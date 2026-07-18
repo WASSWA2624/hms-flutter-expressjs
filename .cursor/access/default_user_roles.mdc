@@ -1,54 +1,51 @@
 ---
-alwaysApply: false
+description: Shipped default user roles and module mappings.
 globs:
   - "backend/**"
   - "frontend/**"
-description: >
-  Shipped default user roles and their module permission mappings.
+alwaysApply: false
 ---
 
 # Default User Roles
 
-Every installation seeds the complete source-controlled role set below. Authorized administrators may customize, extend, or reset role permissions to shipped defaults. Every change is atomic, versioned, and auditable. Effective access is always limited by the active subscription package (see [subscriptions.mdc](./subscriptions.mdc)).
+Seed these roles on install. See `permissions.mdc` for access semantics.
 
-Users may hold **multiple roles** and **multiple module assignments**. Effective permissions = union of role/module/user grants ∩ subscription package ∩ ABAC scope.
+## Shipped Roles
 
-## Shipped roles
-
-| role_key | Label | Default modules (keys) | Default permissions (summary) |
-|---|---|---|---|
-| super_admin | Super Admin | all active modules | manage within platform scope; still bounded by subscription in tenant contexts |
-| tenant_admin | Tenant Admin | all entitled modules for tenant | manage tenant users, modules, config, roles |
-| integration_admin | Integration Admin | integrations, reports_audit | view, manage (integrations); view, export (audit) |
-| facility_admin | Facility Admin | facility-scoped operational modules | manage within assigned facility |
-| hr_staff | Human Resources Staff | hr, access_admin (limited) | view, create, edit, manage (HR scope) |
-| operations_staff | Operations Staff | operations | view, create, edit, manage |
-| housekeeper | Housekeeper | housekeeping | view, create, manage |
-| biomedical_engineer | Biomedical Engineer | biomedical | view, create, edit, manage |
-| discharge_planner | Discharge Planner | discharge, ipd, nursing (view) | view, create, edit, approve (discharge) |
-| doctor | Doctor | opd, ipd, clinical, triage, lab, radiology, pharmacy, nursing, billing, reports_audit, patient_registry | view/create/edit clinical; request/view lab & radiology; prescribe; view billing/reports |
-| dentist | Dentist | dental, opd, clinical, pharmacy, patient_registry | view, create, edit (dental/clinical); prescribe |
-| physiotherapist | Physiotherapist | physiotherapy, opd, ipd, patient_registry | view, create, edit, assign |
-| radiologist | Radiologist | radiology, opd, ipd | view, report, edit, manage (radiology) |
-| radiographer | Radiographer | radiology, opd | view, update, manage (scan performance) |
-| sonographer | Sonographer | radiology | view, create, report (ultrasound) |
-| pharmacist | Pharmacist | pharmacy, billing (view) | view, dispense, manage (pharmacy) |
-| laboratory_technician | Laboratory Technician | lab | view, report, edit, manage (lab) |
-| nurse | Nurse | opd, ipd, nursing, triage, lab, radiology, pharmacy, housekeeping, patient_registry | view/update clinical; request diagnostics; manage nursing; create/update registry |
-| receptionist | Receptionist | opd, ipd, billing, patient_registry, communications | create, view (queues/billing); manage registry |
-| mortuary_attendant | Mortuary Attendant | mortuary | view, create, edit, manage (mortuary) |
-| accountant | Accountant | billing, claims, reports_audit, opd, ipd | manage billing/claims; view/export reports |
-| support_staff | Support Staff | communications, operations (limited) | view, create (support tasks) |
-| patient | Patient | patient_registry, opd, ipd, lab, radiology, pharmacy, nursing, billing, reports_audit | view-own / update-own only |
-| visitor_guest | Visitor / Guest | communications (visitor info) | view limited visitor check-in info |
-
-Detailed attribute-scoped actions live in [permissions.mdc](./permissions.mdc). Module keys live in [modules.mdc](./modules.mdc).
+| role_key | modules | perms summary |
+|---|---|---|
+| super_admin | all active | platform manage |
+| tenant_admin | all entitled | tenant manage |
+| facility_admin | facility modules | facility manage |
+| integration_admin | integrations, reports_audit | integration and audit manage |
+| doctor | opd, ipd, clinical, triage, lab, radiology, pharmacy, nursing, billing, reports_audit, patient_registry | clinical care and diagnostics |
+| nurse | opd, ipd, nursing, triage, lab, radiology, pharmacy, housekeeping, patient_registry | ward care and registry |
+| receptionist | opd, ipd, billing, patient_registry, communications | registration and queues |
+| accountant | billing, claims, reports_audit, opd, ipd | finance and reporting |
+| pharmacist | pharmacy, billing(view) | dispense and manage stock |
+| laboratory_technician | lab | report and manage lab work |
+| radiographer | radiology, opd | scan workflow |
+| radiologist | radiology, opd, ipd | interpret and manage imaging |
+| physiotherapist | physiotherapy, opd, ipd, patient_registry | therapy workflow |
+| discharge_planner | discharge, ipd, nursing(view) | discharge coordination |
+| operations_staff | operations | operations manage |
+| housekeeper | housekeeping | cleaning and turnover |
+| biomedical_engineer | biomedical | equipment maintenance |
+| mortuary_attendant | mortuary | mortuary operations |
+| hr_staff | hr, access_admin(limited) | HR administration |
+| patient | patient-facing modules | own-data only |
+| visitor_guest | communications | limited visitor info |
 
 ## Administration
 
-- Roles are created automatically on system setup.
-- Admins may define additional roles mapped to the same permission vocabulary.
-- Authorized administrators alone may change or reset role mappings.
-- Reset-to-defaults restores this shipped matrix atomically and must leave no user beyond union(role/module/user grants) ∩ subscription ∩ ABAC.
-- Failed role changes or resets roll back completely; audit history records actor, reason, version, and before/after mappings.
-- Frontend and backend must hide/deny menus, components, actions, and workflows for unauthorized roles.
+- Roles must be created automatically at setup.
+- Admins may add custom roles that use the same vocabulary.
+- Reset must restore this shipped matrix atomically.
+- Failed changes must roll back completely and remain auditable.
+- Frontend and backend must deny unauthorized menus, actions, and workflows.
+
+## Related Rules
+
+- `modules.mdc`
+- `permissions.mdc`
+- `subscriptions.mdc`

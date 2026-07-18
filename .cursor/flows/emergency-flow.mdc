@@ -1,130 +1,46 @@
----
-alwaysApply: false
+﻿---
+description: Emergency intake, stabilization, and handoff boundaries for module changes.
 globs:
   - "frontend/lib/features/emergency/**"
   - "backend/src/modules/emergency-case/**"
   - "backend/src/modules/triage-assessment/**"
   - "backend/src/modules/emergency-response/**"
   - "backend/src/modules/ambulance-dispatch/**"
-description: >
-  Emergency intake, triage, and handoff rules for module changes.
+alwaysApply: false
 ---
-# Emergency and Ambulance Patient Flow
+# Emergency Patient Flow
 
-## 0. Overview
+## Purpose
+Emergency owns rapid intake, triage, stabilization, ambulance dispatch, and downstream handoff. Preserve the emergency case as the source record until the patient moves to OPD, IPD, ICU, theater, referral, or discharge.
 
-This file is the direct Emergency flow source of truth for HOSSPI HMS. The **emergency case** is the hub while the patient is in the emergency department. Emergency hands off to OPD, IPD, ICU, or Theater without duplicating downstream encounters. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/icu-flow.mdc`](./icu-flow.mdc), [`.cursor/flows/theater-flow.mdc`](./theater-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+## Stage Sequence
+- Arrival and quick registration.
+- Case opened with chief complaint and priority.
+- Triage records acuity, vitals, and routing decision.
+- Stabilization and emergency treatment.
+- Diagnostics and emergency orders as needed.
+- Handoff destination selected.
+- Downstream flow started and emergency case closed when appropriate.
 
-## 1. Goal
+## Handoffs
+- Triage nurse owns intake and acuity capture.
+- Emergency clinician owns stabilization and destination choice.
+- System owns orchestration of OPD, IPD, ICU, or theater handoff.
+- Emergency must pass source context to the receiving flow and must not create duplicate downstream records.
 
-Enable emergency clinicians, triage nurses, and ambulance dispatchers to run acute intake end-to-end: quick registration, triage, stabilization, ambulance dispatch, emergency response documentation, and **handoff** to receiving workflows â" with care-before-billing affordances and source context preserved on all downstream modules.
+## Hard Invariants
+- Must not own ward beds, OPD consultation queues, or cashier workflows after handoff.
+- Must not recreate IPD when OPD already admitted the patient.
+- Must preserve emergency context on the receiving module.
+- Must allow billing deferral when policy permits urgent care first.
 
-### Central encounter rule
+## Allowed Critical Actions
+- Show `Open in OPD`, `Open in IPD`, `Open in ICU`, or `Open in Theater` when links exist.
+- Keep quick-registration patients visible until registration is completed.
+- Surface deferred billing only when the backend supports it.
 
-While active, the emergency case owns the workflow. Handoff creates or reuses the receiving record (OPD flow, IPD admission, ICU stay, theater case) and links `emergency_case_id`. Emergency does not own inpatient bed management, OPD consultation queues, or cashier workflows after handoff.
-
----
-
-## 2. Position in the Patient Journey
-
-Emergency sits **at the front** of the journey and branches to downstream flows.
-
-```mermaid
-flowchart LR
-    ARR[Arrival / ambulance / walk-in] --> CASE[Emergency case OPEN]
-    CASE --> TRIAGE[Triage + stabilize]
-    TRIAGE --> HO{Handoff destination}
-    HO -->|OPD| OPD[opd-flow â" WAITING_VITALS]
-    HO -->|IPD| IPD[ipd-flow â" admission]
-    HO -->|ICU| ICU[ipd-flow + icu-flow]
-    HO -->|THEATER| OT[theater-flow]
-    HO -->|REFERRAL / DISCHARGE| CLOSE[Case closed]
-    OPD --> OPD_ADMIT[ADMITTED â' IPD]
-```
-
-| Downstream | Flow reference | Emergency responsibility |
-| ---------- | -------------- | ------------------------ |
-| OPD | [opd-flow Â§2](./opd-flow.mdc) | `destination=OPD`; `arrival_mode=EMERGENCY`; payment gate waived when policy allows |
-| IPD | [ipd-flow Â§2.1](./ipd-flow.mdc) | `destination=IPD`; `Billing Deferred` when urgent |
-| ICU | [icu-flow Â§4.1](./icu-flow.mdc) | `destination=ICU`; IPD + `start-icu-stay` |
-| Theater | [theater-flow Â§4.2](./theater-flow.mdc) | `destination=THEATER`; theatre case started |
-| Patient registry | [app-write-up](../app-write-up.mdc) | Quick arrival may create incomplete patient â" complete later |
-
----
-
-## 3. Step-by-Step Emergency Workflow
-
-| Step | Stage | What Happens | Main Role |
-| ---- | ----- | ------------ | --------- |
-| 1 | Arrival | Walk-in, ambulance, or referral arrival; verify or quick-register patient. | Reception / Triage nurse |
-| 2 | Case opened | Emergency case created with chief complaint and priority. | Triage nurse / Clinician |
-| 3 | Triage | Vitals, acuity, isolation flags, routing decision recorded. | Triage nurse |
-| 4 | Stabilization | Emergency response, treatment, monitoring documented. | Emergency clinician |
-| 5 | Diagnostics / orders | Lab, radiology, medication as needed â" orders on case or linked encounter. | Clinician |
-| 6 | Handoff decision | Destination: OPD, IPD, ICU, Theater, referral, or discharge from ED. | Emergency clinician |
-| 7 | Handoff execution | `POST /emergency-cases/:id/handoff` orchestrates downstream flow. | System / Clinician |
-| 8 | Case closure | Terminal handoffs close case; show deep links to receiving module. | System |
-
----
-
-## 4. Handoff Destinations
-
-| Destination | Backend orchestration | Receiving module |
-| ----------- | --------------------- | ---------------- |
-| `OPD` | `startEmergencyOpdFlow` | [opd-flow](./opd-flow.mdc) â" `WAITING_VITALS`, emergency context |
-| `IPD` | `startEmergencyIpdFlow` | [ipd-flow Â§2.1](./ipd-flow.mdc) â" deferred billing optional |
-| `ICU` | `startEmergencyIcuFlow` | [icu-flow Â§4.1](./icu-flow.mdc) â" IPD + ICU stay |
-| `THEATER` | `startEmergencyTheatreFlow` | [theater-flow Â§4.2](./theater-flow.mdc) |
-| `REFERRAL` | Case closed with referral note | External â" no IPD |
-| `DISCHARGE` | Case closed | Patient leaves from ED |
-
-**Rules:**
-
-- After handoff, surface **Open in OPD / IPD / ICU / Theater** on case detail when links exist.
-- Do not recreate IPD from Emergency when patient already routed OPD â' `ADMITTED`.
-- Quick registration patients prompt **Complete registration** link to patient registry.
-
----
-
-## 5. Billing and Care-Before-Billing
-
-Per [ipd-flow Â§4](./ipd-flow.mdc):
-
-- Emergency IPD/ICU path may mark `Billing Deferred`.
-- UI shows deferred status when API provides â" not static copy only.
-- Billing clearance happens in Billing module after handoff.
-
----
-
-## 6. Module Boundaries
-
-| Own in Emergency | Do not duplicate |
-| ---------------- | -------------- |
-| Emergency case, triage, response, ambulance dispatch | OPD consultation queues (OPD flow) |
-| Handoff orchestration | IPD bed board, ward nursing (IPD / Nursing) |
-| ED-level orders during case | ICU stay lifecycle (ICU) |
-| | Theater case lifecycle (Theater) |
-| | OPD pre-consultation triage queue (OPD triage module when handed to OPD) |
-
----
-
-## Key file references
-
-```
-.cursor/flows/emergency-flow.mdc                    # This file
-frontend/lib/features/emergency/
-backend/src/modules/emergency-case/
-backend/src/modules/triage-assessment/
-backend/src/modules/emergency-response/
-```
-
-## UI, access, and quality standards
-
-- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
-- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
-- High performance worklists (pagination/lazy lists); localize all user-facing text with concise, clinically appropriate terminology; no raw enum codes in production UI.
-- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded color, spacing, or typography values.
-- Strict RBAC+ABAC: menus, components, API endpoints, and workflow actions must never be visible or accessible to unauthorized users. Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
-- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
-- Reference entities by `human_friendly_id` in frontend and API responses; backend maps to internal IDs. Never expose raw table IDs.
-
+## Related
+- `opd-flow.mdc`
+- `ipd-flow.mdc`
+- `icu-flow.mdc`
+- `theater-flow.mdc`

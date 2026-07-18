@@ -1,261 +1,45 @@
----
-alwaysApply: false
+﻿---
+description: Theater surgical episode and handoff boundaries for module changes.
 globs:
   - "frontend/lib/features/theater/**"
   - "backend/src/modules/theatre-flow/**"
-description: >
-  Theater surgical episode, stage, and handover rules for OT module changes.
+alwaysApply: false
 ---
-# Theater (Operating Theatre) Patient Flow
-
-## 0. Overview
-
-This file is the direct Theater flow source of truth for the HOSSPI HMS implementation plan. Theater is a **surgical episode overlay on the IPD encounter** (or linked emergency/OPD context) â" not a parallel admission system. It should stay aligned with the backend theatre-flow module (`GET /theatre-flows`, `POST /theatre-flows/start`, `update-stage`, checklists, anesthesia, post-op), the Flutter Theater workspace, and the upstream/downstream flows in [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/icu-flow.mdc`](./icu-flow.mdc), [`.cursor/flows/nursing-flow.mdc`](./nursing-flow.mdc), [`.cursor/flows/emergency-flow.mdc`](./emergency-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
-
-## 1. Goal
-
-Enable surgeons, anesthetists, theater nurses, and theater coordinators to run surgical episodes end-to-end: schedule cases, complete safety checklists, record anesthesia, track intra-operative progress, capture post-operative notes, and **hand over back to ward, ICU, or outpatient care** â" all anchored to the **same IPD admission / encounter** when inpatient.
-
-Elective cases from OPD planning and emergency `THEATER` disposition must land in the theater workspace with source context preserved. Deliver a **professional theater workspace**: case board by stage, resource assignment (room, team), checklist-driven safety, and post-op handover summaries visible on ICU/Nursing detail.
-
-### Central encounter rule
-
-Every theater case, checklist, anesthesia record, and post-op note attaches to the **IPD admission / encounter** (or linked OPD/emergency source). Theater does not create duplicate admission records. OPD owns outpatient completion; IPD owns admission lifecycle; Theater owns the surgical episode overlay while the patient is in the OT pathway.
-
----
-
-## 2. Position in the Patient Journey
-
-Theater sits **on top of** the IPD encounter (or linked encounter from emergency/OPD) during the surgical episode.
-
-```mermaid
-flowchart LR
-    OPD[OPD planned procedure] --> IPD[IPD admission for surgery]
-    EMR[Emergency THEATER disposition] --> CASE[Theatre case started]
-    IPD --> SCHED[Case scheduled]
-    SCHED --> PRE[Pre-op checks]
-    PRE --> OT[Transfer to OT â" In Procedure]
-    OT --> INTRA[Intra-op + anesthesia]
-    INTRA --> POST[Post-op + PACU handoff]
-    POST --> HO{Recovery destination}
-    HO --> WARD[Ward â" Nursing]
-    HO --> ICU[ICU â" icu-flow]
-    HO --> OPD_OUT[OPD follow-up if day case]
-    WARD --> IPD_CARE[IPD care loop continues]
-    ICU --> ICU_CARE[ICU monitoring]
-```
-
-| Upstream | Flow reference | Theater responsibility |
-| -------- | -------------- | ---------------------- |
-| OPD elective surgery | [opd-flow Â§7](./opd-flow.mdc), `ADMITTED` | Preserve OPD encounter link; IPD owns admission |
-| Emergency theater path | [emergency-flow Â§4](./emergency-flow.mdc) | Case from `THEATER` handoff with emergency context |
-| IPD surgery order | [ipd-flow Â§7](./ipd-flow.mdc) | OT scheduling â' pre-op â' operation â' post-op |
-| IPD transfer | [ipd-flow Â§9](./ipd-flow.mdc) | Temporary OT/procedure transfer; return to ward/ICU |
-| ICU post-op | [icu-flow Â§4.4](./icu-flow.mdc) | Post-op ICU handoff summary on ICU detail |
-| Nursing post-op | [nursing-flow Â§4](./nursing-flow.mdc) | Post-op handover visible on nursing detail |
-| Billing | [ipd-flow Â§4](./ipd-flow.mdc) | Pre-auth/deposit before high-cost procedure when required |
-
----
-
-## 3. Step-by-Step Theater Workflow
-
-| Step | Stage | What Happens | Main Role |
-| ---- | ----- | ------------ | --------- |
-| 1 | Case indication | Surgery requested from IPD order, OPD plan, or emergency disposition. | Doctor / Emergency clinician |
-| 2 | Case scheduling | `POST /theatre-flows/start` with admission/encounter link, procedure, surgeon, room, time. | Theater coordinator / Surgeon |
-| 3 | Pre-op preparation | Pre-op checklist, consent verification, billing/pre-auth gate when policy requires. | Theater nurse / Anesthetist |
-| 4 | Transfer to OT | IPD status `In Procedure / OT`; patient moved to theater ([ipd-flow Â§9](./ipd-flow.mdc)). | Ward nurse / Transport |
-| 5 | Sign-in / Time-out | WHO-style safety checklists (`SIGN_IN`, `TIME_OUT`). | Surgeon / Anesthetist / Nurse |
-| 6 | Intra-operative | `INTRA_OP` stage; anesthesia record, observations, procedure progress. | Surgeon / Anesthetist / Scrub nurse |
-| 7 | Sign-out | `SIGN_OUT` checklist; operative note captured. | Surgeon / Team |
-| 8 | Post-op / PACU | `POST_OP`, `PACU_HANDOFF`; recovery monitoring, post-op orders. | Anesthetist / PACU nurse |
-| 9 | Handover destination | Return to ward, escalate to ICU, or day-case OPD follow-up per clinical decision. | Doctor / Theater nurse |
-| 10 | Case closure | Stage `COMPLETED`; charges posted; IPD care loop resumes. | Theater coordinator / System |
-
----
-
-## 4. Theater Entry Paths
-
-### 4.1 Elective OPD â' IPD â' Theater
-
-1. OPD doctor plans procedure and dispositions to `ADMITTED` ([opd-flow Â§3, Â§7](./opd-flow.mdc)).
-2. IPD admission created for surgery ([ipd-flow Â§2.3](./ipd-flow.mdc)).
-3. Pre-auth/deposit completed per policy.
-4. Theater case scheduled with OPD source context on detail.
-
-### 4.2 Emergency â' Theater
-
-1. Emergency clinician sets `THEATER` disposition ([emergency-flow Â§4](./emergency-flow.mdc)).
-2. `startEmergencyTheatreFlow` creates theatre encounter and flow.
-3. Case appears on theater board with emergency case context.
-4. Billing may be deferred per [ipd-flow Â§4](./ipd-flow.mdc).
-
-### 4.3 Inpatient ward â' OT (temporary transfer)
-
-1. Doctor places surgery order on IPD encounter ([ipd-flow Â§7](./ipd-flow.mdc)).
-2. Theater case scheduled; IPD transfer to OT when patient leaves ward.
-3. During case: IPD status `In Procedure / OT`.
-4. Post-op: transfer complete back to ward or ICU with handover note.
-
-### 4.4 Post-op â' ICU
-
-1. Clinical decision for critical recovery.
-2. Theater completes `PACU_HANDOFF` and case closure steps.
-3. Patient transferred to ICU bed; ICU module starts or continues stay ([icu-flow Â§4.4](./icu-flow.mdc)).
-4. ICU detail shows theatre case summary when API provides reference.
-
----
-
-## 5. Backend Queue and Stage Contract
-
-Frontend labels, filters, summary cards, badges, dialogs, and actions must use backend theatre-flow filters on `GET /theatre-flows` as canonical workflow states.
-
-| Backend filter / field | User meaning | Primary owner |
-| ---------------------- | ------------ | ------------- |
-| `queue_scope=ACTIVE` | Scheduled or in-progress cases | Theater coordinator |
-| `status=SCHEDULED` | Case booked, not yet in OT | Theater coordinator |
-| `status=IN_PROGRESS` | Active surgical episode | Surgeon / Anesthetist / Nurse |
-| `status=COMPLETED` | Case closed | Audit / Reporting |
-| `status=CANCELLED` | Case cancelled with reason | Surgeon / Coordinator |
-| `stage=PRE_OP` â¦ `PACU_HANDOFF` | Workflow stage within active case | Theater team |
-| `stage=COMPLETED` | All required checklists and records finalized | Coordinator |
-
-### Workflow stage sequence (canonical)
-
-`PRE_OP` â' `SIGN_IN` â' `TIME_OUT` â' `INTRA_OP` â' `SIGN_OUT` â' `POST_OP` â' `PACU_HANDOFF` â' `COMPLETED`
-
-Required checklist phases for closure: `SIGN_IN`, `TIME_OUT`, `SIGN_OUT`, `PACU_HANDOFF`.
-
-Default landing scope: **Active cases** (`queue_scope=ACTIVE`).
-
----
-
-## 6. Case Lifecycle Actions
-
-| Action | API | When valid |
-| ------ | --- | ---------- |
-| Start / schedule case | `POST /theatre-flows/start` | Linked admission/encounter; procedure and team assigned |
-| Update stage | `POST /theatre-flows/:id/update-stage` | Valid stage transition per backend sequence |
-| Toggle checklist item | Theatre-flow checklist routes | Phase matches current stage |
-| Upsert anesthesia record | Theatre-flow anesthesia routes | During pre-op through PACU |
-| Upsert post-op note | Theatre-flow post-op routes | Post-op / handoff stages |
-| Assign / release resources | Resource assign/release routes | Room, team slots available |
-| Finalize / reopen | Per policy and role | Case completion or authorized reopen |
-
-**Rules:**
-
-- Stage transitions must follow backend sequence; reject invalid jumps with user-friendly messages.
-- Closing a case does **not** close the IPD encounter.
-- Post-op orders (medication, lab) route to IPD encounter via clinical actions ([ipd-flow Â§7](./ipd-flow.mdc)).
-
----
-
-## 7. IPD and Transfer Integration
-
-| Integration | Theater module behavior |
-| ----------- | ----------------------- |
-| IPD board `In Procedure / OT` | Sync when case is `IN_PROGRESS` and patient in OT |
-| Request OT transfer | From IPD when patient in ward â" [ipd-flow Â§9](./ipd-flow.mdc) |
-| Complete return transfer | `update-transfer` with target ward/ICU bed; handover note |
-| **Open in Theater** | IPD detail when active case exists |
-| **Open in IPD** | Theater detail for admission-wide context |
-
----
-
-## 8. Billing and Orders
-
-Per [ipd-flow Â§4](./ipd-flow.mdc):
-
-- High-cost procedures may require pre-auth or deposit before scheduling.
-- Procedure charges post to IPD bill via billing integration.
-- Post-op medication/lab orders use shared `clinical_actions` dialogs with `ClinicalRequestBillingPanel`.
-- Theater does not run cashier workflows.
-
----
-
-## 9. Cross-Flow Integration Rules
-
-### IPD ([ipd-flow.mdc](./ipd-flow.mdc))
-
-- Â§7 Surgery route: canonical order â' theater execution path.
-- Â§9 OT/procedure transfer: temporary movement; return with handover.
-- Â§11 `In Procedure / OT`: case board and IPD status alignment.
-- Â§16 encounter hub: case, anesthesia, checklists, post-op on admission.
-
-### OPD ([opd-flow.mdc](./opd-flow.mdc))
-
-- Â§3 `ADMITTED`: elective surgery admission handoff to IPD/theater.
-- Â§5: theater team actions in theater workspace only.
-
-### ICU ([icu-flow.mdc](./icu-flow.mdc))
-
-- Â§4.4 Post-op â' ICU: handover summary on ICU detail.
-- ICU owns stay lifecycle after handoff â" theater does not start/end ICU stays.
-
-### Nursing ([nursing-flow.mdc](./nursing-flow.mdc))
-
-- Post-op ward recovery: handover summary on nursing detail.
-- MAR and ward vitals remain in Nursing module.
-
-### Emergency ([emergency-flow.mdc](./emergency-flow.mdc))
-
-- `THEATER` disposition creates case with `emergency_case_id` when available.
-
-### Deep links
-
-`/theater?id={caseDisplayId}&panel={checklist|anesthesia|postop|resources}` â" router pre-selects case and focuses panel.
-
----
-
-## 10. Module Boundaries
-
-From [app-write-up.mdc](../app-write-up.mdc):
-
-| Own in Theater | Do not duplicate â" use other module |
-| -------------- | ----------------------------------- |
-| Case scheduling, stage flow, checklists, anesthesia, post-op notes | IPD admission creation (except via upstream handoff) |
-| Resource assignment (room, team) | Hospital-wide bed CRUD (Facility / IPD) |
-| Operative documentation canonical record | Duplicate anesthesia in Clinical if theater owns record |
-| Post-op handover summary | ICU stay lifecycle (ICU module) |
-| Procedure charges trigger | Invoice/payment/cashier (Billing) |
-
----
-
-## 11. Important Implementation Rule
-
-The **IPD encounter remains the central record** ([ipd-flow Â§16](./ipd-flow.mdc)). Theater overlay data attaches to it:
-
-- Theater case start, stage history, checklists
-- Anesthesia and intra-op observations
-- Post-op notes and PACU handoff
-- Resource assignments
-- Source OPD/emergency context (read-only links)
-- Post-op orders (via IPD encounter)
-
-Prefer `theatre-flow` actions as canonical over standalone theatre CRUD for workspace mutations unless admin/reporting requires direct CRUD.
-
----
-
-## Key file references
-
-```
-.cursor/flows/theater-flow.mdc                     # This file
-.cursor/flows/ipd-flow.mdc                          # Surgery route, OT transfer, In Procedure / OT
-.cursor/flows/icu-flow.mdc                          # Post-op ICU handoff
-.cursor/flows/nursing-flow.mdc                      # Post-op ward care
-.cursor/flows/emergency-flow.mdc                    # Emergency THEATER disposition
-frontend/lib/features/theater/
-backend/src/modules/theatre-flow/
-backend/src/modules/emergency-case/services/emergency-case.service.js
-```
-
-## UI, access, and quality standards
-
-- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
-- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
-- High performance worklists (pagination/lazy lists); localize all user-facing text with concise, clinically appropriate terminology; no raw enum codes in production UI.
-- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded color, spacing, or typography values.
-- Strict RBAC+ABAC: menus, components, API endpoints, and workflow actions must never be visible or accessible to unauthorized users. Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
-- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
-- Reference entities by `human_friendly_id` in frontend and API responses; backend maps to internal IDs. Never expose raw table IDs.
-
+# Theater Patient Flow
+
+## Purpose
+Theater owns the surgical episode overlay on the IPD or linked emergency/OPD context. Keep the case board, checklist, anesthesia, intra-op record, and post-op handoff tied to the same admission.
+
+## Stage Sequence
+- Surgery case indicated from IPD, OPD plan, or emergency disposition.
+- Case scheduled with room, team, and source context.
+- Pre-op checks and billing gate completed when required.
+- Transfer to OT and `In Procedure / OT` recorded in IPD.
+- `SIGN_IN`, `TIME_OUT`, intra-op, and `SIGN_OUT` completed.
+- Post-op or PACU handoff recorded.
+- Return to ward, ICU, or outpatient follow-up chosen.
+- Case closed after required records finish.
+
+## Handoffs
+- Theater coordinator owns scheduling and resource assignment.
+- Surgeon, anesthetist, and theater nurse own operative safety and documentation.
+- IPD owns admission lifecycle before and after the case.
+- ICU and Nursing own the receiving handoff after post-op transfer.
+
+## Hard Invariants
+- Must not create a parallel admission record.
+- Must not skip required checklist phases for closure.
+- Must not own ICU stay lifecycle or ward medication administration.
+- Must keep post-op orders on the IPD encounter.
+
+## Allowed Critical Actions
+- Start or update the case only when the linked encounter and team are valid.
+- Gate high-cost procedures on pre-auth or deposit when policy requires it.
+- Use shared clinical actions for post-op medication and lab orders.
+- Treat case closing as separate from IPD discharge.
+
+## Related
+- `ipd-flow.mdc`
+- `icu-flow.mdc`
+- `nursing-flow.mdc`
+- `emergency-flow.mdc`

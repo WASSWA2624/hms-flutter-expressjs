@@ -1,105 +1,43 @@
----
-alwaysApply: false
+﻿---
+description: Lab order execution and result workflow boundaries for module changes.
 globs:
   - "frontend/lib/features/lab/**"
   - "backend/src/modules/lab-workspace/**"
-description: >
-  Lab order execution and result workflow rules for lab module changes.
+alwaysApply: false
 ---
 # Laboratory Patient Flow
 
-## 0. Overview
+## Purpose
+Lab owns sample-to-result execution for encounter-linked orders. Keep the lab workbench focused on receiving orders, collecting samples, processing tests, and releasing verified results.
 
-This file is the direct Laboratory flow source of truth for HOSSPI HMS. Lab is an **executing department** â" every order links to a **clinical encounter** (`encounter_id`). Lab does not create OPD/IPD encounters or advance patient flow stages directly; orchestrators update OPD/IPD stages when work completes. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+## Stage Sequence
+- Order received from OPD, IPD, ICU, or clinical dialog.
+- Billing gate checked when required.
+- Sample collected, labeled, and received or rejected.
+- Test processed and results entered.
+- Supervisor verifies or releases the result.
+- Critical results notify the receiving clinician.
 
-## 1. Goal
+## Handoffs
+- Doctor or clinical user owns order placement.
+- Lab tech owns collection, accession, processing, and result entry.
+- Lab supervisor owns verification and release.
+- OPD or IPD orchestrators own stage progression after results return.
 
-Enable lab staff to execute sample-to-result workflows: receive orders, collect samples, process tests, enter and verify results, handle QC, and release results to clinicians â" with billing integration at order time and encounter traceability on every row.
+## Hard Invariants
+- Must not create encounters or advance OPD/IPD stages directly.
+- Must not duplicate orders already posted through the encounter.
+- Must keep every row tied to a clinical encounter id.
+- Must not hide critical results from the clinician workflow.
 
-### Central encounter rule
+## Allowed Critical Actions
+- Use the workbench route as the canonical lab workspace.
+- Support pay-now or bill-later at order time when policy requires it.
+- Flag critical results immediately for notification.
+- Keep OPD and IPD order contexts distinct in the queue.
 
-Orders attach to OPD or IPD encounters. Lab executes and reports â" Clinical/Doctor places orders via shared clinical actions; OPD/IPD orchestrators own stage progression.
-
----
-
-## 2. Position in the Patient Journey
-
-```mermaid
-flowchart LR
-    OPD[OPD LAB_REQUESTED] --> LAB[Lab workbench]
-    IPD[IPD order â" ipd-flow Â§7] --> LAB
-    CLIN[Clinical order dialog] --> LAB
-    LAB --> RESULT[Result released]
-    RESULT --> OPD_DONE[OPD stage updated by orchestrator]
-    RESULT --> IPD_TL[IPD timeline / care loop Â§8]
-```
-
-| Source | Flow reference | Lab responsibility |
-| ------ | -------------- | ------------------ |
-| OPD | [opd-flow Â§3](./opd-flow.mdc) `LAB_REQUESTED`, `LAB_AND_RADIOLOGY_REQUESTED` | Workbench shows OPD encounter orders |
-| IPD | [ipd-flow Â§7](./ipd-flow.mdc) lab route | Sample â' process â' result on admission encounter |
-| IPD care loop | [ipd-flow Â§8](./ipd-flow.mdc) | Results for doctor/nurse review |
-| Billing | [ipd-flow Â§4](./ipd-flow.mdc) | `ClinicalRequestBillingPanel` at order; charges post per policy |
-
----
-
-## 3. Step-by-Step Lab Workflow
-
-| Step | Stage | What Happens | Main Role |
-| ---- | ----- | ------------ | --------- |
-| 1 | Order received | Order appears on lab workbench from OPD/IPD/ICU/clinical. | System |
-| 2 | Billing gate (if required) | Pay-now or bill-later at order time. | Cashier / System |
-| 3 | Sample collection | Collect, label, send to lab. | Phlebotomist / Lab |
-| 4 | Sample receive / reject | Accession or reject with reason. | Lab tech |
-| 5 | Processing | Test in progress. | Lab tech |
-| 6 | Result entry | Enter values; flag critical results. | Lab tech |
-| 7 | Verification | Verify/release or reject result. | Lab supervisor |
-| 8 | Clinician notification | Critical results notify doctor/ward ([ipd-flow Â§17](./ipd-flow.mdc)). | System |
-
----
-
-## 4. Backend Workbench Contract
-
-Use `GET /lab/workbench` and lab-workspace workflow mutations as canonical. Order pipeline: collect â' receive/reject sample â' release/reject result â' verify â' reverse (when permitted).
-
-| Order status (user meaning) | Lab action |
-| --------------------------- | ---------- |
-| Ordered | Awaiting sample |
-| Waiting sample / patient | Collect sample |
-| In progress | Processing |
-| Result pending | Entry in progress |
-| Completed | Released to clinician |
-| Cancelled | Cancel with reason |
-
----
-
-## 5. Role and Module Boundaries
-
-| Rule | Detail |
-| ---- | ------ |
-| [opd-flow Â§5](./opd-flow.mdc) | Lab workspace actions only â" no OPD clinical stage mutations from lab UI |
-| [opd-flow Â§6](./opd-flow.mdc) | `AppWorkspace`, summary cards filter worklist |
-| Clinical boundary | Doctors order via `clinical_lab_order_action_dialog.dart` |
-| Billing boundary | Pay-now at order; bill-later in Billing module |
-
----
-
-## Key file references
-
-```
-.cursor/flows/lab-flow.mdc                         # This file
-frontend/lib/features/lab/
-backend/src/modules/lab-workspace/
-frontend/lib/shared/clinical_actions/clinical_lab_order_action_dialog.dart
-```
-
-## UI, access, and quality standards
-
-- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
-- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
-- High performance worklists (pagination/lazy lists); localize all user-facing text with concise, clinically appropriate terminology; no raw enum codes in production UI.
-- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded color, spacing, or typography values.
-- Strict RBAC+ABAC: menus, components, API endpoints, and workflow actions must never be visible or accessible to unauthorized users. Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
-- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
-- Reference entities by `human_friendly_id` in frontend and API responses; backend maps to internal IDs. Never expose raw table IDs.
-
+## Related
+- `opd-flow.mdc`
+- `ipd-flow.mdc`
+- `radiology-flow.mdc`
+- `pharmacy-flow.mdc`

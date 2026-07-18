@@ -1,116 +1,45 @@
----
-alwaysApply: false
+﻿---
+description: OPD outpatient workflow boundaries for module changes.
 globs:
   - "frontend/lib/features/opd/**"
   - "backend/src/modules/opd-flow/**"
-description: >
-  OPD patient flow, stages, worklist, and handoff rules for module changes.
+alwaysApply: false
 ---
 # OPD Patient Flow
 
-## 0. Overview
+## Purpose
+OPD owns the outpatient encounter from arrival through consultation, tests, pharmacy, admission, referral, or discharge. Keep one active OPD encounter per patient and preserve source context on every handoff.
 
-This file is the direct OPD flow source of truth for the HMS implementation plan. 
-It should stay aligned with the backend OPD flow module and the Flutter OPD workspace.
+## Stage Sequence
+- `WAITING_VITALS`: nurse triage and registration support.
+- `WAITING_CONSULTATION_PAYMENT` or `WAITING_DOCTOR_ASSIGNMENT`: complete payment gate or assign provider.
+- `WAITING_DOCTOR_REVIEW`: doctor consultation and clinical decision.
+- `LAB_REQUESTED`, `RADIOLOGY_REQUESTED`, `PHARMACY_REQUESTED`: route to the sibling executing department flow.
+- `WAITING_DISPOSITION`: doctor finalizes admit, refer, or discharge.
+- `ADMITTED`: close OPD and hand off to IPD without duplicating the encounter.
+- `DISCHARGED`: outpatient visit closed only.
 
-**Related flow files:** executing departments ([lab-flow](./lab-flow.mdc), [radiology-flow](./radiology-flow.mdc), [pharmacy-flow](./pharmacy-flow.mdc)), upstream [emergency-flow](./emergency-flow.mdc), downstream [ipd-flow](./ipd-flow.mdc) (including [icu-flow](./icu-flow.mdc), [theater-flow](./theater-flow.mdc), [nursing-flow](./nursing-flow.mdc), [discharge-flow](./discharge-flow.mdc)), and [app-write-up.mdc](../app-write-up.mdc).
+## Handoffs
+- Reception owns registration, check-in, and queue creation.
+- Billing owns consultation and payment gates only.
+- Nurse owns vitals and nurse-supported routing.
+- Doctor owns clinical review and final disposition.
+- OPD must hand off to `ipd-flow.mdc` when admitting; use `emergency-flow.mdc` only for preserved emergency context.
 
-## 1. Goal
+## Hard Invariants
+- Must not create a second active OPD encounter for the same patient.
+- Must not show department actions when the backend stage or role does not allow them.
+- Must not expose raw enum names to users.
+- Must keep OPD as the outpatient source record; inpatient, ICU, theater, nursing, discharge, lab, radiology, and pharmacy own their own work.
 
-Make outpatient movement simple and traceable from arrival to consultation, diagnostics, pharmacy, admission, referral, or discharge. The OPD encounter is the central outpatient record and must not be duplicated while an active OPD encounter already exists for the same patient.
+## Allowed Critical Actions
+- Reuse shared workspace components before creating OPD-specific UI.
+- Refresh only the affected row, detail panel, counts, and badges after small actions.
+- Hide zero-count shortcuts when the workspace pattern expects that behavior.
 
-## 2. Supported Entry Paths
-
-
-| Entry path               | Expected handling                                                                                                                                   | Flow reference |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Walk-in / new patient    | Search existing patient first, register if needed, create or reuse active OPD encounter, capture visit type/payer, then route to the correct stage. | â" |
-| Appointment check-in     | Verify appointment, check in, create or reuse active OPD encounter, confirm payer/provider, and route to vitals, doctor, or payment gate.           | â" |
-| Follow-up / review       | Link to previous context where available, create or reuse active OPD encounter, then route to doctor or service queue.                              | â" |
-| Emergency-to-OPD handoff | Accept only where backend flow supports it, preserve the emergency context, and avoid creating a duplicate OPD encounter.                           | [emergency-flow Â§4](./emergency-flow.mdc) |
-
-
-## 3. Backend Stage Contract
-
-Frontend labels, filters, summary cards, badges, dialogs, and actions must use the backend OPD stages below as the canonical workflow states.
-
-
-| Backend OPD stage              | User meaning                                                 | Primary owner        | Department flow |
-| ------------------------------ | ------------------------------------------------------------ | -------------------- | --------------- |
-| `WAITING_CONSULTATION_PAYMENT` | Patient must complete consultation/payment gate if required. | Reception / Billing  | â" |
-| `WAITING_VITALS`               | Patient is ready for vitals.                                 | Nurse                | [nursing-flow Â§2](./nursing-flow.mdc) |
-| `WAITING_DOCTOR_ASSIGNMENT`    | Patient needs doctor/provider assignment.                    | Reception / Nurse    | â" |
-| `WAITING_DOCTOR_REVIEW`        | Patient is waiting for consultation.                         | Doctor               | â" |
-| `LAB_REQUESTED`                | Patient has pending lab work.                                | Lab                  | [lab-flow](./lab-flow.mdc) |
-| `RADIOLOGY_REQUESTED`          | Patient has pending imaging.                                 | Radiology            | [radiology-flow](./radiology-flow.mdc) |
-| `LAB_AND_RADIOLOGY_REQUESTED`  | Patient has pending diagnostics.                             | Lab / Radiology      | lab + radiology flows |
-| `PHARMACY_REQUESTED`           | Patient has pending pharmacy action.                         | Pharmacy             | [pharmacy-flow](./pharmacy-flow.mdc) |
-| `WAITING_DISPOSITION`          | Doctor must decide final outcome.                            | Doctor               | â" |
-| `ADMITTED`                     | Patient has moved to IPD/admission flow.                     | OPD / IPD handoff    | [ipd-flow Â§2.2](./ipd-flow.mdc) |
-| `DISCHARGED`                   | OPD visit is complete.                                       | Reception / Clinical | Not [discharge-flow](./discharge-flow.mdc) â" outpatient only |
-
-
-## 4. Worklist Contract
-
-The OPD worklist should show enough information for staff to know what happens next without opening several pages:
-
-
-| Field                         | Purpose                                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------------------------- |
-| Patient identity              | Confirms the correct patient.                                                                |
-| Encounter / visit information | Shows the OPD visit context and avoids duplicate active encounters.                          |
-| Visit type                    | Distinguishes walk-in, appointment, review, follow-up, or emergency handoff where available. |
-| Queue / stage / status        | Shows the current backend stage with user-friendly wording.                                  |
-| Provider or department        | Shows who is assigned or where the patient is routed.                                        |
-| Billing/payment state         | Shows payment-gate relevance without replacing the billing module.                           |
-| Arrival or waiting time       | Helps prioritize queues.                                                                     |
-| Next required action          | Explains the next step in hospital language.                                                 |
-| Responsible role/team         | Shows who should act next.                                                                   |
-
-
-## 5. Role and Action Rules
-
-
-| Role/team                                | Allowed OPD responsibility                                                                                                                |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Reception                                | Registration, appointment check-in, encounter/queue creation, provider assignment, payment-gate handoff, and reception-level OPD updates. |
-| Billing                                  | Consultation/payment gate and billing/payment actions only.                                                                               |
-| Nurse                                    | Vitals and nursing-supported queue/provider assignment steps.                                                                             |
-| Doctor                                   | Consultation review, clinical disposition, admission/referral/follow-up/discharge decisions.                                              |
-| Lab                                      | Lab workspace/service work only; no OPD clinical or billing actions.                                                                      |
-| Radiology                                | Radiology workspace/service work only; no OPD clinical or billing actions.                                                                |
-| Pharmacy                                 | Pharmacy workspace/service work only; no OPD clinical or billing actions.                                                                 |
-| Patient / housekeeping / unrelated roles | No staff OPD workspace actions.                                                                                                           |
-| Admin roles                              | Broad access according to the permission model.                                                                                           |
-
-
-Actions must be visible only when both the current backend stage and current user role make the action valid. Do not show buttons that the backend would reject.
-
-## 6. UI Rules
-
-- Before creating new UI components or modifying the existing UI component, check the `frontend/lib/shared/*` folder for appropriate reusable component(s) and reuse them instead of reinventing the wheel. If none exists, create the new UI/component, determine if it will be reused (if yes, create it in the appropriate sub-folder within `frontend/lib/shared/*` and re-use it, else create it in any appropriate folder for one-time use).
-- Use `AppWorkspace`, the More actions **Notifications** submenu (worklist filter shortcuts), `AppListTable`, search/filter controls, status badges, detail panels, and focused dialogs.
-- Use hospital workflow language in labels; do not expose enum names to normal users.
-- Notification submenu rows must filter the current worklist, not open modal lists.
-- Hide zero-count notification rows where the workspace pattern expects that behavior.
-- Keep role/team ownership visible for each patient row.
-- Refresh only the affected row, detail panel, counts, and related badges after small modal actions where the controller supports it.
-
-## 7. OPD-to-IPD Handoff
-
-When the doctor decides admission, OPD should clearly show that the outpatient visit has moved to `ADMITTED` and hand over to the IPD/admission flow without losing the source OPD encounter. IPD should then own bed allocation, ward handover ([nursing-flow](./nursing-flow.mdc)), inpatient notes/orders, discharge planning ([discharge-flow](./discharge-flow.mdc)), and bed release. ICU ([icu-flow](./icu-flow.mdc)) and Theater ([theater-flow](./theater-flow.mdc)) overlays attach to the same IPD admission when clinically indicated.
-
-## 8. Completion Rules
-
-An OPD visit is complete when the patient is discharged from OPD, admitted to IPD, referred out, or otherwise closed by a valid backend disposition. Completed rows should not remain mixed with active action queues unless the user deliberately filters for completed records.
-
-## UI, access, and quality standards
-
-- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
-- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
-- High performance worklists (pagination/lazy lists); localize all user-facing text with concise, clinically appropriate terminology; no raw enum codes in production UI.
-- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded color, spacing, or typography values.
-- Strict RBAC+ABAC: menus, components, API endpoints, and workflow actions must never be visible or accessible to unauthorized users. Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
-- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
-- Reference entities by `human_friendly_id` in frontend and API responses; backend maps to internal IDs. Never expose raw table IDs.
-
+## Related
+- `ipd-flow.mdc`
+- `emergency-flow.mdc`
+- `lab-flow.mdc`
+- `radiology-flow.mdc`
+- `pharmacy-flow.mdc`

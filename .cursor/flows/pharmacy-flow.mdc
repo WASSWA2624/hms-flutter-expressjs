@@ -1,98 +1,43 @@
----
-alwaysApply: false
+﻿---
+description: Pharmacy dispensing and discharge medicine boundaries for module changes.
 globs:
   - "frontend/lib/features/pharmacy/**"
   - "backend/src/modules/pharmacy-workspace/**"
-description: >
-  Pharmacy dispensing and discharge medicine rules for pharmacy module changes.
+alwaysApply: false
 ---
 # Pharmacy Patient Flow
 
-## 0. Overview
+## Purpose
+Pharmacy owns encounter-linked dispensing, returns, stock visibility, and take-home medicines. Keep dispensing separate from prescribing and from ward MAR administration.
 
-This file is the direct Pharmacy flow source of truth for HOSSPI HMS. Pharmacy is an **executing department** â" orders attach to **encounter_id**. Pharmacy dispenses; Nursing records administration (MAR) on IPD. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/nursing-flow.mdc`](./nursing-flow.mdc), [`.cursor/flows/discharge-flow.mdc`](./discharge-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+## Stage Sequence
+- Order received from OPD, IPD, or discharge planning.
+- Billing gate checked when required.
+- Medicine prepared, verified, and attested.
+- Ward delivery or patient pickup completed.
+- Return processed when applicable.
+- Discharge medicines prepared for exit clearance.
 
-## 1. Goal
+## Handoffs
+- Doctor or clinical user owns prescription creation.
+- Pharmacist owns dispense, attest, and returns.
+- Nurse owns ward administration recording on IPD.
+- Discharge flow owns final clearance for take-home medicines.
 
-Enable pharmacists to fulfill medication orders: billing gates, prepare and attest dispense, manage returns, maintain stock visibility, and support **discharge take-home medicines**.
+## Hard Invariants
+- Must not create encounters or change OPD/IPD stages directly.
+- Must not duplicate MAR administration in pharmacy.
+- Must keep every dispense tied to the source encounter.
+- Must not mix outpatient, inpatient, and discharge-pending queues.
 
-### Central encounter rule
+## Allowed Critical Actions
+- Use the pharmacy workbench as the canonical dispensing workspace.
+- Support pay-now or bill-later at order time when policy requires it.
+- Surface returns with a reason and keep stock visibility accurate.
+- Prioritize discharge medicines so final clearance stays unblocked.
 
-Pharmacy executes dispensing on encounter-linked orders. It does not create encounters or own MAR administration.
-
----
-
-## 2. Position in the Patient Journey
-
-```mermaid
-flowchart LR
-    OPD[OPD PHARMACY_REQUESTED] --> PHARM[Pharmacy workbench]
-    IPD[IPD medication order Â§7] --> PHARM
-    CLIN[Prescription dialog] --> PHARM
-    PHARM --> DISP[Dispense attested]
-    DISP --> OPD_DONE[OPD stage updated]
-    DISP --> MAR[Nursing MAR â" nursing-flow]
-    IPD_DISC[discharge-flow Â§3 step 5] --> PHARM
-```
-
-| Source | Flow reference | Pharmacy responsibility |
-| ------ | -------------- | ----------------------- |
-| OPD | [opd-flow Â§3](./opd-flow.mdc) `PHARMACY_REQUESTED` | Outpatient dispense queue |
-| IPD ward | [ipd-flow Â§7](./ipd-flow.mdc) medication route | Dispense â' ward MAR (Nursing) |
-| IPD discharge | [ipd-flow Â§10 step 5](./ipd-flow.mdc), [discharge-flow Â§3](./discharge-flow.mdc) | Take-home medicines; `Medication Pending` clearance |
-| Billing | [ipd-flow Â§4](./ipd-flow.mdc) | Billing gate on orders; deferred on urgent admits |
-
----
-
-## 3. Step-by-Step Pharmacy Workflow
-
-| Step | Stage | What Happens | Main Role |
-| ---- | ----- | ------------ | --------- |
-| 1 | Order received | Pharmacy order on workbench (OPD or IPD). | System |
-| 2 | Billing gate | Pay-now or bill-later via order billing payload. | Pharmacist / Cashier |
-| 3 | Prepare dispense | Pick, label, verify against order. | Pharmacist |
-| 4 | Attest dispense | Confirm dispense complete. | Pharmacist |
-| 5 | Ward delivery / pickup | Medicine reaches patient; Nursing MAR. | Pharmacist / Nurse |
-| 6 | Return (if applicable) | Process returns with reason. | Pharmacist |
-| 7 | Discharge medicines | Take-home prep for [discharge-flow](./discharge-flow.mdc) clearance. | Pharmacist |
-
----
-
-## 4. Backend Workbench Contract
-
-Use pharmacy-workspace routes: workbench list, `prepare-dispense`, `attest-dispense`, cancel, return. Billing via order PUT with billing payload or integrated gate.
-
-Queue scopes: distinguish **outpatient** vs **inpatient** vs **discharge-pending** when API supports filters.
-
----
-
-## 5. Module Boundaries
-
-| Own in Pharmacy | Do not duplicate |
-| --------------- | -------------- |
-| Dispensing, returns, stock visibility on workbench | Prescription creation (Clinical) |
-| Billing gate on orders | Cashier reconciliation (Billing) |
-| Take-home medicine prep | MAR administration (Nursing) |
-| | OPD/IPD stage mutations |
-
----
-
-## Key file references
-
-```
-.cursor/flows/pharmacy-flow.mdc                    # This file
-frontend/lib/features/pharmacy/
-backend/src/modules/pharmacy-workspace/
-frontend/lib/shared/clinical_actions/clinical_prescription_action_dialog.dart
-```
-
-## UI, access, and quality standards
-
-- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
-- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
-- High performance worklists (pagination/lazy lists); localize all user-facing text with concise, clinically appropriate terminology; no raw enum codes in production UI.
-- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded color, spacing, or typography values.
-- Strict RBAC+ABAC: menus, components, API endpoints, and workflow actions must never be visible or accessible to unauthorized users. Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
-- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
-- Reference entities by `human_friendly_id` in frontend and API responses; backend maps to internal IDs. Never expose raw table IDs.
-
+## Related
+- `opd-flow.mdc`
+- `ipd-flow.mdc`
+- `nursing-flow.mdc`
+- `discharge-flow.mdc`

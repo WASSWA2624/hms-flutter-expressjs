@@ -1,54 +1,34 @@
 ---
-alwaysApply: false
+description: English-first locale editing rule for routine development.
 globs:
   - "frontend/lib/l10n/**"
   - "backend/src/locales/**"
-  - "frontend/lib/**"
-  - "backend/src/**"
-description: >
-  Edit English locale files only unless user explicitly requests other locales.
+alwaysApply: false
 ---
-# Locale Development — Protective Rule
 
-Purpose: keep token usage low during day-to-day development by treating English as the sole editable locale unless the user explicitly requests other locale work.
+# Locale Development
 
-## Base locale
+Edit English locale files by default and treat other locales as explicit work.
 
-- `en` is the **source of truth** for all new user-facing strings.
-- Add or change copy in English first; never bulk-sync non-English files proactively.
-- All user-facing text must be localized, concise, and use appropriate clinical/operational terminology for its context.
+## Routine Edits
 
-## Frontend (`frontend/lib/l10n/`)
+- Frontend: edit `app_en.arb` first.
+- Backend: edit `en.json` first.
+- Add new keys in English before translating them.
+- Run locale generation after English changes when needed.
 
-| Allowed during routine work | Requires explicit user instruction |
-| --------------------------- | ---------------------------------- |
-| Edit `app_en.arb` only | Edit `app_fr.arb` or any other `app_<locale>.arb` |
-| Add new keys to English | Translate or sync French/other ARB files |
-| Run `flutter gen-l10n` after English changes | Full locale parity updates across all ARB files |
+## Explicit Overrides
 
-## Backend (`backend/src/locales/`)
-
-| Allowed during routine work | Requires explicit user instruction |
-| --------------------------- | ---------------------------------- |
-| Edit `en.json` only | Edit `fr.json` or any other locale JSON |
-| Add new keys to English | Translate or sync French/other locale files |
-
-## Explicit override triggers
-
-Update non-English locale files **only** when the user clearly asks, for example:
-
-- "translate French"
-- "sync fr locale"
-- "update app_fr.arb"
-- "implement French localization"
+- Edit non-English locale files only when the user asks for translation or parity work.
+- Do not bulk-sync French or other locales during normal development.
 
 ## Invariants
 
-- Do not hard-code user-facing strings outside locale files.
-- Clinical, legal, and user-entered data is never auto-translated.
-- English remains the runtime fallback when a non-English key is missing.
+- User-facing strings must stay in locale files.
+- Clinical, legal, and user-entered text must not be auto-translated.
+- English must remain the fallback when a non-English key is missing.
 
-## Related rules
+## Related Rules
 
-- [`frontend/.cursor/localization_i18n.mdc`](../frontend/.cursor/localization_i18n.mdc)
-- [`backend/.cursor/internationalization.mdc`](../backend/.cursor/internationalization.mdc)
+- `frontend/.cursor/localization_i18n.mdc`
+- `backend/.cursor/internationalization.mdc`

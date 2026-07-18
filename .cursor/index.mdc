@@ -1,102 +1,43 @@
 ---
-alwaysApply: false
+description: Monorepo rules index and conflict order for HOSSPI HMS.
 globs:
   - ".cursor/**"
   - "backend/**"
   - "frontend/**"
-description: >
-  Monorepo rules index: conflict order, stack indexes, flow and access pointers.
+alwaysApply: false
 ---
-# HOSSPI HMS — Monorepo Rules Index
 
-Purpose: single entry point for all Cursor rules in this repository.
+# HOSSPI HMS Rules Index
 
-## Product
+HOSSPI HMS is the hospital management monorepo for `backend/` and `frontend/`.
 
-**HOSSPI HMS** (HOSSPI Hospital Management System) is a full-stack, multi-tenant hospital management system:
-- `frontend/` — Flutter client (`hosspi_hms`)
-- `backend/` — Express.js API (`hms-backend`)
-- Product scope and modules: [`app-write-up.mdc`](./app-write-up.mdc)
+## Conflict Order
 
-## Locale rule (contextual)
+When rules conflict, apply this order:
 
-[`locale-development.mdc`](./locale-development.mdc) — during routine development, edit only English locale files (`app_en.arb`, `en.json`). Update French or other locale files only when the user explicitly requests it. Not always-applied; attaches via its globs.
+1. Security, privacy, safety, and compliance.
+2. `api-contract.mdc` for shared HTTP and transport behavior.
+3. `app-write-up.mdc` for product scope and module ownership.
+4. `access/` rules for defaults, roles, permissions, and subscriptions.
+5. `flows/` rules when editing a matching patient journey.
+6. `frontend/.cursor/index.mdc` or `backend/.cursor/index.mdc` for stack-specific guidance.
+7. `dev-plan/` steps for chronology only.
 
-## Conflict order
+## Rule Pointers
 
-When rules disagree, apply this order:
+- `access/modules.mdc` defines shipped module keys and package coverage.
+- `access/permissions.mdc` defines access vocabulary, ABAC, and enforcement.
+- `access/subscriptions.mdc` defines package tiers and limits.
+- `access/default_user_roles.mdc` defines shipped role defaults.
+- `app-write-up.mdc` defines product scope and module responsibilities.
 
-1. Security, privacy, safety, and compliance
-2. [`.cursor/api-contract.mdc`](./api-contract.mdc) for cross-stack HTTP, errors, pagination, and naming
-3. Product scope in [`app-write-up.mdc`](./app-write-up.mdc)
-4. Access defaults in [`.cursor/access/`](./access/)
-5. Contextual flow files in [`.cursor/flows/`](./flows/) when editing those domains (see table below)
-6. Stack owner index: [`frontend/.cursor/index.mdc`](../frontend/.cursor/index.mdc) or [`backend/.cursor/index.mdc`](../backend/.cursor/index.mdc)
-7. Other stack-specific rule files named in the stack index
-8. `dev-plan/` steps (chronology only — not a duplicate standards source)
+## Stack Indexes
 
-For UI mutation and reconciliation behavior specifically,
-[`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc)
-and [`frontend/.cursor/realtime_sync.mdc`](../frontend/.cursor/realtime_sync.mdc)
-specialize the transport contract in `api-contract.mdc`.
+- `frontend/.cursor/index.mdc` covers Flutter architecture, UI, and data flow.
+- `backend/.cursor/index.mdc` covers Express, Prisma, API, and security.
 
-## Access control defaults (source of truth)
+## Prompt Set
 
-| File | Owns |
-|---|---|
-| [`access/modules.mdc`](./access/modules.mdc) | Module catalog + default permissions per module |
-| [`access/permissions.mdc`](./access/permissions.mdc) | Permission vocabulary, RBAC+ABAC matrix |
-| [`access/subscriptions.mdc`](./access/subscriptions.mdc) | Package → module → permission enumeration |
-| [`access/default_user_roles.mdc`](./access/default_user_roles.mdc) | Default roles → module permissions |
-
-Effective access = union(role/module/user grants) ∩ active subscription ∩ ABAC scope. Admins may customize; all changes are atomic, auditable, and resettable to shipped defaults. No user may retain access beyond that intersection.
-
-## Stack indexes
-
-| Stack | Index | Scope |
-|---|---|---|
-| Frontend | [`frontend/.cursor/index.mdc`](../frontend/.cursor/index.mdc) | Flutter architecture, UI, data, quality |
-| Backend | [`backend/.cursor/index.mdc`](../backend/.cursor/index.mdc) | Express, Prisma, API, security |
-
-## Contextual rules (not always applied)
-
-| File | When to use |
-|---|---|
-| [`app-write-up.mdc`](./app-write-up.mdc) | Adding, modifying, or deleting a product module |
-| [`flows/opd-flow.mdc`](./flows/opd-flow.mdc) | OPD module, flow, or action changes |
-| [`flows/ipd-flow.mdc`](./flows/ipd-flow.mdc) | IPD module, flow, or action changes |
-| [`flows/emergency-flow.mdc`](./flows/emergency-flow.mdc) | Emergency / ambulance module changes |
-| [`flows/icu-flow.mdc`](./flows/icu-flow.mdc) | ICU module, flow, or action changes |
-| [`flows/theater-flow.mdc`](./flows/theater-flow.mdc) | Theater / OT module changes |
-| [`flows/nursing-flow.mdc`](./flows/nursing-flow.mdc) | Nursing module changes |
-| [`flows/lab-flow.mdc`](./flows/lab-flow.mdc) | Laboratory module changes |
-| [`flows/radiology-flow.mdc`](./flows/radiology-flow.mdc) | Radiology module changes |
-| [`flows/pharmacy-flow.mdc`](./flows/pharmacy-flow.mdc) | Pharmacy module changes |
-| [`flows/discharge-flow.mdc`](./flows/discharge-flow.mdc) | Discharge module changes |
-
-Full patient-journey index: [app-write-up § Patient Flow Documents](./app-write-up.mdc).
-
-## Application improvement prompts
-
-Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`00`–`13`) in **recommended order**, derived from [`prompt.md`](../prompt.md). Use them with the flow files, access catalogs, and stack indexes. Shared delivery standards are owned by [`prompts/00-global-delivery-acceptance.md`](../prompts/00-global-delivery-acceptance.md); later prompts specialize it and must not weaken security, integrity, or sync rules.
-
-| # | Prompt | # | Prompt |
-|---|--------|---|--------|
-| 00 | Global delivery & acceptance | 07 | Clinical results preview |
-| 01 | Authorization & security | 08 | Laboratory module improvements |
-| 02 | Responsive design & design system | 09 | Radiology module & workflow |
-| 03 | Shared reusable components | 10 | Billing engine integration |
-| 04 | Workflow step progress & actions | 11 | Patient reporting & printing |
-| 05 | Patient details component | 12 | Reception / front-desk workspace |
-| 06 | Permission-aware actions | 13 | General application consistency |
-
-## Cross-stack invariants
-
-- API JSON, query params, and documented payload fields use lowercase `snake_case` (backend owns; frontend DTOs map explicitly).
-- Success responses: `{ success: true, data, meta? }`; errors: normalized problem-details shape (see `api-contract.mdc`).
-- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
-- Backend authorization (RBAC, ABAC, subscription intersection, break-glass) is the source of truth; frontend mirrors it in guards and UI visibility.
-- Offline-capable mutations are idempotent; auth, payments, break-glass, and mortuary release are online-only (see `api-contract.mdc`).
-- CRUD mutations use HTTP; WebSocket delivers post-persistence domain events for multi-client UI refresh (see `api-contract.mdc`, `frontend/.cursor/realtime_sync.mdc`).
-- UI reads only from Riverpod; mutations patch provider state optimistically on success; WebSockets reconcile Riverpod — never update widgets directly (see `frontend/.cursor/instant_ui_sync.mdc`).
-- Whenever a database schema change necessitates a migration, all required migrations must be created, reviewed, and executed promptly for every applicable environment.
+- `prompts/00-global-delivery-acceptance.md` is the shared baseline.
+- `prompts/01` to `prompts/13` specialize delivery, security, workflow, and module work.
+- Use the prompt set with the flow files and stack indexes when work is domain-specific.

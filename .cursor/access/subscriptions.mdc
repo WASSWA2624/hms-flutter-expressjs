@@ -1,102 +1,33 @@
 ---
-alwaysApply: false
+description: Subscription package tiers and access limits.
 globs:
   - "backend/**"
   - "frontend/**"
-description: >
-  Subscription packages: module and permission limits, intersection, and audit.
+alwaysApply: false
 ---
-# Subscription Packages
 
-Subscription packages are the hard upper bound on module and permission access. Every permission check (UI and API) must validate against the active package. Defaults live in source control under `.cursor/access/` and must stay aligned with [modules.mdc](./modules.mdc) and [permissions.mdc](./permissions.mdc).
+# Subscriptions
 
-## Available packages
+Package tiers are the hard upper bound on access. See `permissions.mdc` for the effective-access formula.
 
-### Free
+## Tiers
 
-
-| module_key       | Permissions                 |
-| -----------------| --------------------------- |
-| app_shell        | view                        |
-| auth_session     | view, manage (self)         |
-| general_settings | view, update (self)         |
-| patient_registry | view, create                |
-| reports_audit    | view (demo dashboards only) |
-
-No clinical write actions, billing mutations, or dispensing.
-
-### Basic
-
-Includes Free, plus:
-
-
-| module_key        | Permissions                                     |
-| ----------------- | ----------------------------------------------- |
-| tenant_settings   | view, manage                                    |
-| facility_settings | view, manage                                    |
-| access_admin      | view, create, edit, assign, manage              |
-| subscriptions     | view, manage                                    |
-| rooms_beds        | view, create, edit, assign                      |
-| patient_registry  | view, create, update, export                    |
-| opd               | view, create, edit, assign                      |
-| triage            | view, create, edit                              |
-| clinical          | view, create, edit                              |
-| ipd               | view, create, edit, assign (limited beds/wards) |
-| pharmacy          | view, dispense                                  |
-| billing           | view, create, edit                              |
-| communications    | view, create                                    |
-| reports_audit     | view, export (minimal)                          |
-
-### Advanced
-
-Includes Basic, plus full clinical/operational set:
-
-
-| module_key     | Permissions                                 |
-| -------------- | ------------------------------------------- |
-| ipd            | view, create, edit, assign, manage          |
-| nursing        | view, create, update, manage                |
-| discharge      | view, create, edit, approve                 |
-| emergency      | view, create, edit, assign, manage          |
-| lab            | view, request, report, edit, manage, export |
-| radiology      | view, request, report, edit, manage, export |
-| physiotherapy  | view, create, edit, assign                  |
-| pharmacy       | view, request, prescribe, dispense, manage  |
-| claims         | view, create, edit, approve, export         |
-| billing        | view, create, edit, manage, export          |
-| reports_audit  | view, export, manage                        |
-| communications | view, create, manage                        |
-
-### Pro
-
-Includes Advanced, plus:
-
-
-| module_key   | Permissions                               |
-| ------------ | ----------------------------------------- |
-| icu          | view, create, edit, assign, manage        |
-| theater      | view, create, edit, assign, manage        |
-| hr           | view, create, edit, manage, export        |
-| biomedical   | view, create, edit, manage                |
-| operations   | view, create, edit, manage                |
-| housekeeping | view, create, manage                      |
-| mortuary     | view, create, edit, manage                |
-| integrations | view, manage                              |
-| dental       | view, create, edit, manage (when enabled) |
-
-### Custom
-
-Organization-specific subset or extension of Pro. Must enumerate `module_key` + permissions explicitly in tenant config and remain auditable. Never imply access beyond the documented custom set.
-
-### Developer
-
-Unrestricted module/permission access for **non-production** development, testing, and integration only. Must **not** bypass subscription intersection in production tena	nts. Includes `demo_seed` manage.
+- `Free`: `app_shell`, `auth_session`, `general_settings`, `patient_registry`, `reports_audit`.
+- `Basic`: Free plus tenant, facility, access admin, rooms/beds, OPD, triage, clinical, limited IPD, pharmacy dispense, billing, communications.
+- `Advanced`: Basic plus full IPD, nursing, discharge, emergency, lab, radiology, physiotherapy, pharmacy clinical, claims, and reports.
+- `Pro`: Advanced plus ICU, theater, HR, biomedical, operations, housekeeping, mortuary, integrations, and dental when enabled.
+- `Custom`: Tenant-specific subset or extension of Pro; every entitlement must be explicit.
+- `Developer`: Non-production only; may include `demo_seed` manage.
 
 ## Enforcement
 
-- Effective permissions = union(role grants ∪ module grants ∪ user grants) ∩ subscription-included modules/permissions ∩ ABAC scope.
-- Roles, modules, or direct user grants never unlock capabilities outside the active package.
-- Package creation, customization, assignment, upgrade, downgrade, and reset take effect atomically; prior excess permissions must not persist.
-- All package definitions and assignments are versioned, auditable, source-controlled by shipped defaults, and restorable to those defaults by authorized administrators.
-- A failed package change or reset must roll back completely; no intermediate state may grant access.
-- Source of truth: `.cursor/access/` (`modules.mdc`, `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`).
+- Package checks must run in UI and API paths.
+- Grants must never exceed the active package.
+- Package changes, resets, upgrades, and downgrades must be atomic and auditable.
+- Failed changes must roll back completely.
+
+## Related Rules
+
+- `modules.mdc`
+- `permissions.mdc`
+- `default_user_roles.mdc`

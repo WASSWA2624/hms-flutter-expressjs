@@ -1,95 +1,44 @@
----
-alwaysApply: false
+﻿---
+description: Radiology order execution and reporting boundaries for module changes.
 globs:
   - "frontend/lib/features/radiology/**"
   - "backend/src/modules/radiology-workspace/**"
-description: >
-  Radiology order execution and reporting rules for imaging module changes.
+alwaysApply: false
 ---
-# Radiology and Imaging Patient Flow
+# Radiology Patient Flow
 
-## 0. Overview
+## Purpose
+Radiology owns imaging execution for encounter-linked orders. Keep the workbench focused on scheduling, performing studies, capturing assets, and finalizing reports.
 
-This file is the direct Radiology flow source of truth for HOSSPI HMS. Radiology is an **executing department** â" every order links to a **clinical encounter** (`encounter_id`). Radiology does not create OPD/IPD encounters or advance patient flow stages directly. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+## Stage Sequence
+- Order received from OPD, IPD, ICU, or clinical dialog.
+- Billing gate checked when required.
+- Modality, room, and equipment assigned.
+- Study started and assets captured.
+- Report drafted, finalized, and attested.
+- Addendum issued only when needed.
 
-## 1. Goal
+## Handoffs
+- Doctor or clinical user owns order placement.
+- Radiology clerk owns scheduling and assignment.
+- Radiographer owns study execution and asset upload.
+- Radiologist owns report draft, finalization, and addendum.
+- OPD or IPD orchestrators own stage progression after the report returns.
 
-Enable radiology staff to execute order-to-report workflows: receive orders, schedule and perform studies, manage imaging assets, draft and finalize reports, sync to PACS where configured, and release results to clinicians.
+## Hard Invariants
+- Must not create encounters or advance patient stages directly.
+- Must not own equipment maintenance or biomedical workflows.
+- Must keep every study linked to the source encounter.
+- Must not blur outpatient and inpatient queue contexts.
 
-### Central encounter rule
+## Allowed Critical Actions
+- Use the radiology workbench route as the canonical imaging workspace.
+- Support pay-now or bill-later at order time when policy requires it.
+- Keep PACS sync and report release visible when configured.
+- Surface completed studies back to the receiving clinician timeline.
 
-Orders attach to OPD or IPD encounters. Radiology executes studies and reports; Clinical places orders; OPD/IPD orchestrators own stage progression.
-
----
-
-## 2. Position in the Patient Journey
-
-```mermaid
-flowchart LR
-    OPD[OPD RADIOLOGY_REQUESTED] --> RAD[Radiology workbench]
-    IPD[IPD order â" ipd-flow Â§7] --> RAD
-    CLIN[Clinical order dialog] --> RAD
-    RAD --> REPORT[Report finalized]
-    REPORT --> OPD_DONE[OPD stage updated by orchestrator]
-    REPORT --> IPD_TL[IPD timeline / care loop Â§8]
-```
-
-| Source | Flow reference | Radiology responsibility |
-| ------ | -------------- | ------------------------ |
-| OPD | [opd-flow Â§3](./opd-flow.mdc) `RADIOLOGY_REQUESTED`, `LAB_AND_RADIOLOGY_REQUESTED` | Workbench shows OPD orders |
-| IPD | [ipd-flow Â§7](./ipd-flow.mdc) imaging route | Scan â' report on admission encounter |
-| Billing | [ipd-flow Â§4](./ipd-flow.mdc) | `ClinicalRequestBillingPanel` at order |
-| Biomedical | [app-write-up](../app-write-up.mdc) | Equipment **maintenance** is Biomedical â" radiology consumes equipment for scheduling only |
-
----
-
-## 3. Step-by-Step Radiology Workflow
-
-| Step | Stage | What Happens | Main Role |
-| ---- | ----- | ------------ | --------- |
-| 1 | Order received | Order on radiology workbench. | System |
-| 2 | Billing gate (if required) | Pay-now or bill-later. | Cashier / System |
-| 3 | Scheduling / assignment | Assign modality, room, equipment. | Radiology clerk |
-| 4 | Study start | Patient scanned; study record created. | Radiographer |
-| 5 | Asset capture | Images uploaded; PACS sync if configured. | Radiographer / System |
-| 6 | Report draft | Radiologist drafts report. | Radiologist |
-| 7 | Finalization / attestation | Final report released. | Radiologist |
-| 8 | Addendum (if needed) | Corrected or supplemental report. | Radiologist |
-
----
-
-## 4. Backend Workbench Contract
-
-Use `/api/v1/radiology/*` workspace routes as canonical. Order pipeline: assign â' start â' complete â' cancel; study workflow with asset upload and PACS; result draft â' finalize â' attestation â' addendum.
-
----
-
-## 5. Role and Module Boundaries
-
-| Rule | Detail |
-| ---- | ------ |
-| [opd-flow Â§5](./opd-flow.mdc) | Radiology workspace only â" no OPD stage mutations from radiology UI |
-| Clinical boundary | Orders via `clinical_radiology_order_action_dialog.dart` |
-| Biomedical boundary | Imaging equipment registry/PM is not radiology workflow ownership |
-
----
-
-## Key file references
-
-```
-.cursor/flows/radiology-flow.mdc                   # This file
-frontend/lib/features/radiology/
-backend/src/modules/radiology-workspace/
-frontend/lib/shared/clinical_actions/clinical_radiology_order_action_dialog.dart
-```
-
-## UI, access, and quality standards
-
-- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
-- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
-- High performance worklists (pagination/lazy lists); localize all user-facing text with concise, clinically appropriate terminology; no raw enum codes in production UI.
-- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded color, spacing, or typography values.
-- Strict RBAC+ABAC: menus, components, API endpoints, and workflow actions must never be visible or accessible to unauthorized users. Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
-- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
-- Reference entities by `human_friendly_id` in frontend and API responses; backend maps to internal IDs. Never expose raw table IDs.
-
+## Related
+- `opd-flow.mdc`
+- `ipd-flow.mdc`
+- `lab-flow.mdc`
+- `emergency-flow.mdc`

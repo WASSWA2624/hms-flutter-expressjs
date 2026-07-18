@@ -1,110 +1,101 @@
 ---
-alwaysApply: false
+description: Permission vocabulary, ABAC scope, and enforcement rules.
 globs:
   - "backend/**"
   - "frontend/**"
-description: >
-  Permission vocabulary, RBAC+ABAC matrix, and subscription intersection rules.
+alwaysApply: false
 ---
 
-# Default Permissions (Modules & Roles)
+# Permissions
 
-## Permission vocabulary
+This file owns the access vocabulary and enforcement model.
 
-Most modules expose:
+## Vocabulary
 
-- `view` — browse or access data
-- `create` — add records
-- `edit` / `update` — modify records
-- `delete` — remove records
-- `manage` — configuration and assignments within module scope
-- `export` — export data or reports
-- `assign` — assign records (patient to bed, staff to case)
-- `approve` — workflow approvals
-- Module-specific actions (e.g. `dispense`, `request`, `report`, `prescribe`)
+- `view` browse data.
+- `create` add records.
+- `edit` or `update` change records.
+- `delete` remove records.
+- `manage` configure module scope.
+- `export` export data or reports.
+- `assign` assign records or staff.
+- `approve` approve workflow steps.
+- Module-specific verbs may be added when needed, such as `dispense`, `request`, `report`, or `prescribe`.
 
-## Permission attachment levels
+## Access Model
 
-Permissions attach at **user**, **role**, **module**, and **subscription package** levels. Users may hold multiple roles and module assignments.
+Permissions may attach to users, roles, modules, and subscription packages.
 
-**Effective permissions** = union(role grants ∪ module grants ∪ user grants) ∩ subscription package ∩ ABAC scope.
+Effective access = `union(role/module/user grants) ∩ subscription ∩ ABAC`.
 
-Never exceed the active subscription. Multiple roles expand the grant union, then subscription and ABAC still restrict.
-This source-controlled vocabulary and its shipped assignments must seed a complete core permission set out of the box.
+Users may hold multiple roles and module assignments, but access must never exceed the active subscription or ABAC scope.
 
-## ABAC scoping
+## ABAC
 
-Enforce Attribute-Based Access Control on every permission. Filter by user, record, department, facility, tenant, and context such as `own`, `assigned`, `department`, `facility`, `tenant`, `status`. Avoid generic `manage` / `view all` unless explicitly required and audited.
+- Scope checks must consider tenant, facility, department, unit, ward, room, bed, record ownership, assignment, and status.
+- `own` and `assigned` should be preferred over broad `view all` or `manage all`.
+- Every permission decision must be recordable and auditable.
 
-## Module permission defaults
+## Module Defaults
 
-Keys align with [modules.mdc](./modules.mdc).
-
-| Module key | Permissions (attribute-scoped) |
+| module_key | default permissions |
 |---|---|
-| opd | view (own, assigned department, facility); create; edit (own, assigned); delete (own); manage (department, facility); assign |
-| ipd | view (own, assigned ward/bed, department); create; edit (own/assigned); assign; manage (ward/department) |
-| triage | view; create; edit (own, assigned) |
-| clinical | view; create; edit; approve (department/facility) |
-| radiology | request; view; report; edit (assigned); manage; export |
-| lab | request; view; report; edit (assigned); manage; export |
-| pharmacy | request; view; prescribe; dispense; edit; manage |
-| nursing | view (own patients, shift); update; manage (shift/department); export |
-| billing | view; create; edit; delete (policy); manage; export |
-| claims | view; create; edit; approve; export |
-| reports_audit | view (dataset access); export; manage (config) |
-| access_admin | manage (scope: tenant/facility/domain) |
-| hr | view; create; edit; delete (policy); manage; export |
-| housekeeping | view; create; manage (area/department) |
-| mortuary | view; create; edit; manage |
-| patient_registry | view; create; update; delete (policy); manage; export |
-| operations | view; create; edit; manage |
-| emergency | view; create; edit; assign; manage |
-| icu | view; create; edit; assign; manage |
-| theater | view; create; edit; assign; manage |
-| discharge | view; create; edit; approve |
-| physiotherapy | view; create; edit; assign |
-| biomedical | view; create; edit; manage |
-| dental | view; create; edit; manage |
-| integrations | view; manage |
-| communications | view; create; manage |
-| rooms_beds | view; create; edit; assign; manage |
-| facility_settings | view; manage |
-| tenant_settings | view; manage |
-| subscriptions | view; manage |
+| opd | view, create, edit, delete, manage, assign |
+| ipd | view, create, edit, assign, manage |
+| triage | view, create, edit |
+| clinical | view, create, edit, approve |
+| nursing | view, update, manage, export |
+| lab | request, view, report, edit, manage, export |
+| radiology | request, view, report, edit, manage, export |
+| pharmacy | request, view, prescribe, dispense, edit, manage |
+| billing | view, create, edit, delete, manage, export |
+| claims | view, create, edit, approve, export |
+| patient_registry | view, create, update, delete, manage, export |
+| reports_audit | view, export, manage |
+| access_admin | manage |
+| emergency | view, create, edit, assign, manage |
+| icu | view, create, edit, assign, manage |
+| theater | view, create, edit, assign, manage |
+| discharge | view, create, edit, approve |
+| physiotherapy | view, create, edit, assign |
+| hr | view, create, edit, manage, export |
+| biomedical | view, create, edit, manage |
+| operations | view, create, edit, manage |
+| housekeeping | view, create, manage |
+| mortuary | view, create, edit, manage |
+| communications | view, create, manage |
+| rooms_beds | view, create, edit, assign, manage |
+| facility_settings | view, manage |
+| tenant_settings | view, manage |
+| subscriptions | view, manage |
 
-## Role permission summary
+## Role Summary
 
-Full role → module map: [default_user_roles.mdc](./default_user_roles.mdc). Highlights:
+| role_key | scope summary |
+|---|---|
+| super_admin | platform-wide manage |
+| tenant_admin | tenant-wide manage |
+| facility_admin | facility-scoped manage |
+| doctor | clinical care, diagnostics, billing visibility |
+| nurse | ward care, triage, registry, diagnostics |
+| receptionist | registration, queues, billing |
+| accountant | billing, claims, reports |
+| radiographer | radiology workflow |
+| physiotherapist | therapy workflow |
+| operations_staff | operations workflow |
+| patient | own-data only |
 
-| Role | Modules (keys) | Permissions (summary) |
-|---|---|---|
-| Super Admin | all | manage (platform); tenant contexts still respect subscription |
-| Tenant Admin | all entitled | manage (tenant scope) |
-| Facility Admin | facility modules | manage (facility scope) |
-| Doctor | opd, ipd, clinical, triage, lab, radiology, pharmacy, nursing, billing, reports_audit, patient_registry | view/create/edit clinical; request diagnostics; prescribe; view billing/reports |
-| Nurse | opd, ipd, nursing, triage, lab, radiology, pharmacy, housekeeping, patient_registry | view/update; request; manage nursing; create/update registry |
-| Radiographer | radiology, opd | manage radiology scans; view/update OPD |
-| Physiotherapist | physiotherapy, opd, ipd | view, create, edit, assign |
-| Receptionist | opd, ipd, billing, patient_registry | create, view; manage registry |
-| Accountant | billing, claims, reports_audit, opd, ipd | manage billing/claims; view/export reports |
-| Patient | clinical-facing modules | view-own / update-own only |
-| Operations Staff | operations | manage |
-| Other shipped roles | see default_user_roles.mdc | must map explicitly here when customized |
+## Enforcement
 
-## Matrix & enforcement principles
+- UI, API, menu, component, and workflow access must all pass effective-access checks.
+- Backend enforcement must remain authoritative.
+- Permission changes and resets must be atomic, versioned, and auditable.
+- Failed changes must roll back completely.
 
-- Strict **RBAC + ABAC**: no UI, API, menu, component, action, or workflow may be visible or usable without effective permission.
-- Module/action access always intersects with assigned modules **and** subscription ([subscriptions.mdc](./subscriptions.mdc)).
-- Permission config is source-controlled, versioned, and fully auditable.
-- Authorized admins may adjust or restore defaults at any time; every change and restore is atomic and must not leave partial or excess access.
-- Failed permission changes roll back completely, and audit history must identify actor, before/after state, reason, and version.
-- Frontend mirrors backend authorization via guards; backend remains mandatory.
+## Related Rules
 
-## Related
-
-- [modules.mdc](./modules.mdc)
-- [subscriptions.mdc](./subscriptions.mdc)
-- [default_user_roles.mdc](./default_user_roles.mdc)
-- [frontend/.cursor/permissions.mdc](../../frontend/.cursor/permissions.mdc)
-- [backend/.cursor/auth-security.mdc](../../backend/.cursor/auth-security.mdc)
+- `modules.mdc`
+- `subscriptions.mdc`
+- `default_user_roles.mdc`
+- `frontend/.cursor/permissions.mdc`
+- `backend/.cursor/auth-security.mdc`

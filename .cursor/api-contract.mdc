@@ -1,172 +1,85 @@
 ---
-alwaysApply: false
+description: Shared API contract for HOSSPI HMS frontend and backend.
 globs:
   - "backend/**"
   - "frontend/**"
-description: >
-  Cross-stack API contract: envelopes, errors, pagination, naming, entity IDs.
+alwaysApply: false
 ---
-# API Contract (Frontend ↔ Backend)
 
-Purpose: single source of truth for shared API behavior between `hms-backend` and the Flutter client.
+# API Contract
 
-## Base URL and versioning
+Shared API behavior must stay stable across `backend/` and `frontend/`.
 
-- Business endpoints: `/api/v1/*` (`v1` is the current stable contract).
-- Health endpoints (unversioned): `/health`, `/ready`, `/live`.
-- Breaking changes require a new API version and migration plan.
+## Base Contract
+
+- Business endpoints must use `/api/v1/*`.
+- Health endpoints may stay unversioned: `/health`, `/ready`, `/live`.
+- Breaking changes must ship with a new version and migration plan.
 
 ## Naming
 
-| Surface | Convention |
+| Surface | Rule |
 |---|---|
-| API routes | plural `kebab-case` segments |
-| Query params and JSON fields | lowercase `snake_case` |
-| Backend module folders | `kebab-case` |
-| Backend JS identifiers | `camelCase` |
+| Routes | plural `kebab-case` |
+| Query params | `snake_case` |
+| JSON fields | `snake_case` |
+| Backend folders | `kebab-case` |
+| Backend identifiers | `camelCase` |
 | Flutter files | `snake_case.dart` |
-| Flutter identifiers | `PascalCase` / `camelCase` |
-| Flutter feature folders | `snake_case` |
+| Flutter identifiers | `PascalCase` or `camelCase` |
 
-### Flutter DTO mapping
+- DTOs must mirror backend JSON and stay out of widgets and domain logic.
+- Use explicit mappers between DTOs and domain entities.
 
-- DTOs live in `data/dtos/` and mirror backend `snake_case` JSON.
-- Use `@JsonSerializable(fieldRename: FieldRename.snake)` or explicit `@JsonKey(name: 'snake_case')`.
-- Domain entities use Dart `camelCase`; mappers convert DTO ↔ entity explicitly.
-- Never pass DTOs into domain logic or widgets.
+## Entity IDs
 
-## Entity identifiers
+- Public requests and responses must use `human_friendly_id`.
+- Do not expose raw database IDs in API payloads, list rows, nested references, or WebSocket events.
+- Resolve public IDs to internal IDs only at the data boundary.
 
-- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
-- Public API path params, list/detail payloads, and nested references use `human_friendly_id` (or documented domain display IDs such as MRN / admission number mapped from it).
-- WebSocket `resource_id` and `affected` entries use the same public identifier contract — never internal primary keys.
-- Repositories and services resolve `human_friendly_id` ↔ internal ID at the data boundary only.
+## Success and Errors
 
-## Success envelope
+Success envelope:
 
 ```json
-{
-  "success": true,
-  "data": {},
-  "meta": {}
-}
+{ "success": true, "data": {}, "meta": {} }
 ```
 
-- `data` — resource, list, or accepted job metadata.
-- `meta` — pagination or cursor metadata on list responses (required for paginated lists).
+- `data` must carry the resource or accepted job result.
+- `meta` must carry pagination or cursor metadata on list responses.
 
-### Pagination meta (list responses)
+Error responses must use one normalized problem-details shape with a stable `code`.
+- Validation errors may include field-level `errors`.
+- Internal traces, secrets, Prisma internals, and PHI must not leak.
 
-Include in `meta` at minimum:
+Pagination metadata must include `page`, `per_page`, `total`, and `total_pages`, or documented cursor fields when used.
 
-| Field | Type | Purpose |
-|---|---|---|
-| `page` | number | current page (1-based) |
-| `per_page` | number | page size |
-| `total` | number | total matching records |
-| `total_pages` | number | computed page count |
+## Auth and Access
 
-Cursor-based lists may use `next_cursor` / `has_more` instead when documented.
+- Authority order: package, then module assignment, then role grant, then permission, then ABAC scope.
+- JWT access tokens must stay in secure storage.
+- UI visibility must mirror backend authorization, but backend enforcement always wins.
+- Break-glass access must be explicit, time-limited, and audited.
 
-## Error envelope (problem details)
+## Offline and Online-Only
 
-- One normalized problem-details shape for all errors.
-- Every error includes a stable machine-readable `code`.
-- Validation errors include field-level detail in `errors` when safe.
-- Never expose internal traces, Prisma internals, secrets, or PHI.
+- Offline-capable mutations must use idempotency keys and deterministic conflict handling.
+- Clients must treat connectivity as a hint, not proof of reachability.
+- `409` responses must include record and version metadata.
+- Online-only actions must not queue offline: authentication/session changes, entitlement approval, payments/refunds/closeout, mortuary release, and final close workflows.
 
-### HTTP status mapping (frontend)
+## WebSocket
 
-| Status | Frontend handling |
-|---|---|
-| timeout | localized retryable network failure |
-| no connectivity | localized offline/network failure |
-| `401` | session refresh or logout |
-| `403` | forbidden failure / page |
-| `404` | not found failure / page |
-| `422` / validation | field or form validation failure |
-| `409` | conflict (offline sync); include version metadata |
-| `5xx` | generic safe failure; log diagnostics |
+- Endpoint: `/ws` on the API host, using `ws` or `wss`.
+- Auth: JWT token in the `token` query parameter.
+- Envelope: `{ "event": "<domain.action>", "payload": { ... } }`.
+- Domain fields should stay compact: `event`, `tenant_id`, `facility_id`, `actor_user_id`, `resource_type`, `resource_id`, `affected`, `payload`, `occurred_at`.
+- Clients must treat events as reconciliation hints and refresh through shared realtime infrastructure, not widgets.
 
-## Auth
+## Related Rules
 
-- JWT access tokens with finite-lifetime refresh or session records.
-- Frontend stores tokens in secure storage only (not `shared_preferences`).
-- `user_role` is the backend role-assignment source of truth; users may hold multiple roles and modules.
-- Authority order: **subscription package → module assignment → role → permission → ABAC scope**.
-- Effective permissions = union(role/module/user grants) ∩ subscription package ∩ ABAC scope; never exceed the package.
-- Strict RBAC+ABAC: menus, components, actions, and workflows must not be visible or accessible without effective permission.
-- Shipped defaults: [`.cursor/access/`](./access/). Break-glass access is explicit, time-limited, and audited.
-
-## Timestamps and locale
-
-- Store and transfer timestamps in UTC using ISO-8601 strings unless domain requires otherwise.
-- Display using user locale via shared formatters (`frontend/.cursor/date_time_formatting.mdc`).
-- Backend `en` is baseline; locale resolution may use user preference, tenant default, and `Accept-Language`.
-
-## Offline boundaries
-
-### Server rules
-
-- Offline-capable mutations require idempotency keys and deterministic conflict handling.
-- List/detail endpoints for offline clients should support incremental sync metadata.
-- Server never assumes client clock is authoritative.
-
-### Online-only actions (never queue offline)
-
-- Authentication and session changes
-- Entitlement and break-glass approval
-- Payments, refunds, and billing closeout
-- Mortuary release authorization
-- Last-office / final close workflows
-
-### Client rules
-
-- Connectivity is a hint, not proof of reachability.
-- Conflict responses must surface `409` with record id and version metadata.
-- Pending writes survive restart; failed syncs show recoverable UI.
-
-## WebSocket events
-
-Realtime sync keeps multi-user UI state aligned with persisted data.
-
-### Transport
-
-- Endpoint: `/ws` on the API host (scheme mirrors HTTP: `ws` / `wss`).
-- Auth: JWT access token in `token` query parameter; connection rejected when invalid.
-- Envelope: `{ "event": "<domain.action>", "payload": { ... } }` — all fields `snake_case`.
-
-### Domain envelope (server → client)
-
-| Field | Purpose |
-|---|---|
-| `event` | Stable event name (mirrored in `backend/src/lib/websocket/events.js` and `frontend/lib/core/realtime/realtime_events.dart`) |
-| `tenant_id` | Tenant scope for UI filtering |
-| `facility_id` | Facility scope for UI filtering |
-| `actor_user_id` | User who triggered the change |
-| `resource_type` | Entity family (`patient`, `encounter`, `ward`, …) |
-| `resource_id` | Public resource identifier (`human_friendly_id`) |
-| `affected` | Related public IDs for targeted refresh |
-| `payload` | Module-specific refresh hints (`status`, `target_path`, `operation`, …) |
-| `occurred_at` | ISO-8601 UTC timestamp |
-
-### CRUD flow
-
-1. Client performs create/update/delete via `/api/v1/*` HTTP endpoints.
-2. Backend service persists, audits, then publishes a domain event to scoped recipients.
-3. Connected clients treat the event as a reconciliation hint: apply a typed
-   `RealtimeDelta` when it is safe, otherwise perform the smallest targeted HTTP
-   refresh. HTTP persistence remains authoritative for conflict resolution.
-
-### Client rules
-
-- Workspace controllers subscribe through `listenForRealtimeRefresh` (see `frontend/.cursor/realtime_sync.mdc`).
-- Filter events with tenant/facility scope before triggering refresh.
-- Reconcile through `WorkspaceSyncEngine`; never parse or apply payloads in widgets.
-- Coalesce bursty updates with shared infrastructure and defer refresh while local saves are in flight; do not add arbitrary timers.
-- Backend modules with `createAuditLog` mutations auto-emit `{entity}.{operation}` events unless opted out (see `backend/.cursor/websockets.mdc`).
-
-## Related rules
-
-- Backend: [`response-format.mdc`](../backend/.cursor/response-format.mdc), [`api.mdc`](../backend/.cursor/api.mdc), [`offline-support.mdc`](../backend/.cursor/offline-support.mdc)
-- Frontend: [`network_api.mdc`](../frontend/.cursor/network_api.mdc), [`offline_sync.mdc`](../frontend/.cursor/offline_sync.mdc), [`data_modeling.mdc`](../frontend/.cursor/data_modeling.mdc)
+- `access/permissions.mdc`
+- `access/modules.mdc`
+- `access/subscriptions.mdc`
+- `frontend/.cursor/realtime_sync.mdc`
+- `backend/.cursor/websockets.mdc`
