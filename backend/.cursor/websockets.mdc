@@ -15,14 +15,14 @@ Define realtime transport and CRUD synchronization behavior.
 - Scoped recipient resolution uses `@lib/realtime/recipients.js`.
 
 ## CRUD sync contract
-Flow: `HTTP write -> service persists -> audit log -> publish domain event -> scoped delivery`.
-- `createAuditLog` auto-emits realtime events for `CREATE`, `UPDATE`, `DELETE`; callers need no extra wiring.
-- Default event shape: `{entity}.{created|updated|deleted}`; override via `realtime_event`/`realtime_payload`, opt out via `realtime: false`.
+Flow: persist, audit log, publish domain event, deliver to scoped recipients.
+- `createAuditLog` auto-emits realtime events for `CREATE`, `UPDATE`, and `DELETE`.
+- Default event shape `{entity}.{created|updated|deleted}`; override via `realtime_event`/`realtime_payload`, opt out via `realtime: false`.
 - Bespoke publishers must add the entity to `REALTIME_SKIP_ENTITIES` to avoid duplicate events.
 
 ## Rules
 - Publish after commit; delivery failure must not roll back persistence.
-- Payloads use `snake_case` fields and the shared domain envelope, stay minimal (typed deltas), and never include raw Prisma entities.
+- Payloads use `snake_case` fields and the shared domain envelope, and never include raw Prisma entities.
 - `resource_id` and every entity reference must be `human_friendly_id`, never an internal primary key.
 - Scope recipients by tenant, facility, role, and module entitlements—same boundaries as HTTP.
 - Name events `{domain}.{action}`; include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at`.
@@ -30,6 +30,6 @@ Flow: `HTTP write -> service persists -> audit log -> publish domain event -> sc
 
 ## Connection
 - Clients must authenticate (JWT) before subscribing to privileged channels.
-- Gateway maps `userId -> sockets` and supports multiple tabs; heartbeat is mandatory.
+- Gateway maps users to sockets, supports multiple tabs, requires heartbeat.
 - RBAC gates inbound events; outbound events are recipient-filtered.
 - `src/server.js` must close websocket resources during graceful shutdown.

@@ -12,38 +12,29 @@ Shared API behavior must stay stable across `backend/` and `frontend/`.
 
 ## Base and Naming
 
-- Business endpoints must use `/api/v1/*`; health endpoints (`/health`, `/ready`, `/live`) may stay unversioned.
-- Breaking changes must ship a new version and migration plan.
-- Routes are plural `kebab-case`; query params and JSON fields are `snake_case`.
-- Backend folders are `kebab-case`, identifiers `camelCase`; Flutter files are `snake_case.dart`.
-- DTOs must mirror backend JSON, stay out of widgets, and use explicit mappers to domain entities.
+- Business endpoints must use `/api/v1/*`; health checks may stay unversioned, and breaking changes must ship a new version and migration plan.
+- Routes are plural `kebab-case`; params and JSON fields are `snake_case`; DTOs must mirror backend JSON and map explicitly to domain entities.
 
 ## Entity IDs
 
-- Requests and responses must use `human_friendly_id`.
-- Raw database IDs must not appear in payloads, list rows, nested references, or WebSocket events.
+- Public requests and responses must use `human_friendly_id`; raw database IDs must not appear in payloads, references, or WebSocket events.
 
 ## Success and Errors
 
-- Success envelope carries `success`, `data`, and `meta`; `meta` must include pagination on lists.
-- Errors must use one normalized problem-details shape with a stable `code`; validation may add field `errors`.
-- Traces, secrets, Prisma internals, and PHI must not leak.
-- Pagination must include `page`, `per_page`, `total`, and `total_pages`, or documented cursor fields.
+- Success envelope carries `success`, `data`, and `meta`; lists include page, size, and total or cursor fields in `meta`.
+- Errors must use one problem-details shape with a stable `code`; validation may add field `errors`, and traces, secrets, and PHI must not leak.
 
 ## Auth and Access
 
-- Authority order is package, module assignment, role grant, permission, then ABAC scope.
-- JWT tokens must stay in secure storage; backend enforcement always wins over UI visibility.
-- Break-glass access must be explicit, time-limited, and audited.
+- Authority order is package, module assignment, role grant, permission, then ABAC.
+- JWT tokens must stay in secure storage; backend enforcement wins over UI, and break-glass access must be explicit, time-limited, and audited.
 
 ## Offline and WebSocket
 
-- Offline mutations must use idempotency keys and deterministic conflict handling; `409` must include record and version metadata.
-- Online-only actions (auth/session, entitlement approval, payments, mortuary release, final close) must not queue offline.
-- WebSocket uses `/ws` over `ws`/`wss`, with the JWT in the `token` query param and an `event`/`payload` envelope.
-- Clients must treat events as reconciliation hints and refresh through shared realtime infrastructure.
+- Offline mutations must use idempotency keys and deterministic conflict handling; `409` responses must include record and version metadata.
+- Online-only actions (auth, payments, entitlement, and final-close workflows) must not queue offline.
+- WebSocket uses `/ws` over `ws`/`wss`; clients must treat events as reconciliation hints.
 
 ## Related Rules
 
-- `access/permissions.mdc`, `access/modules.mdc`, `access/subscriptions.mdc`
-- `frontend/.cursor/realtime_sync.mdc`, `backend/.cursor/websockets.mdc`
+- `access/permissions.mdc`, `access/modules.mdc`, `access/subscriptions.mdc`, `frontend/.cursor/realtime_sync.mdc`, `backend/.cursor/websockets.mdc`

@@ -38,7 +38,6 @@ ICU is a critical-care overlay on the IPD admission, not a separate admission sy
 
 - Start ICU stay only for eligible admissions with an ICU bed or completed escalation.
 - Resolve critical alerts before lower-priority work.
-- Use the IPD encounter for all orders and timeline updates.
 - End ICU stay after step-down, not before.
 
 ## Related

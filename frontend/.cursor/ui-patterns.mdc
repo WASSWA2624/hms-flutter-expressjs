@@ -45,5 +45,4 @@ Queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc), with permiss
 ## See also
 
 - [`ui-workspace.mdc`](./ui-workspace.mdc)
-- [`ui-feedback.mdc`](./ui-feedback.mdc)
 - [`validation.mdc`](./validation.mdc)

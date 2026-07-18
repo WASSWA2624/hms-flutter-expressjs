@@ -42,5 +42,4 @@ Must import from `shared/layout`, `shared/components`, and `shared/actions` befo
 ## See also
 
 - [`ui-patterns.mdc`](./ui-patterns.mdc)
-- [`components.mdc`](./components.mdc)
 - [`permissions.mdc`](./permissions.mdc)

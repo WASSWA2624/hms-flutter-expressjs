@@ -15,7 +15,7 @@ HOSSPI HMS frontend is the Flutter client for the hospital management system, im
 - Must build production-ready module workspaces, not a generic disconnected starter.
 - Must support Android, iOS, Web, Windows, macOS, and Linux where enabled; extra-small mobile through large desktop; smartwatch out of scope.
 - Must integrate with `hms-backend` via repositories, DTOs, and [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
-- Should prefer Flutter SDK widgets, Material Design, and shared `lib/shared/` abstractions before custom frameworks or extra packages.
+- Should prefer Flutter SDK widgets, Material Design, and shared `lib/shared/` abstractions before custom packages.
 - Must avoid duplicate dependencies, folders, components, rules, and competing design systems.
 - Module menus, routes, forms, actions, and visibility must match backend permissions, entitlements, and APIs.
 - Must reference entities by `human_friendly_id`; backend maps internal IDs.
@@ -24,7 +24,7 @@ HOSSPI HMS frontend is the Flutter client for the hospital management system, im
 ## Architecture invariants
 
 - One architecture, one routing system (`go_router`), one state system (Riverpod), one design system, one shared component strategy.
-- Mutation/reconciliation is owned by [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); layer boundaries by [`architecture.mdc`](./architecture.mdc). Must not override them.
+- Mutation/reconciliation is owned by [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); layer boundaries by [`architecture.mdc`](./architecture.mdc).
 
 ## Minimum runnable contract
 

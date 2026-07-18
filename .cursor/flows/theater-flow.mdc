@@ -8,7 +8,7 @@ alwaysApply: false
 
 # Theater Patient Flow
 
-Theater owns the surgical episode overlay on the IPD or linked emergency/OPD context; keep the case board, checklist, anesthesia, intra-op record, and post-op handoff tied to the same admission.
+Theater owns the surgical episode overlay on the IPD or linked emergency/OPD context; keep the case board, checklist, anesthesia, and post-op handoff tied to the same admission.
 
 ## Stage Sequence
 
@@ -38,7 +38,6 @@ Theater owns the surgical episode overlay on the IPD or linked emergency/OPD con
 
 - Start or update the case only when the linked encounter and team are valid.
 - Gate high-cost procedures on pre-auth or deposit when policy requires it.
-- Use shared clinical actions for post-op medication and lab orders.
 - Treat case closing as separate from IPD discharge.
 
 ## Related

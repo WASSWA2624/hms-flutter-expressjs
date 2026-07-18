@@ -36,10 +36,9 @@ Ward nursing owns inpatient vitals, MAR, nursing notes, care tasks, handover, an
 
 ## Allowed Critical Actions
 
-- Show shared vitals and MAR visibility for ward context.
-- Surface pending meds, handover items, and alert trends.
+- Surface shared vitals, MAR, pending meds, handover items, and alert trends.
 - Use the IPD encounter id for all ward panels and mutations.
-- Route ICU escalation to ICU flow instead of local ICU CRUD.
+- Route ICU escalation to ICU flow, not local ICU CRUD.
 
 ## Related
 

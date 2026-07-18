@@ -16,28 +16,25 @@ Defines security expectations for storage, networking, logging, configuration, a
 - Must use HTTPS for production communication unless a documented private-network exception exists.
 - Must store sensitive session artifacts in secure storage; use `shared_preferences` only for non-sensitive settings.
 - Must validate data at boundaries: UI input, repository input, API response, and local persistence.
-- Must treat backend and local storage data as untrusted until validated or mapped.
-- Must not display raw server errors to users.
+- Must treat backend and local storage data as untrusted until validated or mapped, and must not display raw server errors to users.
 - Must clear sensitive session state on logout.
 - Must keep debug tools and verbose logs disabled in production builds.
 
 ## RBAC / ABAC authorization
 
-- Must enforce RBAC and ABAC on every surface; menus, components, actions, routes, and workflows must never be visible or accessible to unauthorized users.
-- Effective permissions = union(role/module/user grants) ∩ subscription package ∩ ABAC scope.
+- Must enforce RBAC and ABAC on every surface; unauthorized menus, components, actions, routes, and workflows must never be visible or accessible.
 - Hidden UI alone is never sufficient; backend authorization is mandatory.
-- Must treat [`.cursor/access/`](../../.cursor/access/) and [`permissions.mdc`](./permissions.mdc) as source of truth.
+- Must treat [`permissions.mdc`](./permissions.mdc) and [`.cursor/access/`](../../.cursor/access/) as the source of truth.
 
 ## Secure storage notes
 
 - Native mobile and desktop may use platform-backed secure storage.
-- Web storage has limitations; must not assume web equals native secure storage, and must document any web auth/session strategy before production.
+- Web storage has limitations; must not assume it equals native secure storage, and must document any web auth/session strategy before production.
 
 ## Acceptance checklist
 
 - Secret scanning finds no committed secrets.
-- Production builds print no sensitive logs.
-- Auth and API failures are handled safely.
+- Production builds print no sensitive logs; failures handled safely.
 
 ## Related rules
 

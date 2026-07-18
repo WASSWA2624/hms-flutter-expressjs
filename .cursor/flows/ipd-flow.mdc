@@ -17,7 +17,7 @@ IPD owns the inpatient admission record, ward movement, service routing, and dis
 - `TRANSFER_REQUESTED` / `TRANSFER_IN_PROGRESS`: internal move pending or underway.
 - `DISCHARGE_PLANNED`: discharge work started.
 - `DISCHARGED`: encounter complete.
-- ICU and theater overlays may appear but must not create parallel records.
+- ICU and theater overlays may extend the admission but must not create parallel records.
 
 ## Handoffs
 
@@ -25,7 +25,7 @@ IPD owns the inpatient admission record, ward movement, service routing, and dis
 - Bed manager owns allocation, transfer completion, and bed release.
 - Ward nurse owns admission receive, observations, and clearance support.
 - Doctor owns assessment, orders, transfers, and discharge planning.
-- Billing and pharmacy own clearance checks only and must not advance clinical stages.
+- Billing and pharmacy own clearance checks only.
 
 ## Hard Invariants
 
@@ -38,7 +38,7 @@ IPD owns the inpatient admission record, ward movement, service routing, and dis
 
 - Start ICU stay only when the admission is eligible and an ICU bed is assigned.
 - Use `clinical_actions` so lab, radiology, and pharmacy share one source of truth.
-- Show discharge readiness early, but keep clearance steps separate.
+- Show discharge readiness early while keeping clearance steps separate.
 
 ## Related
 
