@@ -6,9 +6,9 @@ globs:
 alwaysApply: false
 ---
 
-# UI Patterns (Forms, Tables, Search)
+# UI Patterns
 
-Uniform data-entry and data-display interaction patterns.
+Uniform form, table, and search patterns.
 
 ## Product standards
 
@@ -40,7 +40,7 @@ Uniform data-entry and data-display interaction patterns.
 
 ## Module workspaces
 
-Queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc), with permission-gated actions and `human_friendly_id` display, never raw table IDs.
+Queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc) with permission-gated actions and `human_friendly_id`; must not show raw table IDs.
 
 ## See also
 

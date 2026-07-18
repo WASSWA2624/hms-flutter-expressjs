@@ -8,7 +8,7 @@ alwaysApply: false
 
 # Dependency Strategy
 
-Approved dependencies and how to avoid unnecessary package growth.
+Approved dependencies and how to prevent unnecessary package growth.
 
 ## Starter dependencies
 
@@ -23,7 +23,7 @@ Approved dependencies and how to avoid unnecessary package growth.
 - `freezed_annotation`, `json_annotation` — model/DTO generation.
 - `drift`, `drift_flutter` — structured local data, cache, or sync queues.
 - `shared_preferences` — non-sensitive settings; `flutter_secure_storage` — tokens/secrets.
-- `connectivity_plus` — connectivity hint only, and must not proof of internet.
+- `connectivity_plus` — connectivity hint only; must not treat as proof of internet.
 - `path_provider`, `url_launcher`, `app_links` — paths, external/deep links.
 
 ## Dev dependencies

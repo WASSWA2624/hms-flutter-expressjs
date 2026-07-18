@@ -9,7 +9,7 @@ alwaysApply: false
 
 # Module Workspace UI Contract
 
-Keep clinical and operational module screens visually and behaviorally consistent. Applies to new screens and changes; legacy pages may be refactored incrementally.
+Keep clinical and operational module screens consistent. Applies to new and changed screens; legacy pages may refactor incrementally.
 
 ## Mandatory layout stack
 
@@ -29,7 +29,7 @@ Must import from `shared/layout`, `shared/components`, and `shared/actions` befo
 
 - Notifications submenu must filter the current worklist, not open modal lists; hide zero-value rows where expected.
 - Must use hospital workflow language; must not expose raw enum names, stage codes, or internal IDs.
-- Must surface `human_friendly_id` and patient display name; must not raw table IDs or UUIDs.
+- Must surface `human_friendly_id` and patient display name; must not show raw table IDs or UUIDs.
 - Must gate actions by backend stage, permission, and subscription entitlement.
 - Must keep worklists paginated/lazy and the shell responsive across mobile, tablet, desktop.
 - After modal mutations, must refresh the affected row, detail, counts, and nav badges via targeted refresh.

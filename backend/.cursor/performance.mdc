@@ -10,7 +10,7 @@ Keep the backend responsive under realistic hospital workloads.
 
 ## Requirements
 - List endpoints must paginate by default.
-- Use narrow `select`/`include` shapes and must not allow N+1 queries.
+- Use narrow `select`/`include` shapes and must not introduce N+1 queries.
 - Index hot filter and join columns.
 - Move expensive exports, report generation, and reconciliation off the request thread.
 - Profile before introducing caches.

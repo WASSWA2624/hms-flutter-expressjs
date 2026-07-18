@@ -15,7 +15,7 @@ Define backend identity and authorization behavior.
 
 ## Authorization
 - Authority order: subscription package → module assignment → role → permission → ABAC scope.
-- Subscription package is the hard gate; roles/permissions never unlock anything outside the active package.
+- Subscription package is the hard gate; roles/permissions must not unlock anything outside the active package.
 - Users may hold multiple roles and module assignments via `user_role` tables.
 - Effective permissions = `union(role, module, user grants) ∩ subscription modules/permissions ∩ assigned modules ∩ ABAC scope`.
 - RBAC grants baseline actions; ABAC narrows by tenant, facility, department, ownership, shift, and emergency state.

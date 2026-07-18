@@ -18,13 +18,13 @@ Define realtime transport and CRUD synchronization behavior.
 Flow: persist, audit log, publish domain event, deliver to scoped recipients.
 - `createAuditLog` auto-emits realtime events for `CREATE`, `UPDATE`, and `DELETE`.
 - Default event shape `{entity}.{created|updated|deleted}`; override via `realtime_event`/`realtime_payload`, opt out via `realtime: false`.
-- Bespoke publishers must add the entity to `REALTIME_SKIP_ENTITIES` to avoid duplicate events.
+- Bespoke publishers must add the entity to `REALTIME_SKIP_ENTITIES`; must not emit duplicates.
 
 ## Rules
 - Publish after commit; delivery failure must not roll back persistence.
-- Payloads use `snake_case` fields and the shared domain envelope, and must not include raw Prisma entities.
-- `resource_id` and every entity reference must be `human_friendly_id`, and must not an internal primary key.
-- Scope recipients by tenant, facility, role, and module entitlements—same boundaries as HTTP.
+- Payloads use `snake_case`, the shared domain envelope, and must not include raw Prisma entities.
+- `resource_id` and entity references must be `human_friendly_id`, not an internal primary key.
+- Scope recipients by tenant, facility, role, and module entitlements—same as HTTP.
 - Name events `{domain}.{action}`; include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at`.
 - Tests must prove mutations emit the expected scoped event; bespoke publishers must skip audit emission.
 

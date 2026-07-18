@@ -18,12 +18,12 @@ Order: `route -> controller -> service -> repository -> prisma`.
 - Controllers translate HTTP to service calls and response helpers only.
 - Services own business logic, authorization, workflow orchestration, audit, and cross-module coordination.
 - Repositories own all Prisma access; elsewhere it is forbidden except `prisma.$transaction(...)`.
-- Emitted DTOs must expose `human_friendly_id` only; internal IDs never cross the HTTP or websocket boundary.
+- Emitted DTOs must expose `human_friendly_id` only; internal IDs must not cross the HTTP or websocket boundary.
 - Subscription, role, module, and ABAC checks run in middleware and re-validate in services for sensitive workflows.
 
 ## Modules
 - One domain capability per module, with standalone workflows and explicit integration points.
-- Services may depend on other services or shared libs, and must not on another module's controller or repository.
+- Services may depend on other services or shared libs; must not depend on another module's controller or repository.
 
 ## Dependencies
 - Dependency direction must move downward through the layer stack.

@@ -7,12 +7,12 @@ alwaysApply: false
 
 # Instant UI and Backend Sync
 
-Every UI change on shared backend data must update the acting user immediately and converge across authorized sessions through the standard realtime pipeline.
+Shared backend data changes must update the acting user immediately and converge across authorized sessions via the standard realtime pipeline.
 
 ## End-to-end flow
 
 - Widgets read authoritative data only from Riverpod and delegate actions to controllers; must not call APIs or keep competing server-data copies.
-- Controllers write through repositories over HTTP; WebSockets are server-to-client sync, and must not a mutation transport.
+- Controllers write through repositories over HTTP; WebSockets are server-to-client sync, must not be a mutation transport.
 - On successful persistence (`saved == true`), immediately patch every affected Riverpod slice from the response or a typed local delta; cancel or failure must not patch or refresh.
 - After commit, the backend publishes a scoped domain event for each user-visible shared mutation.
 - Controllers subscribe with the relevant `RealtimeEventGroups` and `listenForRealtimeRefresh`.
@@ -22,7 +22,7 @@ Every UI change on shared backend data must update the acting user immediately a
 ## Efficiency
 
 - Prefer the smallest patch; blanket `ref.invalidate` or full reload is a last resort.
-- A local mutation must be visible in the same frame or next rebuild, and must not blocked on a workspace `GET`.
+- A local mutation must be visible in the same frame or next rebuild, must not be blocked on a workspace `GET`.
 - Must not navigate, show feedback, call `setState`, or mutate widgets from realtime handlers.
 
 ## Verification

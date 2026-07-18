@@ -34,8 +34,8 @@ Covers sign-in, session restoration, secure token storage, logout, and protected
 ## Acceptance
 
 - Authenticated routes require a valid session.
-- Restoration never flashes protected content to unauthenticated users.
-- Token values never appear in logs or UI.
+- Restoration must not flash protected content to unauthenticated users.
+- Token values must not appear in logs or UI.
 
 ## Related
 
