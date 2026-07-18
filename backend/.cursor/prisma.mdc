@@ -1,12 +1,12 @@
 ---
-description: Prisma schema, migrations, human_friendly_id, tenancy, and repository-only access rules.
+description: Prisma schema, migrations, human_friendly_id, tenancy, and repository access rules.
 globs:
   - "backend/**"
 alwaysApply: false
 ---
 # Prisma And Database Rules
 
-Define the authoritative database contract.
+Define the database contract.
 
 ## Naming
 - Prisma models, tables, and columns use lowercase `snake_case`.
