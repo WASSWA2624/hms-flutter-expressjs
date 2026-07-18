@@ -7,33 +7,34 @@ alwaysApply: false
 
 # Prompt Definition Standards
 
-Define prompts that an agent can execute without guessing the goal, scope, or acceptance criteria.
+Define prompts an agent can execute without guessing goal, scope, or acceptance criteria.
 
 ## Required Structure
 
-- Prompt files must use the `.md` extension and contain no more than 500 words.
+- Prompt files must use the `.md` extension and stay under 501 words.
 - Start with a specific H1 title and one-paragraph objective.
 - Include `Context`, `Requirements`, `Constraints`, `Acceptance Criteria`, and `Relevant Files`.
-- Make requirements numbered and independently testable; make acceptance criteria observable.
+- Number requirements and make them independently testable; make acceptance criteria observable.
 
 ## Implementation Requirements
 
-- Inspect and reuse existing components, services, utilities, models, and patterns before creating new ones.
-- Generalize genuinely shared behavior. Must not duplicate components, business logic, contracts, validation, or authorization.
-- Every frontend change must identify and wire relevant backend routes, contracts, permissions, validation, and errors.
-- Protected behavior must define RBAC role permissions and ABAC resource/context checks enforced by the backend. Frontend guards are not a security boundary.
-- Require clear, simple UI using familiar controls, concise labels, visible feedback, and the fewest practical steps.
+- Reuse existing components, services, utilities, models, and patterns before creating new ones.
+- Generalize shared behavior; must not duplicate components, logic, contracts, validation, or authorization.
+- Frontend changes must wire the relevant backend routes, contracts, permissions, validation, and errors.
+- Protected behavior must define RBAC role permissions and ABAC resource/context checks enforced by the backend; frontend guards are not a security boundary.
+- Frontend data must be correct and synced with backend data in real time; refresh affected views after mutations and reconcile stale state from the backend.
+- Require clear, simple, efficient UI: familiar controls, concise labels, visible feedback, fewest practical steps, no redundant fetches or rebuilds.
 - Specify permissions, validation, loading, empty, error, and success states when relevant.
 
 ## Writing Requirements
 
-- Use concrete imperative language and define ambiguous terms or states.
+- Use concrete imperative language and define ambiguous terms.
 - Reference existing rules rather than duplicating them.
 - Separate required behavior from optional enhancements.
-- Avoid vague terms, unnecessary implementation prescriptions, unrelated cleanup, and broad refactoring.
+- Avoid vague terms, unneeded implementation prescriptions, and unrelated refactoring.
 
 ## Verification
 
-- Name the tests, analysis, generation, or manual checks expected.
-- Verify integration, reuse, RBAC, ABAC, duplication avoidance, and UI states when applicable.
-- Ensure every acceptance criterion traces to at least one requirement.
+- Name the expected tests, analysis, generation, or manual checks.
+- Verify integration, reuse, RBAC, ABAC, duplication avoidance, data sync, and UI states when applicable.
+- Ensure every acceptance criterion traces to a requirement.
