@@ -1,0 +1,19 @@
+# 09 - Theme System
+Provide balanced light, dark, and system themes through shared Material tokens.
+
+## Applicable Rules
+You must follow [`00-execution-policy.md`](./00-execution-policy.md), [`design-system.mdc`](../.cursor/design-system.mdc), [`assets_branding.mdc`](../.cursor/assets_branding.mdc), [`accessibility.mdc`](../.cursor/accessibility.mdc), and [`localization_i18n.mdc`](../.cursor/localization_i18n.mdc).
+
+## Implementation
+1. Create blue-seeded Material 3 `AppTheme.light` and a clean `AppTheme.dark`.
+2. Define `AppThemeTokens` for spacing, radius, sizing, and optional status colors.
+3. Implement `themeModeControllerProvider`; persistence may store only non-sensitive preferences.
+4. Buttons, icons, fields, cards, dialogs, and navigation should avoid excessive padding or rounding.
+5. Repeated raw colors, spacing, and shapes must not remain in starter UI.
+6. Add theme smoke tests.
+
+## Acceptance Criteria
+- Light mode must be the default.
+- System and dark modes must work.
+- Shared components must use theme tokens.
+- Theme-aware starter UI and its provider/controller must be present.

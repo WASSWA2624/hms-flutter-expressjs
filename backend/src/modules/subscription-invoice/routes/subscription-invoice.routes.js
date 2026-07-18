@@ -3,7 +3,7 @@
  *
  * @module modules/subscription-invoice/routes
  * @description Route definitions for subscription invoice endpoints.
- * Per module-creation.mdc: Mount endpoints as per dev-plan/P010_api_endpoints.mdc
+ * Per module-creation.mdc: Mount endpoints as per dev-plan/P010_api_endpoints.md
  * Per api.mdc: All handlers wrapped with asyncHandler
  */
 

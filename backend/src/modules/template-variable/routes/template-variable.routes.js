@@ -3,7 +3,7 @@
  *
  * @module modules/template-variable/routes
  * @description Express router for template variable endpoints.
- * Per module-creation.mdc: Mount endpoints as per dev-plan/P010_api_endpoints.mdc.
+ * Per module-creation.mdc: Mount endpoints as per dev-plan/P010_api_endpoints.md.
  * Per api.mdc: All routes under /api/v1/template-variables base path.
  */
 

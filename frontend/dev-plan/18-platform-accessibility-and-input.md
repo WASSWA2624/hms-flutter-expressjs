@@ -1,0 +1,19 @@
+# 18 - Platform, Accessibility, and Input
+Ensure core interactions work across mobile, desktop, web, and assistive technologies.
+
+## Applicable Rules
+You must follow [`00-execution-policy.md`](./00-execution-policy.md), [`platform_guidelines.mdc`](../.cursor/platform_guidelines.mdc), [`multi_platform_input.mdc`](../.cursor/multi_platform_input.mdc), [`accessibility.mdc`](../.cursor/accessibility.mdc), and [`permissions.mdc`](../.cursor/permissions.mdc).
+
+## Implementation
+1. Verify mobile safe areas and keyboard insets.
+2. Verify desktop/web keyboard, pointer, hover, and focus behavior.
+3. Icon-only actions must have semantic labels.
+4. Menus, dialogs, dropdowns, menu bars, and side navigation must expose clear keyboard focus.
+5. Document platform-specific limitations.
+6. Add practical input interaction tests.
+
+## Acceptance Criteria
+- Core flows must work with keyboard only.
+- Touch targets must be practical.
+- Important actions must not depend on hover.
+- Platform notes, accessibility improvements, and relevant tests must reflect actual behavior.

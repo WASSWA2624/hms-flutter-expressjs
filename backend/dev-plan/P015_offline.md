@@ -1,0 +1,16 @@
+# P015 Offline Synchronization
+Publish offline behavior only after core modules and conflict rules are stable.
+
+## Offline Candidates
+
+Patient quick edits with conflict checks, idempotent scheduling drafts and queue updates, nursing and observation drafts, housekeeping updates, and selected biomedical field updates may support offline synchronization.
+
+## Online-Only Actions
+
+Authentication and session issuance, entitlement changes, break-glass approval, payments, refunds, payroll finalization, Mortuary release approval or final release, and shift or day closeout finalization must remain online-only.
+
+## Acceptance
+
+- Offline-capable endpoints must expose version metadata and idempotency behavior.
+- Conflict responses must be deterministic and documented for frontend consumers.
+- Synchronization must enforce current authorization when changes reach the server.

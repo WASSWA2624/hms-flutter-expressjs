@@ -11,7 +11,7 @@ Define the mandatory build sequence for every backend module.
 ## Required sequence
 
 0. Permissions must be declared in `.cursor/access/modules.mdc`, roles in `default_user_roles.mdc`, and the module in `subscriptions.mdc`.
-1. The contract must be defined in `../../.cursor/app-write-up.mdc`, `dev-plan/P010_api_endpoints.mdc`, and `dev-plan/P011_modules.mdc`.
+1. The contract must be defined in `../../.cursor/app-write-up.mdc`, `dev-plan/P010_api_endpoints.md`, and `dev-plan/P011_modules.md`.
 2. Module and mirrored test folders must be created.
 3. Zod schemas must use `snake_case` and `human_friendly_id` for public identifiers.
 4. Repositories must support `human_friendly_id` lookup, tenancy, soft-delete, and audit-friendly queries.

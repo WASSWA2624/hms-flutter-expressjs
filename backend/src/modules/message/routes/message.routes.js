@@ -3,7 +3,7 @@
  *
  * @module modules/message/routes
  * @description API routes for message management.
- * Per module-creation.mdc: Mount endpoints per P010_api_endpoints.mdc, apply all middlewares.
+ * Per module-creation.mdc: Mount endpoints per P010_api_endpoints.md, apply all middlewares.
  * Per api.mdc: All endpoints under /api/v1/messages
  */
 

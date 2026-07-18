@@ -3,7 +3,7 @@
  *
  * @module modules/phi-access-log/routes
  * @description Route definitions for PHI access log endpoints.
- * Per module-creation.mdc: Mount endpoints as per P010_api_endpoints.mdc
+ * Per module-creation.mdc: Mount endpoints as per P010_api_endpoints.md
  * Per api.mdc: All routes must be under /api/v1
  */
 

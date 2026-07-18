@@ -1,0 +1,24 @@
+# P009 Database Models
+Define complete domain ownership before routes and modules are implemented.
+
+## Model Groups
+
+Models must be added in this order:
+
+1. Access, organization, subscriptions, entitlements, governance, and audit.
+2. Patient registry, consent, scheduling, queues, encounters, clinical, inpatient, ICU, theatre, and emergency care.
+3. Laboratory, radiology, imaging, PACS, pharmacy, dispensing, and adverse events.
+4. Billing, insurance, coverage, workforce, shifts, rosters, leave, and payroll.
+5. Inventory, procurement, housekeeping, maintenance, assets, and biomedical equipment lifecycle.
+6. Mortuary custody and release; notifications, messaging, reporting, analytics, integrations, office context, handover, and closeout.
+
+## Shared Contract
+
+- Names must use lowercase `snake_case`.
+- Tenant-owned models must consistently include `tenant_id`, `facility_id`, audit fields, indexes, and the approved soft-delete strategy.
+- Biomedical models must cover registry, location, maintenance, calibration, safety, downtime, incidents, recalls, parts, warranties, providers, and utilization.
+- Mortuary must have first-class case, deceased, storage, custody, viewing, post-mortem, authorization, billing, and release models; generic placeholders must not replace them.
+
+## Acceptance
+
+The schema must represent every group without naming or ownership drift.

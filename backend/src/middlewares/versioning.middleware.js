@@ -2,7 +2,7 @@
  * API Versioning Middleware
  *
  * Emits deprecation headers for deprecated API versions.
- * Per dev-plan/P003_app.mdc: supports optional Deprecation/Sunset headers.
+ * Per dev-plan/P003_app.md: supports optional Deprecation/Sunset headers.
  */
 
 const { DEPRECATED_API_VERSIONS, DEPRECATION_SUNSET } = require('@config/constants');

@@ -3,7 +3,7 @@
  *
  * @module modules/triage-assessment/routes
  * @description Defines triage assessment endpoints.
- * Per module-creation.mdc: Mount endpoints as per P010_api_endpoints.mdc.
+ * Per module-creation.mdc: Mount endpoints as per P010_api_endpoints.md.
  * Per api.mdc: Apply all required middlewares in correct order.
  */
 

@@ -1,0 +1,13 @@
+# P013 WebSocket Features
+Publish authorized domain events only after their owning modules are stable.
+
+## Event Families
+
+Events should cover session revocation; appointments and queues; critical and inpatient state; diagnostic results; pharmacy orders and dispensing; roster publishing and escalation; biomedical maintenance, downtime, and recalls; Mortuary custody, storage, and release review; notification delivery; and handover and closeout progress.
+
+## Contract
+
+- Event names and payload fields must remain stable and use `snake_case`.
+- Subscriptions must enforce the same tenant, facility, role, entitlement, and module scope as HTTP endpoints.
+- Events must not expose data beyond the subscriber's current authorization.
+- Domain services should publish through the shared transport abstraction.

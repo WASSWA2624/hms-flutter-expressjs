@@ -1,0 +1,17 @@
+# 03 - App Architecture
+Build a testable feature-first foundation with explicit layer boundaries.
+
+## Applicable Rules
+You must follow [`00-execution-policy.md`](./00-execution-policy.md), [`architecture.mdc`](../.cursor/architecture.mdc), [`project_structure.mdc`](../.cursor/project_structure.mdc), [`state_management.mdc`](../.cursor/state_management.mdc), and [`data_modeling.mdc`](../.cursor/data_modeling.mdc).
+
+## Implementation
+1. Create or normalize `lib/app/`, `lib/core/`, `lib/features/`, `lib/l10n/`, and `lib/shared/`.
+2. Add only a minimal `home` feature as the starter screen.
+3. Domain, data, and presentation folders should exist only where a feature needs those layers.
+4. Document dependency direction in `docs/architecture/`.
+5. Widgets must not call APIs, databases, or storage directly.
+
+## Acceptance Criteria
+- Domain code must not depend on Flutter widgets.
+- Feature boundaries must be clear and testable.
+- The canonical folders, starter route, and architecture documentation must exist.

@@ -1,0 +1,25 @@
+# P010 API Endpoints
+Lock the public route contract before backend module implementation.
+
+## Path Rules
+
+- Business endpoints must live under `/api/v1`.
+- Resource paths must use plural kebab-case.
+- Standard operations must provide list, create, get, update, and archive or soft-delete behavior as applicable.
+- Workflow transitions must use `POST /resource/:id/<action>`.
+
+## Route Families
+
+Routes must cover, in model-group order: access and organization; patients and scheduling; clinical and acute care; diagnostics and pharmacy; billing and workforce; operations and biomedical; Mortuary; communications, reporting, integrations, and closeout.
+
+## Required Actions
+
+- Rosters must support publish and rebalance.
+- Claims must support submission and approval.
+- Maintenance plans must support scheduling and work-order completion.
+- Mortuary must support storage assignment, release approval, and final release.
+- Closeout must support shift submission and approval, day finalization, and pack generation.
+
+## Acceptance
+
+Route names, permissions, entitlements, and model ownership must remain aligned.
