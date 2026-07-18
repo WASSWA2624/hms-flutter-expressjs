@@ -1,0 +1,37 @@
+---
+description: Standards for defining clear, executable implementation prompts
+globs:
+  - "prompts/**/*.md"
+alwaysApply: false
+---
+
+# Prompt Definition Standards
+
+Define prompts that an agent can execute without guessing the goal, scope, or acceptance criteria.
+
+## Required Structure
+
+- Start with a specific H1 title naming the requested outcome.
+- State the objective in one short paragraph.
+- Include `## Context` with relevant modules, workflows, and existing behavior.
+- Include `## Requirements` as numbered, independently testable instructions.
+- Include `## Constraints` for boundaries, invariants, and prohibited changes.
+- Include `## Acceptance Criteria` as observable completion checks.
+- Include `## Relevant Files` with repository-relative paths when known.
+
+## Writing Requirements
+
+- Use imperative language such as `Add`, `Update`, `Preserve`, and `Verify`.
+- Define domain terms and ambiguous states.
+- Specify user roles, permissions, validation, loading, empty, error, and success behavior when relevant.
+- Reference existing project rules and patterns instead of duplicating them.
+- Separate required behavior from optional enhancements.
+- Must not prescribe an implementation detail unless it is a genuine constraint.
+- Must not use vague terms such as “properly,” “as needed,” or “user-friendly” without measurable meaning.
+- Must not request unrelated cleanup or broad refactoring.
+
+## Verification
+
+- Name the tests, analysis, generation, or manual checks expected.
+- Ensure every acceptance criterion traces to at least one requirement.
+- Confirm referenced paths and commands exist before including them.
