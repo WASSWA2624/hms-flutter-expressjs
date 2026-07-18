@@ -1,14 +1,24 @@
-# P001 Core
+---
+description: Builds the shared runtime, security, and access-control foundation.
+globs:
+  - "backend/**"
+alwaysApply: false
+---
+# P001 Core Foundation
+Provide reusable runtime and authorization primitives before domain work starts.
 
-Goal: build the shared backend runtime and access foundation.
+## Runtime
 
-Do:
-- implement config, constants, error types, async handling, response helpers, request context, and health helpers
-- implement authentication, sessions, permissions, entitlement checks, ABAC evaluation, and break-glass support
-- implement rate limiting, CORS, security middleware, audit helper wiring, and structured logging
-- define the canonical role and permission catalog used by all modules
+- Implement configuration, constants, typed errors, async handling, response helpers, request context, health helpers, and structured logging.
+- Add rate limiting, CORS, security middleware, audit wiring, and canonical role and permission catalogs.
 
-Acceptance:
-- middleware stack is stable and reusable
-- `user_role` plus RBAC, ABAC, entitlements, and break-glass behavior are available before module work starts
-- audit-ready helper paths exist for all mutations
+## Access Control
+
+- Authentication must support sessions, `user_role`, permissions, entitlements, ABAC, and break-glass access.
+- Middleware must expose stable, reusable authorization behavior.
+- Every mutation must have an audit-ready helper path.
+
+## Acceptance
+
+- Core helpers and middleware must be reusable by every module.
+- RBAC, ABAC, entitlement, and break-glass behavior must be available before module implementation.

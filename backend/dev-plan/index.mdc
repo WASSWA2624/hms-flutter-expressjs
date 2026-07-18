@@ -1,29 +1,19 @@
+---
+description: Defines the mandatory sequence and release gates for backend implementation.
+globs:
+  - "backend/**"
+alwaysApply: false
+---
 # Backend Development Plan
+Follow this chronology to produce the reproducible HOSSPI HMS backend.
 
-Purpose: this folder is the backend implementation chronology for HOSSPI HMS described in `../../.cursor/app-write-up.mdc` and constrained by `backend/.cursor/*` and `../../.cursor/api-contract.mdc`.
+## Execution Order
 
-Execution order is mandatory:
-1. `P000_setup.md`
-2. `P001_core.md`
-3. `P002_prisma.md`
-4. `P003_app.md`
-5. `P004_i18n.md`
-6. `P005_ws.md`
-7. `P006_storage.md`
-8. `P007_tests.md`
-9. `P008_perf.md`
-10. `P009_models.md`
-11. `P010_api_endpoints.md`
-12. `P011_modules.md`
-13. `P012_seeder.md`
-14. `P013_ws_features.md`
-15. `P014_locales.md`
-16. `P015_offline.md`
+Phases must run without skipping: `P000_setup`, `P001_core`, `P002_prisma`, `P003_app`, `P004_i18n`, `P005_ws`, `P006_storage`, `P007_tests`, `P008_perf`, `P009_models`, `P010_api_endpoints`, `P011_modules`, `P012_seeder`, `P013_ws_features`, `P014_locales`, then `P015_offline`.
 
-Chronology lock:
-- do not skip forward while an earlier phase is incomplete
-- keep module names, permission keys, entitlements, and route families aligned with `app-write-up.md`
-- treat multi-role RBAC plus ABAC, unit-manager roster authority, biomedical ownership, Mortuary, `snake_case`, documentation, and script hygiene as release gates, not optional polish
+## Release Gates
 
-Current repo note:
-- the backend already contains broad module coverage, but this plan describes the target reproducible backend, including the first-class Mortuary domain and final doc alignment
+- Each phase must satisfy its acceptance criteria before the next begins.
+- Module names, permission keys, entitlements, and route families must remain aligned with `../../.cursor/app-write-up.mdc` and `../../.cursor/api-contract.mdc`.
+- Implementations must preserve multi-role RBAC with ABAC, unit-manager roster authority, biomedical ownership, first-class Mortuary workflows, `snake_case`, documentation, and script hygiene.
+- Existing broad module coverage may be reused, but it must converge on this plan and `backend/.cursor/*`.

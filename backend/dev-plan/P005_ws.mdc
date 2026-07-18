@@ -1,13 +1,21 @@
-# P005 WebSockets
+---
+description: Adds authenticated and access-scoped realtime transport.
+globs:
+  - "backend/**"
+alwaysApply: false
+---
+# P005 WebSocket Transport
+Provide realtime delivery without leaking transport concerns into domain services.
 
-Goal: add authenticated realtime transport.
+## Transport
 
-Do:
-- bootstrap the websocket server and gateway
-- authenticate connections and scope subscriptions by tenant, facility, role, and module
-- add shared emit helpers so services can publish domain events without transport leakage
+- Bootstrap the WebSocket server and gateway.
+- Connections must authenticate under the same rules as HTTP requests.
+- Subscriptions must be scoped by tenant, facility, role, entitlement, and module.
+- Shared emit helpers should let services publish domain events without transport coupling.
 
-Acceptance:
-- websocket auth matches backend access rules
-- event payloads are stable and `snake_case`
-- services can publish realtime updates without bypassing module boundaries
+## Acceptance
+
+- WebSocket authorization must match backend access rules.
+- Event names and payloads must remain stable and use `snake_case`.
+- Services must publish updates without bypassing module boundaries.

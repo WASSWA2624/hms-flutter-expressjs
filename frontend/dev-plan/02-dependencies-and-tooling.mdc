@@ -1,28 +1,24 @@
-# 02 - Dependencies and tooling
+---
+description: Defines the approved dependency stack and development tooling.
+globs:
+  - "frontend/{pubspec.yaml,analysis_options.yaml,README.md,build.yaml,lib/**,tool/**}"
+alwaysApply: false
+---
 
-## Goal
-Add the approved starter dependency stack and configure linting, generation readiness, and test tooling.
+# 02 - Dependencies and Tooling
+Configure only the dependencies and tools needed by the runnable starter.
 
-## Applies app rules
-- [`dependencies.md`](../.cursor/dependencies.mdc)
-- [`code_generation.md`](../.cursor/code_generation.mdc)
-- [`coding_conventions.md`](../.cursor/coding_conventions.mdc)
-- [`ci_cd_quality_gates.md`](../.cursor/ci_cd_quality_gates.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`dependencies.mdc`](../.cursor/dependencies.mdc), [`code_generation.mdc`](../.cursor/code_generation.mdc), [`coding_conventions.mdc`](../.cursor/coding_conventions.mdc), and [`ci_cd_quality_gates.mdc`](../.cursor/ci_cd_quality_gates.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Add required starter dependencies only: `flutter_riverpod`, `go_router`, Flutter localization SDK support, and `intl`.
-3. Add approved optional dependencies only when later steps actually implement that capability.
-4. Configure `analysis_options.yaml` with Flutter lints and Riverpod lint readiness.
-5. Add code-generation tooling only if generated providers, models, JSON, or Drift are used.
-6. Document local quality commands in `README.md`.
+## Implementation
+1. Add `flutter_riverpod`, `go_router`, Flutter localization SDK support, and `intl`.
+2. Optional packages must be added only when an implemented capability needs them; packages must not duplicate responsibilities.
+3. Configure Flutter lints and Riverpod lint readiness in `analysis_options.yaml`.
+4. Add generation tooling only when providers, models, JSON, or Drift are generated.
+5. Document format, analyze, test, and generation commands in `README.md`.
 
-## Expected output
-- Minimal `pubspec.yaml` with no duplicate package responsibilities.
-- Analyzer/lint configuration.
-- Documented format, analyze, test, and generation commands.
-
-## Acceptance criteria
-- `flutter pub get` succeeds.
-- Dependency choices match `dependencies.md`.
-- No unused optional dependency is added to the starter.
+## Acceptance Criteria
+- `flutter pub get` must succeed.
+- Dependency choices must match `dependencies.mdc`.
+- The starter must contain no unused optional dependency.

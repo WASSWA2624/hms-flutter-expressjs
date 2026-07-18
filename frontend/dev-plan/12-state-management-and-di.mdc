@@ -1,28 +1,26 @@
-# 12 - State management and DI
+---
+description: Defines Riverpod state management and dependency injection boundaries.
+globs:
+  - "frontend/{lib/app/**,lib/core/**,lib/features/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Set up Riverpod as the single state management and dependency injection system.
+# 12 - State Management and DI
+Use Riverpod as the single override-friendly global state and dependency system.
 
-## Applies app rules
-- [`state_management.md`](../.cursor/state_management.mdc)
-- [`architecture.md`](../.cursor/architecture.mdc)
-- [`testing.md`](../.cursor/testing.mdc)
-- [`startup_flow.md`](../.cursor/startup_flow.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`state_management.mdc`](../.cursor/state_management.mdc), [`architecture.mdc`](../.cursor/architecture.mdc), [`testing.mdc`](../.cursor/testing.mdc), and [`startup_flow.mdc`](../.cursor/startup_flow.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Place app-level providers under `lib/app/` or `lib/core/` by responsibility.
-3. Place feature controllers under `features/<feature>/presentation/controllers/`.
-4. Place repository providers near repository implementations and contracts.
-5. Use provider overrides for tests and non-production starter implementations.
-6. Avoid global mutable singletons.
+## Implementation
+1. Place app-level providers under `lib/app/` or `lib/core/` by responsibility.
+2. Put feature controllers under `features/<feature>/presentation/controllers/`.
+3. Keep repository providers near their contracts and implementations.
+4. Tests and non-production starters must use provider overrides.
+5. Global mutable singletons must not be introduced.
+6. Add theme, locale, router, config, and startup providers only where needed.
 
-## Expected output
-- Provider structure.
-- App-level providers for theme, locale, router, config, and startup where needed.
-- Test override examples.
-
-## Acceptance criteria
-- UI does not instantiate repositories, clients, storage, or databases directly.
-- Tests can override dependencies without touching production services.
-- Riverpod is the only global state system.
+## Acceptance Criteria
+- UI must not instantiate repositories, clients, storage, or databases.
+- Tests must override dependencies without production services.
+- Riverpod must remain the only global state system.
+- Provider organization and test override examples must be clear.

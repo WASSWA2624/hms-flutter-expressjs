@@ -1,31 +1,27 @@
-# 01 - Project setup
+---
+description: Establishes a consistent multi-platform Flutter project root.
+globs:
+  - "frontend/{pubspec.yaml,analysis_options.yaml,l10n.yaml,README.md,docs/**,lib/**,test/**,integration_test/**,tool/**}"
+alwaysApply: false
+---
 
-## Goal
-Create or normalize the Flutter project root for consistent multi-platform development.
+# 01 - Project Setup
+Create or normalize the Flutter root without disturbing compliant project files.
 
-## Applies app rules
-- [`scope.md`](../.cursor/scope.mdc)
-- [`project_structure.md`](../.cursor/project_structure.mdc)
-- [`platform_guidelines.md`](../.cursor/platform_guidelines.mdc)
-- [`documentation_standards.md`](../.cursor/documentation_standards.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`scope.mdc`](../.cursor/scope.mdc), [`project_structure.mdc`](../.cursor/project_structure.mdc), [`platform_guidelines.mdc`](../.cursor/platform_guidelines.mdc), and [`documentation_standards.mdc`](../.cursor/documentation_standards.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. If no Flutter project exists, create one with the supported platform set:
+## Implementation
+1. If no project exists, run:
    ```bash
    flutter create . --platforms=android,ios,web,windows,macos,linux
    ```
-3. If a Flutter project already exists, inspect it and normalize only missing or non-compliant files.
-4. Ensure root files exist: `pubspec.yaml`, `analysis_options.yaml`, `README.md`, `l10n.yaml`, `docs/`, `lib/`, `test/`, `integration_test/`, and `tool/`.
-5. Keep the initial app minimal and runnable; do not add product-specific backend behavior.
-6. Confirm scripts and documentation are safe for Linux/macOS line endings.
+2. Otherwise, normalize only missing or noncompliant files.
+3. Ensure `pubspec.yaml`, `analysis_options.yaml`, `README.md`, `l10n.yaml`, `docs/`, `lib/`, `test/`, `integration_test/`, and `tool/` exist.
+4. The starter must remain minimal, runnable, API-contract-ready, and free of product-specific backend behavior.
+5. Scripts and documentation should use portable line endings.
 
-## Expected output
-- Clean Flutter project root.
-- Supported platform folders where the host and project allow them.
-- Root documentation and required folders.
-
-## Acceptance criteria
-- `flutter pub get` succeeds.
-- Project structure matches `project_structure.md`.
-- The project remains backend-integrated per api-contract.mdc.
+## Acceptance Criteria
+- `flutter pub get` must succeed.
+- Structure must match `project_structure.mdc`.
+- Supported platform folders may depend on host capabilities.

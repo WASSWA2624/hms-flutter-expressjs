@@ -1,31 +1,26 @@
-# 09 - Theme system
+---
+description: Defines the Material theme system and reusable visual tokens.
+globs:
+  - "frontend/{lib/app/theme/**,lib/shared/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Implement a professional Material theme system with light, dark, and system theme mode.
+# 09 - Theme System
+Provide balanced light, dark, and system themes through shared Material tokens.
 
-## Applies app rules
-- [`design-system.mdc`](../.cursor/design-system.mdc)
-- [`assets_branding.md`](../.cursor/assets_branding.mdc)
-- [`accessibility.md`](../.cursor/accessibility.mdc)
-- [`localization_i18n.md`](../.cursor/localization_i18n.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`design-system.mdc`](../.cursor/design-system.mdc), [`assets_branding.mdc`](../.cursor/assets_branding.mdc), [`accessibility.mdc`](../.cursor/accessibility.mdc), and [`localization_i18n.mdc`](../.cursor/localization_i18n.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create `AppTheme.light` using a clean blue Material 3 seed color.
-3. Create `AppTheme.dark` using a clean dark Material 3 scheme.
-4. Create `AppThemeTokens` for spacing, radius, sizing, and optional status colors.
-5. Implement `themeModeControllerProvider` and persistence only for non-sensitive preference storage.
-6. Keep buttons, icons, fields, cards, dialogs, and navigation visually balanced; avoid excessive padding and overly rounded shapes.
-7. Remove raw repeated colors, spacing, and shapes from starter UI.
-8. Add theme smoke tests.
+## Implementation
+1. Create blue-seeded Material 3 `AppTheme.light` and a clean `AppTheme.dark`.
+2. Define `AppThemeTokens` for spacing, radius, sizing, and optional status colors.
+3. Implement `themeModeControllerProvider`; persistence may store only non-sensitive preferences.
+4. Buttons, icons, fields, cards, dialogs, and navigation should avoid excessive padding or rounding.
+5. Repeated raw colors, spacing, and shapes must not remain in starter UI.
+6. Add theme smoke tests.
 
-## Expected output
-- Light and dark themes.
-- Theme token extension.
-- Theme mode provider/controller.
-- Theme-aware starter UI.
-
-## Acceptance criteria
-- Light theme is default.
-- System and dark mode work.
-- Shared components read from theme tokens.
+## Acceptance Criteria
+- Light mode must be the default.
+- System and dark modes must work.
+- Shared components must use theme tokens.
+- Theme-aware starter UI and its provider/controller must be present.

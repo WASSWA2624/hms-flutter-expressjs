@@ -1,30 +1,25 @@
-# 17 - Error handling and observability
+---
+description: Defines typed failures, safe logging, and consistent asynchronous state views.
+globs:
+  - "frontend/{lib/core/error/**,lib/core/logging/**,lib/shared/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Create typed failures, safe logging, and consistent state views.
+# 17 - Error Handling and Observability
+Make failures recoverable, localized, testable, and safe to observe.
 
-## Applies app rules
-- [`error_handling.md`](../.cursor/error_handling.mdc)
-- [`observability.md`](../.cursor/observability.mdc)
-- [`network_api.md`](../.cursor/network_api.mdc)
-- [`security.md`](../.cursor/security.mdc)
-- [`localization_i18n.md`](../.cursor/localization_i18n.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`error_handling.mdc`](../.cursor/error_handling.mdc), [`observability.mdc`](../.cursor/observability.mdc), [`network_api.mdc`](../.cursor/network_api.mdc), [`security.mdc`](../.cursor/security.mdc), and [`localization_i18n.mdc`](../.cursor/localization_i18n.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create typed failure classes or sealed failures.
-3. Create error-to-message mapping through localization.
-4. Create safe logger abstraction under `lib/core/logging/`.
-5. Wire `AsyncStateScaffold` to typed loading, empty, error, and success states.
-6. Add tests for failure mapping.
+## Implementation
+1. Create typed or sealed failure classes.
+2. Map failures to localized user messages.
+3. Add a safe logger abstraction under `lib/core/logging/`.
+4. Connect `AsyncStateScaffold` to typed loading, empty, error, and success states.
+5. Add failure-mapping and state-view tests.
 
-## Expected output
-- Typed failure model.
-- Safe logger.
-- Localized error views.
-- State-view tests.
-
-## Acceptance criteria
-- Raw exceptions are not shown to users.
-- Logs do not expose sensitive data.
-- Recoverable errors have retry paths.
+## Acceptance Criteria
+- Raw exceptions must not be shown to users.
+- Logs must not expose sensitive data.
+- Recoverable errors must provide retry paths.
+- Typed failures, safe logging, localized views, and relevant tests must work consistently.

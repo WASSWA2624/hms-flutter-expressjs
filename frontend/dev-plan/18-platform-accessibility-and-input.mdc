@@ -1,30 +1,26 @@
-# 18 - Platform, accessibility, and input
+---
+description: Defines cross-platform accessibility, focus, and input behavior.
+globs:
+  - "frontend/{lib/**,test/**,integration_test/**,docs/**}"
+alwaysApply: false
+---
 
-## Goal
-Finalize platform compatibility, input methods, accessibility, focus behavior, and permission handling.
+# 18 - Platform, Accessibility, and Input
+Ensure core interactions work across mobile, desktop, web, and assistive technologies.
 
-## Applies app rules
-- [`platform_guidelines.md`](../.cursor/platform_guidelines.mdc)
-- [`multi_platform_input.md`](../.cursor/multi_platform_input.mdc)
-- [`accessibility.md`](../.cursor/accessibility.mdc)
-- [`permissions.md`](../.cursor/permissions.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`platform_guidelines.mdc`](../.cursor/platform_guidelines.mdc), [`multi_platform_input.mdc`](../.cursor/multi_platform_input.mdc), [`accessibility.mdc`](../.cursor/accessibility.mdc), and [`permissions.mdc`](../.cursor/permissions.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Check mobile safe areas and keyboard insets.
-3. Check desktop/web keyboard, pointer, hover, and focus behavior.
-4. Add semantic labels to icon-only actions.
-5. Add focus behavior for menus, dialogs, dropdowns, and side navigation.
-6. Confirm menu bar and side navigation are usable by keyboard.
-7. Document platform-specific limitations.
+## Implementation
+1. Verify mobile safe areas and keyboard insets.
+2. Verify desktop/web keyboard, pointer, hover, and focus behavior.
+3. Icon-only actions must have semantic labels.
+4. Menus, dialogs, dropdowns, menu bars, and side navigation must expose clear keyboard focus.
+5. Document platform-specific limitations.
+6. Add practical input interaction tests.
 
-## Expected output
-- Platform behavior notes.
-- Accessibility improvements.
-- Input interaction tests where practical.
-
-## Acceptance criteria
-- Core flows work with keyboard only.
-- Touch targets are practical.
-- No important action is hover-only.
-- Desktop menu and side navigation have clear focus behavior.
+## Acceptance Criteria
+- Core flows must work with keyboard only.
+- Touch targets must be practical.
+- Important actions must not depend on hover.
+- Platform notes, accessibility improvements, and relevant tests must reflect actual behavior.

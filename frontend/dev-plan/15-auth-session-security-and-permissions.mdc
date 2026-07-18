@@ -1,31 +1,26 @@
-# 15 - Auth, session, security, and permissions
+---
+description: Defines authentication, session, security, and permission boundaries.
+globs:
+  - "frontend/{lib/core/security/**,lib/features/auth/**,lib/app/router/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Prepare authentication, session, security, and permission boundaries without forcing product-specific auth flows.
+# 15 - Auth, Session, Security, and Permissions
+Prepare provider-neutral session controls without forcing a product-specific sign-in flow.
 
-## Applies app rules
-- [`authentication_session.md`](../.cursor/authentication_session.mdc)
-- [`security.md`](../.cursor/security.mdc)
-- [`permissions.md`](../.cursor/permissions.mdc)
-- [`navigation.md`](../.cursor/navigation.mdc)
-- [`storage_strategy.md`](../.cursor/storage_strategy.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`authentication_session.mdc`](../.cursor/authentication_session.mdc), [`security.mdc`](../.cursor/security.mdc), [`permissions.mdc`](../.cursor/permissions.mdc), [`navigation.mdc`](../.cursor/navigation.mdc), and [`storage_strategy.mdc`](../.cursor/storage_strategy.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create session state types: unknown, unauthenticated, authenticated, expired, and forbidden.
-3. Create auth repository contract without assuming a specific provider.
-4. Create secure session storage abstraction when tokens are used.
-5. Wire route guards to session state.
-6. Add permission types and helpers.
-7. Add logout behavior that clears sensitive local session data.
+## Implementation
+1. Define unknown, unauthenticated, authenticated, expired, and forbidden session states.
+2. Create a provider-neutral auth repository contract.
+3. When tokens are used, create secure session storage.
+4. Connect route guards to session state.
+5. Add centralized permission types and helpers.
+6. Logout must clear sensitive local session data.
 
-## Expected output
-- Auth/session contracts.
-- Session provider.
-- Permission helpers.
-- Guarded route example.
-
-## Acceptance criteria
-- Protected routes are blocked without session when enabled.
-- Token values are never logged.
-- Permission checks are centralized.
+## Acceptance Criteria
+- Enabled protected routes must block users without a valid session.
+- Token values must never be logged.
+- Permission checks must be centralized.
+- Auth/session contracts, a session provider, permission helpers, and a guarded route example must exist.

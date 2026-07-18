@@ -1,12 +1,20 @@
-# P004 i18n
+---
+description: Establishes deterministic backend localization behavior and helpers.
+globs:
+  - "backend/**"
+alwaysApply: false
+---
+# P004 Backend Internationalization
+Prepare system-generated backend text for safe, deterministic localization.
 
-Goal: establish backend locale behavior.
+## Requirements
 
-Do:
-- ship a stable `en` catalog and locale resolution helpers
-- return translation-ready messages and problem detail text
-- add locale-aware date, time, and number helpers where backend formatting is required
+- Ship a stable English (`en`) catalog and locale-resolution helpers.
+- Responses and problem details must use translation-ready system messages.
+- Add locale-aware date, time, and number helpers where backend formatting is required.
+- User-entered text must not be translated or otherwise altered.
 
-Acceptance:
-- locale behavior is deterministic
-- user-entered text remains unchanged while system-generated text is localization-ready
+## Acceptance
+
+- Locale resolution must be deterministic.
+- All system-generated text should be localization-ready while preserving user content exactly.

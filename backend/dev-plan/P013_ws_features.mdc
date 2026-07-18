@@ -1,19 +1,19 @@
+---
+description: Defines stable realtime domain events after core modules exist.
+globs:
+  - "backend/**"
+alwaysApply: false
+---
 # P013 WebSocket Features
+Publish authorized domain events only after their owning modules are stable.
 
-Goal: define realtime domain events after core modules exist.
+## Event Families
 
-Event families:
-- auth and session revocation
-- queue and appointment changes
-- critical alerts and inpatient state changes
-- lab and radiology result availability
-- pharmacy order and dispense status changes
-- roster publish and staffing escalation events
-- maintenance, equipment downtime, and recall events
-- mortuary custody, storage, and release-review events
-- notification delivery status
-- shift close, day close, handover, and closeout progress
+Events should cover session revocation; appointments and queues; critical and inpatient state; diagnostic results; pharmacy orders and dispensing; roster publishing and escalation; biomedical maintenance, downtime, and recalls; Mortuary custody, storage, and release review; notification delivery; and handover and closeout progress.
 
-Acceptance:
-- event names and payload fields stay stable and `snake_case`
-- subscriptions respect the same scope and entitlement rules as HTTP endpoints
+## Contract
+
+- Event names and payload fields must remain stable and use `snake_case`.
+- Subscriptions must enforce the same tenant, facility, role, entitlement, and module scope as HTTP endpoints.
+- Events must not expose data beyond the subscriber's current authorization.
+- Domain services should publish through the shared transport abstraction.

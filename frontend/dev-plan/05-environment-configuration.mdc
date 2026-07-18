@@ -1,28 +1,25 @@
-# 05 - Environment configuration
+---
+description: Defines safe environment configuration for all deployment stages.
+globs:
+  - "frontend/{env/**,lib/core/config/**,lib/app/startup/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Create safe environment configuration for development, staging, and production without committing secrets.
+# 05 - Environment Configuration
+Provide override-friendly development, staging, and production configuration without exposing secrets.
 
-## Applies app rules
-- [`environment_configuration.md`](../.cursor/environment_configuration.mdc)
-- [`security.md`](../.cursor/security.mdc)
-- [`feature_flags.md`](../.cursor/feature_flags.mdc)
-- [`startup_flow.md`](../.cursor/startup_flow.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`environment_configuration.mdc`](../.cursor/environment_configuration.mdc), [`security.mdc`](../.cursor/security.mdc), [`feature_flags.mdc`](../.cursor/feature_flags.mdc), and [`startup_flow.mdc`](../.cursor/startup_flow.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create `env/development.json.example`, `env/staging.json.example`, and `env/production.json.example` with non-secret values only.
-3. Create `AppConfig` under `lib/core/config/`.
-4. Read compile-time values with Flutter defines or define files.
-5. Validate required values during startup.
-6. Keep tests override-friendly.
+## Implementation
+1. Create `env/development.json.example`, `env/staging.json.example`, and `env/production.json.example` containing non-secret values only.
+2. Implement `AppConfig` under `lib/core/config/`.
+3. Read compile-time values through Flutter defines or define files.
+4. Validate required values during startup.
+5. Tests must be able to override configuration.
+6. Secrets must not be committed.
 
-## Expected output
-- Environment example files.
-- `AppConfig` model/provider.
-- Startup validation for required config.
-
-## Acceptance criteria
-- Missing required config fails clearly.
-- Production config rejects unsafe debug logging and accidental non-HTTPS public API URLs.
-- No secrets are committed.
+## Acceptance Criteria
+- Missing required configuration must fail with a clear message.
+- Production must reject unsafe debug logging and non-HTTPS public API URLs.
+- Example files, the configuration model/provider, and startup validation must exist.

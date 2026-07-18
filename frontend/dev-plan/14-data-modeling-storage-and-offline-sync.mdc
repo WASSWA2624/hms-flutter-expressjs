@@ -1,30 +1,26 @@
-# 14 - Data modeling, storage, and offline sync
+---
+description: Defines model, storage, database, and offline synchronization boundaries.
+globs:
+  - "frontend/{lib/core/storage/**,lib/core/database/**,lib/features/**/data/**,lib/features/**/domain/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Create clear model boundaries and storage/offline readiness without forcing unnecessary persistence.
+# 14 - Data Modeling, Storage, and Offline Sync
+Keep persistence optional while making model conversion and future synchronization explicit.
 
-## Applies app rules
-- [`data_modeling.md`](../.cursor/data_modeling.mdc)
-- [`storage_strategy.md`](../.cursor/storage_strategy.mdc)
-- [`database_strategy.md`](../.cursor/database_strategy.mdc)
-- [`offline_sync.md`](../.cursor/offline_sync.mdc)
-- [`code_generation.md`](../.cursor/code_generation.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`data_modeling.mdc`](../.cursor/data_modeling.mdc), [`storage_strategy.mdc`](../.cursor/storage_strategy.mdc), [`database_strategy.mdc`](../.cursor/database_strategy.mdc), [`offline_sync.mdc`](../.cursor/offline_sync.mdc), and [`code_generation.mdc`](../.cursor/code_generation.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Define domain entities separately from DTOs and database models.
-3. Add explicit mappers between DTOs, database models, and domain entities.
-4. Add simple preference storage only for non-sensitive starter settings when needed.
-5. Add secure storage only when session/auth is implemented.
-6. Add Drift only when structured local data or sync queues are implemented.
-7. Document sync conflict and retry strategy when offline behavior is added.
+## Implementation
+1. Separate domain entities from DTOs and database models.
+2. Add explicit mappers between model layers.
+3. Plain preferences may store only non-sensitive settings.
+4. Add secure storage only with session/auth implementation.
+5. Add Drift only for structured local data or sync queues.
+6. When offline behavior is added, document conflict and retry strategy.
 
-## Expected output
-- Model boundary examples.
-- Storage abstraction readiness.
-- Optional offline/sync contracts.
-
-## Acceptance criteria
-- Data models do not leak into widgets.
-- Sensitive data is never stored in plain preferences.
-- Offline logic remains explicit and testable.
+## Acceptance Criteria
+- Data models must not leak into widgets.
+- Sensitive data must never use plain preferences.
+- Offline logic must remain explicit and testable.
+- Model examples, storage abstractions, and any sync contracts must preserve layer boundaries.

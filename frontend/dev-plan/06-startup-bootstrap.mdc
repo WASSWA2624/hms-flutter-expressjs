@@ -1,28 +1,25 @@
-# 06 - Startup bootstrap
+---
+description: Defines a small entry point and deterministic startup sequence.
+globs:
+  - "frontend/{lib/main.dart,lib/bootstrap.dart,lib/app/startup/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Create a small entry point and predictable startup sequence.
+# 06 - Startup Bootstrap
+Initialize the app predictably while keeping startup failures recoverable.
 
-## Applies app rules
-- [`startup_flow.md`](../.cursor/startup_flow.mdc)
-- [`state_management.md`](../.cursor/state_management.mdc)
-- [`environment_configuration.md`](../.cursor/environment_configuration.mdc)
-- [`error_handling.md`](../.cursor/error_handling.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`startup_flow.mdc`](../.cursor/startup_flow.mdc), [`state_management.mdc`](../.cursor/state_management.mdc), [`environment_configuration.mdc`](../.cursor/environment_configuration.mdc), and [`error_handling.mdc`](../.cursor/error_handling.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Keep `lib/main.dart` limited to calling `bootstrap`.
-3. Use `lib/bootstrap.dart` for `WidgetsFlutterBinding.ensureInitialized()`, startup services, and `ProviderScope` setup.
-4. Create startup state under `lib/app/startup/` when initialization can fail or take time.
-5. Avoid network calls inside widget `build` methods.
-6. Show a predictable startup/loading/error state if startup work is asynchronous.
+## Implementation
+1. `lib/main.dart` must only call `bootstrap`.
+2. `lib/bootstrap.dart` must initialize Flutter bindings, startup services, and `ProviderScope`.
+3. Add state under `lib/app/startup/` when initialization may fail or take time.
+4. Network calls must not occur inside widget `build` methods.
+5. Asynchronous startup must show predictable loading and localized error states.
 
-## Expected output
-- Small `main.dart`.
-- `bootstrap.dart`.
-- Startup controller/provider if needed.
-
-## Acceptance criteria
-- Cold start is deterministic.
-- Startup errors have a safe, localized recovery path.
-- App can launch without a real backend.
+## Acceptance Criteria
+- Cold start must be deterministic.
+- Startup errors must provide a safe recovery path.
+- The app must launch without a real backend.
+- A startup controller/provider may be omitted when initialization is synchronous.

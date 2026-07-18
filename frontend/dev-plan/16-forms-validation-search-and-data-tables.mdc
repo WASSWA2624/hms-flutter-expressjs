@@ -1,32 +1,27 @@
-# 16 - Forms, validation, search, and data displays
+---
+description: Defines forms, validation, search, filtering, and responsive data displays.
+globs:
+  - "frontend/{lib/shared/forms/**,lib/shared/widgets/**,lib/features/**/presentation/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Implement form standards, validators, searchable selects, filtering, pagination, and list/table patterns.
+# 16 - Forms, Validation, Search, and Data Displays
+Provide testable input and scalable data-display patterns across screen sizes.
 
-## Applies app rules
-- [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc)
-- [`validation.md`](../.cursor/validation.mdc)
-- [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc)
-- [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc)
-- [`components.mdc`](../.cursor/components.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc), [`validation.mdc`](../.cursor/validation.mdc), and [`components.mdc`](../.cursor/components.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create reusable validators under `lib/shared/forms/` or feature-specific validators where rules are product-specific.
-3. Create form field patterns that preserve recoverable input.
-4. Create searchable select behavior using overlay/menu patterns where appropriate.
-5. Create search/filter controller examples with explicit state.
-6. Create mobile list and desktop table patterns for data displays.
-7. Add pagination/lazy loading examples for large datasets.
-8. Add tests for validation and important form components.
+## Implementation
+1. Put reusable validators under `lib/shared/forms/` and product-specific validators with their features.
+2. Form fields must preserve recoverable input.
+3. Searchable selects should use suitable overlay or menu patterns.
+4. Search and filter controllers must expose explicit state.
+5. Provide mobile list and desktop table patterns.
+6. Large datasets must use pagination or lazy loading.
+7. Add tests for validators and important form components.
 
-## Expected output
-- Validation utilities.
-- Search/filter state examples.
-- Searchable select component when needed.
-- Responsive list/table examples.
-
-## Acceptance criteria
-- Forms preserve recoverable input.
-- Search and filters are explicit in state.
-- Large datasets are not loaded unnecessarily.
+## Acceptance Criteria
+- Recoverable form input must survive validation failures.
+- Search and filters must remain explicit in state.
+- Large datasets must not load unnecessarily.
+- Validation utilities, state examples, and responsive displays must be available; searchable select may be added when needed.

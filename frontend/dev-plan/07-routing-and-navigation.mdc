@@ -1,30 +1,26 @@
-# 07 - Routing and navigation
+---
+description: Defines declarative routing, guards, and responsive shell navigation.
+globs:
+  - "frontend/lib/{app/router/**,app/navigation/**,features/**/presentation/**}"
+alwaysApply: false
+---
 
-## Goal
-Configure declarative routing, route names, route guards, and responsive shell navigation.
+# 07 - Routing and Navigation
+Create centralized, guard-ready routes with readable URLs and persistent navigation.
 
-## Applies app rules
-- [`navigation.md`](../.cursor/navigation.mdc)
-- [`authentication_session.md`](../.cursor/authentication_session.mdc)
-- [`permissions.md`](../.cursor/permissions.mdc)
-- [`layouts.mdc`](../.cursor/layouts.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`navigation.mdc`](../.cursor/navigation.mdc), [`authentication_session.mdc`](../.cursor/authentication_session.mdc), [`permissions.mdc`](../.cursor/permissions.mdc), and [`layouts.mdc`](../.cursor/layouts.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create `app_routes.dart` for route names and paths.
-3. Create `app_router.dart` with `go_router`.
-4. Add a home route and localized not-found route.
-5. Add auth/session guard placeholders without requiring a real backend.
-6. Use a shell route for persistent navigation.
-7. Avoid raw route strings inside pages.
+## Implementation
+1. Create `app_routes.dart` for route names and paths.
+2. Configure `go_router` in `app_router.dart`.
+3. Add home and localized not-found routes.
+4. Add auth/session guard placeholders that do not require a real backend.
+5. Use a shell route for persistent responsive navigation.
+6. Pages must not contain raw route strings.
 
-## Expected output
-- Central router configuration.
-- Route constants/helpers.
-- Guard-ready route flow.
-- Shell route connected to responsive layout.
-
-## Acceptance criteria
-- Web URLs are readable.
-- Unknown routes show localized not-found UI.
-- Protected-route behavior can be enabled without restructuring routes.
+## Acceptance Criteria
+- Web URLs must be readable.
+- Unknown routes must show localized not-found UI.
+- Protected routing must be enableable without restructuring routes.
+- Central configuration, route helpers, guards, and the responsive shell must work together.

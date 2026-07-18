@@ -1,27 +1,24 @@
-# 04 - Folder structure
+---
+description: Defines the canonical frontend source and support folder structure.
+globs:
+  - "frontend/{lib/**,test/**,integration_test/**,docs/**,assets/**,env/**,tool/**,README.md,l10n.yaml}"
+alwaysApply: false
+---
 
-## Goal
-Finalize concrete source, test, docs, assets, environment, and tooling folders.
+# 04 - Folder Structure
+Create a stable tree that makes every frontend responsibility easy to locate.
 
-## Applies app rules
-- [`project_structure.md`](../.cursor/project_structure.mdc)
-- [`coding_conventions.md`](../.cursor/coding_conventions.mdc)
-- [`testing.md`](../.cursor/testing.mdc)
-- [`documentation_standards.md`](../.cursor/documentation_standards.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`project_structure.mdc`](../.cursor/project_structure.mdc), [`coding_conventions.mdc`](../.cursor/coding_conventions.mdc), [`testing.mdc`](../.cursor/testing.mdc), and [`documentation_standards.mdc`](../.cursor/documentation_standards.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create the exact folders required by `project_structure.md`.
-3. Mirror source folders in `test/` when tests are added.
-4. Add `.gitkeep` only where an empty required folder must be retained.
-5. Keep `l10n.yaml` at the project root and ARB files under `lib/l10n/`.
-6. Update `README.md` with a short folder summary.
+## Implementation
+1. Create the exact folders required by `project_structure.mdc`.
+2. Mirror source folders under `test/` when corresponding tests are added.
+3. Add `.gitkeep` only when an empty required directory must be retained.
+4. Keep `l10n.yaml` at the frontend root and ARB files under `lib/l10n/`.
+5. Summarize the folder tree in `README.md`.
+6. Duplicate responsibility folders must not exist.
 
-## Expected output
-- Stable folder tree.
-- Matching test folders where useful.
-- Updated documentation.
-
-## Acceptance criteria
-- A developer can find startup, routing, theme, networking, storage, layout, and features quickly.
-- No duplicate responsibility folders exist.
+## Acceptance Criteria
+- Startup, routing, theme, networking, storage, layout, and features must be quickly discoverable.
+- The source, tests, documentation, assets, environments, and tools must follow one stable structure.

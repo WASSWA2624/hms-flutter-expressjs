@@ -1,33 +1,26 @@
-# 08 - Responsive layout system
+---
+description: Defines responsive breakpoints, page constraints, and adaptive shell behavior.
+globs:
+  - "frontend/{lib/core/responsive/**,lib/app/layout/**,lib/shared/layout/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Create centralized breakpoints, layout helpers, page constraints, and adaptive shell behavior.
+# 08 - Responsive Layout System
+Build one adaptive layout system for mobile, tablet, desktop, and web.
 
-## Applies app rules
-- [`layouts.mdc`](../.cursor/layouts.mdc)
-- [`platform_guidelines.md`](../.cursor/platform_guidelines.mdc)
-- [`multi_platform_input.md`](../.cursor/multi_platform_input.mdc)
-- [`performance.md`](../.cursor/performance.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`layouts.mdc`](../.cursor/layouts.mdc), [`platform_guidelines.mdc`](../.cursor/platform_guidelines.mdc), [`multi_platform_input.mdc`](../.cursor/multi_platform_input.mdc), and [`performance.mdc`](../.cursor/performance.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Implement `lib/core/responsive/app_breakpoints.dart` using the canonical breakpoints.
-3. Implement `ResponsivePage` for padding, scrolling, and max-width constraints.
-4. Implement `ResponsiveAppShell` for mobile, tablet, and desktop layouts.
-5. Implement `AppMenuBar` for desktop/web shell actions.
-6. Implement `SideNavigation` with expanded and collapsed states.
-7. Keep desktop navigation compact: icons around `20-24px`, balanced padding, and moderate radius.
-8. Add breakpoint tests and shell smoke tests.
+## Implementation
+1. Implement canonical breakpoints in `lib/core/responsive/app_breakpoints.dart`.
+2. Implement `ResponsivePage` for padding, scrolling, and maximum width.
+3. Implement `ResponsiveAppShell` for mobile, tablet, and desktop.
+4. Add `AppMenuBar` and collapsible `SideNavigation` for desktop/web.
+5. Desktop navigation should use `20-24px` icons, balanced padding, and moderate radius.
+6. Add breakpoint and shell smoke tests.
+7. Separate duplicate screen implementations must not be created.
 
-## Expected output
-- Breakpoint utilities.
-- Responsive page wrapper.
-- Desktop menu bar.
-- Collapsible side navigation.
-- Shell tests.
-
-## Acceptance criteria
-- Core screens work at `320px` width.
-- Large desktop layouts remain readable.
-- Desktop layout includes menu bar, side navigation, and collapsible navigation behavior.
-- No separate duplicate screen implementations are created.
+## Acceptance Criteria
+- Core screens must work at `320px`.
+- Large desktop layouts must remain readable.
+- Desktop must provide a menu bar and expanded/collapsed side navigation.

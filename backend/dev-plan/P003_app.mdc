@@ -1,14 +1,21 @@
-# P003 App
+---
+description: Creates the bootable Express application and canonical middleware pipeline.
+globs:
+  - "backend/**"
+alwaysApply: false
+---
+# P003 Application Bootstrap
+Make the backend bootable without later modules changing startup behavior.
 
-Goal: make the backend bootable with the final middleware order.
+## Bootstrap
 
-Do:
-- build the Express app and root router
-- mount `/health`, `/ready`, `/live`, and `/api/v1`
-- wire validation, auth, entitlements, authorization, and error middleware in the canonical order
-- add graceful shutdown and startup diagnostics
+- Build the Express application and root router.
+- Mount `/health`, `/ready`, `/live`, and `/api/v1`.
+- Validation, authentication, entitlements, authorization, and error handling must run in the canonical order.
+- Add graceful shutdown and startup diagnostics.
 
-Acceptance:
-- the app boots cleanly in development and test
-- health endpoints behave correctly
-- module routes can now be mounted without changing bootstrap behavior
+## Acceptance
+
+- Development and test startup must complete cleanly.
+- Health endpoints must report their intended states correctly.
+- Module routes must be mountable without modifying bootstrap semantics.

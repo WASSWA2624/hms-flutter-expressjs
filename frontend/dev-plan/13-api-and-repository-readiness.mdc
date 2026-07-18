@@ -1,31 +1,25 @@
-# 13 - API and repository readiness
+---
+description: Defines backend-ready API and repository integration boundaries.
+globs:
+  - "frontend/{lib/core/network/**,lib/features/**/domain/**,lib/features/**/data/**,test/**}"
+alwaysApply: false
+---
 
-## Goal
-Prepare backend integration boundaries without requiring a real backend.
+# 13 - API and Repository Readiness
+Prepare testable backend integration without requiring a live service.
 
-## Applies app rules
-- [`network_api.md`](../.cursor/network_api.mdc)
-- [`repository_pattern_example.md`](../.cursor/repository_pattern_example.mdc)
-- [`architecture.md`](../.cursor/architecture.mdc)
-- [`error_handling.md`](../.cursor/error_handling.mdc)
-- [`environment_configuration.md`](../.cursor/environment_configuration.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`network_api.mdc`](../.cursor/network_api.mdc), [`repository_pattern_example.mdc`](../.cursor/repository_pattern_example.mdc), [`architecture.mdc`](../.cursor/architecture.mdc), [`error_handling.mdc`](../.cursor/error_handling.mdc), and [`environment_configuration.mdc`](../.cursor/environment_configuration.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create API client abstraction under `lib/core/network/`.
-3. Add a real HTTP package only when an actual HTTP client is implemented.
-4. Create repository contracts in feature domain folders.
-5. Create repository implementations in feature data folders.
-6. Use fake or in-memory implementations for the runnable starter when no backend exists.
-7. Map network errors into typed failures.
+## Implementation
+1. Create an API client abstraction under `lib/core/network/`.
+2. Add an HTTP package only when implementing a real client.
+3. Put repository contracts in feature domain layers and implementations in data layers.
+4. Use fake or in-memory starter implementations when no backend exists.
+5. Network errors must map to typed failures.
 
-## Expected output
-- API client contract/readiness.
-- Repository contract example.
-- Fake or in-memory starter implementation.
-- Typed failure mapping.
-
-## Acceptance criteria
-- App runs without a real backend.
-- Widgets do not call API clients directly.
-- Repositories are override-friendly in tests.
+## Acceptance Criteria
+- The app must run without a real backend.
+- Widgets must not call API clients directly.
+- Repositories must be override-friendly in tests.
+- API contracts, a repository example, a starter fake, and failure mapping must be available.

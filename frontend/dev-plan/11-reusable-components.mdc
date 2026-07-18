@@ -1,30 +1,24 @@
-# 11 - Reusable components
+---
+description: Defines the minimal reusable and accessible UI component library.
+globs:
+  - "frontend/{lib/shared/**,test/shared/**}"
+alwaysApply: false
+---
 
-## Goal
-Build the minimal shared UI component library without creating unnecessary wrappers.
+# 11 - Reusable Components
+Build shared UI only where repeated behavior or styling justifies abstraction.
 
-## Applies app rules
-- [`components.mdc`](../.cursor/components.mdc)
-- [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc)
-- [`design-system.mdc`](../.cursor/design-system.mdc)
-- [`accessibility.md`](../.cursor/accessibility.mdc)
-- [`layouts.mdc`](../.cursor/layouts.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`components.mdc`](../.cursor/components.mdc), [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc), [`design-system.mdc`](../.cursor/design-system.mdc), [`accessibility.mdc`](../.cursor/accessibility.mdc), and [`layouts.mdc`](../.cursor/layouts.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create shared wrappers only where repeated styling or behavior exists.
-3. Implement minimal starter components: `AppButton`, `AppIconButton`, `AppTextField`, `AppDialog`, `AsyncStateScaffold`, and layout helpers.
-4. Add form/select/radio/checkbox/switch/date components only when the starter demonstrates or requires those controls.
-5. Base components on Flutter built-in widgets.
-6. Support loading, disabled, error, focus, hover, and accessibility states where relevant.
-7. Add widget tests for important components.
+## Implementation
+1. Implement `AppButton`, `AppIconButton`, `AppTextField`, `AppDialog`, `AsyncStateScaffold`, and required layout helpers using Flutter widgets.
+2. Form, select, radio, checkbox, switch, or date wrappers may be added only when demonstrated or required.
+3. Relevant components must support loading, disabled, error, focus, hover, and accessibility states.
+4. Add widget tests for important components.
+5. Duplicate components must not solve the same responsibility.
 
-## Expected output
-- Shared component files.
-- Component tests.
-- Optional small showcase only if useful for validation.
-
-## Acceptance criteria
-- No duplicate component solves the same responsibility.
-- Components are localized and theme-aware.
-- Components work with touch, mouse, keyboard, and screen readers.
+## Acceptance Criteria
+- Components must be localized and theme-aware.
+- Components must support touch, mouse, keyboard, and screen readers.
+- A small showcase may exist only when useful for validation.
