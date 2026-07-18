@@ -1,28 +1,28 @@
 ---
-alwaysApply: false
+description: Apply when implementing or reviewing app startup, bootstrap, and initialization order.
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
-description: >
-  Apply when implementing or reviewing app startup, bootstrap, and initialization order.
+alwaysApply: false
 ---
 
 # Startup Flow
 
-## Scope
 Defines how the app initializes configuration, storage, session, localization, theme, and the first route.
 
 ## Mandatory rules
-- Keep `main.dart` small.
-- Perform setup through `bootstrap.dart` and startup services.
-- Initialize Flutter bindings before platform or storage services.
-- Load environment configuration before creating API clients.
-- Restore theme and locale preferences before rendering the main app where practical.
-- Restore session state before allowing protected-route decisions.
-- Show a predictable startup/loading state when initialization is not complete.
-- Do not run network calls in widget `build` methods.
+
+- Must keep `main.dart` small and free of feature logic.
+- Must perform setup through `bootstrap.dart` and startup services.
+- Must initialize Flutter bindings before platform or storage services.
+- Must load environment configuration before creating API clients.
+- Should restore theme and locale preferences before rendering the main app where practical.
+- Must restore session state before allowing protected-route decisions.
+- Must show a predictable startup/loading state when initialization is incomplete.
+- Must not run network calls in widget `build` methods.
 
 ## Startup order
+
 1. Initialize bindings.
 2. Load environment configuration.
 3. Initialize logging.
@@ -33,12 +33,13 @@ Defines how the app initializes configuration, storage, session, localization, t
 8. Start `App` with router guards.
 
 ## Acceptance checklist
-- Cold start, warm start, and session-expired start all behave predictably.
-- Startup errors are shown with a localized recovery path.
-- `main.dart` remains readable and does not contain feature logic.
+
+- Cold start, warm start, and session-expired start behave predictably.
+- Startup errors show a localized recovery path.
+- `main.dart` remains readable.
 
 ## Related rules
+
 - [`environment_configuration.mdc`](./environment_configuration.mdc)
 - [`state_management.mdc`](./state_management.mdc)
-- [`authentication_session.mdc`](./authentication_session.mdc)
 - [`error_handling.mdc`](./error_handling.mdc)

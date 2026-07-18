@@ -1,79 +1,37 @@
 ---
-alwaysApply: false
+description: Realtime CRUD sync via post-commit events, scoped recipients, and human_friendly_id envelopes.
 globs:
   - "backend/**"
-description: >
-  Realtime CRUD sync: post-commit events, scoped recipients, human_friendly_id envelopes.
+alwaysApply: false
 ---
 # WebSocket Rules
 
-Purpose: define realtime transport and CRUD synchronization behavior.
+Define realtime transport and CRUD synchronization behavior.
 
 ## Architecture
+- Bootstrap lives in `src/websockets/*`; services own logic and emit events—gateways and controllers must not.
+- Use `@lib/websocket` helpers from the service layer only, after successful persistence.
+- Event constants live in `src/lib/websocket/events.js`; never hardcode event strings.
+- Scoped recipient resolution uses `@lib/realtime/recipients.js`.
 
-- WebSocket bootstrap lives in `src/websockets/*` (`server.js`, `gateway.js`).
-- Services own business logic and emit events; controllers and gateways must not embed domain rules.
-- Use `@lib/websocket` helpers (`publishDomainEvent`, `publishCrudRealtimeEvent`, `emitToUsers`) from the **service layer only**, after successful persistence.
-- Event constants live in `src/lib/websocket/events.js`; never hardcode event strings in modules.
-- Recipient resolution for scoped broadcasts uses `@lib/realtime/recipients.js` or repository wrappers that delegate to it.
+## CRUD sync contract
+Flow: `HTTP write -> service validates + persists -> audit log -> publish domain event -> scoped delivery`.
+- `createAuditLog` auto-emits realtime events for `CREATE`, `UPDATE`, `DELETE`; services calling it need no extra wiring.
+- Default event shape: `{entity}.{created|updated|deleted}`; override via `realtime_event`/`realtime_payload`, opt out via `realtime: false`.
+- Bespoke publishers must add the entity to `REALTIME_SKIP_ENTITIES` to avoid duplicate audit events.
 
-## CRUD synchronization contract
+## Rules
+- Publish after the transaction commits; delivery failure must not roll back persistence.
+- Payloads use `snake_case` fields and the shared domain envelope; never send raw Prisma entities.
+- `resource_id` and every entity reference must be `human_friendly_id`, never an internal primary key.
+- Keep payloads minimal (typed deltas) for high-performance fan-out.
+- Scope recipients by tenant, facility, role, and module entitlements—same boundaries as HTTP.
+- Name events `{domain}.{action}` (e.g. `patient.updated`).
+- Include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at`.
+- Tests must prove mutations emit the expected scoped event and that bespoke publishers skip audit emission.
 
-Every user-visible mutation path must follow:
-
-```txt
-HTTP write -> service validates + persists -> audit log -> publish domain event -> gateway delivers to scoped recipients
-```
-
-### Automatic module coverage
-
-`createAuditLog` invokes `@lib/realtime/audit-realtime.js` for `CREATE`, `UPDATE`, and `DELETE` audit actions. Any service that already calls `createAuditLog` on mutations participates in realtime sync without extra wiring.
-
-- Default event shape: `{entity}.{created|updated|deleted|canceled|rescheduled|activated|deactivated}`
-- Opt out per call: `realtime: false` in audit data only when the mutation cannot
-  affect any shared UI; document the reason at the call site
-- Override event: `realtime_event: 'custom.event'`
-- Override payload: `realtime_payload: { ... }`
-- Skip list for bespoke publishers: `@lib/realtime/config.js` (`REALTIME_SKIP_ENTITIES`)
-
-### Manual publishers
-
-Use `@lib/websocket` helpers (`publishDomainEvent`, `publishCrudRealtimeEvent`, `emitToUsers`) when a module needs richer payloads or non-CRUD workflow events. Add the entity to `REALTIME_SKIP_ENTITIES` to prevent duplicate audit-driven events.
-
-Rules:
-
-- Publish **after** the database transaction commits. Delivery failure must not roll back persistence.
-- Payloads use stable `snake_case` fields and the shared domain envelope from `publishDomainEvent`.
-- Do not send raw Prisma entities; emit DTO fields needed for UI refresh routing only.
-- `resource_id` in the domain envelope must be `human_friendly_id`, not an internal table primary key.
-- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
-- Publish after commit with minimal payload surface for high-performance fan-out; avoid full entity snapshots when a typed delta suffices.
-- Scope recipients by tenant, facility, role, and module entitlements — same boundaries as HTTP authorization.
-- Name events `{domain}.{action}` (e.g. `patient.updated`, `facility.layout_updated`).
-- Include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at`; every entity-reference value uses its `human_friendly_id`, even where the canonical envelope retains an `_id` field name.
-- Use `publishCrudRealtimeEvent` for standard create/update/delete broadcasts when a module does not need a bespoke payload shape.
-- Add tests proving user-visible mutations emit the expected scoped event after
-  persistence; bespoke publishers must also prove audit emission is skipped to
-  prevent duplicate events.
-
-## Connection rules
-
-- Clients authenticate before subscribing to privileged channels (JWT in connection query).
-- Gateway maintains `userId -> sockets` routing; supports multiple tabs per user.
-- Heartbeat/ping is mandatory; idle connections are closed per env configuration.
-- RBAC is enforced for sensitive **inbound** client events; outbound domain events are filtered by recipient resolution.
-
-## Valid realtime domains
-
-Clinical alerts, queue changes, roster publishing, biomedical work orders, mortuary custody, notifications, closeout progress, billing/payment state, facility layout (wards/rooms/beds), subscriptions/entitlements, and integration health.
-
-## Shutdown
-
-`src/server.js` must close websocket resources during graceful shutdown (see `architecture.mdc`).
-
-## See also
-
-- [`architecture.mdc`](./architecture.mdc)
-- [`module-creation.mdc`](./module-creation.mdc)
-- [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
-- [`frontend/.cursor/realtime_sync.mdc`](../../frontend/.cursor/realtime_sync.mdc)
+## Connection
+- Clients must authenticate (JWT) before subscribing to privileged channels.
+- Gateway maps `userId -> sockets` supporting multiple tabs; heartbeat is mandatory.
+- RBAC is enforced for sensitive inbound events; outbound events are recipient-filtered.
+- `src/server.js` must close websocket resources during graceful shutdown.

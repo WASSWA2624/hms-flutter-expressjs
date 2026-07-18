@@ -1,80 +1,47 @@
 ---
-alwaysApply: false
+description: Apply when designing or updating clinical or operational module workspace pages.
 globs:
   - "frontend/lib/features/**/presentation/**"
   - "frontend/lib/shared/components/**"
   - "frontend/lib/shared/layout/**"
-description: >
-  Apply when designing or updating clinical or operational module workspace pages.
+alwaysApply: false
 ---
+
 # Module Workspace UI Contract
 
-Purpose: keep clinical and operational module screens visually and behaviorally consistent.
-
-**Scope:** applies to **new** screens and **material** changes to existing workspace pages. Legacy large pages may be refactored incrementally; do not block urgent fixes on full extraction.
+Keep clinical and operational module screens visually and behaviorally consistent. Applies to new screens and material changes; legacy pages may be refactored incrementally.
 
 ## Mandatory layout stack
 
-Module work queues (OPD, IPD, Lab, Billing, Nursing, etc.) must use this stack unless the interaction model is fundamentally different (e.g. auth, simple settings):
+Module work queues (OPD, IPD, Lab, Billing, Nursing) must use this stack unless the interaction model is fundamentally different:
 
-| Layer | Shared widget | Responsibility |
-|---|---|---|
-| Page root | `AsyncStateScaffold` | loading, error, retry ([`ui-feedback.mdc`](./ui-feedback.mdc)) |
-| Page width | `ResponsivePage` + `PageMaxWidth` | padding and max width ([`layouts.mdc`](./layouts.mdc)) |
-| Workspace shell | `AppWorkspace` | title, worklist, detail, status tone; queue counts via toolbar notifications submenu |
-| Worklist | `AppListTable` | columns, pagination, mobile list fallback, selection |
-| Detail | `AppWorkspaceDetailPanel` | selected item sections |
-| Actions | `AppActionPanel` / `AppActionList` | primary actions grouped by role/state |
-| Mutations | `AppDialog`, `AppWorkspaceMutationDialog` | focused forms; not full-page for small edits |
+- Page root: `AsyncStateScaffold`
+- Page width: `ResponsivePage` + `PageMaxWidth`
+- Workspace shell: `AppWorkspace`
+- Worklist: `AppListTable`
+- Detail: `AppWorkspaceDetailPanel`
+- Actions: `AppActionPanel` / `AppActionList`
+- Mutations: `AppDialog` / `AppWorkspaceMutationDialog`
 
-Import from `package:hosspi_hms/shared/layout/layout.dart`, `shared/components/components.dart`, and `shared/actions/actions.dart` before adding feature-local equivalents.
+Must import from `shared/layout`, `shared/components`, and `shared/actions` before adding feature-local equivalents.
 
-## Mandatory behavior (aligned with OPD/IPD flows)
+## Mandatory behavior
 
-- **Notifications submenu (More actions) filters** the current worklist — it must not open modal lists of the same data.
-- **Hide zero-value notification rows** when the workspace pattern expects it.
-- **Hospital workflow language** in labels — never expose raw enum names, API stage codes, or internal IDs to users.
-- **Entity references** — surface `human_friendly_id` (and patient display name where applicable). Backend maps internal IDs; never show raw table IDs or UUIDs in production UI, URLs, or client-held identifiers.
-- **Role + state + subscription gating** — show actions only when backend stage, user permission, and subscription entitlement all allow; disable with tooltip when helpful.
-- **Performance and simplicity** — keep worklists paginated/lazy; minimize steps for common queue actions; preserve uniform spacing, tokens, and component usage across modules.
-- **Responsiveness** — workspace shell must adapt across mobile, tablet, and desktop per [`layouts.mdc`](./layouts.mdc).
-- **Row refresh** — after small modal mutations, refresh the affected row, detail panel, summary counts, and nav badges; avoid full-page reload when the controller supports targeted refresh.
-- **Realtime** — subscribe to the module's `RealtimeEventGroups` where the feature already defines one.
+- Notifications submenu must filter the current worklist, not open modal lists; hide zero-value rows where expected.
+- Must use hospital workflow language; never expose raw enum names, stage codes, or internal IDs.
+- Must surface `human_friendly_id` and patient display name; never raw table IDs or UUIDs.
+- Must gate actions by backend stage, permission, and subscription entitlement.
+- Must keep worklists paginated/lazy and the shell responsive across mobile, tablet, desktop.
+- After modal mutations, must refresh the affected row, detail, counts, and nav badges via targeted refresh.
+- Must subscribe to the module's `RealtimeEventGroups` where defined.
 
 ## Forbidden patterns
 
-- Custom full-page `Scaffold` + hand-rolled table for a module that fits the workspace contract.
-- Duplicate status chips (one clearance state is enough; do not stack redundant badges).
-- Private feature string classes (`_BillingText`, `_IcuText`, etc.) — use `app_en.arb` ([`localization_i18n.mdc`](./localization_i18n.mdc)).
-- Hard-coded colors, spacing, or `TextStyle` in feature presentation code ([`design-system.mdc`](./design-system.mdc)).
-- Inline `SnackBar` success copy that bypasses localization.
-- Creating a new table/list component when `AppListTable` satisfies the need.
-
-## File organization
-
-| File | Max guidance | Owns |
-|---|---|---|
-| `*_workspace_page.dart` | prefer `< 800` lines | composition, wiring |
-| `presentation/widgets/` | extract when page grows | notification builders, detail sections, dialogs |
-| `*_workspace_controller.dart` | — | mutations, filters, selection |
-
-When a workspace page exceeds ~800 lines, extract widgets before adding more inline UI.
-
-## Reusability
-
-- All components suitable for reuse across modules **must** be implemented as reusable components and stored under `frontend/lib/shared/` — never duplicate workspace patterns in feature folders.
-- Check the shared component catalog before creating new UI elements; one implementation per interaction pattern.
-
-## Before adding UI (checklist)
-
-1. Search `frontend/lib/shared/` for an existing component or pattern.
-2. Open a reference module with the same shape (e.g. Lab, Billing, IPD) and match its structure.
-3. Add `app_en.arb` keys before user-facing strings.
-4. Confirm permissions via `AccessGate` / `AppAccessActionGate`.
+- Custom full-page `Scaffold` + hand-rolled table when the workspace contract fits.
+- Duplicate status chips; private feature string classes; hard-coded colors, spacing, or `TextStyle`; unlocalized `SnackBar` copy.
 
 ## See also
 
-- [`.cursor/flows/opd-flow.mdc`](../../.cursor/flows/opd-flow.mdc) §6 UI rules
-- [`ui-patterns.mdc`](./ui-patterns.mdc) — forms, tables, search
-- [`components.mdc`](./components.mdc) — shared catalog
-- [`permissions.mdc`](./permissions.mdc) — action visibility
+- [`ui-patterns.mdc`](./ui-patterns.mdc)
+- [`components.mdc`](./components.mdc)
+- [`permissions.mdc`](./permissions.mdc)

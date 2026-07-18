@@ -1,44 +1,43 @@
 ---
-alwaysApply: false
+description: Define entities, DTOs, value objects, mappers, and UI state models.
 globs:
   - "frontend/lib/**"
-description: >
-  Apply when creating or reviewing entities, DTOs, mappers, and UI state models.
+alwaysApply: false
 ---
 
 # Data Modeling Strategy
 
-## Scope
-Defines entities, DTOs, value objects, mappers, and database models.
+Rules for entities, DTOs, value objects, mappers, and database models.
 
-## Mandatory rules
-- Do not pass API DTOs directly into domain logic.
-- Do not make UI depend on raw JSON.
-- Do not use database table classes as UI state.
+## Requirements
+
+- Must not pass API DTOs into domain logic or make UI depend on raw JSON.
+- Must not use database table classes as UI state.
 - Use immutable models for app state and domain entities.
 - Keep mappers explicit and testable.
 - Use value objects for important constrained values.
-- Keep DTOs shaped around external API contracts (`snake_case` JSON per [api-contract](../../.cursor/api-contract.mdc)).
-- Keep entities shaped around business meaning.
-- Keep presentation-only formatting out of domain entities.
-- Entities and presentation models expose `human_friendly_id` for identity. Map from API `human_friendly_id`; never propagate raw table IDs to UI or domain contracts.
+- Shape DTOs around external API contracts (`snake_case` JSON per [api-contract](../../.cursor/api-contract.mdc)).
+- Shape entities around business meaning; keep presentation-only formatting out of entities.
+- Entities and presentation models expose `human_friendly_id`; never propagate raw table IDs to UI or domain contracts.
 
 ## Model types
+
 | Type | Location | Purpose |
 |---|---|---|
 | Entity | `domain/entities` | business meaning |
-| Value object | `domain/entities` or `domain/value_objects` | validated/constrained values |
+| Value object | `domain/value_objects` | validated values |
 | DTO | `data/dtos` | API request/response shape |
-| Database model | `data/datasources/local` or core database | local persistence shape |
+| Database model | `data/datasources/local` | local persistence shape |
 | View state | `presentation/state` | UI-ready state |
 
-## Acceptance checklist
+## Acceptance
+
 - DTO-to-entity mapping is explicit.
 - Invalid external data cannot silently become valid domain state.
 - Tests cover important mappers and value objects.
 
-## Related rules
+## Related
+
 - [`architecture.mdc`](./architecture.mdc)
 - [`code_generation.mdc`](./code_generation.mdc)
-- [`validation.mdc`](./validation.mdc)
 - [`database_strategy.mdc`](./database_strategy.mdc)

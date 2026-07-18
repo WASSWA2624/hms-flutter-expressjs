@@ -1,18 +1,17 @@
 ---
-alwaysApply: false
+description: CORS configuration for explicit origins, credentials safety, and deterministic preflight.
 globs:
   - "backend/**"
-description: >
-  CORS configuration for explicit origins, credentials safety, and deterministic preflight.
+alwaysApply: false
 ---
 # CORS Rules
 
-Purpose: control browser origin access safely.
+Control browser origin access safely.
 
-Rules:
-- allowed origins are explicit and environment-driven
-- wildcard origins may not be combined with credentials
-- staff and public origins may be separated when risk profiles differ
-- only required headers and methods are exposed
-- preflight behavior must be deterministic and documented
-- CORS failures must not leak sensitive configuration
+## Requirements
+- Allowed origins must be explicit and environment-driven.
+- Wildcard origins must not be combined with credentials.
+- Staff and public origins may be separated when risk profiles differ.
+- Only required headers and methods may be exposed.
+- Preflight behavior must be deterministic and documented.
+- CORS failures must not leak sensitive configuration.

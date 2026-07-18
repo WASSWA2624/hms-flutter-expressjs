@@ -1,27 +1,26 @@
 ---
-alwaysApply: false
+description: Apply when implementing logging, diagnostics, or analytics in the frontend.
 globs:
   - "frontend/lib/core/observability/**"
   - "frontend/lib/shared/logging/**"
-description: >
-  Apply when implementing logging, diagnostics, or analytics in the HOSSPI HMS frontend.
+alwaysApply: false
 ---
 
 # Observability Strategy
 
-## Scope
 Defines logging, diagnostics, analytics readiness, and privacy constraints.
 
 ## Mandatory rules
-- Keep logs structured enough to diagnose issues.
-- Do not log secrets, tokens, passwords, sensitive payloads, or private user data.
-- Use environment-based log levels.
-- Disable verbose logs in production builds.
-- Capture startup, auth, API, sync, and storage failures with safe context.
-- Keep analytics optional and app-specific; do not force a vendor into the base template.
-- Add breadcrumbs or context only when they do not expose sensitive information.
+
+- Logs must be structured enough to diagnose issues.
+- Must not log secrets, tokens, passwords, sensitive payloads, or private user data.
+- Must use environment-based log levels and disable verbose logs in production builds.
+- Must capture startup, auth, API, sync, and storage failures with safe context.
+- Analytics should stay optional and app-specific; must not force a vendor into the base template.
+- Breadcrumbs or context may be added only when they do not expose sensitive information.
 
 ## Log levels
+
 | Level | Use |
 |---|---|
 | debug | development-only details |
@@ -30,11 +29,13 @@ Defines logging, diagnostics, analytics readiness, and privacy constraints.
 | error | failed operation requiring attention |
 
 ## Acceptance checklist
+
 - Production logs are safe.
-- Failure diagnostics help developers reproduce issues without exposing private data.
+- Failure diagnostics help reproduce issues without exposing private data.
 - Logging can be disabled or adjusted per environment.
 
 ## Related rules
+
 - [`security.mdc`](./security.mdc)
 - [`error_handling.mdc`](./error_handling.mdc)
 - [`environment_configuration.mdc`](./environment_configuration.mdc)

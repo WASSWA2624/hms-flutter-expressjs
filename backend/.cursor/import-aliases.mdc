@@ -1,15 +1,15 @@
 ---
-alwaysApply: false
+description: Backend import aliases, cross-folder boundaries, and circular dependency rules.
 globs:
   - "backend/**"
-description: >
-  Backend import aliases, cross-folder boundaries, and circular dependency rules.
+alwaysApply: false
 ---
 # Import Alias Rules
 
-Purpose: keep imports stable and prevent boundary drift.
+Keep imports stable and prevent boundary drift.
 
-Root aliases from `jsconfig.json`:
+## Root aliases
+From `jsconfig.json`:
 - `@app/* -> src/app/*`
 - `@lib/* -> src/lib/*`
 - `@middlewares/* -> src/middlewares/*`
@@ -19,17 +19,12 @@ Root aliases from `jsconfig.json`:
 - `@websockets/* -> src/websockets/*`
 - `@modules/* -> src/modules/*`
 
-Runtime module aliases:
-- `@controllers/<module>`
-- `@services/<module>`
-- `@repositories/<module>`
-- `@validations/<module>`
-- `@routes/<module>`
+## Module aliases
+- `@controllers/<module>`, `@services/<module>`, `@repositories/<module>`, `@validations/<module>`, `@routes/<module>`
 
-Import rules:
-- use aliases for cross-folder imports
-- relative imports may stay inside the same folder tree only
-- modules may import another module only through public service or shared-lib entrypoints
-- controllers and repositories are never imported across modules
-- alias changes require synchronized updates to runtime alias registration and docs
-- imports must not create circular dependency chains
+## Requirements
+- Use aliases for cross-folder imports; relative imports stay within the same folder tree only.
+- Modules may import another module only through public service or shared-lib entrypoints.
+- Controllers and repositories must never be imported across modules.
+- Alias changes require synchronized updates to runtime alias registration and docs.
+- Imports must not create circular dependency chains.

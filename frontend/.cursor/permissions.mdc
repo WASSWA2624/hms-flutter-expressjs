@@ -1,41 +1,37 @@
 ---
-alwaysApply: false
+description: Apply when implementing frontend RBAC, ABAC, subscription entitlements, or guards.
 globs:
   - "frontend/lib/core/permissions/**"
   - "frontend/lib/app/router/**"
   - "frontend/lib/features/**"
-description: >
-  Apply when implementing frontend RBAC, ABAC, subscription entitlements, or guards.
+alwaysApply: false
 ---
+
 # Permissions and Authorization
 
-Purpose: frontend RBAC, ABAC, entitlements, and platform permissions — aligned with `backend/.cursor/auth-security.mdc` and [`.cursor/access/`](../../.cursor/access/).
+Frontend RBAC, ABAC, entitlements, and platform permissions — aligned with `backend/.cursor/auth-security.mdc` and [`.cursor/access/`](../../.cursor/access/).
 
 ## Backend source of truth
 
 - `user_role` is the role-assignment source of truth; users may hold multiple active scoped roles and module assignments.
 - RBAC grants baseline permissions; ABAC narrows by tenant, facility, scope, ownership, shift, patient relationship, and emergency state.
-- Subscription package is the hard gate; frontend must mirror entitlement keys in route guards and action visibility.
-- Break-glass access is explicit, time-limited, and audited.
-- Management roles: `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, `THEATRE_MANAGER` with scoped roster authority.
-- Sensitive workflows (patient, billing, payroll, mortuary release, security admin) require full audit evidence on the backend.
+- Subscription package is the hard gate; break-glass access is explicit, time-limited, and audited.
 
 ## Frontend rules
 
-- **Source of truth:** shipped defaults live in [`.cursor/access/modules.mdc`](../../.cursor/access/modules.mdc), [`.cursor/access/permissions.mdc`](../../.cursor/access/permissions.mdc), [`.cursor/access/subscriptions.mdc`](../../.cursor/access/subscriptions.mdc), and [`.cursor/access/default_user_roles.mdc`](../../.cursor/access/default_user_roles.mdc). Authorized admins may customize; all changes must be versioned and auditable; shipped defaults must be restorable atomically.
-- **Authority order (strict):** active **subscription package** → assigned **roles/modules** → **permissions** → tenant/facility ABAC scope.
-- Users may hold **multiple roles and modules**; effective permissions = union(role/module/user grants) ∩ active subscription package ∩ assigned modules ∩ ABAC scope. No grant may unlock excluded modules, menus, routes, actions, or workflows.
-- `AppAccessPolicy.grants` (and route/action gates) must enforce the effective-permission formula before rendering or enabling UI.
-- **RBAC + ABAC (strict):** hide/disable menus, components, actions, and workflows unauthorized users cannot access; backend authorization remains mandatory — hidden UI is not sufficient alone.
-- Separate platform permissions (camera, etc.) from app authorization.
-- Protect restricted routes via guards ([`navigation.mdc`](./navigation.mdc)).
-- Map `403` to localized forbidden state ([`ui-feedback.mdc`](./ui-feedback.mdc)).
-- Represent permissions as typed values; centralize checks in providers/guards (`AccessGate`, `AppAccessActionGate`).
-- Assignable rights stay within actor ceiling **and** tenant subscription module set (`PermissionModuleMap` / backend `permission-module-map`).
+- Shipped defaults live in [`.cursor/access/`](../../.cursor/access/); admin changes must be versioned, auditable, and atomically restorable.
+- Authority order (strict): active **subscription package** → assigned **roles/modules** → **permissions** → tenant/facility ABAC scope.
+- Effective permissions = union(role/module/user grants) ∩ subscription package ∩ assigned modules ∩ ABAC scope. No grant may unlock excluded modules, menus, routes, actions, or workflows.
+- `AppAccessPolicy.grants` and route/action gates must enforce this formula before rendering or enabling UI.
+- Must hide/disable menus, components, actions, and workflows unauthorized users cannot access; backend authorization remains mandatory.
+- Must separate platform permissions (camera, etc.) from app authorization.
+- Must protect restricted routes via guards ([`navigation.mdc`](./navigation.mdc)).
+- Must map `403` to a localized forbidden state ([`ui-feedback.mdc`](./ui-feedback.mdc)).
+- Permissions must be typed; centralize checks in providers/guards (`AccessGate`, `AppAccessActionGate`).
+- Assignable rights must stay within actor ceiling and tenant subscription module set.
 
 ## See also
 
 - [`authentication_session.mdc`](./authentication_session.mdc)
 - [`security.mdc`](./security.mdc)
 - [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
-- [`backend/.cursor/auth-security.mdc`](../../backend/.cursor/auth-security.mdc)

@@ -5,40 +5,41 @@ globs:
   - "backend/src/modules/ipd-flow/**"
 alwaysApply: false
 ---
+
 # IPD Patient Flow
 
-## Purpose
-IPD owns the inpatient admission record, ward movement, service routing, and discharge readiness. Keep every inpatient action attached to one admission and treat overlays as extensions of that record.
+IPD owns the inpatient admission record, ward movement, service routing, and discharge readiness; keep every inpatient action attached to one admission and treat overlays as extensions of that record.
 
 ## Stage Sequence
+
 - `ADMITTED_PENDING_BED`: admission exists, bed not assigned.
-- `ADMITTED_IN_BED`: patient is admitted and assigned to a ward bed.
-- `TRANSFER_REQUESTED` / `TRANSFER_IN_PROGRESS`: internal move is pending or underway.
-- `DISCHARGE_PLANNED`: discharge work has started.
-- `DISCHARGED`: encounter is complete.
-- ICU and theater overlays may appear during the same admission, but they must not create parallel records.
+- `ADMITTED_IN_BED`: patient admitted to a ward bed.
+- `TRANSFER_REQUESTED` / `TRANSFER_IN_PROGRESS`: internal move pending or underway.
+- `DISCHARGE_PLANNED`: discharge work started.
+- `DISCHARGED`: encounter complete.
+- ICU and theater overlays may appear but must not create parallel records.
 
 ## Handoffs
-- Admission desk owns registration, source verification, and bed request coordination.
+
+- Admission desk owns registration, source verification, and bed requests.
 - Bed manager owns allocation, transfer completion, and bed release.
-- Ward nurse owns admission receive, observations, and nursing clearance support.
-- Doctor owns assessment, orders, transfer decisions, and discharge planning.
-- Billing and pharmacy own clearance checks only; they must not advance clinical stages.
+- Ward nurse owns admission receive, observations, and clearance support.
+- Doctor owns assessment, orders, transfers, and discharge planning.
+- Billing and pharmacy own clearance checks only and must not advance clinical stages.
 
 ## Hard Invariants
+
 - Must keep the IPD encounter as the central inpatient record.
 - Must not duplicate OPD, emergency, ICU, or theater encounters.
-- Must not mark discharge complete until clearance steps finish.
-- Must not hide pending results, open alerts, or transfer state from the admission view.
+- Must not mark discharge complete until clearance finishes.
+- Must not hide pending results, alerts, or transfer state from the admission view.
 
 ## Allowed Critical Actions
-- Start ICU stay only when the admission is eligible and the ICU bed is assigned.
-- Use `clinical_actions` for inpatient orders so lab, radiology, and pharmacy receive one source of truth.
-- Show discharge readiness early, but keep billing, pharmacy, and nursing clearance separate.
+
+- Start ICU stay only when the admission is eligible and an ICU bed is assigned.
+- Use `clinical_actions` so lab, radiology, and pharmacy share one source of truth.
+- Show discharge readiness early, but keep clearance steps separate.
 
 ## Related
-- `opd-flow.mdc`
-- `emergency-flow.mdc`
-- `icu-flow.mdc`
-- `theater-flow.mdc`
-- `discharge-flow.mdc`
+
+- `opd-flow.mdc`, `emergency-flow.mdc`, `icu-flow.mdc`, `theater-flow.mdc`, `discharge-flow.mdc`

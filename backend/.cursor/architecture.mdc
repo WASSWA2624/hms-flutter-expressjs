@@ -1,44 +1,35 @@
 ---
-alwaysApply: false
+description: Backend layer boundaries, module isolation, entitlements, and runtime lifecycle rules.
 globs:
   - "backend/**"
-description: >
-  Backend layer boundaries, module isolation, entitlements, and runtime lifecycle rules.
+alwaysApply: false
 ---
 # Architecture Rules
 
-Purpose: define the required backend architecture.
+Define the required backend architecture and layer boundaries.
 
-Runtime and framework:
-- Node.js runtime only.
-- Express.js owns HTTP transport.
-- CommonJS module syntax only.
-- Long-running work runs in documented worker or async job paths, not in request threads.
+## Runtime
+- Node.js and CommonJS only; Express.js owns HTTP transport.
+- Long-running work must run in worker or async job paths, not request threads.
 
-Layer order:
-`route -> controller -> service -> repository -> prisma`
+## Layers
+Order: `route -> controller -> service -> repository -> prisma`.
+- Routes map URLs and middleware only.
+- Controllers translate HTTP to service calls and response helpers only.
+- Services own business logic, authorization, workflow orchestration, audit, and cross-module coordination.
+- Repositories own all Prisma access; elsewhere it is forbidden except `prisma.$transaction(...)`.
+- Emitted DTOs must expose `human_friendly_id` only; internal IDs never cross the HTTP or websocket boundary.
+- Subscription, role, module, and ABAC checks run in middleware and re-validate in services for sensitive workflows.
 
-Layer rules:
-- routes map URLs and middleware only
-- controllers translate HTTP to service calls and response helpers only
-- services own business logic, authorization decisions, workflow orchestration, audit calls, and cross-module coordination
-- repositories own Prisma access and query composition only
-- Prisma model access outside repositories is forbidden, except transaction orchestration through `prisma.$transaction(...)`
-- controllers and response helpers emit DTOs with `human_friendly_id` only; internal IDs never cross the HTTP or websocket boundary
-- subscription, role, module, and ABAC checks run in middleware and are re-validated in services for sensitive workflows
+## Modules
+- One domain capability per module, with standalone workflows and explicit integration points.
+- Services may depend on other services or shared libs, never on another module's controller or repository.
 
-Module rules:
-- one domain capability per module
-- modules expose standalone workflows and explicit integration points
-- services may depend on other services or shared libs, never on another module's controller or repository
-- module entitlement checks must exist in both middleware and service layers for sensitive workflows
+## Dependencies
+- Dependency direction must move downward through the layer stack.
+- Shared helpers live in `src/lib/*` only when stateless and reused across modules.
+- Circular imports, reverse imports, and hidden side effects are defects.
 
-Dependency rules:
-- dependency direction must always move downward through the layer stack
-- shared helpers live in `src/lib/*` only when they are stateless and reused by multiple modules
-- circular imports, reverse imports, and hidden side effects are defects
-
-Lifecycle rules:
-- `src/server.js` owns startup and graceful shutdown
-- shutdown must close HTTP, Prisma, storage, and websocket resources cleanly
-- startup diagnostics may fail fast when mandatory dependencies are unavailable
+## Lifecycle
+- `src/server.js` owns startup and graceful shutdown, closing HTTP, Prisma, storage, and websocket resources.
+- Startup diagnostics may fail fast when mandatory dependencies are unavailable.

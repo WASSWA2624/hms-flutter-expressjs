@@ -6,41 +6,41 @@ globs:
   - "backend/src/modules/icu-stay/**"
 alwaysApply: false
 ---
+
 # ICU Patient Flow
 
-## Purpose
-ICU is a critical-care overlay on the IPD admission, not a separate admission system. Keep ICU work focused on the stay, alerts, observations, rounds, and step-down decisions.
+ICU is a critical-care overlay on the IPD admission, not a separate admission system; keep ICU work focused on the stay, alerts, observations, rounds, and step-down decisions.
 
 ## Stage Sequence
+
 - Eligible patient identified from ward, emergency, OPD, or theater.
-- ICU bed assigned or reserved.
-- ICU stay opened on the IPD admission.
+- ICU bed assigned or reserved and the ICU stay opened on the IPD admission.
 - Nursing receive, baseline assessment, and intensive monitoring.
 - Critical alerts raised, acknowledged, and resolved.
 - Intensivist rounds and inpatient orders continue.
-- Step-down or ICU bed transfer completed.
-- ICU stay ends while the IPD admission remains open.
+- Step-down or ICU bed transfer completed; stay ends while the IPD admission remains open.
 
 ## Handoffs
+
 - Bed manager and ICU charge nurse own ICU bed placement.
 - ICU nurse owns observations, vitals, alerts, and handover support.
-- Intensivist or doctor owns ICU round notes, treatment changes, and step-down readiness.
+- Intensivist or doctor owns round notes, treatment changes, and step-down readiness.
 - IPD and Discharge own the broader admission and final closure.
 
 ## Hard Invariants
+
 - Must attach every ICU record to the same IPD admission.
 - Must not duplicate the admission lifecycle in ICU.
-- Must not show “patient discharged” until IPD discharge is complete.
+- Must not show "patient discharged" until IPD discharge is complete.
 - Must not let billing or cashier workflows drive ICU clinical actions.
 
 ## Allowed Critical Actions
+
 - Start ICU stay only for eligible admissions with an ICU bed or completed escalation.
 - Resolve critical alerts before lower-priority work.
 - Use the IPD encounter for all orders and timeline updates.
 - End ICU stay after step-down, not before.
 
 ## Related
-- `ipd-flow.mdc`
-- `emergency-flow.mdc`
-- `nursing-flow.mdc`
-- `discharge-flow.mdc`
+
+- `ipd-flow.mdc`, `emergency-flow.mdc`, `nursing-flow.mdc`, `discharge-flow.mdc`

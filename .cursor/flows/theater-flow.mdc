@@ -5,41 +5,42 @@ globs:
   - "backend/src/modules/theatre-flow/**"
 alwaysApply: false
 ---
+
 # Theater Patient Flow
 
-## Purpose
-Theater owns the surgical episode overlay on the IPD or linked emergency/OPD context. Keep the case board, checklist, anesthesia, intra-op record, and post-op handoff tied to the same admission.
+Theater owns the surgical episode overlay on the IPD or linked emergency/OPD context; keep the case board, checklist, anesthesia, intra-op record, and post-op handoff tied to the same admission.
 
 ## Stage Sequence
+
 - Surgery case indicated from IPD, OPD plan, or emergency disposition.
 - Case scheduled with room, team, and source context.
 - Pre-op checks and billing gate completed when required.
 - Transfer to OT and `In Procedure / OT` recorded in IPD.
 - `SIGN_IN`, `TIME_OUT`, intra-op, and `SIGN_OUT` completed.
-- Post-op or PACU handoff recorded.
-- Return to ward, ICU, or outpatient follow-up chosen.
+- Post-op or PACU handoff recorded; return to ward, ICU, or follow-up chosen.
 - Case closed after required records finish.
 
 ## Handoffs
+
 - Theater coordinator owns scheduling and resource assignment.
 - Surgeon, anesthetist, and theater nurse own operative safety and documentation.
 - IPD owns admission lifecycle before and after the case.
 - ICU and Nursing own the receiving handoff after post-op transfer.
 
 ## Hard Invariants
+
 - Must not create a parallel admission record.
 - Must not skip required checklist phases for closure.
 - Must not own ICU stay lifecycle or ward medication administration.
 - Must keep post-op orders on the IPD encounter.
 
 ## Allowed Critical Actions
+
 - Start or update the case only when the linked encounter and team are valid.
 - Gate high-cost procedures on pre-auth or deposit when policy requires it.
 - Use shared clinical actions for post-op medication and lab orders.
 - Treat case closing as separate from IPD discharge.
 
 ## Related
-- `ipd-flow.mdc`
-- `icu-flow.mdc`
-- `nursing-flow.mdc`
-- `emergency-flow.mdc`
+
+- `ipd-flow.mdc`, `icu-flow.mdc`, `nursing-flow.mdc`, `emergency-flow.mdc`

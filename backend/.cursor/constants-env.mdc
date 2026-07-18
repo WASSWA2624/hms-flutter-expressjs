@@ -1,18 +1,17 @@
 ---
-alwaysApply: false
+description: Centralized environment validation, secret handling, and config-driven feature flags.
 globs:
   - "backend/**"
-description: >
-  Centralized env validation, secret handling, and config-driven feature flags.
+alwaysApply: false
 ---
 # Constants And Environment Rules
 
-Purpose: centralize runtime configuration.
+Centralize runtime configuration.
 
-Rules:
-- `src/config/env.js` is the only place that reads raw environment variables
-- all required environment variables are validated at startup
-- secret values must not have silent fallbacks
-- non-secret runtime constants belong in config modules, not scattered literals
-- environment variable names use `UPPER_SNAKE_CASE`
-- feature flags and provider selection are config-driven
+## Requirements
+- `src/config/env.js` must be the only place that reads raw environment variables.
+- All required environment variables must be validated at startup.
+- Secret values must not have silent fallbacks.
+- Non-secret runtime constants must live in config modules, not scattered literals.
+- Environment variable names use `UPPER_SNAKE_CASE`.
+- Feature flags and provider selection must be config-driven.

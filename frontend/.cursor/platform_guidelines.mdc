@@ -1,26 +1,26 @@
 ---
-alwaysApply: false
+description: Apply when reviewing platform-specific behavior for enabled Flutter targets.
 globs:
   - "frontend/lib/**"
-description: >
-  Apply when reviewing platform-specific behavior for enabled Flutter targets.
+alwaysApply: false
 ---
+
 # Platform Guidelines
 
-Purpose: per-platform behavior for HOSSPI HMS on all enabled Flutter targets.
+Per-platform behavior for HOSSPI HMS on all enabled Flutter targets.
 
 ## Mandatory rules
 
-- Support Android, iOS, Web, Windows, macOS, Linux where enabled.
-- Platform checks only at infrastructure boundaries, not throughout feature UI.
-- Web: URLs, refresh, keyboard/pointer, storage limits.
-- Desktop: resizable windows, menu bar, side nav, shortcuts, hover.
-- Mobile: touch, safe areas, keyboard insets, back behavior.
-- Smartwatch layouts out of scope.
+- Must support Android, iOS, Web, Windows, macOS, and Linux where enabled.
+- Platform checks must live only at infrastructure boundaries, not throughout feature UI.
+- Web: must handle URLs, refresh, keyboard/pointer, and storage limits.
+- Desktop: must support resizable windows, menu bar, side nav, shortcuts, and hover.
+- Mobile: must handle touch, safe areas, keyboard insets, and back behavior.
+- Smartwatch layouts are out of scope.
 
 ## Build hosts
 
-- iOS/macOS builds require macOS host with Apple tooling.
+- iOS/macOS builds require a macOS host with Apple tooling.
 - Windows/Linux builds require matching host tooling.
 - CI may split platform builds across OS images.
 

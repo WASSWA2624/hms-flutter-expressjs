@@ -1,29 +1,28 @@
 ---
-alwaysApply: false
+description: Apply when implementing HTTP clients, API data models, interceptors, or network error handling.
 globs:
   - "frontend/lib/core/network/**"
   - "frontend/lib/features/**/data/**"
-description: >
-  Apply when implementing or reviewing HTTP clients, API data models, interceptors, or network error handling in the HOSSPI HMS frontend.
+alwaysApply: false
 ---
+
 # Network and API
 
-Purpose: HTTP access against `hms-backend` per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
+HTTP access against `hms-backend` per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
 
 ## Mandatory rules
 
-- Repository contracts in domain layer; no HTTP from UI.
-- Use `dio` for clients and interceptors.
-- DTOs in data layer with `snake_case` JSON mapping.
-- Map API errors to app failures before UI.
-- Apply request timeouts; support cancellation for stale requests.
-- No logging of tokens, passwords, or sensitive payloads.
-- Handle `401` through session manager.
-- Environment-driven base URLs and timeouts.
-- HTTP owns CRUD mutations; WebSocket listeners refresh UI after server broadcasts (see [`realtime_sync.mdc`](./realtime_sync.mdc)).
-- DTOs and API paths exposed to presentation use `human_friendly_id` (or domain aliases like `displayId` mapped from it). Do not surface raw database primary keys in API responses consumed by the frontend.
-- Repositories map `human_friendly_id` on the wire; internal IDs stay in backend/data layer only.
-- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
+- Repository contracts must live in the domain layer; no HTTP from UI.
+- Must use `dio` for clients and interceptors.
+- DTOs must live in the data layer with `snake_case` JSON mapping.
+- Must map API errors to app failures before UI.
+- Must apply request timeouts and support cancellation for stale requests.
+- Must not log tokens, passwords, or sensitive payloads.
+- Must handle `401` through the session manager.
+- Base URLs and timeouts must be environment-driven.
+- HTTP owns CRUD mutations; WebSocket listeners refresh UI after server broadcasts ([`realtime_sync.mdc`](./realtime_sync.mdc)).
+- DTOs and API paths exposed to presentation must use `human_friendly_id` (or domain aliases like `displayId`); must not surface raw database primary keys.
+- Repositories map `human_friendly_id` on the wire; internal IDs stay in the data/backend layer only.
 
 ## Client layout
 

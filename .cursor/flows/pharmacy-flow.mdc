@@ -5,12 +5,13 @@ globs:
   - "backend/src/modules/pharmacy-workspace/**"
 alwaysApply: false
 ---
+
 # Pharmacy Patient Flow
 
-## Purpose
-Pharmacy owns encounter-linked dispensing, returns, stock visibility, and take-home medicines. Keep dispensing separate from prescribing and from ward MAR administration.
+Pharmacy owns encounter-linked dispensing, returns, stock visibility, and take-home medicines; keep dispensing separate from prescribing and from ward MAR administration.
 
 ## Stage Sequence
+
 - Order received from OPD, IPD, or discharge planning.
 - Billing gate checked when required.
 - Medicine prepared, verified, and attested.
@@ -19,25 +20,26 @@ Pharmacy owns encounter-linked dispensing, returns, stock visibility, and take-h
 - Discharge medicines prepared for exit clearance.
 
 ## Handoffs
+
 - Doctor or clinical user owns prescription creation.
 - Pharmacist owns dispense, attest, and returns.
 - Nurse owns ward administration recording on IPD.
 - Discharge flow owns final clearance for take-home medicines.
 
 ## Hard Invariants
+
 - Must not create encounters or change OPD/IPD stages directly.
 - Must not duplicate MAR administration in pharmacy.
 - Must keep every dispense tied to the source encounter.
 - Must not mix outpatient, inpatient, and discharge-pending queues.
 
 ## Allowed Critical Actions
+
 - Use the pharmacy workbench as the canonical dispensing workspace.
-- Support pay-now or bill-later at order time when policy requires it.
+- May support pay-now or bill-later at order time when policy requires it.
 - Surface returns with a reason and keep stock visibility accurate.
 - Prioritize discharge medicines so final clearance stays unblocked.
 
 ## Related
-- `opd-flow.mdc`
-- `ipd-flow.mdc`
-- `nursing-flow.mdc`
-- `discharge-flow.mdc`
+
+- `opd-flow.mdc`, `ipd-flow.mdc`, `nursing-flow.mdc`, `discharge-flow.mdc`

@@ -1,42 +1,45 @@
 ---
-alwaysApply: false
+description: Govern generated Dart code from freezed, json_serializable, Riverpod, and Drift.
 globs:
   - "frontend/lib/**"
-description: >
-  Apply when adding or reviewing code generation with freezed, json_serializable, or Riverpod.
+alwaysApply: false
 ---
 
 # Code Generation Strategy
 
-## Scope
-Defines generated Dart code and maintenance rules.
+Rules for generated Dart code and its maintenance.
 
-## Approved generated code
-- Immutable classes and unions through `freezed` where useful.
-- JSON serialization through `json_serializable`.
-- Riverpod providers through `riverpod_generator`.
-- Drift database code through Drift tooling.
-- Typed GoRouter routes only when the project adopts route generation consistently.
+## Approved generation
 
-## Mandatory rules
-- Do not edit generated files manually.
-- Keep source files readable without opening generated files whenever possible.
-- Run code generation before analysis, tests, and release builds.
-- Keep generator versions compatible with Dart and Flutter SDK constraints.
-- Do not hide business logic inside generated code.
-- Commit generated files only if the project standard requires it; be consistent.
+- Immutable classes and unions via `freezed` where useful.
+- JSON serialization via `json_serializable`.
+- Riverpod providers via `riverpod_generator`.
+- Drift database code via Drift tooling.
+- Typed GoRouter routes only when adopted consistently.
+
+## Requirements
+
+- Must not edit generated files manually.
+- Keep source files readable without opening generated files.
+- Run generation before analysis, tests, and release builds.
+- Keep generator versions compatible with Dart/Flutter SDK constraints.
+- Must not hide business logic inside generated code.
+- Commit generated files only if the project standard requires it, and be consistent.
 
 ## Standard command
+
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-## Acceptance checklist
+## Acceptance
+
 - Generated files are current.
-- CI fails when generated files are stale if the repository commits them.
+- CI fails when committed generated files are stale.
 - Source models remain readable and testable.
 
-## Related rules
+## Related
+
 - [`dependencies.mdc`](./dependencies.mdc)
 - [`data_modeling.mdc`](./data_modeling.mdc)
 - [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)

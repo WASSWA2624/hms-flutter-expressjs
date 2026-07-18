@@ -1,56 +1,38 @@
 ---
-alwaysApply: false
+description: Define frontend layer boundaries and dependency direction for the HMS app.
 globs:
   - "frontend/lib/**"
-description: >
-  Apply when reviewing frontend layer boundaries, dependency flow, and module roles.
+alwaysApply: false
 ---
+
 # Architecture
 
-Purpose: layer boundaries and dependency direction for HOSSPI HMS frontend.
+Feature-first clean architecture for HOSSPI HMS frontend: `presentation → domain → data contracts`, with data implementations calling external services.
 
-## Style
-
-Feature-first clean architecture:
-
-```txt
-presentation -> domain -> data contracts
-              data implementation -> external services
-```
-
-## Mandatory rules
+## Requirements
 
 - Widgets must not call APIs, databases, secure storage, or sync services directly.
-- Widgets must read display data only from Riverpod providers/controllers — no authoritative `setState` or local caches of server data (see [`instant_ui_sync.mdc`](./instant_ui_sync.mdc)).
+- Widgets must read display data only from Riverpod providers/controllers — no authoritative `setState` or server-data caches ([`instant_ui_sync.mdc`](./instant_ui_sync.mdc)).
 - Widgets must not store tokens or secrets.
 - Repositories must not show dialogs, snackbars, or navigate.
-- Data sources must not contain UI state.
-- Domain entities must not depend on Flutter widgets.
-- `core` must not contain feature-specific business rules.
-- Feature modules expose only intentional public entry points.
-- Workspace controllers that show shared data must register realtime listeners (see [`realtime_sync.mdc`](./realtime_sync.mdc)).
-- Use cases required when business decisions span multiple repositories or rules.
-- Mapping between DTOs, database models, and domain entities must be explicit.
-- Domain and presentation layers reference entities by `human_friendly_id`; internal IDs must not leak into UI state or routes.
-- Presentation must follow product UI standards in [`components.mdc`](./components.mdc), [`layouts.mdc`](./layouts.mdc), and [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
-- All user-facing text in the presentation layer must be localized with concise, clinically appropriate terminology — no hard-coded strings.
-- Presentation layer must enforce RBAC+ABAC: menus, components, and actions must never be visible or accessible to unauthorized users ([`permissions.mdc`](./permissions.mdc)).
-- Prohibit hard-coded color values, spacing values, and typography in presentation code — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
+- Data sources must not hold UI state; domain entities must not depend on widgets.
+- `core` must not contain feature business rules; features expose intentional entry points.
+- Use cases are required when decisions span multiple repositories.
+- Mapping between DTOs, database models, and entities must be explicit.
+- Reference entities by `human_friendly_id`; internal IDs must not leak into UI or routes.
+- Presentation must follow [`components.mdc`](./components.mdc) and [`layouts.mdc`](./layouts.mdc), localize all text, enforce RBAC+ABAC visibility ([`permissions.mdc`](./permissions.mdc)), and use design tokens only ([`design-system.mdc`](./design-system.mdc)).
 
 ## Layer ownership
 
 | Layer | Owns | Must not own |
 |---|---|---|
 | Presentation | pages, widgets, controllers, UI state | API, SQL, tokens |
-| Domain | entities, contracts, use cases | JSON parsing, widgets |
-| Data | repos, DTOs, mappers, data sources | navigation, UI messages |
-| Core | cross-cutting infrastructure | feature business rules |
-| Shared UI | reusable components/layouts | domain decisions |
+| Domain | entities, contracts, use cases | JSON, widgets |
+| Data | repos, DTOs, mappers, sources | navigation, UI messages |
+| Core | cross-cutting infrastructure | feature rules |
 
-## See also
+## Related
 
 - [`project_structure.mdc`](./project_structure.mdc)
 - [`state_management.mdc`](./state_management.mdc)
-- [`network_api.mdc`](./network_api.mdc)
 - [`realtime_sync.mdc`](./realtime_sync.mdc)
-- [`reference/repository-pattern-example.mdc`](./reference/repository-pattern-example.mdc)

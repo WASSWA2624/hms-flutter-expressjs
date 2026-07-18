@@ -1,20 +1,19 @@
 ---
-alwaysApply: false
+description: Privacy, audit evidence, permission-change traceability, and regulated obligations for backend.
 globs:
   - "backend/**"
-description: >
-  Privacy, audit evidence, permission-change traceability, and regulated obligations.
+alwaysApply: false
 ---
 # Compliance Rules
 
-Purpose: encode privacy, audit, and evidence obligations.
+Encode privacy, audit, and evidence obligations.
 
-Rules:
-- all mutations create audit evidence
-- sensitive reads must be traceable when policy requires it
-- PHI, payment, roster, and mortuary release actions require strong actor attribution
-- retention and export behavior must be documented for regulated records
-- break-glass usage, consent changes, PHI review, and release authorisations must be reviewable after the fact
-- compliance logging must preserve who acted, what changed, where it happened, and under which scope
-- changes to roles, modules, subscription packages, and user-level permissions create audit evidence with actor, before/after state, and restore capability
-- permission downgrades from subscription changes must take effect atomically with an auditable trail
+## Requirements
+- All mutations must create audit evidence.
+- Sensitive reads must be traceable when policy requires it.
+- PHI, payment, roster, and mortuary release actions require strong actor attribution.
+- Retention and export behavior must be documented for regulated records.
+- Break-glass usage, consent changes, PHI review, and release authorizations must be reviewable after the fact.
+- Compliance logging must preserve who acted, what changed, where, and under which scope.
+- Changes to roles, modules, subscription packages, and user permissions must create audit evidence with actor, before/after state, and restore capability.
+- Permission downgrades from subscription changes must take effect atomically with an auditable trail.

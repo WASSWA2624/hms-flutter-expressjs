@@ -1,5 +1,5 @@
 ---
-description: Shared API contract for HOSSPI HMS frontend and backend.
+description: Shared API contract governing HTTP and transport behavior across backend and frontend.
 globs:
   - "backend/**"
   - "frontend/**"
@@ -10,76 +10,40 @@ alwaysApply: false
 
 Shared API behavior must stay stable across `backend/` and `frontend/`.
 
-## Base Contract
+## Base and Naming
 
-- Business endpoints must use `/api/v1/*`.
-- Health endpoints may stay unversioned: `/health`, `/ready`, `/live`.
-- Breaking changes must ship with a new version and migration plan.
-
-## Naming
-
-| Surface | Rule |
-|---|---|
-| Routes | plural `kebab-case` |
-| Query params | `snake_case` |
-| JSON fields | `snake_case` |
-| Backend folders | `kebab-case` |
-| Backend identifiers | `camelCase` |
-| Flutter files | `snake_case.dart` |
-| Flutter identifiers | `PascalCase` or `camelCase` |
-
-- DTOs must mirror backend JSON and stay out of widgets and domain logic.
-- Use explicit mappers between DTOs and domain entities.
+- Business endpoints must use `/api/v1/*`; health endpoints (`/health`, `/ready`, `/live`) may stay unversioned.
+- Breaking changes must ship a new version and migration plan.
+- Routes are plural `kebab-case`; query params and JSON fields are `snake_case`.
+- Backend folders are `kebab-case`, identifiers `camelCase`; Flutter files are `snake_case.dart`.
+- DTOs must mirror backend JSON, stay out of widgets, and use explicit mappers to domain entities.
 
 ## Entity IDs
 
-- Public requests and responses must use `human_friendly_id`.
-- Do not expose raw database IDs in API payloads, list rows, nested references, or WebSocket events.
-- Resolve public IDs to internal IDs only at the data boundary.
+- Requests and responses must use `human_friendly_id`.
+- Raw database IDs must not appear in payloads, list rows, nested references, or WebSocket events.
 
 ## Success and Errors
 
-Success envelope:
-
-```json
-{ "success": true, "data": {}, "meta": {} }
-```
-
-- `data` must carry the resource or accepted job result.
-- `meta` must carry pagination or cursor metadata on list responses.
-
-Error responses must use one normalized problem-details shape with a stable `code`.
-- Validation errors may include field-level `errors`.
-- Internal traces, secrets, Prisma internals, and PHI must not leak.
-
-Pagination metadata must include `page`, `per_page`, `total`, and `total_pages`, or documented cursor fields when used.
+- Success envelope carries `success`, `data`, and `meta`; `meta` must include pagination on lists.
+- Errors must use one normalized problem-details shape with a stable `code`; validation may add field `errors`.
+- Traces, secrets, Prisma internals, and PHI must not leak.
+- Pagination must include `page`, `per_page`, `total`, and `total_pages`, or documented cursor fields.
 
 ## Auth and Access
 
-- Authority order: package, then module assignment, then role grant, then permission, then ABAC scope.
-- JWT access tokens must stay in secure storage.
-- UI visibility must mirror backend authorization, but backend enforcement always wins.
+- Authority order is package, module assignment, role grant, permission, then ABAC scope.
+- JWT tokens must stay in secure storage; backend enforcement always wins over UI visibility.
 - Break-glass access must be explicit, time-limited, and audited.
 
-## Offline and Online-Only
+## Offline and WebSocket
 
-- Offline-capable mutations must use idempotency keys and deterministic conflict handling.
-- Clients must treat connectivity as a hint, not proof of reachability.
-- `409` responses must include record and version metadata.
-- Online-only actions must not queue offline: authentication/session changes, entitlement approval, payments/refunds/closeout, mortuary release, and final close workflows.
-
-## WebSocket
-
-- Endpoint: `/ws` on the API host, using `ws` or `wss`.
-- Auth: JWT token in the `token` query parameter.
-- Envelope: `{ "event": "<domain.action>", "payload": { ... } }`.
-- Domain fields should stay compact: `event`, `tenant_id`, `facility_id`, `actor_user_id`, `resource_type`, `resource_id`, `affected`, `payload`, `occurred_at`.
-- Clients must treat events as reconciliation hints and refresh through shared realtime infrastructure, not widgets.
+- Offline mutations must use idempotency keys and deterministic conflict handling; `409` must include record and version metadata.
+- Online-only actions (auth/session, entitlement approval, payments, mortuary release, final close) must not queue offline.
+- WebSocket uses `/ws` over `ws`/`wss`, with the JWT in the `token` query param and an `event`/`payload` envelope.
+- Clients must treat events as reconciliation hints and refresh through shared realtime infrastructure.
 
 ## Related Rules
 
-- `access/permissions.mdc`
-- `access/modules.mdc`
-- `access/subscriptions.mdc`
-- `frontend/.cursor/realtime_sync.mdc`
-- `backend/.cursor/websockets.mdc`
+- `access/permissions.mdc`, `access/modules.mdc`, `access/subscriptions.mdc`
+- `frontend/.cursor/realtime_sync.mdc`, `backend/.cursor/websockets.mdc`

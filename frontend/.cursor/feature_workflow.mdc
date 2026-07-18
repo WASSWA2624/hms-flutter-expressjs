@@ -1,46 +1,39 @@
 ---
-alwaysApply: false
+description: Define the repeatable process for adding a new frontend feature.
 globs:
   - "frontend/lib/features/**"
-description: >
-  Apply when creating or reviewing features for structure, testing, and localization.
+alwaysApply: false
 ---
 
 # Feature Workflow
 
-## Scope
-Defines the repeatable process for adding a new feature to the template or an app built from it.
+Repeatable process for adding a feature to the HMS frontend.
 
-## Mandatory rules
-- Start every feature by identifying its route, state, data needs, validation, localization, responsive behavior, and tests.
-- Create the feature folder using the standard `data/domain/presentation` structure.
-- Define domain models and repository contracts before wiring UI to real data sources when the flow is non-trivial.
-- Add localization keys before adding user-facing text to widgets.
-- Use shared components before creating feature-specific widgets.
-- Queue/workspace features must confirm layout against [`ui-workspace.mdc`](./ui-workspace.mdc) and a reference module before implementation.
-- Confirm subscription-gated module access and permission gates before exposing routes or actions ([`permissions.mdc`](./permissions.mdc)).
-- Deliver high-performance, uniform, simple, intuitive workflows; reuse `frontend/lib/shared/` components and verify mobile, tablet, and desktop layouts.
-- Prohibit hard-coded color values, spacing values, and typography — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
-- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
-- Menus, UI components, and workflow actions must never be visible or accessible to unauthorized users — enforce RBAC and ABAC visibility.
-- Shared-data mutations must update Riverpod immediately and reconcile with backend realtime events per [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
+## Requirements
+
+- Start by identifying route, state, data needs, validation, localization, responsive behavior, and tests.
+- Create the feature folder with the standard `data/domain/presentation` structure.
+- Define domain models and repository contracts before wiring UI to real data when non-trivial.
+- Add localization keys before adding user-facing text.
+- Reuse shared components before creating feature-specific widgets.
+- Queue/workspace features must confirm layout against [`ui-workspace.mdc`](./ui-workspace.mdc) and a reference module first.
+- Confirm subscription-gated access and permission gates before exposing routes or actions ([`permissions.mdc`](./permissions.mdc)).
+- Verify mobile, tablet, and desktop layouts; must not hard-code colors, spacing, or typography ([`design-system.mdc`](./design-system.mdc)).
+- Reference entities by `human_friendly_id`; must not expose raw table IDs.
+- Enforce RBAC+ABAC visibility for menus, components, and actions.
+- Shared-data mutations must update Riverpod immediately and reconcile via [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
 - Add tests for controller logic, repository mapping, and important widgets.
-- Update docs when the feature changes app structure or conventions.
+- Update docs when structure or conventions change.
 
-## Implementation standard
-- Small purely presentational features may omit use cases but must keep boundaries clear.
-- Feature changes should be reviewable by files with focused responsibilities.
+## Acceptance
 
-## Acceptance checklist
-- The feature works at supported breakpoints.
-- No architecture boundary is violated.
+- The feature works at supported breakpoints with no boundary violations.
 - Queue screens match [`ui-workspace.mdc`](./ui-workspace.mdc) when applicable.
 - Tests and localization are included.
 
-## Related rules
+## Related
+
 - [`ui-workspace.mdc`](./ui-workspace.mdc)
 - [`architecture.mdc`](./architecture.mdc)
-- [`project_structure.mdc`](./project_structure.mdc)
 - [`components.mdc`](./components.mdc)
 - [`testing.mdc`](./testing.mdc)
-- [`localization_i18n.mdc`](./localization_i18n.mdc)

@@ -1,35 +1,37 @@
 ---
-alwaysApply: false
+description: Define required frontend documentation for setup, architecture, and decisions.
 globs:
   - "frontend/README.md"
   - "frontend/docs/**"
   - "frontend/.cursor/**"
-description: >
-  Apply when creating or reviewing frontend docs for setup, architecture, and ADRs.
+alwaysApply: false
 ---
 
 # Documentation Standards
 
-## Scope
-Defines required documentation for setup, architecture, decisions, components, and workflows.
+Required documentation for setup, architecture, decisions, components, and workflows.
 
-## Mandatory rules
+## Requirements
+
 - Keep README setup instructions current.
 - Document supported platforms and build commands.
-- Document architecture, folder structure, state management, routing, localization, testing, and code generation commands.
+- Document architecture, folder structure, state management, routing, localization, testing, and code-generation commands.
 - Use ADRs for major dependency or architecture decisions.
 - Document non-obvious algorithms, provider contracts, and shared component APIs.
-- Do not let documentation contradict app rules or dev-plan steps.
+- Documentation must not contradict app rules or dev-plan steps.
 
-## Implementation standard
+## Implementation
+
 - Docs should be concise, actionable, and version-friendly.
 - Every dev-plan file should state its goal, rule references, tasks, and acceptance criteria.
 
-## Acceptance checklist
-- A new developer can set up, run, test, and build the app using the docs.
-- Architecture decisions can be traced to the relevant rules.
+## Acceptance
 
-## Related rules
+- A new developer can set up, run, test, and build the app from the docs.
+- Architecture decisions trace to the relevant rules.
+
+## Related
+
 - [`checklists.mdc`](./checklists.mdc)
 - [`feature_workflow.mdc`](./feature_workflow.mdc)
 - [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)

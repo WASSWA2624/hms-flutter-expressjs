@@ -1,48 +1,48 @@
 ---
-alwaysApply: false
+description: Apply when reviewing frontend security for storage, networking, logging, and sensitive UI.
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
-description: >
-  Apply when reviewing frontend security for storage, networking, logging, and sensitive UI.
+alwaysApply: false
 ---
 
 # Security Rules
 
-## Scope
 Defines security expectations for storage, networking, logging, configuration, and UI handling.
 
 ## Mandatory rules
-- Do not commit secrets, API keys, private certificates, passwords, or tokens.
-- Do not log sensitive values.
-- Use HTTPS for production network communication unless a documented private-network exception exists.
-- Store sensitive session artifacts in secure storage where supported.
-- Use `shared_preferences` only for non-sensitive settings.
-- Validate data at boundaries: UI input, repository input, API response, and local persistence.
-- Treat data from backend and local storage as untrusted until validated or mapped.
-- Avoid displaying raw server errors to users.
-- Clear sensitive session state on logout.
-- Keep debug tools and verbose logs disabled in production builds.
+
+- Must not commit secrets, API keys, private certificates, passwords, or tokens.
+- Must not log sensitive values.
+- Must use HTTPS for production communication unless a documented private-network exception exists.
+- Must store sensitive session artifacts in secure storage where supported.
+- Must use `shared_preferences` only for non-sensitive settings.
+- Must validate data at boundaries: UI input, repository input, API response, and local persistence.
+- Must treat backend and local storage data as untrusted until validated or mapped.
+- Must not display raw server errors to users.
+- Must clear sensitive session state on logout.
+- Must keep debug tools and verbose logs disabled in production builds.
 
 ## RBAC / ABAC authorization
-- Enforce Role-Based (RBAC) and Attribute-Based (ABAC) Access Control on every surface: menus, components, actions, routes, and workflows must never be visible or accessible to unauthorized users.
-- Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
-- Users may hold multiple roles and module assignments; hidden UI alone is never sufficient — backend authorization is mandatory.
-- Reference [`.cursor/access/`](../../.cursor/access/) files and [`permissions.mdc`](./permissions.mdc) as source of truth.
+
+- Must enforce RBAC and ABAC on every surface; menus, components, actions, routes, and workflows must never be visible or accessible to unauthorized users.
+- Effective permissions = union(role/module/user grants) ∩ subscription package ∩ ABAC scope.
+- Hidden UI alone is never sufficient; backend authorization is mandatory.
+- Must treat [`.cursor/access/`](../../.cursor/access/) and [`permissions.mdc`](./permissions.mdc) as source of truth.
 
 ## Secure storage notes
+
 - Native mobile and desktop may use platform-backed secure storage.
-- Web secure storage has platform limitations; do not assume web storage is equivalent to native secure storage.
-- Document any web auth/session strategy clearly before production use.
+- Web secure storage has limitations; must not assume web equals native secure storage.
+- Must document any web auth/session strategy before production use.
 
 ## Acceptance checklist
+
 - Secret scanning finds no committed secrets.
-- Production builds do not print sensitive logs.
-- All auth and API failures are handled safely.
-- Security-sensitive dependencies are reviewed before release.
+- Production builds print no sensitive logs.
+- Auth and API failures are handled safely.
 
 ## Related rules
-- [`authentication_session.mdc`](./authentication_session.mdc)
+
 - [`storage_strategy.mdc`](./storage_strategy.mdc)
 - [`network_api.mdc`](./network_api.mdc)
-- [`environment_configuration.mdc`](./environment_configuration.mdc)

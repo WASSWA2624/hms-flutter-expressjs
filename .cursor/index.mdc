@@ -1,5 +1,5 @@
 ---
-description: Monorepo rules index and conflict order for HOSSPI HMS.
+description: Monorepo rules index and conflict-resolution order for HOSSPI HMS.
 globs:
   - ".cursor/**"
   - "backend/**"
@@ -9,11 +9,11 @@ alwaysApply: false
 
 # HOSSPI HMS Rules Index
 
-HOSSPI HMS is the hospital management monorepo for `backend/` and `frontend/`.
+HOSSPI HMS is the hospital management monorepo for `backend/` and `frontend/`; agents must resolve rule conflicts using the order below.
 
 ## Conflict Order
 
-When rules conflict, apply this order:
+When rules conflict, you must apply this order:
 
 1. Security, privacy, safety, and compliance.
 2. `api-contract.mdc` for shared HTTP and transport behavior.
@@ -38,6 +38,6 @@ When rules conflict, apply this order:
 
 ## Prompt Set
 
-- `prompts/00-global-delivery-acceptance.md` is the shared baseline.
+- You should use `prompts/00-global-delivery-acceptance.md` as the shared baseline.
 - `prompts/01` to `prompts/13` specialize delivery, security, workflow, and module work.
-- Use the prompt set with the flow files and stack indexes when work is domain-specific.
+- You may combine the prompt set with flow files and stack indexes for domain-specific work.

@@ -1,20 +1,19 @@
 ---
-alwaysApply: false
+description: Backend locale resolution, translation keys, and localized API error messaging.
 globs:
   - "backend/**"
-description: >
-  Backend locale resolution, translation keys, and localized API error messaging.
+alwaysApply: false
 ---
 # Internationalization Rules
 
-Purpose: keep backend locale behavior predictable.
+Keep backend locale behavior predictable.
 
-Rules:
-- `en` is the baseline locale
-- locale resolution may consider user preference, tenant default, and `Accept-Language` request headers
-- all user-facing API messages (errors, validation summaries, async job status) use translation keys resolved through the i18n layer; no hard-coded user-facing strings outside locale files under `src/locales/`
-- error `code` values stay stable and language-neutral; localized text lives in locale catalogs under `src/locales/`
-- backend-generated messages use translation keys or localized message helpers
-- stored user-entered clinical, legal, and mortuary notes remain unchanged
-- date, time, and number formatting helpers must be locale-aware when formatting leaves the API boundary
-- keep copy concise and use appropriate clinical/operational terminology for its context
+## Requirements
+- `en` is the baseline locale.
+- Locale resolution may consider user preference, tenant default, and `Accept-Language` headers.
+- All user-facing API messages must use translation keys resolved through the i18n layer; no hard-coded user-facing strings outside `src/locales/`.
+- Error `code` values must stay stable and language-neutral; localized text lives in `src/locales/`.
+- Backend-generated messages must use translation keys or localized message helpers.
+- Stored user-entered clinical, legal, and mortuary notes must remain unchanged.
+- Date, time, and number formatting helpers must be locale-aware at the API boundary.
+- Keep copy concise with appropriate clinical/operational terminology.

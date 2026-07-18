@@ -1,40 +1,36 @@
 ---
-alwaysApply: false
+description: Set Dart/Flutter naming, imports, style, and file-focus conventions.
 globs:
   - "frontend/lib/**"
-description: >
-  Apply when writing or reviewing Dart/Flutter naming, imports, style, and file focus.
+alwaysApply: false
 ---
+
 # Coding Conventions
 
-Purpose: naming, imports, style, and file focus.
+Naming, imports, style, and file focus for the frontend.
 
 ## Naming
 
-- Files: `snake_case.dart`
-- Classes, enums, typedefs, extensions: `PascalCase`
-- Variables, methods, parameters, providers: `camelCase`
-- Private members: `_privateName`
+- Files: `snake_case.dart`.
+- Classes, enums, typedefs, extensions: `PascalCase`.
+- Variables, methods, parameters, providers: `camelCase`.
+- Private members: `_privateName`.
 
 ## Imports
 
-- Package imports for cross-folder imports; relative only inside the same small folder tree.
-- No circular imports.
-- Order: Dart SDK → Flutter → packages → project.
+- Use package imports across folders; relative only within a small folder tree.
+- No circular imports; order Dart SDK → Flutter → packages → project.
 
 ## Style
 
-- `const` constructors where possible.
-- Small focused widgets; no business logic in widgets.
-- Typed models, not maps, for app data.
-- No hard-coded route strings, user-facing text, colors, spacing, or repeated formatting. Use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
-- All user-facing text must be localized with concise, clinically appropriate terminology via ARB keys.
-- Use `human_friendly_id` in routes, deep links, and user-visible identifiers — not raw database IDs.
-- Reuse shared components from `frontend/lib/shared/` before creating feature-local widgets; check the shared catalog first.
-- Menus, UI components, and actions must never be visible or accessible to unauthorized users — enforce RBAC+ABAC ([`permissions.mdc`](./permissions.mdc)).
-- Presentation files must not define private UI copy classes (`_XxxText`) — use `app_en.arb`.
-- `*_workspace_page.dart` files should stay compositional; extract widgets when approaching ~800 lines.
-- Treat analyzer warnings seriously.
+- Use `const` constructors where possible; keep widgets small with no business logic.
+- Use typed models, not maps, for app data.
+- Must not hard-code route strings, user-facing text, colors, spacing, or repeated formatting; use design tokens ([`design-system.mdc`](./design-system.mdc)).
+- Localize all user-facing text via ARB keys; must not define `_XxxText` copy classes.
+- Use `human_friendly_id` in routes and user-visible identifiers, not raw database IDs.
+- Reuse shared components from `frontend/lib/shared/` before creating feature widgets.
+- Enforce RBAC+ABAC visibility for menus, components, and actions ([`permissions.mdc`](./permissions.mdc)).
+- Keep `*_workspace_page.dart` compositional; extract widgets near ~800 lines.
 
 ## File focus
 
@@ -45,11 +41,10 @@ Purpose: naming, imports, style, and file focus.
 | `*_state.dart` | UI state shape |
 | `*_repository.dart` | domain contract |
 | `*_repository_impl.dart` | data coordination |
-| `*_dto.dart` | API shape (`snake_case` JSON per [api-contract](../../.cursor/api-contract.mdc)) |
+| `*_dto.dart` | API shape (`snake_case` JSON) |
 | `*_mapper.dart` | explicit conversion |
 
-## See also
+## Related
 
 - [`architecture.mdc`](./architecture.mdc)
-- [`localization_i18n.mdc`](./localization_i18n.mdc)
 - [`design-system.mdc`](./design-system.mdc)

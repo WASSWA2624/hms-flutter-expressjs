@@ -6,12 +6,13 @@ globs:
   - "backend/src/modules/discharge-summary/**"
 alwaysApply: false
 ---
+
 # Discharge Patient Flow
 
-## Purpose
-Discharge owns the final inpatient clearance sequence on the IPD admission. Keep planning, summary, medicines, billing, nursing sign-off, bed release, and closure in one controlled path.
+Discharge owns the final inpatient clearance sequence on the IPD admission; keep planning, summary, medicines, billing, nursing sign-off, bed release, and closure in one controlled path.
 
 ## Stage Sequence
+
 - Doctor marks discharge as planned.
 - Pending orders and results are reviewed.
 - Discharge summary and follow-up are prepared.
@@ -22,6 +23,7 @@ Discharge owns the final inpatient clearance sequence on the IPD admission. Keep
 - IPD encounter is finalized and closed.
 
 ## Handoffs
+
 - Doctor owns discharge decision and summary.
 - Pharmacy owns take-home medicine readiness.
 - Billing owns financial settlement only.
@@ -29,19 +31,19 @@ Discharge owns the final inpatient clearance sequence on the IPD admission. Keep
 - Bed manager or housekeeping owns bed release after exit.
 
 ## Hard Invariants
+
 - Must not conflate OPD `DISCHARGED` with IPD discharge.
 - Must not mark the patient discharged until IPD closure is complete.
-- Must not skip pharmacy, billing, or nursing clearance when they are required.
+- Must not skip required pharmacy, billing, or nursing clearance.
 - Must not use discharge to execute unrelated inpatient care.
 
 ## Allowed Critical Actions
-- Show pending items early so staff can clear blockers before the exit moment.
+
+- Show pending items early so staff can clear blockers before exit.
 - Keep `DISCHARGE_PLANNED` distinct from final `DISCHARGED`.
 - Link to the billing workspace instead of duplicating payment logic.
 - Trigger bed release only after the patient has physically left.
 
 ## Related
-- `ipd-flow.mdc`
-- `nursing-flow.mdc`
-- `pharmacy-flow.mdc`
-- `opd-flow.mdc`
+
+- `ipd-flow.mdc`, `nursing-flow.mdc`, `pharmacy-flow.mdc`, `opd-flow.mdc`

@@ -1,32 +1,25 @@
 ---
-alwaysApply: false
+description: Apply when designing or refactoring the canonical Flutter frontend folder layout.
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
-description: >
-  Apply when designing or refactoring the canonical Flutter frontend folder layout.
+alwaysApply: false
 ---
+
 # Project Structure
 
-Purpose: canonical layout for `frontend/`.
+Canonical layout for `frontend/`.
 
 ## Root structure
 
 ```txt
 frontend/
-├── .cursor/
-├── .github/workflows/
-├── dev-plan/
+├── .cursor/            # rules only, not imported
+├── dev-plan/           # planning only, not imported
 ├── analysis_options.yaml
 ├── l10n.yaml
 ├── pubspec.yaml
-├── README.md
-├── assets/
-│   ├── icons/
-│   ├── images/
-│   ├── illustrations/
-│   └── logos/
-├── docs/
+├── assets/             # icons, images, illustrations, logos
 ├── env/
 ├── lib/
 ├── test/
@@ -34,61 +27,33 @@ frontend/
 └── tool/
 ```
 
-`dev-plan/` and `.cursor/` are planning/rules only — not imported by app code.
-
 ## `lib/` structure
 
 ```txt
 lib/
 ├── main.dart
 ├── bootstrap.dart
-├── app/
-│   ├── app.dart
-│   ├── locale/
-│   ├── router/
-│   ├── startup/
-│   └── theme/
-├── core/
-│   ├── config/
-│   ├── errors/
-│   ├── logging/
-│   ├── network/
-│   ├── permissions/
-│   ├── responsive/
-│   ├── security/
-│   ├── storage/
-│   ├── sync/
-│   └── utils/
-├── features/<feature_name>/
-│   ├── data/
-│   ├── domain/
-│   └── presentation/
+├── app/          # app.dart, locale, router, startup, theme
+├── core/         # config, errors, logging, network, permissions,
+│                 # responsive, security, storage, sync, utils
+├── features/<feature_name>/  # data, domain, presentation
 ├── l10n/
-└── shared/
-    ├── components/
-    ├── data/
-    ├── forms/
-    ├── layout/
-    ├── search/
-    └── widgets/
+└── shared/       # components, data, forms, layout, search, widgets
 ```
 
 ## Rules
 
-- `features/<feature_name>` for product behavior and screens.
-- `core` for cross-cutting infrastructure used by multiple features.
-- `shared` for reusable UI, layouts, forms, and search helpers not tied to one feature.
-- `shared/` is the only home for cross-feature reusable UI; features must not fork parallel component libraries. Check the shared catalog before creating new components.
-- No feature-specific business logic in `core` or `shared`.
-- All user-facing text must be localized via ARB keys — no hard-coded strings in `lib/`.
-- No duplicate folders/files for the same responsibility.
-- Tests mirror source structure.
-
-## Required starter files
-
-See [`layouts.mdc`](./layouts.mdc) for shell file list and [`index.mdc`](./index.mdc) for full owner map.
+- `features/<feature_name>` must own product behavior and screens.
+- `core` must hold only cross-cutting infrastructure used by multiple features.
+- `shared` must hold reusable UI, layouts, forms, and search helpers not tied to one feature; it is the only home for cross-feature reusable UI.
+- Features must not fork parallel component libraries; check the shared catalog first.
+- Must not place feature-specific business logic in `core` or `shared`.
+- All user-facing text must be localized via ARB keys; no hard-coded strings in `lib/`.
+- Must not create duplicate folders/files for the same responsibility.
+- Tests must mirror source structure.
 
 ## See also
 
 - [`architecture.mdc`](./architecture.mdc)
-- [`feature_workflow.mdc`](./feature_workflow.mdc)
+- [`layouts.mdc`](./layouts.mdc)
+- [`index.mdc`](./index.mdc)

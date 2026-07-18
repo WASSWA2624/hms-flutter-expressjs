@@ -1,45 +1,44 @@
 ---
-alwaysApply: false
+description: Define auth flows, secure session storage, token refresh, and route protection.
 globs:
   - "frontend/lib/shared/auth/**"
   - "frontend/lib/features/**/auth/**"
-description: >
-  Apply when implementing auth flows, session storage, refresh, and route protection.
+alwaysApply: false
 ---
 
 # Authentication and Session Strategy
 
-## Scope
-Defines sign-in, registration readiness, session restoration, secure token storage, logout, and protected routes.
+Covers sign-in, session restoration, secure token storage, logout, and protected routes.
 
-## Mandatory rules
-- Keep authentication logic inside the auth feature and core session services.
-- Store sensitive session tokens only in secure storage where supported.
-- Do not store tokens in `shared_preferences`, plain files, logs, screenshots, or analytics.
-- Restore session state during startup before protected route checks finish.
-- Refresh tokens before expiry when the backend supports refresh tokens.
-- Use a refresh lock to avoid multiple simultaneous refresh calls.
-- If refresh fails, clear the session and redirect to login.
+## Requirements
+
+- Keep auth logic inside the auth feature and core session services.
+- Store session tokens only in secure storage; must not use `shared_preferences`, plain files, logs, screenshots, or analytics.
+- Restore session state at startup before protected route checks finish.
+- Refresh tokens before expiry when the backend supports refresh, using a refresh lock to prevent concurrent calls.
+- On refresh failure, clear the session and redirect to login.
 - Logout must clear sensitive local session data.
 - UI route protection must be backed by backend authorization.
-- Session context must carry effective permissions (RBAC + ABAC + subscription); route guards and action gates enforce them per [`permissions.mdc`](./permissions.mdc) and [`.cursor/access/`](../../.cursor/access/).
+- Session context must carry effective permissions (RBAC + ABAC + subscription); guards enforce them per [`permissions.mdc`](./permissions.mdc).
 
 ## Session states
+
 | State | Meaning |
 |---|---|
-| unknown | startup restoration is running |
+| unknown | startup restoration running |
 | unauthenticated | no valid session |
-| authenticated | valid session and user profile available |
-| expired | session failed refresh or was rejected |
-| forbidden | authenticated user lacks permission for route/action |
+| authenticated | valid session and profile available |
+| expired | refresh failed or session rejected |
+| forbidden | authenticated but lacks permission |
 
-## Acceptance checklist
-- Authenticated routes cannot be entered without a valid session.
-- Session restoration does not flash protected content to unauthenticated users.
+## Acceptance
+
+- Authenticated routes require a valid session.
+- Restoration never flashes protected content to unauthenticated users.
 - Token values never appear in logs or UI.
 
-## Related rules
+## Related
+
 - [`navigation.mdc`](./navigation.mdc)
 - [`permissions.mdc`](./permissions.mdc)
 - [`security.mdc`](./security.mdc)
-- [`storage_strategy.mdc`](./storage_strategy.mdc)

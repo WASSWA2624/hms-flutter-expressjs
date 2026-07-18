@@ -1,29 +1,29 @@
 ---
-alwaysApply: false
+description: Apply when reviewing feature-first structure and scaling patterns in the frontend.
 globs:
   - "frontend/lib/**"
-description: >
-  Apply when reviewing feature-first structure and scaling patterns in the frontend.
+alwaysApply: false
 ---
 
 # Scalability Strategy
 
-## Scope
-Defines how the template remains maintainable as more features, platforms, and teams are added.
+Defines how the template stays maintainable as more features, platforms, and teams are added.
 
 ## Mandatory rules
-- Keep features independent and feature-first.
-- Keep cross-cutting services in `core` only when multiple features use them.
-- Keep shared UI generic and business-free; all reusable components must live under `frontend/lib/shared/`.
-- Keep public feature exports intentional.
-- Avoid global mutable state.
-- Use clear contracts between layers.
-- Document architecture decisions that affect future development.
-- Avoid copying whole screens to support new layouts.
+
+- Must keep features independent and feature-first.
+- Must keep cross-cutting services in `core` only when multiple features use them.
+- Shared UI must stay generic and business-free; all reusable components must live under `frontend/lib/shared/`.
+- Public feature exports must be intentional.
+- Must avoid global mutable state.
+- Must use clear contracts between layers.
+- Should document architecture decisions that affect future development.
+- Must not copy whole screens to support new layouts.
 - UI must be fully responsive across mobile, tablet, and desktop breakpoints.
-- Prohibit hard-coded style tokens; use theme tokens exclusively.
+- Must use theme tokens exclusively; no hard-coded style tokens.
 
 ## Scaling patterns
+
 | Problem | Required pattern |
 |---|---|
 | many features | feature-first modules |
@@ -33,12 +33,13 @@ Defines how the template remains maintainable as more features, platforms, and t
 | many developers | rules, linting, tests, PR checklist |
 
 ## Acceptance checklist
-- Adding a new feature does not require modifying unrelated features.
+
+- Adding a feature does not require modifying unrelated features.
 - Shared components do not become product-specific dumping grounds.
 - Architecture boundaries remain enforceable by review and tests.
 
 ## Related rules
+
 - [`architecture.mdc`](./architecture.mdc)
 - [`project_structure.mdc`](./project_structure.mdc)
-- [`feature_workflow.mdc`](./feature_workflow.mdc)
 - [`performance.mdc`](./performance.mdc)

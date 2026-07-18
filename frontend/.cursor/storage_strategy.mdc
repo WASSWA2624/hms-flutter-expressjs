@@ -1,27 +1,27 @@
 ---
-alwaysApply: false
+description: Apply when implementing preferences, secure storage, or structured local persistence.
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
-description: >
-  Apply when implementing preferences, secure storage, or structured local persistence.
+alwaysApply: false
 ---
 
 # Storage Strategy
 
-## Scope
 Defines local storage choices and ownership.
 
 ## Mandatory rules
-- Use `shared_preferences` only for small non-sensitive preferences.
-- Use `flutter_secure_storage` for tokens and sensitive session artifacts where supported.
-- Use Drift for structured local records, offline cache, and sync queues.
-- Do not store sensitive data in plain files.
-- Keep local storage access inside data sources or core storage services.
-- Do not read or write storage directly from widgets.
-- Keep cache invalidation and retention rules explicit.
+
+- Must use `shared_preferences` only for small non-sensitive preferences.
+- Must use `flutter_secure_storage` for tokens and sensitive session artifacts where supported.
+- Must use Drift for structured local records, offline cache, and sync queues.
+- Must not store sensitive data in plain files.
+- Must keep local storage access inside data sources or core storage services.
+- Must not read or write storage directly from widgets.
+- Must keep cache invalidation and retention rules explicit.
 
 ## Storage ownership
+
 | Data type | Storage |
 |---|---|
 | Theme mode | `shared_preferences` |
@@ -32,12 +32,13 @@ Defines local storage choices and ownership.
 | Temporary cache files | platform cache directory |
 
 ## Acceptance checklist
+
 - Storage choices match sensitivity and structure of the data.
 - Storage services are provider-driven and testable.
 - Logout clears sensitive session data.
 
 ## Related rules
+
 - [`database_strategy.mdc`](./database_strategy.mdc)
 - [`offline_sync.mdc`](./offline_sync.mdc)
 - [`security.mdc`](./security.mdc)
-- [`state_management.mdc`](./state_management.mdc)

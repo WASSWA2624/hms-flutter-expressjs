@@ -1,130 +1,34 @@
 ---
-alwaysApply: false
+description: Index frontend rule ownership, conflict precedence, and app-wide invariants.
 globs:
   - "frontend/**"
-description: >
-  Frontend rules index: ownership, conflict precedence, and frontend-wide invariants.
+alwaysApply: false
 ---
+
 # Frontend Rules Index
 
-Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).
+Entry point to Flutter technical standards for HOSSPI HMS (`frontend/`).
 
 ## Conflict order
 
-1. Security, privacy, and safety rules
-2. [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for HTTP and cross-stack behavior
-3. [`instant_ui_sync.mdc`](./instant_ui_sync.mdc) then
-   [`realtime_sync.mdc`](./realtime_sync.mdc) for UI mutation and reconciliation behavior
-4. This index and the owner file named below
-5. Other frontend rule files
-6. [`dev-plan/`](../dev-plan/) steps (chronology only)
+1. Security, privacy, and safety rules.
+2. [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for HTTP and cross-stack behavior.
+3. [`instant_ui_sync.mdc`](./instant_ui_sync.mdc), then [`realtime_sync.mdc`](./realtime_sync.mdc).
+4. This index and the named owner file.
+5. Other frontend rule files.
+6. `dev-plan/` steps (chronology only).
 
-## Product and UI invariants
+## Invariants
 
-All frontend UI work must prioritize: high performance; uniform, consistent UI; reusable components in `frontend/lib/shared/`; real-time sync to backend; full responsiveness (mobile, tablet, desktop); simple design; intuitive workflows.
-
-## Entity identity
-
-Frontend references entities by `human_friendly_id` only. Backend maps to internal IDs. Never expose raw table IDs in UI, routes, or API consumer code. Owner: [`data_modeling.mdc`](./data_modeling.mdc), [`network_api.mdc`](./network_api.mdc).
-
-## Access control source of truth
-
-Default modules, subscription packages, roles, and permissions are defined in:
-
-| File | Owns |
-|---|---|
-| [`.cursor/access/modules.mdc`](../../.cursor/access/modules.mdc) | Module catalog and default permissions |
-| [`.cursor/access/permissions.mdc`](../../.cursor/access/permissions.mdc) | Permission vocabulary and ABAC scoping |
-| [`.cursor/access/subscriptions.mdc`](../../.cursor/access/subscriptions.mdc) | Package → module → permission intersection |
-| [`.cursor/access/default_user_roles.mdc`](../../.cursor/access/default_user_roles.mdc) | Shipped default role → module permissions |
-
-Effective access = union(role/module/user grants) ∩ active subscription package ∩ assigned modules ∩ ABAC scope. Owner: [`permissions.mdc`](./permissions.mdc).
-
-## Always-applied core rules
-
-| File | Owns |
-|---|---|
-| [`scope.mdc`](./scope.mdc) | Product frontend scope and invariants |
-| [`architecture.mdc`](./architecture.mdc) | Layer boundaries and dependency direction |
-| [`instant_ui_sync.mdc`](./instant_ui_sync.mdc) | Riverpod single source of truth, optimistic mutations, instant UI |
-| [`coding_conventions.mdc`](./coding_conventions.mdc) | Naming, imports, file focus |
+- Prioritize performance, uniform reusable UI in `frontend/lib/shared/`, real-time sync, full responsiveness, and simple, intuitive workflows.
+- Reference entities by `human_friendly_id` only; never expose raw table IDs.
+- Effective access = role/module/user grants ∩ subscription package ∩ assigned modules ∩ ABAC scope, defined in [`.cursor/access/`](../../.cursor/access/).
 
 ## Owner map
 
-### Structure and workflow
-
-| File | Owns |
-|---|---|
-| [`project_structure.mdc`](./project_structure.mdc) | Canonical folder layout |
-| [`feature_workflow.mdc`](./feature_workflow.mdc) | Adding a new feature |
-| [`checklists.mdc`](./checklists.mdc) | Release readiness gates |
-
-### UI and UX
-
-| File | Owns |
-|---|---|
-| [`design-system.mdc`](./design-system.mdc) | Colors, tokens, typography, shape |
-| [`components.mdc`](./components.mdc) | Shared component catalog and styling |
-| [`layouts.mdc`](./layouts.mdc) | Breakpoints, shell, max widths |
-| [`ui-patterns.mdc`](./ui-patterns.mdc) | Forms, tables, search, filters |
-| [`ui-workspace.mdc`](./ui-workspace.mdc) | Module workspace layout (`AppWorkspace`, `AppListTable`) |
-| [`flows/opd-flow.mdc`](../../.cursor/flows/opd-flow.mdc) | OPD UI rules §6 (summary cards, shared components) |
-| [`ui-feedback.mdc`](./ui-feedback.mdc) | Loading, empty, error, success, dialogs |
-| [`navigation.mdc`](./navigation.mdc) | Routing and guards |
-| [`accessibility.mdc`](./accessibility.mdc) | Accessibility baseline |
-| [`multi_platform_input.mdc`](./multi_platform_input.mdc) | Touch, keyboard, focus, hover |
-| [`assets_branding.mdc`](./assets_branding.mdc) | Assets and branding |
-
-### Data and network
-
-| File | Owns |
-|---|---|
-| [`state_management.mdc`](./state_management.mdc) | Riverpod and DI |
-| [`data_modeling.mdc`](./data_modeling.mdc) | Entities, DTOs, mappers |
-| [`network_api.mdc`](./network_api.mdc) | HTTP client and interceptors |
-| [`database_strategy.mdc`](./database_strategy.mdc) | Drift local storage |
-| [`storage_strategy.mdc`](./storage_strategy.mdc) | Secure and preference storage |
-| [`offline_sync.mdc`](./offline_sync.mdc) | Offline queue and sync |
-| [`realtime_sync.mdc`](./realtime_sync.mdc) | WebSocket refresh and live UI sync |
-
-### Security and auth
-
-| File | Owns |
-|---|---|
-| [`security.mdc`](./security.mdc) | Secrets, HTTPS, storage policy |
-| [`authentication_session.mdc`](./authentication_session.mdc) | Session lifecycle |
-| [`permissions.mdc`](./permissions.mdc) | RBAC, ABAC, entitlements UI |
-
-### Platform and config
-
-| File | Owns |
-|---|---|
-| [`startup_flow.mdc`](./startup_flow.mdc) | App initialization order |
-| [`environment_configuration.mdc`](./environment_configuration.mdc) | Env and defines |
-| [`platform_guidelines.mdc`](./platform_guidelines.mdc) | Per-platform behavior |
-| [`localization_i18n.mdc`](./localization_i18n.mdc) | l10n and ARB keys |
-| [`date_time_formatting.mdc`](./date_time_formatting.mdc) | Locale-aware formatting |
-| [`feature_flags.mdc`](./feature_flags.mdc) | Typed feature flags |
-
-### Quality
-
-| File | Owns |
-|---|---|
-| [`dependencies.mdc`](./dependencies.mdc) | Approved packages |
-| [`code_generation.mdc`](./code_generation.mdc) | build_runner and generators |
-| [`testing.mdc`](./testing.mdc) | Test structure |
-| [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc) | CI commands and gates |
-| [`performance.mdc`](./performance.mdc) | Rendering and startup performance |
-| [`scalability.mdc`](./scalability.mdc) | Feature scaling patterns |
-| [`observability.mdc`](./observability.mdc) | Logging and diagnostics |
-| [`error_handling.mdc`](./error_handling.mdc) | Typed failures and layer mapping |
-| [`validation.mdc`](./validation.mdc) | Validation ownership |
-| [`documentation_standards.mdc`](./documentation_standards.mdc) | Docs and ADRs |
-
-### Reference (contextual only)
-
-| File | When to use |
-|---|---|
-| [`reference/app-structure-example.mdc`](./reference/app-structure-example.mdc) | Root `App` widget shape |
-| [`reference/repository-pattern-example.mdc`](./reference/repository-pattern-example.mdc) | Repository boundary example |
-| [`reference/validation-snapshot-2026-05-14.mdc`](./reference/validation-snapshot-2026-05-14.mdc) | Historical validation run |
+- Structure: [`project_structure.mdc`](./project_structure.mdc), [`feature_workflow.mdc`](./feature_workflow.mdc), [`checklists.mdc`](./checklists.mdc).
+- UI/UX: [`design-system.mdc`](./design-system.mdc), [`components.mdc`](./components.mdc), [`layouts.mdc`](./layouts.mdc), [`ui-patterns.mdc`](./ui-patterns.mdc), [`ui-workspace.mdc`](./ui-workspace.mdc), [`ui-feedback.mdc`](./ui-feedback.mdc), [`navigation.mdc`](./navigation.mdc), [`accessibility.mdc`](./accessibility.mdc).
+- Data/network: [`state_management.mdc`](./state_management.mdc), [`data_modeling.mdc`](./data_modeling.mdc), [`network_api.mdc`](./network_api.mdc), [`database_strategy.mdc`](./database_strategy.mdc), [`realtime_sync.mdc`](./realtime_sync.mdc).
+- Security/auth: [`security.mdc`](./security.mdc), [`authentication_session.mdc`](./authentication_session.mdc), [`permissions.mdc`](./permissions.mdc).
+- Platform/config: [`environment_configuration.mdc`](./environment_configuration.mdc), [`localization_i18n.mdc`](./localization_i18n.mdc), [`feature_flags.mdc`](./feature_flags.mdc).
+- Quality: [`dependencies.mdc`](./dependencies.mdc), [`code_generation.mdc`](./code_generation.mdc), [`testing.mdc`](./testing.mdc), [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc), [`error_handling.mdc`](./error_handling.mdc).

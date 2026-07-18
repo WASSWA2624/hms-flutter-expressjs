@@ -1,48 +1,46 @@
 ---
-alwaysApply: false
+description: Apply when designing Riverpod providers, controllers, and dependency injection boundaries.
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
-description: >
-  Apply when designing Riverpod providers, controllers, and dependency injection boundaries.
+alwaysApply: false
 ---
 
 # State Management and Dependency Injection
 
-## Scope
 Defines how app state, feature state, and dependencies are created, read, tested, and overridden.
 
 ## Mandatory rules
-- Use Riverpod as the single state management and dependency injection solution.
-- **Riverpod is the single source of truth for UI data** — widgets read only from providers/controllers; see [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
-- Do not mix Riverpod with another global state management package in the starter.
-- Keep providers close to the layer they own.
-- Use generated providers where it improves safety and consistency.
-- Controllers own presentation state and user actions.
-- HTTP persists mutations; WebSocket reconciles Riverpod state across sessions. Full flow is owned by [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); do not restate or override it here.
-- Repositories own data coordination, not UI state.
+
+- Must use Riverpod as the single state management and dependency injection solution.
+- Riverpod is the single source of truth for UI data; widgets must read only from providers/controllers ([`instant_ui_sync.mdc`](./instant_ui_sync.mdc)).
+- Must not mix Riverpod with another global state package in the starter.
+- Must keep providers close to the layer they own.
+- Should use generated providers where they improve safety and consistency.
+- Controllers must own presentation state and user actions.
+- HTTP persists mutations; WebSocket reconciles Riverpod state. Full flow is owned by [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); must not restate or override it.
+- Repositories must own data coordination, not UI state.
 - Providers must be override-friendly for tests.
-- Do not perform heavy initialization inside widget `build` methods.
-- Use `AsyncValue` or equivalent app wrappers for loading, error, and data states.
+- Must not perform heavy initialization inside widget `build` methods.
+- Must use `AsyncValue` or equivalent wrappers for loading, error, and data states.
 
 ## Provider placement
+
 | Provider type | Location |
 |---|---|
-| App-level config/theme/locale | `lib/app/` or `lib/core/config/` |
-| Infrastructure clients | `lib/core/network`, `lib/core/storage`, `lib/core/sync` |
+| App config/theme/locale | `lib/app/` or `lib/core/config/` |
+| Infrastructure clients | `lib/core/network`, `storage`, `sync` |
 | Feature controllers | `features/<feature>/presentation/controllers` |
-| Feature repositories | `features/<feature>/data/repositories` and domain contracts |
+| Feature repositories | `features/<feature>/data/repositories` |
 
 ## Acceptance checklist
+
 - Features can be tested with provider overrides.
-- UI does not instantiate repositories, API clients, or databases directly.
+- UI does not instantiate repositories, clients, or databases directly.
 - Loading, empty, error, and success states are handled consistently.
-- Successful mutations update visible UI through Riverpod without waiting for an
-  avoidable full refetch.
 
 ## Related rules
+
 - [`instant_ui_sync.mdc`](./instant_ui_sync.mdc)
-- [`architecture.mdc`](./architecture.mdc)
 - [`startup_flow.mdc`](./startup_flow.mdc)
 - [`testing.mdc`](./testing.mdc)
-- [`error_handling.mdc`](./error_handling.mdc)

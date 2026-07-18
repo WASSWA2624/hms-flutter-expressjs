@@ -1,12 +1,15 @@
 ---
-alwaysApply: false
+description: Reference example for repository layer boundaries.
 globs:
   - "frontend/.cursor/reference/repository-pattern-example.mdc"
-description: Reference example for repository layer boundaries.
+alwaysApply: false
 ---
+
 # Repository Pattern Example
 
 Reference only. Policy lives in [`architecture.mdc`](../architecture.mdc) and [`data_modeling.mdc`](../data_modeling.mdc).
+
+## Example
 
 ```dart
 abstract class ProfileRepository {
@@ -36,3 +39,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 }
 ```
+
+## Rules
+
+- Repositories must return `Result` and map errors to typed failures.
+- Data sources must own I/O; repositories must coordinate remote and local.
+- Domain must depend on the abstract contract, not the implementation.

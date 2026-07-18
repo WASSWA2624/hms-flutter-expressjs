@@ -1,5 +1,5 @@
 ---
-description: Source-controlled module catalog for HOSSPI HMS.
+description: Source-controlled module catalog defining shipped module keys and status.
 globs:
   - "backend/**"
   - "frontend/**"
@@ -8,65 +8,26 @@ alwaysApply: false
 
 # Module Catalog
 
-This file owns shipped `module_key` values, package coverage, and status.
+This file owns shipped `module_key` values, package coverage, and status; seed only active modules from it.
 
 ## Rules
 
 - Seed shipped active modules from this catalog.
-- Keep default permissions aligned with `permissions.mdc`.
-- Keep package coverage aligned with `subscriptions.mdc`.
+- Default permissions must align with `permissions.mdc`.
+- Package coverage must align with `subscriptions.mdc`.
 - Reset must restore the shipped mapping atomically.
 - Admin changes must stay auditable and versioned.
-- Planned modules must stay out of default seed data.
+- Planned modules must not enter default seed data.
 
-## Active Modules
+## Active Module Keys
 
-| module_key | packages | status |
-|---|---|---|
-| app_shell | Free+ | active |
-| auth_session | Free+ | active |
-| general_settings | Free+ | active |
-| tenant_settings | Basic+ | active |
-| facility_settings | Basic+ | active |
-| access_admin | Basic+ | active |
-| subscriptions | Basic+ | active |
-| rooms_beds | Basic+ | active |
-| patient_registry | Free+ | active |
-| opd | Basic+ | active |
-| triage | Basic+ | active |
-| clinical | Basic+ | active |
-| nursing | Advanced+ | active |
-| ipd | Basic+/Advanced+ | active |
-| icu | Pro+ | active |
-| theater | Pro+ | active |
-| discharge | Advanced+ | active |
-| emergency | Advanced+ | active |
-| lab | Advanced+ | active |
-| radiology | Advanced+ | active |
-| physiotherapy | Advanced+ | active |
-| pharmacy | Basic+/Advanced+ | active |
-| billing | Basic+ | active |
-| claims | Advanced+ | active |
-| hr | Pro+ | active |
-| biomedical | Pro+ | active |
-| operations | Pro+ | active |
-| housekeeping | Pro+ | active |
-| mortuary | Pro+ | active |
-| communications | Basic+ | active |
-| reports_audit | Basic+/Advanced+ | active |
-| integrations | Pro+ | active |
-| demo_seed | Developer | active |
-| dental | Custom/Pro+ | planned |
+`app_shell`, `auth_session`, `general_settings`, `tenant_settings`, `facility_settings`, `access_admin`, `subscriptions`, `rooms_beds`, `patient_registry`, `opd`, `triage`, `clinical`, `nursing`, `ipd`, `icu`, `theater`, `discharge`, `emergency`, `lab`, `radiology`, `physiotherapy`, `pharmacy`, `billing`, `claims`, `hr`, `biomedical`, `operations`, `housekeeping`, `mortuary`, `communications`, `reports_audit`, `integrations`, `demo_seed`.
 
 ## Planned Modules
 
-- `analytics`, `decision_support`, and `workflow_engine` are planned platform capabilities.
-- `device_integration`, `marketplace`, `research`, and `ai_automation` are planned extensions.
-- Do not seed planned modules as standalone entitlements.
+- `dental` (Custom/Pro+) is planned and must not seed as a standalone entitlement.
+- `analytics`, `decision_support`, `workflow_engine`, `device_integration`, `marketplace`, `research`, and `ai_automation` are planned; do not seed them.
 
 ## Related Rules
 
-- `permissions.mdc`
-- `subscriptions.mdc`
-- `default_user_roles.mdc`
-- `app-write-up.mdc`
+- `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`, `app-write-up.mdc`

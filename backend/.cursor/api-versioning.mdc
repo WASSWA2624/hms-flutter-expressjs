@@ -1,19 +1,18 @@
 ---
-alwaysApply: false
+description: Public API versioning, breaking-change policy, and stable human_friendly_id contracts.
 globs:
   - "backend/**"
-description: >
-  Public API versioning, breaking-change policy, and stable human_friendly_id contracts.
+alwaysApply: false
 ---
 # API Versioning Rules
 
-Purpose: keep public API evolution safe.
+Keep public API evolution safe and predictable.
 
-Rules:
-- `v1` is the current stable contract
-- additive changes may ship within the active version
-- breaking changes require a new version and a migration plan
-- deprecated endpoints must record replacement, start date, and removal target
-- field renames or response-shape changes may not ship silently
-- route family names and permission keys must stay stable once public
-- `human_friendly_id` values remain stable across API versions; breaking identifier changes require migration mapping and a new version
+## Requirements
+- `v1` is the current stable contract.
+- Additive changes may ship within the active version.
+- Breaking changes must introduce a new version and a migration plan.
+- Deprecated endpoints must record replacement, start date, and removal target.
+- Field renames or response-shape changes must not ship silently.
+- Route family names and permission keys must stay stable once public.
+- `human_friendly_id` values must stay stable across versions; breaking identifier changes require migration mapping and a new version.

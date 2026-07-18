@@ -5,41 +5,41 @@ globs:
   - "backend/src/modules/opd-flow/**"
 alwaysApply: false
 ---
+
 # OPD Patient Flow
 
-## Purpose
-OPD owns the outpatient encounter from arrival through consultation, tests, pharmacy, admission, referral, or discharge. Keep one active OPD encounter per patient and preserve source context on every handoff.
+OPD owns the outpatient encounter from arrival through consultation, tests, pharmacy, admission, referral, or discharge; keep one active OPD encounter per patient and preserve source context on every handoff.
 
 ## Stage Sequence
+
 - `WAITING_VITALS`: nurse triage and registration support.
-- `WAITING_CONSULTATION_PAYMENT` or `WAITING_DOCTOR_ASSIGNMENT`: complete payment gate or assign provider.
+- `WAITING_CONSULTATION_PAYMENT` or `WAITING_DOCTOR_ASSIGNMENT`: payment gate or provider assignment.
 - `WAITING_DOCTOR_REVIEW`: doctor consultation and clinical decision.
-- `LAB_REQUESTED`, `RADIOLOGY_REQUESTED`, `PHARMACY_REQUESTED`: route to the sibling executing department flow.
+- `LAB_REQUESTED`, `RADIOLOGY_REQUESTED`, `PHARMACY_REQUESTED`: route to the executing department flow.
 - `WAITING_DISPOSITION`: doctor finalizes admit, refer, or discharge.
 - `ADMITTED`: close OPD and hand off to IPD without duplicating the encounter.
 - `DISCHARGED`: outpatient visit closed only.
 
 ## Handoffs
+
 - Reception owns registration, check-in, and queue creation.
 - Billing owns consultation and payment gates only.
 - Nurse owns vitals and nurse-supported routing.
 - Doctor owns clinical review and final disposition.
-- OPD must hand off to `ipd-flow.mdc` when admitting; use `emergency-flow.mdc` only for preserved emergency context.
 
 ## Hard Invariants
-- Must not create a second active OPD encounter for the same patient.
-- Must not show department actions when the backend stage or role does not allow them.
+
+- Must not create a second active OPD encounter for one patient.
+- Must not show actions the backend stage or role disallows.
 - Must not expose raw enum names to users.
-- Must keep OPD as the outpatient source record; inpatient, ICU, theater, nursing, discharge, lab, radiology, and pharmacy own their own work.
+- Must keep OPD as the outpatient source record.
 
 ## Allowed Critical Actions
+
 - Reuse shared workspace components before creating OPD-specific UI.
-- Refresh only the affected row, detail panel, counts, and badges after small actions.
-- Hide zero-count shortcuts when the workspace pattern expects that behavior.
+- Refresh only affected rows, panels, counts, and badges after small actions.
+- May hide zero-count shortcuts when the workspace pattern expects it.
 
 ## Related
-- `ipd-flow.mdc`
-- `emergency-flow.mdc`
-- `lab-flow.mdc`
-- `radiology-flow.mdc`
-- `pharmacy-flow.mdc`
+
+- `ipd-flow.mdc`, `emergency-flow.mdc`, `lab-flow.mdc`, `radiology-flow.mdc`, `pharmacy-flow.mdc`

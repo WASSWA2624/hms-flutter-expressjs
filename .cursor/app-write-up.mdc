@@ -9,73 +9,33 @@ alwaysApply: false
 
 # HOSSPI HMS App Write-Up
 
-HOSSPI HMS means HOSSPI Hospital Management System.
+HOSSPI HMS is the HOSSPI Hospital Management System, where each module must own a focused, self-contained responsibility.
 
 ## Core Modules
 
-| Module | Responsibility |
-|---|---|
-| App shell | Brand the app and host navigation, badges, and status. |
-| Auth/session | Handle login, logout, sessions, and route guards. |
-| General settings | Store user preferences and accessibility defaults. |
-| Tenant settings | Manage tenant profile, settings, and enabled modules. |
-| Facility settings | Manage facility profile, structure, and service points. |
-| Users/roles/permissions | Manage staff accounts, roles, and access scope. |
-| Subscriptions | Manage plans, entitlements, invoices, and renewal state. |
-| Rooms/wards/beds | Manage care spaces, occupancy, and assignments. |
-| Patient registry | Register patients and maintain lookup data. |
-| OPD flow | Manage arrivals, queues, routing, and completion. |
-| Triage | Capture vitals, complaints, and routing decisions. |
-| Clinical | Manage encounters, notes, orders, and follow-up. |
-| Nursing | Manage tasks, medication administration, and handover. |
-| IPD | Manage admissions, beds, rounds, and transfers. |
-| ICU | Manage critical-care stays, monitoring, and readiness. |
-| Theater | Manage bookings, procedures, anesthesia, and handover. |
-| Discharge | Complete discharge checks, summaries, and closure. |
-| Emergency/ambulance | Manage emergency intake, dispatch, and handoff. |
-| Laboratory | Manage samples, results, and quality checks. |
-| Radiology | Manage imaging orders, studies, and results. |
-| Physiotherapy | Manage therapy plans, sessions, and progress. |
-| Pharmacy | Manage formularies, dispensing, stock, and returns. |
-| Billing/cashier | Manage invoices, payments, refunds, and closeout. |
-| Insurance/claims | Manage coverage, claims, and claim tracking. |
-| HR | Manage staff profiles, shifts, leave, and payroll. |
-| Biomedical | Manage equipment, maintenance, and safety work. |
-| Operations | Manage non-clinical facility maintenance and readiness. |
-| Housekeeping | Manage cleaning, turnover, and sanitation readiness. |
-| Mortuary | Manage custody, storage, release, and mortuary events. |
-| Notifications | Manage alerts, messages, and badge state. |
-| Reports/audit | Manage dashboards, reports, exports, and audit logs. |
-| Integrations | Manage keys, webhooks, logs, and external status. |
-| Demo seed | Provide safe non-production seed data. |
-| Dental | Manage oral care workflows, charting, and follow-up. |
+- Platform: app shell, auth/session, general/tenant/facility settings, users/roles/permissions, subscriptions.
+- Spaces and registry: rooms/wards/beds, patient registry.
+- Patient care: OPD, triage, clinical, nursing, IPD, ICU, theater, discharge, emergency/ambulance.
+- Diagnostics and meds: laboratory, radiology, physiotherapy, pharmacy.
+- Finance: billing/cashier, insurance/claims.
+- Support: HR, biomedical, operations, housekeeping, mortuary, notifications.
+- Cross-cutting: reports/audit, integrations, demo seed, dental.
 
 ## Module Boundaries
 
 - Tenant and facility settings own structure; other modules must consume it.
 - Access modules own account access; other modules must request allowed actions only.
-- Patient-care modules must keep their own workflows focused and self-contained.
+- Patient-care modules must keep workflows focused and self-contained.
 - Reports and audit must read from modules, not replace them.
 - Dental must stay within outpatient and emergency dental care.
 
 ## Patient Flow Documents
 
-Use `flows/` when changing workflow behavior.
+You must use `flows/` when changing workflow behavior:
 
-| Flow | Scope |
-|---|---|
-| `opd-flow.mdc` | Outpatient queues and handoff |
-| `ipd-flow.mdc` | Inpatient admission and stay |
-| `emergency-flow.mdc` | Emergency intake and transfer |
-| `icu-flow.mdc` | ICU overlay on admission |
-| `theater-flow.mdc` | Surgical episode overlay |
-| `nursing-flow.mdc` | Ward nursing and vitals |
-| `lab-flow.mdc` | Lab order execution |
-| `radiology-flow.mdc` | Imaging order execution |
-| `pharmacy-flow.mdc` | Dispensing and discharge meds |
-| `discharge-flow.mdc` | IPD discharge clearance |
+- `opd-flow.mdc`, `ipd-flow.mdc`, `emergency-flow.mdc`, `icu-flow.mdc`, `theater-flow.mdc`.
+- `nursing-flow.mdc`, `lab-flow.mdc`, `radiology-flow.mdc`, `pharmacy-flow.mdc`, `discharge-flow.mdc`.
 
 ## Demo Seeds
 
 - Demo data must be clearly marked, safe to reset, and never required in production.
-

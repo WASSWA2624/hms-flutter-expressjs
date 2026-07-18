@@ -5,12 +5,13 @@ globs:
   - "backend/src/modules/lab-workspace/**"
 alwaysApply: false
 ---
+
 # Laboratory Patient Flow
 
-## Purpose
-Lab owns sample-to-result execution for encounter-linked orders. Keep the lab workbench focused on receiving orders, collecting samples, processing tests, and releasing verified results.
+Lab owns sample-to-result execution for encounter-linked orders; keep the lab workbench focused on receiving orders, collecting samples, processing tests, and releasing verified results.
 
 ## Stage Sequence
+
 - Order received from OPD, IPD, ICU, or clinical dialog.
 - Billing gate checked when required.
 - Sample collected, labeled, and received or rejected.
@@ -19,25 +20,26 @@ Lab owns sample-to-result execution for encounter-linked orders. Keep the lab wo
 - Critical results notify the receiving clinician.
 
 ## Handoffs
+
 - Doctor or clinical user owns order placement.
 - Lab tech owns collection, accession, processing, and result entry.
 - Lab supervisor owns verification and release.
 - OPD or IPD orchestrators own stage progression after results return.
 
 ## Hard Invariants
+
 - Must not create encounters or advance OPD/IPD stages directly.
 - Must not duplicate orders already posted through the encounter.
 - Must keep every row tied to a clinical encounter id.
 - Must not hide critical results from the clinician workflow.
 
 ## Allowed Critical Actions
+
 - Use the workbench route as the canonical lab workspace.
-- Support pay-now or bill-later at order time when policy requires it.
+- May support pay-now or bill-later at order time when policy requires it.
 - Flag critical results immediately for notification.
 - Keep OPD and IPD order contexts distinct in the queue.
 
 ## Related
-- `opd-flow.mdc`
-- `ipd-flow.mdc`
-- `radiology-flow.mdc`
-- `pharmacy-flow.mdc`
+
+- `opd-flow.mdc`, `ipd-flow.mdc`, `radiology-flow.mdc`, `pharmacy-flow.mdc`

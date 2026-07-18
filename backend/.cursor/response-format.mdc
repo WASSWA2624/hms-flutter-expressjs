@@ -1,27 +1,25 @@
 ---
-alwaysApply: false
+description: Standard success/error envelopes, human_friendly_id fields, and localized messages.
 globs:
   - "backend/**"
-description: >
-  Standard success/error envelopes, human_friendly_id fields, and localized messages.
+alwaysApply: false
 ---
 # Response Format Rules
 
-Purpose: standardize success and error payloads.
+Standardize success and error payloads.
 
-Success rules:
-- responses return a top-level `success` flag and `data`
-- list responses include pagination or cursor metadata in `meta`
-- mutation responses return the authoritative current resource or accepted job metadata
-- resource objects expose `human_friendly_id` as the client-visible identifier; omit internal numeric/uuid primary keys from `data` and `meta`
-- nested references use `human_friendly_id` or stable business codes, never raw foreign-key IDs
-- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
-- human-facing messages use translation keys or localized strings from the i18n layer; no hard-coded user-facing strings outside locale files
-- use concise, appropriate clinical/operational terminology in all user-facing text
-- see [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for cross-stack envelope details
+## Success
+- Responses return a top-level `success` flag and `data`.
+- List responses include pagination or cursor metadata in `meta`.
+- Mutation responses return the authoritative resource or accepted job metadata.
+- Resource objects expose `human_friendly_id` as the client-visible identifier; omit internal primary keys from `data` and `meta`.
+- Nested references use `human_friendly_id` or stable business codes, never raw foreign-key IDs.
+- Human-facing messages must use translation keys or localized strings; no hard-coded user-facing strings.
+- Use concise, appropriate clinical/operational terminology.
+- See [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for cross-stack envelope details.
 
-Error rules:
-- errors use one normalized problem-details shape
-- every error includes stable machine-readable code information
-- validation errors include field-level detail when safe
-- internal traces, Prisma internals, secrets, and PHI never reach clients
+## Errors
+- Errors use one normalized problem-details shape.
+- Every error includes a stable machine-readable code.
+- Validation errors include field-level detail when safe.
+- Internal traces, Prisma internals, secrets, and PHI must never reach clients.

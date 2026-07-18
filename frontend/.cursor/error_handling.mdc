@@ -1,20 +1,20 @@
 ---
-alwaysApply: false
+description: Require typed failures and safe error mapping at frontend layer boundaries.
 globs:
   - "frontend/lib/core/errors/**"
   - "frontend/lib/features/**/data/**"
-description: >
-  Apply when adding typed failures or error mapping in core or feature data layers.
+alwaysApply: false
 ---
+
 # Error Handling
 
-Purpose: typed failures and safe mapping at layer boundaries. UI presentation: [`ui-feedback.mdc`](./ui-feedback.mdc).
+Typed failures and safe mapping at layer boundaries; UI presentation lives in [`ui-feedback.mdc`](./ui-feedback.mdc).
 
-## Mandatory rules
+## Requirements
 
 - Convert exceptions to typed failures at layer boundaries.
-- Map API errors per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) before UI.
-- Do not expose raw technical errors to users.
+- Map API errors per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) before reaching UI.
+- Must not expose raw technical errors to users.
 - Log diagnostics without secrets ([`observability.mdc`](./observability.mdc)).
 - Handle startup, navigation, network, storage, validation, and permission errors explicitly.
 
@@ -30,7 +30,7 @@ Purpose: typed failures and safe mapping at layer boundaries. UI presentation: [
 | storage | safe fallback type |
 | unexpected | generic failure; log stack |
 
-## See also
+## Related
 
 - [`network_api.mdc`](./network_api.mdc)
 - [`ui-feedback.mdc`](./ui-feedback.mdc)

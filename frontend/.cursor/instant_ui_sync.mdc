@@ -1,61 +1,36 @@
 ---
-alwaysApply: true
+description: Require optimistic Riverpod UI updates and WebSocket reconciliation for shared data.
 globs:
   - "frontend/lib/**"
-description: >
-  Optimistic UI sync, Riverpod patches, and WebSocket reconciliation requirements.
+alwaysApply: false
 ---
+
 # Instant UI and Backend Sync
 
-Purpose: every UI change involving shared backend data must update the acting
-user immediately and converge across authorized sessions through the standard
-realtime pipeline.
+Every UI change on shared backend data must update the acting user immediately and converge across authorized sessions through the standard realtime pipeline.
 
-## Mandatory end-to-end flow
+## End-to-end flow
 
-1. Widgets read authoritative UI data only from Riverpod and delegate actions to
-   controllers; widgets never call APIs or maintain competing server-data copies.
-2. Controllers write through repositories over HTTP. WebSockets are server-to-client
-   synchronization, never a mutation transport.
-3. On successful persistence (`saved == true`), patch every affected Riverpod slice
-   immediately from the response or a typed local delta: rows, details, summaries,
-   cards, alerts, and navigation badges. Cancel or failure must not patch or refresh.
-4. After commit and audit, the backend publishes a scoped domain event for every
-   user-visible shared mutation. Opting out requires an explicit documented reason.
-5. Controllers subscribe with the relevant `RealtimeEventGroups` and
-   `listenForRealtimeRefresh`, including audit CRUD events where applicable.
-6. Reconcile through `WorkspaceSyncEngine`: apply a safe typed `RealtimeDelta`, or
-   run the smallest `WorkspaceRefreshPlan` HTTP fetch. HTTP persistence resolves
-   conflicts; websocket payloads are reconciliation hints.
-7. Defer reconciliation while saving, refresh after authenticated reconnect, and
-   use `WorkspaceDisconnectPollPlan` only while disconnected.
+- Widgets read authoritative data only from Riverpod and delegate actions to controllers; never call APIs or keep competing server-data copies.
+- Controllers write through repositories over HTTP; WebSockets are server-to-client sync, never a mutation transport.
+- On successful persistence (`saved == true`), immediately patch every affected Riverpod slice from the response or a typed local delta; cancel or failure must not patch or refresh.
+- After commit, the backend publishes a scoped domain event for each user-visible shared mutation.
+- Controllers subscribe with the relevant `RealtimeEventGroups` and `listenForRealtimeRefresh`.
+- Reconcile via `WorkspaceSyncEngine`: apply a safe typed `RealtimeDelta` or the smallest `WorkspaceRefreshPlan` fetch; HTTP resolves conflicts.
+- Defer reconciliation while saving; refresh after authenticated reconnect.
 
-## Responsiveness and efficiency
+## Efficiency
 
-- Sync-driven UI must remain high-performance, uniform, simple, and intuitive across mobile, tablet, and desktop, using reusable `frontend/lib/shared/` components.
-- A successful local mutation must be visible in the same frame or next provider
-  rebuild whenever the response or a deterministic delta is available; never block
-  that visible update on a full workspace `GET`.
-- Cross-session propagation is best-effort over WebSocket plus targeted HTTP
-  reconciliation. Do not promise fixed network latency, ordering, or delivery.
-- Prefer the smallest state patch. Blanket `ref.invalidate` or full workspace reload
-  is a last resort when no correct targeted patch or refresh plan exists.
-- Reuse shared burst coalescing. Add an explicit debounce only when measurement
-  proves it reduces redundant work without creating perceptible staleness.
-- Never navigate, show feedback, call `setState`, or mutate widgets from realtime
-  handlers.
+- Prefer the smallest patch; blanket `ref.invalidate` or full reload is a last resort.
+- A local mutation must be visible in the same frame or next rebuild, never blocked on a workspace `GET`.
+- Must not navigate, show feedback, call `setState`, or mutate widgets from realtime handlers.
 
-## Required verification for sync changes
+## Verification
 
-- Unit-test optimistic/response delta appliers and new event-group membership.
-- Controller-test success patching, cancel/failure behavior, and save-time deferral.
-- Test event reconciliation and authenticated reconnect refresh.
-- For cross-stack mutations, test backend event emission and a simulated second
-  client updating without manual reload.
+- Unit-test delta appliers and event-group membership; controller-test success patching, cancel/failure, and save-time deferral.
+- Test reconnect refresh and cross-stack backend event emission.
 
-## See also
+## Related
 
 - [`state_management.mdc`](./state_management.mdc)
 - [`realtime_sync.mdc`](./realtime_sync.mdc)
-- [`architecture.mdc`](./architecture.mdc)
-- [`ui-feedback.mdc`](./ui-feedback.mdc)

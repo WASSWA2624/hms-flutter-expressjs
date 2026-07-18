@@ -1,17 +1,16 @@
 ---
-alwaysApply: false
+description: Backend rate limiting to protect endpoints from abuse and misuse.
 globs:
   - "backend/**"
-description: >
-  Backend rate limiting to protect endpoints from abuse and misuse.
+alwaysApply: false
 ---
 # Rate Limiting Rules
 
-Purpose: protect the API from abuse and runaway automation.
+Protect the API from abuse and runaway automation.
 
-Rules:
-- authentication, password reset, invite acceptance, and public endpoints use stricter limits than internal staff CRUD
-- rate-limit keys may include IP, tenant, user, or API key depending on endpoint risk
-- break-glass and admin routes are not exempt from abuse controls
-- repeated failures on sensitive flows should trigger defensive logging or temporary blocking
-- limit configuration lives in config, not in route files
+## Requirements
+- Authentication, password reset, invite acceptance, and public endpoints must use stricter limits than internal staff CRUD.
+- Rate-limit keys may include IP, tenant, user, or API key depending on endpoint risk.
+- Break-glass and admin routes must not be exempt from abuse controls.
+- Repeated failures on sensitive flows should trigger defensive logging or temporary blocking.
+- Limit configuration must live in config, not in route files.

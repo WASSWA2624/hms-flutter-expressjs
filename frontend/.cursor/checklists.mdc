@@ -1,51 +1,36 @@
 ---
-alwaysApply: false
+description: Provide release and per-feature readiness gates for the HMS frontend.
 globs:
   - "frontend/lib/**"
-description: >
-  Apply before release or QA to confirm frontend architecture and feature readiness.
+alwaysApply: false
 ---
+
 # Checklists
 
-Purpose: release gates only. Detailed standards live in owner files in [`index.mdc`](./index.mdc).
+Release and per-feature gates only; detailed standards live in owner files in [`index.mdc`](./index.mdc).
 
 ## Release readiness
 
-- [ ] Structure matches [`project_structure.mdc`](./project_structure.mdc)
-- [ ] Layer boundaries per [`architecture.mdc`](./architecture.mdc)
-- [ ] Dependencies per [`dependencies.mdc`](./dependencies.mdc)
-- [ ] Theme/tokens per [`design-system.mdc`](./design-system.mdc)
-- [ ] Components per [`components.mdc`](./components.mdc)
-- [ ] Layouts/shell per [`layouts.mdc`](./layouts.mdc)
-- [ ] Module workspaces per [`ui-workspace.mdc`](./ui-workspace.mdc) (new/changed queue screens)
-- [ ] Localization: no hard-coded user-facing strings; no `_FeatureText` private copy classes
-- [ ] Responsiveness: layouts adapt across mobile, tablet, and desktop ([`layouts.mdc`](./layouts.mdc))
-- [ ] Design tokens: no hard-coded colors, spacing, or typography — all via theme tokens ([`design-system.mdc`](./design-system.mdc))
-- [ ] Reusable components live in `frontend/lib/shared/`; shared catalog checked before new widgets created
-- [ ] Auth/permissions align with backend entitlements
-- [ ] Entity refs: UI/API use `human_friendly_id` only ([`data_modeling.mdc`](./data_modeling.mdc))
-- [ ] Subscription ∩ role permission intersection enforced ([`permissions.mdc`](./permissions.mdc), `.cursor/access/subscriptions.mdc`)
-- [ ] Menus/routes/actions hidden for unauthorized users (strict RBAC+ABAC)
-- [ ] API integration per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
-- [ ] `flutter analyze` and `flutter test` pass ([`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc))
+- [ ] Structure, layer boundaries, and dependencies match their owner rules.
+- [ ] Theme/tokens, components, and layouts follow [`design-system.mdc`](./design-system.mdc), [`components.mdc`](./components.mdc), [`layouts.mdc`](./layouts.mdc).
+- [ ] No hard-coded user-facing strings or `_FeatureText` copy classes.
+- [ ] Layouts adapt across mobile, tablet, desktop; no hard-coded colors, spacing, or typography.
+- [ ] Reusable widgets live in `frontend/lib/shared/`; catalog checked first.
+- [ ] Auth/permissions align with backend entitlements; menus/routes/actions hidden for unauthorized users (RBAC+ABAC).
+- [ ] UI/API use `human_friendly_id` only ([`data_modeling.mdc`](./data_modeling.mdc)).
+- [ ] Subscription ∩ role permission intersection enforced ([`permissions.mdc`](./permissions.mdc)).
+- [ ] API integration per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
+- [ ] `flutter analyze` and `flutter test` pass ([`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)).
 
 ## Per-feature gate
 
-- [ ] Standard `data/domain/presentation` structure
-- [ ] Shared components reused from `lib/shared/`
-- [ ] Queue screens follow [`ui-workspace.mdc`](./ui-workspace.mdc) layout stack
-- [ ] UI feedback states per [`ui-feedback.mdc`](./ui-feedback.mdc)
-- [ ] Forms/tables per [`ui-patterns.mdc`](./ui-patterns.mdc)
-- [ ] No raw UUIDs, enum codes, or magic color/spacing constants in presentation UI
-- [ ] Shared-data mutations follow [`instant_ui_sync.mdc`](./instant_ui_sync.mdc):
-      immediate success patch, scoped backend event, correct `RealtimeEventGroups`,
-      targeted reconciliation, and authenticated reconnect refresh
-- [ ] Cancel/failure does not patch, invalidate, or refresh shared UI state
-- [ ] New realtime behavior has delta/event-group, controller, reconnect, and backend
-      event-emission coverage where applicable
-- [ ] Tests for controller and critical UI
+- [ ] Standard `data/domain/presentation` structure; shared components reused.
+- [ ] Queue screens follow [`ui-workspace.mdc`](./ui-workspace.mdc); feedback per [`ui-feedback.mdc`](./ui-feedback.mdc).
+- [ ] No raw UUIDs, enum codes, or magic constants in presentation.
+- [ ] Shared-data mutations follow [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); cancel/failure never patches or refreshes.
+- [ ] Tests cover controller logic and critical UI.
 
-## See also
+## Related
 
 - [`scope.mdc`](./scope.mdc)
 - [`feature_workflow.mdc`](./feature_workflow.mdc)

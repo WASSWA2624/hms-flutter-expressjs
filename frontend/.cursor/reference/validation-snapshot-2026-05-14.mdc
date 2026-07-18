@@ -1,14 +1,15 @@
 ---
-alwaysApply: false
+description: Historical validation snapshot from 2026-05-14; not current policy.
 globs:
   - "frontend/.cursor/reference/validation-snapshot-2026-05-14.mdc"
-description: Historical validation snapshot from 2026-05-14; not current policy.
+alwaysApply: false
 ---
+
 # Validation Snapshot (2026-05-14)
 
-Historical record only. Current quality gates: [`ci_cd_quality_gates.mdc`](../ci_cd_quality_gates.mdc) and [`checklists.mdc`](../checklists.mdc).
+Historical record only. Readers must treat current quality gates in [`ci_cd_quality_gates.mdc`](../ci_cd_quality_gates.mdc) and [`checklists.mdc`](../checklists.mdc) as authoritative.
 
-## Executed results (at time of snapshot)
+## Executed results
 
 | Check | Result |
 |---|---|
@@ -22,13 +23,10 @@ Historical record only. Current quality gates: [`ci_cd_quality_gates.mdc`](../ci
 
 ```bash
 flutter pub get
+dart run build_runner build --delete-conflicting-outputs
 dart format --set-exit-if-changed .
 flutter analyze
 flutter test
-```
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
 ```
 
 ## Responsive tests validated

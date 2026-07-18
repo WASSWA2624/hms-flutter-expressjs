@@ -1,27 +1,25 @@
 ---
-alwaysApply: false
+description: Apply when implementing offline queues, conflict handling, or sync recovery in the frontend.
 globs:
   - "frontend/lib/core/sync/**"
   - "frontend/lib/features/**/data/**"
-description: >
-  Apply when implementing offline queues, conflict handling, or sync recovery in the frontend.
+alwaysApply: false
 ---
+
 # Offline and Sync
 
-Purpose: client-side offline behavior per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
+Client-side offline behavior per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
 
 ## Mandatory rules
 
 - Connectivity is a hint, not proof of reachability.
-- Queue offline drafts/pending writes in structured local storage when required.
-- Sync operations idempotent where possible.
-- Show sync states: pending, syncing, synced, failed, conflict.
-- Do not silently discard offline changes.
-- Conflict handling explicit; surface `409` with version metadata.
-- Repositories expose consistent local + remote views.
-- After HTTP writes succeed, expect matching domain events from the backend.
-  Controllers reconcile through `WorkspaceSyncEngine`: apply safe typed deltas or
-  perform the smallest HTTP refresh; widgets never consume raw websocket payloads.
+- Must queue offline drafts and pending writes in structured local storage when required.
+- Sync operations should be idempotent where possible.
+- Must show sync states: pending, syncing, synced, failed, conflict.
+- Must not silently discard offline changes.
+- Conflict handling must be explicit; surface `409` with version metadata.
+- Repositories must expose consistent local and remote views.
+- After successful HTTP writes, controllers must reconcile via `WorkspaceSyncEngine` (safe typed deltas or the smallest HTTP refresh); widgets must never consume raw websocket payloads.
 
 ## Online-only (never queue)
 

@@ -1,32 +1,31 @@
 ---
-alwaysApply: false
+description: Mandatory backend module build sequence from schemas through tests and access alignment.
 globs:
   - "backend/**"
-description: >
-  Mandatory backend module build sequence: schemas through tests and access alignment.
+alwaysApply: false
 ---
 # Module Creation Rules
 
-Purpose: define the mandatory build sequence for every backend module.
+Define the mandatory build sequence for every backend module.
 
-Required sequence:
-0. declare module default permissions in `.cursor/access/modules.mdc` and map roles in `.cursor/access/default_user_roles.mdc`; ensure subscription packages in `.cursor/access/subscriptions.mdc` include the module
-1. define the module contract in `../../.cursor/app-write-up.mdc`, `dev-plan/P010_api_endpoints.mdc`, and `dev-plan/P011_modules.mdc`
-2. create the module folder and mirrored test folder
-3. implement Zod schemas using `snake_case` field names and `human_friendly_id` for public identifiers
-4. implement repositories with `human_friendly_id` generation/lookup, tenancy, soft-delete, and audit-friendly query patterns
-5. implement services with RBAC, ABAC, subscription entitlement checks, audit logging, workflow rules, and post-mutation websocket domain events
-6. implement controllers with response helpers and no business logic
-7. implement routes with validation, auth, authorization, and documentation
-8. mount the module and wire websocket emissions for every user-visible mutation path
-9. complete tests, seed updates, and doc sync before declaring the module done
+## Required sequence
+0. Declare module permissions in `.cursor/access/modules.mdc`, map roles in `default_user_roles.mdc`, and include the module in `subscriptions.mdc`.
+1. Define the module contract in `../../.cursor/app-write-up.mdc`, `dev-plan/P010_api_endpoints.mdc`, and `dev-plan/P011_modules.mdc`.
+2. Create the module folder and mirrored test folder.
+3. Implement Zod schemas using `snake_case` fields and `human_friendly_id` for public identifiers.
+4. Implement repositories with `human_friendly_id` lookup, tenancy, soft-delete, and audit-friendly queries.
+5. Implement services with RBAC, ABAC, entitlement checks, audit logging, workflow rules, and post-mutation websocket events.
+6. Implement controllers with response helpers and no business logic.
+7. Implement routes with validation, auth, authorization, and documentation.
+8. Mount the module and wire websocket emissions for every user-visible mutation.
+9. Complete tests, seed updates, and doc sync before declaring the module done.
 
-Done gate:
-- owned tables and permission keys exist
-- public routes and responses use `human_friendly_id` only; internal IDs are not exposed
-- default permissions match `.cursor/access/` and subscription intersection tests pass
-- effective permissions = `union(role, module, user grants) ∩ active subscription ∩ ABAC scope`; no endpoint accessible to unauthorized users
-- standalone workflow is usable without another paid module being open
-- mutation paths create audit evidence
-- route, permission, entitlement, and module names match all docs
-- tests pass for schemas, repositories, services, controllers, and routes
+## Done gate
+- Owned tables and permission keys exist.
+- Public routes and responses use `human_friendly_id` only.
+- Default permissions match `.cursor/access/` and subscription intersection tests pass.
+- Effective permissions = `union(role, module, user grants) ∩ active subscription ∩ ABAC scope`; no endpoint is reachable by unauthorized users.
+- Standalone workflow is usable without another paid module open.
+- Mutation paths create audit evidence.
+- Route, permission, entitlement, and module names match all docs.
+- Tests pass for schemas, repositories, services, controllers, and routes.

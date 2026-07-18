@@ -1,92 +1,41 @@
-
 ---
-alwaysApply: false
+description: Govern shared, reusable UI components and when feature widgets belong in shared.
 globs:
   - "frontend/lib/shared/**"
   - "frontend/lib/features/**/presentation/widgets/**"
-description: >
-  Apply when creating shared UI or deciding whether feature widgets belong under frontend/lib/shared/.
+alwaysApply: false
 ---
+
 # Shared Components
 
-Purpose: uniform reusable UI built on Flutter Material primitives.
+Uniform, reusable UI built on Flutter Material primitives.
 
-## Mandatory rules
+## Requirements
 
-- Prefer Flutter Material/Cupertino widgets; wrap only for consistency or repeated behavior.
-- Keep shared components minimal, flexible, and stable.
-- Do not create multiple components for the same job.
-- Do not put product-specific business logic in shared components.
-- All components suitable for reuse across features **must** live under `frontend/lib/shared/` (components, layout, forms, search, widgets) — never duplicate in feature folders.
-- Optimize for high performance: const constructors, focused rebuilds, lazy child builders where lists are large.
-- Keep UI uniform: one catalog entry per interaction pattern; match design tokens on every variant ([`design-system.mdc`](./design-system.mdc)).
-- Components must adapt cleanly to mobile, tablet, and desktop layouts ([`layouts.mdc`](./layouts.mdc)).
-- All user-facing labels, hints, validation messages, and accessibility labels come from localization.
-- Keep component APIs and interactions simple, consistent, and intuitive for clinical and operational workflows.
-- Data-bound components must render Riverpod changes immediately and support targeted backend reconciliation without owning sync logic.
-- Components support enabled, disabled, loading, error, focused, and empty states where relevant.
-- Components use [`design-system.mdc`](./design-system.mdc) tokens for colors, spacing, typography, radius, and elevation.
-- Before creating new UI, check `lib/shared/` for an existing component; add reusable widgets there, one-off widgets in the feature.
-- Module work-queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc) unless the screen type is excluded there (auth, simple settings, static profile).
-- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
-- Menus, UI components, and workflow actions must never be visible, rendered, or accessible to unauthorized users — enforce RBAC and ABAC access control ([`permissions.mdc`](./permissions.mdc)).
-- Prohibit hard-coded color values, spacing values, and typography throughout — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
+- Prefer Material/Cupertino widgets; wrap only for consistency or repeated behavior.
+- Reusable components must live under `frontend/lib/shared/`; never duplicate in feature folders, and check the catalog before creating new UI.
+- Must not create multiple components for one job or embed product business logic.
+- Optimize for performance: `const` constructors, focused rebuilds, lazy builders for large lists.
+- Match design tokens on every variant ([`design-system.mdc`](./design-system.mdc)) and adapt to mobile, tablet, desktop ([`layouts.mdc`](./layouts.mdc)).
+- All labels, hints, validation, and accessibility text must be localized.
+- Support enabled, disabled, loading, error, focused, and empty states where relevant.
+- Data-bound components render Riverpod changes immediately without owning sync logic.
+- Reference entities by `human_friendly_id`; must not expose raw table IDs.
+- Enforce RBAC+ABAC: unauthorized menus, components, and actions must never render ([`permissions.mdc`](./permissions.mdc)).
+- Module work-queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc).
 
 ## Standard catalog
 
-| Component                              | Built on                                      | Purpose                                                                                                          |
-| -------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `AppWorkspace`                       | composition                                   | module work-queue shell: toolbar notifications submenu, list, detail ([`ui-workspace.mdc`](./ui-workspace.mdc)) |
-| `AppListTable`                       | `ListView` / table layout                   | paginated worklist with mobile adaptive mode                                                                     |
-| `AppWorkspaceDetailPanel`            | composition                                   | selected row detail sections                                                                                     |
-| `AppActionPanel` / `AppActionList` | composition                                   | grouped primary/secondary actions                                                                                |
-| `AppPermissionActionPanel` / list / button / async button | composition + `AccessRequirement` + `AppActionRunner` | RBAC/ABAC/entitlement-aware actions: hide vs disable, confirmation, overflow, idempotent retry lifecycle |
-| `AppWorkspaceMutationDialog`         | `AppDialog`                                 | consistent mutation forms from workspace                                                                         |
-| `AppButton`                          | `TextButton`                                | borderless primary, secondary, tertiary, and icon-only actions                                                   |
-| `AppTextField`                       | `TextFormField`                             | text, number, password, multiline                                                                                |
-| `AppSelectField<T>`                  | `DropdownMenu<T>` or Material menus         | searchable selection                                                                                             |
-| `AppRadioGroup<T>`                   | `RadioGroup` / `RadioListTile`            | exclusive options                                                                                                |
-| `AppCheckboxField`                   | `CheckboxListTile`                          | boolean option                                                                                                   |
-| `AppSwitchField`                     | `SwitchListTile`                            | setting toggle                                                                                                   |
-| `AppDateField`                       | date picker primitives                        | locale-aware date input                                                                                          |
-| `AppDialog`                          | `Dialog` / `AlertDialog`                  | consistent modals                                                                                                |
-| `AsyncStateScaffold`                 | composition                                   | loading, empty, error, success ([`ui-feedback.mdc`](./ui-feedback.mdc))                                         |
-| `AppStatusBadge` / `AppStatusText` | composition                                   | localized status with non-color icon cues                                                                        |
-| `AppTimeline`                        | composition                                   | chronological clinical/ops event rail                                                                            |
-| `AppPatientDetails`                  | composition                                   | compact patient context + Show more/less preference                                                              |
-| `AppWorkflowStepper`                 | composition                                   | workflow step progress + capability-aware actions                                                                |
-| `AppClinicalResultsPreview`          | composition                                   | clinical results preview shell (inline/modal/full-screen) + module content adapters                              |
-| `AppReportSectionTile` / list / `AppReportSectionPicker` | composition | selectable report section picker tiles + responsive grid; empty/unauthorized sections disabled via `report_section_selection` helpers |
-| `ResponsivePage`                     | layout                                        | page padding and max-width ([`layouts.mdc`](./layouts.mdc))                                                     |
-| `ResponsiveAppShell`                 | `Scaffold`, `NavigationRail`, `MenuBar` | mobile/tablet/desktop shell                                                                                      |
-| `AppMenuBar`                         | `MenuBar`                                   | desktop/web app-level actions                                                                                    |
-| `SideNavigation`                     | `NavigationRail` or Material composition    | collapsed/expanded side nav                                                                                      |
-
-**Naming:** public widget `ResponsiveAppShell` lives in `lib/shared/layout/responsive_shell_scaffold.dart`.
+Reuse the standard set instead of new abstractions: `AppWorkspace`, `AppListTable`, `AppWorkspaceDetailPanel`, `AppActionPanel`, `AppPermissionActionPanel`, `AppWorkspaceMutationDialog`, `AppButton`, `AppTextField`, `AppSelectField`, `AppRadioGroup`, `AppCheckboxField`, `AppSwitchField`, `AppDateField`, `AppDialog`, `AsyncStateScaffold`, `AppStatusBadge`, `ResponsivePage`, `ResponsiveAppShell`, `SideNavigation`.
 
 ## Styling bounds
 
-- Icons: `20–24px` unless layout requires larger.
-- Button heights: `40–48px`.
-- Radii: no fixed cap — use any `theme.radius` token (`xs`…`xxl`, or `full` for pill/circular), applied responsively via `context.responsiveRadius(...)`. See [`design-system.mdc`](./design-system.mdc) shape rules.
-- Use text plus icons for important navigation or status items where space allows.
+- Icons `20–24px`; button heights `40–48px`.
+- Radii from `theme.radius` tokens via `context.responsiveRadius(...)`.
+- Form fields expose validation hooks but do not own feature rules.
 
-## Form components
+## Related
 
-- Expose validation hooks; do not own feature validation rules.
-- Searchable selects use overlays/menus, not pushing unrelated content down by default.
-- Date fields use locale-aware formatting.
-- Password fields provide accessible show/hide when used.
-
-## Anti-patterns
-
-- Do not introduce parallel button, dialog, table, or workspace abstractions when the standard catalog already covers the use case.
-- Do not embed module-specific copy in `lib/shared/` — shared widgets accept localized strings from callers.
-- Do not use raw Material buttons/fields on module workspaces when `AppButton` / `AppTextField` / `AppWorkspace` apply.
-
-## See also
-
-- [`ui-workspace.mdc`](./ui-workspace.mdc) — module screen contract
-- [`ui-patterns.mdc`](./ui-patterns.mdc) — forms and tables
-- [`ui-feedback.mdc`](./ui-feedback.mdc) — async states
-- [`layouts.mdc`](./layouts.mdc) — shell and breakpoints
+- [`ui-workspace.mdc`](./ui-workspace.mdc)
+- [`ui-patterns.mdc`](./ui-patterns.mdc)
+- [`layouts.mdc`](./layouts.mdc)

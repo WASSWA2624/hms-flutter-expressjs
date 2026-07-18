@@ -8,39 +8,40 @@ globs:
   - "backend/src/modules/ambulance-dispatch/**"
 alwaysApply: false
 ---
+
 # Emergency Patient Flow
 
-## Purpose
-Emergency owns rapid intake, triage, stabilization, ambulance dispatch, and downstream handoff. Preserve the emergency case as the source record until the patient moves to OPD, IPD, ICU, theater, referral, or discharge.
+Emergency owns rapid intake, triage, stabilization, ambulance dispatch, and downstream handoff; preserve the emergency case as the source record until the patient moves to OPD, IPD, ICU, theater, referral, or discharge.
 
 ## Stage Sequence
+
 - Arrival and quick registration.
 - Case opened with chief complaint and priority.
-- Triage records acuity, vitals, and routing decision.
+- Triage records acuity, vitals, and routing.
 - Stabilization and emergency treatment.
 - Diagnostics and emergency orders as needed.
-- Handoff destination selected.
-- Downstream flow started and emergency case closed when appropriate.
+- Handoff selected, downstream flow started, and the case closed when appropriate.
 
 ## Handoffs
+
 - Triage nurse owns intake and acuity capture.
 - Emergency clinician owns stabilization and destination choice.
 - System owns orchestration of OPD, IPD, ICU, or theater handoff.
-- Emergency must pass source context to the receiving flow and must not create duplicate downstream records.
+- Emergency must pass source context and must not create duplicate downstream records.
 
 ## Hard Invariants
-- Must not own ward beds, OPD consultation queues, or cashier workflows after handoff.
+
+- Must not own ward beds, OPD queues, or cashier workflows after handoff.
 - Must not recreate IPD when OPD already admitted the patient.
 - Must preserve emergency context on the receiving module.
-- Must allow billing deferral when policy permits urgent care first.
+- May allow billing deferral when policy permits urgent care first.
 
 ## Allowed Critical Actions
+
 - Show `Open in OPD`, `Open in IPD`, `Open in ICU`, or `Open in Theater` when links exist.
-- Keep quick-registration patients visible until registration is completed.
+- Keep quick-registration patients visible until registration completes.
 - Surface deferred billing only when the backend supports it.
 
 ## Related
-- `opd-flow.mdc`
-- `ipd-flow.mdc`
-- `icu-flow.mdc`
-- `theater-flow.mdc`
+
+- `opd-flow.mdc`, `ipd-flow.mdc`, `icu-flow.mdc`, `theater-flow.mdc`

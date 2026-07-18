@@ -1,42 +1,39 @@
 ---
-alwaysApply: false
+description: Prisma schema, migrations, human_friendly_id, tenancy, and repository-only access rules.
 globs:
   - "backend/**"
-description: >
-  Prisma schema, migrations, human_friendly_id, tenancy, and repository-only access.
+alwaysApply: false
 ---
 # Prisma And Database Rules
 
-Purpose: define the authoritative database contract.
+Define the authoritative database contract.
 
-Naming rules:
-- Prisma models use lowercase `snake_case`
-- database tables and columns use lowercase `snake_case`
-- join tables use descriptive `snake_case` names such as `user_role`
-- migrations, SQL, queries, and docs must use the same names
+## Naming
+- Prisma models, tables, and columns use lowercase `snake_case`.
+- Join tables use descriptive `snake_case` names such as `user_role`.
+- Migrations, SQL, queries, and docs must reuse the same names.
 
-Schema rules:
-- every tenant-scoped record carries `tenant_id`
-- facility-scoped records carry `facility_id` when required by the domain
-- every tenant-facing business entity includes a unique, immutable `human_friendly_id` (indexed, scoped by tenant when applicable)
-- APIs, audit payloads, and websocket envelopes use `human_friendly_id`; repositories perform ID translation at the data boundary
-- never select or serialize internal primary keys into public DTOs unless required for server-only joins inside repositories
-- auditable records include `created_at`, `updated_at`, and `deleted_at` when soft delete applies
-- frequently filtered scope, status, and `deleted_at` columns are indexed
-- soft delete is the default for business records unless law or storage design requires otherwise
+## Schema
+- Every tenant-scoped record must carry `tenant_id`; facility-scoped records carry `facility_id` when required.
+- Every tenant-facing entity includes a unique, immutable, indexed `human_friendly_id`.
+- APIs, audit payloads, and websocket envelopes use `human_friendly_id`; repositories translate IDs at the data boundary.
+- Never serialize internal primary keys into public DTOs.
+- Auditable records include `created_at`, `updated_at`, and `deleted_at` when soft delete applies.
+- Frequently filtered scope, status, and `deleted_at` columns must be indexed.
+- Soft delete is the default for business records unless law or design requires otherwise.
 
-Migration rules:
-- whenever a schema change necessitates a migration, all required migrations must be created and executed promptly and reliably for every applicable database environment
-- migration files must be committed alongside the schema changes that produce them
-- destructive migrations (column drops, type changes) require a documented rollback plan
+## Migrations
+- Required migrations must be created and executed reliably for every applicable environment.
+- Migration files must be committed alongside the schema changes that produce them.
+- Destructive migrations require a documented rollback plan.
 
-Data-access rules:
-- repositories are the only place for model operations
-- service-level Prisma usage is limited to transaction orchestration
-- raw SQL requires justification and safe parameterization
-- audit evidence must be created for all mutations
+## Data access
+- Repositories are the only place for model operations.
+- Service-level Prisma usage is limited to transaction orchestration.
+- Raw SQL requires justification and safe parameterization.
+- All mutations must create audit evidence.
 
-Domain-specific requirements:
-- workforce access tables must support multi-role assignments and ABAC policy storage
-- biomedical tables must preserve equipment lifecycle history
-- mortuary tables must preserve custody and release evidence without name drift
+## Domain
+- Workforce tables must support multi-role assignments and ABAC policy storage.
+- Biomedical tables must preserve equipment lifecycle history.
+- Mortuary tables must preserve custody and release evidence without name drift.

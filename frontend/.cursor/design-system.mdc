@@ -1,86 +1,53 @@
 ---
-alwaysApply: false
+description: Serve as the single source of truth for the HMS theme, tokens, and typography.
 globs:
   - "frontend/lib/app/theme/**"
   - "frontend/lib/shared/**"
   - "frontend/lib/features/**/presentation/**"
-description: >
-  Apply when theming tokens, colors, or typography in shared components and features.
+alwaysApply: false
 ---
+
 # Design System
 
-Purpose: single source of truth for the HOSSPI HMS visual system.
+Single source of truth for the HOSSPI HMS visual system, built on Material 3.
 
-## Mandatory rules
+## Requirements
 
-- Use Material 3 as the default foundation.
-- Themes must be comprehensive: light, dark, system mode, semantic status tones, spacing, radius, elevation, and typography — all via tokens/extensions.
-- Light theme is the default; support dark theme and system theme mode.
-- Light theme: clean blue-based palette; dark theme: clean, readable, Material-aligned.
-- Never hard-code color, spacing, radius, elevation, or typography tokens in feature or shared widget code.
-- All surfaces must remain readable and consistently styled on mobile, tablet, and desktop breakpoints ([`layouts.mdc`](./layouts.mdc)).
-- Reusable theme-aware components must live in `frontend/lib/shared/`; check the shared catalog before creating new styled widgets.
-- All user-facing text (labels, tooltips, status descriptions) must be localized with concise, clinically appropriate terminology.
-- Keep visual design simple and intuitive; avoid decorative complexity that slows rendering or confuses clinical workflows.
-- Store theme mode as a non-sensitive preference when persisted.
-- Theme changes must update the app reactively.
-- Shared components read colors, typography, shape, and spacing from the active theme or design tokens.
+- Provide comprehensive light, dark, and system themes with semantic status tones, spacing, radius, elevation, and typography via tokens/extensions.
+- Light theme is default (blue-based palette); dark theme stays readable and Material-aligned.
+- Must not hard-code color, spacing, radius, elevation, or typography in feature or shared widgets.
+- Surfaces must remain readable on mobile, tablet, and desktop ([`layouts.mdc`](./layouts.mdc)).
+- Reusable theme-aware components must live in `frontend/lib/shared/`.
+- Localize all user-facing text; theme changes must update reactively.
 
-## Token access (mandatory)
-
-Read tokens through theme extensions — do not duplicate numeric constants in features:
+## Token access
 
 ```dart
 final theme = Theme.of(context);
-theme.spacing.md;           // AppSpacingTokens via app_theme_extensions
+theme.spacing.md;           // AppSpacingTokens
 theme.appTokens;            // AppDesignTokens
 theme.colorScheme.primary;  // ColorScheme roles
 ```
 
-- Use `theme.textTheme` for typography — not inline `TextStyle(fontSize: 14, ...)`.
-- Use `AppWorkspaceStatusTone` / semantic status colors from theme extensions for status chips — not ad-hoc `Colors.green`.
-- Use `AppFormatters` / `app_formatters.dart` for currency and dates — not manual string building.
+- Use `theme.textTheme` for typography, not inline `TextStyle`.
+- Use semantic status tones from theme extensions, not ad-hoc `Colors.green`.
 
-## Color standard
+## Tokens
 
-| Theme | Baseline |
-|---|---|
-| Light | `ColorScheme.fromSeed(seedColor: Color(0xFF1565C0), brightness: Brightness.light)` |
-| Dark | `ColorScheme.fromSeed(seedColor: Color(0xFF90CAF9), brightness: Brightness.dark)` |
-| Error | Material error roles from active `ColorScheme` |
-| Status | success, warning, info via theme extension only when required |
-
-## Design tokens
-
-| Token group | Values |
+| Group | Values |
 |---|---|
 | Spacing | `xs=4`, `sm=8`, `md=12`, `lg=16`, `xl=24`, `xxl=32` |
-| Radius | `none=0`, `xs=4`, `sm=8`, `md=10`, `lg=12`, `xl=16`, `xxl=24`, `full=pill/circular` (open scale — no upper cap) |
+| Radius | `xs=4` … `xxl=24`, `full=pill` (open scale, no cap) |
 | Page padding | mobile `16`, tablet `24`, desktop `32` |
-| Button height | compact `36–40`, standard `40–48` |
-| Icon size | default `20–24`; larger only when layout requires |
-| Max widths | see [`layouts.mdc`](./layouts.mdc) |
+| Icon size | `20–24`; larger only when required |
 
-## Shape and density
+## Shape
 
-- Corner radii have no fixed cap: choose any radius token (`xs`…`xxl`, or `full` for pill/circular) that suits the surface. There is no mandated `8–12` range.
-- Always source radii from `theme.radius` tokens; do not hard-code numeric radii in feature widgets.
-- Radii must be responsive: derive them via `context.responsiveRadius(theme.radius.<token>)` (or `AppRadiusTokens.responsive`) so they scale down on compact screens and up on large desktops.
-- Rely on `RoundedRectangleBorder`/`BorderRadius` auto-clamping (radius is limited to half the shortest side) so large radii never overflow small controls.
-- Avoid excessive padding; keep desktop controls visually balanced.
-- Use consistent elevation and borders; keep the shape language uniform across related card/button/dialog styles.
-- Keep navigation items readable without oversized icons or row heights.
+- Source radii from `theme.radius`; make them responsive via `context.responsiveRadius(...)`.
+- Rely on `BorderRadius` auto-clamping; keep shape language uniform across cards, buttons, dialogs.
 
-## Typography
+## Related
 
-- Use theme text styles, not raw duplicated `TextStyle`.
-- Keep headings consistent by screen purpose.
-- Keep body text readable at scaled font sizes.
-- Use locale-aware text direction where needed.
-
-## See also
-
-- [`components.mdc`](./components.mdc) — component styling
-- [`layouts.mdc`](./layouts.mdc) — breakpoints and page padding
-- [`localization_i18n.mdc`](./localization_i18n.mdc)
+- [`components.mdc`](./components.mdc)
+- [`layouts.mdc`](./layouts.mdc)
 - [`accessibility.mdc`](./accessibility.mdc)

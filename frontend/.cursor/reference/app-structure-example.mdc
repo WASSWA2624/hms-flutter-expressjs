@@ -1,12 +1,15 @@
 ---
-alwaysApply: false
+description: Reference example for the root App widget shape.
 globs:
   - "frontend/.cursor/reference/app-structure-example.mdc"
-description: Reference example for the root App widget shape.
+alwaysApply: false
 ---
+
 # Example App Structure
 
-Reference only. Policy lives in [`startup_flow.mdc`](../startup_flow.mdc), [`navigation.mdc`](../navigation.mdc), [`state_management.mdc`](../state_management.mdc).
+Reference only. Policy lives in [`startup_flow.mdc`](../startup_flow.mdc), [`navigation.mdc`](../navigation.mdc), and [`state_management.mdc`](../state_management.mdc).
+
+## Example
 
 ```dart
 class App extends ConsumerWidget {
@@ -32,6 +35,8 @@ class App extends ConsumerWidget {
 }
 ```
 
-- Keep `App` small; no service init in `build`.
-- Watch only app-level providers.
-- Single root: `MaterialApp.router`.
+## Rules
+
+- `App` must stay small; no service init in `build`.
+- Must watch only app-level providers.
+- Must expose a single root: `MaterialApp.router`.

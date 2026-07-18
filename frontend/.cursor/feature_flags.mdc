@@ -1,34 +1,36 @@
 ---
-alwaysApply: false
+description: Define typed, centralized feature flags and their safe defaults.
 globs:
   - "frontend/lib/core/config/feature_flags.dart"
   - "frontend/lib/core/config/**/feature_flags*.dart"
-description: >
-  Apply when defining or reviewing typed, centralized feature flags in the frontend.
+alwaysApply: false
 ---
 
 # Feature Flags
 
-## Scope
-Defines how optional or staged features are controlled.
+How optional or staged features are controlled.
 
-## Mandatory rules
+## Requirements
+
 - Keep feature flags typed and centralized.
 - Use safe defaults for missing flag values.
-- Do not use feature flags to hide incomplete security rules.
-- Feature flags must not bypass subscription or permission gates ([`permissions.mdc`](./permissions.mdc)).
-- Do not leave dead flags permanently in the codebase.
+- Must not use flags to hide incomplete security rules.
+- Flags must not bypass subscription or permission gates ([`permissions.mdc`](./permissions.mdc)).
+- Must not leave dead flags permanently in the codebase.
 - Avoid scattering raw flag string names through widgets.
 
-## Implementation standard
-- Feature flags may come from environment config, local config, or a backend service in product-specific apps.
+## Implementation
+
+- Flags may come from environment config, local config, or a backend service.
 - Flag checks should be testable through provider overrides.
 
-## Acceptance checklist
+## Acceptance
+
 - Disabled features do not appear in navigation or accessible routes unless intentionally allowed.
 - Flag behavior is documented for release builds.
 
-## Related rules
+## Related
+
 - [`environment_configuration.mdc`](./environment_configuration.mdc)
 - [`navigation.mdc`](./navigation.mdc)
 - [`testing.mdc`](./testing.mdc)

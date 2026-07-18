@@ -1,28 +1,27 @@
 ---
-alwaysApply: false
+description: Define how development, staging, and production configuration and secrets are handled.
 globs:
   - "frontend/lib/core/config/**"
   - "frontend/lib/core/bootstrap/environment.dart"
   - "frontend/lib/core/bootstrap/app_config.dart"
-description: >
-  Apply when reviewing environment config, compile-time defines, and secrets policy.
+alwaysApply: false
 ---
 
 # Environment Configuration
 
-## Scope
-Defines how development, staging, and production configuration is represented.
+How development, staging, and production configuration is represented.
 
-## Mandatory rules
+## Requirements
+
 - Keep environment-specific values outside feature widgets.
-- Do not commit secrets in source code, assets, config files, or docs.
+- Must not commit secrets in source, assets, config files, or docs.
 - Use Flutter compile-time define files for non-secret public values.
-- Validate required configuration during startup.
-- Separate development, staging, and production values.
-- Production API base URLs must use HTTPS unless a controlled private network explicitly requires otherwise.
-- Logs must clearly identify the environment without exposing secrets.
+- Validate required configuration during startup and separate per-environment values.
+- Production API base URLs must use HTTPS unless a controlled private network requires otherwise.
+- Logs must identify the environment without exposing secrets.
 
-## Recommended config values
+## Recommended values
+
 | Value | Example |
 |---|---|
 | environment name | `development`, `staging`, `production` |
@@ -31,13 +30,14 @@ Defines how development, staging, and production configuration is represented.
 | logging level | debug/info/warn/error |
 | feature flag defaults | safe defaults |
 
-## Acceptance checklist
+## Acceptance
+
 - Missing required config fails fast with a clear message.
-- Production builds do not include development-only endpoints by accident.
+- Production builds exclude development-only endpoints.
 - Tests can override environment config.
 
-## Related rules
+## Related
+
 - [`security.mdc`](./security.mdc)
 - [`network_api.mdc`](./network_api.mdc)
 - [`feature_flags.mdc`](./feature_flags.mdc)
-- [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)

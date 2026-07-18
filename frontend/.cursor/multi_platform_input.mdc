@@ -1,42 +1,41 @@
 ---
-alwaysApply: false
+description: Apply when implementing cross-platform touch, pointer, keyboard, focus, hover, or shortcuts.
 globs:
   - "frontend/lib/shared/**"
   - "frontend/lib/features/**/presentation/**"
   - "frontend/lib/app/**"
-description: >
-  Apply when implementing cross-platform touch, pointer, keyboard, focus, hover, or shortcuts.
+alwaysApply: false
 ---
 
 # Multi-Platform Input
 
-## Scope
 Defines touch, mouse, keyboard, focus, hover, and shortcut behavior across platforms.
 
 ## Mandatory rules
-- Support touch-first interaction on mobile and pointer/keyboard interaction on web and desktop.
-- Keep visible focus states for keyboard navigation.
-- Use hover states where they improve desktop/web clarity.
-- Do not make actions available only through hover.
-- Use platform-appropriate text input keyboard types and actions.
-- Keep form submission accessible from keyboard where practical.
-- Respect safe areas and keyboard insets on mobile.
 
-- All user-facing labels, hints, and input affordances must be localized with concise, clinically appropriate terminology.
-- Reusable input components must live in `frontend/lib/shared/`; check the shared catalog before creating feature-local input wrappers.
-- Use design tokens exclusively for colors, spacing, and typography in input components — no hard-coded values ([`design-system.mdc`](./design-system.mdc)).
+- Must support touch-first interaction on mobile and pointer/keyboard on web and desktop.
+- Must keep visible focus states for keyboard navigation.
+- Should use hover states where they improve desktop/web clarity.
+- Must not make actions available only through hover.
+- Must use platform-appropriate keyboard types and input actions.
+- Should keep form submission accessible from keyboard where practical.
+- Must respect safe areas and keyboard insets on mobile.
+- Must localize all labels, hints, and input affordances with concise, clinically appropriate terminology.
+- Reusable input components must live in `frontend/lib/shared/`; check the shared catalog before creating feature-local wrappers.
+- Must use design tokens exclusively for colors, spacing, and typography ([`design-system.mdc`](./design-system.mdc)).
 
 ## Implementation standard
+
 - Shared components should handle focus, hover, enabled/disabled, and pressed states consistently.
-- Shortcut keys may be added at the shell level for app-specific workflows, but must not conflict with browser/system shortcuts.
+- Shortcut keys may be added at the shell level but must not conflict with browser/system shortcuts.
 
 ## Acceptance checklist
+
 - Forms work with keyboard only.
-- Menus, dialogs, and dropdowns can be dismissed predictably.
+- Menus, dialogs, and dropdowns dismiss predictably.
 - Touch targets are practical on mobile.
 
 ## Related rules
+
 - [`accessibility.mdc`](./accessibility.mdc)
-- [`components.mdc`](./components.mdc)
-- [`layouts.mdc`](./layouts.mdc)
 - [`platform_guidelines.mdc`](./platform_guidelines.mdc)

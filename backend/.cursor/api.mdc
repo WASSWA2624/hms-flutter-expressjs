@@ -1,31 +1,26 @@
 ---
-alwaysApply: false
+description: HTTP route shape, middleware order, and human_friendly_id contracts for backend APIs.
 globs:
   - "backend/**"
-description: >
-  HTTP route shape, middleware order, and human_friendly_id contracts for backend APIs.
+alwaysApply: false
 ---
 # API Rules
 
-Purpose: keep the HTTP surface consistent and predictable.
+Keep the HTTP surface consistent, predictable, and access-controlled.
 
-Route rules:
-- versioned business endpoints live under `/api/v1/*`
-- health endpoints remain unversioned at `/health`, `/ready`, and `/live`
-- resource paths use plural kebab-case segments
-- path parameters for business resources use `:human_friendly_id` or domain-specific names that still carry `human_friendly_id` values
-- query parameters and documented JSON fields use `snake_case`
-- list endpoints support pagination, filtering, and sorting consistently
-- action endpoints use `POST /resource/:human_friendly_id/<action>` only when CRUD is insufficient
-- workspace endpoints may aggregate module-owned summaries but must stay inside module scope
+## Routes
+- Versioned business endpoints must live under `/api/v1/*`; health endpoints stay unversioned at `/health`, `/ready`, `/live`.
+- Resource paths must use plural kebab-case segments; query params and JSON fields use `snake_case`.
+- List endpoints must support pagination, filtering, and sorting consistently.
+- Action endpoints use `POST /resource/:human_friendly_id/<action>` only when CRUD is insufficient.
+- Workspace endpoints may aggregate module summaries but must stay in module scope.
 
-Entity identifier rules:
-- Path parameters exposed to clients use `:human_friendly_id` (or documented alias such as `:patient_id`) and must reference `human_friendly_id`, not internal table primary keys
-- Services and repositories resolve `human_friendly_id` → internal ID before persistence; internal IDs stay server-side only
-- List, detail, and mutation responses return `human_friendly_id` as the canonical resource identifier
-- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
+## Identifiers
+- Path params must expose `:human_friendly_id` (or documented alias) and reference `human_friendly_id`, never internal primary keys.
+- Services and repositories must resolve `human_friendly_id` → internal ID before persistence; internal IDs stay server-side.
+- Responses must return `human_friendly_id` as the canonical identifier.
 
-Middleware order:
+## Middleware order
 1. request context
 2. validation
 3. authentication
@@ -34,9 +29,8 @@ Middleware order:
 6. controller handler
 7. centralized error middleware
 
-Contract rules:
-- no business logic in routes
-- no undocumented custom verbs
-- no route may bypass tenancy or facility scope rules
-- no API endpoint or workflow action may be accessible to unauthorized users; effective permissions follow `auth-security.mdc`
-- `.cursor/access/` files are the source of truth for default permissions, roles, and subscription entitlements
+## Contract
+- Routes must not hold business logic or undocumented verbs.
+- No route may bypass tenancy or facility scope.
+- No endpoint or action may be reachable by unauthorized users; effective permissions follow `auth-security.mdc`.
+- `.cursor/access/` files are the source of truth for default permissions, roles, and entitlements.

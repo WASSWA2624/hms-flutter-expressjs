@@ -1,15 +1,14 @@
 ---
-alwaysApply: false
+description: Backend tests for schemas, authorization, subscription intersection, and workflow regression.
 globs:
   - "backend/**"
-description: >
-  Backend tests: schemas, authz, subscription intersection, and workflow regression.
+alwaysApply: false
 ---
 # Testing Rules
 
-Purpose: define the minimum backend verification bar.
+Define the minimum backend verification bar.
 
-Required coverage:
+## Required coverage
 - schema validation tests
 - repository tests
 - service tests
@@ -17,11 +16,11 @@ Required coverage:
 - auth, entitlement, ABAC, and break-glass regression tests
 - `union(role, module, user grants) ∩ subscription ∩ assigned modules ∩ ABAC scope` regression tests
 - API and websocket contract tests proving responses/events expose `human_friendly_id` only
-- admin customize/reset of access defaults produces auditable, atomic permission changes
+- admin customize/reset of access defaults producing auditable, atomic changes
 - seed and maintenance script tests where scripts change data or contracts
 
-Rules:
-- every module mirrors its runtime structure in tests
-- new modules are incomplete until tests and docs land together
-- high-risk domains such as billing, biomedical, mortuary, security, and closeout need workflow-level regression coverage
-- mocks must preserve real contract shape for Prisma, storage, websocket, and auth dependencies
+## Requirements
+- Every module must mirror its runtime structure in tests.
+- New modules are incomplete until tests and docs land together.
+- High-risk domains (billing, biomedical, mortuary, security, closeout) need workflow-level regression coverage.
+- Mocks must preserve real contract shape for Prisma, storage, websocket, and auth dependencies.

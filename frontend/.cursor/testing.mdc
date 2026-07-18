@@ -1,52 +1,47 @@
 ---
-alwaysApply: false
+description: Apply when implementing or reviewing unit, widget, integration, or Patrol E2E tests.
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
   - "frontend/integration_test/**"
   - "frontend/patrol_test/**"
-description: >
-  Apply when implementing or reviewing unit, widget, integration, or Patrol E2E tests.
+alwaysApply: false
 ---
 
 # Testing Strategy
 
-## Scope
 Defines the minimum testing structure for the reusable app foundation.
 
 ## Mandatory rules
-- Use `flutter_test` for unit and widget tests.
-- Use `integration_test` for startup, navigation, and important flows.
-- Use `patrol` (via `patrol_test/`) for end-to-end module workspace flows and failure diagnostics.
-- Use `mocktail` or provider overrides for repository/data-source tests.
-- Keep tests close to source structure where practical.
-- Test controllers, value objects, mappers, validators, and shared components.
-- Test responsive behavior for important shared layouts and page shells.
-- For UI sync changes, test local success patching, cancel/failure behavior, typed
-  realtime delta or targeted refresh, event-group membership, and reconnect refresh.
-- Cross-stack shared mutations require backend event-emission coverage and a
-  simulated peer-client reconciliation test.
-- Tests must not depend on real production services.
-- Tests must not require secrets.
+
+- Must use `flutter_test` for unit and widget tests.
+- Must use `integration_test` for startup, navigation, and important flows.
+- Must use `patrol` (via `patrol_test/`) for end-to-end module workspace flows.
+- Should use `mocktail` or provider overrides for repository/data-source tests.
+- Should keep tests close to source structure where practical.
+- Must test controllers, value objects, mappers, validators, and shared components.
+- Must test responsive behavior for important shared layouts and page shells.
+- For UI sync changes, must test local success patching, cancel/failure behavior, typed delta or targeted refresh, event-group membership, and reconnect refresh.
+- Cross-stack shared mutations must have backend event-emission coverage and a simulated peer-client reconciliation test.
+- Tests must not depend on real production services or require secrets.
 
 ## Test types
+
 | Test type | Target |
 |---|---|
 | Unit | validators, mappers, use cases, value objects |
 | Widget | components, pages, responsive layout, forms |
-| Integration | startup, routing, auth shell, platform-critical flows |
-| Patrol E2E | module workspace shells, cross-module navigation, failure diagnostics |
+| Integration | startup, routing, auth shell, platform flows |
+| Patrol E2E | workspace shells, cross-module navigation |
 | Golden | optional, for stable shared UI only |
 
 ## Acceptance checklist
+
 - `flutter test` passes.
 - Important components have widget tests.
 - Providers can be overridden in tests.
-- Responsive layout utilities have tests.
 
 ## Related rules
+
 - [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)
 - [`state_management.mdc`](./state_management.mdc)
-- [`instant_ui_sync.mdc`](./instant_ui_sync.mdc)
-- [`components.mdc`](./components.mdc)
-- [`layouts.mdc`](./layouts.mdc)

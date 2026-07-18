@@ -1,45 +1,41 @@
 ---
-alwaysApply: false
+description: Enforce accessibility labels, focus, contrast, and localized semantics in screens and components.
 globs:
   - "frontend/lib/shared/**"
   - "frontend/lib/features/**/presentation/**"
-description: >
-  Apply when creating screens or components to enforce accessibility labels and focus.
+alwaysApply: false
 ---
 
 # Accessibility Strategy
 
-## Scope
-Defines baseline accessibility requirements for screens, components, forms, navigation, and feedback states.
+Baseline accessibility for screens, components, forms, navigation, and feedback states.
 
-## Mandatory rules
+## Requirements
+
 - Add semantic labels for icon-only buttons and meaningful images.
-- Keep tap/click targets at least `48px` where practical.
-- Support keyboard navigation on web and desktop.
-- Keep visible focus states.
-- Do not rely only on color to communicate meaning.
-- Keep text readable when font scaling is enabled.
-- Use localized accessibility labels.
-- Associate form errors with their fields where possible.
-- Avoid excessive motion and provide simple transitions by default.
+- Keep tap targets at least `48px` where practical.
+- Support keyboard navigation and keep visible focus states.
+- Must not rely on color alone; pair status with icon plus text.
+- Keep text readable under font scaling.
+- Associate form errors with their fields.
+- Avoid excessive motion; use simple default transitions.
+- Must use design tokens for color and contrast; hard-coded colors are prohibited ([`design-system.mdc`](./design-system.mdc)).
+- Reusable accessible components must live in `frontend/lib/shared/`; check the catalog first.
+- All user-facing text must be localized with concise clinical terminology.
 
-- Use design tokens for colors and contrast — prohibit hard-coded color values ([`design-system.mdc`](./design-system.mdc)).
-- Reusable accessible components must live in `frontend/lib/shared/`; check the shared catalog before creating feature-local accessible wrappers.
-- All user-facing text, labels, and hints must be localized with concise, appropriate clinical/operational terminology.
+## Dialogs and states
 
-## Implementation standard
-- Dialogs should trap focus where the platform expects it and return focus after closing.
-- State views should announce meaningful loading, empty, and error messages.
-- Use icons plus text for important statuses.
+- Dialogs should trap focus and return focus after closing.
+- State views must announce loading, empty, and error messages.
 
-## Acceptance checklist
-- Keyboard tab order is logical.
-- Important actions have semantic labels.
-- Color contrast is readable in light and dark themes.
-- Text scaling does not hide important controls.
+## Acceptance
 
-## Related rules
+- Tab order is logical; important actions have labels.
+- Contrast is readable in light and dark themes.
+- Text scaling does not hide controls.
+
+## Related
+
 - [`design-system.mdc`](./design-system.mdc)
 - [`ui-patterns.mdc`](./ui-patterns.mdc)
 - [`localization_i18n.mdc`](./localization_i18n.mdc)
-- [`multi_platform_input.mdc`](./multi_platform_input.mdc)

@@ -1,45 +1,44 @@
 ---
-alwaysApply: false
+description: Apply when reviewing frontend performance for rendering, lists, images, and networking.
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
-description: >
-  Apply when reviewing frontend performance for rendering, lists, images, and networking.
+alwaysApply: false
 ---
 
 # Performance Strategy
 
-## Scope
 Defines performance expectations for startup, rendering, lists, images, networking, and local data.
 
 ## Mandatory rules
-- High performance is required: smooth, responsive, and efficient across mobile, tablet, and desktop.
-- Full responsiveness is required for all surfaces; layouts must adapt to mobile, tablet, and desktop breakpoints.
-- Prohibit hard-coded style tokens; use theme tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
-- Avoid unnecessary rebuilds by keeping provider watches focused.
-- Use `const` widgets where possible.
-- Paginate or virtualize large lists and tables.
-- Avoid loading huge datasets into memory.
-- Use image sizes appropriate to their display context.
-- Avoid heavy synchronous work on the UI thread.
-- Cache thoughtfully and invalidate explicitly.
-- Keep startup work minimal and visible through a startup state when needed.
-- Use release/profile builds for meaningful performance checks.
-- Performance optimizations must not break uniform UI or responsive layouts ([`layouts.mdc`](./layouts.mdc), [`design-system.mdc`](./design-system.mdc)).
+
+- UI must be smooth, responsive, and efficient across mobile, tablet, and desktop breakpoints.
+- Must use theme tokens exclusively; no hard-coded style tokens ([`design-system.mdc`](./design-system.mdc)).
+- Should avoid unnecessary rebuilds by keeping provider watches focused.
+- Should use `const` widgets where possible.
+- Must paginate or virtualize large lists and tables; must not load huge datasets into memory.
+- Should use image sizes appropriate to their display context.
+- Must avoid heavy synchronous work on the UI thread.
+- Should cache thoughtfully and invalidate explicitly.
+- Startup work should stay minimal and visible through a startup state when needed.
+- Must use release/profile builds for meaningful performance checks.
+- Optimizations must not break uniform UI or responsive layouts ([`layouts.mdc`](./layouts.mdc)).
 
 ## UI performance rules
-- Split large pages into focused widgets.
-- Use slivers or builders for long lists.
-- Avoid expensive layout nesting when a simpler layout works.
-- Apply max-width constraints on large screens for readability and layout stability.
+
+- Should split large pages into focused widgets.
+- Should use slivers or builders for long lists.
+- Should avoid expensive layout nesting when simpler layout works.
+- Must apply max-width constraints on large screens for readability.
 
 ## Acceptance checklist
+
 - Common screens scroll smoothly on target devices.
-- App startup is not blocked by unnecessary network calls.
+- Startup is not blocked by unnecessary network calls.
 - Large lists are paginated, streamed, or built lazily.
 
 ## Related rules
+
 - [`layouts.mdc`](./layouts.mdc)
-- [`database_strategy.mdc`](./database_strategy.mdc)
 - [`network_api.mdc`](./network_api.mdc)
 - [`scalability.mdc`](./scalability.mdc)

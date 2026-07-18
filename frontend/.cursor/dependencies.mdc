@@ -1,60 +1,48 @@
 ---
-alwaysApply: false
+description: Govern approved Dart/Flutter packages and how new dependencies are added.
 globs:
   - "frontend/pubspec.yaml"
   - "frontend/lib/**"
-description: >
-  Apply when adding or reviewing Dart/Flutter package dependencies in the frontend.
+alwaysApply: false
 ---
 
 # Dependency Strategy
 
-## Scope
-Defines approved dependencies, when they may be added, and how to avoid unnecessary package growth.
+Approved dependencies and how to avoid unnecessary package growth.
 
-## Required starter dependencies
-| Purpose | Package | Rule |
-|---|---|---|
-| State and DI | `flutter_riverpod` | Use for app state, feature state, dependency injection, async state, and provider overrides. |
-| Navigation | `go_router` | Use for all navigation, shell routes, guards, deep links, and web URLs. |
-| Localization | `flutter_localizations`, `intl` | Use generated localizations and locale-aware formatting. |
+## Starter dependencies
+
+- `flutter_riverpod` — state, DI, and async state.
+- `go_router` — navigation, shell routes, guards, deep links, web URLs.
+- `flutter_localizations`, `intl` — localization and locale-aware formatting.
 
 ## Approved when needed
-| Purpose | Package | Add only when |
-|---|---|---|
-| Riverpod generation | `riverpod_annotation` | Generated providers are adopted consistently. |
-| HTTP | `dio` | The app needs real HTTP clients, interceptors, cancellation, or API error mapping. |
-| Immutable models | `freezed_annotation` | Model complexity justifies generation. |
-| JSON DTOs | `json_annotation` | API DTO serialization is required. |
-| Local database | `drift`, `drift_flutter` | Structured local data, offline cache, or sync queues are required. |
-| Simple settings | `shared_preferences` | Non-sensitive settings such as theme mode or locale must persist. |
-| Secure storage | `flutter_secure_storage` | Tokens or secrets must be stored where supported. |
-| Connectivity hint | `connectivity_plus` | Connectivity status is useful as a hint, never as proof of internet access. |
-| Paths | `path_provider` | Platform-specific database or cache paths are needed. |
-| External links/deep links | `url_launcher`, `app_links` | External URLs, auth handoff, or app links are required. |
+
+- `riverpod_annotation` — generated providers adopted consistently.
+- `dio` — HTTP clients, interceptors, cancellation, error mapping.
+- `freezed_annotation`, `json_annotation` — model/DTO generation.
+- `drift`, `drift_flutter` — structured local data, cache, or sync queues.
+- `shared_preferences` — non-sensitive settings; `flutter_secure_storage` — tokens/secrets.
+- `connectivity_plus` — connectivity hint only, never proof of internet.
+- `path_provider`, `url_launcher`, `app_links` — paths, external/deep links.
 
 ## Dev dependencies
-| Purpose | Package | Rule |
-|---|---|---|
-| Lints | `flutter_lints`, `riverpod_lint`, `custom_lint` | Keep analysis strict and Riverpod usage consistent. |
-| Testing | `flutter_test`, `integration_test`, `mocktail` | Use provider overrides and mocks for test isolation. |
-| Code generation | `build_runner`, `riverpod_generator`, `freezed`, `json_serializable`, `drift_dev` | Add only when the matching runtime/codegen pattern is used. |
 
-## Mandatory rules
-- Do not add a dependency when Flutter SDK widgets or Dart standard libraries are enough.
-- Do not add duplicate packages for the same responsibility.
-- Every new dependency must have a clear owner, purpose, and platform compatibility check.
-- Keep dependencies compatible with Android, iOS, Web, Windows, macOS, and Linux unless an app-specific exception documents a narrower target set.
-- Avoid packages that are abandoned, unmaintained, or platform-limited unless the app-specific requirement justifies them.
-- Do not put secrets in `pubspec.yaml`, assets, source code, docs, or test fixtures.
+- Lints: `flutter_lints`, `riverpod_lint`, `custom_lint`.
+- Testing: `flutter_test`, `integration_test`, `mocktail`.
+- Codegen: `build_runner`, `riverpod_generator`, `freezed`, `json_serializable`, `drift_dev`.
 
-## Acceptance checklist
-- `pubspec.yaml` contains only the required starter packages plus approved packages that are actively used.
-- Generated-code dependencies are in `dev_dependencies` where appropriate.
-- Dependency decisions are documented in README or an ADR when they affect architecture.
+## Requirements
 
-## Related rules
+- Must not add a dependency when SDK widgets or Dart libraries suffice.
+- Must not add duplicate packages for one responsibility.
+- Every new dependency needs a clear owner, purpose, and platform-compatibility check.
+- Keep dependencies compatible across Android, iOS, Web, Windows, macOS, Linux unless a documented exception narrows the target.
+- Avoid abandoned or platform-limited packages without justification.
+- Must not put secrets in `pubspec.yaml`, assets, source, docs, or fixtures.
+
+## Related
+
 - [`code_generation.mdc`](./code_generation.mdc)
 - [`platform_guidelines.mdc`](./platform_guidelines.mdc)
 - [`security.mdc`](./security.mdc)
-- [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)

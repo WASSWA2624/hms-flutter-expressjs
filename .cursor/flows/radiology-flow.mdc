@@ -5,12 +5,13 @@ globs:
   - "backend/src/modules/radiology-workspace/**"
 alwaysApply: false
 ---
+
 # Radiology Patient Flow
 
-## Purpose
-Radiology owns imaging execution for encounter-linked orders. Keep the workbench focused on scheduling, performing studies, capturing assets, and finalizing reports.
+Radiology owns imaging execution for encounter-linked orders; keep the workbench focused on scheduling, performing studies, capturing assets, and finalizing reports.
 
 ## Stage Sequence
+
 - Order received from OPD, IPD, ICU, or clinical dialog.
 - Billing gate checked when required.
 - Modality, room, and equipment assigned.
@@ -19,6 +20,7 @@ Radiology owns imaging execution for encounter-linked orders. Keep the workbench
 - Addendum issued only when needed.
 
 ## Handoffs
+
 - Doctor or clinical user owns order placement.
 - Radiology clerk owns scheduling and assignment.
 - Radiographer owns study execution and asset upload.
@@ -26,19 +28,19 @@ Radiology owns imaging execution for encounter-linked orders. Keep the workbench
 - OPD or IPD orchestrators own stage progression after the report returns.
 
 ## Hard Invariants
+
 - Must not create encounters or advance patient stages directly.
 - Must not own equipment maintenance or biomedical workflows.
 - Must keep every study linked to the source encounter.
 - Must not blur outpatient and inpatient queue contexts.
 
 ## Allowed Critical Actions
+
 - Use the radiology workbench route as the canonical imaging workspace.
-- Support pay-now or bill-later at order time when policy requires it.
+- May support pay-now or bill-later at order time when policy requires it.
 - Keep PACS sync and report release visible when configured.
 - Surface completed studies back to the receiving clinician timeline.
 
 ## Related
-- `opd-flow.mdc`
-- `ipd-flow.mdc`
-- `lab-flow.mdc`
-- `emergency-flow.mdc`
+
+- `opd-flow.mdc`, `ipd-flow.mdc`, `lab-flow.mdc`, `emergency-flow.mdc`

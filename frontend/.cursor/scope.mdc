@@ -1,63 +1,44 @@
 ---
-alwaysApply: false
+description: Apply when reviewing frontend scope, invariants, and minimum runnable contract.
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
-description: >
-  Apply when reviewing frontend scope, invariants, and minimum runnable contract.
+alwaysApply: false
 ---
+
 # Project Scope
 
-Purpose: define HOSSPI HMS frontend scope, invariants, and minimum runnable contract.
-
-## Product
-
-HOSSPI HMS frontend is the Flutter client for the full-stack hospital management system. It implements module workspaces, clinical and operational flows, and shared shell UI against the `hms-backend` API.
-
-Product modules and boundaries: [`.cursor/app-write-up.mdc`](../../.cursor/app-write-up.mdc).
+HOSSPI HMS frontend is the Flutter client for the full-stack hospital management system, implementing module workspaces, clinical and operational flows, and shared shell UI against the `hms-backend` API. Modules and boundaries: [`.cursor/app-write-up.mdc`](../../.cursor/app-write-up.mdc).
 
 ## Mandatory rules
 
-- Build production-ready module workspaces, not a generic disconnected starter.
-- Support Android, iOS, Web, Windows, macOS, and Linux where the Flutter project and host enable those targets.
-- Support extra-small mobile screens through large desktop screens; smartwatch layouts are out of scope.
-- Integrate with `hms-backend` through repositories, DTOs, and the cross-stack contract in [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
-- Prefer Flutter SDK widgets, Material Design patterns, and shared `lib/shared/` abstractions before custom frameworks or extra packages.
-- Avoid duplicate dependencies, folders, components, rules, and competing design systems.
+- Must build production-ready module workspaces, not a generic disconnected starter.
+- Must support Android, iOS, Web, Windows, macOS, and Linux where enabled; extra-small mobile through large desktop screens; smartwatch out of scope.
+- Must integrate with `hms-backend` via repositories, DTOs, and [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
+- Should prefer Flutter SDK widgets, Material Design, and shared `lib/shared/` abstractions before custom frameworks or extra packages.
+- Must avoid duplicate dependencies, folders, components, rules, and competing design systems.
 - Module menus, routes, forms, actions, permissions, and visibility must match backend routes, permissions, entitlements, and APIs.
-- Deliver high-performance, uniform UI using reusable components in `frontend/lib/shared/`, with real-time sync, full mobile/tablet/desktop responsiveness, simple design, and intuitive clinical workflows.
-- Reference entities by `human_friendly_id` in UI and client contracts; backend maps internal IDs.
-- Enforce RBAC+ABAC and subscription-package permission intersection per [`.cursor/access/subscriptions.mdc`](../../.cursor/access/subscriptions.mdc) and [`permissions.mdc`](./permissions.mdc).
+- Must reference entities by `human_friendly_id`; backend maps internal IDs.
+- Must enforce RBAC+ABAC and subscription-package intersection ([`permissions.mdc`](./permissions.mdc)).
 
 ## Architecture invariants
 
 - One architecture, one routing system (`go_router`), one state system (Riverpod), one design system, one shared component strategy.
-- UI mutation and reconciliation behavior is owned by
-  [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); this scope file must not override it.
-- Layer boundaries are defined in [`architecture.mdc`](./architecture.mdc); do not repeat them in feature code comments.
+- Mutation and reconciliation behavior is owned by [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); layer boundaries by [`architecture.mdc`](./architecture.mdc). Must not override or restate them.
 
 ## Minimum runnable contract
 
-| Area | Required baseline |
-|---|---|
-| Startup | `main.dart`, `bootstrap.dart`, provider scope, predictable startup flow |
-| App shell | `MaterialApp.router`, `go_router`, not-found route, responsive shell |
-| Desktop UI | menu bar, side navigation, collapsible navigation, readable content width |
-| Theme | Material 3 light/dark/system, shared design tokens ([`design-system.mdc`](./design-system.mdc)) |
-| State | Riverpod providers with override-ready boundaries |
-| Localization | English ARB baseline, `l10n.yaml`, generated l10n |
-| Components | Shared buttons, fields, dialogs, state views, layout helpers ([`components.mdc`](./components.mdc)) |
-| Module workspaces | `AppWorkspace` + `AppListTable` contract ([`ui-workspace.mdc`](./ui-workspace.mdc)) |
-| Quality | format, analyze, tests, CI commands |
-
-## Implementation standard
-
-- Every feature follows [`feature_workflow.mdc`](./feature_workflow.mdc) and the standard `data/domain/presentation` structure.
-- Reuse shared components from `lib/shared/` before creating feature-specific widgets.
-- Contextual OPD and IPD work must follow [`.cursor/flows/opd-flow.mdc`](../../.cursor/flows/opd-flow.mdc) and [`.cursor/flows/ipd-flow.mdc`](../../.cursor/flows/ipd-flow.mdc).
+- Startup: `main.dart`, `bootstrap.dart`, provider scope, predictable startup flow.
+- Shell: `MaterialApp.router`, `go_router`, not-found route, responsive shell with menu bar and collapsible side nav.
+- Theme: Material 3 light/dark/system with shared tokens.
+- State: Riverpod providers with override-ready boundaries.
+- Localization: English ARB baseline, `l10n.yaml`, generated l10n.
+- Components: shared buttons, fields, dialogs, state views, layout helpers.
+- Workspaces: `AppWorkspace` + `AppListTable` ([`ui-workspace.mdc`](./ui-workspace.mdc)).
+- Quality: format, analyze, tests, CI commands.
 
 ## See also
 
-- [`index.mdc`](./index.mdc) — owner map
-- [`project_structure.mdc`](./project_structure.mdc) — folder layout
-- [`checklists.mdc`](./checklists.mdc) — release gates
+- [`project_structure.mdc`](./project_structure.mdc)
+- [`feature_workflow.mdc`](./feature_workflow.mdc)
+- [`checklists.mdc`](./checklists.mdc)

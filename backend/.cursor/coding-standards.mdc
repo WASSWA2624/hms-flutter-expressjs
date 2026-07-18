@@ -1,22 +1,21 @@
 ---
-alwaysApply: false
+description: Backend coding standards for naming, style, reuse, and documentation.
 globs:
   - "backend/**"
-description: >
-  Backend coding standards: naming, style, reuse, and documentation requirements.
+alwaysApply: false
 ---
 # Coding Standards
 
-Purpose: keep backend code uniform, reusable, and reviewable.
+Keep backend code uniform, reusable, and reviewable.
 
-Rules:
+## Requirements
 - CommonJS only.
-- Module folders use kebab-case. Functions use camelCase. Constants use `UPPER_SNAKE_CASE`.
-- Database, Prisma model, schema, migration, and documented payload field names use lowercase `snake_case`.
-- Prefer small reusable services and helper functions over copy-paste implementations.
-- Public functions, exported modules, and complex logic require JSDoc-style multi-line comments.
-- Inline comments explain intent, assumptions, or edge cases only.
+- Module folders use kebab-case; functions use camelCase; constants use `UPPER_SNAKE_CASE`.
+- Database, Prisma model, schema, migration, and documented payload fields use lowercase `snake_case`.
+- Prefer small reusable services and helpers over copy-paste implementations.
+- Public functions, exported modules, and complex logic must have JSDoc-style comments.
+- Inline comments must explain intent, assumptions, or edge cases only.
 - Do not read `process.env` outside config helpers.
-- Do not hardcode authorization, entitlement, or role logic inside controllers.
-- Do not add duplicate helper libraries or one-off scripts when an existing family can be extended.
+- Do not hardcode authorization, entitlement, or role logic in controllers.
+- Do not add duplicate helper libraries when an existing family can be extended.
 - Circular dependencies, dead files, and stale comments are defects.

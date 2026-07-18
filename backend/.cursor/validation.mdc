@@ -1,21 +1,20 @@
 ---
-alwaysApply: false
+description: Zod validation for params, query, and body, rejecting raw internal IDs in public inputs.
 globs:
   - "backend/**"
-description: >
-  Zod validation for params, query, body; reject raw internal IDs in public inputs.
+alwaysApply: false
 ---
 # Validation Rules
 
-Purpose: make request validation deterministic.
+Make request validation deterministic.
 
-Rules:
-- every route has explicit Zod schemas for params, query, and body as needed
-- schemas use documented `snake_case` field names
-- create and update payloads reject unknown keys unless an owner file explicitly allows passthrough metadata
-- public route params and body fields accept `human_friendly_id` (and documented business codes) only; reject numeric/uuid internal primary keys in client payloads unless explicitly documented as server-only admin tools
-- validate `human_friendly_id` format, tenant scope, and existence before service execution
-- enum values, date ranges, and scope inputs must be validated before service execution
-- cross-field business rules belong in services only when they need database context
-- validation failures return normalized problem-details responses
-- validation schemas are part of the required test surface
+## Requirements
+- Every route must have explicit Zod schemas for params, query, and body as needed.
+- Schemas use documented `snake_case` field names.
+- Create and update payloads must reject unknown keys unless an owner file allows passthrough metadata.
+- Public params and body fields accept `human_friendly_id` (and documented business codes) only; reject internal primary keys unless documented as server-only admin tools.
+- Validate `human_friendly_id` format, tenant scope, and existence before service execution.
+- Enum values, date ranges, and scope inputs must be validated before service execution.
+- Cross-field business rules belong in services only when they need database context.
+- Validation failures must return normalized problem-details responses.
+- Validation schemas are part of the required test surface.

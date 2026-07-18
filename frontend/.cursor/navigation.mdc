@@ -1,40 +1,38 @@
 ---
-alwaysApply: false
+description: Apply when implementing go_router navigation, shell routes, guards, or deep links.
 globs:
   - "frontend/lib/app/router/**"
-description: >
-  Apply when implementing go_router navigation, shell routes, guards, or deep links.
+alwaysApply: false
 ---
+
 # Navigation and Routing
 
-Purpose: single navigation package and centralized route configuration.
+Single navigation package and centralized route configuration.
 
 ## Mandatory rules
 
-- Use `go_router` only; definitions under `lib/app/router/`.
-- Named routes or typed helpers; no scattered raw route strings.
-- Protect routes via guards using session and entitlements ([`permissions.mdc`](./permissions.mdc)).
-- Build navigation trees from union(role/module/user grants) ∩ subscription package ∩ assigned modules ∩ ABAC scope. Omit unauthorized destinations from shell, drawer, rail, and menu bar.
-- Deep links to unauthorized routes must redirect to localized forbidden/not-found states ([`permissions.mdc`](./permissions.mdc)).
-- Stable readable web URLs using `human_friendly_id` where resource IDs appear; deep-link support where required.
-- No navigation in repositories or data sources.
-- Localized not-found page for unknown routes.
-- Responsive shell for persistent navigation ([`layouts.mdc`](./layouts.mdc)).
-- High performance: avoid unnecessary rebuilds in navigation shells; keep route transitions simple and efficient.
-- Uniform and consistent navigation UI across all modules — reuse shell components from `frontend/lib/shared/layout/`.
-- All navigation labels, tooltips, and route titles must be localized with concise, clinically appropriate terminology.
-- Prohibit hard-coded color values, spacing values, and typography in navigation code — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
+- Must use `go_router` only; definitions under `lib/app/router/`.
+- Must use named routes or typed helpers; no scattered raw route strings.
+- Must protect routes via guards using session and entitlements ([`permissions.mdc`](./permissions.mdc)).
+- Must build navigation from union(role/module/user grants) ∩ subscription package ∩ assigned modules ∩ ABAC scope; omit unauthorized destinations from shell, drawer, rail, and menu bar.
+- Deep links to unauthorized routes must redirect to localized forbidden/not-found states.
+- Must use stable readable web URLs via `human_friendly_id` where resource IDs appear.
+- Must not navigate in repositories or data sources.
+- Must provide a localized not-found page for unknown routes.
+- Should avoid unnecessary rebuilds in navigation shells; keep route transitions simple.
+- Must reuse shell components from `frontend/lib/shared/layout/` for uniform navigation.
+- Must localize all navigation labels, tooltips, and route titles.
+- Must use design tokens exclusively; no hard-coded colors, spacing, or typography ([`design-system.mdc`](./design-system.mdc)).
 
 ## Shell rules
 
-- Shell route for persistent navigation.
+- Must use a shell route for persistent navigation.
 - Mobile: bottom nav or drawer by destination count.
 - Tablet: rail or compact side nav.
 - Desktop/web: menu bar and side nav with collapse support.
-- No duplicate pages for mobile/desktop unless interaction truly differs.
+- Must not duplicate pages for mobile/desktop unless interaction truly differs.
 
 ## See also
 
 - [`authentication_session.mdc`](./authentication_session.mdc)
 - [`layouts.mdc`](./layouts.mdc)
-- [`feature_flags.mdc`](./feature_flags.mdc)

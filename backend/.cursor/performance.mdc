@@ -1,21 +1,20 @@
 ---
-alwaysApply: false
+description: Pagination, query efficiency, async jobs, and low-latency realtime publish paths.
 globs:
   - "backend/**"
-description: >
-  Pagination, query efficiency, async jobs, and low-latency realtime publish paths.
+alwaysApply: false
 ---
 # Performance Rules
 
-Purpose: keep the backend responsive under realistic hospital workloads.
+Keep the backend responsive under realistic hospital workloads.
 
-Rules:
-- paginate list endpoints by default
-- use narrow `select` and `include` shapes and avoid N+1 queries
-- index hot filter and join columns
-- move expensive exports, report generation, and reconciliation work off the request thread
-- profile before introducing caches
-- p95 targets should stay appropriate for staff-facing workflows and be reviewed in readiness checks
-- post-mutation websocket publish paths must stay off the critical HTTP response path when safe (fire-and-forget after commit)
-- realtime payloads stay minimal to support instant UI reconciliation without full list refetches
-- entitlement and ABAC recipient resolution for broadcasts must be indexed and cached where profiling shows hot paths
+## Requirements
+- List endpoints must paginate by default.
+- Use narrow `select`/`include` shapes and avoid N+1 queries.
+- Index hot filter and join columns.
+- Move expensive exports, report generation, and reconciliation off the request thread.
+- Profile before introducing caches.
+- p95 targets should suit staff-facing workflows and be reviewed in readiness checks.
+- Post-mutation websocket publishes should stay off the critical HTTP path (fire-and-forget after commit).
+- Realtime payloads must stay minimal for instant UI reconciliation without full refetches.
+- Entitlement and ABAC recipient resolution for broadcasts must be indexed and cached on hot paths.

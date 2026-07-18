@@ -1,30 +1,30 @@
 ---
-alwaysApply: false
+description: Apply when implementing loading, empty, error, and success UI feedback states.
 globs:
   - "frontend/lib/features/**/presentation/**"
   - "frontend/lib/shared/**"
-description: >
-  Apply when implementing loading, empty, error, and success UI feedback states.
+alwaysApply: false
 ---
+
 # UI Feedback States
 
-Purpose: consistent async and error presentation in the UI.
+Consistent async and error presentation in the UI.
 
 ## Mandatory rules
 
-- Use `AsyncStateScaffold` or equivalent shared wrappers for loading, empty, error, and success.
-- Module workspace pages must wrap data content in `AsyncStateScaffold` at the page root — do not hand-roll `CircularProgressIndicator` + `Column` error layouts on new screens.
-- Keep feedback high-performance, uniform, simple, and responsive on mobile, tablet, and desktop by reusing `frontend/lib/shared/` components.
-- Keep feedback design simple and intuitive; avoid complex or decorative error layouts that confuse clinical workflows.
-- Use design tokens exclusively for colors, spacing, and typography in feedback states — no hard-coded values ([`design-system.mdc`](./design-system.mdc)).
-- Reflect successful shared-data changes immediately from Riverpod; backend realtime events reconcile subsequent changes (HTTP persists, WebSocket reconciles).
-- Do not expose raw technical errors or exception text to users.
-- Keep user-facing error messages localized.
-- Provide retry actions for recoverable failures.
-- Preserve user input on recoverable form failures.
-- Log diagnostic details safely without secrets (see [`observability.mdc`](./observability.mdc)).
+- Must use `AsyncStateScaffold` or equivalent shared wrappers for loading, empty, error, and success.
+- Module workspace pages must wrap data content in `AsyncStateScaffold` at the page root; must not hand-roll `CircularProgressIndicator` + `Column` error layouts.
+- Must keep feedback high-performance, uniform, simple, and responsive by reusing `frontend/lib/shared/` components.
+- Feedback design must stay simple and intuitive; avoid decorative error layouts that confuse clinical workflows.
+- Must use design tokens exclusively; no hard-coded colors, spacing, or typography ([`design-system.mdc`](./design-system.mdc)).
+- Must reflect successful shared-data changes immediately from Riverpod; realtime events reconcile subsequent changes.
+- Must not expose raw technical errors or exception text to users.
+- Must keep user-facing error messages localized.
+- Must provide retry actions for recoverable failures.
+- Must preserve user input on recoverable form failures.
+- Must log diagnostic details safely without secrets ([`observability.mdc`](./observability.mdc)).
 
-## Failure categories (UI behavior)
+## Failure categories
 
 | Category | UI behavior |
 |---|---|
@@ -40,6 +40,5 @@ Layer-boundary mapping (DTO → typed failures) is owned by [`error_handling.mdc
 
 ## See also
 
-- [`error_handling.mdc`](./error_handling.mdc) — typed failures at layer boundaries
-- [`components.mdc`](./components.mdc) — `AsyncStateScaffold`, `AppDialog`
+- [`components.mdc`](./components.mdc)
 - [`localization_i18n.mdc`](./localization_i18n.mdc)

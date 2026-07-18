@@ -1,5 +1,5 @@
 ---
-description: Permission vocabulary, ABAC scope, and enforcement rules.
+description: Permission vocabulary, ABAC scope, and enforcement model for access control.
 globs:
   - "backend/**"
   - "frontend/**"
@@ -8,94 +8,34 @@ alwaysApply: false
 
 # Permissions
 
-This file owns the access vocabulary and enforcement model.
+This file owns the access vocabulary and enforcement model for HOSSPI HMS.
 
 ## Vocabulary
 
-- `view` browse data.
-- `create` add records.
-- `edit` or `update` change records.
-- `delete` remove records.
-- `manage` configure module scope.
-- `export` export data or reports.
-- `assign` assign records or staff.
-- `approve` approve workflow steps.
-- Module-specific verbs may be added when needed, such as `dispense`, `request`, `report`, or `prescribe`.
+- Core verbs are `view`, `create`, `edit`/`update`, `delete`, `manage`, `export`, `assign`, and `approve`.
+- Module-specific verbs may be added when needed, such as `request`, `report`, `dispense`, or `prescribe`.
+- `lab` and `radiology` use `request` and `report`; `pharmacy` uses `prescribe` and `dispense`.
 
 ## Access Model
 
-Permissions may attach to users, roles, modules, and subscription packages.
-
-Effective access = `union(role/module/user grants) ∩ subscription ∩ ABAC`.
-
-Users may hold multiple roles and module assignments, but access must never exceed the active subscription or ABAC scope.
+- Permissions may attach to users, roles, modules, and subscription packages.
+- Effective access = `union(role/module/user grants) ∩ subscription ∩ ABAC`.
+- Users may hold multiple roles, but access must never exceed the active subscription or ABAC scope.
 
 ## ABAC
 
-- Scope checks must consider tenant, facility, department, unit, ward, room, bed, record ownership, assignment, and status.
+- Scope checks must consider tenant, facility, department, unit, ward, room, bed, ownership, assignment, and status.
 - `own` and `assigned` should be preferred over broad `view all` or `manage all`.
 - Every permission decision must be recordable and auditable.
-
-## Module Defaults
-
-| module_key | default permissions |
-|---|---|
-| opd | view, create, edit, delete, manage, assign |
-| ipd | view, create, edit, assign, manage |
-| triage | view, create, edit |
-| clinical | view, create, edit, approve |
-| nursing | view, update, manage, export |
-| lab | request, view, report, edit, manage, export |
-| radiology | request, view, report, edit, manage, export |
-| pharmacy | request, view, prescribe, dispense, edit, manage |
-| billing | view, create, edit, delete, manage, export |
-| claims | view, create, edit, approve, export |
-| patient_registry | view, create, update, delete, manage, export |
-| reports_audit | view, export, manage |
-| access_admin | manage |
-| emergency | view, create, edit, assign, manage |
-| icu | view, create, edit, assign, manage |
-| theater | view, create, edit, assign, manage |
-| discharge | view, create, edit, approve |
-| physiotherapy | view, create, edit, assign |
-| hr | view, create, edit, manage, export |
-| biomedical | view, create, edit, manage |
-| operations | view, create, edit, manage |
-| housekeeping | view, create, manage |
-| mortuary | view, create, edit, manage |
-| communications | view, create, manage |
-| rooms_beds | view, create, edit, assign, manage |
-| facility_settings | view, manage |
-| tenant_settings | view, manage |
-| subscriptions | view, manage |
-
-## Role Summary
-
-| role_key | scope summary |
-|---|---|
-| super_admin | platform-wide manage |
-| tenant_admin | tenant-wide manage |
-| facility_admin | facility-scoped manage |
-| doctor | clinical care, diagnostics, billing visibility |
-| nurse | ward care, triage, registry, diagnostics |
-| receptionist | registration, queues, billing |
-| accountant | billing, claims, reports |
-| radiographer | radiology workflow |
-| physiotherapist | therapy workflow |
-| operations_staff | operations workflow |
-| patient | own-data only |
 
 ## Enforcement
 
 - UI, API, menu, component, and workflow access must all pass effective-access checks.
-- Backend enforcement must remain authoritative.
+- Backend enforcement must remain authoritative over UI visibility.
 - Permission changes and resets must be atomic, versioned, and auditable.
 - Failed changes must roll back completely.
 
 ## Related Rules
 
-- `modules.mdc`
-- `subscriptions.mdc`
-- `default_user_roles.mdc`
-- `frontend/.cursor/permissions.mdc`
-- `backend/.cursor/auth-security.mdc`
+- `modules.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`
+- `frontend/.cursor/permissions.mdc`, `backend/.cursor/auth-security.mdc`
