@@ -1,53 +1,49 @@
 ---
-description: Mandatory standards for creating and maintaining Cursor MDC rule files
+description: Standards for creating and maintaining Cursor MDC rule files
 alwaysApply: true
 ---
 
 # MDC Rule File Standards
 
-Apply these requirements whenever creating or editing an `.mdc` rule file.
+Apply these standards when creating or editing `.mdc` rule files.
 
 ## Required frontmatter
 
-Begin every rule with valid YAML frontmatter:
+- Start with valid YAML frontmatter.
+- Include:
+  - `description:`—concise, single-sentence purpose.
+  - `globs:`—relative globs for scoped rules; omit if `alwaysApply: true`.
+  - `alwaysApply:`—`true` for repo-wide, `false` for scoped.
 
 ```yaml
 ---
-description: One concise sentence stating the rule's purpose
+description: State the rule’s purpose
 globs:
   - "relevant/path/**"
 alwaysApply: false
 ---
 ```
 
-- Set `alwaysApply: true` only for repository-wide rules.
-- For scoped rules, set `alwaysApply: false` and provide precise `globs`.
-- Omit `globs` when `alwaysApply` is `true`.
+## Content structure
 
-## Required content structure
-
-Use this order:
-
-1. A specific H1 title.
-2. A brief purpose or outcome statement.
-3. Actionable requirements grouped under descriptive H2 headings.
-4. Examples or exceptions only when they prevent ambiguity.
-5. Related-rule references only when directly relevant.
+1. H1 title (specific to the rule).
+2. Brief purpose or outcome statement.
+3. Actionable requirements, grouped under clear H2s.
+4. Examples or exceptions only if they prevent ambiguity.
+5. Related-rule links only if directly relevant.
 
 ## Quality requirements
 
-- Keep the complete file under 251 words, including frontmatter.
-- Write professionally with concise, direct language.
-- Make every instruction actionable and testable.
-- Use specific file paths, patterns, commands, or conditions where useful.
-- Prefer short bullets over long paragraphs.
-- Keep one primary concern per rule file.
-- Use requirement words consistently: `must`, `must not`, `should`, and `may`.
-- Remove duplicated instructions within the rule and across related rules.
-- Resolve contradictions before saving; more specific scoped rules may refine, but must not conflict with, repository-wide rules.
-- Avoid vague guidance, unnecessary background, filler, and repeated examples.
-- Preserve valid Markdown and YAML syntax.
+- Stay under 251 words (frontmatter included).
+- Use clear, direct, and professional language.
+- Make each instruction actionable and testable.
+- Prefer concise bullets over long text.
+- State only one primary concern per rule.
+- Use `must`, `must not`, `should`, and `may` consistently.
+- Remove any duplication or contradiction.
+- Give specific commands, files, or patterns when possible.
+- Maintain valid Markdown and YAML.
 
 ## Final check
 
-Before saving, verify the rule is correctly scoped, under the word limit, free of contradictions and duplicates, and clear enough to follow without additional interpretation.
+Confirm correct scope, word count, clarity, and no duplicates or contradictions.
