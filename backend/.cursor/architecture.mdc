@@ -23,7 +23,7 @@ Order: `route -> controller -> service -> repository -> prisma`.
 
 ## Modules
 - One domain capability per module, with standalone workflows and explicit integration points.
-- Services may depend on other services or shared libs, never on another module's controller or repository.
+- Services may depend on other services or shared libs, and must not on another module's controller or repository.
 
 ## Dependencies
 - Dependency direction must move downward through the layer stack.

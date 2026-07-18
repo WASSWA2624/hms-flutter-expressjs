@@ -19,7 +19,7 @@ Single navigation package and centralized route configuration.
 - Must use stable readable web URLs via `human_friendly_id` where resource IDs appear.
 - Must not navigate in repositories or data sources.
 - Must provide a localized not-found page for unknown routes.
-- Should avoid unnecessary rebuilds in navigation shells; keep route transitions simple.
+- Should not unnecessary rebuilds in navigation shells; keep route transitions simple.
 - Must reuse shell components from `frontend/lib/shared/layout/` for uniform navigation.
 - Must localize all navigation labels, tooltips, and route titles.
 - Must use design tokens exclusively; no hard-coded colors, spacing, or typography ([`design-system.mdc`](./design-system.mdc)).

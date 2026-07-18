@@ -14,11 +14,11 @@ Defines performance expectations for startup, rendering, lists, images, networki
 
 - UI must be smooth, responsive, and efficient across mobile, tablet, and desktop breakpoints.
 - Must use theme tokens exclusively; no hard-coded style tokens ([`design-system.mdc`](./design-system.mdc)).
-- Should avoid unnecessary rebuilds by keeping provider watches focused.
+- Should not unnecessary rebuilds by keeping provider watches focused.
 - Should use `const` widgets where possible.
 - Must paginate or virtualize large lists and tables; must not load huge datasets into memory.
 - Should use image sizes appropriate to their display context.
-- Must avoid heavy synchronous work on the UI thread.
+- Must not heavy synchronous work on the UI thread.
 - Should cache thoughtfully and invalidate explicitly.
 - Startup work should stay minimal and visible through a startup state when needed.
 - Must use release/profile builds for meaningful performance checks.
@@ -28,7 +28,7 @@ Defines performance expectations for startup, rendering, lists, images, networki
 
 - Should split large pages into focused widgets.
 - Should use slivers or builders for long lists.
-- Should avoid expensive layout nesting when simpler layout works.
+- Should not expensive layout nesting when simpler layout works.
 - Must apply max-width constraints on large screens for readability.
 
 ## Acceptance checklist

@@ -18,7 +18,7 @@ Baseline accessibility for screens, components, forms, navigation, and feedback 
 - Must not rely on color alone; pair status with icon plus text.
 - Keep text readable under font scaling.
 - Associate form errors with their fields.
-- Avoid excessive motion; use simple default transitions.
+- Must not excessive motion; use simple default transitions.
 - Must use design tokens for color and contrast; hard-coded colors are prohibited ([`design-system.mdc`](./design-system.mdc)).
 - Reusable accessible components must live in `frontend/lib/shared/`; check the catalog first.
 - All user-facing text must be localized with concise clinical terminology.

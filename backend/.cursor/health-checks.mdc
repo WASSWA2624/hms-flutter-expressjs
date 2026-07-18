@@ -15,6 +15,6 @@ Define runtime health endpoints.
 
 ## Requirements
 - Readiness may check database, storage, websocket gateway, and required background infrastructure.
-- Health responses must never expose secrets or raw stack traces.
+- Health responses must not expose secrets or raw stack traces.
 - Startup diagnostics may publish deeper detail to logs, not public health payloads.
 - Failing readiness must stop new traffic but should not crash the process by itself.

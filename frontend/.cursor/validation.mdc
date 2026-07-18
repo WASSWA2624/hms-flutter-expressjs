@@ -19,7 +19,7 @@ Defines validation ownership for user input, API data, domain values, and local 
 - Must keep reusable validation functions in shared/core validation utilities.
 - Must keep business-specific validation in the feature domain or controller layer.
 - Must not rely on frontend validation only; backend validation remains required.
-- May preserve invalid raw external data for diagnostics only, never as trusted domain state.
+- May preserve invalid raw external data for diagnostics only, and must not as trusted domain state.
 
 ## Validation ownership
 

@@ -15,7 +15,7 @@ Define server behavior for sync-capable clients.
 - After successful reconciliation, persisted mutations must still emit scoped realtime events per `websockets.mdc`.
 - Auth, entitlement changes, break-glass approval, payments, refunds, mortuary release, and last-office final close are online-only.
 - Conflict responses must identify the conflicting record and latest version metadata.
-- Server logic must never assume the client clock is authoritative.
+- Server logic must not assume the client clock is authoritative.
 
 ## See also
 - [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)

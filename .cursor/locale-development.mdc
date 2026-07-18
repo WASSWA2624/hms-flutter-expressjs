@@ -20,7 +20,7 @@ Edit English locale files by default and treat other locales as explicit work.
 ## Explicit Overrides
 
 - Edit non-English locale files only when the user asks for translation or parity work.
-- Do not bulk-sync French or other locales during normal development.
+- Must not bulk-sync French or other locales during normal development.
 
 ## Invariants
 

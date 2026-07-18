@@ -25,6 +25,6 @@ From `jsconfig.json`:
 ## Requirements
 - Use aliases for cross-folder imports; relative imports stay within the same folder tree only.
 - Modules may import another module only through public service or shared-lib entrypoints.
-- Controllers and repositories must never be imported across modules.
+- Controllers and repositories must not be imported across modules.
 - Alias changes require synchronized updates to runtime alias registration and docs.
 - Imports must not create circular dependency chains.

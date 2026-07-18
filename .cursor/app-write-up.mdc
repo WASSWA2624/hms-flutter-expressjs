@@ -38,4 +38,4 @@ You must use `flows/` when changing workflow behavior:
 
 ## Demo Seeds
 
-- Demo data must be clearly marked, safe to reset, and never required in production.
+- Demo data must be clearly marked, safe to reset, and must not required in production.

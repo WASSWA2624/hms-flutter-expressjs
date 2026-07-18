@@ -17,7 +17,7 @@ Defines logging, diagnostics, analytics readiness, and privacy constraints.
 - Must use environment-based log levels and disable verbose logs in production builds.
 - Must capture startup, auth, API, sync, and storage failures with safe context.
 - Analytics should stay optional and app-specific; must not force a vendor into the base template.
-- Breadcrumbs or context may be added only when they do not expose sensitive information.
+- Breadcrumbs or context may be added only when they must not expose sensitive information.
 
 ## Log levels
 

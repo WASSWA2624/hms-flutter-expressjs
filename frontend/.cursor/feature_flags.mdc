@@ -17,7 +17,7 @@ How optional or staged features are controlled.
 - Must not use flags to hide incomplete security rules.
 - Flags must not bypass subscription or permission gates ([`permissions.mdc`](./permissions.mdc)).
 - Must not leave dead flags permanently in the codebase.
-- Avoid scattering raw flag string names through widgets.
+- Must not scattering raw flag string names through widgets.
 
 ## Implementation
 
@@ -26,7 +26,7 @@ How optional or staged features are controlled.
 
 ## Acceptance
 
-- Disabled features do not appear in navigation or accessible routes unless intentionally allowed.
+- Disabled features must not appear in navigation or accessible routes unless intentionally allowed.
 - Flag behavior is documented for release builds.
 
 ## Related

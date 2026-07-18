@@ -16,7 +16,7 @@ HOSSPI HMS frontend is the Flutter client for the hospital management system, im
 - Must support Android, iOS, Web, Windows, macOS, and Linux where enabled; extra-small mobile through large desktop; smartwatch out of scope.
 - Must integrate with `hms-backend` via repositories, DTOs, and [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
 - Should prefer Flutter SDK widgets, Material Design, and shared `lib/shared/` abstractions before custom packages.
-- Must avoid duplicate dependencies, folders, components, rules, and competing design systems.
+- Must not duplicate dependencies, folders, components, rules, and competing design systems.
 - Module menus, routes, forms, actions, and visibility must match backend permissions, entitlements, and APIs.
 - Must reference entities by `human_friendly_id`; backend maps internal IDs.
 - Must enforce RBAC+ABAC and subscription-package intersection ([`permissions.mdc`](./permissions.mdc)).

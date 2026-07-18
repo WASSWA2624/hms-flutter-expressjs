@@ -15,7 +15,7 @@ Defines how the template stays maintainable as more features, platforms, and tea
 - Must keep cross-cutting services in `core` only when multiple features use them.
 - Shared UI must stay generic and business-free; all reusable components must live under `frontend/lib/shared/`.
 - Public feature exports must be intentional.
-- Must avoid global mutable state.
+- Must not global mutable state.
 - Must use clear contracts between layers.
 - Should document architecture decisions that affect future development.
 - Must not copy whole screens to support new layouts.
@@ -35,7 +35,7 @@ Defines how the template stays maintainable as more features, platforms, and tea
 ## Acceptance checklist
 
 - Adding a feature does not require modifying unrelated features.
-- Shared components do not become product-specific dumping grounds.
+- Shared components must not become product-specific dumping grounds.
 - Architecture boundaries remain enforceable by review and tests.
 
 ## Related rules

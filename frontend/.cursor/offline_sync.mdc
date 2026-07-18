@@ -19,9 +19,9 @@ Client-side offline behavior per [`.cursor/api-contract.mdc`](../../.cursor/api-
 - Must not silently discard offline changes.
 - Conflict handling must be explicit; surface `409` with version metadata.
 - Repositories must expose consistent local and remote views.
-- After successful HTTP writes, controllers must reconcile via `WorkspaceSyncEngine` (safe typed deltas or the smallest HTTP refresh); widgets must never consume raw websocket payloads.
+- After successful HTTP writes, controllers must reconcile via `WorkspaceSyncEngine` (safe typed deltas or the smallest HTTP refresh); widgets must not consume raw websocket payloads.
 
-## Online-only (never queue)
+## Online-only (must not queue)
 
 Auth/session changes, entitlement/break-glass approval, payments/refunds, mortuary release, final closeout — see `api-contract.mdc`.
 

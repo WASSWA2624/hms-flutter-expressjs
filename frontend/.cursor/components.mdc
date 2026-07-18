@@ -13,7 +13,7 @@ Uniform, reusable UI built on Flutter Material primitives.
 ## Requirements
 
 - Prefer Material/Cupertino widgets; wrap only for consistency or repeated behavior.
-- Reusable components must live under `frontend/lib/shared/`; never duplicate in feature folders, and check the catalog before creating new UI.
+- Reusable components must live under `frontend/lib/shared/`; must not duplicate in feature folders, and check the catalog before creating new UI.
 - Must not create multiple components for one job or embed product business logic.
 - Optimize for performance: `const` constructors, focused rebuilds, lazy builders for large lists.
 - Match design tokens on every variant ([`design-system.mdc`](./design-system.mdc)) and adapt to mobile, tablet, desktop ([`layouts.mdc`](./layouts.mdc)).
@@ -21,7 +21,7 @@ Uniform, reusable UI built on Flutter Material primitives.
 - Support enabled, disabled, loading, error, focused, and empty states where relevant.
 - Data-bound components render Riverpod changes immediately without owning sync logic.
 - Reference entities by `human_friendly_id`; must not expose raw table IDs.
-- Enforce RBAC+ABAC: unauthorized menus, components, and actions must never render ([`permissions.mdc`](./permissions.mdc)).
+- Enforce RBAC+ABAC: unauthorized menus, components, and actions must not render ([`permissions.mdc`](./permissions.mdc)).
 - Module work-queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc).
 
 ## Standard catalog
@@ -32,7 +32,7 @@ Reuse the standard set instead of new abstractions: `AppWorkspace`, `AppListTabl
 
 - Icons `20–24px`; button heights `40–48px`.
 - Radii from `theme.radius` tokens via `context.responsiveRadius(...)`.
-- Form fields expose validation hooks but do not own feature rules.
+- Form fields expose validation hooks but must not own feature rules.
 
 ## Related
 

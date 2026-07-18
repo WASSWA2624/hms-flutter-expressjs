@@ -11,7 +11,7 @@ Define realtime transport and CRUD synchronization behavior.
 ## Architecture
 - Bootstrap lives in `src/websockets/*`; services own logic and emit events—gateways and controllers must not.
 - Use `@lib/websocket` helpers from the service layer only, after successful persistence.
-- Event constants live in `src/lib/websocket/events.js`; never hardcode event strings.
+- Event constants live in `src/lib/websocket/events.js`; must not hardcode event strings.
 - Scoped recipient resolution uses `@lib/realtime/recipients.js`.
 
 ## CRUD sync contract
@@ -22,8 +22,8 @@ Flow: persist, audit log, publish domain event, deliver to scoped recipients.
 
 ## Rules
 - Publish after commit; delivery failure must not roll back persistence.
-- Payloads use `snake_case` fields and the shared domain envelope, and never include raw Prisma entities.
-- `resource_id` and every entity reference must be `human_friendly_id`, never an internal primary key.
+- Payloads use `snake_case` fields and the shared domain envelope, and must not include raw Prisma entities.
+- `resource_id` and every entity reference must be `human_friendly_id`, and must not an internal primary key.
 - Scope recipients by tenant, facility, role, and module entitlements—same boundaries as HTTP.
 - Name events `{domain}.{action}`; include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at`.
 - Tests must prove mutations emit the expected scoped event; bespoke publishers must skip audit emission.

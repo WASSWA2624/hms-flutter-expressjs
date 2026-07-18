@@ -16,7 +16,7 @@ Keep the HTTP surface consistent, predictable, and access-controlled.
 - Workspace endpoints may aggregate module summaries but must stay in module scope.
 
 ## Identifiers
-- Path params must expose `:human_friendly_id` (or documented alias) and reference `human_friendly_id`, never internal primary keys.
+- Path params must expose `:human_friendly_id` (or documented alias) and reference `human_friendly_id`, and must not internal primary keys.
 - Services and repositories must resolve `human_friendly_id` → internal ID before persistence; internal IDs stay server-side.
 - Responses must return `human_friendly_id` as the canonical identifier.
 

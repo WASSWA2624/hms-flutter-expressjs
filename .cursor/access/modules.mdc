@@ -26,7 +26,7 @@ This file owns shipped `module_key` values, package coverage, and status; seed o
 ## Planned Modules
 
 - `dental` (Custom/Pro+) is planned and must not seed as a standalone entitlement.
-- `analytics`, `decision_support`, `workflow_engine`, `device_integration`, `marketplace`, `research`, and `ai_automation` are planned; do not seed them.
+- `analytics`, `decision_support`, `workflow_engine`, `device_integration`, `marketplace`, `research`, and `ai_automation` are planned; must not seed them.
 
 ## Related Rules
 

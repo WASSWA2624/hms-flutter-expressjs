@@ -22,7 +22,7 @@ Package tiers are the hard upper bound on access. See `permissions.mdc` for the 
 ## Enforcement
 
 - Package checks must run in UI and API paths.
-- Grants must never exceed the active package.
+- Grants must not exceed the active package.
 - Package changes, resets, upgrades, and downgrades must be atomic and auditable.
 - Failed changes must roll back completely.
 

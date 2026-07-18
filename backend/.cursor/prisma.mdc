@@ -17,7 +17,7 @@ Define the authoritative database contract.
 - Every tenant-scoped record must carry `tenant_id`; facility-scoped records carry `facility_id` when required.
 - Every tenant-facing entity includes a unique, immutable, indexed `human_friendly_id`.
 - APIs, audit payloads, and websocket envelopes use `human_friendly_id`; repositories translate IDs at the data boundary.
-- Never serialize internal primary keys into public DTOs.
+- Must not serialize internal primary keys into public DTOs.
 - Auditable records include `created_at`, `updated_at`, and `deleted_at` when soft delete applies.
 - Frequently filtered scope, status, and `deleted_at` columns must be indexed.
 - Soft delete is the default for business records unless law or design requires otherwise.

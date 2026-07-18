@@ -25,7 +25,7 @@ Single source of truth for breakpoints, shell behavior, and content width.
 
 - Use centralized responsive utilities in `lib/core/responsive/`.
 - Must not duplicate screens per size unless the interaction model changes.
-- Scale one-column to multi-column; use readable max widths and avoid fixed widths.
+- Scale one-column to multi-column; use readable max widths and must not allow fixed widths.
 - Keep touch and pointer targets comfortable per platform.
 - Keep shell and content-width behavior uniform across modules.
 - Reusable layout components must live in `frontend/lib/shared/layout/`.

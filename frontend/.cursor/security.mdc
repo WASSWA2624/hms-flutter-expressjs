@@ -22,7 +22,7 @@ Defines security expectations for storage, networking, logging, configuration, a
 
 ## RBAC / ABAC authorization
 
-- Must enforce RBAC and ABAC on every surface; unauthorized menus, components, actions, routes, and workflows must never be visible or accessible.
+- Must enforce RBAC and ABAC on every surface; unauthorized menus, components, actions, routes, and workflows must not be visible or accessible.
 - Hidden UI alone is never sufficient; backend authorization is mandatory.
 - Must treat [`permissions.mdc`](./permissions.mdc) and [`.cursor/access/`](../../.cursor/access/) as the source of truth.
 

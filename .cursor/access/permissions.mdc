@@ -20,7 +20,7 @@ This file owns the access vocabulary and enforcement model for HOSSPI HMS.
 
 - Permissions may attach to users, roles, modules, and subscription packages.
 - Effective access = `union(role/module/user grants) ∩ subscription ∩ ABAC`.
-- Users may hold multiple roles, but access must never exceed the active subscription or ABAC scope.
+- Users may hold multiple roles, but access must not exceed the active subscription or ABAC scope.
 
 ## ABAC
 

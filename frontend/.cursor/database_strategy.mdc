@@ -16,7 +16,7 @@ How the frontend uses local structured storage through Drift.
 - Must not query Drift from widgets or controllers directly.
 - Use explicit migrations for schema changes and test them when versions change.
 - Add indexes for frequently queried fields; use pagination or streams for large results.
-- Avoid destructive migrations unless the product requires them and documents the behavior.
+- Must not destructive migrations unless the product requires them and documents the behavior.
 
 ## Folder standard
 

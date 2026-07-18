@@ -15,7 +15,7 @@ Keep backend code uniform, reusable, and reviewable.
 - Prefer small reusable services and helpers over copy-paste implementations.
 - Public functions, exported modules, and complex logic must have JSDoc-style comments.
 - Inline comments must explain intent, assumptions, or edge cases only.
-- Do not read `process.env` outside config helpers.
-- Do not hardcode authorization, entitlement, or role logic in controllers.
-- Do not add duplicate helper libraries when an existing family can be extended.
+- Must not read `process.env` outside config helpers.
+- Must not hardcode authorization, entitlement, or role logic in controllers.
+- Must not add duplicate helper libraries when an existing family can be extended.
 - Circular dependencies, dead files, and stale comments are defects.

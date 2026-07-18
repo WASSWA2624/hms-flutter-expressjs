@@ -18,7 +18,7 @@ Rules for entities, DTOs, value objects, mappers, and database models.
 - Use value objects for important constrained values.
 - Shape DTOs around external API contracts (`snake_case` JSON per [api-contract](../../.cursor/api-contract.mdc)).
 - Shape entities around business meaning; keep presentation-only formatting out of entities.
-- Entities and presentation models expose `human_friendly_id`; never propagate raw table IDs to UI or domain contracts.
+- Entities and presentation models expose `human_friendly_id`; must not propagate raw table IDs to UI or domain contracts.
 
 ## Model types
 

@@ -28,8 +28,8 @@ Must import from `shared/layout`, `shared/components`, and `shared/actions` befo
 ## Mandatory behavior
 
 - Notifications submenu must filter the current worklist, not open modal lists; hide zero-value rows where expected.
-- Must use hospital workflow language; never expose raw enum names, stage codes, or internal IDs.
-- Must surface `human_friendly_id` and patient display name; never raw table IDs or UUIDs.
+- Must use hospital workflow language; must not expose raw enum names, stage codes, or internal IDs.
+- Must surface `human_friendly_id` and patient display name; must not raw table IDs or UUIDs.
 - Must gate actions by backend stage, permission, and subscription entitlement.
 - Must keep worklists paginated/lazy and the shell responsive across mobile, tablet, desktop.
 - After modal mutations, must refresh the affected row, detail, counts, and nav badges via targeted refresh.

@@ -23,7 +23,7 @@ Approved dependencies and how to avoid unnecessary package growth.
 - `freezed_annotation`, `json_annotation` — model/DTO generation.
 - `drift`, `drift_flutter` — structured local data, cache, or sync queues.
 - `shared_preferences` — non-sensitive settings; `flutter_secure_storage` — tokens/secrets.
-- `connectivity_plus` — connectivity hint only, never proof of internet.
+- `connectivity_plus` — connectivity hint only, and must not proof of internet.
 - `path_provider`, `url_launcher`, `app_links` — paths, external/deep links.
 
 ## Dev dependencies
@@ -38,7 +38,7 @@ Approved dependencies and how to avoid unnecessary package growth.
 - Must not add duplicate packages for one responsibility.
 - Every new dependency needs a clear owner, purpose, and platform-compatibility check.
 - Keep dependencies compatible across Android, iOS, Web, Windows, macOS, Linux unless a documented exception narrows the target.
-- Avoid abandoned or platform-limited packages without justification.
+- Must not abandoned or platform-limited packages without justification.
 - Must not put secrets in `pubspec.yaml`, assets, source, docs, or fixtures.
 
 ## Related

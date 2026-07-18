@@ -18,7 +18,7 @@ Define backend technical standards for `hms-backend`.
 ## Backend-wide invariants
 - Express.js and CommonJS are mandatory.
 - Database objects, Prisma models, and documented payload fields use lowercase `snake_case`.
-- Public APIs and realtime payloads expose `human_friendly_id` only; never return raw primary keys.
+- Public APIs and realtime payloads expose `human_friendly_id` only; must not return raw primary keys.
 - Effective access = `union(role, module, user grants) ∩ active subscription ∩ assigned modules ∩ ABAC scope`; no grant bypasses subscription limits.
 - Default modules, packages, roles, and permissions live in `.cursor/access/`; admin changes are versioned and auditable.
 - Every business module must stay standalone and entitlement-aware.
