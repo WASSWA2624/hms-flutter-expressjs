@@ -9,7 +9,7 @@ alwaysApply: false
 Prepare testable backend integration without requiring a live service.
 
 ## Applicable Rules
-You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`network_api.mdc`](../.cursor/network_api.mdc), [`repository_pattern_example.mdc`](../.cursor/repository_pattern_example.mdc), [`architecture.mdc`](../.cursor/architecture.mdc), [`error_handling.mdc`](../.cursor/error_handling.mdc), and [`environment_configuration.mdc`](../.cursor/environment_configuration.mdc).
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`network_api.mdc`](../.cursor/network_api.mdc), [`repository-pattern-example.mdc`](../.cursor/reference/repository-pattern-example.mdc), [`architecture.mdc`](../.cursor/architecture.mdc), [`error_handling.mdc`](../.cursor/error_handling.mdc), and [`environment_configuration.mdc`](../.cursor/environment_configuration.mdc).
 
 ## Implementation
 1. Create an API client abstraction under `lib/core/network/`.

@@ -9,7 +9,7 @@ alwaysApply: false
 
 # Module Workspace UI Contract
 
-Keep clinical and operational module screens visually and behaviorally consistent. Applies to new screens and material changes; legacy pages may be refactored incrementally.
+Keep clinical and operational module screens visually and behaviorally consistent. Applies to new screens and changes; legacy pages may be refactored incrementally.
 
 ## Mandatory layout stack
 
