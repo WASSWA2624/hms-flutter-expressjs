@@ -1,28 +1,26 @@
-# 20 - Testing readiness
+---
+description: Defines unit, widget, and integration testing foundations.
+globs:
+  - "frontend/{test/**,integration_test/**,lib/**,README.md}"
+alwaysApply: false
+---
 
-## Goal
-Add unit, widget, and integration test foundations.
+# 20 - Testing Readiness
+Provide repeatable tests that validate core behavior without production services.
 
-## Applies app rules
-- [`testing.md`](../.cursor/testing.mdc)
-- [`ci_cd_quality_gates.md`](../.cursor/ci_cd_quality_gates.mdc)
-- [`state_management.md`](../.cursor/state_management.mdc)
-- [`layouts.mdc`](../.cursor/layouts.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`testing.mdc`](../.cursor/testing.mdc), [`ci_cd_quality_gates.mdc`](../.cursor/ci_cd_quality_gates.mdc), [`state_management.mdc`](../.cursor/state_management.mdc), and [`layouts.mdc`](../.cursor/layouts.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Create test helper utilities for app setup and provider overrides.
-3. Add tests for validators, mappers, responsive utilities, theme, and shared components.
-4. Add shell tests for mobile and desktop layout decisions.
-5. Add integration startup/navigation smoke test when host tooling supports it.
-6. Document test commands.
+## Implementation
+1. Create test helpers for app setup and provider overrides.
+2. Add tests for validators, mappers, responsive utilities, themes, and shared components.
+3. Add shell tests covering mobile and desktop layout decisions.
+4. Add a startup/navigation integration smoke test when host tooling supports it.
+5. Document test commands.
+6. Tests must not call production services.
 
-## Expected output
-- Test helpers.
-- Baseline unit/widget/integration tests.
-- Documented test commands.
-
-## Acceptance criteria
-- `flutter test` passes.
-- Tests do not require production services.
-- Important shared UI and responsive behavior have tests.
+## Acceptance Criteria
+- `flutter test` must pass.
+- Important shared UI and responsive behavior must have coverage.
+- Test helpers and baseline unit/widget tests must exist.
+- Integration tests may be host-dependent but must remain documented.

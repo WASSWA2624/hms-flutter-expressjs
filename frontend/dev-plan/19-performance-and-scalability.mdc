@@ -1,29 +1,26 @@
-# 19 - Performance and scalability
+---
+description: Defines performance and scalability requirements for frontend growth.
+globs:
+  - "frontend/{lib/**,test/**,docs/**}"
+alwaysApply: false
+---
 
-## Goal
-Optimize rebuilds, list rendering, startup cost, shell performance, and future feature growth.
+# 19 - Performance and Scalability
+Keep startup, rendering, shared UI, and future feature growth efficient.
 
-## Applies app rules
-- [`performance.md`](../.cursor/performance.mdc)
-- [`scalability.md`](../.cursor/scalability.mdc)
-- [`layouts.mdc`](../.cursor/layouts.mdc)
-- [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`performance.mdc`](../.cursor/performance.mdc), [`scalability.mdc`](../.cursor/scalability.mdc), [`layouts.mdc`](../.cursor/layouts.mdc), and [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Review provider watches for unnecessary rebuilds.
-3. Ensure lists are lazy, virtualized, or paginated where datasets can grow.
-4. Avoid heavy startup network work.
-5. Keep shell layout widgets focused and reusable.
-6. Keep shared components generic and stable.
-7. Document performance checks for release readiness.
+## Implementation
+1. Review provider watches and remove unnecessary rebuilds.
+2. Growing lists must be lazy, virtualized, or paginated.
+3. Startup must not perform heavy network work.
+4. Shell layout widgets should remain focused and reusable.
+5. Shared components must remain generic and stable.
+6. Document release performance checks and a scalability review checklist.
 
-## Expected output
-- Performance notes.
-- Lazy/paginated list patterns.
-- Scalability review checklist.
-
-## Acceptance criteria
-- Large lists remain performant.
-- Startup remains minimal.
-- Adding features does not require unrelated rewrites.
+## Acceptance Criteria
+- Large lists must remain performant.
+- Startup must remain minimal.
+- New features must not require unrelated rewrites.
+- Performance notes and lazy or paginated list patterns must be available for release review.

@@ -1,37 +1,30 @@
-# 23 - Final validation checklist
+---
+description: Defines final validation for the complete reusable Flutter starter.
+globs:
+  - "frontend/**"
+alwaysApply: false
+---
 
-## Goal
-Validate the whole starter against all rules and the execution policy.
+# 23 - Final Validation Checklist
+Verify the completed starter against every plan, rule, contract, and quality gate.
 
-## Applies app rules
-- [`checklists.md`](../.cursor/checklists.mdc)
-- [`reference/validation-snapshot-2026-05-14.mdc`](../.cursor/reference/validation-snapshot-2026-05-14.mdc)
-- [`scope.md`](../.cursor/scope.mdc)
-- [`ci_cd_quality_gates.md`](../.cursor/ci_cd_quality_gates.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`checklists.mdc`](../.cursor/checklists.mdc), [`validation-snapshot-2026-05-14.mdc`](../.cursor/reference/validation-snapshot-2026-05-14.mdc), [`scope.mdc`](../.cursor/scope.mdc), and [`ci_cd_quality_gates.mdc`](../.cursor/ci_cd_quality_gates.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Read every rule file and confirm there are no contradictions.
-3. Confirm every dev-plan file references relevant rules.
-4. Run final quality commands:
+## Validation
+1. Confirm all rules are consistent and every plan references relevant rules.
+2. Run generation first when used, then:
    ```bash
    flutter pub get
    dart format --set-exit-if-changed .
    flutter analyze
    flutter test
    ```
-5. Run code generation first when generated files are used.
-6. Validate supported screen-size behavior, including `320px` mobile and large desktop widths.
-7. Validate desktop menu bar, side navigation, and collapsed navigation behavior.
-8. Confirm the starter remains backend-integrated per api-contract.mdc and reusable.
-9. Update `frontend/.cursor/reference/validation-snapshot-2026-05-14.mdc` with actual results from the project.
+3. Test `320px` mobile and large desktop layouts, including menu bar and expanded/collapsed side navigation.
+4. Confirm API-contract readiness and reusability.
+5. Update `frontend/.cursor/reference/validation-snapshot-2026-05-14.mdc` with actual results.
 
-## Expected output
-- Updated validation report.
-- Final checklist results.
-- Ready-to-use Flutter starter.
-
-## Acceptance criteria
-- A developer can follow `00` through `23` in order.
-- The result is a working reusable Flutter foundation.
-- Architecture, UI behavior, and conventions are deterministic.
+## Acceptance Criteria
+- Steps `00` through `23` must be executable in order.
+- The result must be a working reusable foundation.
+- Architecture, UI behavior, conventions, and validation results must be deterministic.

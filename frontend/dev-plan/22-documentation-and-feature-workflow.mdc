@@ -1,30 +1,26 @@
-# 22 - Documentation and feature workflow
+---
+description: Defines frontend documentation and the repeatable feature workflow.
+globs:
+  - "frontend/{README.md,docs/**,lib/features/**}"
+alwaysApply: false
+---
 
-## Goal
-Finalize README, architecture docs, ADRs, and the repeatable feature workflow.
+# 22 - Documentation and Feature Workflow
+Keep setup, architecture, decisions, and feature delivery accurate and repeatable.
 
-## Applies app rules
-- [`documentation_standards.md`](../.cursor/documentation_standards.mdc)
-- [`feature_workflow.md`](../.cursor/feature_workflow.mdc)
-- [`checklists.md`](../.cursor/checklists.mdc)
-- [`coding_conventions.md`](../.cursor/coding_conventions.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`documentation_standards.mdc`](../.cursor/documentation_standards.mdc), [`feature_workflow.mdc`](../.cursor/feature_workflow.mdc), [`checklists.mdc`](../.cursor/checklists.mdc), and [`coding_conventions.mdc`](../.cursor/coding_conventions.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Update `README.md` with purpose, platforms, setup, run, test, build, architecture, and folder structure.
-3. Create or update `docs/architecture/`.
-4. Add ADR template or initial ADRs for major choices.
-5. Document the new feature workflow.
-6. Ensure docs reference rule files instead of repeating long rule content.
-7. Confirm docs match actual folders and commands.
+## Implementation
+1. Update `README.md` with purpose, platforms, setup, run, test, build, architecture, and folder structure.
+2. Create or update `docs/architecture/`.
+3. Add an ADR template or baseline ADRs for major decisions.
+4. Document the new-feature workflow.
+5. Documentation should link to rules instead of duplicating lengthy requirements.
+6. Documentation must match actual folders and commands.
 
-## Expected output
-- Complete README.
-- Architecture docs.
-- Feature workflow guide.
-- ADR template or baseline ADRs.
-
-## Acceptance criteria
-- A new developer can set up and run the app using docs.
-- Coding agents can follow the feature workflow consistently.
-- Docs do not contradict app rules.
+## Acceptance Criteria
+- A new developer must be able to set up and run the app from documentation.
+- Coding agents must be able to repeat the feature workflow.
+- Documentation must not contradict app rules.
+- README, architecture docs, workflow guidance, and ADR support must exist.

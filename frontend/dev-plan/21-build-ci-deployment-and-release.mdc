@@ -1,30 +1,24 @@
-# 21 - Build, CI, deployment, and release readiness
+---
+description: Defines build, CI, deployment, and release readiness requirements.
+globs:
+  - "frontend/{.github/**,tool/**,docs/**,README.md,pubspec.yaml,android/**,ios/**,web/**,windows/**,macos/**,linux/**}"
+alwaysApply: false
+---
 
-## Goal
-Prepare quality gates and build commands for all enabled Flutter platforms.
+# 21 - Build, CI, Deployment, and Release Readiness
+Prepare reliable quality gates and builds for every enabled Flutter platform.
 
-## Applies app rules
-- [`ci_cd_quality_gates.md`](../.cursor/ci_cd_quality_gates.mdc)
-- [`platform_guidelines.md`](../.cursor/platform_guidelines.mdc)
-- [`security.md`](../.cursor/security.mdc)
-- [`dependencies.md`](../.cursor/dependencies.mdc)
-- [`testing.md`](../.cursor/testing.mdc)
+## Applicable Rules
+You must follow [`00-execution-policy.mdc`](./00-execution-policy.mdc), [`ci_cd_quality_gates.mdc`](../.cursor/ci_cd_quality_gates.mdc), [`platform_guidelines.mdc`](../.cursor/platform_guidelines.mdc), [`security.mdc`](../.cursor/security.mdc), [`dependencies.mdc`](../.cursor/dependencies.mdc), and [`testing.mdc`](../.cursor/testing.mdc).
 
-## Implementation tasks
-1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
-2. Document local quality gate commands.
-3. Create CI workflow guidance or config when required.
-4. Document build commands for Android, iOS, Web, Windows, macOS, and Linux.
-5. Note host-specific build requirements for iOS, macOS, Windows, and Linux.
-6. Check release config and versioning rules.
-7. Ensure production builds do not contain debug-only behavior.
+## Implementation
+1. Document local quality-gate commands.
+2. Add CI guidance or configuration when required.
+3. Document Android, iOS, Web, Windows, macOS, and Linux build commands plus host restrictions.
+4. Verify release configuration and versioning.
+5. Production builds must not include debug-only behavior or secrets.
 
-## Expected output
-- Build documentation.
-- CI quality gate plan/config.
-- Release checklist.
-
-## Acceptance criteria
-- Format, analyze, tests, generation, and build commands are clear.
-- Supported build commands cover every enabled platform.
-- No production secrets are included.
+## Acceptance Criteria
+- Format, analyze, test, generation, and build commands must be clear.
+- Build guidance must cover every enabled platform.
+- Build documentation, CI plans/configuration, and a release checklist must be available.
