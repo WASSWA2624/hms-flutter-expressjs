@@ -11,7 +11,7 @@ Define the authoritative database contract.
 ## Naming
 - Prisma models, tables, and columns use lowercase `snake_case`.
 - Join tables use descriptive `snake_case` names such as `user_role`.
-- Migrations, SQL, queries, and docs must reuse the same names.
+- Migrations, SQL, queries, and docs must reuse these names.
 
 ## Schema
 - Every tenant-scoped record must carry `tenant_id`; facility-scoped records carry `facility_id` when required.
@@ -23,7 +23,7 @@ Define the authoritative database contract.
 - Soft delete is the default for business records unless law or design requires otherwise.
 
 ## Migrations
-- Required migrations must be created and executed reliably for every applicable environment.
+- Required migrations must be created and executed reliably for every environment.
 - Migration files must be committed alongside the schema changes that produce them.
 - Destructive migrations require a documented rollback plan.
 

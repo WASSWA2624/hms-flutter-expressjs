@@ -1,4 +1,4 @@
-﻿---
+---
 description: Ward nursing care, MAR, and handover boundaries for module changes.
 globs:
   - "frontend/lib/features/nursing/**"
@@ -14,14 +14,14 @@ Ward nursing owns inpatient vitals, MAR, nursing notes, care tasks, handover, an
 
 - Receive handover from OPD, emergency, admission desk, theater, or ICU.
 - Complete the ward admission checklist.
-- Run the ward care loop: vitals, observations, nursing notes, MAR, and care tasks.
+- Run the ward care loop: vitals, observations, notes, MAR, and care tasks.
 - Support doctor review and transfer preparation.
 - Receive post-op or ICU step-down handoff when applicable.
 - Complete nursing clearance before final IPD discharge.
 
 ## Handoffs
 
-- Ward nurse owns the admission checklist and ongoing bedside care.
+- Ward nurse owns the admission checklist and bedside care.
 - Charge nurse owns transfer support and escalation coordination.
 - Doctor owns clinical orders and discharge decisions.
 - ICU owns critical-care stay start and end.
@@ -37,7 +37,7 @@ Ward nursing owns inpatient vitals, MAR, nursing notes, care tasks, handover, an
 ## Allowed Critical Actions
 
 - Show shared vitals and MAR visibility for ward context.
-- Surface pending meds, handover items, and alert trends for review.
+- Surface pending meds, handover items, and alert trends.
 - Use the IPD encounter id for all ward panels and mutations.
 - Route ICU escalation to ICU flow instead of local ICU CRUD.
 

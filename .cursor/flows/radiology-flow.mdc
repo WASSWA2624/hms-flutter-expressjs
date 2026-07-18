@@ -1,4 +1,4 @@
-﻿---
+---
 description: Radiology order execution and reporting boundaries for module changes.
 globs:
   - "frontend/lib/features/radiology/**"

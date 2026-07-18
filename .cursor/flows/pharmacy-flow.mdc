@@ -1,4 +1,4 @@
-﻿---
+---
 description: Pharmacy dispensing and discharge medicine boundaries for module changes.
 globs:
   - "frontend/lib/features/pharmacy/**"

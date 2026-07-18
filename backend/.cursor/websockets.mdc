@@ -15,23 +15,21 @@ Define realtime transport and CRUD synchronization behavior.
 - Scoped recipient resolution uses `@lib/realtime/recipients.js`.
 
 ## CRUD sync contract
-Flow: `HTTP write -> service validates + persists -> audit log -> publish domain event -> scoped delivery`.
-- `createAuditLog` auto-emits realtime events for `CREATE`, `UPDATE`, `DELETE`; services calling it need no extra wiring.
+Flow: `HTTP write -> service persists -> audit log -> publish domain event -> scoped delivery`.
+- `createAuditLog` auto-emits realtime events for `CREATE`, `UPDATE`, `DELETE`; callers need no extra wiring.
 - Default event shape: `{entity}.{created|updated|deleted}`; override via `realtime_event`/`realtime_payload`, opt out via `realtime: false`.
-- Bespoke publishers must add the entity to `REALTIME_SKIP_ENTITIES` to avoid duplicate audit events.
+- Bespoke publishers must add the entity to `REALTIME_SKIP_ENTITIES` to avoid duplicate events.
 
 ## Rules
-- Publish after the transaction commits; delivery failure must not roll back persistence.
-- Payloads use `snake_case` fields and the shared domain envelope; never send raw Prisma entities.
+- Publish after commit; delivery failure must not roll back persistence.
+- Payloads use `snake_case` fields and the shared domain envelope, stay minimal (typed deltas), and never include raw Prisma entities.
 - `resource_id` and every entity reference must be `human_friendly_id`, never an internal primary key.
-- Keep payloads minimal (typed deltas) for high-performance fan-out.
 - Scope recipients by tenant, facility, role, and module entitlements—same boundaries as HTTP.
-- Name events `{domain}.{action}` (e.g. `patient.updated`).
-- Include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at`.
-- Tests must prove mutations emit the expected scoped event and that bespoke publishers skip audit emission.
+- Name events `{domain}.{action}`; include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at`.
+- Tests must prove mutations emit the expected scoped event; bespoke publishers must skip audit emission.
 
 ## Connection
 - Clients must authenticate (JWT) before subscribing to privileged channels.
-- Gateway maps `userId -> sockets` supporting multiple tabs; heartbeat is mandatory.
-- RBAC is enforced for sensitive inbound events; outbound events are recipient-filtered.
+- Gateway maps `userId -> sockets` and supports multiple tabs; heartbeat is mandatory.
+- RBAC gates inbound events; outbound events are recipient-filtered.
 - `src/server.js` must close websocket resources during graceful shutdown.

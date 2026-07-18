@@ -1,4 +1,4 @@
-﻿---
+---
 description: IPD discharge clearance, exit, and encounter closure boundaries for module changes.
 globs:
   - "frontend/lib/features/discharge/**"

@@ -12,11 +12,9 @@ Defines security expectations for storage, networking, logging, configuration, a
 
 ## Mandatory rules
 
-- Must not commit secrets, API keys, private certificates, passwords, or tokens.
-- Must not log sensitive values.
+- Must not commit or log secrets, API keys, certificates, passwords, or tokens.
 - Must use HTTPS for production communication unless a documented private-network exception exists.
-- Must store sensitive session artifacts in secure storage where supported.
-- Must use `shared_preferences` only for non-sensitive settings.
+- Must store sensitive session artifacts in secure storage; use `shared_preferences` only for non-sensitive settings.
 - Must validate data at boundaries: UI input, repository input, API response, and local persistence.
 - Must treat backend and local storage data as untrusted until validated or mapped.
 - Must not display raw server errors to users.
@@ -33,8 +31,7 @@ Defines security expectations for storage, networking, logging, configuration, a
 ## Secure storage notes
 
 - Native mobile and desktop may use platform-backed secure storage.
-- Web secure storage has limitations; must not assume web equals native secure storage.
-- Must document any web auth/session strategy before production use.
+- Web storage has limitations; must not assume web equals native secure storage, and must document any web auth/session strategy before production.
 
 ## Acceptance checklist
 

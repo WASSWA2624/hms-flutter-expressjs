@@ -27,7 +27,7 @@ Single source of truth for breakpoints, shell behavior, and content width.
 - Must not duplicate screens per size unless the interaction model changes.
 - Scale one-column to multi-column; use readable max widths and avoid fixed widths.
 - Keep touch and pointer targets comfortable per platform.
-- Keep shell and content-width behavior uniform; no one-off breakpoint logic in features.
+- Keep shell and content-width behavior uniform across modules.
 - Reusable layout components must live in `frontend/lib/shared/layout/`.
 - Localize navigation text; omit destinations for unauthorized users (RBAC+ABAC, [`permissions.mdc`](./permissions.mdc)).
 - Reference entities by `human_friendly_id`; use design tokens only ([`design-system.mdc`](./design-system.mdc)).
@@ -40,7 +40,7 @@ Single source of truth for breakpoints, shell behavior, and content width.
 
 ## Max content widths
 
-- Auth forms `420–520`; general forms `560–720`; detail pages `840–1040`; dashboards `1200–1440`; data-heavy `1440` with horizontal scroll.
+- Auth forms `420–520`; general forms `560–720`; detail pages `840–1040`; dashboards `1200–1440`; data-heavy `1440`+.
 
 ## Related
 

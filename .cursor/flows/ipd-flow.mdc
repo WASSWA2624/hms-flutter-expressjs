@@ -1,4 +1,4 @@
-﻿---
+---
 description: IPD admission and ward workflow boundaries for module changes.
 globs:
   - "frontend/lib/features/ipd/**"

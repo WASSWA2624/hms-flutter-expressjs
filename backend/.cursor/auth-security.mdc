@@ -16,7 +16,7 @@ Define backend identity and authorization behavior.
 ## Authorization
 - Authority order: subscription package → module assignment → role → permission → ABAC scope.
 - Subscription package is the hard gate; roles/permissions never unlock anything outside the active package.
-- Users may hold multiple roles and module assignments via `user_role` and module-access tables.
+- Users may hold multiple roles and module assignments via `user_role` tables.
 - Effective permissions = `union(role, module, user grants) ∩ subscription modules/permissions ∩ assigned modules ∩ ABAC scope`.
 - RBAC grants baseline actions; ABAC narrows by tenant, facility, department, ownership, shift, and emergency state.
 - Enforce in middleware and re-validate in services for sensitive workflows.
@@ -31,6 +31,6 @@ Define backend identity and authorization behavior.
 - Scoped managers may manage rosters only inside their assigned scope.
 
 ## Emergency and sensitive workflows
-- Break-glass access must be explicit, time-limited, audited, and queryable for compliance.
+- Break-glass access must be explicit, time-limited, audited, and queryable.
 - Patient, billing, payroll, security admin, mortuary release, and closeout actions require full audit evidence.
 - Sensitive reads must be loggable without exposing secrets.

@@ -8,37 +8,34 @@ alwaysApply: false
 
 # Project Scope
 
-HOSSPI HMS frontend is the Flutter client for the full-stack hospital management system, implementing module workspaces, clinical and operational flows, and shared shell UI against the `hms-backend` API. Modules and boundaries: [`.cursor/app-write-up.mdc`](../../.cursor/app-write-up.mdc).
+HOSSPI HMS frontend is the Flutter client for the hospital management system, implementing module workspaces, clinical and operational flows, and shared shell UI against the `hms-backend` API. Boundaries: [`.cursor/app-write-up.mdc`](../../.cursor/app-write-up.mdc).
 
 ## Mandatory rules
 
 - Must build production-ready module workspaces, not a generic disconnected starter.
-- Must support Android, iOS, Web, Windows, macOS, and Linux where enabled; extra-small mobile through large desktop screens; smartwatch out of scope.
+- Must support Android, iOS, Web, Windows, macOS, and Linux where enabled; extra-small mobile through large desktop; smartwatch out of scope.
 - Must integrate with `hms-backend` via repositories, DTOs, and [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
 - Should prefer Flutter SDK widgets, Material Design, and shared `lib/shared/` abstractions before custom frameworks or extra packages.
 - Must avoid duplicate dependencies, folders, components, rules, and competing design systems.
-- Module menus, routes, forms, actions, permissions, and visibility must match backend routes, permissions, entitlements, and APIs.
+- Module menus, routes, forms, actions, and visibility must match backend permissions, entitlements, and APIs.
 - Must reference entities by `human_friendly_id`; backend maps internal IDs.
 - Must enforce RBAC+ABAC and subscription-package intersection ([`permissions.mdc`](./permissions.mdc)).
 
 ## Architecture invariants
 
 - One architecture, one routing system (`go_router`), one state system (Riverpod), one design system, one shared component strategy.
-- Mutation and reconciliation behavior is owned by [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); layer boundaries by [`architecture.mdc`](./architecture.mdc). Must not override or restate them.
+- Mutation/reconciliation is owned by [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); layer boundaries by [`architecture.mdc`](./architecture.mdc). Must not override them.
 
 ## Minimum runnable contract
 
-- Startup: `main.dart`, `bootstrap.dart`, provider scope, predictable startup flow.
+- Startup: `main.dart`, `bootstrap.dart`, provider scope, predictable flow.
 - Shell: `MaterialApp.router`, `go_router`, not-found route, responsive shell with menu bar and collapsible side nav.
 - Theme: Material 3 light/dark/system with shared tokens.
-- State: Riverpod providers with override-ready boundaries.
+- State: Riverpod with override-ready boundaries.
 - Localization: English ARB baseline, `l10n.yaml`, generated l10n.
-- Components: shared buttons, fields, dialogs, state views, layout helpers.
 - Workspaces: `AppWorkspace` + `AppListTable` ([`ui-workspace.mdc`](./ui-workspace.mdc)).
-- Quality: format, analyze, tests, CI commands.
 
 ## See also
 
 - [`project_structure.mdc`](./project_structure.mdc)
-- [`feature_workflow.mdc`](./feature_workflow.mdc)
 - [`checklists.mdc`](./checklists.mdc)

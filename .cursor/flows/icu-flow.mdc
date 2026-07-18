@@ -1,4 +1,4 @@
-﻿---
+---
 description: ICU stay, monitoring, and transfer overlay boundaries for module changes.
 globs:
   - "frontend/lib/features/icu/**"
@@ -14,17 +14,17 @@ ICU is a critical-care overlay on the IPD admission, not a separate admission sy
 ## Stage Sequence
 
 - Eligible patient identified from ward, emergency, OPD, or theater.
-- ICU bed assigned or reserved and the ICU stay opened on the IPD admission.
+- ICU bed assigned or reserved and the stay opened on the IPD admission.
 - Nursing receive, baseline assessment, and intensive monitoring.
 - Critical alerts raised, acknowledged, and resolved.
 - Intensivist rounds and inpatient orders continue.
-- Step-down or ICU bed transfer completed; stay ends while the IPD admission remains open.
+- Step-down or transfer completed; stay ends while the IPD admission stays open.
 
 ## Handoffs
 
 - Bed manager and ICU charge nurse own ICU bed placement.
 - ICU nurse owns observations, vitals, alerts, and handover support.
-- Intensivist or doctor owns round notes, treatment changes, and step-down readiness.
+- Intensivist owns round notes, treatment changes, and step-down readiness.
 - IPD and Discharge own the broader admission and final closure.
 
 ## Hard Invariants

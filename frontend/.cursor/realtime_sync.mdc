@@ -29,12 +29,12 @@ Keep visible UI state aligned with backend persistence through authenticated Web
 
 ```txt
 core/realtime/
-├── realtime_service.dart      # connection, reconnect, ping/pong
-├── realtime_providers.dart    # Riverpod wiring
-├── realtime_events.dart       # event constants
-├── realtime_event_groups.dart # workspace bundles
-├── realtime_refresh.dart      # debounced listener
-└── realtime_scope.dart        # tenant/facility filters
+├── realtime_service.dart
+├── realtime_providers.dart
+├── realtime_events.dart
+├── realtime_event_groups.dart
+├── realtime_refresh.dart
+└── realtime_scope.dart
 ```
 
 ## See also

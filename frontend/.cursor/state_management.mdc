@@ -26,12 +26,10 @@ Defines how app state, feature state, and dependencies are created, read, tested
 
 ## Provider placement
 
-| Provider type | Location |
-|---|---|
-| App config/theme/locale | `lib/app/` or `lib/core/config/` |
-| Infrastructure clients | `lib/core/network`, `storage`, `sync` |
-| Feature controllers | `features/<feature>/presentation/controllers` |
-| Feature repositories | `features/<feature>/data/repositories` |
+- App config/theme/locale: `lib/app/` or `lib/core/config/`.
+- Infrastructure clients: `lib/core/network`, `storage`, `sync`.
+- Feature controllers: `features/<feature>/presentation/controllers`.
+- Feature repositories: `features/<feature>/data/repositories`.
 
 ## Acceptance checklist
 

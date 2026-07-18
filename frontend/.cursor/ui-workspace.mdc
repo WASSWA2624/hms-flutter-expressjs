@@ -37,8 +37,7 @@ Must import from `shared/layout`, `shared/components`, and `shared/actions` befo
 
 ## Forbidden patterns
 
-- Custom full-page `Scaffold` + hand-rolled table when the workspace contract fits.
-- Duplicate status chips; private feature string classes; hard-coded colors, spacing, or `TextStyle`; unlocalized `SnackBar` copy.
+- Custom full-page `Scaffold` + hand-rolled table when the contract fits; duplicate status chips; private feature string classes; hard-coded colors, spacing, or `TextStyle`; unlocalized `SnackBar` copy.
 
 ## See also
 

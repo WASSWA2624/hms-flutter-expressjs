@@ -1,4 +1,4 @@
-﻿---
+---
 description: Emergency intake, stabilization, and handoff boundaries for module changes.
 globs:
   - "frontend/lib/features/emergency/**"

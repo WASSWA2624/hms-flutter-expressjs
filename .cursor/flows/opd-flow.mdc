@@ -1,4 +1,4 @@
-﻿---
+---
 description: OPD outpatient workflow boundaries for module changes.
 globs:
   - "frontend/lib/features/opd/**"

@@ -1,4 +1,4 @@
-﻿---
+---
 description: Lab order execution and result workflow boundaries for module changes.
 globs:
   - "frontend/lib/features/lab/**"

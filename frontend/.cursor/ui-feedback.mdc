@@ -26,15 +26,12 @@ Consistent async and error presentation in the UI.
 
 ## Failure categories
 
-| Category | UI behavior |
-|---|---|
-| network | retry option |
-| validation | field errors or form summary |
-| unauthorized | restore session or redirect to login |
-| forbidden | forbidden page/state |
-| not found | not-found page/state |
-| storage | safe fallback or recovery guidance |
-| unexpected | generic safe message; diagnostics logged |
+- network: retry option.
+- validation: field errors or form summary.
+- unauthorized: restore session or redirect to login.
+- forbidden / not found: dedicated page/state.
+- storage: safe fallback or recovery guidance.
+- unexpected: generic safe message; diagnostics logged.
 
 Layer-boundary mapping (DTO → typed failures) is owned by [`error_handling.mdc`](./error_handling.mdc).
 
