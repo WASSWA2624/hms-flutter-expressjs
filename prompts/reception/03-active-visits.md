@@ -1,1 +1,34 @@
-So now? On the active visits, active visits. I think this section should show those patients, okay, those visits that are active, I think find a way to make sure that you You view, you show those visits that are active, because that's where, that's what needs to be shown there. But I don't know how we are going to deal with this. So are we I, I think this, this should be patients that within the current time window for today, for the current day, that is from, from That, that is patients that are actually currently in the facility, patients that are waiting doctors, that are with the, that are, with the, with the lab, but still in the OPD, and they are going through reception, so that we don't have the But their encounters, their OPD encounters are not yet any closed, so those are the patients we should see within there. Then also what I want us to do is that On the reception, on the reception menu item within the app's main menu that count should actually show the total. That is the total because we have here patients that have appointments, patients that are on a desk queue, and then patients that are on visits. So we need to count those patients. We aren't counting their encounters, but we, we need to count the actual number of patients that lie within that including those ones that have a payment gate. So that at least when somebody looks at reception on looks at the menu, they know that, oh, right now at the reception we have three patients, we have one patient, or we have two patients, depending on what, how many patients they are.
+# Clarify Active Visits and Reception Patient Count
+
+Update `/reception?section=active` so Active visits lists in-facility patients with open OPD encounters, and the Reception menu badge counts unique patients across reception sections.
+
+## Context
+
+Active visits may omit open visits via a stage subset. The Reception menu badge reuses OPD workload instead of reception patient load. Follow `prompts/.cursor/prompt.mdc`.
+
+## Requirements
+
+1. On Active visits, show synchronized non-terminal OPD flows for today with open encounters for patients still in the facility. Exclude closed, completed, discharged, and cancelled encounters.
+2. Keep Current step and Next action as read-only flow labels. Do not invent stages or add clinical controls beyond authorized row hubs.
+3. Apply the same membership rules to search, filters, sorting, settings, tab counts, and mobile cards.
+4. Set the Reception shell menu badge to unique patients across Appointments, Desk queue, Active visits, and Payment gate—patients, not encounters or duplicates.
+5. Keep tab badges as section row counts; only the shell Reception badge uses the unique-patient total.
+
+## Constraints
+
+- Reuse OPD sync, terminal helpers, authorization, localization, shell badges, and design-system components.
+- Do not change backend contracts, clinical transitions, or unrelated tabs beyond badge math.
+- Support loading, empty, error, themes, and responsive states.
+
+## Acceptance Criteria
+
+- R1–R3: Active visits shows today’s open in-facility patients with correct labels, search, filters, and counts.
+- R4–R5: Reception menu badge equals unique patients across four sections; tab badges stay section-local.
+- Add/update reception and shell-badge tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+- `frontend/lib/app/router/shell_badge_counts.dart`
+- `frontend/lib/app/router/app_router.dart`
+- `frontend/test/features/reception/presentation/`
