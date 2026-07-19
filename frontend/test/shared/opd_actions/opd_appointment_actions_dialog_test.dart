@@ -110,7 +110,43 @@ void main() {
     expect(find.text('Reschedule'), findsNothing);
     expect(find.text('Cancel appointment'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start OPD encounter'), findsNothing);
+    expect(find.text('Quick actions'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
+  });
+
+  testWidgets('doctor front-desk roles can see Start OPD encounter', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMountedDialog(
+      tester,
+      appointment,
+      policy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['DOCTOR']),
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.patientWrite,
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'scheduling-queue',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text('Quick actions'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Start OPD encounter'),
+      findsOneWidget,
+    );
+    expect(find.text('Reschedule'), findsOneWidget);
+    expect(find.text('Cancel appointment'), findsOneWidget);
   });
 
   testWidgets('hides Queue when the appointment already has an active entry', (

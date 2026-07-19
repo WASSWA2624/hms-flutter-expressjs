@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -34,7 +37,7 @@ enum AppQuickActionsPresentation {
 /// Features own labels, eligibility, permissions, and callbacks.
 /// This component owns presentation and layout: buttons are sized to their
 /// content, left-aligned, and wrap onto the next row when space runs out.
-class AppQuickActions extends StatelessWidget {
+class AppQuickActions extends ConsumerWidget {
   const AppQuickActions({
     this.title,
     this.actions = const <AppActionItem>[],
@@ -64,14 +67,23 @@ class AppQuickActions extends StatelessWidget {
   final String? overflowLabel;
   final bool hideWhenEmpty;
 
-  bool get _isEmpty =>
-      actions.isEmpty && permissionActions.isEmpty && extraActions.isEmpty;
+  List<AppPermissionActionItem> _visiblePermissionActions(
+    AppAccessPolicy policy,
+  ) {
+    return <AppPermissionActionItem>[
+      for (final AppPermissionActionItem action in permissionActions)
+        if (!action.hideWhenDenied || action.requirement.isAllowed(policy))
+          action,
+    ];
+  }
 
   /// Buttons must hug their content so rows pack from the left; a stretched
   /// button would otherwise claim the entire wrap run.
-  List<AppPermissionActionItem> get _contentSizedPermissionActions {
+  List<AppPermissionActionItem> _contentSizedPermissionActions(
+    List<AppPermissionActionItem> actions,
+  ) {
     return <AppPermissionActionItem>[
-      for (final AppPermissionActionItem action in permissionActions)
+      for (final AppPermissionActionItem action in actions)
         if (!action.fullWidth) action else _withoutFullWidth(action),
     ];
   }
@@ -105,7 +117,7 @@ class AppQuickActions extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     assert(
       actions.isEmpty || permissionActions.isEmpty,
       'Use either actions or permissionActions in one quick-actions group.',
@@ -115,18 +127,27 @@ class AppQuickActions extends StatelessWidget {
           (title != null && title!.trim().isNotEmpty),
       'title is required unless presentation is buttonsOnly.',
     );
-    if (_isEmpty && emptyState == null && hideWhenEmpty) {
+
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final List<AppPermissionActionItem> visiblePermissionActions =
+        _visiblePermissionActions(policy);
+    final bool isEmpty =
+        actions.isEmpty &&
+        visiblePermissionActions.isEmpty &&
+        extraActions.isEmpty;
+
+    if (isEmpty && emptyState == null && hideWhenEmpty) {
       return const SizedBox.shrink();
     }
 
     final ThemeData theme = Theme.of(context);
     final double gap = spacing ?? theme.spacing.sm;
     final double rowGap = runSpacing ?? gap;
-    final Widget content = _isEmpty
+    final Widget content = isEmpty
         ? emptyState!
-        : permissionActions.isNotEmpty
+        : visiblePermissionActions.isNotEmpty
         ? _PermissionActionButtons(
-            actions: _contentSizedPermissionActions,
+            actions: _contentSizedPermissionActions(visiblePermissionActions),
             extraActions: extraActions,
             spacing: gap,
             runSpacing: rowGap,

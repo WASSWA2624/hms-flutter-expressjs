@@ -41,8 +41,19 @@ const List<AppRole> _opdAdminActionRoles = <AppRole>[
   AppRole.facilityAdmin,
 ];
 
+/// Appointment/queue front-desk mutations (queue, check-in, reschedule, cancel).
+///
+/// Matches roles that may start or advance OPD patient-flow work from Reception
+/// and OPD, not only the receptionist title.
 const AccessRequirement opdFrontDeskActionRequirement = AccessRequirement(
-  anyRoles: <AppRole>[..._opdAdminActionRoles, AppRole.receptionist],
+  anyRoles: <AppRole>[
+    ..._opdAdminActionRoles,
+    AppRole.receptionist,
+    AppRole.nurse,
+    AppRole.doctor,
+    AppRole.operations,
+    AppRole.ambulanceOperator,
+  ],
   activeModules: <String>['scheduling-queue'],
 );
 
