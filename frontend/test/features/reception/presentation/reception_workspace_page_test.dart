@@ -329,7 +329,7 @@ void _stubWorkspace(_MockOpdRepository repository) {
     ),
   );
   when(() => repository.getOpdFlow(any())).thenAnswer(
-    (_) async => const Result<OpdFlowDetail>.success(
+    (_) async => Result<OpdFlowDetail>.success(
       OpdFlowDetail(summary: _paymentFlow),
     ),
   );
