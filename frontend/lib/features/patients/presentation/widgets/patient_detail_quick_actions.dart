@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -44,7 +43,6 @@ class PatientDetailQuickActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final Patient patient = detail.patient;
     final PatientVisitContext? visit = patient.currentVisit;
@@ -212,13 +210,11 @@ class PatientDetailQuickActions extends ConsumerWidget {
       ),
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(l10n.patientsQuickActionsTitle, style: theme.textTheme.titleSmall),
-        SizedBox(height: theme.spacing.sm),
-        AppPermissionActionList(actions: actions),
-      ],
+    return AppQuickActions(
+      title: l10n.patientsQuickActionsTitle,
+      permissionActions: actions,
+      presentation: AppQuickActionsPresentation.plain,
+      leadingIcon: null,
     );
   }
 }

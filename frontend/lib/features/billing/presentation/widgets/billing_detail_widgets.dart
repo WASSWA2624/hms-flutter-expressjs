@@ -448,9 +448,10 @@ class _BillingActionPanel extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return AppActionPanel(
+    return AppQuickActions(
       title: context.l10n.patientsQuickActionsTitle,
       actions: actions,
+      presentation: AppQuickActionsPresentation.detailPanel,
     );
   }
 }

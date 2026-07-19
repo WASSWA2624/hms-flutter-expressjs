@@ -8,7 +8,6 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
@@ -26,6 +25,7 @@ import 'package:hosspi_hms/features/reception/presentation/widgets/reception_pay
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_queue_actions_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
@@ -286,8 +286,14 @@ class _ReceptionWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n),
-              secondaryActions: _buildSecondaryActions(l10n),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            AppQuickActions(
+              title: l10n.patientsQuickActionsTitle,
+              permissionActions: _buildQuickActions(l10n),
+              leadingIcon: Icons.bolt_outlined,
+              minItemWidth: 180,
+              maxColumns: 5,
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section == ReceptionDeskSection.paymentGate &&
@@ -597,82 +603,47 @@ class _ReceptionWorkspaceContentState
     ];
   }
 
-  Widget _buildPrimaryAction(AppLocalizations l10n) {
-    return AppAccessActionGate(
-      requirement: receptionPatientWriteRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        if (!isAllowed) {
-          return const SizedBox.shrink();
-        }
-        return AppTabToolbarPrimary(
-          label: l10n.receptionRegisterPatientAction,
-          icon: Icons.person_add_alt_1_outlined,
-          enabled: isAllowed,
-          onPressed: isAllowed ? () => unawaited(_openRegisterPatient()) : null,
-        );
-      },
-    );
-  }
-
-  List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
-    final AppTabToolbarAction refreshAction = AppTabToolbarAction(
-      label: l10n.commonRefreshActionLabel,
-      icon: Icons.refresh,
-      enabled: !_refreshRequested,
-      isLoading: _refreshRequested,
-      tooltip: _refreshRequested
-          ? l10n.receptionRefreshInProgressTooltip
-          : l10n.commonRefreshActionLabel,
-      semanticLabel: _refreshRequested
-          ? l10n.receptionRefreshInProgressTooltip
-          : l10n.commonRefreshActionLabel,
-      onPressed: _refreshRequested
-          ? null
-          : () => unawaited(_refreshWorkspace()),
-    );
-
-    final Widget scheduleAppointmentAction = AppAccessActionGate(
-      requirement: receptionPatientWriteRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        if (!isAllowed) {
-          return const SizedBox.shrink();
-        }
-        return AppTabToolbarAction(
-          label: l10n.receptionScheduleAppointmentAction,
-          icon: Icons.calendar_month_outlined,
-          enabled: isAllowed,
-          onPressed: isAllowed ? () => unawaited(_scheduleAppointment()) : null,
-        );
-      },
-    );
-
-    return <Widget>[
-      scheduleAppointmentAction,
-      AppAccessActionGate(
+  List<AppPermissionActionItem> _buildQuickActions(AppLocalizations l10n) {
+    return <AppPermissionActionItem>[
+      AppPermissionActionItem(
+        requirement: receptionPatientWriteRequirement,
+        label: l10n.receptionRegisterPatientAction,
+        icon: Icons.person_add_alt_1_outlined,
+        variant: AppButtonVariant.primary,
+        onPressed: () => unawaited(_openRegisterPatient()),
+      ),
+      AppPermissionActionItem(
+        requirement: receptionPatientWriteRequirement,
+        label: l10n.receptionScheduleAppointmentAction,
+        icon: Icons.calendar_month_outlined,
+        onPressed: () => unawaited(_scheduleAppointment()),
+      ),
+      AppPermissionActionItem(
         requirement: receptionPatientRegistryRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarAction(
-            label: l10n.receptionOpenRegistryAction,
-            icon: AppRouteIcons.patients,
-            onPressed: isAllowed
-                ? () => context.go(AppRoutes.patients.location())
-                : null,
-          );
-        },
+        label: l10n.receptionOpenRegistryAction,
+        icon: AppRouteIcons.patients,
+        onPressed: () => context.go(AppRoutes.patients.location()),
       ),
-      AppAccessActionGate(
+      AppPermissionActionItem(
         requirement: receptionOpdWorkspaceRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarAction(
-            label: l10n.receptionOpenOpdAction,
-            icon: AppRouteIcons.opd,
-            onPressed: isAllowed
-                ? () => context.go(AppRoutes.opd.location())
-                : null,
-          );
-        },
+        label: l10n.receptionOpenOpdAction,
+        icon: AppRouteIcons.opd,
+        onPressed: () => context.go(AppRoutes.opd.location()),
       ),
-      refreshAction,
+      AppPermissionActionItem(
+        requirement: receptionWorkspaceRequirement,
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        enabled: !_refreshRequested,
+        isLoading: _refreshRequested,
+        tooltip: _refreshRequested
+            ? l10n.receptionRefreshInProgressTooltip
+            : l10n.commonRefreshActionLabel,
+        semanticLabel: _refreshRequested
+            ? l10n.receptionRefreshInProgressTooltip
+            : l10n.commonRefreshActionLabel,
+        onPressed: () => unawaited(_refreshWorkspace()),
+      ),
     ];
   }
 
@@ -2184,43 +2155,42 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
-    return InkWell(
-      onTap: onOpenDetail,
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.sm,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            AppListItemText(
-              title: row.patientName(context),
-              subtitle: row.patientIdentifier,
-            ),
-            if (row.time != null) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                AppFormatters.dateTime(row.time!, locale),
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
+    // Activation comes from AppListTable's selectable mobile wrapper so this
+    // card does not nest a second InkWell and open duplicate dialogs.
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          AppListItemText(
+            title: row.patientName(context),
+            subtitle: row.patientIdentifier,
+          ),
+          if (row.time != null) ...<Widget>[
             SizedBox(height: theme.spacing.xs),
-            _ReceptionDeskMobileWorkflowField(
-              label: l10n.receptionCurrentStepLabel,
-              child: _ReceptionDeskMobileStatus(section: section, row: row),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            _ReceptionDeskMobileWorkflowField(
-              label: l10n.opdNextActionFilterLabel,
-              child: _ReceptionDeskMobileNextAction(
-                section: section,
-                row: row,
-                onOpenDetail: onOpenDetail,
-              ),
+            Text(
+              AppFormatters.dateTime(row.time!, locale),
+              style: theme.textTheme.bodySmall,
             ),
           ],
-        ),
+          SizedBox(height: theme.spacing.xs),
+          _ReceptionDeskMobileWorkflowField(
+            label: l10n.receptionCurrentStepLabel,
+            child: _ReceptionDeskMobileStatus(section: section, row: row),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          _ReceptionDeskMobileWorkflowField(
+            label: l10n.opdNextActionFilterLabel,
+            child: _ReceptionDeskMobileNextAction(
+              section: section,
+              row: row,
+              onOpenDetail: onOpenDetail,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_fa
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
@@ -610,54 +611,33 @@ class _SettingsQuickActionsPanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
-    return AppSectionPanel(
+    return AppQuickActions(
       title: l10n.settingsWorkspaceQuickActionsTitle,
+      presentation: AppQuickActionsPresentation.section,
       leadingIcon: Icons.bolt_outlined,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        if (actions.isEmpty)
-          Text(
-            l10n.settingsWorkspaceNoQuickActionsBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          )
-        else
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.sm,
-            children: <Widget>[
-              for (final SettingsQuickAction action in actions)
-                _SettingsActionButton(action: action, onRefresh: onRefresh),
-            ],
+      emptyState: Text(
+        l10n.settingsWorkspaceNoQuickActionsBody,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      hideWhenEmpty: false,
+      actions: <AppActionItem>[
+        for (final SettingsQuickAction action in actions)
+          AppActionItem(
+            label: _quickActionLabel(l10n, action),
+            leadingIcon: _iconFor(action.icon),
+            enabled: action.canExecute,
+            tooltip: action.canExecute
+                ? null
+                : l10n.settingsWorkspaceRouteUnavailableBody,
+            onPressed: action.canExecute
+                ? () => unawaited(
+                    _handleQuickCreateAction(context, ref, action, onRefresh),
+                  )
+                : null,
           ),
       ],
-    );
-  }
-}
-
-class _SettingsActionButton extends ConsumerWidget {
-  const _SettingsActionButton({required this.action, required this.onRefresh});
-
-  final SettingsQuickAction action;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppButton.secondary(
-      label: _quickActionLabel(l10n, action),
-      leadingIcon: _iconFor(action.icon),
-      enabled: action.canExecute,
-      tooltip: action.canExecute
-          ? null
-          : l10n.settingsWorkspaceRouteUnavailableBody,
-      onPressed: action.canExecute
-          ? () => unawaited(
-              _handleQuickCreateAction(context, ref, action, onRefresh),
-            )
-          : null,
     );
   }
 }

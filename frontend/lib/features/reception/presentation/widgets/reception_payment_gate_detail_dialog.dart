@@ -13,10 +13,10 @@ Future<void> showReceptionPaymentGateDetailDialog({
   required BuildContext context,
   required ReceptionPaymentGateEntry entry,
 }) {
-  return showDialog<void>(
+  return showAppDialog<void>(
     context: context,
-    builder: (BuildContext context) =>
-        _ReceptionPaymentGateDetailDialog(entry: entry),
+    barrierDismissible: false,
+    builder: (_) => _ReceptionPaymentGateDetailDialog(entry: entry),
   );
 }
 
@@ -73,6 +73,13 @@ class _ReceptionPaymentGateDetailDialog extends StatelessWidget {
           ],
         ],
       ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: context.l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ],
     );
   }
 }
