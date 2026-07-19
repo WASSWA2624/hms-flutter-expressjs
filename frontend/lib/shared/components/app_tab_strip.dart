@@ -56,55 +56,74 @@ class AppTabStrip extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Color hairline = colorScheme.outlineVariant.withValues(alpha: 0.4);
+    // Opaque merge color shared by the active tab and the toolbar so the two
+    // render as one continuous surface (translucent tints would not blend
+    // identically when stacked).
+    final Color activeFill = Color.alphaBlend(
+      colorScheme.primary.withValues(alpha: 0.10),
+      colorScheme.surface,
+    );
+
+    final Widget tabRow = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: <Widget>[
+          for (final AppTabItem tab in tabs)
+            _AppTabChip(
+              label: tab.label,
+              count: tab.count,
+              countTone: tab.countTone,
+              isSelected: selectedId == tab.id,
+              activeFill: activeFill,
+              onTap: () => onTabTapped(tab.id),
+            ),
+        ],
+      ),
+    );
+
+    if (!_hasToolbar) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          tabRow,
+          Container(height: 1, color: hairline),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
+      // No gap or divider between tabs and toolbar: the active tab flows
+      // straight into the toolbar surface.
       children: <Widget>[
-        DecoratedBox(
+        tabRow,
+        Container(
           decoration: BoxDecoration(
+            color: activeFill,
             border: Border(bottom: BorderSide(color: hairline)),
           ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: <Widget>[
-                for (final AppTabItem tab in tabs)
-                  _AppTabChip(
-                    label: tab.label,
-                    count: tab.count,
-                    countTone: tab.countTone,
-                    isSelected: selectedId == tab.id,
-                    onTap: () => onTabTapped(tab.id),
-                  ),
-              ],
-            ),
+          padding: EdgeInsets.symmetric(
+            vertical: theme.spacing.sm,
+            horizontal: theme.spacing.sm,
           ),
-        ),
-        if (_hasToolbar)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: hairline)),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-              child: Wrap(
+          child: Wrap(
+            spacing: theme.spacing.xs,
+            runSpacing: theme.spacing.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
+            children: <Widget>[
+              Wrap(
                 spacing: theme.spacing.xs,
                 runSpacing: theme.spacing.xs,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                alignment: WrapAlignment.spaceBetween,
-                children: <Widget>[
-                  Wrap(
-                    spacing: theme.spacing.xs,
-                    runSpacing: theme.spacing.xs,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: secondaryActions,
-                  ),
-                  ?primaryAction,
-                ],
+                children: secondaryActions,
               ),
-            ),
+              ?primaryAction,
+            ],
           ),
+        ),
       ],
     );
   }
@@ -281,12 +300,57 @@ Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
   };
 }
 
+/// Chrome-style tab silhouette: rounded top corners, bottom corners flaring
+/// outward so the tab appears to grow out of the surface below it.
+class _FlaredTabPainter extends CustomPainter {
+  const _FlaredTabPainter({
+    required this.fill,
+    required this.topRadius,
+    required this.flareRadius,
+  });
+
+  final Color fill;
+  final double topRadius;
+  final double flareRadius;
+
+  Path _tabPath(Size size) {
+    final double w = size.width;
+    final double h = size.height;
+    final double r = flareRadius;
+    final double tr = topRadius;
+    return Path()
+      ..moveTo(0, h)
+      // Bottom-left corner curves outward.
+      ..quadraticBezierTo(r, h, r, h - r)
+      ..lineTo(r, tr)
+      ..quadraticBezierTo(r, 0, r + tr, 0)
+      ..lineTo(w - r - tr, 0)
+      ..quadraticBezierTo(w - r, 0, w - r, tr)
+      ..lineTo(w - r, h - r)
+      // Bottom-right corner curves outward.
+      ..quadraticBezierTo(w - r, h, w, h)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(_tabPath(size), Paint()..color = fill);
+  }
+
+  @override
+  bool shouldRepaint(_FlaredTabPainter oldDelegate) =>
+      oldDelegate.fill != fill ||
+      oldDelegate.topRadius != topRadius ||
+      oldDelegate.flareRadius != flareRadius;
+}
+
 class _AppTabChip extends StatefulWidget {
   const _AppTabChip({
     required this.label,
     required this.isSelected,
     required this.onTap,
     required this.countTone,
+    required this.activeFill,
     this.count,
   });
 
@@ -296,11 +360,17 @@ class _AppTabChip extends StatefulWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
+  /// Opaque fill shared with the toolbar so the selected tab and toolbar
+  /// merge into one continuous surface.
+  final Color activeFill;
+
   @override
   State<_AppTabChip> createState() => _AppTabChipState();
 }
 
 class _AppTabChipState extends State<_AppTabChip> {
+  static const double _flareRadius = 8;
+
   bool _isHovered = false;
 
   @override
@@ -313,7 +383,7 @@ class _AppTabChipState extends State<_AppTabChip> {
         : '$fullLabel (${widget.count})';
 
     final Color backgroundColor = widget.isSelected
-        ? colorScheme.primary.withValues(alpha: 0.10)
+        ? widget.activeFill
         : _isHovered
         ? colorScheme.onSurface.withValues(alpha: 0.06)
         : colorScheme.onSurface.withValues(alpha: 0.03);
@@ -331,29 +401,24 @@ class _AppTabChipState extends State<_AppTabChip> {
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOut,
-          margin: EdgeInsets.only(
-            right: theme.spacing.xs,
-            bottom: theme.spacing.xs / 2,
-            top: theme.spacing.xs / 2,
-          ),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(theme.radius.sm),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(theme.radius.sm),
-              hoverColor: colorScheme.onSurface.withValues(alpha: 0.04),
-              splashColor: colorScheme.primary.withValues(alpha: 0.08),
-              onTap: widget.onTap,
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: Container(
+            // Minimal space kept on top only; the bottom sits flush on the
+            // toolbar so the active tab merges with it.
+            margin: EdgeInsets.only(top: theme.spacing.xs / 2),
+            child: CustomPaint(
+              painter: _FlaredTabPainter(
+                fill: backgroundColor,
+                topRadius: theme.radius.sm,
+                flareRadius: _flareRadius,
+              ),
               child: Padding(
+                // Horizontal padding includes the flare width on each side.
                 padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.xs + 2,
+                  horizontal: theme.spacing.sm + _flareRadius,
+                  vertical: theme.spacing.xs + 4,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
