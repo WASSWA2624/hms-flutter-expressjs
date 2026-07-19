@@ -1,0 +1,1 @@
+No. Still on the reception screen let's also make sure that the payment gate tab is implemented and that This will be showing us only those patients who have Payments that are pending, so It should be showing only the patients that have pending payments.
