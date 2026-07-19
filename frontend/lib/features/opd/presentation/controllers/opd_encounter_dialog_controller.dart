@@ -171,8 +171,7 @@ final class OpdEncounterDialogController {
     String? facilityId,
   }) {
     final String? resolvedFacilityId =
-        facilityId ??
-        _ref.read(sessionStateProvider).session?.user?.facilityId;
+        facilityId ?? _ref.read(sessionStateProvider).session?.user?.facilityId;
     return _clinicalRepository.searchClinicalTerms(
       termType: termType,
       query: query,
@@ -185,6 +184,18 @@ final class OpdEncounterDialogController {
   Future<Result<OpdFlowDetail>> submitPatientEncounter(
     Patient patient,
     Map<String, Object?> payload,
+  ) {
+    return submitEncounter(
+      _withoutEmpty(<String, Object?>{
+        'tenant_id': patient.tenantId,
+        'facility_id': patient.facilityId,
+        ...payload,
+      }),
+    );
+  }
+
+  Future<Result<OpdFlowDetail>> submitEncounter(
+    Map<String, Object?> payload,
   ) async {
     final bool forceNewEncounter = payload['force_new_encounter'] == true;
     final Object? existingEncounterId = payload['existing_encounter_id'];
@@ -195,21 +206,11 @@ final class OpdEncounterDialogController {
       result = await _opdRepository.updateActiveEncounter(
         existingEncounterId.trim(),
         _withoutEmpty(
-          <String, Object?>{
-            'tenant_id': patient.tenantId,
-            'facility_id': patient.facilityId,
-            ...payload,
-          }..remove('existing_encounter_id'),
+          <String, Object?>{...payload}..remove('existing_encounter_id'),
         ),
       );
     } else {
-      result = await _opdRepository.startOpdFlow(
-        _withoutEmpty(<String, Object?>{
-          'tenant_id': patient.tenantId,
-          'facility_id': patient.facilityId,
-          ...payload,
-        }),
-      );
+      result = await _opdRepository.startOpdFlow(_withoutEmpty(payload));
     }
     return _patchWorkspaceOnSuccess(result);
   }

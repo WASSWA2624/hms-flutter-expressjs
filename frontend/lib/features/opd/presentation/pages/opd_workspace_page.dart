@@ -2736,7 +2736,10 @@ class _OpdPatientActionsDialogState
     if (!mounted || dialogResult == null) {
       return;
     }
-    final OpdFlowSummary? activeEncounter = activeEncounterToOpen;
+    final OpdFlowSummary? activeEncounter =
+        dialogResult.action == OpdEncounterDialogAction.continueWorkflow
+        ? dialogResult.flow
+        : activeEncounterToOpen;
     if (activeEncounter == null) {
       Navigator.of(context).pop(true);
       return;

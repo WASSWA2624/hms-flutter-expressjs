@@ -93,18 +93,17 @@ void main() {
       verifyNever(() => opdRepository.updateActiveEncounter(any(), any()));
     });
 
-    test('submitPatientEncounter updates an existing active encounter', () async {
+    test('submitEncounter starts from appointment-only context', () async {
       final _MockOpdRepository opdRepository = _MockOpdRepository();
       Map<String, Object?>? submittedPayload;
       when(
-        () => opdRepository.updateActiveEncounter(
-          any(),
+        () => opdRepository.startOpdFlow(
           any(),
           idempotencyKey: any(named: 'idempotencyKey'),
         ),
       ).thenAnswer((Invocation invocation) async {
         submittedPayload =
-            invocation.positionalArguments[1] as Map<String, Object?>;
+            invocation.positionalArguments.single as Map<String, Object?>;
         return const Result<OpdFlowDetail>.success(detail);
       });
 
@@ -115,28 +114,67 @@ void main() {
 
       final Result<OpdFlowDetail> result = await container
           .read(opdEncounterDialogControllerProvider)
-          .submitPatientEncounter(patient, <String, Object?>{
-            'existing_encounter_id': 'ENC000001',
-            'arrival_mode': 'WALK_IN',
+          .submitEncounter(<String, Object?>{
+            'appointment_id': 'APT000001',
+            'arrival_mode': 'ONLINE_APPOINTMENT',
           });
 
       expect(result.isSuccess, isTrue);
-      expect(submittedPayload, containsPair('arrival_mode', 'WALK_IN'));
-      expect(submittedPayload, isNot(contains('existing_encounter_id')));
-      verify(
-        () => opdRepository.updateActiveEncounter(
-          'ENC000001',
-          any(),
-          idempotencyKey: any(named: 'idempotencyKey'),
-        ),
-      ).called(1);
-      verifyNever(
-        () => opdRepository.startOpdFlow(
-          any(),
-          idempotencyKey: any(named: 'idempotencyKey'),
-        ),
+      expect(submittedPayload, containsPair('appointment_id', 'APT000001'));
+      expect(
+        submittedPayload,
+        containsPair('arrival_mode', 'ONLINE_APPOINTMENT'),
       );
+      verifyNever(() => opdRepository.updateActiveEncounter(any(), any()));
     });
+
+    test(
+      'submitPatientEncounter updates an existing active encounter',
+      () async {
+        final _MockOpdRepository opdRepository = _MockOpdRepository();
+        Map<String, Object?>? submittedPayload;
+        when(
+          () => opdRepository.updateActiveEncounter(
+            any(),
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        ).thenAnswer((Invocation invocation) async {
+          submittedPayload =
+              invocation.positionalArguments[1] as Map<String, Object?>;
+          return const Result<OpdFlowDetail>.success(detail);
+        });
+
+        final ProviderContainer container = _testContainer(
+          opdRepository: opdRepository,
+        );
+        addTearDown(container.dispose);
+
+        final Result<OpdFlowDetail> result = await container
+            .read(opdEncounterDialogControllerProvider)
+            .submitPatientEncounter(patient, <String, Object?>{
+              'existing_encounter_id': 'ENC000001',
+              'arrival_mode': 'WALK_IN',
+            });
+
+        expect(result.isSuccess, isTrue);
+        expect(submittedPayload, containsPair('arrival_mode', 'WALK_IN'));
+        expect(submittedPayload, isNot(contains('existing_encounter_id')));
+        verify(
+          () => opdRepository.updateActiveEncounter(
+            'ENC000001',
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => opdRepository.startOpdFlow(
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        );
+      },
+    );
 
     test('cancelEncounter failure returns failure without success', () async {
       final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -163,49 +201,52 @@ void main() {
       ).called(1);
     });
 
-    test('cancelEncounter success returns persisted cancelled detail', () async {
-      final _MockOpdRepository opdRepository = _MockOpdRepository();
-      const OpdFlowDetail cancelled = OpdFlowDetail(
-        summary: OpdFlowSummary(
-          id: 'encounter-1',
-          publicId: 'ENC000001',
-          facilityId: 'FAC000001',
-          patientId: 'PAT000001',
-          status: 'CANCELLED',
-          stage: 'CANCELLED',
-        ),
-      );
-      when(() => opdRepository.cancelEncounter(any(), any())).thenAnswer(
-        (_) async => const Result<OpdFlowDetail>.success(cancelled),
-      );
+    test(
+      'cancelEncounter success returns persisted cancelled detail',
+      () async {
+        final _MockOpdRepository opdRepository = _MockOpdRepository();
+        const OpdFlowDetail cancelled = OpdFlowDetail(
+          summary: OpdFlowSummary(
+            id: 'encounter-1',
+            publicId: 'ENC000001',
+            facilityId: 'FAC000001',
+            patientId: 'PAT000001',
+            status: 'CANCELLED',
+            stage: 'CANCELLED',
+          ),
+        );
+        when(() => opdRepository.cancelEncounter(any(), any())).thenAnswer(
+          (_) async => const Result<OpdFlowDetail>.success(cancelled),
+        );
 
-      final ProviderContainer container = _testContainer(
-        opdRepository: opdRepository,
-      );
-      addTearDown(container.dispose);
+        final ProviderContainer container = _testContainer(
+          opdRepository: opdRepository,
+        );
+        addTearDown(container.dispose);
 
-      final Result<OpdFlowDetail> result = await container
-          .read(opdEncounterDialogControllerProvider)
-          .cancelEncounter('ENC000001', <String, Object?>{
+        final Result<OpdFlowDetail> result = await container
+            .read(opdEncounterDialogControllerProvider)
+            .cancelEncounter('ENC000001', <String, Object?>{
+              'reason_code': 'DUPLICATE_ENCOUNTER',
+              'reason_notes': 'Superseded',
+            });
+
+        expect(result.isSuccess, isTrue);
+        result.when(
+          success: (OpdFlowDetail value) {
+            expect(value.summary.publicId, 'ENC000001');
+            expect(value.summary.status, 'CANCELLED');
+          },
+          failure: (_) => fail('expected success'),
+        );
+        verify(
+          () => opdRepository.cancelEncounter('ENC000001', <String, Object?>{
             'reason_code': 'DUPLICATE_ENCOUNTER',
             'reason_notes': 'Superseded',
-          });
-
-      expect(result.isSuccess, isTrue);
-      result.when(
-        success: (OpdFlowDetail value) {
-          expect(value.summary.publicId, 'ENC000001');
-          expect(value.summary.status, 'CANCELLED');
-        },
-        failure: (_) => fail('expected success'),
-      );
-      verify(
-        () => opdRepository.cancelEncounter('ENC000001', <String, Object?>{
-          'reason_code': 'DUPLICATE_ENCOUNTER',
-          'reason_notes': 'Superseded',
-        }),
-      ).called(1);
-    });
+          }),
+        ).called(1);
+      },
+    );
 
     test('closeEncounter success returns persisted detail', () async {
       final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -272,123 +313,132 @@ void main() {
       ).called(1);
     });
 
-    test('listProviderSchedules and listAppointments delegate to repository', () async {
-      final _MockOpdRepository opdRepository = _MockOpdRepository();
-      const OpdProviderSchedule schedule = OpdProviderSchedule(
-        id: 'schedule-1',
-        providerUserId: 'USR000001',
-      );
-      const OpdAppointment appointment = OpdAppointment(
-        id: 'appointment-1',
-        publicId: 'APT000001',
-        status: 'SCHEDULED',
-      );
-      when(() => opdRepository.listProviderSchedules()).thenAnswer(
-        (_) async => const Result<List<OpdProviderSchedule>>.success(
-          <OpdProviderSchedule>[schedule],
-        ),
-      );
-      when(() => opdRepository.listAppointments(any())).thenAnswer(
-        (_) async => const Result<AppPage<OpdAppointment>>.success(
-          AppPage<OpdAppointment>(
-            items: <OpdAppointment>[appointment],
-            request: AppPageRequest(),
-            totalItemCount: 1,
+    test(
+      'listProviderSchedules and listAppointments delegate to repository',
+      () async {
+        final _MockOpdRepository opdRepository = _MockOpdRepository();
+        const OpdProviderSchedule schedule = OpdProviderSchedule(
+          id: 'schedule-1',
+          providerUserId: 'USR000001',
+        );
+        const OpdAppointment appointment = OpdAppointment(
+          id: 'appointment-1',
+          publicId: 'APT000001',
+          status: 'SCHEDULED',
+        );
+        when(() => opdRepository.listProviderSchedules()).thenAnswer(
+          (_) async => const Result<List<OpdProviderSchedule>>.success(
+            <OpdProviderSchedule>[schedule],
           ),
-        ),
-      );
+        );
+        when(() => opdRepository.listAppointments(any())).thenAnswer(
+          (_) async => const Result<AppPage<OpdAppointment>>.success(
+            AppPage<OpdAppointment>(
+              items: <OpdAppointment>[appointment],
+              request: AppPageRequest(),
+              totalItemCount: 1,
+            ),
+          ),
+        );
 
-      final ProviderContainer container = _testContainer(
-        opdRepository: opdRepository,
-      );
-      addTearDown(container.dispose);
-      final OpdEncounterDialogController controller = container.read(
-        opdEncounterDialogControllerProvider,
-      );
+        final ProviderContainer container = _testContainer(
+          opdRepository: opdRepository,
+        );
+        addTearDown(container.dispose);
+        final OpdEncounterDialogController controller = container.read(
+          opdEncounterDialogControllerProvider,
+        );
 
-      final Result<List<OpdProviderSchedule>> schedules = await controller
-          .listProviderSchedules();
-      final Result<AppPage<OpdAppointment>> appointments = await controller
-          .listAppointments(const OpdAppointmentQuery(search: 'PAT000001'));
+        final Result<List<OpdProviderSchedule>> schedules = await controller
+            .listProviderSchedules();
+        final Result<AppPage<OpdAppointment>> appointments = await controller
+            .listAppointments(const OpdAppointmentQuery(search: 'PAT000001'));
 
-      expect(schedules.isSuccess, isTrue);
-      expect(appointments.isSuccess, isTrue);
-      schedules.when(
-        success: (List<OpdProviderSchedule> value) {
-          expect(value.single.id, 'schedule-1');
-        },
-        failure: (_) => fail('expected schedules success'),
-      );
-      appointments.when(
-        success: (AppPage<OpdAppointment> value) {
-          expect(value.items.single.publicId, 'APT000001');
-        },
-        failure: (_) => fail('expected appointments success'),
-      );
-    });
+        expect(schedules.isSuccess, isTrue);
+        expect(appointments.isSuccess, isTrue);
+        schedules.when(
+          success: (List<OpdProviderSchedule> value) {
+            expect(value.single.id, 'schedule-1');
+          },
+          failure: (_) => fail('expected schedules success'),
+        );
+        appointments.when(
+          success: (AppPage<OpdAppointment> value) {
+            expect(value.items.single.publicId, 'APT000001');
+          },
+          failure: (_) => fail('expected appointments success'),
+        );
+      },
+    );
 
-    test('loadClinicalReferenceData and searchClinicalTerms delegate', () async {
-      final _MockOpdRepository opdRepository = _MockOpdRepository();
-      final _MockClinicalRepository clinicalRepository =
-          _MockClinicalRepository();
-      const ClinicalCatalogOption term = ClinicalCatalogOption(
-        id: 'TERM000001',
-        code: 'J06.9',
-        name: 'Upper respiratory infection',
-      );
-      when(() => clinicalRepository.loadReferenceData()).thenAnswer(
-        (_) async => const Result<ClinicalReferenceData>.success(
-          ClinicalReferenceData(),
-        ),
-      );
-      when(
-        () => clinicalRepository.searchClinicalTerms(
-          termType: any(named: 'termType'),
-          query: any(named: 'query'),
-          limit: any(named: 'limit'),
-          source: any(named: 'source'),
-          facilityId: any(named: 'facilityId'),
-        ),
-      ).thenAnswer(
-        (_) async =>
-            const Result<List<ClinicalCatalogOption>>.success(<ClinicalCatalogOption>[
-              term,
-            ]),
-      );
+    test(
+      'loadClinicalReferenceData and searchClinicalTerms delegate',
+      () async {
+        final _MockOpdRepository opdRepository = _MockOpdRepository();
+        final _MockClinicalRepository clinicalRepository =
+            _MockClinicalRepository();
+        const ClinicalCatalogOption term = ClinicalCatalogOption(
+          id: 'TERM000001',
+          code: 'J06.9',
+          name: 'Upper respiratory infection',
+        );
+        when(() => clinicalRepository.loadReferenceData()).thenAnswer(
+          (_) async => const Result<ClinicalReferenceData>.success(
+            ClinicalReferenceData(),
+          ),
+        );
+        when(
+          () => clinicalRepository.searchClinicalTerms(
+            termType: any(named: 'termType'),
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            source: any(named: 'source'),
+            facilityId: any(named: 'facilityId'),
+          ),
+        ).thenAnswer(
+          (_) async => const Result<List<ClinicalCatalogOption>>.success(
+            <ClinicalCatalogOption>[term],
+          ),
+        );
 
-      final ProviderContainer container = _testContainer(
-        opdRepository: opdRepository,
-        clinicalRepository: clinicalRepository,
-      );
-      addTearDown(container.dispose);
-      final OpdEncounterDialogController controller = container.read(
-        opdEncounterDialogControllerProvider,
-      );
+        final ProviderContainer container = _testContainer(
+          opdRepository: opdRepository,
+          clinicalRepository: clinicalRepository,
+        );
+        addTearDown(container.dispose);
+        final OpdEncounterDialogController controller = container.read(
+          opdEncounterDialogControllerProvider,
+        );
 
-      final Result<ClinicalReferenceData> reference = await controller
-          .loadClinicalReferenceData();
-      final Result<List<ClinicalCatalogOption>> terms = await controller
-          .searchClinicalTerms(termType: 'DIAGNOSIS', query: 'uri', limit: 20);
+        final Result<ClinicalReferenceData> reference = await controller
+            .loadClinicalReferenceData();
+        final Result<List<ClinicalCatalogOption>> terms = await controller
+            .searchClinicalTerms(
+              termType: 'DIAGNOSIS',
+              query: 'uri',
+              limit: 20,
+            );
 
-      expect(reference.isSuccess, isTrue);
-      expect(terms.isSuccess, isTrue);
-      terms.when(
-        success: (List<ClinicalCatalogOption> value) {
-          expect(value.single.code, 'J06.9');
-        },
-        failure: (_) => fail('expected clinical term search success'),
-      );
-      verify(() => clinicalRepository.loadReferenceData()).called(1);
-      verify(
-        () => clinicalRepository.searchClinicalTerms(
-          termType: 'DIAGNOSIS',
-          query: 'uri',
-          limit: 20,
-          source: 'ALL',
-          facilityId: any(named: 'facilityId'),
-        ),
-      ).called(1);
-    });
+        expect(reference.isSuccess, isTrue);
+        expect(terms.isSuccess, isTrue);
+        terms.when(
+          success: (List<ClinicalCatalogOption> value) {
+            expect(value.single.code, 'J06.9');
+          },
+          failure: (_) => fail('expected clinical term search success'),
+        );
+        verify(() => clinicalRepository.loadReferenceData()).called(1);
+        verify(
+          () => clinicalRepository.searchClinicalTerms(
+            termType: 'DIAGNOSIS',
+            query: 'uri',
+            limit: 20,
+            source: 'ALL',
+            facilityId: any(named: 'facilityId'),
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'resolveConsultationBillingLineItems returns fallback without tenant',
@@ -474,7 +524,10 @@ void main() {
           status: 'OPEN',
           stage: 'WAITING_VITALS',
         );
-        _stubWorkspaceInitialLoad(opdRepository, flows: <OpdFlowSummary>[existing]);
+        _stubWorkspaceInitialLoad(
+          opdRepository,
+          flows: <OpdFlowSummary>[existing],
+        );
         when(() => opdRepository.cancelEncounter(any(), any())).thenAnswer(
           (_) async =>
               const Result<OpdFlowDetail>.failure(AppFailure.network()),
@@ -616,8 +669,8 @@ void _stubWorkspaceInitialLoad(
     (Invocation invocation) async => Result<AppPage<OpdQueueEntry>>.success(
       AppPage<OpdQueueEntry>(
         items: const <OpdQueueEntry>[],
-        request:
-            (invocation.positionalArguments.single as OpdQueueQuery).pageRequest,
+        request: (invocation.positionalArguments.single as OpdQueueQuery)
+            .pageRequest,
         totalItemCount: 0,
       ),
     ),

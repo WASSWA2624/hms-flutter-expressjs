@@ -192,7 +192,75 @@ void main() {
     expect(submittedPayload?['arrival_mode'], 'WALK_IN');
   });
 
-  testWidgets('OpdEncounterDialog submits pay-now payload during OPD start', (
+  testWidgets(
+    'OpdEncounterDialog defaults payment to optional and never captures payment',
+    (WidgetTester tester) async {
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      const Patient patient = Patient(
+        id: 'patient-1',
+        publicId: 'PAT000001',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      );
+      Map<String, Object?>? submittedPayload;
+
+      _stubStartDialogLookups(
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        patients: const <Patient>[patient],
+      );
+
+      await _pumpStartDialog(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        dialog: OpdEncounterDialog(
+          providerSchedules: const <OpdProviderSchedule>[],
+          appointments: const <OpdAppointment>[],
+          initialPatient: patient,
+          onSubmit: (Map<String, Object?> payload) async {
+            submittedPayload = payload;
+            return _successfulOpdSubmit(patientId: patient.id);
+          },
+        ),
+      );
+
+      final Finder amountInput = find.descendant(
+        of: find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppCurrencyAmountField &&
+              widget.amountLabelText == 'Consultation fee (optional)',
+        ),
+        matching: find.byType(EditableText),
+      );
+
+      expect(
+        tester
+            .widget<AppSwitchField>(
+              find.widgetWithText(AppSwitchField, 'Payment required'),
+            )
+            .value,
+        isFalse,
+      );
+      expect(find.text('Payment received'), findsNothing);
+      expect(find.text('Payment method *'), findsNothing);
+      expect(find.text('Transaction reference (optional)'), findsNothing);
+
+      await tester.enterText(amountInput, '25000');
+      await tester.ensureVisible(find.text('Start encounter').last);
+      await tester.tap(find.text('Start encounter').last);
+      await tester.pumpAndSettle();
+
+      expect(submittedPayload?['require_consultation_payment'], isFalse);
+      expect(submittedPayload?['create_consultation_invoice'], isTrue);
+      expect(submittedPayload?['consultation_fee'], '25000');
+      expect(submittedPayload, isNot(contains('pay_now')));
+      expect(submittedPayload, isNot(contains('notes')));
+    },
+  );
+
+  testWidgets('selecting a doctor applies editable consultation defaults', (
     WidgetTester tester,
   ) async {
     final _MockPatientRepository patientRepository = _MockPatientRepository();
@@ -203,12 +271,22 @@ void main() {
       firstName: 'Jane',
       lastName: 'Doe',
     );
-    Map<String, Object?>? submittedPayload;
+    const OpdProviderOption provider = OpdProviderOption(
+      id: 'doctor-1',
+      displayName: 'Dr Able',
+      consultationFee: 30000,
+      consultationCurrency: 'KES',
+    );
 
     _stubStartDialogLookups(
       patientRepository: patientRepository,
       opdRepository: opdRepository,
       patients: const <Patient>[patient],
+    );
+    when(() => opdRepository.listProviders()).thenAnswer(
+      (_) async => const Result<List<OpdProviderOption>>.success(
+        <OpdProviderOption>[provider],
+      ),
     );
 
     await _pumpStartDialog(
@@ -219,41 +297,30 @@ void main() {
         providerSchedules: const <OpdProviderSchedule>[],
         appointments: const <OpdAppointment>[],
         initialPatient: patient,
-        onSubmit: (Map<String, Object?> payload) async {
-          submittedPayload = payload;
-          return _successfulOpdSubmit(patientId: patient.id);
-        },
+        onSubmit: (_) async => _successfulOpdSubmit(),
       ),
     );
+
+    final Finder providerField = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppSelectField<String> &&
+          widget.labelText == 'Search doctor (optional)',
+    );
+    tester
+        .widget<AppSelectField<String>>(providerField)
+        .onChanged
+        ?.call(provider.id);
+    await tester.pump();
 
     final Finder amountInput = find.descendant(
-      of: find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppCurrencyAmountField &&
-            widget.amountLabelText == 'Consultation fee (optional)',
-      ),
+      of: find.byType(AppCurrencyAmountField),
       matching: find.byType(EditableText),
     );
+    expect(tester.widget<EditableText>(amountInput).controller.text, '30000');
+    expect(find.text('KES'), findsWidgets);
 
-    await tester.enterText(amountInput, '25000');
-    await tester.ensureVisible(find.text('Payment received'));
-    await tester.tap(find.text('Payment received'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(EditableText).last, 'MM-10001');
-    await tester.ensureVisible(find.text('Start encounter').last);
-    await tester.tap(find.text('Start encounter').last);
-    await tester.pumpAndSettle();
-
-    expect(submittedPayload?['require_consultation_payment'], isTrue);
-    expect(submittedPayload?['create_consultation_invoice'], isTrue);
-    expect(submittedPayload?['consultation_fee'], '25000');
-    final Map<String, Object?> payNow =
-        submittedPayload!['pay_now']! as Map<String, Object?>;
-    expect(payNow, containsPair('method', 'CASH'));
-    expect(payNow, containsPair('amount', '25000'));
-    expect(payNow, containsPair('status', 'COMPLETED'));
-    expect(payNow, containsPair('transaction_ref', 'MM-10001'));
-    expect(payNow['paid_at'], isA<String>());
+    await tester.enterText(amountInput, '27500');
+    expect(tester.widget<EditableText>(amountInput).controller.text, '27,500');
   });
 
   testWidgets(
@@ -289,7 +356,11 @@ void main() {
 
       expect(find.text('Existing patient'), findsNothing);
       expect(find.text('Search patient *'), findsNothing);
-      expect(find.text('Arrival mode *'), findsOneWidget);
+      expect(find.text('Arrival mode *'), findsNothing);
+      expect(find.text('Search doctor (optional)'), findsOneWidget);
+      expect(find.text('Consultation fee (optional)'), findsOneWidget);
+      expect(find.text('Payment required'), findsOneWidget);
+      expect(find.text('Payment received'), findsNothing);
       expect(find.text('Start encounter'), findsOneWidget);
     },
   );
@@ -430,7 +501,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(AppLoadingIndicator), findsAtLeastNWidgets(1));
+      expect(find.byType(AppLoadingIndicator), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('opd-encounter-loading-overlay')),
+        findsOneWidget,
+      );
       expect(find.byType(LinearProgressIndicator), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(
@@ -648,12 +723,20 @@ void main() {
       ),
     );
 
-    await tester.enterText(find.byType(EditableText).last, 'Keep these notes');
+    final Finder amountInput = find.descendant(
+      of: find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppCurrencyAmountField &&
+            widget.amountLabelText == 'Consultation fee (optional)',
+      ),
+      matching: find.byType(EditableText),
+    );
+    await tester.enterText(amountInput, '25000');
     await tester.tap(find.text('Start encounter').last);
     await tester.pumpAndSettle();
 
     expect(find.byType(OpdEncounterDialog), findsOneWidget);
-    expect(find.text('Keep these notes'), findsOneWidget);
+    expect(tester.widget<EditableText>(amountInput).controller.text, '25,000');
     expect(find.byType(AppFormInformationBanner), findsWidgets);
   });
 

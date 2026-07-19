@@ -66,6 +66,31 @@ OpdEncounterDialog buildPatientPinnedOpdEncounterDialog({
   );
 }
 
+/// Builds the canonical encounter dialog when only appointment context exists.
+///
+/// This keeps sparse appointment action hosts on the same shared start surface
+/// instead of falling back to a direct check-in mutation.
+OpdEncounterDialog buildAppointmentPinnedOpdEncounterDialog({
+  required WidgetRef ref,
+  required OpdAppointment appointment,
+  ValueChanged<OpdFlowSummary>? onExistingActiveEncounter,
+}) {
+  return OpdEncounterDialog(
+    providerSchedules: const <OpdProviderSchedule>[],
+    appointments: <OpdAppointment>[appointment],
+    initialAppointment: appointment,
+    initialAppointmentId: appointment.apiId,
+    defaultArrivalMode: 'ONLINE_APPOINTMENT',
+    defaultProviderId: appointment.providerUserId,
+    onExistingActiveEncounter: onExistingActiveEncounter,
+    onSubmit: (Map<String, Object?> payload) {
+      return ref
+          .read(opdEncounterDialogControllerProvider)
+          .submitEncounter(payload);
+    },
+  );
+}
+
 /// Opens the pinned-patient OPD encounter through [showOpdEncounterDialog].
 ///
 /// Prefer [openPatientOpdEncounterFlow] when a [WidgetRef] is available so the

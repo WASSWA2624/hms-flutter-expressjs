@@ -1,36 +1,3 @@
-# Action Button Inventory — `/reception`
-
-Source of truth: Dart presentation widgets. English labels come from `app_localizations_en.dart`.
-
-- Primary page: `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
-- Route: `AppRoutes.reception` → `/reception`
-- Scope: controls reachable from `/reception`, including nested dialogs
-- Convention: every action is listed once; the **Locations** column combines every place where it is used
-
-Visibility may depend on the selected tab, workflow stage, record state, role, permission, tenant configuration, or enabled module.
-
-## Page, search, and table actions
-
-| Action button / control | Locations | Modal opened or function |
-| --- | --- | --- |
-| Appointments | Page tab strip | Shows the Appointments section and updates the URL. |
-| Desk queue | Page tab strip | Shows the Desk queue section and updates the URL. |
-| Active visits | Page tab strip | Shows the Active visits section and updates the URL. |
-| Payment gate | Page tab strip | Shows the Payment gate section and updates the URL. |
-| Schedule appointment | Secondary toolbar on every authorized tab; patient appointment dialog footer | Opens `_ReceptionPatientPickerDialog`, then `PatientAppointmentQuickDialog`; in the final dialog, creates the appointment. |
-| Register patient | Primary toolbar on every authorized tab; registration dialog footer | Opens `RegisterNewPatientDialog`; in its footer, runs duplicate detection and creates the patient. After create, opens the patient detail editor with Billing navigation suppressed. |
-| Refresh | Secondary toolbar on every tab | Reloads the OPD workspace and Payment gate data; shows a loading state while running. |
-| Patient registry | Secondary toolbar on every authorized tab | Navigates directly to `/patients`. |
-| Outpatient (OPD) | Secondary toolbar on every authorized tab | Navigates directly to `/opd`. |
-| Try again | Workspace load-error state | Retries loading the OPD workspace. |
-| Filters | Search toolbar on every tab; lab and radiology catalog tables | Opens the relevant advanced-filter modal. |
-| Clear filters | Search-field suffix when a query exists; advanced-filter modal footer | In the search field, clears only the query; in the filter modal, resets selected filters. |
-| Apply filters | Advanced-filter modal footer | Applies the selected status, stage, or catalog filters. |
-| Settings | Table toolbar on every tab; lab and radiology catalog tables | Opens the shared column-visibility modal. |
-| Apply columns | Column-settings modal footer | Saves the selected visible columns. |
-| Reset columns | Column-settings modal footer | Restores the default visible columns. |
-| Sort column | Sortable table headers | Sorts the table by the selected column. |
-| Row / card tap | Appointment, queue, Active visits, and Payment gate rows/cards | Opens `ReceptionAppointmentActionsDialog`; `ReceptionQueueActionsDialog` when no linked appointment is found; `FlowActionsDialog` for Active visits (billing actions suppressed); or read-only Payment gate detail. Never navigates to `/billing`. |
 
 ## Appointment, queue, and workflow actions
 

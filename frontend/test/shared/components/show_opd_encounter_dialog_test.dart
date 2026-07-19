@@ -14,7 +14,6 @@ import 'package:hosspi_hms/features/patients/domain/repositories/patient_reposit
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -147,7 +146,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(AppLoadingIndicator), findsWidgets);
+      expect(find.byType(AppLoadingIndicator), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('opd-encounter-loading-overlay')),
+        findsOneWidget,
+      );
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(
         tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,

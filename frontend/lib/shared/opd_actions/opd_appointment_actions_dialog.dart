@@ -228,15 +228,18 @@ class _OpdAppointmentActionsDialogState
       return;
     }
     final OpdWorkspaceState? workspaceState = widget.workspaceState;
-    if (workspaceState != null) {
-      setState(() {
-        _activeAction = _AppointmentFooterAction.checkIn;
-        _failure = null;
-      });
-      final OpdEncounterDialogResult? dialogResult =
-          await showOpdEncounterDialog(
-            context: context,
-            dialog: buildOpdWorkspaceEncounterDialog(
+    setState(() {
+      _activeAction = _AppointmentFooterAction.checkIn;
+      _failure = null;
+    });
+    final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
+      context: context,
+      dialog: workspaceState == null
+          ? buildAppointmentPinnedOpdEncounterDialog(
+              ref: ref,
+              appointment: widget.appointment,
+            )
+          : buildOpdWorkspaceEncounterDialog(
               ref: ref,
               state: workspaceState,
               initialAppointment: widget.appointment,
@@ -245,33 +248,25 @@ class _OpdAppointmentActionsDialogState
               defaultProviderId: widget.appointment.providerUserId,
               includeEncounterLifecycleCallbacks: false,
             ),
-          );
-      if (!mounted) {
-        return;
-      }
-      if (dialogResult == null) {
-        setState(() => _activeAction = null);
-        return;
-      }
-      if (dialogResult.action == OpdEncounterDialogAction.submit) {
-        // Fallback for sparse backend snapshots that omit the linked
-        // appointment identifier. Non-submit outcomes must never advance it.
-        ref
-            .read(opdWorkspaceControllerProvider.notifier)
-            .markAppointmentInProgress(widget.appointment);
-      }
-      Navigator.of(
-        context,
-      ).pop(dialogResult.action != OpdEncounterDialogAction.continueWorkflow);
+    );
+    if (!mounted) {
       return;
     }
-
-    await _run(
-      _AppointmentFooterAction.checkIn,
-      () => ref
+    if (dialogResult == null) {
+      setState(() => _activeAction = null);
+      return;
+    }
+    if (workspaceState != null &&
+        dialogResult.action == OpdEncounterDialogAction.submit) {
+      // Fallback for sparse backend snapshots that omit the linked
+      // appointment identifier. Non-submit outcomes must never advance it.
+      ref
           .read(opdWorkspaceControllerProvider.notifier)
-          .checkInAppointment(widget.appointment),
-    );
+          .markAppointmentInProgress(widget.appointment);
+    }
+    Navigator.of(
+      context,
+    ).pop(dialogResult.action != OpdEncounterDialogAction.continueWorkflow);
   }
 
   bool _hasActiveLinkedQueueEntry() {

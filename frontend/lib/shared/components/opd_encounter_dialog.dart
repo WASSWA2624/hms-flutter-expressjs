@@ -19,13 +19,10 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
-import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
-import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
-import 'package:hosspi_hms/shared/components/app_payment_method.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_switch_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
@@ -59,15 +56,6 @@ const AccessRequirement opdEncounterPermissionRequirement = AccessRequirement(
 );
 
 enum _WalkInPatientMode { existing, appointment, newPatient }
-
-const List<String> _opdStartPaymentMethods = <String>[
-  'CASH',
-  'MOBILE_MONEY',
-  'BANK_TRANSFER',
-  'CREDIT_CARD',
-  'INSURANCE',
-  'OTHER',
-];
 
 class _WalkInModeSelector extends StatelessWidget {
   const _WalkInModeSelector({
@@ -216,7 +204,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       GlobalKey<RegisterNewPatientFormState>();
   late final TextEditingController _feeController;
   late final TextEditingController _notesController;
-  late final TextEditingController _transactionRefController;
   List<Patient> _patientOptions = const <Patient>[];
   List<OpdAppointment> _appointmentOptions = const <OpdAppointment>[];
   List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
@@ -226,6 +213,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   bool _isLoadingPatients = false;
   bool _isLoadingAppointments = false;
   bool _isLoadingProviders = false;
+  bool _isLoadingPatientReferenceData = false;
+  bool _isLoadingBillingDefaults = false;
   bool _isResolvingActiveEncounter = false;
   String? _patientId;
   String? _appointmentId;
@@ -235,11 +224,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   String _arrivalMode = 'WALK_IN';
   String _emergencySeverity = 'HIGH';
   String? _triageLevel;
-  String _paymentMethod = 'CASH';
-  bool _requireConsultationPayment = true;
-  bool _payNow = false;
+  bool _requireConsultationPayment = false;
   bool _forceNewEncounter = false;
   bool _isSaving = false;
+  bool _hasLookupFailure = false;
   AppFailure? _failure;
   int _activeEncounterLookupToken = 0;
   bool _appliedInitialContext = false;
@@ -291,7 +279,15 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       !_pinPatientContext && !_pinAppointmentContext;
 
   bool get _isInitialLoading =>
-      _isLoadingPatients || _isLoadingAppointments || _isLoadingProviders;
+      _isLoadingPatients ||
+      _isLoadingAppointments ||
+      _isLoadingProviders ||
+      _isLoadingPatientReferenceData ||
+      _isLoadingBillingDefaults;
+
+  bool get _showLoadingOverlay =>
+      _isInitialLoading ||
+      (_isResolvingActiveEncounter && _activeEncounter == null);
 
   /// Blocks dismiss/close and competing footer actions while initial option
   /// loads or a mutation is in flight.
@@ -306,7 +302,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     super.initState();
     _feeController = TextEditingController();
     _notesController = TextEditingController();
-    _transactionRefController = TextEditingController();
     _patientOptions = <Patient>[
       if (widget.initialPatient != null) widget.initialPatient!,
     ];
@@ -329,11 +324,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     } else if (_patientId != null) {
       _patientMode = _WalkInPatientMode.existing;
     }
-    unawaited(_loadPatientOptions());
-    unawaited(_loadAppointmentOptions());
-    unawaited(_loadProviderOptions());
-    unawaited(_loadPatientReferenceData());
-    unawaited(_loadBillingDefaults());
+    _loadInitialData();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _applyInitialContext();
@@ -342,11 +333,37 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     });
   }
 
+  void _loadInitialData() {
+    if (_showPatientSection ||
+        (widget.initialPatient == null &&
+            _isNonEmpty(widget.initialPatientId))) {
+      unawaited(_loadPatientOptions());
+    }
+    if (_showPatientSection ||
+        (widget.initialAppointment == null &&
+            _isNonEmpty(widget.initialAppointmentId))) {
+      unawaited(_loadAppointmentOptions());
+    }
+    unawaited(_loadProviderOptions());
+    if (_showPatientSection) {
+      unawaited(_loadPatientReferenceData());
+    }
+    unawaited(_loadBillingDefaults());
+  }
+
+  void _retryInitialData() {
+    setState(() {
+      _failure = null;
+      _hasLookupFailure = false;
+    });
+    _loadInitialData();
+    _refreshActiveEncounterForSelection();
+  }
+
   @override
   void dispose() {
     _feeController.dispose();
     _notesController.dispose();
-    _transactionRefController.dispose();
     super.dispose();
   }
 
@@ -380,7 +397,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           _providerId = appointment.providerUserId ?? _providerId;
         }
         _arrivalMode = 'ONLINE_APPOINTMENT';
-        _requireConsultationPayment = true;
         _applyProviderDefaultsToState(_providerId);
       });
       return;
@@ -409,7 +425,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         _appointmentId = appointment.apiId;
         _providerId = appointment.providerUserId ?? _providerId;
         _arrivalMode = 'ONLINE_APPOINTMENT';
-        _requireConsultationPayment = true;
         _applyProviderDefaultsToState(_providerId);
       });
       return;
@@ -435,7 +450,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
 
       _patientMode = _WalkInPatientMode.appointment;
       _arrivalMode = 'ONLINE_APPOINTMENT';
-      _requireConsultationPayment = true;
       if (patientAppointments.length == 1) {
         final OpdAppointment match = patientAppointments.single;
         _appointmentId = match.apiId;
@@ -520,52 +534,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     return AppDialog(
       title: Text(l10n.opdWalkInDialogTitle),
       icon: const Icon(opdEncounterIcon),
-      scrollable: true,
       pinActionsToBottom: true,
       closeEnabled: !_blocksDismiss,
       maxWidth: 880,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_blocksDismiss,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          if (_isInitialLoading)
-            AppLoadingIndicator(
-              size: AppLoadingIndicatorSize.compact,
-              title: l10n.opdLoadingTitle,
-              body: l10n.opdLoadingBody,
-              semanticLabel: l10n.opdLoadingTitle,
-            ),
-          if (_shouldShowActiveEncounterNotice()) _activeEncounterNotice(l10n),
-          if (_showPatientSection)
-            AppSectionPanel(
-              title: l10n.opdPatientSectionTitle,
-              density: AppContentPanelDensity.compact,
-              children: <Widget>[
-                _WalkInModeSelector(
-                  value: _patientMode,
-                  enabled: !_blocksDismiss && !hasActiveEncounter,
-                  existingLabel: l10n.opdExistingPatientModeLabel,
-                  appointmentLabel: l10n.opdAppointmentPatientModeLabel,
-                  newPatientLabel: l10n.opdNewPatientModeLabel,
-                  showNewPatient: ref
-                      .watch(appAccessPolicyProvider)
-                      .grants(AppPermissions.patientWrite),
-                  onChanged: _setPatientMode,
-                ),
-                _patientModeContent(l10n),
-              ],
-            )
-          else if (_pinPatientContext)
-            _knownPatientSummary(l10n),
-          AppResponsiveFieldRow.two(
-            left: _routingSection(l10n),
-            right: _billingSection(l10n),
-            breakpoint: 760,
-            gap: AppResponsiveFieldRowGap.form,
-          ),
-        ],
-      ),
+      content: _dialogBody(l10n, hasActiveEncounter),
       actions: <Widget>[
         if (hasActiveEncounter) ...<Widget>[
           if (!_forceNewEncounter)
@@ -617,98 +589,185 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     );
   }
 
-  Widget _routingSection(AppLocalizations l10n) {
-    return AppSectionPanel(
-      title: l10n.opdRoutingSectionTitle,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        if (_patientMode != _WalkInPatientMode.appointment)
-          AppSelectField<String>.searchable(
-            value: _arrivalMode,
-            labelText: _opdRequiredFieldLabel(l10n, l10n.opdArrivalModeLabel),
-            semanticLabel: _opdRequiredFieldLabel(
-              l10n,
-              l10n.opdArrivalModeLabel,
+  Widget _dialogBody(AppLocalizations l10n, bool hasActiveEncounter) {
+    final ThemeData theme = Theme.of(context);
+    final Widget form = SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      child: AppFormShell(
+        formKey: _formKey,
+        enabled: !_blocksDismiss,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          if (_hasLookupFailure)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: AppButton.secondary(
+                label: l10n.commonRetryActionLabel,
+                leadingIcon: AppActionIcons.refresh,
+                enabled: !_blocksDismiss,
+                onPressed: _blocksDismiss ? null : _retryInitialData,
+              ),
             ),
-            helperText: _lockArrivalMode
-                ? l10n.opdEncounterArrivalModeLockedHelper
-                : null,
-            enabled: !_blocksDismiss && !_lockArrivalMode,
-            onChanged: (String? value) {
-              setState(() {
-                _arrivalMode = value ?? 'WALK_IN';
-                _requireConsultationPayment = _arrivalMode != 'EMERGENCY';
-                if (!_requireConsultationPayment) {
-                  _payNow = false;
-                }
-              });
-            },
-            options: _statusOptions(_arrivalModeOptions),
-          ),
-        if (_arrivalMode == 'EMERGENCY' &&
-            _patientMode != _WalkInPatientMode.appointment)
-          AppResponsiveFieldRow(
+          if (_shouldShowActiveEncounterNotice()) _activeEncounterNotice(l10n),
+          if (_showPatientSection) ...<Widget>[
+            _WalkInModeSelector(
+              value: _patientMode,
+              enabled: !_blocksDismiss && !hasActiveEncounter,
+              existingLabel: l10n.opdExistingPatientModeLabel,
+              appointmentLabel: l10n.opdAppointmentPatientModeLabel,
+              newPatientLabel: l10n.opdNewPatientModeLabel,
+              showNewPatient: ref
+                  .watch(appAccessPolicyProvider)
+                  .grants(AppPermissions.patientWrite),
+              onChanged: _setPatientMode,
+            ),
+            _patientModeContent(l10n),
+          ] else if (_pinPatientContext)
+            _knownPatientSummary(l10n),
+          ..._arrivalFields(l10n),
+          AppResponsiveFieldRow.two(
+            left: _providerField(l10n),
+            right: _consultationFeeField(l10n),
+            breakpoint: 760,
             gap: AppResponsiveFieldRowGap.form,
-            children: <Widget>[
-              AppSelectField<String>.searchable(
-                value: _emergencySeverity,
-                labelText: _opdRequiredFieldLabel(
-                  l10n,
-                  l10n.opdEmergencySeverityLabel,
-                ),
-                semanticLabel: _opdRequiredFieldLabel(
-                  l10n,
-                  l10n.opdEmergencySeverityLabel,
-                ),
-                enabled: !_blocksDismiss,
-                onChanged: (String? value) {
-                  setState(() {
-                    _emergencySeverity = value ?? _emergencySeverity;
-                  });
-                },
-                options: _statusOptions(_emergencySeverityOptions),
-              ),
-              AppTriageUrgencyField(
-                value: _triageLevel,
-                labelText: _opdOptionalFieldLabel(
-                  l10n,
-                  l10n.opdTriageLevelLabel,
-                ),
-                semanticLabel: _opdOptionalFieldLabel(
-                  l10n,
-                  l10n.opdTriageLevelLabel,
-                ),
-                enabled: !_blocksDismiss,
-                onChanged: (String? value) {
-                  setState(() {
-                    _triageLevel = value;
-                  });
-                },
-                options: _triageLevelFieldOptions(),
-              ),
-            ],
           ),
-        _ProviderSelectField(
-          value: _providerId,
-          providers: _providerOptionsForDialog(),
-          schedules: _providerSchedules,
-          labelText: _opdOptionalFieldLabel(l10n, l10n.opdSearchProviderLabel),
-          helperText: l10n.opdSearchProviderHelper,
-          emptyHelperText: l10n.opdNoProvidersHelper,
-          enabled: !_blocksDismiss,
-          isLoading: _isLoadingProviders,
-          onChanged: (String? value) {
-            setState(() {
-              _providerId = value;
-              _applyProviderDefaultsToState(value);
-            });
-          },
+          ..._billingStatusFields(l10n),
+        ],
+      ),
+    );
+
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        ExcludeSemantics(
+          excluding: _showLoadingOverlay,
+          child: AbsorbPointer(absorbing: _showLoadingOverlay, child: form),
         ),
+        if (_showLoadingOverlay)
+          Positioned.fill(
+            child: ColoredBox(
+              key: const ValueKey<String>('opd-encounter-loading-overlay'),
+              color: theme.colorScheme.surface.withValues(alpha: 0.94),
+              child: AppLoadingIndicator(
+                title: l10n.opdLoadingTitle,
+                body: l10n.opdLoadingBody,
+                expand: true,
+                semanticLabel: l10n.opdLoadingTitle,
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  Widget _billingSection(AppLocalizations l10n) {
+  List<Widget> _arrivalFields(AppLocalizations l10n) {
+    if (_patientMode == _WalkInPatientMode.appointment ||
+        _pinPatientContext ||
+        _pinAppointmentContext) {
+      return const <Widget>[];
+    }
+    return <Widget>[
+      AppSelectField<String>.searchable(
+        value: _arrivalMode,
+        labelText: _opdRequiredFieldLabel(l10n, l10n.opdArrivalModeLabel),
+        semanticLabel: _opdRequiredFieldLabel(l10n, l10n.opdArrivalModeLabel),
+        helperText: _lockArrivalMode
+            ? l10n.opdEncounterArrivalModeLockedHelper
+            : null,
+        enabled: !_blocksDismiss && !_lockArrivalMode,
+        onChanged: (String? value) {
+          setState(() {
+            _arrivalMode = value ?? 'WALK_IN';
+          });
+        },
+        options: _statusOptions(_arrivalModeOptions),
+      ),
+      if (_arrivalMode == 'EMERGENCY') ...<Widget>[
+        AppResponsiveFieldRow(
+          gap: AppResponsiveFieldRowGap.form,
+          children: <Widget>[
+            AppSelectField<String>.searchable(
+              value: _emergencySeverity,
+              labelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdEmergencySeverityLabel,
+              ),
+              semanticLabel: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdEmergencySeverityLabel,
+              ),
+              enabled: !_blocksDismiss,
+              onChanged: (String? value) {
+                setState(() {
+                  _emergencySeverity = value ?? _emergencySeverity;
+                });
+              },
+              options: _statusOptions(_emergencySeverityOptions),
+            ),
+            AppTriageUrgencyField(
+              value: _triageLevel,
+              labelText: _opdOptionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
+              semanticLabel: _opdOptionalFieldLabel(
+                l10n,
+                l10n.opdTriageLevelLabel,
+              ),
+              enabled: !_blocksDismiss,
+              onChanged: (String? value) {
+                setState(() {
+                  _triageLevel = value;
+                });
+              },
+              options: _triageLevelFieldOptions(),
+            ),
+          ],
+        ),
+        AppTextField(
+          controller: _notesController,
+          labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
+          enabled: !_blocksDismiss,
+          maxLines: 3,
+        ),
+      ],
+    ];
+  }
+
+  Widget _providerField(AppLocalizations l10n) {
+    return _ProviderSelectField(
+      value: _providerId,
+      providers: _providerOptionsForDialog(),
+      schedules: _providerSchedules,
+      labelText: _opdOptionalFieldLabel(l10n, l10n.opdSearchProviderLabel),
+      helperText: l10n.opdSearchProviderHelper,
+      emptyHelperText: l10n.opdNoProvidersHelper,
+      enabled: !_blocksDismiss,
+      onChanged: (String? value) {
+        setState(() {
+          _providerId = value;
+          _applyProviderDefaultsToState(value, overwrite: true);
+        });
+      },
+    );
+  }
+
+  Widget _consultationFeeField(AppLocalizations l10n) {
+    return AppCurrencyAmountField(
+      amountController: _feeController,
+      currency: _currency,
+      amountLabelText: _opdOptionalFieldLabel(
+        l10n,
+        l10n.opdConsultationFeeLabel,
+      ),
+      currencyLabelText: _opdRequiredFieldLabel(l10n, l10n.opdCurrencyLabel),
+      enabled: !_blocksDismiss,
+      onCurrencyChanged: (String? value) {
+        setState(() {
+          _currency = value ?? appDefaultCurrencyCode;
+        });
+      },
+    );
+  }
+
+  List<Widget> _billingStatusFields(AppLocalizations l10n) {
     final OpdFlowSummary? activeEncounter = _activeEncounter;
     final bool billingAlreadyPaid =
         activeEncounter != null &&
@@ -718,118 +777,35 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         ? l10n.profileUnknownValue
         : AppFormatters.currency(value, locale, currencyCode: _currency);
 
-    return AppSectionPanel(
-      title: l10n.opdBillingSectionTitle,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        if (billingAlreadyPaid)
-          AppFormInformationBanner.message(
-            title: l10n.opdPaymentStatusLabel,
-            message: l10n.opdEncounterBillingPaidBanner,
-          ),
-        AppCurrencyAmountField(
-          amountController: _feeController,
-          currency: _currency,
-          amountLabelText: _opdOptionalFieldLabel(
-            l10n,
-            l10n.opdConsultationFeeLabel,
-          ),
-          currencyLabelText: _opdRequiredFieldLabel(
-            l10n,
-            l10n.opdCurrencyLabel,
-          ),
-          enabled: !_blocksDismiss,
-          isRequired: _payNow,
-          allowZero: !_payNow,
-          onCurrencyChanged: (String? value) {
-            setState(() {
-              _currency = value ?? appDefaultCurrencyCode;
-            });
-          },
+    return <Widget>[
+      if (billingAlreadyPaid)
+        AppFormInformationBanner.message(
+          title: l10n.opdPaymentStatusLabel,
+          message: l10n.opdEncounterBillingPaidBanner,
         ),
-        if (_engineFeeResolved)
-          AppFormInformationBanner.message(
-            title: l10n.opdBillingSectionTitle,
-            message: _payerContext?.insured == true
-                ? l10n.opdEngineResolvedFeeInsuredHint(
-                    _payerContext?.payerLabel ?? l10n.profileUnknownValue,
-                    formatShare(_resolvedConsultationLine?.patientShare),
-                    formatShare(_resolvedConsultationLine?.insurerShare),
-                  )
-                : l10n.opdEngineResolvedFeeHint,
-          ),
-        AppTextField(
-          controller: _notesController,
-          labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-          enabled: !_blocksDismiss,
-          maxLines: 3,
+      if (_engineFeeResolved)
+        AppFormInformationBanner.message(
+          title: l10n.opdBillingSectionTitle,
+          message: _payerContext?.insured == true
+              ? l10n.opdEngineResolvedFeeInsuredHint(
+                  _payerContext?.payerLabel ?? l10n.profileUnknownValue,
+                  formatShare(_resolvedConsultationLine?.patientShare),
+                  formatShare(_resolvedConsultationLine?.insurerShare),
+                )
+              : l10n.opdEngineResolvedFeeHint,
         ),
-        AppSwitchField(
-          title: l10n.opdPaymentRequiredLabel,
-          value: _requireConsultationPayment,
-          enabled: !_blocksDismiss && !billingAlreadyPaid,
-          secondary: const Icon(AppActionIcons.payment),
-          onChanged: (bool value) {
-            setState(() {
-              _requireConsultationPayment = value;
-              if (!value) {
-                _payNow = false;
-              }
-            });
-          },
-        ),
-        AppCheckboxField(
-          title: l10n.patientsMarkPaymentReceivedLabel,
-          value: _payNow,
-          enabled: !_blocksDismiss && !billingAlreadyPaid,
-          secondary: const Icon(AppActionIcons.payment),
-          onChanged: (bool value) {
-            setState(() {
-              _payNow = value;
-              if (value) {
-                _requireConsultationPayment = true;
-              }
-            });
-          },
-        ),
-        if (_payNow)
-          AppResponsiveFieldRow.two(
-            left: AppSelectField<String>.searchable(
-              value: _paymentMethod,
-              labelText: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdPaymentMethodLabel,
-              ),
-              semanticLabel: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdPaymentMethodLabel,
-              ),
-              enabled: !_blocksDismiss,
-              onChanged: (String? value) {
-                setState(() {
-                  _paymentMethod = value ?? 'CASH';
-                });
-              },
-              options: buildAppPaymentMethodSelectOptions(
-                methods: _opdStartPaymentMethods,
-              ),
-              validator: (String? value) => _payNow && !_isNonEmpty(value)
-                  ? l10n.validationRequired
-                  : null,
-            ),
-            right: AppTextField(
-              controller: _transactionRefController,
-              labelText: _opdOptionalFieldLabel(
-                l10n,
-                l10n.opdTransactionReferenceLabel,
-              ),
-              enabled: !_blocksDismiss,
-            ),
-            breakpoint: 520,
-            gap: AppResponsiveFieldRowGap.form,
-          ),
-      ],
-    );
+      AppSwitchField(
+        title: l10n.opdPaymentRequiredLabel,
+        value: _requireConsultationPayment,
+        enabled: !_blocksDismiss && !billingAlreadyPaid,
+        secondary: const Icon(AppActionIcons.payment),
+        onChanged: (bool value) {
+          setState(() {
+            _requireConsultationPayment = value;
+          });
+        },
+      ),
+    ];
   }
 
   bool _shouldShowActiveEncounterNotice() {
@@ -861,13 +837,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final ThemeData theme = Theme.of(context);
     final OpdFlowSummary? flow = _activeEncounter;
     if (_isResolvingActiveEncounter && flow == null) {
-      return Padding(
-        padding: EdgeInsets.only(bottom: theme.spacing.md),
-        child: AppLoadingIndicator(
-          size: AppLoadingIndicatorSize.compact,
-          title: l10n.opdActiveEncounterCheckingLabel,
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     if (flow == null) {
@@ -959,6 +929,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   }
 
   Future<void> _loadBillingDefaults() async {
+    setState(() {
+      _isLoadingBillingDefaults = true;
+    });
     final Patient? patient =
         widget.initialPatient ?? _patientByApiId(_patientId);
     final Result<OpdBillingDefaults> result = await ref
@@ -975,11 +948,14 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         setState(() {
           _billingDefaults = defaults;
           _applyProviderDefaultsToState(_providerId);
+          _isLoadingBillingDefaults = false;
         });
       },
       failure: (AppFailure failure) {
         setState(() {
           _failure = failure;
+          _hasLookupFailure = true;
+          _isLoadingBillingDefaults = false;
         });
       },
     );
@@ -1192,10 +1168,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _patientMode = mode;
       if (mode == _WalkInPatientMode.appointment) {
         _arrivalMode = 'ONLINE_APPOINTMENT';
-        _requireConsultationPayment = true;
       } else if (_arrivalMode == 'ONLINE_APPOINTMENT') {
         _arrivalMode = 'WALK_IN';
-        _requireConsultationPayment = true;
       }
     });
     _refreshActiveEncounterForSelection();
@@ -1208,7 +1182,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         options: _patientSelectOptions(),
         labelText: _opdRequiredFieldLabel(l10n, l10n.opdSearchPatientLabel),
         semanticLabel: _opdRequiredFieldLabel(l10n, l10n.opdSearchPatientLabel),
-        isLoading: _isLoadingPatients,
         enabled: !_blocksDismiss,
         onChanged: _selectExistingPatient,
         validator: (String? value) =>
@@ -1228,7 +1201,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           l10n,
           l10n.opdAppointmentPatientLabel,
         ),
-        isLoading: _isLoadingAppointments,
         enabled: !_blocksDismiss,
         onChanged: _selectAppointmentPatient,
         validator: (String? value) =>
@@ -1297,7 +1269,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _appointmentId = value;
       _providerId = appointment?.providerUserId ?? _providerId;
       _arrivalMode = 'ONLINE_APPOINTMENT';
-      _requireConsultationPayment = true;
       _applyProviderDefaultsToState(_providerId);
     });
     _resolveActiveEncounterForPatient(
@@ -1310,6 +1281,15 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           appointment?.patientIdentifier ?? contextPatient?.effectiveIdentifier,
       patientPhone: appointment?.patientPhone ?? contextPatient?.primaryPhone,
       appointmentId: appointment?.apiId,
+    );
+    unawaited(
+      _refreshEngineConsultationFee(
+        appointment?.patientIdentifier ??
+            appointment?.patientId ??
+            contextPatient?.publicId ??
+            contextPatient?.id ??
+            _patientId,
+      ),
     );
   }
 
@@ -1422,6 +1402,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           _applyActiveEncounterToState(localMatch);
           if (localMatch == null) {
             _failure = failure;
+            _hasLookupFailure = true;
           }
         });
       },
@@ -1458,9 +1439,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _currency = flow.consultationCurrency!.trim().toUpperCase();
     }
     _requireConsultationPayment = flow.consultationPaymentRequired;
-    if (opdFlowBillingState(flow) == OpdBillingState.paid) {
-      _payNow = false;
-    }
     if (_isNonEmpty(flow.triageLevel)) {
       _triageLevel = flow.triageLevel;
     }
@@ -1613,6 +1591,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   }
 
   Future<void> _loadPatientReferenceData() async {
+    setState(() {
+      _isLoadingPatientReferenceData = true;
+    });
     final Result<PatientReferenceData> result = await ref
         .read(opdEncounterDialogControllerProvider)
         .loadPatientReferenceData();
@@ -1624,11 +1605,14 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       success: (PatientReferenceData data) {
         setState(() {
           _patientReferenceData = data;
+          _isLoadingPatientReferenceData = false;
         });
       },
       failure: (AppFailure failure) {
         setState(() {
           _failure = failure;
+          _hasLookupFailure = true;
+          _isLoadingPatientReferenceData = false;
         });
       },
     );
@@ -1664,6 +1648,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       failure: (AppFailure failure) {
         setState(() {
           _failure = failure;
+          _hasLookupFailure = true;
           _isLoadingPatients = false;
         });
       },
@@ -1698,6 +1683,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       failure: (AppFailure failure) {
         setState(() {
           _failure = failure;
+          _hasLookupFailure = true;
           _isLoadingAppointments = false;
         });
       },
@@ -1741,6 +1727,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       failure: (AppFailure failure) {
         setState(() {
           _failure = failure;
+          _hasLookupFailure = true;
           _isLoadingProviders = false;
         });
       },
@@ -1782,12 +1769,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   Map<String, Object?> _payload() {
     final String notes = _notesController.text.trim();
     final String consultationFee = normalizeCurrencyAmount(_feeController.text);
-    final String transactionRef = _transactionRefController.text.trim();
     final String arrivalMode = _patientMode == _WalkInPatientMode.appointment
         ? 'ONLINE_APPOINTMENT'
         : _arrivalMode;
     final bool hasConsultationFee = consultationFee.isNotEmpty;
-    final bool submitPayment = _payNow && hasConsultationFee;
     final OpdFlowSummary? activeEncounter = _activeEncounter;
     final bool canReuseOpenEncounter =
         _patientMode != _WalkInPatientMode.newPatient;
@@ -1824,16 +1809,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       if (canReuseOpenEncounter && !_forceNewEncounter)
         'reuse_open_encounter': true,
       'create_consultation_invoice':
-          hasConsultationFee || _requireConsultationPayment || submitPayment,
-      if (submitPayment)
-        'pay_now': <String, Object?>{
-          'method': _paymentMethod,
-          'amount': consultationFee,
-          'status': 'COMPLETED',
-          if (transactionRef.isNotEmpty) 'transaction_ref': transactionRef,
-          'paid_at': DateTime.now().toUtc().toIso8601String(),
-        },
-      'notes': notes,
+          hasConsultationFee || _requireConsultationPayment,
     };
   }
 
@@ -2134,7 +2110,6 @@ class _ProviderSelectField extends StatelessWidget {
     required this.helperText,
     required this.emptyHelperText,
     required this.enabled,
-    required this.isLoading,
     required this.onChanged,
   });
 
@@ -2145,7 +2120,6 @@ class _ProviderSelectField extends StatelessWidget {
   final String helperText;
   final String emptyHelperText;
   final bool enabled;
-  final bool isLoading;
   final ValueChanged<String?> onChanged;
 
   @override
@@ -2159,10 +2133,9 @@ class _ProviderSelectField extends StatelessWidget {
       value: value,
       options: options,
       labelText: labelText,
-      helperText: options.isEmpty && !isLoading ? emptyHelperText : helperText,
+      helperText: options.isEmpty ? emptyHelperText : helperText,
       semanticLabel: labelText,
       enabled: enabled,
-      isLoading: isLoading,
       onChanged: onChanged,
     );
   }

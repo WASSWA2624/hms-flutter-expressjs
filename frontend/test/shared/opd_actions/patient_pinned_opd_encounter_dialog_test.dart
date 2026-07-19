@@ -203,18 +203,16 @@ void main() {
       (_) async => const Result<AppPage<Patient>>.failure(AppFailure.network()),
     );
     when(() => opdRepository.listAppointments(any())).thenAnswer(
-      (_) async => const Result<AppPage<OpdAppointment>>.failure(
-        AppFailure.network(),
-      ),
+      (_) async =>
+          const Result<AppPage<OpdAppointment>>.failure(AppFailure.network()),
     );
     when(() => opdRepository.listProviders()).thenAnswer(
       (_) async =>
           const Result<List<OpdProviderOption>>.failure(AppFailure.network()),
     );
     when(() => opdRepository.listProviderSchedules()).thenAnswer(
-      (_) async => const Result<List<OpdProviderSchedule>>.failure(
-        AppFailure.network(),
-      ),
+      (_) async =>
+          const Result<List<OpdProviderSchedule>>.failure(AppFailure.network()),
     );
     when(() => opdRepository.listOpdFlows(any())).thenAnswer(
       (_) async => const Result<AppPage<OpdFlowSummary>>.success(
@@ -277,8 +275,19 @@ void main() {
 
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.byType(AppFormInformationBanner), findsWidgets);
+    expect(find.widgetWithText(AppButton, 'Try again'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    _stubLookups(
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+    );
+    await tester.tap(find.widgetWithText(AppButton, 'Try again'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(AppButton, 'Try again'), findsNothing);
+    expect(find.byType(AppLoadingIndicator), findsNothing);
   });
 
   testWidgets(
