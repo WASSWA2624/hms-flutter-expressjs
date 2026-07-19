@@ -9,7 +9,9 @@ abstract final class ResponsiveSpacing {
   }) {
     final padding = pagePaddingValueFor(breakpoint, designTokens: designTokens);
 
-    return EdgeInsets.symmetric(horizontal: padding, vertical: padding);
+    // No top inset: content (e.g. workspace tab strips) starts flush under
+    // the app bar; spacing applies to the sides and bottom only.
+    return EdgeInsets.fromLTRB(padding, 0, padding, padding);
   }
 
   static double pagePaddingValueFor(
