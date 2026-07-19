@@ -36,10 +36,7 @@ class AppQuickActions extends StatelessWidget {
     this.overflowLabel,
     this.hideWhenEmpty = true,
     super.key,
-  }) : assert(
-         actions.length == 0 || permissionActions.length == 0,
-         'Use either actions or permissionActions in one quick-actions group.',
-       );
+  });
 
   final String title;
   final String? description;
@@ -57,6 +54,10 @@ class AppQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(
+      actions.isEmpty || permissionActions.isEmpty,
+      'Use either actions or permissionActions in one quick-actions group.',
+    );
     if (_isEmpty && emptyState == null && hideWhenEmpty) {
       return const SizedBox.shrink();
     }

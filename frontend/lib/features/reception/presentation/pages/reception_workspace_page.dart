@@ -291,7 +291,6 @@ class _ReceptionWorkspaceContentState
             AppQuickActions(
               title: l10n.patientsQuickActionsTitle,
               permissionActions: _buildQuickActions(l10n),
-              leadingIcon: Icons.bolt_outlined,
               minItemWidth: 180,
               maxColumns: 5,
             ),

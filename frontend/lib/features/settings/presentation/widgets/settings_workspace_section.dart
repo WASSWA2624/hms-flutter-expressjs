@@ -613,8 +613,6 @@ class _SettingsQuickActionsPanel extends ConsumerWidget {
 
     return AppQuickActions(
       title: l10n.settingsWorkspaceQuickActionsTitle,
-      presentation: AppQuickActionsPresentation.section,
-      leadingIcon: Icons.bolt_outlined,
       emptyState: Text(
         l10n.settingsWorkspaceNoQuickActionsBody,
         style: theme.textTheme.bodyMedium?.copyWith(
