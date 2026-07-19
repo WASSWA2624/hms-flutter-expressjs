@@ -237,38 +237,58 @@ final class PatientListQuery {
 final class PatientDuplicateQuery {
   const PatientDuplicateQuery({
     this.patientId = '',
+    this.tenantId = '',
+    this.facilityId = '',
     this.firstName = '',
     this.lastName = '',
     this.dateOfBirth,
+    this.gender = '',
     this.phone = '',
+    this.email = '',
+    this.identifierType = '',
     this.identifierValue = '',
     this.pageRequest = const AppPageRequest(pageSize: 8),
   });
 
   final String patientId;
+  final String tenantId;
+  final String facilityId;
   final String firstName;
   final String lastName;
   final DateTime? dateOfBirth;
+  final String gender;
   final String phone;
+  final String email;
+  final String identifierType;
   final String identifierValue;
   final AppPageRequest pageRequest;
 
   PatientDuplicateQuery copyWith({
     String? patientId,
+    String? tenantId,
+    String? facilityId,
     String? firstName,
     String? lastName,
     DateTime? dateOfBirth,
+    String? gender,
     String? phone,
+    String? email,
+    String? identifierType,
     String? identifierValue,
     AppPageRequest? pageRequest,
     bool clearDateOfBirth = false,
   }) {
     return PatientDuplicateQuery(
       patientId: patientId ?? this.patientId,
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       dateOfBirth: clearDateOfBirth ? null : dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
       phone: phone ?? this.phone,
+      email: email ?? this.email,
+      identifierType: identifierType ?? this.identifierType,
       identifierValue: identifierValue ?? this.identifierValue,
       pageRequest: pageRequest ?? this.pageRequest,
     );
@@ -712,12 +732,35 @@ final class PatientSummaryRecord {
 }
 
 @immutable
+final class PatientDuplicateFieldComparison {
+  const PatientDuplicateFieldComparison({
+    required this.field,
+    required this.inputValue,
+    required this.candidateValue,
+    required this.status,
+    this.contribution = 0,
+    this.similarityPercent,
+  });
+
+  final String field;
+  final String inputValue;
+  final String candidateValue;
+  final String status;
+  final int contribution;
+  final int? similarityPercent;
+
+  bool get isConflict => status.toUpperCase() == 'CONFLICT';
+}
+
+@immutable
 final class PatientDuplicateCandidate {
   const PatientDuplicateCandidate({
     required this.reviewId,
     required this.confidenceScore,
     required this.classification,
     this.matchReasons = const <String>[],
+    this.fieldComparisons = const <PatientDuplicateFieldComparison>[],
+    this.scoreVersion,
     this.primaryPatient,
     this.secondaryPatient,
     this.candidatePatient,
@@ -727,6 +770,8 @@ final class PatientDuplicateCandidate {
   final int confidenceScore;
   final String classification;
   final List<String> matchReasons;
+  final List<PatientDuplicateFieldComparison> fieldComparisons;
+  final String? scoreVersion;
   final Patient? primaryPatient;
   final Patient? secondaryPatient;
   final Patient? candidatePatient;

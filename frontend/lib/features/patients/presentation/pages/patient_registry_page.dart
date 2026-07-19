@@ -224,6 +224,9 @@ class _PatientRegistryContentState
     return AppAccessActionGate(
       requirement: _PatientRegistryContent._writeRequirement,
       builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
         return AppTabToolbarPrimary(
           icon: Icons.person_add_alt_1_outlined,
           label: l10n.patientsRegisterPatientAction,
@@ -356,33 +359,36 @@ class _PatientRegistryContentState
     BuildContext context,
     WidgetRef ref,
   ) async {
-    final Patient? createdPatient = await showRegisterNewPatientDialog(
-      context: context,
-      referenceData: widget.state.referenceData,
-      registrationScope: PatientRegistrationScope.resolve(
-        referenceData: widget.state.referenceData,
-        accessPolicy: ref.read(appAccessPolicyProvider),
-      ),
-      onLookupDuplicates: (PatientDuplicateQuery query) {
-        return ref
-            .read(patientRegistryControllerProvider.notifier)
-            .loadDuplicateCandidates(query);
-      },
-      onSubmit: (Map<String, Object?> payload) {
-        return ref
-            .read(patientRegistryControllerProvider.notifier)
-            .createPatient(payload);
-      },
-    );
+    final PatientRegistrationResult? registration =
+        await showRegisterNewPatientDialog(
+          context: context,
+          referenceData: widget.state.referenceData,
+          registrationScope: PatientRegistrationScope.resolve(
+            referenceData: widget.state.referenceData,
+            accessPolicy: ref.read(appAccessPolicyProvider),
+          ),
+          onLookupDuplicates: (PatientDuplicateQuery query) {
+            return ref
+                .read(patientRegistryControllerProvider.notifier)
+                .loadDuplicateCandidates(query);
+          },
+          onSubmit: (Map<String, Object?> payload) {
+            return ref
+                .read(patientRegistryControllerProvider.notifier)
+                .createPatient(payload);
+          },
+        );
 
-    if (createdPatient == null || !context.mounted) {
+    if (registration == null || !context.mounted) {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(context.l10n.patientsSavedMessage)));
-    await showPatientDetailDialog(context, ref, createdPatient.id);
+    if (registration.wasCreated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.patientsSavedMessage)),
+      );
+    }
+    await showPatientDetailDialog(context, ref, registration.patient.id);
   }
 }
 

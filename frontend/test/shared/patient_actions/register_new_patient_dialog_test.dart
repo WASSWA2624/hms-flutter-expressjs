@@ -129,7 +129,7 @@ void main() {
     },
   );
 
-  testWidgets('duplicate warning switches primary label to Save anyway', (
+  testWidgets('duplicate review can use existing or register anyway', (
     WidgetTester tester,
   ) async {
     var submitCount = 0;
@@ -169,22 +169,76 @@ void main() {
 
     expect(submitCount, 0);
     expect(find.text('Potential duplicate found'), findsOneWidget);
-    expect(find.text('Save anyway'), findsOneWidget);
+    expect(find.text('Register anyway'), findsOneWidget);
+    expect(find.text('Use existing patient'), findsOneWidget);
     expect(find.byIcon(AppActionIcons.copy), findsWidgets);
 
-    await tester.tap(find.widgetWithText(AppButton, 'Save anyway'));
+    await tester.tap(find.widgetWithText(AppButton, 'Register anyway'));
     await tester.pumpAndSettle();
 
     expect(submitCount, 1);
   });
 
+  testWidgets('Use existing patient returns candidate without creating', (
+    WidgetTester tester,
+  ) async {
+    var submitCount = 0;
+    Patient? result;
+    await _pumpDialog(
+      tester,
+      onResult: (Patient? value) => result = value,
+      onLookupDuplicates: (_) async {
+        return const Result<AppPage<PatientDuplicateCandidate>>.success(
+          AppPage<PatientDuplicateCandidate>(
+            items: <PatientDuplicateCandidate>[
+              PatientDuplicateCandidate(
+                reviewId: 'review-1',
+                confidenceScore: 88,
+                classification: 'STRONG',
+                matchReasons: <String>['PHONE_MATCH'],
+                fieldComparisons: <PatientDuplicateFieldComparison>[
+                  PatientDuplicateFieldComparison(
+                    field: 'PHONE',
+                    inputValue: '+256700000000',
+                    candidateValue: '+256700000000',
+                    status: 'MATCH',
+                    contribution: 45,
+                  ),
+                ],
+                candidatePatient: Patient(
+                  id: 'patient-existing',
+                  displayName: 'Jane Doe',
+                ),
+              ),
+            ],
+            request: AppPageRequest(pageSize: 8),
+            totalItemCount: 1,
+          ),
+        );
+      },
+      onSubmit: (Map<String, Object?> payload) async {
+        submitCount += 1;
+        return _registeredPatientResult(payload);
+      },
+    );
+
+    await _fillRegisterPatientBasics(tester);
+    await tester.tap(find.widgetWithText(AppButton, 'Register patient'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Phone:'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButton, 'Use existing patient'));
+    await tester.pumpAndSettle();
+
+    expect(result?.id, 'patient-existing');
+    expect(submitCount, 0);
+    expect(find.byType(RegisterNewPatientDialog), findsNothing);
+  });
+
   testWidgets('locks dismiss while submitting', (WidgetTester tester) async {
     final Completer<Result<Patient>> completer = Completer<Result<Patient>>();
 
-    await _pumpDialog(
-      tester,
-      onSubmit: (_) => completer.future,
-    );
+    await _pumpDialog(tester, onSubmit: (_) => completer.future);
 
     await _fillRegisterPatientBasics(tester, firstName: 'Amina', lastName: '');
     await tester.tap(find.widgetWithText(AppButton, 'Register patient'));
@@ -198,9 +252,9 @@ void main() {
     );
     expect(cancel.enabled, isFalse);
 
-    completer.complete(_registeredPatientResult(const <String, Object?>{
-      'first_name': 'Amina',
-    }));
+    completer.complete(
+      _registeredPatientResult(const <String, Object?>{'first_name': 'Amina'}),
+    );
     await tester.pumpAndSettle();
   });
 
@@ -256,17 +310,18 @@ Future<void> _pumpDialog(
                 label: 'Open register',
                 leadingIcon: AppActionIcons.personAdd,
                 onPressed: () async {
-                  final Patient? value = await showRegisterNewPatientDialog(
-                    context: context,
-                    referenceData: const PatientReferenceData(),
-                    registrationScope: registrationScope,
-                    onLookupDuplicates: onLookupDuplicates,
-                    onSubmit:
-                        onSubmit ??
-                        (Map<String, Object?> payload) async =>
-                            _registeredPatientResult(payload),
-                  );
-                  onResult?.call(value);
+                  final PatientRegistrationResult? value =
+                      await showRegisterNewPatientDialog(
+                        context: context,
+                        referenceData: const PatientReferenceData(),
+                        registrationScope: registrationScope,
+                        onLookupDuplicates: onLookupDuplicates,
+                        onSubmit:
+                            onSubmit ??
+                            (Map<String, Object?> payload) async =>
+                                _registeredPatientResult(payload),
+                      );
+                  onResult?.call(value?.patient);
                 },
               ),
             );

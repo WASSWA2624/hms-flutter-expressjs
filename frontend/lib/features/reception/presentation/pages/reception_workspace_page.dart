@@ -432,6 +432,9 @@ class _ReceptionWorkspaceContentState
     return AppAccessActionGate(
       requirement: receptionPatientWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
         return AppTabToolbarPrimary(
           label: l10n.receptionRegisterPatientAction,
           icon: Icons.person_add_alt_1_outlined,
@@ -466,6 +469,9 @@ class _ReceptionWorkspaceContentState
     final Widget scheduleAppointmentAction = AppAccessActionGate(
       requirement: receptionPatientWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
         return AppTabToolbarAction(
           label: l10n.receptionScheduleAppointmentAction,
           icon: Icons.calendar_month_outlined,
@@ -1372,31 +1378,35 @@ class _ReceptionWorkspaceContentState
       return;
     }
 
-    final Patient? created = await showRegisterNewPatientDialog(
-      context: context,
-      referenceData: loaded.referenceData,
-      registrationScope: PatientRegistrationScope.resolve(
-        referenceData: loaded.referenceData,
-        accessPolicy: ref.read(appAccessPolicyProvider),
-      ),
-      onLookupDuplicates: (PatientDuplicateQuery query) {
-        return ref
-            .read(patientRegistryControllerProvider.notifier)
-            .loadDuplicateCandidates(query);
-      },
-      onSubmit: (Map<String, Object?> payload) {
-        return ref
-            .read(patientRegistryControllerProvider.notifier)
-            .createPatient(payload);
-      },
-    );
+    final PatientRegistrationResult? registration =
+        await showRegisterNewPatientDialog(
+          context: context,
+          referenceData: loaded.referenceData,
+          registrationScope: PatientRegistrationScope.resolve(
+            referenceData: loaded.referenceData,
+            accessPolicy: ref.read(appAccessPolicyProvider),
+          ),
+          onLookupDuplicates: (PatientDuplicateQuery query) {
+            return ref
+                .read(patientRegistryControllerProvider.notifier)
+                .loadDuplicateCandidates(query);
+          },
+          onSubmit: (Map<String, Object?> payload) {
+            return ref
+                .read(patientRegistryControllerProvider.notifier)
+                .createPatient(payload);
+          },
+        );
 
-    if (created == null || !mounted) {
+    if (registration == null || !mounted) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(context.l10n.patientsSavedMessage)));
+    if (registration.wasCreated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.patientsSavedMessage)),
+      );
+    }
+    await openReceptionPatientEditor(context, ref, registration.patient.id);
   }
 
   Future<void> _openFlowActions(OpdFlowSummary flow) async {

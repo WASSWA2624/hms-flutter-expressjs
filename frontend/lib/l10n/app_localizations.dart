@@ -7678,6 +7678,18 @@ abstract class AppLocalizations {
   /// **'Save anyway'**
   String get patientsSaveAnywayAction;
 
+  /// Confirm creating a patient despite a duplicate warning.
+  ///
+  /// In en, this message translates to:
+  /// **'Register anyway'**
+  String get patientsRegisterAnywayAction;
+
+  /// Select a potential duplicate instead of creating a patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing patient'**
+  String get patientsUseExistingPatientAction;
+
   /// Snackbar shown after a patient registry change is saved.
   ///
   /// In en, this message translates to:

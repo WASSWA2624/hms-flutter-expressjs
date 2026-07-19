@@ -76,6 +76,7 @@ class _WalkInModeSelector extends StatelessWidget {
     required this.existingLabel,
     required this.appointmentLabel,
     required this.newPatientLabel,
+    required this.showNewPatient,
     required this.onChanged,
   });
 
@@ -84,6 +85,7 @@ class _WalkInModeSelector extends StatelessWidget {
   final String existingLabel;
   final String appointmentLabel;
   final String newPatientLabel;
+  final bool showNewPatient;
   final ValueChanged<_WalkInPatientMode> onChanged;
 
   @override
@@ -102,11 +104,12 @@ class _WalkInModeSelector extends StatelessWidget {
           label: _WalkInTabLabel(appointmentLabel),
           icon: const Icon(AppActionIcons.calendar),
         ),
-        ButtonSegment<_WalkInPatientMode>(
-          value: _WalkInPatientMode.newPatient,
-          label: _WalkInTabLabel(newPatientLabel),
-          icon: const Icon(AppActionIcons.personAdd),
-        ),
+        if (showNewPatient)
+          ButtonSegment<_WalkInPatientMode>(
+            value: _WalkInPatientMode.newPatient,
+            label: _WalkInTabLabel(newPatientLabel),
+            icon: const Icon(AppActionIcons.personAdd),
+          ),
       ],
       selected: <_WalkInPatientMode>{value},
       showSelectedIcon: false,
@@ -293,7 +296,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   /// Blocks dismiss/close and competing footer actions while initial option
   /// loads or a mutation is in flight.
   bool get _blocksDismiss =>
-      _isSaving || _isInitialLoading || _isResolvingActiveEncounter;
+      _isSaving ||
+      _isInitialLoading ||
+      _isResolvingActiveEncounter ||
+      (_newPatientFormKey.currentState?.isCheckingDuplicates ?? false);
 
   @override
   void initState() {
@@ -499,7 +505,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final bool hasActiveEncounter = _activeEncounter != null;
     final bool isNewPatientMode = _patientMode == _WalkInPatientMode.newPatient;
     final String primaryActionLabel = isNewPatientMode
-        ? l10n.opdCreatePatientAction
+        ? (_newPatientFormKey.currentState?.duplicateWarningAccepted == true
+              ? l10n.patientsRegisterAnywayAction
+              : l10n.opdCreatePatientAction)
         : hasActiveEncounter && !_forceNewEncounter
         ? l10n.opdOpenActiveEncounterAction
         : l10n.opdStartEncounterAction;
@@ -540,6 +548,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                   existingLabel: l10n.opdExistingPatientModeLabel,
                   appointmentLabel: l10n.opdAppointmentPatientModeLabel,
                   newPatientLabel: l10n.opdNewPatientModeLabel,
+                  showNewPatient: ref
+                      .watch(appAccessPolicyProvider)
+                      .grants(AppPermissions.patientWrite),
                   onChanged: _setPatientMode,
                 ),
                 _patientModeContent(l10n),
@@ -895,9 +906,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         ),
       OpdEncounterSummaryPair(
         label: l10n.opdNextStepColumnLabel,
-        value: nextStepLabel.isEmpty
-            ? l10n.profileUnknownValue
-            : nextStepLabel,
+        value: nextStepLabel.isEmpty ? l10n.profileUnknownValue : nextStepLabel,
       ),
       OpdEncounterSummaryPair(
         label: l10n.opdVisitTypeColumnLabel,
@@ -1130,6 +1139,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   }
 
   Future<void> _createPatientAndContinue() async {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
     final RegisterNewPatientFormState? formState =
         _newPatientFormKey.currentState;
     if (formState != null) {
@@ -1137,9 +1149,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       if (!canContinue) {
         return;
       }
-    }
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
     }
     setState(() {
       _isSaving = true;
@@ -1243,6 +1252,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
               .read(opdEncounterDialogControllerProvider)
               .listDuplicateCandidates(query);
         },
+        onDuplicateStateChanged: () => setState(() {}),
+        onUseExistingPatient: _continueWithExistingPatient,
       ),
     };
   }
@@ -1261,6 +1272,22 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     unawaited(
       _refreshEngineConsultationFee(patient?.publicId ?? patient?.id ?? value),
     );
+  }
+
+  void _continueWithExistingPatient(Patient patient) {
+    final String? patientKey = _firstNonEmptyText(<String?>[
+      patient.publicId,
+      patient.id,
+    ]);
+    setState(() {
+      _patientMode = _WalkInPatientMode.existing;
+      _patientId = patientKey;
+      _patientOptions = _mergePatients(<Patient>[..._patientOptions, patient]);
+      _lockArrivalMode = false;
+      _failure = null;
+    });
+    _selectExistingPatient(patientKey);
+    _loadBillingDefaults();
   }
 
   void _selectAppointmentPatient(String? value) {
@@ -1555,15 +1582,14 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             currency: _currency,
           ),
         ];
-    final List<ClinicalRequestBillingLineItem> resolved =
-        await ref
-            .read(opdEncounterDialogControllerProvider)
-            .resolveConsultationBillingLineItems(
-              catalogFallbackItems: fallbackItems,
-              payerContext: payerContext,
-              billingEntity: 'FACILITY',
-              currency: _currency,
-            );
+    final List<ClinicalRequestBillingLineItem> resolved = await ref
+        .read(opdEncounterDialogControllerProvider)
+        .resolveConsultationBillingLineItems(
+          catalogFallbackItems: fallbackItems,
+          payerContext: payerContext,
+          billingEntity: 'FACILITY',
+          currency: _currency,
+        );
     if (!mounted || resolved.isEmpty) {
       return;
     }
@@ -1981,12 +2007,10 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
       _failure = null;
       _validationMessage = null;
     });
-    final AppFailure? failure = await widget.onConfirm(
-      <String, Object?>{
-        'reason_code': _reasonCode,
-        'reason_notes': notes.isEmpty ? null : notes,
-      },
-    );
+    final AppFailure? failure = await widget.onConfirm(<String, Object?>{
+      'reason_code': _reasonCode,
+      'reason_notes': notes.isEmpty ? null : notes,
+    });
     if (!mounted) {
       return;
     }

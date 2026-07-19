@@ -10,7 +10,8 @@ const {
   createPatientSchema,
   updatePatientSchema,
   patientIdParamsSchema,
-  listPatientsQuerySchema
+  listPatientsQuerySchema,
+  patientDuplicateListQuerySchema
 } = require('@validations/patient/patient.schema');
 
 describe('Patient Schemas', () => {
@@ -243,6 +244,41 @@ describe('Patient Schemas', () => {
       const data = { appointment_status: 'INVALID' };
       const result = listPatientsQuerySchema.safeParse(data);
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('patientDuplicateListQuerySchema', () => {
+    it('accepts all normalized registration comparison fields', () => {
+      const result = patientDuplicateListQuerySchema.safeParse({
+        tenant_id: 'TEN0001',
+        facility_id: 'FAC0001',
+        first_name: ' Jane ',
+        last_name: ' Doe ',
+        date_of_birth: '1990-01-01',
+        gender: 'FEMALE',
+        phone: '+256 700 000 001',
+        email: 'jane@example.com',
+        identifier_type: 'NATIONAL_ID',
+        identifier_value: 'CM9001'
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toEqual(
+          expect.objectContaining({
+            first_name: 'Jane',
+            gender: 'FEMALE',
+            email: 'jane@example.com',
+            identifier_type: 'NATIONAL_ID'
+          })
+        );
+      }
+    });
+
+    it('rejects an unsupported gender', () => {
+      expect(
+        patientDuplicateListQuerySchema.safeParse({ gender: 'INVALID' }).success
+      ).toBe(false);
     });
   });
 });

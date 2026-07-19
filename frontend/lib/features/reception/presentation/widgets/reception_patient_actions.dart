@@ -249,6 +249,12 @@ class _ReceptionScheduleAppointmentDialogState
                     .read(patientRegistryControllerProvider.notifier)
                     .loadDuplicateCandidates(query),
                 onDuplicateStateChanged: () => setState(() {}),
+                onUseExistingPatient: (Patient patient) {
+                  setState(() {
+                    _patient = patient;
+                    _isRegistering = false;
+                  });
+                },
               ),
             ],
           ),
@@ -268,7 +274,7 @@ class _ReceptionScheduleAppointmentDialogState
       if (_mode == _SchedulePatientMode.newPatient)
         AppButton.primary(
           label: _registrationKey.currentState?.duplicateWarningAccepted == true
-              ? l10n.patientsSaveAnywayAction
+              ? l10n.patientsRegisterAnywayAction
               : l10n.patientsRegisterNewPatientAction,
           leadingIcon: AppActionIcons.personAdd,
           isLoading: _isRegistering,

@@ -3975,6 +3975,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsSaveAnywayAction => 'Save anyway';
 
   @override
+  String get patientsRegisterAnywayAction => 'Register anyway';
+
+  @override
+  String get patientsUseExistingPatientAction => 'Use existing patient';
+
+  @override
   String get patientsSavedMessage => 'Patient registry changes saved.';
 
   @override

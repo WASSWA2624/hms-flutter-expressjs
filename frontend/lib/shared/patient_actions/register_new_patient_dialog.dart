@@ -10,6 +10,7 @@ import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_f
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_gender_field.dart';
@@ -33,6 +34,21 @@ typedef RegisterNewPatientDuplicateLookup =
       PatientDuplicateQuery query,
     );
 
+enum PatientRegistrationOutcome { created, existing }
+
+@immutable
+final class PatientRegistrationResult {
+  const PatientRegistrationResult({
+    required this.patient,
+    required this.outcome,
+  });
+
+  final Patient patient;
+  final PatientRegistrationOutcome outcome;
+
+  bool get wasCreated => outcome == PatientRegistrationOutcome.created;
+}
+
 /// Embeddable create-only patient registration fields shared by the registry
 /// dialog and OPD intake.
 class RegisterNewPatientForm extends StatefulWidget {
@@ -41,6 +57,7 @@ class RegisterNewPatientForm extends StatefulWidget {
     this.registrationScope = const PatientRegistrationScope(),
     this.onLookupDuplicates,
     this.onDuplicateStateChanged,
+    this.onUseExistingPatient,
     this.enabled = true,
     this.includeNotes = true,
     this.includeActiveToggle = true,
@@ -52,6 +69,7 @@ class RegisterNewPatientForm extends StatefulWidget {
   final PatientRegistrationScope registrationScope;
   final RegisterNewPatientDuplicateLookup? onLookupDuplicates;
   final VoidCallback? onDuplicateStateChanged;
+  final ValueChanged<Patient>? onUseExistingPatient;
   final bool enabled;
   final bool includeNotes;
   final bool includeActiveToggle;
@@ -237,7 +255,10 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     return AppFormSection(
       children: <Widget>[
         if (_duplicateCandidates.isNotEmpty)
-          PatientDuplicateWarningPanel(duplicates: _duplicateCandidates),
+          PatientDuplicateWarningPanel(
+            duplicates: _duplicateCandidates,
+            onUseExistingPatient: widget.onUseExistingPatient,
+          ),
         AppResponsiveFieldRow.two(
           gap: AppResponsiveFieldRowGap.form,
           left: AppTextField(
@@ -400,10 +421,15 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
     final Result<AppPage<PatientDuplicateCandidate>> result =
         await widget.onLookupDuplicates!(
           PatientDuplicateQuery(
+            tenantId: _resolvedTenantId() ?? '',
+            facilityId: _resolvedFacilityId() ?? '',
             firstName: _firstNameController.text.trim(),
             lastName: _lastNameController.text.trim(),
             dateOfBirth: _dateOfBirth,
+            gender: _gender ?? '',
             phone: _phoneController.text.trim(),
+            email: _emailController.text.trim(),
+            identifierType: _identifierTypeController.text.trim(),
             identifierValue: _identifierValueController.text.trim(),
           ),
         );
@@ -463,14 +489,14 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
 }
 
 /// Opens [RegisterNewPatientDialog] with mutating-dialog dismiss rules.
-Future<Patient?> showRegisterNewPatientDialog({
+Future<PatientRegistrationResult?> showRegisterNewPatientDialog({
   required BuildContext context,
   required PatientReferenceData referenceData,
   required RegisterNewPatientSubmit onSubmit,
   PatientRegistrationScope registrationScope = const PatientRegistrationScope(),
   RegisterNewPatientDuplicateLookup? onLookupDuplicates,
 }) {
-  return showAppDialog<Patient>(
+  return showAppDialog<PatientRegistrationResult>(
     context: context,
     barrierDismissible: false,
     builder: (_) => RegisterNewPatientDialog(
@@ -541,6 +567,14 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
               registrationScope: widget.registrationScope,
               onLookupDuplicates: widget.onLookupDuplicates,
               onDuplicateStateChanged: () => setState(() {}),
+              onUseExistingPatient: (Patient patient) {
+                Navigator.of(context).pop(
+                  PatientRegistrationResult(
+                    patient: patient,
+                    outcome: PatientRegistrationOutcome.existing,
+                  ),
+                );
+              },
               enabled: !_isSaving,
             ),
           ],
@@ -565,7 +599,7 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
       return l10n.patientsRegisterNewPatientAction;
     }
     return formState.duplicateWarningAccepted
-        ? l10n.patientsSaveAnywayAction
+        ? l10n.patientsRegisterAnywayAction
         : l10n.patientsRegisterNewPatientAction;
   }
 
@@ -607,7 +641,12 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
     }
     return result.when(
       success: (Patient patient) {
-        Navigator.of(context).pop(patient);
+        Navigator.of(context).pop(
+          PatientRegistrationResult(
+            patient: patient,
+            outcome: PatientRegistrationOutcome.created,
+          ),
+        );
       },
       failure: (AppFailure failure) {
         formState.setFailure(failure);
@@ -618,9 +657,14 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
 }
 
 class PatientDuplicateWarningPanel extends StatelessWidget {
-  const PatientDuplicateWarningPanel({required this.duplicates, super.key});
+  const PatientDuplicateWarningPanel({
+    required this.duplicates,
+    this.onUseExistingPatient,
+    super.key,
+  });
 
   final List<PatientDuplicateCandidate> duplicates;
+  final ValueChanged<Patient>? onUseExistingPatient;
 
   @override
   Widget build(BuildContext context) {
@@ -634,16 +678,23 @@ class PatientDuplicateWarningPanel extends StatelessWidget {
       icon: AppActionIcons.copy,
       children: <Widget>[
         for (final PatientDuplicateCandidate duplicate in visible)
-          _DuplicateCandidateLine(duplicate: duplicate),
+          _DuplicateCandidateLine(
+            duplicate: duplicate,
+            onUseExistingPatient: onUseExistingPatient,
+          ),
       ],
     );
   }
 }
 
 class _DuplicateCandidateLine extends StatelessWidget {
-  const _DuplicateCandidateLine({required this.duplicate});
+  const _DuplicateCandidateLine({
+    required this.duplicate,
+    this.onUseExistingPatient,
+  });
 
   final PatientDuplicateCandidate duplicate;
+  final ValueChanged<Patient>? onUseExistingPatient;
 
   @override
   Widget build(BuildContext context) {
@@ -653,24 +704,60 @@ class _DuplicateCandidateLine extends StatelessWidget {
         duplicate.primaryPatient;
     final ThemeData theme = Theme.of(context);
 
+    if (patient == null) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: EdgeInsets.only(top: theme.spacing.xs),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            context.l10n.patientsDuplicateScoreLabel(duplicate.confidenceScore),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                context.l10n.patientsDuplicateScoreLabel(
+                  duplicate.confidenceScore,
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Text(
+                  _joinDisplay(<String?>[
+                    patient.effectiveDisplayName,
+                    patient.effectiveIdentifier,
+                    AppDisplay.apiLabel(duplicate.classification),
+                  ]),
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Text(
-              _joinDisplay(<String?>[
-                patient?.effectiveDisplayName,
-                patient?.effectiveIdentifier,
-                duplicate.matchReasons.map(AppDisplay.apiLabel).join(', '),
-              ]),
+          if (duplicate.fieldComparisons.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            for (final PatientDuplicateFieldComparison comparison
+                in duplicate.fieldComparisons)
+              Text(
+                '${AppDisplay.apiLabel(comparison.field)}: '
+                '${comparison.inputValue} ↔ ${comparison.candidateValue} '
+                '(${AppDisplay.apiLabel(comparison.status)})',
+                style: theme.textTheme.bodySmall,
+              ),
+          ] else if (duplicate.matchReasons.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              duplicate.matchReasons.map(AppDisplay.apiLabel).join(', '),
+              style: theme.textTheme.bodySmall,
             ),
-          ),
+          ],
+          if (onUseExistingPatient != null) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            AppButton.secondary(
+              label: context.l10n.patientsUseExistingPatientAction,
+              leadingIcon: AppActionIcons.person,
+              onPressed: () => onUseExistingPatient!(patient),
+            ),
+          ],
         ],
       ),
     );

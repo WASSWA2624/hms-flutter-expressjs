@@ -5142,6 +5142,14 @@
   "@patientsSaveAnywayAction": {
     "description": "Save patient despite duplicate warning action label."
   },
+  "patientsRegisterAnywayAction": "Register anyway",
+  "@patientsRegisterAnywayAction": {
+    "description": "Confirm creating a patient despite a duplicate warning."
+  },
+  "patientsUseExistingPatientAction": "Use existing patient",
+  "@patientsUseExistingPatientAction": {
+    "description": "Select a potential duplicate instead of creating a patient."
+  },
   "patientsSavedMessage": "Patient registry changes saved.",
   "@patientsSavedMessage": {
     "description": "Snackbar shown after a patient registry change is saved."

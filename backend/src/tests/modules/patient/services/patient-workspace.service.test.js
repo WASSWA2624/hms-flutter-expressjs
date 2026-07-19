@@ -354,4 +354,133 @@ describe('patient-workspace service', () => {
       }),
     );
   });
+
+  it('returns scoped, explainable duplicate scores capped at 100', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      createPatientRecord({
+        id: 'patient-duplicate',
+        first_name: 'Jane',
+        last_name: 'Doe',
+        date_of_birth: '1990-01-01',
+        gender: 'FEMALE',
+        contacts: [
+          {
+            contact_type: 'PHONE',
+            value: '+256 700 000 001',
+            is_primary: true,
+          },
+          {
+            contact_type: 'EMAIL',
+            value: 'jane@example.com',
+            is_primary: false,
+          },
+        ],
+        identifiers: [
+          {
+            identifier_type: 'NATIONAL_ID',
+            identifier_value: 'CM9001',
+            is_primary: true,
+          },
+        ],
+      }),
+    ]);
+
+    const result = await subject.listDuplicateCandidates(
+      {
+        first_name: 'Jane',
+        last_name: 'Doe',
+        date_of_birth: '1990-01-01',
+        gender: 'female',
+        phone: '+256700000001',
+        email: ' JANE@example.com ',
+        identifier_type: 'NATIONAL_ID',
+        identifier_value: 'cm9001',
+      },
+      { tenant_id: 'TEN0001', facility_id: 'FAC0001' },
+      1,
+      8
+    );
+
+    expect(prisma.patient.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tenant_id: 'TEN0001',
+          facility_id: 'FAC0001',
+          deleted_at: null,
+          is_active: true,
+        }),
+      })
+    );
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        confidence_score: 100,
+        classification: 'STRONG',
+        score_version: 'patient-v2',
+        match_reasons: expect.arrayContaining([
+          'IDENTIFIER_MATCH',
+          'PHONE_MATCH',
+          'EMAIL_MATCH',
+          'NAME_MATCH',
+          'DOB_MATCH',
+          'GENDER_MATCH',
+        ]),
+        field_comparisons: expect.arrayContaining([
+          expect.objectContaining({
+            field: 'IDENTIFIER',
+            status: 'MATCH',
+            contribution: 100,
+          }),
+          expect.objectContaining({
+            field: 'EMAIL',
+            status: 'MATCH',
+            contribution: 45,
+          }),
+        ]),
+      })
+    );
+  });
+
+  it('reports conflicting fields and fuzzy name similarity', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      createPatientRecord({
+        id: 'patient-possible',
+        first_name: 'Jon',
+        last_name: 'Smyth',
+        date_of_birth: '1990-06-01',
+        gender: 'MALE',
+        contacts: [
+          {
+            contact_type: 'PHONE',
+            value: '+256700000999',
+            is_primary: true,
+          },
+        ],
+      }),
+    ]);
+
+    const result = await subject.listDuplicateCandidates(
+      {
+        first_name: 'John',
+        last_name: 'Smith',
+        date_of_birth: '1990-01-01',
+        gender: 'FEMALE',
+        phone: '+256700000999',
+      },
+      { tenant_id: 'TEN0001' },
+      1,
+      8
+    );
+
+    expect(result.items[0].confidence_score).toBeLessThanOrEqual(100);
+    expect(result.items[0].match_reasons).toEqual(
+      expect.arrayContaining(['PHONE_MATCH', 'NAME_SIMILAR', 'AGE_MATCH'])
+    );
+    expect(result.items[0].field_comparisons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'NAME', status: 'SIMILAR' }),
+        expect.objectContaining({ field: 'GENDER', status: 'CONFLICT' }),
+      ])
+    );
+  });
 });

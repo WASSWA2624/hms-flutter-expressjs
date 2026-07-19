@@ -225,8 +225,11 @@ const patientDuplicateListQuerySchema = listQuerySchema.extend({
   first_name: normalizeOptionalTextQuery(120),
   last_name: normalizeOptionalTextQuery(120),
   date_of_birth: dateQuerySchema,
+  gender: z.enum(GENDER_VALUES).optional(),
   phone: normalizeOptionalTextQuery(40),
+  email: normalizeOptionalTextQuery(255),
   contact: normalizeOptionalTextQuery(255),
+  identifier_type: normalizeOptionalTextQuery(60),
   identifier_value: normalizeOptionalTextQuery(120),
 });
 

@@ -27,7 +27,9 @@ const hasGlobalScopeAccess = (user = {}) => {
 const WORKSPACE_PAGE_LIMIT = 25;
 const DUPLICATE_PATIENT_SCAN_LIMIT = 250;
 const DUPLICATE_MIN_SCORE = 45;
-const DUPLICATE_REVIEW_SCORE = 55;
+const DUPLICATE_REVIEW_SCORE = 60;
+const DUPLICATE_STRONG_SCORE = 80;
+const DUPLICATE_SCORE_VERSION = 'patient-v2';
 const PHI_ACCESS_WINDOW_MS = 15 * 60 * 1000;
 const MAX_DOCUMENT_FILES = 5;
 const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
@@ -68,13 +70,48 @@ const APPOINTMENT_STATUS_OPTIONS = Object.freeze([
 const normalizeText = (value) => String(value || '').trim();
 const normalizeLower = (value) => normalizeText(value).toLowerCase();
 const normalizeUpper = (value) => normalizeText(value).toUpperCase();
-const normalizePhone = (value) => normalizeText(value).replace(/[^\d+]/g, '');
+const normalizePhone = (value) => normalizeText(value).replace(/\D/g, '');
+const normalizeComparableText = (value) =>
+  normalizeLower(value)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+const normalizeEmail = (value) => normalizeLower(value).replace(/\s+/g, '');
+const normalizeName = (value) =>
+  normalizeComparableText(value).split(' ').filter(Boolean).sort().join(' ');
 const normalizeDateOnly = (value) => {
   const normalized = normalizeText(value);
   if (!normalized) return '';
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return '';
   return parsed.toISOString().slice(0, 10);
+};
+const levenshteinDistance = (left, right) => {
+  if (!left) return right.length;
+  if (!right) return left.length;
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] +
+          (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1)
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+  return previous[right.length];
+};
+const textSimilarity = (left, right) => {
+  const normalizedLeft = normalizeComparableText(left);
+  const normalizedRight = normalizeComparableText(right);
+  const longest = Math.max(normalizedLeft.length, normalizedRight.length);
+  if (!longest) return 0;
+  return 1 - levenshteinDistance(normalizedLeft, normalizedRight) / longest;
 };
 const toInteger = (value, fallback) => {
   const parsed = Number(value);
@@ -256,6 +293,18 @@ const resolvePrimaryContact = (patient) => {
 
 const serializePatientSummary = (patient) => {
   const primaryContact = resolvePrimaryContact(patient);
+  const contacts = Array.isArray(patient?.contacts) ? patient.contacts : [];
+  const identifiers = Array.isArray(patient?.identifiers) ? patient.identifiers : [];
+  const primaryPhone =
+    contacts.find(
+      (entry) => entry?.is_primary && normalizeUpper(entry?.contact_type) === 'PHONE'
+    ) || contacts.find((entry) => normalizeUpper(entry?.contact_type) === 'PHONE');
+  const primaryEmail =
+    contacts.find(
+      (entry) => entry?.is_primary && normalizeUpper(entry?.contact_type) === 'EMAIL'
+    ) || contacts.find((entry) => normalizeUpper(entry?.contact_type) === 'EMAIL');
+  const primaryIdentifier =
+    identifiers.find((entry) => entry?.is_primary) || identifiers[0] || null;
   const extension = readExtensionJson(patient);
 
   return {
@@ -268,6 +317,10 @@ const serializePatientSummary = (patient) => {
     gender: patient?.gender || null,
     is_active: patient?.is_active !== false,
     contact_value: normalizeText(primaryContact?.value) || null,
+    primary_phone: normalizeText(primaryPhone?.value) || null,
+    primary_email: normalizeText(primaryEmail?.value) || null,
+    primary_identifier_type: normalizeText(primaryIdentifier?.identifier_type) || null,
+    primary_identifier_value: normalizeText(primaryIdentifier?.identifier_value) || null,
     tenant: patient?.tenant
       ? {
           human_friendly_id: resolvePublicIdentifier(
@@ -538,67 +591,151 @@ const getDismissedPairSet = (patient) => {
   return new Set(values.map((value) => normalizeText(value)).filter(Boolean));
 };
 
+const duplicateContactValues = (patient, type, normalizer) =>
+  (patient?.contacts || [])
+    .filter((entry) => normalizeUpper(entry?.contact_type) === type)
+    .map((entry) => normalizer(entry?.value))
+    .filter(Boolean);
+
+const duplicateIdentifierValues = (patient) =>
+  (patient?.identifiers || [])
+    .map((entry) => normalizeComparableText(entry?.identifier_value))
+    .filter(Boolean);
+
+const ageAt = (dateOnly, now = new Date()) => {
+  if (!dateOnly) return null;
+  const birthDate = new Date(`${dateOnly}T00:00:00.000Z`);
+  if (Number.isNaN(birthDate.getTime())) return null;
+  let age = now.getUTCFullYear() - birthDate.getUTCFullYear();
+  const month = now.getUTCMonth() - birthDate.getUTCMonth();
+  if (month < 0 || (month === 0 && now.getUTCDate() < birthDate.getUTCDate())) {
+    age -= 1;
+  }
+  return age >= 0 ? age : null;
+};
+
 const computeDuplicateScore = (target, candidate) => {
-  let score = 0;
+  let rawScore = 0;
   const reasons = [];
+  const fieldComparisons = [];
+
+  const compareExactSet = ({
+    field,
+    targetValues,
+    candidateValues,
+    weight,
+    reason,
+  }) => {
+    if (!targetValues.length || !candidateValues.length) return;
+    const matchedValue = targetValues.find((value) => candidateValues.includes(value));
+    const matched = Boolean(matchedValue);
+    if (matched) {
+      rawScore += weight;
+      reasons.push(reason);
+    }
+    fieldComparisons.push({
+      field,
+      input_value: matchedValue || targetValues[0],
+      candidate_value: matchedValue || candidateValues[0],
+      status: matched ? 'MATCH' : 'CONFLICT',
+      contribution: matched ? weight : 0,
+    });
+  };
+
+  compareExactSet({
+    field: 'IDENTIFIER',
+    targetValues: duplicateIdentifierValues(target),
+    candidateValues: duplicateIdentifierValues(candidate),
+    weight: 100,
+    reason: 'IDENTIFIER_MATCH',
+  });
+  compareExactSet({
+    field: 'PHONE',
+    targetValues: duplicateContactValues(target, 'PHONE', normalizePhone),
+    candidateValues: duplicateContactValues(candidate, 'PHONE', normalizePhone),
+    weight: 45,
+    reason: 'PHONE_MATCH',
+  });
+  compareExactSet({
+    field: 'EMAIL',
+    targetValues: duplicateContactValues(target, 'EMAIL', normalizeEmail),
+    candidateValues: duplicateContactValues(candidate, 'EMAIL', normalizeEmail),
+    weight: 45,
+    reason: 'EMAIL_MATCH',
+  });
+
+  const targetName = `${normalizeText(target?.first_name)} ${normalizeText(target?.last_name)}`.trim();
+  const candidateName = `${normalizeText(candidate?.first_name)} ${normalizeText(candidate?.last_name)}`.trim();
+  if (targetName && candidateName) {
+    const similarity = textSimilarity(
+      normalizeName(targetName),
+      normalizeName(candidateName)
+    );
+    const contribution = similarity >= 0.7 ? Math.round(30 * similarity) : 0;
+    if (contribution > 0) {
+      rawScore += contribution;
+      reasons.push(similarity === 1 ? 'NAME_MATCH' : 'NAME_SIMILAR');
+    }
+    fieldComparisons.push({
+      field: 'NAME',
+      input_value: targetName,
+      candidate_value: candidateName,
+      status: similarity === 1 ? 'MATCH' : similarity >= 0.7 ? 'SIMILAR' : 'CONFLICT',
+      similarity_percent: Math.round(similarity * 100),
+      contribution,
+    });
+  }
 
   const targetDob = normalizeDateOnly(target?.date_of_birth);
   const candidateDob = normalizeDateOnly(candidate?.date_of_birth);
-  const targetName = `${normalizeLower(target?.first_name)} ${normalizeLower(target?.last_name)}`.trim();
-  const candidateName = `${normalizeLower(candidate?.first_name)} ${normalizeLower(candidate?.last_name)}`.trim();
-
-  const targetIdentifierValues = new Set(
-    (target?.identifiers || [])
-      .map((entry) => normalizeLower(entry?.identifier_value))
-      .filter(Boolean)
-  );
-  const candidateIdentifierValues = new Set(
-    (candidate?.identifiers || [])
-      .map((entry) => normalizeLower(entry?.identifier_value))
-      .filter(Boolean)
-  );
-  for (const value of targetIdentifierValues) {
-    if (!candidateIdentifierValues.has(value)) continue;
-    score += 100;
-    reasons.push({ code: 'IDENTIFIER_MATCH', label: value, weight: 100 });
+  if (targetDob && candidateDob) {
+    const exactDob = targetDob === candidateDob;
+    const sameAge = !exactDob && ageAt(targetDob) === ageAt(candidateDob);
+    const contribution = exactDob ? 20 : sameAge ? 8 : 0;
+    if (contribution > 0) {
+      rawScore += contribution;
+      reasons.push(exactDob ? 'DOB_MATCH' : 'AGE_MATCH');
+    }
+    fieldComparisons.push({
+      field: 'DATE_OF_BIRTH',
+      input_value: targetDob,
+      candidate_value: candidateDob,
+      status: exactDob ? 'MATCH' : sameAge ? 'SIMILAR' : 'CONFLICT',
+      contribution,
+    });
   }
 
-  const targetPhones = new Set(
-    (target?.contacts || [])
-      .map((entry) => normalizePhone(entry?.value))
-      .filter(Boolean)
-  );
-  const candidatePhones = new Set(
-    (candidate?.contacts || [])
-      .map((entry) => normalizePhone(entry?.value))
-      .filter(Boolean)
-  );
-  for (const value of targetPhones) {
-    if (!candidatePhones.has(value)) continue;
-    score += 35;
-    reasons.push({ code: 'PHONE_MATCH', label: value, weight: 35 });
+  const targetGender = normalizeUpper(target?.gender);
+  const candidateGender = normalizeUpper(candidate?.gender);
+  if (targetGender && candidateGender) {
+    const matched = targetGender === candidateGender;
+    if (matched) {
+      rawScore += 5;
+      reasons.push('GENDER_MATCH');
+    }
+    fieldComparisons.push({
+      field: 'GENDER',
+      input_value: targetGender,
+      candidate_value: candidateGender,
+      status: matched ? 'MATCH' : 'CONFLICT',
+      contribution: matched ? 5 : 0,
+    });
   }
 
-  if (targetName && candidateName && targetName === candidateName) {
-    score += 30;
-    reasons.push({ code: 'NAME_MATCH', label: targetName, weight: 30 });
-  }
-
-  if (targetDob && candidateDob && targetDob === candidateDob) {
-    score += 25;
-    reasons.push({ code: 'DOB_MATCH', label: targetDob, weight: 25 });
-  }
-
-  if (normalizeUpper(target?.gender) && normalizeUpper(target?.gender) === normalizeUpper(candidate?.gender)) {
-    score += 10;
-    reasons.push({ code: 'GENDER_MATCH', label: normalizeUpper(target?.gender), weight: 10 });
-  }
-
+  const score = Math.min(100, rawScore);
   return {
     score,
     reasons,
+    fieldComparisons,
+    scoreVersion: DUPLICATE_SCORE_VERSION,
     classification:
-      score >= 100 ? 'STRONG' : score >= DUPLICATE_REVIEW_SCORE ? 'MEDIUM' : score >= DUPLICATE_MIN_SCORE ? 'REVIEW' : 'LOW',
+      score >= DUPLICATE_STRONG_SCORE
+        ? 'STRONG'
+        : score >= DUPLICATE_REVIEW_SCORE
+          ? 'POSSIBLE'
+          : score >= DUPLICATE_MIN_SCORE
+            ? 'REVIEW'
+            : 'LOW',
   };
 };
 
@@ -609,6 +746,8 @@ const buildDuplicateCandidateEntry = (target, candidate, duplicateState) => {
     confidence_score: duplicateState.score,
     classification: duplicateState.classification,
     match_reasons: duplicateState.reasons,
+    field_comparisons: duplicateState.fieldComparisons,
+    score_version: duplicateState.scoreVersion,
     primary_patient: serializePatientSummary(target),
     secondary_patient: serializePatientSummary(candidate),
   };
@@ -1714,15 +1853,28 @@ const listDuplicateCandidates = async (filters = {}, scope = {}, page = 1, limit
   const lastName = normalizeText(filters?.last_name);
   const dateOfBirth = normalizeText(filters?.date_of_birth);
   const phone = normalizeText(filters?.phone || filters?.contact);
+  const email = normalizeText(filters?.email);
+  const gender = normalizeText(filters?.gender);
+  const identifierType = normalizeText(filters?.identifier_type);
   const identifierValue = normalizeText(filters?.identifier_value);
-  if (firstName || lastName || dateOfBirth || phone || identifierValue) {
+  if (firstName || lastName || dateOfBirth || phone || email || gender || identifierValue) {
     const syntheticPatient = {
       id: 'synthetic-patient',
       first_name: firstName,
       last_name: lastName,
       date_of_birth: dateOfBirth || null,
-      contacts: phone ? [{ value: phone, is_primary: true }] : [],
-      identifiers: identifierValue ? [{ identifier_value: identifierValue, is_primary: true }] : [],
+      gender: gender || null,
+      contacts: [
+        ...(phone ? [{ contact_type: 'PHONE', value: phone, is_primary: true }] : []),
+        ...(email ? [{ contact_type: 'EMAIL', value: email, is_primary: !phone }] : []),
+      ],
+      identifiers: identifierValue
+        ? [{
+            identifier_type: identifierType || null,
+            identifier_value: identifierValue,
+            is_primary: true,
+          }]
+        : [],
       extension_json: {},
     };
     const { where } = await resolveScopeWhere(scope);
@@ -1749,6 +1901,8 @@ const listDuplicateCandidates = async (filters = {}, scope = {}, page = 1, limit
         confidence_score: duplicateState.score,
         classification: duplicateState.classification,
         match_reasons: duplicateState.reasons,
+        field_comparisons: duplicateState.fieldComparisons,
+        score_version: duplicateState.scoreVersion,
         candidate_patient: serializePatientSummary(candidate),
       }));
 

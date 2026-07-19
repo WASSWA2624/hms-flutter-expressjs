@@ -355,7 +355,22 @@ final class PatientDuplicateCandidateDto {
       reviewId: _string(json['review_id']) ?? '',
       confidenceScore: _int(json['confidence_score']),
       classification: _string(json['classification']) ?? '',
-      matchReasons: _stringList(json['match_reasons']),
+      matchReasons: _duplicateReasonList(json['match_reasons']),
+      fieldComparisons: _list(json['field_comparisons'])
+          .map(
+            (PatientJsonMap value) => PatientDuplicateFieldComparison(
+              field: _string(value['field']) ?? '',
+              inputValue: _string(value['input_value']) ?? '',
+              candidateValue: _string(value['candidate_value']) ?? '',
+              status: _string(value['status']) ?? '',
+              contribution: _int(value['contribution']),
+              similarityPercent: value['similarity_percent'] == null
+                  ? null
+                  : _int(value['similarity_percent']),
+            ),
+          )
+          .toList(growable: false),
+      scoreVersion: _string(json['score_version']),
       primaryPatient: _patientOrNull(json['primary_patient']),
       secondaryPatient: _patientOrNull(json['secondary_patient']),
       candidatePatient: _patientOrNull(json['candidate_patient']),
@@ -625,6 +640,22 @@ List<String> _stringList(Object? value) {
 
   return value
       .map(_string)
+      .whereType<String>()
+      .where((String entry) => entry.isNotEmpty)
+      .toList(growable: false);
+}
+
+List<String> _duplicateReasonList(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+  return value
+      .map((Object? entry) {
+        if (entry is PatientJsonMap) {
+          return _string(entry['code']);
+        }
+        return _string(entry);
+      })
       .whereType<String>()
       .where((String entry) => entry.isNotEmpty)
       .toList(growable: false);
