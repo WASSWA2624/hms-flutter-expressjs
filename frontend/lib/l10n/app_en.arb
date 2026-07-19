@@ -3402,9 +3402,9 @@
   "@receptionRegisterPatientAction": {
     "description": "Primary action to register a patient from reception."
   },
-  "receptionOpenRegistryAction": "Full registry",
+  "receptionOpenRegistryAction": "Patient registry",
   "@receptionOpenRegistryAction": {
-    "description": "Secondary action to open the full patient registry."
+    "description": "Secondary Reception action to open the patient registry."
   },
   "receptionOpenOpdAction": "Full OPD",
   "@receptionOpenOpdAction": {

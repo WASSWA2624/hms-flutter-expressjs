@@ -51,11 +51,9 @@ const AccessRequirement receptionPaymentGateRequirement = AccessRequirement(
   activeModules: <String>['billing-payments'],
 );
 
-/// Full patient registry navigation must mirror its route authorization.
-const AccessRequirement receptionPatientRegistryRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.patientRead],
-  activeModules: <String>['patient-registry'],
-);
+/// Patient registry navigation uses the route's authoritative access policy.
+final AccessRequirement receptionPatientRegistryRequirement =
+    AppRoutes.patients.accessRequirement;
 
 /// Full OPD navigation must mirror the readable OPD route domains.
 const AccessRequirement receptionOpdWorkspaceRequirement = AccessRequirement(

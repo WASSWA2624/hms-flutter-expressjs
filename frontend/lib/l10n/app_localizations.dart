@@ -5056,10 +5056,10 @@ abstract class AppLocalizations {
   /// **'Register patient'**
   String get receptionRegisterPatientAction;
 
-  /// Secondary action to open the full patient registry.
+  /// Secondary Reception action to open the patient registry.
   ///
   /// In en, this message translates to:
-  /// **'Full registry'**
+  /// **'Patient registry'**
   String get receptionOpenRegistryAction;
 
   /// Secondary action to open the full OPD workspace.

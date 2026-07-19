@@ -239,6 +239,7 @@ final OpdFlowSummary _closedTodayFlow = OpdFlowSummary(
 AppAccessPolicy _policy({
   Set<AppPermission>? permissions,
   bool billing = true,
+  bool patientRegistry = true,
 }) {
   return AppAccessPolicy.fromSession(
     AuthSession(
@@ -253,10 +254,11 @@ AppAccessPolicy _policy({
             AppPermissions.billingRead,
           },
       moduleEntitlements: <AppModuleEntitlement>[
-        const AppModuleEntitlement(
-          code: 'patient-registry',
-          licenseStatus: 'ACTIVE',
-        ),
+        if (patientRegistry)
+          const AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
         const AppModuleEntitlement(
           code: 'scheduling-queue',
           licenseStatus: 'ACTIVE',
@@ -469,7 +471,10 @@ void main() {
     expect(find.text('Schedule appointment'), findsOneWidget);
     expect(find.text('Register patient'), findsOneWidget);
     expect(find.text('Refresh'), findsOneWidget);
-    expect(find.text('Full registry'), findsOneWidget);
+    expect(find.text('Patient registry'), findsOneWidget);
+    expect(find.text('Full registry'), findsNothing);
+    expect(find.byTooltip('Patient registry'), findsOneWidget);
+    expect(find.bySemanticsLabel('Patient registry'), findsWidgets);
     expect(find.text('Full OPD'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(
@@ -479,6 +484,24 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('patient registry shortcut navigates directly without mutation', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = await _pumpWorkspace(
+      tester,
+      repository: repository,
+    );
+
+    await tester.tap(
+      find.widgetWithText(AppTabToolbarAction, 'Patient registry'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.path, '/patients');
+    expect(find.text('Patient registry'), findsOneWidget);
+    verifyNever(() => repository.createAppointment(any()));
   });
 
   testWidgets(
@@ -502,7 +525,7 @@ void main() {
         expect(find.text('Register patient'), findsOneWidget);
         expect(find.text('Schedule appointment'), findsOneWidget);
         expect(find.text('Refresh'), findsOneWidget);
-        expect(find.text('Full registry'), findsOneWidget);
+        expect(find.text('Patient registry'), findsOneWidget);
         expect(find.text('Full OPD'), findsOneWidget);
         expect(find.text('Billing'), findsNothing);
         expect(find.text('Open billing'), findsNothing);
@@ -516,7 +539,7 @@ void main() {
         for (final String label in <String>[
           'Schedule appointment',
           'Refresh',
-          'Full registry',
+          'Patient registry',
           'Full OPD',
         ]) {
           final AppTabToolbarAction action = tester.widget<AppTabToolbarAction>(
@@ -525,6 +548,14 @@ void main() {
           expect(action.enabled, isTrue, reason: '$label on $tab');
           expect(action.onPressed, isNotNull, reason: '$label on $tab');
         }
+        expect(
+          tester
+              .widgetList<AppTabToolbarAction>(find.byType(AppTabToolbarAction))
+              .last
+              .label,
+          'Refresh',
+          reason: 'Refresh must be the rightmost secondary action on $tab',
+        );
       }
     },
   );
@@ -555,6 +586,44 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('patient registry shortcut is absent without route access', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      policy: _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
+      initialLocation: '/reception?section=payment-gate',
+    );
+
+    expect(find.text('Payment gate'), findsWidgets);
+    expect(find.text('Patient registry'), findsNothing);
+    expect(find.text('Full registry'), findsNothing);
+    expect(find.byIcon(Icons.badge_outlined), findsNothing);
+  });
+
+  testWidgets(
+    'patient registry shortcut is absent when its module is inactive',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(
+        tester,
+        repository: repository,
+        policy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.patientRead,
+            AppPermissions.billingRead,
+          },
+          patientRegistry: false,
+        ),
+        initialLocation: '/reception?section=payment-gate',
+      );
+
+      expect(find.text('Payment gate'), findsWidgets);
+      expect(find.text('Patient registry'), findsNothing);
+      expect(find.byIcon(Icons.badge_outlined), findsNothing);
+    },
+  );
 
   for (final (String name, Size size) in <(String, Size)>[
     ('desktop', const Size(1440, 900)),
@@ -611,6 +680,7 @@ void main() {
     expect(find.textContaining('Payment gate'), findsNothing);
     expect(find.text('Register patient'), findsNothing);
     expect(find.text('Schedule appointment'), findsNothing);
+    expect(find.text('Patient registry'), findsNothing);
     expect(find.text('Full registry'), findsNothing);
     expect(find.text('Full OPD'), findsNothing);
     expect(find.text('Refresh'), findsNothing);
@@ -1039,10 +1109,12 @@ void main() {
     await tester.pump();
 
     expect(find.text('Ada Appointment'), findsOneWidget);
-    final Finder tableFinder = find.byWidgetPredicate(
-      (Widget widget) => widget is AppListTable,
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) => widget is AppListTable && widget.isLoading,
+      ),
+      findsNothing,
     );
-    expect((tester.widget(tableFinder) as dynamic).isLoading, isFalse);
     expect(
       tester.widget<AppSearchBar>(find.byType(AppSearchBar)).isLoading,
       isFalse,
@@ -1225,10 +1297,12 @@ void main() {
     );
     await tester.pump();
 
-    final dynamic table = tester.widget(
-      find.byWidgetPredicate((Widget widget) => widget is AppListTable),
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) => widget is AppListTable && widget.isLoading,
+      ),
+      findsNothing,
     );
-    expect(table.isLoading, isFalse);
     final AppTabToolbarPrimary registerAction = tester
         .widgetList<AppTabToolbarPrimary>(find.byType(AppTabToolbarPrimary))
         .singleWhere(

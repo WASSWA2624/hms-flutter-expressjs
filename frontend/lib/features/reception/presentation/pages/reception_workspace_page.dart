@@ -462,7 +462,6 @@ class _ReceptionWorkspaceContentState
 
     return <Widget>[
       scheduleAppointmentAction,
-      refreshAction,
       AppAccessActionGate(
         requirement: receptionPatientRegistryRequirement,
         builder: (BuildContext context, bool isAllowed) {
@@ -487,6 +486,7 @@ class _ReceptionWorkspaceContentState
           );
         },
       ),
+      refreshAction,
     ];
   }
 

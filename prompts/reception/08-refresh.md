@@ -11,7 +11,7 @@ Refresh currently leaks loading state into toolbar actions, search, and the tabl
 1. On **Refresh**, reload Appointments, Desk queue, Active visits, and Payment gate, including database changes absent from local state.
 2. Recalculate every Reception tab badge from the refreshed section data, even when that tab is not selected.
 3. Keep current rows visible during requests, then replace rows and badges with successful results; never clear or rebuild the surrounding page.
-4. Keep refresh loading state out of **Register patient**, **Schedule appointment**, navigation actions, tabs, search, filters, settings, and table overlays. Deduplicate concurrent refresh requests.
+4. Keep refresh loading state out of **Register patient**, **Schedule appointment**, navigation actions, tabs, search, filters, settings, and table overlays. Deduplicate concurrent refresh requests. Place **Refresh** rightmost among the secondary toolbar actions on every tab.
 5. Preserve the selected tab, query, filters, sorting, column settings, scroll position, authorization, and responsive layout.
 6. If one section fails, retain its data, apply successful results, and show concise localized feedback without replacing the table.
 
@@ -23,7 +23,7 @@ Refresh currently leaks loading state into toolbar actions, search, and the tabl
 
 ## Acceptance Criteria
 
-- R1–R4: One click silently refreshes all section rows and badges; toolbar, search, and table overlays remain stable.
+- R1–R4: One click silently refreshes all section rows and badges; toolbar, search, and table overlays remain stable, with **Refresh** rendered last in the secondary toolbar.
 - R5–R6: View state survives refresh, and partial failure preserves usable data.
 - Add widget/controller tests for synchronization, duplicate clicks, stable controls, state retention, authorization, partial failure, themes, and viewports; run Flutter analysis.
 
