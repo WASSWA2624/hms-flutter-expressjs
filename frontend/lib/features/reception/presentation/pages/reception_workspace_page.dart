@@ -205,13 +205,13 @@ class _ReceptionWorkspaceContentState
         _section == ReceptionDeskSection.paymentGate &&
         (widget.paymentGateState?.isLoading == true ||
             (paymentGate?.isRefreshing ?? false));
-    final bool isRefreshing =
-        _refreshRequested ||
-        state.isRefreshingAppointments ||
-        state.isRefreshingQueue ||
-        state.isRefreshingFlows ||
-        state.isSaving ||
-        paymentGateLoading;
+    final bool sectionRefreshing = switch (_section) {
+      ReceptionDeskSection.appointments => state.isRefreshingAppointments,
+      ReceptionDeskSection.queue => state.isRefreshingQueue,
+      ReceptionDeskSection.activeVisits => state.isRefreshingFlows,
+      ReceptionDeskSection.paymentGate => paymentGateLoading,
+    };
+    final bool isRefreshing = _refreshRequested || sectionRefreshing;
     final List<ReceptionDeskSection> visibleSections = _visibleSections();
     if (visibleSections.isEmpty) {
       return AppStateView(
@@ -1267,13 +1267,6 @@ class _ReceptionWorkspaceContentState
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .refresh();
-    if (!mounted) {
-      return;
-    }
-    _showFailureIfNeeded(context, failure);
   }
 
   Future<void> _openRowDetail(_ReceptionDeskRow row) async {
@@ -1294,7 +1287,6 @@ class _ReceptionWorkspaceContentState
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-        await _refreshWorkspace();
       }
       return;
     }
@@ -1312,7 +1304,6 @@ class _ReceptionWorkspaceContentState
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-          await _refreshWorkspace();
         }
         return;
       }
@@ -1324,7 +1315,6 @@ class _ReceptionWorkspaceContentState
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-        await _refreshWorkspace();
       }
       return;
     }
@@ -1418,7 +1408,6 @@ class _ReceptionWorkspaceContentState
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      await _refreshWorkspace();
     }
   }
 

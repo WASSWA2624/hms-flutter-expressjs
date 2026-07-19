@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
+import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
@@ -12,6 +14,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 
@@ -68,7 +71,10 @@ class _PatientAppointmentQuickDialogState
   String? _providerId;
   String _status = 'SCHEDULED';
   bool _isLoadingProviders = false;
+  bool _isCheckingEncounter = false;
   bool _isSaving = false;
+  bool _encounterCheckFailed = false;
+  OpdFlowSummary? _openEncounter;
   AppFailure? _failure;
 
   @override
@@ -92,7 +98,10 @@ class _PatientAppointmentQuickDialogState
     super.dispose();
   }
 
-  bool get _isBusy => _isSaving || _isLoadingProviders;
+  bool get _isBusy => _isSaving || _isLoadingProviders || _isCheckingEncounter;
+
+  bool get _schedulingBlocked =>
+      _openEncounter != null || _encounterCheckFailed;
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +129,13 @@ class _PatientAppointmentQuickDialogState
         messageBuilder: (AppFailure failure) => failure.displayMessage(l10n),
       ),
       children: <Widget>[
+        if (_openEncounter != null)
+          AppFormInformationBanner(
+            title: l10n.patientsAppointmentActiveEncounterTitle,
+            message: l10n.patientsAppointmentActiveEncounterBody,
+            variant: AppFormInformationVariant.warning,
+            icon: AppActionIcons.warning,
+          ),
         if (widget.referenceData.facilities.length > 1)
           PatientFacilitySelectField(
             facilities: widget.referenceData.facilities,
@@ -207,7 +223,7 @@ class _PatientAppointmentQuickDialogState
       context,
       l10n.patientsQuickAppointmentAction,
       _isSaving,
-      _isBusy ? null : _submit,
+      _isBusy || _schedulingBlocked ? null : _submit,
       onCancel: _cancel,
       submitLeadingIcon: AppActionIcons.calendar,
     );
@@ -253,14 +269,24 @@ class _PatientAppointmentQuickDialogState
   Future<void> _loadFormOptions() async {
     setState(() => _isLoadingProviders = true);
     widget.onBusyChanged?.call(true);
-    final AppFailure? failure = await ref
+    final AppFailure? optionsFailure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .ensureAppointmentFormOptionsLoaded();
+    final Result<OpdFlowSummary?> encounterResult =
+        await _lookupOpenEncounter();
     if (!mounted) {
       return;
     }
+    AppFailure? encounterFailure;
+    OpdFlowSummary? openEncounter;
+    encounterResult.when(
+      success: (OpdFlowSummary? value) => openEncounter = value,
+      failure: (AppFailure failure) => encounterFailure = failure,
+    );
     setState(() {
-      _failure = failure;
+      _failure = optionsFailure ?? encounterFailure;
+      _openEncounter = openEncounter;
+      _encounterCheckFailed = encounterFailure != null;
       _isLoadingProviders = false;
     });
     widget.onBusyChanged?.call(false);
@@ -281,10 +307,36 @@ class _PatientAppointmentQuickDialogState
     final int duration = int.parse(_durationController.text.trim());
 
     setState(() {
-      _isSaving = true;
+      _isCheckingEncounter = true;
       _failure = null;
+      _encounterCheckFailed = false;
     });
     widget.onBusyChanged?.call(true);
+    final Result<OpdFlowSummary?> encounterResult =
+        await _lookupOpenEncounter();
+    if (!mounted) {
+      return;
+    }
+    AppFailure? encounterFailure;
+    OpdFlowSummary? openEncounter;
+    encounterResult.when(
+      success: (OpdFlowSummary? value) => openEncounter = value,
+      failure: (AppFailure failure) => encounterFailure = failure,
+    );
+    if (encounterFailure != null || openEncounter != null) {
+      setState(() {
+        _isCheckingEncounter = false;
+        _encounterCheckFailed = encounterFailure != null;
+        _openEncounter = openEncounter;
+        _failure = encounterFailure;
+      });
+      widget.onBusyChanged?.call(false);
+      return;
+    }
+    setState(() {
+      _isCheckingEncounter = false;
+      _isSaving = true;
+    });
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .createAppointment(<String, Object?>{
@@ -316,6 +368,79 @@ class _PatientAppointmentQuickDialogState
       _failure = failure;
     });
     widget.onBusyChanged?.call(false);
+  }
+
+  Future<Result<OpdFlowSummary?>> _lookupOpenEncounter() async {
+    final Set<String> patientKeys = <String>{
+      for (final String? value in <String?>[
+        widget.patient.id,
+        widget.patient.publicId,
+        widget.patient.effectiveIdentifier,
+      ])
+        if (value != null && value.trim().isNotEmpty)
+          value.trim().toUpperCase(),
+    };
+    final OpdWorkspaceState? workspace = ref
+        .read(opdWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (OpdWorkspaceState value) => value,
+          failure: (_) => null,
+        );
+    final Iterable<OpdFlowSummary> localFlows = <OpdFlowSummary>[
+      ...?workspace?.flows.items,
+      ...?workspace?.triageQueue.items,
+    ];
+    final OpdFlowSummary? localMatch = _matchingOpenEncounter(
+      localFlows,
+      patientKeys,
+    );
+    if (localMatch != null) {
+      return Result<OpdFlowSummary?>.success(localMatch);
+    }
+
+    final String search = widget.patient.publicId?.trim().isNotEmpty == true
+        ? widget.patient.publicId!.trim()
+        : widget.patient.id.trim();
+    final Result<AppPage<OpdFlowSummary>> result = await ref
+        .read(opdRepositoryProvider)
+        .listOpdFlows(
+          OpdFlowQuery(
+            search: search,
+            pageRequest: const AppPageRequest(pageSize: 25),
+          ),
+        );
+    return result.when(
+      success: (AppPage<OpdFlowSummary> page) =>
+          Result<OpdFlowSummary?>.success(
+            _matchingOpenEncounter(page.items, patientKeys),
+          ),
+      failure: (AppFailure failure) => Result<OpdFlowSummary?>.failure(failure),
+    );
+  }
+
+  OpdFlowSummary? _matchingOpenEncounter(
+    Iterable<OpdFlowSummary> flows,
+    Set<String> patientKeys,
+  ) {
+    for (final OpdFlowSummary flow in flows) {
+      if (flow.isTerminal || isOpdTerminalStatus(flow.status ?? flow.stage)) {
+        continue;
+      }
+      final Set<String> flowKeys = <String>{
+        for (final String? value in <String?>[
+          flow.patientId,
+          flow.patientIdentifier,
+        ])
+          if (value != null && value.trim().isNotEmpty)
+            value.trim().toUpperCase(),
+      };
+      if (flowKeys.any(patientKeys.contains)) {
+        return flow;
+      }
+    }
+    return null;
   }
 
   DateTime? _combineDateAndTime(DateTime? date, AppTimeValue? time) {

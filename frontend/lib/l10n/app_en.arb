@@ -5934,6 +5934,14 @@
   "@patientsAppointmentDialogTitle": {
     "description": "Patient quick appointment dialog title."
   },
+  "patientsAppointmentActiveEncounterTitle": "Appointment unavailable",
+  "@patientsAppointmentActiveEncounterTitle": {
+    "description": "Warning title when a patient already has an open OPD encounter."
+  },
+  "patientsAppointmentActiveEncounterBody": "This patient is already in an active OPD encounter. Complete or cancel the encounter before scheduling another appointment.",
+  "@patientsAppointmentActiveEncounterBody": {
+    "description": "Guidance shown when appointment scheduling is blocked by an open encounter."
+  },
   "patientsAppointmentDateLabel": "Appointment date",
   "@patientsAppointmentDateLabel": {
     "description": "Patient appointment date field label."

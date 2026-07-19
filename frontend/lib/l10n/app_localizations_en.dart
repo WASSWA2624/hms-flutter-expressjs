@@ -4675,6 +4675,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsAppointmentDialogTitle => 'Schedule appointment';
 
   @override
+  String get patientsAppointmentActiveEncounterTitle =>
+      'Appointment unavailable';
+
+  @override
+  String get patientsAppointmentActiveEncounterBody =>
+      'This patient is already in an active OPD encounter. Complete or cancel the encounter before scheduling another appointment.';
+
+  @override
   String get patientsAppointmentDateLabel => 'Appointment date';
 
   @override

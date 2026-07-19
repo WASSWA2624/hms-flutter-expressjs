@@ -8938,6 +8938,18 @@ abstract class AppLocalizations {
   /// **'Schedule appointment'**
   String get patientsAppointmentDialogTitle;
 
+  /// Warning title when a patient already has an open OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment unavailable'**
+  String get patientsAppointmentActiveEncounterTitle;
+
+  /// Guidance shown when appointment scheduling is blocked by an open encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'This patient is already in an active OPD encounter. Complete or cancel the encounter before scheduling another appointment.'**
+  String get patientsAppointmentActiveEncounterBody;
+
   /// Patient appointment date field label.
   ///
   /// In en, this message translates to:

@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/billing/domain/repositories/billing_reposito
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/pages/reception_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -441,6 +442,7 @@ void main() {
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(const BillingWorkspaceQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   setUp(() {
@@ -1006,5 +1008,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('Refresh'), findsOneWidget);
     expect(appointmentCalls, 2);
+  });
+
+  testWidgets('background mutation does not reload the whole worklist', (
+    WidgetTester tester,
+  ) async {
+    final Completer<Result<OpdAppointment>> completer =
+        Completer<Result<OpdAppointment>>();
+    when(
+      () => repository.createAppointment(any()),
+    ).thenAnswer((_) => completer.future);
+    await _pumpWorkspace(tester, repository: repository);
+
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(ReceptionWorkspacePage)),
+    );
+    unawaited(
+      container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .createAppointment(<String, Object?>{}),
+    );
+    await tester.pump();
+
+    final dynamic table = tester.widget(find.byType(AppListTable));
+    expect(table.isLoading, isFalse);
+    final AppTabToolbarPrimary registerAction = tester
+        .widgetList<AppTabToolbarPrimary>(find.byType(AppTabToolbarPrimary))
+        .singleWhere(
+          (AppTabToolbarPrimary action) => action.label == 'Register patient',
+        );
+    expect(registerAction.isLoading, isFalse);
+
+    completer.complete(const Result<OpdAppointment>.success(_newAppointment));
+    await tester.pumpAndSettle();
   });
 }

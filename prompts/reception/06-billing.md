@@ -1,0 +1,1 @@
+Now review the entire Reception screen and all nested components or items within it and make sure that there is no button, there is no bearing button. That navigates to billing. Reception is Is separate, should be separated completely from the billing screen, so there shouldn't be anything that actually routes us to billing

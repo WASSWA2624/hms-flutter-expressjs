@@ -14,7 +14,6 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/patient_appointment_quick_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -49,7 +48,10 @@ void main() {
     expect(dialog.closeEnabled, isTrue);
     expect(dialog.pinActionsToBottom, isTrue);
     expect(find.text('SCHEDULE APPOINTMENT'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Schedule appointment'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Schedule appointment'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
     expect(find.text('Ada Lovelace'), findsNothing);
     expect(find.byType(AppDateField), findsOneWidget);
@@ -85,7 +87,7 @@ void main() {
     final _MockOpdRepository repository = _MockOpdRepository();
     _stubWorkspaceLoad(repository);
     when(() => repository.createAppointment(any())).thenAnswer(
-      (_) async => Result<OpdAppointment>.failure(AppFailure.network()),
+      (_) async => const Result<OpdAppointment>.failure(AppFailure.network()),
     );
     bool? result;
 
@@ -161,6 +163,36 @@ void main() {
     expect(state.appointments.items.single.publicId, 'APT000099');
   });
 
+  testWidgets('blocks scheduling while the patient has an open encounter', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(
+      repository,
+      flows: const <OpdFlowSummary>[
+        OpdFlowSummary(
+          id: 'flow-1',
+          patientId: 'PAT000001',
+          status: 'IN_PROGRESS',
+          stage: 'WITH_DOCTOR',
+        ),
+      ],
+    );
+
+    await _pumpDialog(tester, patient: patient, repository: repository);
+
+    expect(find.text('Appointment unavailable'), findsOneWidget);
+    expect(
+      find.textContaining('already in an active OPD encounter'),
+      findsOneWidget,
+    );
+    final AppButton submit = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Schedule appointment'),
+    );
+    expect(submit.enabled, isFalse);
+    verifyNever(() => repository.createAppointment(any()));
+  });
+
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {
@@ -182,7 +214,10 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('SCHEDULE APPOINTMENT'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Schedule appointment'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Schedule appointment'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
   });
 }
@@ -250,7 +285,10 @@ Future<void> _pumpDialog(
   await tester.pumpAndSettle();
 }
 
-void _stubWorkspaceLoad(_MockOpdRepository repository) {
+void _stubWorkspaceLoad(
+  _MockOpdRepository repository, {
+  List<OpdFlowSummary> flows = const <OpdFlowSummary>[],
+}) {
   when(() => repository.listAppointments(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdAppointment>>.success(
       AppPage<OpdAppointment>(
@@ -262,31 +300,33 @@ void _stubWorkspaceLoad(_MockOpdRepository repository) {
     ),
   );
   when(() => repository.listVisitQueues(any())).thenAnswer(
-    (Invocation invocation) async => const Result<AppPage<OpdQueueEntry>>.success(
-      AppPage<OpdQueueEntry>(
-        items: <OpdQueueEntry>[],
-        request: AppPageRequest(pageSize: 12),
-        totalItemCount: 0,
-      ),
-    ),
+    (Invocation invocation) async =>
+        const Result<AppPage<OpdQueueEntry>>.success(
+          AppPage<OpdQueueEntry>(
+            items: <OpdQueueEntry>[],
+            request: AppPageRequest(pageSize: 12),
+            totalItemCount: 0,
+          ),
+        ),
   );
   when(() => repository.listOpdFlows(any())).thenAnswer(
-    (Invocation invocation) async => const Result<AppPage<OpdFlowSummary>>.success(
+    (Invocation invocation) async => Result<AppPage<OpdFlowSummary>>.success(
       AppPage<OpdFlowSummary>(
-        items: <OpdFlowSummary>[],
-        request: AppPageRequest(),
-        totalItemCount: 0,
+        items: flows,
+        request: const AppPageRequest(),
+        totalItemCount: flows.length,
       ),
     ),
   );
   when(() => repository.listTriageQueue(any())).thenAnswer(
-    (Invocation invocation) async => const Result<AppPage<OpdFlowSummary>>.success(
-      AppPage<OpdFlowSummary>(
-        items: <OpdFlowSummary>[],
-        request: AppPageRequest(pageSize: 12),
-        totalItemCount: 0,
-      ),
-    ),
+    (Invocation invocation) async =>
+        const Result<AppPage<OpdFlowSummary>>.success(
+          AppPage<OpdFlowSummary>(
+            items: <OpdFlowSummary>[],
+            request: AppPageRequest(pageSize: 12),
+            totalItemCount: 0,
+          ),
+        ),
   );
   when(() => repository.getOpdSummaryCounts()).thenAnswer(
     (_) async =>
@@ -302,8 +342,9 @@ void _stubWorkspaceLoad(_MockOpdRepository repository) {
     ),
   );
   when(() => repository.listProviderSchedules()).thenAnswer(
-    (_) async =>
-        const Result<List<OpdProviderSchedule>>.success(<OpdProviderSchedule>[]),
+    (_) async => const Result<List<OpdProviderSchedule>>.success(
+      <OpdProviderSchedule>[],
+    ),
   );
   when(() => repository.listProviders()).thenAnswer(
     (_) async =>
