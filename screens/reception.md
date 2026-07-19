@@ -17,10 +17,9 @@ Visibility may depend on the selected tab, workflow stage, record state, role, p
 | Desk queue | Page tab strip | Shows the Desk queue section and updates the URL. |
 | Active visits | Page tab strip | Shows the Active visits section and updates the URL. |
 | Payment gate | Page tab strip | Shows the Payment gate section and updates the URL. |
-| Schedule appointment | Appointments primary toolbar; patient appointment dialog footer | Opens `_ReceptionPatientPickerDialog`, then `PatientAppointmentQuickDialog`; in the final dialog, creates the appointment. |
-| Register patient | Appointments secondary toolbar; Desk queue and Active visits primary toolbar; registration dialog footer | Opens `RegisterNewPatientDialog`; in its footer, runs duplicate detection and creates the patient. |
-| Billing | Payment gate primary toolbar | Navigates to `/billing`. |
-| Refresh | Secondary toolbar on every tab | Reloads the OPD workspace; shows a loading state while running. |
+| Schedule appointment | Secondary toolbar on every authorized tab; patient appointment dialog footer | Opens `_ReceptionPatientPickerDialog`, then `PatientAppointmentQuickDialog`; in the final dialog, creates the appointment. |
+| Register patient | Primary toolbar on every authorized tab; registration dialog footer | Opens `RegisterNewPatientDialog`; in its footer, runs duplicate detection and creates the patient. After create, opens the patient detail editor with Billing navigation suppressed. |
+| Refresh | Secondary toolbar on every tab | Reloads the OPD workspace and Payment gate data; shows a loading state while running. |
 | Full registry | Appointments secondary toolbar | Navigates to `/patients`. |
 | Full OPD | Desk queue, Active visits, and Payment gate secondary toolbars | Navigates to `/opd`. |
 | Try again | Workspace load-error state | Retries loading the OPD workspace. |
@@ -31,7 +30,7 @@ Visibility may depend on the selected tab, workflow stage, record state, role, p
 | Apply columns | Column-settings modal footer | Saves the selected visible columns. |
 | Reset columns | Column-settings modal footer | Restores the default visible columns. |
 | Sort column | Sortable table headers | Sorts the table by the selected column. |
-| Row / card tap | Appointment, queue, Active visits, and Payment gate rows/cards | Opens `ReceptionAppointmentActionsDialog`; `ReceptionQueueActionsDialog` when no linked appointment is found; or `FlowActionsDialog` for active/payment flows. |
+| Row / card tap | Appointment, queue, Active visits, and Payment gate rows/cards | Opens `ReceptionAppointmentActionsDialog`; `ReceptionQueueActionsDialog` when no linked appointment is found; `FlowActionsDialog` for Active visits (billing actions suppressed); or read-only Payment gate detail. Never navigates to `/billing`. |
 
 ## Appointment, queue, and workflow actions
 
@@ -44,15 +43,14 @@ Visibility may depend on the selected tab, workflow stage, record state, role, p
 | Prioritize | Queue-actions grid; prioritize dialog footer | Opens `AppTextActionDialog`; in that dialog, submits the optional priority reason. |
 | Move | Queue-actions grid; move dialog footer | Opens `_MoveQueueDialog`; in that dialog, changes queue status/provider. |
 | Start consultation | Queue next-action column/mobile action; queue-actions grid; confirmation footer | For a queue row with an ID, the workflow control is disabled because `START_CONSULTATION` has no registry definition. The blank-ID fallback opens the row hub. From the grid it opens `AppConfirmActionDialog`, whose footer starts the consultation. |
-| Pay consultation / Edit consultation billing / Manage consultation billing | Active visits and Payment gate next-action; `FlowActionsDialog`; consultation-payment footer | The compact workflow action routes to `/billing?...&action=pay` when no dialog opener resolves. The flow hub opens `ConsultationPaymentDialog`; its footer creates or updates consultation billing. |
-| Record vitals / Edit vitals | Active visits and Payment gate next-action; `FlowActionsDialog`; vitals dialog footer | Compact action routes to Nursing. The flow hub opens `RecordVitalsDialog`; its footer saves vitals and any inline routing selection. |
-| Assign doctor / Change doctor | Active visits and Payment gate next-action; denied-action fallback; `FlowActionsDialog`; assignment dialog footer | Opens `AssignDoctorDialog`; its footer saves the selected provider. |
-| Doctor review | Active visits and Payment gate next-action; `FlowActionsDialog`; clinical free-text dialog footer | Compact action routes to Clinical. The flow hub opens `ClinicalFreeTextActionDialog`; its footer submits the required clinical note. |
-| Collect sample / diagnostic handoff | Active visits and Payment gate next-action; `FlowActionsDialog` dynamic handoff | Routes to Laboratory or the module appropriate for the current diagnostic stage. |
-| Perform imaging | Active visits and Payment gate next-action; `FlowActionsDialog` dynamic handoff | Routes to Radiology. |
-| Dispense medicine | Active visits and Payment gate next-action; `FlowActionsDialog` dynamic handoff | Routes to Pharmacy. |
-| Disposition / Complete disposition | Active visits and Payment gate next-action; `FlowActionsDialog` | Compact action routes to Clinical disposition; the flow hub opens `OpdDispositionDialog`. |
-| Unsupported action code | Active visits and Payment gate next-action | Displays a generated title-cased label but remains disabled. |
+| Record vitals / Edit vitals | Active visits next-action label; `FlowActionsDialog`; vitals dialog footer | Reception next-action labels are read-only text. From Active visits the flow hub opens `RecordVitalsDialog`; its footer saves vitals and any inline routing selection. |
+| Assign doctor / Change doctor | Active visits next-action label; `FlowActionsDialog`; assignment dialog footer | Opens `AssignDoctorDialog`; its footer saves the selected provider. |
+| Doctor review | Active visits next-action label; `FlowActionsDialog`; clinical free-text dialog footer | The flow hub opens `ClinicalFreeTextActionDialog`; its footer submits the required clinical note. |
+| Collect sample / diagnostic handoff | Active visits next-action label; `FlowActionsDialog` dynamic handoff | Routes to Laboratory or the module appropriate for the current diagnostic stage. |
+| Perform imaging | Active visits next-action label; `FlowActionsDialog` dynamic handoff | Routes to Radiology. |
+| Dispense medicine | Active visits next-action label; `FlowActionsDialog` dynamic handoff | Routes to Pharmacy. |
+| Disposition / Complete disposition | Active visits next-action label; `FlowActionsDialog` | The flow hub opens `OpdDispositionDialog`. |
+| Unsupported action code | Active visits next-action label | Displays a generated title-cased label but remains disabled. |
 | Add diagnosis | `FlowActionsDialog`; diagnosis dialog footer | Opens `ClinicalDiagnosisActionDialog`; its footer submits selected diagnoses. |
 | Request lab | `FlowActionsDialog`; lab-order dialog footer | Opens `ClinicalLabOrderActionDialog`; its footer submits the staged lab requests. |
 | Request radiology | `FlowActionsDialog`; radiology-order dialog footer | Opens `ClinicalRadiologyOrderActionDialog`; its footer submits the staged studies. |
@@ -122,14 +120,15 @@ This section lists modal relationships without repeating their action labels:
 - `RegisterNewPatientDialog`
 - `ReceptionAppointmentActionsDialog` → `OpdRescheduleAppointmentDialog`, `OpdCancelAppointmentDialog`, or `OpdEncounterDialog` → start-new confirmation
 - `ReceptionQueueActionsDialog` → prioritize text dialog, `_MoveQueueDialog`, or consultation confirmation
-- `FlowActionsDialog` → consultation payment, vitals, doctor assignment, clinical free text, diagnosis, lab order, radiology order, prescription, procedure, referral, follow-up, disposition, stage correction, or print-summary dialog
+- `FlowActionsDialog` (Active visits only; consultation billing actions omitted) → vitals, doctor assignment, clinical free text, diagnosis, lab order, radiology order, prescription, procedure, referral, follow-up, disposition, stage correction, or print-summary dialog
+- Payment gate row → read-only outstanding-charge detail (no Billing navigation)
 - Lab order → lab catalog, request-billing dialog, or remove-items confirmation
 - Radiology order → radiology catalog, request-billing dialog, or remove-items confirmation
 - Prescription → prescription-line or request-billing dialog
 - Procedure → procedure catalog
 - Disposition → inpatient-admission or physiotherapy handoff
 
-`RoutingDecisionDialog` is not included: routing in `RecordVitalsDialog` is inline, and the separate route-decision action is not present in the flow action order reachable from `/reception`.
+`RoutingDecisionDialog` is not included: routing in `RecordVitalsDialog` is inline, and the separate route-decision action is not present in the flow action order reachable from `/reception`. Consultation payment and Billing workbench controls are intentionally absent from `/reception`; authorized Billing entry points remain available from other workspaces.
 
 ## Reception helpers not reachable from `/reception`
 
@@ -137,9 +136,7 @@ These reception-feature helpers have no call site from the page or its reachable
 
 | Helper | Would open or do |
 | --- | --- |
-| `openReceptionPatientEditor` | `showPatientDetailDialog` |
 | `openReceptionInsuranceCapture` | Claims enrollment dialog |
-| `ReceptionBillingGuidancePanel` | “Open billing workbench” would navigate to Billing |
 
 ## Main implementation sources
 

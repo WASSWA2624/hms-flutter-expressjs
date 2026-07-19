@@ -81,6 +81,7 @@ void main() {
                       lookupCount += 1;
                       expect(query.firstName, 'Jane');
                       expect(query.lastName, 'Doe');
+                      expect(query.gender, 'FEMALE');
                       return const Result<
                         AppPage<PatientDuplicateCandidate>
                       >.success(
@@ -126,9 +127,9 @@ void main() {
       expect(lookupCount, 1);
       expect(submitCount, 0);
       expect(find.text('Potential duplicate found'), findsOneWidget);
-      expect(find.text('Save anyway'), findsOneWidget);
+      expect(find.text('Register anyway'), findsOneWidget);
 
-      await tester.tap(find.text('Save anyway'));
+      await tester.tap(find.text('Register anyway'));
       await tester.pumpAndSettle();
 
       expect(submitCount, 1);
@@ -198,14 +199,14 @@ void main() {
 
       expect(lookupCount, 1);
       expect(find.text('Potential duplicate found'), findsOneWidget);
-      expect(find.text('Save anyway'), findsOneWidget);
+      expect(find.text('Register anyway'), findsOneWidget);
 
       await tester.enterText(find.byType(EditableText).at(0), 'Janet');
       await tester.pumpAndSettle();
 
       expect(find.text('Potential duplicate found'), findsNothing);
       expect(find.text('Register patient'), findsOneWidget);
-      expect(find.text('Save anyway'), findsNothing);
+      expect(find.text('Register anyway'), findsNothing);
 
       await tester.tap(find.text('Register patient'));
       await tester.pumpAndSettle();

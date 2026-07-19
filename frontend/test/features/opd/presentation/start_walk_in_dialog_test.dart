@@ -7,6 +7,9 @@ import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -34,6 +37,18 @@ class _MockOpdRepository extends Mock implements OpdRepository {}
 class _MockClinicalRepository extends Mock implements ClinicalRepository {}
 
 class _MockApiClient extends Mock implements ApiClient {}
+
+AppAccessPolicy _patientWritePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      permissions: <AppPermission>{
+        AppPermissions.patientRead,
+        AppPermissions.patientWrite,
+      },
+    ),
+  );
+}
 
 void main() {
   setUpAll(() {
@@ -131,6 +146,7 @@ void main() {
         overrides: [
           patientRepositoryProvider.overrideWithValue(patientRepository),
           opdRepositoryProvider.overrideWithValue(opdRepository),
+          appAccessPolicyProvider.overrideWithValue(_patientWritePolicy()),
         ],
         child: MaterialApp(
           theme: AppTheme.light,
@@ -346,6 +362,32 @@ void main() {
       expect(find.text('Search patient *'), findsOneWidget);
     },
   );
+
+  testWidgets('OpdEncounterDialog omits new patient mode without permission', (
+    WidgetTester tester,
+  ) async {
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+    _stubStartDialogLookups(
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+    );
+
+    await _pumpStartDialog(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      canRegisterPatient: false,
+      dialog: OpdEncounterDialog(
+        providerSchedules: const <OpdProviderSchedule>[],
+        appointments: const <OpdAppointment>[],
+        onSubmit: (_) async => _successfulOpdSubmit(),
+      ),
+    );
+
+    expect(find.text('Existing patient'), findsOneWidget);
+    expect(find.text('New patient'), findsNothing);
+  });
 
   testWidgets(
     'OpdEncounterDialog uses shared loading UI and locks dismissal while loading',
@@ -1220,6 +1262,7 @@ Future<void> _pumpStartDialog(
   required _MockOpdRepository opdRepository,
   required OpdEncounterDialog dialog,
   Size size = const Size(800, 720),
+  bool canRegisterPatient = true,
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1228,6 +1271,11 @@ Future<void> _pumpStartDialog(
       overrides: [
         patientRepositoryProvider.overrideWithValue(patientRepository),
         opdRepositoryProvider.overrideWithValue(opdRepository),
+        appAccessPolicyProvider.overrideWithValue(
+          canRegisterPatient
+              ? _patientWritePolicy()
+              : AppAccessPolicy.fromSession(null),
+        ),
       ],
       child: MaterialApp(
         theme: AppTheme.light,

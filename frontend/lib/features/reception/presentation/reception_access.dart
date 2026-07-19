@@ -80,14 +80,6 @@ AccessRequirement receptionDeskSectionRequirement(
   };
 }
 
-/// Read-only billing guidance (estimates, outstanding, payment methods).
-const AccessRequirement receptionBillingGuidanceRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.patientRead,
-    AppPermissions.billingRead,
-  ],
-);
-
 /// Front-desk insurance enrollment capture (not claims finalize).
 const AccessRequirement receptionInsuranceCaptureRequirement =
     AccessRequirement(

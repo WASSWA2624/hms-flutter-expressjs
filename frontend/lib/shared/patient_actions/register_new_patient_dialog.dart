@@ -495,8 +495,9 @@ Future<PatientRegistrationResult?> showRegisterNewPatientDialog({
   required RegisterNewPatientSubmit onSubmit,
   PatientRegistrationScope registrationScope = const PatientRegistrationScope(),
   RegisterNewPatientDuplicateLookup? onLookupDuplicates,
-}) {
-  return showAppDialog<PatientRegistrationResult>(
+}) async {
+  PatientRegistrationOutcome outcome = PatientRegistrationOutcome.created;
+  final Patient? patient = await showAppDialog<Patient>(
     context: context,
     barrierDismissible: false,
     builder: (_) => RegisterNewPatientDialog(
@@ -504,8 +505,13 @@ Future<PatientRegistrationResult?> showRegisterNewPatientDialog({
       registrationScope: registrationScope,
       onLookupDuplicates: onLookupDuplicates,
       onSubmit: onSubmit,
+      onOutcome: (PatientRegistrationOutcome value) => outcome = value,
     ),
   );
+  if (patient == null) {
+    return null;
+  }
+  return PatientRegistrationResult(patient: patient, outcome: outcome);
 }
 
 /// Create-only patient master-record registration dialog.
@@ -515,6 +521,7 @@ class RegisterNewPatientDialog extends StatefulWidget {
     required this.onSubmit,
     this.registrationScope = const PatientRegistrationScope(),
     this.onLookupDuplicates,
+    this.onOutcome,
     super.key,
   });
 
@@ -522,6 +529,7 @@ class RegisterNewPatientDialog extends StatefulWidget {
   final PatientRegistrationScope registrationScope;
   final RegisterNewPatientSubmit onSubmit;
   final RegisterNewPatientDuplicateLookup? onLookupDuplicates;
+  final ValueChanged<PatientRegistrationOutcome>? onOutcome;
 
   @override
   State<RegisterNewPatientDialog> createState() =>
@@ -568,12 +576,8 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
               onLookupDuplicates: widget.onLookupDuplicates,
               onDuplicateStateChanged: () => setState(() {}),
               onUseExistingPatient: (Patient patient) {
-                Navigator.of(context).pop(
-                  PatientRegistrationResult(
-                    patient: patient,
-                    outcome: PatientRegistrationOutcome.existing,
-                  ),
-                );
+                widget.onOutcome?.call(PatientRegistrationOutcome.existing);
+                Navigator.of(context).pop(patient);
               },
               enabled: !_isSaving,
             ),
@@ -641,12 +645,8 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
     }
     return result.when(
       success: (Patient patient) {
-        Navigator.of(context).pop(
-          PatientRegistrationResult(
-            patient: patient,
-            outcome: PatientRegistrationOutcome.created,
-          ),
-        );
+        widget.onOutcome?.call(PatientRegistrationOutcome.created);
+        Navigator.of(context).pop(patient);
       },
       failure: (AppFailure failure) {
         formState.setFailure(failure);

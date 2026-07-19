@@ -602,6 +602,8 @@ const duplicateIdentifierValues = (patient) =>
     .map((entry) => normalizeComparableText(entry?.identifier_value))
     .filter(Boolean);
 
+// patient-v2 score (capped at 100): identifier 100, phone/email 45 each,
+// normalized name up to 30, exact DOB 20 (same age 8), and gender 5.
 const ageAt = (dateOnly, now = new Date()) => {
   if (!dateOnly) return null;
   const birthDate = new Date(`${dateOnly}T00:00:00.000Z`);

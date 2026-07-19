@@ -177,30 +177,15 @@ void main() {
       expect(receptionActiveVisitsRequirement.isAllowed(patientReader), isTrue);
     });
 
-    test('billing guidance stays read-only for reception', () {
+    test('consultation billing actions stay unavailable to receptionists', () {
       final AppAccessPolicy receptionist = _policyFor(
         roles: <String>['RECEPTIONIST'],
       );
       final AppAccessPolicy cashier = _policyFor(roles: <String>['BILLING']);
 
       expect(opdBillingActionRequirement.isAllowed(receptionist), isFalse);
-      expect(
-        receptionBillingGuidanceRequirement.isAllowed(receptionist),
-        isTrue,
-      );
-
-      // The shared OPD action remains available to Billing outside Reception.
+      // Shared OPD billing actions remain available outside Reception.
       expect(opdBillingActionRequirement.isAllowed(cashier), isTrue);
-    });
-
-    test('billing guidance remains available with patient:read', () {
-      final AppAccessPolicy policy = _policyFor(
-        roles: <String>['RECEPTIONIST'],
-      );
-
-      expect(policy.grants(AppPermissions.patientRead), isTrue);
-      expect(receptionBillingGuidanceRequirement.isAllowed(policy), isTrue);
-      expect(policy.grants(AppPermissions.billingWrite), isFalse);
     });
 
     test('payment gate requires billing read but never billing write', () {
