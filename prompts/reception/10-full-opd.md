@@ -1,1 +1,37 @@
-Right still on the reception screen, there is a full OPD, there is a full OPD button, which when clicked, it should actually take us to the OPD, to the OPD screen. So what I want, what I want is When I, we, we can, we should rename it such that it actually, just like what we done to patient registry, and we made it that is full registry button, we made it patient registry. So let's, let's also rename this button so that it actually matches it matches how OPD in bracket, how outpatient in bracket, OPD is labeled on the menu, so that actually someone knows that, yeah, when I click this button, it takes me to the OPD. So this should be like a shortcut, it should be like a shortcut to take us to the OPD. But then also I can see that there is a mismatch in the buttons for, I mean, in the icons for patient registry, we need to maintain the buttons throughout, the icons throughout the app so that there is consistency. So the icon which is used on the On the patient registry in the menu should match the icon used in a patient registry on the, on all screens, and then also this outpatient it works, it, it actually currently uses the correct it uses the correct, the correct icon, so let's see, make that adjustment and everything should work fine. then also one thing I've noted is that when you click the refresh button there is no visual indicator that actually something is refreshing, so we need to, instead of making it momentarily inactive, yeah, we should show something. Maybe a roaring, something roaring to show that, yeah, this is a refresh button and actually it is doing some refresh in the background, yeah. So, so that the user actually has that visual feel that something is refreshing.
+# Align Reception Shortcuts and Refresh
+
+Match Reception shortcuts to main navigation and show local refresh progress. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+**Full OPD** differs from navigation, Patient registry uses a mismatched icon, and refresh lacks visible progress.
+
+## Requirements
+
+1. Rename **Full OPD** to the localized navigation label **Outpatient (OPD)** wherever rendered or announced.
+2. Navigate directly through `AppRoutes.opd` (`/opd`), without dialogs, mutations, or intermediate steps.
+3. Use `AppRouteIcons.opd` for Outpatient and `AppRouteIcons.patients` for Patient registry; do not duplicate constants.
+4. During refresh, replace only its icon with a compact animated indicator. Retain the label and progress semantics, prevent duplicate requests, preserve dimensions, and restore the icon after success or failure.
+5. Omit each shortcut when its existing route requirement denies access or its module is inactive.
+6. Update localization sources/output, semantics, tooltips, inventory, and tests; remove stale **Full OPD** text.
+
+## Constraints
+
+- Reuse existing routes, gates, refresh logic, localization, and toolbar components.
+- Do not change refresh scope, contracts, Reception state, or unrelated actions.
+- Preserve content, responsive layout, and themes. Empty and validation behavior remain unchanged; failures retain data and existing localized feedback.
+
+## Acceptance Criteria
+
+- R1–R3: Authorized toolbars show consistent shortcuts, and Outpatient opens `/opd` directly.
+- R4: Only Refresh shows progress, remains single-flight, and restores its icon after success or error.
+- R5–R6: Unauthorized shortcuts are absent and accessible text contains no stale wording.
+- Test routes, icons, authorization, completion states, semantics, tabs, themes, and viewports; generate localization and run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+- `frontend/lib/app/router/app_route_icons.dart`
+- `frontend/lib/l10n/app_en.arb`
+- `frontend/test/features/reception/`
+- `screens/reception.md`
