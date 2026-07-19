@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -123,36 +121,6 @@ class ReceptionBillingGuidancePanel extends StatelessWidget {
                     ),
                   ),
             ],
-            SizedBox(height: theme.spacing.md),
-            AppAccessActionGate(
-              requirement: receptionBillingCashierRequirement,
-              builder: (BuildContext context, bool canCashier) {
-                if (!canCashier) {
-                  return Text(
-                    l10n.receptionBillingCashierRestrictedMessage,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  );
-                }
-                final String? patientId =
-                    patientDetail?.patient.id ??
-                    flow?.patientId ??
-                    queueEntry?.patientId;
-                return AppButton.secondary(
-                  label: l10n.patientsOpenBillingWorkbenchAction,
-                  leadingIcon: Icons.point_of_sale_outlined,
-                  onPressed: () => context.go(
-                    AppRoutes.billing.location(
-                      queryParameters: <String, String>{
-                        if (patientId != null && patientId.isNotEmpty)
-                          'patientId': patientId,
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
           ],
         );
       },

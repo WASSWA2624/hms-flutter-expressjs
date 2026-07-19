@@ -1403,6 +1403,7 @@ class _ReceptionWorkspaceContentState
     final bool? changed = await showFlowActionsDialog(
       context: context,
       flow: flow,
+      allowBillingActions: false,
     );
     if (changed == true && mounted) {
       ScaffoldMessenger.of(

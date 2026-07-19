@@ -177,7 +177,7 @@ void main() {
       expect(receptionActiveVisitsRequirement.isAllowed(patientReader), isTrue);
     });
 
-    test('billing pay-consultation is hidden without billing:write', () {
+    test('billing guidance stays read-only for reception', () {
       final AppAccessPolicy receptionist = _policyFor(
         roles: <String>['RECEPTIONIST'],
       );
@@ -185,16 +185,12 @@ void main() {
 
       expect(opdBillingActionRequirement.isAllowed(receptionist), isFalse);
       expect(
-        receptionBillingCashierRequirement.isAllowed(receptionist),
-        isFalse,
-      );
-      expect(
         receptionBillingGuidanceRequirement.isAllowed(receptionist),
         isTrue,
       );
 
+      // The shared OPD action remains available to Billing outside Reception.
       expect(opdBillingActionRequirement.isAllowed(cashier), isTrue);
-      expect(receptionBillingCashierRequirement.isAllowed(cashier), isTrue);
     });
 
     test('billing guidance remains available with patient:read', () {
@@ -227,10 +223,6 @@ void main() {
 
       expect(receptionPaymentGateRequirement.isAllowed(patientReader), isFalse);
       expect(receptionPaymentGateRequirement.isAllowed(billingReader), isTrue);
-      expect(
-        receptionBillingCashierRequirement.isAllowed(billingReader),
-        isFalse,
-      );
     });
 
     test('receptionist can capture insurance without billing:write', () {
@@ -240,7 +232,7 @@ void main() {
 
       expect(policy.grants(AppPermissions.patientWrite), isTrue);
       expect(receptionInsuranceCaptureRequirement.isAllowed(policy), isTrue);
-      expect(receptionBillingCashierRequirement.isAllowed(policy), isFalse);
+      expect(policy.grants(AppPermissions.billingWrite), isFalse);
     });
   });
 

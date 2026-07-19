@@ -1586,10 +1586,13 @@ class _LabConfigurationsDialogState
                         setState(() => _filterValue = value);
                       },
                     ),
-                    emptyBuilder: (_) => AppMutedText(
-                      showingTests
-                          ? l10n.labNoOfferedTestsLabel
-                          : l10n.labNoOfferedPanelsLabel,
+                    emptyBuilder: (_) => Center(
+                      child: AppMutedText(
+                        showingTests
+                            ? l10n.labNoOfferedTestsLabel
+                            : l10n.labNoOfferedPanelsLabel,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                     onRowSelected: (LabCatalogItem item) {
                       if (showingTests) {

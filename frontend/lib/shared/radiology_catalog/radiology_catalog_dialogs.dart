@@ -276,8 +276,12 @@ class _RadiologyEnableFacilityOfferingDialogState
                     setState(() => _filterValue = value);
                   },
                 ),
-                emptyBuilder: (_) =>
-                    AppMutedText(l10n.radiologyEnableOfferingNoItemsLabel),
+                emptyBuilder: (_) => Center(
+                  child: AppMutedText(
+                    l10n.radiologyEnableOfferingNoItemsLabel,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
                 columns: _enableOfferingColumns(context),
                 mobileItemBuilder:
                     (BuildContext context, RadiologyCatalogTest item) {

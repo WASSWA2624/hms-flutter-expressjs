@@ -36,8 +36,8 @@ class AppStateView extends StatelessWidget {
     this.detail,
     this.action,
     this.semanticLabel,
-    this.crossAxisAlignment = CrossAxisAlignment.start,
-    this.textAlign = TextAlign.start,
+    this.crossAxisAlignment,
+    this.textAlign,
     this.loadingSize = AppLoadingIndicatorSize.regular,
     super.key,
   });
@@ -49,8 +49,14 @@ class AppStateView extends StatelessWidget {
   final String? detail;
   final Widget? action;
   final String? semanticLabel;
-  final CrossAxisAlignment crossAxisAlignment;
-  final TextAlign textAlign;
+
+  /// Defaults to centered for [AppStateViewVariant.loading] and
+  /// [AppStateViewVariant.empty]; start-aligned otherwise.
+  final CrossAxisAlignment? crossAxisAlignment;
+
+  /// Defaults to centered for [AppStateViewVariant.loading] and
+  /// [AppStateViewVariant.empty]; start-aligned otherwise.
+  final TextAlign? textAlign;
   final AppLoadingIndicatorSize loadingSize;
 
   @override
@@ -59,12 +65,18 @@ class AppStateView extends StatelessWidget {
     final TextTheme textTheme = theme.textTheme;
     final AppSpacingTokens spacing = theme.spacing;
     final bool isLoading = variant == AppStateViewVariant.loading;
+    final bool centersByDefault =
+        isLoading || variant == AppStateViewVariant.empty;
     final CrossAxisAlignment resolvedAlignment = isLoading
         ? CrossAxisAlignment.center
-        : crossAxisAlignment;
+        : crossAxisAlignment ??
+              (centersByDefault
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start);
     final TextAlign resolvedTextAlign = isLoading
         ? TextAlign.center
-        : textAlign;
+        : textAlign ??
+              (centersByDefault ? TextAlign.center : TextAlign.start);
 
     if (isLoading) {
       return Semantics(

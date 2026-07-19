@@ -5164,12 +5164,6 @@ abstract class AppLocalizations {
   /// **'Advise cash, card, mobile money, or insurance as available for this facility.'**
   String get receptionPaymentMethodsAdvice;
 
-  /// Message when reception cannot open cashier billing actions.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment capture, refunds, adjustments, and reconciliation require Billing permission.'**
-  String get receptionBillingCashierRestrictedMessage;
-
   /// Toolbar action to schedule an appointment from reception.
   ///
   /// In en, this message translates to:

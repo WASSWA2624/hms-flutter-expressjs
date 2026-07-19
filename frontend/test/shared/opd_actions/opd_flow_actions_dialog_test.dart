@@ -121,66 +121,76 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
-  testWidgets(
-    'receptionist at vitals-needed sees only front-desk actions',
-    (WidgetTester tester) async {
-      const OpdFlowSummary vitalsNeeded = OpdFlowSummary(
-        id: 'encounter-1',
-        publicId: 'ENC000001',
-        patientDisplayName: 'Patient Example',
-        stage: 'WAITING_VITALS',
-        displayCode: 'VITALS_NEEDED',
-        displayNextStep: 'RECORD_VITALS',
-        providerUserId: 'USR-DOC001',
-        providerDisplayName: 'Jordan Demo',
-        assignedStaffLabel: 'Doctor: Jordan Demo',
-        consultationPaymentRequired: false,
-        consultationPaid: false,
-      );
+  testWidgets('reception context removes billing actions for billing users', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDialog(tester, flow, detail: detail, allowBillingActions: false);
 
-      await _pumpDialog(
-        tester,
-        vitalsNeeded,
-        detail: const OpdFlowDetail(summary: vitalsNeeded),
-        policy: _receptionistPolicy(),
-      );
+    expect(find.text('Pay consultation'), findsNothing);
+    expect(find.text('Manage consultation billing'), findsNothing);
+    expect(find.text('Update consultation billing'), findsNothing);
+    expect(find.text('Payment due'), findsWidgets);
+    expect(find.text('Cancel'), findsOneWidget);
+  });
 
-      expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
-    },
-  );
+  testWidgets('receptionist at vitals-needed sees only front-desk actions', (
+    WidgetTester tester,
+  ) async {
+    const OpdFlowSummary vitalsNeeded = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientDisplayName: 'Patient Example',
+      stage: 'WAITING_VITALS',
+      displayCode: 'VITALS_NEEDED',
+      displayNextStep: 'RECORD_VITALS',
+      providerUserId: 'USR-DOC001',
+      providerDisplayName: 'Jordan Demo',
+      assignedStaffLabel: 'Doctor: Jordan Demo',
+      consultationPaymentRequired: false,
+      consultationPaid: false,
+    );
 
-  testWidgets(
-    'nurse at vitals-needed sees record vitals and change doctor',
-    (WidgetTester tester) async {
-      const OpdFlowSummary vitalsNeeded = OpdFlowSummary(
-        id: 'encounter-1',
-        publicId: 'ENC000001',
-        patientDisplayName: 'Patient Example',
-        stage: 'WAITING_VITALS',
-        displayCode: 'VITALS_NEEDED',
-        displayNextStep: 'RECORD_VITALS',
-        providerUserId: 'USR-DOC001',
-        providerDisplayName: 'Jordan Demo',
-        assignedStaffLabel: 'Doctor: Jordan Demo',
-        consultationPaymentRequired: false,
-        consultationPaid: false,
-      );
+    await _pumpDialog(
+      tester,
+      vitalsNeeded,
+      detail: const OpdFlowDetail(summary: vitalsNeeded),
+      policy: _receptionistPolicy(),
+    );
 
-      await _pumpDialog(
-        tester,
-        vitalsNeeded,
-        detail: const OpdFlowDetail(summary: vitalsNeeded),
-        policy: _nursePolicy(),
-      );
+    expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+  });
 
-      expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
-    },
-  );
+  testWidgets('nurse at vitals-needed sees record vitals and change doctor', (
+    WidgetTester tester,
+  ) async {
+    const OpdFlowSummary vitalsNeeded = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientDisplayName: 'Patient Example',
+      stage: 'WAITING_VITALS',
+      displayCode: 'VITALS_NEEDED',
+      displayNextStep: 'RECORD_VITALS',
+      providerUserId: 'USR-DOC001',
+      providerDisplayName: 'Jordan Demo',
+      assignedStaffLabel: 'Doctor: Jordan Demo',
+      consultationPaymentRequired: false,
+      consultationPaid: false,
+    );
+
+    await _pumpDialog(
+      tester,
+      vitalsNeeded,
+      detail: const OpdFlowDetail(summary: vitalsNeeded),
+      policy: _nursePolicy(),
+    );
+
+    expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+  });
 
   testWidgets('shows shared loading while encounter detail refreshes', (
     WidgetTester tester,
@@ -243,6 +253,7 @@ Future<void> _pumpDialog(
   TextScaler textScaler = TextScaler.noScaling,
   OpdRepository? repository,
   bool settle = true,
+  bool allowBillingActions = true,
 }) async {
   final OpdRepository effectiveRepository;
   if (repository != null) {
@@ -251,9 +262,8 @@ Future<void> _pumpDialog(
     final _MockOpdRepository mock = _MockOpdRepository();
     _stubWorkspaceLoad(mock);
     when(() => mock.getOpdFlow(any())).thenAnswer(
-      (_) async => Result<OpdFlowDetail>.success(
-        detail ?? OpdFlowDetail(summary: flow),
-      ),
+      (_) async =>
+          Result<OpdFlowDetail>.success(detail ?? OpdFlowDetail(summary: flow)),
     );
     effectiveRepository = mock;
   }
@@ -288,7 +298,12 @@ Future<void> _pumpDialog(
             child: child!,
           );
         },
-        home: Scaffold(body: FlowActionsDialog(flow: flow)),
+        home: Scaffold(
+          body: FlowActionsDialog(
+            flow: flow,
+            allowBillingActions: allowBillingActions,
+          ),
+        ),
       ),
     ),
   );
@@ -401,7 +416,10 @@ AppAccessPolicy _nursePolicy() {
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
-        AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
       ],
     ),
   );

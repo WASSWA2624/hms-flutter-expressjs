@@ -1555,10 +1555,13 @@ class _LabEnableFacilityOfferingDialogState
                   setState(() => _filterValue = value);
                 },
               ),
-              emptyBuilder: (_) => AppMutedText(
-                _showingTests
-                    ? l10n.labNoOfferedTestsLabel
-                    : l10n.labNoOfferedPanelsLabel,
+              emptyBuilder: (_) => Center(
+                child: AppMutedText(
+                  _showingTests
+                      ? l10n.labNoOfferedTestsLabel
+                      : l10n.labNoOfferedPanelsLabel,
+                  textAlign: TextAlign.center,
+                ),
               ),
               columns: _enableOfferingColumns(context),
               mobileItemBuilder: (BuildContext context, LabCatalogItem item) {

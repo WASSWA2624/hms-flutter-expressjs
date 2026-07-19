@@ -2672,10 +2672,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Advise cash, card, mobile money, or insurance as available for this facility.';
 
   @override
-  String get receptionBillingCashierRestrictedMessage =>
-      'Payment capture, refunds, adjustments, and reconciliation require Billing permission.';
-
-  @override
   String get receptionScheduleAppointmentAction => 'Schedule appointment';
 
   @override

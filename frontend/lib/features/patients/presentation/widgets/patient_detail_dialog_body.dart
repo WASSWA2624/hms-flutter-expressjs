@@ -3,8 +3,9 @@ part of '../pages/patient_registry_page.dart';
 Future<void> showPatientDetailDialog(
   BuildContext context,
   WidgetRef ref,
-  String patientId,
-) async {
+  String patientId, {
+  bool allowBillingNavigation = true,
+}) async {
   unawaited(
     ref
         .read(patientRegistryControllerProvider.notifier)
@@ -18,7 +19,10 @@ Future<void> showPatientDetailDialog(
 
   await showAppDialog<void>(
     context: context,
-    builder: (_) => PatientDetailDialog(patientId: patientId),
+    builder: (_) => PatientDetailDialog(
+      patientId: patientId,
+      allowBillingNavigation: allowBillingNavigation,
+    ),
   );
 
   if (context.mounted) {
@@ -27,9 +31,14 @@ Future<void> showPatientDetailDialog(
 }
 
 class PatientDetailDialog extends ConsumerWidget {
-  const PatientDetailDialog({required this.patientId, super.key});
+  const PatientDetailDialog({
+    required this.patientId,
+    this.allowBillingNavigation = true,
+    super.key,
+  });
 
   final String patientId;
+  final bool allowBillingNavigation;
 
   static const AccessRequirement _writeRequirement = AccessRequirement(
     allPermissions: <AppPermission>[AppPermissions.patientWrite],
@@ -191,7 +200,10 @@ class PatientDetailDialog extends ConsumerWidget {
               const Divider(),
             ],
             if (billingReader) ...<Widget>[
-              PatientBillingContextPanel(detail: detail),
+              PatientBillingContextPanel(
+                detail: detail,
+                allowBillingNavigation: allowBillingNavigation,
+              ),
               const Divider(),
             ],
             if (!billingReader)

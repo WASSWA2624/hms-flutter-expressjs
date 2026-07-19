@@ -18,9 +18,14 @@ const AccessRequirement _patientBillingWorkbenchRequirement = AccessRequirement(
 );
 
 class PatientBillingContextPanel extends StatelessWidget {
-  const PatientBillingContextPanel({required this.detail, super.key});
+  const PatientBillingContextPanel({
+    required this.detail,
+    this.allowBillingNavigation = true,
+    super.key,
+  });
 
   final PatientDetail detail;
+  final bool allowBillingNavigation;
 
   @override
   Widget build(BuildContext context) {
@@ -41,26 +46,27 @@ class PatientBillingContextPanel extends StatelessWidget {
                 style: theme.textTheme.titleSmall,
               ),
             ),
-            AppAccessActionGate(
-              requirement: _patientBillingWorkbenchRequirement,
-              builder: (BuildContext context, bool canCashier) {
-                if (!canCashier) {
-                  return const SizedBox.shrink();
-                }
-                return AppButton.secondary(
-                  label: l10n.patientsOpenBillingWorkbenchAction,
-                  leadingIcon: Icons.receipt_long_outlined,
-                  onPressed: () => context.go(
-                    AppRoutes.billing.location(
-                      queryParameters: <String, String>{
-                        'patientId':
-                            detail.patient.publicId ?? detail.patient.id,
-                      },
+            if (allowBillingNavigation)
+              AppAccessActionGate(
+                requirement: _patientBillingWorkbenchRequirement,
+                builder: (BuildContext context, bool canCashier) {
+                  if (!canCashier) {
+                    return const SizedBox.shrink();
+                  }
+                  return AppButton.secondary(
+                    label: l10n.patientsOpenBillingWorkbenchAction,
+                    leadingIcon: Icons.receipt_long_outlined,
+                    onPressed: () => context.go(
+                      AppRoutes.billing.location(
+                        queryParameters: <String, String>{
+                          'patientId':
+                              detail.patient.publicId ?? detail.patient.id,
+                        },
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
           ],
         ),
         SizedBox(height: theme.spacing.sm),

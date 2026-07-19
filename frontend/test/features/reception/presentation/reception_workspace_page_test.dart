@@ -26,6 +26,7 @@ import 'package:hosspi_hms/features/reception/presentation/pages/reception_works
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -327,6 +328,11 @@ void _stubWorkspace(_MockOpdRepository repository) {
       OpdFlowAggregateCounts(activeOpd: 2),
     ),
   );
+  when(() => repository.getOpdFlow(any())).thenAnswer(
+    (_) async => const Result<OpdFlowDetail>.success(
+      OpdFlowDetail(summary: _paymentFlow),
+    ),
+  );
   when(
     () => repository.listClinicalAlertThresholds(
       vitalType: any(named: 'vitalType'),
@@ -499,6 +505,9 @@ void main() {
         expect(find.text('Refresh'), findsOneWidget);
         expect(find.text('Full registry'), findsOneWidget);
         expect(find.text('Full OPD'), findsOneWidget);
+        expect(find.text('Billing'), findsNothing);
+        expect(find.text('Open billing'), findsNothing);
+        expect(router.state.uri.path, '/reception');
         expect(
           tester
               .widget<AppTabToolbarPrimary>(find.byType(AppTabToolbarPrimary))
@@ -547,6 +556,42 @@ void main() {
       findsOneWidget,
     );
   });
+
+  for (final (String name, Size size) in <(String, Size)>[
+    ('desktop', const Size(1440, 900)),
+    ('mobile', const Size(390, 844)),
+  ]) {
+    testWidgets(
+      'active visit billing action is absent for authorized user on $name',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpWorkspace(
+          tester,
+          repository: repository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            },
+          ),
+          initialLocation: '/reception?section=active',
+          viewSize: size,
+        );
+
+        await tester.tap(find.text('Penny Payment').first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(FlowActionsDialog), findsOneWidget);
+        expect(find.text('Pay consultation'), findsNothing);
+        expect(find.text('Manage consultation billing'), findsNothing);
+        expect(find.text('Update consultation billing'), findsNothing);
+        expect(find.text('Open billing'), findsNothing);
+        expect(router.state.uri.path, '/reception');
+        expect(router.state.uri.queryParameters['section'], 'active');
+      },
+    );
+  }
 
   testWidgets('unauthorized tabs and actions are absent', (
     WidgetTester tester,

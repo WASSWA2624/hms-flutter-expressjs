@@ -69,16 +69,6 @@ const AccessRequirement receptionOpdWorkspaceRequirement = AccessRequirement(
   activeModules: <String>['scheduling-queue'],
 );
 
-/// Billing toolbar navigation must be absent unless Billing is accessible.
-const AccessRequirement receptionBillingWorkspaceRequirement =
-    AccessRequirement(
-      anyPermissions: <AppPermission>[
-        AppPermissions.billingRead,
-        AppPermissions.billingWrite,
-      ],
-      activeModules: <String>['billing-payments'],
-    );
-
 AccessRequirement receptionDeskSectionRequirement(
   ReceptionDeskSection section,
 ) {
@@ -89,12 +79,6 @@ AccessRequirement receptionDeskSectionRequirement(
     ReceptionDeskSection.paymentGate => receptionPaymentGateRequirement,
   };
 }
-
-/// Cashier / billing-owned payment capture (not default reception).
-const AccessRequirement receptionBillingCashierRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.billingWrite],
-  activeModules: <String>['billing-payments'],
-);
 
 /// Read-only billing guidance (estimates, outstanding, payment methods).
 const AccessRequirement receptionBillingGuidanceRequirement = AccessRequirement(

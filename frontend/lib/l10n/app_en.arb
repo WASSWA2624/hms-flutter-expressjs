@@ -3474,10 +3474,6 @@
   "@receptionPaymentMethodsAdvice": {
     "description": "Advice text for supported payment methods at reception."
   },
-  "receptionBillingCashierRestrictedMessage": "Payment capture, refunds, adjustments, and reconciliation require Billing permission.",
-  "@receptionBillingCashierRestrictedMessage": {
-    "description": "Message when reception cannot open cashier billing actions."
-  },
   "receptionScheduleAppointmentAction": "Schedule appointment",
   "@receptionScheduleAppointmentAction": {
     "description": "Toolbar action to schedule an appointment from reception."

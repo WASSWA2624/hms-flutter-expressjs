@@ -241,8 +241,12 @@ class _ClinicalRadiologyRequestCatalogDialogState
                 setState(() => _filterValue = value);
               },
             ),
-            emptyBuilder: (_) =>
-                AppMutedText(l10n.clinicalRadiologyRequestNoCatalogOptions),
+            emptyBuilder: (_) => Center(
+              child: AppMutedText(
+                l10n.clinicalRadiologyRequestNoCatalogOptions,
+                textAlign: TextAlign.center,
+              ),
+            ),
             mobileItemBuilder:
                 (BuildContext context, ClinicalActionCatalogOption item) {
                   return AppListItemRow(

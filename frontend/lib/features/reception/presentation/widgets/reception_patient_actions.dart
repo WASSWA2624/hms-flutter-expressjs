@@ -22,7 +22,12 @@ Future<void> openReceptionPatientEditor(
   WidgetRef ref,
   String patientId,
 ) {
-  return showPatientDetailDialog(context, ref, patientId);
+  return showPatientDetailDialog(
+    context,
+    ref,
+    patientId,
+    allowBillingNavigation: false,
+  );
 }
 
 Future<bool> openReceptionInsuranceCapture({

@@ -97,18 +97,25 @@ const AccessRequirement opdAdmissionHandoffRequirement = AccessRequirement(
 Future<bool?> showFlowActionsDialog({
   required BuildContext context,
   required OpdFlowSummary flow,
+  bool allowBillingActions = true,
 }) {
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => FlowActionsDialog(flow: flow),
+    builder: (_) =>
+        FlowActionsDialog(flow: flow, allowBillingActions: allowBillingActions),
   );
 }
 
 class FlowActionsDialog extends ConsumerStatefulWidget {
-  const FlowActionsDialog({required this.flow, super.key});
+  const FlowActionsDialog({
+    required this.flow,
+    this.allowBillingActions = true,
+    super.key,
+  });
 
   final OpdFlowSummary flow;
+  final bool allowBillingActions;
 
   @override
   ConsumerState<FlowActionsDialog> createState() => _FlowActionsDialogState();
@@ -176,12 +183,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           if (detail != null && opdDetailHasClinicalRecords(detail))
             OpdEncounterClinicalServicesPanel(detail: detail, flow: flow),
           if (!isInitialLoad)
-            _actionGrid(
-              context,
-              flow,
-              detail,
-              actionsEnabled: !isBusy,
-            ),
+            _actionGrid(context, flow, detail, actionsEnabled: !isBusy),
         ],
       ),
       actions: <Widget>[
@@ -571,7 +573,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     bool shouldIncludeAction(String key) {
       return switch (key) {
         'billing' =>
-          !terminal &&
+          widget.allowBillingActions &&
+              !terminal &&
               (canPayNow || canAdjustBilling || nextActionKey == 'billing'),
         'vitals' =>
           !terminal &&
@@ -1285,11 +1288,7 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
                 context: context,
                 failure: _failure!,
               ),
-            OpdActionContextPanel(
-              flow: flow,
-              detail: detail,
-              showTitle: false,
-            ),
+            OpdActionContextPanel(flow: flow, detail: detail, showTitle: false),
             AppInfoTileGrid(
               minItemWidth: 150,
               borderedTiles: false,
