@@ -7,34 +7,35 @@ alwaysApply: false
 
 # Prompt Definition Standards
 
-Define prompts an agent can execute without guessing goal or scope.
+Define prompts an agent can execute without guessing scope or behavior.
 
 ## Required Structure
 
-- Prompt files must use `.md` and stay under 501 words.
-- Start with a specific H1 title and one-paragraph objective.
+- Use `.md`, stay under 501 words, and start with an H1 and objective.
 - Include `Context`, `Requirements`, `Constraints`, `Acceptance Criteria`, and `Relevant Files`.
-- Number requirements; make acceptance criteria observable.
+- Number requirements and make acceptance criteria observable.
 
 ## Implementation Requirements
 
-- Reuse existing components, services, utilities, and models before creating new ones.
-- Generalize shared behavior; must not duplicate components, logic, contracts, validation, or authorization.
-- Frontend changes must wire the relevant backend routes, contracts, permissions, validation, and errors.
-- Protected behavior must define RBAC role permissions and ABAC resource/context checks enforced by the backend; frontend guards are not a security boundary.
-- Frontend data must be correct and synced with backend data in real time; refresh affected views after mutations.
-- Require clear, simple, efficient UI: familiar controls, concise labels, visible feedback, fewest practical steps, no redundant fetches or rebuilds.
-- Specify permissions, validation, loading, empty, error, and success states when relevant.
+- Reuse code; do not duplicate logic, contracts, validation, or authorization.
+- Wire UI to backend routes, contracts, permissions, validation, and errors.
+- Define backend-enforced RBAC and ABAC; frontend guards are not a security boundary.
+- Check permissions before rendering. Hide unauthorized menus, tabs, components, data, routes, flows, and actions.
+- Do not render disabled unauthorized controls or “no access” feedback during normal navigation. Show forbidden feedback only for direct restricted-route access, stale permissions, or backend denial.
+- Keep frontend data synchronized after mutations.
+- Require efficient UI, concise labels, and visible feedback.
+- Specify permission, loading, empty, error, success, and validation states.
 
 ## Writing Requirements
 
-- Use imperative language; define ambiguous terms.
-- Reference existing rules instead of duplicating them.
-- Separate required behavior from optional enhancements.
-- Avoid vague terms and unrelated refactoring.
+- Use imperative language and define ambiguous terms.
+- Reference existing rules; do not repeat them.
+- Separate requirements from optional enhancements.
+- Exclude vague language and unrelated refactoring.
 
 ## Verification
 
 - Name expected tests, analysis, or manual checks.
-- Verify integration, reuse, RBAC, ABAC, duplication avoidance, data sync, and UI states.
+- Verify integration, reuse, authorization, data sync, and UI states.
+- Test unauthorized UI is absent from the widget tree, navigation, and action flows; test authorized UI remains available.
 - Trace every acceptance criterion to a requirement.
