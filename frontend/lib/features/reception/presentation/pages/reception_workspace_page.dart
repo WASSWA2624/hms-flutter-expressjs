@@ -101,11 +101,16 @@ class _ReceptionWorkspaceContentState
   static const String _statusFilterKey = 'status';
   static const String _stageFilterKey = 'stage';
   static const String _serviceFilterKey = 'service';
+  static const String _staffFilterKey = 'staff';
+  static const String _actionFilterKey = 'action';
+  static const String _paymentFilterKey = 'payment';
+  static const String _genderFilterKey = 'gender';
 
   late final TextEditingController _searchController;
   late ReceptionDeskSection _section;
   String? _appliedRouteSignature;
-  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  final Map<ReceptionDeskSection, AppSearchBarFilterValue> _filterValues =
+      <ReceptionDeskSection, AppSearchBarFilterValue>{};
   bool _refreshRequested = false;
   late final AppListTableColumnVisibilityController<_ReceptionDeskRow>
   _columnVisibilityController;
@@ -161,7 +166,6 @@ class _ReceptionWorkspaceContentState
     if (section != null) {
       setState(() {
         _section = section;
-        _filterValue = AppSearchBarFilterValue.empty;
       });
     }
     if (query.search.isNotEmpty) {
@@ -210,15 +214,14 @@ class _ReceptionWorkspaceContentState
     final ReceptionPaymentGateState? paymentGate = _paymentGateState;
     final List<ReceptionDeskSection> visibleSections = _visibleSections();
     if (visibleSections.isEmpty) {
-      return AppStateView(
-        title: l10n.errorForbiddenTitle,
-        body: l10n.errorForbiddenMessage,
-        variant: AppStateViewVariant.error,
+      return const ResponsivePage(
+        maxWidth: PageMaxWidth.authForm,
+        centerVertically: true,
+        child: AppFailureStateView(failure: AppFailure.forbidden()),
       );
     }
     if (!visibleSections.contains(_section)) {
       _section = visibleSections.first;
-      _filterValue = AppSearchBarFilterValue.empty;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
           return;
@@ -236,7 +239,12 @@ class _ReceptionWorkspaceContentState
       state,
       paymentGate?.entries ?? const <ReceptionPaymentGateEntry>[],
     );
-    final List<_ReceptionDeskRow> rows = _applyStatusFilter(sectionRows);
+    final AppSearchBarFilterValue filterValue =
+        _filterValues[_section] ?? AppSearchBarFilterValue.empty;
+    final List<_ReceptionDeskRow> rows = _applyFilters(
+      sectionRows,
+      filterValue,
+    );
     final List<AppListTableColumn<_ReceptionDeskRow>> columns =
         _receptionDefaultColumns(l10n);
     final List<AppListTableColumn<_ReceptionDeskRow>> columnChoices =
@@ -272,7 +280,6 @@ class _ReceptionWorkspaceContentState
                   if (section.name == tabId) {
                     setState(() {
                       _section = section;
-                      _filterValue = AppSearchBarFilterValue.empty;
                     });
                     _updateUrlForSection(section);
                     break;
@@ -307,6 +314,9 @@ class _ReceptionWorkspaceContentState
                 columnWidthStorageKey: 'reception_cw_${_section.name}',
                 columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
                 columnVisibilityTitle: l10n.commonTableSettingsTitle,
+                columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+                columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+                columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 onRowSelected: (_ReceptionDeskRow row) =>
@@ -323,19 +333,34 @@ class _ReceptionWorkspaceContentState
                       : l10n.receptionSearchHint,
                   clearLabel: l10n.receptionClearFiltersAction,
                   matcher: (_ReceptionDeskRow row, String query) =>
-                      row.matchesSearch(_section, query, context),
+                      row.matchesSearch(
+                        _section,
+                        query,
+                        context,
+                        field: filterValue.field,
+                      ),
                   showAdvancedFilterButton: true,
                   advancedFilterButtonLabel: l10n.receptionFiltersLabel,
                   advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
                   advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                   advancedFilterResetLabel: l10n.receptionClearFiltersAction,
-                  enableDateFilter: false,
+                  advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                  advancedFilterResetAppliesImmediately: true,
+                  searchFields: _searchFields(l10n),
+                  searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+                  enableDateFilter:
+                      _section != ReceptionDeskSection.paymentGate,
+                  dateFilterLabel: _dateFilterLabel(l10n),
+                  dateFromLabel: l10n.opdDateFromLabel,
+                  dateToLabel: l10n.opdDateToLabel,
+                  datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
+                  invalidDateMessage: l10n.opdInvalidDateMessage,
                   allFieldsLabel: l10n.opdAllFieldsFilterLabel,
                   filterGroups: _filterGroups(sectionRows, l10n),
-                  filterValue: _filterValue,
-                  hasActiveFilters: _filterValue.isActive,
+                  filterValue: filterValue,
+                  hasActiveFilters: filterValue.isActive,
                   onFilterChanged: (AppSearchBarFilterValue value) {
-                    setState(() => _filterValue = value);
+                    setState(() => _filterValues[_section] = value);
                   },
                 ),
                 emptyBuilder: (_) => AppStateView(
@@ -397,29 +422,179 @@ class _ReceptionWorkspaceContentState
         label: _filterGroupLabel(l10n),
         allLabel: l10n.opdAllFieldsFilterLabel,
         choices: _statusFilterChoices(rows, l10n),
+        allowMultiple: true,
+      ),
+      AppSearchBarFilterGroup(
+        key: _actionFilterKey,
+        label: l10n.opdNextActionFilterLabel,
+        allLabel: l10n.opdAllNextActionsOption,
+        choices: _filterChoices(
+          rows,
+          (_ReceptionDeskRow row) => row.nextActionLabel(_section, l10n),
+        ),
+        allowMultiple: true,
+      ),
+      AppSearchBarFilterGroup(
+        key: _staffFilterKey,
+        label: l10n.opdProviderFilterLabel,
+        allLabel: l10n.opdAllProvidersOption,
+        choices: _filterChoices(rows, (_ReceptionDeskRow row) => row.staffName),
+        allowMultiple: true,
       ),
     ];
+    if (_section == ReceptionDeskSection.queue ||
+        _section == ReceptionDeskSection.activeVisits) {
+      groups.add(
+        AppSearchBarFilterGroup(
+          key: _paymentFilterKey,
+          label: l10n.receptionPaymentStatusLabel,
+          allLabel: l10n.billingAnyStatusOption,
+          choices: _filterChoices(
+            rows,
+            (_ReceptionDeskRow row) => row.paymentStatus,
+          ),
+          allowMultiple: true,
+        ),
+      );
+    }
     if (_section == ReceptionDeskSection.paymentGate) {
-      final Set<String> sources = <String>{
-        for (final _ReceptionDeskRow row in rows)
-          ...?row.paymentGateEntry?.services,
-      };
       groups.add(
         AppSearchBarFilterGroup(
           key: _serviceFilterKey,
           label: l10n.billingSourceFilterLabel,
           allLabel: l10n.billingAnySourceOption,
-          choices: <AppSearchBarFilterChoice>[
-            for (final String source in sources.toList()..sort())
-              AppSearchBarFilterChoice(
-                value: source,
-                label: billingApiLabel(context, source),
-              ),
-          ],
+          choices: _serviceFilterChoices(rows),
+          allowMultiple: true,
+        ),
+      );
+      groups.add(
+        AppSearchBarFilterGroup(
+          key: _genderFilterKey,
+          label: l10n.patientsGenderFilterLabel,
+          allLabel: l10n.opdAllFieldsFilterLabel,
+          choices: _genderFilterChoices(rows, l10n),
+          allowMultiple: true,
         ),
       );
     }
-    return groups;
+    return groups
+        .where((AppSearchBarFilterGroup group) => group.choices.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  List<AppSearchBarFieldChoice> _searchFields(AppLocalizations l10n) {
+    return <AppSearchBarFieldChoice>[
+      AppSearchBarFieldChoice(
+        field: 'patient',
+        label: l10n.opdPatientNameLabel,
+        icon: Icons.person_search_outlined,
+      ),
+      AppSearchBarFieldChoice(
+        field: 'record',
+        label: l10n.receptionRecordIdSearchLabel,
+        icon: Icons.badge_outlined,
+      ),
+      AppSearchBarFieldChoice(
+        field: 'staff',
+        label: l10n.opdProviderFilterLabel,
+        icon: Icons.medical_services_outlined,
+      ),
+      AppSearchBarFieldChoice(
+        field: 'reason',
+        label: l10n.opdReasonLabel,
+        icon: Icons.notes_outlined,
+      ),
+      AppSearchBarFieldChoice(
+        field: 'status',
+        label: l10n.receptionStatusLabel,
+        icon: Icons.flag_outlined,
+      ),
+      if (_section ==
+          ReceptionDeskSection.paymentGate) ...<AppSearchBarFieldChoice>[
+        AppSearchBarFieldChoice(
+          field: 'service',
+          label: l10n.billingSourceFilterLabel,
+          icon: Icons.category_outlined,
+        ),
+        AppSearchBarFieldChoice(
+          field: 'invoice',
+          label: l10n.billingInvoiceColumn,
+          icon: Icons.receipt_long_outlined,
+        ),
+      ],
+    ];
+  }
+
+  String _dateFilterLabel(AppLocalizations l10n) {
+    return switch (_section) {
+      ReceptionDeskSection.appointments => l10n.receptionScheduledTimeLabel,
+      ReceptionDeskSection.queue => l10n.receptionQueuedAtLabel,
+      ReceptionDeskSection.activeVisits => l10n.receptionStartedAtLabel,
+      ReceptionDeskSection.paymentGate => l10n.opdArrivalDateFilterLabel,
+    };
+  }
+
+  List<AppSearchBarFilterChoice> _filterChoices(
+    List<_ReceptionDeskRow> rows,
+    String? Function(_ReceptionDeskRow row) valueFor,
+  ) {
+    final Map<String, String> values = <String, String>{};
+    for (final _ReceptionDeskRow row in rows) {
+      final String value = valueFor(row)?.trim() ?? '';
+      if (value.isNotEmpty) {
+        values.putIfAbsent(value.toUpperCase(), () => value);
+      }
+    }
+    final List<AppSearchBarFilterChoice> choices = values.entries
+        .map(
+          (MapEntry<String, String> entry) =>
+              AppSearchBarFilterChoice(value: entry.key, label: entry.value),
+        )
+        .toList();
+    choices.sort(
+      (AppSearchBarFilterChoice a, AppSearchBarFilterChoice b) =>
+          a.label.compareTo(b.label),
+    );
+    return choices;
+  }
+
+  List<AppSearchBarFilterChoice> _serviceFilterChoices(
+    List<_ReceptionDeskRow> rows,
+  ) {
+    final Set<String> sources = <String>{
+      for (final _ReceptionDeskRow row in rows)
+        ...?row.paymentGateEntry?.services,
+    };
+    return <AppSearchBarFilterChoice>[
+      for (final String source in sources.toList()..sort())
+        AppSearchBarFilterChoice(
+          value: source.toUpperCase(),
+          label: billingApiLabel(context, source),
+        ),
+    ];
+  }
+
+  List<AppSearchBarFilterChoice> _genderFilterChoices(
+    List<_ReceptionDeskRow> rows,
+    AppLocalizations l10n,
+  ) {
+    final Set<String> values = <String>{
+      for (final _ReceptionDeskRow row in rows)
+        if (row.patientGender?.trim().isNotEmpty ?? false)
+          row.patientGender!.trim().toUpperCase(),
+    };
+    return <AppSearchBarFilterChoice>[
+      for (final String value in values.toList()..sort())
+        AppSearchBarFilterChoice(
+          value: value,
+          label: switch (value) {
+            'MALE' || 'M' => l10n.patientsGenderMale,
+            'FEMALE' || 'F' => l10n.patientsGenderFemale,
+            'OTHER' => l10n.patientsGenderOther,
+            _ => l10n.patientsGenderUnknown,
+          },
+        ),
+    ];
   }
 
   Widget _buildPrimaryAction(AppLocalizations l10n) {
@@ -552,12 +727,17 @@ class _ReceptionWorkspaceContentState
     switch (_section) {
       case ReceptionDeskSection.appointments:
         return <AppListTableColumn<_ReceptionDeskRow>>[
+          _receptionPatientIdColumn(l10n),
+          _receptionPatientPhoneColumn(l10n),
           _receptionAppointmentIdColumn(l10n),
           _receptionProviderColumn(l10n, appointmentProvider: true),
           _receptionReasonColumn(l10n, appointmentReason: true),
+          _receptionFacilityColumn(l10n),
         ];
       case ReceptionDeskSection.queue:
         return <AppListTableColumn<_ReceptionDeskRow>>[
+          _receptionPatientIdColumn(l10n),
+          _receptionPatientPhoneColumn(l10n),
           _receptionQueueIdColumn(l10n),
           _receptionQueuePaymentStatusColumn(l10n),
           _receptionProviderColumn(l10n, queueProvider: true),
@@ -566,11 +746,18 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.activeVisits:
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientIdColumn(l10n),
+          _receptionPatientPhoneColumn(l10n),
+          _receptionProviderColumn(l10n, flowProvider: true),
           _receptionAssignedDoctorColumn(l10n),
+          _receptionChiefComplaintColumn(l10n),
+          _receptionFlowPaymentStatusColumn(l10n),
+          _receptionConsultationFeeColumn(l10n),
         ];
       case ReceptionDeskSection.paymentGate:
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientIdColumn(l10n),
+          _receptionPatientGenderColumn(l10n),
+          _receptionPatientDobColumn(l10n),
           _receptionPaymentInvoicesColumn(l10n),
         ];
     }
@@ -593,6 +780,19 @@ class _ReceptionWorkspaceContentState
             a.patientName(context),
             b.patientName(context),
           ),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPatientPhoneColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'patient_phone',
+      label: l10n.patientsPhoneIdentifierColumnLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+          Text(row.patientPhone ?? ''),
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          appListTableCompareText(a.patientPhone ?? '', b.patientPhone ?? ''),
     );
   }
 
@@ -861,7 +1061,7 @@ class _ReceptionWorkspaceContentState
       id: 'patient_id',
       label: l10n.opdPatientIdLabel,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-          Text(row.flow?.patientIdentifier ?? row.flow?.patientId ?? ''),
+          Text(row.patientIdentifier ?? row.patientId ?? ''),
     );
   }
 
@@ -880,6 +1080,7 @@ class _ReceptionWorkspaceContentState
     AppLocalizations l10n, {
     bool appointmentProvider = false,
     bool queueProvider = false,
+    bool flowProvider = false,
   }) {
     return AppListTableColumn<_ReceptionDeskRow>(
       id: 'provider',
@@ -889,8 +1090,101 @@ class _ReceptionWorkspaceContentState
             ? row.appointment?.providerDisplayName
             : queueProvider
             ? row.queueEntry?.providerDisplayName
+            : flowProvider
+            ? row.flow?.providerDisplayName
             : null;
         return Text(provider ?? '');
+      },
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionFacilityColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'facility',
+      label: l10n.patientsFacilityLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+          Text(row.appointment?.facilityName ?? ''),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionChiefComplaintColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'chief_complaint',
+      label: l10n.opdChiefComplaintLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+          Text(row.flow?.chiefComplaint ?? ''),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionFlowPaymentStatusColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'payment_status',
+      label: l10n.receptionPaymentStatusLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+          Text(row.flow?.consultationPaymentStatus ?? ''),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionConsultationFeeColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'consultation_fee',
+      label: l10n.receptionConsultationFeeLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final OpdFlowSummary? flow = row.flow;
+        if (flow?.consultationFee == null) {
+          return const SizedBox.shrink();
+        }
+        return Text(
+          AppFormatters.currency(
+            flow!.consultationFee!,
+            Localizations.localeOf(context),
+            currencyCode: flow.consultationCurrency,
+          ),
+        );
+      },
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPatientGenderColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'patient_gender',
+      label: l10n.patientsGenderColumnLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final String value = row.patientGender?.trim().toUpperCase() ?? '';
+        return Text(switch (value) {
+          'MALE' || 'M' => l10n.patientsGenderMale,
+          'FEMALE' || 'F' => l10n.patientsGenderFemale,
+          'OTHER' => l10n.patientsGenderOther,
+          '' => '',
+          _ => l10n.patientsGenderUnknown,
+        });
+      },
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPatientDobColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'patient_dob',
+      label: l10n.patientsDobColumnLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final DateTime? dob = row.patientDateOfBirth;
+        return Text(
+          dob == null
+              ? ''
+              : AppFormatters.shortDate(dob, Localizations.localeOf(context)),
+        );
       },
     );
   }
@@ -1063,25 +1357,75 @@ class _ReceptionWorkspaceContentState
     }
   }
 
-  List<_ReceptionDeskRow> _applyStatusFilter(List<_ReceptionDeskRow> rows) {
-    final String? selected = _filterValue.option(_filterGroupKey);
-    final String needle = (selected ?? '').toUpperCase();
-    List<_ReceptionDeskRow> filtered = selected == null || selected.isEmpty
-        ? rows
-        : <_ReceptionDeskRow>[
-            for (final _ReceptionDeskRow row in rows)
-              if (_rowFilterCode(row).toUpperCase() == needle) row,
-          ];
-    if (_section == ReceptionDeskSection.paymentGate) {
-      final String? service = _filterValue.option(_serviceFilterKey);
-      if (service != null && service.isNotEmpty) {
-        filtered = <_ReceptionDeskRow>[
-          for (final _ReceptionDeskRow row in filtered)
-            if (row.paymentGateEntry?.services.contains(service) ?? false) row,
-        ];
-      }
+  List<_ReceptionDeskRow> _applyFilters(
+    List<_ReceptionDeskRow> rows,
+    AppSearchBarFilterValue value,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    return rows
+        .where((_ReceptionDeskRow row) {
+          if (!_matchesSelection(value.optionsFor(_filterGroupKey), <String>{
+            _rowFilterCode(row),
+          })) {
+            return false;
+          }
+          if (!_matchesSelection(value.optionsFor(_actionFilterKey), <String>{
+            row.nextActionLabel(_section, l10n) ?? '',
+          })) {
+            return false;
+          }
+          if (!_matchesSelection(value.optionsFor(_staffFilterKey), <String>{
+            row.staffName ?? '',
+          })) {
+            return false;
+          }
+          if (!_matchesSelection(value.optionsFor(_paymentFilterKey), <String>{
+            row.paymentStatus ?? '',
+          })) {
+            return false;
+          }
+          if (!_matchesSelection(value.optionsFor(_genderFilterKey), <String>{
+            row.patientGender ?? '',
+          })) {
+            return false;
+          }
+          if (!_matchesSelection(
+            value.optionsFor(_serviceFilterKey),
+            row.paymentGateEntry?.services.toSet() ?? const <String>{},
+          )) {
+            return false;
+          }
+          final DateTime? rowTime = row.time;
+          if (value.dateFrom != null &&
+              (rowTime == null ||
+                  DateUtils.dateOnly(
+                    rowTime,
+                  ).isBefore(DateUtils.dateOnly(value.dateFrom!)))) {
+            return false;
+          }
+          if (value.dateTo != null &&
+              (rowTime == null ||
+                  DateUtils.dateOnly(
+                    rowTime,
+                  ).isAfter(DateUtils.dateOnly(value.dateTo!)))) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
+  }
+
+  bool _matchesSelection(Set<String> selected, Set<String> rowValues) {
+    if (selected.isEmpty) {
+      return true;
     }
-    return filtered;
+    final Set<String> normalized = rowValues
+        .map((String value) => value.trim().toUpperCase())
+        .where((String value) => value.isNotEmpty)
+        .toSet();
+    return selected.any(
+      (String value) => normalized.contains(value.trim().toUpperCase()),
+    );
   }
 
   String _rowFilterCode(_ReceptionDeskRow row) {
@@ -1470,6 +1814,43 @@ final class _ReceptionDeskRow {
       flow?.patientIdentifier ??
       paymentGateEntry?.patientIdentifier;
 
+  String? get patientPhone =>
+      appointment?.patientPhone ??
+      queueEntry?.patientPhone ??
+      flow?.patientPhone;
+
+  String? get patientGender {
+    for (final BillingWorkItem invoice
+        in paymentGateEntry?.invoices ?? const <BillingWorkItem>[]) {
+      final String value = invoice.patientGender?.trim() ?? '';
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  DateTime? get patientDateOfBirth {
+    for (final BillingWorkItem invoice
+        in paymentGateEntry?.invoices ?? const <BillingWorkItem>[]) {
+      if (invoice.patientDateOfBirth != null) {
+        return invoice.patientDateOfBirth;
+      }
+    }
+    return null;
+  }
+
+  String? get staffName =>
+      appointment?.providerDisplayName ??
+      queueEntry?.providerDisplayName ??
+      flow?.assignedStaffDisplayName ??
+      flow?.providerDisplayName;
+
+  String? get paymentStatus =>
+      queueEntry?.paymentStatus ??
+      flow?.consultationPaymentStatus ??
+      paymentGateEntry?.clearanceState.name;
+
   String? get displayId =>
       appointment?.publicId ??
       queueEntry?.publicId ??
@@ -1536,11 +1917,24 @@ final class _ReceptionDeskRow {
   DateTime? get time =>
       appointment?.scheduledStart ?? queueEntry?.queuedAt ?? flow?.startedAt;
 
+  String? nextActionLabel(ReceptionDeskSection section, AppLocalizations l10n) {
+    return switch (section) {
+      ReceptionDeskSection.appointments =>
+        appointment == null
+            ? null
+            : _receptionAppointmentNextActionLabelStatic(l10n, appointment!),
+      ReceptionDeskSection.queue => queueNextActionLabel(l10n),
+      ReceptionDeskSection.activeVisits => flowNextActionLabel(l10n),
+      ReceptionDeskSection.paymentGate => null,
+    };
+  }
+
   bool matchesSearch(
     ReceptionDeskSection section,
     String query,
-    BuildContext context,
-  ) {
+    BuildContext context, {
+    String? field,
+  }) {
     if (query.trim().isEmpty) {
       return true;
     }
@@ -1548,12 +1942,85 @@ final class _ReceptionDeskRow {
     final Locale locale = Localizations.localeOf(context);
     final AppLocalizations l10n = context.l10n;
 
-    return searchValues(
-      section,
-      context,
-      locale,
-      l10n,
-    ).any((String value) => value.toLowerCase().contains(needle));
+    final List<String> values = field == null
+        ? searchValues(section, context, locale, l10n)
+        : searchValuesForField(field, section, context, locale, l10n);
+    return values.any((String value) => value.toLowerCase().contains(needle));
+  }
+
+  List<String> searchValuesForField(
+    String field,
+    ReceptionDeskSection section,
+    BuildContext context,
+    Locale locale,
+    AppLocalizations l10n,
+  ) {
+    final List<String?> values = switch (field) {
+      'patient' => <String?>[
+        patientName(context),
+        patientId,
+        patientIdentifier,
+        patientPhone,
+        patientGender,
+        if (patientDateOfBirth != null)
+          AppFormatters.shortDate(patientDateOfBirth!, locale),
+      ],
+      'record' => <String?>[
+        displayId,
+        appointment?.id,
+        appointment?.publicId,
+        queueEntry?.id,
+        queueEntry?.publicId,
+        queueEntry?.appointmentId,
+        flow?.id,
+        flow?.publicId,
+        flow?.appointmentId,
+        flow?.visitQueueId,
+        paymentGateEntry?.encounterId,
+        paymentGateEntry?.encounterIdentifier,
+      ],
+      'staff' => <String?>[
+        appointment?.providerDisplayName,
+        queueEntry?.providerDisplayName,
+        flow?.providerDisplayName,
+        flow?.assignedStaffDisplayName,
+        flow?.assignedStaffRole,
+        flow?.assignedStaffLabel,
+      ],
+      'reason' => <String?>[
+        appointment?.reason,
+        queueEntry?.appointmentReason,
+        flow?.chiefComplaint,
+        flow?.triageNotes,
+      ],
+      'status' => <String?>[
+        status,
+        queueEntry?.paymentStatus,
+        flow?.status,
+        flow?.displayStatus,
+        flow?.consultationPaymentStatus,
+        nextActionLabel(section, l10n),
+        paymentGateEntry?.clearanceState.name,
+      ],
+      'service' => <String?>[...?paymentGateEntry?.services, flow?.lastRouteTo],
+      'invoice' => <String?>[
+        for (final BillingWorkItem invoice
+            in paymentGateEntry?.invoices ??
+                const <BillingWorkItem>[]) ...<String?>[
+          invoice.id,
+          invoice.effectiveDisplayId,
+          invoice.status,
+          invoice.billingStatus,
+          for (final BillingInvoiceItem item in invoice.items) item.description,
+        ],
+      ],
+      _ => searchValues(section, context, locale, l10n),
+    };
+    return values
+        .whereType<String>()
+        .map((String value) => value.trim())
+        .where((String value) => value.isNotEmpty)
+        .toList(growable: false);
   }
 
   List<String> searchValues(
@@ -1566,6 +2033,8 @@ final class _ReceptionDeskRow {
       patientName(context),
       patientId,
       patientIdentifier,
+      patientPhone,
+      patientGender,
       displayId,
     ];
 

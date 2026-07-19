@@ -5182,6 +5182,24 @@ abstract class AppLocalizations {
   /// **'Clear filters'**
   String get receptionClearFiltersAction;
 
+  /// Action to apply Reception table column visibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply columns'**
+  String get receptionApplyColumnsAction;
+
+  /// Action to restore Reception table columns to their defaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset columns'**
+  String get receptionResetColumnsAction;
+
+  /// Reception search scope for appointment, queue, encounter, and related record identifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Record ID'**
+  String get receptionRecordIdSearchLabel;
+
   /// Action to open check-in, reschedule, cancel, and queue for an appointment.
   ///
   /// In en, this message translates to:

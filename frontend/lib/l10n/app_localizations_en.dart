@@ -2681,6 +2681,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionClearFiltersAction => 'Clear filters';
 
   @override
+  String get receptionApplyColumnsAction => 'Apply columns';
+
+  @override
+  String get receptionResetColumnsAction => 'Reset columns';
+
+  @override
+  String get receptionRecordIdSearchLabel => 'Record ID';
+
+  @override
   String get receptionAppointmentActionsAction => 'Appointment actions';
 
   @override

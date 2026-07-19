@@ -21,6 +21,15 @@ final sessionRefreshServiceProvider = Provider<SessionRefreshService>((ref) {
   );
 });
 
+/// True when the backend definitively rejected the credentials, meaning the
+/// stored session is unusable. Transient transport failures (network, timeout,
+/// offline, server errors) must never end the session, or a backend outage
+/// would sign users out and strip their permissions.
+bool isSessionRejectionFailure(AppFailure failure) {
+  return failure.category == AppFailureCategory.unauthorized ||
+      failure.category == AppFailureCategory.forbidden;
+}
+
 final class SessionRefreshService {
   const SessionRefreshService({
     required ApiClient apiClient,
@@ -60,7 +69,11 @@ final class SessionRefreshService {
           return Result<AuthSession?>.success(session);
         },
         failure: (AppFailure failure) async {
-          await _sessionManager.clearSession();
+          // Keep tokens on transient failures so the session survives a
+          // backend outage and the next refresh attempt can succeed.
+          if (isSessionRejectionFailure(failure)) {
+            await _sessionManager.clearSession();
+          }
           return Result<AuthSession?>.failure(failure);
         },
       );

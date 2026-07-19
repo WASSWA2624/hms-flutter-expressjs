@@ -62,12 +62,14 @@ final class AppSearchBarFilterGroup {
     required this.label,
     required this.choices,
     this.allLabel,
+    this.allowMultiple = false,
   });
 
   final String key;
   final String label;
   final List<AppSearchBarFilterChoice> choices;
   final String? allLabel;
+  final bool allowMultiple;
 }
 
 @immutable
@@ -78,6 +80,7 @@ final class AppSearchBarFilterValue {
     this.dateTo,
     this.texts = const <String, String>{},
     this.options = const <String, String>{},
+    this.selections = const <String, Set<String>>{},
   });
 
   static const AppSearchBarFilterValue empty = AppSearchBarFilterValue();
@@ -87,13 +90,26 @@ final class AppSearchBarFilterValue {
   final DateTime? dateTo;
   final Map<String, String> texts;
   final Map<String, String> options;
+  final Map<String, Set<String>> selections;
 
   bool get isActive {
     return _hasText(field) ||
         dateFrom != null ||
         dateTo != null ||
         texts.values.any(_hasText) ||
-        options.values.any(_hasText);
+        options.values.any(_hasText) ||
+        selections.values.any((Set<String> values) => values.isNotEmpty);
+  }
+
+  int get activeCount {
+    return (_hasText(field) ? 1 : 0) +
+        (dateFrom != null || dateTo != null ? 1 : 0) +
+        texts.values.where(_hasText).length +
+        options.values.where(_hasText).length +
+        selections.values.fold<int>(
+          0,
+          (int count, Set<String> values) => count + values.length,
+        );
   }
 
   String? text(String key) {
@@ -106,17 +122,28 @@ final class AppSearchBarFilterValue {
     return _hasText(value) ? value : null;
   }
 
+  Set<String> optionsFor(String key) {
+    final Set<String>? values = selections[key];
+    if (values != null && values.isNotEmpty) {
+      return Set<String>.unmodifiable(values);
+    }
+    final String? scalar = option(key);
+    return scalar == null ? const <String>{} : <String>{scalar};
+  }
+
   AppSearchBarFilterValue copyWith({
     String? field,
     DateTime? dateFrom,
     DateTime? dateTo,
     Map<String, String>? texts,
     Map<String, String>? options,
+    Map<String, Set<String>>? selections,
     bool clearField = false,
     bool clearDateFrom = false,
     bool clearDateTo = false,
     bool clearTexts = false,
     bool clearOptions = false,
+    bool clearSelections = false,
   }) {
     return AppSearchBarFilterValue(
       field: clearField ? null : field ?? this.field,
@@ -126,6 +153,9 @@ final class AppSearchBarFilterValue {
       options: clearOptions
           ? const <String, String>{}
           : options ?? this.options,
+      selections: clearSelections
+          ? const <String, Set<String>>{}
+          : selections ?? this.selections,
     );
   }
 
@@ -136,13 +166,16 @@ final class AppSearchBarFilterValue {
         other.dateFrom == dateFrom &&
         other.dateTo == dateTo &&
         mapEquals(other.texts, texts) &&
-        mapEquals(other.options, options);
+        mapEquals(other.options, options) &&
+        _setMapEquals(other.selections, selections);
   }
 
   @override
   int get hashCode {
     final List<String> textKeys = texts.keys.toList(growable: false)..sort();
     final List<String> optionKeys = options.keys.toList(growable: false)
+      ..sort();
+    final List<String> selectionKeys = selections.keys.toList(growable: false)
       ..sort();
     return Object.hash(
       field,
@@ -154,8 +187,30 @@ final class AppSearchBarFilterValue {
       Object.hashAll(
         optionKeys.map((String key) => Object.hash(key, options[key])),
       ),
+      Object.hashAll(
+        selectionKeys.map((String key) {
+          final List<String> values = selections[key]!.toList()..sort();
+          return Object.hash(key, Object.hashAll(values));
+        }),
+      ),
     );
   }
+}
+
+bool _setMapEquals(
+  Map<String, Set<String>> left,
+  Map<String, Set<String>> right,
+) {
+  if (left.length != right.length || !left.keys.every(right.containsKey)) {
+    return false;
+  }
+  return left.keys.every((String key) => setEquals(left[key], right[key]));
+}
+
+bool appSearchBarDateRangeIsValid(DateTime? from, DateTime? to) {
+  return from == null ||
+      to == null ||
+      !DateUtils.dateOnly(from).isAfter(DateUtils.dateOnly(to));
 }
 
 @immutable
@@ -199,6 +254,8 @@ class AppSearchBar extends StatefulWidget {
     this.advancedFilterTitle,
     this.advancedFilterApplyLabel,
     this.advancedFilterResetLabel,
+    this.advancedFilterCloseLabel,
+    this.advancedFilterResetAppliesImmediately = false,
     this.searchFields = const <AppSearchBarFieldChoice>[],
     this.textFilters = const <AppSearchBarTextFilter>[],
     this.searchFieldLabel,
@@ -240,6 +297,8 @@ class AppSearchBar extends StatefulWidget {
   final String? advancedFilterTitle;
   final String? advancedFilterApplyLabel;
   final String? advancedFilterResetLabel;
+  final String? advancedFilterCloseLabel;
+  final bool advancedFilterResetAppliesImmediately;
   final List<AppSearchBarFieldChoice> searchFields;
   final List<AppSearchBarTextFilter> textFilters;
   final String? searchFieldLabel;
@@ -406,6 +465,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                           active:
                               widget.hasActiveFilters ||
                               widget.filterValue.isActive,
+                          activeCount: widget.filterValue.activeCount,
                           label:
                               widget.advancedFilterButtonLabel ??
                               'Advanced filters',
@@ -544,6 +604,8 @@ class _AppSearchBarState extends State<AppSearchBar> {
         title: widget.advancedFilterTitle ?? 'Advanced filters',
         applyLabel: widget.advancedFilterApplyLabel ?? 'Apply filters',
         resetLabel: widget.advancedFilterResetLabel ?? 'Reset filters',
+        closeLabel: widget.advancedFilterCloseLabel ?? 'Close',
+        resetAppliesImmediately: widget.advancedFilterResetAppliesImmediately,
         searchFields: widget.searchFields,
         textFilters: widget.textFilters,
         searchFieldLabel: widget.searchFieldLabel ?? 'Search in',
@@ -675,6 +737,7 @@ class _AttachedFilterButton extends StatelessWidget {
     required this.borderColor,
     required this.enabled,
     required this.active,
+    required this.activeCount,
     required this.label,
     required this.showLabel,
     required this.onPressed,
@@ -683,20 +746,28 @@ class _AttachedFilterButton extends StatelessWidget {
   final Color borderColor;
   final bool enabled;
   final bool active;
+  final int activeCount;
   final String label;
   final bool showLabel;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return _AttachedSearchBarButton(
-      borderColor: borderColor,
-      enabled: enabled,
-      active: active,
-      showLabel: showLabel,
-      icon: active ? Icons.filter_alt : Icons.filter_alt_outlined,
-      label: label,
-      onPressed: onPressed,
+    final String effectiveLabel = activeCount > 0
+        ? '$label ($activeCount)'
+        : label;
+    return Badge(
+      isLabelVisible: activeCount > 0,
+      label: Text('$activeCount'),
+      child: _AttachedSearchBarButton(
+        borderColor: borderColor,
+        enabled: enabled,
+        active: active,
+        showLabel: showLabel,
+        icon: active ? Icons.filter_alt : Icons.filter_alt_outlined,
+        label: effectiveLabel,
+        onPressed: onPressed,
+      ),
     );
   }
 }
@@ -772,6 +843,8 @@ class _AppSearchBarFiltersDialog extends StatefulWidget {
     required this.title,
     required this.applyLabel,
     required this.resetLabel,
+    required this.closeLabel,
+    required this.resetAppliesImmediately,
     required this.searchFields,
     required this.textFilters,
     required this.searchFieldLabel,
@@ -792,6 +865,8 @@ class _AppSearchBarFiltersDialog extends StatefulWidget {
   final String title;
   final String applyLabel;
   final String resetLabel;
+  final String closeLabel;
+  final bool resetAppliesImmediately;
   final List<AppSearchBarFieldChoice> searchFields;
   final List<AppSearchBarTextFilter> textFilters;
   final String searchFieldLabel;
@@ -823,6 +898,8 @@ class _AppSearchBarFiltersDialogState
   late DateTime? _dateTo;
   late Map<String, TextEditingController> _textControllers;
   late Map<String, String> _options;
+  late Map<String, Set<String>> _selections;
+  String? _dateRangeError;
 
   @override
   void initState() {
@@ -930,7 +1007,10 @@ class _AppSearchBarFiltersDialogState
                       invalidDateMessage: widget.invalidDateMessage,
                       labelText: widget.dateFromLabel,
                       onChanged: (DateTime? value) {
-                        _dateFrom = value;
+                        setState(() {
+                          _dateFrom = value;
+                          _dateRangeError = null;
+                        });
                       },
                     ),
                   ),
@@ -944,19 +1024,31 @@ class _AppSearchBarFiltersDialogState
                       invalidDateMessage: widget.invalidDateMessage,
                       labelText: widget.dateToLabel,
                       onChanged: (DateTime? value) {
-                        _dateTo = value;
+                        setState(() {
+                          _dateTo = value;
+                          _dateRangeError = null;
+                        });
                       },
                     ),
                   ),
                 ),
+                if (_dateRangeError != null) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    _dateRangeError!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
               if (widget.filterGroups.any(_hasFilterChoices)) ...<Widget>[
                 SizedBox(height: theme.spacing.md),
                 _ResponsiveFilterGrid(
                   children: <Widget>[
                     for (final AppSearchBarFilterGroup group
-                        in widget.filterGroups)
-                      if (group.choices.isNotEmpty)
+                        in widget.filterGroups) ...<Widget>[
+                      if (group.choices.isNotEmpty && !group.allowMultiple)
                         AppSelectField<String>.searchable(
                           value: _options[group.key],
                           labelText: group.label,
@@ -990,6 +1082,24 @@ class _AppSearchBarFiltersDialogState
                             });
                           },
                         ),
+                      if (group.choices.isNotEmpty && group.allowMultiple)
+                        _MultiSelectFilterGroup(
+                          group: group,
+                          selected: _selections[group.key] ?? const <String>{},
+                          onChanged: (Set<String> values) {
+                            setState(() {
+                              final Map<String, Set<String>> next =
+                                  _copySelections(_selections);
+                              if (values.isEmpty) {
+                                next.remove(group.key);
+                              } else {
+                                next[group.key] = values;
+                              }
+                              _selections = next;
+                            });
+                          },
+                        ),
+                    ],
                   ],
                 ),
               ],
@@ -1008,6 +1118,11 @@ class _AppSearchBarFiltersDialogState
           leadingIcon: Icons.check,
           onPressed: _apply,
         ),
+        AppButton.tertiary(
+          label: widget.closeLabel,
+          leadingIcon: Icons.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ],
     );
   }
@@ -1021,9 +1136,15 @@ class _AppSearchBarFiltersDialogState
       _textControllers[filter.key]?.text = texts[filter.key] ?? '';
     }
     _options = _knownOptions(value.options);
+    _selections = _knownSelections(value.selections);
+    _dateRangeError = null;
   }
 
   void _reset() {
+    if (widget.resetAppliesImmediately) {
+      Navigator.of(context).pop(AppSearchBarFilterValue.empty);
+      return;
+    }
     setState(() {
       _hydrate(AppSearchBarFilterValue.empty);
     });
@@ -1032,6 +1153,10 @@ class _AppSearchBarFiltersDialogState
   void _apply() {
     final bool isValid = _formKey.currentState?.validate() ?? true;
     if (!isValid) {
+      return;
+    }
+    if (!appSearchBarDateRangeIsValid(_dateFrom, _dateTo)) {
+      setState(() => _dateRangeError = widget.invalidDateMessage);
       return;
     }
     Navigator.of(context).pop(_value);
@@ -1048,6 +1173,9 @@ class _AppSearchBarFiltersDialogState
           if (_hasText(entry.value.text)) entry.key: entry.value.text.trim(),
       }),
       options: Map<String, String>.unmodifiable(_options),
+      selections: Map<String, Set<String>>.unmodifiable(
+        _copySelections(_selections),
+      ),
     );
   }
 
@@ -1087,6 +1215,95 @@ class _AppSearchBarFiltersDialogState
       }
     }
     return known;
+  }
+
+  Map<String, Set<String>> _knownSelections(
+    Map<String, Set<String>> selections,
+  ) {
+    final Map<String, Set<String>> known = <String, Set<String>>{};
+    for (final AppSearchBarFilterGroup group in widget.filterGroups) {
+      if (!group.allowMultiple) {
+        continue;
+      }
+      final Set<String> available = group.choices
+          .map((AppSearchBarFilterChoice choice) => choice.value)
+          .toSet();
+      final Set<String> values = (selections[group.key] ?? const <String>{})
+          .where(available.contains)
+          .toSet();
+      if (values.isNotEmpty) {
+        known[group.key] = values;
+      }
+    }
+    return known;
+  }
+}
+
+Map<String, Set<String>> _copySelections(Map<String, Set<String>> source) {
+  return <String, Set<String>>{
+    for (final MapEntry<String, Set<String>> entry in source.entries)
+      entry.key: Set<String>.of(entry.value),
+  };
+}
+
+class _MultiSelectFilterGroup extends StatelessWidget {
+  const _MultiSelectFilterGroup({
+    required this.group,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final AppSearchBarFilterGroup group;
+  final Set<String> selected;
+  final ValueChanged<Set<String>> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Semantics(
+      container: true,
+      label: group.label,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(theme.radius.md),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                theme.spacing.md,
+                theme.spacing.sm,
+                theme.spacing.md,
+                theme.spacing.xs,
+              ),
+              child: Text(group.label, style: theme.textTheme.labelLarge),
+            ),
+            for (final AppSearchBarFilterChoice choice in group.choices)
+              CheckboxListTile(
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.sm,
+                ),
+                value: selected.contains(choice.value),
+                title: Text(choice.label),
+                secondary: choice.icon == null ? null : Icon(choice.icon),
+                onChanged: (bool? checked) {
+                  final Set<String> next = Set<String>.of(selected);
+                  if (checked ?? false) {
+                    next.add(choice.value);
+                  } else {
+                    next.remove(choice.value);
+                  }
+                  onChanged(next);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

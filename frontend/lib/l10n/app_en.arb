@@ -3486,6 +3486,18 @@
   "@receptionClearFiltersAction": {
     "description": "Action to clear advanced filters on the reception desk table."
   },
+  "receptionApplyColumnsAction": "Apply columns",
+  "@receptionApplyColumnsAction": {
+    "description": "Action to apply Reception table column visibility."
+  },
+  "receptionResetColumnsAction": "Reset columns",
+  "@receptionResetColumnsAction": {
+    "description": "Action to restore Reception table columns to their defaults."
+  },
+  "receptionRecordIdSearchLabel": "Record ID",
+  "@receptionRecordIdSearchLabel": {
+    "description": "Reception search scope for appointment, queue, encounter, and related record identifiers."
+  },
   "receptionAppointmentActionsAction": "Appointment actions",
   "@receptionAppointmentActionsAction": {
     "description": "Action to open check-in, reschedule, cancel, and queue for an appointment."

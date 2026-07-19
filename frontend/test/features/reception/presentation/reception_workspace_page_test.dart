@@ -922,25 +922,40 @@ void main() {
       expect(find.text('Connie Confirmed'), findsOneWidget);
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
-      expect(find.text('New'), findsOneWidget);
-      expect(find.text('Confirmed'), findsOneWidget);
+      expect(find.text('New'), findsWidgets);
+      expect(find.text('Confirmed'), findsWidgets);
       expect(find.text('Scheduled'), findsWidgets);
 
-      final Finder statusFilter = find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppSelectField<String> && widget.labelText == 'Status',
+      final Finder statusFilter = find.widgetWithText(
+        CheckboxListTile,
+        'Confirmed',
       );
       expect(statusFilter, findsOneWidget);
       await tester.tap(statusFilter);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Confirmed').last);
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pumpAndSettle();
 
       expect(find.text('Connie Confirmed'), findsOneWidget);
       expect(find.text('Ada Appointment'), findsNothing);
       expect(find.text('Nia New'), findsNothing);
+
+      await tester.tap(find.text('Desk queue'));
+      await tester.pumpAndSettle();
+      expect(find.text('Priya Progressed'), findsOneWidget);
+      expect(find.text('Quinn Queue'), findsOneWidget);
+
+      await tester.tap(find.text('Appointments'));
+      await tester.pumpAndSettle();
+      expect(find.text('Connie Confirmed'), findsOneWidget);
+      expect(find.text('Ada Appointment'), findsNothing);
+
+      await tester.tap(find.byTooltip('Filters (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ada Appointment'), findsOneWidget);
+      expect(find.text('Nia New'), findsOneWidget);
     },
   );
 
@@ -1007,16 +1022,13 @@ void main() {
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
       expect(find.text('Lab pending'), findsWidgets);
-      final Finder currentStepFilter = find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppSelectField<String> &&
-            widget.labelText == 'Current step',
+      final Finder currentStepFilter = find.widgetWithText(
+        CheckboxListTile,
+        'Lab pending',
       );
       expect(currentStepFilter, findsOneWidget);
       await tester.tap(currentStepFilter);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Lab pending').last);
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pumpAndSettle();
       expect(find.text('Priya Progressed'), findsOneWidget);
@@ -1083,15 +1095,12 @@ void main() {
       await tester.pump();
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
-      final Finder currentStepFilter = find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppSelectField<String> &&
-            widget.labelText == 'Current step',
+      final Finder currentStepFilter = find.widgetWithText(
+        CheckboxListTile,
+        'Consultation In Progress',
       );
       await tester.tap(currentStepFilter);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Consultation In Progress').last);
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pumpAndSettle();
       expect(find.text('Casey Consultation'), findsOneWidget);
@@ -1154,14 +1163,12 @@ void main() {
       await tester.pump();
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
-      final Finder sourceFilter = find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppSelectField<String> && widget.labelText == 'Source',
+      final Finder sourceFilter = find.widgetWithText(
+        CheckboxListTile,
+        'Pharmacy',
       );
       await tester.tap(sourceFilter);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Pharmacy').last);
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pumpAndSettle();
       expect(find.text('Phoebe Pharmacy'), findsOneWidget);

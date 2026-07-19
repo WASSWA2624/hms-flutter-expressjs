@@ -5,7 +5,105 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'component_test_app.dart';
 
 void main() {
-  testWidgets('advanced filter dialog uses a two-action footer on mobile', (
+  test('filter value counts scalar and multi-value criteria', () {
+    const AppSearchBarFilterValue value = AppSearchBarFilterValue(
+      field: 'patient',
+      dateFrom: null,
+      texts: <String, String>{'reason': 'review'},
+      options: <String, String>{'legacy': 'open'},
+      selections: <String, Set<String>>{
+        'status': <String>{'new', 'confirmed'},
+      },
+    );
+
+    expect(value.activeCount, 5);
+    expect(value.optionsFor('legacy'), <String>{'open'});
+    expect(value.optionsFor('status'), <String>{'new', 'confirmed'});
+  });
+
+  test('date ranges are inclusive and reject an inverted range', () {
+    final DateTime day = DateTime(2026, 7, 19);
+
+    expect(appSearchBarDateRangeIsValid(day, day), isTrue);
+    expect(appSearchBarDateRangeIsValid(null, day), isTrue);
+    expect(appSearchBarDateRangeIsValid(DateTime(2026, 7, 20), day), isFalse);
+  });
+
+  testWidgets('multi-select filter returns every checked value on Apply', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+    AppSearchBarFilterValue? applied;
+
+    await pumpComponent(
+      tester,
+      AppSearchBar(
+        controller: controller,
+        semanticLabel: 'Search records',
+        showAdvancedFilterButton: true,
+        enableDateFilter: false,
+        filterGroups: const <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: 'status',
+            label: 'Status',
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(value: 'NEW', label: 'New'),
+              AppSearchBarFilterChoice(value: 'CONFIRMED', label: 'Confirmed'),
+            ],
+            allowMultiple: true,
+          ),
+        ],
+        onFilterChanged: (AppSearchBarFilterValue value) => applied = value,
+      ),
+      size: const Size(720, 640),
+    );
+
+    await tester.tap(find.byTooltip('Advanced filters'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'New'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Confirmed'));
+    await tester.pump();
+    await tester.tap(find.text('Apply filters'));
+    await tester.pumpAndSettle();
+
+    expect(applied?.optionsFor('status'), <String>{'NEW', 'CONFIRMED'});
+  });
+
+  testWidgets('footer Close discards pending filter changes', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+    AppSearchBarFilterValue? applied;
+
+    await pumpComponent(
+      tester,
+      AppSearchBar(
+        controller: controller,
+        semanticLabel: 'Search records',
+        showAdvancedFilterButton: true,
+        enableDateFilter: false,
+        advancedFilterCloseLabel: 'Close',
+        textFilters: const <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(key: 'patient', label: 'Patient'),
+        ],
+        onFilterChanged: (AppSearchBarFilterValue value) => applied = value,
+      ),
+      size: const Size(720, 640),
+    );
+
+    await tester.tap(find.byTooltip('Advanced filters'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).last, 'Ada');
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    expect(applied, isNull);
+  });
+
+  testWidgets('advanced filter dialog includes rightmost Close on mobile', (
     WidgetTester tester,
   ) async {
     final TextEditingController controller = TextEditingController();
@@ -33,14 +131,20 @@ void main() {
 
     final Finder clearAction = find.text('Clear filters');
     final Finder applyAction = find.text('Apply filters');
+    final Finder closeAction = find.text('Close');
 
     expect(find.text('CLINICAL FILTERS'), findsOneWidget);
     expect(clearAction, findsOneWidget);
     expect(applyAction, findsOneWidget);
+    expect(closeAction, findsOneWidget);
     expect(find.text('Cancel'), findsNothing);
+    final Offset applyPosition = tester.getTopLeft(applyAction);
+    final Offset closePosition = tester.getTopLeft(closeAction);
     expect(
-      tester.getTopLeft(clearAction).dy,
-      tester.getTopLeft(applyAction).dy,
+      closePosition.dy > applyPosition.dy ||
+          (closePosition.dy == applyPosition.dy &&
+              closePosition.dx > applyPosition.dx),
+      isTrue,
     );
   });
 

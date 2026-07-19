@@ -516,7 +516,7 @@ void main() {
     expect(find.text('Active'), findsOneWidget);
   });
 
-  testWidgets('column visibility dialog uses a two-action footer on mobile', (
+  testWidgets('column dialog includes rightmost Close on mobile', (
     WidgetTester tester,
   ) async {
     final searchController = TextEditingController();
@@ -547,13 +547,19 @@ void main() {
 
     final Finder resetAction = find.text('Reset columns');
     final Finder applyAction = find.text('Apply columns');
+    final Finder closeAction = find.text('Close');
 
     expect(resetAction, findsOneWidget);
     expect(applyAction, findsOneWidget);
+    expect(closeAction, findsOneWidget);
     expect(find.text('Cancel'), findsNothing);
+    final Offset applyPosition = tester.getTopLeft(applyAction);
+    final Offset closePosition = tester.getTopLeft(closeAction);
     expect(
-      tester.getTopLeft(resetAction).dy,
-      tester.getTopLeft(applyAction).dy,
+      closePosition.dy > applyPosition.dy ||
+          (closePosition.dy == applyPosition.dy &&
+              closePosition.dx > applyPosition.dx),
+      isTrue,
     );
   });
 

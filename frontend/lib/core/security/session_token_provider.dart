@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/api_interceptors.dart';
 import 'package:hosspi_hms/core/network/api_response.dart';
@@ -84,10 +85,12 @@ final class SessionTokenProvider {
         }
         return session;
       },
-      failure: (_) async {
-        await _ref
-            .read(sessionStateProvider.notifier)
-            .handleUnauthorizedResponse();
+      failure: (AppFailure failure) async {
+        if (isSessionRejectionFailure(failure)) {
+          await _ref
+              .read(sessionStateProvider.notifier)
+              .handleUnauthorizedResponse();
+        }
         return null;
       },
     );
@@ -134,10 +137,14 @@ final class SessionTokenProvider {
         await _ref.read(sessionStateProvider.notifier).persistSession(enriched);
         return enriched;
       },
-      failure: (_) async {
-        await _ref
-            .read(sessionStateProvider.notifier)
-            .handleUnauthorizedResponse();
+      failure: (AppFailure failure) async {
+        // A backend outage must not end the session: keep the stored tokens
+        // so the next attempt can refresh once connectivity returns.
+        if (isSessionRejectionFailure(failure)) {
+          await _ref
+              .read(sessionStateProvider.notifier)
+              .handleUnauthorizedResponse();
+        }
         return null;
       },
     );
