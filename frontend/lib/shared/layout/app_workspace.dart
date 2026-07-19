@@ -2242,10 +2242,9 @@ EdgeInsets _compactWorkspacePagePadding(
     breakpoint,
     designTokens: theme.appTokens,
   );
-  final double top = switch (breakpoint) {
-    AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.xs,
-    _ => theme.spacing.sm,
-  };
+  // Tabs sit directly under the app bar: no top padding, spacing is only on
+  // the left/right (and bottom) of the workspace content.
+  final double top = theme.spacing.none;
   final double bottom = switch (breakpoint) {
     AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.sm,
     AppBreakpoint.md || AppBreakpoint.lg => theme.spacing.md,

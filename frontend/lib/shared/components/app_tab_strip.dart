@@ -68,14 +68,15 @@ class AppTabStrip extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: <Widget>[
-          for (final AppTabItem tab in tabs)
+          for (int index = 0; index < tabs.length; index += 1)
             _AppTabChip(
-              label: tab.label,
-              count: tab.count,
-              countTone: tab.countTone,
-              isSelected: selectedId == tab.id,
+              label: tabs[index].label,
+              count: tabs[index].count,
+              countTone: tabs[index].countTone,
+              isSelected: selectedId == tabs[index].id,
+              isFirst: index == 0,
               activeFill: activeFill,
-              onTap: () => onTabTapped(tab.id),
+              onTap: () => onTabTapped(tabs[index].id),
             ),
         ],
       ),
@@ -300,36 +301,62 @@ Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
   };
 }
 
-/// Chrome-style tab silhouette: rounded top corners, bottom corners flaring
-/// outward so the tab appears to grow out of the surface below it.
+/// Chrome-style tab silhouette for the selected tab: rounded top corners and
+/// bottom corners flaring outward into the toolbar. Each flare can be
+/// disabled independently (e.g. the first tab keeps a straight left edge so it
+/// stays flush with the toolbar's left edge).
 class _FlaredTabPainter extends CustomPainter {
   const _FlaredTabPainter({
     required this.fill,
     required this.topRadius,
     required this.flareRadius,
+    required this.flareLeft,
+    required this.flareRight,
   });
 
   final Color fill;
   final double topRadius;
   final double flareRadius;
+  final bool flareLeft;
+  final bool flareRight;
 
   Path _tabPath(Size size) {
     final double w = size.width;
     final double h = size.height;
     final double r = flareRadius;
     final double tr = topRadius;
-    return Path()
-      ..moveTo(0, h)
-      // Bottom-left corner curves outward.
-      ..quadraticBezierTo(r, h, r, h - r)
-      ..lineTo(r, tr)
-      ..quadraticBezierTo(r, 0, r + tr, 0)
-      ..lineTo(w - r - tr, 0)
-      ..quadraticBezierTo(w - r, 0, w - r, tr)
-      ..lineTo(w - r, h - r)
-      // Bottom-right corner curves outward.
-      ..quadraticBezierTo(w - r, h, w, h)
-      ..close();
+    final Path path = Path();
+
+    if (flareLeft) {
+      path
+        ..moveTo(0, h)
+        // Bottom-left corner curves outward.
+        ..quadraticBezierTo(r, h, r, h - r)
+        ..lineTo(r, tr)
+        ..quadraticBezierTo(r, 0, r + tr, 0);
+    } else {
+      path
+        ..moveTo(0, h)
+        ..lineTo(0, tr)
+        ..quadraticBezierTo(0, 0, tr, 0);
+    }
+
+    if (flareRight) {
+      path
+        ..lineTo(w - r - tr, 0)
+        ..quadraticBezierTo(w - r, 0, w - r, tr)
+        ..lineTo(w - r, h - r)
+        // Bottom-right corner curves outward.
+        ..quadraticBezierTo(w - r, h, w, h);
+    } else {
+      path
+        ..lineTo(w - tr, 0)
+        ..quadraticBezierTo(w, 0, w, tr)
+        ..lineTo(w, h);
+    }
+
+    path.close();
+    return path;
   }
 
   @override
@@ -341,13 +368,16 @@ class _FlaredTabPainter extends CustomPainter {
   bool shouldRepaint(_FlaredTabPainter oldDelegate) =>
       oldDelegate.fill != fill ||
       oldDelegate.topRadius != topRadius ||
-      oldDelegate.flareRadius != flareRadius;
+      oldDelegate.flareRadius != flareRadius ||
+      oldDelegate.flareLeft != flareLeft ||
+      oldDelegate.flareRight != flareRight;
 }
 
 class _AppTabChip extends StatefulWidget {
   const _AppTabChip({
     required this.label,
     required this.isSelected,
+    required this.isFirst,
     required this.onTap,
     required this.countTone,
     required this.activeFill,
@@ -358,6 +388,10 @@ class _AppTabChip extends StatefulWidget {
   final int? count;
   final AppTabCountTone countTone;
   final bool isSelected;
+
+  /// First tab in the strip: its left edge stays straight and flush with the
+  /// toolbar's left edge (no outward flare on that side).
+  final bool isFirst;
   final VoidCallback onTap;
 
   /// Opaque fill shared with the toolbar so the selected tab and toolbar
@@ -382,17 +416,22 @@ class _AppTabChipState extends State<_AppTabChip> {
         ? fullLabel
         : '$fullLabel (${widget.count})';
 
+    // Only the selected tab is filled (and flared), so it reads clearly as
+    // one continuous surface with the toolbar; inactive tabs stay flat and
+    // only tint on hover.
     final Color backgroundColor = widget.isSelected
         ? widget.activeFill
         : _isHovered
         ? colorScheme.onSurface.withValues(alpha: 0.06)
-        : colorScheme.onSurface.withValues(alpha: 0.03);
+        : Colors.transparent;
     final Color foregroundColor = widget.isSelected
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
     final FontWeight fontWeight = widget.isSelected
         ? FontWeight.w700
         : FontWeight.w500;
+    final bool flareLeft = widget.isSelected && !widget.isFirst;
+    final bool flareRight = widget.isSelected;
 
     return Semantics(
       button: true,
@@ -404,53 +443,53 @@ class _AppTabChipState extends State<_AppTabChip> {
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: widget.onTap,
-          child: Container(
-            // Minimal space kept on top only; the bottom sits flush on the
-            // toolbar so the active tab merges with it.
-            margin: EdgeInsets.only(top: theme.spacing.xs / 2),
-            child: CustomPaint(
-              painter: _FlaredTabPainter(
-                fill: backgroundColor,
-                topRadius: theme.radius.sm,
-                flareRadius: _flareRadius,
+          child: CustomPaint(
+            painter: _FlaredTabPainter(
+              fill: backgroundColor,
+              topRadius: theme.radius.sm,
+              flareRadius: _flareRadius,
+              flareLeft: flareLeft,
+              flareRight: flareRight,
+            ),
+            child: Padding(
+              // Horizontal padding widens by the flare so the label never
+              // overlaps the curved corners.
+              padding: EdgeInsets.only(
+                left: theme.spacing.sm + (flareLeft ? _flareRadius : 0),
+                right: theme.spacing.sm + (flareRight ? _flareRadius : 0),
+                top: theme.spacing.xs + 4,
+                bottom: theme.spacing.xs + 4,
               ),
-              child: Padding(
-                // Horizontal padding includes the flare width on each side.
-                padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm + _flareRadius,
-                  vertical: theme.spacing.xs + 4,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 1),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Text(
+                      fullLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: foregroundColor,
+                        fontWeight: fontWeight,
+                      ),
+                    ),
+                  ),
+                  if (widget.count != null)
+                    Transform.translate(
+                      offset: const Offset(1, -4),
                       child: Text(
-                        fullLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: foregroundColor,
-                          fontWeight: fontWeight,
+                        '${widget.count}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: _countToneColor(theme, widget.countTone),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                          height: 1,
                         ),
                       ),
                     ),
-                    if (widget.count != null)
-                      Transform.translate(
-                        offset: const Offset(1, -4),
-                        child: Text(
-                          '${widget.count}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: _countToneColor(theme, widget.countTone),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),
