@@ -21,7 +21,7 @@ Visibility may depend on the selected tab, workflow stage, record state, role, p
 | Register patient | Primary toolbar on every authorized tab; registration dialog footer | Opens `RegisterNewPatientDialog`; in its footer, runs duplicate detection and creates the patient. After create, opens the patient detail editor with Billing navigation suppressed. |
 | Refresh | Secondary toolbar on every tab | Reloads the OPD workspace and Payment gate data; shows a loading state while running. |
 | Patient registry | Secondary toolbar on every authorized tab | Navigates directly to `/patients`. |
-| Full OPD | Desk queue, Active visits, and Payment gate secondary toolbars | Navigates to `/opd`. |
+| Outpatient (OPD) | Secondary toolbar on every authorized tab | Navigates directly to `/opd`. |
 | Try again | Workspace load-error state | Retries loading the OPD workspace. |
 | Filters | Search toolbar on every tab; lab and radiology catalog tables | Opens the relevant advanced-filter modal. |
 | Clear filters | Search-field suffix when a query exists; advanced-filter modal footer | In the search field, clears only the query; in the filter modal, resets selected filters. |

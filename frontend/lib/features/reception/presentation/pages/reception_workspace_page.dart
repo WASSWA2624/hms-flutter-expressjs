@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -437,7 +438,11 @@ class _ReceptionWorkspaceContentState
       label: l10n.commonRefreshActionLabel,
       icon: Icons.refresh,
       enabled: !_refreshRequested,
+      isLoading: _refreshRequested,
       tooltip: _refreshRequested
+          ? l10n.receptionRefreshInProgressTooltip
+          : l10n.commonRefreshActionLabel,
+      semanticLabel: _refreshRequested
           ? l10n.receptionRefreshInProgressTooltip
           : l10n.commonRefreshActionLabel,
       onPressed: _refreshRequested
@@ -467,7 +472,7 @@ class _ReceptionWorkspaceContentState
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarAction(
             label: l10n.receptionOpenRegistryAction,
-            icon: Icons.badge_outlined,
+            icon: AppRouteIcons.patients,
             onPressed: isAllowed
                 ? () => context.go(AppRoutes.patients.location())
                 : null,
@@ -479,7 +484,7 @@ class _ReceptionWorkspaceContentState
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarAction(
             label: l10n.receptionOpenOpdAction,
-            icon: Icons.local_hospital_outlined,
+            icon: AppRouteIcons.opd,
             onPressed: isAllowed
                 ? () => context.go(AppRoutes.opd.location())
                 : null,

@@ -175,17 +175,21 @@ class AppTabToolbarAction extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (isLoading)
-            SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            )
-          else if (icon != null) ...<Widget>[
-            Icon(icon, size: 16),
+          if (isLoading || icon != null) ...<Widget>[
+            if (isLoading)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: Padding(
+                  padding: const EdgeInsets.all(1),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              Icon(icon, size: 16),
             SizedBox(width: theme.spacing.xs),
           ],
           Text(

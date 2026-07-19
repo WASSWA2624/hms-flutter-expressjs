@@ -55,7 +55,7 @@ const AccessRequirement receptionPaymentGateRequirement = AccessRequirement(
 final AccessRequirement receptionPatientRegistryRequirement =
     AppRoutes.patients.accessRequirement;
 
-/// Full OPD navigation must mirror the readable OPD route domains.
+/// Outpatient navigation must mirror the readable OPD route domains.
 const AccessRequirement receptionOpdWorkspaceRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.patientRead,

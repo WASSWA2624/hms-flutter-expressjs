@@ -5062,10 +5062,10 @@ abstract class AppLocalizations {
   /// **'Patient registry'**
   String get receptionOpenRegistryAction;
 
-  /// Secondary action to open the full OPD workspace.
+  /// Secondary Reception action matching the Outpatient navigation destination.
   ///
   /// In en, this message translates to:
-  /// **'Full OPD'**
+  /// **'Outpatient (OPD)'**
   String get receptionOpenOpdAction;
 
   /// Action to open the OPD encounter dialog from reception.

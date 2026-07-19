@@ -2614,7 +2614,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionOpenRegistryAction => 'Patient registry';
 
   @override
-  String get receptionOpenOpdAction => 'Full OPD';
+  String get receptionOpenOpdAction => 'Outpatient (OPD)';
 
   @override
   String get receptionOpenEncounterAction => 'Open encounter';

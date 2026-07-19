@@ -3406,9 +3406,9 @@
   "@receptionOpenRegistryAction": {
     "description": "Secondary Reception action to open the patient registry."
   },
-  "receptionOpenOpdAction": "Full OPD",
+  "receptionOpenOpdAction": "Outpatient (OPD)",
   "@receptionOpenOpdAction": {
-    "description": "Secondary action to open the full OPD workspace."
+    "description": "Secondary Reception action matching the Outpatient navigation destination."
   },
   "receptionOpenEncounterAction": "Open encounter",
   "@receptionOpenEncounterAction": {
