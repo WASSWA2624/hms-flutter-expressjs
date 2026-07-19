@@ -9,7 +9,7 @@ The screen contains Appointments, Desk queue, Active visits, and Payment gate ta
 ## Requirements
 
 1. Make **Register patient** the sole primary action on every tab.
-2. Show **Schedule appointment**, **Refresh**, **Full registry**, and **Full OPD** as secondary toolbar actions on every tab. Enable **Schedule appointment** only while Appointments is active; keep it visible but disabled elsewhere.
+2. Show **Schedule appointment**, **Refresh**, **Full registry**, and **Full OPD** as secondary toolbar actions on every tab. Keep every toolbar action enabled on every tab, except during loading or when authorization requires hiding it.
 3. Preserve each action’s existing handler, loading feedback, route, authorization, and responsive toolbar behavior. Do not render unauthorized actions.
 4. On Appointments, display all non-terminal appointment statuses, including NEW and CONFIRMED, using existing appointment data and synchronization.
 5. Make appointment search match the displayed appointment fields. Populate Advanced filters with the statuses represented by the appointment dataset and filter correctly.
