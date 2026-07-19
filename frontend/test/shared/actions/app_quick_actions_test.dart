@@ -83,4 +83,23 @@ void main() {
     await tester.pump();
     expect(pressed, 1);
   });
+
+  testWidgets('buttonsOnly omits title chrome', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        AppQuickActions(
+          presentation: AppQuickActionsPresentation.buttonsOnly,
+          actions: <AppActionItem>[
+            AppActionItem(
+              label: 'Save',
+              leadingIcon: Icons.save_outlined,
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text('Save'), findsOneWidget);
+  });
 }

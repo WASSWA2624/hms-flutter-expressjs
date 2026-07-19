@@ -1848,80 +1848,71 @@ class _ClinicalActionBar extends ConsumerWidget {
     return AppAccessActionGate(
       requirement: _ClinicalWorkspaceContentState._writeRequirement,
       builder: (BuildContext context, bool isAllowed) {
-        return ClinicalActionsPanel(
+        return AppQuickActions(
           title: l10n.clinicalActionsTitle,
-          actions: <ClinicalActionItem>[
-            ClinicalActionItem(
-              kind: ClinicalActionKind.addNote,
+          presentation: AppQuickActionsPresentation.detailPanel,
+          actions: <AppActionItem>[
+            AppActionItem(
               label: l10n.clinicalAddNoteAction,
-              icon: Icons.note_add_outlined,
+              leadingIcon: Icons.note_add_outlined,
               enabled: isAllowed,
               onPressed: () => _openNoteDialog(context, controller),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.addDiagnosis,
+            AppActionItem(
               label: l10n.clinicalAddDiagnosisAction,
-              icon: Icons.rule_outlined,
+              leadingIcon: Icons.rule_outlined,
               enabled: isAllowed,
               onPressed: () => _openDiagnosisDialog(context, controller),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.requestLab,
+            AppActionItem(
               label: l10n.clinicalRequestLabAction,
-              icon: Icons.science_outlined,
+              leadingIcon: Icons.science_outlined,
               enabled: isAllowed,
               onPressed: () =>
                   _openLabDialog(context, controller, referenceData),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.requestRadiology,
+            AppActionItem(
               label: l10n.clinicalRequestRadiologyAction,
-              icon: Icons.biotech_outlined,
+              leadingIcon: Icons.biotech_outlined,
               enabled: isAllowed,
               onPressed: () =>
                   _openRadiologyDialog(context, controller, referenceData),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.prescribe,
+            AppActionItem(
               label: l10n.clinicalPrescribeAction,
-              icon: Icons.medication_outlined,
+              leadingIcon: Icons.medication_outlined,
               enabled: isAllowed,
               onPressed: () =>
                   _openPrescriptionDialog(context, controller, referenceData),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.addProcedure,
+            AppActionItem(
               label: l10n.clinicalRequestProcedureAction,
-              icon: Icons.healing_outlined,
+              leadingIcon: Icons.healing_outlined,
               enabled: isAllowed,
               onPressed: () => _openProcedureDialog(context, controller),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.refer,
+            AppActionItem(
               label: l10n.opdReferAction,
-              icon: Icons.alt_route_outlined,
+              leadingIcon: Icons.alt_route_outlined,
               enabled: isAllowed,
               onPressed: () => _openReferralDialog(context, controller),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.requestAdmission,
+            AppActionItem(
               label: l10n.clinicalRequestAdmissionAction,
-              icon: Icons.bed_outlined,
+              leadingIcon: Icons.bed_outlined,
               enabled: isAllowed,
               onPressed: () =>
                   _openAdmissionDialog(context, controller, referenceData),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.followUp,
+            AppActionItem(
               label: l10n.opdFollowUpAction,
-              icon: Icons.event_repeat_outlined,
+              leadingIcon: Icons.event_repeat_outlined,
               enabled: isAllowed,
               onPressed: () => _openFollowUpDialog(context, controller),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.completeDisposition,
+            AppActionItem(
               label: dispositionActionLabel,
-              icon: Icons.task_alt_outlined,
+              leadingIcon: Icons.task_alt_outlined,
               enabled:
                   isAllowed &&
                   !bundle.entry.isTerminal &&
@@ -1934,10 +1925,9 @@ class _ClinicalActionBar extends ConsumerWidget {
                 actionLabel: dispositionActionLabel,
               ),
             ),
-            ClinicalActionItem(
-              kind: ClinicalActionKind.printSummary,
+            AppActionItem(
               label: l10n.clinicalPrintSummaryAction,
-              icon: Icons.print_outlined,
+              leadingIcon: Icons.print_outlined,
               onPressed: () async {
                 await printFormTemplateDocument(
                   ref: ref,

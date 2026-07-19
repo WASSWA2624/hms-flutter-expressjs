@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_mapper.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -145,14 +146,24 @@ class _HomeDashboardContent extends ConsumerWidget {
                   maxCards: profile.effectiveMaxStatusCards,
                   compact: profile.compactMetrics,
                 ),
-                quickActions: DashboardQuickActions(
+                quickActions: AppQuickActions(
                   title: l10n.homeDashboardNextStepsTitle,
-                  actions: homeDashboardQuickActions(
-                    context: context,
-                    ref: ref,
-                    actions: actions,
-                    request: request,
-                  ),
+                  leadingIcon: Icons.bolt_rounded,
+                  actions: <AppActionItem>[
+                    for (final DashboardQuickActionData action
+                        in homeDashboardQuickActions(
+                          context: context,
+                          ref: ref,
+                          actions: actions,
+                          request: request,
+                        ))
+                      AppActionItem(
+                        label: action.label,
+                        leadingIcon: action.icon,
+                        semanticLabel: action.semanticsLabel,
+                        onPressed: action.onPressed,
+                      ),
+                  ],
                 ),
                 priorityPanel: DashboardPriorityPanel(data: priorityData),
                 charts: LayoutBuilder(

@@ -1,3 +1,35 @@
-On reception, we have, within the, within the dialogue, we have defined we have defined something that, or something that shows us the current step, like the progress of the steps that this patient has gone through, where he currently is, and what the next action is. I want us to To Refine this such that they actually, such that they actually look nice, because right now they are taking up a lot of vertical space these buttons are too big, but we need to see the starting point there should be, and I would show the next step like the progress, the progress for this patient since he came up to where he is, and the, the act, the steps should be clear, they should be clearly visible. I think we also need to make sure that Yeah.
+# Build a Compact Shared Patient Progress Stepper
 
-I think also make these steps the steps view of progress into a reusable component within the shared folder so that it can be reused because there are many places within the app where we, we are showing the progress, current progress previous steps, current step, next step, and where the patient needs to go next. So let's reuse it and also refactor all the other part of the app to make sure that they are reusing this component.
+Replace oversized workflow controls with a reusable, accessible progress stepper. Follow `prompts/.cursor/prompt.mdc`, `.cursor/flows/opd-flow.mdc`, and `frontend/.cursor/index.mdc`.
+
+## Context
+
+Reception action dialogs use excessive space and do not clearly communicate the patient’s journey.
+
+## Requirements
+
+1. Create one presentation-only shared component accepting ordered completed, current, and next steps plus optional concise guidance.
+2. Show the first known step through the next action. Differentiate states with localized text, icons, connectors, and semantics—not color alone.
+3. Use a compact horizontal layout when possible and a readable wrapping or vertical layout on narrow screens, without clipping or scrolling.
+4. Replace compatible progress views in Reception appointment, queue, and flow dialogs; migrate other patient progress views only when behavior matches.
+5. Preserve workflow order, permissions, actions, and synchronization. Omit unauthorized content; never expose raw enums or database IDs.
+6. Handle missing or invalid data safely, preserve host loading/empty/error/success feedback, and support keyboard and screen-reader use.
+
+## Constraints
+
+- Reuse tokens, localization, registries, and action controls; do not invent transitions or embed business logic.
+- Support both themes, text scaling, and all representative widths.
+
+## Acceptance Criteria
+
+- R1–R4: Dialogs show a compact, reusable, ordered journey without compatible duplication.
+- R5–R6: Authorized behavior remains unchanged; restricted UI is absent and every state is accessible.
+- Add component and dialog widget tests for states, permissions, themes, scaling, and widths; run Flutter analysis and tests.
+
+## Relevant Files
+
+- `frontend/lib/shared/`
+- `frontend/lib/shared/opd_actions/`
+- `frontend/lib/shared/workflow_actions/`
+- `frontend/lib/features/reception/presentation/`
+- `frontend/test/`

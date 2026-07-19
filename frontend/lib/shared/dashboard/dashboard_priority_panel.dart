@@ -2,11 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
-import 'package:hosspi_hms/shared/dashboard/dashboard_quick_actions.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 class DashboardPriorityPanel extends StatelessWidget {
@@ -601,7 +601,18 @@ class _DashboardEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DashboardActionButtonRow(actions: actions);
+    return AppQuickActions(
+      presentation: AppQuickActionsPresentation.buttonsOnly,
+      actions: <AppActionItem>[
+        for (final DashboardQuickActionData action in actions.take(5))
+          AppActionItem(
+            label: action.label,
+            leadingIcon: action.icon,
+            semanticLabel: action.semanticsLabel,
+            onPressed: action.onPressed,
+          ),
+      ],
+    );
   }
 }
 

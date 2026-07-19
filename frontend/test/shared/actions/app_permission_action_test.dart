@@ -10,8 +10,8 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/app_action_lifecycle.dart';
-import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
 import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
+import 'package:hosspi_hms/shared/actions/app_quick_actions.dart';
 import 'package:hosspi_hms/shared/components/app_permission_action.dart';
 import 'package:hosspi_hms/shared/components/app_permission_async_action.dart';
 
@@ -181,14 +181,15 @@ void main() {
     });
   });
 
-  group('AppPermissionActionList overflow', () {
+  group('AppQuickActions overflow', () {
     testWidgets('places overflow actions in the more-actions menu', (
       tester,
     ) async {
       await tester.pumpWidget(
         wrap(
-          AppPermissionActionList(
-            actions: <AppPermissionActionItem>[
+          AppQuickActions(
+            presentation: AppQuickActionsPresentation.buttonsOnly,
+            permissionActions: <AppPermissionActionItem>[
               AppPermissionActionItem(
                 requirement: clinicalWrite,
                 label: 'Primary',

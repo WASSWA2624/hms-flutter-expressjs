@@ -5,8 +5,8 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
-import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
 import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
+import 'package:hosspi_hms/shared/actions/app_quick_actions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 
@@ -582,8 +582,9 @@ class _WorkflowStepActions extends StatelessWidget {
     }
 
     if (permissionActions.isNotEmpty) {
-      return AppPermissionActionList(
-        actions: permissionActions,
+      return AppQuickActions(
+        presentation: AppQuickActionsPresentation.buttonsOnly,
+        permissionActions: permissionActions,
         extraActions: plainActions,
       );
     }
