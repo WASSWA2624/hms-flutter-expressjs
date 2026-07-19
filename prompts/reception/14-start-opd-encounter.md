@@ -1,1 +1,34 @@
-On the, on the reception screen, there is a start OTP encounter button, which is actually triggered. Okay, it is three digits. When a patient, actually, when a patient needs to start a new encounter, when you need to start a new encounter for this patient, for a patient, so actually, when the next, when the next, when the, when the next step, the next step is to start a new encounter, I click this button, I, I click the patient row, and I get a start OPD encounter as one of the buttons, but on the OPD encounter On this Star OpEd account, I see there are two loading spinners, which isn't a good user experience in the way they're actually displaying. I think they should this kind of loading spinner that has the Hospice HMO's or the app logo should By default, display in the center of the, it should display in the center of the dialog, of the modal dialog, and it should display over the content of the dialog so that it disappears when everything is loaded. That would give a good user experience, but also the start of the encounter doesn't look organized. there is a lot of nested, there is a lot of grouping. for example, the doctor, so we can search the doctor, that should be a separate component, but not it should be a separate searchable compo-component, but not in a card. Then there is also the billing section where we have the Consultation fee that should also be a separate they shouldn't, they shouldn't be grouped. Let's have one form in which these input fields are nicely arranged. then if the payment is required, then you select accordingly, and if the payment is received, I think the payment received should, we should get rid of the payment received because This, when you're starting an encounter, you're actually not, you You are a receptionist, or maybe it is being used by anyone else. This should instead reflect in the being that, yeah, there is a, a patient who has come to pay and is supposed to pay this amount of money. So instead of displaying this in the, well, instead of, because Okay, b-because of, we don't want the receptionist to receive the money, the money should be paid at the billing desk, unless this person has access to billing, but still the billing should be completed within the billing desk, within the billing screen or the billing module. And then also, so which means right now the only fields that we need is the doctor whom we are assigning to. This patient, then the billing field, which should be autofilled if this doctor actually has a consultation fee attached to him, but it can be edited. So they're not option, but the payment required is also is a required field, but by default, it shouldn't be required, though you can set it to either required or not required. So this start OPD encounter should be used. It should be a reusable component, a reusable dialog that should be used throughout the entire app. So when someone is starting an OPD encounter, then they should be using this model dialog throughout.
+# Simplify the Shared Start OPD Encounter Dialog
+
+Use one focused, reusable dialog for every Start OPD encounter entry point. Follow `prompts/.cursor/prompt.mdc`, `.cursor/flows/opd-flow.mdc`, and `frontend/.cursor/index.mdc`.
+
+## Context
+
+The dialog has competing loaders, excessive grouping, and payment controls outside Reception’s responsibility.
+
+## Requirements
+
+1. Route every authorized start action through shared `OpdEncounterDialog`; remove compatible duplicates without changing workflow contracts.
+2. While initial data loads, show one centered branded `AppLoadingIndicator` overlay. Block dialog interactions and remove simultaneous inline initial loaders.
+3. In appointment/patient-pinned mode, show one flat responsive form: searchable doctor, editable consultation fee and currency, and Payment required.
+4. Default Payment required to false. Selecting a doctor populates any configured fee and currency, which remain editable.
+5. Remove Payment received, payment method, transaction reference, and payment posting. Billing owns collection and settlement.
+6. Preserve active-encounter protection, authorization, validation, localized feedback, recoverable input, and targeted post-success synchronization.
+
+## Constraints
+
+- Do not invent routes, permissions, contracts, transitions, or billing mutations.
+- Use shared components and tokens; support accessibility, both themes, and all viewports without overflow.
+
+## Acceptance Criteria
+
+- R1–R5: Every entry point opens the simplified form with one loader; defaults remain editable and payment cannot be recorded.
+- R6: Loading, error, retry, validation, cancel, and success remain correct.
+- Test reuse, defaults, removed controls, permissions, widths, and themes; run localization generation, Flutter analysis, and relevant tests.
+
+## Relevant Files
+
+- `frontend/lib/shared/components/opd_encounter_dialog.dart`
+- `frontend/lib/shared/opd_actions/opd_encounter_flow.dart`
+- `frontend/lib/features/reception/presentation/`
+- `frontend/test/shared/`
