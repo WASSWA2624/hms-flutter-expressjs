@@ -1105,8 +1105,6 @@ class _OperationsActionPanel extends ConsumerWidget {
     return AppQuickActions(
       title: l10n.operationsActionsTitle,
       leadingIcon: Icons.handyman_outlined,
-      maxColumns: 2,
-      minItemWidth: 180,
       extraActions: <Widget>[
             AppButton.secondary(
               label: l10n.operationsAssignAction,

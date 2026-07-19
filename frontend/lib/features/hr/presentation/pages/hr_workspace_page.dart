@@ -1656,7 +1656,6 @@ class _WorkItemActions extends ConsumerWidget {
         AppQuickActions(
           title: context.l10n.patientsQuickActionsTitle,
           presentation: AppQuickActionsPresentation.plain,
-          minItemWidth: 180,
           permissionActions: _workItemActions(context, ref, item, enabled),
         ),
       ],

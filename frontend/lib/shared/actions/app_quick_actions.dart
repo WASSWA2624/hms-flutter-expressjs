@@ -21,7 +21,9 @@ enum AppQuickActionsPresentation {
 /// A consistent, responsive quick-actions group.
 ///
 /// Features own the action labels, eligibility, permissions, and callbacks.
-/// This component owns only the shared presentation and responsive layout.
+/// This component owns only the shared presentation and layout: buttons are
+/// sized to their content, left-aligned, and wrap onto the next row when
+/// horizontal space runs out.
 class AppQuickActions extends StatelessWidget {
   const AppQuickActions({
     required this.title,
@@ -32,8 +34,6 @@ class AppQuickActions extends StatelessWidget {
     this.emptyState,
     this.presentation = AppQuickActionsPresentation.section,
     this.leadingIcon = Icons.bolt_outlined,
-    this.minItemWidth,
-    this.maxColumns = 4,
     this.spacing,
     this.runSpacing,
     this.overflowLabel,
@@ -49,8 +49,6 @@ class AppQuickActions extends StatelessWidget {
   final Widget? emptyState;
   final AppQuickActionsPresentation presentation;
   final IconData? leadingIcon;
-  final double? minItemWidth;
-  final int maxColumns;
   final double? spacing;
   final double? runSpacing;
   final String? overflowLabel;
@@ -58,6 +56,43 @@ class AppQuickActions extends StatelessWidget {
 
   bool get _isEmpty =>
       actions.isEmpty && permissionActions.isEmpty && extraActions.isEmpty;
+
+  /// Buttons must hug their content so rows pack from the left; a stretched
+  /// button would otherwise claim the entire wrap run.
+  List<AppPermissionActionItem> get _contentSizedPermissionActions {
+    return <AppPermissionActionItem>[
+      for (final AppPermissionActionItem action in permissionActions)
+        if (!action.fullWidth) action else _withoutFullWidth(action),
+    ];
+  }
+
+  static AppPermissionActionItem _withoutFullWidth(
+    AppPermissionActionItem action,
+  ) {
+    return AppPermissionActionItem(
+      requirement: action.requirement,
+      label: action.label,
+      icon: action.icon,
+      onPressed: action.onPressed,
+      mutate: action.mutate,
+      onSuccess: action.onSuccess,
+      variant: action.variant,
+      enabled: action.enabled,
+      isLoading: action.isLoading,
+      hideWhenDenied: action.hideWhenDenied,
+      capabilityAllowed: action.capabilityAllowed,
+      blockedReason: action.blockedReason,
+      tooltip: action.tooltip,
+      semanticLabel: action.semanticLabel,
+      placement: action.placement,
+      confirmTitle: action.confirmTitle,
+      confirmBody: action.confirmBody,
+      confirmSubmitLabel: action.confirmSubmitLabel,
+      destructive: action.destructive,
+      onlineOnly: action.onlineOnly,
+      showFailureFeedback: action.showFailureFeedback,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,10 +109,8 @@ class AppQuickActions extends StatelessWidget {
         ? emptyState!
         : permissionActions.isNotEmpty
         ? AppPermissionActionList(
-            actions: permissionActions,
+            actions: _contentSizedPermissionActions,
             extraActions: extraActions,
-            minItemWidth: minItemWidth,
-            maxColumns: maxColumns,
             spacing: spacing ?? theme.spacing.sm,
             runSpacing: runSpacing ?? spacing ?? theme.spacing.sm,
             overflowLabel: overflowLabel,
@@ -85,8 +118,6 @@ class AppQuickActions extends StatelessWidget {
         : AppActionList(
             actions: actions,
             extraActions: extraActions,
-            minItemWidth: minItemWidth,
-            maxColumns: maxColumns,
             spacing: spacing ?? theme.spacing.sm,
             runSpacing: runSpacing ?? spacing ?? theme.spacing.sm,
           );

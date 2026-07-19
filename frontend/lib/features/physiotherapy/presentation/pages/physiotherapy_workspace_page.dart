@@ -1089,7 +1089,6 @@ class _ActionsPanel extends ConsumerWidget {
     return AppQuickActions(
       title: l10n.physiotherapyActionsTitle,
       presentation: AppQuickActionsPresentation.detailPanel,
-      minItemWidth: 180,
       permissionActions: <AppPermissionActionItem>[
           AppPermissionActionItem(
             requirement: _therapyWriteRequirement,

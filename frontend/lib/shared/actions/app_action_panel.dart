@@ -66,8 +66,6 @@ class AppActionPanel extends StatelessWidget {
     this.extraActions = const <Widget>[],
     this.spacing,
     this.runSpacing,
-    this.minItemWidth,
-    this.maxColumns = 4,
     this.titleIcon,
     super.key,
   });
@@ -78,8 +76,6 @@ class AppActionPanel extends StatelessWidget {
   final List<Widget> extraActions;
   final double? spacing;
   final double? runSpacing;
-  final double? minItemWidth;
-  final int maxColumns;
   final IconData? titleIcon;
 
   @override
@@ -93,8 +89,6 @@ class AppActionPanel extends StatelessWidget {
       leadingIcon: titleIcon ?? Icons.bolt_outlined,
       spacing: spacing,
       runSpacing: runSpacing,
-      minItemWidth: minItemWidth,
-      maxColumns: maxColumns,
     );
   }
 }
@@ -227,8 +221,6 @@ class AppPermissionActionPanel extends StatelessWidget {
     this.extraActions = const <Widget>[],
     this.spacing,
     this.runSpacing,
-    this.minItemWidth,
-    this.maxColumns = 3,
     this.titleIcon,
     this.overflowLabel,
     super.key,
@@ -240,8 +232,6 @@ class AppPermissionActionPanel extends StatelessWidget {
   final List<Widget> extraActions;
   final double? spacing;
   final double? runSpacing;
-  final double? minItemWidth;
-  final int maxColumns;
   final IconData? titleIcon;
   final String? overflowLabel;
 
@@ -256,8 +246,6 @@ class AppPermissionActionPanel extends StatelessWidget {
       leadingIcon: titleIcon ?? Icons.bolt_outlined,
       spacing: spacing,
       runSpacing: runSpacing,
-      minItemWidth: minItemWidth,
-      maxColumns: maxColumns,
       overflowLabel: overflowLabel,
     );
   }
@@ -270,8 +258,6 @@ class AppActionSection extends StatelessWidget {
     this.actions = const <AppActionItem>[],
     this.permissionActions = const <AppPermissionActionItem>[],
     this.extraActions = const <Widget>[],
-    this.minItemWidth,
-    this.maxColumns = 3,
     this.overflowLabel,
     super.key,
   });
@@ -280,8 +266,6 @@ class AppActionSection extends StatelessWidget {
   final List<AppActionItem> actions;
   final List<AppPermissionActionItem> permissionActions;
   final List<Widget> extraActions;
-  final double? minItemWidth;
-  final int maxColumns;
   final String? overflowLabel;
 
   @override
@@ -291,8 +275,6 @@ class AppActionSection extends StatelessWidget {
       actions: actions,
       permissionActions: permissionActions,
       extraActions: extraActions,
-      minItemWidth: minItemWidth,
-      maxColumns: maxColumns,
       overflowLabel: overflowLabel,
     );
   }

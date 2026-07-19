@@ -159,8 +159,6 @@ class _OpdAppointmentActionsDialogState
           if (!terminal)
             AppQuickActions(
               title: l10n.patientsQuickActionsTitle,
-              minItemWidth: 180,
-              maxColumns: 3,
               permissionActions: <AppPermissionActionItem>[
                 if (canQueue)
                   AppPermissionActionItem(

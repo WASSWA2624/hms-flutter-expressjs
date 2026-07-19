@@ -974,8 +974,6 @@ class _PharmacyActionPanel extends ConsumerWidget {
         leadingIcon: Icons.touch_app_outlined,
         spacing: theme.spacing.xs,
         runSpacing: theme.spacing.xs,
-        minItemWidth: 132,
-        maxColumns: 6,
         actions: actions
             .map(
               (AppActionItem action) => AppActionItem(

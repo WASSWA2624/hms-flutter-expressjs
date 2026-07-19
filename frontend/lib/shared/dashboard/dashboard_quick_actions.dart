@@ -17,8 +17,6 @@ class DashboardQuickActions extends StatelessWidget {
     return AppQuickActions(
       title: title,
       leadingIcon: Icons.bolt_rounded,
-      minItemWidth: 180,
-      maxColumns: 5,
       actions: <AppActionItem>[
         for (final DashboardQuickActionData action in actions)
           AppActionItem(

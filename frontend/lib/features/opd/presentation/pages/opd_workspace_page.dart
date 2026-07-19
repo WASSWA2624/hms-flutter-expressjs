@@ -2612,7 +2612,6 @@ class _OpdPatientActionsDialogState
           ),
           AppQuickActions(
             title: l10n.patientsQuickActionsTitle,
-            minItemWidth: 170,
             permissionActions: _actions(context),
           ),
         ],
