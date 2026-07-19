@@ -2601,6 +2601,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Loading appointments, queues, and front-desk visits...';
 
   @override
+  String get receptionRefreshInProgressTooltip => 'Refresh in progress';
+
+  @override
+  String get receptionActionInProgressTooltip =>
+      'Another reception update is in progress';
+
+  @override
   String get receptionRegisterPatientAction => 'Register patient';
 
   @override

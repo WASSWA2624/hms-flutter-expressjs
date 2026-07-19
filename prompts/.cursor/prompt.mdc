@@ -11,7 +11,7 @@ Define prompts an agent can execute without guessing scope or behavior.
 
 ## Required Structure
 
-- Use `.md`, stay under 501 words, and start with an H1 and objective.
+- Use `.md`, stay under 251 words, and start with an H1 and objective.
 - Include `Context`, `Requirements`, `Constraints`, `Acceptance Criteria`, and `Relevant Files`.
 - Number requirements and make acceptance criteria observable.
 

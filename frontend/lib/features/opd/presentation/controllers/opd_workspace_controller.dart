@@ -113,6 +113,12 @@ final class OpdWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
+    // Manual refresh is intentionally single-flight. Realtime refreshes use
+    // the pending-plan path below, but repeated toolbar taps must not enqueue
+    // another identical HTTP reload behind the active one.
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      return Future<AppFailure?>.value();
+    }
     return _syncVisibleData(showLoading: true, refreshProviders: true);
   }
 
@@ -529,8 +535,9 @@ final class OpdWorkspaceController
     OpdAppointment appointment,
     String? reason,
   ) {
-    final String? normalizedReason =
-        reason == null || reason.trim().isEmpty ? null : reason.trim();
+    final String? normalizedReason = reason == null || reason.trim().isEmpty
+        ? null
+        : reason.trim();
     return _mutateAppointment(
       () => _repository.cancelAppointment(appointment.apiId, normalizedReason),
     );
@@ -1304,7 +1311,10 @@ final class OpdWorkspaceController
         if (latest != null) {
           _emit(
             latest.copyWith(
-              appointments: _upsertAppointment(latest.appointments, appointment),
+              appointments: _upsertAppointment(
+                latest.appointments,
+                appointment,
+              ),
               isSaving: false,
             ),
           );
@@ -1765,10 +1775,9 @@ final class OpdWorkspaceController
             next.assignedStaffDisplayName ?? previous.assignedStaffDisplayName,
         assignedStaffRole: next.assignedStaffRole ?? previous.assignedStaffRole,
         assignedStaffType: next.assignedStaffType ?? previous.assignedStaffType,
-        assignedStaffLabel:
-            nextLabelIsPlaceholder
-                ? previous.assignedStaffLabel
-                : (next.assignedStaffLabel ?? previous.assignedStaffLabel),
+        assignedStaffLabel: nextLabelIsPlaceholder
+            ? previous.assignedStaffLabel
+            : (next.assignedStaffLabel ?? previous.assignedStaffLabel),
         visitQueueId: next.visitQueueId ?? previous.visitQueueId,
       );
     }
@@ -1781,7 +1790,8 @@ final class OpdWorkspaceController
           previous.assignedStaffDisplayName ?? next.assignedStaffDisplayName,
       assignedStaffRole: previous.assignedStaffRole ?? next.assignedStaffRole,
       assignedStaffType: previous.assignedStaffType ?? next.assignedStaffType,
-      assignedStaffLabel: previous.assignedStaffLabel ?? next.assignedStaffLabel,
+      assignedStaffLabel:
+          previous.assignedStaffLabel ?? next.assignedStaffLabel,
       visitQueueId: next.visitQueueId ?? previous.visitQueueId,
     );
   }

@@ -82,6 +82,7 @@ class _ReceptionWorkspaceContentState
   late ReceptionDeskSection _section;
   String? _appliedRouteSignature;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  bool _refreshRequested = false;
   late final AppListTableColumnVisibilityController<_ReceptionDeskRow>
   _columnVisibilityController;
 
@@ -175,7 +176,7 @@ class _ReceptionWorkspaceContentState
     final String location = AppRoutes.reception.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
-    GoRouter.of(context).replace<void>(location);
+    context.go(location);
   }
 
   OpdFlowSummary? _findFlow(String id) {
@@ -199,9 +200,34 @@ class _ReceptionWorkspaceContentState
     final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
     final bool isRefreshing =
+        _refreshRequested ||
         state.isRefreshingAppointments ||
         state.isRefreshingQueue ||
-        state.isRefreshingFlows;
+        state.isRefreshingFlows ||
+        state.isSaving;
+    final List<ReceptionDeskSection> visibleSections = _visibleSections();
+    if (visibleSections.isEmpty) {
+      return AppStateView(
+        title: l10n.errorForbiddenTitle,
+        body: l10n.errorForbiddenMessage,
+        variant: AppStateViewVariant.error,
+      );
+    }
+    if (!visibleSections.contains(_section)) {
+      _section = visibleSections.first;
+      _filterValue = AppSearchBarFilterValue.empty;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        final String tab = receptionDeskSectionToQueryValue(_section);
+        GoRouter.of(context).replace<void>(
+          AppRoutes.reception.location(
+            queryParameters: <String, String>{'section': tab},
+          ),
+        );
+      });
+    }
 
     final List<_ReceptionDeskRow> sectionRows = _buildSectionRows(state);
     final List<_ReceptionDeskRow> rows = _applyStatusFilter(sectionRows);
@@ -219,8 +245,7 @@ class _ReceptionWorkspaceContentState
           children: <Widget>[
             AppTabStrip(
               tabs: <AppTabItem>[
-                for (final ReceptionDeskSection section
-                    in ReceptionDeskSection.values)
+                for (final ReceptionDeskSection section in visibleSections)
                   AppTabItem(
                     id: section.name,
                     icon: _sectionIcon(section),
@@ -326,12 +351,16 @@ class _ReceptionWorkspaceContentState
   Widget _buildPrimaryAction(AppLocalizations l10n, bool isRefreshing) {
     return switch (_section) {
       ReceptionDeskSection.appointments => AppAccessActionGate(
-        requirement: receptionFrontDeskWriteRequirement,
+        requirement: receptionPatientWriteRequirement,
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarPrimary(
             label: l10n.receptionScheduleAppointmentAction,
             icon: Icons.calendar_month_outlined,
             enabled: isAllowed && !isRefreshing,
+            isLoading: isAllowed && isRefreshing,
+            tooltip: isAllowed && isRefreshing
+                ? l10n.receptionActionInProgressTooltip
+                : null,
             onPressed: isAllowed && !isRefreshing
                 ? () => unawaited(_scheduleAppointment())
                 : null,
@@ -340,25 +369,33 @@ class _ReceptionWorkspaceContentState
       ),
       ReceptionDeskSection.queue ||
       ReceptionDeskSection.activeVisits => AppAccessActionGate(
-        requirement: receptionFrontDeskWriteRequirement,
+        requirement: receptionPatientWriteRequirement,
         builder: (BuildContext context, bool isAllowed) {
           return AppTabToolbarPrimary(
             label: l10n.receptionRegisterPatientAction,
             icon: Icons.person_add_alt_1_outlined,
             enabled: isAllowed && !isRefreshing,
+            isLoading: isAllowed && isRefreshing,
+            tooltip: isAllowed && isRefreshing
+                ? l10n.receptionActionInProgressTooltip
+                : null,
             onPressed: isAllowed && !isRefreshing
                 ? () => unawaited(_openRegisterPatient())
                 : null,
           );
         },
       ),
-      ReceptionDeskSection.paymentGate => AppTabToolbarPrimary(
-        label: l10n.navigationBillingLabel,
-        icon: Icons.payments_outlined,
-        enabled: !isRefreshing,
-        onPressed: isRefreshing
-            ? null
-            : () => context.go(AppRoutes.billing.location()),
+      ReceptionDeskSection.paymentGate => AppAccessActionGate(
+        requirement: receptionBillingWorkspaceRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.navigationBillingLabel,
+            icon: Icons.payments_outlined,
+            onPressed: isAllowed
+                ? () => context.go(AppRoutes.billing.location())
+                : null,
+          );
+        },
       ),
     };
   }
@@ -372,48 +409,88 @@ class _ReceptionWorkspaceContentState
       icon: Icons.refresh,
       isLoading: isRefreshing,
       enabled: !isRefreshing,
+      tooltip: isRefreshing
+          ? l10n.receptionRefreshInProgressTooltip
+          : l10n.commonRefreshActionLabel,
       onPressed: isRefreshing ? null : () => unawaited(_refreshWorkspace()),
+    );
+
+    final Widget registerPatientAction = AppAccessActionGate(
+      requirement: receptionPatientWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarAction(
+          label: l10n.receptionRegisterPatientAction,
+          icon: Icons.person_add_alt_1_outlined,
+          enabled: isAllowed && !isRefreshing,
+          isLoading: isAllowed && isRefreshing,
+          tooltip: isAllowed && isRefreshing
+              ? l10n.receptionActionInProgressTooltip
+              : null,
+          onPressed: isAllowed && !isRefreshing
+              ? () => unawaited(_openRegisterPatient())
+              : null,
+        );
+      },
     );
 
     return switch (_section) {
       ReceptionDeskSection.appointments => <Widget>[
+        registerPatientAction,
+        refreshAction,
         AppAccessActionGate(
-          requirement: receptionFrontDeskWriteRequirement,
+          requirement: receptionPatientRegistryRequirement,
           builder: (BuildContext context, bool isAllowed) {
             return AppTabToolbarAction(
-              label: l10n.receptionRegisterPatientAction,
-              icon: Icons.person_add_alt_1_outlined,
-              enabled: isAllowed && !isRefreshing,
-              onPressed: isAllowed && !isRefreshing
-                  ? () => unawaited(_openRegisterPatient())
+              label: l10n.receptionOpenRegistryAction,
+              icon: Icons.badge_outlined,
+              onPressed: isAllowed
+                  ? () => context.go(AppRoutes.patients.location())
                   : null,
             );
           },
         ),
-        refreshAction,
-        AppTabToolbarAction(
-          label: l10n.receptionOpenRegistryAction,
-          icon: Icons.badge_outlined,
-          enabled: !isRefreshing,
-          onPressed: isRefreshing
-              ? null
-              : () => context.go(AppRoutes.patients.location()),
-        ),
       ],
       ReceptionDeskSection.queue ||
-      ReceptionDeskSection.activeVisits ||
-      ReceptionDeskSection.paymentGate => <Widget>[
+      ReceptionDeskSection.activeVisits => <Widget>[
         refreshAction,
-        AppTabToolbarAction(
-          label: l10n.receptionOpenOpdAction,
-          icon: Icons.local_hospital_outlined,
-          enabled: !isRefreshing,
-          onPressed: isRefreshing
-              ? null
-              : () => context.go(AppRoutes.opd.location()),
+        AppAccessActionGate(
+          requirement: receptionOpdWorkspaceRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppTabToolbarAction(
+              label: l10n.receptionOpenOpdAction,
+              icon: Icons.local_hospital_outlined,
+              onPressed: isAllowed
+                  ? () => context.go(AppRoutes.opd.location())
+                  : null,
+            );
+          },
+        ),
+      ],
+      ReceptionDeskSection.paymentGate => <Widget>[
+        registerPatientAction,
+        refreshAction,
+        AppAccessActionGate(
+          requirement: receptionOpdWorkspaceRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppTabToolbarAction(
+              label: l10n.receptionOpenOpdAction,
+              icon: Icons.local_hospital_outlined,
+              onPressed: isAllowed
+                  ? () => context.go(AppRoutes.opd.location())
+                  : null,
+            );
+          },
         ),
       ],
     };
+  }
+
+  List<ReceptionDeskSection> _visibleSections() {
+    final policy = ref.watch(appAccessPolicyProvider);
+    return <ReceptionDeskSection>[
+      for (final ReceptionDeskSection section in ReceptionDeskSection.values)
+        if (receptionDeskSectionRequirement(section).isAllowed(policy)) section,
+    ];
   }
 
   List<AppListTableColumn<_ReceptionDeskRow>> _receptionDefaultColumns(
@@ -1042,13 +1119,23 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _refreshWorkspace() async {
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .refresh();
-    if (!mounted) {
+    if (_refreshRequested) {
       return;
     }
-    _showFailureIfNeeded(context, failure);
+    setState(() => _refreshRequested = true);
+    try {
+      final AppFailure? failure = await ref
+          .read(opdWorkspaceControllerProvider.notifier)
+          .refresh();
+      if (!mounted) {
+        return;
+      }
+      _showFailureIfNeeded(context, failure);
+    } finally {
+      if (mounted) {
+        setState(() => _refreshRequested = false);
+      }
+    }
   }
 
   Future<void> _scheduleAppointment() async {
@@ -1079,6 +1166,7 @@ class _ReceptionWorkspaceContentState
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+        await _refreshWorkspace();
       }
       return;
     }
@@ -1096,6 +1184,7 @@ class _ReceptionWorkspaceContentState
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+          await _refreshWorkspace();
         }
         return;
       }
@@ -1107,6 +1196,7 @@ class _ReceptionWorkspaceContentState
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+        await _refreshWorkspace();
       }
       return;
     }
@@ -1200,6 +1290,7 @@ class _ReceptionWorkspaceContentState
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      await _refreshWorkspace();
     }
   }
 

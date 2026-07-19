@@ -3390,6 +3390,14 @@
   "@receptionLoadingBody": {
     "description": "Loading body for the reception workspace."
   },
+  "receptionRefreshInProgressTooltip": "Refresh in progress",
+  "@receptionRefreshInProgressTooltip": {
+    "description": "Tooltip for the disabled reception refresh action while data is reloading."
+  },
+  "receptionActionInProgressTooltip": "Another reception update is in progress",
+  "@receptionActionInProgressTooltip": {
+    "description": "Tooltip for an authorized reception mutation disabled by an in-flight request."
+  },
   "receptionRegisterPatientAction": "Register patient",
   "@receptionRegisterPatientAction": {
     "description": "Primary action to register a patient from reception."

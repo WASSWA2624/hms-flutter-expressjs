@@ -5038,6 +5038,18 @@ abstract class AppLocalizations {
   /// **'Loading appointments, queues, and front-desk visits...'**
   String get receptionLoadingBody;
 
+  /// Tooltip for the disabled reception refresh action while data is reloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh in progress'**
+  String get receptionRefreshInProgressTooltip;
+
+  /// Tooltip for an authorized reception mutation disabled by an in-flight request.
+  ///
+  /// In en, this message translates to:
+  /// **'Another reception update is in progress'**
+  String get receptionActionInProgressTooltip;
+
   /// Primary action to register a patient from reception.
   ///
   /// In en, this message translates to:
