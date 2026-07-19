@@ -62,6 +62,7 @@ void main() {
     expect(find.text('Pay consultation'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
+    expect(find.byType(AppWorkflowStepper), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
@@ -96,7 +97,7 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
-  testWidgets('permission gate keeps next billing action visible but disabled', (
+  testWidgets('permission gate omits the unauthorized billing action', (
     WidgetTester tester,
   ) async {
     await _pumpDialog(
@@ -112,12 +113,7 @@ void main() {
       ),
     );
 
-    // Next-step actions stay visible when denied so Flow Actions is never empty.
-    expect(find.widgetWithText(AppButton, 'Pay consultation'), findsOneWidget);
-    final AppButton billingButton = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Pay consultation'),
-    );
-    expect(billingButton.onPressed, isNull);
+    expect(find.widgetWithText(AppButton, 'Pay consultation'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
   });
 

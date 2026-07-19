@@ -52,6 +52,13 @@ final class AppWorkflowStepItem {
         (descriptionText != null && descriptionText.isNotEmpty) ||
         (blocked != null && blocked.isNotEmpty);
   }
+
+  bool get hasHelpActionContent {
+    final String? help = helpText?.trim();
+    final String? blocked = blockedReason?.trim();
+    return (help != null && help.isNotEmpty) ||
+        (blocked != null && blocked.isNotEmpty);
+  }
 }
 
 @immutable
@@ -110,6 +117,7 @@ class AppWorkflowStepper extends StatelessWidget {
     this.showDescriptions = true,
     this.semanticLabel,
     this.helpActionLabel,
+    this.guidance,
     super.key,
   });
 
@@ -121,6 +129,7 @@ class AppWorkflowStepper extends StatelessWidget {
   /// Localized label for the touch/keyboard help affordance.
   /// Defaults to a generic "Help" string when omitted.
   final String? helpActionLabel;
+  final String? guidance;
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +147,16 @@ class AppWorkflowStepper extends StatelessWidget {
         final double maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final bool compact = maxWidth < compactBreakpoint;
+        final double textScale = MediaQuery.textScalerOf(
+          context,
+        ).scale(1).clamp(1, 2);
+        final double estimatedStepWidth = 120 * textScale;
+        final bool horizontal =
+            steps.length == 1 ||
+            maxWidth >=
+                (steps.length * estimatedStepWidth) +
+                    ((steps.length - 1) * theme.spacing.lg);
+        final bool compact = maxWidth < compactBreakpoint || !horizontal;
         AppWorkflowStepItem? current;
         for (final AppWorkflowStepItem step in steps) {
           if (step.state == AppWorkflowStepState.current) {
@@ -149,35 +167,12 @@ class AppWorkflowStepper extends StatelessWidget {
 
         final Widget track = FocusTraversalGroup(
           policy: OrderedTraversalPolicy(),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: <Widget>[
-                for (
-                  var index = 0;
-                  index < steps.length;
-                  index += 1
-                ) ...<Widget>[
-                  if (index > 0)
-                    Container(
-                      width: compact ? 16 : 24,
-                      height: 2,
-                      color: _connectorColor(
-                        theme,
-                        steps[index - 1],
-                        steps[index],
-                      ),
-                    ),
-                  _WorkflowStepNode(
-                    step: steps[index],
-                    compact: compact,
-                    showDescription: showDescriptions && !compact,
-                    helpActionLabel: resolvedHelpLabel,
-                    focusOrder: index.toDouble(),
-                  ),
-                ],
-              ],
-            ),
+          child: _WorkflowStepTrack(
+            steps: steps,
+            horizontal: horizontal,
+            compact: compact,
+            showDescriptions: showDescriptions,
+            helpActionLabel: resolvedHelpLabel,
           ),
         );
 
@@ -188,15 +183,26 @@ class AppWorkflowStepper extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             track,
-            if (current?.description != null &&
-                current!.description!.trim().isNotEmpty &&
-                compact) ...<Widget>[
+            if (guidance != null && guidance!.trim().isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.sm),
-              Text(
-                current.description!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                  Expanded(
+                    child: Text(
+                      guidance!.trim(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
             if (current?.blockedReason != null &&
@@ -243,6 +249,120 @@ class AppWorkflowStepper extends StatelessWidget {
     return filled
         ? theme.colorScheme.primary
         : theme.colorScheme.outlineVariant;
+  }
+}
+
+class _WorkflowStepTrack extends StatelessWidget {
+  const _WorkflowStepTrack({
+    required this.steps,
+    required this.horizontal,
+    required this.compact,
+    required this.showDescriptions,
+    required this.helpActionLabel,
+  });
+
+  final List<AppWorkflowStepItem> steps;
+  final bool horizontal;
+  final bool compact;
+  final bool showDescriptions;
+  final String helpActionLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    if (horizontal) {
+      return Row(
+        key: const ValueKey<String>('workflowStepTrackHorizontal'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          for (var index = 0; index < steps.length; index += 1) ...<Widget>[
+            if (index > 0)
+              Padding(
+                padding: EdgeInsets.only(top: compact ? 13 : 17),
+                child: Container(
+                  width: theme.spacing.lg,
+                  height: 2,
+                  color: AppWorkflowStepper._connectorColor(
+                    theme,
+                    steps[index - 1],
+                    steps[index],
+                  ),
+                ),
+              ),
+            Expanded(
+              child: _WorkflowStepNode(
+                step: steps[index],
+                compact: compact,
+                showDescription: showDescriptions,
+                helpActionLabel: helpActionLabel,
+                focusOrder: index.toDouble(),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    final double availableWidth = MediaQuery.sizeOf(context).width;
+    final double textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1, 2);
+    final double minimumItemWidth = 136 * textScale;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : availableWidth;
+        final int columnCount = (width / minimumItemWidth).floor().clamp(
+          1,
+          steps.length,
+        );
+        final double itemWidth =
+            (width - (theme.spacing.sm * (columnCount - 1))) / columnCount;
+        return Wrap(
+          key: const ValueKey<String>('workflowStepTrackWrapped'),
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            for (var index = 0; index < steps.length; index += 1)
+              SizedBox(
+                width: itemWidth,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    if (index > 0) ...<Widget>[
+                      Padding(
+                        padding: EdgeInsets.only(top: compact ? 7 : 11),
+                        child: Icon(
+                          columnCount == 1
+                              ? Icons.arrow_downward
+                              : Icons.arrow_forward,
+                          size: 16,
+                          color: AppWorkflowStepper._connectorColor(
+                            theme,
+                            steps[index - 1],
+                            steps[index],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: theme.spacing.xs),
+                    ],
+                    Expanded(
+                      child: _WorkflowStepNode(
+                        step: steps[index],
+                        compact: true,
+                        showDescription: showDescriptions,
+                        helpActionLabel: helpActionLabel,
+                        focusOrder: index.toDouble(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -325,6 +445,7 @@ class _WorkflowStepNode extends StatelessWidget {
     final IconData icon = step.icon ?? _defaultIcon(step.state);
     final Color fill = _fillColor(theme, step.state);
     final Color foreground = _foregroundColor(theme, step.state);
+    final String stateLabel = _stateLabel(context.l10n, step.state);
     final String help = <String>[
       step.label,
       if (step.description != null && step.description!.isNotEmpty)
@@ -332,85 +453,72 @@ class _WorkflowStepNode extends StatelessWidget {
       if (step.helpText != null && step.helpText!.isNotEmpty) step.helpText!,
       if (step.blockedReason != null && step.blockedReason!.isNotEmpty)
         step.blockedReason!,
-      step.state.name,
+      stateLabel,
     ].join('. ');
     final String tooltipMessage =
         step.helpText ?? step.blockedReason ?? step.description ?? step.label;
-    final bool interactive = step.onTap != null || step.hasHelpContent;
+    final bool interactive = step.onTap != null || step.hasHelpActionContent;
 
-    final Widget nodeBody = ConstrainedBox(
-      constraints: BoxConstraints(minWidth: compact ? 72 : 104),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Container(
-            width: compact ? 28 : 36,
-            height: compact ? 28 : 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: fill,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: step.state == AppWorkflowStepState.current
-                    ? colorScheme.primary
-                    : colorScheme.outlineVariant,
-                width: step.state == AppWorkflowStepState.current ? 2 : 1,
-              ),
+    final Widget nodeBody = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: compact ? 28 : 36,
+          height: compact ? 28 : 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: fill,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: step.state == AppWorkflowStepState.current
+                  ? colorScheme.primary
+                  : colorScheme.outlineVariant,
+              width: step.state == AppWorkflowStepState.current ? 2 : 1,
             ),
-            child: Icon(icon, size: compact ? 14 : 18, color: foreground),
           ),
+          child: Icon(icon, size: compact ? 14 : 18, color: foreground),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          step.label,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: step.state == AppWorkflowStepState.current
+                ? FontWeight.w800
+                : FontWeight.w600,
+            color: step.state == AppWorkflowStepState.unavailable
+                ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
+                : null,
+          ),
+        ),
+        if (showDescription &&
+            step.description != null &&
+            step.description!.trim().isNotEmpty)
+          Text(
+            step.description!,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        if (step.hasHelpActionContent) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
-          SizedBox(
-            width: compact ? 80 : 112,
-            child: Text(
-              step.label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: step.state == AppWorkflowStepState.current
-                    ? FontWeight.w800
-                    : FontWeight.w600,
-                color: step.state == AppWorkflowStepState.unavailable
-                    ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
-                    : null,
-              ),
-            ),
+          AppButton.tertiary(
+            iconOnly: true,
+            leadingIcon: Icons.help_outline,
+            label: helpActionLabel,
+            semanticLabel: '$helpActionLabel: ${step.label}',
+            tooltip: helpActionLabel,
+            onPressed: () {
+              showAppWorkflowStepHelp(
+                context: context,
+                step: step,
+                helpActionLabel: helpActionLabel,
+              );
+            },
           ),
-          if (showDescription &&
-              step.description != null &&
-              step.description!.trim().isNotEmpty)
-            SizedBox(
-              width: 112,
-              child: Text(
-                step.description!,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          if (step.hasHelpContent) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            AppButton.tertiary(
-              iconOnly: true,
-              leadingIcon: Icons.help_outline,
-              label: helpActionLabel,
-              semanticLabel: '$helpActionLabel: ${step.label}',
-              tooltip: helpActionLabel,
-              onPressed: () {
-                showAppWorkflowStepHelp(
-                  context: context,
-                  step: step,
-                  helpActionLabel: helpActionLabel,
-                );
-              },
-            ),
-          ],
         ],
-      ),
+      ],
     );
 
     final Widget node = Semantics(
@@ -485,13 +593,24 @@ class _WorkflowStepNode extends StatelessWidget {
       step.onTap!();
       return;
     }
-    if (step.hasHelpContent) {
+    if (step.hasHelpActionContent) {
       showAppWorkflowStepHelp(
         context: context,
         step: step,
         helpActionLabel: helpActionLabel,
       );
     }
+  }
+
+  static String _stateLabel(AppLocalizations l10n, AppWorkflowStepState state) {
+    return switch (state) {
+      AppWorkflowStepState.current => l10n.workflowStepStateCurrent,
+      AppWorkflowStepState.completed => l10n.workflowStepStateCompleted,
+      AppWorkflowStepState.upcoming => l10n.workflowStepStateUpcoming,
+      AppWorkflowStepState.skipped => l10n.workflowStepStateSkipped,
+      AppWorkflowStepState.reverted => l10n.workflowStepStateReverted,
+      AppWorkflowStepState.unavailable => l10n.workflowStepStateUnavailable,
+    };
   }
 
   static IconData _defaultIcon(AppWorkflowStepState state) {

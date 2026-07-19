@@ -59,6 +59,10 @@ void main() {
     );
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
+    expect(find.byType(AppWorkflowStepper), findsOneWidget);
+    expect(find.text('Current step'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.byIcon(Icons.help_outline), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });

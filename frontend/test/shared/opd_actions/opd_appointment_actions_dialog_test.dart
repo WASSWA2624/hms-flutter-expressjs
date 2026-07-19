@@ -66,6 +66,10 @@ void main() {
     );
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
+    expect(find.byType(AppWorkflowStepper), findsOneWidget);
+    expect(find.text('Current step'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.byIcon(Icons.help_outline), findsNothing);
     expect(find.byIcon(AppActionIcons.appointment), findsOneWidget);
     expect(find.byIcon(AppActionIcons.queue), findsWidgets);
     expect(find.byIcon(AppActionIcons.reschedule), findsWidgets);
@@ -78,10 +82,7 @@ void main() {
   testWidgets('hides mutation actions after the appointment is terminal', (
     WidgetTester tester,
   ) async {
-    await _pumpMountedDialog(
-      tester,
-      appointment.copyWith(status: 'COMPLETED'),
-    );
+    await _pumpMountedDialog(tester, appointment.copyWith(status: 'COMPLETED'));
 
     expect(find.byType(AppQuickActions), findsNothing);
     expect(find.text('Start OPD encounter'), findsNothing);

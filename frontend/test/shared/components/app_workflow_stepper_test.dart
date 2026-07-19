@@ -14,8 +14,8 @@ void main() {
   ) async {
     await pumpComponent(
       tester,
-      AppWorkflowStepper(
-        steps: const <AppWorkflowStepItem>[
+      const AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
           AppWorkflowStepItem(
             id: 'triage',
             label: 'Triage',
@@ -91,7 +91,7 @@ void main() {
     expect(tappedId, 'receive');
   });
 
-  testWidgets('shows descriptions on expanded layout and hides on compact', (
+  testWidgets('keeps descriptions readable across responsive layouts', (
     WidgetTester tester,
   ) async {
     const AppWorkflowStepper stepper = AppWorkflowStepper(
@@ -113,12 +113,83 @@ void main() {
 
     await pumpComponent(tester, stepper, size: const Size(1000, 600));
     expect(find.text('Order accepted'), findsOneWidget);
-    expect(find.text('Running assays'), findsWidgets);
+    expect(find.text('Running assays'), findsOneWidget);
 
     await pumpComponent(tester, stepper, size: const Size(360, 640));
-    // Compact keeps the current description below the track, not under each node.
+    // Compact keeps concise state descriptions attached to their nodes.
     expect(find.text('Running assays'), findsOneWidget);
-    expect(find.text('Order accepted'), findsNothing);
+    expect(find.text('Order accepted'), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsNothing);
+  });
+
+  testWidgets('wraps long progress without horizontal scrolling', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'arrival',
+            label: 'Patient arrived',
+            state: AppWorkflowStepState.completed,
+          ),
+          AppWorkflowStepItem(
+            id: 'triage',
+            label: 'Vitals recorded',
+            state: AppWorkflowStepState.completed,
+          ),
+          AppWorkflowStepItem(
+            id: 'review',
+            label: 'Doctor review',
+            state: AppWorkflowStepState.current,
+          ),
+          AppWorkflowStepItem(
+            id: 'disposition',
+            label: 'Disposition',
+            state: AppWorkflowStepState.upcoming,
+          ),
+        ],
+      ),
+      size: const Size(320, 640),
+    );
+
+    expect(
+      find.byKey(const ValueKey<String>('workflowStepTrackWrapped')),
+      findsOneWidget,
+    );
+    expect(find.byType(SingleChildScrollView), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps concise descriptions inline without help controls', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkflowStepper(
+        guidance: 'Continue with the highlighted action.',
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'scheduled',
+            label: 'Scheduled',
+            description: 'Current step',
+            state: AppWorkflowStepState.current,
+          ),
+          AppWorkflowStepItem(
+            id: 'encounter',
+            label: 'Start encounter',
+            description: 'Next action',
+            state: AppWorkflowStepState.upcoming,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Current step'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Continue with the highlighted action.'), findsOneWidget);
+    expect(find.byIcon(Icons.help_outline), findsNothing);
   });
 
   testWidgets('opens touch-accessible help dialog from help control', (

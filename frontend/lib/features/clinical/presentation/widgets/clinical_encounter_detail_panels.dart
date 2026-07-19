@@ -49,8 +49,6 @@ class ClinicalWorkflowProgressStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final String currentStage = handoff.stage ?? '';
     final String nextStep = handoff.nextStep ?? '';
     final List<String> stages = handoff.timeline.isNotEmpty
@@ -61,124 +59,48 @@ class ClinicalWorkflowProgressStrip extends StatelessWidget {
               )
               .where((String value) => value.trim().isNotEmpty)
               .toList(growable: false)
-        : opdWorkflowStagesAround(currentStage);
+        : opdWorkflowStagesAround(currentStage, lookAhead: 0);
     final int currentIndex = handoff.timeline.isNotEmpty
         ? stages.length - 1
         : opdFlowStageIndex(currentStage);
+    final String currentLabel = opdStageDisplayLabel(l10n, currentStage);
+    final String nextLabel = opdNextStepDisplayLabel(l10n, nextStep);
+    final List<AppWorkflowStepItem> steps = <AppWorkflowStepItem>[
+      for (var index = 0; index < stages.length; index += 1)
+        if (index < currentIndex &&
+            opdStageDisplayLabel(l10n, stages[index]).isNotEmpty)
+          AppWorkflowStepItem(
+            id: 'completed-$index-${stages[index]}',
+            label: opdStageDisplayLabel(l10n, stages[index]),
+            state: AppWorkflowStepState.completed,
+          ),
+      if (currentLabel.isNotEmpty)
+        AppWorkflowStepItem(
+          id: 'current-$currentStage',
+          label: currentLabel,
+          description: l10n.clinicalCurrentStageLabel,
+          state: AppWorkflowStepState.current,
+        ),
+      if (nextLabel.isNotEmpty && nextLabel != currentLabel)
+        AppWorkflowStepItem(
+          id: 'next-$nextStep',
+          label: nextLabel,
+          description: l10n.opdNextActionColumnLabel,
+          state: AppWorkflowStepState.upcoming,
+        ),
+    ];
 
-    if (currentStage.isEmpty && nextStep.isEmpty && stages.isEmpty) {
+    if (steps.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AppSectionPanel(
+      title: l10n.clinicalWorkflowProgressLabel,
       children: <Widget>[
-        if (currentStage.isNotEmpty) ...<Widget>[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(theme.radius.sm),
-              border: Border.all(
-                color: colorScheme.primary.withValues(alpha: 0.35),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(theme.spacing.md),
-              child: Row(
-                children: <Widget>[
-                  Icon(Icons.flag_circle_outlined, color: colorScheme.primary),
-                  SizedBox(width: theme.spacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          l10n.clinicalCurrentStageLabel,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          opdStageDisplayLabel(l10n, currentStage),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: theme.spacing.md),
-        ],
-        if (stages.isNotEmpty) ...<Widget>[
-          Text(
-            l10n.clinicalWorkflowProgressLabel,
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          AppWorkflowStepper(
-            steps: <AppWorkflowStepItem>[
-              for (var index = 0; index < stages.length; index += 1)
-                AppWorkflowStepItem(
-                  id: stages[index],
-                  label: opdStageDisplayLabel(l10n, stages[index]),
-                  state: index < currentIndex.clamp(0, stages.length - 1)
-                      ? AppWorkflowStepState.completed
-                      : index == currentIndex.clamp(0, stages.length - 1)
-                      ? AppWorkflowStepState.current
-                      : AppWorkflowStepState.upcoming,
-                ),
-            ],
-            showDescriptions: false,
-          ),
-          SizedBox(height: theme.spacing.md),
-        ],
-        if (nextStep.isNotEmpty)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.secondaryContainer.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(theme.radius.sm),
-              border: Border.all(
-                color: colorScheme.secondary.withValues(alpha: 0.35),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(theme.spacing.md),
-              child: Row(
-                children: <Widget>[
-                  Icon(Icons.trending_flat, color: colorScheme.secondary),
-                  SizedBox(width: theme.spacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          l10n.opdNextStepColumnLabel,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          opdNextStepDisplayLabel(l10n, nextStep),
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        AppWorkflowStepper(
+          steps: steps,
+          semanticLabel: l10n.clinicalWorkflowProgressLabel,
+        ),
       ],
     );
   }

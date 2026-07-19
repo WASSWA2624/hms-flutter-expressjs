@@ -1273,6 +1273,30 @@
   "@workflowStepHelpActionLabel": {
     "description": "Accessible label for workflow step help that works with keyboard and touch."
   },
+  "workflowStepStateCurrent": "Current step",
+  "@workflowStepStateCurrent": {
+    "description": "Accessible state label for the active workflow step."
+  },
+  "workflowStepStateCompleted": "Completed step",
+  "@workflowStepStateCompleted": {
+    "description": "Accessible state label for a completed workflow step."
+  },
+  "workflowStepStateUpcoming": "Upcoming step",
+  "@workflowStepStateUpcoming": {
+    "description": "Accessible state label for an upcoming workflow step."
+  },
+  "workflowStepStateSkipped": "Skipped step",
+  "@workflowStepStateSkipped": {
+    "description": "Accessible state label for a skipped workflow step."
+  },
+  "workflowStepStateReverted": "Reverted step",
+  "@workflowStepStateReverted": {
+    "description": "Accessible state label for a reverted workflow step."
+  },
+  "workflowStepStateUnavailable": "Unavailable step",
+  "@workflowStepStateUnavailable": {
+    "description": "Accessible state label for an unavailable workflow step."
+  },
   "labWorkflowProgressTitle": "Workflow progress",
   "@labWorkflowProgressTitle": {
     "description": "Title for the lab order workflow step progress section."

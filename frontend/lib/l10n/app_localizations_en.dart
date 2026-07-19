@@ -974,6 +974,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workflowStepHelpActionLabel => 'Help';
 
   @override
+  String get workflowStepStateCurrent => 'Current step';
+
+  @override
+  String get workflowStepStateCompleted => 'Completed step';
+
+  @override
+  String get workflowStepStateUpcoming => 'Upcoming step';
+
+  @override
+  String get workflowStepStateSkipped => 'Skipped step';
+
+  @override
+  String get workflowStepStateReverted => 'Reverted step';
+
+  @override
+  String get workflowStepStateUnavailable => 'Unavailable step';
+
+  @override
   String get labWorkflowProgressTitle => 'Workflow progress';
 
   @override

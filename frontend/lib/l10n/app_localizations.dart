@@ -1930,6 +1930,42 @@ abstract class AppLocalizations {
   /// **'Help'**
   String get workflowStepHelpActionLabel;
 
+  /// Accessible state label for the active workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Current step'**
+  String get workflowStepStateCurrent;
+
+  /// Accessible state label for a completed workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed step'**
+  String get workflowStepStateCompleted;
+
+  /// Accessible state label for an upcoming workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming step'**
+  String get workflowStepStateUpcoming;
+
+  /// Accessible state label for a skipped workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped step'**
+  String get workflowStepStateSkipped;
+
+  /// Accessible state label for a reverted workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverted step'**
+  String get workflowStepStateReverted;
+
+  /// Accessible state label for an unavailable workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable step'**
+  String get workflowStepStateUnavailable;
+
   /// Title for the lab order workflow step progress section.
   ///
   /// In en, this message translates to:

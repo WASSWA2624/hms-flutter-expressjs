@@ -228,10 +228,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       }
     }
 
-    AppPermissionActionItem primaryAction(
-      AppPermissionActionItem action, {
-      required String key,
-    }) {
+    AppPermissionActionItem primaryAction(AppPermissionActionItem action) {
       return AppPermissionActionItem(
         requirement: action.requirement,
         label: action.label,
@@ -241,9 +238,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         enabled: actionsEnabled && action.enabled,
         isLoading: action.isLoading,
         fullWidth: action.fullWidth,
-        // Billing next-step stays visible (disabled) when denied. Clinical
-        // next-steps stay role-gated so receptionists only see front-desk work.
-        hideWhenDenied: key == 'billing' ? false : action.hideWhenDenied,
+        hideWhenDenied: action.hideWhenDenied,
         tooltip: action.tooltip,
         semanticLabel: action.semanticLabel,
       );
@@ -641,10 +636,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         continue;
       }
       final AppPermissionActionItem action = factory();
-      addAction(
-        key,
-        key == nextActionKey ? primaryAction(action, key: key) : action,
-      );
+      addAction(key, key == nextActionKey ? primaryAction(action) : action);
     }
 
     return AppQuickActions(
