@@ -24,6 +24,9 @@ Define prompts an agent can execute without guessing scope or behavior.
 - Do not render disabled unauthorized controls or “no access” feedback during normal navigation. Show forbidden feedback only for direct restricted-route access, stale permissions, or backend denial.
 - Keep frontend data synchronized after mutations.
 - Require efficient UI, concise labels, and visible feedback.
+- Require every UI change to work responsively at mobile, tablet, and desktop sizes without clipping, overflow, duplication, or inaccessible actions.
+- Reuse the design system and theme tokens for color, typography, spacing, shape, and states; require coherent light and dark theme behavior where supported.
+- Keep interfaces simple and focused: preserve a clear visual hierarchy, minimize controls and copy, and progressively disclose secondary detail.
 - Specify permission, loading, empty, error, success, and validation states.
 
 ## Writing Requirements
@@ -37,5 +40,6 @@ Define prompts an agent can execute without guessing scope or behavior.
 
 - Name expected tests, analysis, or manual checks.
 - Verify integration, reuse, authorization, data sync, and UI states.
+- Verify changed UI at representative mobile, tablet, and desktop viewports and in every supported theme.
 - Test unauthorized UI is absent from the widget tree, navigation, and action flows; test authorized UI remains available.
 - Trace every acceptance criterion to a requirement.
