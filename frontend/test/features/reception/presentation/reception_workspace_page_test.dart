@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/reception/presentation/pages/reception_works
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -79,7 +80,15 @@ const OpdQueueEntry _progressedQueueEntry = OpdQueueEntry(
   status: 'IN_PROGRESS',
 );
 
-const OpdFlowSummary _progressedQueueFlow = OpdFlowSummary(
+final DateTime _testNow = DateTime.now();
+final DateTime _todayAtNoon = DateTime(
+  _testNow.year,
+  _testNow.month,
+  _testNow.day,
+  12,
+);
+
+final OpdFlowSummary _progressedQueueFlow = OpdFlowSummary(
   id: 'flow-progressed',
   publicId: 'ENC-PROGRESSED',
   patientId: 'patient-progressed',
@@ -87,27 +96,59 @@ const OpdFlowSummary _progressedQueueFlow = OpdFlowSummary(
   patientDisplayName: 'Priya Progressed',
   patientIdentifier: 'PAT-PRIYA',
   status: 'OPEN',
+  startedAt: _todayAtNoon,
   stage: 'LAB_REQUESTED',
   displayCode: 'LAB_PENDING',
   nextStep: 'COLLECT_SAMPLE',
 );
 
-const OpdFlowSummary _activeFlow = OpdFlowSummary(
+final OpdFlowSummary _activeFlow = OpdFlowSummary(
   id: 'flow-active',
   publicId: 'ENC-ACTIVE',
   patientDisplayName: 'Alex Active',
   patientIdentifier: 'PAT-ACT',
   status: 'OPEN',
+  startedAt: _todayAtNoon,
   stage: 'WAITING_VITALS',
+  nextStep: 'RECORD_VITALS',
 );
 
-const OpdFlowSummary _paymentFlow = OpdFlowSummary(
+final OpdFlowSummary _paymentFlow = OpdFlowSummary(
   id: 'flow-payment',
   publicId: 'ENC-PAYMENT',
   patientDisplayName: 'Penny Payment',
   patientIdentifier: 'PAT-PAY',
   status: 'OPEN',
+  startedAt: _todayAtNoon,
   stage: 'WAITING_CONSULTATION_PAYMENT',
+);
+
+final OpdFlowSummary _currentUnlistedStageFlow = OpdFlowSummary(
+  id: 'flow-consultation',
+  patientDisplayName: 'Casey Consultation',
+  patientIdentifier: 'PAT-CASEY',
+  status: 'OPEN',
+  startedAt: _todayAtNoon,
+  stage: 'CONSULTATION_IN_PROGRESS',
+  nextStep: 'DOCTOR_REVIEW',
+);
+
+final OpdFlowSummary _oldOpenFlow = OpdFlowSummary(
+  id: 'flow-old',
+  patientDisplayName: 'Owen Old',
+  patientIdentifier: 'PAT-OLD',
+  status: 'OPEN',
+  startedAt: _todayAtNoon.subtract(const Duration(days: 1)),
+  stage: 'WAITING_VITALS',
+);
+
+final OpdFlowSummary _closedTodayFlow = OpdFlowSummary(
+  id: 'flow-closed',
+  patientDisplayName: 'Cora Closed',
+  patientIdentifier: 'PAT-CLOSED',
+  status: 'CLOSED',
+  startedAt: _todayAtNoon,
+  stage: 'WAITING_DOCTOR_REVIEW',
 );
 
 AppAccessPolicy _policy({
@@ -173,10 +214,13 @@ void _stubWorkspace(_MockOpdRepository repository) {
   when(() => repository.listOpdFlows(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdFlowSummary>>.success(
       AppPage<OpdFlowSummary>(
-        items: const <OpdFlowSummary>[
+        items: <OpdFlowSummary>[
           _activeFlow,
           _paymentFlow,
           _progressedQueueFlow,
+          _currentUnlistedStageFlow,
+          _oldOpenFlow,
+          _closedTodayFlow,
         ],
         request:
             (invocation.positionalArguments.single as OpdFlowQuery).pageRequest,
@@ -394,7 +438,7 @@ void main() {
   testWidgets('unauthorized tabs and actions are absent', (
     WidgetTester tester,
   ) async {
-    final GoRouter router = await _pumpWorkspace(
+    await _pumpWorkspace(
       tester,
       repository: repository,
       policy: _policy(
@@ -402,9 +446,8 @@ void main() {
       ),
     );
 
-    expect(router.state.uri.queryParameters['section'], 'active');
-    expect(find.textContaining('Active visits'), findsOneWidget);
-    expect(find.text('Alex Active'), findsOneWidget);
+    expect(find.textContaining('Active visits'), findsNothing);
+    expect(find.text('Alex Active'), findsNothing);
     expect(find.text('Ada Appointment'), findsNothing);
     expect(find.textContaining('Appointments'), findsNothing);
     expect(find.textContaining('Desk queue'), findsNothing);
@@ -413,8 +456,9 @@ void main() {
     expect(find.text('Schedule appointment'), findsNothing);
     expect(find.text('Full registry'), findsNothing);
     expect(find.text('Full OPD'), findsNothing);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
     expect(find.text('Billing'), findsNothing);
+    expect(find.text('Access denied'), findsOneWidget);
   });
 
   testWidgets(
@@ -560,6 +604,81 @@ void main() {
     expect(find.text('Lab pending'), findsOneWidget);
     expect(find.text('Collect sample'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Collect sample'), findsNothing);
+  });
+
+  testWidgets(
+    'active visits shows all and only today open flows as read-only guidance',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/reception?section=active',
+      );
+
+      expect(find.text('Alex Active'), findsOneWidget);
+      expect(find.text('Penny Payment'), findsOneWidget);
+      expect(find.text('Priya Progressed'), findsOneWidget);
+      expect(find.text('Casey Consultation'), findsOneWidget);
+      expect(find.text('Owen Old'), findsNothing);
+      expect(find.text('Cora Closed'), findsNothing);
+      expect(find.text('Record vitals'), findsOneWidget);
+      expect(find.text('Doctor review'), findsOneWidget);
+      expect(find.byType(WorkflowActionButton), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
+
+      final AppTabStrip tabs = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      expect(
+        tabs.tabs
+            .singleWhere((AppTabItem tab) => tab.id == 'activeVisits')
+            .count,
+        4,
+      );
+
+      final Finder searchField = find.descendant(
+        of: find.byType(AppSearchBar),
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(searchField, 'Doctor review');
+      await tester.pump();
+      expect(find.text('Casey Consultation'), findsOneWidget);
+      expect(find.text('Alex Active'), findsNothing);
+
+      await tester.enterText(searchField, '');
+      await tester.pump();
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      final Finder currentStepFilter = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppSelectField<String> &&
+            widget.labelText == 'Current step',
+      );
+      await tester.tap(currentStepFilter);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Consultation In Progress').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('Casey Consultation'), findsOneWidget);
+      expect(find.text('Alex Active'), findsNothing);
+    },
+  );
+
+  testWidgets('active visits mobile cards keep workflow guidance read-only', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/reception?section=active',
+      viewSize: const Size(390, 844),
+    );
+
+    expect(find.text('Casey Consultation'), findsOneWidget);
+    expect(find.text('Doctor review'), findsOneWidget);
+    expect(find.byType(WorkflowActionButton), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Doctor review'), findsNothing);
   });
 
   testWidgets('refresh is single-flight and exposes progress tooltip', (

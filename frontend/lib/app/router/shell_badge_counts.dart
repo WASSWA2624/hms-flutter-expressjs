@@ -44,6 +44,8 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
+import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
@@ -54,6 +56,7 @@ import 'package:hosspi_hms/features/theater/presentation/controllers/theater_wor
 @immutable
 final class ShellBadgeCounts {
   const ShellBadgeCounts({
+    this.receptionPatientCount,
     this.opdWorkloadCount,
     this.emergencyWorkloadCount,
     this.ipdWorkloadCount,
@@ -81,6 +84,7 @@ final class ShellBadgeCounts {
 
   static const ShellBadgeCounts empty = ShellBadgeCounts();
 
+  final int? receptionPatientCount;
   final int? opdWorkloadCount;
   final int? emergencyWorkloadCount;
   final int? ipdWorkloadCount;
@@ -109,6 +113,7 @@ final class ShellBadgeCounts {
   bool operator ==(Object other) {
     return identical(this, other) ||
         other is ShellBadgeCounts &&
+            receptionPatientCount == other.receptionPatientCount &&
             opdWorkloadCount == other.opdWorkloadCount &&
             emergencyWorkloadCount == other.emergencyWorkloadCount &&
             ipdWorkloadCount == other.ipdWorkloadCount &&
@@ -136,6 +141,7 @@ final class ShellBadgeCounts {
 
   @override
   int get hashCode => Object.hashAll(<int?>[
+    receptionPatientCount,
     opdWorkloadCount,
     emergencyWorkloadCount,
     ipdWorkloadCount,
@@ -164,6 +170,28 @@ final class ShellBadgeCounts {
 
 int? _positiveOrNull(int count) => count > 0 ? count : null;
 
+@visibleForTesting
+int? receptionPatientBadgeCount(
+  OpdWorkspaceState state, {
+  DateTime? now,
+  Set<ReceptionDeskSection>? sections,
+}) {
+  return _positiveOrNull(
+    receptionUniquePatientCount(state, now: now, sections: sections),
+  );
+}
+
+@visibleForTesting
+Set<ReceptionDeskSection> authorizedReceptionDeskSections(
+  AppAccessPolicy accessPolicy,
+) {
+  return <ReceptionDeskSection>{
+    for (final ReceptionDeskSection section in ReceptionDeskSection.values)
+      if (receptionDeskSectionRequirement(section).isAllowed(accessPolicy))
+        section,
+  };
+}
+
 int? _selectBadge<S>(
   AsyncValue<Result<S>> asyncResult,
   int? Function(S state) extract,
@@ -190,6 +218,7 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
   bool canAccess(AppRouteData route) =>
       canAccessShellRoute(route, accessPolicy);
 
+  final bool canReception = canAccess(AppRoutes.reception);
   final bool canOpd = canAccess(AppRoutes.opd);
   final bool canEmergency = canAccess(AppRoutes.emergency);
   final bool canIpd = canAccess(AppRoutes.ipd);
@@ -214,6 +243,18 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
   final bool canTheater = canAccess(AppRoutes.theater);
 
   return ShellBadgeCounts(
+    receptionPatientCount: canReception
+        ? ref.watch(
+            opdWorkspaceControllerProvider.select(
+              (v) => _selectBadge<OpdWorkspaceState>(v, (OpdWorkspaceState s) {
+                return receptionPatientBadgeCount(
+                  s,
+                  sections: authorizedReceptionDeskSections(accessPolicy),
+                );
+              }),
+            ),
+          )
+        : null,
     opdWorkloadCount: canOpd
         ? ref.watch(
             opdWorkspaceControllerProvider.select(

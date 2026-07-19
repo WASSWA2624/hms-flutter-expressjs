@@ -3,6 +3,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/workspace/realtime_delta.dart';
@@ -149,6 +150,31 @@ void main() {
       expect(canAccessShellRoute(AppRoutes.reception, policy), isTrue);
       expect(canAccessShellRoute(AppRoutes.billing, policy), isFalse);
       expect(receptionWorkspaceRequirement.isAllowed(policy), isTrue);
+    });
+
+    test('active visits require backend-readable OPD permissions', () {
+      final AppAccessPolicy lastOfficeOnly = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+          permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
+      final AppAccessPolicy patientReader = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
+
+      expect(
+        receptionActiveVisitsRequirement.isAllowed(lastOfficeOnly),
+        isFalse,
+      );
+      expect(receptionActiveVisitsRequirement.isAllowed(patientReader), isTrue);
     });
 
     test('billing pay-consultation is hidden without billing:write', () {

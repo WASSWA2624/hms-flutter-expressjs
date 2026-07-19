@@ -32,12 +32,14 @@ const AccessRequirement receptionSchedulingReadRequirement = AccessRequirement(
   activeModules: <String>['patient-registry', 'scheduling-queue'],
 );
 
-/// Active visits are available to patient-facing and clinical readers.
+/// Active visits mirror the backend OPD flow list authorization.
 const AccessRequirement receptionActiveVisitsRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.patientRead,
-    AppPermissions.lastOfficeRead,
     AppPermissions.clinicalRead,
+    AppPermissions.billingRead,
+    AppPermissions.operationsRead,
+    AppPermissions.emergencyRead,
   ],
   activeModules: <String>['scheduling-queue'],
 );

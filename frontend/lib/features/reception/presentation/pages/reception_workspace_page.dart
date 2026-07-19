@@ -86,22 +86,6 @@ class _ReceptionWorkspaceContentState
   late final AppListTableColumnVisibilityController<_ReceptionDeskRow>
   _columnVisibilityController;
 
-  static const Set<String> _paymentGateStages = <String>{
-    'WAITING_CONSULTATION_PAYMENT',
-  };
-
-  static const Set<String> _activeVisitStages = <String>{
-    'WAITING_CONSULTATION_PAYMENT',
-    'WAITING_VITALS',
-    'WAITING_DOCTOR_ASSIGNMENT',
-    'WAITING_DOCTOR_REVIEW',
-    'LAB_REQUESTED',
-    'RADIOLOGY_REQUESTED',
-    'LAB_AND_RADIOLOGY_REQUESTED',
-    'PHARMACY_REQUESTED',
-    'WAITING_DISPOSITION',
-  };
-
   @override
   void initState() {
     super.initState();
@@ -652,17 +636,19 @@ class _ReceptionWorkspaceContentState
       id: id,
       label: l10n.receptionCurrentStepLabel,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final String? stage = row.flow?.stage;
-        if (stage == null || stage.isEmpty) {
+        final String label = row.flowCurrentStepLabel(l10n);
+        if (label.isEmpty) {
           return const SizedBox.shrink();
         }
         return AppWorkspaceStatusBadge(
           status: AppWorkspaceStatus(
-            label: opdStageDisplayLabel(context.l10n, stage),
-            tone: opdStageStatusTone(stage),
+            label: label,
+            tone: opdStageStatusTone(row.flowCurrentStepCode),
           ),
         );
       },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          a.flowCurrentStepLabel(l10n).compareTo(b.flowCurrentStepLabel(l10n)),
     );
   }
 
@@ -866,21 +852,14 @@ class _ReceptionWorkspaceContentState
       label: l10n.opdNextActionFilterLabel,
       alwaysVisible: true,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final OpdFlowSummary? flow = row.flow;
-        if (flow == null) {
+        final String label = row.flowNextActionLabel(l10n);
+        if (label.isEmpty) {
           return const SizedBox.shrink();
         }
-        return WorkflowActionButton(
-          encounterId: flow.publicId ?? flow.id,
-          patientId: flow.patientId,
-          stage: flow.stage,
-          nextStep: flow.nextStep,
-          displayNextStep: flow.displayNextStep,
-          assignedStaffId: flow.providerUserId,
-          sourceModule: 'reception',
-          compact: true,
-        );
+        return Text(label);
       },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          a.flowNextActionLabel(l10n).compareTo(b.flowNextActionLabel(l10n)),
     );
   }
 
@@ -941,13 +920,13 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.appointments:
         return <_ReceptionDeskRow>[
           for (final OpdAppointment appointment in state.appointments.items)
-            if (!_isTerminalStatus(appointment.status))
+            if (!isOpdTerminalStatus(appointment.status))
               _ReceptionDeskRow.appointment(appointment),
         ];
       case ReceptionDeskSection.queue:
         return <_ReceptionDeskRow>[
           for (final OpdQueueEntry entry in state.queueEntries.items)
-            if (!_isTerminalStatus(entry.status))
+            if (!isOpdTerminalStatus(entry.status))
               _ReceptionDeskRow.queue(
                 entry,
                 flow: _findFlowForQueueEntry(entry, state.flows.items),
@@ -956,14 +935,12 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.activeVisits:
         return <_ReceptionDeskRow>[
           for (final OpdFlowSummary flow in state.flows.items)
-            if (_activeVisitStages.contains((flow.stage ?? '').toUpperCase()))
-              _ReceptionDeskRow.flow(flow),
+            if (isReceptionActiveVisit(flow)) _ReceptionDeskRow.flow(flow),
         ];
       case ReceptionDeskSection.paymentGate:
         return <_ReceptionDeskRow>[
           for (final OpdFlowSummary flow in state.flows.items)
-            if (_paymentGateStages.contains((flow.stage ?? '').toUpperCase()))
-              _ReceptionDeskRow.flow(flow),
+            if (isReceptionPaymentGateVisit(flow)) _ReceptionDeskRow.flow(flow),
         ];
     }
   }
@@ -976,8 +953,14 @@ class _ReceptionWorkspaceContentState
     final String needle = selected.toUpperCase();
     return <_ReceptionDeskRow>[
       for (final _ReceptionDeskRow row in rows)
-        if ((row.status ?? '').toUpperCase() == needle) row,
+        if (_rowFilterCode(row).toUpperCase() == needle) row,
     ];
+  }
+
+  String _rowFilterCode(_ReceptionDeskRow row) {
+    return _section == ReceptionDeskSection.activeVisits
+        ? row.flowCurrentStepCode
+        : row.status ?? '';
   }
 
   List<AppSearchBarFilterChoice> _statusFilterChoices(
@@ -987,8 +970,8 @@ class _ReceptionWorkspaceContentState
     final Set<String> seen = <String>{};
     final List<AppSearchBarFilterChoice> choices = <AppSearchBarFilterChoice>[];
     for (final _ReceptionDeskRow row in rows) {
-      final String? status = row.status?.trim();
-      if (status == null || status.isEmpty) {
+      final String status = _rowFilterCode(row).trim();
+      if (status.isEmpty) {
         continue;
       }
       final String key = status.toUpperCase();
@@ -998,7 +981,9 @@ class _ReceptionWorkspaceContentState
       choices.add(
         AppSearchBarFilterChoice(
           value: key,
-          label: opdStageDisplayLabel(l10n, status),
+          label: _section == ReceptionDeskSection.activeVisits
+              ? row.flowCurrentStepLabel(l10n)
+              : opdStageDisplayLabel(l10n, status),
         ),
       );
     }
@@ -1013,26 +998,16 @@ class _ReceptionWorkspaceContentState
     switch (section) {
       case ReceptionDeskSection.appointments:
         return state.appointments.items
-            .where((OpdAppointment a) => !_isTerminalStatus(a.status))
+            .where((OpdAppointment a) => !isOpdTerminalStatus(a.status))
             .length;
       case ReceptionDeskSection.queue:
         return state.queueEntries.items
-            .where((OpdQueueEntry e) => !_isTerminalStatus(e.status))
+            .where((OpdQueueEntry e) => !isOpdTerminalStatus(e.status))
             .length;
       case ReceptionDeskSection.activeVisits:
-        return state.flows.items
-            .where(
-              (OpdFlowSummary f) =>
-                  _activeVisitStages.contains((f.stage ?? '').toUpperCase()),
-            )
-            .length;
+        return state.flows.items.where(isReceptionActiveVisit).length;
       case ReceptionDeskSection.paymentGate:
-        return state.flows.items
-            .where(
-              (OpdFlowSummary f) =>
-                  _paymentGateStages.contains((f.stage ?? '').toUpperCase()),
-            )
-            .length;
+        return state.flows.items.where(isReceptionPaymentGateVisit).length;
     }
   }
 
@@ -1043,20 +1018,6 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.activeVisits ||
       ReceptionDeskSection.paymentGate => AppTabCountTone.warning,
     };
-  }
-
-  bool _isTerminalStatus(String? status) {
-    switch ((status ?? '').toUpperCase()) {
-      case 'COMPLETED':
-      case 'CANCELLED':
-      case 'NO_SHOW':
-      case 'DISCHARGED':
-      case 'ADMITTED':
-      case 'CLOSED':
-        return true;
-      default:
-        return false;
-    }
   }
 
   OpdFlowSummary? _findFlowForQueueEntry(
@@ -1380,6 +1341,25 @@ final class _ReceptionDeskRow {
     return '';
   }
 
+  String get flowCurrentStepCode =>
+      flow?.displayCode ?? flow?.stage ?? flow?.status ?? '';
+
+  String flowCurrentStepLabel(AppLocalizations l10n) {
+    final OpdFlowSummary? currentFlow = flow;
+    return currentFlow == null ? '' : opdStatusDisplayLabel(l10n, currentFlow);
+  }
+
+  String flowNextActionLabel(AppLocalizations l10n) {
+    final OpdFlowSummary? currentFlow = flow;
+    if (currentFlow == null) {
+      return '';
+    }
+    return opdNextStepDisplayLabel(
+      l10n,
+      currentFlow.displayNextStep ?? currentFlow.nextStep,
+    );
+  }
+
   DateTime? get time =>
       appointment?.scheduledStart ?? queueEntry?.queuedAt ?? flow?.startedAt;
 
@@ -1610,14 +1590,14 @@ class _ReceptionDeskMobileStatus extends StatelessWidget {
           ),
         );
       case ReceptionDeskSection.activeVisits:
-        final String? stage = row.flow?.stage;
-        if (stage == null || stage.isEmpty) {
+        final String label = row.flowCurrentStepLabel(l10n);
+        if (label.isEmpty) {
           return const SizedBox.shrink();
         }
         return AppWorkspaceStatusBadge(
           status: AppWorkspaceStatus(
-            label: opdStageDisplayLabel(l10n, stage),
-            tone: opdStageStatusTone(stage),
+            label: label,
+            tone: opdStageStatusTone(row.flowCurrentStepCode),
           ),
         );
       case ReceptionDeskSection.paymentGate:
@@ -1673,6 +1653,11 @@ class _ReceptionDeskMobileNextAction extends StatelessWidget {
         }
         return Text(label);
       case ReceptionDeskSection.activeVisits:
+        final String label = row.flowNextActionLabel(l10n);
+        if (label.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Text(label);
       case ReceptionDeskSection.paymentGate:
         final OpdFlowSummary? flow = row.flow;
         if (flow == null) {
