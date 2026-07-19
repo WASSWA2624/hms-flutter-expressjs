@@ -1,37 +1,36 @@
-# Restrict the Reception Payment Gate to Pending Payments
+# Show All Outstanding OPD Charges at Reception
 
-Update `/reception?section=payment-gate` so the Payment gate is a focused worklist containing only patients whose consultation payment is still outstanding.
+Update `/reception?section=payment-gate` into a read-only follow-up worklist for patients with any outstanding charge linked to an OPD encounter.
 
 ## Context
 
-The Payment gate currently selects open OPD flows primarily by workflow stage. A paid or otherwise resolved payment can therefore remain visible when the flow stage has not yet synchronized. Follow `prompts/.cursor/prompt.mdc`.
+Receptionists coordinate patient movement but do not process or modify payments. Outstanding charges may cover consultation, laboratory, radiology, medicines, procedures, or other billed OPD services. Follow `prompts/.cursor/prompt.mdc`.
 
 ## Requirements
 
-1. Include an open, non-terminal OPD flow only when its normalized consultation billing state is **payment required**. This includes pending, issued/invoiced, and partially paid consultations.
-2. Exclude flows whose consultation payment is paid, cleared, successful, approved, completed and settled, waived/not required, or otherwise not outstanding—even if their stage is still `WAITING_CONSULTATION_PAYMENT`.
-3. Reuse the existing billing-state normalization as the source of truth. Do not duplicate raw-status mappings or infer a pending payment from workflow stage alone when authoritative payment data says it is resolved.
-4. Apply the same membership rule to the table, mobile cards, Payment gate tab count, Reception unique-patient badge contribution, search, filters, sorting, and column settings.
-5. Keep the displayed consultation fee, normalized payment status/detail, and authorized payment action accurate. After a successful payment or refresh, remove the patient from the worklist as soon as synchronized billing data marks the payment resolved.
+1. Include patients with at least one pending, issued, unpaid, or partially paid OPD charge, regardless of the encounter’s current workflow stage.
+2. Aggregate outstanding charges by patient and encounter without duplicate rows. Show patient identity, encounter reference, departments/services owed, per-service outstanding amounts, currency, and total outstanding.
+3. Exclude paid, settled, cancelled, voided, waived, not-required, and unknown charges. Remove a patient when no outstanding OPD charge remains after synchronization.
+4. Keep the worklist read-only. Row/card interaction may reveal a read-only detail panel or dialog, but must not navigate, collect payment, edit, delete, waive, cancel, or expose clinical results.
+5. Apply identical data to search, service/status filters, sorting, responsive cards, column settings, tab count, and Reception’s unique-patient badge.
 
 ## Constraints
 
-- Reuse existing OPD synchronization, billing helpers, terminal-state helpers, authorization, localization, and design-system components.
-- Do not change backend contracts, payment processing, clinical workflow transitions, or unrelated reception tabs.
-- Do not treat missing or unknown billing data as a pending payment.
-- Support loading, empty, error, light/dark theme, and mobile/tablet/desktop states.
+- Reuse authoritative billing/invoice data, normalization, OPD links, authorization, localization, and design-system components.
+- Render only fields permitted to reception; hide unauthorized data and controls.
+- Do not change billing state, backend contracts, or unrelated workflows.
+- Support loading, empty, error, refresh-success, themes, and responsive states.
 
 ## Acceptance Criteria
 
-- Only open OPD flows with normalized billing state `required` appear in Payment gate.
-- Paid, settled, not-required, and unknown-payment flows are absent even when their stage still indicates consultation payment.
-- Pending and partially paid flows remain visible with the correct amount, status, and authorized payment action.
-- Table/card results, search, filters, settings, tab count, and Reception unique-patient badge all use the same membership rule.
-- Add or update domain and reception widget tests for pending, partial, paid-but-stale-stage, not-required, unknown, terminal, count, and post-payment refresh cases; run Flutter analysis.
+- R1–R3: Consultation, lab, radiology, medicine, and other outstanding OPD charges appear accurately; resolved-only patients do not.
+- R4: No Payment gate interaction mutates data or routes away.
+- R5: Details, totals, filters, counts, and badges remain consistent after refresh.
+- Add aggregation, authorization, widget, and responsive tests; run Flutter analysis.
 
 ## Relevant Files
 
-- `frontend/lib/features/reception/domain/entities/reception_entities.dart`
-- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
-- `frontend/lib/shared/opd_actions/opd_billing_state.dart`
+- `frontend/lib/features/reception/`
+- `frontend/lib/features/billing/`
+- `frontend/lib/shared/opd_actions/`
 - `frontend/test/features/reception/`
