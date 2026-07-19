@@ -2238,18 +2238,6 @@ EdgeInsets _compactWorkspacePagePadding(
   AppBreakpoint breakpoint,
   ThemeData theme,
 ) {
-  final double horizontal = ResponsiveSpacing.pagePaddingValueFor(
-    breakpoint,
-    designTokens: theme.appTokens,
-  );
-  // Tabs sit directly under the app bar: no top padding, spacing is only on
-  // the left/right (and bottom) of the workspace content.
-  final double top = theme.spacing.none;
-  final double bottom = switch (breakpoint) {
-    AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.sm,
-    AppBreakpoint.md || AppBreakpoint.lg => theme.spacing.md,
-    _ => theme.spacing.md,
-  };
-
-  return EdgeInsets.fromLTRB(horizontal, top, horizontal, bottom);
+  // Match ResponsiveSpacing.pagePaddingFor: xs sides, no top/bottom.
+  return EdgeInsets.symmetric(horizontal: theme.spacing.xs);
 }
