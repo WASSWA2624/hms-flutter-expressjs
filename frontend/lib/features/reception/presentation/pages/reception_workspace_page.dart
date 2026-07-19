@@ -341,8 +341,8 @@ class _ReceptionWorkspaceContentState
 
   String _filterGroupLabel(AppLocalizations l10n) {
     return switch (_section) {
-      ReceptionDeskSection.appointments ||
-      ReceptionDeskSection.queue => l10n.receptionStatusLabel,
+      ReceptionDeskSection.appointments => l10n.receptionStatusLabel,
+      ReceptionDeskSection.queue => l10n.receptionCurrentStepLabel,
       ReceptionDeskSection.activeVisits ||
       ReceptionDeskSection.paymentGate => l10n.receptionCurrentStepLabel,
     };
@@ -455,7 +455,7 @@ class _ReceptionWorkspaceContentState
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientColumn(l10n),
           _receptionQueuedAtColumn(l10n, locale),
-          _receptionStatusColumn(l10n),
+          _receptionQueueCurrentStepColumn(l10n),
           _receptionQueueNextActionColumn(l10n),
         ];
       case ReceptionDeskSection.activeVisits:
@@ -617,6 +617,30 @@ class _ReceptionWorkspaceContentState
           ),
         );
       },
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionQueueCurrentStepColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'status',
+      label: l10n.receptionCurrentStepLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final String label = row.queueCurrentStepLabel(l10n);
+        if (label.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label: label,
+            tone: opdStageStatusTone(row.queueCurrentStepCode),
+          ),
+        );
+      },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) => a
+          .queueCurrentStepLabel(l10n)
+          .compareTo(b.queueCurrentStepLabel(l10n)),
     );
   }
 
@@ -820,31 +844,17 @@ class _ReceptionWorkspaceContentState
   ) {
     return AppListTableColumn<_ReceptionDeskRow>(
       id: 'next_action',
-      label: l10n.opdActionsColumnLabel,
+      label: l10n.opdNextActionFilterLabel,
       alwaysVisible: true,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final OpdQueueEntry? entry = row.queueEntry;
-        if (entry == null || _isTerminalStatus(entry.status)) {
+        final String label = row.queueNextActionLabel(l10n);
+        if (label.isEmpty) {
           return const SizedBox.shrink();
         }
-        final String queueEntryId = entry.publicId ?? entry.id;
-        if (queueEntryId.trim().isEmpty) {
-          return AppButton.secondary(
-            label: l10n.opdStartConsultationAction,
-            onPressed: () => unawaited(_openRowDetail(row)),
-          );
-        }
-        return WorkflowActionButton(
-          encounterId: queueEntryId,
-          patientId: entry.patientId,
-          queueEntryId: queueEntryId,
-          stage: entry.status,
-          nextStep: 'START_CONSULTATION',
-          displayNextStep: l10n.opdStartConsultationAction,
-          sourceModule: 'reception',
-          compact: true,
-        );
+        return Text(label);
       },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          a.queueNextActionLabel(l10n).compareTo(b.queueNextActionLabel(l10n)),
     );
   }
 
@@ -938,7 +948,10 @@ class _ReceptionWorkspaceContentState
         return <_ReceptionDeskRow>[
           for (final OpdQueueEntry entry in state.queueEntries.items)
             if (!_isTerminalStatus(entry.status))
-              _ReceptionDeskRow.queue(entry),
+              _ReceptionDeskRow.queue(
+                entry,
+                flow: _findFlowForQueueEntry(entry, state.flows.items),
+              ),
         ];
       case ReceptionDeskSection.activeVisits:
         return <_ReceptionDeskRow>[
@@ -1044,6 +1057,48 @@ class _ReceptionWorkspaceContentState
       default:
         return false;
     }
+  }
+
+  OpdFlowSummary? _findFlowForQueueEntry(
+    OpdQueueEntry entry,
+    List<OpdFlowSummary> flows,
+  ) {
+    final List<OpdFlowSummary> activeFlows = flows
+        .where((OpdFlowSummary flow) => !flow.isTerminal)
+        .toList(growable: false);
+    final Set<String> queueIds = <String>{
+      entry.id.trim().toLowerCase(),
+      entry.apiId.trim().toLowerCase(),
+      (entry.publicId ?? '').trim().toLowerCase(),
+    }..remove('');
+    for (final OpdFlowSummary flow in activeFlows) {
+      if (queueIds.contains((flow.visitQueueId ?? '').trim().toLowerCase())) {
+        return flow;
+      }
+    }
+
+    final String appointmentId = (entry.appointmentId ?? '')
+        .trim()
+        .toLowerCase();
+    if (appointmentId.isNotEmpty) {
+      for (final OpdFlowSummary flow in activeFlows) {
+        if ((flow.appointmentId ?? '').trim().toLowerCase() == appointmentId) {
+          return flow;
+        }
+      }
+    }
+
+    final String patientId = (entry.patientId ?? '').trim().toLowerCase();
+    if (patientId.isEmpty) {
+      return null;
+    }
+    final List<OpdFlowSummary> patientFlows = activeFlows
+        .where(
+          (OpdFlowSummary flow) =>
+              (flow.patientId ?? '').trim().toLowerCase() == patientId,
+        )
+        .toList(growable: false);
+    return patientFlows.length == 1 ? patientFlows.single : null;
   }
 
   String _sectionLabel(AppLocalizations l10n, ReceptionDeskSection section) {
@@ -1253,8 +1308,8 @@ final class _ReceptionDeskRow {
     return _ReceptionDeskRow._(appointment: appointment);
   }
 
-  factory _ReceptionDeskRow.queue(OpdQueueEntry entry) {
-    return _ReceptionDeskRow._(queueEntry: entry);
+  factory _ReceptionDeskRow.queue(OpdQueueEntry entry, {OpdFlowSummary? flow}) {
+    return _ReceptionDeskRow._(queueEntry: entry, flow: flow);
   }
 
   factory _ReceptionDeskRow.flow(OpdFlowSummary flow) {
@@ -1290,8 +1345,40 @@ final class _ReceptionDeskRow {
       queueEntry?.id ??
       flow?.id;
 
-  String? get status =>
-      appointment?.status ?? queueEntry?.status ?? flow?.stage;
+  String? get status {
+    if (appointment != null) {
+      return appointment?.status;
+    }
+    if (queueEntry != null) {
+      return queueCurrentStepCode;
+    }
+    return flow?.stage;
+  }
+
+  String get queueCurrentStepCode =>
+      flow?.displayCode ?? flow?.stage ?? queueEntry?.status ?? '';
+
+  String queueCurrentStepLabel(AppLocalizations l10n) {
+    final OpdFlowSummary? linkedFlow = flow;
+    if (linkedFlow != null) {
+      return opdStatusDisplayLabel(l10n, linkedFlow);
+    }
+    return opdStageDisplayLabel(l10n, queueEntry?.status);
+  }
+
+  String queueNextActionLabel(AppLocalizations l10n) {
+    final OpdFlowSummary? linkedFlow = flow;
+    if (linkedFlow != null) {
+      return opdNextStepDisplayLabel(
+        l10n,
+        linkedFlow.displayNextStep ?? linkedFlow.nextStep,
+      );
+    }
+    if (queueEntry != null && !isOpdTerminalStatus(queueEntry?.status)) {
+      return l10n.opdStartConsultationAction;
+    }
+    return '';
+  }
 
   DateTime? get time =>
       appointment?.scheduledStart ?? queueEntry?.queuedAt ?? flow?.startedAt;
@@ -1363,10 +1450,15 @@ final class _ReceptionDeskRow {
             entry.queuedAt == null
                 ? null
                 : AppFormatters.dateTime(entry.queuedAt!, locale),
-            opdStageDisplayLabel(l10n, entry.status ?? ''),
+            flow?.displayCode,
+            flow?.displayStatus,
+            flow?.stage,
+            flow?.nextStep,
+            flow?.displayNextStep,
+            queueCurrentStepLabel(l10n),
+            queueNextActionLabel(l10n),
             billing.statusLabel,
             billing.label,
-            l10n.opdStartConsultationAction,
           ]);
         }
       case ReceptionDeskSection.activeVisits:
@@ -1455,30 +1547,23 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
           horizontal: theme.spacing.sm,
           vertical: theme.spacing.sm,
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  AppListItemText(
-                    title: row.patientName(context),
-                    subtitle: row.patientIdentifier,
-                  ),
-                  if (row.time != null) ...<Widget>[
-                    SizedBox(height: theme.spacing.xs),
-                    Text(
-                      AppFormatters.dateTime(row.time!, locale),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                  SizedBox(height: theme.spacing.xs),
-                  _ReceptionDeskMobileStatus(section: section, row: row),
-                ],
-              ),
+            AppListItemText(
+              title: row.patientName(context),
+              subtitle: row.patientIdentifier,
             ),
-            SizedBox(width: theme.spacing.sm),
+            if (row.time != null) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                AppFormatters.dateTime(row.time!, locale),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            SizedBox(height: theme.spacing.xs),
+            _ReceptionDeskMobileStatus(section: section, row: row),
+            SizedBox(height: theme.spacing.sm),
             _ReceptionDeskMobileNextAction(
               section: section,
               row: row,
@@ -1503,9 +1588,7 @@ class _ReceptionDeskMobileStatus extends StatelessWidget {
 
     switch (section) {
       case ReceptionDeskSection.appointments:
-      case ReceptionDeskSection.queue:
-        final String? status =
-            row.appointment?.status ?? row.queueEntry?.status;
+        final String? status = row.appointment?.status;
         if (status == null || status.isEmpty) {
           return const SizedBox.shrink();
         }
@@ -1513,6 +1596,17 @@ class _ReceptionDeskMobileStatus extends StatelessWidget {
           status: AppWorkspaceStatus(
             label: opdStageDisplayLabel(l10n, status),
             tone: AppWorkspaceStatusTone.info,
+          ),
+        );
+      case ReceptionDeskSection.queue:
+        final String label = row.queueCurrentStepLabel(l10n);
+        if (label.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label: label,
+            tone: opdStageStatusTone(row.queueCurrentStepCode),
           ),
         );
       case ReceptionDeskSection.activeVisits:
@@ -1573,27 +1667,11 @@ class _ReceptionDeskMobileNextAction extends StatelessWidget {
         }
         return AppButton.secondary(label: label, onPressed: onOpenDetail);
       case ReceptionDeskSection.queue:
-        final OpdQueueEntry? entry = row.queueEntry;
-        if (entry == null) {
+        final String label = row.queueNextActionLabel(l10n);
+        if (label.isEmpty) {
           return const SizedBox.shrink();
         }
-        final String queueEntryId = entry.publicId ?? entry.id;
-        if (queueEntryId.trim().isEmpty) {
-          return AppButton.secondary(
-            label: l10n.opdStartConsultationAction,
-            onPressed: onOpenDetail,
-          );
-        }
-        return WorkflowActionButton(
-          encounterId: queueEntryId,
-          patientId: entry.patientId,
-          queueEntryId: queueEntryId,
-          stage: entry.status,
-          nextStep: 'START_CONSULTATION',
-          displayNextStep: l10n.opdStartConsultationAction,
-          sourceModule: 'reception',
-          compact: true,
-        );
+        return Text(label);
       case ReceptionDeskSection.activeVisits:
       case ReceptionDeskSection.paymentGate:
         final OpdFlowSummary? flow = row.flow;

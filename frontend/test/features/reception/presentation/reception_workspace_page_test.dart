@@ -70,6 +70,28 @@ const OpdQueueEntry _queueEntry = OpdQueueEntry(
   status: 'WAITING',
 );
 
+const OpdQueueEntry _progressedQueueEntry = OpdQueueEntry(
+  id: 'queue-2',
+  publicId: 'QUE000002',
+  patientId: 'patient-progressed',
+  patientDisplayName: 'Priya Progressed',
+  patientIdentifier: 'PAT-PRIYA',
+  status: 'IN_PROGRESS',
+);
+
+const OpdFlowSummary _progressedQueueFlow = OpdFlowSummary(
+  id: 'flow-progressed',
+  publicId: 'ENC-PROGRESSED',
+  patientId: 'patient-progressed',
+  visitQueueId: 'queue-2',
+  patientDisplayName: 'Priya Progressed',
+  patientIdentifier: 'PAT-PRIYA',
+  status: 'OPEN',
+  stage: 'LAB_REQUESTED',
+  displayCode: 'LAB_PENDING',
+  nextStep: 'COLLECT_SAMPLE',
+);
+
 const OpdFlowSummary _activeFlow = OpdFlowSummary(
   id: 'flow-active',
   publicId: 'ENC-ACTIVE',
@@ -141,20 +163,24 @@ void _stubWorkspace(_MockOpdRepository repository) {
   when(() => repository.listVisitQueues(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdQueueEntry>>.success(
       AppPage<OpdQueueEntry>(
-        items: const <OpdQueueEntry>[_queueEntry],
+        items: const <OpdQueueEntry>[_queueEntry, _progressedQueueEntry],
         request: (invocation.positionalArguments.single as OpdQueueQuery)
             .pageRequest,
-        totalItemCount: 1,
+        totalItemCount: 2,
       ),
     ),
   );
   when(() => repository.listOpdFlows(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdFlowSummary>>.success(
       AppPage<OpdFlowSummary>(
-        items: const <OpdFlowSummary>[_activeFlow, _paymentFlow],
+        items: const <OpdFlowSummary>[
+          _activeFlow,
+          _paymentFlow,
+          _progressedQueueFlow,
+        ],
         request:
             (invocation.positionalArguments.single as OpdFlowQuery).pageRequest,
-        totalItemCount: 2,
+        totalItemCount: 3,
       ),
     ),
   );
@@ -193,10 +219,11 @@ Future<GoRouter> _pumpWorkspace(
   required _MockOpdRepository repository,
   AppAccessPolicy? policy,
   String initialLocation = '/reception',
+  Size viewSize = const Size(1440, 900),
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.physicalSize = viewSize;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -464,6 +491,75 @@ void main() {
     expect(find.text('Reason'), findsOneWidget);
     expect(find.text('Queued at'), findsNothing);
     expect(find.text('Payment status'), findsNothing);
+  });
+
+  testWidgets(
+    'desk queue joins active flow and renders read-only workflow guidance',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/reception?section=desk-queue',
+      );
+
+      expect(find.text('Priya Progressed'), findsOneWidget);
+      expect(find.text('Current step'), findsOneWidget);
+      expect(find.text('Next action'), findsOneWidget);
+      expect(find.text('Lab pending'), findsOneWidget);
+      expect(find.text('Collect sample'), findsOneWidget);
+      expect(find.text('In Progress'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Collect sample'), findsNothing);
+      expect(find.text('Start consultation'), findsOneWidget);
+      expect(
+        find.widgetWithText(AppButton, 'Start consultation'),
+        findsNothing,
+      );
+
+      final Finder searchField = find.descendant(
+        of: find.byType(AppSearchBar),
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(searchField, 'Collect sample');
+      await tester.pump();
+      expect(find.text('Priya Progressed'), findsOneWidget);
+      expect(find.text('Quinn Queue'), findsNothing);
+
+      await tester.enterText(searchField, '');
+      await tester.pump();
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('Lab pending'), findsWidgets);
+      final Finder currentStepFilter = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppSelectField<String> &&
+            widget.labelText == 'Current step',
+      );
+      expect(currentStepFilter, findsOneWidget);
+      await tester.tap(currentStepFilter);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lab pending').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('Priya Progressed'), findsOneWidget);
+      expect(find.text('Quinn Queue'), findsNothing);
+    },
+  );
+
+  testWidgets('desk queue mobile cards show the same read-only guidance', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/reception?section=desk-queue',
+      viewSize: const Size(390, 844),
+    );
+
+    expect(find.text('Priya Progressed'), findsOneWidget);
+    expect(find.text('Lab pending'), findsOneWidget);
+    expect(find.text('Collect sample'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Collect sample'), findsNothing);
   });
 
   testWidgets('refresh is single-flight and exposes progress tooltip', (
