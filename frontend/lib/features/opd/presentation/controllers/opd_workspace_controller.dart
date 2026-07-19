@@ -39,6 +39,7 @@ final class OpdWorkspaceController
   bool _refreshPending = false;
   bool _queueProviderOptionsLoaded = false;
   WorkspaceRefreshPlan? _pendingRefreshPlan;
+  Future<AppFailure?>? _manualRefreshInFlight;
 
   @override
   Future<Result<OpdWorkspaceState>> build() async {
@@ -112,14 +113,45 @@ final class OpdWorkspaceController
     return pending.merge(plan);
   }
 
-  Future<AppFailure?> refresh() {
+  Future<AppFailure?> refresh() => _startManualRefresh(
+    plan: WorkspaceRefreshPlan.full,
+    refreshProviders: true,
+  );
+
+  /// Refreshes only the OPD slices rendered by Reception.
+  ///
+  /// The refresh is silent at controller level so a shared OPD controller does
+  /// not expose page-level loading chrome in either workspace.
+  Future<AppFailure?> refreshReceptionData() =>
+      _startManualRefresh(plan: WorkspaceRefreshPlan.receptionDesk);
+
+  Future<AppFailure?> _startManualRefresh({
+    required WorkspaceRefreshPlan plan,
+    bool refreshProviders = false,
+  }) {
     // Manual refresh is intentionally single-flight. Realtime refreshes use
     // the pending-plan path below, but repeated toolbar taps must not enqueue
     // another identical HTTP reload behind the active one.
+    final Future<AppFailure?>? active = _manualRefreshInFlight;
+    if (active != null) {
+      return active;
+    }
     if (_isSyncing || (_currentState?.isSaving ?? false)) {
       return Future<AppFailure?>.value();
     }
-    return _syncVisibleData(showLoading: true, refreshProviders: true);
+    late final Future<AppFailure?> operation;
+    operation =
+        _syncVisibleData(
+          showLoading: refreshProviders,
+          refreshProviders: refreshProviders,
+          plan: plan,
+        ).whenComplete(() {
+          if (identical(_manualRefreshInFlight, operation)) {
+            _manualRefreshInFlight = null;
+          }
+        });
+    _manualRefreshInFlight = operation;
+    return operation;
   }
 
   Future<AppFailure?> applySearch(String value) async {

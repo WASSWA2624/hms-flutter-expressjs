@@ -201,17 +201,6 @@ class _ReceptionWorkspaceContentState
     final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
     final ReceptionPaymentGateState? paymentGate = _paymentGateState;
-    final bool paymentGateLoading =
-        _section == ReceptionDeskSection.paymentGate &&
-        (widget.paymentGateState?.isLoading == true ||
-            (paymentGate?.isRefreshing ?? false));
-    final bool sectionRefreshing = switch (_section) {
-      ReceptionDeskSection.appointments => state.isRefreshingAppointments,
-      ReceptionDeskSection.queue => state.isRefreshingQueue,
-      ReceptionDeskSection.activeVisits => state.isRefreshingFlows,
-      ReceptionDeskSection.paymentGate => paymentGateLoading,
-    };
-    final bool isRefreshing = _refreshRequested || sectionRefreshing;
     final List<ReceptionDeskSection> visibleSections = _visibleSections();
     if (visibleSections.isEmpty) {
       return AppStateView(
@@ -283,8 +272,8 @@ class _ReceptionWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _buildPrimaryAction(l10n, isRefreshing),
-              secondaryActions: _buildSecondaryActions(l10n, isRefreshing),
+              primaryAction: _buildPrimaryAction(l10n),
+              secondaryActions: _buildSecondaryActions(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section == ReceptionDeskSection.paymentGate &&
@@ -311,7 +300,6 @@ class _ReceptionWorkspaceContentState
                 columnWidthStorageKey: 'reception_cw_${_section.name}',
                 columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
                 columnVisibilityTitle: l10n.commonTableSettingsTitle,
-                isLoading: isRefreshing,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 onRowSelected: (_ReceptionDeskRow row) =>
@@ -327,7 +315,6 @@ class _ReceptionWorkspaceContentState
                       ? l10n.receptionPaymentGateSearchHint
                       : l10n.receptionSearchHint,
                   clearLabel: l10n.receptionClearFiltersAction,
-                  isLoading: isRefreshing,
                   matcher: (_ReceptionDeskRow row, String query) =>
                       row.matchesSearch(_section, query, context),
                   showAdvancedFilterButton: true,
@@ -428,7 +415,7 @@ class _ReceptionWorkspaceContentState
     return groups;
   }
 
-  Widget _buildPrimaryAction(AppLocalizations l10n, bool isRefreshing) {
+  Widget _buildPrimaryAction(AppLocalizations l10n) {
     return AppAccessActionGate(
       requirement: receptionPatientWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
@@ -438,32 +425,24 @@ class _ReceptionWorkspaceContentState
         return AppTabToolbarPrimary(
           label: l10n.receptionRegisterPatientAction,
           icon: Icons.person_add_alt_1_outlined,
-          enabled: isAllowed && !isRefreshing,
-          isLoading: isAllowed && isRefreshing,
-          tooltip: isAllowed && isRefreshing
-              ? l10n.receptionActionInProgressTooltip
-              : null,
-          onPressed: isAllowed && !isRefreshing
-              ? () => unawaited(_openRegisterPatient())
-              : null,
+          enabled: isAllowed,
+          onPressed: isAllowed ? () => unawaited(_openRegisterPatient()) : null,
         );
       },
     );
   }
 
-  List<Widget> _buildSecondaryActions(
-    AppLocalizations l10n,
-    bool isRefreshing,
-  ) {
+  List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
     final AppTabToolbarAction refreshAction = AppTabToolbarAction(
       label: l10n.commonRefreshActionLabel,
       icon: Icons.refresh,
-      isLoading: isRefreshing,
-      enabled: !isRefreshing,
-      tooltip: isRefreshing
+      enabled: !_refreshRequested,
+      tooltip: _refreshRequested
           ? l10n.receptionRefreshInProgressTooltip
           : l10n.commonRefreshActionLabel,
-      onPressed: isRefreshing ? null : () => unawaited(_refreshWorkspace()),
+      onPressed: _refreshRequested
+          ? null
+          : () => unawaited(_refreshWorkspace()),
     );
 
     final Widget scheduleAppointmentAction = AppAccessActionGate(
@@ -475,14 +454,8 @@ class _ReceptionWorkspaceContentState
         return AppTabToolbarAction(
           label: l10n.receptionScheduleAppointmentAction,
           icon: Icons.calendar_month_outlined,
-          enabled: isAllowed && !isRefreshing,
-          isLoading: isAllowed && isRefreshing,
-          tooltip: isAllowed && isRefreshing
-              ? l10n.receptionActionInProgressTooltip
-              : null,
-          onPressed: isAllowed && !isRefreshing
-              ? () => unawaited(_scheduleAppointment())
-              : null,
+          enabled: isAllowed,
+          onPressed: isAllowed ? () => unawaited(_scheduleAppointment()) : null,
         );
       },
     );
@@ -1244,7 +1217,9 @@ class _ReceptionWorkspaceContentState
     setState(() => _refreshRequested = true);
     try {
       final List<Future<AppFailure?>> refreshes = <Future<AppFailure?>>[
-        ref.read(opdWorkspaceControllerProvider.notifier).refresh(),
+        ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .refreshReceptionData(),
         if (widget.paymentGateState != null)
           ref.read(receptionPaymentGateControllerProvider.notifier).refresh(),
       ];

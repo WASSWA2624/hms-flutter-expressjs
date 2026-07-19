@@ -49,7 +49,7 @@ final class ReceptionPaymentGateController
   BillingRepository get _repository => ref.read(billingRepositoryProvider);
 
   bool _isSyncing = false;
-  bool _refreshPending = false;
+  Future<AppFailure?>? _refreshInFlight;
 
   @override
   Future<Result<ReceptionPaymentGateState>> build() async {
@@ -64,11 +64,22 @@ final class ReceptionPaymentGateController
     return _load();
   }
 
-  Future<AppFailure?> refresh() async {
-    if (_isSyncing) {
-      _refreshPending = true;
-      return null;
+  Future<AppFailure?> refresh() {
+    final Future<AppFailure?>? active = _refreshInFlight;
+    if (active != null) {
+      return active;
     }
+    late final Future<AppFailure?> operation;
+    operation = _runRefresh().whenComplete(() {
+      if (identical(_refreshInFlight, operation)) {
+        _refreshInFlight = null;
+      }
+    });
+    _refreshInFlight = operation;
+    return operation;
+  }
+
+  Future<AppFailure?> _runRefresh() async {
     final ReceptionPaymentGateState? current = _currentState;
     if (current != null) {
       _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
@@ -87,10 +98,6 @@ final class ReceptionPaymentGateController
         }
       },
     );
-    if (_refreshPending) {
-      _refreshPending = false;
-      return refresh();
-    }
     return failure;
   }
 

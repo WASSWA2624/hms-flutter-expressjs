@@ -329,9 +329,8 @@ void _stubWorkspace(_MockOpdRepository repository) {
     ),
   );
   when(() => repository.getOpdFlow(any())).thenAnswer(
-    (_) async => Result<OpdFlowDetail>.success(
-      OpdFlowDetail(summary: _paymentFlow),
-    ),
+    (_) async =>
+        Result<OpdFlowDetail>.success(OpdFlowDetail(summary: _paymentFlow)),
   );
   when(
     () => repository.listClinicalAlertThresholds(
@@ -1008,6 +1007,149 @@ void main() {
     expect(calls, 2);
   });
 
+  testWidgets('refresh synchronizes every section without loading the page', (
+    WidgetTester tester,
+  ) async {
+    final _MockBillingRepository billingRepository = _MockBillingRepository();
+    _stubBilling(billingRepository);
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      billingRepository: billingRepository,
+    );
+
+    final appointmentCompleter = Completer<Result<AppPage<OpdAppointment>>>();
+    final queueCompleter = Completer<Result<AppPage<OpdQueueEntry>>>();
+    final flowCompleter = Completer<Result<AppPage<OpdFlowSummary>>>();
+    final billingCompleter = Completer<Result<AppPage<BillingWorkItem>>>();
+    when(
+      () => repository.listAppointments(any()),
+    ).thenAnswer((_) => appointmentCompleter.future);
+    when(
+      () => repository.listVisitQueues(any()),
+    ).thenAnswer((_) => queueCompleter.future);
+    when(
+      () => repository.listOpdFlows(any()),
+    ).thenAnswer((_) => flowCompleter.future);
+    when(
+      () => billingRepository.listWorkItems(any()),
+    ).thenAnswer((_) => billingCompleter.future);
+
+    await tester.tap(find.text('Refresh'));
+    await tester.pump();
+
+    expect(find.text('Ada Appointment'), findsOneWidget);
+    final Finder tableFinder = find.byWidgetPredicate(
+      (Widget widget) => widget is AppListTable,
+    );
+    expect((tester.widget(tableFinder) as dynamic).isLoading, isFalse);
+    expect(
+      tester.widget<AppSearchBar>(find.byType(AppSearchBar)).isLoading,
+      isFalse,
+    );
+    final AppTabToolbarPrimary register = tester.widget<AppTabToolbarPrimary>(
+      find.byType(AppTabToolbarPrimary),
+    );
+    expect(register.enabled, isTrue);
+    expect(register.isLoading, isFalse);
+    final AppTabToolbarAction schedule = tester.widget<AppTabToolbarAction>(
+      find.widgetWithText(AppTabToolbarAction, 'Schedule appointment'),
+    );
+    expect(schedule.enabled, isTrue);
+    expect(schedule.isLoading, isFalse);
+    final AppTabToolbarAction refresh = tester.widget<AppTabToolbarAction>(
+      find.widgetWithText(AppTabToolbarAction, 'Refresh'),
+    );
+    expect(refresh.enabled, isFalse);
+    expect(refresh.isLoading, isFalse);
+    expect(find.byTooltip('Filters'), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsOneWidget);
+
+    const OpdAppointment refreshedAppointment = OpdAppointment(
+      id: 'appointment-refreshed',
+      patientDisplayName: 'Fresh Appointment',
+      status: 'SCHEDULED',
+    );
+    const OpdQueueEntry refreshedQueue = OpdQueueEntry(
+      id: 'queue-refreshed',
+      patientDisplayName: 'Fresh Queue',
+      status: 'WAITING',
+    );
+    final OpdFlowSummary refreshedFlow = OpdFlowSummary(
+      id: 'flow-refreshed',
+      patientDisplayName: 'Fresh Active',
+      status: 'OPEN',
+      startedAt: _todayAtNoon,
+      stage: 'WAITING_VITALS',
+    );
+    final BillingWorkItem refreshedInvoice = _billingInvoice(
+      id: 'invoice-refreshed',
+      displayId: 'INV-REFRESHED',
+      patientId: 'patient-refreshed',
+      patientDisplayId: 'PAT-REFRESHED',
+      patientName: 'Fresh Payment',
+      encounterId: 'encounter-refreshed',
+      encounterDisplayId: 'ENC-REFRESHED',
+      source: 'LABORATORY',
+      description: 'Refreshed service',
+      balance: 10000,
+    );
+    appointmentCompleter.complete(
+      const Result<AppPage<OpdAppointment>>.success(
+        AppPage<OpdAppointment>(
+          items: <OpdAppointment>[refreshedAppointment],
+          request: AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    queueCompleter.complete(
+      const Result<AppPage<OpdQueueEntry>>.success(
+        AppPage<OpdQueueEntry>(
+          items: <OpdQueueEntry>[refreshedQueue],
+          request: AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    flowCompleter.complete(
+      Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: <OpdFlowSummary>[refreshedFlow],
+          request: const AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    billingCompleter.complete(
+      Result<AppPage<BillingWorkItem>>.success(
+        AppPage<BillingWorkItem>(
+          items: <BillingWorkItem>[refreshedInvoice],
+          request: const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final AppTabStrip tabs = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    for (final AppTabItem tab in tabs.tabs) {
+      expect(tab.count, 1, reason: tab.id);
+    }
+    expect(find.text('Fresh Appointment'), findsOneWidget);
+    await tester.tap(find.textContaining('Desk queue').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Fresh Queue'), findsOneWidget);
+    await tester.tap(find.textContaining('Active visits').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Fresh Active'), findsOneWidget);
+    await tester.tap(find.textContaining('Payment gate').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Fresh Payment'), findsOneWidget);
+  });
+
   testWidgets('refresh is single-flight and exposes progress tooltip', (
     WidgetTester tester,
   ) async {
@@ -1037,6 +1179,14 @@ void main() {
     await tester.tap(find.text('Refresh'));
     await tester.pump();
     expect(find.byTooltip('Refresh in progress'), findsOneWidget);
+    expect(
+      tester
+          .widget<AppTabToolbarAction>(
+            find.widgetWithText(AppTabToolbarAction, 'Refresh'),
+          )
+          .isLoading,
+      isFalse,
+    );
 
     await tester.tap(find.text('Refresh'));
     await tester.pump();
@@ -1075,7 +1225,9 @@ void main() {
     );
     await tester.pump();
 
-    final dynamic table = tester.widget(find.byType(AppListTable));
+    final dynamic table = tester.widget(
+      find.byWidgetPredicate((Widget widget) => widget is AppListTable),
+    );
     expect(table.isLoading, isFalse);
     final AppTabToolbarPrimary registerAction = tester
         .widgetList<AppTabToolbarPrimary>(find.byType(AppTabToolbarPrimary))

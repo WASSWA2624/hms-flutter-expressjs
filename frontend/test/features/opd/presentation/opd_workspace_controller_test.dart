@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -267,36 +269,42 @@ void main() {
       verify(() => repository.updateAppointment('APT000001', any())).called(1);
     });
 
-    test('rescheduleAppointment failure leaves the schedule unpatched', () async {
-      final _MockOpdRepository repository = _MockOpdRepository();
-      final DateTime originalStart = DateTime.utc(2026, 7, 20, 8);
-      final DateTime updatedStart = DateTime.utc(2026, 7, 21, 10);
-      final DateTime updatedEnd = DateTime.utc(2026, 7, 21, 10, 30);
-      final OpdAppointment appointment = OpdAppointment(
-        id: 'appointment-internal',
-        publicId: 'APT000001',
-        status: 'SCHEDULED',
-        scheduledStart: originalStart,
-      );
-      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
-      when(() => repository.updateAppointment(any(), any())).thenAnswer(
-        (_) async => Result<OpdAppointment>.failure(AppFailure.network()),
-      );
+    test(
+      'rescheduleAppointment failure leaves the schedule unpatched',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        final DateTime originalStart = DateTime.utc(2026, 7, 20, 8);
+        final DateTime updatedStart = DateTime.utc(2026, 7, 21, 10);
+        final DateTime updatedEnd = DateTime.utc(2026, 7, 21, 10, 30);
+        final OpdAppointment appointment = OpdAppointment(
+          id: 'appointment-internal',
+          publicId: 'APT000001',
+          status: 'SCHEDULED',
+          scheduledStart: originalStart,
+        );
+        _stubInitialLoad(
+          repository,
+          appointments: <OpdAppointment>[appointment],
+        );
+        when(() => repository.updateAppointment(any(), any())).thenAnswer(
+          (_) async => Result<OpdAppointment>.failure(AppFailure.network()),
+        );
 
-      final ProviderContainer container = _testContainer(repository);
-      addTearDown(container.dispose);
-      await container.read(opdWorkspaceControllerProvider.future);
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
 
-      final AppFailure? failure = await container
-          .read(opdWorkspaceControllerProvider.notifier)
-          .rescheduleAppointment(appointment, updatedStart, updatedEnd);
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .rescheduleAppointment(appointment, updatedStart, updatedEnd);
 
-      expect(failure, isA<AppFailure>());
-      expect(
-        _workspaceState(container).appointments.items.single.scheduledStart,
-        originalStart,
-      );
-    });
+        expect(failure, isA<AppFailure>());
+        expect(
+          _workspaceState(container).appointments.items.single.scheduledStart,
+          originalStart,
+        );
+      },
+    );
 
     test('rescheduleAppointment matches persisted rows by public id', () async {
       final _MockOpdRepository repository = _MockOpdRepository();
@@ -317,9 +325,9 @@ void main() {
         scheduledEnd: updatedEnd,
       );
       _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
-      when(() => repository.updateAppointment(any(), any())).thenAnswer(
-        (_) async => Result<OpdAppointment>.success(updated),
-      );
+      when(
+        () => repository.updateAppointment(any(), any()),
+      ).thenAnswer((_) async => Result<OpdAppointment>.success(updated));
 
       final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
@@ -376,34 +384,40 @@ void main() {
       ).called(1);
     });
 
-    test('cancelAppointment sends null for blank cancellation reasons', () async {
-      final _MockOpdRepository repository = _MockOpdRepository();
-      const OpdAppointment appointment = OpdAppointment(
-        id: 'appointment-internal',
-        publicId: 'APT000001',
-        status: 'SCHEDULED',
-      );
-      const OpdAppointment cancelled = OpdAppointment(
-        id: 'appointment-internal',
-        publicId: 'APT000001',
-        status: 'CANCELLED',
-      );
-      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
-      when(() => repository.cancelAppointment(any(), any())).thenAnswer(
-        (_) async => const Result<OpdAppointment>.success(cancelled),
-      );
+    test(
+      'cancelAppointment sends null for blank cancellation reasons',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        const OpdAppointment appointment = OpdAppointment(
+          id: 'appointment-internal',
+          publicId: 'APT000001',
+          status: 'SCHEDULED',
+        );
+        const OpdAppointment cancelled = OpdAppointment(
+          id: 'appointment-internal',
+          publicId: 'APT000001',
+          status: 'CANCELLED',
+        );
+        _stubInitialLoad(
+          repository,
+          appointments: <OpdAppointment>[appointment],
+        );
+        when(() => repository.cancelAppointment(any(), any())).thenAnswer(
+          (_) async => const Result<OpdAppointment>.success(cancelled),
+        );
 
-      final ProviderContainer container = _testContainer(repository);
-      addTearDown(container.dispose);
-      await container.read(opdWorkspaceControllerProvider.future);
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
 
-      final AppFailure? failure = await container
-          .read(opdWorkspaceControllerProvider.notifier)
-          .cancelAppointment(appointment, '   ');
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .cancelAppointment(appointment, '   ');
 
-      expect(failure, isNull);
-      verify(() => repository.cancelAppointment('APT000001', null)).called(1);
-    });
+        expect(failure, isNull);
+        verify(() => repository.cancelAppointment('APT000001', null)).called(1);
+      },
+    );
 
     test('failed appointment mutation leaves the row unchanged', () async {
       final _MockOpdRepository repository = _MockOpdRepository();
@@ -765,9 +779,9 @@ void main() {
               invocation.positionalArguments.single as Map<String, Object?>;
           return const Result<void>.success(null);
         });
-        when(
-          () => repository.getOpdFlow(any()),
-        ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(refreshed));
+        when(() => repository.getOpdFlow(any())).thenAnswer(
+          (_) async => const Result<OpdFlowDetail>.success(refreshed),
+        );
 
         final ProviderContainer container = _testContainer(repository);
         addTearDown(container.dispose);
@@ -835,9 +849,9 @@ void main() {
           flows: <OpdFlowSummary>[flow],
           queueEntries: <OpdQueueEntry>[queued],
         );
-        when(
-          () => repository.getOpdFlow(any()),
-        ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(assigned));
+        when(() => repository.getOpdFlow(any())).thenAnswer(
+          (_) async => const Result<OpdFlowDetail>.success(assigned),
+        );
         when(
           () => repository.assignDoctor(
             any(),
@@ -872,10 +886,7 @@ void main() {
         final OpdWorkspaceState state = _workspaceState(container);
         expect(state.selectedFlow?.summary.providerUserId, 'DOC000001');
         expect(state.selectedFlow?.summary.stage, 'WAITING_DOCTOR_REVIEW');
-        expect(
-          state.flows.items.single.providerUserId,
-          'DOC000001',
-        );
+        expect(state.flows.items.single.providerUserId, 'DOC000001');
         final OpdQueueEntry queueRow = state.queueEntries.items.single;
         expect(queueRow.providerUserId, 'DOC000001');
         expect(queueRow.providerDisplayName, 'Dr Assigned');
@@ -927,112 +938,117 @@ void main() {
       expect(state.queueEntries.items.single, same(queued));
     });
 
-    test('payConsultation posts to pay-consultation and patches flow slices',
-        () async {
-      final _MockOpdRepository repository = _MockOpdRepository();
-      const OpdFlowSummary unpaid = OpdFlowSummary(
-        id: 'encounter-1',
-        publicId: 'ENC000001',
-        stage: 'WAITING_CONSULTATION_PAYMENT',
-        consultationPaymentRequired: true,
-        consultationPaid: false,
-        consultationFee: 25000,
-        consultationCurrency: 'UGX',
-      );
-      const OpdFlowDetail paid = OpdFlowDetail(
-        summary: OpdFlowSummary(
+    test(
+      'payConsultation posts to pay-consultation and patches flow slices',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        const OpdFlowSummary unpaid = OpdFlowSummary(
           id: 'encounter-1',
           publicId: 'ENC000001',
-          stage: 'WAITING_VITALS',
+          stage: 'WAITING_CONSULTATION_PAYMENT',
+          consultationPaymentRequired: true,
+          consultationPaid: false,
+          consultationFee: 25000,
+          consultationCurrency: 'UGX',
+        );
+        const OpdFlowDetail paid = OpdFlowDetail(
+          summary: OpdFlowSummary(
+            id: 'encounter-1',
+            publicId: 'ENC000001',
+            stage: 'WAITING_VITALS',
+            consultationPaymentRequired: true,
+            consultationPaid: true,
+            consultationPaymentStatus: 'PAID',
+            consultationFee: 25000,
+            consultationPaidAmount: 25000,
+            consultationCurrency: 'UGX',
+          ),
           consultationPaymentRequired: true,
           consultationPaid: true,
           consultationPaymentStatus: 'PAID',
-          consultationFee: 25000,
           consultationPaidAmount: 25000,
-          consultationCurrency: 'UGX',
-        ),
-        consultationPaymentRequired: true,
-        consultationPaid: true,
-        consultationPaymentStatus: 'PAID',
-        consultationPaidAmount: 25000,
-      );
-      Map<String, Object?>? submittedPayload;
+        );
+        Map<String, Object?>? submittedPayload;
 
-      _stubInitialLoad(repository, flows: <OpdFlowSummary>[unpaid]);
-      when(() => repository.payConsultation(any(), any())).thenAnswer((
-        Invocation invocation,
-      ) async {
-        submittedPayload =
-            invocation.positionalArguments[1] as Map<String, Object?>;
-        return const Result<OpdFlowDetail>.success(paid);
-      });
+        _stubInitialLoad(repository, flows: <OpdFlowSummary>[unpaid]);
+        when(() => repository.payConsultation(any(), any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          submittedPayload =
+              invocation.positionalArguments[1] as Map<String, Object?>;
+          return const Result<OpdFlowDetail>.success(paid);
+        });
 
-      final ProviderContainer container = _testContainer(repository);
-      addTearDown(container.dispose);
-      await container.read(opdWorkspaceControllerProvider.future);
-      clearInteractions(repository);
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+        clearInteractions(repository);
 
-      final AppFailure? failure = await container
-          .read(opdWorkspaceControllerProvider.notifier)
-          .payConsultation(unpaid, <String, Object?>{
-            'amount': '25000',
-            'currency': 'UGX',
-            'method': 'CASH',
-            'status': 'COMPLETED',
-          });
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .payConsultation(unpaid, <String, Object?>{
+              'amount': '25000',
+              'currency': 'UGX',
+              'method': 'CASH',
+              'status': 'COMPLETED',
+            });
 
-      expect(failure, isNull);
-      expect(submittedPayload, containsPair('method', 'CASH'));
-      expect(submittedPayload, containsPair('status', 'COMPLETED'));
-      verify(() => repository.payConsultation('ENC000001', any())).called(1);
-      expect(
-        _workspaceState(container).selectedFlow?.summary.stage,
-        'WAITING_VITALS',
-      );
-      expect(
-        _workspaceState(container).flows.items.single.consultationPaid,
-        isTrue,
-      );
-    });
+        expect(failure, isNull);
+        expect(submittedPayload, containsPair('method', 'CASH'));
+        expect(submittedPayload, containsPair('status', 'COMPLETED'));
+        verify(() => repository.payConsultation('ENC000001', any())).called(1);
+        expect(
+          _workspaceState(container).selectedFlow?.summary.stage,
+          'WAITING_VITALS',
+        );
+        expect(
+          _workspaceState(container).flows.items.single.consultationPaid,
+          isTrue,
+        );
+      },
+    );
 
-    test('failed payConsultation leaves flow payment state unchanged',
-        () async {
-      final _MockOpdRepository repository = _MockOpdRepository();
-      const OpdFlowSummary unpaid = OpdFlowSummary(
-        id: 'encounter-1',
-        publicId: 'ENC000001',
-        stage: 'WAITING_CONSULTATION_PAYMENT',
-        consultationPaymentRequired: true,
-        consultationPaid: false,
-      );
-      _stubInitialLoad(repository, flows: <OpdFlowSummary>[unpaid]);
-      when(() => repository.payConsultation(any(), any())).thenAnswer(
-        (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
-      );
+    test(
+      'failed payConsultation leaves flow payment state unchanged',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        const OpdFlowSummary unpaid = OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          stage: 'WAITING_CONSULTATION_PAYMENT',
+          consultationPaymentRequired: true,
+          consultationPaid: false,
+        );
+        _stubInitialLoad(repository, flows: <OpdFlowSummary>[unpaid]);
+        when(() => repository.payConsultation(any(), any())).thenAnswer(
+          (_) async =>
+              const Result<OpdFlowDetail>.failure(AppFailure.network()),
+        );
 
-      final ProviderContainer container = _testContainer(repository);
-      addTearDown(container.dispose);
-      await container.read(opdWorkspaceControllerProvider.future);
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
 
-      final AppFailure? failure = await container
-          .read(opdWorkspaceControllerProvider.notifier)
-          .payConsultation(unpaid, <String, Object?>{
-            'amount': '25000',
-            'currency': 'UGX',
-            'method': 'CASH',
-            'status': 'COMPLETED',
-          });
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .payConsultation(unpaid, <String, Object?>{
+              'amount': '25000',
+              'currency': 'UGX',
+              'method': 'CASH',
+              'status': 'COMPLETED',
+            });
 
-      expect(failure, isNotNull);
-      expect(
-        _workspaceState(container).flows.items.single.consultationPaid,
-        isFalse,
-      );
-      expect(
-        _workspaceState(container).flows.items.single.stage,
-        'WAITING_CONSULTATION_PAYMENT',
-      );
-    });
+        expect(failure, isNotNull);
+        expect(
+          _workspaceState(container).flows.items.single.consultationPaid,
+          isFalse,
+        );
+        expect(
+          _workspaceState(container).flows.items.single.stage,
+          'WAITING_CONSULTATION_PAYMENT',
+        );
+      },
+    );
 
     test('correctStage uses the canonical OPD correction endpoint', () async {
       final _MockOpdRepository repository = _MockOpdRepository();
@@ -1096,9 +1112,8 @@ void main() {
 
       _stubInitialLoad(repository, flows: <OpdFlowSummary>[flow]);
       when(() => repository.getOpdFlow(any())).thenAnswer(
-        (_) async => const Result<OpdFlowDetail>.success(
-          OpdFlowDetail(summary: flow),
-        ),
+        (_) async =>
+            const Result<OpdFlowDetail>.success(OpdFlowDetail(summary: flow)),
       );
       when(() => repository.correctStage(any(), any())).thenAnswer(
         (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
@@ -1323,7 +1338,10 @@ void main() {
             });
 
         expect(failure, isNull);
-        expect(reviewPayload, containsPair('note', 'DISCHARGE - Home care advice given'));
+        expect(
+          reviewPayload,
+          containsPair('note', 'DISCHARGE - Home care advice given'),
+        );
         expect(dispositionPayload, containsPair('decision', 'DISCHARGE'));
         verify(() => repository.doctorReview('ENC000001', any())).called(1);
         verify(() => repository.disposition('ENC000001', any())).called(1);
@@ -1624,6 +1642,134 @@ void main() {
         same(queued),
       );
     });
+
+    test(
+      'refreshReceptionData is silent, targeted, and single-flight',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        _stubInitialLoad(repository);
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+        clearInteractions(repository);
+
+        final Completer<Result<AppPage<OpdAppointment>>> appointments =
+            Completer<Result<AppPage<OpdAppointment>>>();
+        when(
+          () => repository.listAppointments(any()),
+        ).thenAnswer((_) => appointments.future);
+        when(() => repository.listVisitQueues(any())).thenAnswer(
+          (invocation) async => Result<AppPage<OpdQueueEntry>>.success(
+            AppPage<OpdQueueEntry>(
+              items: const <OpdQueueEntry>[],
+              request: (invocation.positionalArguments.single as OpdQueueQuery)
+                  .pageRequest,
+            ),
+          ),
+        );
+        when(() => repository.listOpdFlows(any())).thenAnswer(
+          (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+            AppPage<OpdFlowSummary>(
+              items: const <OpdFlowSummary>[],
+              request: (invocation.positionalArguments.single as OpdFlowQuery)
+                  .pageRequest,
+            ),
+          ),
+        );
+
+        final OpdWorkspaceController controller = container.read(
+          opdWorkspaceControllerProvider.notifier,
+        );
+        final Future<AppFailure?> first = controller.refreshReceptionData();
+        final Future<AppFailure?> second = controller.refreshReceptionData();
+
+        expect(identical(first, second), isTrue);
+        final OpdWorkspaceState refreshing = _workspaceState(container);
+        expect(refreshing.isRefreshingAppointments, isFalse);
+        expect(refreshing.isRefreshingQueue, isFalse);
+        expect(refreshing.isRefreshingFlows, isFalse);
+        verify(() => repository.listAppointments(any())).called(1);
+        verify(() => repository.listVisitQueues(any())).called(1);
+        verify(() => repository.listOpdFlows(any())).called(1);
+        verifyNever(() => repository.listTriageQueue(any()));
+        verifyNever(() => repository.getOpdSummaryCounts());
+        verifyNever(() => repository.listProviderSchedules());
+
+        appointments.complete(
+          const Result<AppPage<OpdAppointment>>.success(
+            AppPage<OpdAppointment>(
+              items: <OpdAppointment>[],
+              request: AppPageRequest(),
+            ),
+          ),
+        );
+        expect(await first, isNull);
+        expect(await second, isNull);
+      },
+    );
+
+    test(
+      'refreshReceptionData applies successful slices and retains failures',
+      () async {
+        const OpdAppointment previousAppointment = OpdAppointment(
+          id: 'appointment-old',
+        );
+        const OpdQueueEntry previousQueue = OpdQueueEntry(id: 'queue-old');
+        const OpdFlowSummary previousFlow = OpdFlowSummary(id: 'flow-old');
+        const OpdAppointment refreshedAppointment = OpdAppointment(
+          id: 'appointment-new',
+        );
+        const OpdFlowSummary refreshedFlow = OpdFlowSummary(id: 'flow-new');
+        final _MockOpdRepository repository = _MockOpdRepository();
+        _stubInitialLoad(
+          repository,
+          appointments: const <OpdAppointment>[previousAppointment],
+          queueEntries: const <OpdQueueEntry>[previousQueue],
+          flows: const <OpdFlowSummary>[previousFlow],
+        );
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+
+        when(() => repository.listAppointments(any())).thenAnswer(
+          (invocation) async => Result<AppPage<OpdAppointment>>.success(
+            AppPage<OpdAppointment>(
+              items: const <OpdAppointment>[refreshedAppointment],
+              request:
+                  (invocation.positionalArguments.single as OpdAppointmentQuery)
+                      .pageRequest,
+            ),
+          ),
+        );
+        when(() => repository.listVisitQueues(any())).thenAnswer(
+          (_) async => const Result<AppPage<OpdQueueEntry>>.failure(
+            AppFailure.network(),
+          ),
+        );
+        when(() => repository.listOpdFlows(any())).thenAnswer(
+          (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+            AppPage<OpdFlowSummary>(
+              items: const <OpdFlowSummary>[refreshedFlow],
+              request: (invocation.positionalArguments.single as OpdFlowQuery)
+                  .pageRequest,
+            ),
+          ),
+        );
+
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .refreshReceptionData();
+
+        expect(failure, isNotNull);
+        final OpdWorkspaceState state = _workspaceState(container);
+        expect(state.appointments.items, const <OpdAppointment>[
+          refreshedAppointment,
+        ]);
+        expect(state.queueEntries.items, const <OpdQueueEntry>[previousQueue]);
+        expect(state.flows.items, const <OpdFlowSummary>[refreshedFlow]);
+        expect(state.lastFailure, isNotNull);
+      },
+    );
   });
 }
 

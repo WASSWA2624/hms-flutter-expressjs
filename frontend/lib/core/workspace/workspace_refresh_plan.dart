@@ -52,6 +52,12 @@ final class WorkspaceRefreshPlan {
     selectedDetail: true,
   );
 
+  static const WorkspaceRefreshPlan receptionDesk = WorkspaceRefreshPlan(
+    appointments: true,
+    queue: true,
+    flows: true,
+  );
+
   static const WorkspaceRefreshPlan admissionWorkspace = WorkspaceRefreshPlan(
     primaryList: true,
     selectedDetail: true,
