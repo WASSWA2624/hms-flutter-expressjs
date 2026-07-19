@@ -3203,14 +3203,20 @@ const startOpdFlow = async (data, context = {}) => {
             );
           }
 
-          encounter = await tx.encounter.update({
+          // Prefer updateMany + findFirst over update(). The tenant-guard update
+          // preflight reads via the base client and cannot see this encounter
+          // until the surrounding interactive transaction commits.
+          await tx.encounter.updateMany({
             where: { id: encounter.id },
             data: {
               extension_json: {
                 ...(encounter.extension_json || {}),
                 opd_flow: flowState
               }
-            },
+            }
+          });
+          encounter = await tx.encounter.findFirst({
+            where: { id: encounter.id },
             include: {
               tenant: true,
               facility: true,
@@ -3218,6 +3224,9 @@ const startOpdFlow = async (data, context = {}) => {
               provider: PROVIDER_INCLUDE
             }
           });
+          if (!encounter) {
+            throw new HttpError('errors.opd_flow.not_found', 404);
+          }
         }
       }
 

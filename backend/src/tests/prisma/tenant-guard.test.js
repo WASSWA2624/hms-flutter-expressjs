@@ -82,6 +82,49 @@ describe('tenant guard query extension', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  it('uses the interactive transaction client for update preflight reads', async () => {
+    const txAddress = {
+      findFirst: jest.fn().mockResolvedValue({ id: 'address-123' })
+    };
+    const baseClient = {
+      address: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      _createItxClient: jest.fn().mockReturnValue({
+        address: txAddress
+      })
+    };
+    const handlers = createHandlers(baseClient);
+    const query = jest.fn(async (args) => args);
+    const transaction = { kind: 'itx', id: 'tx-1' };
+
+    const result = await runWithRequestContext(
+      {
+        actor: { roles: ['NURSE'] },
+        scope: { tenant_id: 'tenant-1' }
+      },
+      () =>
+        handlers.update({
+          model: 'address',
+          args: {
+            where: { id: 'address-123' },
+            data: { city: 'Kampala' }
+          },
+          query,
+          __internalParams: { transaction }
+        })
+    );
+
+    expect(baseClient._createItxClient).toHaveBeenCalledWith(transaction);
+    expect(txAddress.findFirst).toHaveBeenCalled();
+    expect(baseClient.address.findFirst).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalled();
+    expect(result).toEqual({
+      where: { id: 'address-123' },
+      data: { city: 'Kampala' }
+    });
+  });
+
   it('blocks cross-tenant deletes with not-found semantics', async () => {
     const baseClient = {
       address: {

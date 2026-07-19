@@ -174,9 +174,28 @@ const findFirstOrThrow = async (delegate, args) => {
   return record;
 };
 
+const resolveScopedDelegate = ({ baseClient, model, rest }) => {
+  const transaction = rest?.__internalParams?.transaction;
+  if (
+    transaction?.kind === 'itx' &&
+    typeof baseClient?._createItxClient === 'function'
+  ) {
+    try {
+      const txClient = baseClient._createItxClient(transaction);
+      if (txClient?.[model]) {
+        return txClient[model];
+      }
+    } catch (_) {
+      // Fall through to the base delegate when Prisma internals change.
+    }
+  }
+
+  return baseClient?.[model] || null;
+};
+
 const createTenantGuardQueryExtension = ({ baseClient, modelMetadata }) => {
   const guardByQuery = (handler) =>
-    async ({ model, args = {}, query }) => {
+    async ({ model, args = {}, query, ...rest }) => {
       const metadata = modelMetadata.get(model);
       if (!metadata?.hasTenantId) {
         return query(args);
@@ -187,7 +206,7 @@ const createTenantGuardQueryExtension = ({ baseClient, modelMetadata }) => {
         return query(args);
       }
 
-      const delegate = baseClient?.[model];
+      const delegate = resolveScopedDelegate({ baseClient, model, rest });
       if (!delegate) {
         return query(args);
       }

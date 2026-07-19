@@ -25,6 +25,7 @@ import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_switch_field.dart';
+import 'package:hosspi_hms/shared/components/app_tab_strip.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_triage_components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -78,53 +79,38 @@ class _WalkInModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return SegmentedButton<_WalkInPatientMode>(
-      expandedInsets: EdgeInsets.zero,
-      segments: <ButtonSegment<_WalkInPatientMode>>[
-        ButtonSegment<_WalkInPatientMode>(
-          value: _WalkInPatientMode.existing,
-          label: _WalkInTabLabel(existingLabel),
-          icon: const Icon(AppActionIcons.person),
+    final Widget strip = AppTabStrip(
+      tabs: <AppTabItem>[
+        AppTabItem(
+          id: _WalkInPatientMode.existing.name,
+          icon: AppActionIcons.person,
+          label: existingLabel,
         ),
-        ButtonSegment<_WalkInPatientMode>(
-          value: _WalkInPatientMode.appointment,
-          label: _WalkInTabLabel(appointmentLabel),
-          icon: const Icon(AppActionIcons.calendar),
+        AppTabItem(
+          id: _WalkInPatientMode.appointment.name,
+          icon: AppActionIcons.calendar,
+          label: appointmentLabel,
         ),
         if (showNewPatient)
-          ButtonSegment<_WalkInPatientMode>(
-            value: _WalkInPatientMode.newPatient,
-            label: _WalkInTabLabel(newPatientLabel),
-            icon: const Icon(AppActionIcons.personAdd),
+          AppTabItem(
+            id: _WalkInPatientMode.newPatient.name,
+            icon: AppActionIcons.personAdd,
+            label: newPatientLabel,
           ),
       ],
-      selected: <_WalkInPatientMode>{value},
-      showSelectedIcon: false,
-      style: ButtonStyle(
-        minimumSize: WidgetStatePropertyAll<Size>(Size(theme.spacing.none, 44)),
-        shape: const WidgetStatePropertyAll<OutlinedBorder>(
-          RoundedRectangleBorder(),
-        ),
-      ),
-      onSelectionChanged: enabled
-          ? (Set<_WalkInPatientMode> selected) => onChanged(selected.first)
-          : null,
+      selectedId: value.name,
+      onTabTapped: (String id) {
+        if (!enabled) {
+          return;
+        }
+        onChanged(_WalkInPatientMode.values.byName(id));
+      },
     );
-  }
-}
 
-class _WalkInTabLabel extends StatelessWidget {
-  const _WalkInTabLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-    );
+    if (enabled) {
+      return strip;
+    }
+    return Opacity(opacity: 0.6, child: strip);
   }
 }
 
