@@ -446,7 +446,8 @@ class _AppTabChipState extends State<_AppTabChip> {
           child: CustomPaint(
             painter: _FlaredTabPainter(
               fill: backgroundColor,
-              topRadius: theme.radius.sm,
+              // Square top corners; only the bottom flares are curved.
+              topRadius: 0,
               flareRadius: _flareRadius,
               flareLeft: flareLeft,
               flareRight: flareRight,
