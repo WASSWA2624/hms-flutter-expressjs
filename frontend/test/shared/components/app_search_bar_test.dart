@@ -8,7 +8,6 @@ void main() {
   test('filter value counts scalar and multi-value criteria', () {
     const AppSearchBarFilterValue value = AppSearchBarFilterValue(
       field: 'patient',
-      dateFrom: null,
       texts: <String, String>{'reason': 'review'},
       options: <String, String>{'legacy': 'open'},
       selections: <String, Set<String>>{
