@@ -190,8 +190,10 @@ class AppTabToolbarAction extends StatelessWidget {
           ],
           Text(
             fullLabel,
+            // Regular weight keeps toolbar actions visually lighter than the
+            // tab labels above.
             style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -272,9 +274,11 @@ class AppTabToolbarPrimary extends StatelessWidget {
           ],
           Text(
             fullLabel,
+            // Medium weight: below the tab labels (w500/w700) in emphasis
+            // while still standing out from the flat toolbar actions (w400).
             style: theme.textTheme.labelMedium?.copyWith(
               color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -427,6 +431,9 @@ class _AppTabChipState extends State<_AppTabChip> {
     final Color foregroundColor = widget.isSelected
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
+    // One tier heavier than the toolbar buttons (w400 actions / w500
+    // primary) so the tab labels read as the dominant level of the strip.
+    // The bundled font ships 400/500/700 only, so stick to those weights.
     final FontWeight fontWeight = widget.isSelected
         ? FontWeight.w700
         : FontWeight.w500;
