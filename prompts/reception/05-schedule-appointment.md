@@ -1,1 +1,35 @@
-So now in the toolbar, still on the reception, on the reception screen. There is a scheduled appointment pattern which I want us to implement. This, actually, this share appointment button will be used or reused wherever any appointment needs to be scheduled even if it's outside the reception screen. But this is the intended behavior that I want. So you can schedule any appointment for a patient who is already in the system. So the patient, a patient who is already registered within the system, within the app, and we have them in the database. Or you could register you could schedule an appointment for a new patient who, the one who isn't yet registered in the screen system. So right now, when you create, when you click the schedule appointment button, it actually opens the select patient dialog, modal dialog, which isn't the, I think, which isn't the intended idea. I think there should be, there should be a way, because this dialog should be labeled schedule appointment, so it should be labeled appropriately and appropriately. Icon, but it sh it should have I think, an nested tab. We can reuse our, our app tab that is already implemented, but then within that tab, we can have two buttons. We can have existing patient or new patient. So within the new patient you can, by default, it should be for existing patient the, the existing patient button or tab should be selected. then within the, within the We can also have the new patients. So within the new patients, that's where you have actually now the content of register new patients. But now because that, that content is already defined somewhere under patient registration. So, but now what we need is the content. But in this case we should have the se the schedule appointment or the, the appointment option to be selected by default. So that you're actually registering a patient You, you are registering patients For scheduling an appointment. So what I want is that on top of that he, on top of that he register new patient. Okay, what I want is that, what I want is that when he, when, when we are in, when we are in register patient you click the register patient, after clicking the register patient, then it, you register the patient, then it takes you back to the schedule appointment dialogue, so that now you have registered the patient and now you can, the patient is, is automatically selected and then you can schedule the We can schedule the, the, the appointment. After the appointment is scheduled, then the, the appointments table actually updated. Maybe one thing we need to adjust is that on the, on the When, when you're scheduling a pa an appointment, that is form for scheduling an appointment? We need to, I think probably we need to adjust to update the daytime component such that It, it has, it has guards so that when the time selected is in twenty, is in twelve hours, then it shouldn't allow selecting values outside the range, and when time selected is in twenty-four hours, then it should also allow, it should allow values appropriately. It shouldn't, it shouldn't be able to set, to enter values outside ranges, acceptable ranges.
+# Schedule Appointments for Existing or New Patients
+
+Replace Reception’s patient-picker-first flow with one reusable **Schedule appointment** dialog. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Scheduling currently requires a separate picker and cannot register a patient within the same task.
+
+## Requirements
+
+1. Open a calendar-icon **Schedule appointment** dialog with design-system tabs **Existing patient** and **New patient**; default to Existing patient.
+2. Existing patient must reuse patient search/selection, then show the existing appointment form in the same flow.
+3. New patient must reuse registration scope, duplicate detection, form, and validation. After registration, retain the dialog, auto-select the created patient, and show the appointment form.
+4. Reuse appointment contracts and validation. Prevent duplicate submission and unsafe dismissal; show loading, no-results, field-error, failure, and success states.
+5. After success, synchronize the Reception appointment table, search, filters, and counts immediately.
+6. Make `AppTimeField` reject incomplete input and enforce hours `1–12` in 12H, hours `0–23` in 24H, and minutes/seconds `0–59`. Format switching must preserve the time.
+
+## Constraints
+
+- Keep authorization authoritative; omit unauthorized UI.
+- Reuse shared components, localization, theme tokens, and responsive behavior; preserve backend contracts.
+
+## Acceptance Criteria
+
+- R1–R3: Both patient paths complete in one dialog with correct defaulting and handoff.
+- R4–R5: States are visible, one appointment is created, and Reception updates.
+- R6: Boundary and format-toggle tests pass in both formats.
+- Add authorization, widget, synchronization, responsive/theme, and time-field tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/features/reception/presentation/widgets/reception_patient_actions.dart`
+- `frontend/lib/shared/patient_actions/register_new_patient_dialog.dart`
+- `frontend/lib/shared/opd_actions/patient_appointment_quick_dialog.dart`
+- `frontend/lib/shared/components/app_time_field.dart`
