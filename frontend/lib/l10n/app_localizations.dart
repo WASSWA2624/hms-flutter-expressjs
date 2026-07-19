@@ -5230,6 +5230,18 @@ abstract class AppLocalizations {
   /// **'No matching patients. Register the patient first.'**
   String get receptionPatientPickerEmpty;
 
+  /// Tab for scheduling an appointment for a registered patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing patient'**
+  String get receptionScheduleExistingPatientTab;
+
+  /// Tab for registering a patient before scheduling.
+  ///
+  /// In en, this message translates to:
+  /// **'New patient'**
+  String get receptionScheduleNewPatientTab;
+
   /// Error when claims lookups fail during reception insurance capture.
   ///
   /// In en, this message translates to:

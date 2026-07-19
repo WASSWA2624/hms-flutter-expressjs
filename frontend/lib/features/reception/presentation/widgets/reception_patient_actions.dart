@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
@@ -70,12 +71,6 @@ Future<bool> openReceptionScheduleAppointment({
   required WidgetRef ref,
   Patient? patient,
 }) async {
-  final Patient? selected =
-      patient ?? await showReceptionPatientPickerDialog(context: context);
-  if (selected == null || !context.mounted) {
-    return false;
-  }
-
   final AsyncValue<Result<PatientRegistryState>> registryAsync = ref.read(
     patientRegistryControllerProvider,
   );
@@ -108,17 +103,224 @@ Future<bool> openReceptionScheduleAppointment({
   if (registry == null || !context.mounted) {
     return false;
   }
-
-  final bool? saved = await showPatientAppointmentQuickDialog(
+  final bool? saved = await showAppDialog<bool>(
     context: context,
-    patient: selected,
-    referenceData: registry.referenceData,
+    barrierDismissible: false,
+    builder: (_) => _ReceptionScheduleAppointmentDialog(
+      initialPatient: patient,
+      referenceData: registry!.referenceData,
+      registrationScope: PatientRegistrationScope.resolve(
+        referenceData: registry.referenceData,
+        accessPolicy: ref.read(appAccessPolicyProvider),
+      ),
+    ),
   );
   return saved == true;
 }
 
+enum _SchedulePatientMode { existing, newPatient }
+
+class _ReceptionScheduleAppointmentDialog extends ConsumerStatefulWidget {
+  const _ReceptionScheduleAppointmentDialog({
+    required this.referenceData,
+    required this.registrationScope,
+    this.initialPatient,
+  });
+
+  final Patient? initialPatient;
+  final PatientReferenceData referenceData;
+  final PatientRegistrationScope registrationScope;
+
+  @override
+  ConsumerState<_ReceptionScheduleAppointmentDialog> createState() =>
+      _ReceptionScheduleAppointmentDialogState();
+}
+
+class _ReceptionScheduleAppointmentDialogState
+    extends ConsumerState<_ReceptionScheduleAppointmentDialog> {
+  final GlobalKey<FormState> _registrationFormKey = GlobalKey<FormState>();
+  final GlobalKey<RegisterNewPatientFormState> _registrationKey =
+      GlobalKey<RegisterNewPatientFormState>();
+  _SchedulePatientMode _mode = _SchedulePatientMode.existing;
+  Patient? _patient;
+  bool _isRegistering = false;
+  bool _isAppointmentBusy = false;
+
+  bool get _isBusy => _isRegistering || _isAppointmentBusy;
+
+  @override
+  void initState() {
+    super.initState();
+    _patient = widget.initialPatient;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.patientsAppointmentDialogTitle),
+      icon: const Icon(AppActionIcons.calendar),
+      scrollable: true,
+      pinActionsToBottom: _patient == null,
+      closeEnabled: !_isBusy,
+      maxWidth: 720,
+      content: _patient == null
+          ? _buildPatientStep(context)
+          : PatientAppointmentQuickDialog(
+              patient: _patient!,
+              referenceData: widget.referenceData,
+              embedded: true,
+              onCancel: () => setState(() {
+                _patient = null;
+                _isAppointmentBusy = false;
+              }),
+              onBusyChanged: (bool value) {
+                if (mounted && value != _isAppointmentBusy) {
+                  setState(() => _isAppointmentBusy = value);
+                }
+              },
+              onSaved: () => Navigator.of(context).pop(true),
+            ),
+      actions: _patient == null
+          ? _patientStepActions(context)
+          : const <Widget>[],
+    );
+  }
+
+  Widget _buildPatientStep(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppTabStrip(
+          tabs: <AppTabItem>[
+            AppTabItem(
+              id: _SchedulePatientMode.existing.name,
+              label: l10n.receptionScheduleExistingPatientTab,
+            ),
+            AppTabItem(
+              id: _SchedulePatientMode.newPatient.name,
+              label: l10n.receptionScheduleNewPatientTab,
+            ),
+          ],
+          selectedId: _mode.name,
+          onTabTapped: (String id) {
+            if (_isBusy) {
+              return;
+            }
+            setState(() {
+              _mode = _SchedulePatientMode.values.byName(id);
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        if (_mode == _SchedulePatientMode.existing)
+          _ReceptionPatientPickerDialog(
+            embedded: true,
+            onSelected: (Patient? value) {
+              if (value != null) {
+                setState(() => _patient = value);
+              }
+            },
+          )
+        else
+          AppFormShell(
+            formKey: _registrationFormKey,
+            enabled: !_isRegistering,
+            formStatus: appFormFailureStatus(
+              context,
+              _registrationKey.currentState?.failure,
+              messageBuilder: (AppFailure failure) =>
+                  failure.displayMessage(l10n),
+            ),
+            children: <Widget>[
+              RegisterNewPatientForm(
+                key: _registrationKey,
+                referenceData: widget.referenceData,
+                registrationScope: widget.registrationScope,
+                enabled: !_isRegistering,
+                onLookupDuplicates: (PatientDuplicateQuery query) => ref
+                    .read(patientRegistryControllerProvider.notifier)
+                    .loadDuplicateCandidates(query),
+                onDuplicateStateChanged: () => setState(() {}),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  List<Widget> _patientStepActions(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return <Widget>[
+      AppButton.secondary(
+        label: l10n.commonCancelActionLabel,
+        leadingIcon: AppActionIcons.cancel,
+        enabled: !_isBusy,
+        onPressed: _isBusy ? null : () => Navigator.of(context).pop(false),
+      ),
+      if (_mode == _SchedulePatientMode.newPatient)
+        AppButton.primary(
+          label: _registrationKey.currentState?.duplicateWarningAccepted == true
+              ? l10n.patientsSaveAnywayAction
+              : l10n.patientsRegisterNewPatientAction,
+          leadingIcon: AppActionIcons.personAdd,
+          isLoading: _isRegistering,
+          enabled: !_isBusy,
+          onPressed: _isBusy ? null : _registerPatient,
+        ),
+    ];
+  }
+
+  Future<void> _registerPatient() async {
+    if (_isBusy || !validateAndSaveAppForm(_registrationFormKey)) {
+      return;
+    }
+    final RegisterNewPatientFormState? formState =
+        _registrationKey.currentState;
+    if (formState == null) {
+      return;
+    }
+    setState(() => _isRegistering = true);
+    formState.clearFailure();
+    final bool canContinue = await formState.prepareSubmit();
+    if (!mounted) {
+      return;
+    }
+    if (!canContinue) {
+      setState(() => _isRegistering = false);
+      return;
+    }
+    final Result<Patient> result = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .createPatient(formState.buildPayload());
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (Patient patient) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.patientsSavedMessage)),
+        );
+        setState(() {
+          _patient = patient;
+          _isRegistering = false;
+        });
+      },
+      failure: (AppFailure failure) {
+        formState.setFailure(failure);
+        setState(() => _isRegistering = false);
+      },
+    );
+  }
+}
+
 class _ReceptionPatientPickerDialog extends ConsumerStatefulWidget {
-  const _ReceptionPatientPickerDialog();
+  const _ReceptionPatientPickerDialog({this.embedded = false, this.onSelected});
+
+  final bool embedded;
+  final ValueChanged<Patient?>? onSelected;
 
   @override
   ConsumerState<_ReceptionPatientPickerDialog> createState() =>
@@ -210,12 +412,16 @@ class _ReceptionPatientPickerDialogState
   }
 
   void _selectPatient(String? value) {
+    final Patient? patient = _patientByOptionValue(value);
     setState(() {
-      _selected = _patientByOptionValue(value);
+      _selected = patient;
       if (_selected != null) {
         _failure = null;
       }
     });
+    if (widget.embedded) {
+      widget.onSelected?.call(patient);
+    }
   }
 
   void _confirmSelection() {
@@ -309,6 +515,31 @@ class _ReceptionPatientPickerDialogState
         ? l10n.receptionPatientPickerEmpty
         : null;
 
+    final Widget form = AppFormShell(
+      formKey: _formKey,
+      density: AppFormSectionDensity.compact,
+      children: <Widget>[
+        if (_failure != null)
+          AppFormInformationBanner.failure(
+            context: context,
+            failure: _failure!,
+          ),
+        AppSelectField<String>.searchable(
+          value: _patientOptionValue(_selected),
+          labelText: l10n.receptionPatientPickerSearchHint,
+          helperText: emptyHelper,
+          isRequired: true,
+          isLoading: _isLoading,
+          options: _patientSelectOptions(),
+          validator: AppValidators.requiredValue(l10n.validationRequired),
+          onSearchTextChanged: _scheduleSearch,
+          onChanged: _selectPatient,
+        ),
+      ],
+    );
+    if (widget.embedded) {
+      return form;
+    }
     return AppDialog(
       title: Text(l10n.receptionPatientPickerTitle),
       icon: const Icon(AppActionIcons.person),
@@ -316,36 +547,13 @@ class _ReceptionPatientPickerDialogState
       pinActionsToBottom: true,
       closeEnabled: !_isLoading,
       maxWidth: 560,
-      content: AppFormShell(
-        formKey: _formKey,
-        density: AppFormSectionDensity.compact,
-        children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
-          AppSelectField<String>.searchable(
-            value: _patientOptionValue(_selected),
-            labelText: l10n.receptionPatientPickerSearchHint,
-            helperText: emptyHelper,
-            isRequired: true,
-            isLoading: _isLoading,
-            options: _patientSelectOptions(),
-            validator: AppValidators.requiredValue(l10n.validationRequired),
-            onSearchTextChanged: _scheduleSearch,
-            onChanged: _selectPatient,
-          ),
-        ],
-      ),
+      content: form,
       actions: <Widget>[
         AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isLoading,
-          onPressed: _isLoading
-              ? null
-              : () => Navigator.of(context).maybePop(),
+          onPressed: _isLoading ? null : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
           label: l10n.commonSelectActionLabel,

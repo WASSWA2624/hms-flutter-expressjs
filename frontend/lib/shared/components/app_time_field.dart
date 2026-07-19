@@ -213,9 +213,9 @@ class _AppTimeFieldState extends State<AppTimeField> {
                         label24: widget.hour24LabelText,
                         enabled: canChange,
                         onChanged: (bool use24Hour) {
-                          setState(() => _userFormat24Hour = use24Hour);
                           final AppTimeValue? current =
                               _parseParts() ?? widget.value;
+                          setState(() => _userFormat24Hour = use24Hour);
                           if (current != null) {
                             _syncControllersFromValue(current);
                             field.didChange(current);
@@ -269,6 +269,8 @@ class _AppTimeFieldState extends State<AppTimeField> {
                           labelText: widget.hourLabelText,
                           hintText: _partHint(0, widget.hourLabelText),
                           maxLength: _hourMaxLength,
+                          minValue: _hourMinValue,
+                          maxValue: _hourMaxValue,
                           enabled: canChange,
                           restorationId: _partRestorationId('hour'),
                           textInputAction: TextInputAction.next,
@@ -290,6 +292,8 @@ class _AppTimeFieldState extends State<AppTimeField> {
                           labelText: widget.minuteLabelText,
                           hintText: _partHint(1, widget.minuteLabelText),
                           maxLength: 2,
+                          minValue: 0,
+                          maxValue: 59,
                           enabled: canChange,
                           restorationId: _partRestorationId('minute'),
                           textInputAction: widget.showSeconds
@@ -311,6 +315,8 @@ class _AppTimeFieldState extends State<AppTimeField> {
                             labelText: widget.secondLabelText,
                             hintText: _partHint(2, widget.secondLabelText),
                             maxLength: 2,
+                            minValue: 0,
+                            maxValue: 59,
                             enabled: canChange,
                             restorationId: _partRestorationId('second'),
                             textInputAction: TextInputAction.done,
@@ -597,6 +603,8 @@ class _TimePartTextField extends StatelessWidget {
     required this.focusNode,
     required this.labelText,
     required this.maxLength,
+    required this.minValue,
+    required this.maxValue,
     required this.enabled,
     required this.textInputAction,
     required this.onChanged,
@@ -610,6 +618,8 @@ class _TimePartTextField extends StatelessWidget {
   final String labelText;
   final String? hintText;
   final int maxLength;
+  final int minValue;
+  final int maxValue;
   final bool enabled;
   final TextInputAction textInputAction;
   final VoidCallback onChanged;
@@ -634,6 +644,11 @@ class _TimePartTextField extends StatelessWidget {
       inputFormatters: <TextInputFormatter>[
         FilteringTextInputFormatter.digitsOnly,
         LengthLimitingTextInputFormatter(maxLength),
+        _TimePartRangeFormatter(
+          minValue: minValue,
+          maxValue: maxValue,
+          maxLength: maxLength,
+        ),
       ],
       onChanged: (String value) {
         onChanged();
@@ -669,6 +684,37 @@ class _TimePartTextField extends StatelessWidget {
         constraints: const BoxConstraints(),
       ),
     );
+  }
+}
+
+class _TimePartRangeFormatter extends TextInputFormatter {
+  const _TimePartRangeFormatter({
+    required this.minValue,
+    required this.maxValue,
+    required this.maxLength,
+  });
+
+  final int minValue;
+  final int maxValue;
+  final int maxLength;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final String text = newValue.text;
+    if (text.isEmpty) {
+      return newValue;
+    }
+    final int? value = int.tryParse(text);
+    if (value == null || value > maxValue) {
+      return oldValue;
+    }
+    if (text.length >= maxLength && value < minValue) {
+      return oldValue;
+    }
+    return newValue;
   }
 }
 

@@ -105,4 +105,52 @@ void main() {
 
     expect(find.text('03'), findsOneWidget);
   });
+
+  testWidgets('AppTimeField rejects typed values outside active ranges', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppTimeField(
+        value: AppTimeValue(hour: 9, minute: 30),
+        use24HourFormat: true,
+        pickerButtonLabel: 'Select time',
+        invalidTimeMessage: 'Invalid time',
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).at(0), '24');
+    await tester.enterText(find.byType(TextField).at(1), '60');
+    await tester.pump();
+
+    expect(find.text('09'), findsOneWidget);
+    expect(find.text('30'), findsOneWidget);
+  });
+
+  testWidgets('format toggle preserves the represented time', (
+    WidgetTester tester,
+  ) async {
+    AppTimeValue? selected;
+    await pumpComponent(
+      tester,
+      AppTimeField(
+        value: const AppTimeValue(hour: 15, minute: 45),
+        use24HourFormat: true,
+        pickerButtonLabel: 'Select time',
+        invalidTimeMessage: 'Invalid time',
+        onChanged: (AppTimeValue? value) => selected = value,
+      ),
+    );
+
+    await tester.tap(find.text('12H'));
+    await tester.pump();
+    expect(find.text('03'), findsOneWidget);
+    expect(find.text('PM'), findsOneWidget);
+    expect(selected, const AppTimeValue(hour: 15, minute: 45));
+
+    await tester.tap(find.text('24H'));
+    await tester.pump();
+    expect(find.text('15'), findsOneWidget);
+    expect(selected, const AppTimeValue(hour: 15, minute: 45));
+  });
 }

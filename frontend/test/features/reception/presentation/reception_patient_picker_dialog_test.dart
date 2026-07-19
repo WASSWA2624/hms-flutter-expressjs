@@ -31,6 +31,32 @@ void main() {
     registerFallbackValue(const PatientListQuery());
   });
 
+  testWidgets('scheduler opens one dialog with Existing patient selected', (
+    WidgetTester tester,
+  ) async {
+    final _MockPatientRepository repository = _MockPatientRepository();
+    _stubPatientLookups(repository, patients: const <Patient>[_patient]);
+
+    await _pumpOpenScheduler(tester, repository: repository);
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('SCHEDULE APPOINTMENT'), findsOneWidget);
+    expect(find.text('Existing patient'), findsOneWidget);
+    expect(find.text('New patient'), findsOneWidget);
+    final AppTabStrip tabs = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    expect(tabs.selectedId, 'existing');
+    expect(find.byType(AppSelectField<String>), findsOneWidget);
+    expect(find.text('SELECT PATIENT'), findsNothing);
+
+    await tester.tap(find.text('New patient'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RegisterNewPatientForm), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Register patient'), findsOneWidget);
+    expect(find.byType(AppDialog), findsOneWidget);
+  });
+
   testWidgets(
     'showReceptionPatientPickerDialog uses AppDialog shell and shared select field',
     (WidgetTester tester) async {
@@ -57,9 +83,8 @@ void main() {
         isFalse,
       );
 
-      final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
-        find.byType(AppSelectField<String>),
-      );
+      final AppSelectField<String> field = tester
+          .widget<AppSelectField<String>>(find.byType(AppSelectField<String>));
       expect(
         field.options.map((AppSelectOption<String> option) => option.value),
         contains('PAT000001'),
@@ -168,6 +193,43 @@ void main() {
     );
     expect(selectButton.enabled, isFalse);
   });
+}
+
+Future<void> _pumpOpenScheduler(
+  WidgetTester tester, {
+  required _MockPatientRepository repository,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
+        patientRepositoryProvider.overrideWithValue(repository),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              return AppButton.primary(
+                label: 'Open scheduler',
+                onPressed: () => openReceptionScheduleAppointment(
+                  context: context,
+                  ref: ref,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(AppButton, 'Open scheduler'));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpOpenPicker(

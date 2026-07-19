@@ -1264,6 +1264,9 @@ class _ReceptionWorkspaceContentState
     if (!scheduled || !mounted) {
       return;
     }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .refresh();

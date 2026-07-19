@@ -36,11 +36,19 @@ class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
   const PatientAppointmentQuickDialog({
     required this.patient,
     required this.referenceData,
+    this.embedded = false,
+    this.onSaved,
+    this.onCancel,
+    this.onBusyChanged,
     super.key,
   });
 
   final Patient patient;
   final PatientReferenceData referenceData;
+  final bool embedded;
+  final VoidCallback? onSaved;
+  final VoidCallback? onCancel;
+  final ValueChanged<bool>? onBusyChanged;
 
   @override
   ConsumerState<PatientAppointmentQuickDialog> createState() =>
@@ -102,6 +110,123 @@ class _PatientAppointmentQuickDialogState
     final List<OpdProviderSchedule> schedules =
         workspace?.providerSchedules ?? const <OpdProviderSchedule>[];
 
+    final Widget form = AppFormShell(
+      formKey: _formKey,
+      enabled: !_isBusy,
+      density: AppFormSectionDensity.compact,
+      formStatus: appFormFailureStatus(
+        context,
+        _failure,
+        messageBuilder: (AppFailure failure) => failure.displayMessage(l10n),
+      ),
+      children: <Widget>[
+        if (widget.referenceData.facilities.length > 1)
+          PatientFacilitySelectField(
+            facilities: widget.referenceData.facilities,
+            value: _facilityId,
+            labelText: l10n.patientsFacilityLabel,
+            enabled: !_isBusy,
+            onChanged: (String? value) => setState(() => _facilityId = value),
+          ),
+        AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppDateField(
+              value: _date,
+              firstDate: DateTime.now().subtract(const Duration(days: 1)),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+              labelText: l10n.patientsAppointmentDateLabel,
+              pickerButtonLabel: l10n.patientsDatePickerAction,
+              invalidDateMessage: l10n.appDateInvalidMessage,
+              enabled: !_isBusy,
+              isRequired: true,
+              validator: AppValidators.requiredValue(l10n.validationRequired),
+              onChanged: (DateTime? value) => setState(() => _date = value),
+            ),
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
+              children: <Widget>[
+                AppTimeField(
+                  value: _startTime,
+                  labelText: l10n.patientsAppointmentTimeLabel,
+                  pickerButtonLabel: l10n.appTimePickerAction,
+                  invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+                  hintText: l10n.patientsTimeHint,
+                  hourLabelText: l10n.appTimeHourLabel,
+                  minuteLabelText: l10n.appTimeMinuteLabel,
+                  enabled: !_isBusy,
+                  isRequired: true,
+                  validator: (AppTimeValue? value) =>
+                      value == null ? l10n.validationRequired : null,
+                  onChanged: (AppTimeValue? value) {
+                    setState(() => _startTime = value);
+                  },
+                ),
+                AppTextField(
+                  controller: _durationController,
+                  labelText: l10n.patientsAppointmentDurationLabel,
+                  enabled: !_isBusy,
+                  isRequired: true,
+                  keyboardType: TextInputType.number,
+                  validator: _durationValidator(l10n),
+                ),
+              ],
+            ),
+          ],
+        ),
+        AppResponsiveFieldRow.two(
+          left: AppSelectField<String>.searchable(
+            value: _status,
+            labelText: l10n.patientsAppointmentStatusLabel,
+            enabled: !_isBusy,
+            onChanged: (String? value) =>
+                setState(() => _status = value ?? 'SCHEDULED'),
+            options: _statusOptions(const <String>['SCHEDULED', 'CONFIRMED']),
+          ),
+          right: AppSelectField<String>.searchable(
+            value: _providerId,
+            labelText: l10n.patientsProviderLabel,
+            helperText: l10n.patientsProviderOptionalHelper,
+            enabled: !_isBusy,
+            onChanged: (String? value) => setState(() => _providerId = value),
+            options: opdProviderSelectOptions(
+              providers: providers,
+              schedules: schedules,
+            ),
+          ),
+        ),
+        AppTextField(
+          controller: _reasonController,
+          labelText: l10n.patientsAppointmentReasonLabel,
+          enabled: !_isBusy,
+          maxLines: 3,
+        ),
+      ],
+    );
+    final List<Widget> actions = clinicalActionDialogActions(
+      context,
+      l10n.patientsQuickAppointmentAction,
+      _isSaving,
+      _isBusy ? null : _submit,
+      onCancel: _cancel,
+      submitLeadingIcon: AppActionIcons.calendar,
+    );
+    if (widget.embedded) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          form,
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
+            children: actions,
+          ),
+        ],
+      );
+    }
     return AppDialog(
       title: Text(l10n.patientsAppointmentDialogTitle),
       icon: const Icon(AppActionIcons.calendar),
@@ -109,112 +234,25 @@ class _PatientAppointmentQuickDialogState
       pinActionsToBottom: true,
       closeEnabled: !_isBusy,
       maxWidth: 720,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isBusy,
-        density: AppFormSectionDensity.compact,
-        formStatus: appFormFailureStatus(
-          context,
-          _failure,
-          messageBuilder: (AppFailure failure) =>
-              failure.displayMessage(l10n),
-        ),
-        children: <Widget>[
-          if (widget.referenceData.facilities.length > 1)
-            PatientFacilitySelectField(
-              facilities: widget.referenceData.facilities,
-              value: _facilityId,
-              labelText: l10n.patientsFacilityLabel,
-              enabled: !_isBusy,
-              onChanged: (String? value) => setState(() => _facilityId = value),
-            ),
-          AppFormSection(
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              AppDateField(
-                value: _date,
-                firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-                labelText: l10n.patientsAppointmentDateLabel,
-                pickerButtonLabel: l10n.patientsDatePickerAction,
-                invalidDateMessage: l10n.appDateInvalidMessage,
-                enabled: !_isBusy,
-                isRequired: true,
-                validator: AppValidators.requiredValue(l10n.validationRequired),
-                onChanged: (DateTime? value) => setState(() => _date = value),
-              ),
-              AppResponsiveFieldRow(
-                gap: AppResponsiveFieldRowGap.form,
-                children: <Widget>[
-                  AppTimeField(
-                    value: _startTime,
-                    labelText: l10n.patientsAppointmentTimeLabel,
-                    pickerButtonLabel: l10n.appTimePickerAction,
-                    invalidTimeMessage: l10n.patientsTimeInvalidMessage,
-                    hintText: l10n.patientsTimeHint,
-                    hourLabelText: l10n.appTimeHourLabel,
-                    minuteLabelText: l10n.appTimeMinuteLabel,
-                    enabled: !_isBusy,
-                    isRequired: true,
-                    validator: (AppTimeValue? value) =>
-                        value == null ? l10n.validationRequired : null,
-                    onChanged: (AppTimeValue? value) {
-                      setState(() => _startTime = value);
-                    },
-                  ),
-                  AppTextField(
-                    controller: _durationController,
-                    labelText: l10n.patientsAppointmentDurationLabel,
-                    enabled: !_isBusy,
-                    isRequired: true,
-                    keyboardType: TextInputType.number,
-                    validator: _durationValidator(l10n),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          AppResponsiveFieldRow.two(
-            left: AppSelectField<String>.searchable(
-              value: _status,
-              labelText: l10n.patientsAppointmentStatusLabel,
-              enabled: !_isBusy,
-              onChanged: (String? value) =>
-                  setState(() => _status = value ?? 'SCHEDULED'),
-              options: _statusOptions(const <String>['SCHEDULED', 'CONFIRMED']),
-            ),
-            right: AppSelectField<String>.searchable(
-              value: _providerId,
-              labelText: l10n.patientsProviderLabel,
-              helperText: l10n.patientsProviderOptionalHelper,
-              enabled: !_isBusy,
-              onChanged: (String? value) => setState(() => _providerId = value),
-              options: opdProviderSelectOptions(
-                providers: providers,
-                schedules: schedules,
-              ),
-            ),
-          ),
-          AppTextField(
-            controller: _reasonController,
-            labelText: l10n.patientsAppointmentReasonLabel,
-            enabled: !_isBusy,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.patientsQuickAppointmentAction,
-        _isSaving,
-        _isBusy ? null : _submit,
-        submitLeadingIcon: AppActionIcons.calendar,
-      ),
+      content: form,
+      actions: actions,
     );
+  }
+
+  void _cancel() {
+    if (_isBusy) {
+      return;
+    }
+    if (widget.embedded) {
+      widget.onCancel?.call();
+      return;
+    }
+    Navigator.of(context).pop(false);
   }
 
   Future<void> _loadFormOptions() async {
     setState(() => _isLoadingProviders = true);
+    widget.onBusyChanged?.call(true);
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .ensureAppointmentFormOptionsLoaded();
@@ -225,6 +263,7 @@ class _PatientAppointmentQuickDialogState
       _failure = failure;
       _isLoadingProviders = false;
     });
+    widget.onBusyChanged?.call(false);
   }
 
   Future<void> _submit() async {
@@ -245,6 +284,7 @@ class _PatientAppointmentQuickDialogState
       _isSaving = true;
       _failure = null;
     });
+    widget.onBusyChanged?.call(true);
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .createAppointment(<String, Object?>{
@@ -264,13 +304,18 @@ class _PatientAppointmentQuickDialogState
       return;
     }
     if (failure == null) {
-      Navigator.of(context).pop(true);
+      if (widget.embedded) {
+        widget.onSaved?.call();
+      } else {
+        Navigator.of(context).pop(true);
+      }
       return;
     }
     setState(() {
       _isSaving = false;
       _failure = failure;
     });
+    widget.onBusyChanged?.call(false);
   }
 
   DateTime? _combineDateAndTime(DateTime? date, AppTimeValue? time) {
@@ -296,9 +341,6 @@ FormFieldValidator<String> _durationValidator(AppLocalizations l10n) {
 List<AppSelectOption<String>> _statusOptions(Iterable<String> values) {
   return <AppSelectOption<String>>[
     for (final String value in values)
-      AppSelectOption<String>(
-        value: value,
-        label: AppDisplay.apiLabel(value),
-      ),
+      AppSelectOption<String>(value: value, label: AppDisplay.apiLabel(value)),
   ];
 }

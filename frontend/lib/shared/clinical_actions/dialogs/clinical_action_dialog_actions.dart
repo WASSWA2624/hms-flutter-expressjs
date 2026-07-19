@@ -11,10 +11,13 @@ List<Widget> clinicalActionDialogActions(
   bool showCancel = true,
   IconData? submitLeadingIcon,
   bool destructive = false,
+
   /// When false, Cancel and primary stay disabled without a submit spinner
   /// (e.g. parent reference-data load). [isSaving] still drives isLoading.
   bool enabled = true,
   String? cancelLabel,
+  VoidCallback? onCancel,
+
   /// Value popped when Cancel is pressed. Defaults to `false` for bool
   /// confirmation dialogs; pass `null` when the route returns an entity.
   Object? cancelResult = false,
@@ -28,7 +31,7 @@ List<Widget> clinicalActionDialogActions(
         leadingIcon: AppActionIcons.cancel,
         enabled: canInteract,
         onPressed: canInteract
-            ? () => Navigator.of(context).pop(cancelResult)
+            ? onCancel ?? () => Navigator.of(context).pop(cancelResult)
             : null,
       ),
     AppButton.primary(

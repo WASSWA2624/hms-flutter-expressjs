@@ -2707,6 +2707,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'No matching patients. Register the patient first.';
 
   @override
+  String get receptionScheduleExistingPatientTab => 'Existing patient';
+
+  @override
+  String get receptionScheduleNewPatientTab => 'New patient';
+
+  @override
   String get receptionInsuranceLookupFailed =>
       'Could not load insurance lookups for enrollment.';
 

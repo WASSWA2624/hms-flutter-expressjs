@@ -3518,6 +3518,14 @@
   "@receptionPatientPickerEmpty": {
     "description": "Empty state when reception patient picker finds no rows."
   },
+  "receptionScheduleExistingPatientTab": "Existing patient",
+  "@receptionScheduleExistingPatientTab": {
+    "description": "Tab for scheduling an appointment for a registered patient."
+  },
+  "receptionScheduleNewPatientTab": "New patient",
+  "@receptionScheduleNewPatientTab": {
+    "description": "Tab for registering a patient before scheduling."
+  },
 
   "receptionInsuranceLookupFailed": "Could not load insurance lookups for enrollment.",
   "@receptionInsuranceLookupFailed": {
