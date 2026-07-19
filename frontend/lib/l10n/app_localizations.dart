@@ -5110,11 +5110,35 @@ abstract class AppLocalizations {
   /// **'Active visits'**
   String get receptionSectionActiveVisits;
 
-  /// Reception desk section for consultation payment gate visits.
+  /// Reception desk section for patients with outstanding OPD charges.
   ///
   /// In en, this message translates to:
   /// **'Payment gate'**
   String get receptionSectionPaymentGate;
+
+  /// Search hint for the read-only Reception Payment gate.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, encounter, service, or invoice'**
+  String get receptionPaymentGateSearchHint;
+
+  /// Empty-state title for the Reception Payment gate.
+  ///
+  /// In en, this message translates to:
+  /// **'No outstanding OPD charges'**
+  String get receptionPaymentGateEmptyTitle;
+
+  /// Empty-state body for the Reception Payment gate.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients with pending OPD charges will appear here.'**
+  String get receptionPaymentGateEmptyBody;
+
+  /// Read-only guidance shown in Reception Payment gate details.
+  ///
+  /// In en, this message translates to:
+  /// **'Review outstanding services and amounts, then follow up with the responsible department. Payment changes remain in Billing.'**
+  String get receptionPaymentGateReadOnlyBody;
 
   /// Title for reception billing guidance panel.
   ///

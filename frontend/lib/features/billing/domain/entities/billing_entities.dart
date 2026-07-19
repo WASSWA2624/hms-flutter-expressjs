@@ -389,6 +389,7 @@ final class BillingWorkItem {
     this.encounterId,
     this.encounterDisplayId,
     this.sourceModule,
+    this.sourceModules = const <String>[],
     this.settlementAmount,
     this.decisionNotes,
   });
@@ -426,6 +427,7 @@ final class BillingWorkItem {
   final String? encounterId;
   final String? encounterDisplayId;
   final String? sourceModule;
+  final List<String> sourceModules;
   final num? settlementAmount;
   final String? decisionNotes;
 
@@ -461,10 +463,14 @@ final class BillingWorkItem {
 
   String? get invoiceSourceSummary {
     final String? direct = sourceModule?.trim();
-    if (direct != null && direct.isNotEmpty) {
-      return direct;
-    }
-    final Set<String> modules = <String>{};
+    final Set<String> modules = <String>{
+      if (direct != null && direct.isNotEmpty) direct,
+    };
+    modules.addAll(
+      sourceModules
+          .map((String module) => module.trim())
+          .where((String module) => module.isNotEmpty),
+    );
     for (final BillingInvoiceItem item in items) {
       final String? module = item.sourceModule?.trim();
       if (module != null && module.isNotEmpty) {
@@ -618,6 +624,7 @@ final class BillingWorkItem {
     String? encounterId,
     String? encounterDisplayId,
     String? sourceModule,
+    List<String>? sourceModules,
     num? settlementAmount,
     String? decisionNotes,
   }) {
@@ -656,6 +663,7 @@ final class BillingWorkItem {
       encounterId: encounterId ?? this.encounterId,
       encounterDisplayId: encounterDisplayId ?? this.encounterDisplayId,
       sourceModule: sourceModule ?? this.sourceModule,
+      sourceModules: sourceModules ?? this.sourceModules,
       settlementAmount: settlementAmount ?? this.settlementAmount,
       decisionNotes: decisionNotes ?? this.decisionNotes,
     );

@@ -207,6 +207,32 @@ void main() {
       expect(policy.grants(AppPermissions.billingWrite), isFalse);
     });
 
+    test('payment gate requires billing read but never billing write', () {
+      final AppAccessPolicy patientReader = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
+      final AppAccessPolicy billingReader = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
+
+      expect(receptionPaymentGateRequirement.isAllowed(patientReader), isFalse);
+      expect(receptionPaymentGateRequirement.isAllowed(billingReader), isTrue);
+      expect(
+        receptionBillingCashierRequirement.isAllowed(billingReader),
+        isFalse,
+      );
+    });
+
     test('receptionist can capture insurance without billing:write', () {
       final AppAccessPolicy policy = _policyFor(
         roles: <String>['RECEPTIONIST'],

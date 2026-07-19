@@ -214,6 +214,7 @@ final class BillingWorkItemDto {
       encounterId: _string(json['encounter_id']),
       encounterDisplayId: _string(json['encounter_display_id']),
       sourceModule: _string(json['source_module']),
+      sourceModules: _strings(json['source_modules']),
       settlementAmount: _num(json['settlement_amount']),
       decisionNotes: _string(json['decision_notes']),
     );
@@ -644,6 +645,13 @@ List<BillingJsonMap> _list(Object? value) {
       .map(_map)
       .where((BillingJsonMap item) => item.isNotEmpty)
       .toList(growable: false);
+}
+
+List<String> _strings(Object? value) {
+  if (value is! List<Object?>) {
+    return const <String>[];
+  }
+  return value.map(_string).whereType<String>().toList(growable: false);
 }
 
 String _firstString(Iterable<Object?> values) {

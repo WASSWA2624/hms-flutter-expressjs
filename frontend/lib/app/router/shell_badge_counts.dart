@@ -45,6 +45,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_w
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
@@ -175,9 +176,16 @@ int? receptionPatientBadgeCount(
   OpdWorkspaceState state, {
   DateTime? now,
   Set<ReceptionDeskSection>? sections,
+  Iterable<ReceptionPaymentGateEntry> paymentGateEntries =
+      const <ReceptionPaymentGateEntry>[],
 }) {
   return _positiveOrNull(
-    receptionUniquePatientCount(state, now: now, sections: sections),
+    receptionUniquePatientCount(
+      state,
+      now: now,
+      sections: sections,
+      paymentGateEntries: paymentGateEntries,
+    ),
   );
 }
 
@@ -241,6 +249,21 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
   final bool canDischarge = canAccess(AppRoutes.discharge);
   final bool canMortuary = canAccess(AppRoutes.mortuary);
   final bool canTheater = canAccess(AppRoutes.theater);
+  final Set<ReceptionDeskSection> receptionSections = canReception
+      ? authorizedReceptionDeskSections(accessPolicy)
+      : const <ReceptionDeskSection>{};
+  final List<ReceptionPaymentGateEntry> receptionPaymentEntries =
+      receptionSections.contains(ReceptionDeskSection.paymentGate)
+      ? ref.watch(
+          receptionPaymentGateControllerProvider.select((value) {
+            return value.asData?.value.when(
+                  success: (ReceptionPaymentGateState state) => state.entries,
+                  failure: (_) => const <ReceptionPaymentGateEntry>[],
+                ) ??
+                const <ReceptionPaymentGateEntry>[];
+          }),
+        )
+      : const <ReceptionPaymentGateEntry>[];
 
   return ShellBadgeCounts(
     receptionPatientCount: canReception
@@ -249,7 +272,8 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
               (v) => _selectBadge<OpdWorkspaceState>(v, (OpdWorkspaceState s) {
                 return receptionPatientBadgeCount(
                   s,
-                  sections: authorizedReceptionDeskSections(accessPolicy),
+                  sections: receptionSections,
+                  paymentGateEntries: receptionPaymentEntries,
                 );
               }),
             ),

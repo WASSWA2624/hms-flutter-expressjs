@@ -3440,7 +3440,23 @@
   },
   "receptionSectionPaymentGate": "Payment gate",
   "@receptionSectionPaymentGate": {
-    "description": "Reception desk section for consultation payment gate visits."
+    "description": "Reception desk section for patients with outstanding OPD charges."
+  },
+  "receptionPaymentGateSearchHint": "Search patient, encounter, service, or invoice",
+  "@receptionPaymentGateSearchHint": {
+    "description": "Search hint for the read-only Reception Payment gate."
+  },
+  "receptionPaymentGateEmptyTitle": "No outstanding OPD charges",
+  "@receptionPaymentGateEmptyTitle": {
+    "description": "Empty-state title for the Reception Payment gate."
+  },
+  "receptionPaymentGateEmptyBody": "Patients with pending OPD charges will appear here.",
+  "@receptionPaymentGateEmptyBody": {
+    "description": "Empty-state body for the Reception Payment gate."
+  },
+  "receptionPaymentGateReadOnlyBody": "Review outstanding services and amounts, then follow up with the responsible department. Payment changes remain in Billing.",
+  "@receptionPaymentGateReadOnlyBody": {
+    "description": "Read-only guidance shown in Reception Payment gate details."
   },
   "receptionBillingGuidanceTitle": "Billing guidance",
   "@receptionBillingGuidanceTitle": {

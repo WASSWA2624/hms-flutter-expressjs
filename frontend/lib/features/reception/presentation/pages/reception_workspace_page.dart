@@ -10,21 +10,24 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_appointment_actions_dialog.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
+import 'package:hosspi_hms/features/reception/presentation/widgets/reception_payment_gate_detail_dialog.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_queue_actions_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 /// High-volume front-desk workspace composing Patient Registry + OPD.
 ///
@@ -40,6 +43,13 @@ class ReceptionWorkspacePage extends ConsumerWidget {
     final AsyncValue<Result<OpdWorkspaceState>> opdState = ref.watch(
       opdWorkspaceControllerProvider,
     );
+    final bool canReadPaymentGate = receptionPaymentGateRequirement.isAllowed(
+      ref.watch(appAccessPolicyProvider),
+    );
+    final AsyncValue<Result<ReceptionPaymentGateState>>? paymentGateState =
+        canReadPaymentGate
+        ? ref.watch(receptionPaymentGateControllerProvider)
+        : null;
 
     return AsyncStateScaffold<OpdWorkspaceState>(
       value: opdState,
@@ -55,6 +65,7 @@ class ReceptionWorkspacePage extends ConsumerWidget {
       dataBuilder: (BuildContext context, OpdWorkspaceState data) {
         return _ReceptionWorkspaceContent(
           state: data,
+          paymentGateState: paymentGateState,
           initialQuery: initialQuery,
         );
       },
@@ -63,9 +74,14 @@ class ReceptionWorkspacePage extends ConsumerWidget {
 }
 
 class _ReceptionWorkspaceContent extends ConsumerStatefulWidget {
-  const _ReceptionWorkspaceContent({required this.state, this.initialQuery});
+  const _ReceptionWorkspaceContent({
+    required this.state,
+    required this.paymentGateState,
+    this.initialQuery,
+  });
 
   final OpdWorkspaceState state;
+  final AsyncValue<Result<ReceptionPaymentGateState>>? paymentGateState;
   final ReceptionWorkspaceQuery? initialQuery;
 
   @override
@@ -77,6 +93,7 @@ class _ReceptionWorkspaceContentState
     extends ConsumerState<_ReceptionWorkspaceContent> {
   static const String _statusFilterKey = 'status';
   static const String _stageFilterKey = 'stage';
+  static const String _serviceFilterKey = 'service';
 
   late final TextEditingController _searchController;
   late ReceptionDeskSection _section;
@@ -183,12 +200,18 @@ class _ReceptionWorkspaceContentState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
+    final ReceptionPaymentGateState? paymentGate = _paymentGateState;
+    final bool paymentGateLoading =
+        _section == ReceptionDeskSection.paymentGate &&
+        (widget.paymentGateState?.isLoading == true ||
+            (paymentGate?.isRefreshing ?? false));
     final bool isRefreshing =
         _refreshRequested ||
         state.isRefreshingAppointments ||
         state.isRefreshingQueue ||
         state.isRefreshingFlows ||
-        state.isSaving;
+        state.isSaving ||
+        paymentGateLoading;
     final List<ReceptionDeskSection> visibleSections = _visibleSections();
     if (visibleSections.isEmpty) {
       return AppStateView(
@@ -213,7 +236,10 @@ class _ReceptionWorkspaceContentState
       });
     }
 
-    final List<_ReceptionDeskRow> sectionRows = _buildSectionRows(state);
+    final List<_ReceptionDeskRow> sectionRows = _buildSectionRows(
+      state,
+      paymentGate?.entries ?? const <ReceptionPaymentGateEntry>[],
+    );
     final List<_ReceptionDeskRow> rows = _applyStatusFilter(sectionRows);
     final List<AppListTableColumn<_ReceptionDeskRow>> columns =
         _receptionDefaultColumns(l10n);
@@ -234,7 +260,12 @@ class _ReceptionWorkspaceContentState
                     id: section.name,
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
-                    count: _sectionCount(state, section),
+                    count: _sectionCount(
+                      state,
+                      section,
+                      paymentGate?.entries ??
+                          const <ReceptionPaymentGateEntry>[],
+                    ),
                     countTone: _sectionCountTone(section),
                   ),
               ],
@@ -256,61 +287,91 @@ class _ReceptionWorkspaceContentState
               secondaryActions: _buildSecondaryActions(l10n, isRefreshing),
             ),
             SizedBox(height: theme.spacing.sm),
-            AppListTable<_ReceptionDeskRow>(
-              items: rows,
-              columns: columns,
-              columnChoices: columnChoices,
-              columnVisibilityController: _columnVisibilityController,
-              columnVisibilityStorageKey: 'reception_${_section.name}',
-              columnWidthStorageKey: 'reception_cw_${_section.name}',
-              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-              columnVisibilityTitle: l10n.commonTableSettingsTitle,
-              isLoading: isRefreshing,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              onRowSelected: (_ReceptionDeskRow row) =>
-                  unawaited(_openRowDetail(row)),
-              itemKeyBuilder: (_ReceptionDeskRow row) =>
-                  ValueKey<String>(row.id),
-              search: AppListTableSearch<_ReceptionDeskRow>(
-                controller: _searchController,
-                semanticLabel: l10n.receptionSearchHint,
-                hintText: l10n.receptionSearchHint,
-                clearLabel: l10n.receptionClearFiltersAction,
+            if (_section == ReceptionDeskSection.paymentGate &&
+                _paymentGateFailure != null &&
+                paymentGate == null)
+              AppStateView(
+                title: l10n.errorUnexpectedTitle,
+                body: l10n.errorUnexpectedMessage,
+                variant: AppStateViewVariant.error,
+                action: AppButton.secondary(
+                  label: l10n.commonRetryActionLabel,
+                  onPressed: () => ref
+                      .read(receptionPaymentGateControllerProvider.notifier)
+                      .refresh(),
+                ),
+              )
+            else
+              AppListTable<_ReceptionDeskRow>(
+                items: rows,
+                columns: columns,
+                columnChoices: columnChoices,
+                columnVisibilityController: _columnVisibilityController,
+                columnVisibilityStorageKey: 'reception_${_section.name}',
+                columnWidthStorageKey: 'reception_cw_${_section.name}',
+                columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+                columnVisibilityTitle: l10n.commonTableSettingsTitle,
                 isLoading: isRefreshing,
-                matcher: (_ReceptionDeskRow row, String query) =>
-                    row.matchesSearch(_section, query, context),
-                showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.receptionFiltersLabel,
-                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                advancedFilterResetLabel: l10n.receptionClearFiltersAction,
-                enableDateFilter: false,
-                allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-                filterGroups: <AppSearchBarFilterGroup>[
-                  AppSearchBarFilterGroup(
-                    key: _filterGroupKey,
-                    label: _filterGroupLabel(l10n),
-                    allLabel: l10n.opdAllFieldsFilterLabel,
-                    choices: _statusFilterChoices(sectionRows, l10n),
-                  ),
-                ],
-                filterValue: _filterValue,
-                hasActiveFilters: _filterValue.isActive,
-                onFilterChanged: (AppSearchBarFilterValue value) {
-                  setState(() => _filterValue = value);
-                },
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                onRowSelected: (_ReceptionDeskRow row) =>
+                    unawaited(_openRowDetail(row)),
+                itemKeyBuilder: (_ReceptionDeskRow row) =>
+                    ValueKey<String>(row.id),
+                search: AppListTableSearch<_ReceptionDeskRow>(
+                  controller: _searchController,
+                  semanticLabel: _section == ReceptionDeskSection.paymentGate
+                      ? l10n.receptionPaymentGateSearchHint
+                      : l10n.receptionSearchHint,
+                  hintText: _section == ReceptionDeskSection.paymentGate
+                      ? l10n.receptionPaymentGateSearchHint
+                      : l10n.receptionSearchHint,
+                  clearLabel: l10n.receptionClearFiltersAction,
+                  isLoading: isRefreshing,
+                  matcher: (_ReceptionDeskRow row, String query) =>
+                      row.matchesSearch(_section, query, context),
+                  showAdvancedFilterButton: true,
+                  advancedFilterButtonLabel: l10n.receptionFiltersLabel,
+                  advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                  advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                  advancedFilterResetLabel: l10n.receptionClearFiltersAction,
+                  enableDateFilter: false,
+                  allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+                  filterGroups: _filterGroups(sectionRows, l10n),
+                  filterValue: _filterValue,
+                  hasActiveFilters: _filterValue.isActive,
+                  onFilterChanged: (AppSearchBarFilterValue value) {
+                    setState(() => _filterValue = value);
+                  },
+                ),
+                emptyBuilder: (_) => AppStateView(
+                  title: _section == ReceptionDeskSection.paymentGate
+                      ? l10n.receptionPaymentGateEmptyTitle
+                      : l10n.receptionEmptyTitle,
+                  body: _section == ReceptionDeskSection.paymentGate
+                      ? l10n.receptionPaymentGateEmptyBody
+                      : l10n.receptionEmptyBody,
+                  variant: AppStateViewVariant.empty,
+                ),
+                mobileItemBuilder: _mobileItemBuilder,
               ),
-              emptyBuilder: (_) => AppStateView(
-                title: l10n.receptionEmptyTitle,
-                body: l10n.receptionEmptyBody,
-                variant: AppStateViewVariant.empty,
-              ),
-              mobileItemBuilder: _mobileItemBuilder,
-            ),
           ],
         ),
       ),
+    );
+  }
+
+  ReceptionPaymentGateState? get _paymentGateState {
+    return widget.paymentGateState?.asData?.value.when(
+      success: (ReceptionPaymentGateState value) => value,
+      failure: (_) => null,
+    );
+  }
+
+  AppFailure? get _paymentGateFailure {
+    return widget.paymentGateState?.asData?.value.when(
+      success: (ReceptionPaymentGateState value) => value.lastFailure,
+      failure: (AppFailure failure) => failure,
     );
   }
 
@@ -318,8 +379,8 @@ class _ReceptionWorkspaceContentState
     return switch (_section) {
       ReceptionDeskSection.appointments ||
       ReceptionDeskSection.queue => _statusFilterKey,
-      ReceptionDeskSection.activeVisits ||
-      ReceptionDeskSection.paymentGate => _stageFilterKey,
+      ReceptionDeskSection.activeVisits => _stageFilterKey,
+      ReceptionDeskSection.paymentGate => _statusFilterKey,
     };
   }
 
@@ -327,9 +388,44 @@ class _ReceptionWorkspaceContentState
     return switch (_section) {
       ReceptionDeskSection.appointments => l10n.receptionStatusLabel,
       ReceptionDeskSection.queue => l10n.receptionCurrentStepLabel,
-      ReceptionDeskSection.activeVisits ||
-      ReceptionDeskSection.paymentGate => l10n.receptionCurrentStepLabel,
+      ReceptionDeskSection.activeVisits => l10n.receptionCurrentStepLabel,
+      ReceptionDeskSection.paymentGate => l10n.billingStatusFilterLabel,
     };
+  }
+
+  List<AppSearchBarFilterGroup> _filterGroups(
+    List<_ReceptionDeskRow> rows,
+    AppLocalizations l10n,
+  ) {
+    final List<AppSearchBarFilterGroup> groups = <AppSearchBarFilterGroup>[
+      AppSearchBarFilterGroup(
+        key: _filterGroupKey,
+        label: _filterGroupLabel(l10n),
+        allLabel: l10n.opdAllFieldsFilterLabel,
+        choices: _statusFilterChoices(rows, l10n),
+      ),
+    ];
+    if (_section == ReceptionDeskSection.paymentGate) {
+      final Set<String> sources = <String>{
+        for (final _ReceptionDeskRow row in rows)
+          ...?row.paymentGateEntry?.services,
+      };
+      groups.add(
+        AppSearchBarFilterGroup(
+          key: _serviceFilterKey,
+          label: l10n.billingSourceFilterLabel,
+          allLabel: l10n.billingAnySourceOption,
+          choices: <AppSearchBarFilterChoice>[
+            for (final String source in sources.toList()..sort())
+              AppSearchBarFilterChoice(
+                value: source,
+                label: billingApiLabel(context, source),
+              ),
+          ],
+        ),
+      );
+    }
+    return groups;
   }
 
   Widget _buildPrimaryAction(AppLocalizations l10n, bool isRefreshing) {
@@ -452,9 +548,10 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.paymentGate:
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientColumn(l10n),
-          _receptionConsultationFeeColumn(l10n),
+          _receptionPaymentEncounterColumn(l10n),
+          _receptionPaymentServicesColumn(l10n),
+          _receptionPaymentOutstandingColumn(l10n),
           _receptionPaymentGateStatusColumn(l10n),
-          _receptionPaymentGateNextActionColumn(l10n),
         ];
     }
   }
@@ -484,8 +581,7 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.paymentGate:
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientIdColumn(l10n),
-          _receptionFlowStageStatusColumn(l10n, id: 'stage'),
-          _receptionPaymentDetailColumn(l10n),
+          _receptionPaymentInvoicesColumn(l10n),
         ];
     }
   }
@@ -561,24 +657,6 @@ class _ReceptionWorkspaceContentState
       },
       sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
           appListTableCompareDateTime(a.flow?.startedAt, b.flow?.startedAt),
-    );
-  }
-
-  AppListTableColumn<_ReceptionDeskRow> _receptionConsultationFeeColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<_ReceptionDeskRow>(
-      id: 'consultation_fee',
-      label: l10n.receptionConsultationFeeLabel,
-      numeric: true,
-      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final num? fee = row.flow?.consultationFee;
-        final String currency = row.flow?.consultationCurrency ?? '';
-        if (fee == null) {
-          return const SizedBox.shrink();
-        }
-        return Text('$currency ${fee.toStringAsFixed(0)}'.trim());
-      },
     );
   }
 
@@ -659,19 +737,109 @@ class _ReceptionWorkspaceContentState
       id: 'status',
       label: l10n.receptionPaymentStatusLabel,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final OpdFlowSummary? flow = row.flow;
-        if (flow == null) {
+        final ReceptionPaymentGateEntry? entry = row.paymentGateEntry;
+        if (entry == null) {
           return const SizedBox.shrink();
         }
-        final OpdBillingDisplay billing = opdFlowBillingDisplay(context, flow);
         return AppWorkspaceStatusBadge(
           status: AppWorkspaceStatus(
-            label: billing.statusLabel,
-            tone: billing.tone,
+            label: billingClearanceLabel(context, entry.clearanceState),
+            tone: billingClearanceTone(entry.clearanceState),
           ),
         );
       },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          (a.paymentGateEntry?.clearanceState.name ?? '').compareTo(
+            b.paymentGateEntry?.clearanceState.name ?? '',
+          ),
     );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPaymentEncounterColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'encounter',
+      label: l10n.billingEncounterLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+          Text(row.paymentGateEntry?.encounterIdentifier ?? ''),
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          (a.paymentGateEntry?.encounterIdentifier ?? '').compareTo(
+            b.paymentGateEntry?.encounterIdentifier ?? '',
+          ),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPaymentServicesColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'services',
+      label: l10n.billingSourceColumn,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) => Text(
+        row.paymentGateEntry?.services
+                .map((String source) => billingApiLabel(context, source))
+                .join(', ') ??
+            '',
+      ),
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          (a.paymentGateEntry?.services.join(',') ?? '').compareTo(
+            b.paymentGateEntry?.services.join(',') ?? '',
+          ),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPaymentOutstandingColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'outstanding',
+      label: l10n.billingAmountDueColumn,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+          Text(_paymentMoneySummary(context, row.paymentGateEntry)),
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          _paymentOutstandingTotal(
+            a.paymentGateEntry,
+          ).compareTo(_paymentOutstandingTotal(b.paymentGateEntry)),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPaymentInvoicesColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'invoices',
+      label: l10n.billingInvoiceColumn,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) => Text(
+        row.paymentGateEntry?.invoices
+                .map((BillingWorkItem invoice) => invoice.effectiveDisplayId)
+                .join(', ') ??
+            '',
+      ),
+    );
+  }
+
+  String _paymentMoneySummary(
+    BuildContext context,
+    ReceptionPaymentGateEntry? entry,
+  ) {
+    if (entry == null) {
+      return '';
+    }
+    return entry.outstandingByCurrency.entries
+        .map(
+          (MapEntry<String, num> total) =>
+              billingMoney(context, total.value, total.key),
+        )
+        .join(' · ');
+  }
+
+  num _paymentOutstandingTotal(ReceptionPaymentGateEntry? entry) {
+    return entry?.outstandingByCurrency.values.fold<num>(
+          0,
+          (num total, num value) => total + value,
+        ) ??
+        0;
   }
 
   AppListTableColumn<_ReceptionDeskRow> _receptionAppointmentIdColumn(
@@ -781,23 +949,6 @@ class _ReceptionWorkspaceContentState
     );
   }
 
-  AppListTableColumn<_ReceptionDeskRow> _receptionPaymentDetailColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<_ReceptionDeskRow>(
-      id: 'payment_detail',
-      label: l10n.receptionPaymentStatusLabel,
-      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final OpdFlowSummary? flow = row.flow;
-        if (flow == null) {
-          return const SizedBox.shrink();
-        }
-        final OpdBillingDisplay billing = opdFlowBillingDisplay(context, flow);
-        return Text(billing.label);
-      },
-    );
-  }
-
   AppListTableColumn<_ReceptionDeskRow> _receptionAppointmentNextActionColumn(
     AppLocalizations l10n,
   ) {
@@ -863,32 +1014,6 @@ class _ReceptionWorkspaceContentState
     );
   }
 
-  AppListTableColumn<_ReceptionDeskRow> _receptionPaymentGateNextActionColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<_ReceptionDeskRow>(
-      id: 'next_action',
-      label: l10n.opdActionsColumnLabel,
-      alwaysVisible: true,
-      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final OpdFlowSummary? flow = row.flow;
-        if (flow == null) {
-          return const SizedBox.shrink();
-        }
-        return WorkflowActionButton(
-          encounterId: flow.publicId ?? flow.id,
-          patientId: flow.patientId,
-          stage: flow.stage,
-          nextStep: flow.nextStep,
-          displayNextStep: flow.displayNextStep,
-          assignedStaffId: flow.providerUserId,
-          sourceModule: 'reception',
-          compact: true,
-        );
-      },
-    );
-  }
-
   String? _receptionAppointmentNextActionLabel(
     AppLocalizations l10n,
     OpdAppointment appointment,
@@ -915,7 +1040,10 @@ class _ReceptionWorkspaceContentState
     );
   }
 
-  List<_ReceptionDeskRow> _buildSectionRows(OpdWorkspaceState state) {
+  List<_ReceptionDeskRow> _buildSectionRows(
+    OpdWorkspaceState state,
+    List<ReceptionPaymentGateEntry> paymentGateEntries,
+  ) {
     switch (_section) {
       case ReceptionDeskSection.appointments:
         return <_ReceptionDeskRow>[
@@ -939,28 +1067,41 @@ class _ReceptionWorkspaceContentState
         ];
       case ReceptionDeskSection.paymentGate:
         return <_ReceptionDeskRow>[
-          for (final OpdFlowSummary flow in state.flows.items)
-            if (isReceptionPaymentGateVisit(flow)) _ReceptionDeskRow.flow(flow),
+          for (final ReceptionPaymentGateEntry entry in paymentGateEntries)
+            _ReceptionDeskRow.paymentGate(entry),
         ];
     }
   }
 
   List<_ReceptionDeskRow> _applyStatusFilter(List<_ReceptionDeskRow> rows) {
     final String? selected = _filterValue.option(_filterGroupKey);
-    if (selected == null || selected.isEmpty) {
-      return rows;
+    final String needle = (selected ?? '').toUpperCase();
+    List<_ReceptionDeskRow> filtered = selected == null || selected.isEmpty
+        ? rows
+        : <_ReceptionDeskRow>[
+            for (final _ReceptionDeskRow row in rows)
+              if (_rowFilterCode(row).toUpperCase() == needle) row,
+          ];
+    if (_section == ReceptionDeskSection.paymentGate) {
+      final String? service = _filterValue.option(_serviceFilterKey);
+      if (service != null && service.isNotEmpty) {
+        filtered = <_ReceptionDeskRow>[
+          for (final _ReceptionDeskRow row in filtered)
+            if (row.paymentGateEntry?.services.contains(service) ?? false) row,
+        ];
+      }
     }
-    final String needle = selected.toUpperCase();
-    return <_ReceptionDeskRow>[
-      for (final _ReceptionDeskRow row in rows)
-        if (_rowFilterCode(row).toUpperCase() == needle) row,
-    ];
+    return filtered;
   }
 
   String _rowFilterCode(_ReceptionDeskRow row) {
-    return _section == ReceptionDeskSection.activeVisits
-        ? row.flowCurrentStepCode
-        : row.status ?? '';
+    return switch (_section) {
+      ReceptionDeskSection.activeVisits => row.flowCurrentStepCode,
+      ReceptionDeskSection.paymentGate =>
+        row.paymentGateEntry?.clearanceState.name ?? '',
+      ReceptionDeskSection.appointments ||
+      ReceptionDeskSection.queue => row.status ?? '',
+    };
   }
 
   List<AppSearchBarFilterChoice> _statusFilterChoices(
@@ -981,9 +1122,15 @@ class _ReceptionWorkspaceContentState
       choices.add(
         AppSearchBarFilterChoice(
           value: key,
-          label: _section == ReceptionDeskSection.activeVisits
-              ? row.flowCurrentStepLabel(l10n)
-              : opdStageDisplayLabel(l10n, status),
+          label: switch (_section) {
+            ReceptionDeskSection.activeVisits => row.flowCurrentStepLabel(l10n),
+            ReceptionDeskSection.paymentGate => billingClearanceLabel(
+              context,
+              row.paymentGateEntry!.clearanceState,
+            ),
+            ReceptionDeskSection.appointments ||
+            ReceptionDeskSection.queue => opdStageDisplayLabel(l10n, status),
+          },
         ),
       );
     }
@@ -994,7 +1141,11 @@ class _ReceptionWorkspaceContentState
     return choices;
   }
 
-  int _sectionCount(OpdWorkspaceState state, ReceptionDeskSection section) {
+  int _sectionCount(
+    OpdWorkspaceState state,
+    ReceptionDeskSection section,
+    List<ReceptionPaymentGateEntry> paymentGateEntries,
+  ) {
     switch (section) {
       case ReceptionDeskSection.appointments:
         return state.appointments.items
@@ -1007,7 +1158,7 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.activeVisits:
         return state.flows.items.where(isReceptionActiveVisit).length;
       case ReceptionDeskSection.paymentGate:
-        return state.flows.items.where(isReceptionPaymentGateVisit).length;
+        return paymentGateEntries.length;
     }
   }
 
@@ -1086,13 +1237,18 @@ class _ReceptionWorkspaceContentState
     }
     setState(() => _refreshRequested = true);
     try {
-      final AppFailure? failure = await ref
-          .read(opdWorkspaceControllerProvider.notifier)
-          .refresh();
+      final List<Future<AppFailure?>> refreshes = <Future<AppFailure?>>[
+        ref.read(opdWorkspaceControllerProvider.notifier).refresh(),
+        if (widget.paymentGateState != null)
+          ref.read(receptionPaymentGateControllerProvider.notifier).refresh(),
+      ];
+      final List<AppFailure?> failures = await Future.wait(refreshes);
       if (!mounted) {
         return;
       }
-      _showFailureIfNeeded(context, failure);
+      for (final AppFailure? failure in failures) {
+        _showFailureIfNeeded(context, failure);
+      }
     } finally {
       if (mounted) {
         setState(() => _refreshRequested = false);
@@ -1118,6 +1274,13 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _openRowDetail(_ReceptionDeskRow row) async {
+    if (row.paymentGateEntry != null) {
+      await showReceptionPaymentGateDetailDialog(
+        context: context,
+        entry: row.paymentGateEntry!,
+      );
+      return;
+    }
     if (row.appointment != null) {
       final bool? changed = await showReceptionAppointmentActionsDialog(
         context: context,
@@ -1263,7 +1426,12 @@ class _ReceptionWorkspaceContentState
 
 @immutable
 final class _ReceptionDeskRow {
-  const _ReceptionDeskRow._({this.appointment, this.queueEntry, this.flow});
+  const _ReceptionDeskRow._({
+    this.appointment,
+    this.queueEntry,
+    this.flow,
+    this.paymentGateEntry,
+  });
 
   factory _ReceptionDeskRow.appointment(OpdAppointment appointment) {
     return _ReceptionDeskRow._(appointment: appointment);
@@ -1277,31 +1445,47 @@ final class _ReceptionDeskRow {
     return _ReceptionDeskRow._(flow: flow);
   }
 
+  factory _ReceptionDeskRow.paymentGate(ReceptionPaymentGateEntry entry) {
+    return _ReceptionDeskRow._(paymentGateEntry: entry);
+  }
+
   final OpdAppointment? appointment;
   final OpdQueueEntry? queueEntry;
   final OpdFlowSummary? flow;
+  final ReceptionPaymentGateEntry? paymentGateEntry;
 
-  String get id => appointment?.id ?? queueEntry?.id ?? flow?.id ?? '';
+  String get id =>
+      appointment?.id ??
+      queueEntry?.id ??
+      flow?.id ??
+      paymentGateEntry?.id ??
+      '';
 
   String patientName(BuildContext context) {
     return appointment?.patientDisplayName ??
         queueEntry?.patientDisplayName ??
         flow?.patientDisplayName ??
+        paymentGateEntry?.patientName ??
         context.l10n.profileUnknownValue;
   }
 
   String? get patientId =>
-      appointment?.patientId ?? queueEntry?.patientId ?? flow?.patientId;
+      appointment?.patientId ??
+      queueEntry?.patientId ??
+      flow?.patientId ??
+      paymentGateEntry?.patientId;
 
   String? get patientIdentifier =>
       appointment?.patientIdentifier ??
       queueEntry?.patientIdentifier ??
-      flow?.patientIdentifier;
+      flow?.patientIdentifier ??
+      paymentGateEntry?.patientIdentifier;
 
   String? get displayId =>
       appointment?.publicId ??
       queueEntry?.publicId ??
       flow?.publicId ??
+      paymentGateEntry?.encounterIdentifier ??
       appointment?.id ??
       queueEntry?.id ??
       flow?.id;
@@ -1442,7 +1626,6 @@ final class _ReceptionDeskRow {
           ]);
         }
       case ReceptionDeskSection.activeVisits:
-      case ReceptionDeskSection.paymentGate:
         final OpdFlowSummary? flowSummary = flow;
         if (flowSummary != null) {
           final OpdBillingDisplay billing = opdFlowBillingDisplay(
@@ -1474,6 +1657,29 @@ final class _ReceptionDeskRow {
               l10n,
               flowSummary.displayNextStep ?? flowSummary.nextStep,
             ),
+          ]);
+        }
+      case ReceptionDeskSection.paymentGate:
+        final ReceptionPaymentGateEntry? entry = paymentGateEntry;
+        if (entry != null) {
+          values.addAll(<String?>[
+            entry.encounterId,
+            entry.encounterIdentifier,
+            entry.clearanceState.name,
+            for (final String service in entry.services) service,
+            for (final MapEntry<String, num> total
+                in entry.outstandingByCurrency.entries) ...<String>[
+              total.key,
+              total.value.toString(),
+            ],
+            for (final BillingWorkItem invoice in entry.invoices) ...<String?>[
+              invoice.id,
+              invoice.effectiveDisplayId,
+              invoice.billingStatus,
+              invoice.status,
+              for (final BillingInvoiceItem item in invoice.items)
+                item.description,
+            ],
           ]);
         }
     }
@@ -1601,15 +1807,14 @@ class _ReceptionDeskMobileStatus extends StatelessWidget {
           ),
         );
       case ReceptionDeskSection.paymentGate:
-        final OpdFlowSummary? flow = row.flow;
-        if (flow == null) {
+        final ReceptionPaymentGateEntry? entry = row.paymentGateEntry;
+        if (entry == null) {
           return const SizedBox.shrink();
         }
-        final OpdBillingDisplay billing = opdFlowBillingDisplay(context, flow);
         return AppWorkspaceStatusBadge(
           status: AppWorkspaceStatus(
-            label: billing.statusLabel,
-            tone: billing.tone,
+            label: billingClearanceLabel(context, entry.clearanceState),
+            tone: billingClearanceTone(entry.clearanceState),
           ),
         );
     }
@@ -1659,19 +1864,22 @@ class _ReceptionDeskMobileNextAction extends StatelessWidget {
         }
         return Text(label);
       case ReceptionDeskSection.paymentGate:
-        final OpdFlowSummary? flow = row.flow;
-        if (flow == null) {
+        final ReceptionPaymentGateEntry? entry = row.paymentGateEntry;
+        if (entry == null) {
           return const SizedBox.shrink();
         }
-        return WorkflowActionButton(
-          encounterId: flow.publicId ?? flow.id,
-          patientId: flow.patientId,
-          stage: flow.stage,
-          nextStep: flow.nextStep,
-          displayNextStep: flow.displayNextStep,
-          assignedStaffId: flow.providerUserId,
-          sourceModule: 'reception',
-          compact: true,
+        return Text(
+          <String>[
+            entry.services
+                .map((String source) => billingApiLabel(context, source))
+                .join(', '),
+            entry.outstandingByCurrency.entries
+                .map(
+                  (MapEntry<String, num> total) =>
+                      billingMoney(context, total.value, total.key),
+                )
+                .join(' · '),
+          ].where((String value) => value.isNotEmpty).join(' · '),
         );
     }
   }

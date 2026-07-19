@@ -44,13 +44,11 @@ const AccessRequirement receptionActiveVisitsRequirement = AccessRequirement(
   activeModules: <String>['scheduling-queue'],
 );
 
-/// Payment-gate guidance may be read by reception or billing readers.
+/// Payment-gate guidance uses authoritative invoice data and therefore mirrors
+/// the backend Billing read scope. It never grants cashier mutations.
 const AccessRequirement receptionPaymentGateRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.patientRead,
-    AppPermissions.billingRead,
-  ],
-  activeModules: <String>['scheduling-queue'],
+  anyPermissions: <AppPermission>[AppPermissions.billingRead],
+  activeModules: <String>['billing-payments'],
 );
 
 /// Full patient registry navigation must mirror its route authorization.

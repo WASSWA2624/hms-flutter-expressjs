@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
-
-const Set<String> receptionPaymentGateStages = <String>{
-  'WAITING_CONSULTATION_PAYMENT',
-};
 
 /// Whether [flow] belongs in Reception's Active visits worklist.
 ///
@@ -33,15 +30,179 @@ bool isReceptionActiveVisit(OpdFlowSummary flow, {DateTime? now}) {
       localStart.day == localNow.day;
 }
 
-bool isReceptionPaymentGateVisit(OpdFlowSummary flow) {
-  if (flow.isTerminal ||
-      isOpdTerminalStatus(flow.status ?? flow.stage) ||
-      flow.endedAt != null) {
+const Set<String> receptionOpdBillingSources = <String>{
+  'CONSULTATION',
+  'LABORATORY',
+  'RADIOLOGY',
+  'PHARMACY',
+  'PROCEDURE',
+  'CONSUMABLE',
+  'THERAPY',
+  'SERVICE',
+  'NURSING',
+};
+
+@immutable
+final class ReceptionPaymentGateEntry {
+  const ReceptionPaymentGateEntry({
+    required this.id,
+    required this.patientId,
+    required this.patientIdentifier,
+    required this.patientName,
+    required this.encounterId,
+    required this.encounterIdentifier,
+    required this.invoices,
+    required this.services,
+    required this.outstandingByCurrency,
+  });
+
+  final String id;
+  final String? patientId;
+  final String? patientIdentifier;
+  final String patientName;
+  final String? encounterId;
+  final String encounterIdentifier;
+  final List<BillingWorkItem> invoices;
+  final Set<String> services;
+  final Map<String, num> outstandingByCurrency;
+
+  int get invoiceCount => invoices.length;
+
+  BillingClearanceState get clearanceState {
+    if (invoices.any(
+      (BillingWorkItem invoice) =>
+          invoice.clearanceState == BillingClearanceState.overdue,
+    )) {
+      return BillingClearanceState.overdue;
+    }
+    if (invoices.any(
+      (BillingWorkItem invoice) =>
+          invoice.clearanceState == BillingClearanceState.partiallyPaid,
+    )) {
+      return BillingClearanceState.partiallyPaid;
+    }
+    return BillingClearanceState.awaitingPayment;
+  }
+}
+
+bool isReceptionOutstandingOpdInvoice(BillingWorkItem item) {
+  if (!item.isInvoice || item.balanceDue <= 0) {
     return false;
   }
-  return receptionPaymentGateStages.contains(
-    (flow.stage ?? '').trim().toUpperCase(),
+  final String billingStatus = (item.billingStatus ?? '').trim().toUpperCase();
+  if (!<String>{'ISSUED', 'PARTIAL', 'OVERDUE'}.contains(billingStatus)) {
+    return false;
+  }
+  if (!<BillingClearanceState>{
+    BillingClearanceState.awaitingPayment,
+    BillingClearanceState.partiallyPaid,
+    BillingClearanceState.overdue,
+  }.contains(item.clearanceState)) {
+    return false;
+  }
+  if (_firstNonEmpty(<String?>[item.encounterId, item.encounterDisplayId]) ==
+      null) {
+    return false;
+  }
+  if (_firstNonEmpty(<String?>[
+        item.patientId,
+        item.patientDisplayId,
+        item.patientDisplayName,
+      ]) ==
+      null) {
+    return false;
+  }
+  return _billingSources(item).any(receptionOpdBillingSources.contains);
+}
+
+List<ReceptionPaymentGateEntry> aggregateReceptionPaymentGateEntries(
+  Iterable<BillingWorkItem> items,
+) {
+  final Map<String, List<BillingWorkItem>> grouped =
+      <String, List<BillingWorkItem>>{};
+  for (final BillingWorkItem item in items) {
+    if (!isReceptionOutstandingOpdInvoice(item)) {
+      continue;
+    }
+    final String patientKey = _firstNonEmpty(<String?>[
+      item.patientId,
+      item.patientDisplayId,
+      item.patientDisplayName,
+    ])!.toLowerCase();
+    final String encounterKey = _firstNonEmpty(<String?>[
+      item.encounterId,
+      item.encounterDisplayId,
+    ])!.toLowerCase();
+    grouped
+        .putIfAbsent('$patientKey|$encounterKey', () => <BillingWorkItem>[])
+        .add(item);
+  }
+
+  final List<ReceptionPaymentGateEntry> entries = <ReceptionPaymentGateEntry>[];
+  for (final MapEntry<String, List<BillingWorkItem>> group in grouped.entries) {
+    final List<BillingWorkItem> invoices = group.value
+      ..sort(
+        (BillingWorkItem a, BillingWorkItem b) =>
+            (b.timelineAt ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(
+              a.timelineAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+            ),
+      );
+    final BillingWorkItem first = invoices.first;
+    final Set<String> services = <String>{};
+    final Map<String, num> totals = <String, num>{};
+    for (final BillingWorkItem invoice in invoices) {
+      services.addAll(_billingSources(invoice));
+      final String currency = (invoice.currency ?? '').trim().toUpperCase();
+      totals.update(
+        currency,
+        (num current) => current + invoice.balanceDue,
+        ifAbsent: () => invoice.balanceDue,
+      );
+    }
+    entries.add(
+      ReceptionPaymentGateEntry(
+        id: group.key,
+        patientId: first.patientId,
+        patientIdentifier: first.patientDisplayId ?? first.patientId,
+        patientName: first.patientDisplayName?.trim().isNotEmpty == true
+            ? first.patientDisplayName!.trim()
+            : first.patientDisplayId ?? first.patientId ?? '',
+        encounterId: first.encounterId,
+        encounterIdentifier:
+            first.encounterDisplayId ?? first.encounterId ?? '',
+        invoices: List<BillingWorkItem>.unmodifiable(invoices),
+        services: Set<String>.unmodifiable(services),
+        outstandingByCurrency: Map<String, num>.unmodifiable(totals),
+      ),
+    );
+  }
+  entries.sort(
+    (ReceptionPaymentGateEntry a, ReceptionPaymentGateEntry b) =>
+        a.patientName.toLowerCase().compareTo(b.patientName.toLowerCase()),
   );
+  return List<ReceptionPaymentGateEntry>.unmodifiable(entries);
+}
+
+Set<String> _billingSources(BillingWorkItem item) {
+  return <String>{
+    if ((item.sourceModule ?? '').trim().isNotEmpty)
+      item.sourceModule!.trim().toUpperCase(),
+    for (final String module in item.sourceModules)
+      if (module.trim().isNotEmpty) module.trim().toUpperCase(),
+    for (final BillingInvoiceItem line in item.items)
+      if ((line.sourceModule ?? '').trim().isNotEmpty)
+        line.sourceModule!.trim().toUpperCase(),
+  };
+}
+
+String? _firstNonEmpty(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return null;
 }
 
 /// Counts distinct patients represented by Reception's four worklists.
@@ -56,6 +217,8 @@ int receptionUniquePatientCount(
   OpdWorkspaceState state, {
   DateTime? now,
   Set<ReceptionDeskSection>? sections,
+  Iterable<ReceptionPaymentGateEntry> paymentGateEntries =
+      const <ReceptionPaymentGateEntry>[],
 }) {
   final Set<ReceptionDeskSection> included =
       sections ?? ReceptionDeskSection.values.toSet();
@@ -99,16 +262,9 @@ int receptionUniquePatientCount(
   final bool includeActiveVisits = included.contains(
     ReceptionDeskSection.activeVisits,
   );
-  final bool includePaymentGate = included.contains(
-    ReceptionDeskSection.paymentGate,
-  );
-  if (includeActiveVisits || includePaymentGate) {
+  if (includeActiveVisits) {
     for (final OpdFlowSummary flow in state.flows.items) {
-      final bool matchesActive =
-          includeActiveVisits && isReceptionActiveVisit(flow, now: now);
-      final bool matchesPayment =
-          includePaymentGate && isReceptionPaymentGateVisit(flow);
-      if (!matchesActive && !matchesPayment) {
+      if (!isReceptionActiveVisit(flow, now: now)) {
         continue;
       }
       identities.add(<String>[
@@ -120,6 +276,16 @@ int receptionUniquePatientCount(
         ..._aliases('queue', <String?>[flow.visitQueueId]),
         ..._aliases('flow', <String?>[flow.id, flow.publicId]),
       ], fallback: 'flow:${flow.id}');
+    }
+  }
+  if (included.contains(ReceptionDeskSection.paymentGate)) {
+    for (final ReceptionPaymentGateEntry entry in paymentGateEntries) {
+      identities.add(<String>[
+        ..._patientAliases(
+          patientId: entry.patientId,
+          patientIdentifier: entry.patientIdentifier,
+        ),
+      ], fallback: 'payment-gate:${entry.id}');
     }
   }
 

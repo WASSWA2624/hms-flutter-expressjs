@@ -63,7 +63,17 @@ void main() {
       ],
     );
 
-    expect(receptionPatientBadgeCount(state, now: now), 4);
+    expect(
+      receptionPatientBadgeCount(
+        state,
+        now: now,
+        paymentGateEntries: <ReceptionPaymentGateEntry>[
+          _paymentEntry('patient-2'),
+          _paymentEntry('patient-4'),
+        ],
+      ),
+      4,
+    );
   });
 
   test('Reception badge joins records through appointment and queue links', () {
@@ -134,12 +144,15 @@ void main() {
         state,
         now: now,
         sections: <ReceptionDeskSection>{ReceptionDeskSection.appointments},
+        paymentGateEntries: <ReceptionPaymentGateEntry>[
+          _paymentEntry('patient-4'),
+        ],
       ),
       1,
     );
   });
 
-  test('Reception badge excludes terminal payment-gate stages', () {
+  test('Reception badge ignores stale payment stages without billing rows', () {
     final OpdWorkspaceState state = _state(
       flows: <OpdFlowSummary>[
         OpdFlowSummary(
@@ -154,6 +167,20 @@ void main() {
 
     expect(receptionPatientBadgeCount(state, now: now), null);
   });
+}
+
+ReceptionPaymentGateEntry _paymentEntry(String patientId) {
+  return ReceptionPaymentGateEntry(
+    id: 'payment-$patientId',
+    patientId: patientId,
+    patientIdentifier: patientId,
+    patientName: patientId,
+    encounterId: 'encounter-$patientId',
+    encounterIdentifier: 'encounter-$patientId',
+    invoices: const [],
+    services: const <String>{'CONSULTATION'},
+    outstandingByCurrency: const <String, num>{'UGX': 100},
+  );
 }
 
 OpdWorkspaceState _state({

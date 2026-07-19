@@ -2642,6 +2642,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionSectionPaymentGate => 'Payment gate';
 
   @override
+  String get receptionPaymentGateSearchHint =>
+      'Search patient, encounter, service, or invoice';
+
+  @override
+  String get receptionPaymentGateEmptyTitle => 'No outstanding OPD charges';
+
+  @override
+  String get receptionPaymentGateEmptyBody =>
+      'Patients with pending OPD charges will appear here.';
+
+  @override
+  String get receptionPaymentGateReadOnlyBody =>
+      'Review outstanding services and amounts, then follow up with the responsible department. Payment changes remain in Billing.';
+
+  @override
   String get receptionBillingGuidanceTitle => 'Billing guidance';
 
   @override

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -13,6 +14,9 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -26,6 +30,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
+
+class _MockBillingRepository extends Mock implements BillingRepository {}
 
 const OpdAppointment _appointment = OpdAppointment(
   id: 'appointment-1',
@@ -123,6 +129,83 @@ final OpdFlowSummary _paymentFlow = OpdFlowSummary(
   stage: 'WAITING_CONSULTATION_PAYMENT',
 );
 
+final BillingWorkItem _labInvoice = _billingInvoice(
+  id: 'invoice-lab',
+  displayId: 'INV-LAB',
+  source: 'LABORATORY',
+  description: 'Complete blood count',
+  balance: 40000,
+);
+
+final BillingWorkItem _radiologyInvoice = _billingInvoice(
+  id: 'invoice-radiology',
+  displayId: 'INV-RAD',
+  source: 'RADIOLOGY',
+  description: 'Chest X-ray',
+  billingStatus: 'PARTIAL',
+  total: 60000,
+  paid: 10000,
+  balance: 50000,
+);
+
+final BillingWorkItem _pharmacyInvoice = _billingInvoice(
+  id: 'invoice-pharmacy',
+  displayId: 'INV-PHA',
+  patientId: 'patient-pharmacy',
+  patientDisplayId: 'PAT-PHA',
+  patientName: 'Phoebe Pharmacy',
+  encounterId: 'encounter-pharmacy',
+  encounterDisplayId: 'ENC-PHA',
+  source: 'PHARMACY',
+  description: 'Prescribed medicines',
+  balance: 25000,
+);
+
+BillingWorkItem _billingInvoice({
+  required String id,
+  required String displayId,
+  required String source,
+  required String description,
+  String patientId = 'patient-payment',
+  String patientDisplayId = 'PAT-PAY',
+  String patientName = 'Penny Payment',
+  String encounterId = 'encounter-payment',
+  String encounterDisplayId = 'ENC-PAYMENT',
+  String billingStatus = 'ISSUED',
+  num total = 40000,
+  num paid = 0,
+  required num balance,
+}) {
+  return BillingWorkItem(
+    id: id,
+    displayId: displayId,
+    kind: BillingWorkItemKind.invoice,
+    patientId: patientId,
+    patientDisplayId: patientDisplayId,
+    patientDisplayName: patientName,
+    encounterId: encounterId,
+    encounterDisplayId: encounterDisplayId,
+    sourceModule: source,
+    status: 'SENT',
+    billingStatus: billingStatus,
+    currency: 'UGX',
+    items: <BillingInvoiceItem>[
+      BillingInvoiceItem(
+        id: 'line-$id',
+        description: description,
+        sourceModule: source,
+        totalPrice: total,
+      ),
+    ],
+    financials: BillingFinancials(
+      invoiceTotal: total,
+      effectiveTotal: total,
+      netPaidTotal: paid,
+      balanceDue: balance,
+    ),
+  );
+}
+
 final OpdFlowSummary _currentUnlistedStageFlow = OpdFlowSummary(
   id: 'flow-consultation',
   patientDisplayName: 'Casey Consultation',
@@ -153,7 +236,7 @@ final OpdFlowSummary _closedTodayFlow = OpdFlowSummary(
 
 AppAccessPolicy _policy({
   Set<AppPermission>? permissions,
-  bool billing = false,
+  bool billing = true,
 }) {
   return AppAccessPolicy.fromSession(
     AuthSession(
@@ -165,6 +248,7 @@ AppAccessPolicy _policy({
             AppPermissions.patientRead,
             AppPermissions.patientWrite,
             AppPermissions.lastOfficeRead,
+            AppPermissions.billingRead,
           },
       moduleEntitlements: <AppModuleEntitlement>[
         const AppModuleEntitlement(
@@ -258,13 +342,39 @@ void _stubWorkspace(_MockOpdRepository repository) {
   );
 }
 
+void _stubBilling(_MockBillingRepository repository) {
+  when(() => repository.listWorkItems(any())).thenAnswer((
+    Invocation invocation,
+  ) async {
+    final BillingWorkspaceQuery query =
+        invocation.positionalArguments.single as BillingWorkspaceQuery;
+    return Result<AppPage<BillingWorkItem>>.success(
+      AppPage<BillingWorkItem>(
+        items: <BillingWorkItem>[
+          _labInvoice,
+          _radiologyInvoice,
+          _pharmacyInvoice,
+        ],
+        request: query.pageRequest,
+        totalItemCount: 3,
+      ),
+    );
+  });
+}
+
 Future<GoRouter> _pumpWorkspace(
   WidgetTester tester, {
   required _MockOpdRepository repository,
+  _MockBillingRepository? billingRepository,
   AppAccessPolicy? policy,
   String initialLocation = '/reception',
   Size viewSize = const Size(1440, 900),
 }) async {
+  final _MockBillingRepository resolvedBillingRepository =
+      billingRepository ?? _MockBillingRepository();
+  if (billingRepository == null) {
+    _stubBilling(resolvedBillingRepository);
+  }
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   tester.view.physicalSize = viewSize;
@@ -302,6 +412,7 @@ Future<GoRouter> _pumpWorkspace(
     ProviderScope(
       overrides: [
         opdRepositoryProvider.overrideWithValue(repository),
+        billingRepositoryProvider.overrideWithValue(resolvedBillingRepository),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
@@ -329,6 +440,7 @@ void main() {
     registerFallbackValue(const OpdQueueQuery());
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
+    registerFallbackValue(const BillingWorkspaceQuery());
   });
 
   setUp(() {
@@ -419,7 +531,6 @@ void main() {
           AppPermissions.patientWrite,
           AppPermissions.billingRead,
         },
-        billing: true,
       ),
       initialLocation: '/reception?section=payment-gate',
     );
@@ -679,6 +790,175 @@ void main() {
     expect(find.text('Doctor review'), findsOneWidget);
     expect(find.byType(WorkflowActionButton), findsNothing);
     expect(find.widgetWithText(AppButton, 'Doctor review'), findsNothing);
+  });
+
+  testWidgets(
+    'payment gate aggregates all outstanding OPD services and stays read-only',
+    (WidgetTester tester) async {
+      final GoRouter router = await _pumpWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/reception?section=payment-gate',
+      );
+
+      expect(find.text('Penny Payment'), findsOneWidget);
+      expect(find.text('Phoebe Pharmacy'), findsOneWidget);
+      expect(find.textContaining('Laboratory'), findsWidgets);
+      expect(find.textContaining('Radiology'), findsWidgets);
+      expect(find.textContaining('Pharmacy'), findsWidgets);
+      expect(find.textContaining('90,000'), findsOneWidget);
+      final AppTabStrip tabs = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      expect(
+        tabs.tabs
+            .singleWhere((AppTabItem tab) => tab.id == 'paymentGate')
+            .count,
+        2,
+      );
+      expect(find.byType(WorkflowActionButton), findsNothing);
+
+      final Finder searchField = find.descendant(
+        of: find.byType(AppSearchBar),
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(searchField, 'Chest X-ray');
+      await tester.pump();
+      expect(find.text('Penny Payment'), findsOneWidget);
+      expect(find.text('Phoebe Pharmacy'), findsNothing);
+
+      await tester.enterText(searchField, '');
+      await tester.pump();
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      final Finder sourceFilter = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppSelectField<String> && widget.labelText == 'Source',
+      );
+      await tester.tap(sourceFilter);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pharmacy').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('Phoebe Pharmacy'), findsOneWidget);
+      expect(find.text('Penny Payment'), findsNothing);
+
+      await tester.tap(find.text('Phoebe Pharmacy'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey<String>('receptionPaymentGateReadOnlyDetail'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Prescribed medicines'), findsOneWidget);
+      expect(find.text('Receive payment'), findsNothing);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(router.state.uri.path, '/reception');
+      expect(router.state.uri.queryParameters['section'], 'payment-gate');
+    },
+  );
+
+  testWidgets('payment gate mobile cards show services and amount only', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/reception?section=payment-gate',
+      viewSize: const Size(390, 844),
+    );
+
+    expect(find.text('Penny Payment'), findsOneWidget);
+    expect(find.textContaining('Laboratory'), findsOneWidget);
+    expect(find.textContaining('Radiology'), findsOneWidget);
+    expect(find.textContaining('90,000'), findsOneWidget);
+    expect(find.byType(WorkflowActionButton), findsNothing);
+  });
+
+  testWidgets('payment gate has focused empty and retry states', (
+    WidgetTester tester,
+  ) async {
+    final _MockBillingRepository emptyBilling = _MockBillingRepository();
+    when(() => emptyBilling.listWorkItems(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      final BillingWorkspaceQuery query =
+          invocation.positionalArguments.single as BillingWorkspaceQuery;
+      return Result<AppPage<BillingWorkItem>>.success(
+        AppPage<BillingWorkItem>(
+          items: const <BillingWorkItem>[],
+          request: query.pageRequest,
+          totalItemCount: 0,
+        ),
+      );
+    });
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      billingRepository: emptyBilling,
+      initialLocation: '/reception?section=payment-gate',
+    );
+    expect(find.text('No outstanding OPD charges'), findsOneWidget);
+    expect(
+      find.text('Patients with pending OPD charges will appear here.'),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    final _MockBillingRepository failingBilling = _MockBillingRepository();
+    when(() => failingBilling.listWorkItems(any())).thenAnswer(
+      (_) async =>
+          const Result<AppPage<BillingWorkItem>>.failure(AppFailure.network()),
+    );
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      billingRepository: failingBilling,
+      initialLocation: '/reception?section=payment-gate',
+    );
+    expect(find.text('Something went wrong'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+  });
+
+  testWidgets('payment gate removes settled patients after refresh', (
+    WidgetTester tester,
+  ) async {
+    final _MockBillingRepository changingBilling = _MockBillingRepository();
+    var calls = 0;
+    when(() => changingBilling.listWorkItems(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      calls += 1;
+      final BillingWorkspaceQuery query =
+          invocation.positionalArguments.single as BillingWorkspaceQuery;
+      return Result<AppPage<BillingWorkItem>>.success(
+        AppPage<BillingWorkItem>(
+          items: calls == 1
+              ? <BillingWorkItem>[_labInvoice]
+              : const <BillingWorkItem>[],
+          request: query.pageRequest,
+          totalItemCount: calls == 1 ? 1 : 0,
+        ),
+      );
+    });
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      billingRepository: changingBilling,
+      initialLocation: '/reception?section=payment-gate',
+    );
+    expect(find.text('Penny Payment'), findsOneWidget);
+
+    await tester.tap(find.text('Refresh'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Penny Payment'), findsNothing);
+    expect(find.text('No outstanding OPD charges'), findsOneWidget);
+    expect(calls, 2);
   });
 
   testWidgets('refresh is single-flight and exposes progress tooltip', (
