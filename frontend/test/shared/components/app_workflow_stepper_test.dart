@@ -61,6 +61,35 @@ void main() {
     expect(find.text('Billing'), findsOneWidget);
     expect(find.text('Awaiting labs'), findsOneWidget);
     expect(find.text('In progress'), findsWidgets);
+    expect(
+      find.byKey(const ValueKey<String>('workflowStepperPanel')),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+  });
+
+  testWidgets('omits grouping panel when showPanel is false', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkflowStepper(
+        showPanel: false,
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'scheduled',
+            label: 'Scheduled',
+            state: AppWorkflowStepState.current,
+          ),
+        ],
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey<String>('workflowStepperPanel')),
+      findsNothing,
+    );
+    expect(find.text('Scheduled'), findsOneWidget);
   });
 
   testWidgets('invokes onTap for completed/current steps', (
@@ -158,6 +187,7 @@ void main() {
       find.byKey(const ValueKey<String>('workflowStepTrackWrapped')),
       findsOneWidget,
     );
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
     expect(find.byType(SingleChildScrollView), findsNothing);
     expect(tester.takeException(), isNull);
   });
