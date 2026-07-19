@@ -17,8 +17,7 @@ import 'package:hosspi_hms/features/physiotherapy/presentation/controllers/physi
 import 'package:hosspi_hms/features/physiotherapy/presentation/widgets/physiotherapy_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
-import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -1087,11 +1086,11 @@ class _ActionsPanel extends ConsumerWidget {
     );
     final TherapyWorkItem item = detail.item;
 
-    return AppWorkspaceDetailPanel(
+    return AppQuickActions(
       title: l10n.physiotherapyActionsTitle,
-      child: AppPermissionActionList(
-        minItemWidth: 180,
-        actions: <AppPermissionActionItem>[
+      presentation: AppQuickActionsPresentation.detailPanel,
+      minItemWidth: 180,
+      permissionActions: <AppPermissionActionItem>[
           AppPermissionActionItem(
             requirement: _therapyWriteRequirement,
             label: l10n.physiotherapyAcceptReferralAction,
@@ -1342,7 +1341,6 @@ class _ActionsPanel extends ConsumerWidget {
             },
           ),
         ],
-      ),
     );
   }
 

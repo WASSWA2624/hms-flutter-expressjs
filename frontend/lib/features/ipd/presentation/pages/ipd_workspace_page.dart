@@ -1013,7 +1013,9 @@ class _IpdDetailActions extends ConsumerWidget {
     final bool icuActive = icuStatus == 'ACTIVE';
     final bool icuEligible = activeBed && !terminal && !icuActive;
 
-    return AppActionList(
+    return AppQuickActions(
+      title: l10n.patientsQuickActionsTitle,
+      presentation: AppQuickActionsPresentation.plain,
       actions: <AppActionItem>[
         if (icuActive || admission.icu.hasCriticalAlert)
           AppActionItem(

@@ -885,7 +885,9 @@ class _TheaterActionBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppActionList(
+    return AppQuickActions(
+      title: l10n.patientsQuickActionsTitle,
+      presentation: AppQuickActionsPresentation.plain,
       actions: <AppActionItem>[
         AppActionItem(
           label: l10n.theaterAssignResourceAction,

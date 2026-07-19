@@ -27,12 +27,15 @@ class AppQuickActions extends StatelessWidget {
     required this.title,
     this.actions = const <AppActionItem>[],
     this.permissionActions = const <AppPermissionActionItem>[],
+    this.extraActions = const <Widget>[],
     this.description,
     this.emptyState,
     this.presentation = AppQuickActionsPresentation.section,
     this.leadingIcon = Icons.bolt_outlined,
     this.minItemWidth,
     this.maxColumns = 4,
+    this.spacing,
+    this.runSpacing,
     this.overflowLabel,
     this.hideWhenEmpty = true,
     super.key,
@@ -42,15 +45,19 @@ class AppQuickActions extends StatelessWidget {
   final String? description;
   final List<AppActionItem> actions;
   final List<AppPermissionActionItem> permissionActions;
+  final List<Widget> extraActions;
   final Widget? emptyState;
   final AppQuickActionsPresentation presentation;
   final IconData? leadingIcon;
   final double? minItemWidth;
   final int maxColumns;
+  final double? spacing;
+  final double? runSpacing;
   final String? overflowLabel;
   final bool hideWhenEmpty;
 
-  bool get _isEmpty => actions.isEmpty && permissionActions.isEmpty;
+  bool get _isEmpty =>
+      actions.isEmpty && permissionActions.isEmpty && extraActions.isEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -62,19 +69,26 @@ class AppQuickActions extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final ThemeData theme = Theme.of(context);
     final Widget content = _isEmpty
         ? emptyState!
         : permissionActions.isNotEmpty
         ? AppPermissionActionList(
             actions: permissionActions,
+            extraActions: extraActions,
             minItemWidth: minItemWidth,
             maxColumns: maxColumns,
+            spacing: spacing ?? theme.spacing.sm,
+            runSpacing: runSpacing ?? spacing ?? theme.spacing.sm,
             overflowLabel: overflowLabel,
           )
         : AppActionList(
             actions: actions,
+            extraActions: extraActions,
             minItemWidth: minItemWidth,
             maxColumns: maxColumns,
+            spacing: spacing ?? theme.spacing.sm,
+            runSpacing: runSpacing ?? spacing ?? theme.spacing.sm,
           );
 
     return switch (presentation) {

@@ -57,4 +57,30 @@ void main() {
 
     expect(find.text('Quick actions'), findsNothing);
   });
+
+  testWidgets('supports extraActions alongside empty action lists', (
+    tester,
+  ) async {
+    var pressed = 0;
+
+    await tester.pumpWidget(
+      wrap(
+        AppQuickActions(
+          title: 'Quick actions',
+          presentation: AppQuickActionsPresentation.plain,
+          extraActions: <Widget>[
+            TextButton(
+              onPressed: () => pressed += 1,
+              child: const Text('Extra'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text('Quick actions'), findsOneWidget);
+    await tester.tap(find.text('Extra'));
+    await tester.pump();
+    expect(pressed, 1);
+  });
 }

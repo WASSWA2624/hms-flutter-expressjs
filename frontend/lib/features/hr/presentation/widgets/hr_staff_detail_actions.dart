@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
-import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 
 typedef HrStaffDetailActionCallback =
     void Function(BuildContext context, WidgetRef ref);
@@ -161,15 +158,9 @@ class HrStaffDetailActions extends ConsumerWidget {
         ),
     ];
 
-    return AppSectionPanel(
+    return AppQuickActions(
       title: l10n.hrStaffActionsTitle,
-      children: <Widget>[
-        AppPermissionActionList(
-          actions: actions,
-          spacing: Theme.of(context).spacing.xs,
-          runSpacing: Theme.of(context).spacing.xs,
-        ),
-      ],
+      permissionActions: actions,
     );
   }
 }

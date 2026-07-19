@@ -1352,8 +1352,9 @@ class EmergencyActionPanel extends ConsumerWidget {
     final bool canWriteEmergency = writeRequirement.isAllowed(accessPolicy);
     final bool canHandoff = _handoffRequirement.isAllowed(accessPolicy);
 
-    return AppActionPanel(
-      title: 'Actions',
+    return AppQuickActions(
+      title: context.l10n.patientsQuickActionsTitle,
+      presentation: AppQuickActionsPresentation.detailPanel,
       actions: <AppActionItem>[
         AppActionItem(
           label: context.l10n.emergencyPriorityDialogTitle,

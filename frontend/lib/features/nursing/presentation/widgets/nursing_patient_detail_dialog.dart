@@ -234,8 +234,9 @@ class _NursingActionBar extends ConsumerWidget {
 
     return AppAccessActionGate(
       requirement: NursingPatientDetailDialog.writeRequirement,
-      builder: (BuildContext context, bool isAllowed) => AppActionPanel(
+      builder: (BuildContext context, bool isAllowed) => AppQuickActions(
         title: l10n.nursingActionsTitle,
+        presentation: AppQuickActionsPresentation.detailPanel,
         actions: <AppActionItem>[
           AppActionItem(
             label: l10n.nursingActionCreateHandover,

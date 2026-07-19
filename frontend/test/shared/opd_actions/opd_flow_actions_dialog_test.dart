@@ -57,7 +57,7 @@ void main() {
     expect(dialog.closeEnabled, isTrue);
     expect(dialog.pinActionsToBottom, isTrue);
     expect(dialog.actions, hasLength(1));
-    expect(find.byType(AppActionSection), findsOneWidget);
+    expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('FLOW ACTIONS'), findsOneWidget);
     expect(find.text('Pay consultation'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
@@ -239,7 +239,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.byType(AppActionSection), findsOneWidget);
+    expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });
 }

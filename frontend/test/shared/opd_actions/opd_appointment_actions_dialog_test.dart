@@ -19,7 +19,6 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_appointment_actions_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -56,12 +55,15 @@ void main() {
     expect(dialog.closeEnabled, isTrue);
     expect(dialog.pinActionsToBottom, isTrue);
     expect(dialog.actions, hasLength(1));
-    expect(find.byType(AppActionSection), findsOneWidget);
+    expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
     expect(find.text('Queue'), findsOneWidget);
     expect(find.text('Reschedule'), findsOneWidget);
     expect(find.text('Cancel appointment'), findsOneWidget);
-    expect(find.text('Start OPD encounter'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Start OPD encounter'),
+      findsOneWidget,
+    );
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byIcon(AppActionIcons.appointment), findsOneWidget);
@@ -81,7 +83,7 @@ void main() {
       appointment.copyWith(status: 'COMPLETED'),
     );
 
-    expect(find.byType(AppActionSection), findsNothing);
+    expect(find.byType(AppQuickActions), findsNothing);
     expect(find.text('Start OPD encounter'), findsNothing);
     expect(find.text('Reschedule'), findsNothing);
     expect(find.text('Cancel appointment'), findsNothing);
@@ -106,7 +108,7 @@ void main() {
     expect(find.text('Queue'), findsNothing);
     expect(find.text('Reschedule'), findsNothing);
     expect(find.text('Cancel appointment'), findsNothing);
-    expect(find.text('Start OPD encounter'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Start OPD encounter'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
   });
 
@@ -132,7 +134,10 @@ void main() {
     );
 
     expect(find.text('Queue'), findsNothing);
-    expect(find.text('Start OPD encounter'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Start OPD encounter'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Cancel pops false without mutating the appointment', (
@@ -277,7 +282,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.byType(AppActionSection), findsOneWidget);
+    expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });
 }

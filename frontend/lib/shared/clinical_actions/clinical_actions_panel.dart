@@ -20,9 +20,10 @@ class ClinicalActionsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppActionPanel(
+    return AppQuickActions(
       title: title,
       description: description,
+      presentation: AppQuickActionsPresentation.detailPanel,
       minItemWidth: minItemWidth,
       maxColumns: maxColumns,
       actions: <AppActionItem>[

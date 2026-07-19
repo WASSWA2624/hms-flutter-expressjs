@@ -1453,8 +1453,9 @@ class _ClaimsDetailContent extends ConsumerWidget {
           ],
         ),
         SizedBox(height: theme.spacing.lg),
-        AppActionPanel(
+        AppQuickActions(
           title: l10n.claimsDetailTitle,
+          presentation: AppQuickActionsPresentation.detailPanel,
           actions: _detailActions(context, controller, state, detail),
         ),
         SizedBox(height: theme.spacing.lg),

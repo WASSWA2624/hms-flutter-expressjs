@@ -42,7 +42,7 @@ void main() {
     expect(dialog.closeEnabled, isTrue);
     expect(dialog.pinActionsToBottom, isTrue);
     expect(dialog.actions, hasLength(1));
-    expect(find.byType(AppActionSection), findsOneWidget);
+    expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
     expect(find.text('Prioritize'), findsOneWidget);
@@ -60,7 +60,7 @@ void main() {
   ) async {
     await _pumpDialog(tester, entry.copyWith(status: 'COMPLETED'));
 
-    expect(find.byType(AppActionSection), findsNothing);
+    expect(find.byType(AppQuickActions), findsNothing);
     expect(find.text('Prioritize'), findsNothing);
     expect(find.text('Move'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
@@ -119,7 +119,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.byType(AppActionSection), findsOneWidget);
+    expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });
 }

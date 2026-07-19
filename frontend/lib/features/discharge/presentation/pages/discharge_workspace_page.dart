@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharg
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -835,19 +836,17 @@ class _CrossModuleLinksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final String admissionId = detail.summary.displayId ?? detail.summary.id;
 
-    return AppWorkspaceDetailPanel(
+    return AppQuickActions(
       title: l10n.dischargeCrossModuleLinksTitle,
       description: l10n.dischargeCrossModuleLinksBody,
-      child: Wrap(
-        spacing: theme.spacing.sm,
-        runSpacing: theme.spacing.sm,
-        children: <Widget>[
-          AppButton.tertiary(
+      presentation: AppQuickActionsPresentation.detailPanel,
+      actions: <AppActionItem>[
+          AppActionItem(
             label: l10n.dischargeOpenIpdAction,
             leadingIcon: Icons.local_hotel_outlined,
+            variant: AppActionVariant.tertiary,
             onPressed: () => _openLinkedWorkspace(
               context,
               admissionId.isEmpty
@@ -857,32 +856,35 @@ class _CrossModuleLinksSection extends StatelessWidget {
                     ),
             ),
           ),
-          AppButton.tertiary(
+          AppActionItem(
             label: l10n.dischargeOpenNursingAction,
             leadingIcon: Icons.health_and_safety_outlined,
+            variant: AppActionVariant.tertiary,
             onPressed: () =>
                 _openLinkedWorkspace(context, AppRoutes.nursing.path),
           ),
-          AppButton.tertiary(
+          AppActionItem(
             label: l10n.dischargeOpenPharmacyAction,
             leadingIcon: Icons.medication_outlined,
+            variant: AppActionVariant.tertiary,
             onPressed: () =>
                 _openLinkedWorkspace(context, AppRoutes.pharmacy.path),
           ),
-          AppButton.tertiary(
+          AppActionItem(
             label: l10n.dischargeOpenBillingAction,
             leadingIcon: Icons.receipt_long_outlined,
+            variant: AppActionVariant.tertiary,
             onPressed: () =>
                 _openLinkedWorkspace(context, AppRoutes.billing.path),
           ),
-          AppButton.tertiary(
+          AppActionItem(
             label: l10n.dischargeOpenHousekeepingAction,
             leadingIcon: Icons.cleaning_services_outlined,
+            variant: AppActionVariant.tertiary,
             onPressed: () =>
                 _openLinkedWorkspace(context, AppRoutes.housekeeping.path),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

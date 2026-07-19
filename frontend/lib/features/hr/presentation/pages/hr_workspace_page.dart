@@ -1653,9 +1653,11 @@ class _WorkItemActions extends ConsumerWidget {
           ],
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        AppPermissionActionList(
+        AppQuickActions(
+          title: context.l10n.patientsQuickActionsTitle,
+          presentation: AppQuickActionsPresentation.plain,
           minItemWidth: 180,
-          actions: _workItemActions(context, ref, item, enabled),
+          permissionActions: _workItemActions(context, ref, item, enabled),
         ),
       ],
     );

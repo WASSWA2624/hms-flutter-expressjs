@@ -7,13 +7,12 @@ import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/actions/app_action_item.dart';
 import 'package:hosspi_hms/shared/actions/app_action_lifecycle.dart';
 import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
+import 'package:hosspi_hms/shared/actions/app_quick_actions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
-import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_info_tile.dart';
 import 'package:hosspi_hms/shared/components/app_permission_action.dart';
 import 'package:hosspi_hms/shared/components/app_permission_async_action.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Renders a consistent responsive row/wrap of app actions.
 class AppActionList extends StatelessWidget {
@@ -85,18 +84,17 @@ class AppActionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
+    return AppQuickActions(
       title: title,
       description: description,
-      titleIcon: titleIcon,
-      child: AppActionList(
-        actions: actions,
-        extraActions: extraActions,
-        spacing: spacing,
-        runSpacing: runSpacing,
-        minItemWidth: minItemWidth,
-        maxColumns: maxColumns,
-      ),
+      actions: actions,
+      extraActions: extraActions,
+      presentation: AppQuickActionsPresentation.detailPanel,
+      leadingIcon: titleIcon ?? Icons.bolt_outlined,
+      spacing: spacing,
+      runSpacing: runSpacing,
+      minItemWidth: minItemWidth,
+      maxColumns: maxColumns,
     );
   }
 }
@@ -249,19 +247,18 @@ class AppPermissionActionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
+    return AppQuickActions(
       title: title,
       description: description,
-      titleIcon: titleIcon,
-      child: AppPermissionActionList(
-        actions: actions,
-        extraActions: extraActions,
-        spacing: spacing,
-        runSpacing: runSpacing,
-        minItemWidth: minItemWidth,
-        maxColumns: maxColumns,
-        overflowLabel: overflowLabel,
-      ),
+      permissionActions: actions,
+      extraActions: extraActions,
+      presentation: AppQuickActionsPresentation.detailPanel,
+      leadingIcon: titleIcon ?? Icons.bolt_outlined,
+      spacing: spacing,
+      runSpacing: runSpacing,
+      minItemWidth: minItemWidth,
+      maxColumns: maxColumns,
+      overflowLabel: overflowLabel,
     );
   }
 }
@@ -289,25 +286,15 @@ class AppActionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Widget actionList = permissionActions.isEmpty
-        ? AppActionList(
-            actions: actions,
-            extraActions: extraActions,
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.sm,
-          )
-        : AppPermissionActionList(
-            actions: permissionActions,
-            extraActions: extraActions,
-            minItemWidth: minItemWidth,
-            maxColumns: maxColumns,
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.sm,
-            overflowLabel: overflowLabel,
-          );
-
-    return AppSectionPanel(title: title, children: <Widget>[actionList]);
+    return AppQuickActions(
+      title: title,
+      actions: actions,
+      permissionActions: permissionActions,
+      extraActions: extraActions,
+      minItemWidth: minItemWidth,
+      maxColumns: maxColumns,
+      overflowLabel: overflowLabel,
+    );
   }
 }
 

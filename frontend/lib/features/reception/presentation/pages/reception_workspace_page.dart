@@ -8,6 +8,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
@@ -25,7 +26,6 @@ import 'package:hosspi_hms/features/reception/presentation/widgets/reception_pay
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_queue_actions_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
@@ -286,13 +286,8 @@ class _ReceptionWorkspaceContentState
                   }
                 }
               },
-            ),
-            SizedBox(height: theme.spacing.sm),
-            AppQuickActions(
-              title: l10n.patientsQuickActionsTitle,
-              permissionActions: _buildQuickActions(l10n),
-              minItemWidth: 180,
-              maxColumns: 5,
+              primaryAction: _buildPrimaryAction(l10n),
+              secondaryActions: _buildSecondaryActions(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section == ReceptionDeskSection.paymentGate &&
@@ -602,47 +597,82 @@ class _ReceptionWorkspaceContentState
     ];
   }
 
-  List<AppPermissionActionItem> _buildQuickActions(AppLocalizations l10n) {
-    return <AppPermissionActionItem>[
-      AppPermissionActionItem(
-        requirement: receptionPatientWriteRequirement,
-        label: l10n.receptionRegisterPatientAction,
-        icon: Icons.person_add_alt_1_outlined,
-        variant: AppButtonVariant.primary,
-        onPressed: () => unawaited(_openRegisterPatient()),
-      ),
-      AppPermissionActionItem(
-        requirement: receptionPatientWriteRequirement,
-        label: l10n.receptionScheduleAppointmentAction,
-        icon: Icons.calendar_month_outlined,
-        onPressed: () => unawaited(_scheduleAppointment()),
-      ),
-      AppPermissionActionItem(
+  Widget _buildPrimaryAction(AppLocalizations l10n) {
+    return AppAccessActionGate(
+      requirement: receptionPatientWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
+        return AppTabToolbarPrimary(
+          label: l10n.receptionRegisterPatientAction,
+          icon: Icons.person_add_alt_1_outlined,
+          enabled: isAllowed,
+          onPressed: isAllowed ? () => unawaited(_openRegisterPatient()) : null,
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
+    final AppTabToolbarAction refreshAction = AppTabToolbarAction(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      enabled: !_refreshRequested,
+      isLoading: _refreshRequested,
+      tooltip: _refreshRequested
+          ? l10n.receptionRefreshInProgressTooltip
+          : l10n.commonRefreshActionLabel,
+      semanticLabel: _refreshRequested
+          ? l10n.receptionRefreshInProgressTooltip
+          : l10n.commonRefreshActionLabel,
+      onPressed: _refreshRequested
+          ? null
+          : () => unawaited(_refreshWorkspace()),
+    );
+
+    final Widget scheduleAppointmentAction = AppAccessActionGate(
+      requirement: receptionPatientWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
+        return AppTabToolbarAction(
+          label: l10n.receptionScheduleAppointmentAction,
+          icon: Icons.calendar_month_outlined,
+          enabled: isAllowed,
+          onPressed: isAllowed ? () => unawaited(_scheduleAppointment()) : null,
+        );
+      },
+    );
+
+    return <Widget>[
+      scheduleAppointmentAction,
+      AppAccessActionGate(
         requirement: receptionPatientRegistryRequirement,
-        label: l10n.receptionOpenRegistryAction,
-        icon: AppRouteIcons.patients,
-        onPressed: () => context.go(AppRoutes.patients.location()),
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarAction(
+            label: l10n.receptionOpenRegistryAction,
+            icon: AppRouteIcons.patients,
+            onPressed: isAllowed
+                ? () => context.go(AppRoutes.patients.location())
+                : null,
+          );
+        },
       ),
-      AppPermissionActionItem(
+      AppAccessActionGate(
         requirement: receptionOpdWorkspaceRequirement,
-        label: l10n.receptionOpenOpdAction,
-        icon: AppRouteIcons.opd,
-        onPressed: () => context.go(AppRoutes.opd.location()),
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarAction(
+            label: l10n.receptionOpenOpdAction,
+            icon: AppRouteIcons.opd,
+            onPressed: isAllowed
+                ? () => context.go(AppRoutes.opd.location())
+                : null,
+          );
+        },
       ),
-      AppPermissionActionItem(
-        requirement: receptionWorkspaceRequirement,
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        enabled: !_refreshRequested,
-        isLoading: _refreshRequested,
-        tooltip: _refreshRequested
-            ? l10n.receptionRefreshInProgressTooltip
-            : l10n.commonRefreshActionLabel,
-        semanticLabel: _refreshRequested
-            ? l10n.receptionRefreshInProgressTooltip
-            : l10n.commonRefreshActionLabel,
-        onPressed: () => unawaited(_refreshWorkspace()),
-      ),
+      refreshAction,
     ];
   }
 

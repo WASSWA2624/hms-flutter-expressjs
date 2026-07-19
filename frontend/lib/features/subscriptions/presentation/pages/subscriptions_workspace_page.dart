@@ -15,6 +15,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -1496,10 +1497,9 @@ class _DetailActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Wrap(
-      spacing: Theme.of(context).spacing.sm,
-      runSpacing: Theme.of(context).spacing.sm,
-      children: <Widget>[
+    return AppQuickActions(
+      title: context.l10n.patientsQuickActionsTitle,
+      extraActions: <Widget>[
         if (item.resource == SubscriptionResource.subscriptions) ...<Widget>[
           AppButton.secondary(
             label: _SubscriptionsText.editSubscription,

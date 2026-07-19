@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entiti
 import 'package:hosspi_hms/features/biomedical/presentation/controllers/biomedical_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -1073,10 +1074,9 @@ class _DetailActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
 
-    return Wrap(
-      spacing: Theme.of(context).spacing.sm,
-      runSpacing: Theme.of(context).spacing.sm,
-      children: <Widget>[
+    return AppQuickActions(
+      title: l10n.patientsQuickActionsTitle,
+      extraActions: <Widget>[
         if (canWrite && asset.isRegistryAsset)
           AppButton.secondary(
             label: l10n.biomedicalEditAssetAction,

@@ -968,9 +968,10 @@ class _PharmacyActionPanel extends ConsumerWidget {
 
     return AppAccessActionGate(
       requirement: writeRequirement,
-      builder: (BuildContext context, bool isAllowed) => AppActionPanel(
+      builder: (BuildContext context, bool isAllowed) => AppQuickActions(
         title: l10n.pharmacyActionsPanelTitle,
-        titleIcon: Icons.touch_app_outlined,
+        presentation: AppQuickActionsPresentation.detailPanel,
+        leadingIcon: Icons.touch_app_outlined,
         spacing: theme.spacing.xs,
         runSpacing: theme.spacing.xs,
         minItemWidth: 132,

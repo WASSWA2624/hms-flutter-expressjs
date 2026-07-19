@@ -2610,10 +2610,9 @@ class _OpdPatientActionsDialogState
             ],
             emptyValue: l10n.profileUnknownValue,
           ),
-          AppActionSection(
-            title: l10n.opdActionsColumnLabel,
+          AppQuickActions(
+            title: l10n.patientsQuickActionsTitle,
             minItemWidth: 170,
-            maxColumns: 4,
             permissionActions: _actions(context),
           ),
         ],

@@ -177,8 +177,9 @@ class IcuActionPanel extends ConsumerWidget {
 
     return AppAccessActionGate(
       requirement: writeRequirement,
-      builder: (BuildContext context, bool isAllowed) => AppActionPanel(
+      builder: (BuildContext context, bool isAllowed) => AppQuickActions(
         title: l10n.icuActionsTitle,
+        presentation: AppQuickActionsPresentation.detailPanel,
         actions: <AppActionItem>[
           if (canStartStay)
             AppActionItem(

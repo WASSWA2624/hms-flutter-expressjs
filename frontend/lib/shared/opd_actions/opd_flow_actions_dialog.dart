@@ -647,9 +647,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       );
     }
 
-    return AppActionSection(
-      title: l10n.opdActionsColumnLabel,
+    return AppQuickActions(
+      title: l10n.patientsQuickActionsTitle,
       minItemWidth: 195,
+      maxColumns: 3,
       permissionActions: actions,
     );
   }

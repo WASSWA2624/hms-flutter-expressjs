@@ -1102,13 +1102,12 @@ class _OperationsActionPanel extends ConsumerWidget {
       operationsWorkspaceControllerProvider.notifier,
     );
 
-    return AppSectionPanel(
+    return AppQuickActions(
       title: l10n.operationsActionsTitle,
       leadingIcon: Icons.handyman_outlined,
-      children: <Widget>[
-        AppResponsiveWrap(
-          maxColumns: 2,
-          children: <Widget>[
+      maxColumns: 2,
+      minItemWidth: 180,
+      extraActions: <Widget>[
             AppButton.secondary(
               label: l10n.operationsAssignAction,
               leadingIcon: Icons.assignment_ind_outlined,
@@ -1192,8 +1191,6 @@ class _OperationsActionPanel extends ConsumerWidget {
                 controller: controller,
               ),
             ),
-          ],
-        ),
       ],
     );
   }
