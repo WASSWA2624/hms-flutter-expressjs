@@ -1,1 +1,36 @@
-Now still on the reception, on the reception screen within the table, we have the filters button and then the settings button. So when I click the filters button It open is the advanced filters button, I mean, modal dialog which is okay, but what I want is that I should be able to see all the available filters for a given table. for example, if I'm on the appointment table, then I should see filters for the appointments 'cause I don't think I'm only supposed to see to filter by, so I should, the filters should be should be comprehensive, because I might be looking for a given patient within appointments, I should, I might be interested to filter by a given date range, I might be interested to filter by status, action, so currently right now I only see The, the scheduled things or only related to appointment, but I, it should be extensive, so the filter should be exten-extensive, actually. I should be able to search all the information about that patient, maybe all the information related, so I should be able to zero down to whatever I want for all appointments desk queues all active and activists so I should be able to filter dynamically. I could even search by the patient's phone number, by age, I sh I should be able to maybe apply multiple filters for a given patient and so on and so forth instead of just having only one parameter within the filters. So that should be that should be it. Then also for the, for the table settings, I should be able to adjust to show all the different, to, to see all the different table settings, filters so on and so on and so forth instead of It being basic, so this adjustment needs to be done for the end, for all the tables within the reception module, and maybe if possible from the table's component that is already implemented so that we have a comprehensive, we have comprehensive filters, we have comprehensive filters. So by default, the search bar, the search bar should be searched globally but the, the filters will zero down to what the search bar can actually search what it, the, when the search bar is typed, what information should be filtered, but the filters should be Should be comprehensive. The key filters buttons should work nicely, and then the apply filters button should also work nicely. But then also there should be a close button, which is actually at the rightmost, at the rightmost side within the advanced filters dialog. then also for the settings, there should be a close button at the rightmost side of the, of the filters, of the, of the, of the The footer of the table settings footer
+# Expand Reception Filters and Table Settings
+
+Make Reception filters and columns section-specific. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Filters and settings are incomplete.
+
+## Requirements
+
+1. Configure Appointments, Desk queue, Active visits, and Payment gate independently using authorized data.
+2. Search all available fields by default. Let users scope search to patient name/ID/phone, record IDs, staff, reason, status/stage, service, or invoice data when present.
+3. Add applicable multi-value filters for status/stage/action, staff/provider, payment/clearance, service/source, demographics, and inclusive scheduled/queued/started date ranges.
+4. Combine filter groups with AND and selections within a group with OR. Apply only through **Apply filters**. **Clear filters** resets pending and applied values; invalid ranges show validation.
+5. Show active-filter count and isolate state by section. Filtered-empty results use the empty state.
+6. List every applicable column in **Table settings**. Keep required columns checked and disabled; persist optional visibility per section; reset section defaults.
+7. Keep title-bar close and add localized **Close** as each dialog footer’s rightmost action. Closing discards pending changes.
+
+## Constraints
+
+- Extend shared components for reusable behavior without regressions.
+- Reuse contracts, localization, authorization, theme tokens, and dialogs; never expose unavailable or unauthorized data.
+- Preserve sorting, accessibility, responsive themes, and loading, error, success, and empty states.
+
+## Acceptance Criteria
+
+- R1–R5: Every section offers combinable filters and scoped search.
+- R6–R7: Columns persist independently; reset and non-applying close work.
+- Test logic, dates, isolation, columns, authorization, semantics, themes, and viewports; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+- `frontend/lib/shared/components/app_search_bar.dart`
+- `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/test/features/reception/`
