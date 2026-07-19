@@ -974,7 +974,8 @@ void main() {
     );
     expect(find.text('Patient name'), findsWidgets);
     expect(find.text('Scheduled'), findsWidgets);
-    expect(find.text('Status'), findsWidgets);
+    expect(find.text('Current step'), findsWidgets);
+    expect(find.text('Next action'), findsWidgets);
 
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
@@ -1007,6 +1008,13 @@ void main() {
         find.widgetWithText(AppButton, 'Start consultation'),
         findsNothing,
       );
+
+      await tester.tap(find.text('Priya Progressed'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FlowActionsDialog), findsOneWidget);
+      expect(find.text('Collect sample'), findsWidgets);
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
 
       final Finder searchField = find.descendant(
         of: find.byType(AppSearchBar),
@@ -1135,6 +1143,9 @@ void main() {
 
       expect(find.text('Penny Payment'), findsOneWidget);
       expect(find.text('Phoebe Pharmacy'), findsOneWidget);
+      expect(find.text('Current step'), findsOneWidget);
+      expect(find.text('Next action'), findsOneWidget);
+      expect(find.text('Billing guidance'), findsNWidgets(2));
       expect(find.textContaining('Laboratory'), findsWidgets);
       expect(find.textContaining('Radiology'), findsWidgets);
       expect(find.textContaining('Pharmacy'), findsWidgets);
@@ -1180,6 +1191,10 @@ void main() {
         find.byKey(
           const ValueKey<String>('receptionPaymentGateReadOnlyDetail'),
         ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('opdWorkflowContextPanel')),
         findsOneWidget,
       );
       expect(find.textContaining('Prescribed medicines'), findsOneWidget);

@@ -693,7 +693,7 @@ class _ReceptionWorkspaceContentState
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientColumn(l10n),
           _receptionScheduledTimeColumn(l10n, locale),
-          _receptionStatusColumn(l10n),
+          _receptionAppointmentCurrentStepColumn(l10n),
           _receptionAppointmentNextActionColumn(l10n),
         ];
       case ReceptionDeskSection.queue:
@@ -714,9 +714,9 @@ class _ReceptionWorkspaceContentState
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientColumn(l10n),
           _receptionPaymentEncounterColumn(l10n),
-          _receptionPaymentServicesColumn(l10n),
-          _receptionPaymentOutstandingColumn(l10n),
           _receptionPaymentGateStatusColumn(l10n),
+          _receptionPaymentNextActionColumn(l10n),
+          _receptionPaymentOutstandingColumn(l10n),
         ];
     }
   }
@@ -758,6 +758,7 @@ class _ReceptionWorkspaceContentState
           _receptionPatientIdColumn(l10n),
           _receptionPatientGenderColumn(l10n),
           _receptionPatientDobColumn(l10n),
+          _receptionPaymentServicesColumn(l10n),
           _receptionPaymentInvoicesColumn(l10n),
         ];
     }
@@ -850,12 +851,12 @@ class _ReceptionWorkspaceContentState
     );
   }
 
-  AppListTableColumn<_ReceptionDeskRow> _receptionStatusColumn(
+  AppListTableColumn<_ReceptionDeskRow> _receptionAppointmentCurrentStepColumn(
     AppLocalizations l10n,
   ) {
     return AppListTableColumn<_ReceptionDeskRow>(
       id: 'status',
-      label: l10n.receptionStatusLabel,
+      label: l10n.receptionCurrentStepLabel,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
         final String? status =
             row.appointment?.status ?? row.queueEntry?.status;
@@ -925,7 +926,7 @@ class _ReceptionWorkspaceContentState
   ) {
     return AppListTableColumn<_ReceptionDeskRow>(
       id: 'status',
-      label: l10n.receptionPaymentStatusLabel,
+      label: l10n.receptionCurrentStepLabel,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
         final ReceptionPaymentGateEntry? entry = row.paymentGateEntry;
         if (entry == null) {
@@ -951,8 +952,15 @@ class _ReceptionWorkspaceContentState
     return AppListTableColumn<_ReceptionDeskRow>(
       id: 'encounter',
       label: l10n.billingEncounterLabel,
-      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-          Text(row.paymentGateEntry?.encounterIdentifier ?? ''),
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final ReceptionPaymentGateEntry? entry = row.paymentGateEntry;
+        return AppListItemText(
+          title: entry?.encounterIdentifier ?? '',
+          subtitle: entry?.services
+              .map((String source) => billingApiLabel(context, source))
+              .join(', '),
+        );
+      },
       sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
           (a.paymentGateEntry?.encounterIdentifier ?? '').compareTo(
             b.paymentGateEntry?.encounterIdentifier ?? '',
@@ -1006,6 +1014,21 @@ class _ReceptionWorkspaceContentState
                 .join(', ') ??
             '',
       ),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPaymentNextActionColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'next_action',
+      label: l10n.opdNextActionFilterLabel,
+      alwaysVisible: true,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+          Text(row.paymentNextActionLabel(l10n)),
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) => a
+          .paymentNextActionLabel(l10n)
+          .compareTo(b.paymentNextActionLabel(l10n)),
     );
   }
 
@@ -1238,7 +1261,7 @@ class _ReceptionWorkspaceContentState
   ) {
     return AppListTableColumn<_ReceptionDeskRow>(
       id: 'next_action',
-      label: l10n.opdActionsColumnLabel,
+      label: l10n.opdNextActionFilterLabel,
       alwaysVisible: true,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
         final OpdAppointment? appointment = row.appointment;
@@ -1627,20 +1650,8 @@ class _ReceptionWorkspaceContentState
       return;
     }
     if (row.queueEntry != null) {
-      final OpdAppointment? linkedAppointment = _findAppointmentForQueueEntry(
-        row.queueEntry!,
-      );
-      if (linkedAppointment != null) {
-        final bool? changed = await showReceptionAppointmentActionsDialog(
-          context: context,
-          appointment: linkedAppointment,
-          workspaceState: widget.state,
-        );
-        if (changed == true && mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-        }
+      if (row.flow != null) {
+        await _openFlowActions(row.flow!);
         return;
       }
       final bool? changed = await showReceptionQueueActionsDialog(
@@ -1657,22 +1668,6 @@ class _ReceptionWorkspaceContentState
     if (row.flow != null) {
       await _openFlowActions(row.flow!);
     }
-  }
-
-  OpdAppointment? _findAppointmentForQueueEntry(OpdQueueEntry entry) {
-    final String? appointmentId = entry.appointmentId?.trim();
-    if (appointmentId == null || appointmentId.isEmpty) {
-      return null;
-    }
-    final String needle = appointmentId.toLowerCase();
-    for (final OpdAppointment appointment in widget.state.appointments.items) {
-      if (appointment.id.toLowerCase() == needle ||
-          appointment.apiId.toLowerCase() == needle ||
-          (appointment.publicId ?? '').toLowerCase() == needle) {
-        return appointment;
-      }
-    }
-    return null;
   }
 
   Future<void> _openRegisterPatient() async {
@@ -1914,6 +1909,10 @@ final class _ReceptionDeskRow {
     );
   }
 
+  String paymentNextActionLabel(AppLocalizations l10n) {
+    return paymentGateEntry == null ? '' : l10n.receptionBillingGuidanceTitle;
+  }
+
   DateTime? get time =>
       appointment?.scheduledStart ?? queueEntry?.queuedAt ?? flow?.startedAt;
 
@@ -1925,7 +1924,7 @@ final class _ReceptionDeskRow {
             : _receptionAppointmentNextActionLabelStatic(l10n, appointment!),
       ReceptionDeskSection.queue => queueNextActionLabel(l10n),
       ReceptionDeskSection.activeVisits => flowNextActionLabel(l10n),
-      ReceptionDeskSection.paymentGate => null,
+      ReceptionDeskSection.paymentGate => paymentNextActionLabel(l10n),
     };
   }
 
@@ -2182,6 +2181,7 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Locale locale = Localizations.localeOf(context);
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
     return InkWell(
@@ -2206,16 +2206,51 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
               ),
             ],
             SizedBox(height: theme.spacing.xs),
-            _ReceptionDeskMobileStatus(section: section, row: row),
+            _ReceptionDeskMobileWorkflowField(
+              label: l10n.receptionCurrentStepLabel,
+              child: _ReceptionDeskMobileStatus(section: section, row: row),
+            ),
             SizedBox(height: theme.spacing.sm),
-            _ReceptionDeskMobileNextAction(
-              section: section,
-              row: row,
-              onOpenDetail: onOpenDetail,
+            _ReceptionDeskMobileWorkflowField(
+              label: l10n.opdNextActionFilterLabel,
+              child: _ReceptionDeskMobileNextAction(
+                section: section,
+                row: row,
+                onOpenDetail: onOpenDetail,
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ReceptionDeskMobileWorkflowField extends StatelessWidget {
+  const _ReceptionDeskMobileWorkflowField({
+    required this.label,
+    required this.child,
+  });
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        child,
+      ],
     );
   }
 }
@@ -2326,18 +2361,27 @@ class _ReceptionDeskMobileNextAction extends StatelessWidget {
         if (entry == null) {
           return const SizedBox.shrink();
         }
-        return Text(
-          <String>[
-            entry.services
-                .map((String source) => billingApiLabel(context, source))
-                .join(', '),
-            entry.outstandingByCurrency.entries
-                .map(
-                  (MapEntry<String, num> total) =>
-                      billingMoney(context, total.value, total.key),
-                )
-                .join(' · '),
-          ].where((String value) => value.isNotEmpty).join(' · '),
+        final ThemeData theme = Theme.of(context);
+        final String summary = <String>[
+          entry.services
+              .map((String source) => billingApiLabel(context, source))
+              .join(', '),
+          entry.outstandingByCurrency.entries
+              .map(
+                (MapEntry<String, num> total) =>
+                    billingMoney(context, total.value, total.key),
+              )
+              .join(' · '),
+        ].where((String value) => value.isNotEmpty).join(' · ');
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(row.paymentNextActionLabel(l10n)),
+            if (summary.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(summary, style: theme.textTheme.bodySmall),
+            ],
+          ],
         );
     }
   }

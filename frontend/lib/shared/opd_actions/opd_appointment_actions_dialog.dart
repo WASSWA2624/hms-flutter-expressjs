@@ -10,6 +10,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
     show opdFrontDeskActionRequirement;
@@ -97,6 +99,13 @@ class _OpdAppointmentActionsDialogState
         !terminal && status != 'IN_PROGRESS' && status != 'COMPLETED';
     final bool canReschedule = !terminal;
     final bool canCancelAppointment = !terminal && status != 'CANCELLED';
+    final String nextAction = canCheckIn
+        ? l10n.opdCheckInAction
+        : canQueue
+        ? l10n.opdQueueAction
+        : canReschedule
+        ? l10n.opdRescheduleAction
+        : '';
 
     return AppDialog(
       title: Text(l10n.opdAppointmentActionsTitle),
@@ -113,26 +122,24 @@ class _OpdAppointmentActionsDialogState
               context: context,
               failure: _failure!,
             ),
-          AppTriageSummaryPanel(
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.opdPatientColumnLabel,
-                value: widget.appointment.displayTitle,
-              ),
-              AppInfoTileData(
-                label: l10n.opdStatusColumnLabel,
-                value: opdStageDisplayLabel(
-                  l10n,
-                  widget.appointment.status ?? '',
-                ),
-              ),
-              AppInfoTileData(
+          OpdWorkflowContextPanel(
+            patientName: widget.appointment.displayTitle,
+            patientNumber: widget.appointment.patientIdentifier ?? '',
+            currentStep: opdStageDisplayLabel(
+              l10n,
+              widget.appointment.status ?? '',
+            ),
+            currentStepCode: widget.appointment.status,
+            nextStep: nextAction,
+            expandedFields: <AppWorkspacePatientContextField>[
+              AppWorkspacePatientContextField(
                 label: l10n.opdProviderColumnLabel,
                 value:
                     widget.appointment.providerDisplayName ??
                     l10n.profileUnknownValue,
+                icon: Icons.medical_services_outlined,
               ),
-              AppInfoTileData(
+              AppWorkspacePatientContextField(
                 label: l10n.opdTimeColumnLabel,
                 value: widget.appointment.scheduledStart == null
                     ? l10n.profileUnknownValue
@@ -140,13 +147,14 @@ class _OpdAppointmentActionsDialogState
                         widget.appointment.scheduledStart!,
                         locale,
                       ),
+                icon: Icons.schedule_outlined,
               ),
-              AppInfoTileData(
+              AppWorkspacePatientContextField(
                 label: l10n.opdReasonLabel,
                 value: widget.appointment.reason ?? l10n.profileUnknownValue,
+                icon: Icons.notes_outlined,
               ),
             ],
-            emptyValue: l10n.profileUnknownValue,
           ),
           if (!terminal)
             AppActionSection(

@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_appointment_actions_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_appointment_actions_dialog.dart';
 
 void main() {
@@ -69,6 +70,9 @@ void main() {
         );
     expect(hub.actionRequirement, same(receptionFrontDeskWriteRequirement));
     expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
+    expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
+    expect(find.text('Scheduled'), findsWidgets);
+    expect(find.text('Start OPD encounter'), findsWidgets);
     expect(find.text('Cancel'), findsOneWidget);
   });
 }

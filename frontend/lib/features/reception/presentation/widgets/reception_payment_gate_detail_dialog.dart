@@ -7,6 +7,7 @@ import 'package:hosspi_hms/features/reception/domain/entities/reception_entities
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 
 Future<void> showReceptionPaymentGateDetailDialog({
   required BuildContext context,
@@ -39,11 +40,12 @@ class _ReceptionPaymentGateDetailDialog extends StatelessWidget {
         key: const ValueKey<String>('receptionPaymentGateReadOnlyDetail'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppPatientDetails(
+          OpdWorkflowContextPanel(
             patientName: entry.patientName,
             patientNumber: entry.patientIdentifier ?? '',
-            patientNumberLabel: context.l10n.billingPatientIdColumn,
-            showAvatar: false,
+            currentStep: billingClearanceLabel(context, entry.clearanceState),
+            currentStepCode: entry.clearanceState.name,
+            nextStep: context.l10n.receptionBillingGuidanceTitle,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: context.l10n.billingEncounterLabel,

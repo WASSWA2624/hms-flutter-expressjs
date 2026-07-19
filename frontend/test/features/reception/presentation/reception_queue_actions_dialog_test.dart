@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/reception/presentation/widgets/reception_que
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart';
 
 void main() {
@@ -42,10 +43,11 @@ void main() {
     expect(dialog.pinActionsToBottom, isTrue);
     expect(dialog.actions, hasLength(1));
     expect(find.byType(AppActionSection), findsOneWidget);
+    expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
     expect(find.text('Prioritize'), findsOneWidget);
     expect(find.text('Move'), findsOneWidget);
-    expect(find.text('Start consultation'), findsOneWidget);
+    expect(find.text('Start consultation'), findsWidgets);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
@@ -61,6 +63,7 @@ void main() {
     expect(find.byType(AppActionSection), findsNothing);
     expect(find.text('Prioritize'), findsNothing);
     expect(find.text('Move'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
     expect(find.text('Start consultation'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
   });
@@ -82,7 +85,8 @@ void main() {
 
     expect(find.text('Prioritize'), findsNothing);
     expect(find.text('Move'), findsNothing);
-    expect(find.text('Start consultation'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
+    expect(find.text('Start consultation'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });
 

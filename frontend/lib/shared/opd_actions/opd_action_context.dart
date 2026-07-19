@@ -7,9 +7,104 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_info_tile.dart';
+import 'package:hosspi_hms/shared/components/app_patient_details.dart';
+import 'package:hosspi_hms/shared/components/app_workflow_stepper.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
+
+/// Shared patient identity and completed/current/next workflow context used by
+/// appointment, queue, and encounter action hubs.
+class OpdWorkflowContextPanel extends StatelessWidget {
+  const OpdWorkflowContextPanel({
+    required this.patientName,
+    required this.patientNumber,
+    required this.currentStep,
+    this.currentStepCode,
+    this.nextStep,
+    this.completedSteps = const <String>[],
+    this.expandedFields = const <AppWorkspacePatientContextField>[],
+    this.expandedChild,
+    this.showTitle = true,
+    super.key,
+  });
+
+  final String patientName;
+  final String patientNumber;
+  final String currentStep;
+  final String? currentStepCode;
+  final String? nextStep;
+  final List<String> completedSteps;
+  final List<AppWorkspacePatientContextField> expandedFields;
+  final Widget? expandedChild;
+  final bool showTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String normalizedCurrent = currentStep.trim();
+    final String normalizedNext = nextStep?.trim() ?? '';
+    final List<String> completed = <String>[
+      for (final String step in completedSteps)
+        if (step.trim().isNotEmpty && step.trim() != normalizedCurrent)
+          step.trim(),
+    ];
+    final List<AppWorkflowStepItem> steps = <AppWorkflowStepItem>[
+      for (var index = 0; index < completed.length; index += 1)
+        AppWorkflowStepItem(
+          id: 'completed-$index',
+          label: completed[index],
+          state: AppWorkflowStepState.completed,
+        ),
+      if (normalizedCurrent.isNotEmpty)
+        AppWorkflowStepItem(
+          id: 'current',
+          label: normalizedCurrent,
+          description: l10n.receptionCurrentStepLabel,
+          state: AppWorkflowStepState.current,
+        ),
+      if (normalizedNext.isNotEmpty && normalizedNext != normalizedCurrent)
+        AppWorkflowStepItem(
+          id: 'next',
+          label: normalizedNext,
+          description: l10n.opdNextActionFilterLabel,
+          state: AppWorkflowStepState.upcoming,
+        ),
+    ];
+
+    return AppSectionPanel(
+      key: const ValueKey<String>('opdWorkflowContextPanel'),
+      title: showTitle ? l10n.opdEncounterContextTitle : null,
+      density: AppContentPanelDensity.compact,
+      children: <Widget>[
+        AppPatientDetails(
+          patientName: patientName,
+          patientNumber: patientNumber,
+          patientNumberLabel: l10n.opdPatientIdLabel,
+          status: normalizedCurrent.isEmpty
+              ? null
+              : AppWorkspaceStatus(
+                  label: normalizedCurrent,
+                  tone: opdStageStatusTone(currentStepCode),
+                ),
+          expandedFields: expandedFields,
+          expandedChild: expandedChild,
+          showAvatar: false,
+          semanticLabel: patientName,
+          persistExpandPreference: false,
+        ),
+        if (steps.isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          AppWorkflowStepper(
+            steps: steps,
+            semanticLabel: l10n.opdVisitJourneyLabel,
+          ),
+        ],
+      ],
+    );
+  }
+}
 
 class OpdActionContextPanel extends StatelessWidget {
   const OpdActionContextPanel({
@@ -26,7 +121,6 @@ class OpdActionContextPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final List<OpdEncounterSummaryPair> pairs = buildOpdEncounterSummaryPairs(
       l10n: l10n,
       flow: flow,
@@ -39,21 +133,39 @@ class OpdActionContextPanel extends StatelessWidget {
       detail: detail,
     );
 
-    return AppSectionPanel(
-      title: showTitle ? l10n.opdEncounterContextTitle : null,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        OpdEncounterSummaryRow(pairs: pairs),
-        if (journeySteps.isNotEmpty)
-          Padding(
-            padding: EdgeInsets.only(top: theme.spacing.sm),
-            child: _OpdVisitJourneyTrail(
-              label: l10n.opdVisitJourneyLabel,
-              steps: journeySteps,
-              currentStageCode: flow.displayCode ?? flow.stage,
-            ),
-          ),
-      ],
+    final String currentStep = opdStatusDisplayLabel(l10n, flow);
+    final String nextStep = opdNextStepDisplayLabel(
+      l10n,
+      flow.displayNextStep ?? flow.nextStep,
+    );
+    final List<OpdEncounterSummaryPair> expandedPairs = pairs
+        .where(
+          (OpdEncounterSummaryPair pair) =>
+              pair.label != l10n.opdPatientColumnLabel &&
+              pair.label != l10n.opdPatientIdLabel &&
+              pair.label != l10n.opdCurrentStageLabel &&
+              pair.label != l10n.opdNextStepColumnLabel &&
+              (pair.label != l10n.opdEncounterIdLabel ||
+                  (flow.publicId?.trim().isNotEmpty ?? false)),
+        )
+        .toList(growable: false);
+
+    return OpdWorkflowContextPanel(
+      patientName:
+          _firstNonEmpty(<String?>[
+            flow.patientDisplayName,
+            flow.displayTitle,
+          ]) ??
+          l10n.profileUnknownValue,
+      patientNumber: _firstNonEmpty(<String?>[flow.patientIdentifier]) ?? '',
+      currentStep: currentStep,
+      currentStepCode: flow.displayCode ?? flow.stage,
+      nextStep: nextStep,
+      completedSteps: journeySteps,
+      expandedChild: expandedPairs.isEmpty
+          ? null
+          : OpdEncounterSummaryRow(pairs: expandedPairs),
+      showTitle: showTitle,
     );
   }
 }

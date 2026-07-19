@@ -14,6 +14,8 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
     show opdFrontDeskActionRequirement;
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
@@ -28,10 +30,8 @@ Future<bool?> showQueueActionsDialog({
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => QueueActionsDialog(
-      entry: entry,
-      actionRequirement: actionRequirement,
-    ),
+    builder: (_) =>
+        QueueActionsDialog(entry: entry, actionRequirement: actionRequirement),
   );
 }
 
@@ -74,28 +74,31 @@ class QueueActionsDialog extends ConsumerWidget {
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          AppTriageSummaryPanel(
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.opdPatientColumnLabel,
-                value: entry.displayTitle,
-              ),
-              AppInfoTileData(
-                label: l10n.opdQueueStatusLabel,
-                value: opdStageDisplayLabel(l10n, entry.status),
-              ),
-              AppInfoTileData(
+          OpdWorkflowContextPanel(
+            patientName: entry.displayTitle,
+            patientNumber: entry.patientIdentifier ?? '',
+            currentStep: opdStageDisplayLabel(l10n, entry.status),
+            currentStepCode: entry.status,
+            nextStep: terminal ? null : l10n.opdStartConsultationAction,
+            expandedFields: <AppWorkspacePatientContextField>[
+              AppWorkspacePatientContextField(
                 label: l10n.opdProviderColumnLabel,
                 value: entry.providerDisplayName ?? l10n.profileUnknownValue,
+                icon: Icons.medical_services_outlined,
               ),
-              AppInfoTileData(
+              AppWorkspacePatientContextField(
                 label: l10n.opdTimeColumnLabel,
                 value: entry.queuedAt == null
                     ? l10n.profileUnknownValue
                     : AppFormatters.dateTime(entry.queuedAt!, locale),
+                icon: Icons.schedule_outlined,
+              ),
+              AppWorkspacePatientContextField(
+                label: l10n.opdReasonLabel,
+                value: entry.appointmentReason ?? l10n.profileUnknownValue,
+                icon: Icons.notes_outlined,
               ),
             ],
-            emptyValue: l10n.profileUnknownValue,
           ),
           if (!terminal)
             AppActionSection(
