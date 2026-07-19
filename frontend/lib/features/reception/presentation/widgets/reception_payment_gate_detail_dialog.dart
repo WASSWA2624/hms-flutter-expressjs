@@ -45,6 +45,7 @@ class _ReceptionPaymentGateDetailDialog extends StatelessWidget {
             patientNumber: entry.patientIdentifier ?? '',
             currentStep: billingClearanceLabel(context, entry.clearanceState),
             currentStepCode: entry.clearanceState.name,
+            currentStepTone: billingClearanceTone(entry.clearanceState),
             nextStep: context.l10n.receptionBillingGuidanceTitle,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(

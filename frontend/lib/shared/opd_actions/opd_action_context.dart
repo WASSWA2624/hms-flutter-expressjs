@@ -21,6 +21,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
     required this.patientNumber,
     required this.currentStep,
     this.currentStepCode,
+    this.currentStepTone,
     this.nextStep,
     this.completedSteps = const <String>[],
     this.expandedFields = const <AppWorkspacePatientContextField>[],
@@ -33,6 +34,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
   final String patientNumber;
   final String currentStep;
   final String? currentStepCode;
+  final AppWorkspaceStatusTone? currentStepTone;
   final String? nextStep;
   final List<String> completedSteps;
   final List<AppWorkspacePatientContextField> expandedFields;
@@ -86,7 +88,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
               ? null
               : AppWorkspaceStatus(
                   label: normalizedCurrent,
-                  tone: opdStageStatusTone(currentStepCode),
+                  tone: currentStepTone ?? opdStageStatusTone(currentStepCode),
                 ),
           expandedFields: expandedFields,
           expandedChild: expandedChild,
@@ -411,163 +413,6 @@ class _OpdEncounterSummaryTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _OpdVisitJourneyTrail extends StatelessWidget {
-  const _OpdVisitJourneyTrail({
-    required this.label,
-    required this.steps,
-    required this.currentStageCode,
-  });
-
-  final String label;
-  final List<String> steps;
-  final String? currentStageCode;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final AppWorkspaceStatusTone currentTone = opdStageStatusTone(
-      currentStageCode,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            for (int index = 0; index < steps.length; index++) ...<Widget>[
-              if (index > 0)
-                Icon(
-                  Icons.arrow_forward,
-                  size: 14,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              _OpdJourneyStepChip(
-                label: steps[index],
-                tone: index == steps.length - 1
-                    ? currentTone
-                    : AppWorkspaceStatusTone.neutral,
-                emphasized: index == steps.length - 1,
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _OpdJourneyStepChip extends StatelessWidget {
-  const _OpdJourneyStepChip({
-    required this.label,
-    required this.tone,
-    required this.emphasized,
-  });
-
-  final String label;
-  final AppWorkspaceStatusTone tone;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final AppStatusColors statusColors = theme.statusColors;
-    final _JourneyChipColors colors = _journeyChipColors(
-      theme,
-      statusColors,
-      tone,
-      emphasized: emphasized,
-    );
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: colors.border),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: colors.foreground,
-            fontWeight: emphasized ? FontWeight.w700 : FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-@immutable
-final class _JourneyChipColors {
-  const _JourneyChipColors({
-    required this.background,
-    required this.foreground,
-    required this.border,
-  });
-
-  final Color background;
-  final Color foreground;
-  final Color border;
-}
-
-_JourneyChipColors _journeyChipColors(
-  ThemeData theme,
-  AppStatusColors statusColors,
-  AppWorkspaceStatusTone tone, {
-  required bool emphasized,
-}) {
-  if (!emphasized) {
-    return _JourneyChipColors(
-      background: theme.colorScheme.surfaceContainerHighest,
-      foreground: theme.colorScheme.onSurfaceVariant,
-      border: theme.colorScheme.outlineVariant,
-    );
-  }
-
-  return switch (tone) {
-    AppWorkspaceStatusTone.success => _JourneyChipColors(
-      background: statusColors.successContainer,
-      foreground: statusColors.onSuccessContainer,
-      border: statusColors.success,
-    ),
-    AppWorkspaceStatusTone.warning => _JourneyChipColors(
-      background: statusColors.warningContainer,
-      foreground: statusColors.onWarningContainer,
-      border: statusColors.warning,
-    ),
-    AppWorkspaceStatusTone.error => _JourneyChipColors(
-      background: statusColors.errorContainer,
-      foreground: statusColors.onErrorContainer,
-      border: statusColors.error,
-    ),
-    AppWorkspaceStatusTone.info => _JourneyChipColors(
-      background: statusColors.infoContainer,
-      foreground: statusColors.onInfoContainer,
-      border: statusColors.info,
-    ),
-    AppWorkspaceStatusTone.neutral => _JourneyChipColors(
-      background: theme.colorScheme.surfaceContainerHighest,
-      foreground: theme.colorScheme.onSurfaceVariant,
-      border: theme.colorScheme.outlineVariant,
-    ),
-  };
 }
 
 String _timelineStepLabel(AppLocalizations l10n, OpdTimelineItem item) {

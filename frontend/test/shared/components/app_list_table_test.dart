@@ -97,6 +97,37 @@ void main() {
     expect(find.text('Alpha'), findsOneWidget);
   });
 
+  testWidgets('AppListTable desktop rows activate from the keyboard', (
+    WidgetTester tester,
+  ) async {
+    _RowItem? selectedItem;
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+          onRowSelected: (_RowItem item) {
+            selectedItem = item;
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+
+    expect(selectedItem, items.first);
+  });
+
   testWidgets('AppListTable uses a compact table on tablet screens', (
     WidgetTester tester,
   ) async {

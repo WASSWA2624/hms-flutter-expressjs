@@ -2266,13 +2266,17 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             },
       cells: <DataCell>[
         DataCell(
-          Align(
-            child: SizedBox(
-              width: _rowNumberColumnWidth,
-              child: Text(
-                (widget.rowNumberOffset + index + 1).toString(),
-                textAlign: TextAlign.center,
-                style: _resolveRowNumberStyle(Theme.of(context)),
+          _DesktopRowKeyboardActivator(
+            enabled: widget.onRowSelected != null,
+            onActivate: () => widget.onRowSelected?.call(item),
+            child: Align(
+              child: SizedBox(
+                width: _rowNumberColumnWidth,
+                child: Text(
+                  (widget.rowNumberOffset + index + 1).toString(),
+                  textAlign: TextAlign.center,
+                  style: _resolveRowNumberStyle(Theme.of(context)),
+                ),
               ),
             ),
           ),
@@ -2378,6 +2382,69 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       }
       return color;
     });
+  }
+}
+
+class _DesktopRowKeyboardActivator extends StatefulWidget {
+  const _DesktopRowKeyboardActivator({
+    required this.enabled,
+    required this.onActivate,
+    required this.child,
+  });
+
+  final bool enabled;
+  final VoidCallback onActivate;
+  final Widget child;
+
+  @override
+  State<_DesktopRowKeyboardActivator> createState() =>
+      _DesktopRowKeyboardActivatorState();
+}
+
+class _DesktopRowKeyboardActivatorState
+    extends State<_DesktopRowKeyboardActivator> {
+  static const Map<ShortcutActivator, Intent> _shortcuts =
+      <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+      };
+
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return FocusableActionDetector(
+      enabled: widget.enabled,
+      shortcuts: _shortcuts,
+      actions: <Type, Action<Intent>>{
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            widget.onActivate();
+            return null;
+          },
+        ),
+      },
+      onShowFocusHighlight: (bool value) {
+        if (_focused != value) {
+          setState(() => _focused = value);
+        }
+      },
+      child: Semantics(
+        button: widget.enabled,
+        enabled: widget.enabled,
+        onTap: widget.enabled ? widget.onActivate : null,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: _focused
+                ? Border.all(color: theme.colorScheme.primary)
+                : null,
+            borderRadius: BorderRadius.circular(theme.radius.xs),
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
   }
 }
 

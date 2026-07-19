@@ -9826,6 +9826,72 @@ abstract class AppLocalizations {
   /// **'Review matches before creating another record.'**
   String get patientsDuplicateWarningBody;
 
+  /// Duplicate field comparison exact match status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Match'**
+  String get patientsDuplicateStatusMatchLabel;
+
+  /// Duplicate field comparison similar status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar'**
+  String get patientsDuplicateStatusSimilarLabel;
+
+  /// Duplicate field comparison conflict status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict'**
+  String get patientsDuplicateStatusConflictLabel;
+
+  /// Duplicate comparison label for the value being registered.
+  ///
+  /// In en, this message translates to:
+  /// **'Your entry'**
+  String get patientsDuplicateYourEntryLabel;
+
+  /// Duplicate comparison label for the stored patient value.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing record'**
+  String get patientsDuplicateExistingRecordLabel;
+
+  /// Duplicate candidate strong classification label.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong match'**
+  String get patientsDuplicateClassificationStrongLabel;
+
+  /// Duplicate candidate possible classification label.
+  ///
+  /// In en, this message translates to:
+  /// **'Possible match'**
+  String get patientsDuplicateClassificationPossibleLabel;
+
+  /// Duplicate candidate review classification label.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs review'**
+  String get patientsDuplicateClassificationReviewLabel;
+
+  /// Duplicate candidate low similarity classification label.
+  ///
+  /// In en, this message translates to:
+  /// **'Low similarity'**
+  String get patientsDuplicateClassificationLowLabel;
+
+  /// Duplicate field fuzzy similarity percentage label.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% similar'**
+  String patientsDuplicateSimilarityLabel(int percent);
+
+  /// Count of duplicate candidates hidden from the warning panel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more possible match not shown} other{{count} more possible matches not shown}}'**
+  String patientsDuplicateMoreMatchesLabel(int count);
+
   /// Patient duplicate review dialog title.
   ///
   /// In en, this message translates to:

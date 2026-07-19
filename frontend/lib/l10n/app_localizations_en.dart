@@ -5134,6 +5134,49 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review matches before creating another record.';
 
   @override
+  String get patientsDuplicateStatusMatchLabel => 'Match';
+
+  @override
+  String get patientsDuplicateStatusSimilarLabel => 'Similar';
+
+  @override
+  String get patientsDuplicateStatusConflictLabel => 'Conflict';
+
+  @override
+  String get patientsDuplicateYourEntryLabel => 'Your entry';
+
+  @override
+  String get patientsDuplicateExistingRecordLabel => 'Existing record';
+
+  @override
+  String get patientsDuplicateClassificationStrongLabel => 'Strong match';
+
+  @override
+  String get patientsDuplicateClassificationPossibleLabel => 'Possible match';
+
+  @override
+  String get patientsDuplicateClassificationReviewLabel => 'Needs review';
+
+  @override
+  String get patientsDuplicateClassificationLowLabel => 'Low similarity';
+
+  @override
+  String patientsDuplicateSimilarityLabel(int percent) {
+    return '$percent% similar';
+  }
+
+  @override
+  String patientsDuplicateMoreMatchesLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more possible matches not shown',
+      one: '1 more possible match not shown',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get patientsDuplicateReviewTitle => 'Duplicate review';
 
   @override

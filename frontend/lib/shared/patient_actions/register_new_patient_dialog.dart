@@ -5,12 +5,14 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
+import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_gender_field.dart';
@@ -663,13 +665,19 @@ class PatientDuplicateWarningPanel extends StatelessWidget {
     super.key,
   });
 
+  static const int _maxVisibleCandidates = 3;
+
   final List<PatientDuplicateCandidate> duplicates;
   final ValueChanged<Patient>? onUseExistingPatient;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final Iterable<PatientDuplicateCandidate> visible = duplicates.take(3);
+    final ThemeData theme = Theme.of(context);
+    final List<PatientDuplicateCandidate> visible = duplicates
+        .take(_maxVisibleCandidates)
+        .toList(growable: false);
+    final int hiddenCount = duplicates.length - visible.length;
 
     return AppFormInformationBanner(
       title: l10n.patientsDuplicateWarningTitle,
@@ -678,17 +686,25 @@ class PatientDuplicateWarningPanel extends StatelessWidget {
       icon: AppActionIcons.copy,
       children: <Widget>[
         for (final PatientDuplicateCandidate duplicate in visible)
-          _DuplicateCandidateLine(
+          _DuplicateCandidateCard(
             duplicate: duplicate,
             onUseExistingPatient: onUseExistingPatient,
+          ),
+        if (hiddenCount > 0)
+          Text(
+            l10n.patientsDuplicateMoreMatchesLabel(hiddenCount),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.statusColors.onWarningContainer,
+              fontStyle: FontStyle.italic,
+            ),
           ),
       ],
     );
   }
 }
 
-class _DuplicateCandidateLine extends StatelessWidget {
-  const _DuplicateCandidateLine({
+class _DuplicateCandidateCard extends StatelessWidget {
+  const _DuplicateCandidateCard({
     required this.duplicate,
     this.onUseExistingPatient,
   });
@@ -702,66 +718,431 @@ class _DuplicateCandidateLine extends StatelessWidget {
         duplicate.secondaryPatient ??
         duplicate.candidatePatient ??
         duplicate.primaryPatient;
-    final ThemeData theme = Theme.of(context);
-
     if (patient == null) {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.xs),
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final _DuplicateSeverityStyle severity = _duplicateSeverityStyle(
+      theme,
+      l10n,
+      duplicate.classification,
+    );
+
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      backgroundColor: theme.colorScheme.surface,
+      borderColor: severity.accent,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                context.l10n.patientsDuplicateScoreLabel(
-                  duplicate.confidenceScore,
-                ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Text(
-                  _joinDisplay(<String?>[
-                    patient.effectiveDisplayName,
-                    patient.effectiveIdentifier,
-                    AppDisplay.apiLabel(duplicate.classification),
-                  ]),
-                ),
-              ),
-            ],
+          _CandidateCardHeader(
+            patient: patient,
+            duplicate: duplicate,
+            severity: severity,
           ),
           if (duplicate.fieldComparisons.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            for (final PatientDuplicateFieldComparison comparison
-                in duplicate.fieldComparisons)
-              Text(
-                '${AppDisplay.apiLabel(comparison.field)}: '
-                '${comparison.inputValue} ↔ ${comparison.candidateValue} '
-                '(${AppDisplay.apiLabel(comparison.status)})',
-                style: theme.textTheme.bodySmall,
+            Divider(height: theme.spacing.lg),
+            for (
+              int index = 0;
+              index < duplicate.fieldComparisons.length;
+              index += 1
+            ) ...<Widget>[
+              if (index > 0) SizedBox(height: theme.spacing.sm),
+              _FieldComparisonRow(
+                comparison: duplicate.fieldComparisons[index],
               ),
+            ],
           ] else if (duplicate.matchReasons.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            Text(
-              duplicate.matchReasons.map(AppDisplay.apiLabel).join(', '),
-              style: theme.textTheme.bodySmall,
+            Divider(height: theme.spacing.lg),
+            Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                for (final String reason in duplicate.matchReasons)
+                  _MatchReasonChip(label: AppDisplay.apiLabel(reason)),
+              ],
             ),
           ],
           if (onUseExistingPatient != null) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            AppButton.secondary(
-              label: context.l10n.patientsUseExistingPatientAction,
-              leadingIcon: AppActionIcons.person,
-              onPressed: () => onUseExistingPatient!(patient),
+            SizedBox(height: theme.spacing.sm),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: AppButton.secondary(
+                label: l10n.patientsUseExistingPatientAction,
+                leadingIcon: AppActionIcons.person,
+                onPressed: () => onUseExistingPatient!(patient),
+              ),
             ),
           ],
         ],
       ),
     );
   }
+}
+
+class _CandidateCardHeader extends StatelessWidget {
+  const _CandidateCardHeader({
+    required this.patient,
+    required this.duplicate,
+    required this.severity,
+  });
+
+  final Patient patient;
+  final PatientDuplicateCandidate duplicate;
+  final _DuplicateSeverityStyle severity;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final String summary = _joinDisplay(<String?>[
+      patient.effectiveIdentifier,
+      _dateOfBirthLabel(context, patient.dateOfBirth),
+      AppDisplay.apiLabel(patient.gender),
+      patient.primaryPhone,
+      patient.primaryEmail,
+    ], separator: ' · ');
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Icon(
+          AppActionIcons.person,
+          size: theme.appTokens.listIconSize,
+          color: severity.accent,
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                patient.effectiveDisplayName,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (summary.isNotEmpty) ...<Widget>[
+                SizedBox(height: theme.spacing.xs / 2),
+                Text(
+                  summary,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            _DuplicateScoreBadge(
+              label: l10n.patientsDuplicateScoreLabel(
+                duplicate.confidenceScore,
+              ),
+              severity: severity,
+            ),
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              severity.label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: severity.accent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DuplicateScoreBadge extends StatelessWidget {
+  const _DuplicateScoreBadge({required this.label, required this.severity});
+
+  final String label;
+  final _DuplicateSeverityStyle severity;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs / 2,
+      ),
+      decoration: BoxDecoration(
+        color: severity.container,
+        borderRadius: BorderRadius.circular(theme.radius.full),
+        border: Border.all(color: severity.accent),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: severity.onContainer,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _FieldComparisonRow extends StatelessWidget {
+  const _FieldComparisonRow({required this.comparison});
+
+  final PatientDuplicateFieldComparison comparison;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final _ComparisonStatusStyle status = _comparisonStatusStyle(
+      theme,
+      l10n,
+      comparison,
+    );
+    final String inputValue = _comparisonValueLabel(
+      context,
+      comparison.field,
+      comparison.inputValue,
+    );
+    final String candidateValue = _comparisonValueLabel(
+      context,
+      comparison.field,
+      comparison.candidateValue,
+    );
+    final bool valuesAgree = status.isMatch || inputValue == candidateValue;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Icon(
+          status.icon,
+          size: theme.appTokens.listIconSize,
+          color: status.color,
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      _comparisonFieldLabel(l10n, comparison.field),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    status.label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: status.color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: theme.spacing.xs / 2),
+              if (valuesAgree)
+                Text(candidateValue, style: theme.textTheme.bodySmall)
+              else ...<Widget>[
+                Text(
+                  '${l10n.patientsDuplicateYourEntryLabel}: $inputValue',
+                  style: theme.textTheme.bodySmall,
+                ),
+                Text(
+                  '${l10n.patientsDuplicateExistingRecordLabel}: '
+                  '$candidateValue',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: status.color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MatchReasonChip extends StatelessWidget {
+  const _MatchReasonChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs / 2,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(theme.radius.full),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+@immutable
+final class _DuplicateSeverityStyle {
+  const _DuplicateSeverityStyle({
+    required this.label,
+    required this.accent,
+    required this.container,
+    required this.onContainer,
+  });
+
+  final String label;
+  final Color accent;
+  final Color container;
+  final Color onContainer;
+}
+
+_DuplicateSeverityStyle _duplicateSeverityStyle(
+  ThemeData theme,
+  AppLocalizations l10n,
+  String classification,
+) {
+  final AppStatusColors statusColors = theme.statusColors;
+  final String normalized = classification.trim().toUpperCase();
+  if (normalized.contains('STRONG')) {
+    return _DuplicateSeverityStyle(
+      label: l10n.patientsDuplicateClassificationStrongLabel,
+      accent: statusColors.error,
+      container: statusColors.errorContainer,
+      onContainer: statusColors.onErrorContainer,
+    );
+  }
+  if (normalized.contains('POSSIBLE') || normalized.contains('MEDIUM')) {
+    return _DuplicateSeverityStyle(
+      label: l10n.patientsDuplicateClassificationPossibleLabel,
+      accent: statusColors.warning,
+      container: statusColors.warningContainer,
+      onContainer: statusColors.onWarningContainer,
+    );
+  }
+  if (normalized.contains('REVIEW')) {
+    return _DuplicateSeverityStyle(
+      label: l10n.patientsDuplicateClassificationReviewLabel,
+      accent: statusColors.info,
+      container: statusColors.infoContainer,
+      onContainer: statusColors.onInfoContainer,
+    );
+  }
+  return _DuplicateSeverityStyle(
+    label: l10n.patientsDuplicateClassificationLowLabel,
+    accent: theme.colorScheme.outline,
+    container: theme.colorScheme.surfaceContainerHighest,
+    onContainer: theme.colorScheme.onSurfaceVariant,
+  );
+}
+
+@immutable
+final class _ComparisonStatusStyle {
+  const _ComparisonStatusStyle({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.isMatch,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool isMatch;
+}
+
+_ComparisonStatusStyle _comparisonStatusStyle(
+  ThemeData theme,
+  AppLocalizations l10n,
+  PatientDuplicateFieldComparison comparison,
+) {
+  final AppStatusColors statusColors = theme.statusColors;
+  final int? similarityPercent = comparison.similarityPercent;
+
+  return switch (comparison.status.trim().toUpperCase()) {
+    'MATCH' => _ComparisonStatusStyle(
+      label: l10n.patientsDuplicateStatusMatchLabel,
+      icon: Icons.check_circle_outline,
+      color: statusColors.success,
+      isMatch: true,
+    ),
+    'SIMILAR' => _ComparisonStatusStyle(
+      label: similarityPercent == null
+          ? l10n.patientsDuplicateStatusSimilarLabel
+          : '${l10n.patientsDuplicateStatusSimilarLabel} · '
+                '${l10n.patientsDuplicateSimilarityLabel(similarityPercent)}',
+      icon: Icons.change_circle_outlined,
+      color: statusColors.warning,
+      isMatch: false,
+    ),
+    'CONFLICT' => _ComparisonStatusStyle(
+      label: l10n.patientsDuplicateStatusConflictLabel,
+      icon: Icons.cancel_outlined,
+      color: statusColors.error,
+      isMatch: false,
+    ),
+    _ => _ComparisonStatusStyle(
+      label: AppDisplay.apiLabel(comparison.status),
+      icon: Icons.info_outline,
+      color: theme.colorScheme.onSurfaceVariant,
+      isMatch: false,
+    ),
+  };
+}
+
+String _comparisonFieldLabel(AppLocalizations l10n, String field) {
+  return switch (field.trim().toUpperCase()) {
+    'NAME' => l10n.patientsNameLabel,
+    'DATE_OF_BIRTH' || 'DOB' => l10n.patientsDobLabel,
+    'GENDER' => l10n.patientsGenderLabel,
+    'PHONE' => l10n.patientsPhoneLabel,
+    'EMAIL' => l10n.patientsEmailLabel,
+    'IDENTIFIER' => l10n.patientsIdentifierLabel,
+    _ => AppDisplay.apiLabel(field),
+  };
+}
+
+String _comparisonValueLabel(BuildContext context, String field, String raw) {
+  final String value = raw.trim();
+  if (value.isEmpty) {
+    return '—';
+  }
+
+  return switch (field.trim().toUpperCase()) {
+    'GENDER' => AppDisplay.apiLabel(value),
+    'DATE_OF_BIRTH' ||
+    'DOB' => _dateOfBirthLabel(context, DateTime.tryParse(value)) ?? value,
+    _ => value,
+  };
+}
+
+String? _dateOfBirthLabel(BuildContext context, DateTime? value) {
+  if (value == null) {
+    return null;
+  }
+  return AppFormatters.mediumDate(value, Localizations.localeOf(context));
 }
 
 Widget _wrapFacilityTooltip({
@@ -788,12 +1169,12 @@ String? _dateOnly(DateTime? value) {
   return value.toIso8601String().split('T').first;
 }
 
-String _joinDisplay(Iterable<String?> values) {
+String _joinDisplay(Iterable<String?> values, {String separator = ' | '}) {
   return values
       .whereType<String>()
       .map((String value) => value.trim())
       .where((String value) => value.isNotEmpty)
-      .join(' | ');
+      .join(separator);
 }
 
 List<AppSelectOption<String>> _identifierTypeSelectOptions(

@@ -6550,6 +6550,60 @@
   "@patientsDuplicateWarningBody": {
     "description": "Patient registration duplicate warning body."
   },
+  "patientsDuplicateStatusMatchLabel": "Match",
+  "@patientsDuplicateStatusMatchLabel": {
+    "description": "Duplicate field comparison exact match status label."
+  },
+  "patientsDuplicateStatusSimilarLabel": "Similar",
+  "@patientsDuplicateStatusSimilarLabel": {
+    "description": "Duplicate field comparison similar status label."
+  },
+  "patientsDuplicateStatusConflictLabel": "Conflict",
+  "@patientsDuplicateStatusConflictLabel": {
+    "description": "Duplicate field comparison conflict status label."
+  },
+  "patientsDuplicateYourEntryLabel": "Your entry",
+  "@patientsDuplicateYourEntryLabel": {
+    "description": "Duplicate comparison label for the value being registered."
+  },
+  "patientsDuplicateExistingRecordLabel": "Existing record",
+  "@patientsDuplicateExistingRecordLabel": {
+    "description": "Duplicate comparison label for the stored patient value."
+  },
+  "patientsDuplicateClassificationStrongLabel": "Strong match",
+  "@patientsDuplicateClassificationStrongLabel": {
+    "description": "Duplicate candidate strong classification label."
+  },
+  "patientsDuplicateClassificationPossibleLabel": "Possible match",
+  "@patientsDuplicateClassificationPossibleLabel": {
+    "description": "Duplicate candidate possible classification label."
+  },
+  "patientsDuplicateClassificationReviewLabel": "Needs review",
+  "@patientsDuplicateClassificationReviewLabel": {
+    "description": "Duplicate candidate review classification label."
+  },
+  "patientsDuplicateClassificationLowLabel": "Low similarity",
+  "@patientsDuplicateClassificationLowLabel": {
+    "description": "Duplicate candidate low similarity classification label."
+  },
+  "patientsDuplicateSimilarityLabel": "{percent}% similar",
+  "@patientsDuplicateSimilarityLabel": {
+    "description": "Duplicate field fuzzy similarity percentage label.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "patientsDuplicateMoreMatchesLabel": "{count, plural, =1{1 more possible match not shown} other{{count} more possible matches not shown}}",
+  "@patientsDuplicateMoreMatchesLabel": {
+    "description": "Count of duplicate candidates hidden from the warning panel.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "patientsDuplicateReviewTitle": "Duplicate review",
   "@patientsDuplicateReviewTitle": {
     "description": "Patient duplicate review dialog title."

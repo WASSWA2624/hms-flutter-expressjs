@@ -226,7 +226,11 @@ void main() {
     await tester.tap(find.widgetWithText(AppButton, 'Register patient'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Phone:'), findsOneWidget);
+    expect(find.text('Phone'), findsOneWidget);
+    expect(find.text('Match'), findsOneWidget);
+    expect(find.text('+256700000000'), findsOneWidget);
+    expect(find.text('Strong match'), findsOneWidget);
+    expect(find.text('88% match'), findsOneWidget);
     await tester.tap(find.widgetWithText(AppButton, 'Use existing patient'));
     await tester.pumpAndSettle();
 

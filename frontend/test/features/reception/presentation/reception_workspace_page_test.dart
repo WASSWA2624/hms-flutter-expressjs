@@ -628,6 +628,14 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    await tester.tap(find.text('Ada Appointment'));
+    await tester.pumpAndSettle();
+    expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('opdWorkflowContextPanel')),
+      findsOneWidget,
+    );
   });
 
   for (final (String name, Size size, ThemeData theme)
@@ -1013,6 +1021,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(FlowActionsDialog), findsOneWidget);
       expect(find.text('Collect sample'), findsWidgets);
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Quinn Queue'));
+      await tester.pumpAndSettle();
+      expect(find.text('QUEUE ACTIONS'), findsOneWidget);
       await tester.tap(find.text('Cancel').last);
       await tester.pumpAndSettle();
 
