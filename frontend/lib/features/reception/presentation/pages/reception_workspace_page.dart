@@ -349,55 +349,23 @@ class _ReceptionWorkspaceContentState
   }
 
   Widget _buildPrimaryAction(AppLocalizations l10n, bool isRefreshing) {
-    return switch (_section) {
-      ReceptionDeskSection.appointments => AppAccessActionGate(
-        requirement: receptionPatientWriteRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.receptionScheduleAppointmentAction,
-            icon: Icons.calendar_month_outlined,
-            enabled: isAllowed && !isRefreshing,
-            isLoading: isAllowed && isRefreshing,
-            tooltip: isAllowed && isRefreshing
-                ? l10n.receptionActionInProgressTooltip
-                : null,
-            onPressed: isAllowed && !isRefreshing
-                ? () => unawaited(_scheduleAppointment())
-                : null,
-          );
-        },
-      ),
-      ReceptionDeskSection.queue ||
-      ReceptionDeskSection.activeVisits => AppAccessActionGate(
-        requirement: receptionPatientWriteRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.receptionRegisterPatientAction,
-            icon: Icons.person_add_alt_1_outlined,
-            enabled: isAllowed && !isRefreshing,
-            isLoading: isAllowed && isRefreshing,
-            tooltip: isAllowed && isRefreshing
-                ? l10n.receptionActionInProgressTooltip
-                : null,
-            onPressed: isAllowed && !isRefreshing
-                ? () => unawaited(_openRegisterPatient())
-                : null,
-          );
-        },
-      ),
-      ReceptionDeskSection.paymentGate => AppAccessActionGate(
-        requirement: receptionBillingWorkspaceRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarPrimary(
-            label: l10n.navigationBillingLabel,
-            icon: Icons.payments_outlined,
-            onPressed: isAllowed
-                ? () => context.go(AppRoutes.billing.location())
-                : null,
-          );
-        },
-      ),
-    };
+    return AppAccessActionGate(
+      requirement: receptionPatientWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: l10n.receptionRegisterPatientAction,
+          icon: Icons.person_add_alt_1_outlined,
+          enabled: isAllowed && !isRefreshing,
+          isLoading: isAllowed && isRefreshing,
+          tooltip: isAllowed && isRefreshing
+              ? l10n.receptionActionInProgressTooltip
+              : null,
+          onPressed: isAllowed && !isRefreshing
+              ? () => unawaited(_openRegisterPatient())
+              : null,
+        );
+      },
+    );
   }
 
   List<Widget> _buildSecondaryActions(
@@ -415,74 +383,52 @@ class _ReceptionWorkspaceContentState
       onPressed: isRefreshing ? null : () => unawaited(_refreshWorkspace()),
     );
 
-    final Widget registerPatientAction = AppAccessActionGate(
+    final Widget scheduleAppointmentAction = AppAccessActionGate(
       requirement: receptionPatientWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarAction(
-          label: l10n.receptionRegisterPatientAction,
-          icon: Icons.person_add_alt_1_outlined,
+          label: l10n.receptionScheduleAppointmentAction,
+          icon: Icons.calendar_month_outlined,
           enabled: isAllowed && !isRefreshing,
           isLoading: isAllowed && isRefreshing,
           tooltip: isAllowed && isRefreshing
               ? l10n.receptionActionInProgressTooltip
               : null,
           onPressed: isAllowed && !isRefreshing
-              ? () => unawaited(_openRegisterPatient())
+              ? () => unawaited(_scheduleAppointment())
               : null,
         );
       },
     );
 
-    return switch (_section) {
-      ReceptionDeskSection.appointments => <Widget>[
-        registerPatientAction,
-        refreshAction,
-        AppAccessActionGate(
-          requirement: receptionPatientRegistryRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppTabToolbarAction(
-              label: l10n.receptionOpenRegistryAction,
-              icon: Icons.badge_outlined,
-              onPressed: isAllowed
-                  ? () => context.go(AppRoutes.patients.location())
-                  : null,
-            );
-          },
-        ),
-      ],
-      ReceptionDeskSection.queue ||
-      ReceptionDeskSection.activeVisits => <Widget>[
-        refreshAction,
-        AppAccessActionGate(
-          requirement: receptionOpdWorkspaceRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppTabToolbarAction(
-              label: l10n.receptionOpenOpdAction,
-              icon: Icons.local_hospital_outlined,
-              onPressed: isAllowed
-                  ? () => context.go(AppRoutes.opd.location())
-                  : null,
-            );
-          },
-        ),
-      ],
-      ReceptionDeskSection.paymentGate => <Widget>[
-        registerPatientAction,
-        refreshAction,
-        AppAccessActionGate(
-          requirement: receptionOpdWorkspaceRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppTabToolbarAction(
-              label: l10n.receptionOpenOpdAction,
-              icon: Icons.local_hospital_outlined,
-              onPressed: isAllowed
-                  ? () => context.go(AppRoutes.opd.location())
-                  : null,
-            );
-          },
-        ),
-      ],
-    };
+    return <Widget>[
+      scheduleAppointmentAction,
+      refreshAction,
+      AppAccessActionGate(
+        requirement: receptionPatientRegistryRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarAction(
+            label: l10n.receptionOpenRegistryAction,
+            icon: Icons.badge_outlined,
+            onPressed: isAllowed
+                ? () => context.go(AppRoutes.patients.location())
+                : null,
+          );
+        },
+      ),
+      AppAccessActionGate(
+        requirement: receptionOpdWorkspaceRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarAction(
+            label: l10n.receptionOpenOpdAction,
+            icon: Icons.local_hospital_outlined,
+            onPressed: isAllowed
+                ? () => context.go(AppRoutes.opd.location())
+                : null,
+          );
+        },
+      ),
+    ];
   }
 
   List<ReceptionDeskSection> _visibleSections() {

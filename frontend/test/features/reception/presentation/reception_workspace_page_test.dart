@@ -34,6 +34,34 @@ const OpdAppointment _appointment = OpdAppointment(
   status: 'SCHEDULED',
 );
 
+const OpdAppointment _newAppointment = OpdAppointment(
+  id: 'appointment-2',
+  publicId: 'APT000002',
+  patientDisplayName: 'Nia New',
+  patientIdentifier: 'PAT-NIA',
+  providerDisplayName: 'Dr New',
+  reason: 'New appointment reason',
+  status: 'NEW',
+);
+
+const OpdAppointment _confirmedAppointment = OpdAppointment(
+  id: 'appointment-3',
+  publicId: 'APT000003',
+  patientDisplayName: 'Connie Confirmed',
+  patientIdentifier: 'PAT-CON',
+  providerDisplayName: 'Dr Confirmed',
+  reason: 'Confirmed appointment reason',
+  status: 'CONFIRMED',
+);
+
+const OpdAppointment _completedAppointment = OpdAppointment(
+  id: 'appointment-4',
+  publicId: 'APT000004',
+  patientDisplayName: 'Cora Completed',
+  patientIdentifier: 'PAT-COM',
+  status: 'COMPLETED',
+);
+
 const OpdQueueEntry _queueEntry = OpdQueueEntry(
   id: 'queue-1',
   publicId: 'QUE000001',
@@ -98,10 +126,15 @@ void _stubWorkspace(_MockOpdRepository repository) {
   when(() => repository.listAppointments(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdAppointment>>.success(
       AppPage<OpdAppointment>(
-        items: const <OpdAppointment>[_appointment],
+        items: const <OpdAppointment>[
+          _appointment,
+          _newAppointment,
+          _confirmedAppointment,
+          _completedAppointment,
+        ],
         request: (invocation.positionalArguments.single as OpdAppointmentQuery)
             .pageRequest,
-        totalItemCount: 1,
+        totalItemCount: 4,
       ),
     ),
   );
@@ -247,34 +280,63 @@ void main() {
     expect(find.text('Register patient'), findsOneWidget);
     expect(find.text('Refresh'), findsOneWidget);
     expect(find.text('Full registry'), findsOneWidget);
-    expect(find.text('Full OPD'), findsNothing);
-  });
-
-  testWidgets('tab selection updates URL and toolbar variants', (
-    WidgetTester tester,
-  ) async {
-    final GoRouter router = await _pumpWorkspace(
-      tester,
-      repository: repository,
-    );
-
-    await tester.tap(find.textContaining('Desk queue').first);
-    await tester.pumpAndSettle();
-    expect(router.state.uri.queryParameters['section'], 'desk-queue');
-    expect(find.text('Quinn Queue'), findsOneWidget);
-    expect(find.text('Register patient'), findsOneWidget);
     expect(find.text('Full OPD'), findsOneWidget);
-    expect(find.text('Full registry'), findsNothing);
-
-    await tester.tap(find.textContaining('Payment gate').first);
-    await tester.pumpAndSettle();
-    expect(router.state.uri.queryParameters['section'], 'payment-gate');
-    expect(find.text('Penny Payment'), findsOneWidget);
-    expect(find.text('Register patient'), findsOneWidget);
-    expect(find.text('Billing'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabToolbarPrimary),
+        matching: find.text('Register patient'),
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('billing action appears only with billing authorization', (
+  testWidgets(
+    'tab selection updates URL and keeps the complete toolbar active',
+    (WidgetTester tester) async {
+      final GoRouter router = await _pumpWorkspace(
+        tester,
+        repository: repository,
+      );
+
+      for (final (String tab, String section) in <(String, String)>[
+        ('Desk queue', 'desk-queue'),
+        ('Active visits', 'active'),
+        ('Payment gate', 'payment-gate'),
+        ('Appointments', 'appointments'),
+      ]) {
+        await tester.tap(find.textContaining(tab).first);
+        await tester.pumpAndSettle();
+
+        expect(router.state.uri.queryParameters['section'], section);
+        expect(find.text('Register patient'), findsOneWidget);
+        expect(find.text('Schedule appointment'), findsOneWidget);
+        expect(find.text('Refresh'), findsOneWidget);
+        expect(find.text('Full registry'), findsOneWidget);
+        expect(find.text('Full OPD'), findsOneWidget);
+        expect(
+          tester
+              .widget<AppTabToolbarPrimary>(find.byType(AppTabToolbarPrimary))
+              .onPressed,
+          isNotNull,
+        );
+        for (final String label in <String>[
+          'Schedule appointment',
+          'Refresh',
+          'Full registry',
+          'Full OPD',
+        ]) {
+          final AppTabToolbarAction action = tester.widget<AppTabToolbarAction>(
+            find.widgetWithText(AppTabToolbarAction, label),
+          );
+          expect(action.enabled, isTrue, reason: '$label on $tab');
+          expect(action.onPressed, isNotNull, reason: '$label on $tab');
+        }
+      }
+    },
+  );
+
+  testWidgets('billing authorization does not replace the reception primary', (
     WidgetTester tester,
   ) async {
     await _pumpWorkspace(
@@ -291,7 +353,15 @@ void main() {
       initialLocation: '/reception?section=payment-gate',
     );
 
-    expect(find.text('Billing'), findsOneWidget);
+    expect(find.text('Billing'), findsNothing);
+    expect(find.text('Register patient'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabToolbarPrimary),
+        matching: find.text('Register patient'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('unauthorized tabs and actions are absent', (
@@ -313,7 +383,87 @@ void main() {
     expect(find.textContaining('Desk queue'), findsNothing);
     expect(find.textContaining('Payment gate'), findsNothing);
     expect(find.text('Register patient'), findsNothing);
+    expect(find.text('Schedule appointment'), findsNothing);
+    expect(find.text('Full registry'), findsNothing);
+    expect(find.text('Full OPD'), findsNothing);
+    expect(find.text('Refresh'), findsOneWidget);
     expect(find.text('Billing'), findsNothing);
+  });
+
+  testWidgets(
+    'appointments expose non-terminal statuses to search and filters',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(tester, repository: repository);
+
+      expect(find.text('Ada Appointment'), findsOneWidget);
+      expect(find.text('Nia New'), findsOneWidget);
+      expect(find.text('Connie Confirmed'), findsOneWidget);
+      expect(find.text('Cora Completed'), findsNothing);
+
+      final Finder searchField = find.descendant(
+        of: find.byType(AppSearchBar),
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(searchField, 'Confirmed appointment reason');
+      await tester.pump();
+      expect(find.text('Connie Confirmed'), findsOneWidget);
+      expect(find.text('Ada Appointment'), findsNothing);
+      expect(find.text('Nia New'), findsNothing);
+
+      await tester.enterText(searchField, '');
+      await tester.pump();
+      expect(find.text('Ada Appointment'), findsOneWidget);
+      expect(find.text('Nia New'), findsOneWidget);
+      expect(find.text('Connie Confirmed'), findsOneWidget);
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('New'), findsOneWidget);
+      expect(find.text('Confirmed'), findsOneWidget);
+      expect(find.text('Scheduled'), findsWidgets);
+
+      final Finder statusFilter = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppSelectField<String> && widget.labelText == 'Status',
+      );
+      expect(statusFilter, findsOneWidget);
+      await tester.tap(statusFilter);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirmed').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply filters'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Connie Confirmed'), findsOneWidget);
+      expect(find.text('Ada Appointment'), findsNothing);
+      expect(find.text('Nia New'), findsNothing);
+    },
+  );
+
+  testWidgets('appointment settings contain only appointment columns', (
+    WidgetTester tester,
+  ) async {
+    await _pumpWorkspace(tester, repository: repository);
+
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppListTable &&
+            widget.columnVisibilityStorageKey == 'reception_appointments',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Patient name'), findsWidgets);
+    expect(find.text('Scheduled'), findsWidgets);
+    expect(find.text('Status'), findsWidgets);
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('TABLE SETTINGS'), findsOneWidget);
+    expect(find.text('Appointment ID'), findsOneWidget);
+    expect(find.text('Assigned staff'), findsOneWidget);
+    expect(find.text('Reason'), findsOneWidget);
+    expect(find.text('Queued at'), findsNothing);
+    expect(find.text('Payment status'), findsNothing);
   });
 
   testWidgets('refresh is single-flight and exposes progress tooltip', (
