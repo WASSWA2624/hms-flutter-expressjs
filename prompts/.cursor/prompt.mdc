@@ -1,5 +1,5 @@
 ---
-description: Standards for defining clear, executable implementation prompts
+description: Defines standards for clear, executable implementation prompts.
 globs:
   - "prompts/**/*.md"
 alwaysApply: false
@@ -7,39 +7,34 @@ alwaysApply: false
 
 # Prompt Definition Standards
 
-Define prompts an agent can execute without guessing scope or behavior.
+Prompts must define observable behavior without requiring scope or implementation guesses.
 
 ## Required Structure
 
-- Use `.md`, stay under 251 words, and start with an H1 and objective.
-- Include `Context`, `Requirements`, `Constraints`, `Acceptance Criteria`, and `Relevant Files`.
-- Number requirements and make acceptance criteria observable.
+- Prompts must use `.md`, stay under 251 words, and begin with an H1 and objective.
+- Prompts must include `Context`, `Requirements`, `Constraints`, `Acceptance Criteria`, and `Relevant Files`.
+- Requirements must be numbered, and acceptance criteria must be observable.
 
 ## Implementation Requirements
 
-- Reuse code; do not duplicate logic, contracts, validation, or authorization.
-- Wire UI to backend routes, contracts, permissions, validation, and errors.
-- Define backend-enforced RBAC and ABAC; frontend guards are not a security boundary.
-- Check permissions before rendering. Hide unauthorized menus, tabs, components, data, routes, flows, and actions.
-- Do not render disabled unauthorized controls or “no access” feedback during normal navigation. Show forbidden feedback only for direct restricted-route access, stale permissions, or backend denial.
-- Keep frontend data synchronized after mutations.
-- Require efficient UI, concise labels, and visible feedback.
-- Require every UI change to work responsively at mobile, tablet, and desktop sizes without clipping, overflow, duplication, or inaccessible actions.
-- Reuse the design system and theme tokens for color, typography, spacing, shape, and states; require coherent light and dark theme behavior where supported.
-- Keep interfaces simple and focused: preserve a clear visual hierarchy, minimize controls and copy, and progressively disclose secondary detail.
-- Specify permission, loading, empty, error, success, and validation states.
+- Implementations must reuse existing logic, contracts, validation, authorization, routes, state, and design-system components.
+- Backend RBAC and ABAC must remain authoritative. Unauthorized UI, data, routes, and actions must not render.
+- Disabled unauthorized controls or routine “no access” feedback must not render. Forbidden feedback may appear for direct restricted access, stale permissions, or backend denial.
+- Frontend data must synchronize after mutations.
+- UI changes must remain responsive on mobile, tablet, and desktop without clipping, overflow, duplication, or inaccessible actions.
+- UI changes must use theme tokens for color, typography, spacing, shape, and states, including supported light and dark themes.
+- Interfaces must stay simple, focused, concise, and visually hierarchical; secondary detail should use progressive disclosure.
+- Prompts must specify permission, loading, empty, error, success, validation, and visible-feedback states.
 
 ## Writing Requirements
 
-- Use imperative language and define ambiguous terms.
-- Reference existing rules; do not repeat them.
-- Separate requirements from optional enhancements.
-- Exclude vague language and unrelated refactoring.
+- Prompts must use imperative language, define ambiguous terms, reference relevant rules, and avoid repeating them.
+- Requirements must be separated from optional enhancements.
+- Vague language and unrelated refactoring must be excluded.
 
 ## Verification
 
-- Name expected tests, analysis, or manual checks.
-- Verify integration, reuse, authorization, data sync, and UI states.
-- Verify changed UI at representative mobile, tablet, and desktop viewports and in every supported theme.
-- Test unauthorized UI is absent from the widget tree, navigation, and action flows; test authorized UI remains available.
-- Trace every acceptance criterion to a requirement.
+- Prompts must name expected tests, analysis, or manual checks.
+- Verification must cover integration, reuse, authorization, synchronization, UI states, representative viewports, and supported themes.
+- Tests must prove unauthorized UI is absent and authorized UI remains available.
+- Every acceptance criterion must trace to a numbered requirement.
