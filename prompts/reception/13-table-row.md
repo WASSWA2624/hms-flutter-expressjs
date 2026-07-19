@@ -1,1 +1,38 @@
-So now we have different tables. We have different tables. Table for appointments table for desk queues table for re-activities and payments. So What I want is that For every table. When someone clicks on a, I want us to Open, I want open the, the appropriety dialogue. for example so I want someone open, I want, I want, I want to open the appropriety model dialogue depending on the next action or next step. Actually, I think on all these tables, like, for example, on the appointment The appointment we have status and then action. I think we can rename action to next step just like what we have done for the desk queue, so we have the current step and next action. so what I think I want for all tables that we have the current step and the next action so so that when you click on a row for that specific patient, patient's encounter or for that specific patient An unappropriate dialogue is opened in order for the receptionist or anyone who has access to reception functionalities or reception access to perform the, the next action. For example here on this, we have we have a doctor review. this is a Okay, we have a doctor review for one patient here, but because the receptionist doesn't have the powers to review the patient. Actually, those people who have only read read Actions, I think you, for all these patients, you, you should open the appropriate dialogue depending on the next action or, yeah, depending on the next action. So if it is starting a consultation and the, the current The current user is authorized to perform that action, then they should be taken to that, that step. But if not, then they should be taken to the patient like details dialog just to show them information about the patient with description about what has to be done next. Yeah, but if it is if it was maybe a doctor on the, on, on that, I think we, they should only, they should open an appropriate dialog that will, that will enable that action to be done. I can see And that dialogue actually should show the progress from where the patient was up to where he is, and then up to the next, 'cause this is going to be a reusable, a reusable state, a reusable dialogue for all the patients and so whenever the receptionist is doing some action, so they know, yeah, now I'm at this step. So if they see a patient maybe they'll be asked to follow up and confirm that the patient has received has received the, the attention to the next step and so on and so forth. There is so that is, I think we call it the Q, the Q actions dialog, that Q actions dialog that builds global and under patient details, we should use the patient details component, there's a component that give, there is a predefined component that's actually defines patient details, where it gives patient name, age current account, and so on and so forth, that those details will be more actions button, so we should replace that with this component so that is actually used throughout. Like that, then in these actions, I think it should be replaced with a quick action, but in this case now they should only, we should only be seeing the actions that are actually are accessible by the receptionist or by the receptionist module, because there is a, there is a, there is a, there is one which is already defined within the patient see, within the, I think, I think is it, is it within the patient or within the, I think it's within the, I think it's within the patient, patient registry that he detail. So there is a component that shows the patient details with more than , a uniform quick action section that is going to be reused everywhere.
+# Open Context-Aware Actions from Reception Rows
+
+Open a reusable, permission-aware workflow dialog from every Reception record. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Reception tables have inconsistent workflow columns, row behavior, and duplicated patient summaries.
+
+## Requirements
+
+1. Show localized **Current step** and **Next action** columns in each table and equivalent card fields, derived from authoritative workflow state.
+2. On row click, keyboard activation, or card tap, open the dialog matching the record type and next action.
+3. Build one reusable shell containing shared patient details, completed/current/next progress, and concise next-step guidance.
+4. Show the existing next-action control and Reception quick actions only when authorized; reuse workflow registries, executors, dialogs, and validation.
+5. Otherwise show read-only details and guidance; omit restricted controls, data, and routine access-denied feedback.
+6. Replace duplicated appointment and queue summaries/action grids. Keep Payment gate read-only unless an authorized existing action applies.
+7. After mutations, synchronize affected rows and progress. Preserve loading, empty, error, success, and record-state-disabled feedback.
+
+## Constraints
+
+- Keep backend RBAC/ABAC authoritative; do not invent actions, transitions, contracts, or routes.
+- Reuse localization and design-system components; preserve sorting, themes, accessibility, and responsive layouts.
+- Do not navigate Reception users to Billing or expose unauthorized clinical actions.
+
+## Acceptance Criteria
+
+- R1–R3: Every record shows consistent workflow context and opens the correct accessible dialog.
+- R4–R6: Authorized actions work, restricted actions are absent, and shared content replaces duplication.
+- R7: Successful actions synchronize rows and progress while every state remains clear.
+- Test all tables, states, activation methods, permissions, synchronization, themes, and viewports; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+- `frontend/lib/features/reception/presentation/widgets/reception_*_actions_dialog.dart`
+- `frontend/lib/shared/components/app_patient_details.dart`
+- `frontend/lib/shared/workflow_actions/`
+- `frontend/test/features/reception/presentation/`
