@@ -60,8 +60,14 @@ class ReceptionWorkspacePage extends ConsumerWidget {
       centerVertically: false,
       deferLoadingToShell: false,
       keepPreviousDataDuringRefresh: true,
-      onRetry: () {
-        ref.read(opdWorkspaceControllerProvider.notifier).refresh();
+      onRetry: () async {
+        await Future.wait<AppFailure?>(<Future<AppFailure?>>[
+          ref
+              .read(opdWorkspaceControllerProvider.notifier)
+              .refreshReceptionData(),
+          if (canReadPaymentGate)
+            ref.read(receptionPaymentGateControllerProvider.notifier).refresh(),
+        ]);
       },
       dataBuilder: (BuildContext context, OpdWorkspaceState data) {
         return _ReceptionWorkspaceContent(

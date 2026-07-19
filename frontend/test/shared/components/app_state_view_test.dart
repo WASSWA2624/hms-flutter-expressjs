@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -22,7 +25,7 @@ void main() {
 
     expect(find.text('Loading'), findsOneWidget);
     expect(find.text('Preparing content.'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(AppLoadingIndicator), findsOneWidget);
   });
 
   testWidgets('AppStateScaffold renders app bar and action content', (
@@ -39,7 +42,6 @@ void main() {
       ),
     );
 
-    expect(find.text('Template'), findsOneWidget);
     expect(find.text('Could not load'), findsOneWidget);
     expect(find.text('Try the request again.'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
@@ -88,6 +90,83 @@ void main() {
 
     await tester.tap(find.text('Try again'));
     expect(retryCount, 1);
+  });
+
+  testWidgets('AppFailureStateView centers icon and title in one row', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppFailureStateView(failure: AppFailure.timeout()),
+    );
+
+    final Offset iconCenter = tester.getCenter(
+      find.byIcon(Icons.error_outline),
+    );
+    final Offset titleCenter = tester.getCenter(find.text('Request timed out'));
+
+    expect(iconCenter.dy, closeTo(titleCenter.dy, 1));
+    expect(titleCenter.dx, greaterThan(iconCenter.dx));
+  });
+
+  testWidgets('AppFailureStateView keeps async retry single-flight', (
+    WidgetTester tester,
+  ) async {
+    final List<Completer<void>> attempts = <Completer<void>>[];
+
+    await pumpComponent(
+      tester,
+      AppFailureStateView(
+        failure: const AppFailure.timeout(),
+        onRetry: () {
+          final Completer<void> attempt = Completer<void>();
+          attempts.add(attempt);
+          return attempt.future;
+        },
+      ),
+    );
+    final Size idleSize = tester.getSize(find.byType(AppButton));
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+
+    expect(attempts, hasLength(1));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(tester.widget<AppButton>(find.byType(AppButton)).isLoading, isTrue);
+    expect(tester.getSize(find.byType(AppButton)), idleSize);
+    final SemanticsNode retrySemantics = tester.getSemantics(
+      find.byType(AppButton),
+    );
+    expect(retrySemantics.hasFlag(SemanticsFlag.isLiveRegion), isTrue);
+    expect(retrySemantics.hasFlag(SemanticsFlag.isEnabled), isFalse);
+
+    await tester.tap(find.text('Try again'));
+    expect(attempts, hasLength(1));
+
+    attempts.single.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(tester.widget<AppButton>(find.byType(AppButton)).isLoading, isFalse);
+
+    await tester.tap(find.text('Try again'));
+    expect(attempts, hasLength(2));
+    attempts.last.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('AppFailureStateScaffold centers failure content vertically', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppFailureStateScaffold(failure: AppFailure.timeout()),
+    );
+
+    expect(
+      tester.getCenter(find.byType(AppFailureStateView)).dy,
+      closeTo(300, 1),
+    );
   });
 
   testWidgets('AppFailureStateView hides retry for non-retryable failures', (

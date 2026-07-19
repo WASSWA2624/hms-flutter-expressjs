@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -380,6 +381,7 @@ Future<GoRouter> _pumpWorkspace(
   AppAccessPolicy? policy,
   String initialLocation = '/reception',
   Size viewSize = const Size(1440, 900),
+  ThemeData? theme,
 }) async {
   final _MockBillingRepository resolvedBillingRepository =
       billingRepository ?? _MockBillingRepository();
@@ -432,6 +434,7 @@ Future<GoRouter> _pumpWorkspace(
       ],
       child: MaterialApp.router(
         routerConfig: router,
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
@@ -458,6 +461,127 @@ void main() {
   setUp(() {
     repository = _MockOpdRepository();
     _stubWorkspace(repository);
+  });
+
+  testWidgets('Try again reloads failed Reception data once with progress', (
+    WidgetTester tester,
+  ) async {
+    final Completer<Result<AppPage<OpdAppointment>>> appointmentRetry =
+        Completer<Result<AppPage<OpdAppointment>>>();
+    var appointmentCalls = 0;
+    when(() => repository.listAppointments(any())).thenAnswer((
+      Invocation invocation,
+    ) {
+      appointmentCalls += 1;
+      if (appointmentCalls == 1) {
+        return Future<Result<AppPage<OpdAppointment>>>.value(
+          Result<AppPage<OpdAppointment>>.failure(AppFailure.conflict()),
+        );
+      }
+      return appointmentRetry.future;
+    });
+    var queueCalls = 0;
+    when(() => repository.listVisitQueues(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      queueCalls += 1;
+      if (queueCalls == 1) {
+        return Result<AppPage<OpdQueueEntry>>.failure(AppFailure.conflict());
+      }
+      return Result<AppPage<OpdQueueEntry>>.success(
+        AppPage<OpdQueueEntry>(
+          items: const <OpdQueueEntry>[],
+          request: (invocation.positionalArguments.single as OpdQueueQuery)
+              .pageRequest,
+        ),
+      );
+    });
+    var flowCalls = 0;
+    when(() => repository.listOpdFlows(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      flowCalls += 1;
+      if (flowCalls == 1) {
+        return Result<AppPage<OpdFlowSummary>>.failure(AppFailure.conflict());
+      }
+      return Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: const <OpdFlowSummary>[],
+          request: (invocation.positionalArguments.single as OpdFlowQuery)
+              .pageRequest,
+        ),
+      );
+    });
+    var triageCalls = 0;
+    when(() => repository.listTriageQueue(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      triageCalls += 1;
+      if (triageCalls == 1) {
+        return Result<AppPage<OpdFlowSummary>>.failure(AppFailure.conflict());
+      }
+      return Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: const <OpdFlowSummary>[],
+          request:
+              (invocation.positionalArguments.single as OpdTriageQueueQuery)
+                  .pageRequest,
+        ),
+      );
+    });
+    final _MockBillingRepository billingRepository = _MockBillingRepository();
+    var billingCalls = 0;
+    when(() => billingRepository.listWorkItems(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      billingCalls += 1;
+      return Result<AppPage<BillingWorkItem>>.success(
+        AppPage<BillingWorkItem>(
+          items: const <BillingWorkItem>[],
+          request:
+              (invocation.positionalArguments.single as BillingWorkspaceQuery)
+                  .pageRequest,
+          totalItemCount: 0,
+        ),
+      );
+    });
+
+    await _pumpWorkspace(
+      tester,
+      repository: repository,
+      billingRepository: billingRepository,
+    );
+    expect(find.text('Update conflict'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+
+    expect(appointmentCalls, 2);
+    expect(queueCalls, 2);
+    expect(flowCalls, 2);
+    expect(triageCalls, 2);
+    expect(billingCalls, 2);
+    expect(find.text('Update conflict'), findsOneWidget);
+    expect(tester.widget<AppButton>(find.byType(AppButton)).isLoading, isTrue);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    expect(appointmentCalls, 2);
+    expect(billingCalls, 2);
+
+    appointmentRetry.complete(
+      Result<AppPage<OpdAppointment>>.success(
+        AppPage<OpdAppointment>(
+          items: const <OpdAppointment>[_appointment],
+          request: const AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ada Appointment'), findsOneWidget);
+    expect(find.text('Update conflict'), findsNothing);
   });
 
   testWidgets('appointment deep link renders backend worklist and toolbar', (
@@ -505,6 +629,34 @@ void main() {
       findsOneWidget,
     );
   });
+
+  for (final (String name, Size size, ThemeData theme)
+      in <(String, Size, ThemeData)>[
+        ('desktop light', const Size(1440, 900), AppTheme.light),
+        ('mobile dark', const Size(390, 844), AppTheme.dark),
+      ]) {
+    testWidgets('navigation shortcuts remain consistent on $name', (
+      WidgetTester tester,
+    ) async {
+      await _pumpWorkspace(
+        tester,
+        repository: repository,
+        viewSize: size,
+        theme: theme,
+      );
+
+      final AppTabToolbarAction patientRegistry = tester
+          .widget<AppTabToolbarAction>(
+            find.widgetWithText(AppTabToolbarAction, 'Patient registry'),
+          );
+      final AppTabToolbarAction outpatient = tester.widget<AppTabToolbarAction>(
+        find.widgetWithText(AppTabToolbarAction, 'Outpatient (OPD)'),
+      );
+      expect(patientRegistry.icon, AppRouteIcons.patients);
+      expect(outpatient.icon, AppRouteIcons.opd);
+      expect(find.text('Full OPD'), findsNothing);
+    });
+  }
 
   testWidgets('patient registry shortcut navigates directly without mutation', (
     WidgetTester tester,

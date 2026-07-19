@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -26,6 +28,7 @@ typedef AsyncStateDataBuilder<T> =
 typedef AsyncStateEmptyPredicate<T> = bool Function(T data);
 typedef AsyncStateFailureMapper =
     AppFailure Function(Object error, StackTrace stackTrace);
+typedef AppRetryCallback = FutureOr<void> Function();
 
 class AppStateView extends StatelessWidget {
   const AppStateView({
@@ -38,6 +41,7 @@ class AppStateView extends StatelessWidget {
     this.semanticLabel,
     this.crossAxisAlignment,
     this.textAlign,
+    this.inlineVisualWithTitle = false,
     this.loadingSize = AppLoadingIndicatorSize.regular,
     super.key,
   });
@@ -57,6 +61,7 @@ class AppStateView extends StatelessWidget {
   /// Defaults to centered for [AppStateViewVariant.loading] and
   /// [AppStateViewVariant.empty]; start-aligned otherwise.
   final TextAlign? textAlign;
+  final bool inlineVisualWithTitle;
   final AppLoadingIndicatorSize loadingSize;
 
   @override
@@ -75,8 +80,7 @@ class AppStateView extends StatelessWidget {
                   : CrossAxisAlignment.start);
     final TextAlign resolvedTextAlign = isLoading
         ? TextAlign.center
-        : textAlign ??
-              (centersByDefault ? TextAlign.center : TextAlign.start);
+        : textAlign ?? (centersByDefault ? TextAlign.center : TextAlign.start);
 
     if (isLoading) {
       return Semantics(
@@ -121,13 +125,31 @@ class AppStateView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: resolvedAlignment,
         children: <Widget>[
-          _StateVisual(variant: variant, icon: icon),
-          SizedBox(height: spacing.sm),
-          Text(
-            title,
-            style: textTheme.titleLarge,
-            textAlign: resolvedTextAlign,
-          ),
+          if (inlineVisualWithTitle)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                _StateVisual(variant: variant, icon: icon),
+                SizedBox(width: spacing.sm),
+                Flexible(
+                  child: Text(
+                    title,
+                    style: textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            )
+          else ...<Widget>[
+            _StateVisual(variant: variant, icon: icon),
+            SizedBox(height: spacing.sm),
+            Text(
+              title,
+              style: textTheme.titleLarge,
+              textAlign: resolvedTextAlign,
+            ),
+          ],
           SizedBox(height: spacing.sm),
           Text(body, style: textTheme.bodyMedium, textAlign: resolvedTextAlign),
           if (detail != null && detail!.isNotEmpty) ...<Widget>[
@@ -148,20 +170,20 @@ class AppStateView extends StatelessWidget {
   }
 }
 
-class AppFailureStateView extends StatelessWidget {
+class AppFailureStateView extends StatefulWidget {
   const AppFailureStateView({
     required this.failure,
     this.onRetry,
     this.title,
     this.body,
     this.semanticLabel,
-    this.crossAxisAlignment = CrossAxisAlignment.start,
-    this.textAlign = TextAlign.start,
+    this.crossAxisAlignment = CrossAxisAlignment.center,
+    this.textAlign = TextAlign.center,
     super.key,
   });
 
   final AppFailure failure;
-  final VoidCallback? onRetry;
+  final AppRetryCallback? onRetry;
   final String? title;
   final String? body;
   final String? semanticLabel;
@@ -169,25 +191,48 @@ class AppFailureStateView extends StatelessWidget {
   final TextAlign textAlign;
 
   @override
+  State<AppFailureStateView> createState() => _AppFailureStateViewState();
+}
+
+class _AppFailureStateViewState extends State<AppFailureStateView> {
+  bool _isRetrying = false;
+
+  Future<void> _retry() async {
+    if (_isRetrying || widget.onRetry == null) {
+      return;
+    }
+    setState(() => _isRetrying = true);
+    try {
+      await widget.onRetry!();
+    } finally {
+      if (mounted) {
+        setState(() => _isRetrying = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final retryAction = failure.isRetryable && onRetry != null
+    final retryAction = widget.failure.isRetryable && widget.onRetry != null
         ? AppButton(
             label: l10n.commonRetryActionLabel,
             leadingIcon: Icons.refresh,
             variant: AppButtonVariant.secondary,
-            onPressed: onRetry,
+            isLoading: _isRetrying,
+            onPressed: _retry,
           )
         : null;
 
     return AppStateView(
-      variant: _failureVariant(failure),
-      title: title ?? l10n.failureTitle(failure),
-      body: body ?? failure.displayMessage(l10n),
+      variant: _failureVariant(widget.failure),
+      title: widget.title ?? l10n.failureTitle(widget.failure),
+      body: widget.body ?? widget.failure.displayMessage(l10n),
       action: retryAction,
-      semanticLabel: semanticLabel,
-      crossAxisAlignment: crossAxisAlignment,
-      textAlign: textAlign,
+      semanticLabel: widget.semanticLabel,
+      crossAxisAlignment: widget.crossAxisAlignment,
+      textAlign: widget.textAlign,
+      inlineVisualWithTitle: true,
     );
   }
 }
@@ -267,8 +312,6 @@ class AppFailureStateScaffold extends StatelessWidget {
     this.title,
     this.body,
     this.semanticLabel,
-    this.maxWidth = PageMaxWidth.authForm,
-    this.centerVertically = true,
     this.scrollable = true,
     this.safeArea = true,
     super.key,
@@ -276,12 +319,10 @@ class AppFailureStateScaffold extends StatelessWidget {
 
   final AppFailure failure;
   final String? appBarTitle;
-  final VoidCallback? onRetry;
+  final AppRetryCallback? onRetry;
   final String? title;
   final String? body;
   final String? semanticLabel;
-  final PageMaxWidth maxWidth;
-  final bool centerVertically;
   final bool scrollable;
   final bool safeArea;
 
@@ -290,8 +331,8 @@ class AppFailureStateScaffold extends StatelessWidget {
     return Scaffold(
       // Route title lives in the shell menu bar; avoid a second page header.
       body: ResponsivePage(
-        maxWidth: maxWidth,
-        centerVertically: centerVertically,
+        maxWidth: PageMaxWidth.authForm,
+        centerVertically: true,
         scrollable: scrollable,
         safeArea: safeArea,
         child: AppFailureStateView(
@@ -337,7 +378,7 @@ class AsyncStateScaffold<T> extends StatelessWidget {
   final String? appBarTitle;
   final String loadingTitle;
   final String loadingBody;
-  final VoidCallback? onRetry;
+  final AppRetryCallback? onRetry;
   final AsyncStateEmptyPredicate<T>? emptyPredicate;
   final String? emptyTitle;
   final String? emptyBody;
@@ -427,8 +468,6 @@ class AsyncStateScaffold<T> extends StatelessWidget {
               appBarTitle: appBarTitle,
               failure: failure,
               onRetry: onRetry,
-              maxWidth: maxWidth,
-              centerVertically: centerVertically,
               scrollable: scrollable,
               safeArea: safeArea,
             ),
@@ -439,8 +478,6 @@ class AsyncStateScaffold<T> extends StatelessWidget {
             appBarTitle: appBarTitle,
             failure: failureMapper(error, stackTrace),
             onRetry: onRetry,
-            maxWidth: maxWidth,
-            centerVertically: centerVertically,
             scrollable: scrollable,
             safeArea: safeArea,
           );

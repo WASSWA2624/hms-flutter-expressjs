@@ -141,17 +141,32 @@ final class OpdWorkspaceController
     }
     late final Future<AppFailure?> operation;
     operation =
-        _syncVisibleData(
-          showLoading: refreshProviders,
-          refreshProviders: refreshProviders,
-          plan: plan,
-        ).whenComplete(() {
-          if (identical(_manualRefreshInFlight, operation)) {
-            _manualRefreshInFlight = null;
-          }
-        });
+        (_currentState == null
+                ? _retryInitialLoad()
+                : _syncVisibleData(
+                    showLoading: refreshProviders,
+                    refreshProviders: refreshProviders,
+                    plan: plan,
+                  ))
+            .whenComplete(() {
+              if (identical(_manualRefreshInFlight, operation)) {
+                _manualRefreshInFlight = null;
+              }
+            });
     _manualRefreshInFlight = operation;
     return operation;
+  }
+
+  Future<AppFailure?> _retryInitialLoad() async {
+    final Result<OpdWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      _loadInitialState,
+    );
+    state = AsyncData<Result<OpdWorkspaceState>>(result);
+    return result.when<AppFailure?>(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
   }
 
   Future<AppFailure?> applySearch(String value) async {
