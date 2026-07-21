@@ -47,23 +47,9 @@ const listPublicProviders = asyncHandler(async (req, res) => {
   sendPaginated(res, 'messages.public.providers.list.success', result.items, result.pagination);
 });
 
-  const {
-    search,
-    page = DEFAULT_PAGE,
-    limit = DEFAULT_PAGE_LIMIT,
-    sort_by,
-    order = 'asc'
-  } = req.query;
-
-    { search },
-    parseInt(page, 10),
-    parseInt(limit, 10),
-    sort_by || 'name',
-    order
-  );
-
-});
+);
 
 module.exports = {
   listPublicServices,
-  listPublicProviders};
+  listPublicProviders,
+};

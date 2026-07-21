@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Department service
  *
  * @module modules/department/services
@@ -33,6 +33,7 @@ const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorU
     recipient_roles: FACILITY_LAYOUT_RECIPIENT_ROLES,
     affected: {
       department_id: resource?.id || null,
+      branch_id: resource?.branch_id || null,
     },
     payload: {
       layout_entity: resourceType,
@@ -71,6 +72,10 @@ const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'cr
 
   if (filters.facility_id) {
     repoFilters.facility_id = filters.facility_id;
+  }
+
+  if (filters.branch_id) {
+    repoFilters.branch_id = filters.branch_id;
   }
 
   if (filters.department_type) {
@@ -145,6 +150,7 @@ const createDepartment = async (data, context = {}) => {
     details: {
       tenant_id: department.tenant_id,
       facility_id: department.facility_id,
+      branch_id: department.branch_id,
       name: department.name,
       short_name: department.short_name,
       department_type: department.department_type,
@@ -185,6 +191,7 @@ const updateDepartment = async (id, data, context = {}) => {
     details: {
       before: {
         facility_id: beforeDepartment.facility_id,
+        branch_id: beforeDepartment.branch_id,
         name: beforeDepartment.name,
         short_name: beforeDepartment.short_name,
         department_type: beforeDepartment.department_type,
@@ -192,6 +199,7 @@ const updateDepartment = async (id, data, context = {}) => {
       },
       after: {
         facility_id: department.facility_id,
+        branch_id: department.branch_id,
         name: department.name,
         short_name: department.short_name,
         department_type: department.department_type,
@@ -246,6 +254,7 @@ const deleteDepartment = async (id, context = {}) => {
     details: {
       tenant_id: department.tenant_id,
       facility_id: department.facility_id,
+      branch_id: department.branch_id,
       name: department.name,
       short_name: department.short_name,
       department_type: department.department_type,
@@ -277,6 +286,7 @@ const restoreDepartment = async (id, context = {}) => {
     details: {
       tenant_id: department.tenant_id,
       facility_id: department.facility_id,
+      branch_id: department.branch_id,
       name: department.name,
     },
   });

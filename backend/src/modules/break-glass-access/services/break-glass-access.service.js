@@ -104,6 +104,10 @@ const createBreakGlassAccess = async (payload = {}, context = {}) => {
       nullable: true,
       where: { tenant_id: tenantId },
     }),
+    branch_id: await resolveIdentifierForPayload({
+      value: payload.branch_id ?? context.branch_id,
+      field: 'branch_id',
+      model: 'branch',
       nullable: true,
       where: { tenant_id: tenantId },
     }),

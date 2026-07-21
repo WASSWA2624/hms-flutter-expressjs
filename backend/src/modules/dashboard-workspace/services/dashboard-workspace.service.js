@@ -1156,6 +1156,8 @@ const hasDashboardFilters = (filters = {}) =>
     filters.tenantId,
     filters.facility_id,
     filters.facilityId,
+    filters.branch_id,
+    filters.branchId,
     filters.queue,
     filters.search,
     filters.status,
@@ -2560,6 +2562,7 @@ const getLookups = async (filters = {}, user = {}) => {
         facility_type: entry.facility_type || null,
       },
     })),
+    branches: (lookups.branches || []).map((entry) => ({
       id: dashboardWorkspaceRepository.safePublicId(entry.human_friendly_id, entry.id),
       label: entry.name,
       meta: {

@@ -40,7 +40,9 @@ const listPublicServices = async (search, skip, take, orderBy) => {
           name: true,
           short_name: true,
           department_type: true,
-          facility_id: true}
+          facility_id: true,
+          branch_id: true
+        }
       }),
       prisma.department.count({ where })
     ]);
@@ -106,7 +108,8 @@ const listPublicProviders = async (search, skip, take, orderBy) => {
                 select: {
                   first_name: true,
                   middle_name: true,
-                  last_name: true}
+                  last_name: true,
+                }
               }
             }
           }
@@ -121,42 +124,8 @@ const listPublicProviders = async (search, skip, take, orderBy) => {
   }
 };
 
-  try {
-    const where = {
-      deleted_at: null,
-      is_active: true
-    };
-
-    if (search) {
-      where.name = buildSearchFilter(search);
-    }
-
-    const [items, total] = await Promise.all([
-        where,
-        skip,
-        take,
-        orderBy,
-        select: {
-          id: true,
-          tenant_id: true,
-          facility_id: true,
-          name: true,
-          facility: {
-            select: {
-              id: true,
-              name: true,
-              facility_type: true
-            }
-          }
-        }
-      })]);
-
-    return { items, total };
-  } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
-  }
-};
 
 module.exports = {
   listPublicServices,
-  listPublicProviders};
+  listPublicProviders,
+};

@@ -27,7 +27,8 @@ jest.mock('@lib/dashboard/summary', () => ({
     MORTUARY_STAFF: 'mortuary_staff',
     MORTUARY_MANAGER: 'mortuary_manager',
     PATIENT_SAFE: 'patient_safe',
-    LIMITED: 'limited'},
+    LIMITED: 'limited',
+  },
   resolveEffectiveRole: jest.fn((user = {}) => {
     if (Array.isArray(user.roles) && user.roles.length) return user.roles[0];
     return user.role || 'SUPER_ADMIN';
@@ -58,7 +59,8 @@ jest.mock('@lib/dashboard/summary', () => ({
       MORTUARY_STAFF: 'mortuary_staff',
       MORTUARY_MANAGER: 'mortuary_manager',
       PATIENT: 'patient',
-      OTHER: 'other'};
+      OTHER: 'other',
+    };
     return profileIds[role] || 'other';
   }),
   resolvePackId: jest.fn((profileId) => {
@@ -67,12 +69,15 @@ jest.mock('@lib/dashboard/summary', () => ({
       tenant_admin: 'tenant_admin',
       facility_admin: 'facility_admin',
       patient: 'patient_safe',
-      other: 'limited'};
+      other: 'limited',
+    };
     return packIds[profileId] || profileId || 'limited';
   }),
   buildDashboardSummary: jest.fn(async () => ({
     roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
-    summaryCards: [{ id: 'patients_today', label: 'Patients today', value: 12, format: 'number' }]}))}));
+    summaryCards: [{ id: 'patients_today', label: 'Patients today', value: 12, format: 'number' }],
+  })),
+}));
 
 const repository = require('@repositories/dashboard-workspace/dashboard-workspace.repository');
 const { buildDashboardSummary } = require('@lib/dashboard/summary');
@@ -87,7 +92,8 @@ describe('dashboard-workspace service', () => {
   it('returns platform workspace payloads for global admins', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'platform_ready',
-      scope: null});
+      scope: null,
+    });
     repository.findPlatformFollowUps.mockResolvedValue([
       {
         id: 'subscription_follow_up:SUB0001',
@@ -104,7 +110,10 @@ describe('dashboard-workspace service', () => {
           module_slug: 'subscriptions',
           resource: 'subscriptions',
           public_id: 'SUB0001',
-          action: 'view'}}]);
+          action: 'view',
+        },
+      },
+    ]);
     repository.findPlatformAlerts.mockResolvedValue([
       {
         id: 'subscription_past_due',
@@ -115,37 +124,48 @@ describe('dashboard-workspace service', () => {
           module_slug: 'subscriptions',
           resource: 'subscriptions',
           public_id: null,
-          action: 'list'}}]);
+          action: 'list',
+        },
+      },
+    ]);
     buildDashboardSummary.mockResolvedValueOnce({
       roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
       summaryCards: [
         { id: 'tenants_active', label: 'Tenants', value: 2, secondary_value: 3, format: 'ratio' },
         { id: 'facilities_active', label: 'Facilities', value: 4, format: 'number' },
         { id: 'subscriptions_health', label: 'Subscriptions', value: 2, secondary_value: 3, format: 'ratio' },
-        { id: 'module_entitlement_issues', label: 'Entitlements', value: 1, format: 'number' }],
+        { id: 'module_entitlement_issues', label: 'Entitlements', value: 1, format: 'number' },
+      ],
       trend: { title: 'New tenant signups', subtitle: '', points: [] },
-      distribution: { title: 'Subscription mix', subtitle: '', total: 3, segments: [] }});
+      distribution: { title: 'Subscription mix', subtitle: '', total: 3, segments: [] },
+    });
 
     const result = await subject.getWorkspace({}, 1, 20, undefined, 'desc', {
-      role: 'SUPER_ADMIN'});
+      role: 'SUPER_ADMIN',
+    });
 
     expect(result.state).toBe('ready');
     expect(result.context).toEqual(
       expect.objectContaining({
         tenant_id: null,
-        facility_id: null})
+        facility_id: null,
+      })
     );
     expect(result.overview.queue_preview).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           title: 'Acme Hospital',
-          subtitle: 'tenant.admin@hosspi.com · +256700000000'})])
+          subtitle: 'tenant.admin@hosspi.com · +256700000000',
+        }),
+      ])
     );
     expect(result.overview.alerts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           kind: 'subscription_past_due',
-          count: 2})])
+          count: 2,
+        }),
+      ])
     );
   });
 
@@ -154,14 +174,17 @@ describe('dashboard-workspace service', () => {
       state: 'ready',
       scope: {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001'}});
+        facility_id: 'FAC0001',
+      },
+    });
     repository.findPlatformFollowUps.mockResolvedValue([]);
     repository.findPlatformAlerts.mockResolvedValue([]);
     buildDashboardSummary.mockResolvedValueOnce({
       roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
       summaryCards: [{ id: 'tenants_active', label: 'Tenants', value: 2, format: 'ratio' }],
       trend: { title: 'New tenant signups', subtitle: '', points: [] },
-      distribution: { title: 'Subscription mix', subtitle: '', total: 0, segments: [] }});
+      distribution: { title: 'Subscription mix', subtitle: '', total: 0, segments: [] },
+    });
 
     const result = await subject.getWorkspace(
       { panel: 'overview' },
@@ -177,14 +200,16 @@ describe('dashboard-workspace service', () => {
     expect(result.context).toEqual(
       expect.objectContaining({
         tenant_id: null,
-        facility_id: null})
+        facility_id: null,
+      })
     );
     expect(Array.isArray(result.status_strip)).toBe(true);
     expect(Array.isArray(result.quick_action_ids)).toBe(true);
     expect(result.queue).toEqual(
       expect.objectContaining({
         items: expect.any(Array),
-        pagination: expect.any(Object)})
+        pagination: expect.any(Object),
+      })
     );
   });
 
@@ -193,22 +218,28 @@ describe('dashboard-workspace service', () => {
       state: 'ready',
       scope: {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001'}});
+        facility_id: 'FAC0001',
+      },
+    });
     repository.findFacilityContext.mockResolvedValue({
       id: 'facility-uuid',
       human_friendly_id: 'FAC0001',
       name: 'Central Hospital',
-      facility_type: 'HOSPITAL'});
+      facility_type: 'HOSPITAL',
+    });
     repository.findCurrentSubscription.mockResolvedValue(null);
     repository.findLookups.mockResolvedValue({
       tenants: [],
-      facilities: []});
+      facilities: [],
+      branches: [],
+    });
     repository.countRows.mockResolvedValue(0);
     repository.sumRows.mockResolvedValue(0);
     repository.findRows.mockResolvedValue([]);
     buildDashboardSummary.mockResolvedValueOnce({
       roleProfile: { id: 'ward_manager', role: 'WARD_MANAGER', pack: 'ward_manager' },
-      summaryCards: []});
+      summaryCards: [],
+    });
 
     const result = await subject.getWorkspace(
       { panel: 'overview' },
@@ -225,7 +256,8 @@ describe('dashboard-workspace service', () => {
       'review_leave',
       'create_shift',
       'publish_roster',
-      'approve_roster']);
+      'approve_roster',
+    ]);
   });
 
   it('keeps tenant-admin quick actions to oversight and setup work', async () => {
@@ -233,22 +265,28 @@ describe('dashboard-workspace service', () => {
       state: 'ready',
       scope: {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001'}});
+        facility_id: 'FAC0001',
+      },
+    });
     repository.findFacilityContext.mockResolvedValue({
       id: 'facility-uuid',
       human_friendly_id: 'FAC0001',
       name: 'Central Hospital',
-      facility_type: 'HOSPITAL'});
+      facility_type: 'HOSPITAL',
+    });
     repository.findCurrentSubscription.mockResolvedValue(null);
     repository.findLookups.mockResolvedValue({
       tenants: [],
-      facilities: []});
+      facilities: [],
+      branches: [],
+    });
     repository.countRows.mockResolvedValue(0);
     repository.sumRows.mockResolvedValue(0);
     repository.findRows.mockResolvedValue([]);
     buildDashboardSummary.mockResolvedValueOnce({
       roleProfile: { id: 'tenant_admin', role: 'TENANT_ADMIN', pack: 'tenant_admin' },
-      summaryCards: []});
+      summaryCards: [],
+    });
 
     const result = await subject.getWorkspace(
       { panel: 'overview' },
@@ -267,7 +305,8 @@ describe('dashboard-workspace service', () => {
         'manage_subscription',
         'run_report',
         'review_audit',
-        'add_staff_profile'])
+        'add_staff_profile',
+      ])
     );
     expect(result.quick_action_ids).not.toEqual(
       expect.arrayContaining([
@@ -276,7 +315,8 @@ describe('dashboard-workspace service', () => {
         'enter_lab_result',
         'dispense_medication',
         'receive_payment',
-        'record_custody_event'])
+        'record_custody_event',
+      ])
     );
   });
 
@@ -285,10 +325,14 @@ describe('dashboard-workspace service', () => {
       state: 'ready',
       scope: {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001'}});
+        facility_id: 'FAC0001',
+      },
+    });
     repository.findLookups.mockResolvedValue({
       tenants: [{ id: 'tenant-uuid', human_friendly_id: 'TEN0001', name: 'Acme' }],
-      facilities: [{ id: 'facility-uuid', human_friendly_id: 'FAC0001', name: 'Central Hospital', facility_type: 'HOSPITAL' }]});
+      facilities: [{ id: 'facility-uuid', human_friendly_id: 'FAC0001', name: 'Central Hospital', facility_type: 'HOSPITAL' }],
+      branches: [{ id: 'branch-uuid', human_friendly_id: 'BR0001', name: 'Main Branch', facility_id: 'FAC0001' }],
+    });
 
     const result = await subject.getLookups({}, { role: 'SUPER_ADMIN' });
 
@@ -300,20 +344,28 @@ describe('dashboard-workspace service', () => {
           {
             id: 'FAC0001',
             label: 'Central Hospital',
-            meta: { facility_type: 'HOSPITAL' }}],
+            meta: { facility_type: 'HOSPITAL' },
+          },
+        ],
+        branches: [
           {
             id: 'BR0001',
             label: 'Main Branch',
-            meta: { facility_id: 'FAC0001' }}]})
+            meta: { facility_id: 'FAC0001' },
+          },
+        ],
+      })
     );
     expect(result.queue_statuses).toEqual(
       expect.arrayContaining([
         { id: 'SCHEDULED', label_key: 'dashboard.statusValues.scheduled' },
-        { id: 'OVERDUE', label_key: 'dashboard.statusValues.overdue' }])
+        { id: 'OVERDUE', label_key: 'dashboard.statusValues.overdue' },
+      ])
     );
     expect(result.activity_statuses).toEqual(
       expect.arrayContaining([
-        { id: 'OPEN', label_key: 'dashboard.statusValues.open' }])
+        { id: 'OPEN', label_key: 'dashboard.statusValues.open' },
+      ])
     );
   });
 
@@ -322,12 +374,15 @@ describe('dashboard-workspace service', () => {
       state: 'ready',
       scope: {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001'}});
+        facility_id: 'FAC0001',
+      },
+    });
     repository.findFacilityContext.mockResolvedValue({
       id: 'facility-uuid',
       human_friendly_id: 'FAC0001',
       name: 'Central Hospital',
-      facility_type: 'HOSPITAL'});
+      facility_type: 'HOSPITAL',
+    });
     repository.findCurrentSubscription.mockResolvedValue(null);
     repository.countRows.mockResolvedValue(0);
     repository.sumRows.mockResolvedValue(0);
@@ -349,12 +404,15 @@ describe('dashboard-workspace service', () => {
         target: expect.objectContaining({
           module_slug: 'dashboard',
           resource: 'getting-started',
-          action: 'open'})})
+          action: 'open',
+        }),
+      })
     );
     expect(result.activity.items).toEqual([]);
     expect(result.activity.empty_state).toEqual(
       expect.objectContaining({
-        reason: 'guided_setup'})
+        reason: 'guided_setup',
+      })
     );
     expect(result.overview.insights_preview).toEqual([]);
     expect(result.overview.alerts).toEqual([]);
@@ -365,16 +423,21 @@ describe('dashboard-workspace service', () => {
       state: 'ready',
       scope: {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001'}});
+        facility_id: 'FAC0001',
+      },
+    });
     repository.findFacilityContext.mockResolvedValue({
       id: 'facility-uuid',
       human_friendly_id: 'FAC0001',
       name: 'Central Hospital',
-      facility_type: 'HOSPITAL'});
+      facility_type: 'HOSPITAL',
+    });
     repository.findCurrentSubscription.mockResolvedValue(null);
     repository.findLookups.mockResolvedValue({
       tenants: [],
-      facilities: []});
+      facilities: [],
+      branches: [],
+    });
     repository.countRows.mockResolvedValue(0);
     repository.sumRows.mockResolvedValue(0);
     repository.findRows.mockImplementation(async ({ model }) => {
@@ -386,7 +449,9 @@ describe('dashboard-workspace service', () => {
             status: 'OPEN',
             reported_at: '2026-03-01T10:00:00.000Z',
             updated_at: '2026-03-01T10:15:00.000Z',
-            created_at: '2026-03-01T09:55:00.000Z'}];
+            created_at: '2026-03-01T09:55:00.000Z',
+          },
+        ];
       }
       return [];
     });
@@ -394,7 +459,8 @@ describe('dashboard-workspace service', () => {
       roleProfile: { id: 'tenant_admin', role: 'TENANT_ADMIN', pack: 'tenant_admin' },
       summaryCards: [],
       trend: { title: '', subtitle: '', points: [] },
-      distribution: { title: '', subtitle: '', total: 0, segments: [] }});
+      distribution: { title: '', subtitle: '', total: 0, segments: [] },
+    });
 
     const result = await subject.getWorkspace(
       { panel: 'queue', queue: 'maintenance_requests' },
@@ -408,7 +474,8 @@ describe('dashboard-workspace service', () => {
     expect(repository.findRows).toHaveBeenCalledWith(
       expect.objectContaining({
         model: 'maintenance_request',
-        select: expect.not.objectContaining({ priority: true })})
+        select: expect.not.objectContaining({ priority: true }),
+      })
     );
     expect(result.queue.items).toEqual([
       expect.objectContaining({
@@ -416,7 +483,9 @@ describe('dashboard-workspace service', () => {
         queue: 'maintenance_requests',
         priority: null,
         severity: 'high',
-        status: 'OPEN'})]);
+        status: 'OPEN',
+      }),
+    ]);
   });
 
   it('preserves queue predicates when applying human-friendly search filters', async () => {
@@ -424,16 +493,21 @@ describe('dashboard-workspace service', () => {
       state: 'ready',
       scope: {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001'}});
+        facility_id: 'FAC0001',
+      },
+    });
     repository.findFacilityContext.mockResolvedValue({
       id: 'facility-uuid',
       human_friendly_id: 'FAC0001',
       name: 'Central Hospital',
-      facility_type: 'HOSPITAL'});
+      facility_type: 'HOSPITAL',
+    });
     repository.findCurrentSubscription.mockResolvedValue(null);
     repository.findLookups.mockResolvedValue({
       tenants: [],
-      facilities: []});
+      facilities: [],
+      branches: [],
+    });
     repository.countRows.mockResolvedValue(0);
     repository.sumRows.mockResolvedValue(0);
     repository.findRows.mockResolvedValue([]);
@@ -441,7 +515,8 @@ describe('dashboard-workspace service', () => {
       roleProfile: { id: 'tenant_admin', role: 'TENANT_ADMIN', pack: 'tenant_admin' },
       summaryCards: [],
       trend: { title: '', subtitle: '', points: [] },
-      distribution: { title: '', subtitle: '', total: 0, segments: [] }});
+      distribution: { title: '', subtitle: '', total: 0, segments: [] },
+    });
 
     await subject.getWorkspace(
       { panel: 'queue', queue: 'billing_follow_up', search: 'inv0001' },
@@ -463,11 +538,18 @@ describe('dashboard-workspace service', () => {
               facility_id: 'FAC0001',
               OR: [
                 { status: { in: ['SENT', 'OVERDUE'] } },
-                { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }]}),
+                { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } },
+              ],
+            }),
             {
               OR: [
                 { human_friendly_id: { contains: 'inv0001' } },
-                { human_friendly_id: { contains: 'INV0001' } }]}]})})
+                { human_friendly_id: { contains: 'INV0001' } },
+              ],
+            },
+          ],
+        }),
+      })
     );
   });
 });

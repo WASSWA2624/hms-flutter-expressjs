@@ -181,11 +181,13 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null) => {
   const userScope = {
     tenant_id: user.tenant_id || user.tenantId || null,
     facility_id: user.facility_id || user.facilityId || null,
+    branch_id: user.branch_id || user.branchId || null
   };
 
   if (effectiveRole === ROLES.SUPER_ADMIN) {
     const tenantId = query.tenant_id || userScope.tenant_id || null;
     const facilityId = query.facility_id || userScope.facility_id || null;
+    const branchId = query.branch_id || userScope.branch_id || null;
 
     if (!tenantId) {
       return {
@@ -196,7 +198,10 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null) => {
     }
 
     let resolvedFacilityId = facilityId;
+    if (branchId) {
+      const branchFacilityId = await dashboardWidgetRepository.resolveBranchFacilityScope(tenantId, branchId);
       if (resolvedFacilityId && branchFacilityId && resolvedFacilityId !== branchFacilityId) {
+        throw new HttpError('errors.validation.invalid', 422, [{ field: 'branch_id' }]);
       }
       if (!resolvedFacilityId) resolvedFacilityId = branchFacilityId;
     }
@@ -204,6 +209,7 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null) => {
     return {
       tenant_id: tenantId,
       facility_id: resolvedFacilityId || null,
+      branch_id: branchId
     };
   }
 

@@ -33,7 +33,6 @@ const resolveAddressScopeIds = async (data = {}) => {
   if (data.facility_id) {
     payload.facility_id = await resolveFacilityId(data.facility_id);
   }
-  }
   if (Object.prototype.hasOwnProperty.call(data, 'patient_id')) {
     payload.patient_id = await resolveOptionalEntityId('patient', data.patient_id);
   }
@@ -80,6 +79,7 @@ const listAddresses = async (filters, page, limit, sortBy, order, userId, ipAddr
     if (resolvedFilters.tenant_id) whereClause.tenant_id = resolvedFilters.tenant_id;
     if (filters.address_type) whereClause.address_type = filters.address_type;
     if (resolvedFilters.facility_id) whereClause.facility_id = resolvedFilters.facility_id;
+    if (resolvedFilters.branch_id) whereClause.branch_id = resolvedFilters.branch_id;
     if (resolvedFilters.patient_id) whereClause.patient_id = resolvedFilters.patient_id;
     if (resolvedFilters.user_profile_id) {
       whereClause.user_profile_id = resolvedFilters.user_profile_id;

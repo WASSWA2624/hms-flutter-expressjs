@@ -292,23 +292,6 @@ const resolvePatientPortalPatient = async ({ scope = {}, userId = null, user = {
   });
 };
 
-  try {
-      where: {
-        tenant_id: tenantId,
-        deleted_at: null
-      },
-      select: {
-        facility_id: true
-      }
-    });
-    if (!branch) {
-    }
-    return branch.facility_id || null;
-  } catch (error) {
-    if (error instanceof HttpError) throw error;
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
-  }
-};
 
 /**
  * Find dashboard widget by ID
@@ -1733,7 +1716,6 @@ module.exports = {
   softDelete,
   getDashboardSummaryByPack,
   countUnreadOpdNotifications,
-  resolveBranchFacilityScope,
   findNurseStaffContext,
   __private__: {
     ROLE_PACKS,

@@ -6,16 +6,24 @@ const includeShape = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true}},
+      name: true,
+    },
+  },
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true}},
+      name: true,
+    },
+  },
+  branch: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true}}};
+      name: true,
+    },
+  },
+};
 
 const mapError = (error) => {
   if (error?.code === 'P2025') {
@@ -36,7 +44,8 @@ const findById = async (id) => {
   try {
     return await prisma.kpi_snapshot.findFirst({
       where: { id, deleted_at: null },
-      include: includeShape});
+      include: includeShape,
+    });
   } catch (error) {
     mapError(error);
   }
@@ -47,11 +56,13 @@ const findMany = async ({ where = {}, skip = 0, take = 20, orderBy = { recorded_
     return await prisma.kpi_snapshot.findMany({
       where: {
         deleted_at: null,
-        ...where},
+        ...where,
+      },
       skip,
       take,
       orderBy,
-      include: includeShape});
+      include: includeShape,
+    });
   } catch (error) {
     mapError(error);
   }
@@ -62,7 +73,9 @@ const count = async (where = {}) => {
     return await prisma.kpi_snapshot.count({
       where: {
         deleted_at: null,
-        ...where}});
+        ...where,
+      },
+    });
   } catch (error) {
     mapError(error);
   }
@@ -72,7 +85,8 @@ const create = async (data) => {
   try {
     return await prisma.kpi_snapshot.create({
       data,
-      include: includeShape});
+      include: includeShape,
+    });
   } catch (error) {
     mapError(error);
   }
@@ -83,7 +97,8 @@ const update = async (id, data) => {
     return await prisma.kpi_snapshot.update({
       where: { id },
       data,
-      include: includeShape});
+      include: includeShape,
+    });
   } catch (error) {
     mapError(error);
   }
@@ -93,7 +108,8 @@ const softDelete = async (id) => {
   try {
     return await prisma.kpi_snapshot.update({
       where: { id },
-      data: { deleted_at: new Date() }});
+      data: { deleted_at: new Date() },
+    });
   } catch (error) {
     mapError(error);
   }
@@ -105,4 +121,5 @@ module.exports = {
   findById,
   findMany,
   softDelete,
-  update};
+  update,
+};

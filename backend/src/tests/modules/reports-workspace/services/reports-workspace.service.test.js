@@ -1,14 +1,17 @@
 jest.mock('@repositories/reports-workspace/reports-workspace.repository');
 jest.mock('@services/dashboard-widget/dashboard-widget.service', () => ({
-  getDashboardSummary: jest.fn()}));
+  getDashboardSummary: jest.fn(),
+}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier)}));
+  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
+}));
 
 const reportsWorkspaceRepository = require('@repositories/reports-workspace/reports-workspace.repository');
 const dashboardWidgetService = require('@services/dashboard-widget/dashboard-widget.service');
 const {
   getLookups,
-  getWorkspace} = require('@services/reports-workspace/reports-workspace.service');
+  getWorkspace,
+} = require('@services/reports-workspace/reports-workspace.service');
 
 const buildRunRecord = (overrides = {}) => ({
   id: 'report-run-123',
@@ -35,20 +38,24 @@ const buildRunRecord = (overrides = {}) => ({
     id: 'report-definition-123',
     human_friendly_id: 'RD-001',
     name: 'Admissions Daily',
-    default_format: 'PDF'},
+    default_format: 'PDF',
+  },
   requested_by: {
     id: 'user-123',
     human_friendly_id: 'USR-001',
     email: 'owner@example.com',
-    profile: { first_name: 'Owner' }},
+    profile: { first_name: 'Owner' },
+  },
   facility: { id: 'facility-123', human_friendly_id: 'FAC-001', name: 'Main Facility' },
   schedule: {
     id: 'report-schedule-123',
     human_friendly_id: 'RS-001',
     name: 'Morning',
     retention_days: 30,
-    status: 'ACTIVE'},
-  ...overrides});
+    status: 'ACTIVE',
+  },
+  ...overrides,
+});
 
 describe('Reports Workspace Service', () => {
   beforeEach(() => {
@@ -66,64 +73,82 @@ describe('Reports Workspace Service', () => {
       recent_activity: 4,
       failed_runs: 0,
       total_schedules: 1,
-      stale_widgets: 0});
+      stale_widgets: 0,
+    });
     reportsWorkspaceRepository.findLookups.mockResolvedValue({
       facilities: [{ id: 'facility-123', human_friendly_id: 'FAC-001', name: 'Main Facility' }],
+      branches: [{ id: 'branch-123', human_friendly_id: 'BR-001', name: 'North Wing', facility_id: 'facility-123' }],
       users: [{
         id: 'user-123',
         human_friendly_id: 'USR-001',
         email: 'owner@example.com',
-        profile: { first_name: 'Owner', last_name: 'One' }}]});
+        profile: { first_name: 'Owner', last_name: 'One' },
+      }],
+    });
     reportsWorkspaceRepository.findItems.mockResolvedValue({
       items: [buildRunRecord()],
-      total: 1});
+      total: 1,
+    });
     reportsWorkspaceRepository.findTimeline.mockResolvedValue({
       runs: [buildRunRecord()],
       schedules: [],
       kpis: [],
-      events: []});
+      events: [],
+    });
     dashboardWidgetService.getDashboardSummary.mockResolvedValue({
-      roleProfile: { id: 'tenant_admin' }});
+      roleProfile: { id: 'tenant_admin' },
+    });
 
     const result = await getWorkspace({}, 1, 20, undefined, 'desc', {
       tenant_id: 'tenant-123',
-      facility_id: 'facility-123'});
+      facility_id: 'facility-123',
+    });
 
     expect(reportsWorkspaceRepository.findItems).toHaveBeenCalledWith(
       expect.objectContaining({
         resource: 'report-runs',
         where: expect.objectContaining({
           tenant_id: 'tenant-123',
-          facility_id: 'facility-123'})})
+          facility_id: 'facility-123',
+        }),
+      })
     );
     expect(result.filters).toMatchObject({
       panel: 'overview',
       resource: 'report-runs',
-      facilityId: 'FAC-001'});
+      facilityId: 'FAC-001',
+    });
     expect(result.lookups.facilities[0]).toEqual({
       id: 'FAC-001',
-      label: 'Main Facility'});
+      label: 'Main Facility',
+    });
     expect(result.items[0]).toMatchObject({
       id: 'RR-001',
-      report_definition_label: 'Admissions Daily'});
+      report_definition_label: 'Admissions Daily',
+    });
     expect(result.summary).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'definitions', value: 3 }),
-        expect.objectContaining({ id: 'runs_queued', value: 2 })])
+        expect.objectContaining({ id: 'runs_queued', value: 2 }),
+      ])
     );
   });
 
   it('maps lookup payloads for the workbench filter UI', async () => {
     reportsWorkspaceRepository.findLookups.mockResolvedValue({
       facilities: [{ id: 'facility-123', human_friendly_id: 'FAC-001', name: 'Main Facility' }],
+      branches: [{ id: 'branch-123', human_friendly_id: 'BR-001', name: 'North Wing', facility_id: 'facility-123' }],
       users: [{
         id: 'user-123',
         human_friendly_id: 'USR-001',
         email: 'owner@example.com',
-        profile: { first_name: 'Owner', last_name: 'One' }}]});
+        profile: { first_name: 'Owner', last_name: 'One' },
+      }],
+    });
 
     const result = await getLookups({ facilityId: 'facility-123' }, {
-      tenant_id: 'tenant-123'});
+      tenant_id: 'tenant-123',
+    });
 
     expect(reportsWorkspaceRepository.findLookups).toHaveBeenCalledWith({
       tenant_id: 'tenant-123',
@@ -132,12 +157,16 @@ describe('Reports Workspace Service', () => {
       report_definition_id: null,
       schedule_id: null,
       user_id: null,
-      resource: null});
+      resource: null,
+    });
     expect(result).toMatchObject({
       facilities: [{ id: 'FAC-001', label: 'Main Facility' }],
+      branches: [{
         id: 'BR-001',
         label: 'North Wing',
-        meta: { facility_id: 'FAC-001' }}],
-      owners: [{ id: 'USR-001', label: 'Owner One' }]});
+        meta: { facility_id: 'FAC-001' },
+      }],
+      owners: [{ id: 'USR-001', label: 'Owner One' }],
+    });
   });
 });

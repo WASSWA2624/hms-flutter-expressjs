@@ -92,13 +92,16 @@ describe('Department Service', () => {
       );
     });
 
+    it('should filter by branch_id', async () => {
       const mockDepartments = [{ id: 'dept-1', name: 'Emergency' }];
       departmentRepository.findMany.mockResolvedValue(mockDepartments);
       departmentRepository.count.mockResolvedValue(1);
 
+      const result = await listDepartments({ branch_id: 'branch-123' }, 1, 20);
 
       expect(result.departments).toEqual(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
+        { branch_id: 'branch-123' },
         0,
         20,
         { created_at: 'desc' }

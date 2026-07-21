@@ -28,6 +28,7 @@ const includeShape = {
       name: true,
     },
   },
+  branch: {
     select: {
       id: true,
       human_friendly_id: true,

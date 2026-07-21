@@ -41,6 +41,8 @@ const listAnalyticsEvents = async (filters = {}, page = 1, limit = 20, sortBy, o
   if (normalizeString(filters.user_id) && !scoped.user_id) where.user_id = '__none__';
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
   if (normalizeString(filters.facility_id) && !scoped.facility_id) where.facility_id = '__none__';
+  if (scoped.branch_id) where.branch_id = scoped.branch_id;
+  if (normalizeString(filters.branch_id) && !scoped.branch_id) where.branch_id = '__none__';
   if (normalizeString(filters.event_category)) where.event_category = normalizeString(filters.event_category);
   if (normalizeString(filters.entity_type)) where.entity_type = normalizeString(filters.entity_type);
   if (normalizeString(filters.severity)) where.severity = safeUpper(filters.severity);
@@ -78,6 +80,10 @@ const createAnalyticsEvent = async (data, context = {}) => {
       tenant_id: scoped.tenant_id,
       nullable: true,
     }),
+    branch_id: await resolvePayloadIdentifier({
+      value: data.branch_id ?? scoped.branch_id,
+      model: 'branch',
+      field: 'branch_id',
       tenant_id: scoped.tenant_id,
       nullable: true,
     }),
@@ -135,10 +141,6 @@ const updateAnalyticsEvent = async (id, data, context = {}) => {
       nullable: true,
     });
   }
-      tenant_id: current.tenant_id,
-      nullable: true,
-    });
-  }
   if (data.event_name !== undefined) updateData.event_name = normalizeString(data.event_name);
   if (data.event_category !== undefined) updateData.event_category = normalizeString(data.event_category);
   if (data.entity_type !== undefined) updateData.entity_type = normalizeString(data.entity_type) || null;
@@ -158,6 +160,7 @@ const updateAnalyticsEvent = async (id, data, context = {}) => {
     diff: createAuditDiff(current, record, [
       'user_id',
       'facility_id',
+      'branch_id',
       'event_name',
       'event_category',
       'entity_type',

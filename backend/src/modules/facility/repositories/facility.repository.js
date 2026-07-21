@@ -339,47 +339,14 @@ const permanentDelete = async (id) => {
   }
 };
 
-/**
- * Find facility branches by facility ID
- *
- * @param {string} facilityId - Facility ID
- * @param {number} skip - Number of records to skip
- * @param {number} take - Number of records to take
- * @param {Object} orderBy - Sort order
- * @returns {Promise<Array>} Array of branches
- */
-const findBranches = async (facilityId, skip = 0, take = 20, orderBy = { created_at: 'desc' }) => {
+) => {
   try {
-      where: {
-        facility_id: facilityId,
-        deleted_at: null,
-      },
-      skip,
-      take,
-      orderBy,
-    });
+    return await;
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
 };
 
-/**
- * Count facility branches
- *
- * @param {string} facilityId - Facility ID
- * @returns {Promise<number>} Count of branches
- */
-const countBranches = async (facilityId) => {
-  try {
-      where: {
-        facility_id: facilityId,
-        deleted_at: null,
-      },
-    });
-  } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
-  }
-};
 
 module.exports = {
   findById,
@@ -391,7 +358,5 @@ module.exports = {
   softDelete,
   restore,
   permanentDelete,
-  findBranches,
-  countBranches,
   normalizeFacilityName,
 };

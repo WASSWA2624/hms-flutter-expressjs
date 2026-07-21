@@ -531,62 +531,6 @@ const permanentDeleteFacility = async (id, context = {}) => {
   });
 };
 
-/**
- * Get facility branches with pagination
- *
- * @param {string} facilityId - Facility ID
- * @param {number} page - Page number
- * @param {number} limit - Items per page
- * @param {string} [sort_by] - Field to sort by
- * @param {string} [order] - Sort order (asc/desc)
- * @returns {Promise<Object>} Paginated branches
- */
-  const resolvedPage = toPositiveInt(page, DEFAULT_PAGE);
-  const resolvedLimit = toPositiveInt(limit, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT);
-  const resolvedSortBy = typeof sort_by === 'string' && sort_by.trim()
-    ? sort_by.trim()
-    : 'created_at';
-  const resolvedOrder = normalizeSortOrder(order);
-
-  const resolvedFacilityId = await resolveFacilityId(facilityId);
-
-  // Check if facility exists
-  const facility = await facilityRepository.findById(resolvedFacilityId);
-  
-  if (!facility) {
-    throw new HttpError('errors.facility.not_found', 404);
-  }
-
-  // Calculate pagination
-  const skip = (resolvedPage - 1) * resolvedLimit;
-
-  // Build sort order
-  const orderBy = {};
-  orderBy[resolvedSortBy] = resolvedOrder;
-
-  // Fetch branches and count
-  const [branches, total] = await Promise.all([
-    facilityRepository.findBranches(resolvedFacilityId, skip, resolvedLimit, orderBy),
-    facilityRepository.countBranches(resolvedFacilityId)
-  ]);
-
-  // Calculate pagination metadata
-  const totalPages = Math.ceil(total / resolvedLimit);
-  const hasNextPage = resolvedPage < totalPages;
-  const hasPreviousPage = resolvedPage > 1;
-
-  return {
-    branches,
-    pagination: {
-      page: resolvedPage,
-      limit: resolvedLimit,
-      total,
-      totalPages,
-      hasNextPage,
-      hasPreviousPage
-    }
-  };
-};
 
 module.exports = {
   listFacilities,

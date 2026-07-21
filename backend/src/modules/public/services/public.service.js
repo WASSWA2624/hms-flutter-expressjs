@@ -40,9 +40,11 @@ const listPublicProviders = async (filters = {}, page = 1, limit = 20, sortBy = 
   };
 };
 
+, page = 1, limit = 20, sortBy = 'name', order = 'asc') => {
   const skip = (page - 1) * limit;
   const orderBy = { [sortBy]: order };
 
+  const { items, total } = await publicRepository.listPublicBranches(filters.search, skip, limit, orderBy);
 
   return {
     items,
@@ -52,4 +54,5 @@ const listPublicProviders = async (filters = {}, page = 1, limit = 20, sortBy = 
 
 module.exports = {
   listPublicServices,
-  listPublicProviders};
+  listPublicProviders,
+};

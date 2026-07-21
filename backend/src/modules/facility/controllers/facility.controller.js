@@ -172,28 +172,7 @@ const permanentDeleteFacility = asyncHandler(async (req, res) => {
   return sendNoContent(res);
 });
 
-/**
- * Get facility branches with pagination
- *
- * @param {Object} req - Express request
- * @param {Object} res - Express response
- * @returns {Promise<void>}
- */
-  const { id } = req.params;
-  const { page, limit, sort_by, order } = req.query;
-
-    id,
-    page,
-    limit,
-    sort_by,
-    order
-  );
-
-  return sendPaginated(
-    res,
-    result.pagination
-  );
-});
+);
 
 module.exports = {
   listFacilities,

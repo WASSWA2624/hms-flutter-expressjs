@@ -13,7 +13,8 @@ const {
   normalizeString,
   resolveListScopedIdentifiers,
   resolveScopedIdentifiers,
-  serializeShiftClose} = require('@lib/last-office/shared');
+  serializeShiftClose,
+} = require('@lib/last-office/shared');
 const { recordWorkflowEvent } = require('@lib/telemetry/metrics');
 const { getUserPermissions } = require('@middlewares/auth.middleware');
 
@@ -22,7 +23,8 @@ const SORT_FIELDS = new Set(['created_at', 'updated_at', 'submitted_at', 'approv
 const resolveShiftCloseId = async (identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'shift_close',
-    identifier});
+    identifier,
+  });
 
   return resolved || identifier;
 };
@@ -37,9 +39,6 @@ const ensureScopedRecord = (record, context = {}) => {
   }
 
   if (context.facility_id && record.facility_id && record.facility_id !== context.facility_id) {
-    throw new HttpError('errors.shift_close.not_found', 404);
-  }
-
     throw new HttpError('errors.shift_close.not_found', 404);
   }
 
@@ -82,24 +81,26 @@ const calculateAmounts = (data = {}, current = {}) => {
   return {
     expected_amount: expected,
     actual_amount: actual,
-    variance_amount: variance};
+    variance_amount: variance,
+  };
 };
 
 const buildListWhere = async (filters = {}, context = {}) => {
   const scoped = await resolveListScopedIdentifiers({ filters, context });
-    return null;
-  }
 
   const where = {
-    tenant_id: scoped.tenant_id};
+    tenant_id: scoped.tenant_id,
+  };
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
+  if (scoped.branch_id) where.branch_id = scoped.branch_id;
 
   if (filters.office_context_id !== undefined) {
     const officeContextId = await resolveIdentifierForFilter({
       value: filters.office_context_id,
       model: 'office_context',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (officeContextId === null) return null;
     if (officeContextId !== undefined) where.office_context_id = officeContextId;
   }
@@ -108,7 +109,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const shiftId = await resolveIdentifierForFilter({
       value: filters.shift_id,
       model: 'shift',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (shiftId === null) return null;
     if (shiftId !== undefined) where.shift_id = shiftId;
   }
@@ -117,7 +119,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const closedByUserId = await resolveIdentifierForFilter({
       value: filters.closed_by_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (closedByUserId === null) return null;
     if (closedByUserId !== undefined) where.closed_by_user_id = closedByUserId;
   }
@@ -126,7 +129,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const approvedByUserId = await resolveIdentifierForFilter({
       value: filters.approved_by_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (approvedByUserId === null) return null;
     if (approvedByUserId !== undefined) where.approved_by_user_id = approvedByUserId;
   }
@@ -144,7 +148,8 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
       value: data.office_context_id,
       field: 'office_context_id',
       model: 'office_context',
-      where: { tenant_id: context.tenant_id }});
+      where: { tenant_id: context.tenant_id },
+    });
     const officeContext = await officeContextRepository.findById(officeContextId);
     if (!officeContext) {
       throw new HttpError('errors.office_context.not_found', 404);
@@ -154,7 +159,9 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
 
   const currentOfficeContext = await officeContextRepository.findCurrent({
     tenant_id: context.tenant_id,
-    ...(context.facility_id ? { facility_id: context.facility_id } : {})});
+    ...(context.facility_id ? { facility_id: context.facility_id } : {}),
+    ...(context.branch_id ? { branch_id: context.branch_id } : {}),
+  });
 
   if (!currentOfficeContext) {
     throw new HttpError('errors.office_context.not_found', 404);
@@ -168,7 +175,8 @@ const listShiftCloses = async (filters = {}, page = 1, limit = 20, sortBy, order
   if (where === null) {
     return {
       shiftCloses: [],
-      pagination: buildPagination(page, limit, 0)};
+      pagination: buildPagination(page, limit, 0),
+    };
   }
 
   const skip = (page - 1) * limit;
@@ -176,11 +184,13 @@ const listShiftCloses = async (filters = {}, page = 1, limit = 20, sortBy, order
 
   const [records, total] = await Promise.all([
     shiftCloseRepository.findMany(where, skip, limit, orderBy),
-    shiftCloseRepository.count(where)]);
+    shiftCloseRepository.count(where),
+  ]);
 
   return {
     shiftCloses: records.map(serializeShiftClose),
-    pagination: buildPagination(page, limit, total)};
+    pagination: buildPagination(page, limit, total),
+  };
 };
 
 const getShiftCloseById = async (id, context = {}) => {
@@ -196,12 +206,14 @@ const createShiftClose = async (data = {}, context = {}) => {
     value: data.shift_id ?? officeContext.shift_id,
     field: 'shift_id',
     model: 'shift',
-    where: { tenant_id: scoped.tenant_id }});
+    where: { tenant_id: scoped.tenant_id },
+  });
   const existingDrafts = await shiftCloseRepository.findMany({
     office_context_id: officeContext.id,
     closed_by_user_id: context.user_id,
     shift_id: shiftId,
-    status: { in: ['DRAFT', 'SUBMITTED'] }}, 0, 1);
+    status: { in: ['DRAFT', 'SUBMITTED'] },
+  }, 0, 1);
 
   if (existingDrafts.length > 0) {
     throw new HttpError('errors.validation.invalid', 409, [{ field: 'office_context_id' }]);
@@ -228,7 +240,8 @@ const createShiftClose = async (data = {}, context = {}) => {
     submitted_at: nextStatus === 'SUBMITTED' ? new Date() : null,
     notes: normalizeString(data.notes) || null,
     evidence_json: data.evidence_json || null,
-    etag: buildRecordEtag(publicId, '1', nextStatus)};
+    etag: buildRecordEtag(publicId, '1', nextStatus),
+  };
 
   const record = await shiftCloseRepository.create(payload);
   const serialized = serializeShiftClose(record);
@@ -242,7 +255,8 @@ const createShiftClose = async (data = {}, context = {}) => {
     entity_id: record.id,
     diff: { after: serialized },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   if (record.status === 'SUBMITTED') {
     await emitLastOfficeEvent({
@@ -253,10 +267,13 @@ const createShiftClose = async (data = {}, context = {}) => {
         shift_close_id: serialized.id,
         office_context_id: serialized.office_context_id,
         status: serialized.status,
-        variance_amount: serialized.variance_amount}});
+        variance_amount: serialized.variance_amount,
+      },
+    });
     recordWorkflowEvent('last_office.shift_close_submitted', {
       'hms.shift_close.id': serialized.id,
-      'hms.office_context.id': serialized.office_context_id});
+      'hms.office_context.id': serialized.office_context_id,
+    });
   }
 
   return serialized;
@@ -288,7 +305,8 @@ const updateShiftClose = async (id, data = {}, context = {}) => {
     actual_amount: amounts.actual_amount,
     variance_amount: amounts.variance_amount,
     submitted_at: nextStatus === 'SUBMITTED' ? current.submitted_at || new Date() : null,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), nextStatus)};
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), nextStatus),
+  };
 
   if (data.totals_json !== undefined) updateData.totals_json = data.totals_json || null;
   if (data.reconciliation_json !== undefined) updateData.reconciliation_json = data.reconciliation_json || null;
@@ -308,7 +326,8 @@ const updateShiftClose = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   if (current.status !== 'SUBMITTED' && record.status === 'SUBMITTED') {
     await emitLastOfficeEvent({
@@ -319,10 +338,13 @@ const updateShiftClose = async (id, data = {}, context = {}) => {
         shift_close_id: after.id,
         office_context_id: after.office_context_id,
         status: after.status,
-        variance_amount: after.variance_amount}});
+        variance_amount: after.variance_amount,
+      },
+    });
     recordWorkflowEvent('last_office.shift_close_submitted', {
       'hms.shift_close.id': after.id,
-      'hms.office_context.id': after.office_context_id});
+      'hms.office_context.id': after.office_context_id,
+    });
   }
 
   return after;
@@ -348,7 +370,8 @@ const approveShiftClose = async (id, data = {}, context = {}) => {
     approved_at: new Date(),
     notes: data.notes !== undefined ? normalizeString(data.notes) || null : current.notes,
     version: nextVersion,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'APPROVED')});
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'APPROVED'),
+  });
 
   const before = serializeShiftClose(current);
   const after = serializeShiftClose(record);
@@ -362,7 +385,8 @@ const approveShiftClose = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   await emitLastOfficeEvent({
     tenant_id: record.tenant_id,
@@ -372,11 +396,14 @@ const approveShiftClose = async (id, data = {}, context = {}) => {
       shift_close_id: after.id,
       office_context_id: after.office_context_id,
       approved_by_user_id: after.approved_by_user_id,
-      variance_amount: after.variance_amount}});
+      variance_amount: after.variance_amount,
+    },
+  });
 
   recordWorkflowEvent('last_office.shift_close_approved', {
     'hms.shift_close.id': after.id,
-    'hms.office_context.id': after.office_context_id});
+    'hms.office_context.id': after.office_context_id,
+  });
 
   return after;
 };
@@ -386,4 +413,5 @@ module.exports = {
   createShiftClose,
   getShiftCloseById,
   listShiftCloses,
-  updateShiftClose};
+  updateShiftClose,
+};
