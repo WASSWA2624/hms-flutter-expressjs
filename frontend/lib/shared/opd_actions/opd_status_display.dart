@@ -228,6 +228,152 @@ int opdFlowStageIndex(String? stage) {
   return opdFlowStageSequence.indexOf(_normalizedOpdStage(stage));
 }
 
+const Set<String> _opdPaidConsultationStatuses = <String>{
+  'COMPLETED',
+  'PAID',
+  'SUCCESS',
+  'SUCCESSFUL',
+  'APPROVED',
+};
+
+bool _opdHasNonEmptyId(String? value) => (value ?? '').trim().isNotEmpty;
+
+bool _opdConsultationPaymentRecorded(OpdFlowSummary flow, OpdFlowDetail? detail) {
+  final bool paid = detail?.consultationPaid ?? flow.consultationPaid;
+  if (paid) {
+    return true;
+  }
+  final String status =
+      (detail?.consultationPaymentStatus ?? flow.consultationPaymentStatus ?? '')
+          .trim()
+          .toUpperCase();
+  if (status == 'NOT_REQUIRED' || _opdPaidConsultationStatuses.contains(status)) {
+    return true;
+  }
+  final bool required =
+      detail?.consultationPaymentRequired ?? flow.consultationPaymentRequired;
+  // Explicit waiver: not required and already past the payment stage.
+  if (!required &&
+      opdFlowStageIndex(flow.stage) >
+          opdFlowStageIndex('WAITING_CONSULTATION_PAYMENT')) {
+    return true;
+  }
+  return false;
+}
+
+bool _opdVitalsRecorded(OpdFlowDetail? detail) {
+  return (detail?.vitalMeasurements.isNotEmpty ?? false) ||
+      (detail?.vitalSigns.isNotEmpty ?? false);
+}
+
+bool _opdDoctorAssigned(OpdFlowSummary flow) {
+  return _opdHasNonEmptyId(flow.providerUserId) ||
+      _opdHasNonEmptyId(flow.assignedStaffDisplayName) ||
+      _opdHasNonEmptyId(flow.providerDisplayName);
+}
+
+bool _opdHasDurableClinicalOrders(OpdFlowDetail? detail) {
+  return (detail?.labOrders.isNotEmpty ?? false) ||
+      (detail?.radiologyOrders.isNotEmpty ?? false) ||
+      (detail?.pharmacyOrders.isNotEmpty ?? false);
+}
+
+bool _opdReviewCompletedProxy(OpdFlowSummary flow, OpdFlowDetail? detail) {
+  if (_opdHasDurableClinicalOrders(detail)) {
+    return true;
+  }
+  if ((detail?.diagnoses.isNotEmpty ?? false) ||
+      (detail?.procedures.isNotEmpty ?? false)) {
+    return true;
+  }
+  final String display = (flow.displayCode ?? '').trim().toUpperCase();
+  return display == 'DECISION_NEEDED' ||
+      display == 'ADMISSION_PENDING' ||
+      display == 'ADMITTED' ||
+      display == 'DISCHARGED';
+}
+
+bool _opdAdmissionMilestone(OpdFlowSummary flow, OpdFlowDetail? detail) {
+  final String stage = _normalizedOpdStage(flow.stage);
+  final String display = (flow.displayCode ?? '').trim().toUpperCase();
+  if (stage == 'ADMITTED' || display == 'ADMITTED') {
+    return true;
+  }
+  final List<OpdRelatedRecord> admissions =
+      detail?.admissions ?? const <OpdRelatedRecord>[];
+  return admissions.any((OpdRelatedRecord record) {
+    final String status = (record.status ?? '').trim().toUpperCase();
+    return status != 'DISCHARGED' && status != 'CANCELLED';
+  });
+}
+
+/// Minimum workflow-stage index selectable for Correct stage.
+///
+/// Recorded milestones raise the floor so staff cannot reverse past completed
+/// work. Mirrors backend `resolveStageCorrectionMinIndex`.
+int opdStageCorrectionMinIndex({
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
+}) {
+  int minIndex = 0;
+  void bump(String stage) {
+    final int index = opdFlowStageIndex(stage);
+    if (index > minIndex) {
+      minIndex = index;
+    }
+  }
+
+  if (_opdConsultationPaymentRecorded(flow, detail)) {
+    bump('WAITING_VITALS');
+  }
+  if (_opdVitalsRecorded(detail)) {
+    bump('WAITING_DOCTOR_ASSIGNMENT');
+  }
+  if (_opdDoctorAssigned(flow)) {
+    bump('WAITING_DOCTOR_REVIEW');
+  }
+
+  final bool hasOrders = _opdHasDurableClinicalOrders(detail);
+  if (_opdReviewCompletedProxy(flow, detail) || hasOrders) {
+    bump(hasOrders ? 'LAB_REQUESTED' : 'WAITING_DISPOSITION');
+  }
+
+  if ((flow.displayCode ?? '').trim().toUpperCase() == 'ADMISSION_PENDING') {
+    bump('WAITING_DISPOSITION');
+  }
+  if (_opdAdmissionMilestone(flow, detail)) {
+    bump('ADMITTED');
+  }
+
+  return minIndex;
+}
+
+bool opdIsEligibleStageCorrectionTarget(
+  String? stage, {
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
+}) {
+  final int toIndex = opdFlowStageIndex(stage);
+  if (toIndex < 0) {
+    return false;
+  }
+  return toIndex >= opdStageCorrectionMinIndex(flow: flow, detail: detail);
+}
+
+/// Eligible Correct-stage targets, excluding [currentStage] when provided.
+List<String> opdEligibleStageCorrectionTargets({
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
+  String? currentStage,
+}) {
+  final String excluded = _normalizedOpdStage(currentStage ?? flow.stage);
+  final int minIndex = opdStageCorrectionMinIndex(flow: flow, detail: detail);
+  return <String>[
+    for (final String stage in opdFlowStageSequence)
+      if (stage != excluded && opdFlowStageIndex(stage) >= minIndex) stage,
+  ];
+}
+
 /// Returns a compact slice of workflow stages around [currentStage].
 List<String> opdWorkflowStagesAround(
   String? currentStage, {

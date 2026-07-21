@@ -1307,7 +1307,10 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
   void initState() {
     super.initState();
     _reasonController = TextEditingController();
-    _stage = _firstSelectableStage(widget.flow.stage);
+    _stage = _firstSelectableStage(
+      widget.flow.stage,
+      flow: widget.flow,
+    );
   }
 
   @override
@@ -1322,9 +1325,20 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
     final OpdFlowSummary flow = _currentFlow;
     final OpdFlowDetail? detail = _currentDetail;
     final String currentStage = _normalizedStage(flow.stage);
+    final List<AppSelectOption<String>> stageOptions = _flowStageOptions(
+      context.l10n,
+      flow: flow,
+      detail: detail,
+      exclude: currentStage,
+    );
+    final String selectedStage = stageOptions.any(
+          (AppSelectOption<String> option) => option.value == _stage,
+        )
+        ? _stage
+        : (stageOptions.isEmpty ? _stage : stageOptions.first.value);
     final bool reasonRequired = _stageCorrectionRequiresReason(
       currentStage,
-      _stage,
+      selectedStage,
     );
     return AppDialog(
       title: Text(l10n.opdCorrectStageAction),
@@ -1352,17 +1366,17 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
                 ),
                 AppInfoTileData(
                   label: l10n.opdTargetStageLabel,
-                  value: opdStageDisplayLabel(l10n, _stage),
+                  value: opdStageDisplayLabel(l10n, selectedStage),
                 ),
               ],
             ),
             AppSelectField<String>(
-              value: _stage,
+              value: stageOptions.isEmpty ? null : selectedStage,
               labelText: _opdRequiredFieldLabel(l10n, l10n.opdTargetStageLabel),
-              enabled: !_isSaving,
+              enabled: !_isSaving && stageOptions.isNotEmpty,
               onChanged: (String? value) =>
                   setState(() => _stage = value ?? _stage),
-              options: _flowStageOptions(context.l10n, exclude: currentStage),
+              options: stageOptions,
             ),
             AppTextField(
               controller: _reasonController,
@@ -1387,13 +1401,15 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
         context,
         l10n.opdCorrectStageAction,
         _isSaving,
-        _isSaving ? null : _submit,
+        _isSaving || stageOptions.isEmpty
+            ? null
+            : () => _submit(selectedStage),
         submitLeadingIcon: AppActionIcons.move,
       ),
     );
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(String stageTo) async {
     if (_isSaving) {
       return;
     }
@@ -1401,17 +1417,24 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
       return;
     }
     final OpdFlowSummary flow = _currentFlow;
-    if (_normalizedStage(flow.stage) == _stage) {
+    final OpdFlowDetail? detail = _currentDetail;
+    if (_normalizedStage(flow.stage) == stageTo ||
+        !opdIsEligibleStageCorrectionTarget(
+          stageTo,
+          flow: flow,
+          detail: detail,
+        )) {
       setState(() => _failure = AppFailure.validation());
       return;
     }
     setState(() {
       _isSaving = true;
       _failure = null;
+      _stage = stageTo;
     });
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
-        .correctStage(flow, _stage, _reasonController.text.trim());
+        .correctStage(flow, stageTo, _reasonController.text.trim());
     if (!mounted) {
       return;
     }
@@ -1813,7 +1836,19 @@ OpdWorkspaceState? _workspaceState(WidgetRef ref) {
   );
 }
 
-String _firstSelectableStage(String? currentStage) {
+String _firstSelectableStage(
+  String? currentStage, {
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
+}) {
+  final List<String> eligible = opdEligibleStageCorrectionTargets(
+    flow: flow,
+    detail: detail,
+    currentStage: currentStage,
+  );
+  if (eligible.isNotEmpty) {
+    return eligible.first;
+  }
   final String normalizedCurrent = _normalizedStage(currentStage);
   return _flowStages.firstWhere(
     (String stage) => stage != normalizedCurrent,
@@ -1835,17 +1870,22 @@ bool _stageCorrectionRequiresReason(String currentStage, String targetStage) {
 
 List<AppSelectOption<String>> _flowStageOptions(
   AppLocalizations l10n, {
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
   String? exclude,
 }) {
-  final String normalizedExclude = _normalizedStage(exclude);
+  final List<String> eligible = opdEligibleStageCorrectionTargets(
+    flow: flow,
+    detail: detail,
+    currentStage: exclude,
+  );
   return <AppSelectOption<String>>[
-    for (final String value in _flowStages)
-      if (value != normalizedExclude)
-        AppSelectOption<String>(
-          value: value,
-          label: opdStageDisplayLabel(l10n, value),
-          leadingIcon: Icon(_flowStageIcon(value)),
-        ),
+    for (final String value in eligible)
+      AppSelectOption<String>(
+        value: value,
+        label: opdStageDisplayLabel(l10n, value),
+        leadingIcon: Icon(_flowStageIcon(value)),
+      ),
   ];
 }
 

@@ -1838,6 +1838,101 @@ const hasConfirmedAdmission = (encounter, flow) => {
   return activeItems(admission.bed_assignments).some((assignment) => !assignment.released_at);
 };
 
+const workflowStageIndex = (stage) => WORKFLOW_STAGE_ORDER.indexOf(stage);
+
+const hasDurableClinicalOrders = (encounter, flow) => {
+  const labIds = Array.isArray(flow?.lab_order_ids)
+    ? flow.lab_order_ids.map(normalizeIdentifier).filter(Boolean)
+    : [];
+  const radiologyIds = Array.isArray(flow?.radiology_order_ids)
+    ? flow.radiology_order_ids.map(normalizeIdentifier).filter(Boolean)
+    : [];
+  if (labIds.length || radiologyIds.length || normalizeIdentifier(flow?.pharmacy_order_id)) {
+    return true;
+  }
+  const isActiveOrder = (order) =>
+    !order?.deleted_at && normalizeStatus(order?.status) !== 'CANCELLED';
+  return (
+    activeItems(encounter?.lab_orders).some(isActiveOrder) ||
+    activeItems(encounter?.radiology_orders).some(isActiveOrder) ||
+    activeItems(encounter?.pharmacy_orders).some(isActiveOrder)
+  );
+};
+
+/**
+ * Minimum workflow-stage index selectable for stage correction.
+ * Recorded milestones raise the floor so staff cannot reverse past completed work.
+ */
+const resolveStageCorrectionMinIndex = (encounter, flow) => {
+  let minIndex = 0;
+  const bump = (stage) => {
+    const index = workflowStageIndex(stage);
+    if (index > minIndex) {
+      minIndex = index;
+    }
+  };
+
+  if (hasCompletedConsultationPayment(flow)) {
+    bump(STAGES.WAITING_VITALS);
+  }
+  if (hasRecordedVitals(encounter)) {
+    bump(STAGES.WAITING_DOCTOR_ASSIGNMENT);
+  }
+  if (normalizeIdentifier(encounter?.provider_user_id)) {
+    bump(STAGES.WAITING_DOCTOR_REVIEW);
+  }
+
+  const hasOrders = hasDurableClinicalOrders(encounter, flow);
+  if (flow?.review_completed || hasOrders) {
+    bump(hasOrders ? STAGES.LAB_REQUESTED : STAGES.WAITING_DISPOSITION);
+  }
+
+  if (flow?.admission_id || flow?.admission_pending || flow?.disposition_decision) {
+    bump(STAGES.WAITING_DISPOSITION);
+  }
+  if (hasConfirmedAdmission(encounter, flow) || flow?.stage === STAGES.ADMITTED) {
+    bump(STAGES.ADMITTED);
+  }
+
+  return minIndex;
+};
+
+const isEligibleStageCorrectionTarget = (stageTo, encounter, flow) => {
+  const toIndex = workflowStageIndex(stageTo);
+  if (toIndex < 0) {
+    return false;
+  }
+  return toIndex >= resolveStageCorrectionMinIndex(encounter, flow);
+};
+
+const STAGE_CORRECTION_ENCOUNTER_INCLUDE = {
+  vital_signs: {
+    where: { deleted_at: null },
+    select: { id: true, deleted_at: true }
+  },
+  admissions: {
+    where: { deleted_at: null },
+    include: {
+      bed_assignments: {
+        where: { deleted_at: null },
+        select: { id: true, released_at: true, deleted_at: true }
+      }
+    }
+  },
+  lab_orders: {
+    where: { deleted_at: null },
+    select: { id: true, status: true, deleted_at: true }
+  },
+  radiology_orders: {
+    where: { deleted_at: null },
+    select: { id: true, status: true, deleted_at: true }
+  },
+  pharmacy_orders: {
+    where: { deleted_at: null },
+    select: { id: true, status: true, deleted_at: true }
+  }
+};
+
 const displayLabelByCode = (code, assignedStaff = null) => {
   if (code === 'WITH_DOCTOR' && assignedStaff?.display_name) return `${assignedStaff.role || 'Doctor'}: ${assignedStaff.display_name}`;
   return {
@@ -5300,7 +5395,9 @@ const correctStage = async (id, data, context = {}) => {
   let updatedResult;
   try {
     updatedResult = await prisma.$transaction(async (tx) => {
-      const encounter = await resolveEncounterByIdentifier(tx, id);
+      const encounter = await resolveEncounterByIdentifier(tx, id, {
+        include: STAGE_CORRECTION_ENCOUNTER_INCLUDE
+      });
       if (!encounter) {
         throw new HttpError('errors.opd_flow.not_found', 404);
       }
@@ -5308,6 +5405,9 @@ const correctStage = async (id, data, context = {}) => {
       const flow = getOpdFlowState(encounter);
       const stageBefore = flow.stage || null;
       if (stageBefore === stageTo) {
+        throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [{ field: 'stage_to' }]);
+      }
+      if (!isEligibleStageCorrectionTarget(stageTo, encounter, flow)) {
         throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [{ field: 'stage_to' }]);
       }
       if (stageCorrectionRequiresReason(stageBefore, stageTo) && !reason) {

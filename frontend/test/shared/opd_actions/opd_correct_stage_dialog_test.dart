@@ -13,7 +13,6 @@ import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_c
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -118,7 +117,7 @@ void main() {
       summary: OpdFlowSummary(
         id: 'encounter-1',
         publicId: 'ENC000001',
-        stage: 'WAITING_CONSULTATION_PAYMENT',
+        stage: 'WAITING_VITALS',
         status: 'OPEN',
       ),
     );
@@ -145,7 +144,7 @@ void main() {
 
     await tester.enterText(
       find.byType(AppTextField),
-      'Moved back for payment',
+      'Moved back for vitals',
     );
     await tester.tap(find.widgetWithText(AppButton, 'Correct stage'));
     await tester.pumpAndSettle();
@@ -154,13 +153,46 @@ void main() {
     expect(find.byType(AppDialog), findsNothing);
     expect(
       submittedPayload,
-      containsPair('stage_to', 'WAITING_CONSULTATION_PAYMENT'),
+      containsPair('stage_to', 'WAITING_VITALS'),
     );
     expect(
       submittedPayload,
-      containsPair('reason', 'Moved back for payment'),
+      containsPair('reason', 'Moved back for vitals'),
     );
     verify(() => repository.correctStage('ENC000001', any())).called(1);
+  });
+
+  testWidgets('omits targets that would undo recorded milestones', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    const OpdFlowSummary paidAssigned = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientDisplayName: 'Patient Example',
+      stage: 'WAITING_DOCTOR_REVIEW',
+      status: 'WITH_DOCTOR',
+      providerUserId: 'doc-1',
+      consultationPaid: true,
+      consultationPaymentRequired: true,
+      consultationPaymentStatus: 'COMPLETED',
+    );
+    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[paidAssigned]);
+
+    await _pumpDialog(tester, flow: paidAssigned, repository: repository);
+
+    final AppSelectField<String> select = tester.widget<AppSelectField<String>>(
+      find.byType(AppSelectField<String>),
+    );
+    final Set<String> values = select.options
+        .map((AppSelectOption<String> option) => option.value)
+        .toSet();
+
+    expect(values.contains('WAITING_CONSULTATION_PAYMENT'), isFalse);
+    expect(values.contains('WAITING_VITALS'), isFalse);
+    expect(values.contains('WAITING_DOCTOR_ASSIGNMENT'), isFalse);
+    expect(values.contains('WAITING_DOCTOR_REVIEW'), isFalse);
+    expect(values.contains('LAB_REQUESTED'), isTrue);
   });
 
   testWidgets('disables dismiss while saving', (WidgetTester tester) async {

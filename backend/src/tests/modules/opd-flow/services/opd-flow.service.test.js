@@ -2494,6 +2494,154 @@ visit_queue: {
     expect(tx.encounter.update).not.toHaveBeenCalled();
   });
 
+  it('rejects correcting to payment due after consultation payment is recorded', async () => {
+    const tx = {
+      encounter: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'enc-1',
+          tenant_id: 'tenant-1',
+          patient_id: 'pat-1',
+          status: 'OPEN',
+          provider_user_id: 'doc-1',
+          vital_signs: [{ id: 'vital-1', deleted_at: null }],
+          lab_orders: [],
+          radiology_orders: [],
+          pharmacy_orders: [],
+          admissions: [],
+          extension_json: {
+            opd_flow: {
+              stage: 'WAITING_DOCTOR_REVIEW',
+              consultation: {
+                require_payment: true,
+                is_paid: true,
+                payment_status: 'COMPLETED'
+              }
+            }
+          }
+        }),
+        update: jest.fn()
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.correctStage(
+        'enc-1',
+        {
+          stage_to: 'WAITING_CONSULTATION_PAYMENT',
+          reason: 'Should not undo payment'
+        },
+        { user_id: 'reception-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.invalid_stage_transition',
+      errors: expect.arrayContaining([
+        expect.objectContaining({ field: 'stage_to' })
+      ])
+    });
+    expect(tx.encounter.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects correcting to vitals needed after vitals are recorded', async () => {
+    const tx = {
+      encounter: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'enc-1',
+          tenant_id: 'tenant-1',
+          patient_id: 'pat-1',
+          status: 'OPEN',
+          provider_user_id: null,
+          vital_signs: [{ id: 'vital-1', deleted_at: null }],
+          lab_orders: [],
+          radiology_orders: [],
+          pharmacy_orders: [],
+          admissions: [],
+          extension_json: {
+            opd_flow: {
+              stage: 'WAITING_DOCTOR_ASSIGNMENT',
+              consultation: {
+                require_payment: true,
+                is_paid: true,
+                payment_status: 'COMPLETED'
+              }
+            }
+          }
+        }),
+        update: jest.fn()
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.correctStage(
+        'enc-1',
+        {
+          stage_to: 'WAITING_VITALS',
+          reason: 'Should not undo vitals'
+        },
+        { user_id: 'reception-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.invalid_stage_transition',
+      errors: expect.arrayContaining([
+        expect.objectContaining({ field: 'stage_to' })
+      ])
+    });
+    expect(tx.encounter.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects correcting to doctor review after review is completed', async () => {
+    const tx = {
+      encounter: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'enc-1',
+          tenant_id: 'tenant-1',
+          patient_id: 'pat-1',
+          status: 'OPEN',
+          provider_user_id: 'doc-1',
+          vital_signs: [{ id: 'vital-1', deleted_at: null }],
+          lab_orders: [],
+          radiology_orders: [],
+          pharmacy_orders: [],
+          admissions: [],
+          extension_json: {
+            opd_flow: {
+              stage: 'WAITING_DISPOSITION',
+              review_completed: true,
+              consultation: {
+                require_payment: true,
+                is_paid: true,
+                payment_status: 'COMPLETED'
+              }
+            }
+          }
+        }),
+        update: jest.fn()
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.correctStage(
+        'enc-1',
+        {
+          stage_to: 'WAITING_DOCTOR_REVIEW',
+          reason: 'Should not undo review'
+        },
+        { user_id: 'reception-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.invalid_stage_transition',
+      errors: expect.arrayContaining([
+        expect.objectContaining({ field: 'stage_to' })
+      ])
+    });
+    expect(tx.encounter.update).not.toHaveBeenCalled();
+  });
+
   it('emits OPD realtime updates, excluding actor and adding assigned provider', async () => {
     prisma.user_role.findMany.mockResolvedValue([
       { user_id: 'doctor-team-1' },
