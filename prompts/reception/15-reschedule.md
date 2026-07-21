@@ -1,1 +1,40 @@
-Let us improve the design, layout, plus the look and feel of the reschedule dialog and the form. So right now the form looks a little bit disorganized and the components aren't aligning. I think we need to organize it better. And if we are rescheduling for this, if we are rescheduling for this This patient this patient's appointment and this patient already has a provider or a doctor who is already assigned to them. I think we should make sure that by default that patient, that he provider or doctor is displayed in the provider's assignment input field. Then also, I want us to Add enough information in the modi-in the patient details so that we have good context about the patient's available details. So we need to know if this patient are male, female, social default, and more information that we need to know about this patient, because things like contact, if the contact is known, things like age, things like gender, so let's make it quite more intuitive and let's also make it a bit much more clear, much more clear. Let's make the form user friendly and easy to understand and not very confusing. Yeah. So also one more request that I need let's also redesign or improve the, the time picker component such that we, we move the Twenty-four hour and twelve hour buttons into the component itself, just to to the right just to the left of the time up time selector button, and just to make it a toggle, such that when you click it if it is twenty-four hours, then it will show, if it is twenty-four hours, it shows twenty-four hours, if it is twenty, if it is twelve hours, then it shows twelve hours, instead of having two separate buttons so that the component looks nice, looks nice And we should also add to that component, we should also add a guard so that you can't you should, you can't type a time that is above the required range. So, like, in AM, you can't type a value above twelve, you can't let it be robust.
+# Improve Reschedule Dialog Layout and Patient Context
+
+Refine `OpdRescheduleAppointmentDialog` and shared `AppTimeField` for clearer rescheduling. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Reschedule on `/reception` has loose form alignment, thin patient context, missing default provider selection, and a crowded dual 12H/24H time-format control.
+
+## Requirements
+
+1. Reorganize the form: patient context, then date/time/duration, then optional provider. Keep fields aligned on mobile, tablet, and desktop without clipping or overflow.
+2. When the appointment has an assigned provider, preselect and display that provider after options load; keep the field optional and clearable.
+3. Enrich `AppPatientDetails` with age, gender, and phone when known; keep status, schedule, and provider via progressive disclosure. Show unknown only when values are missing.
+4. Replace dual 12H/24H chips with one in-field toggle immediately left of the clock picker. Show the active mode label; preserve time on switch.
+5. Guard typed times: hours `1–12` in 12H, `0–23` in 24H, minutes/seconds `0–59`.
+6. Preserve loading, validation, error, success, busy, and permission states; synchronize lists after save.
+
+## Constraints
+
+- Reuse reschedule contracts, authorization, localization, theme tokens, and design-system components.
+- Map demographics only when the API already returns them.
+- Do not change eligibility or invent scheduling rules.
+
+## Acceptance Criteria
+
+- R1: Layout is aligned at representative viewports and themes.
+- R2: Assigned providers appear selected when present in options.
+- R3: Known age, gender, and phone show; missing values stay unknown.
+- R4–R5: Format toggle and range guards work; existing time tests pass.
+- R6: Unauthorized UI stays hidden; success refreshes Reception.
+- Update dialog and `AppTimeField` tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/opd_reschedule_appointment_dialog.dart`
+- `frontend/lib/shared/components/app_time_field.dart`
+- `frontend/lib/shared/components/app_patient_details.dart`
+- `frontend/lib/features/opd/data/dtos/opd_dtos.dart`
+- `frontend/test/shared/opd_actions/`
+- `frontend/test/shared/components/app_time_field_test.dart`
