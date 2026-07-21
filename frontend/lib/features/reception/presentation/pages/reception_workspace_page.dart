@@ -1967,9 +1967,6 @@ final class _ReceptionDeskRow {
         linkedFlow.displayNextStep ?? linkedFlow.nextStep,
       );
     }
-    if (queueEntry != null && !isOpdTerminalStatus(queueEntry?.status)) {
-      return l10n.opdStartConsultationAction;
-    }
     return '';
   }
 

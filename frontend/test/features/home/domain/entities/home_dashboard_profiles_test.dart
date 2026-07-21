@@ -195,16 +195,20 @@ void main() {
     test('doctor profile still exposes quick actions', () {
       final profile = homeProfileForRole(AppRole.doctor);
 
-      expect(profile.quickActionIds, hasLength(5));
+      expect(profile.quickActionIds, hasLength(4));
       expect(
         profile.quickActionIds,
         containsAll(<String>[
-          'start_consultation',
           'continue_consultation',
           'order_lab',
           'order_radiology',
           'write_clinical_note',
         ]),
+      );
+      expect(profile.quickActionIds, isNot(contains('start_consultation')));
+      expect(
+        profile.emptyActionIds,
+        isNot(contains('start_consultation')),
       );
       expect(
         profile.shortcutIds,

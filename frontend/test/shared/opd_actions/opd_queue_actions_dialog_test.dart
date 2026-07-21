@@ -54,15 +54,12 @@ void main() {
     expect(find.text('Prioritize'), findsOneWidget);
     expect(find.text('Change status'), findsOneWidget);
     expect(find.text('Change doctor'), findsOneWidget);
-    expect(
-      find.widgetWithText(AppButton, 'Start consultation'),
-      findsOneWidget,
-    );
+    expect(find.text('Start consultation'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppWorkflowStepper), findsOneWidget);
     expect(find.text('Current step'), findsOneWidget);
-    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Next action'), findsNothing);
     expect(find.byIcon(Icons.help_outline), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -210,17 +207,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('PRIORITIZE QUEUE ENTRY'), findsOneWidget);
-    expect(find.text('Cancel'), findsWidgets);
-  });
-
-  testWidgets('Start consultation opens the confirm child dialog', (
-    WidgetTester tester,
-  ) async {
-    await _pumpDialog(tester, entry);
-    await tester.tap(find.widgetWithText(AppButton, 'Start consultation'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('START CONSULTATION'), findsOneWidget);
     expect(find.text('Cancel'), findsWidgets);
   });
 

@@ -137,15 +137,6 @@ homeActionLibrary = <String, HomeActionDefinition>{
     requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
     requiredModules: <String>['scheduling'],
   ),
-  'start_consultation': HomeActionDefinition(
-    id: 'start_consultation',
-    label: 'Start consultation',
-    icon: Icons.medical_services_outlined,
-    route: AppRoutes.clinical,
-    allowedRoles: <AppRole>[AppRole.doctor],
-    requiredPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-    requiredModules: <String>['clinical'],
-  ),
   'continue_consultation': HomeActionDefinition(
     id: 'continue_consultation',
     label: 'Continue consultation',

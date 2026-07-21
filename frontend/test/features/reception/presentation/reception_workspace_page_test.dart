@@ -1030,7 +1030,7 @@ void main() {
       expect(find.text('High priority'), findsWidgets);
       expect(find.text('In Progress'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Collect sample'), findsNothing);
-      expect(find.text('Start consultation'), findsNWidgets(2));
+      expect(find.text('Start consultation'), findsNothing);
       expect(
         find.widgetWithText(AppButton, 'Start consultation'),
         findsNothing,

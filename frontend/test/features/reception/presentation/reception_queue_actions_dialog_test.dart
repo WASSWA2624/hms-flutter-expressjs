@@ -48,7 +48,7 @@ void main() {
     expect(find.text('Prioritize'), findsOneWidget);
     expect(find.text('Change status'), findsOneWidget);
     expect(find.text('Assign doctor'), findsOneWidget);
-    expect(find.text('Start consultation'), findsWidgets);
+    expect(find.text('Start consultation'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
@@ -91,7 +91,7 @@ void main() {
     expect(find.text('Assign doctor'), findsNothing);
     expect(find.text('Change doctor'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
-    expect(find.text('Start consultation'), findsOneWidget);
+    expect(find.text('Start consultation'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
   });
 

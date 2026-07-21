@@ -189,7 +189,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>[
-      'start_consultation',
       'continue_consultation',
       'order_lab',
       'order_radiology',
@@ -204,7 +203,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'ipd',
     ],
     emptyActionIds: <String>[
-      'start_consultation',
       'order_lab',
       'write_clinical_note',
     ],

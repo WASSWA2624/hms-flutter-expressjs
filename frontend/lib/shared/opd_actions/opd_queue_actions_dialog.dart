@@ -21,7 +21,7 @@ import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
-/// Shared queue status / doctor / prioritize / start actions for OPD and Reception.
+/// Shared queue status / doctor / prioritize actions for OPD and Reception.
 Future<bool?> showQueueActionsDialog({
   required BuildContext context,
   required OpdQueueEntry entry,
@@ -88,7 +88,6 @@ class QueueActionsDialog extends ConsumerWidget {
             patientNumber: entry.patientIdentifier ?? '',
             currentStep: opdStageDisplayLabel(l10n, entry.status),
             currentStepCode: entry.status,
-            nextStep: terminal ? null : l10n.opdStartConsultationAction,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.opdProviderColumnLabel,
@@ -134,14 +133,6 @@ class QueueActionsDialog extends ConsumerWidget {
                   fullWidth: true,
                   onPressed: () => _openAssignDoctor(context),
                 ),
-                AppPermissionActionItem(
-                  requirement: actionRequirement,
-                  label: l10n.opdStartConsultationAction,
-                  icon: AppActionIcons.start,
-                  variant: AppButtonVariant.primary,
-                  fullWidth: true,
-                  onPressed: () => _openStart(context, ref),
-                ),
               ],
             ),
         ],
@@ -172,27 +163,6 @@ class QueueActionsDialog extends ConsumerWidget {
         onSubmit: (String reason) => ref
             .read(opdWorkspaceControllerProvider.notifier)
             .prioritizeQueueEntry(entry, reason),
-      ),
-    );
-    if (changed == true && context.mounted) {
-      Navigator.of(context).pop(true);
-    }
-  }
-
-  Future<void> _openStart(BuildContext context, WidgetRef ref) async {
-    final AppLocalizations l10n = context.l10n;
-    final bool? changed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AppConfirmActionDialog(
-        title: l10n.opdStartConsultationAction,
-        body: l10n.opdStartConsultationConfirmationMessage,
-        submitLabel: l10n.opdStartConsultationAction,
-        submitLeadingIcon: AppActionIcons.start,
-        icon: const Icon(AppActionIcons.start),
-        onConfirm: () => ref
-            .read(opdWorkspaceControllerProvider.notifier)
-            .startOpdFromQueue(entry),
       ),
     );
     if (changed == true && context.mounted) {

@@ -60,7 +60,8 @@ void main() {
 
       expect(merged.profile.role, AppRole.doctor);
       expect(merged.statusCards.map((card) => card.id), contains('assigned'));
-      expect(merged.quickActionIds, contains('start_consultation'));
+      expect(merged.quickActionIds, contains('continue_consultation'));
+      expect(merged.quickActionIds, isNot(contains('start_consultation')));
       expect(merged.quickActionIds, isNot(contains('publish_roster')));
     });
   });

@@ -90,7 +90,7 @@ abstract final class AppActionIcons {
   /// Move / reassign a queue entry (stage or provider).
   static const IconData move = Icons.sync_alt_outlined;
 
-  /// Start consultation / begin an encounter from queue.
+  /// Begin / play primary workflow action.
   static const IconData start = Icons.play_arrow_outlined;
 
   /// Assign or reassign the attending doctor on an encounter/queue item.

@@ -2397,17 +2397,15 @@ class _OpdNextActionCell extends ConsumerWidget {
       );
     }
 
-    return _opdFallbackNextActionButton(context, ref, item);
+    return _opdFallbackNextActionButton(context, item);
   }
 
   Widget _opdFallbackNextActionButton(
     BuildContext context,
-    WidgetRef ref,
     _OpdTableItem item,
   ) {
     final AppLocalizations l10n = context.l10n;
     final OpdAppointment? appointment = item.appointment;
-    final OpdQueueEntry? queueEntry = item.queueEntry;
     final bool terminal = _isCompletedStatus(item.status);
 
     if (appointment != null) {
@@ -2421,15 +2419,6 @@ class _OpdNextActionCell extends ConsumerWidget {
               _openOpdTableItemActions(context, item, state: state),
         );
       }
-    }
-
-    if (queueEntry != null && !terminal) {
-      return AppButton.secondary(
-        label: l10n.opdStartConsultationAction,
-        onPressed: () => ref
-            .read(opdWorkspaceControllerProvider.notifier)
-            .startOpdFromQueue(queueEntry),
-      );
     }
 
     final String label = _nextStepLabel(context, item);

@@ -380,7 +380,7 @@ void main() {
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
     expect(find.text('Prioritize'), findsOneWidget);
     expect(find.text('Change status'), findsOneWidget);
-    expect(find.text('Start consultation'), findsWidgets);
+    expect(find.text('Start consultation'), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
