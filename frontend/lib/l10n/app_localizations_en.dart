@@ -2683,6 +2683,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Patients with scheduled callbacks will appear here.';
 
   @override
+  String get receptionFollowUpsSearchHint =>
+      'Search patient, phone, email, or notes';
+
+  @override
   String get receptionFollowUpDetailBody =>
       'Call the patient using the contact on file, then mark the follow-up completed or schedule another callback.';
 

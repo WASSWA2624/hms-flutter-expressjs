@@ -356,12 +356,8 @@ class _ReceptionWorkspaceContentState
                     ValueKey<String>(row.id),
                 search: AppListTableSearch<_ReceptionDeskRow>(
                   controller: _searchController,
-                  semanticLabel: _section == ReceptionDeskSection.paymentGate
-                      ? l10n.receptionPaymentGateSearchHint
-                      : l10n.receptionSearchHint,
-                  hintText: _section == ReceptionDeskSection.paymentGate
-                      ? l10n.receptionPaymentGateSearchHint
-                      : l10n.receptionSearchHint,
+                  semanticLabel: _sectionSearchHint(l10n),
+                  hintText: _sectionSearchHint(l10n),
                   clearLabel: l10n.receptionClearFiltersAction,
                   matcher: (_ReceptionDeskRow row, String query) =>
                       row.matchesSearch(
@@ -378,7 +374,11 @@ class _ReceptionWorkspaceContentState
                   advancedFilterResetLabel: l10n.receptionClearFiltersAction,
                   advancedFilterCloseLabel: l10n.commonCloseActionLabel,
                   advancedFilterResetAppliesImmediately: true,
-                  searchFields: _searchFields(l10n),
+                  // Follow-ups: free-text search only — omit filter wiring so
+                  // AppSearchBar does not keep showing Filters.
+                  searchFields: _section == ReceptionDeskSection.followUps
+                      ? const <AppSearchBarFieldChoice>[]
+                      : _searchFields(l10n),
                   searchFieldLabel: l10n.opdSearchFieldFilterLabel,
                   enableDateFilter:
                       _section != ReceptionDeskSection.paymentGate &&
@@ -392,9 +392,11 @@ class _ReceptionWorkspaceContentState
                   filterGroups: _filterGroups(sectionRows, l10n),
                   filterValue: filterValue,
                   hasActiveFilters: filterValue.isActive,
-                  onFilterChanged: (AppSearchBarFilterValue value) {
-                    setState(() => _filterValues[_section] = value);
-                  },
+                  onFilterChanged: _section == ReceptionDeskSection.followUps
+                      ? null
+                      : (AppSearchBarFilterValue value) {
+                          setState(() => _filterValues[_section] = value);
+                        },
                 ),
                 emptyBuilder: (_) => AppStateView(
                   title: switch (_section) {
@@ -556,25 +558,6 @@ class _ReceptionWorkspaceContentState
   }
 
   List<AppSearchBarFieldChoice> _searchFields(AppLocalizations l10n) {
-    if (_section == ReceptionDeskSection.followUps) {
-      return <AppSearchBarFieldChoice>[
-        AppSearchBarFieldChoice(
-          field: 'patient',
-          label: l10n.opdPatientNameLabel,
-          icon: Icons.person_search_outlined,
-        ),
-        AppSearchBarFieldChoice(
-          field: 'record',
-          label: l10n.receptionRecordIdSearchLabel,
-          icon: Icons.badge_outlined,
-        ),
-        AppSearchBarFieldChoice(
-          field: 'reason',
-          label: l10n.opdReasonLabel,
-          icon: Icons.notes_outlined,
-        ),
-      ];
-    }
     return <AppSearchBarFieldChoice>[
       AppSearchBarFieldChoice(
         field: 'patient',
@@ -625,6 +608,17 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.activeVisits => l10n.receptionStartedAtLabel,
       ReceptionDeskSection.paymentGate => l10n.opdArrivalDateFilterLabel,
       ReceptionDeskSection.followUps => l10n.opdFollowUpDateLabel,
+    };
+  }
+
+  String _sectionSearchHint(AppLocalizations l10n) {
+    return switch (_section) {
+      ReceptionDeskSection.paymentGate => l10n.receptionPaymentGateSearchHint,
+      ReceptionDeskSection.followUps => l10n.receptionFollowUpsSearchHint,
+      ReceptionDeskSection.appointments ||
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.highPriority ||
+      ReceptionDeskSection.activeVisits => l10n.receptionSearchHint,
     };
   }
 
@@ -2433,6 +2427,7 @@ final class _ReceptionDeskRow {
             entry.encounterId,
             entry.status,
             entry.notes,
+            entry.patientEmail,
             AppFormatters.dateTime(scheduledAt, locale),
             AppFormatters.shortDate(scheduledAt, locale),
             AppFormatters.time(scheduledAt, locale),

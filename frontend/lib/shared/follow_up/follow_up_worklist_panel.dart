@@ -139,8 +139,8 @@ class _FollowUpWorklistBody extends ConsumerWidget {
                       },
                   search: AppListTableSearch<ReceptionFollowUpEntry>(
                     controller: searchController,
-                    semanticLabel: l10n.receptionSearchHint,
-                    hintText: l10n.receptionSearchHint,
+                    semanticLabel: l10n.receptionFollowUpsSearchHint,
+                    hintText: l10n.receptionFollowUpsSearchHint,
                     clearLabel: l10n.receptionClearFiltersAction,
                     matcher: (ReceptionFollowUpEntry entry, String query) {
                       final String q = query.trim().toLowerCase();

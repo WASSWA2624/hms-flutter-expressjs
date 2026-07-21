@@ -5194,6 +5194,12 @@ abstract class AppLocalizations {
   /// **'Patients with scheduled callbacks will appear here.'**
   String get receptionFollowUpsEmptyBody;
 
+  /// Search hint for the Reception Follow-ups tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, phone, email, or notes'**
+  String get receptionFollowUpsSearchHint;
+
   /// Guidance body shown in the Reception follow-up detail dialog.
   ///
   /// In en, this message translates to:

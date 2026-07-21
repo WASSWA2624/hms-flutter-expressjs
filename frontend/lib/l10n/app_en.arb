@@ -3494,6 +3494,10 @@
   "@receptionFollowUpsEmptyBody": {
     "description": "Empty-state body for the Reception Follow-ups tab."
   },
+  "receptionFollowUpsSearchHint": "Search patient, phone, email, or notes",
+  "@receptionFollowUpsSearchHint": {
+    "description": "Search hint for the Reception Follow-ups tab."
+  },
   "receptionFollowUpDetailBody": "Call the patient using the contact on file, then mark the follow-up completed or schedule another callback.",
   "@receptionFollowUpDetailBody": {
     "description": "Guidance body shown in the Reception follow-up detail dialog."
