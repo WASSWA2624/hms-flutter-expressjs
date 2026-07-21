@@ -600,28 +600,32 @@ class AppListTableMobileItem extends StatelessWidget {
               )
             : null);
     final TextStyle titleStyle =
-        theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600) ??
-        const TextStyle(fontWeight: FontWeight.w600);
+        (theme.textTheme.bodySmall ?? const TextStyle(fontSize: 12)).copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          height: 1.2,
+          color: colors.onSurface,
+        );
     final TextStyle captionStyle =
-        theme.textTheme.bodySmall?.copyWith(
+        (theme.textTheme.labelSmall ?? const TextStyle(fontSize: 11)).copyWith(
           color: colors.onSurfaceVariant,
-        ) ??
-        TextStyle(color: colors.onSurfaceVariant);
+          fontSize: 11,
+          height: 1.2,
+          fontWeight: FontWeight.w400,
+        );
 
     return Padding(
       padding:
           padding ??
-          EdgeInsets.fromLTRB(
-            theme.spacing.xs,
-            theme.spacing.sm,
-            theme.spacing.xs,
-            theme.spacing.sm,
+          EdgeInsets.symmetric(
+            horizontal: theme.spacing.xs,
+            vertical: theme.spacing.xs,
           ),
       child: Row(
         children: <Widget>[
           if (leadingWidget != null) ...<Widget>[
             leadingWidget,
-            SizedBox(width: theme.spacing.sm),
+            SizedBox(width: theme.spacing.xs),
           ],
           Expanded(
             child: Column(
@@ -644,7 +648,7 @@ class AppListTableMobileItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (resolvedMeta.isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs / 2),
+                  const SizedBox(height: 2),
                   _AppListTableMobileMetaRow(items: resolvedMeta),
                 ],
               ],
@@ -661,7 +665,7 @@ class _AppListTableMobileAvatar extends StatelessWidget {
 
   final String label;
 
-  static const double _size = 32;
+  static const double _size = 28;
 
   @override
   Widget build(BuildContext context) {
@@ -681,6 +685,8 @@ class _AppListTableMobileAvatar extends StatelessWidget {
           style: theme.textTheme.labelSmall?.copyWith(
             color: colors.onSurface,
             fontWeight: FontWeight.w700,
+            fontSize: 10,
+            height: 1,
           ),
         ),
       ),
@@ -727,21 +733,25 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final Color muted = theme.colorScheme.onSurfaceVariant;
     final TextStyle style =
-        theme.textTheme.bodySmall?.copyWith(color: muted) ??
-        TextStyle(color: muted, fontSize: 12);
-    final double iconSize = theme.appTokens.listIconSize * 0.7;
+        (theme.textTheme.labelSmall ?? const TextStyle(fontSize: 11)).copyWith(
+          color: muted,
+          fontSize: 11,
+          height: 1.2,
+          fontWeight: FontWeight.w400,
+        );
+    const double iconSize = 12;
 
     return Text.rich(
       TextSpan(
         style: style,
         children: <InlineSpan>[
           for (int index = 0; index < items.length; index++) ...<InlineSpan>[
-            if (index > 0) const TextSpan(text: '  ·  '),
+            if (index > 0) const TextSpan(text: ' · '),
             if (items[index].icon != null)
               WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
                 child: Padding(
-                  padding: EdgeInsetsDirectional.only(end: theme.spacing.xs / 2),
+                  padding: const EdgeInsetsDirectional.only(end: 2),
                   child: Icon(
                     items[index].icon,
                     size: iconSize,
@@ -2208,6 +2218,8 @@ class _NumberedMobileListItem extends StatelessWidget {
             style: theme.textTheme.labelSmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
+              fontSize: 10,
+              height: 1.2,
             ),
           ),
         ),
@@ -2271,7 +2283,7 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
                       child: Icon(
                         Icons.chevron_right,
                         color: theme.colorScheme.onSurfaceVariant,
-                        size: theme.appTokens.listIconSize,
+                        size: 18,
                       ),
                     ),
                   ],
