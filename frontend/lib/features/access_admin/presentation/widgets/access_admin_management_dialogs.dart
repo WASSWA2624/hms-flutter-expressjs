@@ -27,17 +27,21 @@ import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart'
 Future<bool?> showManageUsersDialog(BuildContext context, WidgetRef ref) {
   return showAppDialog<bool>(
     context: context,
-    builder: (_) => const _ManageUsersDialog(),
+    builder: (_) => const ManageUsersPanel(dialogMode: true),
   );
 }
 
 Future<bool?> showManageRolesPermissionsDialog(
   BuildContext context,
-  WidgetRef ref,
-) {
+  WidgetRef ref, {
+  AccessAdminPanel panel = AccessAdminPanel.roles,
+}) {
   return showAppDialog<bool>(
     context: context,
-    builder: (_) => const _ManageRolesPermissionsDialog(),
+    builder: (_) => ManageRolesPermissionsPanel(
+      dialogMode: true,
+      panel: panel,
+    ),
   );
 }
 
@@ -277,15 +281,23 @@ abstract class _ScopedAccessAdminListDialogState<
   }
 }
 
-class _ManageUsersDialog extends ConsumerStatefulWidget {
-  const _ManageUsersDialog();
+/// Users table/CRUD shared by manage dialog and setup Users tab.
+class ManageUsersPanel extends ConsumerStatefulWidget {
+  const ManageUsersPanel({
+    this.dialogMode = false,
+    this.onMutated,
+    super.key,
+  });
+
+  final bool dialogMode;
+  final ValueChanged<bool>? onMutated;
 
   @override
-  ConsumerState<_ManageUsersDialog> createState() => _ManageUsersDialogState();
+  ConsumerState<ManageUsersPanel> createState() => _ManageUsersPanelState();
 }
 
-class _ManageUsersDialogState
-    extends _ScopedAccessAdminListDialogState<_ManageUsersDialog> {
+class _ManageUsersPanelState
+    extends _ScopedAccessAdminListDialogState<ManageUsersPanel> {
   String? tenantFilter;
   String? facilityFilter;
   String? roleFilter;
@@ -691,13 +703,8 @@ class _ManageUsersDialogState
         roleFilter != null ||
         statusFilter != null;
 
-    return AppDialog(
-      title: Text(l10n.homeManageUsersTitle),
-      icon: const Icon(Icons.people_outline),
-      pinActionsToBottom: true,
-      maxWidth: 1200,
-      content: SizedBox.expand(
-        child: buildTable(
+    final Widget table = SizedBox.expand(
+      child: buildTable(
           l10n: l10n,
           columnVisibilityStorageKey: 'access_admin_manage_users_v3',
           onRowSelected: (AccessAdminItem item) =>
@@ -834,16 +841,39 @@ class _ManageUsersDialogState
             ),
           ],
         ),
-      ),
+    );
+
+    final Widget createAction = AppButton.primary(
+      label: l10n.accessAdminCreateUserAction,
+      leadingIcon: Icons.person_add_alt_1_outlined,
+      onPressed: loading || mutating
+          ? null
+          : () => unawaited(_openCreateUserDialog()),
+    );
+
+    if (!widget.dialogMode) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (canWrite)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: createAction,
+            ),
+          if (canWrite) const SizedBox(height: 12),
+          Expanded(child: table),
+        ],
+      );
+    }
+
+    return AppDialog(
+      title: Text(l10n.homeManageUsersTitle),
+      icon: const Icon(Icons.people_outline),
+      pinActionsToBottom: true,
+      maxWidth: 1200,
+      content: table,
       actions: <Widget>[
-        if (canWrite)
-          AppButton.primary(
-            label: l10n.accessAdminCreateUserAction,
-            leadingIcon: Icons.person_add_alt_1_outlined,
-            onPressed: loading || mutating
-                ? null
-                : () => unawaited(_openCreateUserDialog()),
-          ),
+        if (canWrite) createAction,
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
@@ -854,16 +884,26 @@ class _ManageUsersDialogState
   }
 }
 
-class _ManageRolesPermissionsDialog extends ConsumerStatefulWidget {
-  const _ManageRolesPermissionsDialog();
+/// Roles/permissions table/CRUD shared by manage dialog and setup tabs.
+class ManageRolesPermissionsPanel extends ConsumerStatefulWidget {
+  const ManageRolesPermissionsPanel({
+    this.dialogMode = false,
+    this.panel = AccessAdminPanel.roles,
+    this.onMutated,
+    super.key,
+  });
+
+  final bool dialogMode;
+  final AccessAdminPanel panel;
+  final ValueChanged<bool>? onMutated;
 
   @override
-  ConsumerState<_ManageRolesPermissionsDialog> createState() =>
-      _ManageRolesPermissionsDialogState();
+  ConsumerState<ManageRolesPermissionsPanel> createState() =>
+      _ManageRolesPermissionsPanelState();
 }
 
-class _ManageRolesPermissionsDialogState
-    extends _ScopedAccessAdminListDialogState<_ManageRolesPermissionsDialog> {
+class _ManageRolesPermissionsPanelState
+    extends _ScopedAccessAdminListDialogState<ManageRolesPermissionsPanel> {
   String? roleScopeFilter;
   String? tenantFilter;
   String? facilityFilter;
@@ -891,9 +931,13 @@ class _ManageRolesPermissionsDialogState
         _canPickTenant && allTenants && tenantFilter == null;
     final bool tenantWide =
         _canFilterAcrossFacilities && allFacilities && facilityFilter == null;
+    final AccessAdminPanel panel = widget.panel;
+    final AccessAdminResource resource = panel == AccessAdminPanel.permissions
+        ? AccessAdminResource.permissions
+        : AccessAdminResource.roles;
     return AccessAdminWorkspaceQuery(
-      panel: AccessAdminPanel.roles,
-      resource: AccessAdminResource.roles,
+      panel: panel,
+      resource: resource,
       roleScope: roleScopeFilter,
       lean: true,
       tenantId: crossTenant ? null : tenantFilter,
@@ -1135,17 +1179,22 @@ class _ManageRolesPermissionsDialogState
       if (roleScopeFilter != null) _roleScopeFilterKey: roleScopeFilter!,
     };
 
-    return AppDialog(
-      title: Text(l10n.homeManageRolesPermissionsTitle),
-      icon: const Icon(Icons.admin_panel_settings_outlined),
-      pinActionsToBottom: true,
-      maxWidth: 1200,
-      content: SizedBox.expand(
-        child: buildTable(
+    final String title = widget.panel == AccessAdminPanel.permissions
+        ? l10n.tenantFacilitySetupTabPermissions
+        : l10n.homeManageRolesPermissionsTitle;
+    final IconData icon = widget.panel == AccessAdminPanel.permissions
+        ? Icons.key_outlined
+        : Icons.admin_panel_settings_outlined;
+    final bool isPermissions = widget.panel == AccessAdminPanel.permissions;
+    final Widget table = SizedBox.expand(
+      child: buildTable(
           l10n: l10n,
-          columnVisibilityStorageKey: 'access_admin_manage_roles_v2',
-          onRowSelected: (AccessAdminItem role) =>
-              unawaited(_openRoleDetail(role)),
+          columnVisibilityStorageKey: isPermissions
+              ? 'access_admin_manage_permissions_v1'
+              : 'access_admin_manage_roles_v2',
+          onRowSelected: isPermissions
+              ? null
+              : (AccessAdminItem role) => unawaited(_openRoleDetail(role)),
           search: buildTableSearch(
             l10n: l10n,
             showAdvancedFilterButton: filterGroups.isNotEmpty,
@@ -1173,13 +1222,14 @@ class _ManageRolesPermissionsDialogState
               label: l10n.accessAdminColumnName,
               cellBuilder: (_, AccessAdminItem item) => Text(item.title),
             ),
-            AppListTableColumn<AccessAdminItem>(
-              id: 'scope',
-              label: l10n.accessAdminColumnScope,
-              cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                  _RoleScopeBadge(item: item),
-            ),
-            if (canWrite)
+            if (!isPermissions)
+              AppListTableColumn<AccessAdminItem>(
+                id: 'scope',
+                label: l10n.accessAdminColumnScope,
+                cellBuilder: (BuildContext context, AccessAdminItem item) =>
+                    _RoleScopeBadge(item: item),
+              ),
+            if (canWrite && !isPermissions)
               AppListTableColumn<AccessAdminItem>(
                 id: 'actions',
                 label: l10n.accessAdminColumnActions,
@@ -1228,16 +1278,41 @@ class _ManageRolesPermissionsDialogState
             ),
           ],
         ),
-      ),
-      actions: <Widget>[
-        if (canWrite)
-          AppButton.primary(
+    );
+
+    final Widget? createAction = (!isPermissions && canWrite)
+        ? AppButton.primary(
             label: l10n.accessAdminCreateRoleAction,
             leadingIcon: Icons.badge_outlined,
             onPressed: loading || mutating
                 ? null
                 : () => unawaited(_openCreateRoleDialog()),
-          ),
+          )
+        : null;
+
+    if (!widget.dialogMode) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (createAction != null)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: createAction,
+            ),
+          if (createAction != null) const SizedBox(height: 12),
+          Expanded(child: table),
+        ],
+      );
+    }
+
+    return AppDialog(
+      title: Text(title),
+      icon: Icon(icon),
+      pinActionsToBottom: true,
+      maxWidth: 1200,
+      content: table,
+      actions: <Widget>[
+        if (createAction != null) createAction,
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,

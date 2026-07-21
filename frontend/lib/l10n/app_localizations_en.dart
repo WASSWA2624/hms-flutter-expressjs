@@ -1168,7 +1168,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationSetupLabel => 'Tenant setup';
 
   @override
+  String get navigationPlatformSetupLabel => 'Platform setup';
+
+  @override
+  String get navigationFacilitySetupLabel => 'Facility setup';
+
+  @override
   String get navigationSetupShortLabel => 'Setup';
+
+  @override
+  String get tenantFacilitySetupTabTenants => 'Tenants';
+
+  @override
+  String get tenantFacilitySetupTabFacility => 'Facility';
+
+  @override
+  String get tenantFacilitySetupTabRoles => 'Roles';
+
+  @override
+  String get tenantFacilitySetupTabPermissions => 'Permissions';
+
+  @override
+  String get tenantFacilitySetupTabUsers => 'Users';
 
   @override
   String get navigationPatientsLabel => 'Patient registry';

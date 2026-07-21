@@ -84,6 +84,7 @@ import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscript
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/presentation/pages/theater_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -466,6 +467,7 @@ final class _ShellDestinationRoute {
 
 List<_ShellDestinationRoute> _localizedShellDestinations(
   AppLocalizations l10n, {
+  required AppAccessPolicy accessPolicy,
   int? billingWorkloadCount,
   int? claimsWorkloadCount,
   int? subscriptionsWorkloadCount,
@@ -817,7 +819,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
     _ShellDestinationRoute(
       route: AppRoutes.tenantFacilitySetup,
       destination: ResponsiveShellDestination(
-        label: l10n.navigationSetupLabel,
+        label: tenantFacilitySetupNavigationLabel(accessPolicy, l10n),
         shortLabel: l10n.navigationSetupShortLabel,
         groupLabel: administrationGroup,
         icon: AppRouteIcons.setup,
@@ -845,6 +847,7 @@ class _AppShell extends ConsumerWidget {
     final List<_ShellDestinationRoute> shellDestinations =
         _localizedShellDestinations(
               l10n,
+              accessPolicy: accessPolicy,
               billingWorkloadCount: badges.billingWorkloadCount,
               claimsWorkloadCount: badges.claimsWorkloadCount,
               subscriptionsWorkloadCount: badges.subscriptionsWorkloadCount,

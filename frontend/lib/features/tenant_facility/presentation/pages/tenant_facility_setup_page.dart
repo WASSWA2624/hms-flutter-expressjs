@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_media_url.dart';
 import 'package:hosspi_hms/core/utils/app_slug.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/facility_similarity.dart';
@@ -25,11 +26,11 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facilit
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_wizard.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
+import 'package:hosspi_hms/shared/actions/app_workspace_refresh_action.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -83,7 +84,6 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     final accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canManageTenant = accessPolicy.canManageTenant();
     final bool canManageFacility = accessPolicy.canManageFacility();
-    final bool canCreateTenant = accessPolicy.canCreateTenant();
     final bool canManageHrSetup = accessPolicy.canManageHrFacilitySetup();
     final bool isHrSetupOnly = accessPolicy.isHrFacilitySetupOnlyUser();
     final bool canManageAccess = accessPolicy.grantsAny(const <AppPermission>[
@@ -94,59 +94,16 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     ]);
 
     return AppWorkspace(
-      title: isHrSetupOnly
-          ? l10n.tenantFacilityHrSetupTitle
-          : l10n.tenantFacilitySetupTitle,
+      title: tenantFacilitySetupWorkspaceTitle(
+        accessPolicy,
+        l10n,
+        isHrSetupOnly: isHrSetupOnly,
+      ),
       leadingIcon: AppRouteIcons.setup,
-      maxWidth: PageMaxWidth.dashboard,
+      maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
-        primary: canManageAccess
-            ? AppButton.primary(
-                label: l10n.homeManageUsersTitle,
-                leadingIcon: Icons.people_outline,
-                onPressed: () {
-                  unawaited(
-                    showManageUsersDialog(context, ref).then((bool? saved) {
-                      if (saved == true && context.mounted) {
-                        unawaited(
-                          ref
-                              .read(
-                                tenantFacilitySetupControllerProvider.notifier,
-                              )
-                              .refresh(),
-                        );
-                      }
-                    }),
-                  );
-                },
-              )
-            : null,
-        secondary: <Widget>[
-          if (canManageAccess)
-            AppButton.tertiary(
-              label: l10n.homeManageRolesPermissionsTitle,
-              leadingIcon: Icons.admin_panel_settings_outlined,
-              onPressed: () {
-                unawaited(
-                  showManageRolesPermissionsDialog(context, ref).then((
-                    bool? saved,
-                  ) {
-                    if (saved == true && context.mounted) {
-                      unawaited(
-                        ref
-                            .read(
-                              tenantFacilitySetupControllerProvider.notifier,
-                            )
-                            .refresh(),
-                      );
-                    }
-                  }),
-                );
-              },
-            ),
-        ],
-        maxVisibleScreenActions: 2,
         showGlobalActions: false,
         showFaultReport: false,
         showHousekeepingRequest: false,
@@ -154,9 +111,9 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
       body: _SetupBody(
         snapshot: snapshot,
         canManageTenant: canManageTenant,
-        canCreateTenant: canCreateTenant,
         canManageFacility: canManageFacility,
         canManageHrSetup: canManageHrSetup,
+        canManageAccess: canManageAccess,
         isHrSetupOnly: isHrSetupOnly,
       ),
     );
@@ -515,30 +472,6 @@ Future<bool?> _openFacilityProfileModal(
   );
 }
 
-Future<void> _openBranchesModal(BuildContext context) {
-  final AppLocalizations l10n = context.l10n;
-
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityBranchesSectionTitle,
-      icon: Icons.account_tree_outlined,
-      builder:
-          (
-            BuildContext context,
-            FacilitySetupSnapshot snapshot,
-            bool canManageTenant,
-            bool canManageFacility,
-            bool canEditHrStructure,
-          ) => _BranchSetupSection(
-            snapshot: snapshot,
-            canSubmit: canManageTenant && snapshot.tenant != null,
-            framed: false,
-          ),
-    ),
-  );
-}
-
 Future<void> _openDepartmentsModal(BuildContext context) {
   final AppLocalizations l10n = context.l10n;
 
@@ -587,78 +520,6 @@ Future<void> _openUnitsModal(BuildContext context) {
   );
 }
 
-Future<void> _openWardsModal(BuildContext context) {
-  final AppLocalizations l10n = context.l10n;
-
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityWardsLabel,
-      icon: Icons.local_hotel_outlined,
-      builder:
-          (
-            BuildContext context,
-            FacilitySetupSnapshot snapshot,
-            bool canManageTenant,
-            bool canManageFacility,
-            bool canEditHrStructure,
-          ) => _WardSetupSection(
-            snapshot: snapshot,
-            canSubmit: canManageFacility && snapshot.facility != null,
-            framed: false,
-          ),
-    ),
-  );
-}
-
-Future<void> _openRoomsModal(BuildContext context) {
-  final AppLocalizations l10n = context.l10n;
-
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityRoomsLabel,
-      icon: Icons.meeting_room_outlined,
-      builder:
-          (
-            BuildContext context,
-            FacilitySetupSnapshot snapshot,
-            bool canManageTenant,
-            bool canManageFacility,
-            bool canEditHrStructure,
-          ) => _RoomSetupSection(
-            snapshot: snapshot,
-            canSubmit: canManageFacility && snapshot.facility != null,
-            framed: false,
-          ),
-    ),
-  );
-}
-
-Future<void> _openBedsModal(BuildContext context) {
-  final AppLocalizations l10n = context.l10n;
-
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityBedsLabel,
-      icon: Icons.bed_outlined,
-      builder:
-          (
-            BuildContext context,
-            FacilitySetupSnapshot snapshot,
-            bool canManageTenant,
-            bool canManageFacility,
-            bool canEditHrStructure,
-          ) => _BedSetupSection(
-            snapshot: snapshot,
-            canSubmit: canManageFacility && snapshot.facility != null,
-            framed: false,
-          ),
-    ),
-  );
-}
-
 Future<void> _openFacilityCatalogModal(
   BuildContext context,
   FacilitySetupSnapshot snapshot,
@@ -700,32 +561,82 @@ AppFailure _setupFailure(Object error) {
   return const AppFailure.unexpected();
 }
 
-class _SetupBody extends ConsumerWidget {
+class _SetupBody extends ConsumerStatefulWidget {
   const _SetupBody({
     required this.snapshot,
     required this.canManageTenant,
-    required this.canCreateTenant,
     required this.canManageFacility,
     required this.canManageHrSetup,
+    required this.canManageAccess,
     required this.isHrSetupOnly,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canManageTenant;
-  final bool canCreateTenant;
   final bool canManageFacility;
   final bool canManageHrSetup;
+  final bool canManageAccess;
   final bool isHrSetupOnly;
 
-  bool get _canEditStructure => canManageFacility || canManageHrSetup;
+  @override
+  ConsumerState<_SetupBody> createState() => _SetupBodyState();
+}
+
+class _SetupBodyState extends ConsumerState<_SetupBody> {
+  TenantFacilitySetupDeskSection? _section;
+
+  bool get _canEditStructure =>
+      widget.canManageFacility || widget.canManageHrSetup;
+
+  List<TenantFacilitySetupDeskSection> get _visibleSections {
+    if (widget.isHrSetupOnly) {
+      return const <TenantFacilitySetupDeskSection>[
+        TenantFacilitySetupDeskSection.departments,
+        TenantFacilitySetupDeskSection.units,
+      ];
+    }
+    return tenantFacilityVisibleSetupDeskSections(
+      canManageTenant: widget.canManageTenant,
+      canManageFacility: widget.canManageFacility,
+      canManageAccess: widget.canManageAccess,
+    );
+  }
+
+  TenantFacilitySetupDeskSection get _currentSection {
+    final List<TenantFacilitySetupDeskSection> sections = _visibleSections;
+    if (sections.isEmpty) {
+      return TenantFacilitySetupDeskSection.facility;
+    }
+    final TenantFacilitySetupDeskSection? selected = _section;
+    if (selected != null && sections.contains(selected)) {
+      return selected;
+    }
+    return sections.first;
+  }
+
+  void _refreshSetup() {
+    unawaited(
+      ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
+    );
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final List<TenantFacilitySetupDeskSection> sections = _visibleSections;
+    final TenantFacilitySetupDeskSection current = _currentSection;
 
-    if (isHrSetupOnly) {
+    if (sections.isEmpty) {
+      return AppWorkspaceStatePanel.empty(
+        title: l10n.tenantFacilitySetupTitle,
+        body: l10n.tenantFacilitySetupBody,
+      );
+    }
+
+    if (widget.isHrSetupOnly) {
       return _HrFacilitySetupBody(
-        snapshot: snapshot,
+        snapshot: widget.snapshot,
         canEditStructure: _canEditStructure,
       );
     }
@@ -733,68 +644,107 @@ class _SetupBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        TenantFacilitySetupWizard(
-          snapshot: snapshot,
-          canManageTenant: canManageTenant,
-          canManageFacility: canManageFacility,
-          canCreateTenant: canCreateTenant,
-          onOpenStep: (TenantFacilitySetupWizardStep step) {
-            _openWizardStep(context, step, snapshot);
+        AppTabStrip(
+          tabs: <AppTabItem>[
+            for (final TenantFacilitySetupDeskSection section in sections)
+              AppTabItem(
+                id: section.name,
+                icon: tenantFacilitySetupDeskSectionIcon(section),
+                label: tenantFacilitySetupDeskSectionLabel(l10n, section),
+              ),
+          ],
+          selectedId: current.name,
+          onTabTapped: (String tabId) {
+            for (final TenantFacilitySetupDeskSection section in sections) {
+              if (section.name == tabId) {
+                setState(() => _section = section);
+                break;
+              }
+            }
           },
-          onManageTenants: canManageTenant
-              ? () {
+          secondaryActions: <Widget>[
+            if (widget.snapshot.facility?.id != null)
+              AppTabToolbarAction(
+                label: l10n.clinicalCatalogConfigurationTitle,
+                icon: Icons.medical_information_outlined,
+                onPressed: () {
                   unawaited(
-                    showManageTenantsDialog(context, ref).then((bool? saved) {
-                      if (saved == true && context.mounted) {
-                        unawaited(
-                          ref
-                              .read(
-                                tenantFacilitySetupControllerProvider.notifier,
-                              )
-                              .refresh(),
-                        );
-                      }
-                    }),
+                    _openFacilityCatalogModal(context, widget.snapshot),
                   );
-                }
-              : null,
-          onManageFacilities: canManageFacility
-              ? () {
-                  unawaited(
-                    showManageFacilitiesDialog(context, ref).then((
-                      bool? saved,
-                    ) {
-                      if (saved == true && context.mounted) {
-                        unawaited(
-                          ref
-                              .read(
-                                tenantFacilitySetupControllerProvider.notifier,
-                              )
-                              .refresh(),
-                        );
-                      }
-                    }),
-                  );
-                }
-              : null,
-          onSelectFacility: (String facilityId) {
-            unawaited(
-              ref
-                  .read(tenantFacilitySetupControllerProvider.notifier)
-                  .selectFacility(facilityId),
-            );
-          },
-          onOpenCatalog: snapshot.facility?.id == null
-              ? null
-              : () => unawaited(_openFacilityCatalogModal(context, snapshot)),
+                },
+              ),
+            AppWorkspaceRefreshAction(
+              label: l10n.commonRefreshActionLabel,
+              onPressed: _refreshSetup,
+            ),
+          ],
         ),
-        SizedBox(height: theme.spacing.md),
-        TenantFacilityPermissionStrip(
-          canManageTenant: canManageTenant,
-          canManageFacility: canManageFacility,
-        ),
+        SizedBox(height: theme.spacing.sm),
+        Expanded(child: _buildTabBody(current)),
       ],
     );
+  }
+
+  Widget _buildTabBody(TenantFacilitySetupDeskSection section) {
+    final FacilitySetupSnapshot snapshot = widget.snapshot;
+    final bool canSubmitFacility =
+        widget.canManageFacility && snapshot.facility != null;
+    final bool canSubmitTenant = widget.canManageTenant;
+
+    return switch (section) {
+      TenantFacilitySetupDeskSection.tenants => ManageTenantsPanel(
+        onMutated: (_) => _refreshSetup(),
+      ),
+      TenantFacilitySetupDeskSection.facility => ManageFacilitiesPanel(
+        onMutated: (_) => _refreshSetup(),
+      ),
+      TenantFacilitySetupDeskSection.branches => SingleChildScrollView(
+        child: _BranchSetupSection(
+          snapshot: snapshot,
+          canSubmit: canSubmitTenant,
+        ),
+      ),
+      TenantFacilitySetupDeskSection.departments => SingleChildScrollView(
+        child: _DepartmentSetupSection(
+          snapshot: snapshot,
+          canSubmit: canSubmitFacility || widget.canManageHrSetup,
+        ),
+      ),
+      TenantFacilitySetupDeskSection.units => SingleChildScrollView(
+        child: _UnitSetupSection(
+          snapshot: snapshot,
+          canSubmit: canSubmitFacility || widget.canManageHrSetup,
+        ),
+      ),
+      TenantFacilitySetupDeskSection.wards => SingleChildScrollView(
+        child: _WardSetupSection(
+          snapshot: snapshot,
+          canSubmit: canSubmitFacility,
+        ),
+      ),
+      TenantFacilitySetupDeskSection.rooms => SingleChildScrollView(
+        child: _RoomSetupSection(
+          snapshot: snapshot,
+          canSubmit: canSubmitFacility,
+        ),
+      ),
+      TenantFacilitySetupDeskSection.beds => SingleChildScrollView(
+        child: _BedSetupSection(
+          snapshot: snapshot,
+          canSubmit: canSubmitFacility,
+        ),
+      ),
+      TenantFacilitySetupDeskSection.roles => ManageRolesPermissionsPanel(
+        onMutated: (_) => _refreshSetup(),
+      ),
+      TenantFacilitySetupDeskSection.permissions => ManageRolesPermissionsPanel(
+        panel: AccessAdminPanel.permissions,
+        onMutated: (_) => _refreshSetup(),
+      ),
+      TenantFacilitySetupDeskSection.users => ManageUsersPanel(
+        onMutated: (_) => _refreshSetup(),
+      ),
+    };
   }
 }
 
@@ -870,33 +820,6 @@ class _HrFacilitySetupBody extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-void _openWizardStep(
-  BuildContext context,
-  TenantFacilitySetupWizardStep step,
-  FacilitySetupSnapshot snapshot,
-) {
-  switch (step) {
-    case TenantFacilitySetupWizardStep.tenant:
-      unawaited(_openTenantProfileModal(context));
-    case TenantFacilitySetupWizardStep.branches:
-      unawaited(_openBranchesModal(context));
-    case TenantFacilitySetupWizardStep.facility:
-      unawaited(
-        _openFacilityProfileModal(context, facility: snapshot.facility),
-      );
-    case TenantFacilitySetupWizardStep.departments:
-      unawaited(_openDepartmentsModal(context));
-    case TenantFacilitySetupWizardStep.units:
-      unawaited(_openUnitsModal(context));
-    case TenantFacilitySetupWizardStep.wards:
-      unawaited(_openWardsModal(context));
-    case TenantFacilitySetupWizardStep.rooms:
-      unawaited(_openRoomsModal(context));
-    case TenantFacilitySetupWizardStep.beds:
-      unawaited(_openBedsModal(context));
   }
 }
 

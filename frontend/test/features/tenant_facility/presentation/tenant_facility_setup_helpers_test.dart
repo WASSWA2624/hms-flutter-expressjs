@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -347,6 +350,107 @@ void main() {
       expect(steps.contains(TenantFacilitySetupWizardStep.tenant), isFalse);
       expect(steps.contains(TenantFacilitySetupWizardStep.branches), isFalse);
       expect(steps.first, TenantFacilitySetupWizardStep.facility);
+    });
+  });
+
+  group('tenant facility setup desk sections', () {
+    test('omits tenants for facility admins and keeps facility tabs', () {
+      final List<TenantFacilitySetupDeskSection> sections =
+          tenantFacilityVisibleSetupDeskSections(
+            canManageTenant: false,
+            canManageFacility: true,
+            canManageAccess: true,
+          );
+
+      expect(
+        sections.contains(TenantFacilitySetupDeskSection.tenants),
+        isFalse,
+      );
+      expect(
+        sections.contains(TenantFacilitySetupDeskSection.branches),
+        isFalse,
+      );
+      expect(
+        sections.contains(TenantFacilitySetupDeskSection.facility),
+        isTrue,
+      );
+      expect(sections.contains(TenantFacilitySetupDeskSection.users), isTrue);
+    });
+
+    test('includes tenants for tenant admins', () {
+      final List<TenantFacilitySetupDeskSection> sections =
+          tenantFacilityVisibleSetupDeskSections(
+            canManageTenant: true,
+            canManageFacility: true,
+            canManageAccess: true,
+          );
+
+      expect(sections.contains(TenantFacilitySetupDeskSection.tenants), isTrue);
+      expect(
+        sections.contains(TenantFacilitySetupDeskSection.permissions),
+        isTrue,
+      );
+    });
+
+    test('omits access tabs when unauthorized', () {
+      final List<TenantFacilitySetupDeskSection> sections =
+          tenantFacilityVisibleSetupDeskSections(
+            canManageTenant: true,
+            canManageFacility: true,
+            canManageAccess: false,
+          );
+
+      expect(sections.contains(TenantFacilitySetupDeskSection.roles), isFalse);
+      expect(
+        sections.contains(TenantFacilitySetupDeskSection.permissions),
+        isFalse,
+      );
+      expect(sections.contains(TenantFacilitySetupDeskSection.users), isFalse);
+    });
+  });
+
+  group('tenantFacilitySetupNavigationLabel', () {
+    test('returns platform, tenant, and facility labels by scope', () {
+      final AppLocalizations l10n = AppLocalizationsEn();
+      final AppAccessPolicy platform = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 't'),
+          user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+        ),
+      );
+      final AppAccessPolicy tenant = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 't'),
+          user: const AuthUserProfile(
+            roles: <String>['TENANT_ADMIN'],
+            tenantId: 'TEN0001',
+          ),
+        ),
+      );
+      final AppAccessPolicy facility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 't'),
+          user: const AuthUserProfile(
+            roles: <String>['FACILITY_ADMIN'],
+            tenantId: 'TEN0001',
+            facilityId: 'FAC0001',
+          ),
+        ),
+      );
+
+      expect(platform.isPlatformElevated, isTrue);
+      expect(
+        tenantFacilitySetupNavigationLabel(platform, l10n),
+        l10n.navigationPlatformSetupLabel,
+      );
+      expect(
+        tenantFacilitySetupNavigationLabel(tenant, l10n),
+        l10n.navigationSetupLabel,
+      );
+      expect(
+        tenantFacilitySetupNavigationLabel(facility, l10n),
+        l10n.navigationFacilitySetupLabel,
+      );
     });
   });
 

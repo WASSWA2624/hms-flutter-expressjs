@@ -109,7 +109,14 @@ void _syncPlatformDashboard(
 Future<bool?> showManageTenantsDialog(BuildContext context, WidgetRef ref) {
   return showAppDialog<bool>(
     context: context,
-    builder: (_) => const _ManageTenantsDialog(),
+    builder: (_) => const ManageTenantsPanel(dialogMode: true),
+  );
+}
+
+Future<bool?> showManageFacilitiesDialog(BuildContext context, WidgetRef ref) {
+  return showAppDialog<bool>(
+    context: context,
+    builder: (_) => const ManageFacilitiesPanel(dialogMode: true),
   );
 }
 
@@ -120,13 +127,6 @@ Future<bool?> showTenantDetailsDialog(
   return showAppDialog<bool>(
     context: context,
     builder: (_) => _TenantDetailsDialog(tenant: tenant),
-  );
-}
-
-Future<bool?> showManageFacilitiesDialog(BuildContext context, WidgetRef ref) {
-  return showAppDialog<bool>(
-    context: context,
-    builder: (_) => const _ManageFacilitiesDialog(),
   );
 }
 
@@ -142,15 +142,22 @@ Future<bool?> showFacilityDetailsDialog(
   );
 }
 
-class _ManageTenantsDialog extends ConsumerStatefulWidget {
-  const _ManageTenantsDialog();
+/// Tenants table/CRUD shared by manage dialog and setup Tenants tab.
+class ManageTenantsPanel extends ConsumerStatefulWidget {
+  const ManageTenantsPanel({
+    this.dialogMode = false,
+    this.onMutated,
+    super.key,
+  });
+
+  final bool dialogMode;
+  final ValueChanged<bool>? onMutated;
 
   @override
-  ConsumerState<_ManageTenantsDialog> createState() =>
-      _ManageTenantsDialogState();
+  ConsumerState<ManageTenantsPanel> createState() => _ManageTenantsPanelState();
 }
 
-class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
+class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
   bool _loading = true;
@@ -175,7 +182,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     _realtimeSync ??= PlatformManagementListSync(
       ref: ref,
       events: _tenantManagementRealtimeEvents,
-      onMutated: () => _mutated = true,
+      onMutated: _markMutated,
       reload: ({bool silent = false, RealtimeMessage? message}) async {
         _applyTenantRealtimeMessage(message);
         await _reload(resetPage: false, silent: silent);
@@ -263,7 +270,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       return;
     }
 
-    _mutated = true;
+    _markMutated();
     await _reload(resetPage: false, silent: true);
   }
 
@@ -282,7 +289,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       return;
     }
 
-    _mutated = true;
+    _markMutated();
     if (forceCreate || tenant == null) {
       _syncPlatformDashboard(
         ref,
@@ -355,7 +362,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     }
 
     if (confirmed == true) {
-      _mutated = true;
+      _markMutated();
       _markTenantSoftDeletedLocally(tenant);
       _syncPlatformDashboard(
         ref,
@@ -393,7 +400,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       return;
     }
 
-    _mutated = true;
+    _markMutated();
     _markTenantRestoredLocally(tenant);
     _syncPlatformDashboard(
       ref,
@@ -463,7 +470,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       return;
     }
 
-    _mutated = true;
+    _markMutated();
     _removeTenantLocally(tenant);
     _syncPlatformDashboard(ref);
     unawaited(_reload(resetPage: false, silent: true));
@@ -617,141 +624,162 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
 
   bool get _canDelete => _canCreate;
 
+  void _markMutated() {
+    _mutated = true;
+    widget.onMutated?.call(true);
+  }
+
+  Widget _buildTableBody(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppSearchBar(
+          controller: _searchController,
+          hintText: l10n.tenantFacilitySearchLabel,
+          semanticLabel: l10n.tenantFacilitySearchLabel,
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: _failure != null
+              ? AppFailureStateView(
+                  failure: _failure!,
+                  onRetry: () => unawaited(_reload(resetPage: true)),
+                )
+              : AppListTable<TenantProfile>(
+                  page: AppPage<TenantProfile>(
+                    items: _tenants,
+                    request: _pageRequest,
+                    totalItemCount: _totalItemCount,
+                  ),
+                  isLoading: _loading,
+                  itemKeyBuilder: (TenantProfile item) =>
+                      ValueKey<String>(item.id),
+                  onRowSelected: (TenantProfile tenant) {
+                    if (tenant.isDeleted) {
+                      return;
+                    }
+                    unawaited(_openTenantDetails(tenant));
+                  },
+                  previousPageLabel: l10n.hrPreviousPageLabel,
+                  nextPageLabel: l10n.hrNextPageLabel,
+                  pageLabelBuilder: (AppPage<TenantProfile> page) {
+                    if (_loading) {
+                      return '';
+                    }
+                    final int total = page.totalItemCount ?? page.items.length;
+                    if (total == 0) return l10n.commonTableEmptyLabel;
+                    final int start = page.pageIndex * page.pageSize + 1;
+                    final int end = start + page.items.length - 1;
+                    return '$start-$end / $total';
+                  },
+                  onPageChanged: _onPageChanged,
+                  columns: <AppListTableColumn<TenantProfile>>[
+                    AppListTableColumn<TenantProfile>(
+                      label: l10n.tenantFacilityTenantNameLabel,
+                      cellBuilder: (_, TenantProfile tenant) => Text(
+                        tenant.name,
+                        style: tenant.isDeleted
+                            ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              )
+                            : null,
+                      ),
+                    ),
+                    AppListTableColumn<TenantProfile>(
+                      label: l10n.tenantFacilityTenantSlugLabel,
+                      cellBuilder: (_, TenantProfile tenant) =>
+                          Text(tenant.slug ?? '—'),
+                    ),
+                    AppListTableColumn<TenantProfile>(
+                      label: l10n.tenantFacilityTenantStatusLabel,
+                      cellBuilder: (_, TenantProfile tenant) =>
+                          Text(_tenantStatusLabel(l10n, tenant)),
+                    ),
+                    if (_canEdit)
+                      AppListTableColumn<TenantProfile>(
+                        label: '',
+                        alwaysVisible: true,
+                        cellBuilder:
+                            (BuildContext context, TenantProfile tenant) {
+                              return _TenantManagementRowActions(
+                                enabled: !_loading,
+                                tenant: tenant,
+                                canDelete: _canDelete,
+                                editLabel: l10n.tenantFacilitySaveTenantAction,
+                                deleteLabel: l10n.tenantFacilityDeleteAction,
+                                restoreLabel:
+                                    l10n.tenantFacilityRestoreTenantAction,
+                                permanentDeleteLabel:
+                                    l10n.tenantFacilityPermanentDeleteAction,
+                                onEdit: () =>
+                                    unawaited(_openTenantForm(tenant: tenant)),
+                                onDelete: () =>
+                                    unawaited(_confirmDeleteTenant(tenant)),
+                                onRestore: () =>
+                                    unawaited(_confirmRestoreTenant(tenant)),
+                                onPermanentDelete: () => unawaited(
+                                  _confirmPermanentDeleteTenant(tenant),
+                                ),
+                              );
+                            },
+                      ),
+                  ],
+                  emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+                    title: l10n.tenantFacilityManageTenantsTitle,
+                    body: l10n.tenantFacilityNoTenants,
+                  ),
+                  mobileItemBuilder:
+                      (BuildContext context, TenantProfile tenant) {
+                        return AppListTableMobileItem(
+                          title: tenant.name,
+                          caption: tenant.slug ?? tenant.id,
+                          meta: <AppListTableMobileMeta>[
+                            AppListTableMobileMeta(
+                              label: _tenantStatusLabel(l10n, tenant),
+                            ),
+                          ],
+                        );
+                      },
+                ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final Widget tableBody = _buildTableBody(l10n);
+
+    if (!widget.dialogMode) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_canCreate)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: AppButton.primary(
+                label: l10n.tenantFacilityAddTenantAction,
+                leadingIcon: Icons.add_business_outlined,
+                onPressed: _loading
+                    ? null
+                    : () => unawaited(_openTenantForm(forceCreate: true)),
+              ),
+            ),
+          if (_canCreate) const SizedBox(height: 12),
+          Expanded(child: tableBody),
+        ],
+      );
+    }
 
     return AppDialog(
       title: Text(l10n.tenantFacilityManageTenantsTitle),
       icon: const Icon(Icons.corporate_fare_outlined),
       pinActionsToBottom: true,
       maxWidth: 960,
-      content: SizedBox(
-        height: 520,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AppSearchBar(
-              controller: _searchController,
-              hintText: l10n.tenantFacilitySearchLabel,
-              semanticLabel: l10n.tenantFacilitySearchLabel,
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _failure != null
-                  ? AppFailureStateView(
-                      failure: _failure!,
-                      onRetry: () => unawaited(_reload(resetPage: true)),
-                    )
-                  : AppListTable<TenantProfile>(
-                      page: AppPage<TenantProfile>(
-                        items: _tenants,
-                        request: _pageRequest,
-                        totalItemCount: _totalItemCount,
-                      ),
-                      isLoading: _loading,
-                      itemKeyBuilder: (TenantProfile item) =>
-                          ValueKey<String>(item.id),
-                      onRowSelected: (TenantProfile tenant) {
-                        if (tenant.isDeleted) {
-                          return;
-                        }
-                        unawaited(_openTenantDetails(tenant));
-                      },
-                      previousPageLabel: l10n.hrPreviousPageLabel,
-                      nextPageLabel: l10n.hrNextPageLabel,
-                      pageLabelBuilder: (AppPage<TenantProfile> page) {
-                        if (_loading) {
-                          return '';
-                        }
-                        final int total =
-                            page.totalItemCount ?? page.items.length;
-                        if (total == 0) return l10n.commonTableEmptyLabel;
-                        final int start = page.pageIndex * page.pageSize + 1;
-                        final int end = start + page.items.length - 1;
-                        return '$start-$end / $total';
-                      },
-                      onPageChanged: _onPageChanged,
-                      columns: <AppListTableColumn<TenantProfile>>[
-                        AppListTableColumn<TenantProfile>(
-                          label: l10n.tenantFacilityTenantNameLabel,
-                          cellBuilder: (_, TenantProfile tenant) => Text(
-                            tenant.name,
-                            style: tenant.isDeleted
-                                ? Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        AppListTableColumn<TenantProfile>(
-                          label: l10n.tenantFacilityTenantSlugLabel,
-                          cellBuilder: (_, TenantProfile tenant) =>
-                              Text(tenant.slug ?? '—'),
-                        ),
-                        AppListTableColumn<TenantProfile>(
-                          label: l10n.tenantFacilityTenantStatusLabel,
-                          cellBuilder: (_, TenantProfile tenant) =>
-                              Text(_tenantStatusLabel(l10n, tenant)),
-                        ),
-                        if (_canEdit)
-                          AppListTableColumn<TenantProfile>(
-                            label: '',
-                            alwaysVisible: true,
-                            cellBuilder:
-                                (BuildContext context, TenantProfile tenant) {
-                                  return _TenantManagementRowActions(
-                                    enabled: !_loading,
-                                    tenant: tenant,
-                                    canDelete: _canDelete,
-                                    editLabel:
-                                        l10n.tenantFacilitySaveTenantAction,
-                                    deleteLabel:
-                                        l10n.tenantFacilityDeleteAction,
-                                    restoreLabel:
-                                        l10n.tenantFacilityRestoreTenantAction,
-                                    permanentDeleteLabel: l10n
-                                        .tenantFacilityPermanentDeleteAction,
-                                    onEdit: () => unawaited(
-                                      _openTenantForm(tenant: tenant),
-                                    ),
-                                    onDelete: () =>
-                                        unawaited(_confirmDeleteTenant(tenant)),
-                                    onRestore: () => unawaited(
-                                      _confirmRestoreTenant(tenant),
-                                    ),
-                                    onPermanentDelete: () => unawaited(
-                                      _confirmPermanentDeleteTenant(tenant),
-                                    ),
-                                  );
-                                },
-                          ),
-                      ],
-                      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-                        title: l10n.tenantFacilityManageTenantsTitle,
-                        body: l10n.tenantFacilityNoTenants,
-                      ),
-                      mobileItemBuilder:
-                          (BuildContext context, TenantProfile tenant) {
-                            return AppListTableMobileItem(
-                              title: tenant.name,
-                              caption: tenant.slug ?? tenant.id,
-                              meta: <AppListTableMobileMeta>[
-                                AppListTableMobileMeta(
-                                  label: _tenantStatusLabel(l10n, tenant),
-                                ),
-                              ],
-                            );
-                          },
-                    ),
-            ),
-          ],
-        ),
-      ),
+      content: SizedBox(height: 520, child: tableBody),
       actions: <Widget>[
         if (_canCreate)
           AppButton.primary(
@@ -3356,16 +3384,23 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
   }
 }
 
-class _ManageFacilitiesDialog extends ConsumerStatefulWidget {
-  const _ManageFacilitiesDialog();
+/// Facilities table/CRUD shared by manage dialog and setup Facility tab.
+class ManageFacilitiesPanel extends ConsumerStatefulWidget {
+  const ManageFacilitiesPanel({
+    this.dialogMode = false,
+    this.onMutated,
+    super.key,
+  });
+
+  final bool dialogMode;
+  final ValueChanged<bool>? onMutated;
 
   @override
-  ConsumerState<_ManageFacilitiesDialog> createState() =>
-      _ManageFacilitiesDialogState();
+  ConsumerState<ManageFacilitiesPanel> createState() =>
+      _ManageFacilitiesPanelState();
 }
 
-class _ManageFacilitiesDialogState
-    extends ConsumerState<_ManageFacilitiesDialog> {
+class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
   bool _loading = true;
@@ -3395,7 +3430,7 @@ class _ManageFacilitiesDialogState
     _realtimeSync ??= PlatformManagementListSync(
       ref: ref,
       events: _facilityManagementRealtimeEvents,
-      onMutated: () => _mutated = true,
+      onMutated: _markMutated,
       reload: ({bool silent = false, RealtimeMessage? message}) async {
         _applyFacilityRealtimeMessage(message);
         await _loadTenants();
@@ -3513,7 +3548,7 @@ class _ManageFacilitiesDialogState
       return;
     }
 
-    _mutated = true;
+    _markMutated();
     await _loadTenants();
     await _reload(resetPage: false, silent: true);
   }
@@ -3533,7 +3568,7 @@ class _ManageFacilitiesDialogState
       return;
     }
 
-    _mutated = true;
+    _markMutated();
     await _loadTenants();
     await _reload(resetPage: forceCreate, silent: true);
     if (!mounted) {
@@ -3581,7 +3616,7 @@ class _ManageFacilitiesDialogState
     }
 
     if (confirmed == true) {
-      _mutated = true;
+      _markMutated();
       _markFacilitySoftDeletedLocally(facility);
       _syncPlatformDashboard(
         ref,
@@ -3620,7 +3655,7 @@ class _ManageFacilitiesDialogState
       return;
     }
 
-    _mutated = true;
+    _markMutated();
     _markFacilityRestoredLocally(facility);
     _syncPlatformDashboard(
       ref,
@@ -3693,7 +3728,7 @@ class _ManageFacilitiesDialogState
       return;
     }
 
-    _mutated = true;
+    _markMutated();
     _removeFacilityLocally(facility.mutationId);
     _syncPlatformDashboard(ref);
     await _loadTenants();
@@ -3800,6 +3835,11 @@ class _ManageFacilitiesDialogState
 
   bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();
 
+  void _markMutated() {
+    _mutated = true;
+    widget.onMutated?.call(true);
+  }
+
   String _tenantLabel(String tenantId) {
     for (final TenantProfile tenant in _tenantOptions) {
       if (tenant.id == tenantId) {
@@ -3809,180 +3849,201 @@ class _ManageFacilitiesDialogState
     return tenantId;
   }
 
+  Widget _buildTableBody(AppLocalizations l10n, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (_tenantOptions.isNotEmpty) ...<Widget>[
+          AppSelectField<String?>(
+            labelText: l10n.profileTenantLabel,
+            value: _tenantFilterId,
+            options: <AppSelectOption<String?>>[
+              AppSelectOption<String?>(
+                value: null,
+                label: l10n.commonAllLabel,
+              ),
+              ..._tenantOptions.map(
+                (TenantProfile tenant) => AppSelectOption<String?>(
+                  value: tenant.id,
+                  label: tenant.name,
+                ),
+              ),
+            ],
+            onChanged: (String? value) {
+              setState(() {
+                _tenantFilterId = value;
+              });
+              unawaited(_reload(resetPage: true));
+            },
+          ),
+          SizedBox(height: theme.spacing.md),
+        ],
+        AppSearchBar(
+          controller: _searchController,
+          hintText: l10n.tenantFacilitySearchLabel,
+          semanticLabel: l10n.tenantFacilitySearchLabel,
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: _failure != null
+              ? AppFailureStateView(
+                  failure: _failure!,
+                  onRetry: () => unawaited(_reload(resetPage: true)),
+                )
+              : AppListTable<FacilityProfile>(
+                  page: AppPage<FacilityProfile>(
+                    items: _facilities,
+                    request: _pageRequest,
+                    totalItemCount: _totalItemCount,
+                  ),
+                  isLoading: _loading,
+                  itemKeyBuilder: (FacilityProfile item) =>
+                      ValueKey<String>(item.id),
+                  onRowSelected: (FacilityProfile facility) {
+                    if (facility.isDeleted) {
+                      return;
+                    }
+                    unawaited(_openFacilityDetails(facility));
+                  },
+                  previousPageLabel: l10n.hrPreviousPageLabel,
+                  nextPageLabel: l10n.hrNextPageLabel,
+                  pageLabelBuilder: (AppPage<FacilityProfile> page) {
+                    if (_loading) {
+                      return '';
+                    }
+                    final int total =
+                        page.totalItemCount ?? page.items.length;
+                    if (total == 0) return l10n.commonTableEmptyLabel;
+                    final int start = page.pageIndex * page.pageSize + 1;
+                    final int end = start + page.items.length - 1;
+                    return '$start-$end / $total';
+                  },
+                  onPageChanged: _onPageChanged,
+                  columns: <AppListTableColumn<FacilityProfile>>[
+                    AppListTableColumn<FacilityProfile>(
+                      label: l10n.authFacilityNameLabel,
+                      cellBuilder: (_, FacilityProfile facility) =>
+                          Text(facility.name),
+                    ),
+                    AppListTableColumn<FacilityProfile>(
+                      label: l10n.profileTenantLabel,
+                      cellBuilder: (_, FacilityProfile facility) =>
+                          Text(_tenantLabel(facility.tenantId)),
+                    ),
+                    AppListTableColumn<FacilityProfile>(
+                      label: l10n.profileFacilityTypeLabel,
+                      cellBuilder: (_, FacilityProfile facility) =>
+                          Text(facility.type.name),
+                    ),
+                    AppListTableColumn<FacilityProfile>(
+                      label: l10n.tenantFacilityTenantStatusLabel,
+                      cellBuilder: (_, FacilityProfile facility) => Text(
+                        _facilityStatusLabel(l10n, facility),
+                        style: facility.isDeleted
+                            ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              )
+                            : null,
+                      ),
+                    ),
+                    if (_canManage)
+                      AppListTableColumn<FacilityProfile>(
+                        label: '',
+                        alwaysVisible: true,
+                        cellBuilder:
+                            (
+                              BuildContext context,
+                              FacilityProfile facility,
+                            ) {
+                              return GestureDetector(
+                                onTap: () {},
+                                child: _FacilityManagementRowActions(
+                                  enabled: !_loading,
+                                  facility: facility,
+                                  editLabel:
+                                      l10n.tenantFacilityEditFacilityAction,
+                                  deleteLabel:
+                                      l10n.tenantFacilityDeleteAction,
+                                  restoreLabel: l10n
+                                      .tenantFacilityRestoreTenantAction,
+                                  permanentDeleteLabel: l10n
+                                      .tenantFacilityPermanentDeleteAction,
+                                  onEdit: () => unawaited(
+                                    _openFacilityForm(facility: facility),
+                                  ),
+                                  onDelete: () => unawaited(
+                                    _confirmDeleteFacility(facility),
+                                  ),
+                                  onRestore: () => unawaited(
+                                    _confirmRestoreFacility(facility),
+                                  ),
+                                  onPermanentDelete: () => unawaited(
+                                    _confirmPermanentDeleteFacility(
+                                      facility,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                      ),
+                  ],
+                  emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+                    title: l10n.tenantFacilityManageFacilitiesTitle,
+                    body: l10n.tenantFacilityNoFacilities,
+                  ),
+                  mobileItemBuilder:
+                      (BuildContext context, FacilityProfile facility) {
+                        return AppListTableMobileItem(
+                          title: facility.name,
+                          caption: _tenantLabel(facility.tenantId),
+                          meta: <AppListTableMobileMeta>[
+                            AppListTableMobileMeta(
+                              label: _facilityStatusLabel(l10n, facility),
+                            ),
+                          ],
+                        );
+                      },
+                ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final Widget tableBody = _buildTableBody(l10n, theme);
+
+    if (!widget.dialogMode) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_canManage)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: AppButton.primary(
+                label: l10n.tenantFacilityAddFacilityAction,
+                leadingIcon: Icons.add_business_outlined,
+                onPressed: _loading
+                    ? null
+                    : () => unawaited(_openFacilityForm(forceCreate: true)),
+              ),
+            ),
+          if (_canManage) const SizedBox(height: 12),
+          Expanded(child: tableBody),
+        ],
+      );
+    }
 
     return AppDialog(
       title: Text(l10n.tenantFacilityManageFacilitiesTitle),
       icon: const Icon(Icons.domain_outlined),
       pinActionsToBottom: true,
       maxWidth: 1040,
-      content: SizedBox(
-        height: 560,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (_tenantOptions.isNotEmpty) ...<Widget>[
-              AppSelectField<String?>(
-                labelText: l10n.profileTenantLabel,
-                value: _tenantFilterId,
-                options: <AppSelectOption<String?>>[
-                  AppSelectOption<String?>(
-                    value: null,
-                    label: l10n.commonAllLabel,
-                  ),
-                  ..._tenantOptions.map(
-                    (TenantProfile tenant) => AppSelectOption<String?>(
-                      value: tenant.id,
-                      label: tenant.name,
-                    ),
-                  ),
-                ],
-                onChanged: (String? value) {
-                  setState(() {
-                    _tenantFilterId = value;
-                  });
-                  unawaited(_reload(resetPage: true));
-                },
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
-            AppSearchBar(
-              controller: _searchController,
-              hintText: l10n.tenantFacilitySearchLabel,
-              semanticLabel: l10n.tenantFacilitySearchLabel,
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _failure != null
-                  ? AppFailureStateView(
-                      failure: _failure!,
-                      onRetry: () => unawaited(_reload(resetPage: true)),
-                    )
-                  : AppListTable<FacilityProfile>(
-                      page: AppPage<FacilityProfile>(
-                        items: _facilities,
-                        request: _pageRequest,
-                        totalItemCount: _totalItemCount,
-                      ),
-                      isLoading: _loading,
-                      itemKeyBuilder: (FacilityProfile item) =>
-                          ValueKey<String>(item.id),
-                      onRowSelected: (FacilityProfile facility) {
-                        if (facility.isDeleted) {
-                          return;
-                        }
-                        unawaited(_openFacilityDetails(facility));
-                      },
-                      previousPageLabel: l10n.hrPreviousPageLabel,
-                      nextPageLabel: l10n.hrNextPageLabel,
-                      pageLabelBuilder: (AppPage<FacilityProfile> page) {
-                        if (_loading) {
-                          return '';
-                        }
-                        final int total =
-                            page.totalItemCount ?? page.items.length;
-                        if (total == 0) return l10n.commonTableEmptyLabel;
-                        final int start = page.pageIndex * page.pageSize + 1;
-                        final int end = start + page.items.length - 1;
-                        return '$start-$end / $total';
-                      },
-                      onPageChanged: _onPageChanged,
-                      columns: <AppListTableColumn<FacilityProfile>>[
-                        AppListTableColumn<FacilityProfile>(
-                          label: l10n.authFacilityNameLabel,
-                          cellBuilder: (_, FacilityProfile facility) =>
-                              Text(facility.name),
-                        ),
-                        AppListTableColumn<FacilityProfile>(
-                          label: l10n.profileTenantLabel,
-                          cellBuilder: (_, FacilityProfile facility) =>
-                              Text(_tenantLabel(facility.tenantId)),
-                        ),
-                        AppListTableColumn<FacilityProfile>(
-                          label: l10n.profileFacilityTypeLabel,
-                          cellBuilder: (_, FacilityProfile facility) =>
-                              Text(facility.type.name),
-                        ),
-                        AppListTableColumn<FacilityProfile>(
-                          label: l10n.tenantFacilityTenantStatusLabel,
-                          cellBuilder: (_, FacilityProfile facility) => Text(
-                            _facilityStatusLabel(l10n, facility),
-                            style: facility.isDeleted
-                                ? Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        if (_canManage)
-                          AppListTableColumn<FacilityProfile>(
-                            label: '',
-                            alwaysVisible: true,
-                            cellBuilder:
-                                (
-                                  BuildContext context,
-                                  FacilityProfile facility,
-                                ) {
-                                  return GestureDetector(
-                                    onTap: () {},
-                                    child: _FacilityManagementRowActions(
-                                      enabled: !_loading,
-                                      facility: facility,
-                                      editLabel:
-                                          l10n.tenantFacilityEditFacilityAction,
-                                      deleteLabel:
-                                          l10n.tenantFacilityDeleteAction,
-                                      restoreLabel: l10n
-                                          .tenantFacilityRestoreTenantAction,
-                                      permanentDeleteLabel: l10n
-                                          .tenantFacilityPermanentDeleteAction,
-                                      onEdit: () => unawaited(
-                                        _openFacilityForm(facility: facility),
-                                      ),
-                                      onDelete: () => unawaited(
-                                        _confirmDeleteFacility(facility),
-                                      ),
-                                      onRestore: () => unawaited(
-                                        _confirmRestoreFacility(facility),
-                                      ),
-                                      onPermanentDelete: () => unawaited(
-                                        _confirmPermanentDeleteFacility(
-                                          facility,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                          ),
-                      ],
-                      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-                        title: l10n.tenantFacilityManageFacilitiesTitle,
-                        body: l10n.tenantFacilityNoFacilities,
-                      ),
-                      mobileItemBuilder:
-                          (BuildContext context, FacilityProfile facility) {
-                            return AppListTableMobileItem(
-                              title: facility.name,
-                              caption: _tenantLabel(facility.tenantId),
-                              meta: <AppListTableMobileMeta>[
-                                AppListTableMobileMeta(
-                                  label: _facilityStatusLabel(l10n, facility),
-                                ),
-                              ],
-                            );
-                          },
-                    ),
-            ),
-          ],
-        ),
-      ),
+      content: SizedBox(height: 560, child: tableBody),
       actions: <Widget>[
         if (_canManage)
           AppButton.primary(

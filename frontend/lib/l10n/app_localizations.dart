@@ -2290,17 +2290,59 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get navigationSettingsShortLabel;
 
-  /// Navigation label for tenant and facility setup.
+  /// Navigation label for tenant-scoped organization setup.
   ///
   /// In en, this message translates to:
   /// **'Tenant setup'**
   String get navigationSetupLabel;
+
+  /// Navigation label for platform-admin organization setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform setup'**
+  String get navigationPlatformSetupLabel;
+
+  /// Navigation label for facility-admin organization setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility setup'**
+  String get navigationFacilitySetupLabel;
 
   /// Compact navigation label for tenant and facility setup.
   ///
   /// In en, this message translates to:
   /// **'Setup'**
   String get navigationSetupShortLabel;
+
+  /// Setup workspace tab label for tenants.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenants'**
+  String get tenantFacilitySetupTabTenants;
+
+  /// Setup workspace tab label for facility identity.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get tenantFacilitySetupTabFacility;
+
+  /// Setup workspace tab label for roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get tenantFacilitySetupTabRoles;
+
+  /// Setup workspace tab label for permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get tenantFacilitySetupTabPermissions;
+
+  /// Setup workspace tab label for users.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get tenantFacilitySetupTabUsers;
 
   /// Navigation label for the patient registry destination.
   ///

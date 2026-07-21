@@ -1,11 +1,135 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/utils/app_slug.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 const String tenantFacilityNoneSelection = '__none__';
+
+/// Setup workspace tabs replacing Guided setup as primary navigation.
+enum TenantFacilitySetupDeskSection {
+  tenants,
+  branches,
+  facility,
+  departments,
+  units,
+  wards,
+  rooms,
+  beds,
+  roles,
+  permissions,
+  users,
+}
+
+/// Shell nav label for `/admin/setup` by admin scope.
+String tenantFacilitySetupNavigationLabel(
+  AppAccessPolicy policy,
+  AppLocalizations l10n,
+) {
+  if (policy.isPlatformElevated) {
+    return l10n.navigationPlatformSetupLabel;
+  }
+  if (policy.canManageTenant()) {
+    return l10n.navigationSetupLabel;
+  }
+  return l10n.navigationFacilitySetupLabel;
+}
+
+/// Page title for setup workspace by admin scope.
+String tenantFacilitySetupWorkspaceTitle(
+  AppAccessPolicy policy,
+  AppLocalizations l10n, {
+  required bool isHrSetupOnly,
+}) {
+  if (isHrSetupOnly) {
+    return l10n.tenantFacilityHrSetupTitle;
+  }
+  return tenantFacilitySetupNavigationLabel(policy, l10n);
+}
+
+bool tenantFacilitySetupDeskSectionVisible({
+  required TenantFacilitySetupDeskSection section,
+  required bool canManageTenant,
+  required bool canManageFacility,
+  required bool canManageAccess,
+}) {
+  return switch (section) {
+    TenantFacilitySetupDeskSection.tenants => canManageTenant,
+    TenantFacilitySetupDeskSection.branches => canManageTenant,
+    TenantFacilitySetupDeskSection.facility ||
+    TenantFacilitySetupDeskSection.departments ||
+    TenantFacilitySetupDeskSection.units ||
+    TenantFacilitySetupDeskSection.wards ||
+    TenantFacilitySetupDeskSection.rooms ||
+    TenantFacilitySetupDeskSection.beds =>
+      canManageFacility || canManageTenant,
+    TenantFacilitySetupDeskSection.roles ||
+    TenantFacilitySetupDeskSection.permissions ||
+    TenantFacilitySetupDeskSection.users => canManageAccess,
+  };
+}
+
+List<TenantFacilitySetupDeskSection> tenantFacilityVisibleSetupDeskSections({
+  required bool canManageTenant,
+  required bool canManageFacility,
+  required bool canManageAccess,
+}) {
+  return TenantFacilitySetupDeskSection.values
+      .where(
+        (TenantFacilitySetupDeskSection section) =>
+            tenantFacilitySetupDeskSectionVisible(
+              section: section,
+              canManageTenant: canManageTenant,
+              canManageFacility: canManageFacility,
+              canManageAccess: canManageAccess,
+            ),
+      )
+      .toList(growable: false);
+}
+
+String tenantFacilitySetupDeskSectionLabel(
+  AppLocalizations l10n,
+  TenantFacilitySetupDeskSection section,
+) {
+  return switch (section) {
+    TenantFacilitySetupDeskSection.tenants =>
+      l10n.tenantFacilitySetupTabTenants,
+    TenantFacilitySetupDeskSection.branches =>
+      l10n.tenantFacilityWizardStepBranches,
+    TenantFacilitySetupDeskSection.facility =>
+      l10n.tenantFacilitySetupTabFacility,
+    TenantFacilitySetupDeskSection.departments =>
+      l10n.tenantFacilityWizardStepDepartments,
+    TenantFacilitySetupDeskSection.units => l10n.tenantFacilityWizardStepUnits,
+    TenantFacilitySetupDeskSection.wards => l10n.tenantFacilityWizardStepWards,
+    TenantFacilitySetupDeskSection.rooms => l10n.tenantFacilityWizardStepRooms,
+    TenantFacilitySetupDeskSection.beds => l10n.tenantFacilityWizardStepBeds,
+    TenantFacilitySetupDeskSection.roles => l10n.tenantFacilitySetupTabRoles,
+    TenantFacilitySetupDeskSection.permissions =>
+      l10n.tenantFacilitySetupTabPermissions,
+    TenantFacilitySetupDeskSection.users => l10n.tenantFacilitySetupTabUsers,
+  };
+}
+
+IconData tenantFacilitySetupDeskSectionIcon(
+  TenantFacilitySetupDeskSection section,
+) {
+  return switch (section) {
+    TenantFacilitySetupDeskSection.tenants => Icons.corporate_fare_outlined,
+    TenantFacilitySetupDeskSection.branches => Icons.account_tree_outlined,
+    TenantFacilitySetupDeskSection.facility => Icons.apartment_outlined,
+    TenantFacilitySetupDeskSection.departments => Icons.domain_outlined,
+    TenantFacilitySetupDeskSection.units => Icons.hub_outlined,
+    TenantFacilitySetupDeskSection.wards => Icons.bed_outlined,
+    TenantFacilitySetupDeskSection.rooms => Icons.meeting_room_outlined,
+    TenantFacilitySetupDeskSection.beds => Icons.hotel_outlined,
+    TenantFacilitySetupDeskSection.roles => Icons.badge_outlined,
+    TenantFacilitySetupDeskSection.permissions => Icons.key_outlined,
+    TenantFacilitySetupDeskSection.users => Icons.people_outline,
+  };
+}
 
 /// Builds a short, OS-safe facility logo basename (≤ 32 chars incl. extension).
 ///

@@ -1520,11 +1520,39 @@
   },
   "navigationSetupLabel": "Tenant setup",
   "@navigationSetupLabel": {
-    "description": "Navigation label for tenant and facility setup."
+    "description": "Navigation label for tenant-scoped organization setup."
+  },
+  "navigationPlatformSetupLabel": "Platform setup",
+  "@navigationPlatformSetupLabel": {
+    "description": "Navigation label for platform-admin organization setup."
+  },
+  "navigationFacilitySetupLabel": "Facility setup",
+  "@navigationFacilitySetupLabel": {
+    "description": "Navigation label for facility-admin organization setup."
   },
   "navigationSetupShortLabel": "Setup",
   "@navigationSetupShortLabel": {
     "description": "Compact navigation label for tenant and facility setup."
+  },
+  "tenantFacilitySetupTabTenants": "Tenants",
+  "@tenantFacilitySetupTabTenants": {
+    "description": "Setup workspace tab label for tenants."
+  },
+  "tenantFacilitySetupTabFacility": "Facility",
+  "@tenantFacilitySetupTabFacility": {
+    "description": "Setup workspace tab label for facility identity."
+  },
+  "tenantFacilitySetupTabRoles": "Roles",
+  "@tenantFacilitySetupTabRoles": {
+    "description": "Setup workspace tab label for roles."
+  },
+  "tenantFacilitySetupTabPermissions": "Permissions",
+  "@tenantFacilitySetupTabPermissions": {
+    "description": "Setup workspace tab label for permissions."
+  },
+  "tenantFacilitySetupTabUsers": "Users",
+  "@tenantFacilitySetupTabUsers": {
+    "description": "Setup workspace tab label for users."
   },
   "navigationPatientsLabel": "Patient registry",
   "@navigationPatientsLabel": {
