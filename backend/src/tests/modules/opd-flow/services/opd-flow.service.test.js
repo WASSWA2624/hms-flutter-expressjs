@@ -203,6 +203,9 @@ describe('opd-flow.service', () => {
 
   it('starts a walk-in flow and creates patient when patient_id is missing', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       tenant: {
         findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
       },
@@ -224,6 +227,12 @@ describe('opd-flow.service', () => {
           id: 'inv-1',
           total_amount: '40.00',
           currency: 'USD'
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '40.00',
+          currency: 'USD',
+          status: 'ISSUED'
         })
       },
       payment: {
@@ -261,7 +270,8 @@ describe('opd-flow.service', () => {
             }
           }
         }),
-        update: jest.fn()
+        update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 })
       }
     };
 
@@ -292,6 +302,9 @@ describe('opd-flow.service', () => {
 
   it('starts an emergency flow in care-first mode', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       tenant: {
         findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
       },
@@ -383,6 +396,9 @@ describe('opd-flow.service', () => {
       severity: 'CRITICAL'
     };
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       tenant: {
         findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
       },
@@ -483,6 +499,9 @@ describe('opd-flow.service', () => {
 
   it('starts an online appointment flow and moves appointment to IN_PROGRESS', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       appointment: {
         findFirst: jest
           .fn()
@@ -592,6 +611,9 @@ describe('opd-flow.service', () => {
 
   it('returns the existing OPD flow when an appointment is checked in twice', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       appointment: {
         findFirst: jest
           .fn()
@@ -659,7 +681,10 @@ describe('opd-flow.service', () => {
       facility_id: 'facility-1'
     };
     const tx = {
-      visit_queue: {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+visit_queue: {
         findFirst: jest.fn().mockResolvedValue(queue),
         update: jest.fn().mockResolvedValue({
           ...queue,
@@ -753,6 +778,42 @@ describe('opd-flow.service', () => {
     );
   });
 
+
+  it('rejects a new OPD flow when the patient already has an open IPD admission', async () => {
+    const tx = {
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
+      },
+      patient: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'pat-1' })
+      },
+      admission: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'adm-1',
+          human_friendly_id: 'ADM0000001',
+          status: 'ADMITTED'
+        })
+      }
+    };
+    opdFlowRepository.findOpenActiveEncounterForPatient.mockResolvedValueOnce(null);
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.startOpdFlow(
+        {
+          tenant_id: 'tenant-1',
+          patient_id: 'PAT0000003',
+          require_consultation_payment: false
+        },
+        { tenant_id: 'tenant-1', user_id: 'usr-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.open_admission_exists',
+      statusCode: 409
+    });
+    expect(tx.admission.findFirst).toHaveBeenCalled();
+  });
+
   it('rejects a stale supersede request when the active encounter changed', async () => {
     const tx = {
       tenant: {
@@ -797,6 +858,9 @@ describe('opd-flow.service', () => {
     duplicateError.meta = { target: ['active_opd_lock_key'] };
 
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       tenant: {
         findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
       },
@@ -877,6 +941,9 @@ describe('opd-flow.service', () => {
 
   it('blocks vitals when consultation payment is required and unpaid', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'enc-1',
@@ -942,6 +1009,9 @@ describe('opd-flow.service', () => {
       pharmacy_orders: []
     };
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -1155,6 +1225,9 @@ describe('opd-flow.service', () => {
       pharmacy_orders: []
     };
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -1328,6 +1401,9 @@ describe('opd-flow.service', () => {
       pharmacy_orders: []
     };
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -1453,6 +1529,9 @@ describe('opd-flow.service', () => {
       pharmacy_orders: []
     };
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -1571,6 +1650,9 @@ describe('opd-flow.service', () => {
       pharmacy_orders: []
     };
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -1634,6 +1716,9 @@ describe('opd-flow.service', () => {
 
   it('creates lab, radiology, and pharmacy requests on doctor review', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -1762,6 +1847,9 @@ describe('opd-flow.service', () => {
 
   it('resolves standard lab catalog requests during doctor review', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -1881,6 +1969,9 @@ describe('opd-flow.service', () => {
 
   it('prevents send-to-pharmacy disposition without pharmacy order', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'enc-1',
@@ -2030,6 +2121,9 @@ describe('opd-flow.service', () => {
 
   it('rejects disposition when flow is already terminal', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'enc-1',
@@ -2060,6 +2154,9 @@ describe('opd-flow.service', () => {
 
   it('reopens a completed flow when correcting to a non-terminal stage', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -2169,6 +2266,9 @@ describe('opd-flow.service', () => {
 
   it('requires a reason for backward stage corrections', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'enc-1',
@@ -2214,6 +2314,9 @@ describe('opd-flow.service', () => {
     prisma.notification_delivery.createMany.mockResolvedValue({ count: 2 });
 
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -2320,6 +2423,9 @@ describe('opd-flow.service', () => {
 
   it('assigns a doctor using tenant-wide fallback when facility-scoped lookup misses', async () => {
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -2416,6 +2522,9 @@ describe('opd-flow.service', () => {
     prisma.user_role.findMany.mockResolvedValue([{ user_id: 'nurse-1' }]);
 
     const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
       encounter: {
         findFirst: jest
           .fn()
@@ -2543,7 +2652,10 @@ describe('opd-flow.service', () => {
         admissions: []
       };
       const tx = {
-        encounter: {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      encounter: {
           findFirst: jest
             .fn()
             .mockResolvedValueOnce(initialEncounter)

@@ -858,14 +858,21 @@ class _ReceptionWorkspaceContentState
       id: 'status',
       label: l10n.receptionCurrentStepLabel,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final String? status =
-            row.appointment?.status ?? row.queueEntry?.status;
-        if (status == null || status.isEmpty) {
+        final OpdAppointment? appointment = row.appointment;
+        if (appointment == null) {
+          return const SizedBox.shrink();
+        }
+        final String label = opdAppointmentCurrentStepLabel(
+          context.l10n,
+          appointment: appointment,
+          linkedFlow: row.flow,
+        );
+        if (label.isEmpty) {
           return const SizedBox.shrink();
         }
         return AppWorkspaceStatusBadge(
           status: AppWorkspaceStatus(
-            label: opdStageDisplayLabel(context.l10n, status),
+            label: label,
             tone: AppWorkspaceStatusTone.info,
           ),
         );
@@ -1268,10 +1275,7 @@ class _ReceptionWorkspaceContentState
         if (appointment == null) {
           return const SizedBox.shrink();
         }
-        final String? label = _receptionAppointmentNextActionLabel(
-          l10n,
-          appointment,
-        );
+        final String? label = row.appointmentNextActionLabel(l10n);
         if (label == null) {
           return const SizedBox.shrink();
         }
@@ -1321,24 +1325,6 @@ class _ReceptionWorkspaceContentState
     );
   }
 
-  String? _receptionAppointmentNextActionLabel(
-    AppLocalizations l10n,
-    OpdAppointment appointment,
-  ) {
-    final String status = (appointment.status ?? '').toUpperCase();
-    if (isOpdAppointmentTerminalStatus(status)) {
-      return null;
-    }
-    final bool canCheckIn = status != 'IN_PROGRESS' && status != 'COMPLETED';
-    if (canCheckIn) {
-      return l10n.opdCheckInAction;
-    }
-    if (status != 'IN_PROGRESS' && appointment.patientId != null) {
-      return l10n.opdQueueAction;
-    }
-    return l10n.opdRescheduleAction;
-  }
-
   Widget _mobileItemBuilder(BuildContext context, _ReceptionDeskRow row) {
     return _ReceptionDeskMobileRow(
       section: _section,
@@ -1356,7 +1342,13 @@ class _ReceptionWorkspaceContentState
         return <_ReceptionDeskRow>[
           for (final OpdAppointment appointment in state.appointments.items)
             if (!isOpdTerminalStatus(appointment.status))
-              _ReceptionDeskRow.appointment(appointment),
+              _ReceptionDeskRow.appointment(
+                appointment,
+                flow: findActiveOpdFlowForAppointment(
+                  appointment: appointment,
+                  flows: state.flows.items,
+                ),
+              ),
         ];
       case ReceptionDeskSection.queue:
         return <_ReceptionDeskRow>[
@@ -1642,10 +1634,14 @@ class _ReceptionWorkspaceContentState
         appointment: row.appointment!,
         workspaceState: widget.state,
       );
-      if (changed == true && mounted) {
+      if (!mounted) {
+        return;
+      }
+      if (changed == true) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+        await _refreshWorkspace();
       }
       return;
     }
@@ -1761,8 +1757,11 @@ final class _ReceptionDeskRow {
     this.paymentGateEntry,
   });
 
-  factory _ReceptionDeskRow.appointment(OpdAppointment appointment) {
-    return _ReceptionDeskRow._(appointment: appointment);
+  factory _ReceptionDeskRow.appointment(
+    OpdAppointment appointment, {
+    OpdFlowSummary? flow,
+  }) {
+    return _ReceptionDeskRow._(appointment: appointment, flow: flow);
   }
 
   factory _ReceptionDeskRow.queue(OpdQueueEntry entry, {OpdFlowSummary? flow}) {
@@ -1918,14 +1917,37 @@ final class _ReceptionDeskRow {
 
   String? nextActionLabel(ReceptionDeskSection section, AppLocalizations l10n) {
     return switch (section) {
-      ReceptionDeskSection.appointments =>
-        appointment == null
-            ? null
-            : _receptionAppointmentNextActionLabelStatic(l10n, appointment!),
+      ReceptionDeskSection.appointments => appointmentNextActionLabel(l10n),
       ReceptionDeskSection.queue => queueNextActionLabel(l10n),
       ReceptionDeskSection.activeVisits => flowNextActionLabel(l10n),
       ReceptionDeskSection.paymentGate => paymentNextActionLabel(l10n),
     };
+  }
+
+  String? appointmentNextActionLabel(AppLocalizations l10n) {
+    final OpdAppointment? appt = appointment;
+    if (appt == null) {
+      return null;
+    }
+    return opdAppointmentPrimaryActionLabel(
+      l10n,
+      resolveOpdAppointmentPrimaryAction(
+        appointment: appt,
+        linkedFlow: flow,
+      ),
+    );
+  }
+
+  String appointmentCurrentStepLabel(AppLocalizations l10n) {
+    final OpdAppointment? appt = appointment;
+    if (appt == null) {
+      return '';
+    }
+    return opdAppointmentCurrentStepLabel(
+      l10n,
+      appointment: appt,
+      linkedFlow: flow,
+    );
   }
 
   bool matchesSearch(
@@ -2051,7 +2073,8 @@ final class _ReceptionDeskRow {
                 ? null
                 : AppFormatters.dateTime(appt.scheduledStart!, locale),
             opdStageDisplayLabel(l10n, appt.status ?? ''),
-            _receptionAppointmentNextActionLabelStatic(l10n, appt),
+            appointmentNextActionLabel(l10n),
+            if (flow != null) opdStatusDisplayLabel(l10n, flow!),
           ]);
         }
       case ReceptionDeskSection.queue:
@@ -2146,24 +2169,6 @@ final class _ReceptionDeskRow {
         .map((String value) => value.trim())
         .where((String value) => value.isNotEmpty)
         .toList(growable: false);
-  }
-
-  static String? _receptionAppointmentNextActionLabelStatic(
-    AppLocalizations l10n,
-    OpdAppointment appointment,
-  ) {
-    final String status = (appointment.status ?? '').toUpperCase();
-    if (isOpdAppointmentTerminalStatus(status)) {
-      return null;
-    }
-    final bool canCheckIn = status != 'IN_PROGRESS' && status != 'COMPLETED';
-    if (canCheckIn) {
-      return l10n.opdCheckInAction;
-    }
-    if (status != 'IN_PROGRESS' && appointment.patientId != null) {
-      return l10n.opdQueueAction;
-    }
-    return l10n.opdRescheduleAction;
   }
 }
 
@@ -2266,13 +2271,17 @@ class _ReceptionDeskMobileStatus extends StatelessWidget {
 
     switch (section) {
       case ReceptionDeskSection.appointments:
-        final String? status = row.appointment?.status;
-        if (status == null || status.isEmpty) {
+        final OpdAppointment? appointment = row.appointment;
+        if (appointment == null) {
+          return const SizedBox.shrink();
+        }
+        final String label = row.appointmentCurrentStepLabel(l10n);
+        if (label.isEmpty) {
           return const SizedBox.shrink();
         }
         return AppWorkspaceStatusBadge(
           status: AppWorkspaceStatus(
-            label: opdStageDisplayLabel(l10n, status),
+            label: label,
             tone: AppWorkspaceStatusTone.info,
           ),
         );
@@ -2330,15 +2339,7 @@ class _ReceptionDeskMobileNextAction extends StatelessWidget {
 
     switch (section) {
       case ReceptionDeskSection.appointments:
-        final OpdAppointment? appointment = row.appointment;
-        if (appointment == null) {
-          return const SizedBox.shrink();
-        }
-        final String? label =
-            _ReceptionDeskRow._receptionAppointmentNextActionLabelStatic(
-              l10n,
-              appointment,
-            );
+        final String? label = row.appointmentNextActionLabel(l10n);
         if (label == null) {
           return const SizedBox.shrink();
         }

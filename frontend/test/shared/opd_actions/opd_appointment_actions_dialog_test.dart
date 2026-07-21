@@ -79,6 +79,41 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
+  testWidgets(
+    'shows Continue and Edit when the patient already has an open OPD flow',
+    (WidgetTester tester) async {
+      await _pumpMountedDialog(
+        tester,
+        appointment,
+        workspaceState: OpdWorkspaceState.empty().copyWith(
+          flows: const AppPage<OpdFlowSummary>(
+            items: <OpdFlowSummary>[
+              OpdFlowSummary(
+                id: 'flow-1',
+                publicId: 'ENC000001',
+                patientId: 'PAT000001',
+                appointmentId: 'APT000001',
+                status: 'OPEN',
+                stage: 'WAITING_DOCTOR_REVIEW',
+                displayCode: 'WITH_DOCTOR',
+                displayStatus: 'With doctor',
+              ),
+            ],
+            request: AppPageRequest(pageSize: 12),
+          ),
+        ),
+      );
+
+      expect(find.text('Start OPD encounter'), findsNothing);
+      expect(
+        find.widgetWithText(AppButton, 'Continue encounter'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppButton, 'Edit encounter'), findsOneWidget);
+      expect(find.text('With doctor'), findsWidgets);
+    },
+  );
+
   testWidgets('hides mutation actions after the appointment is terminal', (
     WidgetTester tester,
   ) async {

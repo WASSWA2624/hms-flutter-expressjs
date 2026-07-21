@@ -1,6 +1,7 @@
 export 'opd_action_context.dart';
 export 'opd_admission_handoff_dialog.dart';
 export 'opd_appointment_actions_dialog.dart';
+export 'opd_appointment_eligibility.dart';
 export 'opd_billing_state.dart';
 export 'opd_consultation_payment_dialog.dart';
 export 'opd_disposition_dialog.dart';

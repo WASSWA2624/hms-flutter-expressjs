@@ -2878,7 +2878,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdQueueFilterLabel => 'Queue';
 
   @override
-  String get opdProviderFilterLabel => 'Assigned staff';
+  String get opdProviderFilterLabel => 'Doctor';
 
   @override
   String get opdBillingFilterLabel => 'Billing';
@@ -2899,7 +2899,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdAllQueuesOption => 'All queues';
 
   @override
-  String get opdAllProvidersOption => 'All staff';
+  String get opdAllProvidersOption => 'All doctors';
 
   @override
   String get opdAllBillingStatesOption => 'All billing states';
@@ -3180,7 +3180,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdWaitingTimeColumnLabel => 'Wait time';
 
   @override
-  String get opdProviderColumnLabel => 'Assigned staff';
+  String get opdProviderColumnLabel => 'Doctor';
 
   @override
   String get opdPayerBillingColumnLabel => 'Payer / billing';
@@ -3491,7 +3491,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdGenderLabel => 'Gender';
 
   @override
-  String get opdProviderIdLabel => 'Staff ID';
+  String get opdProviderIdLabel => 'Doctor ID';
 
   @override
   String get opdConsultationFeeLabel => 'Consultation fee';

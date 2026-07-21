@@ -228,6 +228,7 @@
   "errors.oauth_account.not_found": "OAuth account not found",
   "errors.office_context.not_found": "Office context not found",
   "errors.opd_flow.active_encounter_exists": "This patient already has an active OPD encounter at this facility",
+  "errors.opd_flow.open_admission_exists": "This patient already has an open inpatient admission. Close or discharge the admission before starting an OPD encounter",
   "errors.opd_flow.active_encounter_patient_mismatch": "Active OPD encounter belongs to a different patient",
   "errors.opd_flow.supersede_encounter_mismatch": "The active encounter changed. Refresh and confirm the encounter to replace.",
   "errors.opd_flow.already_terminal": "OPD flow is already in terminal state",

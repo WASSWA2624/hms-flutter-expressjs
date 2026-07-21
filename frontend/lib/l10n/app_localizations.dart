@@ -5575,7 +5575,7 @@ abstract class AppLocalizations {
   /// OPD table provider filter label.
   ///
   /// In en, this message translates to:
-  /// **'Assigned staff'**
+  /// **'Doctor'**
   String get opdProviderFilterLabel;
 
   /// OPD table billing filter label.
@@ -5617,7 +5617,7 @@ abstract class AppLocalizations {
   /// All providers option label in OPD filters.
   ///
   /// In en, this message translates to:
-  /// **'All staff'**
+  /// **'All doctors'**
   String get opdAllProvidersOption;
 
   /// All billing states option label in OPD filters.
@@ -6157,7 +6157,7 @@ abstract class AppLocalizations {
   /// Provider column label.
   ///
   /// In en, this message translates to:
-  /// **'Assigned staff'**
+  /// **'Doctor'**
   String get opdProviderColumnLabel;
 
   /// Payer and billing column label for the main OPD table.
@@ -6733,7 +6733,7 @@ abstract class AppLocalizations {
   /// Provider ID field label.
   ///
   /// In en, this message translates to:
-  /// **'Staff ID'**
+  /// **'Doctor ID'**
   String get opdProviderIdLabel;
 
   /// Consultation fee field label.

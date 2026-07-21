@@ -989,7 +989,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('TABLE SETTINGS'), findsOneWidget);
     expect(find.text('Appointment ID'), findsOneWidget);
-    expect(find.text('Assigned staff'), findsOneWidget);
+    expect(find.text('Doctor'), findsOneWidget);
     expect(find.text('Reason'), findsOneWidget);
     expect(find.text('Queued at'), findsNothing);
     expect(find.text('Payment status'), findsNothing);

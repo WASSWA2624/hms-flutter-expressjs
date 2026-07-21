@@ -12,9 +12,10 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_appointment_eligibility.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
-    show opdFrontDeskActionRequirement;
+    show opdFrontDeskActionRequirement, showFlowActionsDialog;
 import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart'
     show isOpdQueueTerminalStatus;
 import 'package:hosspi_hms/shared/opd_actions/opd_reschedule_appointment_dialog.dart';
@@ -41,18 +42,10 @@ Future<bool?> showOpdAppointmentActionsDialog({
 }
 
 bool isOpdAppointmentTerminalStatus(String? status) {
-  return switch ((status ?? '').toUpperCase()) {
-    'COMPLETED' ||
-    'CANCELLED' ||
-    'NO_SHOW' ||
-    'DISCHARGED' ||
-    'ADMITTED' ||
-    'CLOSED' => true,
-    _ => false,
-  };
+  return isOpdAppointmentStatusTerminal(status);
 }
 
-enum _AppointmentFooterAction { queue, checkIn }
+enum _AppointmentFooterAction { queue, checkIn, continueEncounter, editEncounter }
 
 class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
   const OpdAppointmentActionsDialog({
@@ -82,6 +75,17 @@ class _OpdAppointmentActionsDialogState
 
   bool get _isSaving => _activeAction != null;
 
+  OpdFlowSummary? get _linkedFlow {
+    final OpdWorkspaceState? workspaceState = widget.workspaceState;
+    if (workspaceState == null) {
+      return null;
+    }
+    return findActiveOpdFlowForAppointment(
+      appointment: widget.appointment,
+      flows: workspaceState.flows.items,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -89,23 +93,29 @@ class _OpdAppointmentActionsDialogState
     final String status = (widget.appointment.status ?? '').toUpperCase();
     final bool terminal = isOpdAppointmentTerminalStatus(status);
     final bool alreadyQueued = _hasActiveLinkedQueueEntry();
+    final OpdFlowSummary? linkedFlow = _linkedFlow;
+    final OpdAppointmentPrimaryAction primaryAction =
+        resolveOpdAppointmentPrimaryAction(
+          appointment: widget.appointment,
+          linkedFlow: linkedFlow,
+          alreadyQueued: alreadyQueued,
+        );
     final bool canQueue =
         !terminal &&
         status != 'IN_PROGRESS' &&
         !alreadyQueued &&
+        linkedFlow == null &&
         widget.appointment.patientId != null &&
         widget.appointment.tenantId != null;
-    final bool canCheckIn =
-        !terminal && status != 'IN_PROGRESS' && status != 'COMPLETED';
+    final bool canStartEncounter =
+        primaryAction == OpdAppointmentPrimaryAction.startEncounter;
+    final bool canContinueEncounter =
+        primaryAction == OpdAppointmentPrimaryAction.continueEncounter &&
+        linkedFlow != null;
     final bool canReschedule = !terminal;
     final bool canCancelAppointment = !terminal && status != 'CANCELLED';
-    final String nextAction = canCheckIn
-        ? l10n.opdCheckInAction
-        : canQueue
-        ? l10n.opdQueueAction
-        : canReschedule
-        ? l10n.opdRescheduleAction
-        : '';
+    final String nextAction =
+        opdAppointmentPrimaryActionLabel(l10n, primaryAction) ?? '';
 
     return AppDialog(
       title: Text(l10n.opdAppointmentActionsTitle),
@@ -125,16 +135,21 @@ class _OpdAppointmentActionsDialogState
           OpdWorkflowContextPanel(
             patientName: widget.appointment.displayTitle,
             patientNumber: widget.appointment.patientIdentifier ?? '',
-            currentStep: opdStageDisplayLabel(
+            currentStep: opdAppointmentCurrentStepLabel(
               l10n,
-              widget.appointment.status ?? '',
+              appointment: widget.appointment,
+              linkedFlow: linkedFlow,
             ),
-            currentStepCode: widget.appointment.status,
+            currentStepCode:
+                linkedFlow?.displayCode ??
+                linkedFlow?.stage ??
+                widget.appointment.status,
             nextStep: nextAction,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.opdProviderColumnLabel,
                 value:
+                    linkedFlow?.providerDisplayName ??
                     widget.appointment.providerDisplayName ??
                     l10n.profileUnknownValue,
                 icon: Icons.medical_services_outlined,
@@ -194,7 +209,32 @@ class _OpdAppointmentActionsDialogState
                     enabled: !_isSaving,
                     onPressed: _openCancel,
                   ),
-                if (canCheckIn)
+                if (canContinueEncounter) ...<AppPermissionActionItem>[
+                  AppPermissionActionItem(
+                    requirement: widget.actionRequirement,
+                    label: l10n.opdContinueEncounterAction,
+                    icon: AppActionIcons.start,
+                    variant: AppButtonVariant.primary,
+                    fullWidth: true,
+                    isLoading:
+                        _activeAction ==
+                        _AppointmentFooterAction.continueEncounter,
+                    enabled: !_isSaving,
+                    onPressed: () => _openContinue(linkedFlow),
+                  ),
+                  AppPermissionActionItem(
+                    requirement: widget.actionRequirement,
+                    label: l10n.opdOpenActiveEncounterAction,
+                    icon: AppActionIcons.edit,
+                    fullWidth: true,
+                    isLoading:
+                        _activeAction ==
+                        _AppointmentFooterAction.editEncounter,
+                    enabled: !_isSaving,
+                    onPressed: _openCheckIn,
+                  ),
+                ],
+                if (canStartEncounter)
                   AppPermissionActionItem(
                     requirement: widget.actionRequirement,
                     label: l10n.opdCheckInAction,
@@ -223,13 +263,38 @@ class _OpdAppointmentActionsDialogState
     );
   }
 
+  Future<void> _openContinue(OpdFlowSummary flow) async {
+    if (_isSaving) {
+      return;
+    }
+    setState(() {
+      _activeAction = _AppointmentFooterAction.continueEncounter;
+      _failure = null;
+    });
+    final bool? changed = await showFlowActionsDialog(
+      context: context,
+      flow: flow,
+      allowBillingActions: false,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (changed == true) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() => _activeAction = null);
+  }
+
   Future<void> _openCheckIn() async {
     if (_isSaving) {
       return;
     }
     final OpdWorkspaceState? workspaceState = widget.workspaceState;
     setState(() {
-      _activeAction = _AppointmentFooterAction.checkIn;
+      _activeAction = _linkedFlow == null
+          ? _AppointmentFooterAction.checkIn
+          : _AppointmentFooterAction.editEncounter;
       _failure = null;
     });
     final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
@@ -264,9 +329,12 @@ class _OpdAppointmentActionsDialogState
           .read(opdWorkspaceControllerProvider.notifier)
           .markAppointmentInProgress(widget.appointment);
     }
-    Navigator.of(
-      context,
-    ).pop(dialogResult.action != OpdEncounterDialogAction.continueWorkflow);
+    Navigator.of(context).pop(
+      dialogResult.action == OpdEncounterDialogAction.submit ||
+          dialogResult.action == OpdEncounterDialogAction.cancelled ||
+          dialogResult.action == OpdEncounterDialogAction.closed ||
+          dialogResult.action == OpdEncounterDialogAction.continueWorkflow,
+    );
   }
 
   bool _hasActiveLinkedQueueEntry() {

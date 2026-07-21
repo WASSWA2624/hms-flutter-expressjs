@@ -111,7 +111,9 @@ class PatientDetailQuickActions extends ConsumerWidget {
             ],
           ),
         )
-      else if (!hasActiveOpdEncounter && !hasActiveOpdWorkItem)
+      else if (!hasActiveOpdEncounter &&
+          !hasActiveOpdWorkItem &&
+          !hasActiveAdmission)
         AppPermissionActionItem(
           label: l10n.patientsQuickOpdCheckInAction,
           icon: opdEncounterIcon,

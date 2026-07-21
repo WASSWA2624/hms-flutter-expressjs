@@ -2870,6 +2870,33 @@ const startOpdFlow = async (data, context = {}) => {
         }
       }
 
+      const openAdmission = await tx.admission.findFirst({
+        where: {
+          tenant_id: tenantId,
+          patient_id: patientId,
+          deleted_at: null,
+          status: { in: ['ADMITTED', 'TRANSFERRED'] },
+          ...(facilityId
+            ? { OR: [{ facility_id: facilityId }, { facility_id: null }] }
+            : {})
+        },
+        select: {
+          id: true,
+          human_friendly_id: true,
+          status: true
+        },
+        orderBy: { created_at: 'desc' }
+      });
+      if (openAdmission) {
+        throw new HttpError('errors.opd_flow.open_admission_exists', 409, [
+          {
+            field: 'patient_id',
+            admission_id: openAdmission.human_friendly_id || openAdmission.id,
+            admission_status: openAdmission.status
+          }
+        ]);
+      }
+
       const providerIdentifier =
         normalizeIdentifier(data.provider_user_id) ||
         normalizeIdentifier(requestedVisitQueue?.provider_user_id) ||
