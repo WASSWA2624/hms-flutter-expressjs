@@ -30,6 +30,10 @@ const {
   persistConsultationBilling,
   cancelInvoiceIfReversible,
 } = require('@lib/billing/clinical-request-billing');
+const {
+  publishIssuedInvoiceBillingEvents,
+  publishUpdatedInvoiceBillingEvents,
+} = require('@lib/billing/realtime');
 
 const STAGES = {
   WAITING_CONSULTATION_PAYMENT: 'WAITING_CONSULTATION_PAYMENT',
@@ -835,6 +839,81 @@ const publishOpdRealtimeUpdates = async ({ snapshot, transition, context }) => {
     }
   } catch (_err) {
     // Realtime updates must never fail the OPD transaction response path.
+  }
+};
+
+const CONSULTATION_INVOICE_REALTIME_INCLUDE = Object.freeze({
+  patient: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      first_name: true,
+      last_name: true,
+    },
+  },
+});
+
+const resolveConsultationInvoiceId = (snapshot, explicitInvoiceId = null) =>
+  normalizeIdentifier(explicitInvoiceId) ||
+  normalizeIdentifier(snapshot?.flow?.consultation?.invoice_id) ||
+  normalizeIdentifier(
+    snapshot?.encounter?.extension_json?.opd_flow?.consultation?.invoice_id
+  ) ||
+  null;
+
+const loadConsultationInvoiceForRealtime = async (snapshot, explicitInvoiceId = null) => {
+  const invoiceId = resolveConsultationInvoiceId(snapshot, explicitInvoiceId);
+  if (!invoiceId) {
+    return null;
+  }
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId },
+    include: CONSULTATION_INVOICE_REALTIME_INCLUDE,
+  });
+  if (!invoice) {
+    return null;
+  }
+  const encounterId =
+    normalizeIdentifier(invoice.encounter_id) ||
+    normalizeIdentifier(snapshot?.encounter?.id) ||
+    null;
+  if (encounterId && !invoice.encounter_id) {
+    invoice.encounter_id = encounterId;
+  }
+  return invoice;
+};
+
+/**
+ * Push consultation invoice create/update into Billing workspace queues.
+ * Never throws — billing notify must not block OPD responses.
+ */
+const publishConsultationBillingRealtime = async ({
+  snapshot,
+  context = {},
+  mode = 'issued',
+  invoiceId = null,
+} = {}) => {
+  try {
+    const invoice = await loadConsultationInvoiceForRealtime(snapshot, invoiceId);
+    if (!invoice) {
+      return;
+    }
+    const actorUserId = context.user_id || null;
+    if (mode === 'cancelled' || mode === 'updated') {
+      await publishUpdatedInvoiceBillingEvents({
+        invoice,
+        actorUserId,
+        action: mode === 'cancelled' ? 'CANCELLED' : 'UPDATED',
+      });
+      return;
+    }
+    await publishIssuedInvoiceBillingEvents({
+      invoice,
+      actorUserId,
+      action: 'ISSUED',
+    });
+  } catch (_err) {
+    // Billing realtime must never fail the OPD transaction response path.
   }
 };
 
@@ -3446,6 +3525,13 @@ const startOpdFlow = async (data, context = {}) => {
     transition: startedResult.transition,
     context
   });
+  if (snapshot?.flow?.consultation?.invoice_id) {
+    await publishConsultationBillingRealtime({
+      snapshot,
+      context,
+      mode: 'issued'
+    });
+  }
   return snapshot;
 };
 
@@ -3582,12 +3668,32 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
         }
       }
 
+      let cancelledConsultationInvoiceId = null;
+      let consultationBillingMutated = false;
+      if (
+        consultation.require_payment === false &&
+        consultation.invoice_id &&
+        !consultation.is_paid &&
+        !PAID_PAYMENT_STATUSES.has(normalizeUpper(consultation.payment_status))
+      ) {
+        const cancelled = await cancelInvoiceIfReversible(tx, consultation.invoice_id);
+        if (cancelled) {
+          cancelledConsultationInvoiceId = consultation.invoice_id;
+          consultation.invoice_id = null;
+          consultation.billing = null;
+          consultation.payment_id = null;
+          consultation.payment_status = 'NOT_REQUIRED';
+          consultationBillingMutated = true;
+        }
+      }
+
       const requiresInvoice =
         hasPositiveContextFee && (
           data.create_consultation_invoice === true ||
           data.pay_now ||
           consultation.require_payment === true ||
-          Boolean(consultation.consultation_fee)
+          (consultation.require_payment !== false &&
+            Boolean(consultation.consultation_fee))
         );
       let invoice = consultation.invoice_id
         ? await tx.invoice.findFirst({
@@ -3674,6 +3780,7 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
                 PAID_PAYMENT_STATUSES.has(normalizeUpper(entry.status))
               ) || null;
             consultation.payment_id = payment?.id || consultation.payment_id || null;
+            consultationBillingMutated = true;
           }
         }
       } else if (!consultation.payment_status) {
@@ -3705,6 +3812,9 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
           context,
           issuedAt: now
         });
+        if (flow.consultation?.invoice_id) {
+          consultationBillingMutated = true;
+        }
       }
 
       if (flow.visit_queue_id) {
@@ -3768,6 +3878,9 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
 
       return {
         encounter: updatedEncounter,
+        cancelledConsultationInvoiceId,
+        consultationBillingMutated,
+        consultationInvoiceId: flow.consultation?.invoice_id || null,
         transition: {
           action: 'UPDATE_ACTIVE_ENCOUNTER_CONTEXT',
           stage_from: stageBefore,
@@ -3798,6 +3911,23 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
     transition: updatedResult.transition,
     context
   });
+  if (updatedResult.cancelledConsultationInvoiceId) {
+    await publishConsultationBillingRealtime({
+      snapshot,
+      context,
+      mode: 'cancelled',
+      invoiceId: updatedResult.cancelledConsultationInvoiceId
+    });
+  } else if (
+    updatedResult.consultationBillingMutated &&
+    updatedResult.consultationInvoiceId
+  ) {
+    await publishConsultationBillingRealtime({
+      snapshot,
+      context,
+      mode: 'issued'
+    });
+  }
   return snapshot;
 };
 
@@ -4358,6 +4488,10 @@ const assignDoctor = async (id, data, context = {}) => {
 
     return {
       encounter: updatedEncounter,
+      consultationInvoiceId: flow.consultation?.invoice_id || null,
+      consultationBillingMutated: Boolean(
+        requiresInvoice && flow.consultation?.invoice_id
+      ),
       transition: {
         action: 'ASSIGN_DOCTOR',
         stage_from: stageBefore,
@@ -4384,6 +4518,16 @@ const assignDoctor = async (id, data, context = {}) => {
     transition: updatedResult.transition,
     context
   });
+  if (
+    updatedResult.consultationBillingMutated &&
+    updatedResult.consultationInvoiceId
+  ) {
+    await publishConsultationBillingRealtime({
+      snapshot,
+      context,
+      mode: 'issued'
+    });
+  }
   return snapshot;
 };
 
@@ -4992,12 +5136,24 @@ const cancelEncounter = async (id, data, context = {}) => {
     ip_address: context.ip_address
   }).catch(() => {});
 
+  const consultationInvoiceId =
+    updatedResult.encounter?.extension_json?.opd_flow?.consultation?.invoice_id ||
+    null;
+
   const snapshot = await getOpdFlowById(updatedResult.encounter.id);
   await publishOpdRealtimeUpdates({
     snapshot,
     transition: updatedResult.transition,
     context
   });
+  if (consultationInvoiceId) {
+    await publishConsultationBillingRealtime({
+      snapshot,
+      context,
+      mode: 'cancelled',
+      invoiceId: consultationInvoiceId
+    });
+  }
   return snapshot;
 };
 
@@ -5059,12 +5215,24 @@ const closeEncounter = async (id, data, context = {}) => {
     ip_address: context.ip_address
   }).catch(() => {});
 
+  const consultationInvoiceId =
+    updatedResult.encounter?.extension_json?.opd_flow?.consultation?.invoice_id ||
+    null;
+
   const snapshot = await getOpdFlowById(updatedResult.encounter.id);
   await publishOpdRealtimeUpdates({
     snapshot,
     transition: updatedResult.transition,
     context
   });
+  if (consultationInvoiceId) {
+    await publishConsultationBillingRealtime({
+      snapshot,
+      context,
+      mode: 'cancelled',
+      invoiceId: consultationInvoiceId
+    });
+  }
   return snapshot;
 };
 
@@ -5181,6 +5349,10 @@ const correctStage = async (id, data, context = {}) => {
         encounter: updatedEncounter,
         stageBefore,
         stageAfter: stageTo,
+        consultationInvoiceId: flow.consultation?.invoice_id || null,
+        consultationBillingMutated:
+          stageTo === STAGES.WAITING_CONSULTATION_PAYMENT &&
+          Boolean(flow.consultation?.invoice_id),
         transition: {
           action: 'STAGE_CORRECTED',
           stage_from: stageBefore,
@@ -5220,6 +5392,16 @@ const correctStage = async (id, data, context = {}) => {
     transition: updatedResult.transition,
     context
   });
+  if (
+    updatedResult.consultationBillingMutated &&
+    updatedResult.consultationInvoiceId
+  ) {
+    await publishConsultationBillingRealtime({
+      snapshot,
+      context,
+      mode: 'issued'
+    });
+  }
   return snapshot;
 };
 

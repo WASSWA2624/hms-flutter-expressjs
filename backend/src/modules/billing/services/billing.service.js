@@ -2,10 +2,9 @@ const billingRepository = require('@repositories/billing/billing.repository');
 const { createAuditLog } = require('@lib/audit');
 const { sendEmail } = require('@lib/notifications/sendEmail');
 const { HttpError } = require('@lib/errors');
-const { logger } = require('@lib/logging');
 const { isFeatureEnabled } = require('@config/feature-flags');
 const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
-const { normalizeRoleName, ROLES } = require('@config/roles');
+const { normalizeRoleName } = require('@config/roles');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const {
@@ -22,7 +21,8 @@ const {
   syncClinicalOrderBillingSnapshotsFromInvoiceTx,
 } = require('@lib/billing/clinical-request-billing');
 const { notifyLabOrdersBillingUpdated } = require('@services/lab-order/lab-order.service');
-const { publishDomainEvent, BILLING_EVENTS, PAYMENT_EVENTS } = require('@lib/websocket');
+const { BILLING_EVENTS, PAYMENT_EVENTS } = require('@lib/websocket');
+const { publishBillingRealtimeUpdate } = require('@lib/billing/realtime');
 
 const QUEUE_TYPES = {
   NEEDS_ISSUE: 'NEEDS_ISSUE',
@@ -35,13 +35,6 @@ const QUEUE_TYPES = {
 const ADJUSTMENT_ABS_THRESHOLD = 50;
 const ADJUSTMENT_PERCENT_THRESHOLD = 0.2;
 const APPLIED_ADJUSTMENT_STATUSES = new Set(['ISSUED', 'PAID', 'PARTIAL']);
-const BILLING_REALTIME_RECIPIENT_ROLES = Object.freeze([
-  ROLES.BILLING,
-  ROLES.FACILITY_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.RECEPTIONIST,
-  ROLES.ACCOUNTANT,
-]);
 
 const INVOICE_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true, name: true } },
@@ -180,92 +173,6 @@ const auditUpdate = (user, ip, entity, entityId, metadata = {}) =>
     diff: { metadata },
     ip_address: ip,
   }).catch(() => {});
-
-const compactId = (value) => clean(value) || null;
-
-const publishBillingRealtimeUpdate = async ({
-  event,
-  action,
-  invoice = null,
-  payment = null,
-  refund = null,
-  approval = null,
-  actorUserId = null,
-}) => {
-  try {
-    const invoiceRecord = invoice || payment?.invoice || refund?.payment?.invoice || null;
-    const paymentRecord = payment || refund?.payment || null;
-    const tenantId = compactId(invoiceRecord?.tenant_id || paymentRecord?.tenant_id || approval?.tenant_id);
-    if (!tenantId) return;
-
-    const facilityId = compactId(invoiceRecord?.facility_id || paymentRecord?.facility_id || approval?.facility_id);
-    const invoiceId = compactId(invoiceRecord?.id || paymentRecord?.invoice_id || approval?.payload_json?.invoice_id);
-    const paymentId = compactId(paymentRecord?.id || approval?.payload_json?.payment_id);
-    const patientId = compactId(invoiceRecord?.patient_id || paymentRecord?.patient_id);
-    const encounterId = compactId(invoiceRecord?.encounter_id || paymentRecord?.encounter_id);
-    const recipientUserIds = await billingRepository.findRealtimeRecipientUserIds({
-      tenantId,
-      facilityId,
-      roles: BILLING_REALTIME_RECIPIENT_ROLES,
-    });
-
-    const invoiceDisplayId = invoiceRecord ? displayId(invoiceRecord) : compactId(approval?.payload_json?.invoice_display_id);
-    const paymentDisplayId = paymentRecord ? displayId(paymentRecord) : compactId(approval?.payload_json?.payment_display_id);
-    const patientRecord = invoiceRecord?.patient || paymentRecord?.patient || null;
-    const targetIdentifier = invoiceDisplayId || invoiceRecord?.id;
-    const occurredAt = new Date().toISOString();
-    const resourceType = paymentRecord || event.startsWith('payment.') ? 'payment' : 'invoice';
-    const resourceId = resourceType === 'payment' ? paymentId : invoiceId;
-
-    publishDomainEvent({
-      event,
-      tenant_id: tenantId,
-      facility_id: facilityId,
-      actor_user_id: actorUserId,
-      resource_type: resourceType,
-      resource_id: resourceId,
-      recipient_user_ids: recipientUserIds,
-      affected: {
-        invoice_id: invoiceId,
-        payment_id: paymentId,
-        refund_id: compactId(refund?.id),
-        approval_id: compactId(approval?.id),
-        patient_id: patientId,
-        encounter_id: encounterId
-      },
-      payload: {
-        action: clean(action).toUpperCase() || 'UPDATED',
-        invoice_id: invoiceId,
-        invoice_public_id: invoiceDisplayId,
-        payment_id: paymentId,
-        payment_public_id: paymentDisplayId,
-        refund_id: compactId(refund?.id),
-        approval_id: compactId(approval?.id),
-        patient_id: patientId,
-        patient_public_id: patientRecord ? displayId(patientRecord) : null,
-        encounter_id: encounterId,
-        amount: paymentRecord?.amount ?? invoiceRecord?.total_amount ?? null,
-        status: compactId(
-          invoiceRecord?.billing_status ||
-            invoiceRecord?.status ||
-            paymentRecord?.status ||
-            approval?.status
-        ),
-        method: paymentRecord?.method || null,
-        actor_user_id: actorUserId || null,
-        target_path: targetIdentifier ? `/billing?id=${encodeURIComponent(targetIdentifier)}` : '/billing',
-        occurred_at: occurredAt,
-      }
-    });
-  } catch (error) {
-    logger.error('Failed to publish billing realtime event', {
-      event,
-      invoiceId: invoice?.id || payment?.invoice_id || approval?.payload_json?.invoice_id,
-      paymentId: payment?.id || approval?.payload_json?.payment_id,
-      error: error.message,
-    });
-  }
-};
 
 const resolveScope = async (filters = {}, user = {}) => {
   const tenantId = clean(filters.tenant_id) || clean(user.tenant_id);

@@ -6,14 +6,20 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
+
+class _MockBillingRepository extends Mock implements BillingRepository {}
 
 void main() {
   setUpAll(() {
@@ -21,6 +27,7 @@ void main() {
     registerFallbackValue(const OpdQueueQuery());
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
+    registerFallbackValue(const BillingWorkspaceQuery());
     registerFallbackValue(<String, Object?>{});
   });
 
@@ -508,6 +515,75 @@ void main() {
         'IN_PROGRESS',
       );
     });
+
+    test(
+      'submitOpdEncounter with consultation invoice refreshes Payment gate',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        final _MockBillingRepository billingRepository =
+            _MockBillingRepository();
+        var paymentGateLoads = 0;
+        when(() => billingRepository.listWorkItems(any())).thenAnswer((
+          invocation,
+        ) async {
+          paymentGateLoads += 1;
+          final BillingWorkspaceQuery query =
+              invocation.positionalArguments.single as BillingWorkspaceQuery;
+          return Result<AppPage<BillingWorkItem>>.success(
+            AppPage<BillingWorkItem>(
+              items: const <BillingWorkItem>[],
+              request: query.pageRequest,
+            ),
+          );
+        });
+
+        const OpdFlowDetail detail = OpdFlowDetail(
+          summary: OpdFlowSummary(
+            id: 'encounter-pay-1',
+            publicId: 'ENC000091',
+            patientId: 'PAT000091',
+            status: 'OPEN',
+            stage: 'WAITING_CONSULTATION_PAYMENT',
+            consultationPaymentRequired: true,
+            consultationInvoiceId: 'INV000091',
+            consultationFee: 25000,
+          ),
+        );
+        _stubInitialLoad(repository);
+        when(
+          () => repository.startOpdFlow(
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
+
+        final ProviderContainer container = ProviderContainer(
+          overrides: [
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            opdRepositoryProvider.overrideWithValue(repository),
+            billingRepositoryProvider.overrideWithValue(billingRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+        await container.read(receptionPaymentGateControllerProvider.future);
+        final int loadsAfterGateInit = paymentGateLoads;
+
+        final Result<OpdFlowDetail> result = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .submitOpdEncounter(<String, Object?>{
+              'patient_id': 'PAT000091',
+              'consultation_fee': 25000,
+              'require_consultation_payment': true,
+            });
+
+        expect(result.isSuccess, isTrue);
+        await Future<void>.delayed(Duration.zero);
+        expect(paymentGateLoads, greaterThan(loadsAfterGateInit));
+      },
+    );
 
     test('submitOpdEncounter failure patches nothing', () async {
       final _MockOpdRepository repository = _MockOpdRepository();

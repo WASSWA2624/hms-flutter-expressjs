@@ -10,8 +10,20 @@ jest.mock(
 jest.mock('@lib/websocket', () => ({
   emitToUser: jest.fn(),
   emitToUsers: jest.fn(),
+  publishDomainEvent: jest.fn(),
   OPD_EVENTS: { OPD_FLOW_UPDATED: 'opd.flow.updated' },
   NOTIFICATION_EVENTS: { NOTIFICATION_CREATED: 'notification.created' },
+  BILLING_EVENTS: {
+    BILLING_INVOICE_ISSUED: 'billing.invoice_issued',
+    INVOICE_UPDATED: 'invoice.updated',
+    BILLING_BALANCE_UPDATED: 'billing.balance_updated',
+  },
+}));
+
+jest.mock('@lib/billing/realtime', () => ({
+  publishIssuedInvoiceBillingEvents: jest.fn(async () => {}),
+  publishUpdatedInvoiceBillingEvents: jest.fn(async () => {}),
+  publishBillingRealtimeUpdate: jest.fn(async () => {}),
 }));
 
 jest.mock('@lib/billing/financials', () => ({

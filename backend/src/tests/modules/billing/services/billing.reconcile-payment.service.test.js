@@ -68,6 +68,7 @@ jest.mock('@services/lab-order/lab-order.service', () => ({
 jest.mock('@lib/websocket', () => ({
   publishDomainEvent: jest.fn(),
   BILLING_EVENTS: {
+    BILLING_INVOICE_ISSUED: 'billing.invoice_issued',
     BILLING_PAYMENT_RECEIVED: 'billing.payment_received',
     INVOICE_UPDATED: 'invoice.updated',
     BILLING_BALANCE_UPDATED: 'billing.balance_updated',
@@ -75,6 +76,10 @@ jest.mock('@lib/websocket', () => ({
   PAYMENT_EVENTS: {
     PAYMENT_RECONCILED: 'payment.reconciled',
   },
+}));
+
+jest.mock('@lib/realtime/recipients', () => ({
+  findRealtimeRecipientUserIds: jest.fn(async () => ['billing-1', 'reception-1']),
 }));
 
 const mockSyncConsultationBillingFromInvoicePayment = jest.fn(async () => null);
@@ -86,6 +91,7 @@ jest.mock('@services/opd-flow/opd-flow.service', () => ({
 const billingRepository = require('@repositories/billing/billing.repository');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { publishDomainEvent } = require('@lib/websocket');
+const { findRealtimeRecipientUserIds } = require('@lib/realtime/recipients');
 const billingService = require('@services/billing/billing.service');
 
 describe('billing.service reconcilePayment', () => {
@@ -188,7 +194,7 @@ describe('billing.service reconcilePayment', () => {
         }),
       })
     );
-    expect(billingRepository.findRealtimeRecipientUserIds).toHaveBeenCalledWith(
+    expect(findRealtimeRecipientUserIds).toHaveBeenCalledWith(
       expect.objectContaining({
         roles: expect.arrayContaining(['BILLING', 'RECEPTIONIST']),
       })

@@ -22,6 +22,7 @@ import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.da
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_realtime_delta_applier.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final opdWorkspaceControllerProvider =
@@ -1495,6 +1496,24 @@ final class OpdWorkspaceController
     );
   }
 
+  /// Refresh Reception Payment gate when Start/Edit/Cancel OPD changes payables.
+  /// Billing workspace follows via BILLING_EVENTS (avoids an OPD↔Billing import cycle).
+  void _syncLinkedBillingSurfacesAfterConsultationChange(OpdFlowSummary summary) {
+    final bool affectsBilling =
+        summary.consultationInvoiceId != null ||
+        summary.consultationPaymentRequired ||
+        summary.isTerminal;
+    if (!affectsBilling) {
+      return;
+    }
+    if (!ref.exists(receptionPaymentGateControllerProvider)) {
+      return;
+    }
+    unawaited(
+      ref.read(receptionPaymentGateControllerProvider.notifier).refresh(),
+    );
+  }
+
   /// Clears Payment-due consultation fields when Billing settles the invoice.
   void applyConsultationInvoicePaidIfLoaded(BillingWorkItem invoice) {
     final OpdWorkspaceState? latest = _currentState;
@@ -1789,6 +1808,7 @@ final class OpdWorkspaceController
               ),
             );
           }
+          _syncLinkedBillingSurfacesAfterConsultationChange(detail.summary);
           // Background refresh must not turn a persisted mutation into a
           // user-visible failure (e.g. after assign-doctor succeeds).
           try {
