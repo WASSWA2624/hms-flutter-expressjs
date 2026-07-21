@@ -25,6 +25,7 @@ class AppButton extends StatelessWidget {
     this.iconOnly = false,
     this.color,
     this.iconWidget,
+    this.labelWidget,
     super.key,
   }) : assert(
          iconOnly || label.isNotEmpty,
@@ -45,6 +46,7 @@ class AppButton extends StatelessWidget {
     this.iconOnly = false,
     this.color,
     this.iconWidget,
+    this.labelWidget,
     super.key,
   }) : variant = AppButtonVariant.primary;
 
@@ -62,6 +64,7 @@ class AppButton extends StatelessWidget {
     this.iconOnly = false,
     this.color,
     this.iconWidget,
+    this.labelWidget,
     super.key,
   }) : variant = AppButtonVariant.secondary;
 
@@ -79,6 +82,7 @@ class AppButton extends StatelessWidget {
     this.iconOnly = false,
     this.color,
     this.iconWidget,
+    this.labelWidget,
     super.key,
   }) : variant = AppButtonVariant.tertiary;
 
@@ -96,6 +100,10 @@ class AppButton extends StatelessWidget {
   final bool iconOnly;
   final Color? color;
   final Widget? iconWidget;
+
+  /// Optional rich label. When set, replaces the default [Text] while [label]
+  /// remains the semantic/findable string.
+  final Widget? labelWidget;
 
   IconData? get _resolvedIcon => leadingIcon ?? icon;
 
@@ -199,6 +207,7 @@ class AppButton extends StatelessWidget {
       style: _buttonStyle(context, variant, iconOnly: false),
       child: _ButtonContent(
         label: label,
+        labelWidget: labelWidget,
         leadingIcon: _resolvedIcon,
         isLoading: isLoading,
         loadingColor: foregroundColor,
@@ -285,13 +294,21 @@ class AppButton extends StatelessWidget {
       side: WidgetStateProperty.resolveWith<BorderSide?>((
         Set<WidgetState> states,
       ) {
-        if (!states.contains(WidgetState.focused)) {
-          return BorderSide.none;
+        if (states.contains(WidgetState.focused)) {
+          return BorderSide(
+            color: colorScheme.primary.withValues(alpha: 0.72),
+            width: 1.25,
+          );
         }
-        return BorderSide(
-          color: colorScheme.primary.withValues(alpha: 0.72),
-          width: 1.25,
-        );
+        if (variant == AppButtonVariant.secondary) {
+          final double alpha = states.contains(WidgetState.disabled)
+              ? 0.16
+              : 0.28;
+          return BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: alpha),
+          );
+        }
+        return BorderSide.none;
       }),
     );
   }
@@ -335,9 +352,11 @@ class _ButtonContent extends StatelessWidget {
     required this.isLoading,
     required this.loadingColor,
     this.iconWidget,
+    this.labelWidget,
   });
 
   final String label;
+  final Widget? labelWidget;
   final IconData? leadingIcon;
   final bool isLoading;
   final Color loadingColor;
@@ -348,16 +367,18 @@ class _ButtonContent extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final AppSpacingTokens spacing = theme.spacing;
     final double iconSize = theme.appTokens.listIconSize;
-    final Widget labelText = Text(
-      label,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      softWrap: false,
-      style: theme.textTheme.labelLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-        fontSize: 14,
-      ),
+    final TextStyle? labelStyle = theme.textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      fontSize: 14,
     );
+    final Widget labelText = labelWidget ??
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+          style: labelStyle,
+        );
 
     if (isLoading) {
       return Row(

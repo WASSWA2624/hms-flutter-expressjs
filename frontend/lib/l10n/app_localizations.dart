@@ -9190,6 +9190,18 @@ abstract class AppLocalizations {
   /// **'BMI {value}'**
   String patientsBmiCalculatedLabel(String value);
 
+  /// Combined body-metrics action for weight, height, and BMI entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight, height & BMI'**
+  String get patientsBodyMetricsLabel;
+
+  /// Body-mass index field label.
+  ///
+  /// In en, this message translates to:
+  /// **'BMI'**
+  String get patientsBmiLabel;
+
   /// Vital action button label when a value is already recorded.
   ///
   /// In en, this message translates to:

@@ -717,6 +717,34 @@ void main() {
     expect(savedValue, 'pro');
   });
 
+  testWidgets('AppCheckboxField places optional icon after the checkbox', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppCheckboxField(
+        title: 'Fall risk',
+        value: false,
+        secondary: Icon(Icons.personal_injury_outlined),
+      ),
+    );
+
+    final Finder tile = find.byType(CheckboxListTile);
+    expect(tile, findsOneWidget);
+    final CheckboxListTile checkbox = tester.widget<CheckboxListTile>(tile);
+    expect(checkbox.secondary, isNull);
+    expect(checkbox.controlAffinity, ListTileControlAffinity.leading);
+    expect(find.byIcon(Icons.personal_injury_outlined), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byType(Checkbox)).dx,
+      lessThan(tester.getTopLeft(find.byIcon(Icons.personal_injury_outlined)).dx),
+    );
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.personal_injury_outlined)).dx,
+      lessThan(tester.getTopLeft(find.text('Fall risk')).dx),
+    );
+  });
+
   testWidgets('AppCheckboxField updates through the shared form wrapper', (
     WidgetTester tester,
   ) async {

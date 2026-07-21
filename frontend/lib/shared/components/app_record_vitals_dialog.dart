@@ -8,6 +8,7 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
+import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_time_field.dart';
 import 'package:hosspi_hms/shared/components/app_time_value.dart';
 import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
@@ -244,14 +245,7 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
   @override
   Widget build(BuildContext context) {
     final bool enabled = _enabled;
-    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final double? bmi = calculateAppBodyMassIndex(
-      weight: _weightController.text,
-      height: _heightController.text,
-      weightUnit: _weightUnit,
-      heightUnit: _heightUnit,
-    );
     return AppDialog(
       title: Text(widget.title),
       icon: widget.icon,
@@ -279,24 +273,10 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
                 spacing: theme.spacing.sm,
                 runSpacing: theme.spacing.sm,
                 children: <Widget>[
-                  for (final AppVitalKind kind in _visibleVitalKinds)
-                    AppButton.secondary(
-                      label: _vitalActionLabel(l10n, kind),
-                      leadingIcon: _vitalActionIcon(kind),
-                      onPressed: enabled ? () => _openVitalEditor(kind) : null,
-                    ),
+                  for (final _VitalActionKind action in _visibleVitalActions)
+                    _buildVitalActionButton(context, action, enabled),
                 ],
               ),
-              if (bmi != null)
-                Padding(
-                  padding: EdgeInsets.only(top: theme.spacing.sm),
-                  child: Text(
-                    l10n.patientsBmiCalculatedLabel(
-                      formatAppVitalNumber(bmi, decimals: 1),
-                    ),
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ),
               if (widget.showRecordedAt) _recordedAtFields(context, enabled),
             ],
           ),
@@ -315,108 +295,293 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
     );
   }
 
-  Set<AppVitalKind> get _visibleVitalKinds {
+  List<_VitalActionKind> get _visibleVitalActions {
     final String? editingType = _editingVitalType;
     if (editingType == null) {
-      return kAppVitalKindsAll;
+      return const <_VitalActionKind>[
+        _VitalActionKind.bloodPressure,
+        _VitalActionKind.temperature,
+        _VitalActionKind.heartRate,
+        _VitalActionKind.respiratoryRate,
+        _VitalActionKind.oxygenSaturation,
+        _VitalActionKind.bodyMetrics,
+      ];
     }
     return switch (editingType) {
-      'BLOOD_PRESSURE' => <AppVitalKind>{AppVitalKind.bloodPressure},
-      'TEMPERATURE' => <AppVitalKind>{AppVitalKind.temperature},
-      'HEART_RATE' => <AppVitalKind>{AppVitalKind.heartRate},
-      'RESPIRATORY_RATE' => <AppVitalKind>{AppVitalKind.respiratoryRate},
-      'OXYGEN_SATURATION' => <AppVitalKind>{AppVitalKind.oxygenSaturation},
-      'WEIGHT' => <AppVitalKind>{AppVitalKind.weight},
-      'HEIGHT' => <AppVitalKind>{AppVitalKind.height},
-      _ => kAppVitalKindsAll,
+      'BLOOD_PRESSURE' => const <_VitalActionKind>[
+        _VitalActionKind.bloodPressure,
+      ],
+      'TEMPERATURE' => const <_VitalActionKind>[_VitalActionKind.temperature],
+      'HEART_RATE' => const <_VitalActionKind>[_VitalActionKind.heartRate],
+      'RESPIRATORY_RATE' => const <_VitalActionKind>[
+        _VitalActionKind.respiratoryRate,
+      ],
+      'OXYGEN_SATURATION' => const <_VitalActionKind>[
+        _VitalActionKind.oxygenSaturation,
+      ],
+      'WEIGHT' || 'HEIGHT' => const <_VitalActionKind>[
+        _VitalActionKind.bodyMetrics,
+      ],
+      _ => const <_VitalActionKind>[
+        _VitalActionKind.bloodPressure,
+        _VitalActionKind.temperature,
+        _VitalActionKind.heartRate,
+        _VitalActionKind.respiratoryRate,
+        _VitalActionKind.oxygenSaturation,
+        _VitalActionKind.bodyMetrics,
+      ],
     };
   }
 
-  IconData _vitalActionIcon(AppVitalKind kind) {
-    return switch (kind) {
-      AppVitalKind.bloodPressure => Icons.favorite_outline,
-      AppVitalKind.temperature => Icons.thermostat_outlined,
-      AppVitalKind.heartRate => Icons.monitor_heart_outlined,
-      AppVitalKind.respiratoryRate => Icons.air,
-      AppVitalKind.oxygenSaturation => Icons.bloodtype_outlined,
-      AppVitalKind.weight => Icons.monitor_weight_outlined,
-      AppVitalKind.height => Icons.height,
-    };
+  Widget _buildVitalActionButton(
+    BuildContext context,
+    _VitalActionKind action,
+    bool enabled,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final String name = _vitalActionName(l10n, action);
+    final String? summary = _vitalActionSummary(action);
+    final String semanticLabel = summary == null || summary.isEmpty
+        ? name
+        : l10n.patientsVitalActionRecordedLabel(name, summary);
+    return AppButton.secondary(
+      label: semanticLabel,
+      leadingIcon: _vitalActionIcon(action),
+      labelWidget: _vitalActionLabelWidget(context, name, action),
+      onPressed: enabled ? () => _openVitalEditor(action) : null,
+    );
   }
 
-  String _vitalActionLabel(AppLocalizations l10n, AppVitalKind kind) {
-    final String name = switch (kind) {
-      AppVitalKind.bloodPressure => widget.bloodPressureLabel,
-      AppVitalKind.temperature => widget.temperatureLabel,
-      AppVitalKind.heartRate => widget.heartRateLabel,
-      AppVitalKind.respiratoryRate => widget.respiratoryRateLabel,
-      AppVitalKind.oxygenSaturation => widget.oxygenSaturationLabel,
-      AppVitalKind.weight => widget.weightLabel,
-      AppVitalKind.height => widget.heightLabel,
-    };
-    final String? summary = _vitalSummary(kind);
-    if (summary == null || summary.isEmpty) {
-      return name;
+  Widget _vitalActionLabelWidget(
+    BuildContext context,
+    String name,
+    _VitalActionKind action,
+  ) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? baseStyle = theme.textTheme.labelLarge?.copyWith(
+      fontSize: 14,
+    );
+    final List<_VitalSummaryPart> parts = _vitalActionSummaryParts(action);
+    if (parts.isEmpty) {
+      return Text(
+        name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
+        style: baseStyle?.copyWith(fontWeight: FontWeight.w700),
+      );
     }
-    return l10n.patientsVitalActionRecordedLabel(name, summary);
+
+    return Text.rich(
+      TextSpan(
+        children: <InlineSpan>[
+          TextSpan(
+            text: name,
+            style: baseStyle?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          TextSpan(
+            text: ' · ',
+            style: baseStyle?.copyWith(fontWeight: FontWeight.w500),
+          ),
+          for (int index = 0; index < parts.length; index++) ...<InlineSpan>[
+            if (index > 0)
+              TextSpan(
+                text: ' · ',
+                style: baseStyle?.copyWith(fontWeight: FontWeight.w500),
+              ),
+            TextSpan(
+              text: parts[index].text,
+              style: baseStyle?.copyWith(
+                fontWeight: FontWeight.w500,
+                color:
+                    appVitalSignStatusColor(context, parts[index].status) ??
+                    baseStyle.color,
+              ),
+            ),
+          ],
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
+    );
   }
 
-  String? _vitalSummary(AppVitalKind kind) {
-    return switch (kind) {
-      AppVitalKind.bloodPressure => () {
+  IconData _vitalActionIcon(_VitalActionKind action) {
+    return switch (action) {
+      _VitalActionKind.bloodPressure => Icons.favorite_outline,
+      _VitalActionKind.temperature => Icons.thermostat_outlined,
+      _VitalActionKind.heartRate => Icons.monitor_heart_outlined,
+      _VitalActionKind.respiratoryRate => Icons.air,
+      _VitalActionKind.oxygenSaturation => Icons.bloodtype_outlined,
+      _VitalActionKind.bodyMetrics => Icons.monitor_weight_outlined,
+    };
+  }
+
+  String _vitalActionName(AppLocalizations l10n, _VitalActionKind action) {
+    return switch (action) {
+      _VitalActionKind.bloodPressure => widget.bloodPressureLabel,
+      _VitalActionKind.temperature => widget.temperatureLabel,
+      _VitalActionKind.heartRate => widget.heartRateLabel,
+      _VitalActionKind.respiratoryRate => widget.respiratoryRateLabel,
+      _VitalActionKind.oxygenSaturation => widget.oxygenSaturationLabel,
+      _VitalActionKind.bodyMetrics => l10n.patientsBodyMetricsLabel,
+    };
+  }
+
+  String? _vitalActionSummary(_VitalActionKind action) {
+    final List<_VitalSummaryPart> parts = _vitalActionSummaryParts(action);
+    if (parts.isEmpty) {
+      return null;
+    }
+    return parts.map((_VitalSummaryPart part) => part.text).join(' · ');
+  }
+
+  List<_VitalSummaryPart> _vitalActionSummaryParts(_VitalActionKind action) {
+    final AppVitalsReference reference = widget.reference;
+    return switch (action) {
+      _VitalActionKind.bloodPressure => () {
         final String systolic = normalizeAppVitalInput(_systolicController.text);
         final String diastolic = normalizeAppVitalInput(
           _diastolicController.text,
         );
         if (systolic.isEmpty && diastolic.isEmpty) {
+          return const <_VitalSummaryPart>[];
+        }
+        final String text = systolic.isEmpty || diastolic.isEmpty
+            ? (systolic.isEmpty ? diastolic : systolic)
+            : '$systolic/$diastolic $_bloodPressureUnit';
+        final AppVitalSignStatus? status = () {
+          if (systolic.isEmpty || diastolic.isEmpty) {
+            return null;
+          }
+          final AppVitalSignStatus? systolicStatus = resolveAppVitalSignStatus(
+            systolic,
+            reference.systolic.forBloodPressureUnit(_bloodPressureUnit),
+          );
+          final AppVitalSignStatus? diastolicStatus = resolveAppVitalSignStatus(
+            diastolic,
+            reference.diastolic.forBloodPressureUnit(_bloodPressureUnit),
+          );
+          if (systolicStatus == AppVitalSignStatus.abnormal ||
+              diastolicStatus == AppVitalSignStatus.abnormal) {
+            return AppVitalSignStatus.abnormal;
+          }
+          if (systolicStatus == AppVitalSignStatus.normal &&
+              diastolicStatus == AppVitalSignStatus.normal) {
+            return AppVitalSignStatus.normal;
+          }
           return null;
-        }
-        if (systolic.isEmpty || diastolic.isEmpty) {
-          return systolic.isEmpty ? diastolic : systolic;
-        }
-        return '$systolic/$diastolic $_bloodPressureUnit';
+        }();
+        return <_VitalSummaryPart>[
+          _VitalSummaryPart(text: text, status: status),
+        ];
       }(),
-      AppVitalKind.temperature => _valueWithUnit(
+      _VitalActionKind.temperature => _singleSummaryPart(
         _temperatureController.text,
         _temperatureUnit,
+        reference.temperature.forTemperatureUnit(_temperatureUnit),
       ),
-      AppVitalKind.heartRate => _valueWithUnit(
+      _VitalActionKind.heartRate => _singleSummaryPart(
         _heartRateController.text,
         AppVitalsUnits.heartRate,
+        reference.heartRate,
       ),
-      AppVitalKind.respiratoryRate => _valueWithUnit(
+      _VitalActionKind.respiratoryRate => _singleSummaryPart(
         _respiratoryRateController.text,
         AppVitalsUnits.respiratoryRate,
+        reference.respiratoryRate,
       ),
-      AppVitalKind.oxygenSaturation => _valueWithUnit(
+      _VitalActionKind.oxygenSaturation => _singleSummaryPart(
         _oxygenSaturationController.text,
         AppVitalsUnits.oxygenSaturation,
+        reference.oxygenSaturation,
       ),
-      AppVitalKind.weight => _valueWithUnit(_weightController.text, _weightUnit),
-      AppVitalKind.height => _valueWithUnit(_heightController.text, _heightUnit),
+      _VitalActionKind.bodyMetrics => _bodyMetricsSummaryParts(),
     };
   }
 
-  String? _valueWithUnit(String raw, String unit) {
+  List<_VitalSummaryPart> _singleSummaryPart(
+    String raw,
+    String unit,
+    AppVitalReferenceRange range,
+  ) {
     final String value = normalizeAppVitalInput(raw);
     if (value.isEmpty) {
-      return null;
+      return const <_VitalSummaryPart>[];
     }
-    return '$value $unit';
+    return <_VitalSummaryPart>[
+      _VitalSummaryPart(
+        text: '$value $unit',
+        status: resolveAppVitalSignStatus(value, range),
+      ),
+    ];
   }
 
-  Future<void> _openVitalEditor(AppVitalKind kind) async {
+  List<_VitalSummaryPart> _bodyMetricsSummaryParts() {
+    final List<_VitalSummaryPart> parts = <_VitalSummaryPart>[];
+    final String weight = normalizeAppVitalInput(_weightController.text);
+    final String height = normalizeAppVitalInput(_heightController.text);
+    if (weight.isNotEmpty) {
+      parts.add(
+        _VitalSummaryPart(
+          text: '$weight $_weightUnit',
+          status: resolveAppVitalSignStatus(
+            weight,
+            widget.reference.weight.forWeightUnit(_weightUnit),
+          ),
+        ),
+      );
+    }
+    if (height.isNotEmpty) {
+      parts.add(
+        _VitalSummaryPart(
+          text: '$height $_heightUnit',
+          status: resolveAppVitalSignStatus(
+            height,
+            widget.reference.height.forHeightUnit(_heightUnit),
+          ),
+        ),
+      );
+    }
+    final double? bmi = calculateAppBodyMassIndex(
+      weight: _weightController.text,
+      height: _heightController.text,
+      weightUnit: _weightUnit,
+      heightUnit: _heightUnit,
+    );
+    if (bmi != null) {
+      final String bmiText = formatAppVitalNumber(bmi, decimals: 1);
+      parts.add(
+        _VitalSummaryPart(
+          text: 'BMI $bmiText',
+          status: resolveAppVitalSignStatus(
+            bmiText,
+            kAppBodyMassIndexReference,
+          ),
+        ),
+      );
+    }
+    return parts;
+  }
+
+  Future<void> _openVitalEditor(_VitalActionKind action) async {
+    if (action == _VitalActionKind.bodyMetrics) {
+      await _openBodyMetricsEditor();
+      return;
+    }
+
+    final AppVitalKind kind = switch (action) {
+      _VitalActionKind.bloodPressure => AppVitalKind.bloodPressure,
+      _VitalActionKind.temperature => AppVitalKind.temperature,
+      _VitalActionKind.heartRate => AppVitalKind.heartRate,
+      _VitalActionKind.respiratoryRate => AppVitalKind.respiratoryRate,
+      _VitalActionKind.oxygenSaturation => AppVitalKind.oxygenSaturation,
+      _VitalActionKind.bodyMetrics => AppVitalKind.weight,
+    };
     final GlobalKey<FormState> editorFormKey = GlobalKey<FormState>();
     final AppLocalizations l10n = context.l10n;
-    final String title = switch (kind) {
-      AppVitalKind.bloodPressure => widget.bloodPressureLabel,
-      AppVitalKind.temperature => widget.temperatureLabel,
-      AppVitalKind.heartRate => widget.heartRateLabel,
-      AppVitalKind.respiratoryRate => widget.respiratoryRateLabel,
-      AppVitalKind.oxygenSaturation => widget.oxygenSaturationLabel,
-      AppVitalKind.weight => widget.weightLabel,
-      AppVitalKind.height => widget.heightLabel,
-    };
+    final String title = _vitalActionName(l10n, action);
 
     await showAppDialog<void>(
       context: context,
@@ -426,7 +591,7 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
           builder: (BuildContext context, StateSetter setDialogState) {
             return AppDialog(
               title: Text(title),
-              icon: Icon(_vitalActionIcon(kind)),
+              icon: Icon(_vitalActionIcon(action)),
               scrollable: true,
               maxWidth: 560,
               content: Form(
@@ -500,6 +665,53 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
                 ),
               ],
             );
+          },
+        );
+      },
+    );
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _openBodyMetricsEditor() async {
+    await showAppDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return _BodyMetricsEditorDialog(
+          temperatureController: _temperatureController,
+          systolicController: _systolicController,
+          diastolicController: _diastolicController,
+          heartRateController: _heartRateController,
+          respiratoryRateController: _respiratoryRateController,
+          oxygenSaturationController: _oxygenSaturationController,
+          weightController: _weightController,
+          heightController: _heightController,
+          temperatureLabel: widget.temperatureLabel,
+          systolicLabel: widget.systolicLabel,
+          diastolicLabel: widget.diastolicLabel,
+          heartRateLabel: widget.heartRateLabel,
+          respiratoryRateLabel: widget.respiratoryRateLabel,
+          oxygenSaturationLabel: widget.oxygenSaturationLabel,
+          weightLabel: widget.weightLabel,
+          heightLabel: widget.heightLabel,
+          bloodPressureLabel: widget.bloodPressureLabel,
+          unitLabel: widget.unitLabel,
+          bodyMetricsLabel: context.l10n.patientsBodyMetricsLabel,
+          bmiLabel: context.l10n.patientsBmiLabel,
+          cancelLabel: context.l10n.commonCancelActionLabel,
+          doneLabel: context.l10n.clinicalRequestCatalogPickerDoneAction,
+          reference: widget.reference,
+          bloodPressureUnit: _bloodPressureUnit,
+          temperatureUnit: _temperatureUnit,
+          weightUnit: _weightUnit,
+          heightUnit: _heightUnit,
+          onWeightUnitChanged: (String value) {
+            _weightUnit = value;
+          },
+          onHeightUnitChanged: (String value) {
+            _heightUnit = value;
           },
         );
       },
@@ -874,4 +1086,288 @@ String _bloodPressureMmHgValue(String rawValue, String unit) {
       ? value / AppVitalsUnits.bloodPressureKpaFactor
       : value;
   return formatAppVitalNumber(mmHg, decimals: 2);
+}
+
+enum _VitalActionKind {
+  bloodPressure,
+  temperature,
+  heartRate,
+  respiratoryRate,
+  oxygenSaturation,
+  bodyMetrics,
+}
+
+@immutable
+final class _VitalSummaryPart {
+  const _VitalSummaryPart({required this.text, this.status});
+
+  final String text;
+  final AppVitalSignStatus? status;
+}
+
+class _BodyMetricsEditorDialog extends StatefulWidget {
+  const _BodyMetricsEditorDialog({
+    required this.temperatureController,
+    required this.systolicController,
+    required this.diastolicController,
+    required this.heartRateController,
+    required this.respiratoryRateController,
+    required this.oxygenSaturationController,
+    required this.weightController,
+    required this.heightController,
+    required this.temperatureLabel,
+    required this.systolicLabel,
+    required this.diastolicLabel,
+    required this.heartRateLabel,
+    required this.respiratoryRateLabel,
+    required this.oxygenSaturationLabel,
+    required this.weightLabel,
+    required this.heightLabel,
+    required this.bloodPressureLabel,
+    required this.unitLabel,
+    required this.bodyMetricsLabel,
+    required this.bmiLabel,
+    required this.cancelLabel,
+    required this.doneLabel,
+    required this.reference,
+    required this.bloodPressureUnit,
+    required this.temperatureUnit,
+    required this.weightUnit,
+    required this.heightUnit,
+    required this.onWeightUnitChanged,
+    required this.onHeightUnitChanged,
+  });
+
+  final TextEditingController temperatureController;
+  final TextEditingController systolicController;
+  final TextEditingController diastolicController;
+  final TextEditingController heartRateController;
+  final TextEditingController respiratoryRateController;
+  final TextEditingController oxygenSaturationController;
+  final TextEditingController weightController;
+  final TextEditingController heightController;
+  final String temperatureLabel;
+  final String systolicLabel;
+  final String diastolicLabel;
+  final String heartRateLabel;
+  final String respiratoryRateLabel;
+  final String oxygenSaturationLabel;
+  final String weightLabel;
+  final String heightLabel;
+  final String bloodPressureLabel;
+  final String unitLabel;
+  final String bodyMetricsLabel;
+  final String bmiLabel;
+  final String cancelLabel;
+  final String doneLabel;
+  final AppVitalsReference reference;
+  final String bloodPressureUnit;
+  final String temperatureUnit;
+  final String weightUnit;
+  final String heightUnit;
+  final ValueChanged<String> onWeightUnitChanged;
+  final ValueChanged<String> onHeightUnitChanged;
+
+  @override
+  State<_BodyMetricsEditorDialog> createState() =>
+      _BodyMetricsEditorDialogState();
+}
+
+class _BodyMetricsEditorDialogState extends State<_BodyMetricsEditorDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _bmiController;
+  late String _weightUnit;
+  late String _heightUnit;
+  bool _syncing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _weightUnit = widget.weightUnit;
+    _heightUnit = widget.heightUnit;
+    final double? bmi = calculateAppBodyMassIndex(
+      weight: widget.weightController.text,
+      height: widget.heightController.text,
+      weightUnit: _weightUnit,
+      heightUnit: _heightUnit,
+    );
+    _bmiController = TextEditingController(
+      text: bmi == null ? '' : formatAppVitalNumber(bmi, decimals: 1),
+    );
+    widget.weightController.addListener(_syncFromWeightOrHeight);
+    widget.heightController.addListener(_syncFromWeightOrHeight);
+  }
+
+  @override
+  void dispose() {
+    widget.weightController.removeListener(_syncFromWeightOrHeight);
+    widget.heightController.removeListener(_syncFromWeightOrHeight);
+    _bmiController.dispose();
+    super.dispose();
+  }
+
+  void _applyDerivedValue(
+    TextEditingController controller,
+    double? value, {
+    int decimals = 1,
+  }) {
+    if (value == null || !value.isFinite) {
+      return;
+    }
+    controller.text = formatAppVitalNumber(value, decimals: decimals);
+  }
+
+  void _syncFromWeightOrHeight() {
+    if (_syncing || !mounted) {
+      return;
+    }
+    final double? bmi = calculateAppBodyMassIndex(
+      weight: widget.weightController.text,
+      height: widget.heightController.text,
+      weightUnit: _weightUnit,
+      heightUnit: _heightUnit,
+    );
+    if (bmi == null) {
+      return;
+    }
+    _syncing = true;
+    _applyDerivedValue(_bmiController, bmi);
+    _syncing = false;
+    setState(() {});
+  }
+
+  void _syncFromBmi(String _) {
+    if (_syncing) {
+      return;
+    }
+    final String weight = normalizeAppVitalInput(widget.weightController.text);
+    final String height = normalizeAppVitalInput(widget.heightController.text);
+    final String bmi = normalizeAppVitalInput(_bmiController.text);
+    if (bmi.isEmpty) {
+      return;
+    }
+    _syncing = true;
+    if (height.isNotEmpty && weight.isEmpty) {
+      _applyDerivedValue(
+        widget.weightController,
+        calculateAppWeightFromBodyMassIndex(
+          bmi: _bmiController.text,
+          height: widget.heightController.text,
+          heightUnit: _heightUnit,
+          weightUnit: _weightUnit,
+        ),
+      );
+    } else if (weight.isNotEmpty && height.isEmpty) {
+      _applyDerivedValue(
+        widget.heightController,
+        calculateAppHeightFromBodyMassIndex(
+          bmi: _bmiController.text,
+          weight: widget.weightController.text,
+          weightUnit: _weightUnit,
+          heightUnit: _heightUnit,
+        ),
+        decimals: _heightUnit == AppVitalsUnits.heightMeters ? 2 : 0,
+      );
+    } else if (weight.isNotEmpty && height.isNotEmpty) {
+      _applyDerivedValue(
+        widget.weightController,
+        calculateAppWeightFromBodyMassIndex(
+          bmi: _bmiController.text,
+          height: widget.heightController.text,
+          heightUnit: _heightUnit,
+          weightUnit: _weightUnit,
+        ),
+      );
+    }
+    _syncing = false;
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return AppDialog(
+      title: Text(widget.bodyMetricsLabel),
+      icon: const Icon(Icons.monitor_weight_outlined),
+      scrollable: true,
+      maxWidth: 560,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            AppVitalsForm(
+              temperatureController: widget.temperatureController,
+              systolicController: widget.systolicController,
+              diastolicController: widget.diastolicController,
+              heartRateController: widget.heartRateController,
+              respiratoryRateController: widget.respiratoryRateController,
+              oxygenSaturationController: widget.oxygenSaturationController,
+              weightController: widget.weightController,
+              heightController: widget.heightController,
+              temperatureLabel: widget.temperatureLabel,
+              systolicLabel: widget.systolicLabel,
+              diastolicLabel: widget.diastolicLabel,
+              heartRateLabel: widget.heartRateLabel,
+              respiratoryRateLabel: widget.respiratoryRateLabel,
+              oxygenSaturationLabel: widget.oxygenSaturationLabel,
+              weightLabel: widget.weightLabel,
+              heightLabel: widget.heightLabel,
+              bloodPressureLabel: widget.bloodPressureLabel,
+              unitLabel: widget.unitLabel,
+              reference: widget.reference,
+              bloodPressureUnit: widget.bloodPressureUnit,
+              temperatureUnit: widget.temperatureUnit,
+              weightUnit: _weightUnit,
+              heightUnit: _heightUnit,
+              visibleKinds: const <AppVitalKind>{
+                AppVitalKind.weight,
+                AppVitalKind.height,
+              },
+              onWeightUnitChanged: (String? value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() => _weightUnit = value);
+                widget.onWeightUnitChanged(value);
+                _syncFromWeightOrHeight();
+              },
+              onHeightUnitChanged: (String? value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() => _heightUnit = value);
+                widget.onHeightUnitChanged(value);
+                _syncFromWeightOrHeight();
+              },
+            ),
+            SizedBox(height: theme.spacing.md),
+            AppTextField(
+              controller: _bmiController,
+              labelText: widget.bmiLabel,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: _syncFromBmi,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: widget.cancelLabel,
+          leadingIcon: AppActionIcons.cancel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: widget.doneLabel,
+          leadingIcon: AppActionIcons.save,
+          onPressed: () {
+            if (!(_formKey.currentState?.validate() ?? false)) {
+              return;
+            }
+            Navigator.of(context).pop();
+          },
+        ),
+      ],
+    );
+  }
 }

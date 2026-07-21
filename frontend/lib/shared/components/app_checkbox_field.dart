@@ -45,6 +45,23 @@ class AppCheckboxField extends StatelessWidget {
       autovalidateMode: autovalidateMode,
       forceErrorText: errorText,
       builder: (FormFieldState<bool> field) {
+        final Widget titleContent = secondary == null
+            ? Text(title)
+            : Row(
+                children: <Widget>[
+                  IconTheme(
+                    data: IconThemeData(
+                      size: theme.appTokens.listIconSize,
+                      color: canChange
+                          ? theme.colorScheme.onSurfaceVariant
+                          : theme.disabledColor,
+                    ),
+                    child: secondary!,
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(child: Text(title)),
+                ],
+              );
         Widget content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -59,9 +76,8 @@ class AppCheckboxField extends StatelessWidget {
                         onChanged?.call(resolvedValue);
                       }
                     : null,
-                title: Text(title),
+                title: titleContent,
                 subtitle: subtitle == null ? null : Text(subtitle!),
-                secondary: secondary,
                 enabled: canChange,
                 dense: true,
                 visualDensity: VisualDensity.compact,

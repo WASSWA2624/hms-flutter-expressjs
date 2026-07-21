@@ -60,6 +60,97 @@ double? calculateAppBodyMassIndex({
   return kilograms / (meters * meters);
 }
 
+/// Derives weight in [weightUnit] from BMI and height, or null when invalid.
+double? calculateAppWeightFromBodyMassIndex({
+  required String bmi,
+  required String height,
+  required String heightUnit,
+  required String weightUnit,
+}) {
+  final double? bodyMassIndex = double.tryParse(normalizeCurrencyAmount(bmi));
+  final double? rawHeight = double.tryParse(normalizeCurrencyAmount(height));
+  if (bodyMassIndex == null ||
+      rawHeight == null ||
+      bodyMassIndex <= 0 ||
+      rawHeight <= 0) {
+    return null;
+  }
+
+  final double meters = heightUnit == AppVitalsUnits.heightMeters
+      ? rawHeight
+      : rawHeight / 100;
+  if (meters <= 0) {
+    return null;
+  }
+  final double kilograms = bodyMassIndex * meters * meters;
+  return weightUnit == AppVitalsUnits.weightPounds
+      ? kilograms * 2.2046226218
+      : kilograms;
+}
+
+/// Derives height in [heightUnit] from BMI and weight, or null when invalid.
+double? calculateAppHeightFromBodyMassIndex({
+  required String bmi,
+  required String weight,
+  required String weightUnit,
+  required String heightUnit,
+}) {
+  final double? bodyMassIndex = double.tryParse(normalizeCurrencyAmount(bmi));
+  final double? rawWeight = double.tryParse(normalizeCurrencyAmount(weight));
+  if (bodyMassIndex == null ||
+      rawWeight == null ||
+      bodyMassIndex <= 0 ||
+      rawWeight <= 0) {
+    return null;
+  }
+
+  final double kilograms = weightUnit == AppVitalsUnits.weightPounds
+      ? rawWeight / 2.2046226218
+      : rawWeight;
+  final double meters = math.sqrt(kilograms / bodyMassIndex);
+  if (!meters.isFinite || meters <= 0) {
+    return null;
+  }
+  return heightUnit == AppVitalsUnits.heightMeters ? meters : meters * 100;
+}
+
+/// Adult BMI reference used for normal/abnormal coloring of body metrics.
+const AppVitalReferenceRange kAppBodyMassIndexReference = AppVitalReferenceRange(
+  normalMin: 18.5,
+  normalMax: 24.9,
+  validMin: 10,
+  validMax: 80,
+  unit: '',
+  decimals: 1,
+);
+
+enum AppVitalSignStatus { normal, abnormal }
+
+AppVitalSignStatus? resolveAppVitalSignStatus(
+  String? text,
+  AppVitalReferenceRange range,
+) {
+  final double? value = parseAppVitalInput(text);
+  if (value == null) {
+    return null;
+  }
+  return range.containsNormal(value)
+      ? AppVitalSignStatus.normal
+      : AppVitalSignStatus.abnormal;
+}
+
+Color? appVitalSignStatusColor(
+  BuildContext context,
+  AppVitalSignStatus? status,
+) {
+  final AppStatusColors statusColors = Theme.of(context).statusColors;
+  return switch (status) {
+    AppVitalSignStatus.normal => statusColors.success,
+    AppVitalSignStatus.abnormal => statusColors.warning,
+    null => null,
+  };
+}
+
 class AppVitalsForm extends StatelessWidget {
   const AppVitalsForm({
     required this.temperatureController,
@@ -1062,13 +1153,11 @@ _VitalSignStatus? _statusForVitalText(
   String text,
   AppVitalReferenceRange range,
 ) {
-  final double? value = parseAppVitalInput(text);
-  if (value == null) {
-    return null;
-  }
-  return range.containsNormal(value)
-      ? _VitalSignStatus.normal
-      : _VitalSignStatus.abnormal;
+  return switch (resolveAppVitalSignStatus(text, range)) {
+    AppVitalSignStatus.normal => _VitalSignStatus.normal,
+    AppVitalSignStatus.abnormal => _VitalSignStatus.abnormal,
+    null => null,
+  };
 }
 
 String? _validateVitalValue(
@@ -1095,12 +1184,14 @@ String? _validateVitalValue(
 }
 
 Color? _statusColor(BuildContext context, _VitalSignStatus? status) {
-  final AppStatusColors statusColors = Theme.of(context).statusColors;
-  return switch (status) {
-    _VitalSignStatus.normal => statusColors.success,
-    _VitalSignStatus.abnormal => statusColors.warning,
-    null => null,
-  };
+  return appVitalSignStatusColor(
+    context,
+    switch (status) {
+      _VitalSignStatus.normal => AppVitalSignStatus.normal,
+      _VitalSignStatus.abnormal => AppVitalSignStatus.abnormal,
+      null => null,
+    },
+  );
 }
 
 IconData _statusIcon(_VitalSignStatus status) {

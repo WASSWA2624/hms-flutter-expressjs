@@ -86,6 +86,36 @@ void main() {
     );
   });
 
+  test('body-metrics helpers derive any third value in selected units', () {
+    expect(
+      calculateAppWeightFromBodyMassIndex(
+        bmi: '22.9',
+        height: '175',
+        heightUnit: AppVitalsUnits.heightCentimeters,
+        weightUnit: AppVitalsUnits.weightKilograms,
+      ),
+      closeTo(70.1, 0.2),
+    );
+    expect(
+      calculateAppHeightFromBodyMassIndex(
+        bmi: '22.9',
+        weight: '70',
+        weightUnit: AppVitalsUnits.weightKilograms,
+        heightUnit: AppVitalsUnits.heightCentimeters,
+      ),
+      closeTo(174.8, 0.5),
+    );
+    expect(
+      calculateAppWeightFromBodyMassIndex(
+        bmi: '22.9',
+        height: '1.75',
+        heightUnit: AppVitalsUnits.heightMeters,
+        weightUnit: AppVitalsUnits.weightPounds,
+      ),
+      closeTo(154.5, 1.0),
+    );
+  });
+
   testWidgets('composes AppRecordVitalsDialog with role-based title chrome', (
     WidgetTester tester,
   ) async {
@@ -100,12 +130,76 @@ void main() {
     expect(find.text('Triage'), findsOneWidget);
     expect(find.text('Triage priority'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Heart rate'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Weight, height & BMI'),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(AppButton, 'Weight'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Height'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Risk flags'), findsOneWidget);
+    expect(find.byType(AppTriageRiskFlagSelector), findsNothing);
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
     expect(find.text('PATIENT EXAMPLE'), findsNothing);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
     expect(find.byIcon(AppActionIcons.save), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('opens risk flags in a modal and summarizes confirmed flags', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+
+    await _pumpDialog(tester, flow: _flow, repository: repository);
+
+    final Finder riskFlagsAction = find.widgetWithText(AppButton, 'Risk flags');
+    await tester.ensureVisible(riskFlagsAction);
+    await tester.tap(riskFlagsAction);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppTriageRiskFlagSelector), findsOneWidget);
+    await tester.tap(find.text('Fall risk'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(AppButton, 'Done'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppTriageRiskFlagSelector), findsNothing);
+    expect(find.textContaining('Fall risk'), findsWidgets);
+  });
+
+  testWidgets('body metrics action derives BMI from weight and height', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+
+    await _pumpDialog(tester, flow: _flow, repository: repository);
+
+    final Finder bodyMetricsAction = find.widgetWithText(
+      AppButton,
+      'Weight, height & BMI',
+    );
+    await tester.ensureVisible(bodyMetricsAction);
+    await tester.tap(bodyMetricsAction);
+    await tester.pumpAndSettle();
+
+    final Finder weightField = find.bySemanticsLabel('Weight kg');
+    final Finder heightField = find.bySemanticsLabel('Height cm');
+    expect(weightField, findsOneWidget);
+    expect(heightField, findsOneWidget);
+    await tester.ensureVisible(weightField);
+    await tester.enterText(weightField, '70');
+    await tester.enterText(heightField, '175');
+    await tester.pump();
+
+    expect(find.text('22.9'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButton, 'Done'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('70 kg'), findsWidgets);
+    expect(find.textContaining('BMI 22.9'), findsWidgets);
   });
 
   testWidgets('Cancel pops false without recording vitals', (

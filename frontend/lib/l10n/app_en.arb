@@ -6115,6 +6115,14 @@
       }
     }
   },
+  "patientsBodyMetricsLabel": "Weight, height & BMI",
+  "@patientsBodyMetricsLabel": {
+    "description": "Combined body-metrics action for weight, height, and BMI entry."
+  },
+  "patientsBmiLabel": "BMI",
+  "@patientsBmiLabel": {
+    "description": "Body-mass index field label."
+  },
   "patientsVitalActionRecordedLabel": "{name} · {summary}",
   "@patientsVitalActionRecordedLabel": {
     "description": "Vital action button label when a value is already recorded.",

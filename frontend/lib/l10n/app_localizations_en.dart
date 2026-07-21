@@ -4813,6 +4813,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get patientsBodyMetricsLabel => 'Weight, height & BMI';
+
+  @override
+  String get patientsBmiLabel => 'BMI';
+
+  @override
   String patientsVitalActionRecordedLabel(String name, String summary) {
     return '$name · $summary';
   }
