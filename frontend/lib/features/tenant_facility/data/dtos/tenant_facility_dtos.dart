@@ -129,8 +129,6 @@ final class FacilityProfileDto {
   }
 }
 
-final class BranchProfileDto {
-  const BranchProfileDto({
     required this.id,
     required this.tenantId,
     required this.name,
@@ -139,8 +137,6 @@ final class BranchProfileDto {
     this.deletedAt,
   });
 
-  factory BranchProfileDto.fromJson(JsonMap json) {
-    return BranchProfileDto(
       id: _requiredString(json, 'id'),
       tenantId: _requiredString(json, 'tenant_id'),
       name: _requiredString(json, 'name'),
@@ -157,8 +153,6 @@ final class BranchProfileDto {
   final bool isActive;
   final DateTime? deletedAt;
 
-  BranchProfile toEntity() {
-    return BranchProfile(
       id: id,
       tenantId: tenantId,
       name: name,
@@ -177,7 +171,6 @@ final class DepartmentProfileDto {
     required this.type,
     this.shortName,
     this.facilityId,
-    this.branchId,
     required this.isActive,
     this.deletedAt,
   });
@@ -192,7 +185,6 @@ final class DepartmentProfileDto {
       ),
       shortName: _optionalString(json, 'short_name'),
       facilityId: _optionalString(json, 'facility_id'),
-      branchId: _optionalString(json, 'branch_id'),
       isActive: _optionalBool(json, 'is_active') ?? true,
       deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
@@ -204,7 +196,6 @@ final class DepartmentProfileDto {
   final DepartmentSetupType type;
   final String? shortName;
   final String? facilityId;
-  final String? branchId;
   final bool isActive;
   final DateTime? deletedAt;
 
@@ -216,7 +207,6 @@ final class DepartmentProfileDto {
       type: type,
       shortName: shortName,
       facilityId: facilityId,
-      branchId: branchId,
       isActive: isActive,
       deletedAt: deletedAt,
     );
@@ -611,9 +601,6 @@ final class FacilitySetupWorkspaceDto {
           city: _optionalString(contactAddressJson, 'city'),
           country: _optionalString(contactAddressJson, 'country'),
         ),
-        branches: _decodeOptionalList<BranchProfileDto>(
-          json['branches'],
-          BranchProfileDto.fromJson,
         ).map((dto) => dto.toEntity()).toList(growable: false),
         departments: _decodeOptionalList<DepartmentProfileDto>(
           json['departments'],

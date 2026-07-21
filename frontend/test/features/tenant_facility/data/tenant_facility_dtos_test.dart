@@ -41,7 +41,6 @@ void main() {
                 'city': 'Kampala',
                 'country': 'UG',
               },
-              'branches': <Object?>[
                 <String, Object?>{
                   'id': 'BRN0001',
                   'tenant_id': 'TEN0001',

@@ -853,7 +853,6 @@ String _labelForKey(AppLocalizations l10n, String key) {
     'settings.workspace.checklist.tenant' => l10n.settingsWorkspaceModuleTenant,
     'settings.tabs.facility' || 'settings.workspace.checklist.facility' =>
       l10n.settingsWorkspaceModuleFacility,
-    'settings.tabs.branch' => l10n.settingsWorkspaceModuleBranch,
     'settings.tabs.department' || 'settings.workspace.checklist.department' =>
       l10n.settingsWorkspaceModuleDepartment,
     'settings.tabs.unit' => l10n.settingsWorkspaceModuleUnit,
@@ -1119,8 +1118,6 @@ const Set<String> _tenantFacilityRoutes = <String>{
   '/settings/tenants/create',
   '/settings/facilities',
   '/settings/facilities/create',
-  '/settings/branches',
-  '/settings/branches/create',
   '/settings/departments',
   '/settings/departments/create',
   '/settings/units',

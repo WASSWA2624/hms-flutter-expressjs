@@ -183,7 +183,6 @@ final class AppAccessPolicy {
     required this.permissions,
     required this.tenantId,
     required this.facilityId,
-    required this.branchId,
     required this.moduleEntitlements,
     this.planTierCode,
   });
@@ -242,7 +241,6 @@ final class AppAccessPolicy {
       permissions: Set<AppPermission>.unmodifiable(planGated),
       tenantId: tenantId,
       facilityId: _nonEmpty(user?.facilityId),
-      branchId: _nonEmpty(user?.branchId),
       moduleEntitlements: entitlements,
       planTierCode: planTierCode,
     );
@@ -252,7 +250,6 @@ final class AppAccessPolicy {
   final Set<AppPermission> permissions;
   final String? tenantId;
   final String? facilityId;
-  final String? branchId;
   final Map<String, AppModuleEntitlement> moduleEntitlements;
   final String? planTierCode;
 
@@ -262,7 +259,6 @@ final class AppAccessPolicy {
       permissions: Set<AppPermission>.unmodifiable(permissions),
       tenantId: tenantId,
       facilityId: facilityId,
-      branchId: branchId,
       moduleEntitlements: moduleEntitlements,
       planTierCode: planTierCode,
     );

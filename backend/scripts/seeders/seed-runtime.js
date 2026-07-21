@@ -46,7 +46,6 @@ const AUTO_MANAGED_FIELDS = new Set(['created_at', 'updated_at', 'deleted_at', '
 const PUBLIC_ID_PREFIXES = Object.freeze({
   tenant: 'TEN',
   facility: 'FAC',
-  branch: 'BRN',
   department: 'DEP',
   ward: 'WRD',
   room: 'ROM',

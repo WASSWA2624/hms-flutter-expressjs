@@ -81,7 +81,6 @@ abstract interface class TenantFacilityRepository {
     String? country,
   });
 
-  Future<Result<BranchProfile>> saveBranch({
     String? id,
     required String tenantId,
     String? facilityId,
@@ -89,9 +88,7 @@ abstract interface class TenantFacilityRepository {
     required bool isActive,
   });
 
-  Future<Result<void>> deleteBranch(String id);
 
-  Future<Result<BranchProfile>> restoreBranch(String id);
 
   Future<Result<DepartmentProfile>> saveDepartment({
     String? id,
@@ -99,7 +96,6 @@ abstract interface class TenantFacilityRepository {
     required String facilityId,
     required String name,
     String? shortName,
-    String? branchId,
     required DepartmentSetupType type,
     required bool isActive,
   });

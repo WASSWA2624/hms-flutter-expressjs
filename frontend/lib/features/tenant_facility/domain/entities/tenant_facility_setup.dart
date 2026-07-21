@@ -162,8 +162,6 @@ final class FacilityProfile {
   }
 }
 
-final class BranchProfile {
-  const BranchProfile({
     required this.id,
     required this.tenantId,
     required this.name,
@@ -181,7 +179,6 @@ final class BranchProfile {
 
   bool get isDeleted => deletedAt != null;
 
-  BranchProfile copyWith({
     String? id,
     String? tenantId,
     String? name,
@@ -190,7 +187,6 @@ final class BranchProfile {
     DateTime? deletedAt,
     bool clearDeletedAt = false,
   }) {
-    return BranchProfile(
       id: id ?? this.id,
       tenantId: tenantId ?? this.tenantId,
       name: name ?? this.name,
@@ -209,7 +205,6 @@ final class DepartmentProfile {
     required this.type,
     this.shortName,
     this.facilityId,
-    this.branchId,
     this.isActive = true,
     this.deletedAt,
   });
@@ -220,7 +215,6 @@ final class DepartmentProfile {
   final DepartmentSetupType type;
   final String? shortName;
   final String? facilityId;
-  final String? branchId;
   final bool isActive;
   final DateTime? deletedAt;
 
@@ -233,7 +227,6 @@ final class DepartmentProfile {
     DepartmentSetupType? type,
     String? shortName,
     String? facilityId,
-    String? branchId,
     bool? isActive,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
@@ -245,7 +238,6 @@ final class DepartmentProfile {
       type: type ?? this.type,
       shortName: shortName ?? this.shortName,
       facilityId: facilityId ?? this.facilityId,
-      branchId: branchId ?? this.branchId,
       isActive: isActive ?? this.isActive,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
@@ -488,7 +480,6 @@ final class FacilitySetupSnapshot {
     this.facility,
     this.facilities = const <FacilityProfile>[],
     this.contactAddress = const FacilityContactAddress(),
-    this.branches = const <BranchProfile>[],
     this.departments = const <DepartmentProfile>[],
     this.units = const <UnitProfile>[],
     this.wards = const <WardProfile>[],
@@ -502,7 +493,6 @@ final class FacilitySetupSnapshot {
   final FacilityProfile? facility;
   final List<FacilityProfile> facilities;
   final FacilityContactAddress contactAddress;
-  final List<BranchProfile> branches;
   final List<DepartmentProfile> departments;
   final List<UnitProfile> units;
   final List<WardProfile> wards;
@@ -516,7 +506,6 @@ final class FacilitySetupSnapshot {
     Object? facility = _facilitySetupSnapshotUnset,
     List<FacilityProfile>? facilities,
     FacilityContactAddress? contactAddress,
-    List<BranchProfile>? branches,
     List<DepartmentProfile>? departments,
     List<UnitProfile>? units,
     List<WardProfile>? wards,
@@ -567,7 +556,6 @@ final class FacilitySetupSnapshot {
         contactAddress.phone?.trim().isNotEmpty == true;
   }
 
-  bool get hasBranchesConfigured => branches.isNotEmpty;
 
   bool get hasUnitsConfigured => units.isNotEmpty;
 
@@ -580,7 +568,6 @@ final class FacilitySetupSnapshot {
   int get completedChecklistItems {
     return <bool>[
       hasTenant,
-      hasBranchesConfigured || hasFacilityIdentity,
       hasFacilityIdentity,
       hasDepartments,
       hasUnitsConfigured || hasDepartments,

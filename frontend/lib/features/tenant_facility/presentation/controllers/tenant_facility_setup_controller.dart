@@ -405,7 +405,6 @@ final class TenantFacilitySetupSubmissionController
     );
   }
 
-  Future<bool> saveBranch({
     String? id,
     required String tenantId,
     String? facilityId,
@@ -413,43 +412,33 @@ final class TenantFacilitySetupSubmissionController
     required bool isActive,
   }) {
     return _submit(
-      () => _repository.saveBranch(
         id: id,
         tenantId: tenantId,
         facilityId: facilityId,
         name: name,
         isActive: isActive,
       ),
-      updateSnapshot: (FacilitySetupSnapshot snapshot, BranchProfile branch) {
         return snapshot.copyWith(
-          branches: _upsertById<BranchProfile>(
             snapshot.branches,
             branch,
-            (BranchProfile item) => item.id,
           ),
         );
       },
     );
   }
 
-  Future<bool> deleteBranch(String id) {
     return _submit(
-      () => _repository.deleteBranch(id),
       updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
         final DateTime deletedAt = DateTime.now().toUtc();
         final List<DepartmentProfile> departments = <DepartmentProfile>[
           for (final DepartmentProfile department in snapshot.departments)
-            department.branchId == id
                 ? department.copyWith(deletedAt: deletedAt)
                 : department,
         ];
         final Set<String> deletedDepartmentIds = <String>{
           for (final DepartmentProfile department in departments)
-            if (department.branchId == id) department.id,
         };
         return snapshot.copyWith(
-          branches: <BranchProfile>[
-            for (final BranchProfile branch in snapshot.branches)
               branch.id == id ? branch.copyWith(deletedAt: deletedAt) : branch,
           ],
           departments: departments,
@@ -465,15 +454,10 @@ final class TenantFacilitySetupSubmissionController
     );
   }
 
-  Future<bool> restoreBranch(String id) {
     return _submit(
-      () => _repository.restoreBranch(id),
-      updateSnapshot: (FacilitySetupSnapshot snapshot, BranchProfile branch) {
         return snapshot.copyWith(
-          branches: _upsertById<BranchProfile>(
             snapshot.branches,
             branch.copyWith(clearDeletedAt: true),
-            (BranchProfile item) => item.id,
           ),
         );
       },
@@ -486,7 +470,6 @@ final class TenantFacilitySetupSubmissionController
     required String facilityId,
     required String name,
     String? shortName,
-    String? branchId,
     required DepartmentSetupType type,
     required bool isActive,
   }) {
@@ -497,7 +480,6 @@ final class TenantFacilitySetupSubmissionController
         facilityId: facilityId,
         name: name,
         shortName: shortName,
-        branchId: branchId,
         type: type,
         isActive: isActive,
       ),

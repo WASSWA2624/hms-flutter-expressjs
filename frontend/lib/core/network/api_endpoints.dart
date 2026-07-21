@@ -16,7 +16,6 @@ enum HmsApiResource {
   userSessions('user-sessions', HmsApiEndpointGroup.authSession),
   tenants('tenants', HmsApiEndpointGroup.tenantFacility),
   facilities('facilities', HmsApiEndpointGroup.tenantFacility),
-  branches('branches', HmsApiEndpointGroup.tenantFacility),
   departments('departments', HmsApiEndpointGroup.tenantFacility),
   units('units', HmsApiEndpointGroup.tenantFacility),
   rooms('rooms', HmsApiEndpointGroup.tenantFacility),

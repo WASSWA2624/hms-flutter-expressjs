@@ -27,7 +27,6 @@ abstract final class RealtimeScope {
     required Map<String, Object?> payload,
     String? tenantId,
     String? facilityId,
-    String? branchId,
   }) {
     if (payload.isEmpty) {
       return true;
@@ -42,8 +41,6 @@ abstract final class RealtimeScope {
           payloadString(payload, const <String>['facility_id', 'facilityId']),
         ) &&
         matchesValue(
-          branchId,
-          payloadString(payload, const <String>['branch_id', 'branchId']),
         );
   }
 
@@ -51,13 +48,11 @@ abstract final class RealtimeScope {
     required RealtimeMessage message,
     String? tenantId,
     String? facilityId,
-    String? branchId,
   }) {
     return matchesTenantFacility(
       payload: message.payload,
       tenantId: tenantId,
       facilityId: facilityId,
-      branchId: branchId,
     );
   }
 }

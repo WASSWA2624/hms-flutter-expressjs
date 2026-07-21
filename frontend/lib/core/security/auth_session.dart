@@ -406,7 +406,6 @@ final class AuthUserProfile {
     this.facilityId,
     this.facilityName,
     this.facilityType,
-    this.branchId,
     this.staffNumber,
     this.staffPosition,
     this.practitionerType,
@@ -422,7 +421,6 @@ final class AuthUserProfile {
       tenantId: _string(payload['tenant_id']) ?? _string(payload['tenantId']),
       facilityId:
           _string(payload['facility_id']) ?? _string(payload['facilityId']),
-      branchId: _string(payload['branch_id']) ?? _string(payload['branchId']),
       roles: roles,
     );
   }
@@ -442,7 +440,6 @@ final class AuthUserProfile {
   final String? facilityId;
   final String? facilityName;
   final String? facilityType;
-  final String? branchId;
   final String? staffNumber;
   final String? staffPosition;
   final String? practitionerType;

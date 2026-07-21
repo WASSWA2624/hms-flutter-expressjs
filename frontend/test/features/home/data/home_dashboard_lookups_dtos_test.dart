@@ -16,7 +16,6 @@ void main() {
               'meta': <String, Object?>{'facility_type': 'hospital'},
             },
           ],
-          'branches': <Object?>[
             <String, Object?>{
               'id': 'BR-1',
               'label': 'Outpatient wing',

@@ -693,7 +693,6 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       TenantFacilitySetupDeskSection.facility => ManageFacilitiesPanel(
         onMutated: (_) => _refreshSetup(),
       ),
-      TenantFacilitySetupDeskSection.branches => _BranchSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitTenant,
       ),
@@ -2239,8 +2238,6 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
 
 const String _noneSelection = tenantFacilityNoneSelection;
 
-class _BranchSetupSection extends ConsumerWidget {
-  const _BranchSetupSection({
     required this.snapshot,
     required this.canSubmit,
   });
@@ -2254,43 +2251,30 @@ class _BranchSetupSection extends ConsumerWidget {
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canManageRecords = canSubmit && !submission.isSubmitting;
 
-    final Widget content = _SearchableEntityGroup<BranchProfile>(
-      title: l10n.tenantFacilityBranchesListTitle,
       items: snapshot.branches,
-      emptyLabel: l10n.tenantFacilityNoBranches,
       noResultsLabel: l10n.tenantFacilitySearchNoResults,
       searchLabel: l10n.tenantFacilitySearchLabel,
-      searchHint: l10n.tenantFacilityBranchSearchHint,
-      addLabel: l10n.tenantFacilityAddBranchAction,
       canManageRecords: canManageRecords,
       canAdd: canManageRecords,
       onAdd: () => _openBranchDialog(context, snapshot),
-      titleBuilder: (BranchProfile branch) => branch.name,
-      subtitleBuilder: (BranchProfile branch) => branch.isDeleted
           ? l10n.tenantFacilityStructureDeletedStatus
           : _activeStatusLabel(l10n, branch.isActive),
-      isDeletedBuilder: (BranchProfile branch) => branch.isDeleted,
-      onEdit: (BranchProfile branch) {
         if (branch.isDeleted) {
           return;
         }
         _openBranchDialog(context, snapshot, branch: branch);
       },
-      onDelete: (BranchProfile branch) => _deleteEntity(
         context: context,
         ref: ref,
         name: branch.name,
         deleteAction: () => ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
-            .deleteBranch(branch.id),
       ),
-      onRestore: (BranchProfile branch) => _restoreEntity(
         context: context,
         ref: ref,
         name: branch.name,
         restoreAction: () => ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
-            .restoreBranch(branch.id),
       ),
     );
 
@@ -3192,17 +3176,12 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
   }
 }
 
-class _BranchFormDialog extends ConsumerStatefulWidget {
-  const _BranchFormDialog({required this.snapshot, this.branch});
 
   final FacilitySetupSnapshot snapshot;
-  final BranchProfile? branch;
 
   @override
-  ConsumerState<_BranchFormDialog> createState() => _BranchFormDialogState();
 }
 
-class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late bool _isActive;
@@ -3230,8 +3209,6 @@ class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
     return AppDialog(
       title: Text(
         isEditing
-            ? l10n.tenantFacilityEditBranchTitle
-            : l10n.tenantFacilityAddBranchTitle,
       ),
       scrollable: true,
       closeEnabled: canEdit,
@@ -3243,7 +3220,6 @@ class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
             AppTextField(
               controller: _nameController,
               enabled: canEdit,
-              labelText: l10n.tenantFacilityBranchNameLabel,
               isRequired: true,
               textCapitalization: TextCapitalization.words,
               validator: AppValidators.requiredText(l10n.validationRequired),
@@ -3292,7 +3268,6 @@ class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
 
     final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
-        .saveBranch(
           id: widget.branch?.id,
           tenantId: tenant.id,
           facilityId: widget.snapshot.facility?.id,
@@ -3331,7 +3306,6 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
     _nameController = TextEditingController(text: department?.name);
     _shortNameController = TextEditingController(text: department?.shortName);
     _type = department?.type ?? DepartmentSetupType.clinical;
-    _branchId = department?.branchId ?? _noneSelection;
     _isActive = department?.isActive ?? true;
   }
 
@@ -3399,20 +3373,16 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
             AppSelectField<String>.searchable(
               value: _branchId,
               enabled: canEdit,
-              labelText: l10n.tenantFacilityDepartmentBranchLabel,
               options: <AppSelectOption<String>>[
                 AppSelectOption<String>(
                   value: _noneSelection,
                   label: l10n.tenantFacilityNoSelectionLabel,
                 ),
-                for (final BranchProfile branch in widget.snapshot.branches)
                   AppSelectOption<String>(value: branch.id, label: branch.name),
               ],
               validator: tenantFacilityValidReferenceSelection(
                 validIds: widget.snapshot.branches
-                    .map((BranchProfile branch) => branch.id)
                     .toList(growable: false),
-                invalidMessage: l10n.tenantFacilityInvalidBranchSelection,
               ),
               onChanged: (String? value) {
                 setState(() {
@@ -3471,7 +3441,6 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
           facilityId: facility.id,
           name: _nameController.text,
           shortName: _shortNameController.text,
-          branchId: _optionalSelection(_branchId),
           type: _type,
           isActive: _isActive,
         );
@@ -4171,12 +4140,10 @@ class _SubmissionFailureBanner extends ConsumerWidget {
 Future<void> _openBranchDialog(
   BuildContext context,
   FacilitySetupSnapshot snapshot, {
-  BranchProfile? branch,
 }) async {
   await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _BranchFormDialog(snapshot: snapshot, branch: branch),
   );
 }
 
@@ -4318,7 +4285,6 @@ String _departmentSubtitle(
   return _joinParts(<String?>[
     _departmentTypeLabel(l10n, department.type),
     if (department.shortName != null) department.shortName!,
-    _branchName(snapshot, department.branchId),
     _activeStatusLabel(l10n, department.isActive),
   ]);
 }
@@ -4379,9 +4345,7 @@ String _joinParts(List<String?> parts) {
       .join(', ');
 }
 
-String? _branchName(FacilitySetupSnapshot snapshot, String? branchId) {
   return snapshot.branches
-      .where((BranchProfile branch) => branch.id == branchId)
       .firstOrNull
       ?.name;
 }
@@ -4659,10 +4623,8 @@ Future<void> showTenantFacilityDepartmentFormDialog(
 }
 
 /// Shared branch create/edit dialog for facility setup and management.
-Future<void> showTenantFacilityBranchFormDialog(
   BuildContext context,
   FacilitySetupSnapshot snapshot, {
-  BranchProfile? branch,
 }) {
   return _openBranchDialog(context, snapshot, branch: branch);
 }

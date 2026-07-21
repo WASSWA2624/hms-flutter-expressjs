@@ -66,7 +66,6 @@ final class ReportsLookupsDto {
   ReportsLookups toEntity() {
     return ReportsLookups(
       facilities: _options(json['facilities']),
-      branches: _options(json['branches']),
       owners: _options(json['owners']),
       datasets: _options(json['datasets']),
       statuses: _options(json['statuses']),

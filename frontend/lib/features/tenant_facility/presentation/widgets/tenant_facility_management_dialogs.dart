@@ -1981,11 +1981,9 @@ class _FacilityDetailsDialogState
     await _loadUsers(silent: true);
   }
 
-  Future<void> _openBranchForm({BranchProfile? branch}) async {
     if (branch != null && branch.isDeleted) {
       return;
     }
-    await showTenantFacilityBranchFormDialog(
       context,
       _effectiveSnapshot,
       branch: branch,
@@ -2334,35 +2332,22 @@ class _FacilityDetailsDialogState
           onRestore: (AccessAdminItem user) => unawaited(_restoreUser(user)),
         );
       case _FacilityDetailsPanel.branches:
-        return _FacilityStructureCrudPanel<BranchProfile>(
-          title: l10n.tenantFacilityBranchesSectionTitle,
           items: snapshot.branches,
-          emptyLabel: l10n.tenantFacilityNoBranches,
-          addLabel: l10n.tenantFacilityAddBranchAction,
           canManage: canMutateStructure,
-          titleBuilder: (BranchProfile item) => item.name,
-          subtitleBuilder: (BranchProfile item) => '',
-          isDeletedBuilder: (BranchProfile item) => item.isDeleted,
-          statusBuilder: (BranchProfile item) => item.isDeleted
               ? l10n.tenantFacilityStructureDeletedStatus
               : l10n.tenantFacilityStructureActiveStatus,
           onAdd: () => unawaited(_openBranchForm()),
-          onEdit: (BranchProfile item) =>
               unawaited(_openBranchForm(branch: item)),
-          onDelete: (BranchProfile item) => unawaited(
             _confirmDeleteStructure(
               name: item.name,
               deleteAction: () => ref
                   .read(tenantFacilitySetupSubmissionProvider.notifier)
-                  .deleteBranch(item.id),
             ),
           ),
-          onRestore: (BranchProfile item) => unawaited(
             _confirmRestoreStructure(
               name: item.name,
               restoreAction: () => ref
                   .read(tenantFacilitySetupSubmissionProvider.notifier)
-                  .restoreBranch(item.id),
             ),
           ),
         );
@@ -2786,10 +2771,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
                     onTap: () => onPanelSelected(_FacilityDetailsPanel.users),
                   ),
                   _FacilityMetricChip(
-                    label: l10n.tenantFacilityBranchesSectionTitle,
                     value:
                         snapshot?.branches
-                            .where((BranchProfile item) => !item.isDeleted)
                             .length ??
                         0,
                     selected: selectedPanel == _FacilityDetailsPanel.branches,

@@ -112,7 +112,6 @@ bool _matchesDashboardScope(
     payload: payload,
     tenantId: request.tenantId,
     facilityId: request.facilityId,
-    branchId: request.branchId,
   );
 }
 

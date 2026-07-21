@@ -31,8 +31,6 @@ void main() {
           logoUrl: 'https://example.com/logo.png',
         ),
         contactAddress: FacilityContactAddress(phone: '+256700000000'),
-        branches: <BranchProfile>[
-          BranchProfile(
             id: 'BRN0001',
             tenantId: 'TEN0001',
             name: 'Main',

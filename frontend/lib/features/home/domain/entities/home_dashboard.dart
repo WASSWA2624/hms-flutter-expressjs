@@ -3,13 +3,11 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 enum HomeDashboardLoadState { ready, tenantContextRequired }
 
 final class HomeDashboardRequest {
-  const HomeDashboardRequest({this.tenantId, this.facilityId, this.branchId});
 
   factory HomeDashboardRequest.fromQuery(Map<String, String> query) {
     return HomeDashboardRequest(
       tenantId: _string(query['tenant_id'] ?? query['tenantId']),
       facilityId: _string(query['facility_id'] ?? query['facilityId']),
-      branchId: _string(query['branch_id'] ?? query['branchId']),
     );
   }
 
@@ -17,13 +15,11 @@ final class HomeDashboardRequest {
 
   final String? tenantId;
   final String? facilityId;
-  final String? branchId;
 
   Map<String, Object?> toQueryParameters() {
     return <String, Object?>{
       if (tenantId != null) 'tenant_id': tenantId,
       if (facilityId != null) 'facility_id': facilityId,
-      if (branchId != null) 'branch_id': branchId,
       'limit': 5,
     };
   }
@@ -35,11 +31,9 @@ final class HomeDashboardRequest {
     return other is HomeDashboardRequest &&
         other.tenantId == tenantId &&
         other.facilityId == facilityId &&
-        other.branchId == branchId;
   }
 
   @override
-  int get hashCode => Object.hash(tenantId, facilityId, branchId);
 }
 
 final class HomeDashboard {
@@ -247,7 +241,6 @@ final class HomeDashboardContext {
     this.facilityId,
     this.facilityName,
     this.facilityType,
-    this.branchId,
     this.nurseContext,
     this.departmentName,
   });
@@ -257,7 +250,6 @@ final class HomeDashboardContext {
   final String? facilityId;
   final String? facilityName;
   final String? facilityType;
-  final String? branchId;
   final String? nurseContext;
   final String? departmentName;
 }

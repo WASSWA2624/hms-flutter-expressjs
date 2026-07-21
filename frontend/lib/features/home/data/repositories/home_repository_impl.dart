@@ -143,7 +143,6 @@ final class HomeRepositoryImpl implements HomeRepository {
     return HomeDashboardRequest(
       tenantId: request.tenantId ?? _accessPolicy.tenantId,
       facilityId: request.facilityId ?? _accessPolicy.facilityId,
-      branchId: request.branchId ?? _accessPolicy.branchId,
     );
   }
 
@@ -197,7 +196,6 @@ final class HomeRepositoryImpl implements HomeRepository {
         facilityId: _accessPolicy.facilityId,
         facilityName: user?.facilityName,
         facilityType: user?.facilityType,
-        branchId: _accessPolicy.branchId,
       ),
       statusCards: tailoredProfile.fallbackStatusCards(),
       trend: HomeDashboardTrend.empty,

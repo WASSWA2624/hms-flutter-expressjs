@@ -15,7 +15,6 @@ final class HomeDashboardLookupsDto {
     return HomeDashboardLookups(
       tenants: _options(json['tenants']),
       facilities: _options(json['facilities'], includeFacilityMeta: true),
-      branches: _options(json['branches'], includeBranchMeta: true),
       queueTypes: _options(json['queue_types']),
       datePresets: _options(json['date_presets']),
     );

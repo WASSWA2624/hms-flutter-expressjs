@@ -4,7 +4,6 @@ const seedOrgPack = async (ctx) => {
   const result = {
     tenants: {},
     facilities: {},
-    branches: {},
     departments: {},
     units: {},
     wards: {},
@@ -87,23 +86,6 @@ const seedOrgPack = async (ctx) => {
         }
       );
     }
-
-    for (const branchDefinition of scenario.branches || []) {
-      const facility = result.facilities[`${scenario.key}:${branchDefinition.facility_key}`];
-      const branch = await ctx.upsert(
-        'branch',
-        `${scenario.key}:branch:${branchDefinition.key}`,
-        {
-          tenant_id: tenant.id,
-          facility_id: facility?.id || null,
-          name: branchDefinition.name,
-          is_active: true,
-        },
-        {
-          tenantCode: scenario.tenant_code,
-          scenarioKey: scenario.scenario_key,
-          publicIdPrefix: 'BRN',
-        }
       );
       result.branches[`${scenario.key}:${branchDefinition.key}`] = branch;
 
@@ -138,7 +120,6 @@ const seedOrgPack = async (ctx) => {
         {
           tenant_id: tenant.id,
           facility_id: anchorFacility?.id || null,
-          branch_id: branch?.id || null,
           name: departmentName,
           short_name: departmentName.slice(0, 8).toUpperCase(),
           department_type: /billing|executive|compliance|it|front office|operations|hr/i.test(departmentName)

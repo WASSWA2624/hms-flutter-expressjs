@@ -761,7 +761,6 @@ const buildSchemas = () => ({
       id: { type: 'string' },
       tenant_id: { type: 'string', nullable: true },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       version: { type: 'integer', nullable: true },
       etag: { type: 'string', nullable: true },
       created_at: { type: 'string', format: 'date-time', nullable: true },
@@ -876,7 +875,6 @@ const buildSchemas = () => ({
     properties: {
       tenant_id: { type: 'string' },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       department_id: { type: 'string', nullable: true },
       name: { type: 'string' },
       description: { type: 'string', nullable: true },
@@ -921,7 +919,6 @@ const buildSchemas = () => ({
     properties: {
       tenant_id: { type: 'string' },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       patient_id: { type: 'string', nullable: true },
       target_resource_type: { type: 'string' },
       target_resource_id: { type: 'string', nullable: true },
@@ -990,7 +987,6 @@ const buildSchemas = () => ({
     properties: {
       tenant_id: { type: 'string' },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       shift_id: { type: 'string' },
       current_holder_user_id: { type: 'string', nullable: true },
       office_date: { type: 'string', nullable: true },
@@ -1046,7 +1042,6 @@ const buildSchemas = () => ({
     properties: {
       tenant_id: { type: 'string' },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       office_context_id: { type: 'string' },
       shift_id: { type: 'string' },
       totals_json: { $ref: '#/components/schemas/JsonObject' },
@@ -1084,7 +1079,6 @@ const buildSchemas = () => ({
     properties: {
       tenant_id: { type: 'string' },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       office_context_id: { type: 'string' },
       checklist_json: { $ref: '#/components/schemas/JsonObject' },
       blockers_json: { $ref: '#/components/schemas/JsonValue' },
@@ -1127,7 +1121,6 @@ const buildSchemas = () => ({
     properties: {
       tenant_id: { type: 'string' },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       office_context_id: { type: 'string' },
       from_user_id: { type: 'string' },
       to_user_id: { type: 'string' },
@@ -1167,7 +1160,6 @@ const buildSchemas = () => ({
     properties: {
       tenant_id: { type: 'string' },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       office_context_id: { type: 'string' },
       asset_snapshot_json: { $ref: '#/components/schemas/JsonValue' },
       cash_drawer_snapshot_json: { $ref: '#/components/schemas/JsonValue' },
@@ -1211,7 +1203,6 @@ const buildSchemas = () => ({
     properties: {
       tenant_id: { type: 'string' },
       facility_id: { type: 'string', nullable: true },
-      branch_id: { type: 'string', nullable: true },
       office_context_id: { type: 'string' },
       shift_close_id: { type: 'string', nullable: true },
       day_close_id: { type: 'string', nullable: true },

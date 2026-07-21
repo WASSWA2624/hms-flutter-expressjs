@@ -745,13 +745,8 @@ class _SetupStepRecordSelectorState extends State<_SetupStepRecordSelector> {
       ),
       TenantFacilitySetupWizardStep.branches => _buildListSelector(
         context,
-        label: l10n.tenantFacilityWizardStepBranches,
-        emptyMessage: l10n.tenantFacilityNoBranches,
         items: snapshot.branches,
-        idOf: (BranchProfile item) => item.id,
-        labelOf: (BranchProfile item) =>
             '${item.name} · ${tenantFacilityActiveStatusLabel(l10n, item.isActive)}',
-        searchOf: (BranchProfile item) => item.name,
       ),
       TenantFacilitySetupWizardStep.departments => _buildListSelector(
         context,

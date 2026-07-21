@@ -97,7 +97,6 @@ String tenantFacilitySetupDeskSectionLabel(
     TenantFacilitySetupDeskSection.tenants =>
       l10n.tenantFacilitySetupTabTenants,
     TenantFacilitySetupDeskSection.branches =>
-      l10n.tenantFacilityWizardStepBranches,
     TenantFacilitySetupDeskSection.facility =>
       l10n.tenantFacilitySetupTabFacility,
     TenantFacilitySetupDeskSection.departments =>
@@ -140,7 +139,6 @@ String? tenantFacilitySetupDeskCreateLabel(
     TenantFacilitySetupDeskSection.tenants =>
       l10n.tenantFacilityAddTenantAction,
     TenantFacilitySetupDeskSection.branches =>
-      l10n.tenantFacilityAddBranchAction,
     TenantFacilitySetupDeskSection.facility =>
       l10n.tenantFacilityAddFacilityAction,
     TenantFacilitySetupDeskSection.departments =>
@@ -317,13 +315,9 @@ String tenantFacilityBedStatusLabel(
   };
 }
 
-String? tenantFacilityBranchName(
   FacilitySetupSnapshot snapshot,
-  String? branchId,
 ) {
   return snapshot.branches
-      .where((BranchProfile branch) => branch.id == branchId)
-      .map((BranchProfile branch) => branch.name)
       .firstOrNull;
 }
 
@@ -432,7 +426,6 @@ bool tenantFacilityWizardStepCompleted(
 ) {
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => snapshot.hasTenant,
-    TenantFacilitySetupWizardStep.branches => snapshot.hasBranchesConfigured,
     TenantFacilitySetupWizardStep.facility => snapshot.hasFacilityIdentity,
     TenantFacilitySetupWizardStep.departments => snapshot.hasDepartments,
     TenantFacilitySetupWizardStep.units => snapshot.hasUnitsConfigured,
@@ -479,8 +472,6 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
     TenantFacilitySetupWizardStep.branches =>
       <TenantFacilityWizardStepRequirement>[
         TenantFacilityWizardStepRequirement(
-          label: l10n.tenantFacilityWizardMissingBranches,
-          satisfied: snapshot.hasBranchesConfigured,
           fixStep: TenantFacilitySetupWizardStep.branches,
         ),
       ],
@@ -869,7 +860,6 @@ String tenantFacilityWizardStepLabel(
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => l10n.tenantFacilityWizardStepTenant,
     TenantFacilitySetupWizardStep.branches =>
-      l10n.tenantFacilityWizardStepBranches,
     TenantFacilitySetupWizardStep.facility =>
       l10n.tenantFacilityWizardStepFacility,
     TenantFacilitySetupWizardStep.departments =>
@@ -947,7 +937,6 @@ String tenantFacilityWizardStepEmptyMessage(
 ) {
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => l10n.tenantFacilityChecklistTenant,
-    TenantFacilitySetupWizardStep.branches => l10n.tenantFacilityNoBranches,
     TenantFacilitySetupWizardStep.facility => l10n.tenantFacilityNoFacilities,
     TenantFacilitySetupWizardStep.departments =>
       l10n.tenantFacilityNoDepartments,
@@ -974,8 +963,6 @@ String tenantFacilityWizardPrimaryActionLabel(
                 : l10n.tenantFacilityEditTenantAction),
     TenantFacilitySetupWizardStep.branches =>
       hasRecords
-          ? l10n.tenantFacilityManageBranchesAction
-          : l10n.tenantFacilityCreateBranchAction,
     TenantFacilitySetupWizardStep.facility =>
       hasRecords
           ? l10n.tenantFacilityEditFacilityAction
@@ -1048,7 +1035,6 @@ String tenantFacilityWizardStepBlockedHint(
       l10n.tenantFacilityPermissionRequired,
     TenantFacilitySetupWizardStep.branches =>
       snapshot.hasTenant
-          ? l10n.tenantFacilityBranchesOptionalHint
           : l10n.tenantFacilityGateNeedTenant,
     TenantFacilitySetupWizardStep.facility =>
       snapshot.hasTenant

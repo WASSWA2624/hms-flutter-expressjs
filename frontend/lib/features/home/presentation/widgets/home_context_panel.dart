@@ -34,7 +34,6 @@ class _HomeTenantContextPanelState
     super.initState();
     _selectedTenantId = widget.request.tenantId;
     _selectedFacilityId = widget.request.facilityId;
-    _selectedBranchId = widget.request.branchId;
   }
 
   @override
@@ -44,7 +43,6 @@ class _HomeTenantContextPanelState
         HomeDashboardRequest(
           tenantId: _selectedTenantId,
           facilityId: _selectedFacilityId,
-          branchId: widget.request.branchId,
         ),
       ),
     );
@@ -169,7 +167,6 @@ class _HomeTenantContextPanelState
         queryParameters: <String, String>{
           'tenant_id': _selectedTenantId!,
           'facility_id': ?_selectedFacilityId,
-          'branch_id': ?_selectedBranchId,
         },
       ),
     );
@@ -215,8 +212,6 @@ class _TenantButtons extends StatelessWidget {
                     'tenant_id': option.id,
                     if (request.facilityId != null)
                       'facility_id': request.facilityId!,
-                    if (request.branchId != null)
-                      'branch_id': request.branchId!,
                   },
                 ),
               );

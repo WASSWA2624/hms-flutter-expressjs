@@ -273,7 +273,6 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
                 tenant: tenant,
                 facility: selectedFacility,
                 facilities: facilities,
-                branches: _value<List<BranchProfile>>(results[0]),
                 departments: _value<List<DepartmentProfile>>(results[1]),
                 units: _value<List<UnitProfile>>(results[2]),
                 contactAddress: _value<FacilityContactAddress>(results[3]),
@@ -518,7 +517,6 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
-  Future<Result<BranchProfile>> saveBranch({
     String? id,
     required String tenantId,
     String? facilityId,
@@ -534,29 +532,20 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     };
 
     if (id == null) {
-      return _apiClient.post<BranchProfile>(
-        ApiEndpoints.collection(HmsApiResource.branches),
         data: payload,
         decoder: _decodeBranch,
       );
     }
 
-    return _apiClient.put<BranchProfile>(
-      ApiEndpoints.byId(HmsApiResource.branches, id),
       data: payload,
       decoder: _decodeBranch,
     );
   }
 
   @override
-  Future<Result<void>> deleteBranch(String id) {
-    return _deleteResource(HmsApiResource.branches, id);
   }
 
   @override
-  Future<Result<BranchProfile>> restoreBranch(String id) {
-    return _apiClient.post<BranchProfile>(
-      ApiEndpoints.nested(HmsApiResource.branches, id, const <String>[
         'restore',
       ]),
       decoder: _decodeBranch,
@@ -570,16 +559,13 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required String facilityId,
     required String name,
     String? shortName,
-    String? branchId,
     required DepartmentSetupType type,
     required bool isActive,
   }) {
     final String? normalizedShortName = _normalizedOptional(shortName);
-    final String? normalizedBranchId = _normalizedOptional(branchId);
     final payload = <String, Object?>{
       if (id == null) 'tenant_id': tenantId,
       'facility_id': facilityId,
-      'branch_id': normalizedBranchId,
       'name': name.trim(),
       'short_name': normalizedShortName,
       'department_type': type.apiValue,
@@ -842,25 +828,19 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     );
   }
 
-  Future<Result<List<BranchProfile>>> _listBranches(
     String tenantId,
     String facilityId, {
     bool includeDeleted = false,
   }) async {
-    final result = await _apiClient.get<List<BranchProfile>>(
       ApiEndpoints.collection(
-        HmsApiResource.branches,
         queryParameters: _facilityQuery(
           tenantId,
           facilityId,
           includeDeleted: includeDeleted,
         ),
       ),
-      decoder: (data) => ApiResponseEnvelope.decodeData<List<BranchProfile>>(
         data,
-        decoder: (payload) => decodeList<BranchProfileDto>(
           payload,
-          BranchProfileDto.fromJson,
         ).map((dto) => dto.toEntity()).toList(growable: false),
       ),
     );
@@ -1252,11 +1232,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     );
   }
 
-  static BranchProfile _decodeBranch(Object? data) {
-    return ApiResponseEnvelope.decodeData<BranchProfile>(
       data,
       decoder: (payload) =>
-          BranchProfileDto.fromJson(_requireMap(payload)).toEntity(),
     );
   }
 

@@ -36,7 +36,6 @@ const DEMO_PLAN_CATALOG = Object.freeze([
     max_modules: 20,
     extension_json: {
       price_notes: { monthly: 39, yearly: 390, extra_user_monthly: 6, extra_user_yearly: 60 },
-      branch_allowance: { included_branches: 2 },
       support: 'email_48_72h',
     },
   },
@@ -225,7 +224,6 @@ const DEMO_TENANTS = Object.freeze([
     primary_plan_code: 'pro',
     seed_inpatient_resources: true,
     facilities: [{ key: 'main', name: 'DemoCare General Hospital', type: 'HOSPITAL' }],
-    branches: [],
     departments: [
       'Outpatient',
       'Inpatient',
@@ -270,7 +268,6 @@ const DEMO_TENANT = DEMO_TENANTS[0];
 const CURATED_MODELS = Object.freeze(new Set([
   'tenant',
   'facility',
-  'branch',
   'department',
   'ward',
   'room',

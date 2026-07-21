@@ -262,7 +262,6 @@ final class AuthSessionDto {
           _optionalString(facility, 'name') ??
           _optionalString(user, 'facility_name'),
       facilityType: _optionalString(facility, 'facility_type'),
-      branchId: _optionalString(user, 'branch_id'),
       staffNumber: _optionalString(staffProfile, 'staff_number'),
       staffPosition: _optionalString(staffProfile, 'position'),
       practitionerType: _optionalString(staffProfile, 'practitioner_type'),

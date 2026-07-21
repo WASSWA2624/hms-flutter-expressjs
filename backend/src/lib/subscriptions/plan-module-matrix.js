@@ -290,7 +290,6 @@ const PLATFORM_INFRASTRUCTURE_MODULES = Object.freeze([
       is_platform_infrastructure: true,
       api_path_segments: [
         'facility',
-        'branch',
         'department',
         'unit',
         'room',

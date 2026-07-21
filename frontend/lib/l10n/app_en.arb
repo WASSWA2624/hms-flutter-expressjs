@@ -7687,10 +7687,6 @@
   "@tenantFacilityChecklistDepartments": {
     "description": "Checklist item for departments."
   },
-  "tenantFacilityChecklistBranches": "Branches are configured (optional)",
-  "@tenantFacilityChecklistBranches": {
-    "description": "Checklist item for optional branches."
-  },
   "tenantFacilityChecklistUnits": "Units are configured (optional)",
   "@tenantFacilityChecklistUnits": {
     "description": "Checklist item for optional units."
@@ -7726,10 +7722,6 @@
   "tenantFacilityWizardStepFacility": "Facility identity",
   "@tenantFacilityWizardStepFacility": {
     "description": "Wizard step label for facility identity."
-  },
-  "tenantFacilityWizardStepBranches": "Branches",
-  "@tenantFacilityWizardStepBranches": {
-    "description": "Wizard step label for optional branches."
   },
   "tenantFacilityWizardStepDepartments": "Departments",
   "@tenantFacilityWizardStepDepartments": {
@@ -7785,14 +7777,6 @@
       }
     }
   },
-  "tenantFacilityCreateBranchAction": "Create branch",
-  "@tenantFacilityCreateBranchAction": {
-    "description": "Primary action to create the first branch in setup."
-  },
-  "tenantFacilityManageBranchesAction": "Manage branches",
-  "@tenantFacilityManageBranchesAction": {
-    "description": "Primary action to manage existing branches in setup."
-  },
   "tenantFacilityCreateDepartmentAction": "Create department",
   "@tenantFacilityCreateDepartmentAction": {
     "description": "Primary action to create the first department in setup."
@@ -7832,10 +7816,6 @@
   "tenantFacilityManageBedsAction": "Manage beds",
   "@tenantFacilityManageBedsAction": {
     "description": "Primary action to manage existing beds in setup."
-  },
-  "tenantFacilityBranchesOptionalHint": "Optional for single-site facilities. Skip when there is only one site.",
-  "@tenantFacilityBranchesOptionalHint": {
-    "description": "Guidance for the optional branches setup step."
   },
   "tenantFacilityGateNeedFacility": "Configure facility identity before adding departments.",
   "@tenantFacilityGateNeedFacility": {
@@ -7906,10 +7886,6 @@
   "tenantFacilityWizardMissingDepartments": "Create at least one department",
   "@tenantFacilityWizardMissingDepartments": {
     "description": "Missing requirement for the departments setup wizard step."
-  },
-  "tenantFacilityWizardMissingBranches": "Create at least one branch",
-  "@tenantFacilityWizardMissingBranches": {
-    "description": "Missing requirement for the optional branches setup wizard step."
   },
   "tenantFacilityWizardMissingUnits": "Create at least one unit",
   "@tenantFacilityWizardMissingUnits": {
@@ -8000,10 +7976,6 @@
   "tenantFacilityRoomOutpatientLabel": "Outpatient / department area",
   "@tenantFacilityRoomOutpatientLabel": {
     "description": "Label for rooms not assigned to a ward."
-  },
-  "tenantFacilityInvalidBranchSelection": "Select a branch that belongs to this facility.",
-  "@tenantFacilityInvalidBranchSelection": {
-    "description": "Validation message for invalid branch selection."
   },
   "tenantFacilityInvalidDepartmentSelection": "Select a department that belongs to this facility.",
   "@tenantFacilityInvalidDepartmentSelection": {
@@ -8328,14 +8300,6 @@
   "@tenantFacilityStatusInactive": {
     "description": "Inactive status label."
   },
-  "tenantFacilityBranchesSectionTitle": "Branches",
-  "@tenantFacilityBranchesSectionTitle": {
-    "description": "Branches setup section title."
-  },
-  "tenantFacilityBranchesSectionBody": "Add branch entry points for facilities that operate across sites.",
-  "@tenantFacilityBranchesSectionBody": {
-    "description": "Branches setup section body."
-  },
   "tenantFacilityManageTenantsTitle": "Manage tenants",
   "@tenantFacilityManageTenantsTitle": {
     "description": "Platform admin dialog title for tenant management."
@@ -8632,34 +8596,6 @@
   "@commonTableEmptyLabel": {
     "description": "Generic empty table label."
   },
-  "tenantFacilityNoBranches": "No branches have been added.",
-  "@tenantFacilityNoBranches": {
-    "description": "Empty branch list label."
-  },
-  "tenantFacilityBranchNameLabel": "Branch name",
-  "@tenantFacilityBranchNameLabel": {
-    "description": "Branch name field label."
-  },
-  "tenantFacilityBranchesListTitle": "Branch records",
-  "@tenantFacilityBranchesListTitle": {
-    "description": "Branches list subheading."
-  },
-  "tenantFacilityBranchSearchHint": "Search branches by name or status",
-  "@tenantFacilityBranchSearchHint": {
-    "description": "Branches modal search field hint."
-  },
-  "tenantFacilityAddBranchAction": "Add branch",
-  "@tenantFacilityAddBranchAction": {
-    "description": "Add branch button label."
-  },
-  "tenantFacilityAddBranchTitle": "Add branch",
-  "@tenantFacilityAddBranchTitle": {
-    "description": "Add branch modal title."
-  },
-  "tenantFacilityEditBranchTitle": "Edit branch",
-  "@tenantFacilityEditBranchTitle": {
-    "description": "Edit branch modal title."
-  },
   "tenantFacilityDepartmentsSectionTitle": "Departments and units",
   "@tenantFacilityDepartmentsSectionTitle": {
     "description": "Departments and units setup section title."
@@ -8711,10 +8647,6 @@
   "tenantFacilityDepartmentTypeLabel": "Department type",
   "@tenantFacilityDepartmentTypeLabel": {
     "description": "Department type field label."
-  },
-  "tenantFacilityDepartmentBranchLabel": "Branch",
-  "@tenantFacilityDepartmentBranchLabel": {
-    "description": "Department branch selection field label."
   },
   "tenantFacilityDepartmentTypeClinical": "Clinical",
   "@tenantFacilityDepartmentTypeClinical": {
@@ -23918,10 +23850,6 @@
   "settingsWorkspaceModuleFacility": "Facility",
   "@settingsWorkspaceModuleFacility": {
     "description": "Settings workspace ModuleFacility."
-  },
-  "settingsWorkspaceModuleBranch": "Branch",
-  "@settingsWorkspaceModuleBranch": {
-    "description": "Settings workspace ModuleBranch."
   },
   "settingsWorkspaceModuleDepartment": "Department",
   "@settingsWorkspaceModuleDepartment": {

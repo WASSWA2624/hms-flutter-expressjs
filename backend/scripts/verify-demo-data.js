@@ -226,9 +226,6 @@ const verifyDemoData = async () => {
   if (!basicPlan || basicPlan.max_facilities !== 1) {
     errors.push('Basic plan max_facilities must be 1.');
   }
-  if (!basicPlan?.extension_json?.branch_allowance?.included_branches) {
-    errors.push('Basic plan branch allowance must be stored in extension_json.');
-  }
 
   const proPlan = findPlanByCode(plans, 'pro');
   if (!proPlan?.extension_json?.price_notes?.yearly) {
