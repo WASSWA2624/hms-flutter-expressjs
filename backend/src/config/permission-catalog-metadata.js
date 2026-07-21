@@ -31,7 +31,8 @@ const DOMAIN_LABELS = Object.freeze({
   financial: 'Financial',
   facility: 'Facility',
   tenant: 'Tenant',
-  system: 'System'});
+  system: 'System',
+});
 
 const ACTION_LABELS = Object.freeze({
   read: 'Read',
@@ -49,150 +50,199 @@ const ACTION_LABELS = Object.freeze({
   audit: 'Audit',
   review: 'Review',
   request: 'Request',
-  admin: 'Admin'});
+  admin: 'Admin',
+});
 
 const PERMISSION_OVERRIDES = Object.freeze({
   'facility:admin': {
     displayName: 'Facility — Admin',
-    description: 'Manage facility configuration, users, and operational settings.'},
+    description: 'Manage facility configuration, users, and operational settings.',
+  },
   'tenant:admin': {
     displayName: 'Tenant — Admin',
-    description: 'Manage tenant-wide settings, facilities, subscriptions, and access.'},
+    description: 'Manage tenant-wide settings, facilities, subscriptions, and access.',
+  },
   'system:admin': {
     displayName: 'System — Admin',
-    description: 'Full platform administration across tenants and global settings.'},
+    description: 'Full platform administration across tenants and global settings.',
+  },
   'financial:approve': {
     displayName: 'Financial — Approve',
-    description: 'Approve financial transactions, adjustments, and billing exceptions.'},
+    description: 'Approve financial transactions, adjustments, and billing exceptions.',
+  },
   'evidence:export': {
     displayName: 'Evidence — Export',
-    description: 'Export audit evidence and compliance records for review.'},
+    description: 'Export audit evidence and compliance records for review.',
+  },
   'break_glass:request': {
     displayName: 'Break Glass — Request',
-    description: 'Request temporary elevated access to restricted patient records.'},
+    description: 'Request temporary elevated access to restricted patient records.',
+  },
   'break_glass:review': {
     displayName: 'Break Glass — Review',
-    description: 'Review break-glass access requests submitted by clinical staff.'},
+    description: 'Review break-glass access requests submitted by clinical staff.',
+  },
   'break_glass:approve': {
     displayName: 'Break Glass — Approve',
-    description: 'Approve or deny break-glass access requests.'}});
+    description: 'Approve or deny break-glass access requests.',
+  },
+});
 
 const ROLE_OVERRIDES = Object.freeze({
   SUPER_ADMIN: {
     displayName: 'Super Admin',
-    description: 'Platform administrator with unrestricted access across all tenants.'},
+    description: 'Platform administrator with unrestricted access across all tenants.',
+  },
   TENANT_ADMIN: {
     displayName: 'Tenant Admin',
-    description: 'Hospital group administrator responsible for tenant-wide operations.'},
+    description: 'Hospital group administrator responsible for tenant-wide operations.',
+  },
   FACILITY_ADMIN: {
     displayName: 'Facility Admin',
-    description: 'Facility administrator managing users, modules, and local settings.'},
+    description: 'Facility administrator managing users, modules, and local settings.',
+  },
   DOCTOR: {
     displayName: 'Doctor',
-    description: 'Licensed physician with clinical documentation and order privileges.'},
+    description: 'Licensed physician with clinical documentation and order privileges.',
+  },
   NURSE: {
     displayName: 'Nurse',
-    description: 'Registered nurse with bedside care and clinical charting access.'},
+    description: 'Registered nurse with bedside care and clinical charting access.',
+  },
   LAB_TECH: {
     displayName: 'Lab Technologist',
-    description: 'Laboratory staff member processing orders and releasing results.'},
+    description: 'Laboratory staff member processing orders and releasing results.',
+  },
   RADIOLOGY_TECH: {
     displayName: 'Radiology Technologist',
-    description: 'Imaging staff member managing radiology orders and studies.'},
+    description: 'Imaging staff member managing radiology orders and studies.',
+  },
   PHARMACIST: {
     displayName: 'Pharmacist',
-    description: 'Pharmacy staff member dispensing medications and reviewing orders.'},
+    description: 'Pharmacy staff member dispensing medications and reviewing orders.',
+  },
   RECEPTIONIST: {
     displayName: 'Receptionist',
     description:
-      'Front-desk staff handling patient registration, OPD/emergency intake, doctor assignment, communications, and desk setup.'},
+      'Front-desk staff handling patient registration, OPD/emergency intake, doctor assignment, communications, and desk setup.',
+  },
   BILLING: {
     displayName: 'Billing Officer',
-    description: 'Finance staff managing invoices, claims, and payment workflows.'},
+    description: 'Finance staff managing invoices, claims, and payment workflows.',
+  },
   OPERATIONS: {
     displayName: 'Operations Lead',
-    description: 'Operations staff overseeing compliance, governance, and reporting.'},
+    description: 'Operations staff overseeing compliance, governance, and reporting.',
+  },
   HR: {
     displayName: 'HR Officer',
-    description: 'Human resources staff managing workforce records, units, and rosters.'},
+    description: 'Human resources staff managing workforce records, units, and rosters.',
+  },
   BIOMED: {
     displayName: 'Biomedical Engineer',
-    description: 'Biomedical staff maintaining equipment and service records.'},
+    description: 'Biomedical staff maintaining equipment and service records.',
+  },
   HOUSE_KEEPER: {
     displayName: 'Housekeeping Staff',
-    description: 'Support staff with limited operational visibility.'},
+    description: 'Support staff with limited operational visibility.',
+  },
   AMBULANCE_OPERATOR: {
     displayName: 'Ambulance Operator',
-    description: 'Emergency transport staff managing ambulance and emergency cases.'},
+    description: 'Emergency transport staff managing ambulance and emergency cases.',
+  },
   UNIT_MANAGER: {
     displayName: 'Unit Manager',
-    description: 'Manager overseeing a clinical or support unit and its roster.'},
+    description: 'Manager overseeing a clinical or support unit and its roster.',
+  },
   WARD_MANAGER: {
     displayName: 'Ward Manager',
-    description: 'Inpatient ward manager coordinating beds, nursing, and rostering.'},
+    description: 'Inpatient ward manager coordinating beds, nursing, and rostering.',
+  },
   ICU_MANAGER: {
     displayName: 'ICU Manager',
-    description: 'Intensive care manager supervising critical-care operations.'},
+    description: 'Intensive care manager supervising critical-care operations.',
+  },
   THEATRE_MANAGER: {
     displayName: 'Theatre Manager',
-    description: 'Operating theatre manager coordinating surgical schedules and staff.'},
+    description: 'Operating theatre manager coordinating surgical schedules and staff.',
+  },
   HOUSEKEEPING_MANAGER: {
     displayName: 'Housekeeping Manager',
-    description: 'Manager supervising environmental services and housekeeping teams.'},
+    description: 'Manager supervising environmental services and housekeeping teams.',
+  },
   BIOMED_MANAGER: {
     displayName: 'Biomedical Manager',
-    description: 'Manager overseeing biomedical engineering and equipment lifecycle.'},
+    description: 'Manager overseeing biomedical engineering and equipment lifecycle.',
+  },
   MORTUARY_STAFF: {
     displayName: 'Mortuary Officer',
-    description: 'Mortuary staff handling intake, storage, and case documentation.'},
+    description: 'Mortuary staff handling intake, storage, and case documentation.',
+  },
   MORTUARY_MANAGER: {
     displayName: 'Mortuary Manager',
-    description: 'Mortuary manager approving releases, audits, and complex cases.'},
+    description: 'Mortuary manager approving releases, audits, and complex cases.',
+  },
   PATIENT: {
     displayName: 'Patient',
-    description: 'Patient portal user with access to personal health information.'},
+    description: 'Patient portal user with access to personal health information.',
+  },
   OTHER: {
     displayName: 'Other',
-    description: 'Limited-access role for ancillary or uncategorized users.'},
+    description: 'Limited-access role for ancillary or uncategorized users.',
+  },
   ATTENDING_PHYSICIAN: {
     displayName: 'Attending Physician',
-    description: 'Senior physician responsible for supervising clinical care.'},
+    description: 'Senior physician responsible for supervising clinical care.',
+  },
   RESIDENT_PHYSICIAN: {
     displayName: 'Resident Physician',
-    description: 'Physician in postgraduate training with supervised clinical privileges.'},
+    description: 'Physician in postgraduate training with supervised clinical privileges.',
+  },
   LICENSED_PRACTICAL_NURSE: {
     displayName: 'Licensed Practical Nurse',
-    description: 'Licensed practical nurse providing bedside and procedural support.'},
+    description: 'Licensed practical nurse providing bedside and procedural support.',
+  },
   NURSE_PRACTITIONER: {
     displayName: 'Nurse Practitioner',
-    description: 'Advanced practice nurse with expanded clinical order privileges.'},
+    description: 'Advanced practice nurse with expanded clinical order privileges.',
+  },
   MEDICAL_LABORATORY_SCIENTIST: {
     displayName: 'Medical Laboratory Scientist',
-    description: 'Laboratory scientist performing and validating diagnostic tests.'},
+    description: 'Laboratory scientist performing and validating diagnostic tests.',
+  },
   PHARMACY_TECHNICIAN: {
     displayName: 'Pharmacy Technician',
-    description: 'Pharmacy support staff assisting with dispensing and inventory.'},
+    description: 'Pharmacy support staff assisting with dispensing and inventory.',
+  },
   MEDICAL_RECORDS_CLERK: {
     displayName: 'Medical Records Clerk',
-    description: 'Health information staff maintaining records and registrations.'},
+    description: 'Health information staff maintaining records and registrations.',
+  },
   ADMISSIONS_COORDINATOR: {
     displayName: 'Admissions Coordinator',
-    description: 'Staff coordinating patient admissions and front-office intake.'},
+    description: 'Staff coordinating patient admissions and front-office intake.',
+  },
   MEDICAL_CODER: {
     displayName: 'Medical Coder',
-    description: 'Coding specialist preparing claims and billing documentation.'},
+    description: 'Coding specialist preparing claims and billing documentation.',
+  },
   IT_SUPPORT: {
     displayName: 'IT Support',
-    description: 'Technical support staff with operational troubleshooting access.'},
+    description: 'Technical support staff with operational troubleshooting access.',
+  },
   SECURITY_OFFICER: {
     displayName: 'Security Officer',
-    description: 'Security personnel with limited operational visibility.'},
+    description: 'Security personnel with limited operational visibility.',
+  },
   FOOD_SERVICE_WORKER: {
     displayName: 'Food Service Worker',
-    description: 'Dietary support staff with limited operational visibility.'},
+    description: 'Dietary support staff with limited operational visibility.',
+  },
   MAINTENANCE_ENGINEER: {
     displayName: 'Maintenance Engineer',
-    description: 'Facilities maintenance staff supporting equipment and infrastructure.'}});
+    description: 'Facilities maintenance staff supporting equipment and infrastructure.',
+  },
+});
 
 const humanizeToken = (token = '') =>
   String(token || '')
@@ -214,7 +264,8 @@ const getPermissionMetadata = (code) => {
 
   return {
     displayName: `${domainLabel} — ${actionLabel}`,
-    description: `Allows ${actionLabel.toLowerCase()} access within ${domainLabel.toLowerCase()}.`};
+    description: `Allows ${actionLabel.toLowerCase()} access within ${domainLabel.toLowerCase()}.`,
+  };
 };
 
 const getRoleMetadata = (roleCode) => {
@@ -227,9 +278,11 @@ const getRoleMetadata = (roleCode) => {
   const displayName = humanizeToken(normalized);
   return {
     displayName,
-    description: `System role for ${displayName.toLowerCase()} users.`};
+    description: `System role for ${displayName.toLowerCase()} users.`,
+  };
 };
 
 module.exports = {
   getPermissionMetadata,
-  getRoleMetadata};
+  getRoleMetadata,
+};

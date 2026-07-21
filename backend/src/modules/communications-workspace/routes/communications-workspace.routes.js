@@ -16,14 +16,17 @@ const {
   createConversationSchema,
   addParticipantSchema,
   listMessagesQuerySchema,
-  createMessageSchema} = require('@validations/communications-workspace/communications-workspace.schema');
+  createMessageSchema,
+} = require('@validations/communications-workspace/communications-workspace.schema');
 
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     files: 5,
-    fileSize: 10 * 1024 * 1024}});
+    fileSize: 10 * 1024 * 1024,
+  },
+});
 
 const requireCommunicationsWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('communications_workspace_v1')) {
@@ -115,7 +118,8 @@ router.post(
   '/conversations/:conversationIdentifier/participants',
   validateRequest({
     params: conversationIdentifierParamsSchema,
-    body: addParticipantSchema}),
+    body: addParticipantSchema,
+  }),
   authorize(PERMISSIONS.COMMUNICATIONS_WRITE, 'permission'),
   communicationsWorkspaceController.addParticipant
 );
@@ -131,7 +135,8 @@ router.get(
   '/conversations/:conversationIdentifier/messages',
   validateRequest({
     params: conversationIdentifierParamsSchema,
-    query: listMessagesQuerySchema}),
+    query: listMessagesQuerySchema,
+  }),
   authorize(PERMISSIONS.COMMUNICATIONS_READ, 'permission'),
   communicationsWorkspaceController.listMessages
 );
@@ -141,7 +146,8 @@ router.post(
   upload.array('attachments', 5),
   validateRequest({
     params: conversationIdentifierParamsSchema,
-    body: createMessageSchema}),
+    body: createMessageSchema,
+  }),
   authorize(PERMISSIONS.COMMUNICATIONS_WRITE, 'permission'),
   communicationsWorkspaceController.createMessage
 );

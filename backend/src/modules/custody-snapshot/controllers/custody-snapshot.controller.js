@@ -42,4 +42,5 @@ module.exports = {
   finalizeCustodySnapshot,
   getCustodySnapshotById,
   listCustodySnapshots,
-  updateCustodySnapshot};
+  updateCustodySnapshot,
+};

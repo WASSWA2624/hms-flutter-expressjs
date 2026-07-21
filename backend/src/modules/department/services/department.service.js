@@ -13,14 +13,16 @@ const { HttpError } = require('@lib/errors');
 const { resolveEntityId } = require('@lib/billing/identifiers');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier,
+} = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
 const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
   ROLES.TENANT_ADMIN,
-  ROLES.NURSE]);
+  ROLES.NURSE,
+]);
 
 const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorUserId, payload = {}) => {
   await publishCrudRealtimeEvent({
@@ -30,10 +32,13 @@ const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorU
     actor_user_id: actorUserId,
     recipient_roles: FACILITY_LAYOUT_RECIPIENT_ROLES,
     affected: {
-      department_id: resource?.id || null},
+      department_id: resource?.id || null,
+    },
     payload: {
       layout_entity: resourceType,
-      ...payload}});
+      ...payload,
+    },
+  });
 };
 
 const resolveDepartmentId = async (identifier, { includeDeleted = false } = {}) => {
@@ -44,7 +49,8 @@ const resolveDepartmentId = async (identifier, { includeDeleted = false } = {}) 
     const resolved = await resolveModelIdByIdentifier({
       model: 'department',
       identifier: normalized,
-      includeDeleted: true});
+      includeDeleted: true,
+    });
     return resolved || normalized;
   }
 
@@ -89,7 +95,8 @@ const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'cr
 
   const [departments, total] = await Promise.all([
     departmentRepository.findMany(repoFilters, skip, limit, orderBy, listOptions),
-    departmentRepository.count(repoFilters, listOptions)]);
+    departmentRepository.count(repoFilters, listOptions),
+  ]);
 
   const totalPages = Math.ceil(total / limit);
   const hasNextPage = page < totalPages;
@@ -103,7 +110,9 @@ const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'cr
       total,
       totalPages,
       hasNextPage,
-      hasPreviousPage}};
+      hasPreviousPage,
+    },
+  };
 };
 
 /**
@@ -141,11 +150,14 @@ const createDepartment = async (data, context = {}) => {
       name: department.name,
       short_name: department.short_name,
       department_type: department.department_type,
-      is_active: department.is_active}});
+      is_active: department.is_active,
+    },
+  });
 
   await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
     operation: 'created',
-    name: department.name});
+    name: department.name,
+  });
 
   return department;
 };
@@ -178,17 +190,22 @@ const updateDepartment = async (id, data, context = {}) => {
         name: beforeDepartment.name,
         short_name: beforeDepartment.short_name,
         department_type: beforeDepartment.department_type,
-        is_active: beforeDepartment.is_active},
+        is_active: beforeDepartment.is_active,
+      },
       after: {
         facility_id: department.facility_id,
         name: department.name,
         short_name: department.short_name,
         department_type: department.department_type,
-        is_active: department.is_active}}});
+        is_active: department.is_active,
+      },
+    },
+  });
 
   await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
     operation: 'updated',
-    name: department.name});
+    name: department.name,
+  });
 
   return department;
 };
@@ -208,7 +225,8 @@ const deleteDepartment = async (id, context = {}) => {
         model: 'department',
         identifier: candidate,
         includeDeleted: true,
-        select: { id: true, deleted_at: true }});
+        select: { id: true, deleted_at: true },
+      });
       if (deletedDepartment?.deleted_at) {
         return;
       }
@@ -232,11 +250,14 @@ const deleteDepartment = async (id, context = {}) => {
       facility_id: department.facility_id,
       name: department.name,
       short_name: department.short_name,
-      department_type: department.department_type}});
+      department_type: department.department_type,
+    },
+  });
 
   await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
     operation: 'deleted',
-    name: department.name});
+    name: department.name,
+  });
 };
 
 /**
@@ -258,11 +279,14 @@ const restoreDepartment = async (id, context = {}) => {
     details: {
       tenant_id: department.tenant_id,
       facility_id: department.facility_id,
-      name: department.name}});
+      name: department.name,
+    },
+  });
 
   await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
     operation: 'restored',
-    name: department.name});
+    name: department.name,
+  });
 
   return department;
 };
@@ -294,4 +318,5 @@ module.exports = {
   updateDepartment,
   deleteDepartment,
   restoreDepartment,
-  getDepartmentUnits};
+  getDepartmentUnits,
+};

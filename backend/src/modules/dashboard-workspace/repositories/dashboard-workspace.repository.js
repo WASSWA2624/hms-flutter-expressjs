@@ -14,7 +14,8 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
     if (effectiveRole === 'SUPER_ADMIN') {
       const tenantId = await resolveIdentifierForFilter({
         value: requestedTenantId || userTenantId,
-        model: 'tenant'});
+        model: 'tenant',
+      });
 
       if (!tenantId) {
         return { state: 'platform_ready', scope: null };
@@ -23,16 +24,20 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
       const facilityId = await resolveIdentifierForFilter({
         value: requestedFacilityId || userFacilityId,
         model: 'facility',
-        where: { tenant_id: tenantId }});
+        where: { tenant_id: tenantId },
+      });
 
         value: requestedBranchId || userBranchId,
-        where: { tenant_id: tenantId }});
+        where: { tenant_id: tenantId },
+      });
 
       let resolvedFacilityId = facilityId || null;
           where: {
             tenant_id: tenantId,
-            deleted_at: null},
-          select: { facility_id: true }});
+            deleted_at: null,
+          },
+          select: { facility_id: true },
+        });
         if (!branch) {
         }
         if (!resolvedFacilityId) {
@@ -44,7 +49,9 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
         state: 'ready',
         scope: {
           tenant_id: tenantId,
-          facility_id: resolvedFacilityId}};
+          facility_id: resolvedFacilityId,
+        },
+      };
     }
 
     if (!userTenantId) {
@@ -54,16 +61,20 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
     const facilityId = await resolveIdentifierForFilter({
       value: requestedFacilityId || userFacilityId,
       model: 'facility',
-      where: { tenant_id: userTenantId }});
+      where: { tenant_id: userTenantId },
+    });
 
       value: requestedBranchId || userBranchId,
-      where: { tenant_id: userTenantId }});
+      where: { tenant_id: userTenantId },
+    });
 
     return {
       state: 'ready',
       scope: {
         tenant_id: userTenantId,
-        facility_id: facilityId || userFacilityId || null}};
+        facility_id: facilityId || userFacilityId || null,
+      },
+    };
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -78,22 +89,27 @@ const findLookups = async ({ scope = null, includeTenants = false }) => {
             where: { deleted_at: null },
             select: { id: true, human_friendly_id: true, name: true },
             orderBy: { name: 'asc' },
-            take: 200})
+            take: 200,
+          })
         : Promise.resolve([]),
       scope?.tenant_id
         ? prisma.facility.findMany({
             where: { tenant_id: scope.tenant_id, deleted_at: null },
             select: { id: true, human_friendly_id: true, name: true, facility_type: true },
-            orderBy: { name: 'asc' }})
+            orderBy: { name: 'asc' },
+          })
         : Promise.resolve([]),
       scope?.tenant_id
             where: {
               tenant_id: scope.tenant_id,
               ...(scope?.facility_id ? { facility_id: scope.facility_id } : {}),
-              deleted_at: null},
+              deleted_at: null,
+            },
             select: { id: true, human_friendly_id: true, name: true, facility_id: true },
-            orderBy: { name: 'asc' }})
-        : Promise.resolve([])]);
+            orderBy: { name: 'asc' },
+          })
+        : Promise.resolve([]),
+    ]);
 
     return { tenants, facilities, branches };
   } catch (error) {
@@ -111,14 +127,17 @@ const findFacilityContext = async (scope = {}) => {
         where: {
           id: scope.facility_id,
           tenant_id: scope.tenant_id,
-          deleted_at: null},
-        select: { id: true, human_friendly_id: true, name: true, facility_type: true }});
+          deleted_at: null,
+        },
+        select: { id: true, human_friendly_id: true, name: true, facility_type: true },
+      });
     }
 
     return await prisma.facility.findFirst({
       where: { tenant_id: scope.tenant_id, deleted_at: null },
       select: { id: true, human_friendly_id: true, name: true, facility_type: true },
-      orderBy: { created_at: 'asc' }});
+      orderBy: { created_at: 'asc' },
+    });
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -133,7 +152,8 @@ const findCurrentSubscription = async (scope = {}) => {
       where: {
         tenant_id: scope.tenant_id,
         deleted_at: null,
-        status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }},
+        status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+      },
       include: {
         plan: {
           select: {
@@ -146,7 +166,9 @@ const findCurrentSubscription = async (scope = {}) => {
             max_facilities: true,
             max_storage_mb: true,
             max_modules: true,
-            plan_fit_warning_percent: true}},
+            plan_fit_warning_percent: true,
+          },
+        },
         module_subscriptions: {
           where: { deleted_at: null },
           include: {
@@ -156,8 +178,14 @@ const findCurrentSubscription = async (scope = {}) => {
                 human_friendly_id: true,
                 name: true,
                 slug: true,
-                is_add_on: true}}}}},
-      orderBy: { updated_at: 'desc' }});
+                is_add_on: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { updated_at: 'desc' },
+    });
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -177,7 +205,9 @@ const sumRows = async ({ model, where = {}, field }) => {
     const result = await prisma[model].aggregate({
       where,
       _sum: {
-        [field]: true}});
+        [field]: true,
+      },
+    });
     return Number(result?._sum?.[field] || 0);
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -191,7 +221,8 @@ const findRows = async ({ model, where = {}, select = undefined, orderBy = undef
       select,
       orderBy,
       take,
-      skip});
+      skip,
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -220,7 +251,10 @@ const findPlatformFollowUps = async ({ limit = 5 } = {}) => {
           { status: { in: ['PAST_DUE', 'CANCELLED'] } },
           {
             status: { in: ['ACTIVE', 'TRIAL'] },
-            end_date: { lte: expiringWindow }}]},
+            end_date: { lte: expiringWindow },
+          },
+        ],
+      },
       select: {
         id: true,
         human_friendly_id: true,
@@ -230,9 +264,13 @@ const findPlatformFollowUps = async ({ limit = 5 } = {}) => {
           select: {
             id: true,
             human_friendly_id: true,
-            name: true}}},
+            name: true,
+          },
+        },
+      },
       orderBy: [{ end_date: 'asc' }, { updated_at: 'desc' }],
-      take: Math.max(1, Number(limit || 5))});
+      take: Math.max(1, Number(limit || 5)),
+    });
 
     const tenantIds = Array.from(
       new Set(subscriptions.map((entry) => entry.tenant?.id).filter(Boolean))
@@ -245,14 +283,20 @@ const findPlatformFollowUps = async ({ limit = 5 } = {}) => {
             tenant_id: { in: tenantIds },
             role: {
               deleted_at: null,
-              name: 'TENANT_ADMIN'}},
+              name: 'TENANT_ADMIN',
+            },
+          },
           select: {
             tenant_id: true,
             user: {
               select: {
                 email: true,
-                phone: true}}},
-          orderBy: { created_at: 'asc' }})
+                phone: true,
+              },
+            },
+          },
+          orderBy: { created_at: 'asc' },
+        })
       : [];
 
     const contactByTenantId = new Map();
@@ -260,7 +304,8 @@ const findPlatformFollowUps = async ({ limit = 5 } = {}) => {
       if (!entry.tenant_id || contactByTenantId.has(entry.tenant_id)) continue;
       contactByTenantId.set(entry.tenant_id, {
         email: normalizeContact(entry.user?.email),
-        phone: normalizeContact(entry.user?.phone)});
+        phone: normalizeContact(entry.user?.phone),
+      });
     }
 
     return subscriptions
@@ -291,13 +336,16 @@ const findPlatformFollowUps = async ({ limit = 5 } = {}) => {
             module_slug: 'subscriptions',
             resource: 'subscriptions',
             public_id: publicId,
-            action: 'view'},
+            action: 'view',
+          },
           meta: {
             tenant_id: tenantPublicId,
             tenant_name: tenant.name || null,
             email,
             phone,
-            expires_at: subscription.end_date || null}};
+            expires_at: subscription.end_date || null,
+          },
+        };
       })
       .filter(Boolean);
   } catch (error) {
@@ -316,24 +364,35 @@ const findPlatformAlerts = async ({ limit = 3 } = {}) => {
       pastDueSubscriptions,
       entitlementIssues,
       tenantsWithoutSubscription,
-      integrationErrors] = await Promise.all([
+      integrationErrors,
+    ] = await Promise.all([
       prisma.subscription.count({
-        where: { deleted_at: null, status: 'PAST_DUE' }}),
+        where: { deleted_at: null, status: 'PAST_DUE' },
+      }),
       prisma.subscription.count({
         where: {
           deleted_at: null,
-          plan_fit_status: { in: ['APPROACHING_LIMIT', 'EXCEEDED'] }}}),
+          plan_fit_status: { in: ['APPROACHING_LIMIT', 'EXCEEDED'] },
+        },
+      }),
       prisma.tenant.count({
         where: {
           deleted_at: null,
           subscriptions: {
             none: {
               deleted_at: null,
-              status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }}}}}),
+              status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+            },
+          },
+        },
+      }),
       prisma.integration.count({
         where: {
           deleted_at: null,
-          status: { in: ['ERROR', 'INACTIVE'] }}})]);
+          status: { in: ['ERROR', 'INACTIVE'] },
+        },
+      }),
+    ]);
 
     const alerts = [
       {
@@ -346,7 +405,9 @@ const findPlatformAlerts = async ({ limit = 3 } = {}) => {
           resource: 'subscriptions',
           public_id: null,
           action: 'list',
-          query: { queue: 'PAST_DUE' }}},
+          query: { queue: 'PAST_DUE' },
+        },
+      },
       {
         id: 'entitlement_issues',
         kind: 'entitlement_issues',
@@ -356,7 +417,9 @@ const findPlatformAlerts = async ({ limit = 3 } = {}) => {
           module_slug: 'subscriptions',
           resource: 'modules',
           public_id: null,
-          action: 'list'}},
+          action: 'list',
+        },
+      },
       {
         id: 'tenants_without_subscription',
         kind: 'tenants_without_subscription',
@@ -366,7 +429,9 @@ const findPlatformAlerts = async ({ limit = 3 } = {}) => {
           module_slug: 'settings',
           resource: 'tenants',
           public_id: null,
-          action: 'list'}},
+          action: 'list',
+        },
+      },
       {
         id: 'integration_errors',
         kind: 'integration_errors',
@@ -376,7 +441,10 @@ const findPlatformAlerts = async ({ limit = 3 } = {}) => {
           module_slug: 'settings',
           resource: 'integrations',
           public_id: null,
-          action: 'list'}}];
+          action: 'list',
+        },
+      },
+    ];
 
     return alerts
       .filter((entry) => Number(entry.count || 0) > 0)
@@ -405,7 +473,10 @@ const findTenantFollowUps = async ({ tenantId, limit = 5 } = {}) => {
             { is_active: false },
             {
               is_active: true,
-              users: { none: { deleted_at: null } }}]},
+              users: { none: { deleted_at: null } },
+            },
+          ],
+        },
         select: {
           id: true,
           human_friendly_id: true,
@@ -413,9 +484,11 @@ const findTenantFollowUps = async ({ tenantId, limit = 5 } = {}) => {
           is_active: true,
           facility_type: true,
           updated_at: true,
-          created_at: true},
+          created_at: true,
+        },
         orderBy: [{ is_active: 'asc' }, { updated_at: 'desc' }],
-        take: safeLimit}),
+        take: safeLimit,
+      }),
       prisma.subscription.findFirst({
         where: {
           tenant_id: tenantId,
@@ -424,13 +497,19 @@ const findTenantFollowUps = async ({ tenantId, limit = 5 } = {}) => {
             { status: { in: ['PAST_DUE', 'CANCELLED'] } },
             {
               status: { in: ['ACTIVE', 'TRIAL'] },
-              end_date: { lte: expiringWindow }}]},
+              end_date: { lte: expiringWindow },
+            },
+          ],
+        },
         select: {
           id: true,
           human_friendly_id: true,
           status: true,
-          end_date: true},
-        orderBy: [{ end_date: 'asc' }, { updated_at: 'desc' }]})]);
+          end_date: true,
+        },
+        orderBy: [{ end_date: 'asc' }, { updated_at: 'desc' }],
+      }),
+    ]);
 
     const items = facilities
       .map((facility) => {
@@ -453,7 +532,9 @@ const findTenantFollowUps = async ({ tenantId, limit = 5 } = {}) => {
             module_slug: 'settings',
             resource: 'facilities',
             public_id: publicId,
-            action: 'view'}};
+            action: 'view',
+          },
+        };
       })
       .filter(Boolean);
 
@@ -476,7 +557,9 @@ const findTenantFollowUps = async ({ tenantId, limit = 5 } = {}) => {
             module_slug: 'subscriptions',
             resource: 'subscriptions',
             public_id: publicId,
-            action: 'view'}});
+            action: 'view',
+          },
+        });
       }
     }
 
@@ -497,19 +580,23 @@ const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
       inactiveFacilities,
       facilitiesWithoutUsers,
       subscription,
-      entitlementDeniedModules] = await Promise.all([
+      entitlementDeniedModules,
+    ] = await Promise.all([
       prisma.facility.count({ where: facilityWhere }),
       prisma.facility.count({ where: { ...facilityWhere, is_active: false } }),
       prisma.facility.count({
         where: {
           ...facilityWhere,
           is_active: true,
-          users: { none: { deleted_at: null } }}}),
+          users: { none: { deleted_at: null } },
+        },
+      }),
       prisma.subscription.findFirst({
         where: {
           tenant_id: tenantId,
           deleted_at: null,
-          status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }},
+          status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+        },
         select: {
           id: true,
           human_friendly_id: true,
@@ -517,15 +604,23 @@ const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
           plan_fit_status: true,
           plan: {
             select: {
-              max_facilities: true}}},
-        orderBy: { updated_at: 'desc' }}),
+              max_facilities: true,
+            },
+          },
+        },
+        orderBy: { updated_at: 'desc' },
+      }),
       prisma.module_subscription.count({
         where: {
           deleted_at: null,
           entitlement_denied: true,
           subscription: {
             tenant_id: tenantId,
-            deleted_at: null}}})]);
+            deleted_at: null,
+          },
+        },
+      }),
+    ]);
 
     const alerts = [
       {
@@ -538,7 +633,9 @@ const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
           module_slug: 'settings',
           resource: 'facilities',
           public_id: null,
-          action: 'create'}},
+          action: 'create',
+        },
+      },
       {
         id: 'inactive_facilities',
         kind: 'inactive_facilities',
@@ -550,7 +647,9 @@ const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
           resource: 'facilities',
           public_id: null,
           action: 'list',
-          query: { status: 'INACTIVE' }}},
+          query: { status: 'INACTIVE' },
+        },
+      },
       {
         id: 'facility_setup_pending',
         kind: 'facility_setup_pending',
@@ -561,7 +660,9 @@ const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
           module_slug: 'settings',
           resource: 'facilities',
           public_id: null,
-          action: 'list'}},
+          action: 'list',
+        },
+      },
       {
         id: 'subscription_past_due',
         kind: 'subscription_past_due',
@@ -572,7 +673,9 @@ const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
           module_slug: 'subscriptions',
           resource: 'subscriptions',
           public_id: safePublicId(subscription?.human_friendly_id, subscription?.id),
-          action: 'view'}},
+          action: 'view',
+        },
+      },
       {
         id: 'plan_limit_pressure',
         kind: 'plan_limit_pressure',
@@ -587,7 +690,9 @@ const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
           module_slug: 'subscriptions',
           resource: 'subscriptions',
           public_id: safePublicId(subscription?.human_friendly_id, subscription?.id),
-          action: 'view'}},
+          action: 'view',
+        },
+      },
       {
         id: 'entitlement_denied_modules',
         kind: 'entitlement_denied_modules',
@@ -598,7 +703,10 @@ const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
           module_slug: 'subscriptions',
           resource: 'modules',
           public_id: null,
-          action: 'list'}}];
+          action: 'list',
+        },
+      },
+    ];
 
     return alerts
       .filter((entry) => Number(entry.count || 0) > 0)
@@ -621,4 +729,5 @@ module.exports = {
   findRows,
   resolveWorkspaceScope,
   safePublicId,
-  sumRows};
+  sumRows,
+};

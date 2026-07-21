@@ -37,7 +37,8 @@ const NO_STORE_PREFIXES = Object.freeze([
   '/api/v1/day-closes',
   '/api/v1/handovers',
   '/api/v1/custody-snapshots',
-  '/api/v1/closeout-packs']);
+  '/api/v1/closeout-packs',
+]);
 
 const SAFE_LIST_SYNC_PREFIXES = Object.freeze([
   '/api/v1/appointments',
@@ -47,7 +48,8 @@ const SAFE_LIST_SYNC_PREFIXES = Object.freeze([
   '/api/v1/inventory-items',
   '/api/v1/inventory-stocks',
   '/api/v1/equipment-work-orders',
-  '/api/v1/report-runs']);
+  '/api/v1/report-runs',
+]);
 
 const CONDITIONAL_MUTATION_PREFIXES = Object.freeze([
   '/api/v1/equipment-work-orders',
@@ -57,13 +59,15 @@ const CONDITIONAL_MUTATION_PREFIXES = Object.freeze([
   '/api/v1/custody-snapshots',
   '/api/v1/closeout-packs',
   '/api/v1/break-glass-access',
-  '/api/v1/break-glass-reviews']);
+  '/api/v1/break-glass-reviews',
+]);
 
 const IDEMPOTENCY_DISABLED_PREFIXES = Object.freeze([
   '/api/v1/auth',
   '/api/v1/break-glass-access',
   '/api/v1/break-glass-reviews',
-  '/api/v1/closeout-packs']);
+  '/api/v1/closeout-packs',
+]);
 
 /** Mutations that must never be queued for offline execution. */
 const ONLINE_ONLY_MUTATION_PREFIXES = Object.freeze([
@@ -80,7 +84,8 @@ const ONLINE_ONLY_MUTATION_PREFIXES = Object.freeze([
   '/api/v1/day-closes',
   '/api/v1/closeout-packs',
   '/api/v1/patient-reports',
-  '/api/v1/office-contexts']);
+  '/api/v1/office-contexts',
+]);
 
 const matchesAnyPrefix = (path, prefixes) =>
   prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
@@ -112,7 +117,8 @@ const resolveOfflinePolicy = (req) => {
     // Online-only financial / closeout mutations must not be queued offline.
     allow_offline_queue: isMutation ? !onlineOnly : true,
     require_conditional_mutation:
-      isMutation && matchesAnyPrefix(path, CONDITIONAL_MUTATION_PREFIXES)};
+      isMutation && matchesAnyPrefix(path, CONDITIONAL_MUTATION_PREFIXES),
+  };
 };
 
 module.exports = {
@@ -122,4 +128,5 @@ module.exports = {
   IDEMPOTENCY_DISABLED_PREFIXES,
   ONLINE_ONLY_MUTATION_PREFIXES,
   normalizePath,
-  resolveOfflinePolicy};
+  resolveOfflinePolicy,
+};

@@ -154,4 +154,5 @@ module.exports = {
   addParticipant,
   removeParticipant,
   listMessages,
-  createMessage};
+  createMessage,
+};

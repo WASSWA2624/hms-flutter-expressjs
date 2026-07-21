@@ -19,7 +19,10 @@ const FORMULARY_DRUG_INCLUDE = {
       code: true,
       form: true,
       strength: true,
-      human_friendly_id: true}}};
+      human_friendly_id: true,
+    },
+  },
+};
 
 /**
  * List formulary items with pagination and filtering
@@ -53,7 +56,8 @@ const listFormularyItems = async (filters, page, limit, sortBy, order, userId, i
         orderBy,
         FORMULARY_DRUG_INCLUDE
       ),
-      formularyItemRepository.count(whereClause)]);
+      formularyItemRepository.count(whereClause),
+    ]);
 
     return {
       formularyItems,

@@ -27,7 +27,8 @@ const createDrugSchema = z.object({
   form: z.string().trim().max(80).optional().nullable(),
   strength: z.string().trim().max(80).optional().nullable(),
   unit_price: z.coerce.number().min(0).optional().nullable(),
-  currency: z.string().trim().max(10).optional().nullable()});
+  currency: z.string().trim().max(10).optional().nullable(),
+});
 
 /**
  * Update drug body validation
@@ -40,7 +41,8 @@ const updateDrugSchema = z.object({
   form: z.string().trim().max(80).optional().nullable(),
   strength: z.string().trim().max(80).optional().nullable(),
   unit_price: z.coerce.number().min(0).optional().nullable(),
-  currency: z.string().trim().max(10).optional().nullable()});
+  currency: z.string().trim().max(10).optional().nullable(),
+});
 
 // ==================== URL Params ====================
 

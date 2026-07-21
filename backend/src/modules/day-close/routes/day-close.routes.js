@@ -8,7 +8,8 @@ const {
   createDayCloseSchema,
   dayCloseIdParamsSchema,
   listDayClosesQuerySchema,
-  updateDayCloseSchema} = require('@validations/day-close/day-close.schema');
+  updateDayCloseSchema,
+} = require('@validations/day-close/day-close.schema');
 
 const router = express.Router();
 

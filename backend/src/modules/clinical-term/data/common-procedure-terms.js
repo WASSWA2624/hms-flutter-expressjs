@@ -71,7 +71,8 @@ const explicitProcedureTerms = [
   ['Dilatation and curettage', 'HMS-PROC-000062', 'Obstetrics and gynecology', 'D and C uterine curettage'],
   ['Electrocardiogram recording', 'HMS-PROC-000063', 'Cardiology', 'ECG EKG'],
   ['Cardioversion', 'HMS-PROC-000064', 'Cardiology', 'electrical cardioversion'],
-  ['Defibrillation', 'HMS-PROC-000065', 'Emergency', 'cardiac defibrillation']];
+  ['Defibrillation', 'HMS-PROC-000065', 'Emergency', 'cardiac defibrillation'],
+];
 
 const procedureGroups = [
   {
@@ -89,7 +90,8 @@ const procedureGroups = [
       'Marsupialization',
       'Drain insertion',
       'Drain removal',
-      'Wedge resection'],
+      'Wedge resection',
+    ],
     sites: [
       'skin abscess', 'scalp lesion', 'forehead wound', 'eyebrow wound', 'eyelid lesion',
       'cheek wound', 'lip wound', 'chin wound', 'neck wound', 'axillary abscess',
@@ -103,8 +105,10 @@ const procedureGroups = [
       'skin tag', 'wart', 'mole', 'keloid scar', 'hypertrophic scar', 'pyogenic granuloma',
       'ganglion cyst', 'small hematoma', 'burn blister', 'chronic ulcer', 'diabetic foot ulcer',
       'traumatic laceration', 'dog bite wound', 'human bite wound', 'puncture wound',
-      'infected wound', 'surgical wound', 'suture line', 'pressure ulcer', 'venous ulcer'],
-    qualifiers: ['left', 'right', 'infected', 'recurrent', 'pediatric', 'adult', 'emergency']},
+      'infected wound', 'surgical wound', 'suture line', 'pressure ulcer', 'venous ulcer',
+    ],
+    qualifiers: ['left', 'right', 'infected', 'recurrent', 'pediatric', 'adult', 'emergency'],
+  },
   {
     code: 'WDC',
     category: 'Wound care',
@@ -118,15 +122,18 @@ const procedureGroups = [
       'Suture removal',
       'Staple removal',
       'Wound packing',
-      'Wound irrigation'],
+      'Wound irrigation',
+    ],
     sites: [
       'forehead wound', 'face wound', 'neck wound', 'shoulder wound', 'chest wound',
       'abdominal wound', 'back wound', 'buttock wound', 'perineal wound', 'upper arm wound',
       'forearm wound', 'wrist wound', 'hand wound', 'finger wound', 'thigh wound',
       'knee wound', 'leg wound', 'ankle wound', 'heel wound', 'foot wound', 'toe wound',
       'burn wound', 'diabetic foot wound', 'venous leg ulcer', 'pressure ulcer', 'postoperative wound',
-      'traumatic wound', 'bite wound', 'abscess cavity', 'skin graft site', 'donor site'],
-    qualifiers: ['clean', 'infected', 'chronic', 'acute', 'deep', 'superficial']},
+      'traumatic wound', 'bite wound', 'abscess cavity', 'skin graft site', 'donor site',
+    ],
+    qualifiers: ['clean', 'infected', 'chronic', 'acute', 'deep', 'superficial'],
+  },
   {
     code: 'MSK',
     category: 'Musculoskeletal',
@@ -140,7 +147,8 @@ const procedureGroups = [
       'Cast removal',
       'Traction setup',
       'Tendon sheath injection',
-      'Bursa injection'],
+      'Bursa injection',
+    ],
     sites: [
       'shoulder joint', 'elbow joint', 'wrist joint', 'hand joint', 'finger joint',
       'hip joint', 'knee joint', 'ankle joint', 'foot joint', 'toe joint', 'temporomandibular joint',
@@ -148,8 +156,10 @@ const procedureGroups = [
       'prepatellar bursa', 'Achilles tendon sheath', 'trigger finger', 'carpal tunnel',
       'distal radius fracture', 'ulna fracture', 'humerus fracture', 'clavicle fracture',
       'metacarpal fracture', 'phalangeal fracture', 'femur fracture', 'tibia fracture',
-      'fibula fracture', 'metatarsal fracture', 'rib fracture', 'ankle sprain', 'knee sprain'],
-    qualifiers: ['left', 'right', 'pediatric', 'adult', 'acute', 'follow-up']},
+      'fibula fracture', 'metatarsal fracture', 'rib fracture', 'ankle sprain', 'knee sprain',
+    ],
+    qualifiers: ['left', 'right', 'pediatric', 'adult', 'acute', 'follow-up'],
+  },
   {
     code: 'GYN',
     category: 'Obstetrics and gynecology',
@@ -166,14 +176,17 @@ const procedureGroups = [
       'Manual vacuum aspiration',
       'Dilatation and curettage',
       'Episiotomy repair',
-      'Manual removal of placenta'],
+      'Manual removal of placenta',
+    ],
     sites: [
       'cervix', 'vagina', 'vulva', 'uterus', 'endometrium', 'ovary', 'fallopian tube',
       'perineum', 'Bartholin gland', 'contraceptive implant site', 'postpartum perineal tear',
       'retained products of conception', 'retained placenta', 'early pregnancy loss',
       'cervical polyp', 'vaginal cyst', 'vulval cyst', 'pelvic mass', 'antenatal patient',
-      'postnatal patient'],
-    qualifiers: ['screening', 'diagnostic', 'therapeutic', 'emergency', 'follow-up']},
+      'postnatal patient',
+    ],
+    qualifiers: ['screening', 'diagnostic', 'therapeutic', 'emergency', 'follow-up'],
+  },
   {
     code: 'URO',
     category: 'Urology',
@@ -187,13 +200,16 @@ const procedureGroups = [
       'Dorsal slit',
       'Scrotal exploration',
       'Hydrocele aspiration',
-      'Testicular aspiration'],
+      'Testicular aspiration',
+    ],
     sites: [
       'male patient', 'female patient', 'pediatric patient', 'adult patient', 'urinary retention',
       'blocked catheter', 'long-term catheter', 'suprapubic catheter site', 'bladder', 'urethra',
       'foreskin', 'phimosis', 'paraphimosis', 'scrotum', 'hydrocele', 'epididymal cyst',
-      'testis', 'penile lesion', 'urinary tract', 'periurethral abscess'],
-    qualifiers: ['routine', 'emergency', 'first-time', 'repeat', 'left', 'right']},
+      'testis', 'penile lesion', 'urinary tract', 'periurethral abscess',
+    ],
+    qualifiers: ['routine', 'emergency', 'first-time', 'repeat', 'left', 'right'],
+  },
   {
     code: 'ENT',
     category: 'ENT',
@@ -207,13 +223,16 @@ const procedureGroups = [
       'Nasal toilet',
       'Throat swab collection',
       'Tonsillar abscess drainage',
-      'Myringotomy'],
+      'Myringotomy',
+    ],
     sites: [
       'right ear', 'left ear', 'both ears', 'external ear canal', 'ear wax impaction',
       'ear foreign body', 'nose foreign body', 'right nostril', 'left nostril', 'both nostrils',
       'anterior nose bleed', 'posterior nose bleed', 'nasal septum', 'nasal cavity',
-      'tonsil', 'peritonsillar abscess', 'throat', 'oropharynx', 'larynx', 'sinus cavity'],
-    qualifiers: ['pediatric', 'adult', 'emergency', 'follow-up', 'infected']},
+      'tonsil', 'peritonsillar abscess', 'throat', 'oropharynx', 'larynx', 'sinus cavity',
+    ],
+    qualifiers: ['pediatric', 'adult', 'emergency', 'follow-up', 'infected'],
+  },
   {
     code: 'EYE',
     category: 'Ophthalmology',
@@ -227,12 +246,15 @@ const procedureGroups = [
       'Subconjunctival injection',
       'Eye dressing',
       'Tarsorrhaphy',
-      'Lacrimal duct probing'],
+      'Lacrimal duct probing',
+    ],
     sites: [
       'right eye', 'left eye', 'both eyes', 'cornea', 'conjunctiva', 'eyelid', 'upper eyelid',
       'lower eyelid', 'eyelash', 'lacrimal duct', 'chemical eye injury', 'eye foreign body',
-      'corneal abrasion', 'conjunctival lesion', 'subconjunctival space', 'eye wound'],
-    qualifiers: ['pediatric', 'adult', 'emergency', 'minor', 'follow-up']},
+      'corneal abrasion', 'conjunctival lesion', 'subconjunctival space', 'eye wound',
+    ],
+    qualifiers: ['pediatric', 'adult', 'emergency', 'minor', 'follow-up'],
+  },
   {
     code: 'GI',
     category: 'Gastrointestinal',
@@ -247,13 +269,16 @@ const procedureGroups = [
       'Proctoscopy',
       'Hemorrhoid banding',
       'Perianal abscess drainage',
-      'Feeding tube change'],
+      'Feeding tube change',
+    ],
     sites: [
       'stomach', 'nasogastric tube', 'abdomen', 'ascites', 'peritoneal cavity', 'rectum',
       'anal canal', 'hemorrhoid', 'perianal area', 'feeding tube site', 'gastrostomy tube',
       'ileostomy site', 'colostomy site', 'abdominal wall', 'epigastric region', 'right iliac fossa',
-      'left iliac fossa'],
-    qualifiers: ['diagnostic', 'therapeutic', 'emergency', 'routine', 'pediatric', 'adult']},
+      'left iliac fossa',
+    ],
+    qualifiers: ['diagnostic', 'therapeutic', 'emergency', 'routine', 'pediatric', 'adult'],
+  },
   {
     code: 'RESP',
     category: 'Respiratory and airway',
@@ -268,13 +293,16 @@ const procedureGroups = [
       'Chest tube insertion',
       'Chest tube removal',
       'Pleural aspiration',
-      'Thoracentesis'],
+      'Thoracentesis',
+    ],
     sites: [
       'airway', 'upper airway', 'lower airway', 'right pleural space', 'left pleural space',
       'chest wall', 'tracheostomy site', 'endotracheal tube', 'oxygen delivery system',
       'nebulizer treatment', 'asthma exacerbation', 'COPD exacerbation', 'pneumothorax',
-      'pleural effusion', 'respiratory distress', 'sputum specimen'],
-    qualifiers: ['emergency', 'routine', 'pediatric', 'adult', 'left', 'right']},
+      'pleural effusion', 'respiratory distress', 'sputum specimen',
+    ],
+    qualifiers: ['emergency', 'routine', 'pediatric', 'adult', 'left', 'right'],
+  },
   {
     code: 'VAC',
     category: 'Vascular access',
@@ -288,13 +316,16 @@ const procedureGroups = [
       'Venepuncture',
       'Therapeutic phlebotomy',
       'Blood transfusion setup',
-      'Line flushing'],
+      'Line flushing',
+    ],
     sites: [
       'right hand vein', 'left hand vein', 'forearm vein', 'antecubital vein', 'external jugular vein',
       'internal jugular vein', 'subclavian vein', 'femoral vein', 'radial artery', 'femoral artery',
       'tibial intraosseous site', 'humeral intraosseous site', 'peripheral line', 'central line',
-      'arterial line', 'blood transfusion line'],
-    qualifiers: ['routine', 'emergency', 'ultrasound-guided', 'pediatric', 'adult', 'difficult access']},
+      'arterial line', 'blood transfusion line',
+    ],
+    qualifiers: ['routine', 'emergency', 'ultrasound-guided', 'pediatric', 'adult', 'difficult access'],
+  },
   {
     code: 'DEN',
     category: 'Dental and oral',
@@ -308,13 +339,16 @@ const procedureGroups = [
       'Tooth splinting',
       'Scaling and polishing',
       'Root canal procedure',
-      'Operculectomy'],
+      'Operculectomy',
+    ],
     sites: [
       'upper incisor', 'lower incisor', 'upper canine', 'lower canine', 'upper premolar',
       'lower premolar', 'upper molar', 'lower molar', 'wisdom tooth', 'gum abscess',
       'oral mucosa', 'tongue lesion', 'lip lesion', 'palate lesion', 'dental cavity', 'fractured tooth',
-      'dental socket', 'periodontal pocket'],
-    qualifiers: ['right', 'left', 'pediatric', 'adult', 'infected', 'emergency']},
+      'dental socket', 'periodontal pocket',
+    ],
+    qualifiers: ['right', 'left', 'pediatric', 'adult', 'infected', 'emergency'],
+  },
   {
     code: 'CAR',
     category: 'Cardiology and emergency',
@@ -328,12 +362,15 @@ const procedureGroups = [
       'Pericardiocentesis',
       'Blood pressure monitoring setup',
       'Orthostatic blood pressure assessment',
-      'Pulse oximetry monitoring setup'],
+      'Pulse oximetry monitoring setup',
+    ],
     sites: [
       'adult patient', 'pediatric patient', 'chest pain patient', 'arrhythmia patient',
       'cardiac arrest patient', 'unstable patient', 'hypertensive emergency', 'syncope patient',
-      'pericardial effusion', 'critical care bed', 'emergency bay', 'procedure room'],
-    qualifiers: ['urgent', 'emergency', 'routine', 'repeat', 'monitored']},
+      'pericardial effusion', 'critical care bed', 'emergency bay', 'procedure room',
+    ],
+    qualifiers: ['urgent', 'emergency', 'routine', 'repeat', 'monitored'],
+  },
   {
     code: 'NEU',
     category: 'Neurology',
@@ -345,12 +382,16 @@ const procedureGroups = [
       'Conscious sedation monitoring',
       'Seizure emergency procedure',
       'Neurological observation setup',
-      'Botulinum injection'],
+      'Botulinum injection',
+    ],
     sites: [
       'lumbar spine', 'cerebrospinal fluid space', 'occipital nerve', 'facial nerve region',
       'trigeminal nerve region', 'neck trigger point', 'back trigger point', 'shoulder trigger point',
-      'pediatric patient', 'adult patient', 'emergency patient', 'procedure room'],
-    qualifiers: ['diagnostic', 'therapeutic', 'emergency', 'repeat', 'ultrasound-guided']}];
+      'pediatric patient', 'adult patient', 'emergency patient', 'procedure room',
+    ],
+    qualifiers: ['diagnostic', 'therapeutic', 'emergency', 'repeat', 'ultrasound-guided'],
+  },
+];
 
 const toSentenceCase = (value) => {
   const text = String(value || '').trim().replace(/\s+/g, ' ');
@@ -383,7 +424,9 @@ const addTerm = (items, seen, { description, code, category, keywords = '', rank
       normalizedDescription,
       normalizedCode,
       category,
-      keywords].filter(Boolean).join(' '))});
+      keywords,
+    ].filter(Boolean).join(' ')),
+  });
 };
 
 const buildCommonProcedureTerms = () => {
@@ -396,7 +439,8 @@ const buildCommonProcedureTerms = () => {
       code,
       category,
       keywords,
-      rank: index});
+      rank: index,
+    });
   });
 
   procedureGroups.forEach((group, groupIndex) => {
@@ -409,7 +453,8 @@ const buildCommonProcedureTerms = () => {
           code: baseCode,
           category: group.category,
           keywords: `${action} ${site} ${group.category}`,
-          rank: 500 + groupIndex * 100});
+          rank: 500 + groupIndex * 100,
+        });
 
         group.qualifiers.forEach((qualifier) => {
           const description = qualifierDescription(qualifier, baseDescription);
@@ -418,7 +463,8 @@ const buildCommonProcedureTerms = () => {
             code: `HMS-${group.code}-${String(items.length + 1).padStart(5, '0')}`,
             category: group.category,
             keywords: `${action} ${site} ${qualifier} ${group.category}`,
-            rank: 1000 + groupIndex * 100});
+            rank: 1000 + groupIndex * 100,
+          });
         });
       });
     });
@@ -430,4 +476,5 @@ const buildCommonProcedureTerms = () => {
 const COMMON_PROCEDURE_TERMS = Object.freeze(buildCommonProcedureTerms());
 
 module.exports = {
-  COMMON_PROCEDURE_TERMS};
+  COMMON_PROCEDURE_TERMS,
+};

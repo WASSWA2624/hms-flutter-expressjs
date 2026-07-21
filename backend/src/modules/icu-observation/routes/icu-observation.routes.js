@@ -25,7 +25,8 @@ const ICU_ALLOWED_ROLES = [
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
-  ROLES.NURSE];
+  ROLES.NURSE,
+];
 
 /**
  * @description List ICU observations with pagination and filters
@@ -47,8 +48,7 @@ const ICU_ALLOWED_ROLES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',
-  validateRequest({ query: listIcuObservationsQuerySchema }),
+  '/',  validateRequest({ query: listIcuObservationsQuerySchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -69,8 +69,7 @@ router.get(
  * @throws 404 ICU observation not found
  */
 router.get(
-  '/:id',
-  validateRequest({ params: icuObservationIdParamsSchema }),
+  '/:id',  validateRequest({ params: icuObservationIdParamsSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -95,8 +94,7 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',
-  validateRequest({ body: createIcuObservationSchema }),
+  '/',  validateRequest({ body: createIcuObservationSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -121,8 +119,7 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',
-  validateRequest({ params: icuObservationIdParamsSchema, body: updateIcuObservationSchema }),
+  '/:id',  validateRequest({ params: icuObservationIdParamsSchema, body: updateIcuObservationSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -143,8 +140,7 @@ router.put(
  * @throws 404 ICU observation not found
  */
 router.delete(
-  '/:id',
-  validateRequest({ params: icuObservationIdParamsSchema }),
+  '/:id',  validateRequest({ params: icuObservationIdParamsSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),

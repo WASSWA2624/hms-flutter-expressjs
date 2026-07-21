@@ -28,7 +28,8 @@ const listFacilities = asyncHandler(async (req, res) => {
     facility_type,
     is_active,
     search,
-    include_deleted} = req.query;
+    include_deleted,
+  } = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
@@ -148,7 +149,8 @@ const restoreFacility = asyncHandler(async (req, res) => {
     tenant_id: req.user?.tenant_id,
     facility_id: req.user?.facility_id,
     ip_address: req.ip,
-    user_agent: req.get('user-agent')};
+    user_agent: req.get('user-agent'),
+  };
 
   const facility = await facilityService.restoreFacility(id, context);
 
@@ -162,7 +164,8 @@ const permanentDeleteFacility = asyncHandler(async (req, res) => {
     tenant_id: req.user?.tenant_id,
     facility_id: req.user?.facility_id,
     ip_address: req.ip,
-    user_agent: req.get('user-agent')};
+    user_agent: req.get('user-agent'),
+  };
 
   await facilityService.permanentDeleteFacility(id, context);
 
@@ -188,7 +191,6 @@ const permanentDeleteFacility = asyncHandler(async (req, res) => {
 
   return sendPaginated(
     res,
-    result.branches,
     result.pagination
   );
 });
@@ -200,4 +202,5 @@ module.exports = {
   updateFacility,
   deleteFacility,
   restoreFacility,
-  permanentDeleteFacility};
+  permanentDeleteFacility,
+};

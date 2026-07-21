@@ -7,7 +7,6 @@ const buildContext = (req) => ({
   user_id: req.user?.id || req.user?.user_id || null,
   tenant_id: req.user?.tenant_id || req.user?.tenantId || req.body?.tenant_id || null,
   facility_id: req.user?.facility_id || req.user?.facilityId || req.body?.facility_id || null,
-  branch_id: req.user?.branch_id || req.user?.branchId || req.body?.branch_id || null,
   ip_address: req.ip,
 });
 

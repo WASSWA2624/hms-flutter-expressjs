@@ -12,7 +12,8 @@ const {
   normalizeString,
   resolveListScopedIdentifiers,
   resolveScopedIdentifiers,
-  serializeCustodySnapshot} = require('@lib/last-office/shared');
+  serializeCustodySnapshot,
+} = require('@lib/last-office/shared');
 const { recordWorkflowEvent } = require('@lib/telemetry/metrics');
 
 const SORT_FIELDS = new Set(['created_at', 'updated_at', 'captured_at', 'finalized_at']);
@@ -20,7 +21,8 @@ const SORT_FIELDS = new Set(['created_at', 'updated_at', 'captured_at', 'finaliz
 const resolveCustodySnapshotId = async (identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'custody_snapshot',
-    identifier});
+    identifier,
+  });
 
   return resolved || identifier;
 };
@@ -60,7 +62,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
   }
 
   const where = {
-    tenant_id: scoped.tenant_id};
+    tenant_id: scoped.tenant_id,
+  };
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
 
@@ -68,7 +71,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const officeContextId = await resolveIdentifierForFilter({
       value: filters.office_context_id,
       model: 'office_context',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (officeContextId === null) return null;
     if (officeContextId !== undefined) where.office_context_id = officeContextId;
   }
@@ -77,7 +81,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const capturedByUserId = await resolveIdentifierForFilter({
       value: filters.captured_by_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (capturedByUserId === null) return null;
     if (capturedByUserId !== undefined) where.captured_by_user_id = capturedByUserId;
   }
@@ -95,7 +100,8 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
       value: data.office_context_id,
       field: 'office_context_id',
       model: 'office_context',
-      where: { tenant_id: context.tenant_id }});
+      where: { tenant_id: context.tenant_id },
+    });
     const officeContext = await officeContextRepository.findById(officeContextId);
     if (!officeContext) {
       throw new HttpError('errors.office_context.not_found', 404);
@@ -105,7 +111,8 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
 
   const currentOfficeContext = await officeContextRepository.findCurrent({
     tenant_id: context.tenant_id,
-    ...(context.facility_id ? { facility_id: context.facility_id } : {})});
+    ...(context.facility_id ? { facility_id: context.facility_id } : {}),
+  });
 
   if (!currentOfficeContext) {
     throw new HttpError('errors.office_context.not_found', 404);
@@ -119,7 +126,8 @@ const listCustodySnapshots = async (filters = {}, page = 1, limit = 20, sortBy, 
   if (where === null) {
     return {
       custodySnapshots: [],
-      pagination: buildPagination(page, limit, 0)};
+      pagination: buildPagination(page, limit, 0),
+    };
   }
 
   const skip = (page - 1) * limit;
@@ -127,11 +135,13 @@ const listCustodySnapshots = async (filters = {}, page = 1, limit = 20, sortBy, 
 
   const [records, total] = await Promise.all([
     custodySnapshotRepository.findMany(where, skip, limit, orderBy),
-    custodySnapshotRepository.count(where)]);
+    custodySnapshotRepository.count(where),
+  ]);
 
   return {
     custodySnapshots: records.map(serializeCustodySnapshot),
-    pagination: buildPagination(page, limit, total)};
+    pagination: buildPagination(page, limit, total),
+  };
 };
 
 const getCustodySnapshotById = async (id, context = {}) => {
@@ -146,7 +156,8 @@ const createCustodySnapshot = async (data = {}, context = {}) => {
   const existingDrafts = await custodySnapshotRepository.findMany({
     office_context_id: officeContext.id,
     captured_by_user_id: context.user_id,
-    status: 'DRAFT'}, 0, 1);
+    status: 'DRAFT',
+  }, 0, 1);
 
   if (existingDrafts.length > 0) {
     throw new HttpError('errors.validation.invalid', 409, [{ field: 'office_context_id' }]);
@@ -165,7 +176,8 @@ const createCustodySnapshot = async (data = {}, context = {}) => {
     controlled_items_json: data.controlled_items_json || null,
     captured_at: new Date(),
     notes: normalizeString(data.notes) || null,
-    etag: buildRecordEtag(publicId, '1', 'DRAFT')};
+    etag: buildRecordEtag(publicId, '1', 'DRAFT'),
+  };
 
   const record = await custodySnapshotRepository.create(payload);
   const serialized = serializeCustodySnapshot(record);
@@ -179,7 +191,8 @@ const createCustodySnapshot = async (data = {}, context = {}) => {
     entity_id: record.id,
     diff: { after: serialized },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   return serialized;
 };
@@ -194,7 +207,8 @@ const updateCustodySnapshot = async (id, data = {}, context = {}) => {
   const nextVersion = Number(current.version || 1) + 1;
   const updateData = {
     version: nextVersion,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), current.status)};
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), current.status),
+  };
 
   if (data.asset_snapshot_json !== undefined) updateData.asset_snapshot_json = data.asset_snapshot_json || null;
   if (data.cash_drawer_snapshot_json !== undefined) updateData.cash_drawer_snapshot_json = data.cash_drawer_snapshot_json || null;
@@ -214,7 +228,8 @@ const updateCustodySnapshot = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   return after;
 };
@@ -230,7 +245,8 @@ const finalizeCustodySnapshot = async (id, data = {}, context = {}) => {
     ...current,
     asset_snapshot_json: data.asset_snapshot_json !== undefined ? data.asset_snapshot_json : current.asset_snapshot_json,
     cash_drawer_snapshot_json: data.cash_drawer_snapshot_json !== undefined ? data.cash_drawer_snapshot_json : current.cash_drawer_snapshot_json,
-    controlled_items_json: data.controlled_items_json !== undefined ? data.controlled_items_json : current.controlled_items_json};
+    controlled_items_json: data.controlled_items_json !== undefined ? data.controlled_items_json : current.controlled_items_json,
+  };
 
   if (!hasSnapshotEvidence(nextRecord)) {
     throw new HttpError('errors.validation.invalid', 400, [{ field: 'asset_snapshot_json' }]);
@@ -245,7 +261,8 @@ const finalizeCustodySnapshot = async (id, data = {}, context = {}) => {
     finalized_at: new Date(),
     notes: data.notes !== undefined ? normalizeString(data.notes) || null : current.notes,
     version: nextVersion,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'FINALIZED')});
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'FINALIZED'),
+  });
 
   const before = serializeCustodySnapshot(current);
   const after = serializeCustodySnapshot(record);
@@ -259,7 +276,8 @@ const finalizeCustodySnapshot = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   await emitLastOfficeEvent({
     tenant_id: record.tenant_id,
@@ -268,11 +286,14 @@ const finalizeCustodySnapshot = async (id, data = {}, context = {}) => {
     payload: {
       custody_snapshot_id: after.id,
       office_context_id: after.office_context_id,
-      captured_by_user_id: after.captured_by_user_id}});
+      captured_by_user_id: after.captured_by_user_id,
+    },
+  });
 
   recordWorkflowEvent('last_office.custody_snapshot_finalized', {
     'hms.custody_snapshot.id': after.id,
-    'hms.office_context.id': after.office_context_id});
+    'hms.office_context.id': after.office_context_id,
+  });
 
   return after;
 };
@@ -282,4 +303,5 @@ module.exports = {
   finalizeCustodySnapshot,
   getCustodySnapshotById,
   listCustodySnapshots,
-  updateCustodySnapshot};
+  updateCustodySnapshot,
+};

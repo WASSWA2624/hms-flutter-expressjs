@@ -13,7 +13,8 @@ const {
   createDiagnosisSchema,
   updateDiagnosisSchema,
   diagnosisIdParamsSchema,
-  listDiagnosesQuerySchema} = require('@validations/diagnosis/diagnosis.schema');
+  listDiagnosesQuerySchema,
+} = require('@validations/diagnosis/diagnosis.schema');
 
 router.get(
   '/',

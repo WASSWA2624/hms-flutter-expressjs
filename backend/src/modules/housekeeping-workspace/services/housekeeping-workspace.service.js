@@ -7,26 +7,30 @@ const DEFAULT_RESOURCE_BY_PANEL = Object.freeze({
   tasks: 'housekeeping-tasks',
   requests: 'maintenance-requests',
   assets: 'assets',
-  history: 'asset-service-logs'});
+  history: 'asset-service-logs',
+});
 
 const PANEL_DEFINITIONS = Object.freeze([
   { id: 'overview', label_key: 'housekeeping.workspace.panels.overview', default_resource: 'housekeeping-tasks' },
   { id: 'tasks', label_key: 'housekeeping.workspace.panels.tasks', default_resource: 'housekeeping-tasks' },
   { id: 'requests', label_key: 'housekeeping.workspace.panels.requests', default_resource: 'maintenance-requests' },
   { id: 'assets', label_key: 'housekeeping.workspace.panels.assets', default_resource: 'assets' },
-  { id: 'history', label_key: 'housekeeping.workspace.panels.history', default_resource: 'asset-service-logs' }]);
+  { id: 'history', label_key: 'housekeeping.workspace.panels.history', default_resource: 'asset-service-logs' },
+]);
 
 const QUEUE_DEFINITIONS = Object.freeze([
   { id: 'TODAY', label_key: 'housekeeping.workspace.queues.TODAY', panel: 'tasks', resource: 'housekeeping-tasks' },
   { id: 'OVERDUE_TASKS', label_key: 'housekeeping.workspace.queues.OVERDUE_TASKS', panel: 'tasks', resource: 'housekeeping-tasks' },
   { id: 'OPEN_REQUESTS', label_key: 'housekeeping.workspace.queues.OPEN_REQUESTS', panel: 'requests', resource: 'maintenance-requests' },
   { id: 'OVERDUE_REQUESTS', label_key: 'housekeeping.workspace.queues.OVERDUE_REQUESTS', panel: 'requests', resource: 'maintenance-requests' },
-  { id: 'SERVICE_HISTORY', label_key: 'housekeeping.workspace.queues.SERVICE_HISTORY', panel: 'history', resource: 'asset-service-logs' }]);
+  { id: 'SERVICE_HISTORY', label_key: 'housekeeping.workspace.queues.SERVICE_HISTORY', panel: 'history', resource: 'asset-service-logs' },
+]);
 
 const STATUS_OPTIONS_BY_RESOURCE = Object.freeze({
   'housekeeping-tasks': ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
   'maintenance-requests': ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
-  assets: ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']});
+  assets: ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+});
 
 const normalizeString = (value) => String(value || '').trim();
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
@@ -39,7 +43,8 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: page * limit < total,
-  hasPreviousPage: page > 1});
+  hasPreviousPage: page > 1,
+});
 
 const buildWorkspacePath = (params = {}) => {
   const query = new URLSearchParams();
@@ -55,14 +60,16 @@ const mapLookupOption = (record, label, subtitle = null, meta = null) => ({
   id: safePublicId(record?.human_friendly_id, record?.id),
   label,
   subtitle,
-  meta});
+  meta,
+});
 
 const mapSummaryCards = (summary = {}) => [
   { id: 'pending_tasks', label_key: 'housekeeping.workspace.summary.pendingTasks', value: Number(summary.pending_tasks || 0) },
   { id: 'completed_today', label_key: 'housekeeping.workspace.summary.completedToday', value: Number(summary.completed_today || 0) },
   { id: 'open_requests', label_key: 'housekeeping.workspace.summary.openRequests', value: Number(summary.open_requests || 0) },
   { id: 'overdue_requests', label_key: 'housekeeping.workspace.summary.overdueRequests', value: Number(summary.overdue_requests || 0) },
-  { id: 'total_assets', label_key: 'housekeeping.workspace.summary.totalAssets', value: Number(summary.total_assets || 0) }];
+  { id: 'total_assets', label_key: 'housekeeping.workspace.summary.totalAssets', value: Number(summary.total_assets || 0) },
+];
 
 const mapQueueSummaries = (queueCounts = {}) =>
   QUEUE_DEFINITIONS.map((definition) => ({
@@ -74,7 +81,9 @@ const mapQueueSummaries = (queueCounts = {}) =>
     target_path: buildWorkspacePath({
       panel: definition.panel,
       resource: definition.resource,
-      queue: definition.id})}));
+      queue: definition.id,
+    }),
+  }));
 
 const mapPanelSummaries = (summary = {}, queueCounts = {}) =>
   PANEL_DEFINITIONS.map((panel) => {
@@ -90,7 +99,8 @@ const mapPanelSummaries = (summary = {}, queueCounts = {}) =>
       label_key: panel.label_key,
       default_resource: panel.default_resource,
       count,
-      target_path: buildWorkspacePath({ panel: panel.id, resource: panel.default_resource })};
+      target_path: buildWorkspacePath({ panel: panel.id, resource: panel.default_resource }),
+    };
   });
 
 const mapSpotlight = (queueCounts = {}) =>
@@ -118,7 +128,8 @@ const mapItem = (resource, item) => {
       scheduled_at: item?.scheduled_at || null,
       completed_at: item?.completed_at || null,
       timeline_at: item?.completed_at || item?.scheduled_at || item?.updated_at || item?.created_at || null,
-      target_path: `/housekeeping/housekeeping-tasks/${safePublicId(item?.human_friendly_id, item?.id)}`};
+      target_path: `/housekeeping/housekeeping-tasks/${safePublicId(item?.human_friendly_id, item?.id)}`,
+    };
   }
 
   if (resource === 'housekeeping-schedules') {
@@ -137,7 +148,8 @@ const mapItem = (resource, item) => {
       start_date: item?.start_date || null,
       end_date: item?.end_date || null,
       timeline_at: item?.start_date || item?.updated_at || item?.created_at || null,
-      target_path: `/housekeeping/housekeeping-schedules/${safePublicId(item?.human_friendly_id, item?.id)}`};
+      target_path: `/housekeeping/housekeeping-schedules/${safePublicId(item?.human_friendly_id, item?.id)}`,
+    };
   }
 
   if (resource === 'maintenance-requests') {
@@ -156,7 +168,8 @@ const mapItem = (resource, item) => {
       reported_at: item?.reported_at || null,
       resolved_at: item?.resolved_at || null,
       timeline_at: item?.reported_at || item?.updated_at || item?.created_at || null,
-      target_path: `/housekeeping/maintenance-requests/${safePublicId(item?.human_friendly_id, item?.id)}`};
+      target_path: `/housekeeping/maintenance-requests/${safePublicId(item?.human_friendly_id, item?.id)}`,
+    };
   }
 
   if (resource === 'assets') {
@@ -171,7 +184,8 @@ const mapItem = (resource, item) => {
       facility_id: safePublicId(item?.facility?.human_friendly_id, item?.facility_id),
       facility_label: item?.facility?.name || null,
       timeline_at: item?.updated_at || item?.created_at || null,
-      target_path: `/housekeeping/assets/${safePublicId(item?.human_friendly_id, item?.id)}`};
+      target_path: `/housekeeping/assets/${safePublicId(item?.human_friendly_id, item?.id)}`,
+    };
   }
 
   return {
@@ -188,7 +202,8 @@ const mapItem = (resource, item) => {
     facility_label: item?.asset?.facility?.name || null,
     serviced_at: item?.serviced_at || null,
     timeline_at: item?.serviced_at || item?.updated_at || item?.created_at || null,
-    target_path: `/housekeeping/asset-service-logs/${safePublicId(item?.human_friendly_id, item?.id)}`};
+    target_path: `/housekeeping/asset-service-logs/${safePublicId(item?.human_friendly_id, item?.id)}`,
+  };
 };
 
 const resolveScopedFilters = async (filters = {}, user = {}) => {
@@ -199,22 +214,26 @@ const resolveScopedFilters = async (filters = {}, user = {}) => {
     priority: normalizeString(filters.priority) || undefined,
     search: normalizeString(filters.search) || undefined,
     queue: normalizeString(filters.queue) || undefined,
-    datePreset: normalizeString(filters.date_preset) || undefined};
+    datePreset: normalizeString(filters.date_preset) || undefined,
+  };
 
   scopedFilters.facilityId = await resolveIdentifierForFilter({
     value: filters.facility_id || user?.facility_id || user?.facilityId,
     model: 'facility',
-    where: tenantId ? { tenant_id: tenantId } : {}});
+    where: tenantId ? { tenant_id: tenantId } : {},
+  });
 
   scopedFilters.roomId = await resolveIdentifierForFilter({
     value: filters.room_id,
     model: 'room',
-    where: tenantId ? { tenant_id: tenantId } : {}});
+    where: tenantId ? { tenant_id: tenantId } : {},
+  });
 
   scopedFilters.assigneeId = await resolveIdentifierForFilter({
     value: filters.assignee_id,
     model: 'staff_profile',
-    where: tenantId ? { tenant_id: tenantId } : {}});
+    where: tenantId ? { tenant_id: tenantId } : {},
+  });
 
   return scopedFilters;
 };
@@ -228,7 +247,8 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 
   const itemFilters = {
     ...scopedFilters,
     status: statusOptions.includes(scopedFilters.status) ? scopedFilters.status : undefined,
-    priority: priorityOptions.includes(scopedFilters.priority) ? scopedFilters.priority : undefined};
+    priority: priorityOptions.includes(scopedFilters.priority) ? scopedFilters.priority : undefined,
+  };
   const skip = (page - 1) * limit;
   const orderBy = { [sortBy || 'updated_at']: order === 'asc' ? 'asc' : 'desc' };
 
@@ -236,7 +256,8 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 
     housekeepingWorkspaceRepository.findSummary(scopedFilters),
     housekeepingWorkspaceRepository.findQueueCounts(scopedFilters),
     housekeepingWorkspaceRepository.findItems({ resource, filters: itemFilters, skip, take: limit, orderBy }),
-    housekeepingWorkspaceRepository.findLookups(scopedFilters)]);
+    housekeepingWorkspaceRepository.findLookups(scopedFilters),
+  ]);
 
   return {
     summary: mapSummaryCards(summary),
@@ -254,7 +275,8 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 
       assignee_id: safePublicId(undefined, scopedFilters.assigneeId),
       date_preset: normalizeString(filters.date_preset) || null,
       id: normalizeString(filters.id) || null,
-      action: normalizeString(filters.action) || null},
+      action: normalizeString(filters.action) || null,
+    },
     lookups: {
       facilities: (lookups.facilities || []).map((entry) =>
         mapLookupOption(entry, entry.name, entry.facility_type || null, { facility_type: entry.facility_type || null })
@@ -270,10 +292,12 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 
       ),
       statuses: statusOptions.map((entry) => ({ id: entry, label: entry, subtitle: null, meta: null })),
       priorities: priorityOptions.map((entry) => ({ id: entry, label: entry, subtitle: null, meta: null })),
-      queues: QUEUE_DEFINITIONS.map((entry) => ({ id: entry.id, label: entry.id, subtitle: entry.panel, meta: { resource: entry.resource } }))},
+      queues: QUEUE_DEFINITIONS.map((entry) => ({ id: entry.id, label: entry.id, subtitle: entry.panel, meta: { resource: entry.resource } })),
+    },
     items: (listResult.items || []).map((item) => mapItem(resource, item)),
     pagination: buildPagination(page, limit, Number(listResult.total || 0)),
-    spotlight: mapSpotlight(queueCounts)};
+    spotlight: mapSpotlight(queueCounts),
+  };
 };
 
 const getLookups = async (filters = {}, user = {}) => {
@@ -292,9 +316,11 @@ const getLookups = async (filters = {}, user = {}) => {
     ),
     assets: (lookups.assets || []).map((entry) =>
       mapLookupOption(entry, entry.name, entry.asset_tag || entry.status || null, { status: entry.status || null })
-    )};
+    ),
+  };
 };
 
 module.exports = {
   getWorkspace,
-  getLookups};
+  getLookups,
+};

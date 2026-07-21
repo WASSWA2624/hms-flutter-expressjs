@@ -9,7 +9,6 @@ const createBreakGlassAccessSchema = z
   .object({
     tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
     facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-    branch_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     patient_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     target_resource_type: z.string().trim().min(1).max(120),
     target_resource_id: z.string().trim().max(64).optional().nullable(),

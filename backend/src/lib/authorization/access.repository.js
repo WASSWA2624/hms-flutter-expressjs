@@ -9,7 +9,6 @@ const ACTIVE_BREAK_GLASS_STATUSES = Object.freeze({
 const findApplicablePolicies = async ({
   tenant_id,
   facility_id,
-  branch_id,
   department_id,
   resource_type,
   action,
@@ -32,8 +31,6 @@ const findApplicablePolicies = async ({
       AND: [
         {
           OR: [
-            { branch_id: null },
-            { branch_id },
           ],
         },
         {
@@ -307,7 +304,6 @@ const resolveOfficeScopedContext = async (model, identifier) => {
     id: record.id,
     tenant_id: record.tenant_id,
     facility_id: record.facility_id || null,
-    branch_id: record.branch_id || null,
   };
 };
 

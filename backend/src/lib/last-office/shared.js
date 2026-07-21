@@ -22,8 +22,7 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: page * limit < total,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const decimalToString = (value) => {
   if (value === undefined || value === null) return null;
@@ -38,8 +37,7 @@ const serializeBase = (record) => ({
   version: Number(record?.version || 1),
   etag: record?.etag || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeOfficeContext = (record) => ({
   ...serializeBase(record),
@@ -55,8 +53,7 @@ const serializeOfficeContext = (record) => ({
   closed_at: record?.closed_at || null,
   handover_due_at: record?.handover_due_at || null,
   notes: record?.notes || null,
-  metadata_json: record?.metadata_json || null,
-});
+  metadata_json: record?.metadata_json || null});
 
 const serializeShiftClose = (record) => ({
   ...serializeBase(record),
@@ -73,8 +70,7 @@ const serializeShiftClose = (record) => ({
   submitted_at: record?.submitted_at || null,
   approved_at: record?.approved_at || null,
   notes: record?.notes || null,
-  evidence_json: record?.evidence_json || null,
-});
+  evidence_json: record?.evidence_json || null});
 
 const serializeDayClose = (record) => ({
   ...serializeBase(record),
@@ -88,8 +84,7 @@ const serializeDayClose = (record) => ({
   submitted_at: record?.submitted_at || null,
   approved_at: record?.approved_at || null,
   notes: record?.notes || null,
-  evidence_json: record?.evidence_json || null,
-});
+  evidence_json: record?.evidence_json || null});
 
 const serializeHandover = (record) => ({
   ...serializeBase(record),
@@ -101,8 +96,7 @@ const serializeHandover = (record) => ({
   signoff_notes: record?.signoff_notes || null,
   accepted_notes: record?.accepted_notes || null,
   submitted_at: record?.submitted_at || null,
-  accepted_at: record?.accepted_at || null,
-});
+  accepted_at: record?.accepted_at || null});
 
 const serializeCustodySnapshot = (record) => ({
   ...serializeBase(record),
@@ -114,8 +108,7 @@ const serializeCustodySnapshot = (record) => ({
   controlled_items_json: record?.controlled_items_json || null,
   captured_at: record?.captured_at || null,
   finalized_at: record?.finalized_at || null,
-  notes: record?.notes || null,
-});
+  notes: record?.notes || null});
 
 const serializeCloseoutPack = (record) => ({
   ...serializeBase(record),
@@ -141,8 +134,7 @@ const serializeCloseoutPack = (record) => ({
   generated_at: record?.generated_at || null,
   error_message: record?.error_message || null,
   summary_json: record?.summary_json || null,
-  parameter_overrides_json: record?.parameter_overrides_json || null,
-});
+  parameter_overrides_json: record?.parameter_overrides_json || null});
 
 const buildContext = (req) => ({
   user: req.user || {},
@@ -150,8 +142,7 @@ const buildContext = (req) => ({
   tenant_id: req.user?.tenant_id || req.user?.tenantId || req.body?.tenant_id || null,
   facility_id: req.user?.facility_id || req.user?.facilityId || req.body?.facility_id || null,
   ip_address: req.ip,
-  user_agent: req.get ? req.get('user-agent') : null,
-});
+  user_agent: req.get ? req.get('user-agent') : null});
 
 const ensureTenantId = (value) => {
   const normalized = normalizeString(value);
@@ -168,18 +159,14 @@ const resolveScopedIdentifiers = async ({ payload = {}, context = {} } = {}) => 
     field: 'facility_id',
     model: 'facility',
     nullable: true,
-    where: { tenant_id: context.tenant_id || payload.tenant_id || undefined },
-  }),
-});
+    where: { tenant_id: context.tenant_id || payload.tenant_id || undefined }})});
 
 const resolveListScopedIdentifiers = async ({ filters = {}, context = {} } = {}) => ({
   tenant_id: ensureTenantId(context.tenant_id || filters.tenant_id),
   facility_id: await resolveIdentifierForFilter({
     value: filters.facility_id ?? context.facility_id,
     model: 'facility',
-    where: { tenant_id: context.tenant_id || filters.tenant_id || undefined },
-  }),
-});
+    where: { tenant_id: context.tenant_id || filters.tenant_id || undefined }})});
 
 module.exports = {
   buildContext,
@@ -195,5 +182,4 @@ module.exports = {
   serializeDayClose,
   serializeHandover,
   serializeOfficeContext,
-  serializeShiftClose,
-};
+  serializeShiftClose};

@@ -12,12 +12,14 @@ const {
   buildWorkflow,
   generateRosterAssignments: generateRosterAssignmentsCore,
   resolveRecordOrThrow,
-  resolveDisplayId} = require('@services/hr-workspace/hr-roster-engine');
+  resolveDisplayId,
+} = require('@services/hr-workspace/hr-roster-engine');
 const {
   calculateCompensationAmount,
   computeEligibleWorkdays,
   normalizeMoney,
-  sumCompensationAmounts} = require('@services/hr-workspace/payroll-calculation');
+  sumCompensationAmounts,
+} = require('@services/hr-workspace/payroll-calculation');
 const { loadStaffPayrollActivity } = require('@services/hr-workspace/hr-payroll-activity');
 
 const DEFAULT_PANEL = 'staffing';
@@ -30,7 +32,8 @@ const HR_RECIPIENT_ROLES = Object.freeze([
   ROLES.HR,
   ROLES.OPERATIONS,
   ROLES.NURSE,
-  ROLES.DOCTOR]);
+  ROLES.DOCTOR,
+]);
 
 const WORKBENCH_PANELS = Object.freeze([
   {
@@ -38,37 +41,44 @@ const WORKBENCH_PANELS = Object.freeze([
     label_key: 'hr.workbench.panels.overview',
     default_resource: 'staff-profiles',
     resources: ['staff-profiles'],
-    visible: true},
+    visible: true,
+  },
   {
     id: 'staffing',
     label_key: 'hr.workbench.panels.staffing',
     default_resource: 'staff-profiles',
     resources: ['staff-positions', 'staff-profiles', 'staff-assignments', 'staff-leaves', 'staff-availabilities'],
-    visible: true},
+    visible: true,
+  },
   {
     id: 'roster',
     label_key: 'hr.workbench.panels.roster',
     default_resource: 'nurse-rosters',
     resources: ['nurse-rosters', 'roster-day-offs'],
-    visible: true},
+    visible: true,
+  },
   {
     id: 'shifts',
     label_key: 'hr.workbench.panels.shifts',
     default_resource: 'shifts',
     resources: ['shifts', 'shift-assignments', 'shift-swap-requests', 'shift-templates'],
-    visible: true},
+    visible: true,
+  },
   {
     id: 'payroll',
     label_key: 'hr.workbench.panels.payroll',
     default_resource: 'payroll-runs',
     resources: ['payroll-runs', 'payroll-items'],
-    visible: true},
+    visible: true,
+  },
   {
     id: 'onboarding',
     label_key: 'hr.workbench.panels.onboarding',
     default_resource: 'doctors',
     resources: ['doctors'],
-    visible: false}]);
+    visible: false,
+  },
+]);
 
 const RESOURCE_PANEL_MAP = Object.freeze(
   WORKBENCH_PANELS.reduce((acc, panel) => {
@@ -85,7 +95,8 @@ const QUEUE_DEFINITIONS = Object.freeze([
   { id: 'ROSTER_DRAFTS', label_key: 'hr.workbench.queues.ROSTER_DRAFTS', panel: 'roster', resource: 'nurse-rosters' },
   { id: 'UNASSIGNED_SHIFTS', label_key: 'hr.workbench.queues.UNASSIGNED_SHIFTS', panel: 'shifts', resource: 'shifts' },
   { id: 'PAYROLL_DRAFTS', label_key: 'hr.workbench.queues.PAYROLL_DRAFTS', panel: 'payroll', resource: 'payroll-runs' },
-  { id: 'OVERDUE_SHIFTS', label_key: 'hr.workbench.queues.OVERDUE_SHIFTS', panel: 'shifts', resource: 'shifts' }]);
+  { id: 'OVERDUE_SHIFTS', label_key: 'hr.workbench.queues.OVERDUE_SHIFTS', panel: 'shifts', resource: 'shifts' },
+]);
 
 const LEGACY_RESOURCE_CONFIG = Object.freeze({
   'staff-positions': { model: 'staff_position', panel: 'staffing', resource: 'staff-positions' },
@@ -101,7 +112,8 @@ const LEGACY_RESOURCE_CONFIG = Object.freeze({
   'shift-templates': { model: 'shift_template', panel: 'shifts', resource: 'shift-templates' },
   'payroll-runs': { model: 'payroll_run', panel: 'payroll', resource: 'payroll-runs' },
   'payroll-items': { model: 'payroll_item', panel: 'payroll', resource: 'payroll-items' },
-  doctors: { model: 'doctor', panel: 'onboarding', resource: 'doctors' }});
+  doctors: { model: 'doctor', panel: 'onboarding', resource: 'doctors' },
+});
 
 const RESOURCE_STATUS_ENUMS = Object.freeze({
   'staff-positions': ['ACTIVE', 'INACTIVE'],
@@ -112,7 +124,8 @@ const RESOURCE_STATUS_ENUMS = Object.freeze({
   shifts: ['SCHEDULED', 'COMPLETED', 'CANCELLED'],
   'shift-swap-requests': ['SCHEDULED', 'COMPLETED', 'CANCELLED'],
   'shift-templates': ['ACTIVE', 'INACTIVE'],
-  'payroll-runs': ['DRAFT', 'PROCESSED', 'PAID', 'CANCELLED']});
+  'payroll-runs': ['DRAFT', 'PROCESSED', 'PAID', 'CANCELLED'],
+});
 
 const SHIFT_TYPE_OPTIONS = Object.freeze(['DAY', 'NIGHT', 'SWING', 'ON_CALL']);
 const {
@@ -122,15 +135,18 @@ const {
   leaveTypeOptions,
   leaveHalfDayPeriodOptions,
   enrichStaffPositionOption,
-  staffPositionCatalogOptions} = require('@lib/hr/reference-data');
+  staffPositionCatalogOptions,
+} = require('@lib/hr/reference-data');
 const {
   HR_ASSIGNABLE_ROLE_NAMES,
   enrichRoleOption,
   sortRoleRecords,
-  roleLabel} = require('@lib/hr/role-catalog');
+  roleLabel,
+} = require('@lib/hr/role-catalog');
 const {
   DEFAULT_FACILITY_DEPARTMENT_NAMES,
-  inferDepartmentType} = require('@lib/setup/facility-structure-catalog');
+  inferDepartmentType,
+} = require('@lib/setup/facility-structure-catalog');
 const SYSTEM_CRITICAL_ROLES = new Set([ROLES.SUPER_ADMIN]);
 
 const normalizeString = (value) => String(value || '').trim();
@@ -176,7 +192,8 @@ const formatShiftOptionLabel = (entry) =>
     formatShiftScheduleLabel(entry.start_time, entry.end_time),
     normalizeString(entry.nurse_roster?.department?.name || entry.nurse_roster?.department?.short_name),
     resolvePublicIdentifier(entry.human_friendly_id),
-    entry.status]
+    entry.status,
+  ]
     .filter(Boolean)
     .join(' | ');
 
@@ -186,7 +203,8 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: page * limit < total,
-  hasPreviousPage: page > 1});
+  hasPreviousPage: page > 1,
+});
 
 const buildWorkbenchPath = (params = {}) => {
   const query = new URLSearchParams();
@@ -200,7 +218,8 @@ const buildWorkbenchPath = (params = {}) => {
     'departmentId',
     'staffProfileId',
     'rosterId',
-    'payrollRunId'].forEach((key) => {
+    'payrollRunId',
+  ].forEach((key) => {
     const value = normalizeString(params[key]);
     if (value) query.set(key, value);
   });
@@ -220,7 +239,9 @@ const buildQueueMeta = (queue, count) => {
     target_path: buildWorkbenchPath({
       panel: definition?.panel || undefined,
       resource: definition?.resource || undefined,
-      queue})};
+      queue,
+    }),
+  };
 };
 
 const buildWorkspaceSpotlight = (summary = {}) => {
@@ -230,7 +251,8 @@ const buildWorkspaceSpotlight = (summary = {}) => {
     ROSTER_DRAFTS: Number(summary.draft_rosters || 0),
     UNASSIGNED_SHIFTS: Number(summary.unassigned_shifts || 0),
     PAYROLL_DRAFTS: Number(summary.payroll_draft_runs || 0),
-    OVERDUE_SHIFTS: Number(summary.overdue_shifts || 0)};
+    OVERDUE_SHIFTS: Number(summary.overdue_shifts || 0),
+  };
 
   return QUEUE_DEFINITIONS.map((definition) => ({
     queue: definition.id,
@@ -241,7 +263,9 @@ const buildWorkspaceSpotlight = (summary = {}) => {
     target_path: buildWorkbenchPath({
       panel: definition.panel,
       resource: definition.resource,
-      queue: definition.id})}))
+      queue: definition.id,
+    }),
+  }))
     .filter((entry) => entry.count > 0)
     .sort((left, right) => right.count - left.count)
     .slice(0, 6);
@@ -269,7 +293,8 @@ const buildPanelSummaries = (summary = {}) =>
       resources: panel.resources,
       visible: panel.visible !== false,
       count,
-      target_path: buildWorkbenchPath({ panel: panel.id, resource: panel.default_resource })};
+      target_path: buildWorkbenchPath({ panel: panel.id, resource: panel.default_resource }),
+    };
   });
 
 const mapLeave = (item) => ({
@@ -303,7 +328,9 @@ const mapLeave = (item) => ({
     resource: 'staff-leaves',
     id: resolveDisplayId(item),
     action: 'view',
-    staffProfileId: resolveDisplayId(item.staff_profile || {})})});
+    staffProfileId: resolveDisplayId(item.staff_profile || {}),
+  }),
+});
 
 const mapSwap = (item) => ({
   id: resolveDisplayId(item),
@@ -325,7 +352,9 @@ const mapSwap = (item) => ({
     panel: 'shifts',
     resource: 'shift-swap-requests',
     id: resolveDisplayId(item),
-    action: 'view'})});
+    action: 'view',
+  }),
+});
 
 const mapRoster = (item) => ({
   id: resolveDisplayId(item),
@@ -346,7 +375,9 @@ const mapRoster = (item) => ({
     resource: 'nurse-rosters',
     id: resolveDisplayId(item),
     action: 'view',
-    rosterId: resolveDisplayId(item)})});
+    rosterId: resolveDisplayId(item),
+  }),
+});
 
 const mapShift = (item, queue = 'UNASSIGNED_SHIFTS') => ({
   id: resolveDisplayId(item),
@@ -371,7 +402,9 @@ const mapShift = (item, queue = 'UNASSIGNED_SHIFTS') => ({
     id: resolveDisplayId(item),
     action: 'view',
     queue,
-    rosterId: resolveDisplayId(item.nurse_roster || {})})});
+    rosterId: resolveDisplayId(item.nurse_roster || {}),
+  }),
+});
 
 const mapPayroll = (item) => ({
   id: resolveDisplayId(item),
@@ -388,7 +421,9 @@ const mapPayroll = (item) => ({
     resource: 'payroll-runs',
     id: resolveDisplayId(item),
     action: 'view',
-    payrollRunId: resolveDisplayId(item)})});
+    payrollRunId: resolveDisplayId(item),
+  }),
+});
 
 const buildLeaveSearchWhere = (search) => {
   if (!hasText(search)) return {};
@@ -401,7 +436,9 @@ const buildLeaveSearchWhere = (search) => {
       { staff_profile: { staff_number: { contains: search, mode: 'insensitive' } } },
       { staff_profile: { user: { profile: { first_name: { contains: search, mode: 'insensitive' } } } } },
       { staff_profile: { user: { profile: { last_name: { contains: search, mode: 'insensitive' } } } } },
-      { staff_profile: { user: { email: { contains: search, mode: 'insensitive' } } } }]};
+      { staff_profile: { user: { email: { contains: search, mode: 'insensitive' } } } },
+    ],
+  };
 };
 
 const buildSwapSearchWhere = (search) => {
@@ -414,7 +451,9 @@ const buildSwapSearchWhere = (search) => {
       { requester: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
       { requester: { staff_number: { contains: search, mode: 'insensitive' } } },
       { target: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
-      { target: { staff_number: { contains: search, mode: 'insensitive' } } }]};
+      { target: { staff_number: { contains: search, mode: 'insensitive' } } },
+    ],
+  };
 };
 
 const buildRosterSearchWhere = (search) => {
@@ -422,7 +461,9 @@ const buildRosterSearchWhere = (search) => {
   return {
     OR: [
       { human_friendly_id: { contains: search, mode: 'insensitive' } },
-      { status: { contains: search, mode: 'insensitive' } }]};
+      { status: { contains: search, mode: 'insensitive' } },
+    ],
+  };
 };
 
 const buildPayrollSearchWhere = (search) => {
@@ -430,7 +471,9 @@ const buildPayrollSearchWhere = (search) => {
   return {
     OR: [
       { human_friendly_id: { contains: search, mode: 'insensitive' } },
-      { status: { contains: search, mode: 'insensitive' } }]};
+      { status: { contains: search, mode: 'insensitive' } },
+    ],
+  };
 };
 
 const buildShiftSearchWhere = (search) => {
@@ -441,30 +484,37 @@ const buildShiftSearchWhere = (search) => {
       { shift_type: { contains: search, mode: 'insensitive' } },
       { status: { contains: search, mode: 'insensitive' } },
       { nurse_roster: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
-      { shift_template: { human_friendly_id: { contains: search, mode: 'insensitive' } } }]};
+      { shift_template: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
+    ],
+  };
 };
 
 const buildScope = async (filters = {}) => {
   const facilityId = await resolveIdentifierForFilter({
     value: filters.facility_id,
     model: 'facility',
-    where: { deleted_at: null }});
+    where: { deleted_at: null },
+  });
   const departmentId = await resolveIdentifierForFilter({
     value: filters.department_id,
     model: 'department',
-    where: { deleted_at: null }});
+    where: { deleted_at: null },
+  });
   const staffProfileId = await resolveIdentifierForFilter({
     value: filters.staff_profile_id,
     model: 'staff_profile',
-    where: { deleted_at: null }});
+    where: { deleted_at: null },
+  });
   const rosterId = await resolveIdentifierForFilter({
     value: filters.roster_id,
     model: 'nurse_roster',
-    where: { deleted_at: null }});
+    where: { deleted_at: null },
+  });
   const payrollRunId = await resolveIdentifierForFilter({
     value: filters.payroll_run_id,
     model: 'payroll_run',
-    where: { deleted_at: null }});
+    where: { deleted_at: null },
+  });
 
   return {
     panel: normalizeString(filters.panel).toLowerCase() || null,
@@ -478,7 +528,8 @@ const buildScope = async (filters = {}) => {
     payrollRunId,
     from: normalizeDate(filters.date_from || filters.from),
     to: normalizeDate(filters.date_to || filters.to),
-    search: normalizeString(filters.search) || null};
+    search: normalizeString(filters.search) || null,
+  };
 };
 
 const resolveRoleRecipients = async ({ tenantId, facilityId = null }) => {
@@ -490,10 +541,14 @@ const resolveRoleRecipients = async ({ tenantId, facilityId = null }) => {
       tenant_id: tenantId,
       role: {
         deleted_at: null,
-        name: { in: HR_RECIPIENT_ROLES }},
-      ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {})},
+        name: { in: HR_RECIPIENT_ROLES },
+      },
+      ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {}),
+    },
     select: {
-      user_id: true}});
+      user_id: true,
+    },
+  });
 
   return rows.map((row) => row.user_id).filter(Boolean);
 };
@@ -508,7 +563,8 @@ const publishHrWorkspaceUpdate = async ({
   displayId = null,
   queue = null,
   targetPath = null,
-  extra = {}}) => {
+  extra = {},
+}) => {
   try {
     if (!tenantId) return;
 
@@ -527,8 +583,10 @@ const publishHrWorkspaceUpdate = async ({
         panel: panel || DEFAULT_PANEL,
         resource: resource || DEFAULT_RESOURCE,
         ...(displayId ? { id: displayId } : {}),
-        ...(queue ? { queue } : {})}),
-      ...extra});
+        ...(queue ? { queue } : {}),
+      }),
+      ...extra,
+    });
   } catch (_error) {
     // realtime delivery must never block a successful mutation
   }
@@ -551,55 +609,69 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
     swaps,
     rosters,
     payrollRuns,
-    shifts] = await Promise.all([
+    shifts,
+  ] = await Promise.all([
     repo.countStaffProfiles({
-      ...(scope.departmentId ? { department_id: scope.departmentId } : {})}),
+      ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
+    }),
     repo.countStaffLeaves({
       status: 'REQUESTED',
       ...(scope.staffProfileId ? { staff_profile_id: scope.staffProfileId } : {}),
-      ...(scope.departmentId ? { staff_profile: { department_id: scope.departmentId } } : {})}),
+      ...(scope.departmentId ? { staff_profile: { department_id: scope.departmentId } } : {}),
+    }),
     repo.countShiftSwaps({
       status: 'SCHEDULED',
       shift: {
         deleted_at: null,
-        ...(scope.facilityId ? { facility_id: scope.facilityId } : {})}}),
+        ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+      },
+    }),
     repo.countRosters({
       status: 'DRAFT',
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-      ...(scope.departmentId ? { department_id: scope.departmentId } : {})}),
+      ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
+    }),
     repo.countPayrollRuns({ status: 'DRAFT' }),
     repo.countShifts({
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-      assignments: { none: { deleted_at: null } }}),
+      assignments: { none: { deleted_at: null } },
+    }),
     repo.countShifts({
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
       start_time: { lt: now },
-      status: { in: ['SCHEDULED'] }}),
+      status: { in: ['SCHEDULED'] },
+    }),
     repo.findTimelineLeaves(
       {
         ...(scope.staffProfileId ? { staff_profile_id: scope.staffProfileId } : {}),
-        ...(scope.departmentId ? { staff_profile: { department_id: scope.departmentId } } : {})},
+        ...(scope.departmentId ? { staff_profile: { department_id: scope.departmentId } } : {}),
+      },
       timelineLimit
     ),
     repo.findTimelineSwaps(
       {
         shift: {
           deleted_at: null,
-          ...(scope.facilityId ? { facility_id: scope.facilityId } : {})}},
+          ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+        },
+      },
       timelineLimit
     ),
     repo.findTimelineRosters(
       {
         ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-        ...(scope.departmentId ? { department_id: scope.departmentId } : {})},
+        ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
+      },
       timelineLimit
     ),
     repo.findTimelinePayrollRuns({}, timelineLimit),
     repo.findTimelineShifts(
       {
-        ...(scope.facilityId ? { facility_id: scope.facilityId } : {})},
+        ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+      },
       timelineLimit
-    )]);
+    ),
+  ]);
 
   const summary = {
     total_staff: totalStaff,
@@ -608,7 +680,8 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
     draft_rosters: draftRosters,
     unassigned_shifts: unassignedShifts,
     payroll_draft_runs: draftPayroll,
-    overdue_shifts: overdueShifts};
+    overdue_shifts: overdueShifts,
+  };
 
   const queueSummaries = QUEUE_DEFINITIONS.map((definition) =>
     buildQueueMeta(
@@ -639,7 +712,9 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
         panel: 'staffing',
         resource: 'staff-leaves',
         id: resolveDisplayId(item),
-        action: 'view'})})),
+        action: 'view',
+      }),
+    })),
     ...swaps.map((item) => ({
       type: 'SWAP',
       action: item.status === 'COMPLETED' ? 'APPROVED' : 'UPDATED',
@@ -651,7 +726,9 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
         panel: 'shifts',
         resource: 'shift-swap-requests',
         id: resolveDisplayId(item),
-        action: 'view'})})),
+        action: 'view',
+      }),
+    })),
     ...rosters.map((item) => ({
       type: 'ROSTER',
       action: item.status === 'PUBLISHED' ? 'PUBLISHED' : 'UPDATED',
@@ -664,7 +741,9 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
         resource: 'nurse-rosters',
         id: resolveDisplayId(item),
         action: 'view',
-        rosterId: resolveDisplayId(item)})})),
+        rosterId: resolveDisplayId(item),
+      }),
+    })),
     ...payrollRuns.map((item) => ({
       type: 'PAYROLL',
       action: item.status === 'PROCESSED' ? 'PROCESSED' : 'UPDATED',
@@ -677,7 +756,9 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
         resource: 'payroll-runs',
         id: resolveDisplayId(item),
         action: 'view',
-        payrollRunId: resolveDisplayId(item)})})),
+        payrollRunId: resolveDisplayId(item),
+      }),
+    })),
     ...shifts.map((item) => ({
       type: 'SHIFT',
       action: 'UPDATED',
@@ -689,7 +770,10 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
         panel: 'shifts',
         resource: 'shifts',
         id: resolveDisplayId(item),
-        action: 'view'})}))]
+        action: 'view',
+      }),
+    })),
+  ]
     .filter((item) => item.timeline_at)
     .sort((left, right) => new Date(right.timeline_at).getTime() - new Date(left.timeline_at).getTime())
     .slice(0, timelineLimit);
@@ -710,17 +794,21 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20) => {
     defaults: {
       panel: requestedPanel,
       resource: requestedResource,
-      queue: scope.queue || null},
+      queue: scope.queue || null,
+    },
     panels: WORKBENCH_PANELS.map((panel) => ({
       id: panel.id,
       label_key: panel.label_key,
       default_resource: panel.default_resource,
       resources: panel.resources,
-      visible: panel.visible !== false})),
+      visible: panel.visible !== false,
+    })),
     timeline: {
       items: timelineItems,
-      pagination: buildPagination(page, timelineLimit, timelineItems.length)},
-    generated_at: new Date().toISOString()};
+      pagination: buildPagination(page, timelineLimit, timelineItems.length),
+    },
+    generated_at: new Date().toISOString(),
+  };
 };
 
 const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
@@ -733,9 +821,12 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
         ? {
             start_date: {
               ...(scope.from ? { gte: scope.from } : {}),
-              ...(scope.to ? { lte: scope.to } : {})}}
+              ...(scope.to ? { lte: scope.to } : {}),
+            },
+          }
         : {}),
-      ...buildLeaveSearchWhere(scope.search)};
+      ...buildLeaveSearchWhere(scope.search),
+    };
     const items = await repo.findManyLeaves({ where: whereClause, skip, take, orderBy });
     const total = await repo.countStaffLeaves(whereClause);
     return { items: items.map(mapLeave), total };
@@ -747,8 +838,10 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
       shift: {
         deleted_at: null,
         ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-        ...(scope.rosterId ? { nurse_roster_id: scope.rosterId } : {})},
-      ...buildSwapSearchWhere(scope.search)};
+        ...(scope.rosterId ? { nurse_roster_id: scope.rosterId } : {}),
+      },
+      ...buildSwapSearchWhere(scope.search),
+    };
     const items = await repo.findManyShiftSwaps({ where: whereClause, skip, take, orderBy });
     const total = await repo.countShiftSwaps(whereClause);
     return { items: items.map(mapSwap), total };
@@ -760,7 +853,8 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
       ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
       ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
       ...(scope.rosterId ? { id: scope.rosterId } : {}),
-      ...buildRosterSearchWhere(scope.search)};
+      ...buildRosterSearchWhere(scope.search),
+    };
     const items = await repo.findManyRosters({ where: whereClause, skip, take, orderBy });
     const total = await repo.countRosters(whereClause);
     return { items: items.map(mapRoster), total };
@@ -770,7 +864,8 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
     const whereClause = {
       status: scope.status || 'DRAFT',
       ...(scope.payrollRunId ? { id: scope.payrollRunId } : {}),
-      ...buildPayrollSearchWhere(scope.search)};
+      ...buildPayrollSearchWhere(scope.search),
+    };
     const items = await repo.findManyPayrollRuns({ where: whereClause, skip, take, orderBy });
     const total = await repo.countPayrollRuns(whereClause);
     return { items: items.map(mapPayroll), total };
@@ -782,7 +877,8 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
       ...(scope.rosterId ? { nurse_roster_id: scope.rosterId } : {}),
       start_time: { lt: new Date() },
       status: scope.status ? { equals: scope.status } : { in: ['SCHEDULED'] },
-      ...buildShiftSearchWhere(scope.search)};
+      ...buildShiftSearchWhere(scope.search),
+    };
     const items = await repo.findManyOverdueShifts({ where: whereClause, skip, take, orderBy });
     const total = await repo.countShifts(whereClause);
     return { items: items.map((item) => mapShift(item, 'OVERDUE_SHIFTS')), total };
@@ -796,15 +892,19 @@ const listQueueItems = async ({ queue, scope, skip, take, orderBy }) => {
       ? {
           start_time: {
             ...(scope.from ? { gte: scope.from } : {}),
-            ...(scope.to ? { lte: scope.to } : {})}}
+            ...(scope.to ? { lte: scope.to } : {}),
+          },
+        }
       : {}),
     ...(scope.status ? { status: scope.status } : {}),
-    ...buildShiftSearchWhere(scope.search)};
+    ...buildShiftSearchWhere(scope.search),
+  };
 
   const items = await repo.findManyUnassignedShifts({ where: whereClause, skip, take, orderBy });
   const total = await repo.countShifts({
     ...whereClause,
-    assignments: { none: { deleted_at: null } }});
+    assignments: { none: { deleted_at: null } },
+  });
   return { items: items.map((item) => mapShift(item, 'UNASSIGNED_SHIFTS')), total };
 };
 
@@ -827,7 +927,8 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
       scope,
       skip,
       take: limit,
-      orderBy: queueOrderBy});
+      orderBy: queueOrderBy,
+    });
     return {
       panel: scope.panel || RESOURCE_PANEL_MAP[scope.resource] || null,
       resource: scope.resource || QUEUE_DEFINITIONS.find((entry) => entry.id === queue)?.resource || null,
@@ -835,7 +936,8 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
       items,
       pagination: buildPagination(page, limit, total),
       sort_by: normalizeString(sortBy) || null,
-      order: safeOrder};
+      order: safeOrder,
+    };
   }
 
   const grouped = [];
@@ -851,7 +953,8 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
           ? { created_at: safeOrder }
           : currentQueue === 'UNASSIGNED_SHIFTS' || currentQueue === 'OVERDUE_SHIFTS'
             ? { start_time: safeOrder }
-            : { updated_at: safeOrder }});
+            : { updated_at: safeOrder },
+    });
     grouped.push({
       queue: currentQueue,
       total,
@@ -859,13 +962,16 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, sortBy = 'update
       target_path: buildWorkbenchPath({
         panel: QUEUE_DEFINITIONS.find((entry) => entry.id === currentQueue)?.panel,
         resource: QUEUE_DEFINITIONS.find((entry) => entry.id === currentQueue)?.resource,
-        queue: currentQueue})});
+        queue: currentQueue,
+      }),
+    });
   }
 
   return {
     panel: scope.panel || null,
     resource: scope.resource || null,
-    queues: grouped};
+    queues: grouped,
+  };
 };
 
 const getReferenceData = async (filters = {}) => {
@@ -880,42 +986,52 @@ const getReferenceData = async (filters = {}) => {
         tenant_id: tenantId,
         ...(scope.facilityId
           ? {
-              OR: [{ facility_id: scope.facilityId }, { facility_id: null }]}
-          : {})}
+              OR: [{ facility_id: scope.facilityId }, { facility_id: null }],
+            }
+          : {}),
+      }
     : {
         deleted_at: null,
-        ...(scope.facilityId ? { facility_id: scope.facilityId } : {})};
+        ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+      };
 
   const [facilities, departments, units, rooms, staffProfiles, staffPositions, rosters, payrollRuns, shiftTemplates, shifts, roles, users] =
     await Promise.all([
       prisma.facility.findMany({
         where: {
           deleted_at: null,
-          ...(scope.facilityId ? { id: scope.facilityId } : {})},
+          ...(scope.facilityId ? { id: scope.facilityId } : {}),
+        },
         orderBy: { name: 'asc' },
         take: 200,
-        select: { id: true, human_friendly_id: true, name: true, facility_type: true }}),
+        select: { id: true, human_friendly_id: true, name: true, facility_type: true },
+      }),
       prisma.department.findMany({
         where: {
           deleted_at: null,
           ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-          ...(scope.departmentId ? { id: scope.departmentId } : {})},
+          ...(scope.departmentId ? { id: scope.departmentId } : {}),
+        },
         orderBy: { name: 'asc' },
         take: 500,
-        select: { id: true, human_friendly_id: true, name: true, short_name: true, facility_id: true }}),
+        select: { id: true, human_friendly_id: true, name: true, short_name: true, facility_id: true },
+      }),
       prisma.unit.findMany({
         where: {
           deleted_at: null,
           ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-          ...(scope.departmentId ? { department_id: scope.departmentId } : {})},
+          ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
+        },
         orderBy: { name: 'asc' },
         take: 500,
-        select: { id: true, human_friendly_id: true, name: true, facility_id: true, department_id: true }}),
+        select: { id: true, human_friendly_id: true, name: true, facility_id: true, department_id: true },
+      }),
       prisma.room.findMany({
         where: {
           deleted_at: null,
           ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
-          ...(scope.departmentId ? { ward: { department_id: scope.departmentId } } : {})},
+          ...(scope.departmentId ? { ward: { department_id: scope.departmentId } } : {}),
+        },
         orderBy: { name: 'asc' },
         take: 500,
         select: {
@@ -923,12 +1039,15 @@ const getReferenceData = async (filters = {}) => {
           human_friendly_id: true,
           name: true,
           facility_id: true,
-          ward: { select: { department_id: true } }}}),
+          ward: { select: { department_id: true } },
+        },
+      }),
       prisma.staff_profile.findMany({
         where: {
           deleted_at: null,
           ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
-          ...(scope.staffProfileId ? { id: scope.staffProfileId } : {})},
+          ...(scope.staffProfileId ? { id: scope.staffProfileId } : {}),
+        },
         orderBy: { created_at: 'desc' },
         take: 200,
         select: {
@@ -944,7 +1063,13 @@ const getReferenceData = async (filters = {}) => {
               profile: {
                 select: {
                   first_name: true,
-                  last_name: true}}}}}}),
+                  last_name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
       prisma.staff_position.findMany({
         where: staffPositionWhere,
         orderBy: { name: 'asc' },
@@ -954,13 +1079,16 @@ const getReferenceData = async (filters = {}) => {
           human_friendly_id: true,
           name: true,
           department_id: true,
-          is_active: true}}),
+          is_active: true,
+        },
+      }),
       prisma.nurse_roster.findMany({
         where: {
           deleted_at: null,
           ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
           ...(scope.departmentId ? { department_id: scope.departmentId } : {}),
-          ...(scope.rosterId ? { id: scope.rosterId } : {})},
+          ...(scope.rosterId ? { id: scope.rosterId } : {}),
+        },
         orderBy: { period_start: 'desc' },
         take: 200,
         select: {
@@ -970,11 +1098,14 @@ const getReferenceData = async (filters = {}) => {
           department_id: true,
           period_start: true,
           period_end: true,
-          status: true}}),
+          status: true,
+        },
+      }),
       prisma.payroll_run.findMany({
         where: {
           deleted_at: null,
-          ...(scope.payrollRunId ? { id: scope.payrollRunId } : {})},
+          ...(scope.payrollRunId ? { id: scope.payrollRunId } : {}),
+        },
         orderBy: { period_start: 'desc' },
         take: 200,
         select: {
@@ -982,11 +1113,14 @@ const getReferenceData = async (filters = {}) => {
           human_friendly_id: true,
           period_start: true,
           period_end: true,
-          status: true}}),
+          status: true,
+        },
+      }),
       prisma.shift_template.findMany({
         where: {
           deleted_at: null,
-          ...(scope.facilityId ? { facility_id: scope.facilityId } : {})},
+          ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
+        },
         orderBy: { name: 'asc' },
         take: 200,
         select: {
@@ -1000,7 +1134,9 @@ const getReferenceData = async (filters = {}) => {
           weekly_schedule_json: true,
           is_active: true,
           created_at: true,
-          updated_at: true}}),
+          updated_at: true,
+        },
+      }),
       prisma.shift.findMany({
         where: {
           deleted_at: null,
@@ -1008,7 +1144,8 @@ const getReferenceData = async (filters = {}) => {
           ...(scope.facilityId ? { facility_id: scope.facilityId } : {}),
           ...(scope.departmentId
             ? { nurse_roster: { department_id: scope.departmentId } }
-            : {})},
+            : {}),
+        },
         orderBy: { start_time: 'desc' },
         take: 200,
         select: {
@@ -1023,7 +1160,9 @@ const getReferenceData = async (filters = {}) => {
             select: {
               id: true,
               human_friendly_id: true,
-              name: true}},
+              name: true,
+            },
+          },
           nurse_roster: {
             select: {
               id: true,
@@ -1033,13 +1172,20 @@ const getReferenceData = async (filters = {}) => {
                   id: true,
                   human_friendly_id: true,
                   name: true,
-                  short_name: true}}}}}}),
+                  short_name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
       prisma.role.findMany({
         where: {
           deleted_at: null,
           name: { in: [...HR_ASSIGNABLE_ROLE_NAMES] },
           ...(tenantId ? { tenant_id: tenantId } : {}),
-          facility_id: null},
+          facility_id: null,
+        },
         orderBy: { name: 'asc' },
         take: 200,
         select: {
@@ -1048,7 +1194,10 @@ const getReferenceData = async (filters = {}) => {
           name: true,
           permissions: {
             where: { deleted_at: null },
-            select: { permission_id: true }}}}),
+            select: { permission_id: true },
+          },
+        },
+      }),
       prisma.user.findMany({
         where: {
           deleted_at: null,
@@ -1057,7 +1206,10 @@ const getReferenceData = async (filters = {}) => {
           roles: {
             none: {
               deleted_at: null,
-              role: { deleted_at: null, name: ROLES.PATIENT }}}},
+              role: { deleted_at: null, name: ROLES.PATIENT },
+            },
+          },
+        },
         orderBy: { email: 'asc' },
         take: 200,
         select: {
@@ -1068,15 +1220,23 @@ const getReferenceData = async (filters = {}) => {
           profile: {
             select: {
               first_name: true,
-              last_name: true}},
+              last_name: true,
+            },
+          },
           staff_profile: {
             where: { deleted_at: null },
-            select: { id: true, human_friendly_id: true }},
+            select: { id: true, human_friendly_id: true },
+          },
           roles: {
             where: { deleted_at: null },
             take: 3,
             select: {
-              role: { select: { name: true } }}}}})]);
+              role: { select: { name: true } },
+            },
+          },
+        },
+      }),
+    ]);
 
   const toOption = (value, label, extra = {}) => {
     const publicId = resolvePublicIdentifier(value?.human_friendly_id, value?.display_id);
@@ -1086,34 +1246,39 @@ const getReferenceData = async (filters = {}) => {
       value: optionValue,
       label,
       display_id: publicId || null,
-      ...extra};
+      ...extra,
+    };
   };
 
   return {
     facilities: facilities
       .map((entry) =>
         toOption(entry, normalizeString(entry.name) || resolvePublicIdentifier(entry.human_friendly_id), {
-          facility_type: entry.facility_type || null})
+          facility_type: entry.facility_type || null,
+        })
       )
       .filter(Boolean),
     departments: departments
       .map((entry) =>
         toOption(entry, normalizeString(entry.name || entry.short_name) || resolvePublicIdentifier(entry.human_friendly_id), {
-          facility_id: entry.facility_id || null})
+          facility_id: entry.facility_id || null,
+        })
       )
       .filter(Boolean),
     units: units
       .map((entry) =>
         toOption(entry, normalizeString(entry.name) || resolvePublicIdentifier(entry.human_friendly_id), {
           facility_id: entry.facility_id || null,
-          department_id: entry.department_id || null})
+          department_id: entry.department_id || null,
+        })
       )
       .filter(Boolean),
     rooms: rooms
       .map((entry) =>
         toOption(entry, normalizeString(entry.name) || resolvePublicIdentifier(entry.human_friendly_id), {
           facility_id: entry.facility_id || null,
-          department_id: entry.ward?.department_id || null})
+          department_id: entry.ward?.department_id || null,
+        })
       )
       .filter(Boolean),
     staff_profiles: staffProfiles
@@ -1133,7 +1298,8 @@ const getReferenceData = async (filters = {}) => {
           label,
           display_id: displayId,
           department_id: entry.department_id || null,
-          practitioner_type: entry.practitioner_type || null};
+          practitioner_type: entry.practitioner_type || null,
+        };
       })
       .filter(Boolean),
     staff_positions: (() => {
@@ -1147,13 +1313,15 @@ const getReferenceData = async (filters = {}) => {
         toOption(entry, [resolvePublicIdentifier(entry.human_friendly_id), formatDateRangeLabel(entry.period_start, entry.period_end), entry.status].filter(Boolean).join(' | '), {
           facility_id: entry.facility_id || null,
           department_id: entry.department_id || null,
-          status: entry.status || null})
+          status: entry.status || null,
+        })
       )
       .filter(Boolean),
     payroll_runs: payrollRuns
       .map((entry) =>
         toOption(entry, [resolvePublicIdentifier(entry.human_friendly_id), formatDateRangeLabel(entry.period_start, entry.period_end), entry.status].filter(Boolean).join(' | '), {
-          status: entry.status || null})
+          status: entry.status || null,
+        })
       )
       .filter(Boolean),
     shift_templates: shiftTemplates
@@ -1166,7 +1334,8 @@ const getReferenceData = async (filters = {}) => {
           weekly_schedule_json: entry.weekly_schedule_json || null,
           is_active: Boolean(entry.is_active),
           created_at: entry.created_at || null,
-          updated_at: entry.updated_at || null})
+          updated_at: entry.updated_at || null,
+        })
       )
       .filter(Boolean),
     shifts: shifts
@@ -1181,7 +1350,8 @@ const getReferenceData = async (filters = {}) => {
           department_name:
             normalizeString(entry.nurse_roster?.department?.name || entry.nurse_roster?.department?.short_name) ||
             null,
-          shift_template_name: normalizeString(entry.shift_template?.name) || null})
+          shift_template_name: normalizeString(entry.shift_template?.name) || null,
+        })
       )
       .filter(Boolean),
     roles: sortRoleRecords(roles)
@@ -1190,7 +1360,8 @@ const getReferenceData = async (filters = {}) => {
         const enriched = enrichRoleOption(
           {
             ...entry,
-            is_system_critical: SYSTEM_CRITICAL_ROLES.has(roleName)}
+            is_system_critical: SYSTEM_CRITICAL_ROLES.has(roleName),
+          }
         );
         if (!enriched) return null;
         return {
@@ -1201,7 +1372,8 @@ const getReferenceData = async (filters = {}) => {
           name: enriched.name,
           category: enriched.category,
           permission_count: enriched.permission_count,
-          is_system_critical: enriched.is_system_critical};
+          is_system_critical: enriched.is_system_critical,
+        };
       })
       .filter(Boolean),
     users: users
@@ -1226,7 +1398,8 @@ const getReferenceData = async (filters = {}) => {
           position_title: entry.position_title || null,
           role_hint: roleHint || null,
           has_staff_profile: Boolean(entry.staff_profile),
-          staff_profile_id: resolvePublicIdentifier(entry.staff_profile?.human_friendly_id)};
+          staff_profile_id: resolvePublicIdentifier(entry.staff_profile?.human_friendly_id),
+        };
       })
       .filter(Boolean),
     shift_types: SHIFT_TYPE_OPTIONS.map((value) => ({ value, label: value })),
@@ -1237,8 +1410,10 @@ const getReferenceData = async (filters = {}) => {
     resource_statuses: Object.fromEntries(
       Object.entries(RESOURCE_STATUS_ENUMS).map(([resource, values]) => [
         resource,
-        values.map((value) => ({ value, label: value }))])
-    )};
+        values.map((value) => ({ value, label: value })),
+      ])
+    ),
+  };
 };
 
 const resolveTenantIdForScope = async (scope) => {
@@ -1247,7 +1422,8 @@ const resolveTenantIdForScope = async (scope) => {
   }
   const facility = await prisma.facility.findFirst({
     where: { id: scope.facilityId, deleted_at: null },
-    select: { tenant_id: true }});
+    select: { tenant_id: true },
+  });
   return facility?.tenant_id || null;
 };
 
@@ -1257,8 +1433,10 @@ const buildStaffPositionCatalogWhere = (scope, tenantId) => ({
   department_id: null,
   ...(scope.facilityId
     ? {
-        OR: [{ facility_id: scope.facilityId }, { facility_id: null }]}
-    : { facility_id: null })});
+        OR: [{ facility_id: scope.facilityId }, { facility_id: null }],
+      }
+    : { facility_id: null }),
+});
 
 const ensureAssignableRoles = async (scope, tenantId = null) => {
   const resolvedTenantId = tenantId || (await resolveTenantIdForScope(scope));
@@ -1271,8 +1449,10 @@ const ensureAssignableRoles = async (scope, tenantId = null) => {
       tenant_id: resolvedTenantId,
       deleted_at: null,
       facility_id: null,
-      name: { in: [...HR_ASSIGNABLE_ROLE_NAMES] }},
-    select: { id: true, name: true }});
+      name: { in: [...HR_ASSIGNABLE_ROLE_NAMES] },
+    },
+    select: { id: true, name: true },
+  });
   const existingNames = new Set(
     existingRoles.map((entry) => normalizeString(entry.name).toUpperCase()).filter(Boolean)
   );
@@ -1284,8 +1464,10 @@ const ensureAssignableRoles = async (scope, tenantId = null) => {
   const permissions = await prisma.permission.findMany({
     where: {
       tenant_id: resolvedTenantId,
-      deleted_at: null},
-    select: { id: true, name: true }});
+      deleted_at: null,
+    },
+    select: { id: true, name: true },
+  });
   const permissionIdByName = new Map(
     permissions.map((entry) => [normalizeString(entry.name), entry.id]).filter(([name]) => Boolean(name))
   );
@@ -1296,8 +1478,10 @@ const ensureAssignableRoles = async (scope, tenantId = null) => {
         tenant_id: resolvedTenantId,
         facility_id: null,
         name: roleName,
-        description: roleLabel(roleName)},
-      select: { id: true, name: true }});
+        description: roleLabel(roleName),
+      },
+      select: { id: true, name: true },
+    });
 
     const permissionNames = ROLE_PERMISSIONS[roleName] || [];
     for (const permissionName of permissionNames) {
@@ -1308,7 +1492,9 @@ const ensureAssignableRoles = async (scope, tenantId = null) => {
       await prisma.role_permission.create({
         data: {
           role_id: role.id,
-          permission_id: permissionId}});
+          permission_id: permissionId,
+        },
+      });
     }
   }
 };
@@ -1320,7 +1506,8 @@ const ensureDefaultStaffPositions = async (scope) => {
   }
 
   const existingCount = await prisma.staff_position.count({
-    where: buildStaffPositionCatalogWhere(scope, tenantId)});
+    where: buildStaffPositionCatalogWhere(scope, tenantId),
+  });
   if (existingCount > 0) {
     return;
   }
@@ -1332,7 +1519,9 @@ const ensureDefaultStaffPositions = async (scope) => {
           tenant_id: tenantId,
           facility_id: null,
           name,
-          is_active: true}})
+          is_active: true,
+        },
+      })
     )
   );
 };
@@ -1346,7 +1535,9 @@ const ensureDefaultFacilityStructure = async (scope) => {
   const existingCount = await prisma.department.count({
     where: {
       deleted_at: null,
-      facility_id: scope.facilityId}});
+      facility_id: scope.facilityId,
+    },
+  });
   if (existingCount > 0) {
     return;
   }
@@ -1359,7 +1550,9 @@ const ensureDefaultFacilityStructure = async (scope) => {
         name,
         short_name: name.slice(0, 8).toUpperCase(),
         department_type: inferDepartmentType(name),
-        is_active: true}});
+        is_active: true,
+      },
+    });
 
     await prisma.unit.create({
       data: {
@@ -1367,7 +1560,9 @@ const ensureDefaultFacilityStructure = async (scope) => {
         facility_id: scope.facilityId,
         department_id: department.id,
         name: `${name} Unit`,
-        is_active: true}});
+        is_active: true,
+      },
+    });
   }
 };
 
@@ -1378,18 +1573,21 @@ const generateStaffNumber = async ({ tenantId = null, facilityId = null } = {}) 
         model: 'tenant',
         field: 'tenant_id',
         where: { deleted_at: null },
-        nullable: true})
+        nullable: true,
+      })
     : null;
   const resolvedFacilityId = facilityId
     ? await resolveIdentifierForFilter({
         value: facilityId,
         model: 'facility',
-        where: { deleted_at: null }})
+        where: { deleted_at: null },
+      })
     : null;
 
   return generateStaffNumberCore({
     tenantId: resolvedTenantId,
-    facilityId: resolvedFacilityId});
+    facilityId: resolvedFacilityId,
+  });
 };
 
 const getRosterWorkflow = async (rosterIdentifier) => buildWorkflow(rosterIdentifier);
@@ -1401,7 +1599,8 @@ const generateRosterAssignments = async ({ rosterIdentifier, constraints, replac
     replaceExistingAssignments,
     dryRun,
     userId,
-    ipAddress});
+    ipAddress,
+  });
 
   publishHrWorkspaceUpdate({
     action: 'GENERATE',
@@ -1416,10 +1615,13 @@ const generateRosterAssignments = async ({ rosterIdentifier, constraints, replac
       resource: 'nurse-rosters',
       id: result?.roster?.display_id || null,
       rosterId: result?.roster?.display_id || null,
-      action: 'view'}),
+      action: 'view',
+    }),
     extra: {
       roster_id: result?.roster?.display_id || null,
-      dry_run: Boolean(dryRun)}}).catch(() => {});
+      dry_run: Boolean(dryRun),
+    },
+  }).catch(() => {});
 
   return result;
 };
@@ -1434,7 +1636,8 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
 
   if (hasGaps && !allowPartial) {
     throw new HttpError('errors.hr_workspace.publish_blocked_unassigned', 400, [
-      { reason: 'unassigned_shifts_present', unassigned_count: workflow.gaps.length }]);
+      { reason: 'unassigned_shifts_present', unassigned_count: workflow.gaps.length },
+    ]);
   }
 
   if (hasGaps && allowPartial && !publishNote) {
@@ -1451,7 +1654,9 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
       facility_id: true,
       status: true,
       published_at: true,
-      human_friendly_id: true}});
+      human_friendly_id: true,
+    },
+  });
 
   if (!roster?.id) {
     throw new HttpError('errors.nurse_roster.not_found', 404);
@@ -1459,7 +1664,8 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
 
   const updated = await prisma.nurse_roster.update({
     where: { id: roster.id },
-    data: { status: 'PUBLISHED', published_at: new Date() }});
+    data: { status: 'PUBLISHED', published_at: new Date() },
+  });
 
   createAuditLog({
     user_id: userId,
@@ -1475,8 +1681,11 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
         notify_staff: notifyStaff,
         allow_partial_publish: allowPartial,
         publish_note: publishNote,
-        gaps: workflow.gaps}},
-    ip_address: ipAddress}).catch(() => {});
+        gaps: workflow.gaps,
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   publishHrWorkspaceUpdate({
     action: 'PUBLISH',
@@ -1491,7 +1700,9 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
       resource: 'nurse-rosters',
       id: resolveDisplayId(updated),
       rosterId: resolveDisplayId(updated),
-      action: 'view'})}).catch(() => {});
+      action: 'view',
+    }),
+  }).catch(() => {});
 
   return {
     published_roster: {
@@ -1499,13 +1710,16 @@ const publishRoster = async (rosterIdentifier, body = {}, userId = null, ipAddre
       display_id: resolveDisplayId(updated),
       backend_identifier: updated.id,
       status: updated.status,
-      published_at: updated.published_at},
+      published_at: updated.published_at,
+    },
     publish_summary: {
       notify_staff: notifyStaff,
       allow_partial_publish: allowPartial,
       has_unassigned_gaps: hasGaps,
       unassigned_gaps: workflow.gaps,
-      coverage: workflow.coverage}};
+      coverage: workflow.coverage,
+    },
+  };
 };
 
 const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = null, ipAddress = null) => {
@@ -1513,7 +1727,8 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
     model: 'shift',
     identifier: shiftIdentifier,
     where: { deleted_at: null },
-    errorKey: 'errors.shift.not_found'});
+    errorKey: 'errors.shift.not_found',
+  });
 
   const shiftWithContext = await prisma.shift.findUnique({
     where: { id: shiftRecord.id },
@@ -1524,27 +1739,34 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
       nurse_roster: {
         select: {
           id: true,
-          human_friendly_id: true}},
-      human_friendly_id: true}});
+          human_friendly_id: true,
+        },
+      },
+      human_friendly_id: true,
+    },
+  });
 
   const staffProfileId = await resolveIdentifierForPayload({
     value: payload.staff_profile_id,
     model: 'staff_profile',
     field: 'staff_profile_id',
-    where: { deleted_at: null }});
+    where: { deleted_at: null },
+  });
 
   const reason = normalizeString(payload.reason);
 
   const assignment = await prisma.$transaction(async (tx) => {
     await tx.shift_assignment.updateMany({
       where: { deleted_at: null, shift_id: shiftRecord.id },
-      data: { deleted_at: new Date() }});
+      data: { deleted_at: new Date() },
+    });
 
     return tx.shift_assignment.create({
       data: {
         shift_id: shiftRecord.id,
         staff_profile_id: staffProfileId,
-        assigned_at: new Date()},
+        assigned_at: new Date(),
+      },
       include: {
         shift: {
           select: {
@@ -1553,12 +1775,18 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
             shift_type: true,
             status: true,
             start_time: true,
-            end_time: true}},
+            end_time: true,
+          },
+        },
         staff_profile: {
           select: {
             id: true,
             human_friendly_id: true,
-            staff_number: true}}}});
+            staff_number: true,
+          },
+        },
+      },
+    });
   });
 
   const auditRef = `HR-OVR-${Date.now()}`;
@@ -1574,8 +1802,11 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
         reason,
         audit_ref: auditRef,
         shift_id: shiftRecord.id,
-        staff_profile_id: staffProfileId}},
-    ip_address: ipAddress}).catch(() => {});
+        staff_profile_id: staffProfileId,
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   publishHrWorkspaceUpdate({
     action: 'OVERRIDE',
@@ -1591,7 +1822,9 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
       resource: 'shifts',
       id: resolveDisplayId(assignment.shift || shiftWithContext || {}),
       action: 'view',
-      rosterId: resolveDisplayId(shiftWithContext?.nurse_roster || {})})}).catch(() => {});
+      rosterId: resolveDisplayId(shiftWithContext?.nurse_roster || {}),
+    }),
+  }).catch(() => {});
 
   return {
     assignment: {
@@ -1602,7 +1835,8 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
       shift_display_id: resolveDisplayId(assignment.shift || {}),
       staff_profile_id: resolveDisplayId(assignment.staff_profile || {}),
       staff_profile_display_id: resolveDisplayId(assignment.staff_profile || {}),
-      assigned_at: assignment.assigned_at},
+      assigned_at: assignment.assigned_at,
+    },
     shift: {
       id: resolveDisplayId(assignment.shift || {}),
       display_id: resolveDisplayId(assignment.shift || {}),
@@ -1610,8 +1844,10 @@ const overrideShiftAssignment = async (shiftIdentifier, payload = {}, userId = n
       shift_type: assignment.shift?.shift_type || null,
       status: assignment.shift?.status || null,
       start_time: assignment.shift?.start_time || null,
-      end_time: assignment.shift?.end_time || null},
-    audit_ref: auditRef};
+      end_time: assignment.shift?.end_time || null,
+    },
+    audit_ref: auditRef,
+  };
 };
 
 const approveSwap = async (swapIdentifier, payload = {}, userId = null, ipAddress = null) => {
@@ -1630,7 +1866,11 @@ const approveSwap = async (swapIdentifier, payload = {}, userId = null, ipAddres
         select: {
           tenant_id: true,
           facility_id: true,
-          human_friendly_id: true}}}});
+          human_friendly_id: true,
+        },
+      },
+    },
+  });
 
   if (!swapRecord?.id) {
     throw new HttpError('errors.shift_swap_request.not_found', 404);
@@ -1639,7 +1879,8 @@ const approveSwap = async (swapIdentifier, payload = {}, userId = null, ipAddres
   const result = await prisma.$transaction(async (tx) => {
     const updatedSwap = await tx.shift_swap_request.update({
       where: { id: swapRecord.id },
-      data: { status: 'COMPLETED' }});
+      data: { status: 'COMPLETED' },
+    });
 
     const mutations = [];
 
@@ -1648,13 +1889,16 @@ const approveSwap = async (swapIdentifier, payload = {}, userId = null, ipAddres
         where: {
           deleted_at: null,
           shift_id: swapRecord.shift_id,
-          staff_profile_id: swapRecord.requester_staff_id}});
+          staff_profile_id: swapRecord.requester_staff_id,
+        },
+      });
 
       if (existing) {
         mutations.push(
           await tx.shift_assignment.update({
             where: { id: existing.id },
-            data: { staff_profile_id: swapRecord.target_staff_id }})
+            data: { staff_profile_id: swapRecord.target_staff_id },
+          })
         );
       } else {
         mutations.push(
@@ -1662,7 +1906,9 @@ const approveSwap = async (swapIdentifier, payload = {}, userId = null, ipAddres
             data: {
               shift_id: swapRecord.shift_id,
               staff_profile_id: swapRecord.target_staff_id,
-              assigned_at: new Date()}})
+              assigned_at: new Date(),
+            },
+          })
         );
       }
     }
@@ -1678,8 +1924,11 @@ const approveSwap = async (swapIdentifier, payload = {}, userId = null, ipAddres
     diff: {
       metadata: {
         operation: 'SWAP_APPROVE',
-        reason: normalizeString(payload.reason) || null}},
-    ip_address: ipAddress}).catch(() => {});
+        reason: normalizeString(payload.reason) || null,
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   publishHrWorkspaceUpdate({
     action: 'APPROVE',
@@ -1694,21 +1943,26 @@ const approveSwap = async (swapIdentifier, payload = {}, userId = null, ipAddres
       panel: 'shifts',
       resource: 'shift-swap-requests',
       id: resolveDisplayId(result.updatedSwap),
-      action: 'view'})}).catch(() => {});
+      action: 'view',
+    }),
+  }).catch(() => {});
 
   return {
     swap: {
       id: resolveDisplayId(result.updatedSwap),
       display_id: resolveDisplayId(result.updatedSwap),
       backend_identifier: result.updatedSwap.id,
-      status: result.updatedSwap.status},
+      status: result.updatedSwap.status,
+    },
     shift_assignments: result.mutations.map((entry) => ({
       id: resolveDisplayId(entry),
       display_id: resolveDisplayId(entry),
       backend_identifier: entry.id,
       shift_id: entry.shift_id,
       staff_profile_id: entry.staff_profile_id,
-      assigned_at: entry.assigned_at}))};
+      assigned_at: entry.assigned_at,
+    })),
+  };
 };
 
 const rejectSwap = async (swapIdentifier, payload = {}, userId = null, ipAddress = null) => {
@@ -1722,7 +1976,11 @@ const rejectSwap = async (swapIdentifier, payload = {}, userId = null, ipAddress
       shift: {
         select: {
           tenant_id: true,
-          facility_id: true}}}});
+          facility_id: true,
+        },
+      },
+    },
+  });
 
   if (!swapRecord?.id) {
     throw new HttpError('errors.shift_swap_request.not_found', 404);
@@ -1730,7 +1988,8 @@ const rejectSwap = async (swapIdentifier, payload = {}, userId = null, ipAddress
 
   const updatedSwap = await prisma.shift_swap_request.update({
     where: { id: swapRecord.id },
-    data: { status: 'CANCELLED' }});
+    data: { status: 'CANCELLED' },
+  });
 
   createAuditLog({
     user_id: userId,
@@ -1740,8 +1999,11 @@ const rejectSwap = async (swapIdentifier, payload = {}, userId = null, ipAddress
     diff: {
       metadata: {
         operation: 'SWAP_REJECT',
-        reason: normalizeString(payload.reason) || null}},
-    ip_address: ipAddress}).catch(() => {});
+        reason: normalizeString(payload.reason) || null,
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   publishHrWorkspaceUpdate({
     action: 'REJECT',
@@ -1756,14 +2018,18 @@ const rejectSwap = async (swapIdentifier, payload = {}, userId = null, ipAddress
       panel: 'shifts',
       resource: 'shift-swap-requests',
       id: resolveDisplayId(updatedSwap),
-      action: 'view'})}).catch(() => {});
+      action: 'view',
+    }),
+  }).catch(() => {});
 
   return {
     swap: {
       id: resolveDisplayId(updatedSwap),
       display_id: resolveDisplayId(updatedSwap),
       backend_identifier: updatedSwap.id,
-      status: updatedSwap.status}};
+      status: updatedSwap.status,
+    },
+  };
 };
 
 const approveLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddress = null) => {
@@ -1778,7 +2044,11 @@ const approveLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddr
         select: {
           id: true,
           human_friendly_id: true,
-          tenant_id: true}}}});
+          tenant_id: true,
+        },
+      },
+    },
+  });
 
   if (!leaveRecord?.id) {
     throw new HttpError('errors.staff_leave.not_found', 404);
@@ -1786,7 +2056,8 @@ const approveLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddr
 
   const updated = await prisma.staff_leave.update({
     where: { id: leaveRecord.id },
-    data: { status: 'APPROVED' }});
+    data: { status: 'APPROVED' },
+  });
 
   createAuditLog({
     user_id: userId,
@@ -1794,8 +2065,10 @@ const approveLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddr
     entity: 'staff_leave',
     entity_id: leaveRecord.id,
     diff: {
-      metadata: { operation: 'LEAVE_APPROVE', reason: normalizeString(payload.reason) || null }},
-    ip_address: ipAddress}).catch(() => {});
+      metadata: { operation: 'LEAVE_APPROVE', reason: normalizeString(payload.reason) || null },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   publishHrWorkspaceUpdate({
     action: 'APPROVE',
@@ -1810,14 +2083,18 @@ const approveLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddr
       resource: 'staff-leaves',
       id: resolveDisplayId(updated),
       action: 'view',
-      staffProfileId: resolveDisplayId(leaveRecord.staff_profile || {})})}).catch(() => {});
+      staffProfileId: resolveDisplayId(leaveRecord.staff_profile || {}),
+    }),
+  }).catch(() => {});
 
   return {
     leave: {
       id: resolveDisplayId(updated),
       display_id: resolveDisplayId(updated),
       backend_identifier: updated.id,
-      status: updated.status}};
+      status: updated.status,
+    },
+  };
 };
 
 const rejectLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddress = null) => {
@@ -1832,7 +2109,11 @@ const rejectLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddre
         select: {
           id: true,
           human_friendly_id: true,
-          tenant_id: true}}}});
+          tenant_id: true,
+        },
+      },
+    },
+  });
 
   if (!leaveRecord?.id) {
     throw new HttpError('errors.staff_leave.not_found', 404);
@@ -1840,7 +2121,8 @@ const rejectLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddre
 
   const updated = await prisma.staff_leave.update({
     where: { id: leaveRecord.id },
-    data: { status: 'REJECTED' }});
+    data: { status: 'REJECTED' },
+  });
 
   createAuditLog({
     user_id: userId,
@@ -1848,8 +2130,10 @@ const rejectLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddre
     entity: 'staff_leave',
     entity_id: leaveRecord.id,
     diff: {
-      metadata: { operation: 'LEAVE_REJECT', reason: normalizeString(payload.reason) || null }},
-    ip_address: ipAddress}).catch(() => {});
+      metadata: { operation: 'LEAVE_REJECT', reason: normalizeString(payload.reason) || null },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   publishHrWorkspaceUpdate({
     action: 'REJECT',
@@ -1864,36 +2148,44 @@ const rejectLeave = async (leaveIdentifier, payload = {}, userId = null, ipAddre
       resource: 'staff-leaves',
       id: resolveDisplayId(updated),
       action: 'view',
-      staffProfileId: resolveDisplayId(leaveRecord.staff_profile || {})})}).catch(() => {});
+      staffProfileId: resolveDisplayId(leaveRecord.staff_profile || {}),
+    }),
+  }).catch(() => {});
 
   return {
     leave: {
       id: resolveDisplayId(updated),
       display_id: resolveDisplayId(updated),
       backend_identifier: updated.id,
-      status: updated.status}};
+      status: updated.status,
+    },
+  };
 };
 
 const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
   const facilityId = await resolveIdentifierForFilter({
     value: filters.facility_id,
     model: 'facility',
-    where: { deleted_at: null }});
+    where: { deleted_at: null },
+  });
   const departmentId = await resolveIdentifierForFilter({
     value: filters.department_id,
     model: 'department',
-    where: { deleted_at: null }});
+    where: { deleted_at: null },
+  });
   const staffProfileId = await resolveIdentifierForFilter({
     value: filters.staff_profile_id,
     model: 'staff_profile',
-    where: { deleted_at: null, tenant_id: payrollRunRecord.tenant_id }});
+    where: { deleted_at: null, tenant_id: payrollRunRecord.tenant_id },
+  });
 
   const periodStart = payrollRunRecord.period_start;
   const periodEnd = payrollRunRecord.period_end;
   const compensationEffectiveWhere = {
     deleted_at: null,
     effective_from: { lte: periodEnd },
-    OR: [{ effective_to: null }, { effective_to: { gte: periodStart } }]};
+    OR: [{ effective_to: null }, { effective_to: { gte: periodStart } }],
+  };
 
   const staffInclude = {
     id: true,
@@ -1904,7 +2196,8 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
     consultation_currency: true,
     compensations: {
       where: compensationEffectiveWhere,
-      orderBy: { effective_from: 'desc' }},
+      orderBy: { effective_from: 'desc' },
+    },
     user: {
       select: {
         id: true,
@@ -1912,7 +2205,12 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
         profile: {
           select: {
             first_name: true,
-            last_name: true}}}}};
+            last_name: true,
+          },
+        },
+      },
+    },
+  };
 
   const staffProfiles = await prisma.staff_profile.findMany({
     where: {
@@ -1930,15 +2228,23 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
                 deleted_at: null,
                 ...(facilityId ? { facility_id: facilityId } : {}),
                 start_time: { lte: periodEnd },
-                end_time: { gte: periodStart }}}}}]},
-    select: staffInclude});
+                end_time: { gte: periodStart },
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: staffInclude,
+  });
 
   const activityMap = await loadStaffPayrollActivity({
     staffProfiles,
     periodStart,
     periodEnd,
     tenantId: payrollRunRecord.tenant_id,
-    facilityId});
+    facilityId,
+  });
 
   const proposedItems = staffProfiles.map((profile) => {
     const activity = activityMap.get(profile.id) || {
@@ -1948,13 +2254,15 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
       totalHours: 0,
       assignmentCount: 0,
       consultationCount: 0,
-      procedureCount: 0};
+      procedureCount: 0,
+    };
     const eligibleWorkdays = computeEligibleWorkdays({
       periodStart,
       periodEnd,
       availabilityRecords: activity.availability,
       assignments: activity.assignments,
-      leaves: activity.leaves});
+      leaves: activity.leaves,
+    });
 
     const compensations = Array.isArray(profile.compensations) && profile.compensations.length
       ? profile.compensations
@@ -1965,7 +2273,9 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
               rate: profile.consultation_fee,
               currency: profile.consultation_currency || 'USD',
               effective_from: periodStart,
-              metadata_json: { source: 'legacy_consultation_fee' }}]
+              metadata_json: { source: 'legacy_consultation_fee' },
+            },
+          ]
         : [];
 
     const calculations = compensations.map((compensation) =>
@@ -1976,7 +2286,8 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
         periodEnd,
         eligibleWorkdays,
         consultationCount: activity.consultationCount,
-        procedureCount: activity.procedureCount})
+        procedureCount: activity.procedureCount,
+      })
     );
 
     const { amount, currency, warnings, mixedCurrency } = sumCompensationAmounts(calculations);
@@ -1999,7 +2310,9 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
         components: calculations.map((item) => item.calculation),
         warnings,
         mixed_currency: mixedCurrency,
-        eligible_workdays: eligibleWorkdays.eligibleDays}};
+        eligible_workdays: eligibleWorkdays.eligibleDays,
+      },
+    };
   });
 
   const totals = proposedItems.reduce(
@@ -2029,7 +2342,9 @@ const previewPayrollRun = async (payrollRunIdentifier, filters = {}) => {
       tenant_id: true,
       status: true,
       period_start: true,
-      period_end: true}});
+      period_end: true,
+    },
+  });
 
   if (!payrollRunRecord?.id) throw new HttpError('errors.payroll_run.not_found', 404);
 
@@ -2041,12 +2356,15 @@ const previewPayrollRun = async (payrollRunIdentifier, filters = {}) => {
       backend_identifier: payrollRunRecord.id,
       status: payrollRunRecord.status,
       period_start: payrollRunRecord.period_start,
-      period_end: payrollRunRecord.period_end},
+      period_end: payrollRunRecord.period_end,
+    },
     proposed_items: proposedItems,
-    totals};
+    totals,
+  };
   await prisma.payroll_run.update({
     where: { id: payrollRunRecord.id },
-    data: { preview_json: preview }}).catch(() => {});
+    data: { preview_json: preview },
+  }).catch(() => {});
   return preview;
 };
 
@@ -2061,7 +2379,9 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
       tenant_id: true,
       status: true,
       period_start: true,
-      period_end: true}});
+      period_end: true,
+    },
+  });
 
   if (!payrollRunRecord?.id) throw new HttpError('errors.payroll_run.not_found', 404);
   if (String(payrollRunRecord.status || '').toUpperCase() === 'PAID') {
@@ -2075,12 +2395,14 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
     if (replaceExisting) {
       await tx.payroll_item.updateMany({
         where: { deleted_at: null, payroll_run_id: payrollRunRecord.id },
-        data: { deleted_at: new Date() }});
+        data: { deleted_at: new Date() },
+      });
     }
 
     for (const item of proposedItems) {
       const existing = await tx.payroll_item.findFirst({
-        where: { deleted_at: null, payroll_run_id: payrollRunRecord.id, staff_profile_id: item.staff_profile_id }});
+        where: { deleted_at: null, payroll_run_id: payrollRunRecord.id, staff_profile_id: item.staff_profile_id },
+      });
 
       if (existing) {
         await tx.payroll_item.update({
@@ -2088,7 +2410,9 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
           data: {
             amount: String(item.amount.toFixed(2)),
             currency: item.currency,
-            calculation_json: item.calculation}});
+            calculation_json: item.calculation,
+          },
+        });
       } else {
         await tx.payroll_item.create({
           data: {
@@ -2096,7 +2420,9 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
             staff_profile_id: item.staff_profile_id,
             amount: String(item.amount.toFixed(2)),
             currency: item.currency,
-            calculation_json: item.calculation}});
+            calculation_json: item.calculation,
+          },
+        });
       }
     }
 
@@ -2111,7 +2437,10 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
           processed_by_user_id: userId || null,
           replace_existing_items: replaceExisting,
           notes: normalizeString(payload.notes) || null,
-          totals}}});
+          totals,
+        },
+      },
+    });
   });
 
   createAuditLog({
@@ -2126,8 +2455,11 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
         replace_existing_items: replaceExisting,
         notes: normalizeString(payload.notes) || null,
         processed_items: proposedItems.length,
-        totals}},
-    ip_address: ipAddress}).catch(() => {});
+        totals,
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   publishHrWorkspaceUpdate({
     action: 'PROCESS',
@@ -2142,7 +2474,9 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
       resource: 'payroll-runs',
       id: resolveDisplayId(payrollRunRecord),
       payrollRunId: resolveDisplayId(payrollRunRecord),
-      action: 'view'})}).catch(() => {});
+      action: 'view',
+    }),
+  }).catch(() => {});
 
   return {
     processed_summary: {
@@ -2151,8 +2485,10 @@ const processPayrollRun = async (payrollRunIdentifier, payload = {}, userId = nu
       backend_identifier: payrollRunRecord.id,
       status: 'PROCESSED',
       processed_items: proposedItems.length,
-      totals},
-    items: proposedItems};
+      totals,
+    },
+    items: proposedItems,
+  };
 };
 
 const resolveLegacyRouteIdentifier = async (resource, id) => {
@@ -2166,7 +2502,8 @@ const resolveLegacyRouteIdentifier = async (resource, id) => {
     model: config.model,
     identifier: normalizedIdentifier,
     where: { deleted_at: null },
-    select: { id: true, human_friendly_id: true }});
+    select: { id: true, human_friendly_id: true },
+  });
 
   if (!record?.id) throw new HttpError('errors.resource.not_found', 404);
 
@@ -2181,7 +2518,8 @@ const resolveLegacyRouteIdentifier = async (resource, id) => {
     panel: config.panel,
     resource: config.resource,
     id: publicIdentifier,
-    action: 'view'};
+    action: 'view',
+  };
 
   return {
     resource: normalizedResource,
@@ -2195,7 +2533,8 @@ const resolveLegacyRouteIdentifier = async (resource, id) => {
         ? 'uuid'
         : 'human_friendly_id',
     route_state: routeState,
-    target_path: buildWorkbenchPath(routeState)};
+    target_path: buildWorkbenchPath(routeState),
+  };
 };
 
 const getStaffAccessSummary = async (staffProfileIdentifier) => {
@@ -2208,7 +2547,9 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
       human_friendly_id: true,
       tenant_id: true,
       user_id: true,
-      department_id: true}});
+      department_id: true,
+    },
+  });
 
   if (!staffRecord?.id) {
     throw new HttpError('errors.staff_profile.not_found', 404);
@@ -2220,22 +2561,28 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
       linked_user: null,
       user_roles: [],
       module_access: [],
-      effective_permissions: []};
+      effective_permissions: [],
+    };
   }
 
   const [userRoles, linkedUser, subscription] = await Promise.all([
     prisma.user_role.findMany({
       where: {
         deleted_at: null,
-        user_id: staffRecord.user_id},
+        user_id: staffRecord.user_id,
+      },
       include: {
         role: {
           select: {
             id: true,
             human_friendly_id: true,
-            name: true}}},
+            name: true,
+          },
+        },
+      },
       orderBy: { created_at: 'desc' },
-      take: 50}),
+      take: 50,
+    }),
     prisma.user.findFirst({
       where: { id: staffRecord.user_id, deleted_at: null },
       select: {
@@ -2245,12 +2592,17 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
         profile: {
           select: {
             first_name: true,
-            last_name: true}}}}),
+            last_name: true,
+          },
+        },
+      },
+    }),
     prisma.subscription.findFirst({
       where: {
         tenant_id: staffRecord.tenant_id,
         deleted_at: null,
-        status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }},
+        status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+      },
       orderBy: { updated_at: 'desc' },
       include: {
         module_subscriptions: {
@@ -2262,15 +2614,24 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
                 human_friendly_id: true,
                 name: true,
                 slug: true,
-                module_group: true}}},
-          orderBy: [{ is_active: 'desc' }, { updated_at: 'desc' }]}}})]);
+                module_group: true,
+              },
+            },
+          },
+          orderBy: [{ is_active: 'desc' }, { updated_at: 'desc' }],
+        },
+      },
+    }),
+  ]);
 
   const facilityIds = [
-    ...new Set(userRoles.map((entry) => entry.facility_id).filter(Boolean))];
+    ...new Set(userRoles.map((entry) => entry.facility_id).filter(Boolean)),
+  ];
   const facilities = facilityIds.length
     ? await prisma.facility.findMany({
         where: { id: { in: facilityIds }, deleted_at: null },
-        select: { id: true, human_friendly_id: true, name: true }})
+        select: { id: true, human_friendly_id: true, name: true },
+      })
     : [];
   const facilityById = new Map(facilities.map((entry) => [entry.id, entry]));
 
@@ -2279,11 +2640,16 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
     ? await prisma.role_permission.findMany({
         where: {
           deleted_at: null,
-          role_id: { in: roleIds }},
+          role_id: { in: roleIds },
+        },
         include: {
           permission: {
             select: {
-              name: true}}}})
+              name: true,
+            },
+          },
+        },
+      })
     : [];
 
   const effectivePermissions = [
@@ -2291,14 +2657,16 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
       rolePermissions
         .map((entry) => entry.permission?.name)
         .filter(Boolean)
-    )].sort();
+    ),
+  ].sort();
 
   const moduleAccess = (subscription?.module_subscriptions || [])
     .map((entry) => ({
       slug: entry.module?.slug || null,
       label: entry.module?.name || null,
       module_group: entry.module?.module_group || null,
-      granted: Boolean(entry.is_active) && !Boolean(entry.entitlement_denied)}))
+      granted: Boolean(entry.is_active) && !Boolean(entry.entitlement_denied),
+    }))
     .filter((entry) => entry.slug);
 
   const mappedRoles = userRoles.map((entry) => {
@@ -2312,7 +2680,8 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
       facility_id: entry.facility_id || null,
       facility_name: facility?.name || null,
       facility_display_id: resolvePublicIdentifier(facility?.human_friendly_id),
-      tenant_id: entry.tenant_id || null};
+      tenant_id: entry.tenant_id || null,
+    };
   });
 
   const firstName = linkedUser?.profile?.first_name || '';
@@ -2326,11 +2695,13 @@ const getStaffAccessSummary = async (staffProfileIdentifier) => {
           display_id: resolvePublicIdentifier(linkedUser.human_friendly_id),
           email: linkedUser.email || null,
           full_name:
-            normalizeString(`${firstName} ${lastName}`) || linkedUser.email || null}
+            normalizeString(`${firstName} ${lastName}`) || linkedUser.email || null,
+        }
       : null,
     user_roles: mappedRoles,
     module_access: moduleAccess,
-    effective_permissions: effectivePermissions};
+    effective_permissions: effectivePermissions,
+  };
 };
 
 const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null, ipAddress = null) => {
@@ -2343,7 +2714,9 @@ const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null
       human_friendly_id: true,
       staff_number: true,
       tenant_id: true,
-      user_id: true}});
+      user_id: true,
+    },
+  });
 
   if (!staffRecord?.id) {
     throw new HttpError('errors.staff_profile.not_found', 404);
@@ -2360,33 +2733,41 @@ const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null
         where: {
           deleted_at: null,
           staff_profile_id: staffRecord.id,
-          OR: [{ end_date: null }, { end_date: { gt: lastWorkingDay } }]},
-        data: { end_date: lastWorkingDay }});
+          OR: [{ end_date: null }, { end_date: { gt: lastWorkingDay } }],
+        },
+        data: { end_date: lastWorkingDay },
+      });
     }
 
     await tx.shift_assignment.updateMany({
       where: {
         deleted_at: null,
         staff_profile_id: staffRecord.id,
-        assigned_at: { gt: lastWorkingDay }},
-      data: { deleted_at: new Date() }});
+        assigned_at: { gt: lastWorkingDay },
+      },
+      data: { deleted_at: new Date() },
+    });
 
     await tx.staff_leave.updateMany({
       where: {
         deleted_at: null,
         staff_profile_id: staffRecord.id,
-        status: { in: ['PENDING', 'REQUESTED', 'DRAFT'] }},
-      data: { status: 'CANCELLED' }});
+        status: { in: ['PENDING', 'REQUESTED', 'DRAFT'] },
+      },
+      data: { status: 'CANCELLED' },
+    });
 
     if (payload.revoke_access !== false && staffRecord.user_id) {
       await tx.user.update({
         where: { id: staffRecord.user_id },
-        data: { deleted_at: new Date() }}).catch(() => {});
+        data: { deleted_at: new Date() },
+      }).catch(() => {});
     }
 
     await tx.staff_profile.update({
       where: { id: staffRecord.id },
-      data: { deleted_at: lastWorkingDay }});
+      data: { deleted_at: lastWorkingDay },
+    });
   });
 
   createAuditLog({
@@ -2399,14 +2780,18 @@ const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null
         operation: 'STAFF_OFFBOARD',
         separation_type: payload.separation_type,
         last_working_day: lastWorkingDay.toISOString(),
-        reason: normalizeString(payload.reason) || null}},
-    ip_address: ipAddress}).catch(() => {});
+        reason: normalizeString(payload.reason) || null,
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   publishHrWorkspaceUpdate({
     action: 'OFFBOARD',
     actorUserId: userId || null,
     tenantId: staffRecord.tenant_id,
-    staffProfileId: staffRecord.id}).catch(() => {});
+    staffProfileId: staffRecord.id,
+  }).catch(() => {});
 
   return {
     staff_profile_id: resolveDisplayId(staffRecord),
@@ -2414,7 +2799,8 @@ const offboardStaff = async (staffProfileIdentifier, payload = {}, userId = null
     status: 'SEPARATED',
     separation_type: payload.separation_type,
     separation_date: lastWorkingDay,
-    reason: normalizeString(payload.reason) || null};
+    reason: normalizeString(payload.reason) || null,
+  };
 };
 
 module.exports = {
@@ -2435,4 +2821,5 @@ module.exports = {
   previewPayrollRun,
   processPayrollRun,
   offboardStaff,
-  resolveLegacyRouteIdentifier};
+  resolveLegacyRouteIdentifier,
+};

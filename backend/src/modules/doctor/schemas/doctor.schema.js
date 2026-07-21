@@ -31,14 +31,16 @@ const recurringScheduleSchema = z.object({
   timezone: z.string().trim().min(1).max(64).optional().default('UTC'),
   schedule_type: scheduleTypeSchema.optional().default('RECURRING'),
   effective_from: z.string().trim().datetime().optional().nullable(),
-  effective_to: z.string().trim().datetime().optional().nullable()});
+  effective_to: z.string().trim().datetime().optional().nullable(),
+});
 
 const scheduleOverrideSchema = z.object({
   schedule_index: z.number().int().min(0).optional(),
   override_date: z.string().trim().datetime(),
   start_time: z.string().trim().datetime(),
   end_time: z.string().trim().datetime(),
-  is_available: z.boolean().optional().default(true)});
+  is_available: z.boolean().optional().default(true),
+});
 
 const createDoctorSchema = z.object({
   tenant_id: resourceFriendlyIdSchema,
@@ -57,7 +59,8 @@ const createDoctorSchema = z.object({
   is_fee_overridden: z.boolean().optional(),
   role_ids: z.array(resourceIdentifierSchema).optional().default([]),
   recurring_schedules: z.array(recurringScheduleSchema).optional().default([]),
-  schedule_overrides: z.array(scheduleOverrideSchema).optional().default([])});
+  schedule_overrides: z.array(scheduleOverrideSchema).optional().default([]),
+});
 
 const updateDoctorSchema = z.object({
   facility_id: resourceFriendlyIdSchema.optional().nullable(),
@@ -75,20 +78,24 @@ const updateDoctorSchema = z.object({
   is_fee_overridden: z.boolean().optional(),
   role_ids: z.array(resourceIdentifierSchema).optional(),
   recurring_schedules: z.array(recurringScheduleSchema).optional(),
-  schedule_overrides: z.array(scheduleOverrideSchema).optional()});
+  schedule_overrides: z.array(scheduleOverrideSchema).optional(),
+});
 
 const doctorIdParamsSchema = z.object({
-  id: resourceFriendlyIdSchema});
+  id: resourceFriendlyIdSchema,
+});
 
 const listDoctorsQuerySchema = listQuerySchema.extend({
   tenant_id: resourceFriendlyIdSchema.optional(),
   facility_id: resourceFriendlyIdSchema.optional(),
   practitioner_type: practitionerTypeSchema.optional(),
   position_title: z.string().trim().optional(),
-  search: z.string().trim().optional()});
+  search: z.string().trim().optional(),
+});
 
 module.exports = {
   createDoctorSchema,
   updateDoctorSchema,
   doctorIdParamsSchema,
-  listDoctorsQuerySchema};
+  listDoctorsQuerySchema,
+};

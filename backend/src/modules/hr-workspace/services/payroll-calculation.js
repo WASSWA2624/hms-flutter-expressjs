@@ -63,7 +63,8 @@ const computeEligibleWorkdays = ({
   periodEnd,
   availabilityRecords = [],
   assignments = [],
-  leaves = []}) => {
+  leaves = [],
+}) => {
   const eligibleKeys = new Set();
   const periodKeys = enumerateDayKeys(periodStart, periodEnd);
 
@@ -91,7 +92,8 @@ const computeEligibleWorkdays = ({
 
   return {
     eligibleDays: eligibleKeys.size,
-    eligibleDayKeys: [...eligibleKeys].sort()};
+    eligibleDayKeys: [...eligibleKeys].sort(),
+  };
 };
 
 const buildComponentResult = ({
@@ -103,7 +105,8 @@ const buildComponentResult = ({
   unit,
   formula,
   sourceRefs = {},
-  extra = {}}) => {
+  extra = {},
+}) => {
   const amount = normalizeMoney(rate * quantity);
   return {
     amount,
@@ -118,8 +121,10 @@ const buildComponentResult = ({
       formula,
       amount,
       source_refs: sourceRefs,
-      ...extra},
-    warning: quantity === 0 ? 'zero_quantity' : null};
+      ...extra,
+    },
+    warning: quantity === 0 ? 'zero_quantity' : null,
+  };
 };
 
 const calculateCompensationAmount = ({
@@ -129,7 +134,8 @@ const calculateCompensationAmount = ({
   periodEnd,
   eligibleWorkdays = { eligibleDays: 0, eligibleDayKeys: [] },
   consultationCount = 0,
-  procedureCount = 0}) => {
+  procedureCount = 0,
+}) => {
   const payType = String(compensation?.pay_type || '').trim().toUpperCase();
   const rate = Number(compensation?.rate || 0) || 0;
   const currency = String(compensation?.currency || 'USD').trim().toUpperCase() || 'USD';
@@ -146,7 +152,8 @@ const calculateCompensationAmount = ({
       quantity: totalHours,
       unit: 'hours',
       formula: 'rate * hours',
-      sourceRefs: { shift_hours: normalizeMoney(totalHours) }});
+      sourceRefs: { shift_hours: normalizeMoney(totalHours) },
+    });
   }
 
   if (payType === 'PER_DAY') {
@@ -161,7 +168,9 @@ const calculateCompensationAmount = ({
       formula: 'rate * eligible_days',
       sourceRefs: {
         eligible_days: eligibleDays,
-        eligible_day_keys: eligibleDayKeys}});
+        eligible_day_keys: eligibleDayKeys,
+      },
+    });
   }
 
   if (payType === 'PER_MONTH') {
@@ -188,8 +197,10 @@ const calculateCompensationAmount = ({
       sourceRefs: {
         period_days: periodDays,
         eligible_days: eligibleDays,
-        pay_frequency: payFrequency},
-      extra: { period_days: periodDays, eligible_days: eligibleDays }});
+        pay_frequency: payFrequency,
+      },
+      extra: { period_days: periodDays, eligible_days: eligibleDays },
+    });
   }
 
   if (payType === 'PER_CONSULTATION') {
@@ -202,7 +213,8 @@ const calculateCompensationAmount = ({
       quantity: count,
       unit: 'consultations',
       formula: 'rate * consultation_count',
-      sourceRefs: { consultation_count: count, source: 'encounter_opd_closed' }});
+      sourceRefs: { consultation_count: count, source: 'encounter_opd_closed' },
+    });
   }
 
   if (payType === 'PER_PROCEDURE') {
@@ -215,7 +227,8 @@ const calculateCompensationAmount = ({
       quantity: count,
       unit: 'procedures',
       formula: 'rate * procedure_count',
-      sourceRefs: { procedure_count: count, source: 'procedure_performed_at' }});
+      sourceRefs: { procedure_count: count, source: 'procedure_performed_at' },
+    });
   }
 
   return buildComponentResult({
@@ -225,7 +238,8 @@ const calculateCompensationAmount = ({
     currency,
     quantity: 0,
     unit: 'unknown',
-    formula: 'unsupported_pay_type'});
+    formula: 'unsupported_pay_type',
+  });
 };
 
 const sumCompensationAmounts = (calculations = []) => {
@@ -237,7 +251,8 @@ const sumCompensationAmounts = (calculations = []) => {
     .filter((item) => item.warning)
     .map((item) => ({
       pay_type: item.calculation?.pay_type,
-      warning: item.warning}));
+      warning: item.warning,
+    }));
 
   return { amount, currency, warnings, mixedCurrency };
 };
@@ -249,4 +264,5 @@ module.exports = {
   enumerateDayKeys,
   computeEligibleWorkdays,
   calculateCompensationAmount,
-  sumCompensationAmounts};
+  sumCompensationAmounts,
+};

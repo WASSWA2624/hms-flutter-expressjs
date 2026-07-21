@@ -6,13 +6,15 @@ const DEFAULT_INCLUDE = {
   facility: { select: { id: true, human_friendly_id: true } },
   office_context: { select: { id: true, human_friendly_id: true } },
   from_user: { select: { id: true, human_friendly_id: true } },
-  to_user: { select: { id: true, human_friendly_id: true } }};
+  to_user: { select: { id: true, human_friendly_id: true } },
+};
 
 const findById = async (id, include = DEFAULT_INCLUDE) => {
   try {
     return await prisma.handover.findFirst({
       where: { id, deleted_at: null },
-      include});
+      include,
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -25,7 +27,8 @@ const findMany = async (where = {}, skip = 0, take = 20, orderBy = { created_at:
       skip,
       take,
       orderBy,
-      include});
+      include,
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -68,4 +71,5 @@ module.exports = {
   findById,
   findMany,
   softDelete,
-  update};
+  update,
+};

@@ -38,4 +38,5 @@ module.exports = {
   createCloseoutPack,
   downloadCloseoutPack,
   getCloseoutPackById,
-  listCloseoutPacks};
+  listCloseoutPacks,
+};

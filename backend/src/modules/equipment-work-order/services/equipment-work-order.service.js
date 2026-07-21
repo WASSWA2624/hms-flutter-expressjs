@@ -14,7 +14,8 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: page * limit < total,
-  hasPreviousPage: page > 1});
+  hasPreviousPage: page > 1,
+});
 
 const mapEquipmentWorkOrder = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -42,13 +43,15 @@ const mapEquipmentWorkOrder = (record) => {
     downtime_ended_at: record.downtime_ended_at || null,
     resolution_notes: record.resolution_notes || null,
     created_at: record.created_at || null,
-    updated_at: record.updated_at || null};
+    updated_at: record.updated_at || null,
+  };
 };
 
 const resolveWorkOrderId = async (id) => {
   const resolvedId = await resolveModelIdByIdentifier({
     model: 'equipment_work_order',
-    identifier: id});
+    identifier: id,
+  });
 
   return resolvedId || id;
 };
@@ -61,7 +64,8 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20) => {
     if (tenantId === null) {
       return {
         equipmentWorkOrders: [],
-        pagination: buildPagination(page, limit, 0)};
+        pagination: buildPagination(page, limit, 0),
+      };
     }
     if (tenantId !== undefined) resolvedFilters.tenant_id = tenantId;
   }
@@ -70,11 +74,13 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20) => {
     const equipmentRegistryId = await resolveIdentifierForFilter({
       value: filters.equipment_registry_id,
       model: 'equipment_registry',
-      where: resolvedFilters.tenant_id ? { tenant_id: resolvedFilters.tenant_id } : {}});
+      where: resolvedFilters.tenant_id ? { tenant_id: resolvedFilters.tenant_id } : {},
+    });
     if (equipmentRegistryId === null) {
       return {
         equipmentWorkOrders: [],
-        pagination: buildPagination(page, limit, 0)};
+        pagination: buildPagination(page, limit, 0),
+      };
     }
     if (equipmentRegistryId !== undefined) resolvedFilters.equipment_registry_id = equipmentRegistryId;
   }
@@ -83,11 +89,13 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20) => {
     const engineerId = await resolveIdentifierForFilter({
       value: filters.assigned_engineer_user_id,
       model: 'user',
-      where: resolvedFilters.tenant_id ? { tenant_id: resolvedFilters.tenant_id } : {}});
+      where: resolvedFilters.tenant_id ? { tenant_id: resolvedFilters.tenant_id } : {},
+    });
     if (engineerId === null) {
       return {
         equipmentWorkOrders: [],
-        pagination: buildPagination(page, limit, 0)};
+        pagination: buildPagination(page, limit, 0),
+      };
     }
     if (engineerId !== undefined) resolvedFilters.assigned_engineer_user_id = engineerId;
   }
@@ -107,7 +115,8 @@ const resolvePayload = async (data = {}, existing = null, context = {}) => {
     payload.tenant_id = await resolveIdentifierForPayload({
       value: payload.tenant_id,
       field: 'tenant_id',
-      model: 'tenant'});
+      model: 'tenant',
+    });
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'equipment_registry_id')) {
@@ -115,7 +124,8 @@ const resolvePayload = async (data = {}, existing = null, context = {}) => {
       value: payload.equipment_registry_id,
       field: 'equipment_registry_id',
       model: 'equipment_registry',
-      where: tenantId ? { tenant_id: tenantId } : {}});
+      where: tenantId ? { tenant_id: tenantId } : {},
+    });
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'maintenance_plan_id')) {
@@ -124,7 +134,8 @@ const resolvePayload = async (data = {}, existing = null, context = {}) => {
       field: 'maintenance_plan_id',
       model: 'equipment_maintenance_plan',
       nullable: true,
-      where: tenantId ? { tenant_id: tenantId } : {}});
+      where: tenantId ? { tenant_id: tenantId } : {},
+    });
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'maintenance_request_id')) {
@@ -132,7 +143,8 @@ const resolvePayload = async (data = {}, existing = null, context = {}) => {
       value: payload.maintenance_request_id,
       field: 'maintenance_request_id',
       model: 'maintenance_request',
-      nullable: true});
+      nullable: true,
+    });
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'reported_by_user_id')) {
@@ -141,7 +153,8 @@ const resolvePayload = async (data = {}, existing = null, context = {}) => {
       field: 'reported_by_user_id',
       model: 'user',
       nullable: true,
-      where: tenantId ? { tenant_id: tenantId } : {}});
+      where: tenantId ? { tenant_id: tenantId } : {},
+    });
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'assigned_engineer_user_id')) {
@@ -150,7 +163,8 @@ const resolvePayload = async (data = {}, existing = null, context = {}) => {
       field: 'assigned_engineer_user_id',
       model: 'user',
       nullable: true,
-      where: tenantId ? { tenant_id: tenantId } : {}});
+      where: tenantId ? { tenant_id: tenantId } : {},
+    });
   }
 
   if (payload.started_at) payload.started_at = new Date(payload.started_at);
@@ -174,7 +188,8 @@ const emitWorkOrderEvent = async (record, event) => {
     equipment_work_order_id: displayId(record),
     status: record.status,
     priority: record.priority || null,
-    equipment_registry_id: resolvePublicIdentifier(record?.equipment_registry?.human_friendly_id, record?.equipment_registry_id)};
+    equipment_registry_id: resolvePublicIdentifier(record?.equipment_registry?.human_friendly_id, record?.equipment_registry_id),
+  };
 
   emitToUsers(recipientIds, event, payload);
   emitToUsers(recipientIds, BIOMEDICAL_EVENTS.BIOMEDICAL_WORKSPACE_UPDATED, payload);
@@ -188,11 +203,13 @@ const listEquipmentWorkOrders = async (filters = {}, page = 1, limit = 20, sortB
   const orderBy = { [sortBy]: order };
   const [items, total] = await Promise.all([
     equipmentWorkOrderRepository.findMany(resolvedFilters, skip, limit, orderBy),
-    equipmentWorkOrderRepository.count(resolvedFilters)]);
+    equipmentWorkOrderRepository.count(resolvedFilters),
+  ]);
 
   return {
     equipmentWorkOrders: items.map(mapEquipmentWorkOrder),
-    pagination: buildPagination(page, limit, total)};
+    pagination: buildPagination(page, limit, total),
+  };
 };
 
 const getEquipmentWorkOrderById = async (id) => {
@@ -314,7 +331,8 @@ const returnToServiceEquipmentWorkOrder = async (id, data = {}, context = {}) =>
     status: 'RETURNED_TO_SERVICE',
     completed_at: new Date(),
     closed_at: new Date(),
-    resolution_notes: notes});
+    resolution_notes: notes,
+  });
 
   createAuditLog({
     tenant_id: before?.equipment_registry?.tenant_id || context.tenant_id,
@@ -326,7 +344,8 @@ const returnToServiceEquipmentWorkOrder = async (id, data = {}, context = {}) =>
       before,
       after: item,
       metadata: {
-        verification_evidence_manifest: evidenceManifest}
+        verification_evidence_manifest: evidenceManifest,
+      }
     },
     ip_address: context.ip_address || context.ip
   }).catch(() => {});

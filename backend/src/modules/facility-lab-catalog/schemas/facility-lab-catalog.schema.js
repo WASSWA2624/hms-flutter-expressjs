@@ -17,10 +17,12 @@ const standardLabPanelIdentifierSchema = z
   .transform((value) => value.toUpperCase());
 const facilityLabTestIdentifierSchema = z.union([
   uuidOrFriendlyIdentifierSchema,
-  standardLabTestIdentifierSchema]);
+  standardLabTestIdentifierSchema,
+]);
 const facilityLabPanelIdentifierSchema = z.union([
   uuidOrFriendlyIdentifierSchema,
-  standardLabPanelIdentifierSchema]);
+  standardLabPanelIdentifierSchema,
+]);
 
 const optionalTrimmedString = (max) =>
   z.preprocess(
@@ -51,14 +53,16 @@ const labReferenceRangeSchema = z.object({
   notes: optionalTrimmedString(255),
   effective_from: z.string().datetime().optional().nullable(),
   effective_to: z.string().datetime().optional().nullable(),
-  version: z.coerce.number().int().min(1).max(9999).optional().nullable()});
+  version: z.coerce.number().int().min(1).max(9999).optional().nullable(),
+});
 
 const labUnitOptionSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   label: optionalTrimmedString(80),
   unit: z.string().trim().min(1).max(40),
   ucum_code: optionalTrimmedString(40),
-  is_default: z.boolean().optional()});
+  is_default: z.boolean().optional(),
+});
 
 const labResultOptionSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
@@ -68,7 +72,8 @@ const labResultOptionSchema = z.object({
   aliases_json: z.array(z.string().trim().min(1).max(80)).max(20).optional(),
   status: labResultStatusSchema.optional(),
   result_flag: optionalTrimmedString(40),
-  is_positive: z.boolean().optional()});
+  is_positive: z.boolean().optional(),
+});
 
 const upsertFacilityLabTestOfferingSchema = z
   .object({
@@ -86,13 +91,15 @@ const upsertFacilityLabTestOfferingSchema = z
   reference_range: optionalTrimmedString(255),
   reference_ranges: z.array(labReferenceRangeSchema).max(20).optional(),
   unit_options: z.array(labUnitOptionSchema).max(20).optional(),
-  result_options: z.array(labResultOptionSchema).max(40).optional()})
+  result_options: z.array(labResultOptionSchema).max(40).optional(),
+  })
   .superRefine((data, ctx) => {
     if (data.is_active !== false && (data.unit_price == null || data.unit_price < 0)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'unit_price is required when the offering is active',
-        path: ['unit_price']});
+        path: ['unit_price'],
+      });
     }
   });
 
@@ -104,31 +111,37 @@ const upsertFacilityLabPanelOfferingSchema = z
     is_active: z.boolean().optional().default(true),
     sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
     unit_price: z.coerce.number().min(0).optional(),
-    currency: optionalTrimmedString(10)})
+    currency: optionalTrimmedString(10),
+  })
   .superRefine((data, ctx) => {
     if (data.is_active !== false && (data.unit_price == null || data.unit_price < 0)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'unit_price is required when the offering is active',
-        path: ['unit_price']});
+        path: ['unit_price'],
+      });
     }
   });
 
 const disableFacilityLabOfferingSchema = z.object({
-  reason: z.string().trim().min(1).max(500)});
+  reason: z.string().trim().min(1).max(500),
+});
 
 const facilityLabTestParamsSchema = z.object({
-  lab_test_id: facilityLabTestIdentifierSchema});
+  lab_test_id: facilityLabTestIdentifierSchema,
+});
 
 const facilityLabPanelParamsSchema = z.object({
-  lab_panel_id: facilityLabPanelIdentifierSchema});
+  lab_panel_id: facilityLabPanelIdentifierSchema,
+});
 
 const listFacilityLabCatalogQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   search: z.string().trim().max(120).optional(),
   offered_only: z.enum(['true', 'false']).optional(),
-  include_inactive: z.enum(['true', 'false']).optional()});
+  include_inactive: z.enum(['true', 'false']).optional(),
+});
 
 const searchFacilityLabCatalogQuerySchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -136,7 +149,8 @@ const searchFacilityLabCatalogQuerySchema = z.object({
   term_type: z.enum(['LAB_TEST', 'LAB_PANEL']),
   q: z.string().trim().max(120).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(25),
-  offered_only: z.enum(['true', 'false']).optional().default('true')});
+  offered_only: z.enum(['true', 'false']).optional().default('true'),
+});
 
 module.exports = {
   upsertFacilityLabTestOfferingSchema,
@@ -145,4 +159,5 @@ module.exports = {
   facilityLabTestParamsSchema,
   facilityLabPanelParamsSchema,
   listFacilityLabCatalogQuerySchema,
-  searchFacilityLabCatalogQuerySchema};
+  searchFacilityLabCatalogQuerySchema,
+};

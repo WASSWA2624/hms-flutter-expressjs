@@ -8,14 +8,16 @@ const housekeepingResourceSchema = z.enum([
   'housekeeping-schedules',
   'maintenance-requests',
   'assets',
-  'asset-service-logs']);
+  'asset-service-logs',
+]);
 
 const housekeepingQueueSchema = z.enum([
   'TODAY',
   'OVERDUE_TASKS',
   'OPEN_REQUESTS',
   'OVERDUE_REQUESTS',
-  'SERVICE_HISTORY']);
+  'SERVICE_HISTORY',
+]);
 
 const workspaceQuerySchema = listQuerySchema.extend({
   panel: housekeepingPanelSchema.optional(),
@@ -29,15 +31,18 @@ const workspaceQuerySchema = listQuerySchema.extend({
   assignee_id: uuidOrFriendlyIdentifierSchema.optional(),
   date_preset: z.enum(['today', 'next_7_days', 'overdue', 'this_month']).optional(),
   id: uuidOrFriendlyIdentifierSchema.optional(),
-  action: z.enum(['view', 'create', 'edit', 'complete', 'triage']).optional()});
+  action: z.enum(['view', 'create', 'edit', 'complete', 'triage']).optional(),
+});
 
 const lookupsQuerySchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  search: z.string().trim().optional()});
+  search: z.string().trim().optional(),
+});
 
 module.exports = {
   housekeepingPanelSchema,
   housekeepingResourceSchema,
   housekeepingQueueSchema,
   workspaceQuerySchema,
-  lookupsQuerySchema};
+  lookupsQuerySchema,
+};

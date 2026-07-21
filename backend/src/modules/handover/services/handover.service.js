@@ -13,7 +13,8 @@ const {
   normalizeString,
   resolveListScopedIdentifiers,
   resolveScopedIdentifiers,
-  serializeHandover} = require('@lib/last-office/shared');
+  serializeHandover,
+} = require('@lib/last-office/shared');
 const { recordWorkflowEvent } = require('@lib/telemetry/metrics');
 const { getUserPermissions } = require('@middlewares/auth.middleware');
 
@@ -22,7 +23,8 @@ const SORT_FIELDS = new Set(['created_at', 'updated_at', 'submitted_at', 'accept
 const resolveHandoverId = async (identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'handover',
-    identifier});
+    identifier,
+  });
 
   return resolved || identifier;
 };
@@ -52,7 +54,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
   }
 
   const where = {
-    tenant_id: scoped.tenant_id};
+    tenant_id: scoped.tenant_id,
+  };
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
 
@@ -60,7 +63,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const officeContextId = await resolveIdentifierForFilter({
       value: filters.office_context_id,
       model: 'office_context',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (officeContextId === null) return null;
     if (officeContextId !== undefined) where.office_context_id = officeContextId;
   }
@@ -69,7 +73,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const fromUserId = await resolveIdentifierForFilter({
       value: filters.from_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (fromUserId === null) return null;
     if (fromUserId !== undefined) where.from_user_id = fromUserId;
   }
@@ -78,7 +83,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const toUserId = await resolveIdentifierForFilter({
       value: filters.to_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (toUserId === null) return null;
     if (toUserId !== undefined) where.to_user_id = toUserId;
   }
@@ -96,7 +102,8 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
       value: data.office_context_id,
       field: 'office_context_id',
       model: 'office_context',
-      where: { tenant_id: context.tenant_id }});
+      where: { tenant_id: context.tenant_id },
+    });
     const officeContext = await officeContextRepository.findById(officeContextId);
     if (!officeContext) {
       throw new HttpError('errors.office_context.not_found', 404);
@@ -106,7 +113,8 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
 
   const currentOfficeContext = await officeContextRepository.findCurrent({
     tenant_id: context.tenant_id,
-    ...(context.facility_id ? { facility_id: context.facility_id } : {})});
+    ...(context.facility_id ? { facility_id: context.facility_id } : {}),
+  });
 
   if (!currentOfficeContext) {
     throw new HttpError('errors.office_context.not_found', 404);
@@ -120,7 +128,8 @@ const listHandovers = async (filters = {}, page = 1, limit = 20, sortBy, order, 
   if (where === null) {
     return {
       handovers: [],
-      pagination: buildPagination(page, limit, 0)};
+      pagination: buildPagination(page, limit, 0),
+    };
   }
 
   const skip = (page - 1) * limit;
@@ -128,11 +137,13 @@ const listHandovers = async (filters = {}, page = 1, limit = 20, sortBy, order, 
 
   const [records, total] = await Promise.all([
     handoverRepository.findMany(where, skip, limit, orderBy),
-    handoverRepository.count(where)]);
+    handoverRepository.count(where),
+  ]);
 
   return {
     handovers: records.map(serializeHandover),
-    pagination: buildPagination(page, limit, total)};
+    pagination: buildPagination(page, limit, total),
+  };
 };
 
 const getHandoverById = async (id, context = {}) => {
@@ -148,12 +159,14 @@ const createHandover = async (data = {}, context = {}) => {
     value: data.from_user_id ?? context.user_id,
     field: 'from_user_id',
     model: 'user',
-    where: { tenant_id: scoped.tenant_id }});
+    where: { tenant_id: scoped.tenant_id },
+  });
   const toUserId = await resolveIdentifierForPayload({
     value: data.to_user_id,
     field: 'to_user_id',
     model: 'user',
-    where: { tenant_id: scoped.tenant_id }});
+    where: { tenant_id: scoped.tenant_id },
+  });
 
   if (fromUserId === toUserId) {
     throw new HttpError('errors.validation.invalid', 400, [{ field: 'to_user_id' }]);
@@ -161,7 +174,8 @@ const createHandover = async (data = {}, context = {}) => {
 
   const pendingExisting = await handoverRepository.findMany({
     office_context_id: officeContext.id,
-    status: 'PENDING'}, 0, 1);
+    status: 'PENDING',
+  }, 0, 1);
 
   if (pendingExisting.length > 0) {
     throw new HttpError('errors.validation.invalid', 409, [{ field: 'office_context_id' }]);
@@ -180,14 +194,16 @@ const createHandover = async (data = {}, context = {}) => {
     signoff_notes: normalizeString(data.signoff_notes) || null,
     accepted_notes: null,
     submitted_at: new Date(),
-    etag: buildRecordEtag(publicId, '1', 'PENDING')};
+    etag: buildRecordEtag(publicId, '1', 'PENDING'),
+  };
 
   const record = await handoverRepository.create(payload);
   await officeContextRepository.update(officeContext.id, {
     status: 'HANDOVER_PENDING',
     current_holder_user_id: fromUserId,
     version: Number(officeContext.version || 1) + 1,
-    etag: buildRecordEtag(officeContext.human_friendly_id || officeContext.id, String(Number(officeContext.version || 1) + 1), 'HANDOVER_PENDING')});
+    etag: buildRecordEtag(officeContext.human_friendly_id || officeContext.id, String(Number(officeContext.version || 1) + 1), 'HANDOVER_PENDING'),
+  });
 
   const serialized = serializeHandover(record);
 
@@ -200,11 +216,13 @@ const createHandover = async (data = {}, context = {}) => {
     entity_id: record.id,
     diff: { after: serialized },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   recordWorkflowEvent('last_office.handover_created', {
     'hms.handover.id': serialized.id,
-    'hms.office_context.id': serialized.office_context_id});
+    'hms.office_context.id': serialized.office_context_id,
+  });
 
   return serialized;
 };
@@ -225,7 +243,8 @@ const updateHandover = async (id, data = {}, context = {}) => {
   const nextVersion = Number(current.version || 1) + 1;
   const updateData = {
     version: nextVersion,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'PENDING')};
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'PENDING'),
+  };
 
   if (data.items_json !== undefined) updateData.items_json = data.items_json || null;
   if (data.signoff_notes !== undefined) updateData.signoff_notes = normalizeString(data.signoff_notes) || null;
@@ -234,7 +253,8 @@ const updateHandover = async (id, data = {}, context = {}) => {
       value: data.to_user_id,
       field: 'to_user_id',
       model: 'user',
-      where: { tenant_id: current.tenant_id }});
+      where: { tenant_id: current.tenant_id },
+    });
   }
 
   const record = await handoverRepository.update(current.id, updateData);
@@ -250,7 +270,8 @@ const updateHandover = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   return after;
 };
@@ -274,7 +295,8 @@ const acceptHandover = async (id, data = {}, context = {}) => {
     accepted_notes: normalizeString(data.accepted_notes) || null,
     accepted_at: new Date(),
     version: nextVersion,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'ACCEPTED')});
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'ACCEPTED'),
+  });
 
   const officeContext = await officeContextRepository.findById(current.office_context_id);
   if (officeContext) {
@@ -282,7 +304,8 @@ const acceptHandover = async (id, data = {}, context = {}) => {
       status: 'OPEN',
       current_holder_user_id: record.to_user_id,
       version: Number(officeContext.version || 1) + 1,
-      etag: buildRecordEtag(officeContext.human_friendly_id || officeContext.id, String(Number(officeContext.version || 1) + 1), 'OPEN')});
+      etag: buildRecordEtag(officeContext.human_friendly_id || officeContext.id, String(Number(officeContext.version || 1) + 1), 'OPEN'),
+    });
   }
 
   const before = serializeHandover(current);
@@ -297,7 +320,8 @@ const acceptHandover = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   await emitLastOfficeEvent({
     tenant_id: record.tenant_id,
@@ -306,11 +330,14 @@ const acceptHandover = async (id, data = {}, context = {}) => {
     payload: {
       handover_id: after.id,
       office_context_id: after.office_context_id,
-      to_user_id: after.to_user_id}});
+      to_user_id: after.to_user_id,
+    },
+  });
 
   recordWorkflowEvent('last_office.handover_accepted', {
     'hms.handover.id': after.id,
-    'hms.office_context.id': after.office_context_id});
+    'hms.office_context.id': after.office_context_id,
+  });
 
   return after;
 };
@@ -320,4 +347,5 @@ module.exports = {
   createHandover,
   getHandoverById,
   listHandovers,
-  updateHandover};
+  updateHandover,
+};

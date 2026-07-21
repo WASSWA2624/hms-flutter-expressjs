@@ -18,7 +18,8 @@ const {
   normalizeString,
   resolveListScopedIdentifiers,
   resolveScopedIdentifiers,
-  serializeCloseoutPack} = require('@lib/last-office/shared');
+  serializeCloseoutPack,
+} = require('@lib/last-office/shared');
 const { generateReportFile } = require('@lib/reports/files');
 const { recordBackgroundJob, recordWorkflowEvent } = require('@lib/telemetry/metrics');
 const { createStorageService } = require('@lib/storage');
@@ -30,7 +31,8 @@ const SUPPORTED_FORMATS = new Set(['PDF', 'CSV', 'JSON', 'XLSX']);
 const resolveCloseoutPackId = async (identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'closeout_pack',
-    identifier});
+    identifier,
+  });
 
   return resolved || identifier;
 };
@@ -65,7 +67,8 @@ const buildSummary = ({ officeContext, shiftClose, dayClose, handover, custodySn
     id: officeContext.human_friendly_id || officeContext.id,
     status: officeContext.status,
     office_date: officeContext.office_date,
-    shift_id: officeContext.shift?.human_friendly_id || officeContext.shift_id} : null,
+    shift_id: officeContext.shift?.human_friendly_id || officeContext.shift_id,
+  } : null,
   shift_close: shiftClose ? {
     id: shiftClose.human_friendly_id || shiftClose.id,
     status: shiftClose.status,
@@ -73,25 +76,30 @@ const buildSummary = ({ officeContext, shiftClose, dayClose, handover, custodySn
     actual_amount: shiftClose.actual_amount ? String(shiftClose.actual_amount) : null,
     variance_amount: shiftClose.variance_amount ? String(shiftClose.variance_amount) : null,
     totals_json: shiftClose.totals_json || null,
-    reconciliation_json: shiftClose.reconciliation_json || null} : null,
+    reconciliation_json: shiftClose.reconciliation_json || null,
+  } : null,
   day_close: dayClose ? {
     id: dayClose.human_friendly_id || dayClose.id,
     status: dayClose.status,
     checklist_json: dayClose.checklist_json || null,
     blockers_json: dayClose.blockers_json || null,
-    unresolved_items_json: dayClose.unresolved_items_json || null} : null,
+    unresolved_items_json: dayClose.unresolved_items_json || null,
+  } : null,
   handover: handover ? {
     id: handover.human_friendly_id || handover.id,
     status: handover.status,
     from_user_id: handover.from_user?.human_friendly_id || handover.from_user_id,
     to_user_id: handover.to_user?.human_friendly_id || handover.to_user_id,
-    items_json: handover.items_json || null} : null,
+    items_json: handover.items_json || null,
+  } : null,
   custody_snapshot: custodySnapshot ? {
     id: custodySnapshot.human_friendly_id || custodySnapshot.id,
     status: custodySnapshot.status,
     asset_snapshot_json: custodySnapshot.asset_snapshot_json || null,
     cash_drawer_snapshot_json: custodySnapshot.cash_drawer_snapshot_json || null,
-    controlled_items_json: custodySnapshot.controlled_items_json || null} : null});
+    controlled_items_json: custodySnapshot.controlled_items_json || null,
+  } : null,
+});
 
 const buildReportRows = (summary = {}) => {
   const rows = [];
@@ -101,7 +109,8 @@ const buildReportRows = (summary = {}) => {
     rows.push({
       section,
       field: key,
-      value: typeof value === 'object' ? JSON.stringify(value) : String(value)});
+      value: typeof value === 'object' ? JSON.stringify(value) : String(value),
+    });
   };
 
   Object.entries(summary || {}).forEach(([section, sectionValue]) => {
@@ -126,7 +135,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
   }
 
   const where = {
-    tenant_id: scoped.tenant_id};
+    tenant_id: scoped.tenant_id,
+  };
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
 
@@ -134,7 +144,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const officeContextId = await resolveIdentifierForFilter({
       value: filters.office_context_id,
       model: 'office_context',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (officeContextId === null) return null;
     if (officeContextId !== undefined) where.office_context_id = officeContextId;
   }
@@ -143,7 +154,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const generatedByUserId = await resolveIdentifierForFilter({
       value: filters.generated_by_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (generatedByUserId === null) return null;
     if (generatedByUserId !== undefined) where.generated_by_user_id = generatedByUserId;
   }
@@ -165,10 +177,12 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
       value: data.office_context_id,
       field: 'office_context_id',
       model: 'office_context',
-      where: { tenant_id: context.tenant_id }});
+      where: { tenant_id: context.tenant_id },
+    });
     const officeContext = await officeContextRepository.findById(officeContextId, {
       shift: { select: { id: true, human_friendly_id: true } },
-      facility: { select: { id: true, human_friendly_id: true } }});
+      facility: { select: { id: true, human_friendly_id: true } },
+    });
     if (!officeContext) {
       throw new HttpError('errors.office_context.not_found', 404);
     }
@@ -177,9 +191,11 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
 
   const currentOfficeContext = await officeContextRepository.findCurrent({
     tenant_id: context.tenant_id,
-    ...(context.facility_id ? { facility_id: context.facility_id } : {})}, {
+    ...(context.facility_id ? { facility_id: context.facility_id } : {}),
+  }, {
     shift: { select: { id: true, human_friendly_id: true } },
-    facility: { select: { id: true, human_friendly_id: true } }});
+    facility: { select: { id: true, human_friendly_id: true } },
+  });
 
   if (!currentOfficeContext) {
     throw new HttpError('errors.office_context.not_found', 404);
@@ -212,7 +228,8 @@ const listCloseoutPacks = async (filters = {}, page = 1, limit = 20, sortBy, ord
   if (where === null) {
     return {
       closeoutPacks: [],
-      pagination: buildPagination(page, limit, 0)};
+      pagination: buildPagination(page, limit, 0),
+    };
   }
 
   const skip = (page - 1) * limit;
@@ -220,11 +237,13 @@ const listCloseoutPacks = async (filters = {}, page = 1, limit = 20, sortBy, ord
 
   const [records, total] = await Promise.all([
     closeoutPackRepository.findMany(where, skip, limit, orderBy),
-    closeoutPackRepository.count(where)]);
+    closeoutPackRepository.count(where),
+  ]);
 
   return {
     closeoutPacks: records.map(serializeCloseoutPack),
-    pagination: buildPagination(page, limit, total)};
+    pagination: buildPagination(page, limit, total),
+  };
 };
 
 const getCloseoutPackById = async (id, context = {}) => {
@@ -247,7 +266,8 @@ const createCloseoutPack = async (data = {}, context = {}) => {
           field: 'shift_close_id',
           model: 'shift_close',
           nullable: true,
-          where: { tenant_id: scoped.tenant_id, office_context_id: officeContext.id }})
+          where: { tenant_id: scoped.tenant_id, office_context_id: officeContext.id },
+        })
       )
     : await getLatestRecord(shiftCloseRepository, { office_context_id: officeContext.id, status: 'APPROVED' }, 'approved_at');
 
@@ -258,7 +278,8 @@ const createCloseoutPack = async (data = {}, context = {}) => {
           field: 'day_close_id',
           model: 'day_close',
           nullable: true,
-          where: { tenant_id: scoped.tenant_id, office_context_id: officeContext.id }})
+          where: { tenant_id: scoped.tenant_id, office_context_id: officeContext.id },
+        })
       )
     : await getLatestRecord(dayCloseRepository, { office_context_id: officeContext.id, status: 'APPROVED' }, 'approved_at');
 
@@ -269,7 +290,8 @@ const createCloseoutPack = async (data = {}, context = {}) => {
           field: 'handover_id',
           model: 'handover',
           nullable: true,
-          where: { tenant_id: scoped.tenant_id, office_context_id: officeContext.id }})
+          where: { tenant_id: scoped.tenant_id, office_context_id: officeContext.id },
+        })
       )
     : await getLatestRecord(handoverRepository, { office_context_id: officeContext.id, status: 'ACCEPTED' }, 'accepted_at');
 
@@ -280,7 +302,8 @@ const createCloseoutPack = async (data = {}, context = {}) => {
           field: 'custody_snapshot_id',
           model: 'custody_snapshot',
           nullable: true,
-          where: { tenant_id: scoped.tenant_id, office_context_id: officeContext.id }})
+          where: { tenant_id: scoped.tenant_id, office_context_id: officeContext.id },
+        })
       )
     : await getLatestRecord(custodySnapshotRepository, { office_context_id: officeContext.id, status: 'FINALIZED' }, 'finalized_at');
 
@@ -303,7 +326,8 @@ const createCloseoutPack = async (data = {}, context = {}) => {
     format,
     summary_json: null,
     parameter_overrides_json: data.parameter_overrides_json || null,
-    etag: buildRecordEtag(publicId, '1', 'PROCESSING')});
+    etag: buildRecordEtag(publicId, '1', 'PROCESSING'),
+  });
 
   await createAuditLog({
     tenant_id: initialRecord.tenant_id,
@@ -314,11 +338,13 @@ const createCloseoutPack = async (data = {}, context = {}) => {
     entity_id: initialRecord.id,
     diff: { after: serializeCloseoutPack(initialRecord) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   recordBackgroundJob('closeout_pack.started', {
     'hms.closeout_pack.id': publicId,
-    'hms.office_context.id': officeContext.human_friendly_id || officeContext.id});
+    'hms.office_context.id': officeContext.human_friendly_id || officeContext.id,
+  });
 
   try {
     const summary = buildSummary({ officeContext, shiftClose, dayClose, handover, custodySnapshot });
@@ -328,7 +354,8 @@ const createCloseoutPack = async (data = {}, context = {}) => {
       subtitle: 'Last Office evidence bundle',
       columns: ['section', 'field', 'value'],
       rows,
-      format});
+      format,
+    });
 
     const checksum = crypto.createHash('sha256').update(rendered.buffer).digest('hex');
     const storage = createStorageService();
@@ -338,7 +365,9 @@ const createCloseoutPack = async (data = {}, context = {}) => {
       encrypt: true,
       metadata: {
         closeout_pack_id: initialRecord.id,
-        office_context_id: officeContext.id}});
+        office_context_id: officeContext.id,
+      },
+    });
 
     const nextVersion = Number(initialRecord.version || 1) + 1;
     const record = await closeoutPackRepository.update(initialRecord.id, {
@@ -352,7 +381,8 @@ const createCloseoutPack = async (data = {}, context = {}) => {
       error_message: null,
       summary_json: summary,
       version: nextVersion,
-      etag: buildRecordEtag(publicId, String(nextVersion), 'READY')});
+      etag: buildRecordEtag(publicId, String(nextVersion), 'READY'),
+    });
 
     const serialized = serializeCloseoutPack(record);
 
@@ -365,9 +395,11 @@ const createCloseoutPack = async (data = {}, context = {}) => {
       entity_id: record.id,
       diff: {
         before: serializeCloseoutPack(initialRecord),
-        after: serialized},
+        after: serialized,
+      },
       ip_address: context.ip_address,
-      user_agent: context.user_agent});
+      user_agent: context.user_agent,
+    });
 
     await emitLastOfficeEvent({
       tenant_id: record.tenant_id,
@@ -376,14 +408,18 @@ const createCloseoutPack = async (data = {}, context = {}) => {
       payload: {
         closeout_pack_id: serialized.id,
         office_context_id: serialized.office_context_id,
-        format: serialized.format}});
+        format: serialized.format,
+      },
+    });
 
     recordWorkflowEvent('last_office.closeout_pack_ready', {
       'hms.closeout_pack.id': serialized.id,
-      'hms.office_context.id': serialized.office_context_id});
+      'hms.office_context.id': serialized.office_context_id,
+    });
     recordBackgroundJob('closeout_pack.completed', {
       'hms.closeout_pack.id': serialized.id,
-      'hms.closeout_pack.format': serialized.format});
+      'hms.closeout_pack.format': serialized.format,
+    });
 
     return serialized;
   } catch (error) {
@@ -392,7 +428,8 @@ const createCloseoutPack = async (data = {}, context = {}) => {
       status: 'FAILED',
       error_message: String(error?.message || 'Closeout pack generation failed').slice(0, 10000),
       version: nextVersion,
-      etag: buildRecordEtag(publicId, String(nextVersion), 'FAILED')});
+      etag: buildRecordEtag(publicId, String(nextVersion), 'FAILED'),
+    });
 
     await createAuditLog({
       tenant_id: failedRecord.tenant_id,
@@ -403,12 +440,15 @@ const createCloseoutPack = async (data = {}, context = {}) => {
       entity_id: failedRecord.id,
       diff: {
         before: serializeCloseoutPack(initialRecord),
-        after: serializeCloseoutPack(failedRecord)},
+        after: serializeCloseoutPack(failedRecord),
+      },
       ip_address: context.ip_address,
-      user_agent: context.user_agent}).catch(() => {});
+      user_agent: context.user_agent,
+    }).catch(() => {});
 
     recordBackgroundJob('closeout_pack.failed', {
-      'hms.closeout_pack.id': publicId});
+      'hms.closeout_pack.id': publicId,
+    });
 
     throw error;
   }
@@ -434,16 +474,19 @@ const downloadCloseoutPack = async (id, context = {}) => {
     entity_id: record.id,
     diff: { after: serializeCloseoutPack(record) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   return {
     buffer,
     file_name: record.output_file_name || `${record.human_friendly_id || record.id}.bin`,
-    mime_type: record.output_mime_type || 'application/octet-stream'};
+    mime_type: record.output_mime_type || 'application/octet-stream',
+  };
 };
 
 module.exports = {
   createCloseoutPack,
   downloadCloseoutPack,
   getCloseoutPackById,
-  listCloseoutPacks};
+  listCloseoutPacks,
+};

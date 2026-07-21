@@ -8,7 +8,8 @@ const { isFeatureEnabled } = require('@config/feature-flags');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   workspaceQuerySchema,
-  lookupsQuerySchema} = require('@validations/housekeeping-workspace/housekeeping-workspace.schema');
+  lookupsQuerySchema,
+} = require('@validations/housekeeping-workspace/housekeeping-workspace.schema');
 
 const HOUSEKEEPING_READ_SCOPES = [PERMISSIONS.OPERATIONS_READ];
 

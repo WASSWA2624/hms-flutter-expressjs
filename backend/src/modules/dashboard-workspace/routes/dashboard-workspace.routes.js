@@ -7,7 +7,8 @@ const { authorize } = require('@middlewares/auth.middleware');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const {
   lookupsQuerySchema,
-  workspaceQuerySchema} = require('@validations/dashboard-workspace/dashboard-workspace.schema');
+  workspaceQuerySchema,
+} = require('@validations/dashboard-workspace/dashboard-workspace.schema');
 
 const router = express.Router();
 const DASHBOARD_WORKSPACE_ROLES = ROLE_VALUES.filter((role) => role !== ROLES.OTHER);

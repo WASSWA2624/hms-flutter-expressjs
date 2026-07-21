@@ -10,10 +10,12 @@ const createCloseoutPackSchema = z.object({
   handover_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   custody_snapshot_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   format: z.enum(['PDF', 'CSV', 'JSON', 'XLSX']).optional(),
-  parameter_overrides_json: z.object({}).passthrough().optional().nullable()});
+  parameter_overrides_json: z.object({}).passthrough().optional().nullable(),
+});
 
 const closeoutPackIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema});
+  id: uuidOrFriendlyIdentifierSchema,
+});
 
 const listCloseoutPacksQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -21,9 +23,11 @@ const listCloseoutPacksQuerySchema = listQuerySchema.extend({
   office_context_id: uuidOrFriendlyIdentifierSchema.optional(),
   generated_by_user_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: z.enum(['QUEUED', 'PROCESSING', 'READY', 'FAILED']).optional(),
-  format: z.enum(['PDF', 'CSV', 'JSON', 'XLSX']).optional()});
+  format: z.enum(['PDF', 'CSV', 'JSON', 'XLSX']).optional(),
+});
 
 module.exports = {
   closeoutPackIdParamsSchema,
   createCloseoutPackSchema,
-  listCloseoutPacksQuerySchema};
+  listCloseoutPacksQuerySchema,
+};

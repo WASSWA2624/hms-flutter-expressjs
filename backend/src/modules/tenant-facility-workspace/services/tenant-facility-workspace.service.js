@@ -45,7 +45,6 @@ const buildSerializeContext = (tenant, facility, facilityRecords = {}) => {
   const idMap = buildIdentifierMap([
     tenant ? [tenant] : [],
     facility ? [facility] : [],
-    facilityRecords.branches || [],
     facilityRecords.departments || [],
     facilityRecords.units || [],
     facilityRecords.wards || [],
@@ -286,7 +285,6 @@ const buildChecklist = ({
       priority: 1},
     {
       id: 'branches',
-      label_key: 'tenant_facility.checklist.branches',
       priority: 2},
     {
       id: 'facility_identity',
@@ -432,7 +430,6 @@ const getSetup = async (filters = {}, user = {}) => {
     facility: serializeFacility(selectedFacility, serializeContext),
     facilities: facilities.map((entry) => serializeFacility(entry, serializeContext)),
     contact_address: contactAddress,
-    branches: facilityRecords.branches.map((entry) =>
       serializeBranch(entry, serializeContext)
     ),
     departments: facilityRecords.departments.map((entry) =>
@@ -446,7 +443,6 @@ const getSetup = async (filters = {}, user = {}) => {
       tenant,
       facility: selectedFacility,
       contactAddress,
-      branches: facilityRecords.branches,
       departments: facilityRecords.departments,
       units: facilityRecords.units,
       wards: facilityRecords.wards,

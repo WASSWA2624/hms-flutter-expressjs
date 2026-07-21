@@ -42,4 +42,5 @@ module.exports = {
   createHandover,
   getHandoverById,
   listHandovers,
-  updateHandover};
+  updateHandover,
+};

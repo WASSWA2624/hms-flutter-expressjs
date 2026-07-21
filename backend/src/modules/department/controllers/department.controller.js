@@ -142,7 +142,8 @@ const restoreDepartment = asyncHandler(async (req, res) => {
     tenant_id: req.user?.tenant_id,
     facility_id: req.user?.facility_id,
     ip_address: req.ip,
-    user_agent: req.get('user-agent')};
+    user_agent: req.get('user-agent'),
+  };
 
   const department = await departmentService.restoreDepartment(id, context);
 
@@ -177,4 +178,5 @@ module.exports = {
   updateDepartment,
   deleteDepartment,
   restoreDepartment,
-  getDepartmentUnits};
+  getDepartmentUnits,
+};

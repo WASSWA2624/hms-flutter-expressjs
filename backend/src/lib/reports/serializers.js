@@ -12,7 +12,6 @@ const mapFacility = (record) => ({
 });
 
 const mapBranch = (record) => ({
-  branch_id: safePublicId(record?.branch?.human_friendly_id, record?.branch_id),
   branch_label: record?.branch?.name || null,
 });
 

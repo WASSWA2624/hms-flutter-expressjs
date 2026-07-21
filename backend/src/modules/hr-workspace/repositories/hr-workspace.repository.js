@@ -28,7 +28,9 @@ const countStaffProfiles = async (where = {}) =>
     prisma.staff_profile.count({
       where: {
         deleted_at: null,
-        ...(where || {})}})
+        ...(where || {}),
+      },
+    })
   );
 
 const countStaffLeaves = async (where = {}) =>
@@ -36,7 +38,9 @@ const countStaffLeaves = async (where = {}) =>
     prisma.staff_leave.count({
       where: {
         deleted_at: null,
-        ...(where || {})}})
+        ...(where || {}),
+      },
+    })
   );
 
 const countShiftSwaps = async (where = {}) =>
@@ -44,7 +48,9 @@ const countShiftSwaps = async (where = {}) =>
     prisma.shift_swap_request.count({
       where: {
         deleted_at: null,
-        ...(where || {})}})
+        ...(where || {}),
+      },
+    })
   );
 
 const countRosters = async (where = {}) =>
@@ -52,7 +58,9 @@ const countRosters = async (where = {}) =>
     prisma.nurse_roster.count({
       where: {
         deleted_at: null,
-        ...(where || {})}})
+        ...(where || {}),
+      },
+    })
   );
 
 const countPayrollRuns = async (where = {}) =>
@@ -60,7 +68,9 @@ const countPayrollRuns = async (where = {}) =>
     prisma.payroll_run.count({
       where: {
         deleted_at: null,
-        ...(where || {})}})
+        ...(where || {}),
+      },
+    })
   );
 
 const countShifts = async (where = {}) =>
@@ -68,7 +78,9 @@ const countShifts = async (where = {}) =>
     prisma.shift.count({
       where: {
         deleted_at: null,
-        ...(where || {})}})
+        ...(where || {}),
+      },
+    })
   );
 
 const findManyLeaves = async ({ where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' } } = {}) =>
@@ -76,7 +88,8 @@ const findManyLeaves = async ({ where = {}, skip = 0, take = 20, orderBy = { cre
     prisma.staff_leave.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       include: {
         staff_profile: {
           select: {
@@ -92,7 +105,13 @@ const findManyLeaves = async ({ where = {}, skip = 0, take = 20, orderBy = { cre
                 profile: {
                   select: {
                     first_name: true,
-                    last_name: true}}}}}},
+                    last_name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         covering_staff_profile: {
           select: {
             id: true,
@@ -104,10 +123,18 @@ const findManyLeaves = async ({ where = {}, skip = 0, take = 20, orderBy = { cre
                 profile: {
                   select: {
                     first_name: true,
-                    last_name: true}}}}}}},
+                    last_name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       skip,
       take,
-      orderBy})
+      orderBy,
+    })
   );
 
 const findManyShiftSwaps = async ({ where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' } } = {}) =>
@@ -115,7 +142,8 @@ const findManyShiftSwaps = async ({ where = {}, skip = 0, take = 20, orderBy = {
     prisma.shift_swap_request.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       include: {
         shift: {
           select: {
@@ -125,22 +153,30 @@ const findManyShiftSwaps = async ({ where = {}, skip = 0, take = 20, orderBy = {
             start_time: true,
             end_time: true,
             facility_id: true,
-            tenant_id: true}},
+            tenant_id: true,
+          },
+        },
         requester: {
           select: {
             id: true,
             human_friendly_id: true,
             staff_number: true,
-            position: true}},
+            position: true,
+          },
+        },
         target: {
           select: {
             id: true,
             human_friendly_id: true,
             staff_number: true,
-            position: true}}},
+            position: true,
+          },
+        },
+      },
       skip,
       take,
-      orderBy})
+      orderBy,
+    })
   );
 
 const findManyRosters = async ({ where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' } } = {}) =>
@@ -148,10 +184,12 @@ const findManyRosters = async ({ where = {}, skip = 0, take = 20, orderBy = { cr
     prisma.nurse_roster.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       skip,
       take,
-      orderBy})
+      orderBy,
+    })
   );
 
 const findManyPayrollRuns = async ({ where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' } } = {}) =>
@@ -159,10 +197,12 @@ const findManyPayrollRuns = async ({ where = {}, skip = 0, take = 20, orderBy = 
     prisma.payroll_run.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       skip,
       take,
-      orderBy})
+      orderBy,
+    })
   );
 
 const findManyUnassignedShifts = async ({ where = {}, skip = 0, take = 20, orderBy = { start_time: 'asc' } } = {}) =>
@@ -172,17 +212,24 @@ const findManyUnassignedShifts = async ({ where = {}, skip = 0, take = 20, order
         deleted_at: null,
         assignments: {
           none: {
-            deleted_at: null}},
-        ...(where || {})},
+            deleted_at: null,
+          },
+        },
+        ...(where || {}),
+      },
       include: {
         nurse_roster: {
           select: {
             id: true,
             human_friendly_id: true,
-            status: true}}},
+            status: true,
+          },
+        },
+      },
       skip,
       take,
-      orderBy})
+      orderBy,
+    })
   );
 
 const findManyOverdueShifts = async ({ where = {}, skip = 0, take = 20, orderBy = { start_time: 'asc' } } = {}) =>
@@ -190,17 +237,22 @@ const findManyOverdueShifts = async ({ where = {}, skip = 0, take = 20, orderBy 
     prisma.shift.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       include: {
         assignments: {
           where: { deleted_at: null },
           select: {
             id: true,
             human_friendly_id: true,
-            staff_profile_id: true}}},
+            staff_profile_id: true,
+          },
+        },
+      },
       skip,
       take,
-      orderBy})
+      orderBy,
+    })
   );
 
 const findTimelineLeaves = async (where = {}, take = 10) =>
@@ -208,14 +260,19 @@ const findTimelineLeaves = async (where = {}, take = 10) =>
     prisma.staff_leave.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       take,
       orderBy: { updated_at: 'desc' },
       include: {
         staff_profile: {
           select: {
             human_friendly_id: true,
-            staff_number: true}}}})
+            staff_number: true,
+          },
+        },
+      },
+    })
   );
 
 const findTimelineSwaps = async (where = {}, take = 10) =>
@@ -223,13 +280,18 @@ const findTimelineSwaps = async (where = {}, take = 10) =>
     prisma.shift_swap_request.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       take,
       orderBy: { updated_at: 'desc' },
       include: {
         shift: {
           select: {
-            human_friendly_id: true}}}})
+            human_friendly_id: true,
+          },
+        },
+      },
+    })
   );
 
 const findTimelineRosters = async (where = {}, take = 10) =>
@@ -237,9 +299,11 @@ const findTimelineRosters = async (where = {}, take = 10) =>
     prisma.nurse_roster.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       take,
-      orderBy: { updated_at: 'desc' }})
+      orderBy: { updated_at: 'desc' },
+    })
   );
 
 const findTimelinePayrollRuns = async (where = {}, take = 10) =>
@@ -247,9 +311,11 @@ const findTimelinePayrollRuns = async (where = {}, take = 10) =>
     prisma.payroll_run.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       take,
-      orderBy: { updated_at: 'desc' }})
+      orderBy: { updated_at: 'desc' },
+    })
   );
 
 const findTimelineShifts = async (where = {}, take = 10) =>
@@ -257,9 +323,11 @@ const findTimelineShifts = async (where = {}, take = 10) =>
     prisma.shift.findMany({
       where: {
         deleted_at: null,
-        ...(where || {})},
+        ...(where || {}),
+      },
       take,
-      orderBy: { updated_at: 'desc' }})
+      orderBy: { updated_at: 'desc' },
+    })
   );
 
 const withTransaction = async (callback) => withDbErrorHandling(() => prisma.$transaction((tx) => callback(tx)));
@@ -282,4 +350,5 @@ module.exports = {
   findTimelineRosters,
   findTimelinePayrollRuns,
   findTimelineShifts,
-  withTransaction};
+  withTransaction,
+};

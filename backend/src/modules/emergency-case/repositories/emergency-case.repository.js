@@ -15,18 +15,25 @@ const DEFAULT_INCLUDE = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true}},
+      name: true,
+    },
+  },
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true}},
+      name: true,
+    },
+  },
   patient: {
     select: {
       id: true,
       human_friendly_id: true,
       first_name: true,
-      last_name: true}}};
+      last_name: true,
+    },
+  },
+};
 
 const SEARCHABLE_SEVERITIES = new Set(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
 const SEARCHABLE_STATUSES = new Set(['OPEN', 'CLOSED', 'CANCELLED']);
@@ -36,11 +43,13 @@ const SEARCHABLE_STATUS_ALIAS_MAP = Object.freeze({
   CANCELLED: 'CANCELLED',
   PENDING: 'OPEN',
   IN_PROGRESS: 'OPEN',
-  COMPLETED: 'CLOSED'});
+  COMPLETED: 'CLOSED',
+});
 
 const buildWhere = (filters = {}) => {
   const where = {
-    deleted_at: null};
+    deleted_at: null,
+  };
 
   const {
     search,
@@ -61,7 +70,8 @@ const buildWhere = (filters = {}) => {
     { tenant: { human_friendly_id: { contains: searchUpper } } },
     { tenant: { name: { contains: normalizedSearch } } },
     { facility: { human_friendly_id: { contains: searchUpper } } },
-    { facility: { name: { contains: normalizedSearch } } }];
+    { facility: { name: { contains: normalizedSearch } } },
+  ];
 
   if (SEARCHABLE_SEVERITIES.has(searchUpper)) {
     searchClauses.push({ severity: searchUpper });
@@ -74,7 +84,8 @@ const buildWhere = (filters = {}) => {
 
   where.AND = [
     ...(Array.isArray(where.AND) ? where.AND : []),
-    { OR: searchClauses }];
+    { OR: searchClauses },
+  ];
 
   return where;
 };
@@ -158,7 +169,8 @@ const create = async (data, dbClient = prisma) => {
   try {
     return await dbClient.emergency_case.create({
       data,
-      include: DEFAULT_INCLUDE});
+      include: DEFAULT_INCLUDE,
+    });
   } catch (error) {
     if (error.code === 'P2002') {
       // Unique constraint violation
@@ -186,7 +198,8 @@ const update = async (id, data) => {
     return await prisma.emergency_case.update({
       where: { id },
       data,
-      include: DEFAULT_INCLUDE});
+      include: DEFAULT_INCLUDE,
+    });
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.emergency_case.not_found', 404);
@@ -219,7 +232,8 @@ const softDelete = async (id) => {
       data: {
         deleted_at: new Date()
       },
-      include: DEFAULT_INCLUDE});
+      include: DEFAULT_INCLUDE,
+    });
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.emergency_case.not_found', 404);

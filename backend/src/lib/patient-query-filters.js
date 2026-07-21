@@ -13,8 +13,13 @@ const withActivePatient = (filters = {}, relationName = 'patient') => {
       ...toArray(AND),
       {
         [relationName]: {
-          deleted_at: null}}]};
+          deleted_at: null,
+        },
+      },
+    ],
+  };
 };
 
 module.exports = {
-  withActivePatient};
+  withActivePatient,
+};

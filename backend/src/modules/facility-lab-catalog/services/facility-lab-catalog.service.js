@@ -16,23 +16,27 @@ const {
   buildPagination,
   normalizeSearchTerm,
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow} = require('@services/lab-workspace/lab.shared');
+  resolveModelRecordOrThrow,
+} = require('@services/lab-workspace/lab.shared');
 const {
   buildLabReferenceRangeSummary,
   normalizeLabReferenceRanges,
   normalizeLabResultOptions,
   normalizeLabUnitOptions,
-  toOptionalText} = require('@services/lab-workspace/lab.configuration');
+  toOptionalText,
+} = require('@services/lab-workspace/lab.configuration');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
 const {
   mapMergedLabPanelRecord,
   mapMergedLabTestRecord,
   mapClinicalCatalogLabPanelRow,
   mapClinicalCatalogLabTestRow,
-  mergeLabTestWithOffering} = require('@services/lab-workspace/facility-lab-catalog.merge');
+  mergeLabTestWithOffering,
+} = require('@services/lab-workspace/facility-lab-catalog.merge');
 const { emitToUsers, DIAGNOSTIC_EVENTS } = require('@lib/websocket');
 const {
-  resolveFacilityLabCatalogRecipients} = require('@services/lab-workspace/lab.realtime');
+  resolveFacilityLabCatalogRecipients,
+} = require('@services/lab-workspace/lab.realtime');
 
 const publishLabCatalogRealtimeUpdate = async ({
   tenantId,
@@ -41,12 +45,14 @@ const publishLabCatalogRealtimeUpdate = async ({
   action,
   resourceId = null,
   isActive = null,
-  actorUserId = null} = {}) => {
+  actorUserId = null,
+} = {}) => {
   try {
     const recipientUserIds = await resolveFacilityLabCatalogRecipients({
       tenantId,
       facilityId,
-      actorUserId});
+      actorUserId,
+    });
     if (!recipientUserIds.length) return;
 
     emitToUsers(recipientUserIds, DIAGNOSTIC_EVENTS.LAB_CATALOG_UPDATED, {
@@ -58,7 +64,8 @@ const publishLabCatalogRealtimeUpdate = async ({
       is_active: isActive,
       action: String(action || 'UPDATED').trim().toUpperCase(),
       occurred_at: new Date().toISOString(),
-      target_path: '/lab'});
+      target_path: '/lab',
+    });
   } catch (_error) {
     // Realtime updates must never block catalog persistence.
   }
@@ -80,7 +87,8 @@ const resolveOrCreateStandardLabTest = async ({
   identifier,
   tenantId,
   userId,
-  ipAddress}) => {
+  ipAddress,
+}) => {
   const catalogCode = standardCatalogCodeFromIdentifier(identifier, 'STD_LAB_TEST');
   if (!catalogCode) {
     return null;
@@ -95,8 +103,10 @@ const resolveOrCreateStandardLabTest = async ({
     where: {
       tenant_id: tenantId,
       deleted_at: null,
-      code: definition.code},
-    select: { id: true }});
+      code: definition.code,
+    },
+    select: { id: true },
+  });
   if (existing) {
     return existing;
   }
@@ -120,9 +130,15 @@ const resolveOrCreateStandardLabTest = async ({
                   unit: definition.unit,
                   ucum_code: null,
                   is_default: true,
-                  sort_order: 0}]}}
-        : {})},
-    select: { id: true }});
+                  sort_order: 0,
+                },
+              ],
+            },
+          }
+        : {}),
+    },
+    select: { id: true },
+  });
 
   createAuditLog({
     tenant_id: tenantId,
@@ -131,8 +147,10 @@ const resolveOrCreateStandardLabTest = async ({
     entity: 'lab_test',
     entity_id: labTest.id,
     diff: {
-      after: { ...definition, id: labTest.id, source: 'STANDARD_LAB_CATALOG' }},
-    ip_address: ipAddress}).catch(() => {});
+      after: { ...definition, id: labTest.id, source: 'STANDARD_LAB_CATALOG' },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   return labTest;
 };
@@ -147,7 +165,8 @@ const resolveOrCreateStandardLabPanel = async ({
   identifier,
   tenantId,
   userId,
-  ipAddress}) => {
+  ipAddress,
+}) => {
   const catalogCode = standardCatalogCodeFromIdentifier(identifier, 'STD_LAB_PANEL');
   if (!catalogCode) {
     return null;
@@ -162,8 +181,10 @@ const resolveOrCreateStandardLabPanel = async ({
     where: {
       tenant_id: tenantId,
       deleted_at: null,
-      code: catalogCode},
-    select: { id: true }});
+      code: catalogCode,
+    },
+    select: { id: true },
+  });
   if (existing) {
     return existing;
   }
@@ -175,7 +196,8 @@ const resolveOrCreateStandardLabPanel = async ({
       identifier: `STD_LAB_TEST:${testCode}`,
       tenantId,
       userId,
-      ipAddress});
+      ipAddress,
+    });
     if (!labTest?.id) {
       continue;
     }
@@ -184,7 +206,8 @@ const resolveOrCreateStandardLabPanel = async ({
       lab_test_id: labTest.id,
       is_required: true,
       sort_order: index,
-      instructions: null});
+      instructions: null,
+    });
   }
 
   if (!panelItems.length) {
@@ -199,8 +222,11 @@ const resolveOrCreateStandardLabPanel = async ({
       category: 'STANDARD',
       description: 'Standard lab panel',
       panel_items: {
-        create: panelItems}},
-    select: { id: true }});
+        create: panelItems,
+      },
+    },
+    select: { id: true },
+  });
 
   createAuditLog({
     tenant_id: tenantId,
@@ -212,8 +238,11 @@ const resolveOrCreateStandardLabPanel = async ({
       after: {
         id: labPanel.id,
         code: catalogCode,
-        source: 'STANDARD_LAB_CATALOG'}},
-    ip_address: ipAddress}).catch(() => {});
+        source: 'STANDARD_LAB_CATALOG',
+      },
+    },
+    ip_address: ipAddress,
+  }).catch(() => {});
 
   return labPanel;
 };
@@ -222,12 +251,14 @@ const resolveLabPanelIdOrThrow = async ({
   identifier,
   tenantId,
   context = {},
-  errorKey = 'errors.lab_panel.not_found'}) => {
+  errorKey = 'errors.lab_panel.not_found',
+}) => {
   const standardLabPanel = await resolveOrCreateStandardLabPanel({
     identifier,
     tenantId,
     userId: context.user_id,
-    ipAddress: context.ip_address});
+    ipAddress: context.ip_address,
+  });
   if (standardLabPanel?.id) {
     return standardLabPanel.id;
   }
@@ -236,19 +267,22 @@ const resolveLabPanelIdOrThrow = async ({
     model: 'lab_panel',
     identifier,
     tenantId,
-    errorKey});
+    errorKey,
+  });
 };
 
 const resolveLabTestIdOrThrow = async ({
   identifier,
   tenantId,
   context = {},
-  errorKey = 'errors.lab_test.not_found'}) => {
+  errorKey = 'errors.lab_test.not_found',
+}) => {
   const standardLabTest = await resolveOrCreateStandardLabTest({
     identifier,
     tenantId,
     userId: context.user_id,
-    ipAddress: context.ip_address});
+    ipAddress: context.ip_address,
+  });
   if (standardLabTest?.id) {
     return standardLabTest.id;
   }
@@ -257,7 +291,8 @@ const resolveLabTestIdOrThrow = async ({
     model: 'lab_test',
     identifier,
     tenantId,
-    errorKey});
+    errorKey,
+  });
 };
 
 const withoutChildIdentifier = (entry = {}) => {
@@ -275,14 +310,16 @@ const buildNestedChildWritePayload = (entries = [], options = {}) => {
   const existingIds = existingRows.map((entry) => entry.id);
   const createRows = entries.filter((entry) => !toOptionalText(entry.id));
   const payload = {
-    deleteMany: existingIds.length > 0 ? { id: { notIn: existingIds } } : {}};
+    deleteMany: existingIds.length > 0 ? { id: { notIn: existingIds } } : {},
+  };
   if (createRows.length > 0) {
     payload.create = createRows.map(withoutChildIdentifier);
   }
   if (existingRows.length > 0) {
     payload.update = existingRows.map((entry) => ({
       where: { id: entry.id },
-      data: withoutChildIdentifier(entry)}));
+      data: withoutChildIdentifier(entry),
+    }));
   }
   return payload;
 };
@@ -305,7 +342,8 @@ const buildOfferingWritePayload = (payload = {}, options = {}) => {
 
   if (hasReferenceRanges) {
     data.reference_ranges = buildNestedChildWritePayload(normalizedRanges, {
-      preserveExisting: preserveExistingChildren});
+      preserveExisting: preserveExistingChildren,
+    });
   } else {
     delete data.reference_ranges;
   }
@@ -316,7 +354,8 @@ const buildOfferingWritePayload = (payload = {}, options = {}) => {
 
   if (hasUnitOptions) {
     data.unit_options = buildNestedChildWritePayload(normalizedUnitOptions, {
-      preserveExisting: preserveExistingChildren});
+      preserveExisting: preserveExistingChildren,
+    });
     const defaultUnitOption = normalizedUnitOptions.find((entry) => entry.is_default)
       || normalizedUnitOptions[0]
       || null;
@@ -329,7 +368,8 @@ const buildOfferingWritePayload = (payload = {}, options = {}) => {
 
   if (hasResultOptions) {
     data.result_options = buildNestedChildWritePayload(normalizedResultOptions, {
-      preserveExisting: preserveExistingChildren});
+      preserveExisting: preserveExistingChildren,
+    });
   } else {
     delete data.result_options;
   }
@@ -352,13 +392,15 @@ const copyMasterDefaults = (masterTest = {}) => ({
     critical_max_value: entry.critical_max_value,
     reference_text: entry.reference_text,
     notes: entry.notes,
-    sort_order: entry.sort_order})),
+    sort_order: entry.sort_order,
+  })),
   unit_options: (masterTest.unit_options || []).map((entry) => ({
     label: entry.label,
     unit: entry.unit,
     ucum_code: entry.ucum_code,
     is_default: entry.is_default,
-    sort_order: entry.sort_order})),
+    sort_order: entry.sort_order,
+  })),
   result_options: (masterTest.result_options || []).map((entry) => ({
     value: entry.value,
     label: entry.label,
@@ -366,21 +408,25 @@ const copyMasterDefaults = (masterTest = {}) => ({
     status: entry.status,
     result_flag: entry.result_flag,
     is_positive: entry.is_positive,
-    sort_order: entry.sort_order})),
-  reference_range: masterTest.reference_range});
+    sort_order: entry.sort_order,
+  })),
+  reference_range: masterTest.reference_range,
+});
 
 const resolveFacilityId = async (context = {}, payload = {}) => {
   const facilityId = await resolveOperationalFacilityId({
     facilityId: payload.facility_id || context.facility_id || null,
     userId: context.user_id || null,
-    tenantId: context.tenant_id || payload.tenant_id || null});
+    tenantId: context.tenant_id || payload.tenant_id || null,
+  });
   if (!facilityId) {
     throw new HttpError('errors.validation.field.required', 400, [{ field: 'facility_id' }]);
   }
   return resolveModelIdOrThrow({
     model: 'facility',
     identifier: facilityId,
-    tenantId: context.tenant_id});
+    tenantId: context.tenant_id,
+  });
 };
 
 const syncLegacyOffering = async ({ tenantId, facilityId, labTestId, isActive }) => {
@@ -389,14 +435,16 @@ const syncLegacyOffering = async ({ tenantId, facilityId, labTestId, isActive })
     facility_id: facilityId,
     term_type: 'LAB_TEST',
     item_id: labTestId,
-    deleted_at: null});
+    deleted_at: null,
+  });
 
   const data = {
     tenant_id: tenantId,
     facility_id: facilityId,
     term_type: 'LAB_TEST',
     item_id: labTestId,
-    is_active: isActive !== false};
+    is_active: isActive !== false,
+  };
 
   if (existing) {
     await clinicalTermRepository.updateFacilityOffering(existing.id, data);
@@ -417,7 +465,9 @@ const buildTestSearchWhere = (tenantId, searchTerm) => {
       { code: { contains: searchTerm.raw } },
       { category: { contains: searchTerm.raw } },
       { specimen_type: { contains: searchTerm.raw } },
-      { description: { contains: searchTerm.raw } }]};
+      { description: { contains: searchTerm.raw } },
+    ],
+  };
 };
 
 const buildPanelSearchWhere = (tenantId, searchTerm) => {
@@ -429,7 +479,9 @@ const buildPanelSearchWhere = (tenantId, searchTerm) => {
       { name: { contains: searchTerm.raw } },
       { code: { contains: searchTerm.raw } },
       { category: { contains: searchTerm.raw } },
-      { description: { contains: searchTerm.raw } }]};
+      { description: { contains: searchTerm.raw } },
+    ],
+  };
 };
 
 const listFacilityLabTests = async (filters, page, limit, sortBy, order, context = {}) => {
@@ -447,7 +499,8 @@ const listFacilityLabTests = async (filters, page, limit, sortBy, order, context
     const offeringWhere = {
       tenant_id: tenantId,
       facility_id: facilityId,
-      ...(includeInactive ? {} : { is_active: true })};
+      ...(includeInactive ? {} : { is_active: true }),
+    };
     const offerings = await facilityLabCatalogRepository.findTestOfferings(
       offeringWhere,
       skip,
@@ -464,12 +517,14 @@ const listFacilityLabTests = async (filters, page, limit, sortBy, order, context
   const masterWhere = buildTestSearchWhere(tenantId, searchTerm);
   const [masterTests, total] = await Promise.all([
     labTestRepository.findMany(masterWhere, skip, limit, orderBy, LAB_TEST_WITH_RELATIONS_INCLUDE),
-    labTestRepository.count(masterWhere)]);
+    labTestRepository.count(masterWhere),
+  ]);
   const offeringRows = await facilityLabCatalogRepository.findTestOfferings(
     {
       tenant_id: tenantId,
       facility_id: facilityId,
-      lab_test_id: { in: masterTests.map((row) => row.id) }},
+      lab_test_id: { in: masterTests.map((row) => row.id) },
+    },
     0,
     masterTests.length
   );
@@ -509,12 +564,14 @@ const listFacilityLabPanels = async (filters, page, limit, sortBy, order, contex
   const masterWhere = buildPanelSearchWhere(tenantId, searchTerm);
   const [masterPanels, total] = await Promise.all([
     labPanelRepository.findMany(masterWhere, skip, limit, orderBy, LAB_PANEL_WITH_RELATIONS_INCLUDE),
-    labPanelRepository.count(masterWhere)]);
+    labPanelRepository.count(masterWhere),
+  ]);
   const offeringRows = await facilityLabCatalogRepository.findPanelOfferings(
     {
       tenant_id: tenantId,
       facility_id: facilityId,
-      lab_panel_id: { in: masterPanels.map((row) => row.id) }},
+      lab_panel_id: { in: masterPanels.map((row) => row.id) },
+    },
     0,
     masterPanels.length
   );
@@ -533,16 +590,19 @@ const getFacilityLabTest = async (labTestIdentifier, context = {}, filters = {})
   const labTestId = await resolveLabTestIdOrThrow({
     identifier: labTestIdentifier,
     tenantId,
-    context});
+    context,
+  });
   const masterTest = await resolveModelRecordOrThrow({
     model: 'lab_test',
     identifier: labTestId,
     tenantId,
-    include: LAB_TEST_WITH_RELATIONS_INCLUDE});
+    include: LAB_TEST_WITH_RELATIONS_INCLUDE,
+  });
   const offering = await facilityLabCatalogRepository.findTestOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    lab_test_id: labTestId});
+    lab_test_id: labTestId,
+  });
   return mapMergedLabTestRecord(masterTest, offering);
 };
 
@@ -553,16 +613,19 @@ const getFacilityLabPanel = async (labPanelIdentifier, context = {}, filters = {
   const labPanelId = await resolveLabPanelIdOrThrow({
     identifier: labPanelIdentifier,
     tenantId,
-    context});
+    context,
+  });
   const masterPanel = await resolveModelRecordOrThrow({
     model: 'lab_panel',
     identifier: labPanelId,
     tenantId,
-    include: LAB_PANEL_WITH_RELATIONS_INCLUDE});
+    include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
+  });
   const offering = await facilityLabCatalogRepository.findPanelOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    lab_panel_id: labPanelId});
+    lab_panel_id: labPanelId,
+  });
   return mapMergedLabPanelRecord(masterPanel, offering);
 };
 
@@ -575,17 +638,20 @@ const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
   const labTestId = await resolveLabTestIdOrThrow({
     identifier: payload.lab_test_id,
     tenantId,
-    context});
+    context,
+  });
   const masterTest = await resolveModelRecordOrThrow({
     model: 'lab_test',
     identifier: labTestId,
     tenantId,
-    include: LAB_TEST_WITH_RELATIONS_INCLUDE});
+    include: LAB_TEST_WITH_RELATIONS_INCLUDE,
+  });
 
   const existing = await facilityLabCatalogRepository.findTestOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    lab_test_id: labTestId});
+    lab_test_id: labTestId,
+  });
 
   const shouldSeedDefaults = !existing
     && payload.is_active !== false
@@ -609,10 +675,12 @@ const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
     ...(shouldSeedDefaults ? copyMasterDefaults(masterTest) : {}),
     ...(hasOwn(payload, 'reference_ranges') ? { reference_ranges: payload.reference_ranges } : {}),
     ...(hasOwn(payload, 'unit_options') ? { unit_options: payload.unit_options } : {}),
-    ...(hasOwn(payload, 'result_options') ? { result_options: payload.result_options } : {})};
+    ...(hasOwn(payload, 'result_options') ? { result_options: payload.result_options } : {}),
+  };
 
   const writePayload = buildOfferingWritePayload(basePayload, {
-    includeDeleteMany: Boolean(existing)});
+    includeDeleteMany: Boolean(existing),
+  });
 
   const offering = existing
     ? await facilityLabCatalogRepository.updateTestOffering(existing.id, writePayload)
@@ -622,7 +690,8 @@ const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
     tenantId,
     facilityId,
     labTestId,
-    isActive: offering.is_active});
+    isActive: offering.is_active,
+  });
 
   createAuditLog({
     tenant_id: tenantId,
@@ -631,7 +700,8 @@ const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
     entity: 'facility_lab_test_offering',
     entity_id: offering.id,
     diff: { after: offering },
-    ip_address: context.ip_address}).catch(() => {});
+    ip_address: context.ip_address,
+  }).catch(() => {});
 
   publishLabCatalogRealtimeUpdate({
     tenantId,
@@ -640,7 +710,8 @@ const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
     action: existing ? 'UPDATED' : 'ENABLED',
     resourceId: labTestId,
     isActive: offering.is_active,
-    actorUserId: userId});
+    actorUserId: userId,
+  });
 
   return mapMergedLabTestRecord(masterTest, offering);
 };
@@ -654,18 +725,21 @@ const disableFacilityLabTestOffering = async (labTestIdentifier, payload = {}, c
   const labTestId = await resolveLabTestIdOrThrow({
     identifier: labTestIdentifier,
     tenantId,
-    context});
+    context,
+  });
   const offering = await facilityLabCatalogRepository.findTestOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    lab_test_id: labTestId});
+    lab_test_id: labTestId,
+  });
   if (!offering) {
     throw new HttpError('errors.facility_lab_test_offering.not_found', 404);
   }
 
   const updated = await facilityLabCatalogRepository.updateTestOffering(offering.id, {
     is_active: false,
-    deleted_at: new Date()});
+    deleted_at: new Date(),
+  });
 
   await syncLegacyOffering({ tenantId, facilityId, labTestId, isActive: false });
 
@@ -676,7 +750,8 @@ const disableFacilityLabTestOffering = async (labTestIdentifier, payload = {}, c
     entity: 'facility_lab_test_offering',
     entity_id: offering.id,
     diff: { before: offering, reason: normalizeText(payload.reason) },
-    ip_address: context.ip_address}).catch(() => {});
+    ip_address: context.ip_address,
+  }).catch(() => {});
 
   publishLabCatalogRealtimeUpdate({
     tenantId,
@@ -685,7 +760,8 @@ const disableFacilityLabTestOffering = async (labTestIdentifier, payload = {}, c
     action: 'DISABLED',
     resourceId: labTestId,
     isActive: false,
-    actorUserId: userId});
+    actorUserId: userId,
+  });
 
   return updated;
 };
@@ -699,17 +775,20 @@ const upsertFacilityLabPanelOffering = async (payload = {}, context = {}) => {
   const labPanelId = await resolveLabPanelIdOrThrow({
     identifier: payload.lab_panel_id,
     tenantId,
-    context});
+    context,
+  });
   const masterPanel = await resolveModelRecordOrThrow({
     model: 'lab_panel',
     identifier: labPanelId,
     tenantId,
-    include: LAB_PANEL_WITH_RELATIONS_INCLUDE});
+    include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
+  });
 
   const existing = await facilityLabCatalogRepository.findPanelOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    lab_panel_id: labPanelId});
+    lab_panel_id: labPanelId,
+  });
 
   const writePayload = {
     tenant_id: tenantId,
@@ -718,7 +797,8 @@ const upsertFacilityLabPanelOffering = async (payload = {}, context = {}) => {
     is_active: payload.is_active !== false,
     sort_order: Number(payload.sort_order || 0),
     unit_price: payload.unit_price,
-    currency: toOptionalText(payload.currency) || masterPanel.currency || null};
+    currency: toOptionalText(payload.currency) || masterPanel.currency || null,
+  };
 
   const offering = existing
     ? await facilityLabCatalogRepository.updatePanelOffering(existing.id, writePayload)
@@ -731,7 +811,8 @@ const upsertFacilityLabPanelOffering = async (payload = {}, context = {}) => {
     entity: 'facility_lab_panel_offering',
     entity_id: offering.id,
     diff: { after: offering },
-    ip_address: context.ip_address}).catch(() => {});
+    ip_address: context.ip_address,
+  }).catch(() => {});
 
   publishLabCatalogRealtimeUpdate({
     tenantId,
@@ -740,7 +821,8 @@ const upsertFacilityLabPanelOffering = async (payload = {}, context = {}) => {
     action: existing ? 'UPDATED' : 'ENABLED',
     resourceId: labPanelId,
     isActive: offering.is_active,
-    actorUserId: userId});
+    actorUserId: userId,
+  });
 
   return mapMergedLabPanelRecord(masterPanel, offering);
 };
@@ -754,18 +836,21 @@ const disableFacilityLabPanelOffering = async (labPanelIdentifier, payload = {},
   const labPanelId = await resolveLabPanelIdOrThrow({
     identifier: labPanelIdentifier,
     tenantId,
-    context});
+    context,
+  });
   const offering = await facilityLabCatalogRepository.findPanelOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    lab_panel_id: labPanelId});
+    lab_panel_id: labPanelId,
+  });
   if (!offering) {
     throw new HttpError('errors.facility_lab_panel_offering.not_found', 404);
   }
 
   const updated = await facilityLabCatalogRepository.updatePanelOffering(offering.id, {
     is_active: false,
-    deleted_at: new Date()});
+    deleted_at: new Date(),
+  });
 
   createAuditLog({
     tenant_id: tenantId,
@@ -774,7 +859,8 @@ const disableFacilityLabPanelOffering = async (labPanelIdentifier, payload = {},
     entity: 'facility_lab_panel_offering',
     entity_id: offering.id,
     diff: { before: offering, reason: normalizeText(payload.reason) },
-    ip_address: context.ip_address}).catch(() => {});
+    ip_address: context.ip_address,
+  }).catch(() => {});
 
   publishLabCatalogRealtimeUpdate({
     tenantId,
@@ -783,7 +869,8 @@ const disableFacilityLabPanelOffering = async (labPanelIdentifier, payload = {},
     action: 'DISABLED',
     resourceId: labPanelId,
     isActive: false,
-    actorUserId: userId});
+    actorUserId: userId,
+  });
 
   return updated;
 };
@@ -810,8 +897,12 @@ const searchFacilityLabCatalog = async (filters = {}, context = {}) => {
               OR: [
                 { name: { contains: searchTerm.raw } },
                 { code: { contains: searchTerm.raw } },
-                { category: { contains: searchTerm.raw } }]}}
-        : {})};
+                { category: { contains: searchTerm.raw } },
+              ],
+            },
+          }
+        : {}),
+    };
     const offerings = await facilityLabCatalogRepository.findPanelOfferings(
       offeringWhere,
       0,
@@ -834,8 +925,12 @@ const searchFacilityLabCatalog = async (filters = {}, context = {}) => {
             OR: [
               { name: { contains: searchTerm.raw } },
               { code: { contains: searchTerm.raw } },
-              { category: { contains: searchTerm.raw } }]}}
-      : {})};
+              { category: { contains: searchTerm.raw } },
+            ],
+          },
+        }
+      : {}),
+  };
   const offerings = await facilityLabCatalogRepository.findTestOfferings(
     offeringWhere,
     0,
@@ -851,7 +946,8 @@ const resolveFacilityLabTestForInterpretation = async ({
   tenantId,
   facilityId,
   labTestId,
-  masterTest = null}) => {
+  masterTest = null,
+}) => {
   if (!tenantId || !facilityId || !labTestId) {
     return masterTest;
   }
@@ -860,7 +956,8 @@ const resolveFacilityLabTestForInterpretation = async ({
     tenant_id: tenantId,
     facility_id: facilityId,
     lab_test_id: labTestId,
-    is_active: true});
+    is_active: true,
+  });
   if (!offering) {
     return masterTest;
   }
@@ -877,4 +974,5 @@ module.exports = {
   upsertFacilityLabPanelOffering,
   disableFacilityLabPanelOffering,
   searchFacilityLabCatalog,
-  resolveFacilityLabTestForInterpretation};
+  resolveFacilityLabTestForInterpretation,
+};

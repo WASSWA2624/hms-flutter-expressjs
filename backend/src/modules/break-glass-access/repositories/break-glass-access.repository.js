@@ -4,7 +4,6 @@ const { HttpError } = require('@lib/errors');
 const DEFAULT_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
   facility: { select: { id: true, human_friendly_id: true } },
-  branch: { select: { id: true, human_friendly_id: true } },
   patient: { select: { id: true, human_friendly_id: true } },
   requested_by: { select: { id: true, human_friendly_id: true } },
   approved_by: { select: { id: true, human_friendly_id: true } },

@@ -8,7 +8,8 @@ const {
   custodySnapshotIdParamsSchema,
   finalizeCustodySnapshotSchema,
   listCustodySnapshotsQuerySchema,
-  updateCustodySnapshotSchema} = require('@validations/custody-snapshot/custody-snapshot.schema');
+  updateCustodySnapshotSchema,
+} = require('@validations/custody-snapshot/custody-snapshot.schema');
 
 const router = express.Router();
 

@@ -11,7 +11,8 @@ const buildContext = (req) => ({
   tenant_id: req.user?.tenant_id || req.user?.tenantId || req.query?.tenant_id || req.body?.tenant_id,
   facility_id: req.user?.facility_id || req.user?.facilityId || req.query?.facility_id || req.body?.facility_id,
   user_id: req.user?.id,
-  ip_address: req.ip});
+  ip_address: req.ip,
+});
 
 const listFacilityPharmacyDrugs = asyncHandler(async (req, res) => {
   const {
@@ -23,7 +24,8 @@ const listFacilityPharmacyDrugs = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
-    order = 'asc'} = req.query;
+    order = 'asc',
+  } = req.query;
 
   const result = await facilityPharmacyCatalogService.listFacilityPharmacyDrugs(
     { tenant_id, facility_id, search, offered_only, include_inactive },
@@ -74,4 +76,5 @@ module.exports = {
   listFacilityPharmacyDrugs,
   getFacilityPharmacyDrug,
   upsertFacilityPharmacyOffering,
-  disableFacilityPharmacyOffering};
+  disableFacilityPharmacyOffering,
+};

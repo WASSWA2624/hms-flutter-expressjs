@@ -15,7 +15,6 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_media_url.dart';
 import 'package:hosspi_hms/core/utils/app_slug.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
-import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/facility_similarity.dart';
@@ -31,7 +30,6 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
-import 'package:hosspi_hms/shared/actions/app_workspace_refresh_action.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -108,6 +106,18 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         showGlobalActions: false,
         showFaultReport: false,
         showHousekeepingRequest: false,
+        onRefresh: () =>
+            ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
+        secondary: <Widget>[
+          if (snapshot.facility?.id != null)
+            AppTabToolbarAction(
+              label: l10n.clinicalCatalogConfigurationTitle,
+              icon: Icons.medical_information_outlined,
+              onPressed: () {
+                unawaited(_openFacilityCatalogModal(context, snapshot));
+              },
+            ),
+        ],
       ),
       body: _SetupBody(
         snapshot: snapshot,
@@ -585,7 +595,6 @@ class _SetupBody extends ConsumerStatefulWidget {
 
 class _SetupBodyState extends ConsumerState<_SetupBody> {
   TenantFacilitySetupDeskSection? _section;
-  final ValueNotifier<int> _deskReloadToken = ValueNotifier<int>(0);
 
   bool get _canEditStructure =>
       widget.canManageFacility || widget.canManageHrSetup;
@@ -616,156 +625,9 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     return sections.first;
   }
 
-  @override
-  void dispose() {
-    _deskReloadToken.dispose();
-    super.dispose();
-  }
-
   void _refreshSetup() {
     unawaited(
       ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
-    );
-  }
-
-  void _bumpDeskReload() {
-    _deskReloadToken.value++;
-  }
-
-  Future<void> _onDeskCreateSucceeded() async {
-    _bumpDeskReload();
-    _refreshSetup();
-  }
-
-  bool _canShowCreateForSection(TenantFacilitySetupDeskSection section) {
-    final FacilitySetupSnapshot snapshot = widget.snapshot;
-    final submission = ref.read(tenantFacilitySetupSubmissionProvider);
-    final bool submitting = submission.isSubmitting;
-    final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
-
-    return switch (section) {
-      TenantFacilitySetupDeskSection.tenants =>
-        accessPolicy.canCreateTenant() && !submitting,
-      TenantFacilitySetupDeskSection.branches =>
-        widget.canManageTenant && !submitting,
-      TenantFacilitySetupDeskSection.facility =>
-        widget.canManageFacility && !submitting,
-      TenantFacilitySetupDeskSection.departments =>
-        (widget.canManageFacility || widget.canManageHrSetup) &&
-            !submitting &&
-            snapshot.facility?.id != null,
-      TenantFacilitySetupDeskSection.units =>
-        (widget.canManageFacility || widget.canManageHrSetup) &&
-            !submitting &&
-            snapshot.departments.isNotEmpty,
-      TenantFacilitySetupDeskSection.wards =>
-        widget.canManageFacility &&
-            !submitting &&
-            snapshot.departments.isNotEmpty,
-      TenantFacilitySetupDeskSection.rooms =>
-        widget.canManageFacility &&
-            !submitting &&
-            (snapshot.departments.isNotEmpty || snapshot.wards.isNotEmpty),
-      TenantFacilitySetupDeskSection.beds =>
-        widget.canManageFacility &&
-            !submitting &&
-            snapshot.rooms.isNotEmpty,
-      TenantFacilitySetupDeskSection.roles => widget.canManageAccess,
-      TenantFacilitySetupDeskSection.permissions => false,
-      TenantFacilitySetupDeskSection.users => widget.canManageAccess,
-    };
-  }
-
-  Future<void> _runCreateForSection(
-    TenantFacilitySetupDeskSection section,
-  ) async {
-    final FacilitySetupSnapshot snapshot = widget.snapshot;
-    switch (section) {
-      case TenantFacilitySetupDeskSection.tenants:
-        final bool? saved = await showTenantFacilityTenantFormDialog(
-          context,
-          forceCreate: true,
-          managementMode: true,
-        );
-        if (saved == true && mounted) {
-          await _onDeskCreateSucceeded();
-        }
-      case TenantFacilitySetupDeskSection.facility:
-        final bool? saved = await showTenantFacilityFacilityFormDialog(
-          context,
-          requireTenantPicker: true,
-          managementMode: true,
-        );
-        if (saved == true && mounted) {
-          await _onDeskCreateSucceeded();
-        }
-      case TenantFacilitySetupDeskSection.branches:
-        await showTenantFacilityBranchFormDialog(context, snapshot);
-        if (mounted) {
-          _refreshSetup();
-        }
-      case TenantFacilitySetupDeskSection.departments:
-        await showTenantFacilityDepartmentFormDialog(context, snapshot);
-        if (mounted) {
-          _refreshSetup();
-        }
-      case TenantFacilitySetupDeskSection.units:
-        await showTenantFacilityUnitFormDialog(context, snapshot);
-        if (mounted) {
-          _refreshSetup();
-        }
-      case TenantFacilitySetupDeskSection.wards:
-        await showTenantFacilityWardFormDialog(context, snapshot);
-        if (mounted) {
-          _refreshSetup();
-        }
-      case TenantFacilitySetupDeskSection.rooms:
-        await showTenantFacilityRoomFormDialog(context, snapshot);
-        if (mounted) {
-          _refreshSetup();
-        }
-      case TenantFacilitySetupDeskSection.beds:
-        await showTenantFacilityBedFormDialog(context, snapshot);
-        if (mounted) {
-          _refreshSetup();
-        }
-      case TenantFacilitySetupDeskSection.roles:
-        final bool? saved = await showAccessAdminCreateRoleDialog(
-          context,
-          ref,
-        );
-        if (saved == true && mounted) {
-          await _onDeskCreateSucceeded();
-        }
-      case TenantFacilitySetupDeskSection.users:
-        final bool? saved = await showAccessAdminCreateUserDialog(
-          context,
-          ref,
-        );
-        if (saved == true && mounted) {
-          await _onDeskCreateSucceeded();
-        }
-      case TenantFacilitySetupDeskSection.permissions:
-        break;
-    }
-  }
-
-  Widget? _buildPrimaryCreateAction(
-    AppLocalizations l10n,
-    TenantFacilitySetupDeskSection section,
-  ) {
-    if (!_canShowCreateForSection(section)) {
-      return null;
-    }
-    final String? label = tenantFacilitySetupDeskCreateLabel(l10n, section);
-    final IconData? icon = tenantFacilitySetupDeskCreateIcon(section);
-    if (label == null || icon == null) {
-      return null;
-    }
-    return AppButton.primary(
-      label: label,
-      leadingIcon: icon,
-      onPressed: () => unawaited(_runCreateForSection(section)),
     );
   }
 
@@ -775,7 +637,6 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     final ThemeData theme = Theme.of(context);
     final List<TenantFacilitySetupDeskSection> sections = _visibleSections;
     final TenantFacilitySetupDeskSection current = _currentSection;
-    ref.watch(tenantFacilitySetupSubmissionProvider);
 
     if (sections.isEmpty) {
       return AppWorkspaceStatePanel.empty(
@@ -812,23 +673,6 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
               }
             }
           },
-          primaryAction: _buildPrimaryCreateAction(l10n, current),
-          secondaryActions: <Widget>[
-            if (widget.snapshot.facility?.id != null)
-              AppTabToolbarAction(
-                label: l10n.clinicalCatalogConfigurationTitle,
-                icon: Icons.medical_information_outlined,
-                onPressed: () {
-                  unawaited(
-                    _openFacilityCatalogModal(context, widget.snapshot),
-                  );
-                },
-              ),
-            AppWorkspaceRefreshAction(
-              label: l10n.commonRefreshActionLabel,
-              onPressed: _refreshSetup,
-            ),
-          ],
         ),
         SizedBox(height: theme.spacing.sm),
         Expanded(child: _buildTabBody(current)),
@@ -844,59 +688,43 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
 
     return switch (section) {
       TenantFacilitySetupDeskSection.tenants => ManageTenantsPanel(
-        showCreateAction: false,
-        reloadListenable: _deskReloadToken,
         onMutated: (_) => _refreshSetup(),
       ),
       TenantFacilitySetupDeskSection.facility => ManageFacilitiesPanel(
-        showCreateAction: false,
-        reloadListenable: _deskReloadToken,
         onMutated: (_) => _refreshSetup(),
       ),
       TenantFacilitySetupDeskSection.branches => _BranchSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitTenant,
-        showAddButton: false,
       ),
       TenantFacilitySetupDeskSection.departments => _DepartmentSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitFacility || widget.canManageHrSetup,
-        showAddButton: false,
       ),
       TenantFacilitySetupDeskSection.units => _UnitSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitFacility || widget.canManageHrSetup,
-        showAddButton: false,
       ),
       TenantFacilitySetupDeskSection.wards => _WardSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitFacility,
-        showAddButton: false,
       ),
       TenantFacilitySetupDeskSection.rooms => _RoomSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitFacility,
-        showAddButton: false,
       ),
       TenantFacilitySetupDeskSection.beds => _BedSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitFacility,
-        showAddButton: false,
       ),
       TenantFacilitySetupDeskSection.roles => ManageRolesPermissionsPanel(
-        showCreateAction: false,
-        reloadListenable: _deskReloadToken,
         onMutated: (_) => _refreshSetup(),
       ),
       TenantFacilitySetupDeskSection.permissions => ManageRolesPermissionsPanel(
         panel: AccessAdminPanel.permissions,
-        showCreateAction: false,
-        reloadListenable: _deskReloadToken,
         onMutated: (_) => _refreshSetup(),
       ),
       TenantFacilitySetupDeskSection.users => ManageUsersPanel(
-        showCreateAction: false,
-        reloadListenable: _deskReloadToken,
         onMutated: (_) => _refreshSetup(),
       ),
     };
@@ -2415,12 +2243,10 @@ class _BranchSetupSection extends ConsumerWidget {
   const _BranchSetupSection({
     required this.snapshot,
     required this.canSubmit,
-    this.showAddButton = true,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
-  final bool showAddButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2437,7 +2263,7 @@ class _BranchSetupSection extends ConsumerWidget {
       searchHint: l10n.tenantFacilityBranchSearchHint,
       addLabel: l10n.tenantFacilityAddBranchAction,
       canManageRecords: canManageRecords,
-      canAdd: showAddButton && canManageRecords,
+      canAdd: canManageRecords,
       onAdd: () => _openBranchDialog(context, snapshot),
       titleBuilder: (BranchProfile branch) => branch.name,
       subtitleBuilder: (BranchProfile branch) => branch.isDeleted
@@ -2477,13 +2303,11 @@ class _DepartmentSetupSection extends ConsumerWidget {
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
-    this.showAddButton = true,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
   final bool framed;
-  final bool showAddButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2491,7 +2315,7 @@ class _DepartmentSetupSection extends ConsumerWidget {
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canManageRecords = canSubmit && !submission.isSubmitting;
     final bool prerequisitesMet = snapshot.facility?.id != null;
-    final bool canAdd = showAddButton && canManageRecords && prerequisitesMet;
+    final bool canAdd = canManageRecords && prerequisitesMet;
     final String? blockedMessage = canManageRecords && !prerequisitesMet
         ? l10n.tenantFacilityGateNeedFacility
         : null;
@@ -2553,13 +2377,11 @@ class _UnitSetupSection extends ConsumerWidget {
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
-    this.showAddButton = true,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
   final bool framed;
-  final bool showAddButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2567,7 +2389,7 @@ class _UnitSetupSection extends ConsumerWidget {
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canManageRecords = canSubmit && !submission.isSubmitting;
     final bool prerequisitesMet = snapshot.departments.isNotEmpty;
-    final bool canAdd = showAddButton && canManageRecords && prerequisitesMet;
+    final bool canAdd = canManageRecords && prerequisitesMet;
     final String? blockedMessage = canManageRecords && !prerequisitesMet
         ? l10n.tenantFacilityGateNeedDepartmentForUnits
         : null;
@@ -3043,6 +2865,16 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         onFilterChanged: (AppSearchBarFilterValue value) {
           setState(() => _filterValue = value);
         },
+        trailingActions: widget.canAdd
+            ? <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.add,
+                  label: widget.addLabel,
+                  tooltip: widget.addLabel,
+                  onPressed: widget.onAdd,
+                ),
+              ]
+            : const <AppSearchBarAction>[],
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: widget.title,
@@ -3057,25 +2889,6 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         );
       },
     );
-
-    if (widget.canAdd) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: AppButton.secondary(
-              label: widget.addLabel,
-              leadingIcon: Icons.add,
-              onPressed: widget.onAdd,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          table,
-        ],
-      );
-    }
 
     return table;
   }

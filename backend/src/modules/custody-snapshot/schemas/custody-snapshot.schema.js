@@ -10,25 +10,29 @@ const createCustodySnapshotSchema = z.object({
   asset_snapshot_json: jsonPayloadSchema.optional().nullable(),
   cash_drawer_snapshot_json: jsonPayloadSchema.optional().nullable(),
   controlled_items_json: jsonPayloadSchema.optional().nullable(),
-  notes: z.string().trim().max(10000).optional().nullable()});
+  notes: z.string().trim().max(10000).optional().nullable(),
+});
 
 const updateCustodySnapshotSchema = createCustodySnapshotSchema.partial();
 
 const finalizeCustodySnapshotSchema = updateCustodySnapshotSchema;
 
 const custodySnapshotIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema});
+  id: uuidOrFriendlyIdentifierSchema,
+});
 
 const listCustodySnapshotsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   office_context_id: uuidOrFriendlyIdentifierSchema.optional(),
   captured_by_user_id: uuidOrFriendlyIdentifierSchema.optional(),
-  status: z.enum(['DRAFT', 'FINALIZED']).optional()});
+  status: z.enum(['DRAFT', 'FINALIZED']).optional(),
+});
 
 module.exports = {
   createCustodySnapshotSchema,
   custodySnapshotIdParamsSchema,
   finalizeCustodySnapshotSchema,
   listCustodySnapshotsQuerySchema,
-  updateCustodySnapshotSchema};
+  updateCustodySnapshotSchema,
+};

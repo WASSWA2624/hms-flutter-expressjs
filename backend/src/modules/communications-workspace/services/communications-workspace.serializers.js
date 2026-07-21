@@ -37,7 +37,8 @@ const serializeUser = (record = {}) => {
       .filter(Boolean)
       .slice(0, 2)
       .map((entry) => entry[0]?.toUpperCase() || '')
-      .join('')};
+      .join(''),
+  };
 };
 
 const serializeAttachment = (record = {}) => ({
@@ -47,7 +48,8 @@ const serializeAttachment = (record = {}) => ({
   size_bytes: Number(record.size_bytes || 0),
   attachment_kind: text(record.attachment_kind).toUpperCase() || 'DOCUMENT',
   public_url: text(record.public_url) || null,
-  created_at: record.created_at || null});
+  created_at: record.created_at || null,
+});
 
 const serializeMessage = (record = {}) => ({
   id: resolvePublicIdentifier(record.human_friendly_id, record.id),
@@ -63,9 +65,11 @@ const serializeMessage = (record = {}) => ({
     ? {
         id: resolvePublicIdentifier(record.reply_to_message.human_friendly_id, record.reply_to_message.id),
         content: text(record.reply_to_message.content),
-        sender: record.reply_to_message.sender_user ? serializeUser(record.reply_to_message.sender_user) : null}
+        sender: record.reply_to_message.sender_user ? serializeUser(record.reply_to_message.sender_user) : null,
+      }
     : null,
-  attachments: (record.attachments || []).map(serializeAttachment)});
+  attachments: (record.attachments || []).map(serializeAttachment),
+});
 
 const conversationTitle = (record = {}, viewerUserId) => {
   if (text(record.subject)) return text(record.subject);
@@ -129,12 +133,15 @@ const serializeConversation = (record = {}, viewerUserId) => {
       ),
       is_favorite: Boolean(entry.is_favorite),
       is_flagged: Boolean(entry.is_flagged),
-      user: entry.user ? serializeUser(entry.user) : null})),
+      user: entry.user ? serializeUser(entry.user) : null,
+    })),
     visibility_roles: (record.visibility_roles || []).map((entry) => ({
       id: resolvePublicIdentifier(entry.human_friendly_id, entry.id),
-      role_code: text(entry.role_code).toUpperCase()})),
+      role_code: text(entry.role_code).toUpperCase(),
+    })),
     last_message: lastMessage,
-    attachment_count: lastMessage?.attachments?.length || 0};
+    attachment_count: lastMessage?.attachments?.length || 0,
+  };
 };
 
 const serializeNotification = (record = {}) => ({
@@ -151,7 +158,8 @@ const serializeNotification = (record = {}) => ({
   template: record.template
     ? {
         id: resolvePublicIdentifier(record.template.human_friendly_id, record.template.id),
-        name: text(record.template.name)}
+        name: text(record.template.name),
+      }
     : null,
   deliveries: (record.deliveries || []).map((entry) => ({
     id: resolvePublicIdentifier(entry.human_friendly_id, entry.id),
@@ -162,7 +170,9 @@ const serializeNotification = (record = {}) => ({
     failed_at: entry.failed_at || null,
     attempt_count: Number(entry.attempt_count || 0),
     retryable: Boolean(entry.retryable),
-    error_message: text(entry.error_message) || null}))});
+    error_message: text(entry.error_message) || null,
+  })),
+});
 
 const serializeDelivery = (record = {}) => ({
   id: resolvePublicIdentifier(record.human_friendly_id, record.id),
@@ -179,7 +189,8 @@ const serializeDelivery = (record = {}) => ({
   error_message: text(record.error_message) || null,
   target_path: text(record.notification?.target_path) || null,
   notification_title: text(record.notification?.title) || null,
-  recipient: record.notification?.user ? serializeUser(record.notification.user) : null});
+  recipient: record.notification?.user ? serializeUser(record.notification.user) : null,
+});
 
 const templatePreview = (template = {}) => {
   const samples = (template.variables || []).reduce((acc, variable) => {
@@ -205,7 +216,9 @@ const serializeTemplate = (record = {}) => ({
     id: resolvePublicIdentifier(entry.human_friendly_id, entry.id),
     key: text(entry.key),
     description: text(entry.description) || null,
-    sample_value: text(entry.sample_value) || null}))});
+    sample_value: text(entry.sample_value) || null,
+  })),
+});
 
 module.exports = {
   buildConversationPath,
@@ -217,4 +230,5 @@ module.exports = {
   serializeNotification,
   serializeDelivery,
   serializeTemplate,
-  isUnreadConversation};
+  isUnreadConversation,
+};

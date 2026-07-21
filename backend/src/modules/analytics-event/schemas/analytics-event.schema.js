@@ -9,7 +9,6 @@ const createAnalyticsEventSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  branch_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   event_name: z.string().trim().min(1).max(255),
   event_category: z.string().trim().min(1).max(80),
   entity_type: z.string().trim().max(80).optional().nullable(),
@@ -22,7 +21,6 @@ const createAnalyticsEventSchema = z.object({
 const updateAnalyticsEventSchema = z.object({
   user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  branch_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   event_name: z.string().trim().min(1).max(255).optional(),
   event_category: z.string().trim().min(1).max(80).optional(),
   entity_type: z.string().trim().max(80).optional().nullable(),
@@ -41,7 +39,6 @@ const listAnalyticsEventsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   user_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  branch_id: uuidOrFriendlyIdentifierSchema.optional(),
   event_category: z.string().trim().optional(),
   entity_type: z.string().trim().optional(),
   severity: z.enum(ANALYTICS_EVENT_SEVERITIES).optional(),

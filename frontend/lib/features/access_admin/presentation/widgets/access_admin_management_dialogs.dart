@@ -259,6 +259,7 @@ abstract class _ScopedAccessAdminListDialogState<
     bool hasActiveFilters = false,
     bool showAdvancedFilterButton = false,
     String? advancedFilterTitle,
+    List<AppSearchBarAction> trailingActions = const <AppSearchBarAction>[],
   }) {
     return AppListTableSearch<AccessAdminItem>(
       controller: searchController,
@@ -277,6 +278,7 @@ abstract class _ScopedAccessAdminListDialogState<
       filterValue: filterValue,
       hasActiveFilters: hasActiveFilters,
       onFilterChanged: onFilterChanged,
+      trailingActions: trailingActions,
     );
   }
 }
@@ -741,6 +743,18 @@ class _ManageUsersPanelState
             onFilterChanged: (AppSearchBarFilterValue value) {
               unawaited(_applyUserFilters(value));
             },
+            trailingActions: widget.showCreateAction && canWrite
+                ? <AppSearchBarAction>[
+                    AppSearchBarAction(
+                      icon: Icons.person_add_alt_1_outlined,
+                      label: l10n.accessAdminCreateUserAction,
+                      tooltip: l10n.accessAdminCreateUserAction,
+                      onPressed: loading || mutating
+                          ? null
+                          : () => unawaited(_openCreateUserDialog()),
+                    ),
+                  ]
+                : const <AppSearchBarAction>[],
           ),
           columns: <AppListTableColumn<AccessAdminItem>>[
             AppListTableColumn<AccessAdminItem>(
@@ -872,18 +886,7 @@ class _ManageUsersPanelState
     );
 
     if (!widget.dialogMode) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (widget.showCreateAction && canWrite)
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: createAction,
-            ),
-          if (widget.showCreateAction && canWrite) const SizedBox(height: 12),
-          Expanded(child: table),
-        ],
-      );
+      return table;
     }
 
     return AppDialog(
@@ -893,7 +896,7 @@ class _ManageUsersPanelState
       maxWidth: 1200,
       content: table,
       actions: <Widget>[
-        if (canWrite) createAction,
+        if (widget.showCreateAction && canWrite) createAction,
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
@@ -1249,6 +1252,20 @@ class _ManageRolesPermissionsPanelState
                 : (AppSearchBarFilterValue value) {
                     unawaited(_applyRoleListFilters(value));
                   },
+            trailingActions: !isPermissions &&
+                    canWrite &&
+                    widget.showCreateAction
+                ? <AppSearchBarAction>[
+                    AppSearchBarAction(
+                      icon: Icons.badge_outlined,
+                      label: l10n.accessAdminCreateRoleAction,
+                      tooltip: l10n.accessAdminCreateRoleAction,
+                      onPressed: loading || mutating
+                          ? null
+                          : () => unawaited(_openCreateRoleDialog()),
+                    ),
+                  ]
+                : const <AppSearchBarAction>[],
           ),
           columns: <AppListTableColumn<AccessAdminItem>>[
             AppListTableColumn<AccessAdminItem>(
@@ -1320,7 +1337,8 @@ class _ManageRolesPermissionsPanelState
         ),
     );
 
-    final Widget? createAction = (!isPermissions && canWrite)
+    final Widget? createAction =
+        (!isPermissions && canWrite && widget.showCreateAction)
         ? AppButton.primary(
             label: l10n.accessAdminCreateRoleAction,
             leadingIcon: Icons.badge_outlined,
@@ -1331,19 +1349,7 @@ class _ManageRolesPermissionsPanelState
         : null;
 
     if (!widget.dialogMode) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (widget.showCreateAction && createAction != null)
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: createAction,
-            ),
-          if (widget.showCreateAction && createAction != null)
-            const SizedBox(height: 12),
-          Expanded(child: table),
-        ],
-      );
+      return table;
     }
 
     return AppDialog(

@@ -34,7 +34,8 @@ const createFacilitySchema = z.object({
   name: z.string().trim().min(1).max(255),
   facility_type: facilityTypeEnum,
   is_active: z.boolean().optional(),
-  extension_json: extensionJsonSchema});
+  extension_json: extensionJsonSchema,
+});
 
 /**
  * Update facility body validation
@@ -45,7 +46,8 @@ const updateFacilitySchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   facility_type: facilityTypeEnum.optional(),
   is_active: z.boolean().optional(),
-  extension_json: extensionJsonSchema});
+  extension_json: extensionJsonSchema,
+});
 
 // ==================== URL Params ====================
 
@@ -69,7 +71,8 @@ const listFacilitiesQuerySchema = listQuerySchema.extend({
   facility_type: facilityTypeEnum.optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),
-  include_deleted: z.enum(['true', 'false']).optional()});
+  include_deleted: z.enum(['true', 'false']).optional(),
+});
 
 module.exports = {
   createFacilitySchema,

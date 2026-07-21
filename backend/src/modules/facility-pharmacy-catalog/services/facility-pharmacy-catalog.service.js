@@ -11,7 +11,8 @@ const {
   buildPagination,
   normalizeSearchTerm,
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow} = require('@services/pharmacy-workspace/pharmacy.shared');
+  resolveModelRecordOrThrow,
+} = require('@services/pharmacy-workspace/pharmacy.shared');
 const { mapMergedDrugRecord } = require('@services/pharmacy-workspace/facility-pharmacy-catalog.merge');
 const { resolveDefaultStorageShelfId } = require('@services/pharmacy-workspace/pharmacy-storage.service');
 
@@ -26,14 +27,16 @@ const resolveFacilityId = async (context = {}, payload = {}) => {
   const facilityId = await resolveOperationalFacilityId({
     facilityId: payload.facility_id || context.facility_id || null,
     userId: context.user_id || null,
-    tenantId: context.tenant_id || payload.tenant_id || null});
+    tenantId: context.tenant_id || payload.tenant_id || null,
+  });
   if (!facilityId) {
     throw new HttpError('errors.validation.field.required', 400, [{ field: 'facility_id' }]);
   }
   return resolveModelIdOrThrow({
     model: 'facility',
     identifier: facilityId,
-    tenantId: context.tenant_id});
+    tenantId: context.tenant_id,
+  });
 };
 
 const resolveDrugIdOrThrow = async ({ identifier, tenantId, errorKey = 'errors.drug.not_found' }) =>
@@ -41,7 +44,8 @@ const resolveDrugIdOrThrow = async ({ identifier, tenantId, errorKey = 'errors.d
     model: 'drug',
     identifier,
     tenantId,
-    errorKey});
+    errorKey,
+  });
 
 const buildDrugSearchWhere = (tenantId, searchTerm) => {
   const where = { tenant_id: tenantId, deleted_at: null };
@@ -52,7 +56,9 @@ const buildDrugSearchWhere = (tenantId, searchTerm) => {
       { name: { contains: searchTerm.raw } },
       { code: { contains: searchTerm.raw } },
       { form: { contains: searchTerm.raw } },
-      { strength: { contains: searchTerm.raw } }]};
+      { strength: { contains: searchTerm.raw } },
+    ],
+  };
 };
 
 const listFacilityPharmacyDrugs = async (filters, page, limit, sortBy, order, context = {}) => {
@@ -79,8 +85,12 @@ const listFacilityPharmacyDrugs = async (filters, page, limit, sortBy, order, co
                 { name: { contains: searchTerm.raw } },
                 { code: { contains: searchTerm.raw } },
                 { form: { contains: searchTerm.raw } },
-                { strength: { contains: searchTerm.raw } }]}}
-        : {})};
+                { strength: { contains: searchTerm.raw } },
+              ],
+            },
+          }
+        : {}),
+    };
     const offerings = await facilityPharmacyCatalogRepository.findDrugOfferings(
       offeringWhere,
       skip,
@@ -112,12 +122,14 @@ const listFacilityPharmacyDrugs = async (filters, page, limit, sortBy, order, co
   const masterWhere = buildDrugSearchWhere(tenantId, searchTerm);
   const [masterDrugs, total] = await Promise.all([
     drugRepository.findMany(masterWhere, skip, limit, orderBy),
-    drugRepository.count(masterWhere)]);
+    drugRepository.count(masterWhere),
+  ]);
   const offeringRows = await facilityPharmacyCatalogRepository.findDrugOfferings(
     {
       tenant_id: tenantId,
       facility_id: facilityId,
-      drug_id: { in: masterDrugs.map((row) => row.id) }},
+      drug_id: { in: masterDrugs.map((row) => row.id) },
+    },
     0,
     masterDrugs.length
   );
@@ -137,11 +149,13 @@ const getFacilityPharmacyDrug = async (drugIdentifier, context = {}, filters = {
   const masterDrug = await resolveModelRecordOrThrow({
     model: 'drug',
     identifier: drugId,
-    tenantId});
+    tenantId,
+  });
   const offering = await facilityPharmacyCatalogRepository.findDrugOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    drug_id: drugId});
+    drug_id: drugId,
+  });
   return mapMergedDrugRecord(masterDrug, offering);
 };
 
@@ -153,16 +167,19 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
   const facilityId = await resolveFacilityId(context, payload);
   const drugId = await resolveDrugIdOrThrow({
     identifier: payload.drug_id,
-    tenantId});
+    tenantId,
+  });
   const masterDrug = await resolveModelRecordOrThrow({
     model: 'drug',
     identifier: drugId,
-    tenantId});
+    tenantId,
+  });
 
   const existing = await facilityPharmacyCatalogRepository.findDrugOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    drug_id: drugId});
+    drug_id: drugId,
+  });
 
   let defaultStorageShelfId = null;
   if (payload.default_storage_shelf_id) {
@@ -181,7 +198,8 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
     sort_order: Number(payload.sort_order || 0),
     unit_price: payload.unit_price,
     currency: toOptionalText(payload.currency) || masterDrug.currency || null,
-    ...(defaultStorageShelfId ? { default_storage_shelf_id: defaultStorageShelfId } : {})};
+    ...(defaultStorageShelfId ? { default_storage_shelf_id: defaultStorageShelfId } : {}),
+  };
 
   const offering = existing
     ? await facilityPharmacyCatalogRepository.updateDrugOffering(existing.id, writePayload)
@@ -194,7 +212,8 @@ const upsertFacilityPharmacyOffering = async (payload = {}, context = {}) => {
     entity: 'facility_pharmacy_offering',
     entity_id: offering.id,
     diff: { after: offering },
-    ip_address: context.ip_address}).catch(() => {});
+    ip_address: context.ip_address,
+  }).catch(() => {});
 
   return mapMergedDrugRecord(masterDrug, offering);
 };
@@ -209,13 +228,15 @@ const disableFacilityPharmacyOffering = async (drugIdentifier, payload = {}, con
   const existing = await facilityPharmacyCatalogRepository.findDrugOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    drug_id: drugId});
+    drug_id: drugId,
+  });
   if (!existing) {
     throw new HttpError('errors.facility_pharmacy_offering.not_found', 404);
   }
 
   await facilityPharmacyCatalogRepository.updateDrugOffering(existing.id, {
-    is_active: false});
+    is_active: false,
+  });
 
   createAuditLog({
     tenant_id: tenantId,
@@ -226,12 +247,16 @@ const disableFacilityPharmacyOffering = async (drugIdentifier, payload = {}, con
     diff: {
       metadata: {
         disabled: true,
-        reason: payload.reason || null}},
-    ip_address: context.ip_address}).catch(() => {});
+        reason: payload.reason || null,
+      },
+    },
+    ip_address: context.ip_address,
+  }).catch(() => {});
 };
 
 module.exports = {
   listFacilityPharmacyDrugs,
   getFacilityPharmacyDrug,
   upsertFacilityPharmacyOffering,
-  disableFacilityPharmacyOffering};
+  disableFacilityPharmacyOffering,
+};

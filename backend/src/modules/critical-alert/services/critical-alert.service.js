@@ -42,7 +42,14 @@ const CRITICAL_ALERT_INCLUDE = {
               id: true,
               human_friendly_id: true,
               first_name: true,
-              last_name: true}}}}}}};
+              last_name: true,
+            },
+          },
+        },
+      },
+    },
+  },
+};
 
 const mapIcuStayRelation = (stay) => {
   if (!stay) return null;
@@ -67,9 +74,12 @@ const mapIcuStayRelation = (stay) => {
                   stay.admission.patient
                 ),
                 first_name: stay.admission.patient.first_name || null,
-                last_name: stay.admission.patient.last_name || null}
-            : null}
-      : null};
+                last_name: stay.admission.patient.last_name || null,
+              }
+            : null,
+        }
+      : null,
+  };
 };
 
 const mapCriticalAlertRecord = (record) => {
@@ -87,7 +97,8 @@ const mapCriticalAlertRecord = (record) => {
     message: record.message || null,
     created_at: record.created_at || null,
     updated_at: record.updated_at || null,
-    icu_stay: mapIcuStayRelation(record.icu_stay)};
+    icu_stay: mapIcuStayRelation(record.icu_stay),
+  };
 };
 
 const buildEmptyPagination = (page, limit) => ({
@@ -96,13 +107,15 @@ const buildEmptyPagination = (page, limit) => ({
   total: 0,
   totalPages: 0,
   hasNextPage: false,
-  hasPreviousPage: page > 1});
+  hasPreviousPage: page > 1,
+});
 
 const resolveCriticalAlert = async (identifier) =>
   resolveModelIdByIdentifier({
     model: 'critical_alert',
     identifier,
-    select: { id: true }});
+    select: { id: true },
+  });
 
 const resolveIcuStay = async (identifier) =>
   resolveModelIdByIdentifier({
@@ -110,7 +123,9 @@ const resolveIcuStay = async (identifier) =>
     identifier,
     select: {
       id: true,
-      admission: { select: { tenant_id: true } }}});
+      admission: { select: { tenant_id: true } },
+    },
+  });
 
 const resolveAuditTenantId = (record, fallback = null) =>
   record?.icu_stay?.admission?.tenant_id || fallback || null;
@@ -126,7 +141,8 @@ const listCriticalAlerts = async (filters, page, limit, sortBy, order) => {
       if (!resolvedIcuStay?.id) {
         return {
           critical_alerts: [],
-          pagination: buildEmptyPagination(page, limit)};
+          pagination: buildEmptyPagination(page, limit),
+        };
       }
       whereClause.icu_stay_id = resolvedIcuStay.id;
     }
@@ -142,7 +158,8 @@ const listCriticalAlerts = async (filters, page, limit, sortBy, order) => {
         orderBy,
         CRITICAL_ALERT_INCLUDE
       ),
-      criticalAlertRepository.count(whereClause)]);
+      criticalAlertRepository.count(whereClause),
+    ]);
 
     return {
       critical_alerts: criticalAlerts.map(mapCriticalAlertRecord),
@@ -152,11 +169,14 @@ const listCriticalAlerts = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1}};
+        hasPreviousPage: page > 1,
+      },
+    };
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message }]);
+      { originalError: error.message },
+    ]);
   }
 };
 
@@ -179,7 +199,8 @@ const getCriticalAlertById = async (id) => {
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message }]);
+      { originalError: error.message },
+    ]);
   }
 };
 
@@ -188,12 +209,14 @@ const createCriticalAlert = async (data, userId, ipAddress) => {
     const resolvedIcuStay = await resolveIcuStay(data?.icu_stay_id);
     if (!resolvedIcuStay?.id) {
       throw new HttpError('errors.icu_stay.not_found', 404, [
-        { field: 'icu_stay_id' }]);
+        { field: 'icu_stay_id' },
+      ]);
     }
 
     const createdCriticalAlert = await criticalAlertRepository.create({
       ...data,
-      icu_stay_id: resolvedIcuStay.id});
+      icu_stay_id: resolvedIcuStay.id,
+    });
     const criticalAlert =
       (await criticalAlertRepository.findById(
         createdCriticalAlert.id,
@@ -210,13 +233,15 @@ const createCriticalAlert = async (data, userId, ipAddress) => {
       entity: 'critical_alert',
       entity_id: criticalAlert.id,
       diff: { after: criticalAlert },
-      ip_address: ipAddress}).catch(() => {});
+      ip_address: ipAddress,
+    }).catch(() => {});
 
     return mapCriticalAlertRecord(criticalAlert);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message }]);
+      { originalError: error.message },
+    ]);
   }
 };
 
@@ -252,13 +277,15 @@ const updateCriticalAlert = async (id, data, userId, ipAddress) => {
       entity: 'critical_alert',
       entity_id: criticalAlert.id,
       diff: { before, after: criticalAlert },
-      ip_address: ipAddress}).catch(() => {});
+      ip_address: ipAddress,
+    }).catch(() => {});
 
     return mapCriticalAlertRecord(criticalAlert);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message }]);
+      { originalError: error.message },
+    ]);
   }
 };
 
@@ -286,11 +313,13 @@ const deleteCriticalAlert = async (id, userId, ipAddress) => {
       entity: 'critical_alert',
       entity_id: resolvedCriticalAlert.id,
       diff: { before },
-      ip_address: ipAddress}).catch(() => {});
+      ip_address: ipAddress,
+    }).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message }]);
+      { originalError: error.message },
+    ]);
   }
 };
 
@@ -299,4 +328,5 @@ module.exports = {
   getCriticalAlertById,
   createCriticalAlert,
   updateCriticalAlert,
-  deleteCriticalAlert};
+  deleteCriticalAlert,
+};

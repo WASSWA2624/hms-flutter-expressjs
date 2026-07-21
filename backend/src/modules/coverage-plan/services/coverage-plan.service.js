@@ -13,12 +13,15 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId} = require('@lib/billing/identifiers');
+  resolveEntityId,
+} = require('@lib/billing/identifiers');
 
 const COVERAGE_PLAN_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
   insurance_company: {
-    select: { id: true, human_friendly_id: true, name: true, code: true }}};
+    select: { id: true, human_friendly_id: true, name: true, code: true },
+  },
+};
 
 const buildEmptyListResult = (page, limit) => ({
   coveragePlans: [],
@@ -28,7 +31,9 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1}});
+    hasPreviousPage: page > 1,
+  },
+});
 
 const mapCoveragePlanForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -48,7 +53,8 @@ const mapCoveragePlanForDisplay = (record) => {
     ),
     insurance_company_name: record?.insurance_company?.name || record?.provider_name || null,
     insurance_company_code: record?.insurance_company?.code || null,
-    timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null};
+    timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null,
+  };
 };
 
 /**
@@ -64,7 +70,8 @@ const listCoveragePlans = async (filters, page, limit, sortBy, order) => {
     if (filters.tenant_id !== undefined) {
       const tenantId = await resolveIdentifierForFilter({
         value: filters.tenant_id,
-        model: 'tenant'});
+        model: 'tenant',
+      });
       if (tenantId === null) return buildEmptyListResult(page, limit);
       if (tenantId !== undefined) whereClause.tenant_id = tenantId;
     }
@@ -77,7 +84,8 @@ const listCoveragePlans = async (filters, page, limit, sortBy, order) => {
     if (filters.insurance_company_id !== undefined) {
       const companyId = await resolveIdentifierForFilter({
         value: filters.insurance_company_id,
-        model: 'insurance_company'});
+        model: 'insurance_company',
+      });
       if (companyId === null) return buildEmptyListResult(page, limit);
       if (companyId !== undefined) whereClause.insurance_company_id = companyId;
     }
@@ -88,12 +96,14 @@ const listCoveragePlans = async (filters, page, limit, sortBy, order) => {
         { name: { contains: search } },
         { provider_name: { contains: search } },
         { code: { contains: search } },
-        { human_friendly_id: { contains: search.toUpperCase() } }];
+        { human_friendly_id: { contains: search.toUpperCase() } },
+      ];
     }
 
     const [coveragePlans, total] = await Promise.all([
       coveragePlanRepository.findMany(whereClause, skip, limit, orderBy, COVERAGE_PLAN_INCLUDE),
-      coveragePlanRepository.count(whereClause)]);
+      coveragePlanRepository.count(whereClause),
+    ]);
 
     return {
       coveragePlans: coveragePlans.map(mapCoveragePlanForDisplay),
@@ -103,7 +113,9 @@ const listCoveragePlans = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1}};
+        hasPreviousPage: page > 1,
+      },
+    };
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -117,7 +129,8 @@ const getCoveragePlanById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'coverage_plan',
-      identifier: id});
+      identifier: id,
+    });
 
     const coveragePlan = await coveragePlanRepository.findById(resolvedId, COVERAGE_PLAN_INCLUDE);
 
@@ -140,14 +153,16 @@ const createCoveragePlan = async (data, userId, ipAddress) => {
     const tenantId = await resolveIdentifierForPayload({
       value: data?.tenant_id,
       field: 'tenant_id',
-      model: 'tenant'});
+      model: 'tenant',
+    });
 
     let insuranceCompanyId;
     if (data?.insurance_company_id) {
       insuranceCompanyId = await resolveIdentifierForPayload({
         value: data.insurance_company_id,
         field: 'insurance_company_id',
-        model: 'insurance_company'});
+        model: 'insurance_company',
+      });
     }
 
     const coveragePlan = await coveragePlanRepository.create({
@@ -155,7 +170,8 @@ const createCoveragePlan = async (data, userId, ipAddress) => {
       tenant_id: tenantId,
       ...(insuranceCompanyId !== undefined
         ? { insurance_company_id: insuranceCompanyId }
-        : {})});
+        : {}),
+    });
 
     const createdRecord = await coveragePlanRepository.findById(coveragePlan.id, COVERAGE_PLAN_INCLUDE);
 
@@ -166,7 +182,8 @@ const createCoveragePlan = async (data, userId, ipAddress) => {
       entity: 'coverage_plan',
       entity_id: coveragePlan.id,
       diff: { after: coveragePlan },
-      ip_address: ipAddress}).catch(() => {});
+      ip_address: ipAddress,
+    }).catch(() => {});
 
     return mapCoveragePlanForDisplay(createdRecord || coveragePlan);
   } catch (error) {
@@ -182,7 +199,8 @@ const updateCoveragePlan = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'coverage_plan',
-      identifier: id});
+      identifier: id,
+    });
 
     const before = await coveragePlanRepository.findById(resolvedId, COVERAGE_PLAN_INCLUDE);
 
@@ -196,7 +214,8 @@ const updateCoveragePlan = async (id, data, userId, ipAddress) => {
         ? await resolveIdentifierForPayload({
             value: payload.insurance_company_id,
             field: 'insurance_company_id',
-            model: 'insurance_company'})
+            model: 'insurance_company',
+          })
         : null;
     }
 
@@ -210,7 +229,8 @@ const updateCoveragePlan = async (id, data, userId, ipAddress) => {
       entity: 'coverage_plan',
       entity_id: coveragePlan.id,
       diff: { before, after: coveragePlan },
-      ip_address: ipAddress}).catch(() => {});
+      ip_address: ipAddress,
+    }).catch(() => {});
 
     return mapCoveragePlanForDisplay(updatedRecord || coveragePlan);
   } catch (error) {
@@ -226,7 +246,8 @@ const deleteCoveragePlan = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'coverage_plan',
-      identifier: id});
+      identifier: id,
+    });
 
     const before = await coveragePlanRepository.findById(resolvedId, COVERAGE_PLAN_INCLUDE);
 
@@ -243,7 +264,8 @@ const deleteCoveragePlan = async (id, userId, ipAddress) => {
       entity: 'coverage_plan',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress}).catch(() => {});
+      ip_address: ipAddress,
+    }).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -255,4 +277,5 @@ module.exports = {
   getCoveragePlanById,
   createCoveragePlan,
   updateCoveragePlan,
-  deleteCoveragePlan};
+  deleteCoveragePlan,
+};

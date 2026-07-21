@@ -6,14 +6,17 @@
  */
 
 const {
-  resolveTenantModuleEntitlements} = require('@lib/subscriptions/tenant-entitlements');
+  resolveTenantModuleEntitlements,
+} = require('@lib/subscriptions/tenant-entitlements');
 const {
   getRoleNames,
-  resolveEffectiveAccess} = require('@lib/authorization/effective-access');
+  resolveEffectiveAccess,
+} = require('@lib/authorization/effective-access');
 const {
   filterPermissionNamesByPlanModules,
   filterPermissionNamesBySubscriptionPermissions,
-  normalizeEnabledModuleSet} = require('@lib/authorization/permission-module-map');
+  normalizeEnabledModuleSet,
+} = require('@lib/authorization/permission-module-map');
 const authRepository = require('@repositories/auth/auth.repository');
 const { HttpError } = require('@lib/errors');
 
@@ -124,11 +127,13 @@ const hydrateLiveAccess = () => async (req, res, next) => {
       {
         ...liveUser,
         tenant_id: tenantId,
-        facility_id: user.facility_id || user.facilityId || liveUser.facility_id},
+        facility_id: user.facility_id || user.facilityId || liveUser.facility_id,
+      },
       {
         moduleEntitlements: entitlements,
         applyPlanGate: true,
-        applyAssignedModuleGate: true}
+        applyAssignedModuleGate: true,
+      }
     );
 
     // Keep request roles as canonical name strings. Prisma returns user_role
@@ -156,4 +161,5 @@ const hydrateLiveAccess = () => async (req, res, next) => {
 
 module.exports = {
   clearLiveAccessCaches,
-  hydrateLiveAccess};
+  hydrateLiveAccess,
+};

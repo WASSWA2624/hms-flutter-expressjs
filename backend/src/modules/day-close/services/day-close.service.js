@@ -13,7 +13,8 @@ const {
   normalizeString,
   resolveListScopedIdentifiers,
   resolveScopedIdentifiers,
-  serializeDayClose} = require('@lib/last-office/shared');
+  serializeDayClose,
+} = require('@lib/last-office/shared');
 const { recordWorkflowEvent } = require('@lib/telemetry/metrics');
 const { getUserPermissions } = require('@middlewares/auth.middleware');
 
@@ -22,7 +23,8 @@ const SORT_FIELDS = new Set(['created_at', 'updated_at', 'submitted_at', 'approv
 const resolveDayCloseId = async (identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'day_close',
-    identifier});
+    identifier,
+  });
 
   return resolved || identifier;
 };
@@ -59,7 +61,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
   }
 
   const where = {
-    tenant_id: scoped.tenant_id};
+    tenant_id: scoped.tenant_id,
+  };
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
 
@@ -67,7 +70,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const officeContextId = await resolveIdentifierForFilter({
       value: filters.office_context_id,
       model: 'office_context',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (officeContextId === null) return null;
     if (officeContextId !== undefined) where.office_context_id = officeContextId;
   }
@@ -76,7 +80,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const submittedByUserId = await resolveIdentifierForFilter({
       value: filters.submitted_by_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (submittedByUserId === null) return null;
     if (submittedByUserId !== undefined) where.submitted_by_user_id = submittedByUserId;
   }
@@ -85,7 +90,8 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const approvedByUserId = await resolveIdentifierForFilter({
       value: filters.approved_by_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id }});
+      where: { tenant_id: scoped.tenant_id },
+    });
     if (approvedByUserId === null) return null;
     if (approvedByUserId !== undefined) where.approved_by_user_id = approvedByUserId;
   }
@@ -103,7 +109,8 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
       value: data.office_context_id,
       field: 'office_context_id',
       model: 'office_context',
-      where: { tenant_id: context.tenant_id }});
+      where: { tenant_id: context.tenant_id },
+    });
     const officeContext = await officeContextRepository.findById(officeContextId);
     if (!officeContext) {
       throw new HttpError('errors.office_context.not_found', 404);
@@ -113,7 +120,8 @@ const resolveOfficeContext = async (data = {}, context = {}) => {
 
   const currentOfficeContext = await officeContextRepository.findCurrent({
     tenant_id: context.tenant_id,
-    ...(context.facility_id ? { facility_id: context.facility_id } : {})});
+    ...(context.facility_id ? { facility_id: context.facility_id } : {}),
+  });
 
   if (!currentOfficeContext) {
     throw new HttpError('errors.office_context.not_found', 404);
@@ -127,7 +135,8 @@ const listDayCloses = async (filters = {}, page = 1, limit = 20, sortBy, order, 
   if (where === null) {
     return {
       dayCloses: [],
-      pagination: buildPagination(page, limit, 0)};
+      pagination: buildPagination(page, limit, 0),
+    };
   }
 
   const skip = (page - 1) * limit;
@@ -135,11 +144,13 @@ const listDayCloses = async (filters = {}, page = 1, limit = 20, sortBy, order, 
 
   const [records, total] = await Promise.all([
     dayCloseRepository.findMany(where, skip, limit, orderBy),
-    dayCloseRepository.count(where)]);
+    dayCloseRepository.count(where),
+  ]);
 
   return {
     dayCloses: records.map(serializeDayClose),
-    pagination: buildPagination(page, limit, total)};
+    pagination: buildPagination(page, limit, total),
+  };
 };
 
 const getDayCloseById = async (id, context = {}) => {
@@ -154,7 +165,8 @@ const createDayClose = async (data = {}, context = {}) => {
   const existingDrafts = await dayCloseRepository.findMany({
     office_context_id: officeContext.id,
     submitted_by_user_id: context.user_id,
-    status: { in: ['DRAFT', 'SUBMITTED'] }}, 0, 1);
+    status: { in: ['DRAFT', 'SUBMITTED'] },
+  }, 0, 1);
 
   if (existingDrafts.length > 0) {
     throw new HttpError('errors.validation.invalid', 409, [{ field: 'office_context_id' }]);
@@ -177,7 +189,8 @@ const createDayClose = async (data = {}, context = {}) => {
     submitted_at: nextStatus === 'SUBMITTED' ? new Date() : null,
     notes: normalizeString(data.notes) || null,
     evidence_json: data.evidence_json || null,
-    etag: buildRecordEtag(publicId, '1', nextStatus)};
+    etag: buildRecordEtag(publicId, '1', nextStatus),
+  };
 
   const record = await dayCloseRepository.create(payload);
   const serialized = serializeDayClose(record);
@@ -191,7 +204,8 @@ const createDayClose = async (data = {}, context = {}) => {
     entity_id: record.id,
     diff: { after: serialized },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   if (record.status === 'SUBMITTED') {
     await emitLastOfficeEvent({
@@ -201,10 +215,13 @@ const createDayClose = async (data = {}, context = {}) => {
       payload: {
         day_close_id: serialized.id,
         office_context_id: serialized.office_context_id,
-        status: serialized.status}});
+        status: serialized.status,
+      },
+    });
     recordWorkflowEvent('last_office.day_close_submitted', {
       'hms.day_close.id': serialized.id,
-      'hms.office_context.id': serialized.office_context_id});
+      'hms.office_context.id': serialized.office_context_id,
+    });
   }
 
   return serialized;
@@ -232,7 +249,8 @@ const updateDayClose = async (id, data = {}, context = {}) => {
     version: nextVersion,
     status: nextStatus,
     submitted_at: nextStatus === 'SUBMITTED' ? current.submitted_at || new Date() : null,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), nextStatus)};
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), nextStatus),
+  };
 
   if (data.checklist_json !== undefined) updateData.checklist_json = data.checklist_json || null;
   if (data.blockers_json !== undefined) updateData.blockers_json = data.blockers_json || null;
@@ -253,7 +271,8 @@ const updateDayClose = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   if (current.status !== 'SUBMITTED' && record.status === 'SUBMITTED') {
     await emitLastOfficeEvent({
@@ -263,10 +282,13 @@ const updateDayClose = async (id, data = {}, context = {}) => {
       payload: {
         day_close_id: after.id,
         office_context_id: after.office_context_id,
-        status: after.status}});
+        status: after.status,
+      },
+    });
     recordWorkflowEvent('last_office.day_close_submitted', {
       'hms.day_close.id': after.id,
-      'hms.office_context.id': after.office_context_id});
+      'hms.office_context.id': after.office_context_id,
+    });
   }
 
   return after;
@@ -298,7 +320,8 @@ const approveDayClose = async (id, data = {}, context = {}) => {
     blockers_json: blockers || null,
     notes: data.notes !== undefined ? normalizeString(data.notes) || null : current.notes,
     version: nextVersion,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'APPROVED')});
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'APPROVED'),
+  });
 
   const before = serializeDayClose(current);
   const after = serializeDayClose(record);
@@ -312,7 +335,8 @@ const approveDayClose = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent});
+    user_agent: context.user_agent,
+  });
 
   await emitLastOfficeEvent({
     tenant_id: record.tenant_id,
@@ -321,11 +345,14 @@ const approveDayClose = async (id, data = {}, context = {}) => {
     payload: {
       day_close_id: after.id,
       office_context_id: after.office_context_id,
-      approved_by_user_id: after.approved_by_user_id}});
+      approved_by_user_id: after.approved_by_user_id,
+    },
+  });
 
   recordWorkflowEvent('last_office.day_close_approved', {
     'hms.day_close.id': after.id,
-    'hms.office_context.id': after.office_context_id});
+    'hms.office_context.id': after.office_context_id,
+  });
 
   return after;
 };
@@ -335,4 +362,5 @@ module.exports = {
   createDayClose,
   getDayCloseById,
   listDayCloses,
-  updateDayClose};
+  updateDayClose,
+};

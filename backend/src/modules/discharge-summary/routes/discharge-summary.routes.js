@@ -26,7 +26,8 @@ const IPD_WRITE_SCOPES = [PERMISSIONS.CLINICAL_WRITE];
 const IPD_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN];
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List discharge summaries with pagination and filters
@@ -46,8 +47,7 @@ const IPD_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',
-  validateRequest({ query: listDischargeSummariesQuerySchema }),
+  '/',  validateRequest({ query: listDischargeSummariesQuerySchema }),
 
   authenticate(),
   authorize(IPD_READ_SCOPES, 'permission'),
@@ -68,8 +68,7 @@ router.get(
  * @throws 404 Discharge summary not found
  */
 router.get(
-  '/:id',
-  validateRequest({ params: dischargeSummaryIdParamsSchema }),
+  '/:id',  validateRequest({ params: dischargeSummaryIdParamsSchema }),
 
   authenticate(),
   authorize(IPD_READ_SCOPES, 'permission'),
@@ -95,8 +94,7 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',
-  validateRequest({ body: createDischargeSummarySchema }),
+  '/',  validateRequest({ body: createDischargeSummarySchema }),
 
   authenticate(),
   authorize(IPD_WRITE_SCOPES, 'permission'),
@@ -122,8 +120,7 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',
-  validateRequest({ params: dischargeSummaryIdParamsSchema, body: updateDischargeSummarySchema }),
+  '/:id',  validateRequest({ params: dischargeSummaryIdParamsSchema, body: updateDischargeSummarySchema }),
 
   authenticate(),
   authorize(IPD_WRITE_SCOPES, 'permission'),
@@ -144,8 +141,7 @@ router.put(
  * @throws 404 Discharge summary not found
  */
 router.delete(
-  '/:id',
-  validateRequest({ params: dischargeSummaryIdParamsSchema }),
+  '/:id',  validateRequest({ params: dischargeSummaryIdParamsSchema }),
 
   authenticate(),
   authorize(IPD_ADMIN_SCOPES, 'permission'),

@@ -21,7 +21,8 @@ const buildContext = (req) => ({
     req.body?.facility_id,
   roles: req.user?.roles || [],
   role: req.user?.role,
-  ip_address: req.ip});
+  ip_address: req.ip,
+});
 
 const listClinicalTermSuggestions = asyncHandler(async (req, res) => {
   const result = await clinicalTermService.listClinicalTermSuggestions(req.query, buildContext(req));
@@ -71,5 +72,6 @@ module.exports = {
   listClinicalCatalogSearch,
   listFacilityCatalogOfferings,
   upsertFacilityCatalogOffering,
-  deleteFacilityCatalogOffering};
+  deleteFacilityCatalogOffering,
+};
 

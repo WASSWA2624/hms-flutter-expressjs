@@ -509,8 +509,8 @@ final class AppListTableSearch<T> {
       onFilterChanged: onFilterChanged,
       hasActiveFilters: hasActiveFilters,
       trailingActions: <AppSearchBarAction>[
-        ...this.trailingActions,
         ...trailingActions,
+        ...this.trailingActions,
       ],
       maxTrailingActions: maxTrailingActions ?? this.maxTrailingActions,
       trailingActionsOverflowLabel:
@@ -1035,7 +1035,16 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (saved != null) {
       return saved.clamp(_minResizableColumnWidth, 640);
     }
+    if (_isActionsColumn(column)) {
+      return compact ? 180.0 : 220.0;
+    }
     return compact ? _defaultCompactColumnWidth : _defaultColumnWidth;
+  }
+
+  bool _isActionsColumn(AppListTableColumn<T> column) {
+    final String key = column.key.trim().toLowerCase();
+    final String label = column.label.trim().toLowerCase();
+    return column.id == 'actions' || key == 'actions' || label == 'actions';
   }
 
   void _updateColumnWidth(String columnKey, double width) {
@@ -2509,7 +2518,13 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
                 alignment: column.numeric
                     ? Alignment.centerRight
                     : Alignment.centerLeft,
-                child: column.cellBuilder(context, item),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: column.numeric
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: column.cellBuilder(context, item),
+                ),
               ),
             ),
           ),

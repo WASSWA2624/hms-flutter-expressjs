@@ -44,7 +44,8 @@ const mapFormularyDrugRecord = (record) => {
     code: toText(record.code) || null,
     form,
     strength,
-    drug_display_name: joinDrugDisplay(name, strength, form) || toText(record.code) || null};
+    drug_display_name: joinDrugDisplay(name, strength, form) || toText(record.code) || null,
+  };
 };
 
 const mapFormularyItemRecord = (record) => {
@@ -62,9 +63,11 @@ const mapFormularyItemRecord = (record) => {
     is_active: Boolean(record.is_active),
     drug,
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at)};
+    updated_at: toIsoDateTime(record.updated_at),
+  };
 };
 
 module.exports = {
   mapFormularyItemRecord,
-  mapFormularyDrugRecord};
+  mapFormularyDrugRecord,
+};

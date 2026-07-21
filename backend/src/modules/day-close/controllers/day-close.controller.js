@@ -42,4 +42,5 @@ module.exports = {
   createDayClose,
   getDayCloseById,
   listDayCloses,
-  updateDayClose};
+  updateDayClose,
+};

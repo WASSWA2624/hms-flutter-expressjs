@@ -41,7 +41,8 @@ const updateFollowUpSchema = z.object({
 });
 
 const transitionFollowUpSchema = z.object({
-  notes: z.string().trim().max(10000).optional().nullable()});
+  notes: z.string().trim().max(10000).optional().nullable(),
+});
 
 // ==================== URL Params ====================
 
@@ -67,7 +68,8 @@ const listFollowUpsQuerySchema = listQuerySchema.extend({
     .optional(),
   status: z.enum(FOLLOW_UP_STATUS_VALUES).optional(),
   scheduled_before: isoDateSchema.optional(),
-  scheduled_after: isoDateSchema.optional()});
+  scheduled_after: isoDateSchema.optional(),
+});
 
 module.exports = {
   createFollowUpSchema,

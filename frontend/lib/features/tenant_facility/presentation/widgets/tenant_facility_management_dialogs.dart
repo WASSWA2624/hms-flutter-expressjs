@@ -738,6 +738,18 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         onFilterChanged: (AppSearchBarFilterValue value) {
           setState(() => _filterValue = value);
         },
+        trailingActions: widget.showCreateAction && _canCreate
+            ? <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.add_business_outlined,
+                  label: l10n.tenantFacilityAddTenantAction,
+                  tooltip: l10n.tenantFacilityAddTenantAction,
+                  onPressed: _loading
+                      ? null
+                      : () => unawaited(_openTenantForm(forceCreate: true)),
+                ),
+              ]
+            : const <AppSearchBarAction>[],
       ),
       columns: <AppListTableColumn<TenantProfile>>[
         AppListTableColumn<TenantProfile>(
@@ -816,25 +828,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     final Widget tableBody = _buildTableBody(l10n);
 
     if (!widget.dialogMode) {
-      final bool showCreate = widget.showCreateAction && _canCreate;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (showCreate)
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: AppButton.primary(
-                label: l10n.tenantFacilityAddTenantAction,
-                leadingIcon: Icons.add_business_outlined,
-                onPressed: _loading
-                    ? null
-                    : () => unawaited(_openTenantForm(forceCreate: true)),
-              ),
-            ),
-          if (showCreate) const SizedBox(height: 12),
-          Expanded(child: tableBody),
-        ],
-      );
+      return tableBody;
     }
 
     return AppDialog(
@@ -844,7 +838,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       maxWidth: 960,
       content: SizedBox(height: 520, child: tableBody),
       actions: <Widget>[
-        if (_canCreate)
+        if (widget.showCreateAction && _canCreate)
           AppButton.primary(
             label: l10n.tenantFacilityAddTenantAction,
             leadingIcon: Icons.add_business_outlined,
@@ -4050,6 +4044,18 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         onFilterChanged: (AppSearchBarFilterValue value) {
           unawaited(_applyFacilityFilters(value));
         },
+        trailingActions: widget.showCreateAction && _canManage
+            ? <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.add_business_outlined,
+                  label: l10n.tenantFacilityAddFacilityAction,
+                  tooltip: l10n.tenantFacilityAddFacilityAction,
+                  onPressed: _loading
+                      ? null
+                      : () => unawaited(_openFacilityForm(forceCreate: true)),
+                ),
+              ]
+            : const <AppSearchBarAction>[],
       ),
       columns: <AppListTableColumn<FacilityProfile>>[
         AppListTableColumn<FacilityProfile>(
@@ -4140,25 +4146,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
     final Widget tableBody = _buildTableBody(l10n);
 
     if (!widget.dialogMode) {
-      final bool showCreate = widget.showCreateAction && _canManage;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (showCreate)
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: AppButton.primary(
-                label: l10n.tenantFacilityAddFacilityAction,
-                leadingIcon: Icons.add_business_outlined,
-                onPressed: _loading
-                    ? null
-                    : () => unawaited(_openFacilityForm(forceCreate: true)),
-              ),
-            ),
-          if (showCreate) const SizedBox(height: 12),
-          Expanded(child: tableBody),
-        ],
-      );
+      return tableBody;
     }
 
     return AppDialog(
@@ -4168,7 +4156,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       maxWidth: 1040,
       content: SizedBox(height: 560, child: tableBody),
       actions: <Widget>[
-        if (_canManage)
+        if (widget.showCreateAction && _canManage)
           AppButton.primary(
             label: l10n.tenantFacilityAddFacilityAction,
             leadingIcon: Icons.add_business_outlined,

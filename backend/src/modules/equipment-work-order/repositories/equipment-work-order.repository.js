@@ -8,12 +8,17 @@ const DEFAULT_INCLUDE = {
       human_friendly_id: true,
       equipment_name: true,
       equipment_code: true,
-      tenant_id: true}},
+      tenant_id: true,
+    },
+  },
   maintenance_plan: {
     select: {
       id: true,
       human_friendly_id: true,
-      plan_name: true}}};
+      plan_name: true,
+    },
+  },
+};
 
 const buildWhere = (filters = {}) => {
   const { search, ...rest } = filters || {};
@@ -31,7 +36,10 @@ const buildWhere = (filters = {}) => {
         { title: { contains: normalizedSearch, mode: 'insensitive' } },
         { description: { contains: normalizedSearch, mode: 'insensitive' } },
         { equipment_registry: { equipment_name: { contains: normalizedSearch } } },
-        { equipment_registry: { equipment_code: { contains: normalizedSearch } } }]}];
+        { equipment_registry: { equipment_code: { contains: normalizedSearch } } },
+      ],
+    },
+  ];
 
   return where;
 };
@@ -97,8 +105,10 @@ const findRecipientUserIds = async (tenantId) => {
         tenant_id: tenantId,
         deleted_at: null,
         role: { name: { in: ['BIOMED', 'OPERATIONS', 'FACILITY_ADMIN', 'TENANT_ADMIN'] }, deleted_at: null },
-        user: { deleted_at: null }},
-      select: { user_id: true }});
+        user: { deleted_at: null },
+      },
+      select: { user_id: true },
+    });
 
     return Array.from(new Set(rows.map((entry) => entry.user_id).filter(Boolean)));
   } catch (error) {

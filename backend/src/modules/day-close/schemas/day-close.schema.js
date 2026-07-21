@@ -13,16 +13,19 @@ const createDayCloseSchema = z.object({
   notes: z.string().trim().max(10000).optional().nullable(),
   evidence_json: jsonObjectSchema.optional().nullable(),
   submit: z.boolean().optional(),
-  status: z.enum(['DRAFT', 'SUBMITTED']).optional()});
+  status: z.enum(['DRAFT', 'SUBMITTED']).optional(),
+});
 
 const updateDayCloseSchema = createDayCloseSchema.partial();
 
 const approveDayCloseSchema = z.object({
   blockers_json: z.union([jsonObjectSchema, z.array(z.any())]).optional().nullable(),
-  notes: z.string().trim().max(10000).optional().nullable()});
+  notes: z.string().trim().max(10000).optional().nullable(),
+});
 
 const dayCloseIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema});
+  id: uuidOrFriendlyIdentifierSchema,
+});
 
 const listDayClosesQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -30,11 +33,13 @@ const listDayClosesQuerySchema = listQuerySchema.extend({
   office_context_id: uuidOrFriendlyIdentifierSchema.optional(),
   submitted_by_user_id: uuidOrFriendlyIdentifierSchema.optional(),
   approved_by_user_id: uuidOrFriendlyIdentifierSchema.optional(),
-  status: z.enum(['DRAFT', 'SUBMITTED', 'APPROVED']).optional()});
+  status: z.enum(['DRAFT', 'SUBMITTED', 'APPROVED']).optional(),
+});
 
 module.exports = {
   approveDayCloseSchema,
   createDayCloseSchema,
   dayCloseIdParamsSchema,
   listDayClosesQuerySchema,
-  updateDayCloseSchema};
+  updateDayCloseSchema,
+};

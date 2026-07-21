@@ -54,10 +54,12 @@ const FEATURE_FLAGS = Object.freeze({
   biomedical_workspace_v1: parseFlag(process.env.FEATURE_BIOMEDICAL_WORKSPACE_V1, true),
   mortuary_workspace_v1: parseFlag(process.env.FEATURE_MORTUARY_WORKSPACE_V1, true),
   reports_workspace_v1: parseFlag(process.env.FEATURE_REPORTS_WORKSPACE_V1, true),
-  radiology_attestation_v2: parseFlag(process.env.RADIOLOGY_ATTESTATION_V2, false)});
+  radiology_attestation_v2: parseFlag(process.env.RADIOLOGY_ATTESTATION_V2, false),
+});
 
 const isFeatureEnabled = (flagName) => Boolean(FEATURE_FLAGS[flagName]);
 
 module.exports = {
   FEATURE_FLAGS,
-  isFeatureEnabled};
+  isFeatureEnabled,
+};

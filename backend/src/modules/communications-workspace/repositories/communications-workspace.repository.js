@@ -3,7 +3,8 @@ const { HttpError } = require('@lib/errors');
 const {
   normalizeIdentifier,
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier,
+} = require('@lib/identifiers/resolve-entity-id');
 
 const BASE_USER_SELECT = {
   id: true,
@@ -13,7 +14,10 @@ const BASE_USER_SELECT = {
   profile: {
     select: {
       first_name: true,
-      last_name: true}}};
+      last_name: true,
+    },
+  },
+};
 
 const ATTACHMENT_SELECT = {
   id: true,
@@ -25,7 +29,8 @@ const ATTACHMENT_SELECT = {
   size_bytes: true,
   attachment_kind: true,
   public_url: true,
-  created_at: true};
+  created_at: true,
+};
 
 const MESSAGE_SELECT = {
   id: true,
@@ -41,18 +46,24 @@ const MESSAGE_SELECT = {
   created_at: true,
   updated_at: true,
   sender_user: {
-    select: BASE_USER_SELECT},
+    select: BASE_USER_SELECT,
+  },
   reply_to_message: {
     select: {
       id: true,
       human_friendly_id: true,
       content: true,
       sender_user: {
-        select: BASE_USER_SELECT}}},
+        select: BASE_USER_SELECT,
+      },
+    },
+  },
   attachments: {
     where: { deleted_at: null },
     orderBy: { created_at: 'asc' },
-    select: ATTACHMENT_SELECT}};
+    select: ATTACHMENT_SELECT,
+  },
+};
 
 const PARTICIPANT_SELECT = {
   id: true,
@@ -71,26 +82,35 @@ const PARTICIPANT_SELECT = {
     select: {
       id: true,
       human_friendly_id: true,
-      sent_at: true}},
+      sent_at: true,
+    },
+  },
   user: {
-    select: BASE_USER_SELECT}};
+    select: BASE_USER_SELECT,
+  },
+};
 
 const CONVERSATION_LIST_INCLUDE = {
   participants: {
     where: { deleted_at: null },
     orderBy: { joined_at: 'asc' },
-    select: PARTICIPANT_SELECT},
+    select: PARTICIPANT_SELECT,
+  },
   messages: {
     where: { deleted_at: null },
     orderBy: { sent_at: 'desc' },
     take: 1,
-    select: MESSAGE_SELECT},
+    select: MESSAGE_SELECT,
+  },
   visibility_roles: {
     where: { deleted_at: null },
     select: {
       id: true,
       human_friendly_id: true,
-      role_code: true}}};
+      role_code: true,
+    },
+  },
+};
 
 const CONVERSATION_DETAIL_INCLUDE = {
   ...CONVERSATION_LIST_INCLUDE,
@@ -98,7 +118,9 @@ const CONVERSATION_DETAIL_INCLUDE = {
     where: { deleted_at: null },
     orderBy: { sent_at: 'asc' },
     take: 100,
-    select: MESSAGE_SELECT}};
+    select: MESSAGE_SELECT,
+  },
+};
 
 const normalizeSearch = (value) => normalizeIdentifier(value);
 const normalizeRole = (value) => String(value || '').trim().toUpperCase();
@@ -114,7 +136,8 @@ const buildConversationWhere = ({
   userId,
   search,
   sensitive,
-  filter}) => {
+  filter,
+}) => {
   const normalizedSearch = normalizeSearch(search);
   const normalizedFilter = normalizeRole(filter);
 
@@ -124,7 +147,10 @@ const buildConversationWhere = ({
     participants: {
       some: {
         user_id: userId,
-        deleted_at: null}}};
+        deleted_at: null,
+      },
+    },
+  };
 
   if (typeof sensitive === 'boolean') {
     where.is_sensitive = sensitive;
@@ -138,7 +164,11 @@ const buildConversationWhere = ({
           some: {
             user_id: userId,
             deleted_at: null,
-            archived_at: { not: null }}}}];
+            archived_at: { not: null },
+          },
+        },
+      },
+    ];
   }
 
   if (normalizedFilter === 'FAVORITES') {
@@ -147,7 +177,9 @@ const buildConversationWhere = ({
         user_id: userId,
         deleted_at: null,
         is_favorite: true,
-        archived_at: null}};
+        archived_at: null,
+      },
+    };
   }
 
   if (normalizedFilter === 'FLAGGED') {
@@ -156,7 +188,9 @@ const buildConversationWhere = ({
         user_id: userId,
         deleted_at: null,
         is_flagged: true,
-        archived_at: null}};
+        archived_at: null,
+      },
+    };
   }
 
   if (normalizedFilter === 'ACTIVE') {
@@ -175,7 +209,10 @@ const buildConversationWhere = ({
           messages: {
             some: {
               deleted_at: null,
-              content: { contains: normalizedSearch }}}},
+              content: { contains: normalizedSearch },
+            },
+          },
+        },
         {
           participants: {
             some: {
@@ -188,7 +225,18 @@ const buildConversationWhere = ({
                     profile: {
                       OR: [
                         { first_name: { contains: normalizedSearch } },
-                        { last_name: { contains: normalizedSearch } }]}}]}}}}]}];
+                        { last_name: { contains: normalizedSearch } },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    },
+  ];
 
   return where;
 };
@@ -199,7 +247,9 @@ const resolveUserId = async (identifier, tenantId) =>
     identifier,
     where: {
       tenant_id: tenantId,
-      deleted_at: null}});
+      deleted_at: null,
+    },
+  });
 
 const resolveConversationRecord = async (identifier, tenantId, include = CONVERSATION_DETAIL_INCLUDE) =>
   resolveModelRecordByIdentifier({
@@ -207,8 +257,10 @@ const resolveConversationRecord = async (identifier, tenantId, include = CONVERS
     identifier,
     where: {
       tenant_id: tenantId,
-      deleted_at: null},
-    include});
+      deleted_at: null,
+    },
+    include,
+  });
 
 const resolveMessageRecord = async (identifier, tenantId, include = {}) =>
   resolveModelRecordByIdentifier({
@@ -218,8 +270,11 @@ const resolveMessageRecord = async (identifier, tenantId, include = {}) =>
       deleted_at: null,
       conversation: {
         tenant_id: tenantId,
-        deleted_at: null}},
-    include});
+        deleted_at: null,
+      },
+    },
+    include,
+  });
 
 const resolveNotificationRecord = async (identifier, tenantId, include = {}) =>
   resolveModelRecordByIdentifier({
@@ -227,8 +282,10 @@ const resolveNotificationRecord = async (identifier, tenantId, include = {}) =>
     identifier,
     where: {
       tenant_id: tenantId,
-      deleted_at: null},
-    include});
+      deleted_at: null,
+    },
+    include,
+  });
 
 const resolveTemplateRecord = async (identifier, tenantId, include = {}) =>
   resolveModelRecordByIdentifier({
@@ -236,8 +293,10 @@ const resolveTemplateRecord = async (identifier, tenantId, include = {}) =>
     identifier,
     where: {
       tenant_id: tenantId,
-      deleted_at: null},
-    include});
+      deleted_at: null,
+    },
+    include,
+  });
 
 const resolveParticipantRecord = async (identifier, conversationId) =>
   resolveModelRecordByIdentifier({
@@ -245,10 +304,14 @@ const resolveParticipantRecord = async (identifier, conversationId) =>
     identifier,
     where: {
       conversation_id: conversationId,
-      deleted_at: null},
+      deleted_at: null,
+    },
     include: {
       user: {
-        select: BASE_USER_SELECT}}});
+        select: BASE_USER_SELECT,
+      },
+    },
+  });
 
 const listConversations = async ({
   tenantId,
@@ -257,36 +320,42 @@ const listConversations = async ({
   sensitive,
   filter,
   page = 1,
-  limit = 30}) => {
+  limit = 30,
+}) => {
   try {
     const where = buildConversationWhere({
       tenantId,
       userId,
       search,
       sensitive,
-      filter});
+      filter,
+    });
     return prisma.conversation.findMany({
       where,
       include: CONVERSATION_LIST_INCLUDE,
       orderBy: [{ last_message_at: 'desc' }, { updated_at: 'desc' }],
       skip: Math.max(0, (page - 1) * limit),
-      take: limit});
+      take: limit,
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [
-      { originalError: error.message }]);
+      { originalError: error.message },
+    ]);
   }
 };
 
 const countConversations = async ({ tenantId, userId, search, sensitive, filter }) =>
   prisma.conversation.count({
-    where: buildConversationWhere({ tenantId, userId, search, sensitive, filter })});
+    where: buildConversationWhere({ tenantId, userId, search, sensitive, filter }),
+  });
 
 const getConversation = async ({ tenantId, identifier }) => {
   try {
     return resolveConversationRecord(identifier, tenantId);
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [
-      { originalError: error.message }]);
+      { originalError: error.message },
+    ]);
   }
 };
 
@@ -297,7 +366,9 @@ const listMessages = async ({ tenantId, conversationId, search, page = 1, limit 
     conversation_id: conversationId,
     conversation: {
       tenant_id: tenantId,
-      deleted_at: null}};
+      deleted_at: null,
+    },
+  };
 
   if (normalizedSearch) {
     where.content = { contains: normalizedSearch };
@@ -308,7 +379,8 @@ const listMessages = async ({ tenantId, conversationId, search, page = 1, limit 
     orderBy: { sent_at: 'asc' },
     skip: Math.max(0, (page - 1) * limit),
     take: limit,
-    select: MESSAGE_SELECT});
+    select: MESSAGE_SELECT,
+  });
 };
 
 const getMessage = async ({ tenantId, identifier }) => resolveMessageRecord(identifier, tenantId, {
@@ -317,7 +389,10 @@ const getMessage = async ({ tenantId, identifier }) => resolveMessageRecord(iden
     select: {
       id: true,
       human_friendly_id: true,
-      tenant_id: true}}});
+      tenant_id: true,
+    },
+  },
+});
 
 const listNotifications = async ({ tenantId, userId, search, page = 1, limit = 40 }) => {
   const normalizedSearch = normalizeSearch(search);
@@ -331,14 +406,19 @@ const listNotifications = async ({ tenantId, userId, search, page = 1, limit = 4
             OR: [
               { title: { contains: normalizedSearch } },
               { message: { contains: normalizedSearch } },
-              { human_friendly_id: { contains: normalizedSearch.toUpperCase() } }]}
-        : {})},
+              { human_friendly_id: { contains: normalizedSearch.toUpperCase() } },
+            ],
+          }
+        : {}),
+    },
     include: {
       template: {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true}},
+          name: true,
+        },
+      },
       deliveries: {
         where: { deleted_at: null },
         orderBy: { created_at: 'desc' },
@@ -352,10 +432,14 @@ const listNotifications = async ({ tenantId, userId, search, page = 1, limit = 4
           failed_at: true,
           attempt_count: true,
           retryable: true,
-          error_message: true}}},
+          error_message: true,
+        },
+      },
+    },
     orderBy: { created_at: 'desc' },
     skip: Math.max(0, (page - 1) * limit),
-    take: limit});
+    take: limit,
+  });
 };
 
 const countNotifications = async ({ tenantId, userId }) =>
@@ -363,7 +447,9 @@ const countNotifications = async ({ tenantId, userId }) =>
     where: {
       tenant_id: tenantId,
       user_id: userId,
-      deleted_at: null}});
+      deleted_at: null,
+    },
+  });
 
 const listDeliveries = async ({ tenantId, search, page = 1, limit = 40 }) => {
   const normalizedSearch = normalizeSearch(search);
@@ -372,7 +458,8 @@ const listDeliveries = async ({ tenantId, search, page = 1, limit = 40 }) => {
       deleted_at: null,
       notification: {
         tenant_id: tenantId,
-        deleted_at: null},
+        deleted_at: null,
+      },
       ...(normalizedSearch
         ? {
             OR: [
@@ -384,8 +471,14 @@ const listDeliveries = async ({ tenantId, search, page = 1, limit = 40 }) => {
                   OR: [
                     { title: { contains: normalizedSearch } },
                     { message: { contains: normalizedSearch } },
-                    { human_friendly_id: { contains: normalizedSearch.toUpperCase() } }]}}]}
-        : {})},
+                    { human_friendly_id: { contains: normalizedSearch.toUpperCase() } },
+                  ],
+                },
+              },
+            ],
+          }
+        : {}),
+    },
     include: {
       notification: {
         select: {
@@ -395,10 +488,15 @@ const listDeliveries = async ({ tenantId, search, page = 1, limit = 40 }) => {
           target_path: true,
           user_id: true,
           user: {
-            select: BASE_USER_SELECT}}}},
+            select: BASE_USER_SELECT,
+          },
+        },
+      },
+    },
     orderBy: [{ failed_at: 'desc' }, { updated_at: 'desc' }],
     skip: Math.max(0, (page - 1) * limit),
-    take: limit});
+    take: limit,
+  });
 };
 
 const countDeliveries = async ({ tenantId }) =>
@@ -407,7 +505,10 @@ const countDeliveries = async ({ tenantId }) =>
       deleted_at: null,
       notification: {
         tenant_id: tenantId,
-        deleted_at: null}}});
+        deleted_at: null,
+      },
+    },
+  });
 
 const listTemplates = async ({ tenantId, search, page = 1, limit = 40 }) => {
   const normalizedSearch = normalizeSearch(search);
@@ -421,22 +522,30 @@ const listTemplates = async ({ tenantId, search, page = 1, limit = 40 }) => {
               { name: { contains: normalizedSearch } },
               { subject: { contains: normalizedSearch } },
               { body: { contains: normalizedSearch } },
-              { human_friendly_id: { contains: normalizedSearch.toUpperCase() } }]}
-        : {})},
+              { human_friendly_id: { contains: normalizedSearch.toUpperCase() } },
+            ],
+          }
+        : {}),
+    },
     include: {
       variables: {
         where: { deleted_at: null },
-        orderBy: { key: 'asc' }}},
+        orderBy: { key: 'asc' },
+      },
+    },
     orderBy: [{ updated_at: 'desc' }, { name: 'asc' }],
     skip: Math.max(0, (page - 1) * limit),
-    take: limit});
+    take: limit,
+  });
 };
 
 const countTemplates = async ({ tenantId }) =>
   prisma.template.count({
     where: {
       tenant_id: tenantId,
-      deleted_at: null}});
+      deleted_at: null,
+    },
+  });
 
 const listReferenceUsers = async ({ tenantId, search }) => {
   const normalizedSearch = normalizeSearch(search);
@@ -453,8 +562,14 @@ const listReferenceUsers = async ({ tenantId, search }) => {
                 profile: {
                   OR: [
                     { first_name: { contains: normalizedSearch } },
-                    { last_name: { contains: normalizedSearch } }]}}]}
-        : {})},
+                    { last_name: { contains: normalizedSearch } },
+                  ],
+                },
+              },
+            ],
+          }
+        : {}),
+    },
     select: {
       ...BASE_USER_SELECT,
       roles: {
@@ -462,9 +577,15 @@ const listReferenceUsers = async ({ tenantId, search }) => {
         select: {
           role: {
             select: {
-              name: true}}}}},
+              name: true,
+            },
+          },
+        },
+      },
+    },
     orderBy: { email: 'asc' },
-    take: 50});
+    take: 50,
+  });
 };
 
 const findExistingDirectConversation = async ({ tenantId, participantIds }) => {
@@ -479,10 +600,14 @@ const findExistingDirectConversation = async ({ tenantId, participantIds }) => {
       participants: {
         some: {
           user_id: { in: uniqueIds },
-          deleted_at: null}}},
+          deleted_at: null,
+        },
+      },
+    },
     include: CONVERSATION_DETAIL_INCLUDE,
     orderBy: { updated_at: 'desc' },
-    take: 10});
+    take: 10,
+  });
 
   return (
     results.find((record) => {
@@ -502,14 +627,20 @@ const findConversationUnreadStats = async ({ tenantId, userId }) => {
       deleted_at: null,
       conversation: {
         tenant_id: tenantId,
-        deleted_at: null}},
+        deleted_at: null,
+      },
+    },
     select: {
       archived_at: true,
       last_read_at: true,
       conversation: {
         select: {
           last_message_at: true,
-          is_sensitive: true}}}});
+          is_sensitive: true,
+        },
+      },
+    },
+  });
 
   return rows.reduce(
     (acc, row) => {
@@ -546,4 +677,5 @@ module.exports = {
   countTemplates,
   listReferenceUsers,
   findExistingDirectConversation,
-  findConversationUnreadStats};
+  findConversationUnreadStats,
+};

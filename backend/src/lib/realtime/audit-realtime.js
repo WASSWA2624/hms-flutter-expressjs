@@ -56,7 +56,6 @@ const extractResourceFromAudit = (auditData = {}, tenantId) => {
     id: pickId(auditData.entity_id),
     tenant_id: pickId(snapshot.tenant_id) || pickId(auditData.tenant_id) || pickId(tenantId),
     facility_id: pickId(snapshot.facility_id) || pickId(auditData.facility_id),
-    branch_id: pickId(snapshot.branch_id),
     patient_id: pickId(snapshot.patient_id),
     provider_user_id: pickId(snapshot.provider_user_id),
     status: snapshot.status || null
@@ -134,7 +133,6 @@ const publishAuditRealtime = async (auditData = {}, resolvedTenantId, resolvedAc
       affected,
       payload: {
         operation,
-        branch_id: resource.branch_id || null,
         patient_id: resource.patient_id || null,
         provider_user_id: resource.provider_user_id || null,
         status: resource.status,

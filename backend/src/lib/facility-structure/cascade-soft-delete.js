@@ -16,8 +16,7 @@ const assertActiveParent = async ({
   model,
   id,
   errorKey,
-  optional = false,
-}) => {
+  optional = false}) => {
   if (!id) {
     if (optional) return null;
     throw new HttpError(errorKey, 409);
@@ -25,8 +24,7 @@ const assertActiveParent = async ({
 
   const record = await prisma[model].findFirst({
     where: { id, deleted_at: null },
-    select: { id: true },
-  });
+    select: { id: true }});
 
   if (!record) {
     throw new HttpError(errorKey, 409);
@@ -43,29 +41,25 @@ const softDeleteDepartmentCascade = async (departmentId) => {
 
   return prisma.$transaction(async (tx) => {
     const department = await tx.department.findFirst({
-      where: { id: departmentId, deleted_at: null },
-    });
+      where: { id: departmentId, deleted_at: null }});
     if (!department) {
       throw Object.assign(new Error('Record not found'), { code: 'P2025' });
     }
 
     const units = await tx.unit.findMany({
       where: { department_id: departmentId, deleted_at: null },
-      select: { id: true },
-    });
+      select: { id: true }});
     const unitIds = units.map((row) => row.id);
 
     if (unitIds.length > 0) {
       await tx.unit.updateMany({
         where: { id: { in: unitIds }, deleted_at: null },
-        data: { deleted_at: deletedAt },
-      });
+        data: { deleted_at: deletedAt }});
     }
 
     const updated = await tx.department.update({
       where: { id: departmentId },
-      data: { deleted_at: deletedAt },
-    });
+      data: { deleted_at: deletedAt }});
 
     return { deletedAt, department: updated, unitIds };
   });
@@ -79,16 +73,14 @@ const softDeleteWardCascade = async (wardId) => {
 
   return prisma.$transaction(async (tx) => {
     const ward = await tx.ward.findFirst({
-      where: { id: wardId, deleted_at: null },
-    });
+      where: { id: wardId, deleted_at: null }});
     if (!ward) {
       throw Object.assign(new Error('Record not found'), { code: 'P2025' });
     }
 
     const rooms = await tx.room.findMany({
       where: { ward_id: wardId, deleted_at: null },
-      select: { id: true },
-    });
+      select: { id: true }});
     const roomIds = rooms.map((row) => row.id);
 
     const beds = await tx.bed.findMany({
@@ -96,31 +88,25 @@ const softDeleteWardCascade = async (wardId) => {
         deleted_at: null,
         OR: [
           { ward_id: wardId },
-          ...(roomIds.length > 0 ? [{ room_id: { in: roomIds } }] : []),
-        ],
-      },
-      select: { id: true },
-    });
+          ...(roomIds.length > 0 ? [{ room_id: { in: roomIds } }] : [])]},
+      select: { id: true }});
     const bedIds = beds.map((row) => row.id);
 
     if (bedIds.length > 0) {
       await tx.bed.updateMany({
         where: { id: { in: bedIds }, deleted_at: null },
-        data: { deleted_at: deletedAt },
-      });
+        data: { deleted_at: deletedAt }});
     }
 
     if (roomIds.length > 0) {
       await tx.room.updateMany({
         where: { id: { in: roomIds }, deleted_at: null },
-        data: { deleted_at: deletedAt },
-      });
+        data: { deleted_at: deletedAt }});
     }
 
     const updated = await tx.ward.update({
       where: { id: wardId },
-      data: { deleted_at: deletedAt },
-    });
+      data: { deleted_at: deletedAt }});
 
     return { deletedAt, ward: updated, roomIds, bedIds };
   });
@@ -134,29 +120,25 @@ const softDeleteRoomCascade = async (roomId) => {
 
   return prisma.$transaction(async (tx) => {
     const room = await tx.room.findFirst({
-      where: { id: roomId, deleted_at: null },
-    });
+      where: { id: roomId, deleted_at: null }});
     if (!room) {
       throw Object.assign(new Error('Record not found'), { code: 'P2025' });
     }
 
     const beds = await tx.bed.findMany({
       where: { room_id: roomId, deleted_at: null },
-      select: { id: true },
-    });
+      select: { id: true }});
     const bedIds = beds.map((row) => row.id);
 
     if (bedIds.length > 0) {
       await tx.bed.updateMany({
         where: { id: { in: bedIds }, deleted_at: null },
-        data: { deleted_at: deletedAt },
-      });
+        data: { deleted_at: deletedAt }});
     }
 
     const updated = await tx.room.update({
       where: { id: roomId },
-      data: { deleted_at: deletedAt },
-    });
+      data: { deleted_at: deletedAt }});
 
     return { deletedAt, room: updated, bedIds };
   });
@@ -168,9 +150,7 @@ const restoreDepartment = async (departmentId) => {
     select: {
       id: true,
       facility_id: true,
-      deleted_at: true,
-    },
-  });
+      deleted_at: true}});
   if (!existing || !existing.deleted_at) {
     throw Object.assign(new Error('Record not found'), { code: 'P2025' });
   }
@@ -179,13 +159,11 @@ const restoreDepartment = async (departmentId) => {
     model: 'facility',
     id: existing.facility_id,
     errorKey: 'errors.department.restore_requires_active_facility',
-    optional: !existing.facility_id,
-  });
+    optional: !existing.facility_id});
 
   return prisma.department.update({
     where: { id: departmentId },
-    data: { deleted_at: null },
-  });
+    data: { deleted_at: null }});
 };
 
 const restoreUnit = async (unitId) => {
@@ -195,9 +173,7 @@ const restoreUnit = async (unitId) => {
       id: true,
       facility_id: true,
       department_id: true,
-      deleted_at: true,
-    },
-  });
+      deleted_at: true}});
   if (!existing || !existing.deleted_at) {
     throw Object.assign(new Error('Record not found'), { code: 'P2025' });
   }
@@ -206,26 +182,22 @@ const restoreUnit = async (unitId) => {
     model: 'facility',
     id: existing.facility_id,
     errorKey: 'errors.unit.restore_requires_active_facility',
-    optional: !existing.facility_id,
-  });
+    optional: !existing.facility_id});
   await assertActiveParent({
     model: 'department',
     id: existing.department_id,
     errorKey: 'errors.unit.restore_requires_active_department',
-    optional: !existing.department_id,
-  });
+    optional: !existing.department_id});
 
   return prisma.unit.update({
     where: { id: unitId },
-    data: { deleted_at: null },
-  });
+    data: { deleted_at: null }});
 };
 
 const restoreWard = async (wardId) => {
   const existing = await prisma.ward.findUnique({
     where: { id: wardId },
-    select: { id: true, facility_id: true, deleted_at: true },
-  });
+    select: { id: true, facility_id: true, deleted_at: true }});
   if (!existing || !existing.deleted_at) {
     throw Object.assign(new Error('Record not found'), { code: 'P2025' });
   }
@@ -233,20 +205,17 @@ const restoreWard = async (wardId) => {
   await assertActiveParent({
     model: 'facility',
     id: existing.facility_id,
-    errorKey: 'errors.ward.restore_requires_active_facility',
-  });
+    errorKey: 'errors.ward.restore_requires_active_facility'});
 
   return prisma.ward.update({
     where: { id: wardId },
-    data: { deleted_at: null },
-  });
+    data: { deleted_at: null }});
 };
 
 const restoreRoom = async (roomId) => {
   const existing = await prisma.room.findUnique({
     where: { id: roomId },
-    select: { id: true, ward_id: true, deleted_at: true },
-  });
+    select: { id: true, ward_id: true, deleted_at: true }});
   if (!existing || !existing.deleted_at) {
     throw Object.assign(new Error('Record not found'), { code: 'P2025' });
   }
@@ -254,20 +223,17 @@ const restoreRoom = async (roomId) => {
   await assertActiveParent({
     model: 'ward',
     id: existing.ward_id,
-    errorKey: 'errors.room.restore_requires_active_ward',
-  });
+    errorKey: 'errors.room.restore_requires_active_ward'});
 
   return prisma.room.update({
     where: { id: roomId },
-    data: { deleted_at: null },
-  });
+    data: { deleted_at: null }});
 };
 
 const restoreBed = async (bedId) => {
   const existing = await prisma.bed.findUnique({
     where: { id: bedId },
-    select: { id: true, room_id: true, ward_id: true, deleted_at: true },
-  });
+    select: { id: true, room_id: true, ward_id: true, deleted_at: true }});
   if (!existing || !existing.deleted_at) {
     throw Object.assign(new Error('Record not found'), { code: 'P2025' });
   }
@@ -276,21 +242,18 @@ const restoreBed = async (bedId) => {
     await assertActiveParent({
       model: 'room',
       id: existing.room_id,
-      errorKey: 'errors.bed.restore_requires_active_room',
-    });
+      errorKey: 'errors.bed.restore_requires_active_room'});
   } else {
     await assertActiveParent({
       model: 'ward',
       id: existing.ward_id,
       errorKey: 'errors.bed.restore_requires_active_ward',
-      optional: !existing.ward_id,
-    });
+      optional: !existing.ward_id});
   }
 
   return prisma.bed.update({
     where: { id: bedId },
-    data: { deleted_at: null },
-  });
+    data: { deleted_at: null }});
 };
 
 module.exports = {
@@ -301,5 +264,4 @@ module.exports = {
   restoreUnit,
   restoreWard,
   restoreRoom,
-  restoreBed,
-};
+  restoreBed};

@@ -6,7 +6,8 @@ const dashboardPanelSchema = z.enum([
   'queue',
   'activity',
   'insights',
-  'getting-started']);
+  'getting-started',
+]);
 
 const workspaceQuerySchema = listQuerySchema.extend({
   panel: dashboardPanelSchema.optional(),
@@ -22,15 +23,18 @@ const workspaceQuerySchema = listQuerySchema.extend({
   datePreset: z.string().trim().max(80).optional(),
   date_preset: z.string().trim().max(80).optional(),
   from: z.string().trim().optional(),
-  to: z.string().trim().optional()});
+  to: z.string().trim().optional(),
+});
 
 const lookupsQuerySchema = z.object({
   tenantId: uuidOrFriendlyIdentifierSchema.optional(),
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facilityId: uuidOrFriendlyIdentifierSchema.optional(),
-  facility_id: uuidOrFriendlyIdentifierSchema.optional()});
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+});
 
 module.exports = {
   dashboardPanelSchema,
   lookupsQuerySchema,
-  workspaceQuerySchema};
+  workspaceQuerySchema,
+};

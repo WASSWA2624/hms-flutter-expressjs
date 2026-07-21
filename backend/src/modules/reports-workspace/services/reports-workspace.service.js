@@ -44,7 +44,6 @@ const buildLookups = (lookups = {}) => {
 
   return {
     facilities,
-    branches: (lookups.branches || []).map((entry) => ({
     id: safePublicId(entry.human_friendly_id, entry.id),
     label: entry.name,
     meta: {
@@ -272,7 +271,6 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
     internalId: scoped.facility_id,
     entries: lookups.facilities});
   const branchPublicId = resolveScopedPublicId({
-    entries: lookups.branches});
   const ownerPublicId = resolveScopedPublicId({
     explicitValue: filters.owner_id || filters.ownerId,
     internalId: scoped.owner_id,

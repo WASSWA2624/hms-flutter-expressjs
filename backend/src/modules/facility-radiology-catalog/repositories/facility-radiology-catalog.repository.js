@@ -6,7 +6,8 @@ const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
 const FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE = {
-  radiology_test: true};
+  radiology_test: true,
+};
 
 const findTestOffering = async (
   where = {},
@@ -15,7 +16,8 @@ const findTestOffering = async (
   try {
     return await prisma.facility_radiology_test_offering.findFirst({
       where: { deleted_at: null, ...where },
-      include});
+      include,
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -34,7 +36,8 @@ const findTestOfferings = async (
       skip,
       take,
       orderBy,
-      include});
+      include,
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -43,7 +46,8 @@ const findTestOfferings = async (
 const countTestOfferings = async (filters = {}) => {
   try {
     return await prisma.facility_radiology_test_offering.count({
-      where: { deleted_at: null, ...filters }});
+      where: { deleted_at: null, ...filters },
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -53,7 +57,8 @@ const createTestOffering = async (data) => {
   try {
     return await prisma.facility_radiology_test_offering.create({
       data,
-      include: FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE});
+      include: FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE,
+    });
   } catch (error) {
     if (error.code === 'P2002') {
       throw new HttpError('errors.database.unique_field', 409, [{ field: error.meta?.target?.[0] || 'field' }]);
@@ -67,7 +72,8 @@ const updateTestOffering = async (id, data) => {
     return await prisma.facility_radiology_test_offering.update({
       where: { id },
       data,
-      include: FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE});
+      include: FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE,
+    });
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.facility_radiology_test_offering.not_found', 404);
@@ -82,4 +88,5 @@ module.exports = {
   findTestOfferings,
   countTestOfferings,
   createTestOffering,
-  updateTestOffering};
+  updateTestOffering,
+};

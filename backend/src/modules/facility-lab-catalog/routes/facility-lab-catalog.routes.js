@@ -15,7 +15,8 @@ const {
   facilityLabTestParamsSchema,
   facilityLabPanelParamsSchema,
   listFacilityLabCatalogQuerySchema,
-  searchFacilityLabCatalogQuerySchema} = require('@validations/facility-lab-catalog/facility-lab-catalog.schema');
+  searchFacilityLabCatalogQuerySchema,
+} = require('@validations/facility-lab-catalog/facility-lab-catalog.schema');
 
 const router = express.Router();
 
@@ -25,13 +26,15 @@ const LAB_READ_ROLES = [
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
   ROLES.NURSE,
-  ROLES.LAB_TECH];
+  ROLES.LAB_TECH,
+];
 
 const LAB_CONFIG_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.LAB_TECH];
+  ROLES.LAB_TECH,
+];
 
 router.get(
   '/search',
@@ -61,7 +64,8 @@ router.put(
   '/tests/:lab_test_id',
   validateRequest({
     params: facilityLabTestParamsSchema,
-    body: upsertFacilityLabTestOfferingSchema}),
+    body: upsertFacilityLabTestOfferingSchema,
+  }),
   authenticate(),
   authorize(LAB_CONFIG_WRITE_ROLES, 'role'),
   facilityLabCatalogController.upsertFacilityLabTestOffering
@@ -71,7 +75,8 @@ router.delete(
   '/tests/:lab_test_id',
   validateRequest({
     params: facilityLabTestParamsSchema,
-    body: disableFacilityLabOfferingSchema}),
+    body: disableFacilityLabOfferingSchema,
+  }),
   authenticate(),
   authorize(LAB_CONFIG_WRITE_ROLES, 'role'),
   facilityLabCatalogController.disableFacilityLabTestOffering
@@ -97,7 +102,8 @@ router.put(
   '/panels/:lab_panel_id',
   validateRequest({
     params: facilityLabPanelParamsSchema,
-    body: upsertFacilityLabPanelOfferingSchema}),
+    body: upsertFacilityLabPanelOfferingSchema,
+  }),
   authenticate(),
   authorize(LAB_CONFIG_WRITE_ROLES, 'role'),
   facilityLabCatalogController.upsertFacilityLabPanelOffering
@@ -107,7 +113,8 @@ router.delete(
   '/panels/:lab_panel_id',
   validateRequest({
     params: facilityLabPanelParamsSchema,
-    body: disableFacilityLabOfferingSchema}),
+    body: disableFacilityLabOfferingSchema,
+  }),
   authenticate(),
   authorize(LAB_CONFIG_WRITE_ROLES, 'role'),
   facilityLabCatalogController.disableFacilityLabPanelOffering

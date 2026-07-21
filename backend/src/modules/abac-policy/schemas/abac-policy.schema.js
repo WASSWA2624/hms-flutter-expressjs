@@ -6,7 +6,6 @@ const jsonObjectSchema = z.object({}).passthrough();
 const createAbacPolicySchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  branch_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255),
   description: z.string().trim().max(10000).optional().nullable(),
@@ -30,7 +29,6 @@ const abacPolicyIdParamsSchema = z.object({
 const listAbacPoliciesQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  branch_id: uuidOrFriendlyIdentifierSchema.optional(),
   department_id: uuidOrFriendlyIdentifierSchema.optional(),
   resource_type: z.string().trim().optional(),
   action: z.string().trim().optional(),

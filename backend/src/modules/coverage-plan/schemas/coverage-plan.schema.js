@@ -7,7 +7,8 @@
 const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema} = require('@lib/validation/zod');
+  listQuerySchema,
+} = require('@lib/validation/zod');
 
 const createCoveragePlanSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
@@ -20,7 +21,8 @@ const createCoveragePlanSchema = z.object({
   effective_from: z.string().datetime().optional().nullable(),
   effective_to: z.string().datetime().optional().nullable(),
   default_copay_type: z.enum(['NONE', 'FIXED', 'PERCENT']).optional().default('NONE'),
-  default_copay_value: z.number().min(0).finite().optional().nullable()});
+  default_copay_value: z.number().min(0).finite().optional().nullable(),
+});
 
 const updateCoveragePlanSchema = z.object({
   insurance_company_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
@@ -32,10 +34,12 @@ const updateCoveragePlanSchema = z.object({
   effective_from: z.string().datetime().optional().nullable(),
   effective_to: z.string().datetime().optional().nullable(),
   default_copay_type: z.enum(['NONE', 'FIXED', 'PERCENT']).optional(),
-  default_copay_value: z.number().min(0).finite().optional().nullable()});
+  default_copay_value: z.number().min(0).finite().optional().nullable(),
+});
 
 const coveragePlanIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema});
+  id: uuidOrFriendlyIdentifierSchema,
+});
 
 const listCoveragePlansQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -44,10 +48,12 @@ const listCoveragePlansQuerySchema = listQuerySchema.extend({
   code: z.string().trim().optional(),
   provider_name: z.string().trim().optional(),
   status: z.enum(['ACTIVE', 'RETIRED']).optional(),
-  search: z.string().trim().optional()});
+  search: z.string().trim().optional(),
+});
 
 module.exports = {
   createCoveragePlanSchema,
   updateCoveragePlanSchema,
   coveragePlanIdParamsSchema,
-  listCoveragePlansQuerySchema};
+  listCoveragePlansQuerySchema,
+};
