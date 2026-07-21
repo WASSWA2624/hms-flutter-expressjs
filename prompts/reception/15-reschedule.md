@@ -1,19 +1,19 @@
 # Improve Reschedule Dialog Layout and Patient Context
 
-Refine `OpdRescheduleAppointmentDialog` and shared `AppTimeField` for clearer rescheduling. Follow `prompts/.cursor/prompt.mdc`.
+Refine `OpdRescheduleAppointmentDialog` and `AppTimeField` for clearer rescheduling. Follow `prompts/.cursor/prompt.mdc`.
 
 ## Context
 
-Reschedule on `/reception` has loose form alignment, thin patient context, missing default provider selection, and a crowded dual 12H/24H time-format control.
+Reschedule on `/reception` has loose form alignment, thin patient context, missing default provider selection, and a crowded dual 12H/24H control.
 
 ## Requirements
 
-1. Reorganize the form: patient context, then date/time/duration, then optional provider. Keep fields aligned on mobile, tablet, and desktop without clipping or overflow.
-2. When the appointment has an assigned provider, preselect and display that provider after options load; keep the field optional and clearable.
-3. Enrich `AppPatientDetails` with age, gender, and phone when known; keep status, schedule, and provider via progressive disclosure. Show unknown only when values are missing.
-4. Replace dual 12H/24H chips with one in-field toggle immediately left of the clock picker. Show the active mode label; preserve time on switch.
+1. Reorganize the form: patient context, then date/time/duration, then optional provider. Align fields across viewports without clipping or overflow.
+2. When an assigned provider exists, preselect and display it after options load; keep the field optional and clearable.
+3. Enrich `AppPatientDetails` with age, gender, and phone when known; keep status, schedule, and provider in progressive disclosure. Use unknown only when missing.
+4. Replace dual 12H/24H chips with one in-field toggle left of the clock picker. Show the active mode; preserve time on switch.
 5. Guard typed times: hours `1–12` in 12H, `0–23` in 24H, minutes/seconds `0–59`.
-6. Preserve loading, validation, error, success, busy, and permission states; synchronize lists after save.
+6. Preserve loading, validation, error, success, busy, and permission states; synchronize after save.
 
 ## Constraints
 
@@ -28,7 +28,7 @@ Reschedule on `/reception` has loose form alignment, thin patient context, missi
 - R3: Known age, gender, and phone show; missing values stay unknown.
 - R4–R5: Format toggle and range guards work; existing time tests pass.
 - R6: Unauthorized UI stays hidden; success refreshes Reception.
-- Update dialog and `AppTimeField` tests; run Flutter analysis.
+- Update dialog and time-field tests; run Flutter analysis.
 
 ## Relevant Files
 
