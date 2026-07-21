@@ -4,7 +4,7 @@ Remove the separate **Queue** appointment action from `/reception` so check-in i
 
 ## Context
 
-Appointment actions offer **Queue** (desk queue only) beside **Start OPD encounter**. The row next-action is effectively unreachable for visible statuses, and starting an encounter already creates the visit-queue entry.
+Appointment actions offer **Queue** (desk queue only) beside **Start OPD encounter**. The row next-action is unreachable for visible statuses, and starting an encounter already creates the visit-queue entry.
 
 ## Requirements
 
@@ -18,13 +18,13 @@ Appointment actions offer **Queue** (desk queue only) beside **Start OPD encount
 
 - Reuse existing encounter, queue, authorization, localization, and design-system paths.
 - Do not remove Desk queue prioritize/move actions or invent clinical transitions.
-- Limit scope to Reception check-in unless shared dialog reuse requires it.
+- Limit scope to Reception check-in unless shared-dialog reuse requires it.
 
 ## Acceptance Criteria
 
 - R1–R2: Reception hides **Queue**; Start OPD encounter and remaining authorized actions still work.
 - R3–R4: Successful start places the patient on Desk queue and refreshes lists.
-- R5: Loading, error, success, and permission states remain clear; unauthorized UI is absent.
+- R5: UI states remain clear; unauthorized UI is absent.
 - Update reception and shared appointment-action tests; run Flutter analysis.
 
 ## Relevant Files
