@@ -13,7 +13,7 @@ Reception still opens **Record vitals** from Flow Actions. Receptionists must se
 1. On Reception, keep vitals Current/Next labels read-only; omit Record/Edit vitals quick actions and openers.
 2. Keep authorized Record/Edit vitals on clinical owners (OPD, nursing); reuse one shared dialog.
 3. Drop triage priority; keep one searchable **Triage level** (default Normal). Keep optional chief complaint, symptoms, allergies, notes, emergency toggle, risk flags; searchable labeled **Pain severity**.
-4. Replace inline vitals with buttons opening sub-dialogs for BP, temperature, HR, RR, SpO2, weight, height (defaults mmHg, °C, kg, cm). Derive BMI; show age/gender ranges; require ≥1 vital to save.
+4. Replace inline vitals with buttons opening sub-dialogs for BP, temperature, HR, RR, SpO2, weight, height (defaults mmHg, °C, kg, cm). Derive BMI; show age/gender ranges; require ≥1 vital.
 5. Preserve loading, empty, error, validation, busy, success, permission, sync; omit unauthorized UI.
 
 ## Constraints
@@ -24,7 +24,7 @@ Reception still opens **Record vitals** from Flow Actions. Receptionists must se
 ## Acceptance Criteria
 
 - R1: Reception never opens Record/Edit vitals; next-step text still shows.
-- R2–R4: Shared dialog matches fields, sub-dialogs, BMI, ranges; ≥1 vital on save.
+- R2–R4: Shared dialog matches fields, sub-dialogs, BMI, ranges; ≥1 vital.
 - R5: States and sync clear; unauthorized UI absent.
 - Update reception, flow-actions, record-vitals tests; run Flutter analysis.
 
