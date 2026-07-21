@@ -3188,7 +3188,6 @@ class _FacilityStructureCrudPanelState<T>
                                         mainAxisSize: MainAxisSize.min,
                                         children: <Widget>[
                                           AppButton.tertiary(
-                                            iconOnly: true,
                                             leadingIcon: Icons.edit_outlined,
                                             label: l10n.tenantFacilityEditAction,
                                             semanticLabel:
@@ -3199,7 +3198,6 @@ class _FacilityStructureCrudPanelState<T>
                                                 widget.onEdit(item),
                                           ),
                                           AppButton.tertiary(
-                                            iconOnly: true,
                                             leadingIcon: Icons.delete_outline,
                                             label:
                                                 l10n.tenantFacilityDeleteAction,
@@ -3394,7 +3392,6 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: <Widget>[
                                       AppButton.tertiary(
-                                        iconOnly: true,
                                         leadingIcon: Icons.edit_outlined,
                                         label: l10n.tenantFacilityEditAction,
                                         semanticLabel:
@@ -3403,7 +3400,6 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                                         onPressed: () => onEdit(user),
                                       ),
                                       AppButton.tertiary(
-                                        iconOnly: true,
                                         leadingIcon: Icons.delete_outline,
                                         label: l10n.tenantFacilityDeleteAction,
                                         semanticLabel:
@@ -4255,7 +4251,6 @@ class _TenantManagementRowActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         AppButton.tertiary(
-          iconOnly: true,
           leadingIcon: Icons.edit_outlined,
           label: editLabel,
           semanticLabel: editLabel,
@@ -4265,7 +4260,6 @@ class _TenantManagementRowActions extends StatelessWidget {
         ),
         if (canDelete)
           AppButton.tertiary(
-            iconOnly: true,
             leadingIcon: Icons.delete_outline,
             label: deleteLabel,
             semanticLabel: deleteLabel,
@@ -4339,7 +4333,6 @@ class _FacilityManagementRowActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         AppButton.tertiary(
-          iconOnly: true,
           leadingIcon: Icons.edit_outlined,
           label: editLabel,
           semanticLabel: editLabel,
@@ -4348,7 +4341,6 @@ class _FacilityManagementRowActions extends StatelessWidget {
           onPressed: enabled ? onEdit : null,
         ),
         AppButton.tertiary(
-          iconOnly: true,
           leadingIcon: Icons.delete_outline,
           label: deleteLabel,
           semanticLabel: deleteLabel,

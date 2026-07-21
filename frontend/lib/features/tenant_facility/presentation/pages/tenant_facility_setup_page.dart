@@ -2970,7 +2970,6 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                     )
                   else ...<Widget>[
                     AppButton(
-                      iconOnly: true,
                       leadingIcon: Icons.edit_outlined,
                       label: l10n.tenantFacilityEditAction,
                       semanticLabel: l10n.tenantFacilityEditAction,
@@ -2978,7 +2977,6 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                       onPressed: () => widget.onEdit(item),
                     ),
                     AppButton(
-                      iconOnly: true,
                       leadingIcon: Icons.delete_outline,
                       label: l10n.tenantFacilityDeleteAction,
                       semanticLabel: l10n.tenantFacilityDeleteAction,

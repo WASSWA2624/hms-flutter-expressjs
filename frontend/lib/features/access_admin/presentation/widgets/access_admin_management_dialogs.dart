@@ -818,7 +818,6 @@ class _ManageUsersPanelState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         AppButton.tertiary(
-                          iconOnly: true,
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.tenantFacilityEditAction,
                           semanticLabel: l10n.tenantFacilityEditAction,
@@ -829,7 +828,6 @@ class _ManageUsersPanelState
                               : null,
                         ),
                         AppButton.tertiary(
-                          iconOnly: true,
                           leadingIcon: Icons.delete_outline,
                           label: l10n.tenantFacilityDeleteAction,
                           semanticLabel: l10n.tenantFacilityDeleteAction,
@@ -1284,7 +1282,6 @@ class _ManageRolesPermissionsPanelState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         AppButton.tertiary(
-                          iconOnly: true,
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.tenantFacilityEditAction,
                           semanticLabel: l10n.tenantFacilityEditAction,
@@ -1296,7 +1293,6 @@ class _ManageRolesPermissionsPanelState
                         ),
                         if (!role.isSystemCritical)
                           AppButton.tertiary(
-                            iconOnly: true,
                             leadingIcon: Icons.delete_outline,
                             label: l10n.tenantFacilityDeleteAction,
                             semanticLabel: l10n.tenantFacilityDeleteAction,
