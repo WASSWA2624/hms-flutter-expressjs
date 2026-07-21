@@ -1,1 +1,41 @@
-In the clinical section there is a step called, there is a step called with the doctor, and then the next, the next action is labeled doctor review. Actually all receptionists should not see the doctor review button and the quick actions, but this is the intended behavior for that. I think this name is misleading it should be maybe it's, it is misleading. It's not it's not it's not supposed to be a step, but it's supposed to be a quick action for a patient who is with a doctor which is actually a step for writing clinical notes. So Should be a step that is used by Dr. Strachan, so this, this button should be named, according, renamed accordingly, but the step actually should be, should remain maybe doctor review, but with this this, I think maybe it should be named something like maybe consultation. So the client, the ca and, and during consultation the doctor can do quite a number of things such as such as editing the vitals. Maybe reviewing maybe So when you're with a doctor, you should be able to see all those things, but the receptionist shouldn't actually see, shouldn't actually, shouldn't even actually see the vitals, shouldn't see the vitals, the results of the vitals, should actually only see that the vitals have been recorded, because these are not medical people, they don't need to see all this, but they should see that the patient is, is currently with a doctor, and the, this button which is currently misleading, which is labeled "doctor review," should be actually renamed to "clinician notes," and it shouldn't, shouldn't be should only be available in the OPD section, where the doctor can see, can write reviews for patients. Maybe can write clinical notes for patients maybe that is in outpatient and also maybe maybe also Under patients themselves, so doctors who are authorized can see that they can, doctors can see that button and can write notes maybe in emergency to also be available in patients then in intensive care clinical maybe in physiotherapy. So every section where someone writes clinical notes they should be able to see that, that option. I don't think radiology, pharmacy, and laboratory need this, billing doesn't, insurance doesn't, subscription doesn't, operations, housekeeping, biomedical, mortuary human resource, communications, all those non-clinical, non-clinical sections you don't see the option of adding of adding notes for the patient.
+# Rename Doctor Review to Clinical Notes
+
+Rename **Doctor review** to **Clinical notes**; hide clinician actions and vital results from Reception; clinical modules only. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+At **With doctor**, Flow Actions shows **Doctor review** and a required clinical-note dialog. Reception sees vital results and clinician quick actions—this is a clinician note action, not a front-desk step.
+
+**Clinical notes action:** `DOCTOR_REVIEW` / `ClinicalFreeTextActionDialog` (today Doctor review).
+**Clinician-only quick actions:** diagnosis, lab, radiology, prescribe, procedure, refer, follow-up.
+**Clinical modules:** OPD, Patients, Emergency, ICU/clinical, Physiotherapy.
+**Non-clinical:** Reception plus ancillary/admin modules.
+
+## Requirements
+
+1. Rename Doctor review action, dialog title, and submit to **Clinical notes**; keep backend codes/stages.
+2. On Reception Flow Actions and Active visits: omit Clinical notes and clinician-only quick actions; keep front-desk actions.
+3. On Reception clinical-services UI: show recorded status/location without results.
+4. Expose Clinical notes only in clinical modules for authorized clinicians when with-doctor / review-eligible; omit elsewhere.
+5. Preserve loading, busy, required-note validation, error, success, sync, and permission omission; omit unauthorized UI.
+
+## Constraints
+
+- Reuse flow/clinical dialogs, clinical-services panel, authorization, localization, design-system; no new contracts.
+- Do not invent stages or change progression beyond labels/visibility.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1: Labels say Clinical notes.
+- R2–R3: Reception omits Clinical notes/clinician quick actions; vitals recorded without results.
+- R4–R5: Action only in clinical modules when authorized; states/sync intact; unauthorized UI absent.
+- Update flow-actions and reception tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/`
+- `frontend/lib/shared/clinical_actions/dialogs/`
+- `frontend/lib/features/reception/`
+- `frontend/lib/l10n/app_en.arb`
+- `frontend/test/shared/opd_actions/`
