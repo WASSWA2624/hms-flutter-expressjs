@@ -136,37 +136,14 @@ void main() {
     );
     expect(find.widgetWithText(AppButton, 'Weight'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Height'), findsNothing);
-    expect(find.widgetWithText(AppButton, 'Risk flags'), findsOneWidget);
-    expect(find.byType(AppTriageRiskFlagSelector), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Risk flags'), findsNothing);
+    expect(find.byType(AppTriageRiskFlagSelector), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
     expect(find.text('PATIENT EXAMPLE'), findsNothing);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
     expect(find.byIcon(AppActionIcons.save), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-  });
-
-  testWidgets('opens risk flags in a modal and summarizes confirmed flags', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository);
-
-    await _pumpDialog(tester, flow: _flow, repository: repository);
-
-    final Finder riskFlagsAction = find.widgetWithText(AppButton, 'Risk flags');
-    await tester.ensureVisible(riskFlagsAction);
-    await tester.tap(riskFlagsAction);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AppTriageRiskFlagSelector), findsOneWidget);
-    await tester.tap(find.text('Fall risk'));
-    await tester.pump();
-    await tester.tap(find.widgetWithText(AppButton, 'Done'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AppTriageRiskFlagSelector), findsNothing);
-    expect(find.textContaining('Fall risk'), findsWidgets);
   });
 
   testWidgets('body metrics action derives BMI from weight and height', (

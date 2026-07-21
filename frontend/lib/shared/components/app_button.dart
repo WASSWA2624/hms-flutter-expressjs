@@ -302,10 +302,11 @@ class AppButton extends StatelessWidget {
         }
         if (variant == AppButtonVariant.secondary) {
           final double alpha = states.contains(WidgetState.disabled)
-              ? 0.16
-              : 0.28;
+              ? 0.2
+              : 0.42;
           return BorderSide(
             color: colorScheme.outlineVariant.withValues(alpha: alpha),
+            width: 1.5,
           );
         }
         return BorderSide.none;

@@ -10,6 +10,7 @@ class AppFormSection extends StatelessWidget {
     this.description,
     this.density = AppFormSectionDensity.regular,
     this.crossAxisAlignment = CrossAxisAlignment.start,
+    this.framed,
     super.key,
   });
 
@@ -19,13 +20,17 @@ class AppFormSection extends StatelessWidget {
   final AppFormSectionDensity density;
   final CrossAxisAlignment crossAxisAlignment;
 
+  /// When null, titled sections are framed so adjacent blocks stay distinct.
+  final bool? framed;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final TextTheme textTheme = theme.textTheme;
     final double gap = _gap(theme);
+    final bool showFrame = framed ?? title != null;
 
-    return Column(
+    final Widget body = Column(
       crossAxisAlignment: crossAxisAlignment,
       children: <Widget>[
         if (title != null) ...<Widget>[
@@ -42,6 +47,32 @@ class AppFormSection extends StatelessWidget {
         ],
       ],
     );
+
+    if (!showFrame) {
+      return body;
+    }
+
+    return Material(
+      color: theme.colorScheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          context.responsiveRadius(theme.radius.lg),
+        ),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.72),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(padding: _framePadding(theme), child: body),
+    );
+  }
+
+  EdgeInsetsGeometry _framePadding(ThemeData theme) {
+    return EdgeInsets.all(switch (density) {
+      AppFormSectionDensity.compact => theme.spacing.sm,
+      AppFormSectionDensity.regular => theme.spacing.md,
+      AppFormSectionDensity.spacious => theme.spacing.lg,
+    });
   }
 
   double _gap(ThemeData theme) {

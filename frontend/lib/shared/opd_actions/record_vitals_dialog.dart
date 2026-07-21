@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
@@ -235,11 +234,12 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
             });
           },
         ),
-        AppButton.secondary(
-          label: _riskFlagsActionLabel(l10n),
-          leadingIcon: Icons.flag_outlined,
-          labelWidget: _riskFlagsActionLabelWidget(context),
-          onPressed: enabled ? () => _openRiskFlagsEditor(context) : null,
+        AppTriageRiskFlagSelector(
+          title: l10n.opdRiskFlagsLabel,
+          options: _triageRiskFlagFieldOptions(l10n),
+          selected: _riskFlags,
+          enabled: enabled,
+          onChanged: _setRiskFlag,
         ),
         AppTriageDecisionField(
           value: _routeDecision ?? _noRouteDecisionValue,
@@ -433,115 +433,13 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     return _formatOpdVitalInput(parts[index]);
   }
 
-  String _riskFlagsActionLabel(AppLocalizations l10n) {
-    if (_riskFlags.isEmpty) {
-      return l10n.opdRiskFlagsLabel;
-    }
-    return l10n.patientsVitalActionRecordedLabel(
-      l10n.opdRiskFlagsLabel,
-      _riskFlagsSummary(l10n),
-    );
-  }
-
-  String _riskFlagsSummary(AppLocalizations l10n) {
-    return _riskFlags
-        .map((String flag) => _riskFlagLabel(l10n, flag))
-        .join(', ');
-  }
-
-  Widget _riskFlagsActionLabelWidget(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final TextStyle? baseStyle = theme.textTheme.labelLarge?.copyWith(
-      fontSize: 14,
-    );
-    if (_riskFlags.isEmpty) {
-      return Text(
-        l10n.opdRiskFlagsLabel,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        softWrap: false,
-        style: baseStyle?.copyWith(fontWeight: FontWeight.w700),
-      );
-    }
-    return Text.rich(
-      TextSpan(
-        children: <InlineSpan>[
-          TextSpan(
-            text: l10n.opdRiskFlagsLabel,
-            style: baseStyle?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          TextSpan(
-            text: ' · ',
-            style: baseStyle?.copyWith(fontWeight: FontWeight.w500),
-          ),
-          TextSpan(
-            text: _riskFlagsSummary(l10n),
-            style: baseStyle?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: theme.statusColors.warning,
-            ),
-          ),
-        ],
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      softWrap: false,
-    );
-  }
-
-  Future<void> _openRiskFlagsEditor(BuildContext context) async {
-    final AppLocalizations l10n = context.l10n;
-    final Set<String> draft = Set<String>.of(_riskFlags);
-    final bool? confirmed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setDialogState) {
-            return AppDialog(
-              title: Text(l10n.opdRiskFlagsLabel),
-              icon: const Icon(Icons.flag_outlined),
-              scrollable: true,
-              maxWidth: 560,
-              content: AppTriageRiskFlagSelector(
-                title: l10n.opdRiskFlagsLabel,
-                options: _triageRiskFlagFieldOptions(l10n),
-                selected: draft,
-                onChanged: (String flag, bool selected) {
-                  setDialogState(() {
-                    if (selected) {
-                      draft.add(flag);
-                    } else {
-                      draft.remove(flag);
-                    }
-                  });
-                },
-              ),
-              actions: <Widget>[
-                AppButton.tertiary(
-                  label: l10n.commonCancelActionLabel,
-                  leadingIcon: AppActionIcons.cancel,
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                ),
-                AppButton.primary(
-                  label: l10n.clinicalRequestCatalogPickerDoneAction,
-                  leadingIcon: AppActionIcons.save,
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-    if (!mounted || confirmed != true) {
-      return;
-    }
+  void _setRiskFlag(String flag, bool selected) {
     setState(() {
-      _riskFlags
-        ..clear()
-        ..addAll(draft);
+      if (selected) {
+        _riskFlags.add(flag);
+      } else {
+        _riskFlags.remove(flag);
+      }
     });
   }
 
