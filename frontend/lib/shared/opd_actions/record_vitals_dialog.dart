@@ -82,7 +82,9 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     _symptomsController = TextEditingController();
     _allergiesController = TextEditingController();
     _notesController = TextEditingController();
-    _triageLevel = widget.flow.triageLevel;
+    _triageLevel = _isNonEmpty(widget.flow.triageLevel)
+        ? widget.flow.triageLevel
+        : 'LEVEL_5';
     _providerId = widget.flow.providerUserId;
     unawaited(_loadProviderOptions());
   }
@@ -131,6 +133,10 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       normalizeBloodPressureToMmHg: true,
       isBusy: _isLoadingProviders,
       maxWidth: 780,
+      reference: AppVitalsReference.fromPatientData(
+        dateOfBirth: widget.flow.patientDateOfBirth,
+        gender: widget.flow.patientGender,
+      ),
       initialValues: _initialValues(),
       leadingSectionsBuilder: _leadingSections,
       trailingSectionsBuilder: _trailingSections,
@@ -165,9 +171,17 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   Widget _triagePrioritySection(BuildContext context, bool enabled) {
     final AppLocalizations l10n = context.l10n;
     return AppFormSection(
-      title: l10n.patientsTriagePrioritySectionTitle,
+      title: l10n.opdTriageSectionTitle,
       density: AppFormSectionDensity.compact,
       children: <Widget>[
+        AppTriageUrgencyField(
+          value: _triageLevel,
+          labelText: l10n.opdTriageLevelLabel,
+          semanticLabel: l10n.opdTriageLevelLabel,
+          enabled: enabled,
+          onChanged: (String? value) => setState(() => _triageLevel = value),
+          options: _triageLevelFieldOptions(l10n),
+        ),
         AppTextField(
           controller: _chiefComplaintController,
           labelText: _optionalFieldLabel(l10n, l10n.opdChiefComplaintLabel),
@@ -194,7 +208,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
               onChanged: (String? value) {
                 setState(() => _painSeverity = value);
               },
-              options: _painSeverityOptions,
+              options: _painSeverityOptions(l10n),
             ),
             AppTextField(
               controller: _allergiesController,
@@ -211,7 +225,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           onChanged: (bool value) {
             setState(() {
               _emergencyIndicator = value;
-              if (value && _triageLevel == null) {
+              if (value && (_triageLevel == null || _triageLevel == 'LEVEL_5')) {
                 _triageLevel = 'LEVEL_1';
               }
               if (value && _routeDecision == null) {
@@ -226,14 +240,6 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           selected: _riskFlags,
           enabled: enabled,
           onChanged: _setRiskFlag,
-        ),
-        AppTriageUrgencyField(
-          value: _triageLevel,
-          labelText: _optionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
-          semanticLabel: _optionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
-          enabled: enabled,
-          onChanged: (String? value) => setState(() => _triageLevel = value),
-          options: _triageLevelFieldOptions(l10n),
         ),
         AppTriageDecisionField(
           value: _routeDecision ?? _noRouteDecisionValue,
@@ -302,7 +308,6 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
               .recordVitals(widget.flow, <String, Object?>{
                 'vitals': vitals,
                 'triage_level': _triageLevel,
-                'triage_priority': _triageLevel,
                 'chief_complaint': _chiefComplaintController.text.trim(),
                 'emergency': _emergencyIndicator,
                 'triage_notes': triageNotes,
@@ -492,7 +497,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     }
 
     add(l10n.opdSymptomsLabel, _symptomsController.text);
-    add(l10n.opdPainSeverityLabel, _painSeverity ?? '');
+    add(l10n.opdPainSeverityLabel, _painSeverityDisplay(l10n, _painSeverity));
     add(l10n.opdAllergiesLabel, _allergiesController.text);
     if (_riskFlags.isNotEmpty) {
       lines.add(
@@ -622,17 +627,49 @@ String _optionalFieldLabel(AppLocalizations l10n, String label) {
   return l10n.opdFieldOptionalLabel(label);
 }
 
+String _painSeverityDisplay(AppLocalizations l10n, String? score) {
+  final String normalized = (score ?? '').trim();
+  if (normalized.isEmpty) {
+    return '';
+  }
+  final int? value = int.tryParse(normalized);
+  if (value == null) {
+    return normalized;
+  }
+  return l10n.opdPainSeverityOptionLabel(
+    normalized,
+    _painSeverityMeaning(l10n, value),
+  );
+}
+
+String _painSeverityMeaning(AppLocalizations l10n, int score) {
+  return switch (score) {
+    0 => l10n.opdPainSeverityNone,
+    1 || 2 || 3 => l10n.opdPainSeverityMild,
+    4 || 5 || 6 => l10n.opdPainSeverityModerate,
+    7 || 8 || 9 => l10n.opdPainSeveritySevere,
+    _ => l10n.opdPainSeverityWorst,
+  };
+}
+
 bool _isNonEmpty(String? value) {
   return value != null && value.trim().isNotEmpty;
 }
 
 String _apiLabel(String value) => AppDisplay.apiLabel(value);
 
-final List<AppSelectOption<String>> _painSeverityOptions =
-    List<AppSelectOption<String>>.unmodifiable(<AppSelectOption<String>>[
-      for (int value = 0; value <= 10; value += 1)
-        AppSelectOption<String>(value: '$value', label: value.toString()),
-    ]);
+List<AppSelectOption<String>> _painSeverityOptions(AppLocalizations l10n) {
+  return List<AppSelectOption<String>>.unmodifiable(<AppSelectOption<String>>[
+    for (int value = 0; value <= 10; value += 1)
+      AppSelectOption<String>(
+        value: '$value',
+        label: l10n.opdPainSeverityOptionLabel(
+          '$value',
+          _painSeverityMeaning(l10n, value),
+        ),
+      ),
+  ]);
+}
 
 const String _noRouteDecisionValue = 'NO_ROUTE_DECISION';
 const String _riskFlagFall = 'FALL_RISK';

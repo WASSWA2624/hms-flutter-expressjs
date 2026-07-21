@@ -1819,6 +1819,7 @@ class _ReceptionWorkspaceContentState
       context: context,
       flow: flow,
       allowBillingActions: false,
+      allowVitalsActions: false,
     );
     if (changed == true && mounted) {
       ScaffoldMessenger.of(

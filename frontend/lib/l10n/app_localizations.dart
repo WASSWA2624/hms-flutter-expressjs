@@ -7630,6 +7630,48 @@ abstract class AppLocalizations {
   /// **'Pain severity'**
   String get opdPainSeverityLabel;
 
+  /// Pain severity select option combining numeric score and meaning.
+  ///
+  /// In en, this message translates to:
+  /// **'{score} · {meaning}'**
+  String opdPainSeverityOptionLabel(String score, String meaning);
+
+  /// Pain severity meaning for score 0.
+  ///
+  /// In en, this message translates to:
+  /// **'No pain'**
+  String get opdPainSeverityNone;
+
+  /// Pain severity meaning for scores 1-3.
+  ///
+  /// In en, this message translates to:
+  /// **'Mild'**
+  String get opdPainSeverityMild;
+
+  /// Pain severity meaning for scores 4-6.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get opdPainSeverityModerate;
+
+  /// Pain severity meaning for scores 7-9.
+  ///
+  /// In en, this message translates to:
+  /// **'Severe'**
+  String get opdPainSeveritySevere;
+
+  /// Pain severity meaning for score 10.
+  ///
+  /// In en, this message translates to:
+  /// **'Worst imaginable'**
+  String get opdPainSeverityWorst;
+
+  /// Section title for triage assessment fields in record vitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage'**
+  String get opdTriageSectionTitle;
+
   /// Allergies field label in triage capture.
   ///
   /// In en, this message translates to:
@@ -9141,6 +9183,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vital signs'**
   String get patientsVitalsSectionTitle;
+
+  /// Derived body-mass index summary shown when weight and height are present.
+  ///
+  /// In en, this message translates to:
+  /// **'BMI {value}'**
+  String patientsBmiCalculatedLabel(String value);
+
+  /// Vital action button label when a value is already recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {summary}'**
+  String patientsVitalActionRecordedLabel(String name, String summary);
 
   /// Patient clinical quick action assessment section title.
   ///

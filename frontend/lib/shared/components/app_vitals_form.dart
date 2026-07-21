@@ -9,6 +9,57 @@ import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 
+/// Individual vital signs that can be shown in [AppVitalsForm] or captured
+/// through focused sub-dialogs.
+enum AppVitalKind {
+  bloodPressure,
+  temperature,
+  heartRate,
+  respiratoryRate,
+  oxygenSaturation,
+  weight,
+  height,
+}
+
+const Set<AppVitalKind> kAppVitalKindsAll = <AppVitalKind>{
+  AppVitalKind.bloodPressure,
+  AppVitalKind.temperature,
+  AppVitalKind.heartRate,
+  AppVitalKind.respiratoryRate,
+  AppVitalKind.oxygenSaturation,
+  AppVitalKind.weight,
+  AppVitalKind.height,
+};
+
+/// Derives BMI from weight and height in the given units, or null when either
+/// value is missing/invalid.
+double? calculateAppBodyMassIndex({
+  required String weight,
+  required String height,
+  required String weightUnit,
+  required String heightUnit,
+}) {
+  final double? rawWeight = double.tryParse(normalizeCurrencyAmount(weight));
+  final double? rawHeight = double.tryParse(normalizeCurrencyAmount(height));
+  if (rawWeight == null ||
+      rawHeight == null ||
+      rawWeight <= 0 ||
+      rawHeight <= 0) {
+    return null;
+  }
+
+  final double kilograms = weightUnit == AppVitalsUnits.weightPounds
+      ? rawWeight / 2.2046226218
+      : rawWeight;
+  final double meters = heightUnit == AppVitalsUnits.heightMeters
+      ? rawHeight
+      : rawHeight / 100;
+  if (meters <= 0) {
+    return null;
+  }
+  return kilograms / (meters * meters);
+}
+
 class AppVitalsForm extends StatelessWidget {
   const AppVitalsForm({
     required this.temperatureController,
@@ -38,6 +89,7 @@ class AppVitalsForm extends StatelessWidget {
     this.onTemperatureUnitChanged,
     this.onWeightUnitChanged,
     this.onHeightUnitChanged,
+    this.visibleKinds = kAppVitalKindsAll,
     this.enabled = true,
     super.key,
   });
@@ -69,14 +121,19 @@ class AppVitalsForm extends StatelessWidget {
   final ValueChanged<String?>? onTemperatureUnitChanged;
   final ValueChanged<String?>? onWeightUnitChanged;
   final ValueChanged<String?>? onHeightUnitChanged;
+  final Set<AppVitalKind> visibleKinds;
   final bool enabled;
+
+  bool _shows(AppVitalKind kind) => visibleKinds.contains(kind);
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final String resolvedUnitLabel = unitLabel ?? l10n.patientsVitalUnitLabel;
     final List<Widget> bodyMeasureFields = <Widget>[
-      if (weightController != null && weightLabel != null)
+      if (_shows(AppVitalKind.weight) &&
+          weightController != null &&
+          weightLabel != null)
         _vitalSignInput(
           context,
           controller: weightController!,
@@ -90,7 +147,9 @@ class AppVitalsForm extends StatelessWidget {
           onUnitChanged: onWeightUnitChanged,
           unitWidth: 112,
         ),
-      if (heightController != null && heightLabel != null)
+      if (_shows(AppVitalKind.height) &&
+          heightController != null &&
+          heightLabel != null)
         _vitalSignInput(
           context,
           controller: heightController!,
@@ -106,9 +165,16 @@ class AppVitalsForm extends StatelessWidget {
         ),
     ];
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
+    final List<Widget> sections = <Widget>[];
+    void addSection(Widget child) {
+      if (sections.isNotEmpty) {
+        sections.add(SizedBox(height: Theme.of(context).spacing.md));
+      }
+      sections.add(child);
+    }
+
+    if (_shows(AppVitalKind.bloodPressure)) {
+      addSection(
         _BloodPressureInput(
           title: bloodPressureLabel ?? l10n.patientsBloodPressureLabel,
           systolicController: systolicController,
@@ -130,7 +196,10 @@ class AppVitalsForm extends StatelessWidget {
           enabled: enabled,
           onUnitChanged: onBloodPressureUnitChanged,
         ),
-        SizedBox(height: Theme.of(context).spacing.md),
+      );
+    }
+    if (_shows(AppVitalKind.temperature)) {
+      addSection(
         _vitalSignInput(
           context,
           controller: temperatureController,
@@ -144,7 +213,10 @@ class AppVitalsForm extends StatelessWidget {
           onUnitChanged: onTemperatureUnitChanged,
           unitWidth: 112,
         ),
-        SizedBox(height: Theme.of(context).spacing.md),
+      );
+    }
+    if (_shows(AppVitalKind.heartRate)) {
+      addSection(
         _vitalSignInput(
           context,
           controller: heartRateController,
@@ -153,31 +225,37 @@ class AppVitalsForm extends StatelessWidget {
           unit: AppVitalsUnits.heartRate,
           unitLabelText: resolvedUnitLabel,
         ),
-        SizedBox(height: Theme.of(context).spacing.md),
-        _vitalSignsGrid(context, <Widget>[
-          _vitalSignInput(
-            context,
-            controller: respiratoryRateController,
-            labelText: respiratoryRateLabel,
-            range: reference.respiratoryRate,
-            unit: AppVitalsUnits.respiratoryRate,
-            unitLabelText: resolvedUnitLabel,
-          ),
-          _vitalSignInput(
-            context,
-            controller: oxygenSaturationController,
-            labelText: oxygenSaturationLabel,
-            range: reference.oxygenSaturation,
-            unit: AppVitalsUnits.oxygenSaturation,
-            unitLabelText: resolvedUnitLabel,
-          ),
-        ]),
-        if (bodyMeasureFields.isNotEmpty) ...<Widget>[
-          SizedBox(height: Theme.of(context).spacing.md),
-          _vitalSignsGrid(context, bodyMeasureFields),
-        ],
-      ],
-    );
+      );
+    }
+
+    final List<Widget> paired = <Widget>[
+      if (_shows(AppVitalKind.respiratoryRate))
+        _vitalSignInput(
+          context,
+          controller: respiratoryRateController,
+          labelText: respiratoryRateLabel,
+          range: reference.respiratoryRate,
+          unit: AppVitalsUnits.respiratoryRate,
+          unitLabelText: resolvedUnitLabel,
+        ),
+      if (_shows(AppVitalKind.oxygenSaturation))
+        _vitalSignInput(
+          context,
+          controller: oxygenSaturationController,
+          labelText: oxygenSaturationLabel,
+          range: reference.oxygenSaturation,
+          unit: AppVitalsUnits.oxygenSaturation,
+          unitLabelText: resolvedUnitLabel,
+        ),
+    ];
+    if (paired.isNotEmpty) {
+      addSection(_vitalSignsGrid(context, paired));
+    }
+    if (bodyMeasureFields.isNotEmpty) {
+      addSection(_vitalSignsGrid(context, bodyMeasureFields));
+    }
+
+    return Column(mainAxisSize: MainAxisSize.min, children: sections);
   }
 
   Widget _vitalSignsGrid(BuildContext context, List<Widget> children) {

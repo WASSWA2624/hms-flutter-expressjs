@@ -3956,6 +3956,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdPainSeverityLabel => 'Pain severity';
 
   @override
+  String opdPainSeverityOptionLabel(String score, String meaning) {
+    return '$score · $meaning';
+  }
+
+  @override
+  String get opdPainSeverityNone => 'No pain';
+
+  @override
+  String get opdPainSeverityMild => 'Mild';
+
+  @override
+  String get opdPainSeverityModerate => 'Moderate';
+
+  @override
+  String get opdPainSeveritySevere => 'Severe';
+
+  @override
+  String get opdPainSeverityWorst => 'Worst imaginable';
+
+  @override
+  String get opdTriageSectionTitle => 'Triage';
+
+  @override
   String get opdAllergiesLabel => 'Allergies';
 
   @override
@@ -4783,6 +4806,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsVitalsSectionTitle => 'Vital signs';
+
+  @override
+  String patientsBmiCalculatedLabel(String value) {
+    return 'BMI $value';
+  }
+
+  @override
+  String patientsVitalActionRecordedLabel(String name, String summary) {
+    return '$name · $summary';
+  }
 
   @override
   String get patientsClinicalAssessmentSectionTitle => 'Assessment';

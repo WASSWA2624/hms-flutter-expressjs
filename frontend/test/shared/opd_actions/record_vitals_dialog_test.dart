@@ -74,6 +74,18 @@ void main() {
     expect(payloads.single['diastolic_value'], isNotNull);
   });
 
+  test('calculateAppBodyMassIndex derives BMI from kg and cm', () {
+    expect(
+      calculateAppBodyMassIndex(
+        weight: '70',
+        height: '175',
+        weightUnit: AppVitalsUnits.weightKilograms,
+        heightUnit: AppVitalsUnits.heightCentimeters,
+      ),
+      closeTo(22.9, 0.05),
+    );
+  });
+
   testWidgets('composes AppRecordVitalsDialog with role-based title chrome', (
     WidgetTester tester,
   ) async {
@@ -85,6 +97,9 @@ void main() {
     expect(find.byType(AppRecordVitalsDialog), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.text('RECORD VITALS'), findsOneWidget);
+    expect(find.text('Triage'), findsOneWidget);
+    expect(find.text('Triage priority'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Heart rate'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
     expect(find.text('PATIENT EXAMPLE'), findsNothing);
@@ -217,11 +232,20 @@ void main() {
 }
 
 Future<void> _enterHeartRate(WidgetTester tester, String value) async {
+  final Finder heartRateAction = find.widgetWithText(AppButton, 'Heart rate');
+  expect(heartRateAction, findsOneWidget);
+  await tester.ensureVisible(heartRateAction);
+  await tester.tap(heartRateAction);
+  await tester.pumpAndSettle();
+
   final Finder field = find.bySemanticsLabel('Heart rate beats per minute');
   expect(field, findsOneWidget);
   await tester.ensureVisible(field);
   await tester.enterText(field, value);
   await tester.pump();
+
+  await tester.tap(find.widgetWithText(AppButton, 'Done'));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpDialog(

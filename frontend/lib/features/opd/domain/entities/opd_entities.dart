@@ -419,6 +419,8 @@ final class OpdFlowSummary {
     this.patientDisplayName,
     this.patientIdentifier,
     this.patientPhone,
+    this.patientDateOfBirth,
+    this.patientGender,
     this.providerDisplayName,
     this.assignedStaffDisplayName,
     this.assignedStaffRole,
@@ -463,6 +465,8 @@ final class OpdFlowSummary {
   final String? patientDisplayName;
   final String? patientIdentifier;
   final String? patientPhone;
+  final DateTime? patientDateOfBirth;
+  final String? patientGender;
   final String? providerDisplayName;
   final String? assignedStaffDisplayName;
   final String? assignedStaffRole;
@@ -524,6 +528,8 @@ final class OpdFlowSummary {
     String? patientDisplayName,
     String? patientIdentifier,
     String? patientPhone,
+    DateTime? patientDateOfBirth,
+    String? patientGender,
     String? providerDisplayName,
     String? assignedStaffDisplayName,
     String? assignedStaffRole,
@@ -568,6 +574,8 @@ final class OpdFlowSummary {
       patientDisplayName: patientDisplayName ?? this.patientDisplayName,
       patientIdentifier: patientIdentifier ?? this.patientIdentifier,
       patientPhone: patientPhone ?? this.patientPhone,
+      patientDateOfBirth: patientDateOfBirth ?? this.patientDateOfBirth,
+      patientGender: patientGender ?? this.patientGender,
       providerDisplayName: providerDisplayName ?? this.providerDisplayName,
       assignedStaffDisplayName:
           assignedStaffDisplayName ?? this.assignedStaffDisplayName,

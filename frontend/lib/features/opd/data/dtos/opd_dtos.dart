@@ -241,6 +241,8 @@ final class OpdFlowSummaryDto {
       patientDisplayName: _patientDisplayName(patient),
       patientIdentifier: _string(patient?['human_friendly_id']),
       patientPhone: _string(patient?['primary_phone']),
+      patientDateOfBirth: _date(patient?['date_of_birth']),
+      patientGender: _string(patient?['gender']),
       providerDisplayName: _providerDisplayName(provider),
       assignedStaffDisplayName: assignedStaffDisplayName,
       assignedStaffRole:

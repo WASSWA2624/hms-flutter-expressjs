@@ -4306,6 +4306,42 @@
   },
   "opdSymptomsLabel": "Symptoms",
   "opdPainSeverityLabel": "Pain severity",
+  "opdPainSeverityOptionLabel": "{score} · {meaning}",
+  "@opdPainSeverityOptionLabel": {
+    "description": "Pain severity select option combining numeric score and meaning.",
+    "placeholders": {
+      "score": {
+        "type": "String"
+      },
+      "meaning": {
+        "type": "String"
+      }
+    }
+  },
+  "opdPainSeverityNone": "No pain",
+  "@opdPainSeverityNone": {
+    "description": "Pain severity meaning for score 0."
+  },
+  "opdPainSeverityMild": "Mild",
+  "@opdPainSeverityMild": {
+    "description": "Pain severity meaning for scores 1-3."
+  },
+  "opdPainSeverityModerate": "Moderate",
+  "@opdPainSeverityModerate": {
+    "description": "Pain severity meaning for scores 4-6."
+  },
+  "opdPainSeveritySevere": "Severe",
+  "@opdPainSeveritySevere": {
+    "description": "Pain severity meaning for scores 7-9."
+  },
+  "opdPainSeverityWorst": "Worst imaginable",
+  "@opdPainSeverityWorst": {
+    "description": "Pain severity meaning for score 10."
+  },
+  "opdTriageSectionTitle": "Triage",
+  "@opdTriageSectionTitle": {
+    "description": "Section title for triage assessment fields in record vitals."
+  },
   "opdAllergiesLabel": "Allergies",
   "opdRiskFlagsLabel": "Risk flags",
   "opdRiskFlagFall": "Fall risk",
@@ -6069,6 +6105,27 @@
   "patientsVitalsSectionTitle": "Vital signs",
   "@patientsVitalsSectionTitle": {
     "description": "Patient triage vital signs section title."
+  },
+  "patientsBmiCalculatedLabel": "BMI {value}",
+  "@patientsBmiCalculatedLabel": {
+    "description": "Derived body-mass index summary shown when weight and height are present.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "patientsVitalActionRecordedLabel": "{name} · {summary}",
+  "@patientsVitalActionRecordedLabel": {
+    "description": "Vital action button label when a value is already recorded.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "summary": {
+        "type": "String"
+      }
+    }
   },
   "patientsClinicalAssessmentSectionTitle": "Assessment",
   "@patientsClinicalAssessmentSectionTitle": {

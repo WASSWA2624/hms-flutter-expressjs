@@ -858,11 +858,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppRecordVitalsDialog), findsOneWidget);
+      expect(find.text('Triage'), findsOneWidget);
+      expect(find.text('Triage priority'), findsNothing);
       expect(find.text('Symptoms (optional)'), findsOneWidget);
       expect(find.text('Pain severity (optional)'), findsOneWidget);
       expect(find.text('Allergies (optional)'), findsOneWidget);
       expect(find.text('Risk flags'), findsOneWidget);
       expect(find.text('Do not route yet'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Heart rate'), findsOneWidget);
+      expect(find.textContaining('Level 5'), findsWidgets);
     },
   );
 

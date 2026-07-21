@@ -109,12 +109,16 @@ Future<bool?> showFlowActionsDialog({
   required BuildContext context,
   required OpdFlowSummary flow,
   bool allowBillingActions = true,
+  bool allowVitalsActions = true,
 }) {
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) =>
-        FlowActionsDialog(flow: flow, allowBillingActions: allowBillingActions),
+    builder: (_) => FlowActionsDialog(
+      flow: flow,
+      allowBillingActions: allowBillingActions,
+      allowVitalsActions: allowVitalsActions,
+    ),
   );
 }
 
@@ -122,11 +126,15 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
   const FlowActionsDialog({
     required this.flow,
     this.allowBillingActions = true,
+    this.allowVitalsActions = true,
     super.key,
   });
 
   final OpdFlowSummary flow;
   final bool allowBillingActions;
+
+  /// When false, Record/Edit vitals quick actions are omitted (Reception).
+  final bool allowVitalsActions;
 
   @override
   ConsumerState<FlowActionsDialog> createState() => _FlowActionsDialogState();
@@ -583,7 +591,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               !terminal &&
               (canPayNow || canAdjustBilling || nextActionKey == 'billing'),
         'vitals' =>
-          !terminal &&
+          widget.allowVitalsActions &&
+              !terminal &&
               (nextActionKey == 'vitals' ||
                   <String>{'WAITING_VITALS', 'VITALS_NEEDED'}.contains(stage) ||
                   displayCode == 'VITALS_NEEDED' ||

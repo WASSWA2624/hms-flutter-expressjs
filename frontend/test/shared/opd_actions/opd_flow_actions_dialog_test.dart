@@ -129,6 +129,38 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
+  testWidgets('reception context omits record vitals for clinical users', (
+    WidgetTester tester,
+  ) async {
+    const OpdFlowSummary vitalsNeeded = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientDisplayName: 'Patient Example',
+      stage: 'WAITING_VITALS',
+      displayCode: 'VITALS_NEEDED',
+      displayNextStep: 'RECORD_VITALS',
+      providerUserId: 'USR-DOC001',
+      providerDisplayName: 'Jordan Demo',
+      assignedStaffLabel: 'Doctor: Jordan Demo',
+      consultationPaymentRequired: false,
+      consultationPaid: false,
+    );
+
+    await _pumpDialog(
+      tester,
+      vitalsNeeded,
+      detail: const OpdFlowDetail(summary: vitalsNeeded),
+      policy: _nursePolicy(),
+      allowBillingActions: false,
+      allowVitalsActions: false,
+    );
+
+    expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
+    expect(find.text('Record vitals'), findsWidgets);
+    expect(find.text('Cancel'), findsOneWidget);
+  });
+
   testWidgets('receptionist at vitals-needed sees only front-desk actions', (
     WidgetTester tester,
   ) async {
@@ -250,6 +282,7 @@ Future<void> _pumpDialog(
   OpdRepository? repository,
   bool settle = true,
   bool allowBillingActions = true,
+  bool allowVitalsActions = true,
 }) async {
   final OpdRepository effectiveRepository;
   if (repository != null) {
@@ -298,6 +331,7 @@ Future<void> _pumpDialog(
           body: FlowActionsDialog(
             flow: flow,
             allowBillingActions: allowBillingActions,
+            allowVitalsActions: allowVitalsActions,
           ),
         ),
       ),
