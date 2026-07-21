@@ -18,7 +18,11 @@ jest.mock("@prisma/client", () => ({
   follow_up: {
     count: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     update: jest.fn(),
+  },
+  encounter: {
+    findFirst: jest.fn(),
   },
   user_role: {
     findMany: jest.fn(),
@@ -62,7 +66,12 @@ describe("Follow-up Service", () => {
     resolveIdentifierForPayload.mockImplementation(async ({ value }) => value);
     prisma.follow_up.count.mockResolvedValue(0);
     prisma.follow_up.findMany.mockResolvedValue([]);
+    prisma.follow_up.findFirst.mockResolvedValue(null);
     prisma.follow_up.update.mockResolvedValue({});
+    prisma.encounter.findFirst.mockResolvedValue({
+      id: "encounter-uuid-1",
+      patient_id: "patient-1",
+    });
     prisma.user_role.findMany.mockResolvedValue([]);
     prisma.notification.create.mockImplementation(async ({ data }) => ({
       id: `notif-${data.user_id}`,
@@ -256,6 +265,27 @@ describe("Follow-up Service", () => {
         }),
       );
       expect(createAuditLog).toHaveBeenCalled();
+    });
+
+    it("should reject a second scheduled follow-up for the same patient", async () => {
+      resolveIdentifierForPayload.mockResolvedValue("encounter-uuid-2");
+      prisma.encounter.findFirst.mockResolvedValue({
+        id: "encounter-uuid-2",
+        patient_id: "patient-1",
+      });
+      prisma.follow_up.findFirst.mockResolvedValue({ id: "fu-existing" });
+
+      await expect(
+        createFollowUp(
+          { encounter_id: "ENC000002", scheduled_at: "2026-01-26" },
+          "user-1",
+          "127.0.0.1",
+        ),
+      ).rejects.toMatchObject({
+        messageKey: "errors.follow_up.already_scheduled",
+        statusCode: 409,
+      });
+      expect(followUpRepository.create).not.toHaveBeenCalled();
     });
   });
 

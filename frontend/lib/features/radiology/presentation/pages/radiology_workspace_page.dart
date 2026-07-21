@@ -486,7 +486,13 @@ class _RadiologyWorkspaceContentState
                     id: section.name,
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
-                    count: _sectionCount(state, section),
+                    count: section == RadiologyDeskSection.followUps
+                        ? ref.watch(
+                            followUpTabCountProvider(
+                              const FollowUpWorklistScope(),
+                            ),
+                          )
+                        : _sectionCount(state, section),
                     countTone: _sectionCountTone(section),
                   ),
               ],

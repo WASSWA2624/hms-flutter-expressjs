@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -13,7 +12,6 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_follow_up_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 
 Future<bool?> showReceptionFollowUpDetailDialog({
@@ -46,7 +44,7 @@ class _ReceptionFollowUpDetailDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
+    final Locale locale = Localizations.localeOf(context);
     final ReceptionFollowUpEntry entry = widget.entry;
     final bool canWrite = receptionFrontDeskWriteRequirement.isAllowed(
       ref.watch(appAccessPolicyProvider),
@@ -55,20 +53,22 @@ class _ReceptionFollowUpDetailDialogState
         entry.patientDisplayName?.trim().isNotEmpty == true
         ? entry.patientDisplayName!.trim()
         : l10n.profileUnknownValue;
-    final String phone =
-        entry.patientPhone?.trim().isNotEmpty == true
-        ? entry.patientPhone!.trim()
-        : l10n.profileUnknownValue;
-    final String email =
-        entry.patientEmail?.trim().isNotEmpty == true
-        ? entry.patientEmail!.trim()
-        : l10n.profileUnknownValue;
+    final String? phone = _nonEmpty(entry.patientPhone);
+    final String? email = _nonEmpty(entry.patientEmail);
+    final String? notes = _nonEmpty(entry.notes);
     final DateTime localScheduled = entry.scheduledAt.toLocal();
+    final String scheduledDate = AppFormatters.shortDate(localScheduled, locale);
+    final String scheduledTime = AppFormatters.time(localScheduled, locale);
+    final String unknown = l10n.profileUnknownValue;
 
     return AppDialog(
       title: Text(l10n.opdFollowUpsTitle),
       icon: const Icon(AppActionIcons.followUp),
-      maxWidth: 640,
+      maxWidth: 560,
+      // Content-sized shell: avoids a maximized empty canvas for this short
+      // call workflow.
+      initialMaximized: false,
+      scrollable: false,
       closeEnabled: !_isBusy,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -83,65 +83,90 @@ class _ReceptionFollowUpDetailDialogState
             patientNumber: entry.patientIdentifier,
             currentStep: l10n.opdFollowUpAction,
             currentStepCode: entry.status,
-            nextStep: l10n.receptionFollowUpDetailBody,
             showJourneyStepper: false,
-            expandedFields: <AppWorkspacePatientContextField>[
-              AppWorkspacePatientContextField(
-                label: l10n.patientsPhoneLabel,
-                value: phone,
-                icon: Icons.phone_outlined,
+          ),
+          AppFormSection(
+            title: l10n.receptionFollowUpContactSectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppInfoTileGrid(
+                maxColumns: 2,
+                minItemWidth: 200,
+                emptyValue: unknown,
+                items: <AppInfoTileData>[
+                  AppInfoTileData(
+                    label: l10n.patientsPhoneLabel,
+                    value: phone,
+                    icon: Icons.phone_outlined,
+                    copyable: phone != null,
+                    copiedMessage: l10n.identifierCopiedMessage,
+                  ),
+                  AppInfoTileData(
+                    label: l10n.patientsEmailLabel,
+                    value: email,
+                    icon: Icons.email_outlined,
+                    copyable: email != null,
+                    copiedMessage: l10n.identifierCopiedMessage,
+                  ),
+                ],
               ),
-              AppWorkspacePatientContextField(
-                label: l10n.patientsEmailLabel,
-                value: email,
-                icon: Icons.email_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.opdFollowUpDateLabel,
-                value: AppFormatters.shortDate(
-                  localScheduled,
-                  Localizations.localeOf(context),
-                ),
-                icon: Icons.event_outlined,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.opdFollowUpTimeLabel,
-                value: AppFormatters.time(
-                  localScheduled,
-                  Localizations.localeOf(context),
-                ),
-                icon: Icons.schedule_outlined,
-              ),
-              if (entry.notes != null && entry.notes!.trim().isNotEmpty)
-                AppWorkspacePatientContextField(
-                  label: l10n.opdNotesLabel,
-                  value: entry.notes!.trim(),
-                  icon: AppActionIcons.edit,
-                ),
             ],
           ),
-          SizedBox(height: theme.spacing.sm),
-          Text(
-            l10n.receptionFollowUpDetailBody,
-            style: theme.textTheme.bodyMedium,
+          AppFormSection(
+            title: l10n.clinicalFollowUpDetailsTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppInfoTileGrid(
+                maxColumns: 2,
+                minItemWidth: 200,
+                emptyValue: unknown,
+                items: <AppInfoTileData>[
+                  AppInfoTileData(
+                    label: l10n.opdFollowUpDateLabel,
+                    value: scheduledDate,
+                    icon: Icons.event_outlined,
+                  ),
+                  AppInfoTileData(
+                    label: l10n.opdFollowUpTimeLabel,
+                    value: scheduledTime,
+                    icon: Icons.schedule_outlined,
+                  ),
+                  if (notes != null)
+                    AppInfoTileData(
+                      label: l10n.opdNotesLabel,
+                      value: notes,
+                      icon: AppActionIcons.edit,
+                    ),
+                ],
+              ),
+            ],
+          ),
+          AppFormInformationBanner.message(
+            title: l10n.receptionFollowUpNextStepTitle,
+            message: l10n.receptionFollowUpDetailBody,
+            icon: Icons.phone_callback_outlined,
           ),
         ],
       ),
       actions: <Widget>[
         if (canWrite) ...<Widget>[
-          AppButton(
+          AppButton.secondary(
+            onPressed: _isBusy ? null : () => _reschedule(context),
+            label: l10n.receptionScheduleAnotherFollowUpAction,
+            leadingIcon: Icons.event_repeat_outlined,
+          ),
+          AppButton.primary(
             onPressed: _isBusy ? null : () => _complete(context),
             label: l10n.receptionMarkFollowUpCompletedAction,
             leadingIcon: AppActionIcons.success,
             isLoading: _isBusy,
           ),
-          AppButton(
-            onPressed: _isBusy ? null : () => _scheduleAnother(context),
-            label: l10n.receptionScheduleAnotherFollowUpAction,
-            leadingIcon: AppActionIcons.followUp,
-            variant: AppButtonVariant.secondary,
+        ] else
+          AppButton.secondary(
+            label: l10n.commonCloseActionLabel,
+            leadingIcon: AppActionIcons.cancel,
+            onPressed: () => Navigator.of(context).maybePop(),
           ),
-        ],
       ],
     );
   }
@@ -171,32 +196,38 @@ class _ReceptionFollowUpDetailDialogState
     Navigator.of(this.context).pop(true);
   }
 
-  Future<void> _scheduleAnother(BuildContext context) async {
+  Future<void> _reschedule(BuildContext context) async {
     final bool? scheduled = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => ClinicalFollowUpActionDialog(
         title: context.l10n.receptionScheduleAnotherFollowUpAction,
         submitLabel: context.l10n.opdSaveFollowUpAction,
-        onSubmit: ({required DateTime scheduledAt, required String notes}) async {
-          final Result<void> result = await ref
-              .read(receptionFollowUpRepositoryProvider)
-              .createFollowUp(<String, Object?>{
-                'encounter_id': widget.entry.encounterId,
-                'scheduled_at': scheduledAt.toUtc().toIso8601String(),
-                'status': 'SCHEDULED',
-                'notes': notes,
-              });
-          return result.when(
-            success: (_) => null,
-            failure: (AppFailure value) => value,
-          );
-        },
+        initialScheduledAt: widget.entry.scheduledAt.toLocal(),
+        onSubmit:
+            ({required DateTime scheduledAt, required String notes}) async {
+              // One scheduled follow-up per patient: update the open row.
+              final Result<void> result = await ref
+                  .read(receptionFollowUpRepositoryProvider)
+                  .updateFollowUp(widget.entry.id, <String, Object?>{
+                    'scheduled_at': scheduledAt.toUtc().toIso8601String(),
+                    'notes': notes,
+                  });
+              return result.when(
+                success: (_) => null,
+                failure: (AppFailure value) => value,
+              );
+            },
       ),
     );
     if (!mounted || scheduled != true) {
       return;
     }
     Navigator.of(this.context).pop(true);
+  }
+
+  static String? _nonEmpty(String? value) {
+    final String trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed;
   }
 }

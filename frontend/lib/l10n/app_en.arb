@@ -3498,17 +3498,21 @@
   "@receptionFollowUpsSearchHint": {
     "description": "Search hint for the Reception Follow-ups tab."
   },
-  "receptionFollowUpDetailBody": "Call the patient using the contact on file, then mark the follow-up completed or schedule another callback.",
+  "receptionFollowUpDetailBody": "Call the patient, then mark this follow-up completed. Reschedule only if they need a later callback.",
   "@receptionFollowUpDetailBody": {
     "description": "Guidance body shown in the Reception follow-up detail dialog."
+  },
+  "receptionFollowUpNextStepTitle": "What to do next",
+  "@receptionFollowUpNextStepTitle": {
+    "description": "Title for the next-step guidance banner in the follow-up detail dialog."
   },
   "receptionMarkFollowUpCompletedAction": "Mark completed",
   "@receptionMarkFollowUpCompletedAction": {
     "description": "Action to mark a Reception follow-up call as completed."
   },
-  "receptionScheduleAnotherFollowUpAction": "Schedule another",
+  "receptionScheduleAnotherFollowUpAction": "Reschedule",
   "@receptionScheduleAnotherFollowUpAction": {
-    "description": "Action to schedule another follow-up callback for the same patient."
+    "description": "Action to change the scheduled date/time of the open follow-up callback."
   },
   "receptionFollowUpContactRequiredLabel": "Contact phone",
   "@receptionFollowUpContactRequiredLabel": {

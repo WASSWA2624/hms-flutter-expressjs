@@ -253,7 +253,13 @@ class _ClinicalWorkspaceContentState
                     id: section.name,
                     icon: _clinicalSectionIcon(section),
                     label: _clinicalSectionLabel(l10n, section),
-                    count: _clinicalSectionCount(state, section),
+                    count: section.isFollowUps
+                        ? ref.watch(
+                            followUpTabCountProvider(
+                              const FollowUpWorklistScope(),
+                            ),
+                          )
+                        : _clinicalSectionCount(state, section),
                     countTone: _clinicalSectionCountTone(section),
                   ),
               ],

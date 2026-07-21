@@ -140,6 +140,8 @@
   "errors.facility_catalog_offering.not_found": "Facility catalog offering not found",
   "errors.facility_lab_panel_offering.not_found": "Facility lab panel offering not found",
   "errors.facility_lab_test_offering.not_found": "Facility lab test offering not found",
+  "errors.follow_up.already_scheduled": "This patient already has a scheduled follow-up",
+  "errors.follow_up.encounter_not_found": "Encounter not found for follow-up",
   "errors.follow_up.invalid_status_transition": "Invalid follow-up status transition",
   "errors.follow_up.not_found": "Follow-up not found",
   "errors.formulary_item.not_found": "Formulary item not found",

@@ -2688,13 +2688,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get receptionFollowUpDetailBody =>
-      'Call the patient using the contact on file, then mark the follow-up completed or schedule another callback.';
+      'Call the patient, then mark this follow-up completed. Reschedule only if they need a later callback.';
+
+  @override
+  String get receptionFollowUpNextStepTitle => 'What to do next';
 
   @override
   String get receptionMarkFollowUpCompletedAction => 'Mark completed';
 
   @override
-  String get receptionScheduleAnotherFollowUpAction => 'Schedule another';
+  String get receptionScheduleAnotherFollowUpAction => 'Reschedule';
 
   @override
   String get receptionFollowUpContactRequiredLabel => 'Contact phone';

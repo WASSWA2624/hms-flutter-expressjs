@@ -321,6 +321,12 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                   id: IpdWorkspaceSection.followUps.name,
                   icon: Icons.phone_callback_outlined,
                   label: l10n.opdFollowUpsTitle,
+                  count: ref.watch(
+                    followUpTabCountProvider(
+                      const FollowUpWorklistScope(encounterType: 'IPD'),
+                    ),
+                  ),
+                  countTone: AppTabCountTone.warning,
                 ),
               ],
               selectedId: _section.name,

@@ -398,7 +398,15 @@ class _TheaterWorkspaceContentState
                     id: section.name,
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
-                    count: _sectionCount(state, section),
+                    count: section == TheaterSection.followUps
+                        ? ref.watch(
+                            followUpTabCountProvider(
+                              const FollowUpWorklistScope(
+                                encounterType: 'THEATRE',
+                              ),
+                            ),
+                          )
+                        : _sectionCount(state, section),
                     countTone: _sectionCountTone(section),
                   ),
               ],

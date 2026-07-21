@@ -402,19 +402,55 @@ const getFollowUpById = async (id) => {
 };
 
 /**
+ * Ensures a patient has at most one active SCHEDULED follow-up.
+ */
+const assertNoScheduledFollowUpForPatient = async (patientId) => {
+  if (!patientId) {
+    return;
+  }
+  const existing = await prisma.follow_up.findFirst({
+    where: {
+      deleted_at: null,
+      status: "SCHEDULED",
+      encounter: {
+        patient_id: patientId,
+        deleted_at: null,
+      },
+    },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new HttpError("errors.follow_up.already_scheduled", 409);
+  }
+};
+
+/**
  * Create follow-up
  */
 const createFollowUp = async (data, userId, ipAddress) => {
   try {
+    const encounterId = await resolveIdentifierForPayload({
+      value: data.encounter_id,
+      field: "encounter_id",
+      model: "encounter",
+      where: { deleted_at: null },
+    });
+    const status = normalizeStatus(data.status, "SCHEDULED");
+    const encounter = await prisma.encounter.findFirst({
+      where: { id: encounterId, deleted_at: null },
+      select: { id: true, patient_id: true },
+    });
+    if (!encounter) {
+      throw new HttpError("errors.follow_up.encounter_not_found", 404);
+    }
+    if (status === "SCHEDULED") {
+      await assertNoScheduledFollowUpForPatient(encounter.patient_id);
+    }
+
     const payload = {
       ...data,
-      status: normalizeStatus(data.status, "SCHEDULED"),
-      encounter_id: await resolveIdentifierForPayload({
-        value: data.encounter_id,
-        field: "encounter_id",
-        model: "encounter",
-        where: { deleted_at: null },
-      }),
+      status,
+      encounter_id: encounterId,
     };
     const followUp = await followUpRepository.create(payload);
 

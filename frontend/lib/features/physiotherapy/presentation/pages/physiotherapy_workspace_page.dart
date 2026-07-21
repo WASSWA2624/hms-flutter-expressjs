@@ -331,6 +331,9 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                 id: _physiotherapyFollowUpsWorklistTabId,
                 icon: Icons.phone_callback_outlined,
                 label: l10n.opdFollowUpsTitle,
+                count: ref.watch(
+                  followUpTabCountProvider(const FollowUpWorklistScope()),
+                ),
               ),
             ],
             selectedId: showFollowUpWorklist

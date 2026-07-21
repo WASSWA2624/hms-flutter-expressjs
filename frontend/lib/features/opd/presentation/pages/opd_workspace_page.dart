@@ -131,7 +131,15 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
                     id: section.name,
                     icon: _opdSectionIcon(section),
                     label: _opdSectionLabel(l10n, section),
-                    count: _opdSectionCount(state, section, allItems),
+                    count: section == OpdWorkspaceSection.followUps
+                        ? ref.watch(
+                            followUpTabCountProvider(
+                              const FollowUpWorklistScope(
+                                encounterType: 'OPD',
+                              ),
+                            ),
+                          )
+                        : _opdSectionCount(state, section, allItems),
                     countTone: _opdSectionCountTone(section),
                   ),
               ],

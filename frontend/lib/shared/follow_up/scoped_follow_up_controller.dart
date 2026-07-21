@@ -67,6 +67,20 @@ final scopedFollowUpControllerProvider = FutureProvider.family<
   );
 });
 
+/// Scheduled follow-up count for a workspace Follow-ups tab badge.
+final followUpTabCountProvider = Provider.family<int?, FollowUpWorklistScope>((
+  Ref ref,
+  FollowUpWorklistScope scope,
+) {
+  final AsyncValue<Result<ReceptionFollowUpState>> async = ref.watch(
+    scopedFollowUpControllerProvider(scope),
+  );
+  return async.asData?.value.when(
+    success: (ReceptionFollowUpState state) => state.entries.length,
+    failure: (_) => null,
+  );
+});
+
 Future<AppFailure?> refreshScopedFollowUps(
   WidgetRef ref,
   FollowUpWorklistScope scope,

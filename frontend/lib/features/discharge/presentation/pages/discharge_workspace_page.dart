@@ -487,7 +487,15 @@ class _DischargeWorkspaceContentState
                     id: section.name,
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
-                    count: _sectionCount(state, section),
+                    count: section == DischargeDeskSection.followUps
+                        ? ref.watch(
+                            followUpTabCountProvider(
+                              const FollowUpWorklistScope(
+                                encounterType: 'IPD',
+                              ),
+                            ),
+                          )
+                        : _sectionCount(state, section),
                     countTone: _sectionCountTone(section),
                   ),
               ],

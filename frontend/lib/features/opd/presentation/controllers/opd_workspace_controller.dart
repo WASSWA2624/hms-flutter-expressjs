@@ -22,8 +22,10 @@ import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.da
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_realtime_delta_applier.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_follow_up_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 
 final opdWorkspaceControllerProvider =
     AsyncNotifierProvider<OpdWorkspaceController, Result<OpdWorkspaceState>>(
@@ -922,7 +924,7 @@ final class OpdWorkspaceController
     required DateTime scheduledAt,
     String? notes,
   }) async {
-    return _mutateRelatedFlowRecord(
+    final AppFailure? failure = await _mutateRelatedFlowRecord(
       flow,
       () => _repository.createFollowUp(<String, Object?>{
         'encounter_id': flow.apiId,
@@ -931,6 +933,11 @@ final class OpdWorkspaceController
         'notes': notes,
       }),
     );
+    if (failure == null) {
+      ref.invalidate(scopedFollowUpControllerProvider);
+      unawaited(ref.read(receptionFollowUpControllerProvider.notifier).refresh());
+    }
+    return failure;
   }
 
   Future<AppFailure?> _flushPendingRefresh() async {

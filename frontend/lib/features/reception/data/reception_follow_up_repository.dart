@@ -66,6 +66,22 @@ final class ReceptionFollowUpRepository {
       decoder: (_) {},
     );
   }
+
+  Future<Result<void>> updateFollowUp(
+    String followUpId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.followUps, followUpId),
+      data: <String, Object?>{
+        for (final MapEntry<String, Object?> entry in payload.entries)
+          if (entry.value != null &&
+              !(entry.value is String && (entry.value as String).trim().isEmpty))
+            entry.key: entry.value,
+      },
+      decoder: (_) {},
+    );
+  }
 }
 
 List<ReceptionFollowUpEntry> _decodeFollowUpList(Object? responseData) {
