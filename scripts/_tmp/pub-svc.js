@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Public service
  */
 
@@ -40,7 +40,7 @@ const listPublicProviders = async (filters = {}, page = 1, limit = 20, sortBy = 
   };
 };
 
-, page = 1, limit = 20, sortBy = 'name', order = 'asc') => {
+const listPublicBranches = async (filters = {}, page = 1, limit = 20, sortBy = 'name', order = 'asc') => {
   const skip = (page - 1) * limit;
   const orderBy = { [sortBy]: order };
 
