@@ -162,41 +162,6 @@ final class FacilityProfile {
   }
 }
 
-    required this.id,
-    required this.tenantId,
-    required this.name,
-    this.facilityId,
-    this.isActive = true,
-    this.deletedAt,
-  });
-
-  final String id;
-  final String tenantId;
-  final String name;
-  final String? facilityId;
-  final bool isActive;
-  final DateTime? deletedAt;
-
-  bool get isDeleted => deletedAt != null;
-
-    String? id,
-    String? tenantId,
-    String? name,
-    String? facilityId,
-    bool? isActive,
-    DateTime? deletedAt,
-    bool clearDeletedAt = false,
-  }) {
-      id: id ?? this.id,
-      tenantId: tenantId ?? this.tenantId,
-      name: name ?? this.name,
-      facilityId: facilityId ?? this.facilityId,
-      isActive: isActive ?? this.isActive,
-      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
-    );
-  }
-}
-
 final class DepartmentProfile {
   const DepartmentProfile({
     required this.id,
@@ -523,7 +488,6 @@ final class FacilitySetupSnapshot {
           : facility as FacilityProfile?,
       facilities: facilities ?? this.facilities,
       contactAddress: contactAddress ?? this.contactAddress,
-      branches: branches ?? this.branches,
       departments: departments ?? this.departments,
       units: units ?? this.units,
       wards: wards ?? this.wards,
@@ -537,7 +501,7 @@ final class FacilitySetupSnapshot {
     );
   }
 
-  static const int setupChecklistTotal = 8;
+  static const int setupChecklistTotal = 7;
 
   bool get hasTenant => tenant != null;
   bool get hasFacility => facility != null;

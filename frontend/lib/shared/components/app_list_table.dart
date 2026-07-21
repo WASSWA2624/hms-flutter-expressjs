@@ -1445,7 +1445,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           );
         }
 
-        final Widget desktopTable = _DesktopListTable<T>(
+        return _DesktopListTable<T>(
           items: visibleItems,
           columns: visibleColumns,
           itemKeyBuilder: widget.itemKeyBuilder,
@@ -1459,21 +1459,13 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           onSort: _sortByColumn,
           rowNumberOffset: rowNumberOffset,
           enableColumnResize: widget.enableColumnResize,
+          scrollVertically: hasBoundedHeight,
           columnWidthFor: (AppListTableColumn<T> column) {
             return _columnWidthFor(column, compact: compact);
           },
           onColumnWidthChanged: widget.enableColumnResize
               ? _updateColumnWidth
               : null,
-        );
-
-        if (!hasBoundedHeight) {
-          return desktopTable;
-        }
-
-        return Scrollbar(
-          thumbVisibility: true,
-          child: SingleChildScrollView(child: desktopTable),
         );
       },
     );
@@ -2294,6 +2286,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     required this.onSort,
     this.rowNumberOffset = 0,
     this.enableColumnResize = true,
+    this.scrollVertically = false,
     required this.columnWidthFor,
     this.onColumnWidthChanged,
   });
@@ -2311,6 +2304,9 @@ class _DesktopListTable<T> extends StatefulWidget {
   final ValueChanged<AppListTableColumn<T>> onSort;
   final int rowNumberOffset;
   final bool enableColumnResize;
+  /// When true, vertical scroll is nested inside horizontal scroll so the
+  /// bottom horizontal scrollbar stays fixed above the table footer.
+  final bool scrollVertically;
   final double Function(AppListTableColumn<T> column) columnWidthFor;
   final void Function(String columnKey, double width)? onColumnWidthChanged;
 
@@ -2320,16 +2316,19 @@ class _DesktopListTable<T> extends StatefulWidget {
 
 class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   late final ScrollController _horizontalController;
+  late final ScrollController _verticalController;
 
   @override
   void initState() {
     super.initState();
     _horizontalController = ScrollController();
+    _verticalController = ScrollController();
   }
 
   @override
   void dispose() {
     _horizontalController.dispose();
+    _verticalController.dispose();
     super.dispose();
   }
 
@@ -2415,21 +2414,54 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
           color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
-      child: Scrollbar(
-        controller: _horizontalController,
-        thumbVisibility: true,
-        notificationPredicate: (ScrollNotification notification) {
-          return notification.metrics.axis == Axis.horizontal;
-        },
-        child: SingleChildScrollView(
-          controller: _horizontalController,
-          scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: widget.minWidth),
-            child: table,
-          ),
-        ),
-      ),
+      child: widget.scrollVertically
+          ? LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double tableWidth = math.max(
+                  widget.minWidth,
+                  constraints.maxWidth,
+                );
+                return Scrollbar(
+                  controller: _horizontalController,
+                  thumbVisibility: true,
+                  scrollbarOrientation: ScrollbarOrientation.bottom,
+                  notificationPredicate: (ScrollNotification notification) {
+                    return notification.metrics.axis == Axis.horizontal;
+                  },
+                  child: SingleChildScrollView(
+                    controller: _horizontalController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: tableWidth,
+                      height: constraints.maxHeight,
+                      child: Scrollbar(
+                        controller: _verticalController,
+                        thumbVisibility: true,
+                        child: SingleChildScrollView(
+                          controller: _verticalController,
+                          child: table,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            )
+          : Scrollbar(
+              controller: _horizontalController,
+              thumbVisibility: true,
+              notificationPredicate: (ScrollNotification notification) {
+                return notification.metrics.axis == Axis.horizontal;
+              },
+              child: SingleChildScrollView(
+                controller: _horizontalController,
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: widget.minWidth),
+                  child: table,
+                ),
+              ),
+            ),
     );
   }
 

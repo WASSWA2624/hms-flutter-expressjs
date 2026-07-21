@@ -743,11 +743,6 @@ class _SetupStepRecordSelectorState extends State<_SetupStepRecordSelector> {
                 widget.onSelectFacility!(value);
               },
       ),
-      TenantFacilitySetupWizardStep.branches => _buildListSelector(
-        context,
-        items: snapshot.branches,
-            '${item.name} · ${tenantFacilityActiveStatusLabel(l10n, item.isActive)}',
-      ),
       TenantFacilitySetupWizardStep.departments => _buildListSelector(
         context,
         label: l10n.tenantFacilityWizardStepDepartments,

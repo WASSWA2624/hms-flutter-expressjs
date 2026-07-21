@@ -39,8 +39,6 @@ abstract final class RealtimeScope {
         matchesValue(
           facilityId,
           payloadString(payload, const <String>['facility_id', 'facilityId']),
-        ) &&
-        matchesValue(
         );
   }
 

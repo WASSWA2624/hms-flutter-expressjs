@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 enum HomeDashboardLoadState { ready, tenantContextRequired }
 
 final class HomeDashboardRequest {
+  const HomeDashboardRequest({this.tenantId, this.facilityId});
 
   factory HomeDashboardRequest.fromQuery(Map<String, String> query) {
     return HomeDashboardRequest(
@@ -30,10 +31,11 @@ final class HomeDashboardRequest {
   bool operator ==(Object other) {
     return other is HomeDashboardRequest &&
         other.tenantId == tenantId &&
-        other.facilityId == facilityId &&
+        other.facilityId == facilityId;
   }
 
   @override
+  int get hashCode => Object.hash(tenantId, facilityId);
 }
 
 final class HomeDashboard {

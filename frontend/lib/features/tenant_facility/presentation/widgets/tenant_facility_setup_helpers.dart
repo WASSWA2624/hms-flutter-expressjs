@@ -11,7 +11,6 @@ const String tenantFacilityNoneSelection = '__none__';
 /// Setup workspace tabs replacing Guided setup as primary navigation.
 enum TenantFacilitySetupDeskSection {
   tenants,
-  branches,
   facility,
   departments,
   units,
@@ -57,7 +56,6 @@ bool tenantFacilitySetupDeskSectionVisible({
 }) {
   return switch (section) {
     TenantFacilitySetupDeskSection.tenants => canManageTenant,
-    TenantFacilitySetupDeskSection.branches => canManageTenant,
     TenantFacilitySetupDeskSection.facility ||
     TenantFacilitySetupDeskSection.departments ||
     TenantFacilitySetupDeskSection.units ||
@@ -96,7 +94,6 @@ String tenantFacilitySetupDeskSectionLabel(
   return switch (section) {
     TenantFacilitySetupDeskSection.tenants =>
       l10n.tenantFacilitySetupTabTenants,
-    TenantFacilitySetupDeskSection.branches =>
     TenantFacilitySetupDeskSection.facility =>
       l10n.tenantFacilitySetupTabFacility,
     TenantFacilitySetupDeskSection.departments =>
@@ -117,7 +114,6 @@ IconData tenantFacilitySetupDeskSectionIcon(
 ) {
   return switch (section) {
     TenantFacilitySetupDeskSection.tenants => Icons.corporate_fare_outlined,
-    TenantFacilitySetupDeskSection.branches => Icons.account_tree_outlined,
     TenantFacilitySetupDeskSection.facility => Icons.apartment_outlined,
     TenantFacilitySetupDeskSection.departments => Icons.domain_outlined,
     TenantFacilitySetupDeskSection.units => Icons.hub_outlined,
@@ -138,7 +134,6 @@ String? tenantFacilitySetupDeskCreateLabel(
   return switch (section) {
     TenantFacilitySetupDeskSection.tenants =>
       l10n.tenantFacilityAddTenantAction,
-    TenantFacilitySetupDeskSection.branches =>
     TenantFacilitySetupDeskSection.facility =>
       l10n.tenantFacilityAddFacilityAction,
     TenantFacilitySetupDeskSection.departments =>
@@ -159,7 +154,6 @@ IconData? tenantFacilitySetupDeskCreateIcon(
 ) {
   return switch (section) {
     TenantFacilitySetupDeskSection.tenants => Icons.add_business_outlined,
-    TenantFacilitySetupDeskSection.branches => Icons.add,
     TenantFacilitySetupDeskSection.facility => Icons.add_business_outlined,
     TenantFacilitySetupDeskSection.departments ||
     TenantFacilitySetupDeskSection.units ||
@@ -315,12 +309,6 @@ String tenantFacilityBedStatusLabel(
   };
 }
 
-  FacilitySetupSnapshot snapshot,
-) {
-  return snapshot.branches
-      .firstOrNull;
-}
-
 String? tenantFacilityDepartmentName(
   FacilitySetupSnapshot snapshot,
   String? departmentId,
@@ -366,7 +354,6 @@ String tenantFacilityRecordPreview<T>({
 
 enum TenantFacilitySetupWizardStep {
   tenant,
-  branches,
   facility,
   departments,
   units,
@@ -377,7 +364,6 @@ enum TenantFacilitySetupWizardStep {
 
 bool tenantFacilityWizardStepOptional(TenantFacilitySetupWizardStep step) {
   return switch (step) {
-    TenantFacilitySetupWizardStep.branches ||
     TenantFacilitySetupWizardStep.units ||
     TenantFacilitySetupWizardStep.wards => true,
     TenantFacilitySetupWizardStep.tenant ||
@@ -394,8 +380,7 @@ bool tenantFacilityWizardStepVisible({
   required bool canManageFacility,
 }) {
   return switch (step) {
-    TenantFacilitySetupWizardStep.tenant ||
-    TenantFacilitySetupWizardStep.branches => canManageTenant,
+    TenantFacilitySetupWizardStep.tenant => canManageTenant,
     TenantFacilitySetupWizardStep.facility ||
     TenantFacilitySetupWizardStep.departments ||
     TenantFacilitySetupWizardStep.units ||
@@ -467,12 +452,6 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
           label: l10n.tenantFacilityWizardMissingTenant,
           satisfied: snapshot.hasTenant,
           fixStep: TenantFacilitySetupWizardStep.tenant,
-        ),
-      ],
-    TenantFacilitySetupWizardStep.branches =>
-      <TenantFacilityWizardStepRequirement>[
-        TenantFacilityWizardStepRequirement(
-          fixStep: TenantFacilitySetupWizardStep.branches,
         ),
       ],
     TenantFacilitySetupWizardStep.facility => () {
@@ -859,7 +838,6 @@ String tenantFacilityWizardStepLabel(
 ) {
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => l10n.tenantFacilityWizardStepTenant,
-    TenantFacilitySetupWizardStep.branches =>
     TenantFacilitySetupWizardStep.facility =>
       l10n.tenantFacilityWizardStepFacility,
     TenantFacilitySetupWizardStep.departments =>
@@ -874,7 +852,6 @@ String tenantFacilityWizardStepLabel(
 IconData tenantFacilityWizardStepIcon(TenantFacilitySetupWizardStep step) {
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => Icons.apartment_outlined,
-    TenantFacilitySetupWizardStep.branches => Icons.account_tree_outlined,
     TenantFacilitySetupWizardStep.facility => Icons.local_hospital_outlined,
     TenantFacilitySetupWizardStep.departments => Icons.groups_2_outlined,
     TenantFacilitySetupWizardStep.units => Icons.hub_outlined,
@@ -894,8 +871,6 @@ String tenantFacilityWizardStepSummary(
       snapshot.tenant?.name.trim().isNotEmpty == true
           ? snapshot.tenant!.name
           : l10n.tenantFacilityChecklistTenant,
-    TenantFacilitySetupWizardStep.branches =>
-      l10n.tenantFacilitySummaryRecordCount(snapshot.branches.length),
     TenantFacilitySetupWizardStep.facility =>
       snapshot.facility?.name.trim().isNotEmpty == true
           ? snapshot.facility!.name
@@ -920,7 +895,6 @@ bool tenantFacilityWizardStepHasRecords(
 ) {
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant => snapshot.hasTenant,
-    TenantFacilitySetupWizardStep.branches => snapshot.branches.isNotEmpty,
     TenantFacilitySetupWizardStep.facility => snapshot.hasFacility,
     TenantFacilitySetupWizardStep.departments =>
       snapshot.departments.isNotEmpty,
@@ -961,8 +935,6 @@ String tenantFacilityWizardPrimaryActionLabel(
           : (canCreateTenant
                 ? l10n.tenantFacilityCreateTenantAction
                 : l10n.tenantFacilityEditTenantAction),
-    TenantFacilitySetupWizardStep.branches =>
-      hasRecords
     TenantFacilitySetupWizardStep.facility =>
       hasRecords
           ? l10n.tenantFacilityEditFacilityAction
@@ -1033,9 +1005,6 @@ String tenantFacilityWizardStepBlockedHint(
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant =>
       l10n.tenantFacilityPermissionRequired,
-    TenantFacilitySetupWizardStep.branches =>
-      snapshot.hasTenant
-          : l10n.tenantFacilityGateNeedTenant,
     TenantFacilitySetupWizardStep.facility =>
       snapshot.hasTenant
           ? _tenantFacilityWizardMissingSummary(

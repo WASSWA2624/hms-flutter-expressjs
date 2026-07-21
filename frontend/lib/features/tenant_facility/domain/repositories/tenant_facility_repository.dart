@@ -81,15 +81,6 @@ abstract interface class TenantFacilityRepository {
     String? country,
   });
 
-    String? id,
-    required String tenantId,
-    String? facilityId,
-    required String name,
-    required bool isActive,
-  });
-
-
-
   Future<Result<DepartmentProfile>> saveDepartment({
     String? id,
     required String tenantId,

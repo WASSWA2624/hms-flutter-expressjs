@@ -684,7 +684,6 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     final FacilitySetupSnapshot snapshot = widget.snapshot;
     final bool canSubmitFacility =
         widget.canManageFacility && snapshot.facility != null;
-    final bool canSubmitTenant = widget.canManageTenant;
 
     return switch (section) {
       TenantFacilitySetupDeskSection.tenants => ManageTenantsPanel(
@@ -692,9 +691,6 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       ),
       TenantFacilitySetupDeskSection.facility => ManageFacilitiesPanel(
         onMutated: (_) => _refreshSetup(),
-      ),
-        snapshot: snapshot,
-        canSubmit: canSubmitTenant,
       ),
       TenantFacilitySetupDeskSection.departments => _DepartmentSetupSection(
         snapshot: snapshot,
@@ -2238,50 +2234,6 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
 
 const String _noneSelection = tenantFacilityNoneSelection;
 
-    required this.snapshot,
-    required this.canSubmit,
-  });
-
-  final FacilitySetupSnapshot snapshot;
-  final bool canSubmit;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canManageRecords = canSubmit && !submission.isSubmitting;
-
-      items: snapshot.branches,
-      noResultsLabel: l10n.tenantFacilitySearchNoResults,
-      searchLabel: l10n.tenantFacilitySearchLabel,
-      canManageRecords: canManageRecords,
-      canAdd: canManageRecords,
-      onAdd: () => _openBranchDialog(context, snapshot),
-          ? l10n.tenantFacilityStructureDeletedStatus
-          : _activeStatusLabel(l10n, branch.isActive),
-        if (branch.isDeleted) {
-          return;
-        }
-        _openBranchDialog(context, snapshot, branch: branch);
-      },
-        context: context,
-        ref: ref,
-        name: branch.name,
-        deleteAction: () => ref
-            .read(tenantFacilitySetupSubmissionProvider.notifier)
-      ),
-        context: context,
-        ref: ref,
-        name: branch.name,
-        restoreAction: () => ref
-            .read(tenantFacilitySetupSubmissionProvider.notifier)
-      ),
-    );
-
-    return content;
-  }
-}
-
 class _DepartmentSetupSection extends ConsumerWidget {
   const _DepartmentSetupSection({
     required this.snapshot,
@@ -3177,109 +3129,6 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
 }
 
 
-  final FacilitySetupSnapshot snapshot;
-
-  @override
-}
-
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late bool _isActive;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.branch?.name);
-    _isActive = widget.branch?.isActive ?? true;
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool isEditing = widget.branch != null;
-    final bool canEdit = !submission.isSubmitting;
-
-    return AppDialog(
-      title: Text(
-        isEditing
-      ),
-      scrollable: true,
-      closeEnabled: canEdit,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            AppTextField(
-              controller: _nameController,
-              enabled: canEdit,
-              isRequired: true,
-              textCapitalization: TextCapitalization.words,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppSwitchField(
-              title: l10n.tenantFacilityActiveLabel,
-              value: _isActive,
-              enabled: canEdit,
-              onChanged: (bool value) {
-                setState(() {
-                  _isActive = value;
-                });
-              },
-            ),
-            _SubmissionFailureBanner(),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: canEdit,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: isEditing
-              ? l10n.tenantFacilitySaveAction
-              : l10n.tenantFacilityCreateAction,
-          leadingIcon: Icons.save_outlined,
-          isLoading: submission.isSubmitting,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (_formKey.currentState?.validate() != true) {
-      return;
-    }
-
-    final TenantProfile? tenant = widget.snapshot.tenant;
-    if (tenant == null) {
-      return;
-    }
-
-    final bool saved = await ref
-        .read(tenantFacilitySetupSubmissionProvider.notifier)
-          id: widget.branch?.id,
-          tenantId: tenant.id,
-          facilityId: widget.snapshot.facility?.id,
-          name: _nameController.text,
-          isActive: _isActive,
-        );
-    if (saved && mounted) {
-      Navigator.of(context).pop(true);
-    }
-  }
-}
-
 class _DepartmentFormDialog extends ConsumerStatefulWidget {
   const _DepartmentFormDialog({required this.snapshot, this.department});
 
@@ -3296,7 +3145,6 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _shortNameController;
   late DepartmentSetupType _type;
-  late String _branchId;
   late bool _isActive;
 
   @override
@@ -3367,26 +3215,6 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
                 }
                 setState(() {
                   _type = value;
-                });
-              },
-            ),
-            AppSelectField<String>.searchable(
-              value: _branchId,
-              enabled: canEdit,
-              options: <AppSelectOption<String>>[
-                AppSelectOption<String>(
-                  value: _noneSelection,
-                  label: l10n.tenantFacilityNoSelectionLabel,
-                ),
-                  AppSelectOption<String>(value: branch.id, label: branch.name),
-              ],
-              validator: tenantFacilityValidReferenceSelection(
-                validIds: widget.snapshot.branches
-                    .toList(growable: false),
-              ),
-              onChanged: (String? value) {
-                setState(() {
-                  _branchId = value ?? _noneSelection;
                 });
               },
             ),
@@ -4137,16 +3965,6 @@ class _SubmissionFailureBanner extends ConsumerWidget {
   }
 }
 
-Future<void> _openBranchDialog(
-  BuildContext context,
-  FacilitySetupSnapshot snapshot, {
-}) async {
-  await showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-  );
-}
-
 Future<void> _openDepartmentDialog(
   BuildContext context,
   FacilitySetupSnapshot snapshot, {
@@ -4343,11 +4161,6 @@ String _joinParts(List<String?> parts) {
       .map((String part) => part.trim())
       .where((String part) => part.isNotEmpty)
       .join(', ');
-}
-
-  return snapshot.branches
-      .firstOrNull
-      ?.name;
 }
 
 String? _departmentName(FacilitySetupSnapshot snapshot, String? departmentId) {
@@ -4620,13 +4433,6 @@ Future<void> showTenantFacilityDepartmentFormDialog(
   DepartmentProfile? department,
 }) {
   return _openDepartmentDialog(context, snapshot, department: department);
-}
-
-/// Shared branch create/edit dialog for facility setup and management.
-  BuildContext context,
-  FacilitySetupSnapshot snapshot, {
-}) {
-  return _openBranchDialog(context, snapshot, branch: branch);
 }
 
 /// Shared unit create/edit dialog for facility setup.

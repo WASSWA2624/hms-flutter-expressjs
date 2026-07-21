@@ -1596,7 +1596,6 @@ class _ManagementRowActions extends StatelessWidget {
 
 enum _FacilityDetailsPanel {
   users,
-  branches,
   departments,
   units,
   wards,
@@ -1981,19 +1980,6 @@ class _FacilityDetailsDialogState
     await _loadUsers(silent: true);
   }
 
-    if (branch != null && branch.isDeleted) {
-      return;
-    }
-      context,
-      _effectiveSnapshot,
-      branch: branch,
-    );
-    if (!mounted) {
-      return;
-    }
-    await _afterStructureMutation();
-  }
-
   Future<void> _openDepartmentForm({DepartmentProfile? department}) async {
     if (department != null && department.isDeleted) {
       return;
@@ -2330,26 +2316,6 @@ class _FacilityDetailsDialogState
           onEdit: (AccessAdminItem user) => unawaited(_editUser(user)),
           onDelete: (AccessAdminItem user) => unawaited(_deleteUser(user)),
           onRestore: (AccessAdminItem user) => unawaited(_restoreUser(user)),
-        );
-      case _FacilityDetailsPanel.branches:
-          items: snapshot.branches,
-          canManage: canMutateStructure,
-              ? l10n.tenantFacilityStructureDeletedStatus
-              : l10n.tenantFacilityStructureActiveStatus,
-          onAdd: () => unawaited(_openBranchForm()),
-              unawaited(_openBranchForm(branch: item)),
-            _confirmDeleteStructure(
-              name: item.name,
-              deleteAction: () => ref
-                  .read(tenantFacilitySetupSubmissionProvider.notifier)
-            ),
-          ),
-            _confirmRestoreStructure(
-              name: item.name,
-              restoreAction: () => ref
-                  .read(tenantFacilitySetupSubmissionProvider.notifier)
-            ),
-          ),
         );
       case _FacilityDetailsPanel.departments:
         return _FacilityStructureCrudPanel<DepartmentProfile>(
@@ -2769,15 +2735,6 @@ class _FacilityDetailsSummary extends StatelessWidget {
                     value: userCount,
                     selected: selectedPanel == _FacilityDetailsPanel.users,
                     onTap: () => onPanelSelected(_FacilityDetailsPanel.users),
-                  ),
-                  _FacilityMetricChip(
-                    value:
-                        snapshot?.branches
-                            .length ??
-                        0,
-                    selected: selectedPanel == _FacilityDetailsPanel.branches,
-                    onTap: () =>
-                        onPanelSelected(_FacilityDetailsPanel.branches),
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityDepartmentsListTitle,

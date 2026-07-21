@@ -129,40 +129,6 @@ final class FacilityProfileDto {
   }
 }
 
-    required this.id,
-    required this.tenantId,
-    required this.name,
-    this.facilityId,
-    required this.isActive,
-    this.deletedAt,
-  });
-
-      id: _requiredString(json, 'id'),
-      tenantId: _requiredString(json, 'tenant_id'),
-      name: _requiredString(json, 'name'),
-      facilityId: _optionalString(json, 'facility_id'),
-      isActive: _optionalBool(json, 'is_active') ?? true,
-      deletedAt: _optionalDateTime(json, 'deleted_at'),
-    );
-  }
-
-  final String id;
-  final String tenantId;
-  final String name;
-  final String? facilityId;
-  final bool isActive;
-  final DateTime? deletedAt;
-
-      id: id,
-      tenantId: tenantId,
-      name: name,
-      facilityId: facilityId,
-      isActive: isActive,
-      deletedAt: deletedAt,
-    );
-  }
-}
-
 final class DepartmentProfileDto {
   const DepartmentProfileDto({
     required this.id,
@@ -601,7 +567,6 @@ final class FacilitySetupWorkspaceDto {
           city: _optionalString(contactAddressJson, 'city'),
           country: _optionalString(contactAddressJson, 'country'),
         ),
-        ).map((dto) => dto.toEntity()).toList(growable: false),
         departments: _decodeOptionalList<DepartmentProfileDto>(
           json['departments'],
           DepartmentProfileDto.fromJson,

@@ -227,11 +227,6 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
             final results =
                 await Future.wait<Result<Object>>(<Future<Result<Object>>>[
-                  _listBranches(
-                    tenant.id,
-                    selectedFacility.id,
-                    includeDeleted: includeDeleted,
-                  ).then((result) => result.map<Object>((value) => value)),
                   _listDepartments(
                     tenant.id,
                     selectedFacility.id,
@@ -273,12 +268,12 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
                 tenant: tenant,
                 facility: selectedFacility,
                 facilities: facilities,
-                departments: _value<List<DepartmentProfile>>(results[1]),
-                units: _value<List<UnitProfile>>(results[2]),
-                contactAddress: _value<FacilityContactAddress>(results[3]),
-                wards: _value<List<WardProfile>>(results[4]),
-                rooms: _value<List<RoomProfile>>(results[5]),
-                beds: _value<List<BedProfile>>(results[6]),
+                departments: _value<List<DepartmentProfile>>(results[0]),
+                units: _value<List<UnitProfile>>(results[1]),
+                contactAddress: _value<FacilityContactAddress>(results[2]),
+                wards: _value<List<WardProfile>>(results[3]),
+                rooms: _value<List<RoomProfile>>(results[4]),
+                beds: _value<List<BedProfile>>(results[5]),
               ),
             );
           },
@@ -514,42 +509,6 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     }
 
     return const Result<void>.success(null);
-  }
-
-  @override
-    String? id,
-    required String tenantId,
-    String? facilityId,
-    required String name,
-    required bool isActive,
-  }) {
-    final String? normalizedFacilityId = _normalizedOptional(facilityId);
-    final payload = <String, Object?>{
-      if (id == null) 'tenant_id': tenantId,
-      'facility_id': ?normalizedFacilityId,
-      'name': name.trim(),
-      'is_active': isActive,
-    };
-
-    if (id == null) {
-        data: payload,
-        decoder: _decodeBranch,
-      );
-    }
-
-      data: payload,
-      decoder: _decodeBranch,
-    );
-  }
-
-  @override
-  }
-
-  @override
-        'restore',
-      ]),
-      decoder: _decodeBranch,
-    );
   }
 
   @override
@@ -826,26 +785,6 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
         ).map((dto) => dto.toEntity()).toList(growable: false),
       ),
     );
-  }
-
-    String tenantId,
-    String facilityId, {
-    bool includeDeleted = false,
-  }) async {
-      ApiEndpoints.collection(
-        queryParameters: _facilityQuery(
-          tenantId,
-          facilityId,
-          includeDeleted: includeDeleted,
-        ),
-      ),
-        data,
-          payload,
-        ).map((dto) => dto.toEntity()).toList(growable: false),
-      ),
-    );
-
-    return _emptyListOnForbidden(result);
   }
 
   Future<Result<List<DepartmentProfile>>> _listDepartments(
@@ -1229,11 +1168,6 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       data,
       decoder: (payload) =>
           FacilityProfileDto.fromJson(_requireMap(payload)).toEntity(),
-    );
-  }
-
-      data,
-      decoder: (payload) =>
     );
   }
 

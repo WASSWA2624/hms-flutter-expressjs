@@ -405,65 +405,6 @@ final class TenantFacilitySetupSubmissionController
     );
   }
 
-    String? id,
-    required String tenantId,
-    String? facilityId,
-    required String name,
-    required bool isActive,
-  }) {
-    return _submit(
-        id: id,
-        tenantId: tenantId,
-        facilityId: facilityId,
-        name: name,
-        isActive: isActive,
-      ),
-        return snapshot.copyWith(
-            snapshot.branches,
-            branch,
-          ),
-        );
-      },
-    );
-  }
-
-    return _submit(
-      updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
-        final DateTime deletedAt = DateTime.now().toUtc();
-        final List<DepartmentProfile> departments = <DepartmentProfile>[
-          for (final DepartmentProfile department in snapshot.departments)
-                ? department.copyWith(deletedAt: deletedAt)
-                : department,
-        ];
-        final Set<String> deletedDepartmentIds = <String>{
-          for (final DepartmentProfile department in departments)
-        };
-        return snapshot.copyWith(
-              branch.id == id ? branch.copyWith(deletedAt: deletedAt) : branch,
-          ],
-          departments: departments,
-          units: <UnitProfile>[
-            for (final UnitProfile unit in snapshot.units)
-              unit.departmentId != null &&
-                      deletedDepartmentIds.contains(unit.departmentId)
-                  ? unit.copyWith(deletedAt: deletedAt)
-                  : unit,
-          ],
-        );
-      },
-    );
-  }
-
-    return _submit(
-        return snapshot.copyWith(
-            snapshot.branches,
-            branch.copyWith(clearDeletedAt: true),
-          ),
-        );
-      },
-    );
-  }
-
   Future<bool> saveDepartment({
     String? id,
     required String tenantId,
