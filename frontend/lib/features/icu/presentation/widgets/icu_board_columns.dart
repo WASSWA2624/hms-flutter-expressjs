@@ -45,7 +45,8 @@ List<AppListTableColumn<IcuPatientSummary>> icuColumnsForSection(
     ],
     IcuWorkspaceSection.active ||
     IcuWorkspaceSection.all ||
-    IcuWorkspaceSection.beds => <AppListTableColumn<IcuPatientSummary>>[
+    IcuWorkspaceSection.beds ||
+    IcuWorkspaceSection.followUps => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
       icuSourceColumn(l10n),
@@ -120,6 +121,7 @@ List<Widget> icuMobilePriorityFields(
     case IcuWorkspaceSection.active:
     case IcuWorkspaceSection.all:
     case IcuWorkspaceSection.beds:
+    case IcuWorkspaceSection.followUps:
       fields.add(Text(item.locationLabel, style: theme.textTheme.bodySmall));
       if (item.sourceLabel.isNotEmpty) {
         fields.add(

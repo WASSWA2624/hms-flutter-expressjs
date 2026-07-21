@@ -109,6 +109,10 @@ void main() {
         IpdWorkspaceSection.bedBoard,
       );
       expect(
+        IpdWorkspaceSectionX.fromQueryParam('follow-ups'),
+        IpdWorkspaceSection.followUps,
+      );
+      expect(
         IpdWorkspaceSectionX.fromQueryParam('unknown'),
         IpdWorkspaceSection.admissionQueue,
       );

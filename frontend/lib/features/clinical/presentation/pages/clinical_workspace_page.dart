@@ -24,6 +24,8 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
@@ -131,7 +133,8 @@ class _ClinicalWorkspaceContentState
     _tableColumnController =
         AppListTableColumnVisibilityController<ClinicalWorklistEntry>();
     _scheduleRouteQuery(widget.initialQuery);
-    if (_section != ClinicalWorkspaceSection.all) {
+    if (_section != ClinicalWorkspaceSection.all &&
+        !_section.isFollowUps) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ref
@@ -210,6 +213,9 @@ class _ClinicalWorkspaceContentState
     }
     setState(() => _section = section);
     _updateUrlForSection(section);
+    if (section.isFollowUps) {
+      return;
+    }
     _searchController.clear();
     final ClinicalQueueScope scope = _clinicalSectionScope(section);
     ref.read(clinicalWorkspaceControllerProvider.notifier).applyScope(scope);
@@ -265,7 +271,13 @@ class _ClinicalWorkspaceContentState
               secondaryActions: _clinicalSecondaryActions(context),
             ),
             SizedBox(height: theme.spacing.sm),
-            _ClinicalWorklistPanel(
+            if (_section.isFollowUps)
+              const FollowUpWorklistPanel(
+                scope: FollowUpWorklistScope(),
+                storageKeyPrefix: 'clinical_follow_ups',
+              )
+            else
+              _ClinicalWorklistPanel(
               state: state,
               section: _section,
               searchController: _searchController,
@@ -298,12 +310,13 @@ class _ClinicalWorkspaceContentState
         .applySearch(value, showLoading: false);
   }
 
-  Widget _clinicalPrimaryAction(
+  Widget? _clinicalPrimaryAction(
     BuildContext context,
     ClinicalWorkspaceState state,
   ) {
     final AppLocalizations l10n = context.l10n;
     return switch (_section) {
+      ClinicalWorkspaceSection.followUps => null,
       ClinicalWorkspaceSection.all ||
       ClinicalWorkspaceSection.waitingReview ||
       ClinicalWorkspaceSection.urgent ||
@@ -332,6 +345,7 @@ class _ClinicalWorkspaceContentState
   List<Widget> _clinicalSecondaryActions(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return switch (_section) {
+      ClinicalWorkspaceSection.followUps => const <Widget>[],
       ClinicalWorkspaceSection.all => const <Widget>[],
       ClinicalWorkspaceSection.waitingReview ||
       ClinicalWorkspaceSection.urgent ||
@@ -368,6 +382,7 @@ class _ClinicalWorkspaceContentState
 
 ClinicalQueueScope _clinicalSectionScope(ClinicalWorkspaceSection section) {
   return switch (section) {
+    ClinicalWorkspaceSection.followUps => ClinicalQueueScope.all,
     ClinicalWorkspaceSection.all => ClinicalQueueScope.all,
     ClinicalWorkspaceSection.waitingReview => ClinicalQueueScope.waitingReview,
     ClinicalWorkspaceSection.urgent => ClinicalQueueScope.urgent,
@@ -380,6 +395,7 @@ ClinicalQueueScope _clinicalSectionScope(ClinicalWorkspaceSection section) {
 
 IconData _clinicalSectionIcon(ClinicalWorkspaceSection section) {
   return switch (section) {
+    ClinicalWorkspaceSection.followUps => Icons.phone_callback_outlined,
     ClinicalWorkspaceSection.all => Icons.inventory_2_outlined,
     ClinicalWorkspaceSection.waitingReview => Icons.rate_review_outlined,
     ClinicalWorkspaceSection.urgent => Icons.priority_high_outlined,
@@ -395,6 +411,7 @@ String _clinicalSectionLabel(
   ClinicalWorkspaceSection section,
 ) {
   return switch (section) {
+    ClinicalWorkspaceSection.followUps => l10n.opdFollowUpsTitle,
     ClinicalWorkspaceSection.all => l10n.clinicalSectionAllLabel,
     ClinicalWorkspaceSection.waitingReview =>
       l10n.clinicalSectionWaitingReviewLabel,
@@ -407,10 +424,13 @@ String _clinicalSectionLabel(
   };
 }
 
-int _clinicalSectionCount(
+int? _clinicalSectionCount(
   ClinicalWorkspaceState state,
   ClinicalWorkspaceSection section,
 ) {
+  if (section.isFollowUps) {
+    return null;
+  }
   return switch (section) {
     ClinicalWorkspaceSection.all => _pageTotal(state.worklist),
     ClinicalWorkspaceSection.waitingReview => state.waitingReviewCount,
@@ -418,6 +438,7 @@ int _clinicalSectionCount(
     ClinicalWorkspaceSection.resultsReady => state.resultsReadyCount,
     ClinicalWorkspaceSection.inConsultation => state.inConsultationCount,
     ClinicalWorkspaceSection.completed => state.completedCount,
+    ClinicalWorkspaceSection.followUps => null,
   };
 }
 
@@ -428,12 +449,14 @@ AppTabCountTone _clinicalSectionCountTone(ClinicalWorkspaceSection section) {
     ClinicalWorkspaceSection.inConsultation => AppTabCountTone.warning,
     ClinicalWorkspaceSection.all ||
     ClinicalWorkspaceSection.resultsReady ||
-    ClinicalWorkspaceSection.completed => AppTabCountTone.info,
+    ClinicalWorkspaceSection.completed ||
+    ClinicalWorkspaceSection.followUps => AppTabCountTone.info,
   };
 }
 
 String _clinicalSectionQueryValue(ClinicalWorkspaceSection section) {
   return switch (section) {
+    ClinicalWorkspaceSection.followUps => 'follow-ups',
     ClinicalWorkspaceSection.all => '',
     ClinicalWorkspaceSection.waitingReview => 'waiting-review',
     ClinicalWorkspaceSection.urgent => 'urgent',
@@ -479,6 +502,7 @@ List<_ClinicalTableColumnId> _clinicalDefaultColumnsForSection(
       _ClinicalTableColumnId.status,
       _ClinicalTableColumnId.nextAction,
     ],
+    ClinicalWorkspaceSection.followUps => standardDefaults,
   };
 }
 

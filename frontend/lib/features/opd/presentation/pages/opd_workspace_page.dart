@@ -19,6 +19,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
@@ -192,6 +194,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         state.isRefreshingTriageQueue;
 
     final Widget primary = switch (section) {
+      OpdWorkspaceSection.followUps => const SizedBox.shrink(),
       OpdWorkspaceSection.all ||
       OpdWorkspaceSection.arrivals ||
       OpdWorkspaceSection.queue ||
@@ -214,6 +217,20 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     };
 
     final List<Widget> secondary = switch (section) {
+      OpdWorkspaceSection.followUps => <Widget>[
+        AppTabToolbarAction(
+          label: l10n.commonRefreshActionLabel,
+          icon: Icons.refresh,
+          onPressed: () {
+            unawaited(
+              refreshScopedFollowUps(
+                ref,
+                const FollowUpWorklistScope(encounterType: 'OPD'),
+              ),
+            );
+          },
+        ),
+      ],
       OpdWorkspaceSection.all ||
       OpdWorkspaceSection.arrivals ||
       OpdWorkspaceSection.queue ||
@@ -369,6 +386,12 @@ class _OpdWorkspaceBodyState extends State<_OpdWorkspaceBody> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.section == OpdWorkspaceSection.followUps) {
+      return const FollowUpWorklistPanel(
+        scope: FollowUpWorklistScope(encounterType: 'OPD'),
+        storageKeyPrefix: 'opd_follow_ups',
+      );
+    }
     final List<_OpdTableItem> allItems = _getAllItems(context);
     final String? sectionCategory = _opdSectionCategory(widget.section);
     final List<_OpdTableItem> sectionItems = sectionCategory == null
@@ -1935,7 +1958,7 @@ const List<_OpdTableColumnId> _defaultOpdTableColumns = <_OpdTableColumnId>[
 
 String? _opdSectionCategory(OpdWorkspaceSection section) {
   return switch (section) {
-    OpdWorkspaceSection.all => null,
+    OpdWorkspaceSection.all || OpdWorkspaceSection.followUps => null,
     OpdWorkspaceSection.arrivals => _opdCategoryArrival,
     OpdWorkspaceSection.queue => _opdCategoryQueue,
     OpdWorkspaceSection.triage => _opdCategoryTriage,
@@ -1950,6 +1973,7 @@ IconData _opdSectionIcon(OpdWorkspaceSection section) {
     OpdWorkspaceSection.queue => Icons.queue_outlined,
     OpdWorkspaceSection.triage => Icons.monitor_heart_outlined,
     OpdWorkspaceSection.active => Icons.medical_services_outlined,
+    OpdWorkspaceSection.followUps => Icons.event_repeat_outlined,
   };
 }
 
@@ -1960,10 +1984,11 @@ String _opdSectionLabel(AppLocalizations l10n, OpdWorkspaceSection section) {
     OpdWorkspaceSection.queue => l10n.opdSectionQueueLabel,
     OpdWorkspaceSection.triage => l10n.opdSectionTriageLabel,
     OpdWorkspaceSection.active => l10n.opdSectionActiveLabel,
+    OpdWorkspaceSection.followUps => l10n.receptionSectionFollowUps,
   };
 }
 
-int _opdSectionCount(
+int? _opdSectionCount(
   OpdWorkspaceState state,
   OpdWorkspaceSection section,
   List<_OpdTableItem> allItems,
@@ -1977,6 +2002,7 @@ int _opdSectionCount(
       state.summaryCounts.activeOpd > 0
           ? state.summaryCounts.activeOpd
           : state.activeFlowCount,
+    OpdWorkspaceSection.followUps => null,
   };
 }
 
@@ -1986,7 +2012,8 @@ AppTabCountTone _opdSectionCountTone(OpdWorkspaceSection section) {
     OpdWorkspaceSection.queue ||
     OpdWorkspaceSection.triage ||
     OpdWorkspaceSection.active => AppTabCountTone.warning,
-    OpdWorkspaceSection.all => AppTabCountTone.info,
+    OpdWorkspaceSection.all ||
+    OpdWorkspaceSection.followUps => AppTabCountTone.info,
   };
 }
 
@@ -1997,6 +2024,7 @@ String _opdSectionQueryValue(OpdWorkspaceSection section) {
     OpdWorkspaceSection.queue => 'queue',
     OpdWorkspaceSection.triage => 'triage',
     OpdWorkspaceSection.active => 'active',
+    OpdWorkspaceSection.followUps => 'follow-ups',
   };
 }
 
@@ -2026,7 +2054,8 @@ List<_OpdTableColumnId> _opdDefaultColumnsForSection(
       _OpdTableColumnId.status,
       _OpdTableColumnId.nextAction,
     ],
-    OpdWorkspaceSection.active => const <_OpdTableColumnId>[
+    OpdWorkspaceSection.active ||
+    OpdWorkspaceSection.followUps => const <_OpdTableColumnId>[
       _OpdTableColumnId.patient,
       _OpdTableColumnId.provider,
       _OpdTableColumnId.visitType,
@@ -2069,7 +2098,8 @@ List<_OpdTableColumnId> _opdColumnChoicesForSection(
       _OpdTableColumnId.arrivalTime,
       _OpdTableColumnId.encounter,
     ],
-    OpdWorkspaceSection.active => const <_OpdTableColumnId>[
+    OpdWorkspaceSection.active ||
+    OpdWorkspaceSection.followUps => const <_OpdTableColumnId>[
       _OpdTableColumnId.encounter,
       _OpdTableColumnId.waitingTime,
       _OpdTableColumnId.arrivalTime,

@@ -28,6 +28,8 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope_section.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -157,7 +159,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
                       _filterValue = AppSearchBarFilterValue.empty;
                     });
                     _updateUrlForSection(section);
-                    unawaited(controller.applyScope(_scopeForSection(section)));
+                    if (!section.isFollowUps) {
+                      unawaited(controller.applyScope(_scopeForSection(section)));
+                    }
                     break;
                   }
                 }
@@ -166,7 +170,13 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
               secondaryActions: _buildSecondaryActions(l10n, state),
             ),
             SizedBox(height: theme.spacing.sm),
-            _LabWorklistPanel(
+            if (_section.isFollowUps)
+              const FollowUpWorklistPanel(
+                scope: FollowUpWorklistScope(),
+                storageKeyPrefix: 'lab_follow_ups',
+              )
+            else
+              _LabWorklistPanel(
               state: state,
               canMutate: canMutate,
               searchController: _searchController,
@@ -187,6 +197,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   }
 
   Widget? _buildPrimaryAction(AppLocalizations l10n, LabWorkspaceState state) {
+    if (_section.isFollowUps) {
+      return null;
+    }
     return switch (_section) {
       LabDeskSection.completed => AppAccessActionGate(
         requirement: _mutationRequirement,
@@ -222,6 +235,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           );
         },
       ),
+      LabDeskSection.followUps => null,
     };
   }
 
@@ -305,6 +319,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.processing ||
       LabDeskSection.verification ||
       LabDeskSection.critical => <Widget>[viewToggle, refreshAction],
+      LabDeskSection.followUps => const <Widget>[],
     };
   }
 
@@ -356,6 +371,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.verification => LabQueueScope.results,
       LabDeskSection.critical => LabQueueScope.critical,
       LabDeskSection.completed => LabQueueScope.completed,
+      LabDeskSection.followUps => LabQueueScope.all,
     };
   }
 
@@ -379,6 +395,10 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       case 'completed':
       case 'done':
         return LabDeskSection.completed;
+      case 'follow-ups':
+      case 'follow_ups':
+      case 'followups':
+        return LabDeskSection.followUps;
       default:
         return null;
     }
@@ -392,6 +412,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.verification => 'verification',
       LabDeskSection.critical => 'critical',
       LabDeskSection.completed => 'completed',
+      LabDeskSection.followUps => 'follow-ups',
     };
   }
 
@@ -412,6 +433,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.verification => l10n.labScopeResults,
       LabDeskSection.critical => l10n.labScopeCritical,
       LabDeskSection.completed => l10n.labScopeCompleted,
+      LabDeskSection.followUps => l10n.opdFollowUpsTitle,
     };
   }
 
@@ -423,10 +445,14 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.verification => Icons.pending_actions_outlined,
       LabDeskSection.critical => Icons.priority_high_outlined,
       LabDeskSection.completed => Icons.verified_outlined,
+      LabDeskSection.followUps => Icons.phone_callback_outlined,
     };
   }
 
-  int _sectionCount(LabWorkspaceState state, LabDeskSection section) {
+  int? _sectionCount(LabWorkspaceState state, LabDeskSection section) {
+    if (section.isFollowUps) {
+      return null;
+    }
     final LabWorkbenchView view = state.query.view;
     return switch (section) {
       LabDeskSection.worklist => state.summary.totalForView(view),
@@ -435,6 +461,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.verification => state.summary.resultsForView(view),
       LabDeskSection.critical => state.summary.criticalForView(view),
       LabDeskSection.completed => state.summary.completedForView(view),
+      LabDeskSection.followUps => null,
     };
   }
 
@@ -445,7 +472,8 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.processing => AppTabCountTone.warning,
       LabDeskSection.worklist ||
       LabDeskSection.verification ||
-      LabDeskSection.completed => AppTabCountTone.info,
+      LabDeskSection.completed ||
+      LabDeskSection.followUps => AppTabCountTone.info,
     };
   }
 

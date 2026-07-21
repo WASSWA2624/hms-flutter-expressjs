@@ -63,6 +63,9 @@ const followUpIdParamsSchema = z.object({
  */
 const listFollowUpsQuerySchema = listQuerySchema.extend({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
+  encounter_type: z
+    .enum(['OPD', 'IPD', 'ICU', 'THEATRE', 'EMERGENCY', 'TELEMEDICINE'])
+    .optional(),
   status: z.enum(FOLLOW_UP_STATUS_VALUES).optional(),
   scheduled_before: isoDateSchema.optional(),
   scheduled_after: isoDateSchema.optional(),

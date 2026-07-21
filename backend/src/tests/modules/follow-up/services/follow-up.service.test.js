@@ -96,6 +96,7 @@ describe("Follow-up Service", () => {
           encounter: {
             id: "enc-1",
             human_friendly_id: "ENC-1",
+            encounter_type: "OPD",
             patient: {
               id: "pat-1",
               human_friendly_id: "PAT-1",
@@ -105,6 +106,11 @@ describe("Follow-up Service", () => {
                 {
                   contact_type: "PHONE",
                   value: "+256700000001",
+                  is_primary: true,
+                },
+                {
+                  contact_type: "EMAIL",
+                  value: "ada@example.com",
                   is_primary: true,
                 },
               ],
@@ -141,11 +147,44 @@ describe("Follow-up Service", () => {
           patient_id: "PAT-1",
           patient_display_name: "Ada Lovelace",
           patient_primary_phone: "+256700000001",
+          patient_primary_email: "ada@example.com",
+          encounter_type: "OPD",
           status: "SCHEDULED",
           notes: "Call back",
         }),
       ]);
       expect(result.pagination.total).toBe(1);
+    });
+
+    it("should filter by encounter_type", async () => {
+      followUpRepository.findMany.mockResolvedValue([]);
+      followUpRepository.count.mockResolvedValue(0);
+
+      await listFollowUps(
+        { encounter_type: "IPD", status: "SCHEDULED" },
+        1,
+        20,
+        "scheduled_at",
+        "asc",
+        "user-1",
+        "127.0.0.1",
+      );
+
+      expect(followUpRepository.findMany).toHaveBeenCalledWith(
+        {
+          status: "SCHEDULED",
+          encounter: {
+            encounter_type: "IPD",
+            deleted_at: null,
+          },
+        },
+        0,
+        20,
+        { scheduled_at: "asc" },
+        expect.objectContaining({
+          encounter: expect.any(Object),
+        })
+      );
     });
   });
 

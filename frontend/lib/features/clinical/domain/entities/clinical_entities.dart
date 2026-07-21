@@ -66,6 +66,7 @@ enum ClinicalWorkspaceSection {
   resultsReady,
   inConsultation,
   completed,
+  followUps,
 }
 
 ClinicalWorkspaceSection _parseClinicalSection(String raw) {
@@ -84,8 +85,15 @@ ClinicalWorkspaceSection _parseClinicalSection(String raw) {
     'inconsultation' ||
     'consultation' => ClinicalWorkspaceSection.inConsultation,
     'completed' || 'closed' || 'done' => ClinicalWorkspaceSection.completed,
+    'follow-ups' ||
+    'follow_ups' ||
+    'followups' => ClinicalWorkspaceSection.followUps,
     _ => ClinicalWorkspaceSection.all,
   };
+}
+
+extension ClinicalWorkspaceSectionX on ClinicalWorkspaceSection {
+  bool get isFollowUps => this == ClinicalWorkspaceSection.followUps;
 }
 
 @immutable

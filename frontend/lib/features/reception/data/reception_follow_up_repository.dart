@@ -19,7 +19,9 @@ final class ReceptionFollowUpRepository {
 
   final ApiClient _apiClient;
 
-  Future<Result<List<ReceptionFollowUpEntry>>> listScheduledFollowUps() {
+  Future<Result<List<ReceptionFollowUpEntry>>> listScheduledFollowUps({
+    String? encounterType,
+  }) {
     return _apiClient.get<List<ReceptionFollowUpEntry>>(
       ApiEndpoints.collection(HmsApiResource.followUps),
       queryParameters: <String, Object?>{
@@ -28,6 +30,8 @@ final class ReceptionFollowUpRepository {
         'limit': AppPageRequest.maxPageSize,
         'sort_by': 'scheduled_at',
         'order': 'asc',
+        if (encounterType != null && encounterType.trim().isNotEmpty)
+          'encounter_type': encounterType.trim().toUpperCase(),
       },
       decoder: _decodeFollowUpList,
     );

@@ -35,6 +35,8 @@ import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope_section.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -232,6 +234,7 @@ class _RadiologyWorkspaceContentState
       RadiologyDeskSection.reporting => 'reporting',
       RadiologyDeskSection.released => 'released',
       RadiologyDeskSection.allOrders => 'all',
+      RadiologyDeskSection.followUps => 'follow-ups',
     };
   }
 
@@ -252,6 +255,10 @@ class _RadiologyWorkspaceContentState
       case 'all_orders':
       case 'all-orders':
         return RadiologyDeskSection.allOrders;
+      case 'follow-ups':
+      case 'follow_ups':
+      case 'followups':
+        return RadiologyDeskSection.followUps;
       default:
         return null;
     }
@@ -270,6 +277,8 @@ class _RadiologyWorkspaceContentState
         unawaited(controller.applyStage('COMPLETED'));
       case RadiologyDeskSection.allOrders:
         unawaited(controller.applyStage('ALL'));
+      case RadiologyDeskSection.followUps:
+        break;
     }
   }
 
@@ -279,6 +288,7 @@ class _RadiologyWorkspaceContentState
       RadiologyDeskSection.reporting => l10n.radiologyReportingSummaryLabel,
       RadiologyDeskSection.released => l10n.radiologyReleasedSummaryLabel,
       RadiologyDeskSection.allOrders => l10n.radiologyAllOrdersSummaryLabel,
+      RadiologyDeskSection.followUps => l10n.opdFollowUpsTitle,
     };
   }
 
@@ -288,13 +298,17 @@ class _RadiologyWorkspaceContentState
       RadiologyDeskSection.reporting => Icons.edit_note_outlined,
       RadiologyDeskSection.released => Icons.verified_outlined,
       RadiologyDeskSection.allOrders => Icons.assignment_outlined,
+      RadiologyDeskSection.followUps => Icons.phone_callback_outlined,
     };
   }
 
-  int _sectionCount(
+  int? _sectionCount(
     RadiologyWorkspaceState state,
     RadiologyDeskSection section,
   ) {
+    if (section.isFollowUps) {
+      return null;
+    }
     return switch (section) {
       RadiologyDeskSection.worklist => state.workloadCount,
       RadiologyDeskSection.reporting => state.reportingCount,
@@ -302,6 +316,7 @@ class _RadiologyWorkspaceContentState
       RadiologyDeskSection.allOrders => state.summary.totalForView(
         state.query.view,
       ),
+      RadiologyDeskSection.followUps => null,
     };
   }
 
@@ -310,15 +325,19 @@ class _RadiologyWorkspaceContentState
       RadiologyDeskSection.worklist ||
       RadiologyDeskSection.reporting => AppTabCountTone.warning,
       RadiologyDeskSection.released ||
-      RadiologyDeskSection.allOrders => AppTabCountTone.info,
+      RadiologyDeskSection.allOrders ||
+      RadiologyDeskSection.followUps => AppTabCountTone.info,
     };
   }
 
-  Widget _buildPrimaryAction(
+  Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     RadiologyWorkspaceState state,
     AppAccessPolicy accessPolicy,
   ) {
+    if (_section.isFollowUps) {
+      return null;
+    }
     final bool canRequest = _requestRequirement.isAllowed(accessPolicy);
     if (!canRequest) {
       return AppTabToolbarPrimary(
@@ -437,6 +456,7 @@ class _RadiologyWorkspaceContentState
         if (canRequest) refreshAction,
         configurationsAction,
       ],
+      RadiologyDeskSection.followUps => const <Widget>[],
     };
   }
 
@@ -490,14 +510,20 @@ class _RadiologyWorkspaceContentState
               ),
             ),
             SizedBox(height: theme.spacing.sm),
-            if (lastFailure != null) ...<Widget>[
+            if (lastFailure != null && !_section.isFollowUps) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
                 onRetry: controller.refresh,
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            _RadiologyOrderBoard(
+            if (_section.isFollowUps)
+              const FollowUpWorklistPanel(
+                scope: FollowUpWorklistScope(),
+                storageKeyPrefix: 'radiology_follow_ups',
+              )
+            else
+              _RadiologyOrderBoard(
               section: _section,
               state: state,
               canWork: canWork,

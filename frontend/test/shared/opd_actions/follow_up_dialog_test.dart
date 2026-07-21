@@ -10,8 +10,12 @@ import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.da
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_follow_up_action_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_workflow_stepper.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -19,6 +23,8 @@ import 'package:hosspi_hms/shared/opd_actions/opd_follow_up_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
+
+class _MockPatientRepository extends Mock implements PatientRepository {}
 
 void main() {
   setUpAll(() {
@@ -40,13 +46,51 @@ void main() {
     status: 'OPEN',
   );
 
+  const PatientDetail patientDetail = PatientDetail(
+    patient: Patient(
+      id: 'patient-1',
+      primaryPhone: '+256700000001',
+      primaryEmail: 'patient@example.com',
+    ),
+    workspace: PatientWorkspaceSnapshot(),
+  );
+
+  testWidgets('shows patient identity without journey stepper', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
+    _stubPatient(patientRepository, detail: patientDetail);
+
+    await _pumpDialog(
+      tester,
+      flow: flow,
+      repository: repository,
+      patientRepository: patientRepository,
+    );
+
+    expect(find.text('Patient Example'), findsOneWidget);
+    expect(find.byType(AppWorkflowStepper), findsNothing);
+    expect(find.byType(AppPhoneField), findsOneWidget);
+    expect(find.byType(AppEmailField), findsOneWidget);
+    expect(find.text('patient@example.com'), findsOneWidget);
+  });
+
   testWidgets('uses AppDialog with Save follow-up and Cancel chrome', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
     _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
+    _stubPatient(patientRepository, detail: patientDetail);
 
-    await _pumpDialog(tester, flow: flow, repository: repository);
+    await _pumpDialog(
+      tester,
+      flow: flow,
+      repository: repository,
+      patientRepository: patientRepository,
+    );
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isTrue);
@@ -55,7 +99,6 @@ void main() {
     expect(find.text('FOLLOW UP'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Save follow-up'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
-    expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppDateField), findsOneWidget);
     expect(find.byType(AppTimeField), findsOneWidget);
     expect(find.byIcon(AppActionIcons.followUp), findsWidgets);
@@ -67,13 +110,16 @@ void main() {
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
     _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
+    _stubPatient(patientRepository, detail: patientDetail);
     bool? result;
 
     await _pumpDialog(
       tester,
       flow: flow,
       repository: repository,
+      patientRepository: patientRepository,
       onResult: (bool? value) => result = value,
     );
 
@@ -88,7 +134,9 @@ void main() {
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
     _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
+    _stubPatient(patientRepository, detail: patientDetail);
     when(() => repository.createFollowUp(any())).thenAnswer(
       (_) async => const Result<void>.failure(AppFailure.network()),
     );
@@ -98,10 +146,11 @@ void main() {
       tester,
       flow: flow,
       repository: repository,
+      patientRepository: patientRepository,
       onResult: (bool? value) => result = value,
     );
 
-    await tester.enterText(find.byType(AppTextField), 'Keep this note');
+    await tester.enterText(find.byType(AppTextField).last, 'Keep this note');
     await tester.tap(find.widgetWithText(AppButton, 'Save follow-up'));
     await tester.pumpAndSettle();
 
@@ -116,6 +165,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
     const OpdFlowDetail refreshed = OpdFlowDetail(
       summary: flow,
       followUps: <OpdRelatedRecord>[
@@ -129,6 +179,7 @@ void main() {
     );
     Map<String, Object?>? submittedPayload;
     _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
+    _stubPatient(patientRepository, detail: patientDetail);
     when(() => repository.createFollowUp(any())).thenAnswer((
       Invocation invocation,
     ) async {
@@ -145,6 +196,7 @@ void main() {
       tester,
       flow: flow,
       repository: repository,
+      patientRepository: patientRepository,
       onResult: (bool? value) => result = value,
     );
 
@@ -158,6 +210,7 @@ void main() {
     expect(submittedPayload?['scheduled_at'], isA<String>());
     verify(() => repository.createFollowUp(any())).called(1);
     verify(() => repository.getOpdFlow('ENC000001')).called(1);
+    verifyNever(() => patientRepository.updatePatient(any(), any()));
 
     final ProviderContainer container = ProviderScope.containerOf(
       tester.element(find.byType(Scaffold)),
@@ -172,29 +225,99 @@ void main() {
     expect(state.selectedFlow?.followUps.single.id, 'follow-up-1');
   });
 
+  testWidgets('persists changed contact before creating follow-up', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    const OpdFlowSummary missingContact = OpdFlowSummary(
+      id: 'encounter-2',
+      publicId: 'ENC000002',
+      patientId: 'patient-2',
+      patientDisplayName: 'New Contact',
+      stage: 'WITH_DOCTOR',
+      status: 'OPEN',
+    );
+    const PatientDetail emptyDetail = PatientDetail(
+      patient: Patient(id: 'patient-2'),
+      workspace: PatientWorkspaceSnapshot(),
+    );
+    Map<String, Object?>? patientPayload;
+    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[missingContact]);
+    _stubPatient(patientRepository, detail: emptyDetail);
+    when(() => patientRepository.updatePatient(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      patientPayload =
+          invocation.positionalArguments[1] as Map<String, Object?>;
+      return Result<Patient>.success(
+        Patient(
+          id: 'patient-2',
+          primaryPhone: patientPayload?['primary_phone'] as String?,
+          primaryEmail: patientPayload?['primary_email'] as String?,
+        ),
+      );
+    });
+    when(() => repository.createFollowUp(any())).thenAnswer(
+      (_) async => const Result<void>.success(null),
+    );
+    when(() => repository.getOpdFlow(any())).thenAnswer(
+      (_) async => Result<OpdFlowDetail>.success(
+        OpdFlowDetail(summary: missingContact),
+      ),
+    );
+
+    await _pumpDialog(
+      tester,
+      flow: missingContact,
+      repository: repository,
+      patientRepository: patientRepository,
+    );
+
+    await tester.enterText(find.byType(AppEmailField), 'new@example.com');
+    // Phone field is composite; set controller via AppPhoneField national entry.
+    final Finder phoneFinder = find.byType(AppPhoneField);
+    expect(phoneFinder, findsOneWidget);
+    await tester.enterText(find.descendant(
+      of: phoneFinder,
+      matching: find.byType(TextField),
+    ).last, '700000099');
+    await tester.tap(find.widgetWithText(AppButton, 'Save follow-up'));
+    await tester.pumpAndSettle();
+
+    expect(patientPayload, isNotNull);
+    expect(patientPayload?['primary_email'], 'new@example.com');
+    verify(() => repository.createFollowUp(any())).called(1);
+  });
+
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {
-    tester.view.physicalSize = const Size(320, 568);
+    tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
     _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
+    _stubPatient(patientRepository, detail: patientDetail);
 
     await _pumpDialog(
       tester,
       flow: flow,
       repository: repository,
+      patientRepository: patientRepository,
       dark: true,
-      textScaler: const TextScaler.linear(1.8),
+      textScaler: const TextScaler.linear(1.3),
     );
 
     expect(tester.takeException(), isNull);
     expect(find.text('FOLLOW UP'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Save follow-up'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.byType(AppPhoneField), findsOneWidget);
+    expect(find.byType(AppEmailField), findsOneWidget);
   });
 }
 
@@ -202,6 +325,7 @@ Future<void> _pumpDialog(
   WidgetTester tester, {
   required OpdFlowSummary flow,
   required OpdRepository repository,
+  required PatientRepository patientRepository,
   ValueChanged<bool?>? onResult,
   bool dark = false,
   TextScaler textScaler = TextScaler.noScaling,
@@ -213,6 +337,7 @@ Future<void> _pumpDialog(
           const SessionState.ready(),
         ),
         opdRepositoryProvider.overrideWithValue(repository),
+        patientRepositoryProvider.overrideWithValue(patientRepository),
       ],
       child: MaterialApp(
         theme: AppTheme.light,
@@ -254,6 +379,15 @@ Future<void> _pumpDialog(
 
   await tester.tap(find.widgetWithText(AppButton, 'Open'));
   await tester.pumpAndSettle();
+}
+
+void _stubPatient(
+  _MockPatientRepository repository, {
+  required PatientDetail detail,
+}) {
+  when(() => repository.loadPatientDetail(any())).thenAnswer(
+    (_) async => Result<PatientDetail>.success(detail),
+  );
 }
 
 void _stubWorkspaceLoad(

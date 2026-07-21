@@ -1,1 +1,43 @@
-The patient follow up is implemented, but it needs some refining. The button, the action button, the follow up action button, actually works. So when you click on it, it will open the Follow up dialogue, but let's see, standardize it like this. let's get rid of the The progress, the flow progress step, the one which shows the current step and then the next step. I think we can leave. Okay, let's leave, let's leave, let's leave with the flow stepper. But the contact the contactee The contact form component, input component should use actually the, that define the form inputs component, the one that already defined within the, within the, within the, within the shared folder, and then also We need to, we need to, so if, if this patient already has a contact attached to them, so when this form is opened it should immediately show the phone number and I think even the email, so those two fields should be prefilled if the information actually exists. if not, then it should be it should be supplied by the respective patient or whoever is available to attend and whoever is making this follow-up should just confirm the contact. So meaning that the follow-up needs someone to supply a contact, which is either a phone number or an email, but both of them are needed, and we need to make sure that this information is actually saved in the database and it can be followed up. By the respective personnel. so I think also we need to make sure that I think we need to make sure that but we can remove the flow stepper because it's not needed at this point. So it's not needed at this point, maybe the patient information can remain the patient's information details can remain and Also so the respective screens should have a tab for patient pre for patient follow-ups, because I can see it's available on reception outpatient isn't available, so on outpatient it should be available. But I think then outpatient should only see follow-up patients that that within their respective scope. For example, patients who just came to OPD and maybe they are already coming back for another visit check-up then also inpatient should have a follow-up tab ICU should have a follow-up tab clinical or doctors should have a follow-up, physiotherapy should also have a follow-up. Theater can also have a follow up then maybe discharge might have a follow up also. I think lab can also have a follow up, radiology can have a follow up, pharmacy doesn't need, and billing also doesn't need a follow up, so it's implemented that.
+# Refine Follow-up Contact Capture and Scoped Tabs
+
+Standardize Follow-up contact fields and add scoped Follow-ups tabs on clinical workspaces. Follow `prompts/.cursor/prompt.mdc`.
+
+
+## Context
+
+Follow-up opens from Flow Actions with a plain phone field, no email, and journey stepper. Reception has Follow-ups; OPD and peer workspaces lack a scoped worklist.
+
+**Contact capture:** required phone and email; prefilled when present; confirmed or supplied before save; persisted.
+
+**Scoped Follow-ups tab:** patients in that workspace domain—not hospital-wide.
+
+## Requirements
+
+1. Keep patient identity; omit the visit journey stepper.
+2. Show phone and email via `AppPhoneField` and `AppEmailField`; prefill when available.
+3. Require both before save; persist to the patient when new or changed.
+4. Keep schedule date/time and optional notes; Save creates and syncs.
+5. Add Follow-ups tabs on OPD, inpatient, ICU, clinical, physiotherapy, theater, discharge, lab, radiology—scoped per workspace.
+6. Omit Follow-ups tabs on pharmacy and billing.
+7. Preserve loading, empty, error, success, busy, validation, permission states; omit unauthorized UI.
+
+## Constraints
+
+- Reuse follow-up dialogs, phone/email fields, patient APIs, lists, localization, auth, design-system; no new contracts.
+- Do not change Follow-up authorization beyond contact UX.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1: Patient details remain; no journey stepper.
+- R2–R3: Shared phone/email; prefilled; both required; contact persisted.
+- R4: Schedule/notes unchanged; sync after save.
+- R5–R6: Scoped tabs on listed workspaces; absent on pharmacy and billing.
+- R7: States intact; unauthorized UI absent.
+- Update follow-up/workspace tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/`
+- `frontend/lib/features/{reception,opd}/`
+- `frontend/test/shared/opd_actions/`

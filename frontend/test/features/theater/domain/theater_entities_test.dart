@@ -24,6 +24,11 @@ void main() {
       expect(TheaterSectionX.fromQuery(null), TheaterSection.all);
       expect(TheaterSectionX.fromQuery(''), TheaterSection.all);
       expect(TheaterSectionX.fromQuery('unknown'), TheaterSection.all);
+      expect(
+        TheaterSectionX.fromQuery('follow-ups'),
+        TheaterSection.followUps,
+      );
+      expect(TheaterSection.followUps.queryValue, 'follow-ups');
     });
   });
 

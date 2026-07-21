@@ -22,6 +22,7 @@ const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
 const listFollowUps = asyncHandler(async (req, res) => {
   const {
     encounter_id,
+    encounter_type,
     status,
     scheduled_before,
     scheduled_after,
@@ -33,6 +34,7 @@ const listFollowUps = asyncHandler(async (req, res) => {
 
   const filters = {
     encounter_id,
+    encounter_type,
     status,
     scheduled_before,
     scheduled_after,

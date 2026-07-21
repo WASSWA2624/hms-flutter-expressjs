@@ -22,6 +22,8 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
@@ -40,6 +42,8 @@ const AccessRequirement _therapyWriteRequirement = AccessRequirement(
   ],
 );
 
+const String _physiotherapyFollowUpsWorklistTabId = 'followUpsWorklist';
+
 class PhysiotherapyWorkspacePage extends ConsumerStatefulWidget {
   const PhysiotherapyWorkspacePage({this.initialQuery, super.key});
 
@@ -56,15 +60,21 @@ class _PhysiotherapyWorkspacePageState
   late final AppListTableColumnVisibilityController<TherapyWorkItem>
   _columnVisibilityController;
   late PhysiotherapyQueueScope _section;
+  bool _showFollowUpWorklist = false;
   String? _pendingSearchControllerText;
   String? _appliedRouteSignature;
 
   @override
   void initState() {
     super.initState();
-    _section =
-        _sectionFromQuery(widget.initialQuery) ??
-        PhysiotherapyQueueScope.referrals;
+    if (_isFollowUpsWorklistQuery(widget.initialQuery?.section)) {
+      _showFollowUpWorklist = true;
+      _section = PhysiotherapyQueueScope.referrals;
+    } else {
+      _section =
+          _sectionFromQuery(widget.initialQuery) ??
+          PhysiotherapyQueueScope.referrals;
+    }
     _searchController = TextEditingController();
     _columnVisibilityController =
         AppListTableColumnVisibilityController<TherapyWorkItem>();
@@ -99,6 +109,12 @@ class _PhysiotherapyWorkspacePageState
     );
 
     final PhysiotherapyQueueScope? section = _sectionFromQuery(query);
+    if (_isFollowUpsWorklistQuery(query.section)) {
+      if (!_showFollowUpWorklist) {
+        setState(() => _showFollowUpWorklist = true);
+      }
+      return;
+    }
     if (section != null) {
       if (section != _section) {
         setState(() => _section = section);
@@ -120,10 +136,15 @@ class _PhysiotherapyWorkspacePageState
     }
   }
 
-  void _updateUrlForSection(PhysiotherapyQueueScope section) {
+  void _updateUrlForSection({
+    PhysiotherapyQueueScope? scope,
+    bool followUpWorklist = false,
+  }) {
     if (!mounted) return;
     final Map<String, String> params = <String, String>{
-      'section': _sectionToQueryValue(section),
+      'section': followUpWorklist
+          ? 'follow-ups'
+          : _sectionToQueryValue(scope ?? _section),
     };
     if (_searchController.text.trim().isNotEmpty) {
       params['search'] = _searchController.text.trim();
@@ -135,11 +156,26 @@ class _PhysiotherapyWorkspacePageState
   }
 
   void _onTabChanged(PhysiotherapyQueueScope scope) {
-    setState(() => _section = scope);
+    setState(() {
+      _section = scope;
+      _showFollowUpWorklist = false;
+    });
     ref
         .read(physiotherapyWorkspaceControllerProvider.notifier)
         .applyScope(scope);
-    _updateUrlForSection(scope);
+    _updateUrlForSection(scope: scope);
+  }
+
+  void _onFollowUpWorklistTabSelected() {
+    setState(() => _showFollowUpWorklist = true);
+    _updateUrlForSection(followUpWorklist: true);
+  }
+
+  static bool _isFollowUpsWorklistQuery(String? value) {
+    return switch ((value ?? '').trim().toLowerCase()) {
+      'follow-ups' || 'follow_ups' || 'followups' => true,
+      _ => false,
+    };
   }
 
   static PhysiotherapyQueueScope? _sectionFromQuery(
@@ -204,7 +240,9 @@ class _PhysiotherapyWorkspacePageState
         return _PhysiotherapyWorkspace(
           state: state,
           section: _section,
+          showFollowUpWorklist: _showFollowUpWorklist,
           onTabChanged: _onTabChanged,
+          onFollowUpWorklistTabSelected: _onFollowUpWorklistTabSelected,
           searchController: _searchController,
           columnVisibilityController: _columnVisibilityController,
         );
@@ -240,14 +278,18 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
   const _PhysiotherapyWorkspace({
     required this.state,
     required this.section,
+    required this.showFollowUpWorklist,
     required this.onTabChanged,
+    required this.onFollowUpWorklistTabSelected,
     required this.searchController,
     required this.columnVisibilityController,
   });
 
   final PhysiotherapyWorkspaceState state;
   final PhysiotherapyQueueScope section;
+  final bool showFollowUpWorklist;
   final ValueChanged<PhysiotherapyQueueScope> onTabChanged;
+  final VoidCallback onFollowUpWorklistTabSelected;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<TherapyWorkItem>
   columnVisibilityController;
@@ -285,9 +327,20 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                   count: _sectionCount(state, scope),
                   countTone: _sectionCountTone(scope),
                 ),
+              AppTabItem(
+                id: _physiotherapyFollowUpsWorklistTabId,
+                icon: Icons.phone_callback_outlined,
+                label: l10n.opdFollowUpsTitle,
+              ),
             ],
-            selectedId: section.name,
+            selectedId: showFollowUpWorklist
+                ? _physiotherapyFollowUpsWorklistTabId
+                : section.name,
             onTabTapped: (String tabId) {
+              if (tabId == _physiotherapyFollowUpsWorklistTabId) {
+                onFollowUpWorklistTabSelected();
+                return;
+              }
               for (final PhysiotherapyQueueScope scope
                   in PhysiotherapyQueueScope.values) {
                 if (scope.name == tabId) {
@@ -296,13 +349,17 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                 }
               }
             },
-            primaryAction: _primaryActionForSection(
-              context,
-              ref,
-              section,
-              state,
-            ),
-            secondaryActions: <Widget>[
+            primaryAction: showFollowUpWorklist
+                ? null
+                : _primaryActionForSection(
+                    context,
+                    ref,
+                    section,
+                    state,
+                  ),
+            secondaryActions: showFollowUpWorklist
+                ? const <Widget>[]
+                : <Widget>[
               AppTabToolbarAction(
                 label: l10n.commonRefreshActionLabel,
                 icon: Icons.refresh,
@@ -314,7 +371,13 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
             ],
           ),
           SizedBox(height: theme.spacing.sm),
-          _buildWorklist(context, ref, controller),
+          if (showFollowUpWorklist)
+            const FollowUpWorklistPanel(
+              scope: FollowUpWorklistScope(),
+              storageKeyPrefix: 'physiotherapy_follow_ups',
+            )
+          else
+            _buildWorklist(context, ref, controller),
         ],
       ),
     );

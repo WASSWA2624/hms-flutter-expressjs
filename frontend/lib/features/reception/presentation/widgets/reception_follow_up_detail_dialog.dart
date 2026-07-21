@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/reception/data/reception_follow_up_repository.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
-import 'package:hosspi_hms/features/reception/presentation/controllers/reception_follow_up_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -58,6 +59,10 @@ class _ReceptionFollowUpDetailDialogState
         entry.patientPhone?.trim().isNotEmpty == true
         ? entry.patientPhone!.trim()
         : l10n.profileUnknownValue;
+    final String email =
+        entry.patientEmail?.trim().isNotEmpty == true
+        ? entry.patientEmail!.trim()
+        : l10n.profileUnknownValue;
     final DateTime localScheduled = entry.scheduledAt.toLocal();
 
     return AppDialog(
@@ -79,11 +84,17 @@ class _ReceptionFollowUpDetailDialogState
             currentStep: l10n.opdFollowUpAction,
             currentStepCode: entry.status,
             nextStep: l10n.receptionFollowUpDetailBody,
+            showJourneyStepper: false,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.patientsPhoneLabel,
                 value: phone,
                 icon: Icons.phone_outlined,
+              ),
+              AppWorkspacePatientContextField(
+                label: l10n.patientsEmailLabel,
+                value: email,
+                icon: Icons.email_outlined,
               ),
               AppWorkspacePatientContextField(
                 label: l10n.opdFollowUpDateLabel,
@@ -140,12 +151,16 @@ class _ReceptionFollowUpDetailDialogState
       _isBusy = true;
       _failure = null;
     });
-    final AppFailure? failure = await ref
-        .read(receptionFollowUpControllerProvider.notifier)
-        .completeFollowUp(widget.entry);
+    final Result<void> result = await ref
+        .read(receptionFollowUpRepositoryProvider)
+        .completeFollowUp(widget.entry.id);
     if (!mounted) {
       return;
     }
+    final AppFailure? failure = result.when(
+      success: (_) => null,
+      failure: (AppFailure value) => value,
+    );
     if (failure != null) {
       setState(() {
         _failure = failure;
@@ -163,14 +178,19 @@ class _ReceptionFollowUpDetailDialogState
       builder: (_) => ClinicalFollowUpActionDialog(
         title: context.l10n.receptionScheduleAnotherFollowUpAction,
         submitLabel: context.l10n.opdSaveFollowUpAction,
-        onSubmit: ({required DateTime scheduledAt, required String notes}) {
-          return ref
-              .read(receptionFollowUpControllerProvider.notifier)
-              .createFollowUp(
-                encounterId: widget.entry.encounterId,
-                scheduledAt: scheduledAt,
-                notes: notes,
-              );
+        onSubmit: ({required DateTime scheduledAt, required String notes}) async {
+          final Result<void> result = await ref
+              .read(receptionFollowUpRepositoryProvider)
+              .createFollowUp(<String, Object?>{
+                'encounter_id': widget.entry.encounterId,
+                'scheduled_at': scheduledAt.toUtc().toIso8601String(),
+                'status': 'SCHEDULED',
+                'notes': notes,
+              });
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure value) => value,
+          );
         },
       ),
     );

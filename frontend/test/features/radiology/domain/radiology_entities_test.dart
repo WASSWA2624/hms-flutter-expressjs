@@ -61,6 +61,7 @@ void main() {
         RadiologyDeskSection.reporting,
         RadiologyDeskSection.released,
         RadiologyDeskSection.allOrders,
+        RadiologyDeskSection.followUps,
       ]);
     });
   });

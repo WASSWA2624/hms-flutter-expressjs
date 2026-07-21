@@ -21,7 +21,11 @@ enum DischargeStatusFilter {
   completed,
 }
 
-enum DischargeDeskSection { all, planned, pendingClearance, completed }
+enum DischargeDeskSection { all, planned, pendingClearance, completed, followUps }
+
+extension DischargeDeskSectionX on DischargeDeskSection {
+  bool get isFollowUps => this == DischargeDeskSection.followUps;
+}
 
 enum DischargeClearanceCode {
   doctor,

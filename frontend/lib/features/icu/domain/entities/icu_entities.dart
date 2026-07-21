@@ -15,6 +15,7 @@ enum IcuWorkspaceSection {
   ended,
   all,
   beds,
+  followUps,
 }
 
 extension IcuWorkspaceSectionX on IcuWorkspaceSection {
@@ -25,10 +26,36 @@ extension IcuWorkspaceSectionX on IcuWorkspaceSection {
     IcuWorkspaceSection.discharge => IcuBoardScope.discharge,
     IcuWorkspaceSection.ended => IcuBoardScope.ended,
     IcuWorkspaceSection.all => IcuBoardScope.all,
-    IcuWorkspaceSection.beds => null,
+    IcuWorkspaceSection.beds || IcuWorkspaceSection.followUps => null,
   };
 
   bool get isBedBoard => this == IcuWorkspaceSection.beds;
+
+  bool get isFollowUps => this == IcuWorkspaceSection.followUps;
+
+  String get queryValue => switch (this) {
+    IcuWorkspaceSection.followUps => 'follow-ups',
+    _ => name,
+  };
+
+  static IcuWorkspaceSection fromQueryParam(String? value) {
+    final String normalized = (value ?? '').trim().toLowerCase();
+    return switch (normalized) {
+      'follow-ups' || 'follow_ups' || 'followups' =>
+        IcuWorkspaceSection.followUps,
+      'critical' => IcuWorkspaceSection.critical,
+      'transfers' => IcuWorkspaceSection.transfers,
+      'discharge' => IcuWorkspaceSection.discharge,
+      'ended' => IcuWorkspaceSection.ended,
+      'all' => IcuWorkspaceSection.all,
+      'beds' => IcuWorkspaceSection.beds,
+      'active' || '' => IcuWorkspaceSection.active,
+      _ => IcuWorkspaceSection.values.firstWhere(
+        (IcuWorkspaceSection section) => section.name == normalized,
+        orElse: () => IcuWorkspaceSection.active,
+      ),
+    };
+  }
 }
 
 /// Detail panels that can be focused via deep link (`/icu?id=&panel=`).

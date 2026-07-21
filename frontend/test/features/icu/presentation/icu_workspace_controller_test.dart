@@ -111,12 +111,22 @@ void main() {
       expect(IcuWorkspaceSection.ended.toBoardScope(), IcuBoardScope.ended);
       expect(IcuWorkspaceSection.all.toBoardScope(), IcuBoardScope.all);
       expect(IcuWorkspaceSection.beds.toBoardScope(), isNull);
+      expect(IcuWorkspaceSection.followUps.toBoardScope(), isNull);
     });
 
     test('isBedBoard returns true only for beds section', () {
       expect(IcuWorkspaceSection.beds.isBedBoard, isTrue);
       expect(IcuWorkspaceSection.active.isBedBoard, isFalse);
       expect(IcuWorkspaceSection.all.isBedBoard, isFalse);
+      expect(IcuWorkspaceSection.followUps.isFollowUps, isTrue);
+    });
+
+    test('fromQueryParam resolves follow-ups alias', () {
+      expect(
+        IcuWorkspaceSectionX.fromQueryParam('follow-ups'),
+        IcuWorkspaceSection.followUps,
+      );
+      expect(IcuWorkspaceSection.followUps.queryValue, 'follow-ups');
     });
   });
 

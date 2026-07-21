@@ -19,6 +19,11 @@ enum LabDeskSection {
   verification,
   critical,
   completed,
+  followUps,
+}
+
+extension LabDeskSectionX on LabDeskSection {
+  bool get isFollowUps => this == LabDeskSection.followUps;
 }
 
 enum LabWorkbenchView { patients, orders }

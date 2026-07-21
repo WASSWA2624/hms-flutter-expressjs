@@ -53,6 +53,8 @@ final class ReceptionFollowUpEntry {
     required this.scheduledAt,
     this.patientDisplayName,
     this.patientPhone,
+    this.patientEmail,
+    this.encounterType,
     this.notes,
     this.status = 'SCHEDULED',
   });
@@ -71,6 +73,8 @@ final class ReceptionFollowUpEntry {
           patientId,
       patientDisplayName: _nonEmpty(json['patient_display_name']),
       patientPhone: _nonEmpty(json['patient_primary_phone']),
+      patientEmail: _nonEmpty(json['patient_primary_email']),
+      encounterType: _nonEmpty(json['encounter_type']),
       scheduledAt: _dateTime(json['scheduled_at']) ?? DateTime.fromMillisecondsSinceEpoch(0),
       notes: _nonEmpty(json['notes']),
       status: _nonEmpty(json['status']) ?? 'SCHEDULED',
@@ -83,6 +87,8 @@ final class ReceptionFollowUpEntry {
   final String patientIdentifier;
   final String? patientDisplayName;
   final String? patientPhone;
+  final String? patientEmail;
+  final String? encounterType;
   final DateTime scheduledAt;
   final String? notes;
   final String status;

@@ -27,7 +27,7 @@ List<AppListTableColumn<TheaterCase>> defaultTheaterColumnsForSection(
       'status',
       'next_action',
     },
-    TheaterSection.all => const <String>{
+    TheaterSection.all || TheaterSection.followUps => const <String>{
       'patient',
       'procedure',
       'time',
@@ -69,7 +69,7 @@ List<AppListTableColumn<TheaterCase>> theaterColumnChoicesForSection(
       'status',
       'next_action',
     },
-    TheaterSection.all => const <String>{
+    TheaterSection.all || TheaterSection.followUps => const <String>{
       'patient',
       'procedure',
       'time',

@@ -6,6 +6,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_follow_up_action_dialog.dart';
@@ -34,7 +35,7 @@ Future<bool?> showFollowUpDialog({
 ///
 /// Creates a follow-up via `POST /api/v1/follow-ups` with public
 /// `encounter_id`, UTC `scheduled_at`, `status`, and optional `notes`.
-/// When the patient has no phone on file, requires contact capture before save.
+/// Always captures phone and email; persists patient contact when new or changed.
 class FollowUpDialog extends ConsumerStatefulWidget {
   const FollowUpDialog({
     required this.flow,
@@ -50,20 +51,62 @@ class FollowUpDialog extends ConsumerStatefulWidget {
 }
 
 class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
+  final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
+      GlobalKey<State<AppPhoneField>>();
   late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+  String? _initialPhone;
+  String? _initialEmail;
+  bool _contactHydrating = false;
 
   @override
   void initState() {
     super.initState();
-    _phoneController = TextEditingController(
-      text: widget.flow.patientPhone?.trim() ?? '',
-    );
+    _initialPhone = widget.flow.patientPhone?.trim();
+    _phoneController = TextEditingController(text: _initialPhone ?? '');
+    _emailController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _hydrateContactFromPatient();
+    });
   }
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _hydrateContactFromPatient() async {
+    final String? patientId = widget.flow.patientId?.trim();
+    if (patientId == null || patientId.isEmpty || !mounted) {
+      return;
+    }
+    setState(() => _contactHydrating = true);
+    final Result<PatientDetail> detailResult = await ref
+        .read(patientRepositoryProvider)
+        .loadPatientDetail(patientId);
+    if (!mounted) {
+      return;
+    }
+    detailResult.when(
+      success: (PatientDetail detail) {
+        final String phone = detail.patient.primaryPhone?.trim() ?? '';
+        final String email = detail.patient.primaryEmail?.trim() ?? '';
+        if (phone.isNotEmpty && _phoneController.text.trim().isEmpty) {
+          _phoneController.text = phone;
+        }
+        if (email.isNotEmpty) {
+          _emailController.text = email;
+        }
+        _initialPhone = _phoneController.text.trim();
+        _initialEmail = _emailController.text.trim();
+      },
+      failure: (_) {},
+    );
+    if (mounted) {
+      setState(() => _contactHydrating = false);
+    }
   }
 
   @override
@@ -74,7 +117,6 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
       ref,
       widget.flow,
     );
-    final bool needsContact = (currentFlow.patientPhone ?? '').trim().isEmpty;
 
     return ClinicalFollowUpActionDialog(
       title: l10n.opdFollowUpAction,
@@ -85,26 +127,35 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
           flow: currentFlow,
           detail: currentDetail,
           showTitle: false,
+          showJourneyStepper: false,
         ),
-        if (needsContact)
-          AppTextField(
-            controller: _phoneController,
-            labelText: l10n.opdFieldRequiredLabel(
-              l10n.receptionFollowUpContactRequiredLabel,
+        AppFormSection(
+          title: l10n.receptionFollowUpContactSectionTitle,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            PatientPhoneField(
+              phoneFieldKey: _phoneFieldKey,
+              controller: _phoneController,
+              labelText: l10n.receptionFollowUpContactRequiredLabel,
+              isRequired: true,
+              isLoading: _contactHydrating,
+              textInputAction: TextInputAction.next,
             ),
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.next,
-            prefixIcon: const Icon(Icons.phone_outlined),
-            isRequired: true,
-            validator: AppValidators.requiredText(l10n.validationRequired),
-          ),
+            PatientEmailField(
+              controller: _emailController,
+              labelText: l10n.patientsEmailLabel,
+              isRequired: true,
+              isLoading: _contactHydrating,
+              textInputAction: TextInputAction.next,
+            ),
+          ],
+        ),
       ],
       onSubmit: ({required DateTime scheduledAt, required String notes}) {
         return _submit(
           currentFlow: currentFlow,
           scheduledAt: scheduledAt,
           notes: notes,
-          needsContact: needsContact,
         );
       },
     );
@@ -114,24 +165,35 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
     required OpdFlowSummary currentFlow,
     required DateTime scheduledAt,
     required String notes,
-    required bool needsContact,
   }) async {
-    if (needsContact) {
-      final String phone = _phoneController.text.trim();
-      if (phone.isEmpty) {
-        return AppFailure.validation(
-          validationFields: const <String>{'primary_phone'},
-        );
-      }
-      final String? patientId = currentFlow.patientId?.trim();
-      if (patientId == null || patientId.isEmpty) {
-        return AppFailure.validation(
-          validationFields: const <String>{'patient_id'},
-        );
-      }
+    AppPhoneField.commitPhone(_phoneFieldKey);
+    final String phone = _phoneController.text.trim();
+    final String email = _emailController.text.trim();
+    if (phone.isEmpty || email.isEmpty) {
+      return AppFailure.validation(
+        validationFields: <String>{
+          if (phone.isEmpty) 'primary_phone',
+          if (email.isEmpty) 'primary_email',
+        },
+      );
+    }
+
+    final String? patientId = currentFlow.patientId?.trim();
+    if (patientId == null || patientId.isEmpty) {
+      return AppFailure.validation(
+        validationFields: const <String>{'patient_id'},
+      );
+    }
+
+    final bool phoneChanged = phone != (_initialPhone ?? '').trim();
+    final bool emailChanged = email != (_initialEmail ?? '').trim();
+    if (phoneChanged || emailChanged) {
       final Result<Patient> updateResult = await ref
           .read(patientRepositoryProvider)
-          .updatePatient(patientId, <String, Object?>{'primary_phone': phone});
+          .updatePatient(patientId, <String, Object?>{
+            if (phoneChanged) 'primary_phone': phone,
+            if (emailChanged) 'primary_email': email,
+          });
       final AppFailure? updateFailure = updateResult.when(
         success: (_) => null,
         failure: (AppFailure failure) => failure,
@@ -139,6 +201,8 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
       if (updateFailure != null) {
         return updateFailure;
       }
+      _initialPhone = phone;
+      _initialEmail = email;
     }
 
     return ref

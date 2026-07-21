@@ -68,6 +68,19 @@ const resolvePrimaryPhone = (contacts = []) => {
   return normalizeText(primary?.value);
 };
 
+const resolvePrimaryEmail = (contacts = []) => {
+  if (!Array.isArray(contacts)) return null;
+  const emails = contacts.filter(
+    (contact) =>
+      String(contact?.contact_type || "")
+        .trim()
+        .toUpperCase() === "EMAIL"
+  );
+  const primary =
+    emails.find((contact) => contact?.is_primary) || emails[0] || null;
+  return normalizeText(primary?.value);
+};
+
 /**
  * Projects follow-up rows with patient identity and contact for call worklists.
  */
@@ -95,6 +108,8 @@ const serializeFollowUp = (record) => {
     patient_id: patientId,
     patient_display_name: formatPatientName(patient),
     patient_primary_phone: resolvePrimaryPhone(patient?.contacts),
+    patient_primary_email: resolvePrimaryEmail(patient?.contacts),
+    encounter_type: normalizeText(record?.encounter?.encounter_type),
     scheduled_at: record.scheduled_at || null,
     status: record.status || null,
     completed_at: record.completed_at || null,
@@ -307,6 +322,13 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
     }
     if (filters.status)
       whereClause.status = normalizeStatus(filters.status, "SCHEDULED");
+    if (filters.encounter_type) {
+      whereClause.encounter = {
+        ...(whereClause.encounter || {}),
+        encounter_type: String(filters.encounter_type).trim().toUpperCase(),
+        deleted_at: null,
+      };
+    }
     if (filters.scheduled_before || filters.scheduled_after) {
       whereClause.scheduled_at = {};
       if (filters.scheduled_before)

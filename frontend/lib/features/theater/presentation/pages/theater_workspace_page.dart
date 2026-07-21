@@ -18,6 +18,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
@@ -157,7 +159,7 @@ class _TheaterWorkspaceContentState
       if (!mounted) {
         return;
       }
-      if (_section != TheaterSection.all) {
+      if (_section != TheaterSection.all && !_section.isFollowUps) {
         _applyTabFilter(_section);
       }
       unawaited(_maybeOpenScheduleDialog());
@@ -229,6 +231,8 @@ class _TheaterWorkspaceContentState
         unawaited(controller.applyStage('POST_OP', clearStatus: true));
       case TheaterSection.all:
         unawaited(controller.clearFilters());
+      case TheaterSection.followUps:
+        break;
     }
   }
 
@@ -238,6 +242,7 @@ class _TheaterWorkspaceContentState
       TheaterSection.inTheater => Icons.meeting_room_outlined,
       TheaterSection.recovery => Icons.monitor_heart_outlined,
       TheaterSection.all => Icons.inventory_2_outlined,
+      TheaterSection.followUps => Icons.phone_callback_outlined,
     };
   }
 
@@ -247,15 +252,20 @@ class _TheaterWorkspaceContentState
       TheaterSection.inTheater => l10n.theaterInTheaterSummaryLabel,
       TheaterSection.recovery => l10n.theaterRecoverySectionLabel,
       TheaterSection.all => l10n.theaterAllCasesSummaryLabel,
+      TheaterSection.followUps => l10n.opdFollowUpsTitle,
     };
   }
 
-  int _sectionCount(TheaterWorkspaceState state, TheaterSection section) {
+  int? _sectionCount(TheaterWorkspaceState state, TheaterSection section) {
+    if (section.isFollowUps) {
+      return null;
+    }
     return switch (section) {
       TheaterSection.scheduled => state.scheduledCount,
       TheaterSection.inTheater => state.inTheaterCount,
       TheaterSection.recovery => state.recoveryCount,
       TheaterSection.all => _pageTotal(state.cases),
+      TheaterSection.followUps => null,
     };
   }
 
@@ -264,11 +274,11 @@ class _TheaterWorkspaceContentState
       TheaterSection.scheduled ||
       TheaterSection.inTheater ||
       TheaterSection.recovery => AppTabCountTone.warning,
-      TheaterSection.all => AppTabCountTone.info,
+      TheaterSection.all || TheaterSection.followUps => AppTabCountTone.info,
     };
   }
 
-  Widget _buildPrimaryAction(
+  Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     TheaterWorkspaceState state,
     TheaterWorkspaceController controller,
@@ -277,11 +287,15 @@ class _TheaterWorkspaceContentState
     if (!canWrite) {
       return _buildRefreshPrimaryAction(l10n, state, controller);
     }
+    if (_section.isFollowUps) {
+      return null;
+    }
     return switch (_section) {
       TheaterSection.scheduled ||
       TheaterSection.inTheater ||
       TheaterSection.recovery ||
-      TheaterSection.all => AppTabToolbarPrimary(
+      TheaterSection.all ||
+      TheaterSection.followUps => AppTabToolbarPrimary(
         label: l10n.theaterScheduleCaseAction,
         icon: Icons.add,
         semanticLabel: l10n.theaterScheduleCaseAction,
@@ -310,11 +324,15 @@ class _TheaterWorkspaceContentState
     if (!canWrite) {
       return const <Widget>[];
     }
+    if (_section.isFollowUps) {
+      return const <Widget>[];
+    }
     return switch (_section) {
       TheaterSection.scheduled ||
       TheaterSection.inTheater ||
       TheaterSection.recovery ||
-      TheaterSection.all => <Widget>[
+      TheaterSection.all ||
+      TheaterSection.followUps => <Widget>[
         _buildRefreshSecondaryAction(l10n, state, controller),
       ],
     };
@@ -389,8 +407,10 @@ class _TheaterWorkspaceContentState
                 for (final TheaterSection section in TheaterSection.values) {
                   if (section.name == tabId) {
                     setState(() => _section = section);
-                    _applyTabFilter(section);
                     _updateUrlForSection(section);
+                    if (!section.isFollowUps) {
+                      _applyTabFilter(section);
+                    }
                     break;
                   }
                 }
@@ -416,7 +436,13 @@ class _TheaterWorkspaceContentState
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            _TheaterCaseBoard(
+            if (_section.isFollowUps)
+              const FollowUpWorklistPanel(
+                scope: FollowUpWorklistScope(encounterType: 'THEATRE'),
+                storageKeyPrefix: 'theater_follow_ups',
+              )
+            else
+              _TheaterCaseBoard(
               state: state,
               section: _section,
               canWrite: canWrite,

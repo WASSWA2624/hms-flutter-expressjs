@@ -88,7 +88,7 @@ final class OpdFlowQuery {
 }
 
 /// Routable worklist sections for the OPD workspace tab strip.
-enum OpdWorkspaceSection { all, arrivals, queue, triage, active }
+enum OpdWorkspaceSection { all, arrivals, queue, triage, active, followUps }
 
 OpdWorkspaceSection _parseOpdSection(String raw) {
   return switch (raw.trim().toLowerCase()) {
@@ -99,6 +99,7 @@ OpdWorkspaceSection _parseOpdSection(String raw) {
     'active_flow' ||
     'encounters' ||
     'flows' => OpdWorkspaceSection.active,
+    'follow-ups' || 'follow_ups' || 'followups' => OpdWorkspaceSection.followUps,
     _ => OpdWorkspaceSection.all,
   };
 }

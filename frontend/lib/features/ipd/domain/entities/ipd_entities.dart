@@ -17,6 +17,7 @@ enum IpdWorkspaceSection {
   transferPending,
   dischargePlanned,
   bedBoard,
+  followUps,
 }
 
 extension IpdWorkspaceSectionX on IpdWorkspaceSection {
@@ -25,10 +26,12 @@ extension IpdWorkspaceSectionX on IpdWorkspaceSection {
     IpdWorkspaceSection.activePatients => IpdQueueScope.activePatients,
     IpdWorkspaceSection.transferPending => IpdQueueScope.transferPending,
     IpdWorkspaceSection.dischargePlanned => IpdQueueScope.dischargePlanned,
-    IpdWorkspaceSection.bedBoard => null,
+    IpdWorkspaceSection.bedBoard || IpdWorkspaceSection.followUps => null,
   };
 
   bool get isBedBoard => this == IpdWorkspaceSection.bedBoard;
+
+  bool get isFollowUps => this == IpdWorkspaceSection.followUps;
 
   static IpdWorkspaceSection fromQueryParam(String? value) {
     return switch ((value ?? '').trim().toLowerCase()) {
@@ -52,6 +55,9 @@ extension IpdWorkspaceSectionX on IpdWorkspaceSection {
       'bed_board' ||
       'bedboard' ||
       'beds' => IpdWorkspaceSection.bedBoard,
+      'follow-ups' ||
+      'follow_ups' ||
+      'followups' => IpdWorkspaceSection.followUps,
       _ => IpdWorkspaceSection.admissionQueue,
     };
   }

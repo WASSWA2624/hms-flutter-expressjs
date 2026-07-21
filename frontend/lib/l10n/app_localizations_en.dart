@@ -2696,6 +2696,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionFollowUpContactRequiredLabel => 'Contact phone';
 
   @override
+  String get receptionFollowUpContactSectionTitle => 'Contact';
+
+  @override
   String get receptionFollowUpSkipAction => 'Skip';
 
   @override

@@ -12,6 +12,8 @@ void main() {
           'patient_id': 'PAT-1',
           'patient_display_name': 'Ada Lovelace',
           'patient_primary_phone': '+256700000001',
+          'patient_primary_email': 'ada@example.com',
+          'encounter_type': 'OPD',
           'scheduled_at': '2026-07-22T09:30:00.000Z',
           'status': 'SCHEDULED',
           'notes': 'Call about meds',
@@ -24,6 +26,8 @@ void main() {
       expect(entry.patientIdentifier, 'PAT-1');
       expect(entry.patientDisplayName, 'Ada Lovelace');
       expect(entry.patientPhone, '+256700000001');
+      expect(entry.patientEmail, 'ada@example.com');
+      expect(entry.encounterType, 'OPD');
       expect(entry.scheduledAt.toUtc().toIso8601String(), '2026-07-22T09:30:00.000Z');
       expect(entry.isScheduled, isTrue);
       expect(entry.notes, 'Call about meds');

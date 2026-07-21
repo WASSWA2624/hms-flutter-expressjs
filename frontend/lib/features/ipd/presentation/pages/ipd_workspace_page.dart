@@ -28,6 +28,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/ipd_actions/ipd_actions.dart';
@@ -205,6 +207,9 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   }
 
   void _applySectionFilter(IpdWorkspaceSection section) {
+    if (section.isFollowUps) {
+      return;
+    }
     final IpdWorkspaceController controller = ref.read(
       ipdWorkspaceControllerProvider.notifier,
     );
@@ -243,6 +248,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       IpdWorkspaceSection.transferPending => 'transfers',
       IpdWorkspaceSection.dischargePlanned => 'discharge',
       IpdWorkspaceSection.bedBoard => 'bed-board',
+      IpdWorkspaceSection.followUps => 'follow-ups',
     };
   }
 
@@ -311,6 +317,11 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                   icon: Icons.grid_view_outlined,
                   label: l10n.ipdBedBoardTab,
                 ),
+                AppTabItem(
+                  id: IpdWorkspaceSection.followUps.name,
+                  icon: Icons.phone_callback_outlined,
+                  label: l10n.opdFollowUpsTitle,
+                ),
               ],
               selectedId: _section.name,
               onTabTapped: (String id) {
@@ -329,7 +340,12 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
               ),
             ),
             SizedBox(height: theme.spacing.sm),
-            if (_section.isBedBoard)
+            if (_section.isFollowUps)
+              const FollowUpWorklistPanel(
+                scope: FollowUpWorklistScope(encounterType: 'IPD'),
+                storageKeyPrefix: 'ipd_follow_ups',
+              )
+            else if (_section.isBedBoard)
               IpdBedBoardPanel(
                 state: state,
                 canManageBeds: canManageBeds,
@@ -361,6 +377,9 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     IpdWorkspaceState state,
     bool canManageBeds,
   ) {
+    if (_section.isFollowUps) {
+      return null;
+    }
     if (_section.isBedBoard && canManageBeds) {
       return AppTabToolbarPrimary(
         label: l10n.ipdBedBoardManageBedsAction,

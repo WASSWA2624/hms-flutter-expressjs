@@ -18,6 +18,8 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class IcuWorkspacePage extends ConsumerStatefulWidget {
@@ -136,7 +138,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
-    _section = _sectionFromQueryValue(widget.initialQuery?.section ?? '');
+    _section = IcuWorkspaceSectionX.fromQueryParam(widget.initialQuery?.section);
     _columnVisibilityController =
         AppListTableColumnVisibilityController<IcuPatientSummary>();
 
@@ -171,19 +173,9 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     super.dispose();
   }
 
-  static IcuWorkspaceSection _sectionFromQueryValue(String raw) {
-    final String normalized = raw.trim().toLowerCase();
-    for (final IcuWorkspaceSection section in IcuWorkspaceSection.values) {
-      if (section.name == normalized) {
-        return section;
-      }
-    }
-    return IcuWorkspaceSection.active;
-  }
-
   void _updateUrlForSection(IcuWorkspaceSection section) {
     if (!mounted) return;
-    final String tab = section.name;
+    final String tab = section.queryValue;
     final String location = AppRoutes.icu.location(
       queryParameters: <String, String>{if (tab != 'active') 'section': tab},
     );
@@ -199,6 +191,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       IcuWorkspaceSection.ended => l10n.icuEndedStaysLabel,
       IcuWorkspaceSection.all => l10n.icuAllIcuLabel,
       IcuWorkspaceSection.beds => l10n.icuViewBedBoard,
+      IcuWorkspaceSection.followUps => l10n.opdFollowUpsTitle,
     };
   }
 
@@ -211,10 +204,14 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       IcuWorkspaceSection.ended => Icons.output_outlined,
       IcuWorkspaceSection.all => Icons.inventory_2_outlined,
       IcuWorkspaceSection.beds => Icons.bed_outlined,
+      IcuWorkspaceSection.followUps => Icons.phone_callback_outlined,
     };
   }
 
-  int _sectionCount(IcuWorkspaceState state, IcuWorkspaceSection section) {
+  int? _sectionCount(IcuWorkspaceState state, IcuWorkspaceSection section) {
+    if (section.isFollowUps) {
+      return null;
+    }
     return switch (section) {
       IcuWorkspaceSection.active => state.activeCount,
       IcuWorkspaceSection.critical => state.criticalCount,
@@ -226,6 +223,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
             .length,
       IcuWorkspaceSection.all => _pageTotal(state.board),
       IcuWorkspaceSection.beds => state.bedBoard.beds.length,
+      IcuWorkspaceSection.followUps => null,
     };
   }
 
@@ -237,7 +235,8 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       IcuWorkspaceSection.discharge => AppTabCountTone.warning,
       IcuWorkspaceSection.ended ||
       IcuWorkspaceSection.all ||
-      IcuWorkspaceSection.beds => AppTabCountTone.info,
+      IcuWorkspaceSection.beds ||
+      IcuWorkspaceSection.followUps => AppTabCountTone.info,
     };
   }
 
@@ -246,7 +245,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     IcuWorkspaceState state,
     IcuWorkspaceController controller,
   ) {
-    if (_section.isBedBoard) {
+    if (_section.isBedBoard || _section.isFollowUps) {
       return null;
     }
     return AppAccessActionGate(
@@ -276,7 +275,10 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     IcuWorkspaceController controller,
   ) {
     final bool isBedView = _section.isBedBoard;
-    final bool isRefreshing = isBedView
+    final bool isFollowUpsView = _section.isFollowUps;
+    final bool isRefreshing = isFollowUpsView
+        ? false
+        : isBedView
         ? state.isRefreshingBeds
         : state.isRefreshingBoard;
     return <Widget>[
@@ -289,6 +291,9 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
         onPressed: isRefreshing
             ? null
             : () {
+                if (isFollowUpsView) {
+                  return;
+                }
                 if (isBedView) {
                   unawaited(controller.loadBedBoard());
                 } else {
@@ -308,6 +313,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       icuWorkspaceControllerProvider.notifier,
     );
     final bool isBedView = _section.isBedBoard;
+    final bool isFollowUpsView = _section.isFollowUps;
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -335,6 +341,9 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
                   if (section.name == tabId) {
                     setState(() => _section = section);
                     _updateUrlForSection(section);
+                    if (section.isFollowUps) {
+                      break;
+                    }
                     final IcuBoardScope? scope = section.toBoardScope();
                     if (scope != null) {
                       controller.applyScope(scope);
@@ -350,7 +359,12 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
               secondaryActions: _buildSecondaryActions(l10n, state, controller),
             ),
             SizedBox(height: theme.spacing.sm),
-            if (isBedView)
+            if (isFollowUpsView)
+              const FollowUpWorklistPanel(
+                scope: FollowUpWorklistScope(encounterType: 'ICU'),
+                storageKeyPrefix: 'icu_follow_ups',
+              )
+            else if (isBedView)
               IcuBedBoardPanel(state: state)
             else
               IcuBoardPanel(

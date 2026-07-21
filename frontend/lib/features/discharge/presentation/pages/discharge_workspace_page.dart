@@ -24,6 +24,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
+import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
@@ -200,6 +202,7 @@ class _DischargeWorkspaceContentState
       DischargeDeskSection.planned => 'planned',
       DischargeDeskSection.pendingClearance => 'pending',
       DischargeDeskSection.completed => 'completed',
+      DischargeDeskSection.followUps => 'follow-ups',
     };
   }
 
@@ -217,6 +220,10 @@ class _DischargeWorkspaceContentState
       case 'completed':
       case 'discharged':
         return DischargeDeskSection.completed;
+      case 'follow-ups':
+      case 'follow_ups':
+      case 'followups':
+        return DischargeDeskSection.followUps;
       default:
         return null;
     }
@@ -229,6 +236,7 @@ class _DischargeWorkspaceContentState
       DischargeDeskSection.pendingClearance =>
         l10n.dischargeSectionPendingClearance,
       DischargeDeskSection.completed => l10n.dischargeSectionCompleted,
+      DischargeDeskSection.followUps => l10n.opdFollowUpsTitle,
     };
   }
 
@@ -238,18 +246,23 @@ class _DischargeWorkspaceContentState
       DischargeDeskSection.planned => Icons.event_available_outlined,
       DischargeDeskSection.pendingClearance => Icons.pending_actions_outlined,
       DischargeDeskSection.completed => Icons.check_circle_outline,
+      DischargeDeskSection.followUps => Icons.phone_callback_outlined,
     };
   }
 
-  int _sectionCount(
+  int? _sectionCount(
     DischargeWorkspaceState state,
     DischargeDeskSection section,
   ) {
+    if (section.isFollowUps) {
+      return null;
+    }
     return switch (section) {
       DischargeDeskSection.all => state.queue.items.length,
       DischargeDeskSection.planned => state.plannedCount,
       DischargeDeskSection.pendingClearance => state.summaryPendingCount,
       DischargeDeskSection.completed => state.completedCount,
+      DischargeDeskSection.followUps => null,
     };
   }
 
@@ -258,12 +271,14 @@ class _DischargeWorkspaceContentState
       DischargeDeskSection.planned ||
       DischargeDeskSection.pendingClearance => AppTabCountTone.warning,
       DischargeDeskSection.all ||
-      DischargeDeskSection.completed => AppTabCountTone.info,
+      DischargeDeskSection.completed ||
+      DischargeDeskSection.followUps => AppTabCountTone.info,
     };
   }
 
   List<IpdAdmissionSummary> _buildRows(DischargeWorkspaceState state) {
     return switch (_section) {
+      DischargeDeskSection.followUps => const <IpdAdmissionSummary>[],
       DischargeDeskSection.all => state.queue.items.toList(),
       DischargeDeskSection.planned =>
         state.queue.items.where(isPlannedDischarge).toList(),
@@ -289,11 +304,13 @@ class _DischargeWorkspaceContentState
       DischargeDeskSection.pendingClearance =>
         l10n.dischargeManageClearanceAction,
       DischargeDeskSection.completed => l10n.dischargePrintSummaryAction,
+      DischargeDeskSection.followUps => '',
     };
   }
 
-  static IconData _primaryActionIcon(DischargeDeskSection section) {
+  static IconData? _primaryActionIcon(DischargeDeskSection section) {
     return switch (section) {
+      DischargeDeskSection.followUps => null,
       DischargeDeskSection.all => Icons.edit_note_outlined,
       DischargeDeskSection.planned => Icons.fact_check_outlined,
       DischargeDeskSection.pendingClearance => Icons.fact_check_outlined,
@@ -378,11 +395,14 @@ class _DischargeWorkspaceContentState
     await _openDischargeDetailDialog(context, ref, state, admission);
   }
 
-  Widget _buildPrimaryAction(
+  Widget? _buildPrimaryAction(
     AppLocalizations l10n,
     DischargeWorkspaceState state,
     List<IpdAdmissionSummary> rows,
   ) {
+    if (_section.isFollowUps) {
+      return null;
+    }
     if (_section == DischargeDeskSection.completed) {
       return AppTabToolbarPrimary(
         label: _primaryActionLabel(l10n, _section),
@@ -489,7 +509,13 @@ class _DischargeWorkspaceContentState
               secondaryActions: _buildSecondaryActions(l10n, state, controller),
             ),
             SizedBox(height: theme.spacing.sm),
-            AppListTable<IpdAdmissionSummary>(
+            if (_section.isFollowUps)
+              const FollowUpWorklistPanel(
+                scope: FollowUpWorklistScope(encounterType: 'IPD'),
+                storageKeyPrefix: 'discharge_follow_ups',
+              )
+            else
+              AppListTable<IpdAdmissionSummary>(
               items: rows,
               columns: defaultColumns,
               columnChoices: allColumns,
@@ -1127,6 +1153,7 @@ class _MobileQueueItem extends StatelessWidget {
       DischargeDeskSection.completed => Text(
         _dateLabel(context, item.dischargedAt),
       ),
+      DischargeDeskSection.followUps => const SizedBox.shrink(),
     };
   }
 }
@@ -1596,6 +1623,13 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeDefaultColumns(
       'patient',
       'location',
       'discharged_at',
+      'status',
+      'next_action',
+    ],
+    DischargeDeskSection.followUps => <String>[
+      'patient',
+      'location',
+      'target_date',
       'status',
       'next_action',
     ],

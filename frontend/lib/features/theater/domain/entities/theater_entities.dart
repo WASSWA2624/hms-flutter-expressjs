@@ -44,7 +44,7 @@ const List<String> theaterFinalizeRecordTypes = <String>[
   'ALL',
 ];
 
-enum TheaterSection { scheduled, inTheater, recovery, all }
+enum TheaterSection { scheduled, inTheater, recovery, all, followUps }
 
 extension TheaterSectionX on TheaterSection {
   String get queryValue => switch (this) {
@@ -52,13 +52,17 @@ extension TheaterSectionX on TheaterSection {
     TheaterSection.inTheater => 'in-theater',
     TheaterSection.recovery => 'recovery',
     TheaterSection.all => 'all',
+    TheaterSection.followUps => 'follow-ups',
   };
+
+  bool get isFollowUps => this == TheaterSection.followUps;
 
   static TheaterSection fromQuery(String? value) {
     return switch ((value ?? '').trim().toLowerCase()) {
       'scheduled' => TheaterSection.scheduled,
       'in-theater' || 'in_theater' || 'intheater' => TheaterSection.inTheater,
       'recovery' || 'post-op' || 'post_op' || 'pacu' => TheaterSection.recovery,
+      'follow-ups' || 'follow_ups' || 'followups' => TheaterSection.followUps,
       _ => TheaterSection.all,
     };
   }

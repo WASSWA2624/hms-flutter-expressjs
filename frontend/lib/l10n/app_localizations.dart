@@ -5218,6 +5218,12 @@ abstract class AppLocalizations {
   /// **'Contact phone'**
   String get receptionFollowUpContactRequiredLabel;
 
+  /// Section title for phone and email capture on the follow-up dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get receptionFollowUpContactSectionTitle;
+
   /// Dismisses the optional post-disposition follow-up dialog without scheduling.
   ///
   /// In en, this message translates to:

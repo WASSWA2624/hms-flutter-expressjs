@@ -106,6 +106,7 @@ class IcuNextActionButton extends ConsumerWidget {
       case IcuWorkspaceSection.active:
       case IcuWorkspaceSection.all:
       case IcuWorkspaceSection.beds:
+      case IcuWorkspaceSection.followUps:
         break;
     }
 

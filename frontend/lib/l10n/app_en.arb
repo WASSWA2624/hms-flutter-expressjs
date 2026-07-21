@@ -3510,6 +3510,10 @@
   "@receptionFollowUpContactRequiredLabel": {
     "description": "Required phone field when scheduling a follow-up without a known patient contact."
   },
+  "receptionFollowUpContactSectionTitle": "Contact",
+  "@receptionFollowUpContactSectionTitle": {
+    "description": "Section title for phone and email capture on the follow-up dialog."
+  },
   "receptionFollowUpSkipAction": "Skip",
   "@receptionFollowUpSkipAction": {
     "description": "Dismisses the optional post-disposition follow-up dialog without scheduling."

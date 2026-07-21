@@ -51,7 +51,11 @@ const List<String> radiologyBillingGateFilters = <String>[
 
 enum RadiologyWorkbenchView { patients, orders }
 
-enum RadiologyDeskSection { worklist, reporting, released, allOrders }
+enum RadiologyDeskSection { worklist, reporting, released, allOrders, followUps }
+
+extension RadiologyDeskSectionX on RadiologyDeskSection {
+  bool get isFollowUps => this == RadiologyDeskSection.followUps;
+}
 
 @immutable
 final class RadiologyWorkspaceQuery {

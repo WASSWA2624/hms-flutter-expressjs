@@ -374,6 +374,12 @@ void main() {
       );
       expect(
         ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=follow-ups'),
+        ).section,
+        ClinicalWorkspaceSection.followUps,
+      );
+      expect(
+        ClinicalWorkspaceQuery.fromUri(
           Uri.parse('/clinical?section=consultation'),
         ).section,
         ClinicalWorkspaceSection.inConsultation,
