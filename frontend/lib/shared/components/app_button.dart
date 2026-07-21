@@ -8,7 +8,7 @@ enum AppButtonVariant { primary, secondary, tertiary }
 
 const Duration _buttonAnimationDuration = Duration(milliseconds: 140);
 
-/// Borderless action button: icon + label (or icon-only in compact toolbars).
+/// Action button: icon + label (or icon-only in compact toolbars), with a thin outline.
 class AppButton extends StatelessWidget {
   AppButton({
     required this.label,
@@ -304,11 +304,12 @@ class AppButton extends StatelessWidget {
       side: WidgetStateProperty.resolveWith<BorderSide?>((
         Set<WidgetState> states,
       ) {
+        const double thinWidth = 1;
         if (states.contains(WidgetState.focused) &&
             variant != AppButtonVariant.primary) {
           return BorderSide(
             color: colorScheme.primary.withValues(alpha: 0.72),
-            width: 1.25,
+            width: thinWidth,
           );
         }
         if (variant == AppButtonVariant.primary) {
@@ -317,19 +318,14 @@ class AppButton extends StatelessWidget {
               : 0.72;
           return BorderSide(
             color: colorScheme.primary.withValues(alpha: alpha),
-            width: 1.75,
+            width: thinWidth,
           );
         }
-        if (variant == AppButtonVariant.secondary) {
-          final double alpha = states.contains(WidgetState.disabled)
-              ? 0.2
-              : 0.42;
-          return BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: alpha),
-            width: 1.5,
-          );
-        }
-        return BorderSide.none;
+        final double alpha = states.contains(WidgetState.disabled) ? 0.2 : 0.42;
+        return BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: alpha),
+          width: thinWidth,
+        );
       }),
     );
   }

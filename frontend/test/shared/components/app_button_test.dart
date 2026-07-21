@@ -69,7 +69,7 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('uses transparent button styling for primary variant', (
+    testWidgets('uses soft fill and thin border for primary variant', (
       WidgetTester tester,
     ) async {
       await pumpComponent(
@@ -85,11 +85,35 @@ void main() {
         find.byType(TextButton),
       );
       final ButtonStyle style = button.style!;
-      expect(
-        style.backgroundColor?.resolve(<WidgetState>{}),
-        Colors.transparent,
-      );
+      final Color? background = style.backgroundColor?.resolve(<WidgetState>{});
+      final BorderSide? side = style.side?.resolve(<WidgetState>{});
+      expect(background, isNotNull);
+      expect(background!.a, closeTo(0.12, 0.001));
       expect(style.overlayColor?.resolve(<WidgetState>{}), isNull);
+      expect(side?.width, 1);
+    });
+
+    testWidgets('applies a thin border on all variants', (
+      WidgetTester tester,
+    ) async {
+      for (final AppButtonVariant variant in AppButtonVariant.values) {
+        await pumpComponent(
+          tester,
+          AppButton(
+            label: variant.name,
+            variant: variant,
+            onPressed: () {},
+          ),
+        );
+
+        final TextButton button = tester.widget<TextButton>(
+          find.byType(TextButton),
+        );
+        final BorderSide? side = button.style!.side?.resolve(<WidgetState>{});
+        expect(side, isNotNull);
+        expect(side!.width, 1);
+        expect(side.style, BorderStyle.solid);
+      }
     });
   });
 }
