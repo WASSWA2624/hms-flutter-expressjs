@@ -14,8 +14,7 @@ const {
   normalizeString,
   resolveListScopedIdentifiers,
   resolveScopedIdentifiers,
-  serializeOfficeContext,
-} = require('@lib/last-office/shared');
+  serializeOfficeContext} = require('@lib/last-office/shared');
 const { recordWorkflowEvent } = require('@lib/telemetry/metrics');
 
 const SORT_FIELDS = new Set(['created_at', 'updated_at', 'opened_at', 'closed_at', 'office_date']);
@@ -37,8 +36,7 @@ const parseDateValue = (value, field, { nullable = true } = {}) => {
 const resolveOfficeContextId = async (identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'office_context',
-    identifier,
-  });
+    identifier});
 
   return resolved || identifier;
 };
@@ -56,7 +54,6 @@ const ensureScopedRecord = (record, context = {}) => {
     throw new HttpError('errors.office_context.not_found', 404);
   }
 
-  if (context.branch_id && record.branch_id && record.branch_id !== context.branch_id) {
     throw new HttpError('errors.office_context.not_found', 404);
   }
 
@@ -65,23 +62,19 @@ const ensureScopedRecord = (record, context = {}) => {
 
 const buildListWhere = async (filters = {}, context = {}) => {
   const scoped = await resolveListScopedIdentifiers({ filters, context });
-  if ((filters.facility_id !== undefined && scoped.facility_id === null) || (filters.branch_id !== undefined && scoped.branch_id === null)) {
     return null;
   }
 
   const where = {
-    tenant_id: scoped.tenant_id,
-  };
+    tenant_id: scoped.tenant_id};
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
-  if (scoped.branch_id) where.branch_id = scoped.branch_id;
 
   if (filters.shift_id !== undefined) {
     const shiftId = await resolveIdentifierForFilter({
       value: filters.shift_id,
       model: 'shift',
-      where: { tenant_id: scoped.tenant_id },
-    });
+      where: { tenant_id: scoped.tenant_id }});
 
     if (shiftId === null) return null;
     if (shiftId !== undefined) where.shift_id = shiftId;
@@ -91,8 +84,7 @@ const buildListWhere = async (filters = {}, context = {}) => {
     const currentHolderUserId = await resolveIdentifierForFilter({
       value: filters.current_holder_user_id,
       model: 'user',
-      where: { tenant_id: scoped.tenant_id },
-    });
+      where: { tenant_id: scoped.tenant_id }});
 
     if (currentHolderUserId === null) return null;
     if (currentHolderUserId !== undefined) where.current_holder_user_id = currentHolderUserId;
@@ -119,8 +111,7 @@ const listOfficeContexts = async (filters = {}, page = 1, limit = 20, sortBy, or
   if (where === null) {
     return {
       officeContexts: [],
-      pagination: buildPagination(page, limit, 0),
-    };
+      pagination: buildPagination(page, limit, 0)};
   }
 
   const skip = (page - 1) * limit;
@@ -128,13 +119,11 @@ const listOfficeContexts = async (filters = {}, page = 1, limit = 20, sortBy, or
 
   const [records, total] = await Promise.all([
     officeContextRepository.findMany(where, skip, limit, orderBy),
-    officeContextRepository.count(where),
-  ]);
+    officeContextRepository.count(where)]);
 
   return {
     officeContexts: records.map(serializeOfficeContext),
-    pagination: buildPagination(page, limit, total),
-  };
+    pagination: buildPagination(page, limit, total)};
 };
 
 const getOfficeContextById = async (id, context = {}) => {
@@ -150,15 +139,12 @@ const getCurrentOfficeContext = async (filters = {}, context = {}) => {
     field: 'shift_id',
     model: 'shift',
     nullable: true,
-    where: { tenant_id: scoped.tenant_id },
-  });
+    where: { tenant_id: scoped.tenant_id }});
 
   const record = await officeContextRepository.findCurrent({
     tenant_id: scoped.tenant_id,
     ...(scoped.facility_id ? { facility_id: scoped.facility_id } : {}),
-    ...(scoped.branch_id ? { branch_id: scoped.branch_id } : {}),
-    ...(shiftId ? { shift_id: shiftId } : {}),
-  });
+    ...(shiftId ? { shift_id: shiftId } : {})});
 
   if (!record) {
     throw new HttpError('errors.office_context.not_found', 404);
@@ -173,22 +159,18 @@ const createOfficeContext = async (data = {}, context = {}) => {
     value: data.shift_id,
     field: 'shift_id',
     model: 'shift',
-    where: { tenant_id: scoped.tenant_id },
-  });
+    where: { tenant_id: scoped.tenant_id }});
   const currentHolderUserId = await resolveIdentifierForPayload({
     value: data.current_holder_user_id ?? context.user_id,
     field: 'current_holder_user_id',
     model: 'user',
     nullable: true,
-    where: { tenant_id: scoped.tenant_id },
-  });
+    where: { tenant_id: scoped.tenant_id }});
   const officeDate = parseDateValue(data.office_date || new Date(), 'office_date', { nullable: false });
   const existing = await officeContextRepository.findCurrent({
     tenant_id: scoped.tenant_id,
     ...(scoped.facility_id ? { facility_id: scoped.facility_id } : {}),
-    ...(scoped.branch_id ? { branch_id: scoped.branch_id } : {}),
-    shift_id: shiftId,
-  });
+    shift_id: shiftId});
 
   if (existing) {
     throw new HttpError('errors.validation.invalid', 409, [{ field: 'shift_id' }]);
@@ -199,7 +181,6 @@ const createOfficeContext = async (data = {}, context = {}) => {
     human_friendly_id: publicId,
     tenant_id: scoped.tenant_id,
     facility_id: scoped.facility_id,
-    branch_id: scoped.branch_id,
     shift_id: shiftId,
     opened_by_user_id: context.user_id,
     current_holder_user_id: currentHolderUserId,
@@ -208,8 +189,7 @@ const createOfficeContext = async (data = {}, context = {}) => {
     handover_due_at: parseDateValue(data.handover_due_at, 'handover_due_at'),
     notes: normalizeString(data.notes) || null,
     metadata_json: data.metadata_json || null,
-    etag: buildRecordEtag(publicId, '1', 'OPEN'),
-  };
+    etag: buildRecordEtag(publicId, '1', 'OPEN')};
 
   const record = await officeContextRepository.create(payload);
   const serialized = serializeOfficeContext(record);
@@ -223,8 +203,7 @@ const createOfficeContext = async (data = {}, context = {}) => {
     entity_id: record.id,
     diff: { after: serialized },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   await emitLastOfficeEvent({
     tenant_id: record.tenant_id,
@@ -232,16 +211,12 @@ const createOfficeContext = async (data = {}, context = {}) => {
     event: LAST_OFFICE_EVENTS.LAST_OFFICE_OFFICE_CONTEXT_OPENED,
     payload: {
       office_context_id: serialized.id,
-      branch_id: serialized.branch_id,
       shift_id: serialized.shift_id,
-      status: serialized.status,
-    },
-  });
+      status: serialized.status}});
 
   recordWorkflowEvent('last_office.office_context_opened', {
     'hms.office_context.id': serialized.id,
-    'hms.facility.id': serialized.facility_id,
-  });
+    'hms.facility.id': serialized.facility_id});
 
   return serialized;
 };
@@ -255,8 +230,7 @@ const updateOfficeContext = async (id, data = {}, context = {}) => {
 
   const nextVersion = Number(current.version || 1) + 1;
   const updateData = {
-    version: nextVersion,
-  };
+    version: nextVersion};
 
   if (data.current_holder_user_id !== undefined) {
     updateData.current_holder_user_id = await resolveIdentifierForPayload({
@@ -264,8 +238,7 @@ const updateOfficeContext = async (id, data = {}, context = {}) => {
       field: 'current_holder_user_id',
       model: 'user',
       nullable: true,
-      where: { tenant_id: current.tenant_id },
-    });
+      where: { tenant_id: current.tenant_id }});
   }
   if (data.office_date !== undefined) updateData.office_date = parseDateValue(data.office_date, 'office_date', { nullable: false });
   if (data.handover_due_at !== undefined) updateData.handover_due_at = parseDateValue(data.handover_due_at, 'handover_due_at');
@@ -298,8 +271,7 @@ const updateOfficeContext = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return after;
 };
@@ -314,22 +286,17 @@ const closeOfficeContext = async (id, data = {}, context = {}) => {
   const [pendingShiftCloses, pendingDayCloses, pendingHandovers] = await Promise.all([
     shiftCloseRepository.count({
       office_context_id: current.id,
-      status: { in: ['DRAFT', 'SUBMITTED'] },
-    }),
+      status: { in: ['DRAFT', 'SUBMITTED'] }}),
     dayCloseRepository.count({
       office_context_id: current.id,
-      status: { in: ['DRAFT', 'SUBMITTED'] },
-    }),
+      status: { in: ['DRAFT', 'SUBMITTED'] }}),
     handoverRepository.count({
       office_context_id: current.id,
-      status: 'PENDING',
-    }),
-  ]);
+      status: 'PENDING'})]);
 
   if (pendingShiftCloses || pendingDayCloses || pendingHandovers) {
     throw new HttpError('errors.validation.invalid', 409, [
-      { field: 'office_context', message: 'Pending Last Office records must be completed before close.' },
-    ]);
+      { field: 'office_context', message: 'Pending Last Office records must be completed before close.' }]);
   }
 
   const nextVersion = Number(current.version || 1) + 1;
@@ -343,8 +310,7 @@ const closeOfficeContext = async (id, data = {}, context = {}) => {
     current_holder_user_id: null,
     notes: nextNotes,
     version: nextVersion,
-    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'CLOSED'),
-  });
+    etag: buildRecordEtag(current.human_friendly_id || current.id, String(nextVersion), 'CLOSED')});
 
   const before = serializeOfficeContext(current);
   const after = serializeOfficeContext(record);
@@ -358,13 +324,11 @@ const closeOfficeContext = async (id, data = {}, context = {}) => {
     entity_id: record.id,
     diff: { before, after },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   recordWorkflowEvent('last_office.office_context_closed', {
     'hms.office_context.id': after.id,
-    'hms.facility.id': after.facility_id,
-  });
+    'hms.facility.id': after.facility_id});
 
   return after;
 };
@@ -375,5 +339,4 @@ module.exports = {
   getCurrentOfficeContext,
   getOfficeContextById,
   listOfficeContexts,
-  updateOfficeContext,
-};
+  updateOfficeContext};

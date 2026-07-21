@@ -4,8 +4,7 @@ const {
   resolveNextTierCode,
   resolvePlatformAdminContact,
   resolvePlatformBankTransferDetails,
-  COMMERCIAL_TIER_LADDER,
-} = require('@lib/subscriptions/tenant-subscription-summary');
+  COMMERCIAL_TIER_LADDER} = require('@lib/subscriptions/tenant-subscription-summary');
 
 describe('tenant-subscription-summary', () => {
   describe('resolveNextTierCode', () => {
@@ -15,8 +14,7 @@ describe('tenant-subscription-summary', () => {
         'BASIC',
         'ADVANCED',
         'PRO',
-        'CUSTOM',
-      ]);
+        'CUSTOM']);
       expect(resolveNextTierCode('FREE')).toBe('BASIC');
       expect(resolveNextTierCode('basic')).toBe('ADVANCED');
       expect(resolveNextTierCode('ADVANCED')).toBe('PRO');
@@ -32,8 +30,7 @@ describe('tenant-subscription-summary', () => {
         resolveHeaderState({
           status: 'ACTIVE',
           daysUntilExpiry: 30,
-          expiringSoonDays: 14,
-        })
+          expiringSoonDays: 14})
       ).toBe('active');
     });
 
@@ -42,8 +39,7 @@ describe('tenant-subscription-summary', () => {
         resolveHeaderState({
           status: 'TRIAL',
           daysUntilExpiry: 10,
-          expiringSoonDays: 14,
-        })
+          expiringSoonDays: 14})
       ).toBe('expiring_soon');
     });
 
@@ -52,8 +48,7 @@ describe('tenant-subscription-summary', () => {
         resolveHeaderState({
           status: 'PAST_DUE',
           daysUntilExpiry: 5,
-          expiringSoonDays: 14,
-        })
+          expiringSoonDays: 14})
       ).toBe('expired');
     });
   });
@@ -69,8 +64,7 @@ describe('tenant-subscription-summary', () => {
       const contact = resolvePlatformAdminContact();
       expect(contact).toEqual({
         email: contact.email,
-        phone: contact.phone,
-      });
+        phone: contact.phone});
     });
   });
 

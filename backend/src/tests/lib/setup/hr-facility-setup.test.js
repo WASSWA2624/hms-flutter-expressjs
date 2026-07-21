@@ -6,19 +6,16 @@ const {
   canWriteSetupModule,
   filterSetupModulesForUser,
   isAdminSetupUser,
-  isHrSetupOnlyUser,
-} = require('@lib/setup/hr-facility-setup');
+  isHrSetupOnlyUser} = require('@lib/setup/hr-facility-setup');
 
 describe('hr-facility-setup policy', () => {
   const hrUser = {
     roles: ['HR'],
-    permissions: ['hr:read', 'hr:write', 'unit:manage'],
-  };
+    permissions: ['hr:read', 'hr:write', 'unit:manage']};
 
   const facilityAdminUser = {
     roles: ['FACILITY_ADMIN'],
-    permissions: ['facility:admin'],
-  };
+    permissions: ['facility:admin']};
 
   it('identifies HR-only setup users', () => {
     expect(isHrSetupOnlyUser(hrUser)).toBe(true);
@@ -30,8 +27,7 @@ describe('hr-facility-setup policy', () => {
       { id: 'tenant' },
       { id: 'department' },
       { id: 'unit' },
-      { id: 'user' },
-    ];
+      { id: 'user' }];
 
     expect(filterSetupModulesForUser(modules, hrUser).map((entry) => entry.id)).toEqual(
       HR_FACILITY_SETUP_MODULE_IDS,

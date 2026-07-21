@@ -8,8 +8,7 @@
 const { HttpError } = require('@lib/errors');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 // Mock dependencies
 jest.mock('@repositories/visit-queue/visit-queue.repository');
@@ -20,13 +19,10 @@ jest.mock('@lib/websocket', () => ({
     VISIT_QUEUE_CREATED: 'visit_queue.created',
     VISIT_QUEUE_UPDATED: 'visit_queue.updated',
     VISIT_QUEUE_DELETED: 'visit_queue.deleted',
-    VISIT_QUEUE_POSITION_CHANGED: 'visit_queue.position_changed',
-  },
-}));
+    VISIT_QUEUE_POSITION_CHANGED: 'visit_queue.position_changed'}}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 const visitQueueRepository = require('@repositories/visit-queue/visit-queue.repository');
 const { createAuditLog } = require('@lib/audit');

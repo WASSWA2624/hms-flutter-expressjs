@@ -209,9 +209,7 @@ describe('User Schemas', () => {
         ...validData,
         permission_ids: [
           '550e8400-e29b-41d4-a716-446655440010',
-          '550e8400-e29b-41d4-a716-446655440011',
-        ],
-      };
+          '550e8400-e29b-41d4-a716-446655440011']};
       const result = createUserSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -219,8 +217,7 @@ describe('User Schemas', () => {
     it('should reject invalid permission_ids', () => {
       const data = {
         ...validData,
-        permission_ids: ['not-a-uuid'],
-      };
+        permission_ids: ['not-a-uuid']};
       const result = createUserSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
@@ -296,16 +293,13 @@ describe('User Schemas', () => {
       const result = updateUserSchema.safeParse({
         permission_ids: [
           '550e8400-e29b-41d4-a716-446655440010',
-          '550e8400-e29b-41d4-a716-446655440011',
-        ],
-      });
+          '550e8400-e29b-41d4-a716-446655440011']});
       expect(result.success).toBe(true);
     });
 
     it('should reject invalid permission_ids on update', () => {
       const result = updateUserSchema.safeParse({
-        permission_ids: ['invalid'],
-      });
+        permission_ids: ['invalid']});
       expect(result.success).toBe(false);
     });
   });

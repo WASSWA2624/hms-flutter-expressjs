@@ -53,5 +53,4 @@ module.exports = {
   downloadJob,
   getJobById,
   listSections,
-  recordPrintEvent,
-};
+  recordPrintEvent};

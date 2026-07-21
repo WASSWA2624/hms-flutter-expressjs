@@ -46,7 +46,7 @@ describe('Conversation Repository', () => {
       expect(result).toEqual(mockConversation);
       expect(prisma.conversation.findFirst).toHaveBeenCalledWith({
         where: { id: mockConversation.id, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -79,7 +79,7 @@ describe('Conversation Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -93,7 +93,7 @@ describe('Conversation Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
   });

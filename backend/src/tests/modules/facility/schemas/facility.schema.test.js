@@ -3,8 +3,7 @@ const {
   updateFacilitySchema,
   facilityIdParamsSchema,
   listFacilitiesQuerySchema,
-  facilityTypeEnum,
-} = require('../../../../modules/facility/schemas/facility.schema');
+  facilityTypeEnum} = require('../../../../modules/facility/schemas/facility.schema');
 
 describe('Facility Schema Validation', () => {
   describe('createFacilitySchema', () => {
@@ -17,17 +16,14 @@ describe('Facility Schema Validation', () => {
         extension_json: {
           logo_url: 'https://example.com/facility-logo.png',
           timezone: 'Africa/Kampala',
-          currency: 'UGX',
-        },
-      });
+          currency: 'UGX'}});
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.extension_json).toEqual({
           logo_url: 'https://example.com/facility-logo.png',
           timezone: 'Africa/Kampala',
-          currency: 'UGX',
-        });
+          currency: 'UGX'});
       }
     });
 
@@ -36,8 +32,7 @@ describe('Facility Schema Validation', () => {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Satellite Clinic',
         facility_type: 'CLINIC',
-        extension_json: null,
-      });
+        extension_json: null});
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -49,8 +44,7 @@ describe('Facility Schema Validation', () => {
       const result = createFacilitySchema.safeParse({
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Unknown Facility',
-        facility_type: 'INVALID',
-      });
+        facility_type: 'INVALID'});
 
       expect(result.success).toBe(false);
     });
@@ -62,23 +56,19 @@ describe('Facility Schema Validation', () => {
         name: 'Updated Facility',
         extension_json: {
           website: 'https://facility.example.com',
-          email: 'frontdesk@example.com',
-        },
-      });
+          email: 'frontdesk@example.com'}});
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.extension_json).toEqual({
           website: 'https://facility.example.com',
-          email: 'frontdesk@example.com',
-        });
+          email: 'frontdesk@example.com'});
       }
     });
 
     it('allows clearing extension_json during updates', () => {
       const result = updateFacilitySchema.safeParse({
-        extension_json: null,
-      });
+        extension_json: null});
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -90,16 +80,14 @@ describe('Facility Schema Validation', () => {
   describe('facilityIdParamsSchema', () => {
     it('accepts valid facility ids', () => {
       const result = facilityIdParamsSchema.safeParse({
-        id: '123e4567-e89b-12d3-a456-426614174000',
-      });
+        id: '123e4567-e89b-12d3-a456-426614174000'});
 
       expect(result.success).toBe(true);
     });
 
     it('accepts friendly facility ids', () => {
       const result = facilityIdParamsSchema.safeParse({
-        id: 'FAC0001',
-      });
+        id: 'FAC0001'});
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -109,8 +97,7 @@ describe('Facility Schema Validation', () => {
 
     it('rejects invalid facility ids', () => {
       const result = facilityIdParamsSchema.safeParse({
-        id: 'not-a-valid-id',
-      });
+        id: 'not-a-valid-id'});
 
       expect(result.success).toBe(false);
     });
@@ -124,8 +111,7 @@ describe('Facility Schema Validation', () => {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         facility_type: 'LAB',
         is_active: 'true',
-        search: 'Main',
-      });
+        search: 'Main'});
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -137,8 +123,7 @@ describe('Facility Schema Validation', () => {
 
     it('rejects invalid active filters', () => {
       const result = listFacilitiesQuerySchema.safeParse({
-        is_active: 'maybe',
-      });
+        is_active: 'maybe'});
 
       expect(result.success).toBe(false);
     });

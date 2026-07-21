@@ -2,36 +2,29 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/lab-result/lab-result.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/websocket', () => ({
   emitToUsers: jest.fn(),
   DIAGNOSTIC_EVENTS: {
     LAB_WORKFLOW_UPDATED: 'diagnostic.lab_workflow_updated',
     LAB_RESULT_READY: 'diagnostic.lab_result_ready',
-    LAB_RESULT_UPDATED: 'diagnostic.lab_result_updated',
-  },
-}));
+    LAB_RESULT_UPDATED: 'diagnostic.lab_result_updated'}}));
 jest.mock('@prisma/client', () => ({
   user_role: {
-    findMany: jest.fn(),
-  },
-}));
+    findMany: jest.fn()}}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
-    resolveModelRecordOrThrow: jest.fn(),
-  };
+    resolveModelRecordOrThrow: jest.fn()};
 });
 
 const labResultRepository = require('@repositories/lab-result/lab-result.repository');
 const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/lab-workspace/lab.shared');
+  resolveModelRecordOrThrow} = require('@services/lab-workspace/lab.shared');
 const labResultService = require('@services/lab-result/lab-result.service');
 
 const mockUserId = 'user-123';
@@ -66,8 +59,7 @@ const buildLabResultRecord = (overrides = {}) => ({
       unit: 'g/dL',
       reference_ranges: [],
       unit_options: [],
-      result_options: [],
-    },
+      result_options: []},
     lab_order: {
       id: 'order-internal-1',
       human_friendly_id: 'LAB0000001',
@@ -78,16 +70,11 @@ const buildLabResultRecord = (overrides = {}) => ({
         first_name: 'Amina',
         last_name: 'Stone',
         gender: 'FEMALE',
-        date_of_birth: new Date('1994-06-01T00:00:00.000Z'),
-      },
+        date_of_birth: new Date('1994-06-01T00:00:00.000Z')},
       encounter: {
         id: 'encounter-internal-1',
-        human_friendly_id: 'ENC0000001',
-      },
-    },
-  },
-  ...overrides,
-});
+        human_friendly_id: 'ENC0000001'}}},
+  ...overrides});
 
 describe('lab-result.service', () => {
   beforeEach(() => {
@@ -103,8 +90,7 @@ describe('lab-result.service', () => {
     const result = await labResultService.listLabResults(
       {
         lab_order_item_id: 'LIT0000001',
-        search: 'amina',
-      },
+        search: 'amina'},
       1,
       20,
       'created_at',
@@ -117,8 +103,7 @@ describe('lab-result.service', () => {
       identifier: 'LIT0000001',
       model: 'lab_order_item',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order_item.not_found',
-    });
+      errorKey: 'errors.lab_order_item.not_found'});
     expect(labResultRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         lab_order_item_id: 'order-item-internal-1',
@@ -126,12 +111,7 @@ describe('lab-result.service', () => {
           {
             lab_order_item: {
               lab_order: {
-                patient: { first_name: { contains: 'amina' } },
-              },
-            },
-          },
-        ]),
-      }),
+                patient: { first_name: { contains: 'amina' } }}}}])}),
       0,
       20,
       { created_at: 'desc' },
@@ -147,9 +127,7 @@ describe('lab-result.service', () => {
       patient_display_name: 'Amina Stone',
       test_display_name: 'CBC',
       result_unit: 'g/dL',
-      result_flag: null,
-    }),
-  ]);
+      result_flag: null})]);
   });
 
   it('gets a lab result by friendly identifier through shared resolution', async () => {
@@ -166,13 +144,11 @@ describe('lab-result.service', () => {
       model: 'lab_result',
       where: { deleted_at: null },
       include: expect.any(Object),
-      errorKey: 'errors.lab_result.not_found',
-    });
+      errorKey: 'errors.lab_result.not_found'});
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LRS0000001',
-        patient_id: 'PAT0000001',
-      })
+        patient_id: 'PAT0000001'})
     );
   });
 
@@ -184,23 +160,18 @@ describe('lab-result.service', () => {
         unit: 'g/dL',
         reference_ranges: [],
         unit_options: [],
-        result_options: [],
-      },
+        result_options: []},
       lab_order: {
         patient: {
           gender: 'FEMALE',
-          date_of_birth: new Date('1994-06-01T00:00:00.000Z'),
-        },
-      },
-    });
+          date_of_birth: new Date('1994-06-01T00:00:00.000Z')}}});
     labResultRepository.create.mockResolvedValue({ id: 'result-internal-1' });
     labResultRepository.findById.mockResolvedValue(buildLabResultRecord());
 
     const result = await labResultService.createLabResult(
       {
         lab_order_item_id: 'LIT0000001',
-        reported_at: now.toISOString(),
-      },
+        reported_at: now.toISOString()},
       mockUserId,
       mockIpAddress
     );
@@ -210,21 +181,18 @@ describe('lab-result.service', () => {
         lab_order_item_id: 'order-item-internal-1',
         status: 'PENDING',
         result_unit: 'g/dL',
-        reported_at: expect.any(Date),
-      })
+        reported_at: expect.any(Date)})
     );
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'CREATE',
         entity: 'lab_result',
-        entity_id: 'result-internal-1',
-      })
+        entity_id: 'result-internal-1'})
     );
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LRS0000001',
-        result_unit: 'g/dL',
-      })
+        result_unit: 'g/dL'})
     );
   });
 
@@ -238,19 +206,13 @@ describe('lab-result.service', () => {
           {
             normal_min_value: 12,
             normal_max_value: 16,
-            gender: 'FEMALE',
-          },
-        ],
+            gender: 'FEMALE'}],
         unit_options: [],
-        result_options: [],
-      },
+        result_options: []},
       lab_order: {
         patient: {
           gender: 'FEMALE',
-          date_of_birth: new Date('1994-06-01T00:00:00.000Z'),
-        },
-      },
-    });
+          date_of_birth: new Date('1994-06-01T00:00:00.000Z')}}});
     labResultRepository.create.mockResolvedValue({ id: 'result-internal-1' });
     labResultRepository.findById.mockResolvedValue(
       buildLabResultRecord({
@@ -260,8 +222,7 @@ describe('lab-result.service', () => {
         reference_range_summary: '10 - 18 (manual)',
         result_flag: 'HIGH',
         status: 'ABNORMAL',
-        result_value: '19.2',
-      })
+        result_value: '19.2'})
     );
 
     await labResultService.createLabResult(
@@ -272,8 +233,7 @@ describe('lab-result.service', () => {
         interpretation_override: true,
         reference_range_override: '10 - 18 (manual)',
         result_flag_override: 'HIGH',
-        status: 'ABNORMAL',
-      },
+        status: 'ABNORMAL'},
       mockUserId,
       mockIpAddress
     );
@@ -283,14 +243,12 @@ describe('lab-result.service', () => {
         interpretation_override: true,
         reference_range_summary: '10 - 18 (manual)',
         result_flag: 'HIGH',
-        status: 'ABNORMAL',
-      })
+        status: 'ABNORMAL'})
     );
     expect(labResultRepository.create).not.toHaveBeenCalledWith(
       expect.objectContaining({
         reference_range_override: expect.anything(),
-        result_flag_override: expect.anything(),
-      })
+        result_flag_override: expect.anything()})
     );
   });
 
@@ -302,24 +260,18 @@ describe('lab-result.service', () => {
         unit: 'g/dL',
         reference_ranges: [],
         unit_options: [],
-        result_options: [],
-      },
+        result_options: []},
       lab_order: {
         patient: {
           gender: 'FEMALE',
-          date_of_birth: new Date('1994-06-01T00:00:00.000Z'),
-        },
-      },
-    };
+          date_of_birth: new Date('1994-06-01T00:00:00.000Z')}}};
     const afterUpdate = buildLabResultRecord({
       status: 'PENDING',
-      result_text: 'Updated notes',
-    });
+      result_text: 'Updated notes'});
     const afterRelease = buildLabResultRecord({
       status: 'CRITICAL',
       result_value: '12.8',
-      result_text: 'Critical potassium level',
-    });
+      result_text: 'Critical potassium level'});
 
     resolveModelRecordOrThrow
       .mockResolvedValueOnce(before)
@@ -338,8 +290,7 @@ describe('lab-result.service', () => {
       'LRS0000001',
       {
         lab_order_item_id: 'LIT0000001',
-        result_text: 'Updated notes',
-      },
+        result_text: 'Updated notes'},
       mockUserId,
       mockIpAddress
     );
@@ -348,8 +299,7 @@ describe('lab-result.service', () => {
       {
         status: 'CRITICAL',
         result_value: '12.8',
-        result_text: 'Critical potassium level',
-      },
+        result_text: 'Critical potassium level'},
       mockUserId,
       mockIpAddress
     );
@@ -363,8 +313,7 @@ describe('lab-result.service', () => {
       result_flag: null,
       is_positive: false,
       reference_range_label: null,
-      reference_range_summary: null,
-    });
+      reference_range_summary: null});
     expect(labResultRepository.update).toHaveBeenNthCalledWith(
       2,
       'result-internal-1',
@@ -377,16 +326,14 @@ describe('lab-result.service', () => {
         is_positive: false,
         reference_range_label: null,
         reference_range_summary: null,
-        reported_at: expect.any(Date),
-      })
+        reported_at: expect.any(Date)})
     );
     expect(updated).toEqual(expect.objectContaining({ result_text: 'Updated notes' }));
     expect(released).toEqual(
       expect.objectContaining({
         id: 'LRS0000001',
         status: 'CRITICAL',
-        result_value: '12.8',
-      })
+        result_value: '12.8'})
     );
   });
 

@@ -8,16 +8,14 @@ const workspacePanelSchema = z.enum([
   'opd',
   'reminders',
   'capacity',
-  'followups',
-]);
+  'followups']);
 
 const workspaceQueueSchema = z.enum([
   'ARRIVING_TODAY',
   'WAITING_QUEUE',
   'ACTIVE_OPD',
   'OVERDUE_REMINDERS',
-  'FOLLOW_UPS_DUE',
-]);
+  'FOLLOW_UPS_DUE']);
 
 const workspaceQuerySchema = listQuerySchema.extend({
   panel: workspacePanelSchema.optional(),
@@ -28,14 +26,12 @@ const workspaceQuerySchema = listQuerySchema.extend({
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   provider_user_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: z.string().trim().min(1).max(80).optional(),
-  search: z.string().trim().max(120).optional(),
-});
+  search: z.string().trim().max(120).optional()});
 
 const referenceDataQuerySchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  search: z.string().trim().max(120).optional(),
-});
+  search: z.string().trim().max(120).optional()});
 
 const resolveLegacyParamsSchema = z.object({
   resource: z.enum([
@@ -45,15 +41,12 @@ const resolveLegacyParamsSchema = z.object({
     'availability-slots',
     'visit-queues',
     'opd-flows',
-    'follow-ups',
-  ]),
-  id: uuidOrFriendlyIdentifierSchema,
-});
+    'follow-ups']),
+  id: uuidOrFriendlyIdentifierSchema});
 
 module.exports = {
   workspacePanelSchema,
   workspaceQueueSchema,
   workspaceQuerySchema,
   referenceDataQuerySchema,
-  resolveLegacyParamsSchema,
-};
+  resolveLegacyParamsSchema};

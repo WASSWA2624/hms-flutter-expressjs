@@ -8,8 +8,7 @@ const {
   createStaffPositionSchema,
   updateStaffPositionSchema,
   staffPositionIdParamsSchema,
-  listStaffPositionsQuerySchema,
-} = require('@validations/staff-position/staff-position.schema');
+  listStaffPositionsQuerySchema} = require('@validations/staff-position/staff-position.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

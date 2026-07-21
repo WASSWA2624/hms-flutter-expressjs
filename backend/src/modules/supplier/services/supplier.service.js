@@ -12,8 +12,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveScopedUserContext,
-  buildTenantScopeWhere,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  buildTenantScopeWhere} = require('@services/pharmacy-workspace/pharmacy.shared');
 
 const findScopedSupplierOrThrow = async (id, user = {}) => {
   const scope = resolveScopedUserContext(user);
@@ -62,8 +61,7 @@ const listSuppliers = async (filters, pagination, sort, user = {}) => {
   
   // Build filter object
   const whereFilters = {
-    ...buildTenantScopeWhere(scope),
-  };
+    ...buildTenantScopeWhere(scope)};
 
   if (scope.can_manage_all_tenants && filters.tenant_id) {
     whereFilters.tenant_id = filters.tenant_id;
@@ -104,8 +102,7 @@ const createSupplier = async (supplierData, auditContext) => {
   const scope = resolveScopedUserContext(auditContext?.user || {});
   const payload = {
     ...supplierData,
-    ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {}),
-  };
+    ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {})};
   const supplier = await supplierRepository.create(payload);
   
   // Create audit log
@@ -138,8 +135,7 @@ const updateSupplier = async (id, updateData, auditContext) => {
   );
   const payload = {
     ...updateData,
-    ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {}),
-  };
+    ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {})};
   const updatedSupplier = await supplierRepository.update(id, payload);
   
   // Create audit log

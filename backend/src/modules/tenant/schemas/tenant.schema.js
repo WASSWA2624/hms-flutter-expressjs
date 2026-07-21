@@ -25,8 +25,7 @@ const createTenantSchema = z.object({
   name: z.string().trim().min(1).max(255),
   slug: z.string().trim().min(1).max(191).optional(),
   is_active: z.boolean().optional(),
-  extension_json: extensionJsonSchema,
-});
+  extension_json: extensionJsonSchema});
 
 /**
  * Update tenant body validation
@@ -37,8 +36,7 @@ const updateTenantSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   slug: z.string().trim().min(1).max(191).optional().nullable(),
   is_active: z.boolean().optional(),
-  extension_json: extensionJsonSchema,
-});
+  extension_json: extensionJsonSchema});
 
 // ==================== URL Params ====================
 
@@ -60,8 +58,7 @@ const tenantIdParamsSchema = z.object({
 const listTenantsQuerySchema = listQuerySchema.extend({
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),
-  include_deleted: z.enum(['true', 'false']).optional(),
-});
+  include_deleted: z.enum(['true', 'false']).optional()});
 
 module.exports = {
   createTenantSchema,

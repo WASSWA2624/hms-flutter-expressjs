@@ -26,11 +26,7 @@ const buildInternalObservation = () => ({
         id: '550e8400-e29b-41d4-a716-446655440240',
         human_friendly_id: 'PAT-001',
         first_name: 'Jane',
-        last_name: 'Doe',
-      },
-    },
-  },
-});
+        last_name: 'Doe'}}}});
 
 describe('ICU Observation Service', () => {
   beforeEach(() => {
@@ -55,8 +51,7 @@ describe('ICU Observation Service', () => {
       icu_stay_id: 'ICU-001',
       admission_display_id: 'ADM-001',
       patient_display_id: 'PAT-001',
-      patient_display_name: 'Jane Doe',
-    });
+      patient_display_name: 'Jane Doe'});
     expect(result.icu_observations[0].icu_stay.admission.patient.id).toBe(
       'PAT-001'
     );
@@ -65,8 +60,7 @@ describe('ICU Observation Service', () => {
   it('resolves ICU stay filters before querying the repository', async () => {
     resolveModelIdByIdentifier.mockResolvedValueOnce({
       id: '550e8400-e29b-41d4-a716-446655440220',
-      admission: { tenant_id: 'tenant-001' },
-    });
+      admission: { tenant_id: 'tenant-001' }});
     icuObservationRepository.findMany.mockResolvedValue([]);
     icuObservationRepository.count.mockResolvedValue(0);
 
@@ -80,8 +74,7 @@ describe('ICU Observation Service', () => {
 
     expect(icuObservationRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        icu_stay_id: '550e8400-e29b-41d4-a716-446655440220',
-      }),
+        icu_stay_id: '550e8400-e29b-41d4-a716-446655440220'}),
       0,
       20,
       { created_at: 'desc' },
@@ -92,44 +85,37 @@ describe('ICU Observation Service', () => {
   it('creates observations with internal ids and tenant-aware audit logs', async () => {
     resolveModelIdByIdentifier.mockResolvedValueOnce({
       id: '550e8400-e29b-41d4-a716-446655440220',
-      admission: { tenant_id: 'tenant-001' },
-    });
+      admission: { tenant_id: 'tenant-001' }});
     icuObservationRepository.create.mockResolvedValue({
-      id: '550e8400-e29b-41d4-a716-446655440210',
-    });
+      id: '550e8400-e29b-41d4-a716-446655440210'});
     icuObservationRepository.findById.mockResolvedValue(buildInternalObservation());
 
     const result = await icuObservationService.createIcuObservation(
       {
         icu_stay_id: 'ICU-001',
-        observation: 'Stable oxygen saturation',
-      },
+        observation: 'Stable oxygen saturation'},
       'user-001',
       '127.0.0.1'
     );
 
     expect(icuObservationRepository.create).toHaveBeenCalledWith({
       icu_stay_id: '550e8400-e29b-41d4-a716-446655440220',
-      observation: 'Stable oxygen saturation',
-    });
+      observation: 'Stable oxygen saturation'});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-001',
         action: 'CREATE',
-        entity: 'icu_observation',
-      })
+        entity: 'icu_observation'})
     );
     expect(result.id).toBe('ICUOBS-001');
   });
 
   it('updates and deletes by resolved public identifier', async () => {
     resolveModelIdByIdentifier.mockResolvedValue({
-      id: '550e8400-e29b-41d4-a716-446655440210',
-    });
+      id: '550e8400-e29b-41d4-a716-446655440210'});
     icuObservationRepository.findById.mockResolvedValue(buildInternalObservation());
     icuObservationRepository.update.mockResolvedValue({
-      id: '550e8400-e29b-41d4-a716-446655440210',
-    });
+      id: '550e8400-e29b-41d4-a716-446655440210'});
     icuObservationRepository.softDelete.mockResolvedValue({});
 
     await icuObservationService.updateIcuObservation(
@@ -154,8 +140,7 @@ describe('ICU Observation Service', () => {
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-001',
-        action: 'DELETE',
-      })
+        action: 'DELETE'})
     );
   });
 

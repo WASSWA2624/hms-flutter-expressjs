@@ -11,15 +11,13 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 jest.mock('@repositories/anesthesia-record/anesthesia-record.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 describe('Anesthesia record Service', () => {
   const userId = 'user-123';
@@ -48,23 +46,16 @@ describe('Anesthesia record Service', () => {
           id: patientId,
           human_friendly_id: 'PAT0001',
           first_name: 'John',
-          last_name: 'Doe',
-        },
-      },
-    },
+          last_name: 'Doe'}}},
     anesthetist: {
       id: anesthetistUserId,
       human_friendly_id: 'USR0001',
       profile: {
         first_name: 'Jane',
         middle_name: 'Q',
-        last_name: 'Public',
-      },
+        last_name: 'Public'},
       staff_profile: {
-        human_friendly_id: 'STF0001',
-      },
-    },
-  };
+        human_friendly_id: 'STF0001'}}};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -101,17 +92,14 @@ describe('Anesthesia record Service', () => {
           anesthetist_user_display_id: 'USR0001',
           staff_profile_display_id: 'STF0001',
           anesthetist_display_name: 'Jane Q Public',
-          record_status: 'DRAFT',
-        }),
-      ]);
+          record_status: 'DRAFT'})]);
       expect(result.pagination).toEqual({
         page: 1,
         limit: 20,
         total: 1,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
     });
 
     it('should apply theatre_case_id filter', async () => {
@@ -130,8 +118,7 @@ describe('Anesthesia record Service', () => {
 
       expect(anesthesiaRecordRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          theatre_case_id: theatreCaseId,
-        }),
+          theatre_case_id: theatreCaseId}),
         0,
         20,
         { created_at: 'desc' }
@@ -154,8 +141,7 @@ describe('Anesthesia record Service', () => {
 
       expect(anesthesiaRecordRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          anesthetist_user_id: anesthetistUserId,
-        }),
+          anesthetist_user_id: anesthetistUserId}),
         0,
         20,
         { created_at: 'desc' }
@@ -196,8 +182,7 @@ describe('Anesthesia record Service', () => {
         total: 45,
         totalPages: 3,
         hasNextPage: true,
-        hasPreviousPage: true,
-      });
+        hasPreviousPage: true});
     });
 
     it('should throw HttpError on repository error', async () => {
@@ -224,8 +209,7 @@ describe('Anesthesia record Service', () => {
         expect.objectContaining({
           id: recordId,
           display_id: 'ANR0001',
-          patient_display_name: 'John Doe',
-        })
+          patient_display_name: 'John Doe'})
       );
       expect(anesthesiaRecordRepository.findById).toHaveBeenCalledWith(recordId);
     });
@@ -252,8 +236,7 @@ describe('Anesthesia record Service', () => {
     const createData = {
       theatre_case_id: theatreCaseId,
       anesthetist_user_id: anesthetistUserId,
-      notes: 'Test notes',
-    };
+      notes: 'Test notes'};
 
     it('should create anesthesia record', async () => {
       anesthesiaRecordRepository.create.mockResolvedValue(mockAnesthesiaRecord);
@@ -269,13 +252,11 @@ describe('Anesthesia record Service', () => {
         expect.objectContaining({
           id: recordId,
           display_id: 'ANR0001',
-          record_status: 'DRAFT',
-        })
+          record_status: 'DRAFT'})
       );
       expect(anesthesiaRecordRepository.create).toHaveBeenCalledWith({
         ...createData,
-        record_status: 'DRAFT',
-      });
+        record_status: 'DRAFT'});
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: 'tenant-1',
         user_id: userId,
@@ -283,8 +264,7 @@ describe('Anesthesia record Service', () => {
         entity: 'anesthesia_record',
         entity_id: recordId,
         diff: { after: mockAnesthesiaRecord },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should throw HttpError on repository error', async () => {
@@ -309,8 +289,7 @@ describe('Anesthesia record Service', () => {
     it('should update anesthesia record', async () => {
       const updatedRecord = {
         ...mockAnesthesiaRecord,
-        record_status: 'FINALIZED',
-      };
+        record_status: 'FINALIZED'};
 
       resolveModelRecordByIdentifier.mockResolvedValueOnce({ id: recordId });
       anesthesiaRecordRepository.findById
@@ -328,12 +307,10 @@ describe('Anesthesia record Service', () => {
       expect(result).toEqual(
         expect.objectContaining({
           id: recordId,
-          record_status: 'FINALIZED',
-        })
+          record_status: 'FINALIZED'})
       );
       expect(anesthesiaRecordRepository.update).toHaveBeenCalledWith(recordId, {
-        record_status: 'FINALIZED',
-      });
+        record_status: 'FINALIZED'});
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: 'tenant-1',
         user_id: userId,
@@ -342,10 +319,8 @@ describe('Anesthesia record Service', () => {
         entity_id: recordId,
         diff: {
           before: mockAnesthesiaRecord,
-          after: updatedRecord,
-        },
-        ip_address: ipAddress,
-      });
+          after: updatedRecord},
+        ip_address: ipAddress});
     });
 
     it('should throw HttpError when anesthesia record not found', async () => {
@@ -394,8 +369,7 @@ describe('Anesthesia record Service', () => {
         entity: 'anesthesia_record',
         entity_id: recordId,
         diff: { before: mockAnesthesiaRecord },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should throw HttpError when anesthesia record not found', async () => {

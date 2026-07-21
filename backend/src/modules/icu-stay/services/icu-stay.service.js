@@ -38,12 +38,7 @@ const ICU_STAY_INCLUDE = {
           id: true,
           human_friendly_id: true,
           first_name: true,
-          last_name: true,
-        },
-      },
-    },
-  },
-};
+          last_name: true}}}}};
 
 const mapAdmissionRelation = (admission) => {
   if (!admission) return null;
@@ -53,8 +48,7 @@ const mapAdmissionRelation = (admission) => {
         display_id: resolvePublicIdentifier(admission.patient),
         human_friendly_id: resolvePublicIdentifier(admission.patient),
         first_name: admission.patient.first_name || null,
-        last_name: admission.patient.last_name || null,
-      }
+        last_name: admission.patient.last_name || null}
     : null;
 
   return {
@@ -63,8 +57,7 @@ const mapAdmissionRelation = (admission) => {
     human_friendly_id: resolvePublicIdentifier(admission),
     patient_display_id: resolvePublicIdentifier(admission.patient),
     patient_display_name: resolvePatientDisplayName(admission.patient),
-    patient,
-  };
+    patient};
 };
 
 const mapIcuStayRecord = (record) => {
@@ -81,8 +74,7 @@ const mapIcuStayRecord = (record) => {
     ended_at: record.ended_at || null,
     created_at: record.created_at || null,
     updated_at: record.updated_at || null,
-    admission: mapAdmissionRelation(record.admission),
-  };
+    admission: mapAdmissionRelation(record.admission)};
 };
 
 const buildEmptyPagination = (page, limit) => ({
@@ -91,22 +83,19 @@ const buildEmptyPagination = (page, limit) => ({
   total: 0,
   totalPages: 0,
   hasNextPage: false,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const resolveAdmission = async (identifier) =>
   resolveModelIdByIdentifier({
     model: 'admission',
     identifier,
-    select: { id: true, tenant_id: true },
-  });
+    select: { id: true, tenant_id: true }});
 
 const resolveIcuStay = async (identifier) =>
   resolveModelIdByIdentifier({
     model: 'icu_stay',
     identifier,
-    select: { id: true },
-  });
+    select: { id: true }});
 
 const resolveAuditTenantId = (record, fallback = null) =>
   record?.admission?.tenant_id || fallback || null;
@@ -122,8 +111,7 @@ const listIcuStays = async (filters, page, limit, sortBy, order) => {
       if (!resolvedAdmission?.id) {
         return {
           icu_stays: [],
-          pagination: buildEmptyPagination(page, limit),
-        };
+          pagination: buildEmptyPagination(page, limit)};
       }
       whereClause.admission_id = resolvedAdmission.id;
     }
@@ -160,8 +148,7 @@ const listIcuStays = async (filters, page, limit, sortBy, order) => {
         orderBy,
         ICU_STAY_INCLUDE
       ),
-      icuStayRepository.count(whereClause),
-    ]);
+      icuStayRepository.count(whereClause)]);
 
     return {
       icu_stays: icuStays.map(mapIcuStayRecord),
@@ -171,14 +158,11 @@ const listIcuStays = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -201,8 +185,7 @@ const getIcuStayById = async (id) => {
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -211,14 +194,12 @@ const createIcuStay = async (data, userId, ipAddress) => {
     const resolvedAdmission = await resolveAdmission(data?.admission_id);
     if (!resolvedAdmission?.id) {
       throw new HttpError('errors.admission.not_found', 404, [
-        { field: 'admission_id' },
-      ]);
+        { field: 'admission_id' }]);
     }
 
     const createdIcuStay = await icuStayRepository.create({
       ...data,
-      admission_id: resolvedAdmission.id,
-    });
+      admission_id: resolvedAdmission.id});
     const icuStay =
       (await icuStayRepository.findById(createdIcuStay.id, ICU_STAY_INCLUDE)) ||
       createdIcuStay;
@@ -230,15 +211,13 @@ const createIcuStay = async (data, userId, ipAddress) => {
       entity: 'icu_stay',
       entity_id: icuStay.id,
       diff: { after: icuStay },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapIcuStayRecord(icuStay);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -269,15 +248,13 @@ const updateIcuStay = async (id, data, userId, ipAddress) => {
       entity: 'icu_stay',
       entity_id: icuStay.id,
       diff: { before, after: icuStay },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapIcuStayRecord(icuStay);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -305,13 +282,11 @@ const deleteIcuStay = async (id, userId, ipAddress) => {
       entity: 'icu_stay',
       entity_id: resolvedIcuStay.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -320,5 +295,4 @@ module.exports = {
   getIcuStayById,
   createIcuStay,
   updateIcuStay,
-  deleteIcuStay,
-};
+  deleteIcuStay};

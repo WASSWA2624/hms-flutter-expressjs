@@ -10,24 +10,19 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   createSubscriptionPublicId,
-  PUBLIC_ID_PREFIXES,
-} = require('@lib/subscriptions/constants');
+  PUBLIC_ID_PREFIXES} = require('@lib/subscriptions/constants');
 const {
   serializeModuleSubscription,
-  serializeModuleSubscriptionEligibility,
-} = require('@lib/subscriptions/serializers');
+  serializeModuleSubscriptionEligibility} = require('@lib/subscriptions/serializers');
 const {
-  evaluateModuleEntitlement,
-} = require('@lib/subscriptions/policies');
+  evaluateModuleEntitlement} = require('@lib/subscriptions/policies');
 const {
   resolveEntityId,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 const {
   canAccessTenant,
-  resolveUserTenantScope,
-} = require('@lib/subscriptions/access');
+  resolveUserTenantScope} = require('@lib/subscriptions/access');
 const requireTenantScope = (user = {}) => {
   const scope = resolveUserTenantScope(user);
   if (!scope.is_elevated && !scope.tenant_id) {
@@ -44,16 +39,13 @@ const emptyList = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const loadModuleSubscriptionRecord = async (identifier, user = {}) => {
   const scope = requireTenantScope(user);
   const resolvedId = await resolveEntityId({
     model: 'module_subscription',
-    identifier,
-  });
+    identifier});
   const record = await moduleSubscriptionRepository.findById(resolvedId);
 
   if (
@@ -77,15 +69,13 @@ const resolveModuleSubscriptionPayload = async (
     : scope.tenant_id;
 
   const payload = {
-    ...data,
-  };
+    ...data};
 
   if (data.module_id !== undefined) {
     payload.module_id = await resolveIdentifierForPayload({
       value: data.module_id,
       model: 'module',
-      field: 'module_id',
-    });
+      field: 'module_id'});
   }
 
   if (data.subscription_id !== undefined) {
@@ -93,8 +83,7 @@ const resolveModuleSubscriptionPayload = async (
       value: data.subscription_id,
       model: 'subscription',
       field: 'subscription_id',
-      where: scopedTenantId ? { tenant_id: scopedTenantId } : {},
-    });
+      where: scopedTenantId ? { tenant_id: scopedTenantId } : {}});
   }
 
   return payload;
@@ -118,16 +107,14 @@ const listModuleSubscriptions = async (
   if (filters.module_id) {
     repoFilters.module_id = await resolveIdentifierForFilter({
       value: filters.module_id,
-      model: 'module',
-    });
+      model: 'module'});
   }
 
   if (filters.subscription_id) {
     const subscriptionId = await resolveIdentifierForFilter({
       value: filters.subscription_id,
       model: 'subscription',
-      where: !scope.is_elevated ? { tenant_id: scope.tenant_id } : {},
-    });
+      where: !scope.is_elevated ? { tenant_id: scope.tenant_id } : {}});
     if (subscriptionId === null) {
       return emptyList(page, limit);
     }
@@ -142,13 +129,11 @@ const listModuleSubscriptions = async (
 
   const skip = (page - 1) * limit;
   const orderBy = {
-    [sort_by]: order,
-  };
+    [sort_by]: order};
 
   const [moduleSubscriptions, total] = await Promise.all([
     moduleSubscriptionRepository.findMany(repoFilters, skip, limit, orderBy),
-    moduleSubscriptionRepository.count(repoFilters),
-  ]);
+    moduleSubscriptionRepository.count(repoFilters)]);
 
   const totalPages = Math.ceil(total / limit);
   const hasNextPage = page < totalPages;
@@ -162,9 +147,7 @@ const listModuleSubscriptions = async (
       total,
       totalPages,
       hasNextPage,
-      hasPreviousPage,
-    },
-  };
+      hasPreviousPage}};
 };
 
 const getModuleSubscriptionById = async (id, user = {}) => {
@@ -178,8 +161,7 @@ const createModuleSubscription = async (data, context) => {
     ...(await resolveModuleSubscriptionPayload(data, context.user, scope.tenant_id)),
     human_friendly_id:
       data.human_friendly_id
-      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.module_subscription),
-  });
+      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.module_subscription)});
   const moduleSubscription = await loadModuleSubscriptionRecord(created.id, context.user);
 
   createAuditLog({
@@ -189,8 +171,7 @@ const createModuleSubscription = async (data, context) => {
     entity_id: moduleSubscription.id,
     diff: { after: moduleSubscription },
     ip_address: context.ip,
-    tenant_id: moduleSubscription.subscription?.tenant_id || context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: moduleSubscription.subscription?.tenant_id || context.tenant_id || null}).catch(() => {});
 
   return serializeModuleSubscription(moduleSubscription);
 };
@@ -220,14 +201,12 @@ const updateModuleSubscription = async (id, data, context) => {
     entity_id: updatedModuleSubscription.id,
     diff: {
       before: existingModuleSubscription,
-      after: updatedModuleSubscription,
-    },
+      after: updatedModuleSubscription},
     ip_address: context.ip,
     tenant_id:
       existingModuleSubscription.subscription?.tenant_id
       || context.tenant_id
-      || null,
-  }).catch(() => {});
+      || null}).catch(() => {});
 
   return serializeModuleSubscription(updatedModuleSubscription);
 };
@@ -248,14 +227,12 @@ const deleteModuleSubscription = async (id, context) => {
     entity_id: deletedModuleSubscription.id,
     diff: {
       before: existingModuleSubscription,
-      after: deletedModuleSubscription,
-    },
+      after: deletedModuleSubscription},
     ip_address: context.ip,
     tenant_id:
       existingModuleSubscription.subscription?.tenant_id
       || context.tenant_id
-      || null,
-  }).catch(() => {});
+      || null}).catch(() => {});
 
   return deletedModuleSubscription;
 };
@@ -269,8 +246,7 @@ const activateModuleSubscription = async (id, data = {}, context = {}) => {
     entitlement_denial_reason: null,
     activation_requested_at: new Date(),
     activated_at: new Date(),
-    deactivated_at: null,
-  });
+    deactivated_at: null});
   const updated = await loadModuleSubscriptionRecord(before.id, context.user);
 
   createAuditLog({
@@ -283,12 +259,9 @@ const activateModuleSubscription = async (id, data = {}, context = {}) => {
       after: updated,
       metadata: {
         event: 'activate',
-        reason: data.reason || null,
-      },
-    },
+        reason: data.reason || null}},
     ip_address: context.ip,
-    tenant_id: before.subscription?.tenant_id || context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: before.subscription?.tenant_id || context.tenant_id || null}).catch(() => {});
 
   return serializeModuleSubscription(updated);
 };
@@ -298,8 +271,7 @@ const deactivateModuleSubscription = async (id, data = {}, context = {}) => {
 
   await moduleSubscriptionRepository.update(before.id, {
     is_active: false,
-    deactivated_at: new Date(),
-  });
+    deactivated_at: new Date()});
   const updated = await loadModuleSubscriptionRecord(before.id, context.user);
 
   createAuditLog({
@@ -312,12 +284,9 @@ const deactivateModuleSubscription = async (id, data = {}, context = {}) => {
       after: updated,
       metadata: {
         event: 'deactivate',
-        reason: data.reason || null,
-      },
-    },
+        reason: data.reason || null}},
     ip_address: context.ip,
-    tenant_id: before.subscription?.tenant_id || context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: before.subscription?.tenant_id || context.tenant_id || null}).catch(() => {});
 
   return serializeModuleSubscription(updated);
 };
@@ -327,8 +296,7 @@ const checkModuleSubscriptionEligibility = async (id, context = {}) => {
   const eligibility = evaluateModuleEntitlement({
     subscriptionRecord: moduleSubscription.subscription || {},
     moduleRecord: moduleSubscription.module || {},
-    planRecord: moduleSubscription.subscription?.plan || {},
-  });
+    planRecord: moduleSubscription.subscription?.plan || {}});
   const eligible = eligibility.eligible;
   const reason = eligibility.reason;
 
@@ -336,8 +304,7 @@ const checkModuleSubscriptionEligibility = async (id, context = {}) => {
     entitlement_denied: !eligible,
     entitlement_denial_reason: reason,
     eligibility_checked_at: new Date(),
-    evaluated_plan_fit_status: moduleSubscription.subscription?.plan_fit_status || null,
-  });
+    evaluated_plan_fit_status: moduleSubscription.subscription?.plan_fit_status || null});
   const updated = await loadModuleSubscriptionRecord(
     moduleSubscription.id,
     context.user
@@ -358,12 +325,9 @@ const checkModuleSubscriptionEligibility = async (id, context = {}) => {
         subscription_plan_tier:
           moduleSubscription.subscription?.plan?.tier_code || null,
         eligible,
-        reason,
-      },
-    },
+        reason}},
     ip_address: context.ip,
-    tenant_id: moduleSubscription.subscription?.tenant_id || context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: moduleSubscription.subscription?.tenant_id || context.tenant_id || null}).catch(() => {});
 
   return serializeModuleSubscriptionEligibility({
     module_subscription_id: serializeModuleSubscription(updated).id,
@@ -374,8 +338,7 @@ const checkModuleSubscriptionEligibility = async (id, context = {}) => {
     subscription_plan_tier:
       moduleSubscription.subscription?.plan?.tier_code || null,
     checked_at: updated.eligibility_checked_at,
-    module_subscription: serializeModuleSubscription(updated),
-  });
+    module_subscription: serializeModuleSubscription(updated)});
 };
 
 module.exports = {
@@ -386,5 +349,4 @@ module.exports = {
   deleteModuleSubscription,
   activateModuleSubscription,
   deactivateModuleSubscription,
-  checkModuleSubscriptionEligibility,
-};
+  checkModuleSubscriptionEligibility};

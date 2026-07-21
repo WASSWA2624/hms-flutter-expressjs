@@ -14,13 +14,11 @@ const {
   resolvePayloadIdentifier,
   resolveScopeIdsForList,
   resolveScopedContext,
-  safeUpper,
-} = require('@lib/reports/api');
+  safeUpper} = require('@lib/reports/api');
 const {
   REPORT_DEFAULT_RETENTION_DAYS,
   REPORT_FORMATS,
-  REPORT_RUN_STATUSES,
-} = require('@lib/reports/constants');
+  REPORT_RUN_STATUSES} = require('@lib/reports/constants');
 const { serializeReportRun } = require('@lib/reports/serializers');
 
 const SORT_FIELDS = ['queued_at', 'created_at', 'updated_at', 'completed_at', 'status', 'format'];
@@ -30,8 +28,7 @@ const buildListWhere = async (filters = {}, user = {}) => {
   const where = {
     tenant_id: scoped.tenant_id,
     ...buildSinceFilter(filters.since),
-    ...buildDateWindowFilter({ from: filters.from, to: filters.to, field: 'queued_at' }),
-  };
+    ...buildDateWindowFilter({ from: filters.from, to: filters.to, field: 'queued_at' })};
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
   if (normalizeString(filters.facility_id) && !scoped.facility_id) where.facility_id = '__none__';
@@ -67,13 +64,11 @@ const listReportRuns = async (filters = {}, page = 1, limit = 20, sortBy, order,
 
   const [records, total] = await Promise.all([
     reportRunRepository.findMany({ where, skip, take: limit, orderBy }),
-    reportRunRepository.count(where),
-  ]);
+    reportRunRepository.count(where)]);
 
   return {
     reportRuns: records.map(serializeReportRun),
-    pagination: buildPagination(page, limit, total),
-  };
+    pagination: buildPagination(page, limit, total)};
 };
 
 const getReportRunById = async (id, user = {}) => serializeReportRun(await assertScopedRun(id, user));
@@ -84,8 +79,7 @@ const createReportRun = async (data, context = {}) => {
     value: data.report_definition_id,
     model: 'report_definition',
     field: 'report_definition_id',
-    tenant_id: scoped.tenant_id,
-  });
+    tenant_id: scoped.tenant_id});
 
   const run = await enqueueReportRun({
     report_definition_id: reportDefinitionId,
@@ -94,14 +88,12 @@ const createReportRun = async (data, context = {}) => {
       model: 'facility',
       field: 'facility_id',
       tenant_id: scoped.tenant_id,
-      nullable: true,
-    }),
+      nullable: true}),
     requested_by_user_id: context.user_id || null,
     trigger_type: 'MANUAL',
     format: safeUpper(data.format) || REPORT_FORMATS[0],
     parameters_json: data.parameters_json || {},
-    retention_days: data.retention_days || REPORT_DEFAULT_RETENTION_DAYS,
-  });
+    retention_days: data.retention_days || REPORT_DEFAULT_RETENTION_DAYS});
 
   return serializeReportRun(run);
 };
@@ -111,12 +103,10 @@ const updateReportRun = async (id, data, context = {}) => {
   ensureVersionMatch({
     current,
     expectedVersion: data.version,
-    serializer: serializeReportRun,
-  });
+    serializer: serializeReportRun});
 
   const updateData = {
-    version: Number(current.version || 1) + 1,
-  };
+    version: Number(current.version || 1) + 1};
   if (data.status !== undefined) updateData.status = safeUpper(data.status);
   if (data.error_message !== undefined) updateData.error_message = normalizeString(data.error_message) || null;
   if (data.completed_at !== undefined) updateData.completed_at = data.completed_at ? new Date(data.completed_at) : null;
@@ -137,11 +127,9 @@ const updateReportRun = async (id, data, context = {}) => {
       'completed_at',
       'expires_at',
       'output_file_name',
-      'version',
-    ]),
+      'version']),
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportRun(record);
 };
@@ -158,8 +146,7 @@ const deleteReportRun = async (id, context = {}) => {
     entity_id: current.id,
     diff: { before: serializeReportRun(current) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 };
 
 const retryReportRun = async (id, payload = {}, context = {}) => {
@@ -178,8 +165,7 @@ const retryReportRun = async (id, payload = {}, context = {}) => {
     retention_days:
       payload.retention_days ||
       current.schedule?.retention_days ||
-      REPORT_DEFAULT_RETENTION_DAYS,
-  });
+      REPORT_DEFAULT_RETENTION_DAYS});
 
   await createAuditLog({
     tenant_id: current.tenant_id,
@@ -190,11 +176,9 @@ const retryReportRun = async (id, payload = {}, context = {}) => {
     entity_id: run.id,
     diff: {
       before: { source_report_run_id: current.id },
-      after: serializeReportRun(run),
-    },
+      after: serializeReportRun(run)},
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportRun(run);
 };
@@ -216,8 +200,7 @@ const cancelReportRunById = async (id, context = {}) => {
     entity_id: current.id,
     diff: createAuditDiff(current, next, ['status', 'completed_at']),
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportRun(next);
 };
@@ -240,14 +223,12 @@ const downloadReportRun = async (id, context = {}) => {
     entity_id: run.id,
     diff: { after: { output_file_name: run.output_file_name, status: run.status } },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return {
     buffer,
     file_name: run.output_file_name || `${serializeReportRun(run).human_friendly_id || 'report-run'}.bin`,
-    mime_type: run.output_mime_type || 'application/octet-stream',
-  };
+    mime_type: run.output_mime_type || 'application/octet-stream'};
 };
 
 module.exports = {
@@ -258,5 +239,4 @@ module.exports = {
   getReportRunById,
   listReportRuns,
   retryReportRun,
-  updateReportRun,
-};
+  updateReportRun};

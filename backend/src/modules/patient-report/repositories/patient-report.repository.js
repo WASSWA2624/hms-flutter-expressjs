@@ -6,15 +6,13 @@ const DEFAULT_INCLUDE = {
   facility: { select: { id: true, human_friendly_id: true } },
   patient: { select: { id: true, human_friendly_id: true } },
   encounter: { select: { id: true, human_friendly_id: true } },
-  requested_by: { select: { id: true, human_friendly_id: true } },
-};
+  requested_by: { select: { id: true, human_friendly_id: true } }};
 
 const findById = async (id, include = DEFAULT_INCLUDE) => {
   try {
     return await prisma.patient_report_job.findFirst({
       where: { id, deleted_at: null },
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -33,8 +31,7 @@ const findMany = async (
       skip,
       take,
       orderBy,
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -43,8 +40,7 @@ const findMany = async (
 const count = async (where = {}) => {
   try {
     return await prisma.patient_report_job.count({
-      where: { deleted_at: null, ...where },
-    });
+      where: { deleted_at: null, ...where }});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -65,8 +61,7 @@ const update = async (id, data) => {
     return await prisma.patient_report_job.update({
       where: { id },
       data,
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') throw new HttpError('errors.patient_report.not_found', 404);
     if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409);
@@ -80,5 +75,4 @@ module.exports = {
   create,
   findById,
   findMany,
-  update,
-};
+  update};

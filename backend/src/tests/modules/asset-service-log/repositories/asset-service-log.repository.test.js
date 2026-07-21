@@ -40,7 +40,7 @@ describe('Asset Service Log Repository', () => {
       expect(result).toEqual(mockLog);
       expect(prisma.asset_service_log.findFirst).toHaveBeenCalledWith({
         where: { id: mockLog.id, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -77,7 +77,7 @@ describe('Asset Service Log Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

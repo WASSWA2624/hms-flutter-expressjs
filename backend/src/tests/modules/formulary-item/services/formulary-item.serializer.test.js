@@ -1,7 +1,6 @@
 const {
   mapFormularyItemRecord,
-  mapFormularyDrugRecord,
-} = require('@services/formulary-item/formulary-item.serializer');
+  mapFormularyDrugRecord} = require('@services/formulary-item/formulary-item.serializer');
 
 describe('Formulary Item Serializer', () => {
   describe('mapFormularyDrugRecord', () => {
@@ -12,16 +11,14 @@ describe('Formulary Item Serializer', () => {
         name: 'Acyclovir',
         strength: '400 mg',
         form: 'Tablet',
-        code: 'ACV400',
-      });
+        code: 'ACV400'});
 
       expect(result).toMatchObject({
         id: 'DRG-ACV400',
         display_id: 'DRG-ACV400',
         name: 'Acyclovir',
         code: 'ACV400',
-        drug_display_name: 'Acyclovir | 400 mg | Tablet',
-      });
+        drug_display_name: 'Acyclovir | 400 mg | Tablet'});
     });
   });
 
@@ -40,9 +37,7 @@ describe('Formulary Item Serializer', () => {
           name: 'Acyclovir',
           strength: '400 mg',
           form: 'Tablet',
-          code: 'ACV400',
-        },
-      });
+          code: 'ACV400'}});
 
       expect(result).toMatchObject({
         id: 'FRM-78F1DB9675',
@@ -53,9 +48,7 @@ describe('Formulary Item Serializer', () => {
         is_active: true,
         drug: {
           name: 'Acyclovir',
-          drug_display_name: 'Acyclovir | 400 mg | Tablet',
-        },
-      });
+          drug_display_name: 'Acyclovir | 400 mg | Tablet'}});
     });
   });
 });

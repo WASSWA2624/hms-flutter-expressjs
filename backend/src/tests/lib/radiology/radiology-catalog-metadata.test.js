@@ -6,8 +6,7 @@ const {
   inferBodyRegionFromName,
   resolveRadiologyBodyRegion,
   buildRadiologyCatalogMetadata,
-  isNonBodyRegionToken,
-} = require('@lib/radiology/radiology-catalog-metadata');
+  isNonBodyRegionToken} = require('@lib/radiology/radiology-catalog-metadata');
 
 describe('radiology-catalog-metadata', () => {
   it('rejects catalog source tokens as body regions', () => {
@@ -21,8 +20,7 @@ describe('radiology-catalog-metadata', () => {
     expect(
       buildRadiologyCatalogMetadata({
         name: 'Transvaginal Pelvic Ultrasound',
-        modality: 'ULTRASOUND',
-      }).body_region,
+        modality: 'ULTRASOUND'}).body_region,
     ).toBe('Pelvis');
   });
 
@@ -30,8 +28,7 @@ describe('radiology-catalog-metadata', () => {
     expect(
       resolveRadiologyBodyRegion({
         name: 'Chest X-Ray',
-        body_region: 'Chest',
-      }),
+        body_region: 'Chest'}),
     ).toBe('Chest');
   });
 });

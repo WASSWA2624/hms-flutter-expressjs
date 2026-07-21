@@ -43,7 +43,7 @@ describe('Audit Log Repository', () => {
 
       expect(prisma.audit_log.findFirst).toHaveBeenCalledWith({
         where: { id: mockId, deleted_at: null },
-        include: {}
+        include: undefined
       });
       expect(result).toEqual(mockAuditLog);
     });
@@ -103,7 +103,7 @@ describe('Audit Log Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
       expect(result).toEqual(mockAuditLogs);
     });
@@ -119,7 +119,7 @@ describe('Audit Log Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { created_at: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

@@ -22,8 +22,7 @@ const CSRF_EXEMPT_ROUTES = new Set([
   'POST /api/v1/auth/verify-phone',
   'POST /api/v1/auth/resend-verification',
   'POST /api/v1/auth/forgot-password',
-  'POST /api/v1/auth/reset-password',
-]);
+  'POST /api/v1/auth/reset-password']);
 
 const isCsrfExempt = (req) => {
   const method = String(req?.method || '').toUpperCase();

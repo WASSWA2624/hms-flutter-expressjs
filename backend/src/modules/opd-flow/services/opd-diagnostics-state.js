@@ -53,5 +53,4 @@ const resolveLabState = (orders = []) => {
 module.exports = {
   resolveLabState,
   isLabOrderComplete,
-  isLabOrderItemComplete,
-};
+  isLabOrderItemComplete};

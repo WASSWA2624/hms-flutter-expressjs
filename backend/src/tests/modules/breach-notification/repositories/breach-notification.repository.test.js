@@ -52,7 +52,7 @@ describe('Breach Notification Repository', () => {
           id: mockBreachNotification.id,
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -89,7 +89,7 @@ describe('Breach Notification Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { reported_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

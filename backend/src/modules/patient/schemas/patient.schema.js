@@ -12,8 +12,7 @@ const {
   uuidSchema,
   uuidOrFriendlyIdentifierSchema,
   friendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const GENDER_VALUES = ['MALE', 'FEMALE', 'OTHER', 'UNKNOWN'];
@@ -98,8 +97,7 @@ const jsonValueSchema = z.lazy(() =>
     z.boolean(),
     z.null(),
     z.array(jsonValueSchema),
-    z.record(z.string(), jsonValueSchema),
-  ])
+    z.record(z.string(), jsonValueSchema)])
 );
 const optionalJsonObjectSchema = z
   .record(z.string(), jsonValueSchema)
@@ -124,8 +122,7 @@ const createPatientSchema = z.object({
   primary_phone: z.string().trim().min(1).max(40).optional().nullable(),
   primary_email: z.string().trim().email().max(255).optional().nullable(),
   primary_identifier_type: z.string().trim().max(80).optional().nullable(),
-  primary_identifier_value: z.string().trim().max(120).optional().nullable(),
-});
+  primary_identifier_value: z.string().trim().max(120).optional().nullable()});
 
 /**
  * Update patient body validation
@@ -143,8 +140,7 @@ const updatePatientSchema = z.object({
   primary_phone: z.string().trim().min(1).max(40).optional().nullable(),
   primary_email: z.string().trim().email().max(255).optional().nullable(),
   primary_identifier_type: z.string().trim().max(80).optional().nullable(),
-  primary_identifier_value: z.string().trim().max(120).optional().nullable(),
-});
+  primary_identifier_value: z.string().trim().max(120).optional().nullable()});
 
 // ==================== URL Params ====================
 
@@ -157,17 +153,14 @@ const patientIdParamsSchema = z.object({
 });
 
 const patientWorkspaceParamsSchema = z.object({
-  patientId: patientRouteIdSchema,
-});
+  patientId: patientRouteIdSchema});
 
 const patientDocumentParamsSchema = z.object({
   patientId: patientRouteIdSchema,
-  documentId: uuidOrFriendlyIdentifierSchema,
-});
+  documentId: uuidOrFriendlyIdentifierSchema});
 
 const patientDuplicateDismissParamsSchema = z.object({
-  reviewId: z.string().trim().min(1).max(255),
-});
+  reviewId: z.string().trim().min(1).max(255)});
 
 // ==================== Query Params ====================
 
@@ -200,23 +193,19 @@ const listPatientsQuerySchema = listQuerySchema.extend({
   search: searchQuerySchema,
   has_active_admission: optionalBooleanQuerySchema,
   has_outstanding_balance: optionalBooleanQuerySchema,
-  consent_state: z.enum(CONSENT_STATUS_VALUES).optional(),
-});
+  consent_state: z.enum(CONSENT_STATUS_VALUES).optional()});
 
 const patientWorkspaceOverviewQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
-  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-});
+  facility_id: uuidOrFriendlyIdentifierSchema.optional()});
 
 const patientWorkspaceReferenceDataQuerySchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
-  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-});
+  facility_id: uuidOrFriendlyIdentifierSchema.optional()});
 
 const patientWorkspaceListQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
-  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-});
+  facility_id: uuidOrFriendlyIdentifierSchema.optional()});
 
 const patientDuplicateListQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -230,13 +219,11 @@ const patientDuplicateListQuerySchema = listQuerySchema.extend({
   email: normalizeOptionalTextQuery(255),
   contact: normalizeOptionalTextQuery(255),
   identifier_type: normalizeOptionalTextQuery(60),
-  identifier_value: normalizeOptionalTextQuery(120),
-});
+  identifier_value: normalizeOptionalTextQuery(120)});
 
 const patientMergePreviewSchema = z.object({
   primary_patient_id: uuidOrFriendlyIdentifierSchema,
-  secondary_patient_id: uuidOrFriendlyIdentifierSchema,
-});
+  secondary_patient_id: uuidOrFriendlyIdentifierSchema});
 
 const patientMergeSchema = patientMergePreviewSchema.extend({
   summary: z.object({
@@ -244,22 +231,18 @@ const patientMergeSchema = patientMergePreviewSchema.extend({
     last_name: z.string().trim().min(1).max(120).optional(),
     date_of_birth: dateLikeBodySchema.optional(),
     gender: z.enum(GENDER_VALUES).optional().nullable(),
-    facility_id: optionalFriendlyOrUuidSchema,
-  }).optional(),
-});
+    facility_id: optionalFriendlyOrUuidSchema}).optional()});
 
 const patientDuplicateDismissSchema = z.object({
   primary_patient_id: uuidOrFriendlyIdentifierSchema,
   secondary_patient_id: uuidOrFriendlyIdentifierSchema,
-  dismissed_reason: z.string().trim().max(255).optional().nullable(),
-});
+  dismissed_reason: z.string().trim().max(255).optional().nullable()});
 
 const patientDocumentUploadBodySchema = z.object({
   document_type: z.string().trim().max(120).optional().nullable(),
   title: z.string().trim().max(255).optional().nullable(),
   description: z.string().trim().max(2000).optional().nullable(),
-  document_date: dateLikeBodySchema,
-});
+  document_date: dateLikeBodySchema});
 
 module.exports = {
   createPatientSchema,
@@ -277,5 +260,4 @@ module.exports = {
   patientMergePreviewSchema,
   patientMergeSchema,
   patientDuplicateDismissSchema,
-  patientDocumentUploadBodySchema,
-};
+  patientDocumentUploadBodySchema};

@@ -9,8 +9,7 @@ jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 
 const buildPlanRecord = (overrides = {}) => ({
   id: 'plan-uuid',
@@ -19,8 +18,7 @@ const buildPlanRecord = (overrides = {}) => ({
   tenant: {
     id: 'tenant-uuid',
     human_friendly_id: 'TEN0001',
-    name: 'Acme Hospital',
-  },
+    name: 'Acme Hospital'},
   code: 'PRO',
   name: 'Professional',
   tier_code: 'PRO',
@@ -34,8 +32,7 @@ const buildPlanRecord = (overrides = {}) => ({
   add_on_eligibility_json: { add_ons: ['analytics'] },
   limit_policy_json: { hard_stop: true },
   _count: { subscriptions: 3 },
-  ...overrides,
-});
+  ...overrides});
 
 describe('Subscription Plan Service', () => {
   beforeEach(() => {
@@ -52,8 +49,7 @@ describe('Subscription Plan Service', () => {
         tenant_id: 'TEN0001',
         tenant_label: 'Acme Hospital',
         name: 'Professional',
-        subscription_count: 3,
-      })
+        subscription_count: 3})
     );
   });
 
@@ -63,9 +59,7 @@ describe('Subscription Plan Service', () => {
       buildPlanRecord({
         id: 'plan-uuid-2',
         human_friendly_id: 'PLAN0002',
-        name: 'Advanced',
-      }),
-    ]);
+        name: 'Advanced'})]);
     subscriptionPlanRepository.count.mockResolvedValue(2);
 
     const result = await subscriptionPlanService.listSubscriptionPlans(
@@ -77,8 +71,7 @@ describe('Subscription Plan Service', () => {
     expect(subscriptionPlanRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         billing_cycle: 'MONTHLY',
-        OR: expect.any(Array),
-      }),
+        OR: expect.any(Array)}),
       0,
       20,
       { created_at: 'desc' },
@@ -86,16 +79,14 @@ describe('Subscription Plan Service', () => {
     );
     expect(result.subscriptionPlans).toEqual([
       expect.objectContaining({ id: 'PLAN0001' }),
-      expect.objectContaining({ id: 'PLAN0002' }),
-    ]);
+      expect.objectContaining({ id: 'PLAN0002' })]);
   });
 
   it('creates a plan, reloads it, and writes an audit log', async () => {
     const created = buildPlanRecord({
       id: 'plan-uuid-2',
       human_friendly_id: 'PLAN0002',
-      name: 'Advanced',
-    });
+      name: 'Advanced'});
     subscriptionPlanRepository.create.mockResolvedValue({ id: created.id });
     subscriptionPlanRepository.findById.mockResolvedValue(created);
 
@@ -105,8 +96,7 @@ describe('Subscription Plan Service', () => {
         human_friendly_id: 'PLAN0002',
         name: 'Advanced',
         price: 99,
-        billing_cycle: 'MONTHLY',
-      },
+        billing_cycle: 'MONTHLY'},
       { id: 'user-1', role: 'SUPER_ADMIN' },
       '127.0.0.1'
     );
@@ -115,8 +105,7 @@ describe('Subscription Plan Service', () => {
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'CREATE',
-        entity: 'subscription_plan',
-      })
+        entity: 'subscription_plan'})
     );
   });
 
@@ -132,10 +121,7 @@ describe('Subscription Plan Service', () => {
         add_ons: expect.arrayContaining([
           expect.objectContaining({
             code: 'biomedical_engineering_suite',
-            eligible: true,
-          }),
-        ]),
-      })
+            eligible: true})])})
     );
   });
 
@@ -146,14 +132,10 @@ describe('Subscription Plan Service', () => {
           allowed_modules: {
             included: ['core-messaging', 'biomed'],
             blocked: ['analytics'],
-            notes: 'Upgrade customers can unlock biomedical on approval.',
-          },
-          add_on_module_ids: ['extra-storage'],
-        },
+            notes: 'Upgrade customers can unlock biomedical on approval.'},
+          add_on_module_ids: ['extra-storage']},
         add_on_eligibility_json: {
-          allowed_module_ids: ['extra-storage'],
-        },
-      })
+          allowed_module_ids: ['extra-storage']}})
     );
 
     const result = await subscriptionPlanService.getPlanEntitlements('PLAN0001');
@@ -166,9 +148,7 @@ describe('Subscription Plan Service', () => {
           blocked: ['analytics'],
           add_on_eligible: ['extra-storage'],
           customization_notes:
-            'Upgrade customers can unlock biomedical on approval.',
-        },
-      })
+            'Upgrade customers can unlock biomedical on approval.'}})
     );
   });
 

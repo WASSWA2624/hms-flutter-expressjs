@@ -5,8 +5,7 @@ const {
   invoiceIdentifierParamsSchema,
   paymentIdentifierParamsSchema,
   approvalIdentifierParamsSchema,
-  adjustmentRequestSchema,
-} = require('@validations/billing/billing.schema');
+  adjustmentRequestSchema} = require('@validations/billing/billing.schema');
 
 describe('billing schema', () => {
   it('accepts UUID and friendly IDs in params', () => {
@@ -31,8 +30,7 @@ describe('billing schema', () => {
         to: '2026-07-04T23:59:59.000Z',
         search: 'wilson',
         page: '1',
-        limit: '12',
-      }).success
+        limit: '12'}).success
     ).toBe(true);
   });
 
@@ -41,8 +39,7 @@ describe('billing schema', () => {
       adjustmentRequestSchema.safeParse({
         invoice_id: 'INV0000123',
         amount: '-25.50',
-        reason: 'Loyalty discount',
-      }).success
+        reason: 'Loyalty discount'}).success
     ).toBe(true);
   });
 
@@ -51,8 +48,7 @@ describe('billing schema', () => {
       adjustmentRequestSchema.safeParse({
         invoice_id: 'INV0000123',
         amount: 'abc',
-        reason: 'Invalid',
-      }).success
+        reason: 'Invalid'}).success
     ).toBe(false);
   });
 });

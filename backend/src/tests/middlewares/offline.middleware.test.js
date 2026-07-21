@@ -130,18 +130,15 @@ describe('offline support middleware', () => {
       message: 'ok',
       data: [
         { id: 'active-1', updated_at: sharedUpdatedAt },
-        { id: 'deleted-1', updated_at: sharedUpdatedAt, deleted_at: '2026-02-11T10:00:00.000Z' },
-      ],
+        { id: 'deleted-1', updated_at: sharedUpdatedAt, deleted_at: '2026-02-11T10:00:00.000Z' }],
       meta: { locale: 'en', direction: 'ltr' },
-      pagination: { page: 1, limit: 20, total: 2 },
-    };
+      pagination: { page: 1, limit: 20, total: 2 }};
     const shrunkPayload = {
       status: 200,
       message: 'ok',
       data: [{ id: 'active-1', updated_at: sharedUpdatedAt }],
       meta: { locale: 'en', direction: 'ltr' },
-      pagination: { page: 1, limit: 20, total: 1 },
-    };
+      pagination: { page: 1, limit: 20, total: 1 }};
 
     const firstReq = createReq({ method: 'GET', path: '/api/v1/tenants' });
     const firstRes = createRes();
@@ -155,9 +152,7 @@ describe('offline support middleware', () => {
       path: '/api/v1/tenants',
       headers: {
         'if-none-match': staleEtag,
-        'if-modified-since': lastModified,
-      },
-    });
+        'if-modified-since': lastModified}});
     const secondRes = createRes();
     middleware(secondReq, secondRes, jest.fn());
     secondRes.json(shrunkPayload);
@@ -174,8 +169,7 @@ describe('offline support middleware', () => {
       status: 200,
       message: 'ok',
       data: [{ id: 't1', updated_at: '2026-02-10T10:00:00.000Z' }],
-      meta: { locale: 'en', direction: 'ltr' },
-    };
+      meta: { locale: 'en', direction: 'ltr' }};
 
     const firstReq = createReq({ method: 'GET', path: '/api/v1/tenants' });
     const firstRes = createRes();
@@ -186,8 +180,7 @@ describe('offline support middleware', () => {
     const secondReq = createReq({
       method: 'GET',
       path: '/api/v1/tenants',
-      headers: { 'if-modified-since': lastModified },
-    });
+      headers: { 'if-modified-since': lastModified }});
     const secondRes = createRes();
     middleware(secondReq, secondRes, jest.fn());
     secondRes.json(payload);

@@ -7,13 +7,11 @@
 const {
   applyClinicalRequestBilling,
   buildConsultationBillingPayload,
-  BILLABLE_SOURCE_MODULES,
-} = require('@lib/billing/clinical-request-billing');
+  BILLABLE_SOURCE_MODULES} = require('@lib/billing/clinical-request-billing');
 
 const money = (value) => ({
   toString: () => String(value),
-  toNumber: () => Number(value),
-});
+  toNumber: () => Number(value)});
 
 const createTx = () => {
   const state = {
@@ -24,8 +22,7 @@ const createTx = () => {
     nextInvoice: 1,
     nextPayment: 1,
     nextEvent: 1,
-    nextItem: 1,
-  };
+    nextItem: 1};
 
   const tx = {
     invoice: {
@@ -39,8 +36,7 @@ const createTx = () => {
             ...invoice,
             payments: state.payments.filter(
               (payment) => payment.invoice_id === invoice.id && !payment.deleted_at
-            ),
-          };
+            )};
         }
         return { ...invoice };
       }),
@@ -50,16 +46,14 @@ const createTx = () => {
           id,
           ...data,
           total_amount: money(data.total_amount),
-          deleted_at: null,
-        };
+          deleted_at: null};
         state.invoices.set(id, invoice);
         for (const item of data.items?.create || []) {
           state.items.push({
             id: `item-${state.nextItem++}`,
             invoice_id: id,
             ...item,
-            deleted_at: null,
-          });
+            deleted_at: null});
         }
         return { ...invoice };
       }),
@@ -68,8 +62,7 @@ const createTx = () => {
         const next = {
           ...current,
           ...data,
-          total_amount: money(data.total_amount ?? current.total_amount),
-        };
+          total_amount: money(data.total_amount ?? current.total_amount)};
         delete next.items;
         state.invoices.set(where.id, next);
         for (const item of data.items?.create || []) {
@@ -77,12 +70,10 @@ const createTx = () => {
             id: `item-${state.nextItem++}`,
             invoice_id: where.id,
             ...item,
-            deleted_at: null,
-          });
+            deleted_at: null});
         }
         return { ...next };
-      }),
-    },
+      })},
     invoice_item: {
       updateMany: jest.fn(async ({ where, data }) => {
         for (const item of state.items) {
@@ -91,21 +82,18 @@ const createTx = () => {
           }
         }
         return { count: 1 };
-      }),
-    },
+      })},
     payment: {
       create: jest.fn(async ({ data }) => {
         const payment = {
           id: `pay-${state.nextPayment++}`,
           ...data,
           amount: money(data.amount),
-          deleted_at: null,
-        };
+          deleted_at: null};
         state.payments.push(payment);
         return payment;
       }),
-      updateMany: jest.fn(async () => ({ count: 0 })),
-    },
+      updateMany: jest.fn(async () => ({ count: 0 }))},
     billable_charge_event: {
       findFirst: jest.fn(async ({ where }) => {
         for (const event of state.events.values()) {
@@ -155,10 +143,8 @@ const createTx = () => {
         const next = { ...current, ...data };
         state.events.set(where.id, next);
         return next;
-      }),
-    },
-    _state: state,
-  };
+      })},
+    _state: state};
 
   return tx;
 };
@@ -170,19 +156,16 @@ jest.mock('@lib/billing/financials', () => {
     recalculateInvoiceStateTx: jest.fn(async (tx, invoiceId) => {
       const invoice = await tx.invoice.findFirst({
         where: { id: invoiceId },
-        include: { payments: true },
-      });
+        include: { payments: true }});
       return { invoice, financials: actual.computeInvoiceFinancials(invoice || {}) };
-    }),
-  };
+    })};
 });
 
 jest.mock('@lib/billing/price-resolver', () => {
   const actual = jest.requireActual('@lib/billing/price-resolver');
   return {
     ...actual,
-    resolveUnitPrices: jest.fn(async () => []),
-  };
+    resolveUnitPrices: jest.fn(async () => [])};
 });
 
 describe('applyClinicalRequestBilling idempotency', () => {
@@ -191,8 +174,7 @@ describe('applyClinicalRequestBilling idempotency', () => {
     const billing = buildConsultationBillingPayload({
       consultationFee: '50.00',
       currency: 'USD',
-      catalogItemId: 'catalog-consult-1',
-    });
+      catalogItemId: 'catalog-consult-1'});
 
     const first = await applyClinicalRequestBilling(tx, {
       billing,
@@ -204,8 +186,7 @@ describe('applyClinicalRequestBilling idempotency', () => {
       sourceId: 'encounter-1',
       catalogType: 'CONSULTATION',
       catalogItemId: 'catalog-consult-1',
-      description: 'Consultation fee',
-    });
+      description: 'Consultation fee'});
 
     expect(first?.invoice_id).toBeTruthy();
     expect(tx.invoice.create).toHaveBeenCalledTimes(1);
@@ -221,8 +202,7 @@ describe('applyClinicalRequestBilling idempotency', () => {
       sourceId: 'encounter-1',
       catalogType: 'CONSULTATION',
       catalogItemId: 'catalog-consult-1',
-      description: 'Consultation fee',
-    });
+      description: 'Consultation fee'});
 
     expect(second?.invoice_id).toBe(first.invoice_id);
     expect(tx.invoice.create).toHaveBeenCalledTimes(1);
@@ -234,8 +214,7 @@ describe('applyClinicalRequestBilling idempotency', () => {
     const billing = buildConsultationBillingPayload({
       consultationFee: '65.50',
       currency: 'USD',
-      catalogItemId: 'catalog-consult-2',
-    });
+      catalogItemId: 'catalog-consult-2'});
 
     const snapshot = await applyClinicalRequestBilling(tx, {
       billing,
@@ -244,8 +223,7 @@ describe('applyClinicalRequestBilling idempotency', () => {
       sourceModule: BILLABLE_SOURCE_MODULES.CONSULTATION,
       sourceId: 'encounter-2',
       catalogType: 'CONSULTATION',
-      catalogItemId: 'catalog-consult-2',
-    });
+      catalogItemId: 'catalog-consult-2'});
 
     expect(snapshot.total_amount).toBe('65.50');
     const event = [...tx._state.events.values()][0];

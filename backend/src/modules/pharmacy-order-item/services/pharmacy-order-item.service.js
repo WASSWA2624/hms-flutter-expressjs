@@ -14,8 +14,7 @@ const {
   buildDrugScopeWhere,
   buildOrderItemScopeWhere,
   buildOrderScopeWhere,
-  matchesOrderItemScope,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  matchesOrderItemScope} = require('@services/pharmacy-workspace/pharmacy.shared');
 
 const ORDER_TENANT_INCLUDE = {
   pharmacy_order: {
@@ -23,8 +22,7 @@ const ORDER_TENANT_INCLUDE = {
       patient: {
         select: {
           tenant_id: true,
-          facility_id: true,
-        }
+          facility_id: true}
       }
     }
   }
@@ -70,8 +68,7 @@ const normalizeItemPayload = (data = {}) => {
     'dose_unit',
     'duration_unit',
     'instructions',
-    'custom_prescription',
-  ].forEach((field) => {
+    'custom_prescription'].forEach((field) => {
     if (Object.prototype.hasOwnProperty.call(payload, field)) {
       payload[field] = normalizeNullableString(payload[field]);
     }
@@ -96,11 +93,9 @@ const resolveScopedOrderId = async (identifier, scope, allowNull = false) =>
     model: 'pharmacy_order',
     where: {
       deleted_at: null,
-      ...buildOrderScopeWhere(scope),
-    },
+      ...buildOrderScopeWhere(scope)},
     errorKey: 'errors.pharmacy_order.not_found',
-    allowNull,
-  });
+    allowNull});
 
 const resolveScopedDrugId = async (identifier, scope, allowNull = false) =>
   resolveModelIdOrThrow({
@@ -108,11 +103,9 @@ const resolveScopedDrugId = async (identifier, scope, allowNull = false) =>
     model: 'drug',
     where: {
       deleted_at: null,
-      ...buildDrugScopeWhere(scope),
-    },
+      ...buildDrugScopeWhere(scope)},
     errorKey: 'errors.drug.not_found',
-    allowNull,
-  });
+    allowNull});
 
 const findScopedOrderItemOrThrow = async (id, include = ORDER_TENANT_INCLUDE, user = {}) => {
   const scope = resolveScopedUserContext(user);
@@ -145,8 +138,7 @@ const listPharmacyOrderItems = async (filters, page, limit, sortBy, order, userI
     const scope = resolveScopedUserContext(user);
 
     const whereClause = {
-      ...buildOrderItemScopeWhere(scope),
-    };
+      ...buildOrderItemScopeWhere(scope)};
     if (filters.pharmacy_order_id) {
       whereClause.pharmacy_order_id = await resolveScopedOrderId(filters.pharmacy_order_id, scope);
     }
@@ -205,14 +197,9 @@ const getPharmacyOrderItemById = async (id, userId, ipAddress, user = {}) => {
             patient: {
               select: {
                 tenant_id: true,
-                facility_id: true,
-              },
-            },
-          },
-        },
+                facility_id: true}}}},
         drug: true,
-        dispense_logs: true,
-      },
+        dispense_logs: true},
       user
     );
 
@@ -242,8 +229,7 @@ const createPharmacyOrderItem = async (data, userId, ipAddress, user = {}) => {
     const payload = normalizeItemPayload({
       ...data,
       pharmacy_order_id: await resolveScopedOrderId(data.pharmacy_order_id, scope),
-      drug_id: await resolveScopedDrugId(data.drug_id, scope),
-    });
+      drug_id: await resolveScopedDrugId(data.drug_id, scope)});
 
     const pharmacyOrderItem = await pharmacyOrderItemRepository.create(payload);
     const createdWithOrder = await pharmacyOrderItemRepository.findById(pharmacyOrderItem.id, ORDER_TENANT_INCLUDE);

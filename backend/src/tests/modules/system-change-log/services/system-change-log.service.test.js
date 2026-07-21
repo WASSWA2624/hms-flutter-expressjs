@@ -1,7 +1,6 @@
 jest.mock('@repositories/system-change-log/system-change-log.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: jest.fn((...values) => {
     for (const value of values) {
@@ -17,19 +16,16 @@ jest.mock('@lib/billing/identifiers', () => ({
   ),
   resolveIdentifierForPayload: jest.fn(async ({ value, nullable = false }) =>
     value === undefined ? (nullable ? null : value) : value
-  ),
-}));
+  )}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
-}));
+  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier)}));
 
 const systemChangeLogService = require('@services/system-change-log/system-change-log.service');
 const systemChangeLogRepository = require('@repositories/system-change-log/system-change-log.repository');
 const { createAuditLog } = require('@lib/audit');
 const identifiers = require('@lib/billing/identifiers');
 const {
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { HttpError } = require('@lib/errors');
 
 const buildRawSystemChangeLog = (overrides = {}) => ({
@@ -44,24 +40,20 @@ const buildRawSystemChangeLog = (overrides = {}) => ({
   tenant: {
     id: '550e8400-e29b-41d4-a716-446655440001',
     human_friendly_id: 'TEN0000001',
-    name: 'Acme Health',
-  },
+    name: 'Acme Health'},
   user: {
     id: '550e8400-e29b-41d4-a716-446655440002',
     human_friendly_id: 'USR0000001',
     email: 'jane.doe@example.com',
     first_name: 'Jane',
-    last_name: 'Doe',
-  },
-  ...overrides,
-});
+    last_name: 'Doe'},
+  ...overrides});
 
 describe('System Change Log Service', () => {
   const actor = {
     id: '550e8400-e29b-41d4-a716-446655440002',
     human_friendly_id: 'USR0000001',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440001',
-  };
+    tenant_id: '550e8400-e29b-41d4-a716-446655440001'};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -86,8 +78,7 @@ describe('System Change Log Service', () => {
         change_type: 'DATABASE',
         search: 'users',
         from_date: '2026-03-01T00:00:00.000Z',
-        to_date: '2026-03-31T23:59:59.999Z',
-      },
+        to_date: '2026-03-31T23:59:59.999Z'},
       1,
       20,
       'created_at',
@@ -101,10 +92,8 @@ describe('System Change Log Service', () => {
         change_type: { contains: 'DATABASE' },
         created_at: {
           gte: expect.any(Date),
-          lte: expect.any(Date),
-        },
-        OR: expect.any(Array),
-      }),
+          lte: expect.any(Date)},
+        OR: expect.any(Array)}),
       0,
       20,
       { created_at: 'asc' },
@@ -115,8 +104,7 @@ describe('System Change Log Service', () => {
         id: 'SCL0000001',
         tenant_id: 'TEN0000001',
         user_id: 'USR0000001',
-        user_label: 'Jane Doe',
-      })
+        user_label: 'Jane Doe'})
     );
   });
 
@@ -140,15 +128,13 @@ describe('System Change Log Service', () => {
       tenant_id: actor.tenant_id,
       user_id: actor.id,
       change_type: 'DATABASE_MIGRATION',
-      details: 'Added new column to users table',
-    });
+      details: 'Added new column to users table'});
     systemChangeLogRepository.findMany.mockResolvedValue([rawRecord]);
 
     const result = await systemChangeLogService.createSystemChangeLog(
       {
         change_type: 'DATABASE_MIGRATION',
-        details: 'Added new column to users table',
-      },
+        details: 'Added new column to users table'},
       actor,
       '127.0.0.1'
     );
@@ -157,15 +143,13 @@ describe('System Change Log Service', () => {
       tenant_id: actor.tenant_id,
       user_id: actor.id,
       change_type: 'DATABASE_MIGRATION',
-      details: 'Added new column to users table',
-    });
+      details: 'Added new column to users table'});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: actor.tenant_id,
         user_id: actor.id,
         action: 'CREATE',
-        entity: 'system_change_log',
-      })
+        entity: 'system_change_log'})
     );
     expect(result).toEqual(expect.objectContaining({ id: 'SCL0000001' }));
   });
@@ -174,15 +158,13 @@ describe('System Change Log Service', () => {
     const before = buildRawSystemChangeLog();
     const after = buildRawSystemChangeLog({
       details:
-        'Added new column to users table\n\n[APPROVED] {"approved_by":"USR0000001"}',
-    });
+        'Added new column to users table\n\n[APPROVED] {"approved_by":"USR0000001"}'});
     systemChangeLogRepository.findMany
       .mockResolvedValueOnce([before])
       .mockResolvedValueOnce([after]);
     systemChangeLogRepository.update.mockResolvedValue({
       id: before.id,
-      details: after.details,
-    });
+      details: after.details});
 
     const result = await systemChangeLogService.approveSystemChangeLog(
       'SCL0000001',
@@ -194,20 +176,17 @@ describe('System Change Log Service', () => {
     expect(systemChangeLogRepository.update).toHaveBeenCalledWith(
       before.id,
       expect.objectContaining({
-        details: expect.stringContaining('[APPROVED]'),
-      })
+        details: expect.stringContaining('[APPROVED]')})
     );
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'UPDATE',
         entity: 'system_change_log',
-        entity_id: before.id,
-      })
+        entity_id: before.id})
     );
     expect(result).toEqual(
       expect.objectContaining({
-        details: expect.stringContaining('[APPROVED]'),
-      })
+        details: expect.stringContaining('[APPROVED]')})
     );
   });
 
@@ -215,15 +194,13 @@ describe('System Change Log Service', () => {
     const before = buildRawSystemChangeLog();
     const after = buildRawSystemChangeLog({
       details:
-        'Added new column to users table\n\n[IMPLEMENTED] {"implemented_by":"USR0000001"}',
-    });
+        'Added new column to users table\n\n[IMPLEMENTED] {"implemented_by":"USR0000001"}'});
     systemChangeLogRepository.findMany
       .mockResolvedValueOnce([before])
       .mockResolvedValueOnce([after]);
     systemChangeLogRepository.update.mockResolvedValue({
       id: before.id,
-      details: after.details,
-    });
+      details: after.details});
 
     const result = await systemChangeLogService.implementSystemChangeLog(
       'SCL0000001',
@@ -235,20 +212,17 @@ describe('System Change Log Service', () => {
     expect(systemChangeLogRepository.update).toHaveBeenCalledWith(
       before.id,
       expect.objectContaining({
-        details: expect.stringContaining('[IMPLEMENTED]'),
-      })
+        details: expect.stringContaining('[IMPLEMENTED]')})
     );
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'UPDATE',
         entity: 'system_change_log',
-        entity_id: before.id,
-      })
+        entity_id: before.id})
     );
     expect(result).toEqual(
       expect.objectContaining({
-        details: expect.stringContaining('[IMPLEMENTED]'),
-      })
+        details: expect.stringContaining('[IMPLEMENTED]')})
     );
   });
 

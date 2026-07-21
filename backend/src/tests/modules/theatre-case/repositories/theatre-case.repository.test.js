@@ -82,8 +82,7 @@ describe('Theatre Case Repository', () => {
         },
         include: {
           ...theatreCaseRepository.BASE_INCLUDE,
-          ...include,
-        }
+          ...include}
       });
     });
   });

@@ -3,14 +3,12 @@ const { resolveLabState, isLabOrderComplete } = require('@services/opd-flow/opd-
 const completedItem = (resultStatus = 'NORMAL') => ({
   deleted_at: null,
   status: 'COMPLETED',
-  results: [{ deleted_at: null, status: resultStatus }],
-});
+  results: [{ deleted_at: null, status: resultStatus }]});
 
 const pendingItem = () => ({
   deleted_at: null,
   status: 'IN_PROCESS',
-  results: [{ deleted_at: null, status: 'PENDING' }],
-});
+  results: [{ deleted_at: null, status: 'PENDING' }]});
 
 describe('opd-diagnostics-state resolveLabState', () => {
   it('returns RESULTS_READY when all active items are completed', () => {
@@ -19,15 +17,12 @@ describe('opd-diagnostics-state resolveLabState', () => {
         status: 'COMPLETED',
         deleted_at: null,
         items: [completedItem('NORMAL'), completedItem('ABNORMAL')],
-        samples: [{ deleted_at: null, status: 'RECEIVED' }],
-      },
-    ]);
+        samples: [{ deleted_at: null, status: 'RECEIVED' }]}]);
 
     expect(state).toEqual({
       code: 'RESULTS_READY',
       pending: false,
-      ready: true,
-    });
+      ready: true});
   });
 
   it('ignores cancelled items when determining completion', () => {
@@ -40,26 +35,19 @@ describe('opd-diagnostics-state resolveLabState', () => {
           {
             deleted_at: null,
             status: 'CANCELLED',
-            results: [],
-          },
-        ],
-        samples: [{ deleted_at: null, status: 'PENDING' }],
-      },
-    ]);
+            results: []}],
+        samples: [{ deleted_at: null, status: 'PENDING' }]}]);
 
     expect(state).toEqual({
       code: 'RESULTS_READY',
       pending: false,
-      ready: true,
-    });
+      ready: true});
     expect(
       isLabOrderComplete({
         status: 'IN_PROCESS',
         items: [
           completedItem('NORMAL'),
-          { deleted_at: null, status: 'CANCELLED', results: [] },
-        ],
-      })
+          { deleted_at: null, status: 'CANCELLED', results: [] }]})
     ).toBe(true);
   });
 
@@ -69,9 +57,7 @@ describe('opd-diagnostics-state resolveLabState', () => {
         status: 'IN_PROCESS',
         deleted_at: null,
         items: [completedItem('VERIFIED')],
-        samples: [{ deleted_at: null, status: 'RECEIVED' }],
-      },
-    ]);
+        samples: [{ deleted_at: null, status: 'RECEIVED' }]}]);
 
     expect(state.code).toBe('RESULTS_READY');
     expect(state.pending).toBe(false);
@@ -83,15 +69,12 @@ describe('opd-diagnostics-state resolveLabState', () => {
         status: 'IN_PROCESS',
         deleted_at: null,
         items: [completedItem('NORMAL'), pendingItem()],
-        samples: [{ deleted_at: null, status: 'RECEIVED' }],
-      },
-    ]);
+        samples: [{ deleted_at: null, status: 'RECEIVED' }]}]);
 
     expect(state).toEqual({
       code: 'IN_LAB',
       pending: true,
-      ready: false,
-    });
+      ready: false});
   });
 
   it('reports SAMPLE_PENDING when incomplete work still needs a sample', () => {
@@ -103,17 +86,12 @@ describe('opd-diagnostics-state resolveLabState', () => {
           {
             deleted_at: null,
             status: 'ORDERED',
-            results: [],
-          },
-        ],
-        samples: [{ deleted_at: null, status: 'PENDING' }],
-      },
-    ]);
+            results: []}],
+        samples: [{ deleted_at: null, status: 'PENDING' }]}]);
 
     expect(state).toEqual({
       code: 'SAMPLE_PENDING',
       pending: true,
-      ready: false,
-    });
+      ready: false});
   });
 });

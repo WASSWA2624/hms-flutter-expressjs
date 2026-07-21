@@ -16,26 +16,19 @@ const prisma = require('@prisma/client');
 jest.mock('@repositories/staff-profile/staff-profile.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/hr/staff-number', () => ({
-  generateStaffNumber: jest.fn().mockResolvedValue({ staff_number: 'STF-001' }),
-}));
+  generateStaffNumber: jest.fn().mockResolvedValue({ staff_number: 'STF-001' })}));
 jest.mock('@lib/hr/staff-department-sync', () => ({
-  syncStaffProfilePrimaryDepartment: jest.fn().mockResolvedValue(undefined),
-}));
+  syncStaffProfilePrimaryDepartment: jest.fn().mockResolvedValue(undefined)}));
 jest.mock('@prisma/client', () => ({
   user: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   staff_position: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   $transaction: jest.fn((callback) => callback({
     staff_compensation: {
       updateMany: jest.fn().mockResolvedValue({ count: 0 }),
-      create: jest.fn().mockResolvedValue({ id: 'comp-1' }),
-    },
-  })),
-}));
+      create: jest.fn().mockResolvedValue({ id: 'comp-1' })}}))}));
 
 describe('Staff Profile Service', () => {
   const mockUserId = 'user-123';
@@ -45,8 +38,7 @@ describe('Staff Profile Service', () => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue({});
     prisma.user.findFirst.mockResolvedValue({
-      id: '550e8400-e29b-41d4-a716-446655440001',
-    });
+      id: '550e8400-e29b-41d4-a716-446655440001'});
     prisma.staff_position.findFirst.mockResolvedValue(null);
     prisma.staff_position.create.mockResolvedValue({ id: 'pos-1', name: 'Nurse' });
   });
@@ -64,9 +56,7 @@ describe('Staff Profile Service', () => {
           expect.objectContaining({
             id: '1',
             staff_number: 'STF001',
-            display_id: 'STF001',
-          }),
-        ])
+            display_id: 'STF001'})])
       );
       expect(result.pagination.total).toBe(1);
       expect(result.pagination.totalPages).toBe(1);
@@ -109,8 +99,7 @@ describe('Staff Profile Service', () => {
       expect(result).toEqual(expect.objectContaining({
         id: '123',
         staff_number: 'STF001',
-        display_id: 'STF001',
-      }));
+        display_id: 'STF001'}));
     });
 
     it('should throw HttpError if staff profile not found', async () => {
@@ -138,8 +127,7 @@ describe('Staff Profile Service', () => {
       expect(result).toEqual(expect.objectContaining({
         id: '456',
         staff_number: 'STF001',
-        display_id: 'STF001',
-      }));
+        display_id: 'STF001'}));
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: mockData.tenant_id,
         user_id: mockUserId,
@@ -165,8 +153,7 @@ describe('Staff Profile Service', () => {
 
       expect(result).toEqual(expect.objectContaining({
         id: '456',
-        user_id: '550e8400-e29b-41d4-a716-446655440001',
-      }));
+        user_id: '550e8400-e29b-41d4-a716-446655440001'}));
     });
 
     it('should upsert staff position catalog entry and compensation on create', async () => {
@@ -179,18 +166,14 @@ describe('Staff Profile Service', () => {
             pay_type: 'PER_MONTH',
             rate: 2500,
             currency: 'USD',
-            effective_from: new Date('2026-01-01'),
-          },
-        ],
-      };
+            effective_from: new Date('2026-01-01')}]};
       const mockProfile = { id: '456', tenant_id: mockData.tenant_id, position: mockData.position };
       staffProfileRepository.create.mockResolvedValue(mockProfile);
       staffProfileRepository.findById.mockResolvedValue(mockProfile);
       prisma.staff_position.findFirst.mockResolvedValue(null);
       prisma.staff_position.create.mockResolvedValue({
         id: 'pos-1',
-        name: mockData.position,
-      });
+        name: mockData.position});
 
       await staffProfileService.createStaffProfile(mockData, mockUserId, mockIpAddress);
 
@@ -198,9 +181,7 @@ describe('Staff Profile Service', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             name: 'Clinical Coordinator',
-            is_active: true,
-          }),
-        })
+            is_active: true})})
       );
       expect(prisma.$transaction).toHaveBeenCalled();
     });
@@ -220,8 +201,7 @@ describe('Staff Profile Service', () => {
 
       expect(result).toEqual(expect.objectContaining({
         id: '123',
-        position: 'Senior Nurse',
-      }));
+        position: 'Senior Nurse'}));
       expect(createAuditLog).toHaveBeenCalled();
     });
 

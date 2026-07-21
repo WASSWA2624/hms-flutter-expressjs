@@ -35,7 +35,7 @@ describe('Patient Guardian Repository', () => {
       expect(result).toEqual(mockGuardian);
       expect(prisma.patient_guardian.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -74,7 +74,7 @@ describe('Patient Guardian Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
   });

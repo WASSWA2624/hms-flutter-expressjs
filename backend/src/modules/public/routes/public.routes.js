@@ -10,6 +10,5 @@ const { listPublicResourcesQuerySchema } = require('@validations/public/public.s
 
 router.get('/services', validateRequest({ query: listPublicResourcesQuerySchema }), publicController.listPublicServices);
 router.get('/providers', validateRequest({ query: listPublicResourcesQuerySchema }), publicController.listPublicProviders);
-router.get('/branches', validateRequest({ query: listPublicResourcesQuerySchema }), publicController.listPublicBranches);
 
 module.exports = router;

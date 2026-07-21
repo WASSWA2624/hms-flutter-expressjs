@@ -2,23 +2,20 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/lab-sample/lab-sample.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
-    resolveModelRecordOrThrow: jest.fn(),
-  };
+    resolveModelRecordOrThrow: jest.fn()};
 });
 
 const labSampleRepository = require('@repositories/lab-sample/lab-sample.repository');
 const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/lab-workspace/lab.shared');
+  resolveModelRecordOrThrow} = require('@services/lab-workspace/lab.shared');
 const labSampleService = require('@services/lab-sample/lab-sample.service');
 
 const mockUserId = 'user-123';
@@ -42,15 +39,11 @@ const buildLabSampleRecord = (overrides = {}) => ({
       id: 'patient-internal-1',
       human_friendly_id: 'PAT0000001',
       first_name: 'Amina',
-      last_name: 'Stone',
-    },
+      last_name: 'Stone'},
     encounter: {
       id: 'encounter-internal-1',
-      human_friendly_id: 'ENC0000001',
-    },
-  },
-  ...overrides,
-});
+      human_friendly_id: 'ENC0000001'}},
+  ...overrides});
 
 describe('lab-sample.service', () => {
   beforeEach(() => {
@@ -67,8 +60,7 @@ describe('lab-sample.service', () => {
       {
         lab_order_id: 'LAB0000001',
         status: 'PENDING',
-        search: 'amina',
-      },
+        search: 'amina'},
       1,
       20,
       'created_at',
@@ -81,8 +73,7 @@ describe('lab-sample.service', () => {
       identifier: 'LAB0000001',
       model: 'lab_order',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order.not_found',
-    });
+      errorKey: 'errors.lab_order.not_found'});
     expect(labSampleRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         lab_order_id: 'order-internal-1',
@@ -90,9 +81,7 @@ describe('lab-sample.service', () => {
         OR: expect.arrayContaining([
           { human_friendly_id: { contains: 'AMINA' } },
           { lab_order: { patient: { first_name: { contains: 'amina' } } } },
-          { lab_order: { patient: { last_name: { contains: 'amina' } } } },
-        ]),
-      }),
+          { lab_order: { patient: { last_name: { contains: 'amina' } } } }])}),
       0,
       20,
       { created_at: 'desc' },
@@ -104,15 +93,12 @@ describe('lab-sample.service', () => {
         display_id: 'LSP0000001',
         lab_order_id: 'LAB0000001',
         patient_id: 'PAT0000001',
-        patient_display_name: 'Amina Stone',
-      }),
-    ]);
+        patient_display_name: 'Amina Stone'})]);
     expect(result.pagination).toMatchObject({
       page: 1,
       limit: 20,
       total: 1,
-      totalPages: 1,
-    });
+      totalPages: 1});
   });
 
   it('gets a lab sample by friendly identifier through shared resolution', async () => {
@@ -129,14 +115,12 @@ describe('lab-sample.service', () => {
       model: 'lab_sample',
       where: { deleted_at: null },
       include: expect.any(Object),
-      errorKey: 'errors.lab_sample.not_found',
-    });
+      errorKey: 'errors.lab_sample.not_found'});
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LSP0000001',
         lab_order_id: 'LAB0000001',
-        patient_id: 'PAT0000001',
-      })
+        patient_id: 'PAT0000001'})
     );
   });
 
@@ -150,8 +134,7 @@ describe('lab-sample.service', () => {
         lab_order_id: 'LAB0000001',
         status: 'COLLECTED',
         collected_at: now.toISOString(),
-        received_at: null,
-      },
+        received_at: null},
       mockUserId,
       mockIpAddress
     );
@@ -160,34 +143,29 @@ describe('lab-sample.service', () => {
       lab_order_id: 'order-internal-1',
       status: 'COLLECTED',
       collected_at: expect.any(Date),
-      received_at: null,
-    });
+      received_at: null});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: mockUserId,
         action: 'CREATE',
         entity: 'lab_sample',
         entity_id: 'sample-internal-1',
-        ip_address: mockIpAddress,
-      })
+        ip_address: mockIpAddress})
     );
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LSP0000001',
-        status: 'PENDING',
-      })
+        status: 'PENDING'})
     );
   });
 
   it('swallows audit failures after a successful update', async () => {
     const before = buildLabSampleRecord({
       status: 'PENDING',
-      collected_at: null,
-    });
+      collected_at: null});
     const after = buildLabSampleRecord({
       status: 'COLLECTED',
-      collected_at: now,
-    });
+      collected_at: now});
 
     resolveModelRecordOrThrow.mockResolvedValue(before);
     labSampleRepository.update.mockResolvedValue({ id: 'sample-internal-1' });
@@ -199,22 +177,19 @@ describe('lab-sample.service', () => {
         'LSP0000001',
         {
           status: 'COLLECTED',
-          collected_at: now.toISOString(),
-        },
+          collected_at: now.toISOString()},
         mockUserId,
         mockIpAddress
       )
     ).resolves.toEqual(
       expect.objectContaining({
         id: 'LSP0000001',
-        status: 'COLLECTED',
-      })
+        status: 'COLLECTED'})
     );
 
     expect(labSampleRepository.update).toHaveBeenCalledWith('sample-internal-1', {
       status: 'COLLECTED',
-      collected_at: expect.any(Date),
-    });
+      collected_at: expect.any(Date)});
   });
 
   it('deletes lab samples using the resolved internal identifier', async () => {
@@ -234,8 +209,7 @@ describe('lab-sample.service', () => {
       expect.objectContaining({
         action: 'DELETE',
         entity: 'lab_sample',
-        entity_id: 'sample-internal-1',
-      })
+        entity_id: 'sample-internal-1'})
     );
   });
 

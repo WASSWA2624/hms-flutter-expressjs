@@ -19,8 +19,7 @@ describe('Integration Schema Validation', () => {
         tenant_id: 'TEN0000001',
         integration_type: 'HL7',
         status: 'ACTIVE',
-        name: 'Test Integration',
-      };
+        name: 'Test Integration'};
 
       const result = createIntegrationSchema.safeParse(validData);
       expect(result.success).toBe(true);

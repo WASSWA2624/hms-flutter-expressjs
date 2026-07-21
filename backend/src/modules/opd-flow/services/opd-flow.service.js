@@ -28,12 +28,10 @@ const { recalculateInvoiceStateTx, computeInvoiceFinancials } = require('@lib/bi
 const {
   buildConsultationBillingPayload,
   persistConsultationBilling,
-  cancelInvoiceIfReversible,
-} = require('@lib/billing/clinical-request-billing');
+  cancelInvoiceIfReversible} = require('@lib/billing/clinical-request-billing');
 const {
   publishIssuedInvoiceBillingEvents,
-  publishUpdatedInvoiceBillingEvents,
-} = require('@lib/billing/realtime');
+  publishUpdatedInvoiceBillingEvents} = require('@lib/billing/realtime');
 
 const STAGES = {
   WAITING_CONSULTATION_PAYMENT: 'WAITING_CONSULTATION_PAYMENT',
@@ -848,10 +846,7 @@ const CONSULTATION_INVOICE_REALTIME_INCLUDE = Object.freeze({
       id: true,
       human_friendly_id: true,
       first_name: true,
-      last_name: true,
-    },
-  },
-});
+      last_name: true}}});
 
 const resolveConsultationInvoiceId = (snapshot, explicitInvoiceId = null) =>
   normalizeIdentifier(explicitInvoiceId) ||
@@ -868,8 +863,7 @@ const loadConsultationInvoiceForRealtime = async (snapshot, explicitInvoiceId = 
   }
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId },
-    include: CONSULTATION_INVOICE_REALTIME_INCLUDE,
-  });
+    include: CONSULTATION_INVOICE_REALTIME_INCLUDE});
   if (!invoice) {
     return null;
   }
@@ -891,8 +885,7 @@ const publishConsultationBillingRealtime = async ({
   snapshot,
   context = {},
   mode = 'issued',
-  invoiceId = null,
-} = {}) => {
+  invoiceId = null} = {}) => {
   try {
     const invoice = await loadConsultationInvoiceForRealtime(snapshot, invoiceId);
     if (!invoice) {
@@ -903,15 +896,13 @@ const publishConsultationBillingRealtime = async ({
       await publishUpdatedInvoiceBillingEvents({
         invoice,
         actorUserId,
-        action: mode === 'cancelled' ? 'CANCELLED' : 'UPDATED',
-      });
+        action: mode === 'cancelled' ? 'CANCELLED' : 'UPDATED'});
       return;
     }
     await publishIssuedInvoiceBillingEvents({
       invoice,
       actorUserId,
-      action: 'ISSUED',
-    });
+      action: 'ISSUED'});
   } catch (_err) {
     // Billing realtime must never fail the OPD transaction response path.
   }
@@ -2796,8 +2787,7 @@ const getOpdFlowSummaryCounts = async (filters = {}, context = {}) => {
     imaging_pending: new Set(),
     pharmacy_pending: new Set(),
     decision_needed: new Set(),
-    admission_pending: new Set(),
-  };
+    admission_pending: new Set()};
   const addPatientToCategory = (key, encounter) => {
     const patientKey = normalizeIdentifier(encounter?.patient_id) || normalizeIdentifier(encounter?.id);
     if (patientKey && categoryPatientSets[key]) categoryPatientSets[key].add(patientKey);
@@ -5035,8 +5025,7 @@ const disposition = async (id, data, context = {}) => {
           source_id: encounter.id,
           source_title: 'OPD visit',
           referral_reason: dispositionReason,
-          notes: dispositionNotes,
-        },
+          notes: dispositionNotes},
         context
       );
       flow.therapy_episode_id = therapyEpisode.id;
@@ -5766,8 +5755,7 @@ const resolveEncounterForConsultationInvoice = async (tx, invoice) => {
 const syncConsultationBillingFromInvoicePayment = async ({
   invoiceId = null,
   payment = null,
-  context = {},
-} = {}) => {
+  context = {}} = {}) => {
   try {
     const normalizedInvoiceId = normalizeIdentifier(invoiceId);
     if (!normalizedInvoiceId) {
@@ -5776,8 +5764,7 @@ const syncConsultationBillingFromInvoicePayment = async ({
 
     const transition = await prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.findFirst({
-        where: { id: normalizedInvoiceId, deleted_at: null },
-      });
+        where: { id: normalizedInvoiceId, deleted_at: null }});
       if (!invoice) {
         return null;
       }
@@ -5813,8 +5800,7 @@ const syncConsultationBillingFromInvoicePayment = async ({
         payment,
         consultation,
         currency: consultation.currency || invoice.currency || null,
-        paymentStatus: payment?.status || null,
-      });
+        paymentStatus: payment?.status || null});
       flow.consultation = consultation;
 
       if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT && consultation.is_paid) {
@@ -5826,24 +5812,19 @@ const syncConsultationBillingFromInvoicePayment = async ({
         invoice_id: invoice.id,
         amount: payment?.amount || null,
         status: payment?.status || null,
-        source: 'BILLING_RECONCILE',
-      });
+        source: 'BILLING_RECONCILE'});
 
       const updatedEncounter = await tx.encounter.update({
         where: { id: encounter.id },
         data: {
           extension_json: {
             ...(encounter.extension_json || {}),
-            opd_flow: flow,
-          },
-        },
-      });
+            opd_flow: flow}}});
 
       return {
         encounterId: updatedEncounter.id,
         stage_from: stageBefore,
-        stage_to: flow.stage,
-      };
+        stage_to: flow.stage};
     });
 
     if (!transition) {
@@ -5857,10 +5838,8 @@ const syncConsultationBillingFromInvoicePayment = async ({
         action: 'PAY_CONSULTATION',
         stage_from: transition.stage_from,
         stage_to: transition.stage_to,
-        occurred_at: new Date().toISOString(),
-      },
-      context,
-    });
+        occurred_at: new Date().toISOString()},
+      context});
     return snapshot;
   } catch (_err) {
     // Billing reconcile must succeed even when OPD sync cannot run.
@@ -5886,5 +5865,4 @@ module.exports = {
   getBillingDefaults,
   correctStage,
   syncDiagnosticsStage,
-  syncConsultationBillingFromInvoicePayment,
-};
+  syncConsultationBillingFromInvoicePayment};

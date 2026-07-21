@@ -8,8 +8,7 @@ const {
   createHandoverSchema,
   handoverIdParamsSchema,
   listHandoversQuerySchema,
-  updateHandoverSchema,
-} = require('@validations/handover/handover.schema');
+  updateHandoverSchema} = require('@validations/handover/handover.schema');
 
 const router = express.Router();
 

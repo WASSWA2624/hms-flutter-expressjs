@@ -44,7 +44,7 @@ describe('Radiology Test Repository', () => {
       expect(result).toEqual(mockRadiologyTest);
       expect(prisma.radiology_test.findFirst).toHaveBeenCalledWith({
         where: { id: radiologyTestId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -118,7 +118,7 @@ describe('Radiology Test Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

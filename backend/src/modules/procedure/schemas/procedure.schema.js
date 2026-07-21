@@ -14,8 +14,7 @@ const {
   isoDateSchema
 } = require('@lib/validation/zod');
 const {
-  clinicalRequestBillingSchema,
-} = require('@lib/billing/clinical-request-billing.schema');
+  clinicalRequestBillingSchema} = require('@lib/billing/clinical-request-billing.schema');
 
 // ==================== Body Schemas ====================
 

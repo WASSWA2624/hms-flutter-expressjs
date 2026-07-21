@@ -13,19 +13,16 @@ const { ROLES } = require("@config/roles");
 const { isFeatureEnabled } = require("@config/feature-flags");
 const { emitToUser, NOTIFICATION_EVENTS } = require("@lib/websocket");
 const {
-  parseIpdMedicationReminderNote,
-} = require("@lib/clinical/ipdMedicationReminder");
+  parseIpdMedicationReminderNote} = require("@lib/clinical/ipdMedicationReminder");
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require("@lib/identifiers/service-identifier-resolution");
+  resolveIdentifierForPayload} = require("@lib/identifiers/service-identifier-resolution");
 const { resolvePublicIdentifier } = require("@lib/billing/identifiers");
 
 const FOLLOW_UP_TRANSITIONS = Object.freeze({
   SCHEDULED: new Set(["COMPLETED", "CANCELLED"]),
   COMPLETED: new Set([]),
-  CANCELLED: new Set([]),
-});
+  CANCELLED: new Set([])});
 
 const FOLLOW_UP_PATIENT_INCLUDE = Object.freeze({
   encounter: {
@@ -33,13 +30,7 @@ const FOLLOW_UP_PATIENT_INCLUDE = Object.freeze({
       patient: {
         include: {
           contacts: {
-            where: { deleted_at: null },
-          },
-        },
-      },
-    },
-  },
-});
+            where: { deleted_at: null }}}}}}});
 
 const normalizeText = (value) => {
   if (value == null) return null;
@@ -116,8 +107,7 @@ const serializeFollowUp = (record) => {
     completed_by_user_id: record.completed_by_user_id || null,
     notes: normalizeText(record.notes),
     created_at: record.created_at || null,
-    updated_at: record.updated_at || null,
-  };
+    updated_at: record.updated_at || null};
 };
 
 const IPD_REMINDER_RECIPIENT_ROLES = [
@@ -125,8 +115,7 @@ const IPD_REMINDER_RECIPIENT_ROLES = [
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
-  ROLES.NURSE,
-];
+  ROLES.NURSE];
 
 const normalizeStatus = (value, fallback = "SCHEDULED") => {
   const normalized = String(value || "")
@@ -147,8 +136,7 @@ const assertTransition = (fromStatus, toStatus) => {
     throw new HttpError("errors.follow_up.invalid_status_transition", 400, [
       { field: "status" },
       { from: fromStatus },
-      { to: toStatus },
-    ]);
+      { to: toStatus }]);
   }
 };
 
@@ -161,14 +149,11 @@ const resolveFrontDeskRecipients = async ({ tenantId, facilityId = null }) => {
       deleted_at: null,
       role: {
         deleted_at: null,
-        name: ROLES.RECEPTIONIST,
-      },
+        name: ROLES.RECEPTIONIST},
       ...(facilityId
         ? { OR: [{ facility_id: facilityId }, { facility_id: null }] }
-        : {}),
-    },
-    select: { user_id: true },
-  });
+        : {})},
+    select: { user_id: true }});
 
   return rows.map((row) => row.user_id).filter(Boolean);
 };
@@ -176,8 +161,7 @@ const resolveFrontDeskRecipients = async ({ tenantId, facilityId = null }) => {
 const resolveRoleRecipients = async ({
   tenantId,
   facilityId = null,
-  roles = [],
-}) => {
+  roles = []}) => {
   if (!tenantId || !Array.isArray(roles) || roles.length === 0) return [];
 
   const rows = await prisma.user_role.findMany({
@@ -187,15 +171,11 @@ const resolveRoleRecipients = async ({
       role: {
         deleted_at: null,
         name: {
-          in: roles,
-        },
-      },
+          in: roles}},
       ...(facilityId
         ? { OR: [{ facility_id: facilityId }, { facility_id: null }] }
-        : {}),
-    },
-    select: { user_id: true },
-  });
+        : {})},
+    select: { user_id: true }});
 
   return rows.map((row) => row.user_id).filter(Boolean);
 };
@@ -209,8 +189,7 @@ const createReminderNotifications = async ({
   targetPath = null,
   contextType = null,
   contextPublicId = null,
-  emitRealtime = true,
-}) => {
+  emitRealtime = true}) => {
   const uniqueRecipients = Array.from(
     new Set(recipientUserIds.filter(Boolean)),
   );
@@ -229,9 +208,7 @@ const createReminderNotifications = async ({
           message,
           target_path: targetPath || null,
           context_type: contextType || null,
-          context_public_id: contextPublicId || null,
-        },
-      });
+          context_public_id: contextPublicId || null}});
       notifications.push(notification);
     } catch (_error) {
       // Ignore per-recipient failure to keep dispatcher resilient.
@@ -245,9 +222,7 @@ const createReminderNotifications = async ({
           notification_id: notification.id,
           channel: "IN_APP",
           status: "PENDING_ATTENTION",
-          sent_at: new Date(),
-        })),
-      });
+          sent_at: new Date()}))});
     } catch (_error) {
       // Delivery metadata is best-effort.
     }
@@ -274,10 +249,8 @@ const createReminderNotifications = async ({
               target_path: notification.target_path || targetPath || null,
               context_type: notification.context_type || contextType || null,
               context_public_id:
-                notification.context_public_id || contextPublicId || null,
-            },
-            target_path: notification.target_path || targetPath || null,
-          },
+                notification.context_public_id || contextPublicId || null},
+            target_path: notification.target_path || targetPath || null},
         );
       } catch (_error) {
         // realtime emission is best-effort.
@@ -301,8 +274,7 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
       const encounterId = await resolveIdentifierForFilter({
         value: filters.encounter_id,
         model: "encounter",
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (encounterId === null) {
         return {
           followUps: [],
@@ -312,9 +284,7 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
             total: 0,
             totalPages: 0,
             hasNextPage: false,
-            hasPreviousPage: false,
-          },
-        };
+            hasPreviousPage: false}};
       }
       if (encounterId !== undefined) {
         whereClause.encounter_id = encounterId;
@@ -326,8 +296,7 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
       whereClause.encounter = {
         ...(whereClause.encounter || {}),
         encounter_type: String(filters.encounter_type).trim().toUpperCase(),
-        deleted_at: null,
-      };
+        deleted_at: null};
     }
     if (filters.scheduled_before || filters.scheduled_after) {
       whereClause.scheduled_at = {};
@@ -345,8 +314,7 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
         orderBy,
         FOLLOW_UP_PATIENT_INCLUDE
       ),
-      followUpRepository.count(whereClause),
-    ]);
+      followUpRepository.count(whereClause)]);
 
     return {
       followUps: followUps.map(serializeFollowUp),
@@ -356,14 +324,11 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError("errors.server.unexpected", 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -371,8 +336,7 @@ const resolveFollowUpId = async (value) => {
   const resolved = await resolveIdentifierForFilter({
     value,
     model: "follow_up",
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
   if (resolved === null || resolved === undefined) {
     throw new HttpError("errors.follow_up.not_found", 404);
   }
@@ -396,8 +360,7 @@ const getFollowUpById = async (id) => {
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError("errors.server.unexpected", 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -414,11 +377,8 @@ const assertNoScheduledFollowUpForPatient = async (patientId) => {
       status: "SCHEDULED",
       encounter: {
         patient_id: patientId,
-        deleted_at: null,
-      },
-    },
-    select: { id: true },
-  });
+        deleted_at: null}},
+    select: { id: true }});
   if (existing) {
     throw new HttpError("errors.follow_up.already_scheduled", 409);
   }
@@ -433,13 +393,11 @@ const createFollowUp = async (data, userId, ipAddress) => {
       value: data.encounter_id,
       field: "encounter_id",
       model: "encounter",
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const status = normalizeStatus(data.status, "SCHEDULED");
     const encounter = await prisma.encounter.findFirst({
       where: { id: encounterId, deleted_at: null },
-      select: { id: true, patient_id: true },
-    });
+      select: { id: true, patient_id: true }});
     if (!encounter) {
       throw new HttpError("errors.follow_up.encounter_not_found", 404);
     }
@@ -450,8 +408,7 @@ const createFollowUp = async (data, userId, ipAddress) => {
     const payload = {
       ...data,
       status,
-      encounter_id: encounterId,
-    };
+      encounter_id: encounterId};
     const followUp = await followUpRepository.create(payload);
 
     createAuditLog({
@@ -460,15 +417,13 @@ const createFollowUp = async (data, userId, ipAddress) => {
       entity: "follow_up",
       entity_id: followUp.id,
       diff: { after: followUp },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return followUp;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError("errors.server.unexpected", 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -500,15 +455,13 @@ const updateFollowUp = async (id, data, userId, ipAddress) => {
       entity: "follow_up",
       entity_id: followUp.id,
       diff: { before, after: followUp },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return followUp;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError("errors.server.unexpected", 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -531,13 +484,11 @@ const deleteFollowUp = async (id, userId, ipAddress) => {
       entity: "follow_up",
       entity_id: followUpId,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError("errors.server.unexpected", 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -563,8 +514,7 @@ const transitionFollowUp = async (
   assertTransition(before.status, normalizedTarget);
 
   const updatePayload = {
-    status: normalizedTarget,
-  };
+    status: normalizedTarget};
   if (normalizedTarget === "COMPLETED") {
     updatePayload.completed_at = new Date();
     updatePayload.completed_by_user_id = userId || null;
@@ -581,11 +531,8 @@ const transitionFollowUp = async (
       before,
       after: followUp,
       metadata: {
-        notes: metadata?.notes || null,
-      },
-    },
-    ip_address: ipAddress,
-  }).catch(() => {});
+        notes: metadata?.notes || null}},
+    ip_address: ipAddress}).catch(() => {});
 
   return followUp;
 };
@@ -606,24 +553,18 @@ const getFollowUpReminderDueSummary = async () => {
         deleted_at: null,
         status: "SCHEDULED",
         scheduled_at: { lte: now },
-        reminder_due_sent_at: null,
-      },
-    }),
+        reminder_due_sent_at: null}}),
     prisma.follow_up.count({
       where: {
         deleted_at: null,
         status: "SCHEDULED",
         scheduled_at: { gt: now, lte: in24h },
-        reminder_24h_sent_at: null,
-      },
-    }),
-  ]);
+        reminder_24h_sent_at: null}})]);
 
   return {
     generated_at: now.toISOString(),
     due_now: dueNowCount,
-    due_in_24h: dueIn24hCount,
-  };
+    due_in_24h: dueIn24hCount};
 };
 
 const dispatchFollowUpReminders = async (context = {}) => {
@@ -633,8 +574,7 @@ const dispatchFollowUpReminders = async (context = {}) => {
       reason: "feature_disabled",
       summary: await getFollowUpReminderDueSummary(),
       sent_24h: 0,
-      sent_due: 0,
-    };
+      sent_due: 0};
   }
 
   const now = new Date();
@@ -647,23 +587,15 @@ const dispatchFollowUpReminders = async (context = {}) => {
       OR: [
         {
           scheduled_at: { gt: now, lte: in24h },
-          reminder_24h_sent_at: null,
-        },
+          reminder_24h_sent_at: null},
         {
           scheduled_at: { lte: now },
-          reminder_due_sent_at: null,
-        },
-      ],
-    },
+          reminder_due_sent_at: null}]},
     include: {
       encounter: {
         include: {
-          patient: true,
-        },
-      },
-    },
-    orderBy: { scheduled_at: "asc" },
-  });
+          patient: true}}},
+    orderBy: { scheduled_at: "asc" }});
 
   let sent24h = 0;
   let sentDue = 0;
@@ -682,21 +614,16 @@ const dispatchFollowUpReminders = async (context = {}) => {
           ...(await resolveRoleRecipients({
             tenantId: encounter.tenant_id,
             facilityId: encounter.facility_id || null,
-            roles: IPD_REMINDER_RECIPIENT_ROLES,
-          })),
-        ]
+            roles: IPD_REMINDER_RECIPIENT_ROLES}))]
       : [
           ...(encounter.provider_user_id ? [encounter.provider_user_id] : []),
           ...(await resolveFrontDeskRecipients({
             tenantId: encounter.tenant_id,
-            facilityId: encounter.facility_id || null,
-          })),
-        ];
+            facilityId: encounter.facility_id || null}))];
 
     const patientName = [
       encounter?.patient?.first_name,
-      encounter?.patient?.last_name,
-    ]
+      encounter?.patient?.last_name]
       .map((value) => String(value || "").trim())
       .filter(Boolean)
       .join(" ");
@@ -748,15 +675,13 @@ const dispatchFollowUpReminders = async (context = {}) => {
       contextType: ipdMedicationReminder
         ? "ipd_medication_reminder"
         : "follow_up",
-      contextPublicId: ipdMedicationReminder?.admission_public_id || null,
-    });
+      contextPublicId: ipdMedicationReminder?.admission_public_id || null});
 
     await prisma.follow_up.update({
       where: { id: followUp.id },
       data: shouldSendDue
         ? { reminder_due_sent_at: new Date() }
-        : { reminder_24h_sent_at: new Date() },
-    });
+        : { reminder_24h_sent_at: new Date() }});
 
     if (shouldSendDue) sentDue += 1;
     if (shouldSend24h) sent24h += 1;
@@ -771,18 +696,14 @@ const dispatchFollowUpReminders = async (context = {}) => {
     diff: {
       after: {
         sent_24h: sent24h,
-        sent_due: sentDue,
-      },
-    },
-    ip_address: context.ip_address,
-  }).catch(() => {});
+        sent_due: sentDue}},
+    ip_address: context.ip_address}).catch(() => {});
 
   return {
     dispatched: true,
     sent_24h: sent24h,
     sent_due: sentDue,
-    summary: await getFollowUpReminderDueSummary(),
-  };
+    summary: await getFollowUpReminderDueSummary()};
 };
 
 module.exports = {
@@ -794,5 +715,4 @@ module.exports = {
   completeFollowUp,
   cancelFollowUp,
   dispatchFollowUpReminders,
-  getFollowUpReminderDueSummary,
-};
+  getFollowUpReminderDueSummary};

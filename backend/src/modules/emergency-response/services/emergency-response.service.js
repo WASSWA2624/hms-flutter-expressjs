@@ -14,8 +14,7 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const sanitizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
 const toPublicIdentifier = (value) => {
@@ -42,8 +41,7 @@ const buildEmptyListResult = (page, limit) => ({
   total: 0,
   page,
   limit,
-  totalPages: 0,
-});
+  totalPages: 0});
 
 const mapEmergencyResponseForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -60,8 +58,7 @@ const mapEmergencyResponseForDisplay = (record) => {
       record.patient_display_id,
       record.emergency_case?.patient?.human_friendly_id
     ),
-    patient_display_name: record.patient_display_name || resolvePatientDisplayName(record.emergency_case?.patient),
-  };
+    patient_display_name: record.patient_display_name || resolvePatientDisplayName(record.emergency_case?.patient)};
 };
 
 const resolveEmergencyResponseId = async (id) => {
@@ -70,8 +67,7 @@ const resolveEmergencyResponseId = async (id) => {
 
   const resolvedId = await resolveModelIdByIdentifier({
     model: 'emergency_response',
-    identifier: normalized,
-  });
+    identifier: normalized});
 
   return resolvedId || normalized;
 };
@@ -82,8 +78,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   if (filters.emergency_case_id !== undefined) {
     const emergencyCaseId = await resolveIdentifierForFilter({
       value: filters.emergency_case_id,
-      model: 'emergency_case',
-    });
+      model: 'emergency_case'});
     if (emergencyCaseId === null) return buildEmptyListResult(page, limit);
     if (emergencyCaseId !== undefined) resolvedFilters.emergency_case_id = emergencyCaseId;
   }
@@ -99,8 +94,7 @@ const resolveCreatePayload = async (data = {}) => {
   payload.emergency_case_id = await resolveIdentifierForPayload({
     value: payload.emergency_case_id,
     field: 'emergency_case_id',
-    model: 'emergency_case',
-  });
+    model: 'emergency_case'});
   return payload;
 };
 
@@ -111,8 +105,7 @@ const resolveUpdatePayload = async (data = {}) => {
     payload.emergency_case_id = await resolveIdentifierForPayload({
       value: payload.emergency_case_id,
       field: 'emergency_case_id',
-      model: 'emergency_case',
-    });
+      model: 'emergency_case'});
   }
 
   return payload;
@@ -145,16 +138,14 @@ const listEmergencyResponses = async (
 
   const [items, total] = await Promise.all([
     emergencyResponseRepository.findMany(resolvedFilters, skip, limit, orderBy),
-    emergencyResponseRepository.count(resolvedFilters),
-  ]);
+    emergencyResponseRepository.count(resolvedFilters)]);
 
   return {
     items: items.map(mapEmergencyResponseForDisplay),
     total,
     page,
     limit,
-    totalPages: Math.ceil(total / limit),
-  };
+    totalPages: Math.ceil(total / limit)};
 };
 
 /**
@@ -192,8 +183,7 @@ const createEmergencyResponse = async (data, user) => {
     resource_id: emergencyResponse.id,
     user_id: user.id,
     tenant_id: user.tenant_id,
-    details: { data: payload },
-  });
+    details: { data: payload }});
 
   return mapEmergencyResponseForDisplay(emergencyResponse);
 };
@@ -223,8 +213,7 @@ const updateEmergencyResponse = async (id, data, user) => {
     resource_id: existing.id,
     user_id: user.id,
     tenant_id: user.tenant_id,
-    details: { before: existing, after: payload },
-  });
+    details: { before: existing, after: payload }});
 
   return mapEmergencyResponseForDisplay(updated);
 };
@@ -252,8 +241,7 @@ const deleteEmergencyResponse = async (id, user) => {
     resource_id: existing.id,
     user_id: user.id,
     tenant_id: user.tenant_id,
-    details: { data: existing },
-  });
+    details: { data: existing }});
 
   return mapEmergencyResponseForDisplay(deleted);
 };
@@ -263,5 +251,4 @@ module.exports = {
   getEmergencyResponseById,
   createEmergencyResponse,
   updateEmergencyResponse,
-  deleteEmergencyResponse,
-};
+  deleteEmergencyResponse};

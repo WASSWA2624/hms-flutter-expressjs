@@ -14,15 +14,13 @@ const {
   createDoctorSchema,
   updateDoctorSchema,
   doctorIdParamsSchema,
-  listDoctorsQuerySchema,
-} = require('@validations/doctor/doctor.schema');
+  listDoctorsQuerySchema} = require('@validations/doctor/doctor.schema');
 
 const DOCTOR_ADMIN_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.HR,
-];
+  ROLES.HR];
 
 const DOCTOR_READ_ROLES = [
   ...DOCTOR_ADMIN_ROLES,
@@ -30,8 +28,7 @@ const DOCTOR_READ_ROLES = [
   ROLES.NURSE,
   ROLES.RECEPTIONIST,
   ROLES.BILLING,
-  ROLES.OPERATIONS,
-];
+  ROLES.OPERATIONS];
 
 router.get(
   '/',

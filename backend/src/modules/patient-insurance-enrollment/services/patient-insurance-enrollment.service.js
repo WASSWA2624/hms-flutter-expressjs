@@ -14,8 +14,7 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 const { getInsurerAdapter } = require('@lib/insurer/adapter');
 
 const ENROLLMENT_INCLUDE = {
@@ -26,9 +25,7 @@ const ENROLLMENT_INCLUDE = {
       id: true,
       human_friendly_id: true,
       first_name: true,
-      last_name: true,
-    },
-  },
+      last_name: true}},
   coverage_plan: {
     select: {
       id: true,
@@ -44,12 +41,7 @@ const ENROLLMENT_INCLUDE = {
           id: true,
           human_friendly_id: true,
           name: true,
-          code: true,
-        },
-      },
-    },
-  },
-};
+          code: true}}}}};
 
 const buildEmptyListResult = (page, limit) => ({
   enrollments: [],
@@ -59,9 +51,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const mapEnrollmentForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -89,8 +79,7 @@ const mapEnrollmentForDisplay = (record) => {
       record?.coverage_plan?.human_friendly_id,
       record?.coverage_plan_id
     ),
-    timeline_at: record?.timeline_at || record?.verified_at || record?.valid_from || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.verified_at || record?.valid_from || record?.created_at || null};
 };
 
 const normalizeCreatePayload = async (data = {}) => {
@@ -99,25 +88,20 @@ const normalizeCreatePayload = async (data = {}) => {
     tenant_id: await resolveIdentifierForPayload({
       value: data.tenant_id,
       model: 'tenant',
-      field: 'tenant_id',
-    }),
+      field: 'tenant_id'}),
     facility_id: await resolveIdentifierForPayload({
       value: data.facility_id,
       model: 'facility',
       field: 'facility_id',
-      nullable: true,
-    }),
+      nullable: true}),
     patient_id: await resolveIdentifierForPayload({
       value: data.patient_id,
       model: 'patient',
-      field: 'patient_id',
-    }),
+      field: 'patient_id'}),
     coverage_plan_id: await resolveIdentifierForPayload({
       value: data.coverage_plan_id,
       model: 'coverage_plan',
-      field: 'coverage_plan_id',
-    }),
-  };
+      field: 'coverage_plan_id'})};
 
   if (payload.valid_from) payload.valid_from = new Date(payload.valid_from);
   if (payload.valid_to) payload.valid_to = new Date(payload.valid_to);
@@ -133,24 +117,21 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.facility_id,
       model: 'facility',
       field: 'facility_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'patient_id')) {
     payload.patient_id = await resolveIdentifierForPayload({
       value: data.patient_id,
       model: 'patient',
-      field: 'patient_id',
-    });
+      field: 'patient_id'});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'coverage_plan_id')) {
     payload.coverage_plan_id = await resolveIdentifierForPayload({
       value: data.coverage_plan_id,
       model: 'coverage_plan',
-      field: 'coverage_plan_id',
-    });
+      field: 'coverage_plan_id'});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'valid_from') && data.valid_from) {
@@ -212,8 +193,7 @@ const listPatientInsuranceEnrollments = async (filters, page, limit, sortBy, ord
     if (filters.tenant_id !== undefined) {
       const tenantId = await resolveIdentifierForFilter({
         value: filters.tenant_id,
-        model: 'tenant',
-      });
+        model: 'tenant'});
       if (tenantId === null) return buildEmptyListResult(page, limit);
       if (tenantId !== undefined) whereClause.tenant_id = tenantId;
     }
@@ -222,8 +202,7 @@ const listPatientInsuranceEnrollments = async (filters, page, limit, sortBy, ord
       const facilityId = await resolveIdentifierForFilter({
         value: filters.facility_id,
         model: 'facility',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (facilityId === null) return buildEmptyListResult(page, limit);
       if (facilityId !== undefined) whereClause.facility_id = facilityId;
     }
@@ -232,8 +211,7 @@ const listPatientInsuranceEnrollments = async (filters, page, limit, sortBy, ord
       const patientId = await resolveIdentifierForFilter({
         value: filters.patient_id,
         model: 'patient',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (patientId === null) return buildEmptyListResult(page, limit);
       if (patientId !== undefined) whereClause.patient_id = patientId;
     }
@@ -242,8 +220,7 @@ const listPatientInsuranceEnrollments = async (filters, page, limit, sortBy, ord
       const coveragePlanId = await resolveIdentifierForFilter({
         value: filters.coverage_plan_id,
         model: 'coverage_plan',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (coveragePlanId === null) return buildEmptyListResult(page, limit);
       if (coveragePlanId !== undefined) whereClause.coverage_plan_id = coveragePlanId;
     }
@@ -256,8 +233,7 @@ const listPatientInsuranceEnrollments = async (filters, page, limit, sortBy, ord
       whereClause.OR = [
         { member_id: { contains: search } },
         { notes: { contains: search } },
-        { human_friendly_id: { contains: search.toUpperCase() } },
-      ];
+        { human_friendly_id: { contains: search.toUpperCase() } }];
     }
 
     const [enrollments, total] = await Promise.all([
@@ -268,8 +244,7 @@ const listPatientInsuranceEnrollments = async (filters, page, limit, sortBy, ord
         orderBy,
         ENROLLMENT_INCLUDE
       ),
-      patientInsuranceEnrollmentRepository.count(whereClause),
-    ]);
+      patientInsuranceEnrollmentRepository.count(whereClause)]);
 
     return {
       enrollments: enrollments.map(mapEnrollmentForDisplay),
@@ -279,9 +254,7 @@ const listPatientInsuranceEnrollments = async (filters, page, limit, sortBy, ord
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -295,8 +268,7 @@ const getPatientInsuranceEnrollmentById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'patient_insurance_enrollment',
-      identifier: id,
-    });
+      identifier: id});
 
     const enrollment = await patientInsuranceEnrollmentRepository.findById(
       resolvedId,
@@ -333,8 +305,7 @@ const createPatientInsuranceEnrollment = async (data, userId, ipAddress) => {
       entity: 'patient_insurance_enrollment',
       entity_id: enrollment.id,
       diff: { after: enrollment },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapEnrollmentForDisplay(createdRecord || enrollment);
   } catch (error) {
@@ -350,8 +321,7 @@ const updatePatientInsuranceEnrollment = async (id, data, userId, ipAddress) => 
   try {
     const resolvedId = await resolveEntityId({
       model: 'patient_insurance_enrollment',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await patientInsuranceEnrollmentRepository.findById(
       resolvedId,
@@ -376,8 +346,7 @@ const updatePatientInsuranceEnrollment = async (id, data, userId, ipAddress) => 
       entity: 'patient_insurance_enrollment',
       entity_id: enrollment.id,
       diff: { before, after: enrollment },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapEnrollmentForDisplay(updatedRecord || enrollment);
   } catch (error) {
@@ -393,8 +362,7 @@ const deletePatientInsuranceEnrollment = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'patient_insurance_enrollment',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await patientInsuranceEnrollmentRepository.findById(
       resolvedId,
@@ -414,8 +382,7 @@ const deletePatientInsuranceEnrollment = async (id, userId, ipAddress) => {
       entity: 'patient_insurance_enrollment',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -429,8 +396,7 @@ const verifyPatientInsuranceEnrollment = async (id, data = {}, userId, ipAddress
   try {
     const resolvedId = await resolveEntityId({
       model: 'patient_insurance_enrollment',
-      identifier: id,
-    });
+      identifier: id});
 
     const enrollment = await patientInsuranceEnrollmentRepository.findById(
       resolvedId,
@@ -453,17 +419,14 @@ const verifyPatientInsuranceEnrollment = async (id, data = {}, userId, ipAddress
       eligibility = {
         eligible: nextStatus === 'ACTIVE',
         source: 'MANUAL',
-        notes: data?.notes || null,
-      };
+        notes: data?.notes || null};
     } else {
       const integrations = await prisma.insurer_integration.findMany({
         where: {
           deleted_at: null,
           is_enabled: true,
-          tenant_id: enrollment.tenant_id,
-        },
-        orderBy: { created_at: 'desc' },
-      });
+          tenant_id: enrollment.tenant_id},
+        orderBy: { created_at: 'desc' }});
 
       const integration = pickPreferredIntegration(integrations, enrollment);
 
@@ -473,15 +436,13 @@ const verifyPatientInsuranceEnrollment = async (id, data = {}, userId, ipAddress
         eligibility = {
           eligible: true,
           source: 'MANUAL_FALLBACK',
-          notes: 'No enabled insurer integration; verified manually',
-        };
+          notes: 'No enabled insurer integration; verified manually'};
       } else {
         integrationId = integration.id;
         const adapter = getInsurerAdapter(integration);
         eligibility = await adapter.checkEligibility({
           memberId: enrollment.member_id,
-          coveragePlan: enrollment.coverage_plan,
-        });
+          coveragePlan: enrollment.coverage_plan});
         nextStatus = eligibility?.eligible ? 'ACTIVE' : 'EXPIRED';
         verifiedVia = adapter.name || integration.adapter_type || 'STUB';
       }
@@ -492,8 +453,7 @@ const verifyPatientInsuranceEnrollment = async (id, data = {}, userId, ipAddress
     const updated = await patientInsuranceEnrollmentRepository.update(enrollment.id, {
       status: nextStatus,
       verified_at: verifiedAt,
-      last_verified_via: verifiedVia,
-    });
+      last_verified_via: verifiedVia});
 
     const updatedRecord = await patientInsuranceEnrollmentRepository.findById(
       updated.id,
@@ -510,15 +470,12 @@ const verifyPatientInsuranceEnrollment = async (id, data = {}, userId, ipAddress
         before: enrollment,
         after: updated,
         eligibility,
-        integration_id: integrationId,
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+        integration_id: integrationId},
+      ip_address: ipAddress}).catch(() => {});
 
     return {
       enrollment: mapEnrollmentForDisplay(updatedRecord || updated),
-      eligibility,
-    };
+      eligibility};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -531,5 +488,4 @@ module.exports = {
   createPatientInsuranceEnrollment,
   updatePatientInsuranceEnrollment,
   deletePatientInsuranceEnrollment,
-  verifyPatientInsuranceEnrollment,
-};
+  verifyPatientInsuranceEnrollment};

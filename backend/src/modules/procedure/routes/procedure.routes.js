@@ -13,8 +13,7 @@ const {
   createProcedureSchema,
   updateProcedureSchema,
   procedureIdParamsSchema,
-  listProceduresQuerySchema,
-} = require('@validations/procedure/procedure.schema');
+  listProceduresQuerySchema} = require('@validations/procedure/procedure.schema');
 
 router.get(
   '/',

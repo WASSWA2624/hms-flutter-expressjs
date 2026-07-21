@@ -15,8 +15,7 @@ const imagingModalitySchema = z.enum([
   'ECHO',
   'ENDO',
   'GASTRO',
-  'OTHER',
-]);
+  'OTHER']);
 
 const stageFilterSchema = z.enum([
   'ALL',
@@ -24,21 +23,17 @@ const stageFilterSchema = z.enum([
   'PROCESSING',
   'REPORTING',
   'COMPLETED',
-  'CANCELLED',
-]);
+  'CANCELLED']);
 const workbenchViewSchema = z.enum(['PATIENTS', 'ORDERS', 'patients', 'orders']);
 
 const orderWorkflowParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 const studyWorkflowParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 const resultWorkflowParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 const getRadiologyWorkbenchQuerySchema = listQuerySchema.extend({
   stage: stageFilterSchema.optional(),
@@ -51,22 +46,19 @@ const getRadiologyWorkbenchQuerySchema = listQuerySchema.extend({
   to: z.string().datetime().optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 const referenceDataQuerySchema = z.object({
   search: z.string().trim().max(120).optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
-  limit: z.coerce.number().int().min(1).max(50).optional(),
-});
+  limit: z.coerce.number().int().min(1).max(50).optional()});
 
 const requestDetailsSchema = z.object({
   modality: imagingModalitySchema.optional().nullable(),
   body_region: z.string().trim().max(120).optional().nullable(),
   laterality: z.string().trim().max(40).optional().nullable(),
   priority: z.string().trim().max(40).optional().nullable(),
-  standard_study_code: z.string().trim().max(80).optional().nullable(),
-}).passthrough();
+  standard_study_code: z.string().trim().max(80).optional().nullable()}).passthrough();
 
 const requestedRadiologyTestSchema = z.object({
   radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
@@ -75,14 +67,11 @@ const requestedRadiologyTestSchema = z.object({
   new_test: z.object({
     name: z.string().trim().min(1).max(255),
     code: z.string().trim().max(80).optional().nullable(),
-    modality: imagingModalitySchema.optional(),
-  }).optional(),
-}).refine(
+    modality: imagingModalitySchema.optional()}).optional()}).refine(
   (value) => Boolean(value.radiology_test_id || value.new_test?.name),
   {
     message: 'errors.validation.required',
-    path: ['radiology_test_id'],
-  }
+    path: ['radiology_test_id']}
 );
 
 const createRadiologyOrderSchema = z.object({
@@ -93,21 +82,18 @@ const createRadiologyOrderSchema = z.object({
   notes: z.string().trim().max(65535).optional().nullable(),
   clinical_note: z.string().trim().max(65535).optional().nullable(),
   request_details: requestDetailsSchema.optional().default({}),
-  requested_tests: z.array(requestedRadiologyTestSchema).min(1).max(50).optional(),
-}).refine(
+  requested_tests: z.array(requestedRadiologyTestSchema).min(1).max(50).optional()}).refine(
   (value) =>
     Boolean(value.radiology_test_id) ||
     (Array.isArray(value.requested_tests) && value.requested_tests.length > 0),
   {
     message: 'errors.validation.required',
-    path: ['requested_tests'],
-  }
+    path: ['requested_tests']}
 );
 
 const updateRadiologyOrderRequestDetailsSchema = z.object({
   clinical_note: z.string().trim().max(65535).optional().nullable(),
-  request_details: requestDetailsSchema.optional().default({}),
-});
+  request_details: requestDetailsSchema.optional().default({})});
 
 const assignRadiologyOrderSchema = z.object({
   assignee_user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
@@ -115,24 +101,20 @@ const assignRadiologyOrderSchema = z.object({
   scheduled_at: z.string().datetime().optional().nullable(),
   room: z.string().trim().max(120).optional().nullable(),
   equipment_registry_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const startRadiologyOrderSchema = z.object({
   started_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const completeRadiologyOrderSchema = z.object({
   completed_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const cancelRadiologyOrderSchema = z.object({
   reason: z.string().trim().min(2).max(255),
   cancelled_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const createRadiologyStudySchema = z.object({
   modality: imagingModalitySchema.optional(),
@@ -140,48 +122,41 @@ const createRadiologyStudySchema = z.object({
   equipment_registry_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   performed_at: z.string().datetime().optional(),
   started_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const initUploadAssetSchema = z.object({
   file_name: z.string().trim().min(1).max(255),
   content_type: z.string().trim().max(120).optional().nullable(),
-  size_bytes: z.coerce.number().int().positive().optional(),
-});
+  size_bytes: z.coerce.number().int().positive().optional()});
 
 const commitUploadAssetSchema = z.object({
   storage_key: z.string().trim().min(1).max(255),
   file_name: z.string().trim().max(255).optional().nullable(),
   content_type: z.string().trim().max(120).optional().nullable(),
-  upload_token: z.string().trim().max(255).optional().nullable(),
-});
+  upload_token: z.string().trim().max(255).optional().nullable()});
 
 const pacsSyncStudySchema = z.object({
   study_uid: z.string().trim().max(255).optional().nullable(),
   instances: z.array(z.any()).optional(),
   metadata: z.array(z.record(z.any())).optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const draftRadiologyResultSchema = z.object({
   report_text: z.string().trim().max(65535).optional().nullable(),
   findings: z.string().trim().max(65535).optional().nullable(),
   impression: z.string().trim().max(65535).optional().nullable(),
-  reported_at: z.string().datetime().optional(),
-});
+  reported_at: z.string().datetime().optional()});
 
 const finalizeRadiologyResultSchema = z.object({
   report_text: z.string().trim().max(65535).optional().nullable(),
   reported_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const requestFinalizationRadiologyResultSchema = z.object({
   statement: z.string().trim().max(65535).optional().nullable(),
   reason: z.string().trim().max(255).optional().nullable(),
   requested_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const attestFinalizationRadiologyResultSchema = z.object({
   statement: z.string().trim().max(65535).optional().nullable(),
@@ -189,14 +164,12 @@ const attestFinalizationRadiologyResultSchema = z.object({
   report_text: z.string().trim().max(65535).optional().nullable(),
   reported_at: z.string().datetime().optional(),
   attested_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const addendumRadiologyResultSchema = z.object({
   addendum_text: z.string().trim().min(2).max(65535),
   reported_at: z.string().datetime().optional(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 module.exports = {
   getRadiologyWorkbenchQuerySchema,
@@ -218,5 +191,4 @@ module.exports = {
   finalizeRadiologyResultSchema,
   requestFinalizationRadiologyResultSchema,
   attestFinalizationRadiologyResultSchema,
-  addendumRadiologyResultSchema,
-};
+  addendumRadiologyResultSchema};

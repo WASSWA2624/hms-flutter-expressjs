@@ -14,27 +14,22 @@ jest.mock('@services/pharmacy-workspace/pharmacy.shared', () => {
   const actual = jest.requireActual('@services/pharmacy-workspace/pharmacy.shared');
   return {
     ...actual,
-    resolveModelIdOrThrow: jest.fn(),
-  };
+    resolveModelIdOrThrow: jest.fn()};
 });
 
 const mockUser = {
   id: 'user-123',
   tenant_id: 'tenant-1',
   facility_id: 'facility-1',
-  roles: ['PHARMACIST'],
-};
+  roles: ['PHARMACIST']};
 
 const buildScopedItem = (overrides = {}) => ({
   id: 'item-1',
   pharmacy_order: {
     patient: {
       tenant_id: 'tenant-1',
-      facility_id: 'facility-1',
-    },
-  },
-  ...overrides,
-});
+      facility_id: 'facility-1'}},
+  ...overrides});
 
 describe('Pharmacy Order Item Service', () => {
   const userId = 'user-123';
@@ -116,8 +111,7 @@ describe('Pharmacy Order Item Service', () => {
     it('should get pharmacy order item by id', async () => {
       const mockItem = buildScopedItem({
         drug: { id: 'drug-1' },
-        dispense_logs: [],
-      });
+        dispense_logs: []});
       pharmacyOrderItemRepository.findById.mockResolvedValue(mockItem);
 
       const result = await pharmacyOrderItemService.getPharmacyOrderItemById(
@@ -142,10 +136,7 @@ describe('Pharmacy Order Item Service', () => {
           pharmacy_order: {
             patient: {
               tenant_id: 'tenant-other',
-              facility_id: 'facility-other',
-            },
-          },
-        })
+              facility_id: 'facility-other'}}})
       );
 
       await expect(
@@ -181,8 +172,7 @@ describe('Pharmacy Order Item Service', () => {
       expect(pharmacyOrderItemRepository.create).toHaveBeenCalledWith({
         ...payload,
         pharmacy_order_id: 'order-1',
-        drug_id: 'drug-1',
-      });
+        drug_id: 'drug-1'});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           tenant_id: 'tenant-1',

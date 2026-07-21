@@ -9,15 +9,13 @@ const appendSearchClause = (where, clause) => {
   if (!clause) return where;
   return {
     ...where,
-    AND: [...(Array.isArray(where.AND) ? where.AND : []), clause],
-  };
+    AND: [...(Array.isArray(where.AND) ? where.AND : []), clause]};
 };
 
 const withScope = ({ tenantId = null, facilityId = null } = {}) => ({
   deleted_at: null,
   ...(tenantId ? { tenant_id: tenantId } : {}),
-  ...(facilityId ? { facility_id: facilityId } : {}),
-});
+  ...(facilityId ? { facility_id: facilityId } : {})});
 
 const buildAppointmentWhere = ({
   tenantId,
@@ -27,21 +25,18 @@ const buildAppointmentWhere = ({
   status = null,
   search = null,
   dayStart = null,
-  dayEnd = null,
-} = {}) => {
+  dayEnd = null} = {}) => {
   let where = {
     ...withScope({ tenantId, facilityId }),
     ...(patientId ? { patient_id: patientId } : {}),
     ...(providerUserId ? { provider_user_id: providerUserId } : {}),
     ...(status ? { status } : {}),
-    patient: { deleted_at: null },
-  };
+    patient: { deleted_at: null }};
 
   if (dayStart || dayEnd) {
     where.scheduled_start = {
       ...(dayStart ? { gte: dayStart } : {}),
-      ...(dayEnd ? { lte: dayEnd } : {}),
-    };
+      ...(dayEnd ? { lte: dayEnd } : {})};
   }
 
   const rawSearch = resolveTextSearch(search);
@@ -57,9 +52,7 @@ const buildAppointmentWhere = ({
         { provider: { human_friendly_id: { contains: upperSearch } } },
         { provider: { email: { contains: rawSearch } } },
         { provider: { profile: { first_name: { contains: rawSearch } } } },
-        { provider: { profile: { last_name: { contains: rawSearch } } } },
-      ],
-    });
+        { provider: { profile: { last_name: { contains: rawSearch } } } }]});
   }
 
   return where;
@@ -70,15 +63,13 @@ const buildQueueWhere = ({
   facilityId,
   patientId = null,
   providerUserId = null,
-  search = null,
-} = {}) => {
+  search = null} = {}) => {
   let where = {
     ...withScope({ tenantId, facilityId }),
     ...(patientId ? { patient_id: patientId } : {}),
     ...(providerUserId ? { provider_user_id: providerUserId } : {}),
     patient: { deleted_at: null },
-    status: { in: ACTIVE_APPOINTMENT_STATUSES },
-  };
+    status: { in: ACTIVE_APPOINTMENT_STATUSES }};
 
   const rawSearch = resolveTextSearch(search);
   if (rawSearch) {
@@ -92,9 +83,7 @@ const buildQueueWhere = ({
         { appointment: { human_friendly_id: { contains: upperSearch } } },
         { provider: { human_friendly_id: { contains: upperSearch } } },
         { provider: { profile: { first_name: { contains: rawSearch } } } },
-        { provider: { profile: { last_name: { contains: rawSearch } } } },
-      ],
-    });
+        { provider: { profile: { last_name: { contains: rawSearch } } } }]});
   }
 
   return where;
@@ -106,8 +95,7 @@ const buildReminderWhere = ({
   patientId = null,
   providerUserId = null,
   search = null,
-  dueAt = null,
-} = {}) => {
+  dueAt = null} = {}) => {
   let where = {
     deleted_at: null,
     sent_at: null,
@@ -115,10 +103,8 @@ const buildReminderWhere = ({
       ...withScope({ tenantId, facilityId }),
       ...(patientId ? { patient_id: patientId } : {}),
       ...(providerUserId ? { provider_user_id: providerUserId } : {}),
-      patient: { deleted_at: null },
-    },
-    ...(dueAt ? { scheduled_at: { lte: dueAt } } : {}),
-  };
+      patient: { deleted_at: null }},
+    ...(dueAt ? { scheduled_at: { lte: dueAt } } : {})};
 
   const rawSearch = resolveTextSearch(search);
   if (rawSearch) {
@@ -130,9 +116,7 @@ const buildReminderWhere = ({
         { appointment: { reason: { contains: rawSearch } } },
         { appointment: { patient: { human_friendly_id: { contains: upperSearch } } } },
         { appointment: { patient: { first_name: { contains: rawSearch } } } },
-        { appointment: { patient: { last_name: { contains: rawSearch } } } },
-      ],
-    });
+        { appointment: { patient: { last_name: { contains: rawSearch } } } }]});
   }
 
   return where;
@@ -145,8 +129,7 @@ const buildFollowUpWhere = ({
   providerUserId = null,
   search = null,
   dueStart = null,
-  dueEnd = null,
-} = {}) => {
+  dueEnd = null} = {}) => {
   let where = {
     deleted_at: null,
     status: 'SCHEDULED',
@@ -154,15 +137,12 @@ const buildFollowUpWhere = ({
       ...withScope({ tenantId, facilityId }),
       ...(patientId ? { patient_id: patientId } : {}),
       ...(providerUserId ? { provider_user_id: providerUserId } : {}),
-      patient: { deleted_at: null },
-    },
-  };
+      patient: { deleted_at: null }}};
 
   if (dueStart || dueEnd) {
     where.scheduled_at = {
       ...(dueStart ? { gte: dueStart } : {}),
-      ...(dueEnd ? { lte: dueEnd } : {}),
-    };
+      ...(dueEnd ? { lte: dueEnd } : {})};
   }
 
   const rawSearch = resolveTextSearch(search);
@@ -177,9 +157,7 @@ const buildFollowUpWhere = ({
         { encounter: { patient: { first_name: { contains: rawSearch } } } },
         { encounter: { patient: { last_name: { contains: rawSearch } } } },
         { encounter: { provider: { profile: { first_name: { contains: rawSearch } } } } },
-        { encounter: { provider: { profile: { last_name: { contains: rawSearch } } } } },
-      ],
-    });
+        { encounter: { provider: { profile: { last_name: { contains: rawSearch } } } } }]});
   }
 
   return where;
@@ -191,19 +169,16 @@ const buildScheduleWhere = ({
   providerUserId = null,
   search = null,
   dayOfWeek = null,
-  dayEnd = null,
-} = {}) => {
+  dayEnd = null} = {}) => {
   let where = {
     ...withScope({ tenantId, facilityId }),
     ...(providerUserId ? { provider_user_id: providerUserId } : {}),
-    ...(Number.isInteger(dayOfWeek) ? { day_of_week: dayOfWeek } : {}),
-  };
+    ...(Number.isInteger(dayOfWeek) ? { day_of_week: dayOfWeek } : {})};
 
   if (dayEnd) {
     where.AND = [
       { OR: [{ effective_from: null }, { effective_from: { lte: dayEnd } }] },
-      { OR: [{ effective_to: null }, { effective_to: { gte: dayEnd } }] },
-    ];
+      { OR: [{ effective_to: null }, { effective_to: { gte: dayEnd } }] }];
   }
 
   const rawSearch = resolveTextSearch(search);
@@ -215,9 +190,7 @@ const buildScheduleWhere = ({
         { provider: { human_friendly_id: { contains: upperSearch } } },
         { provider: { email: { contains: rawSearch } } },
         { provider: { profile: { first_name: { contains: rawSearch } } } },
-        { provider: { profile: { last_name: { contains: rawSearch } } } },
-      ],
-    });
+        { provider: { profile: { last_name: { contains: rawSearch } } } }]});
   }
 
   return where;
@@ -228,16 +201,14 @@ const buildOpenEncounterWhere = ({
   facilityId,
   patientId = null,
   providerUserId = null,
-  search = null,
-} = {}) => {
+  search = null} = {}) => {
   let where = {
     ...withScope({ tenantId, facilityId }),
     encounter_type: { in: ['OPD', 'EMERGENCY'] },
     status: 'OPEN',
     ...(patientId ? { patient_id: patientId } : {}),
     ...(providerUserId ? { provider_user_id: providerUserId } : {}),
-    patient: { deleted_at: null },
-  };
+    patient: { deleted_at: null }};
 
   const rawSearch = resolveTextSearch(search);
   if (rawSearch) {
@@ -250,9 +221,7 @@ const buildOpenEncounterWhere = ({
         { patient: { last_name: { contains: rawSearch } } },
         { provider: { human_friendly_id: { contains: upperSearch } } },
         { provider: { profile: { first_name: { contains: rawSearch } } } },
-        { provider: { profile: { last_name: { contains: rawSearch } } } },
-      ],
-    });
+        { provider: { profile: { last_name: { contains: rawSearch } } } }]});
   }
 
   return where;
@@ -262,8 +231,7 @@ const PATIENT_SELECT = {
   id: true,
   human_friendly_id: true,
   first_name: true,
-  last_name: true,
-};
+  last_name: true};
 
 const USER_SELECT = {
   id: true,
@@ -273,16 +241,12 @@ const USER_SELECT = {
     select: {
       first_name: true,
       middle_name: true,
-      last_name: true,
-    },
-  },
-};
+      last_name: true}}};
 
 const FACILITY_SELECT = {
   id: true,
   human_friendly_id: true,
-  name: true,
-};
+  name: true};
 
 const findAppointments = async ({ where, take = 8 } = {}) =>
   prisma.appointment.findMany({
@@ -292,9 +256,7 @@ const findAppointments = async ({ where, take = 8 } = {}) =>
     include: {
       facility: { select: FACILITY_SELECT },
       patient: { select: PATIENT_SELECT },
-      provider: { select: USER_SELECT },
-    },
-  });
+      provider: { select: USER_SELECT }}});
 
 const countAppointments = async (where) => prisma.appointment.count({ where });
 
@@ -312,11 +274,7 @@ const findQueueEntries = async ({ where, take = 8 } = {}) =>
           id: true,
           human_friendly_id: true,
           scheduled_start: true,
-          status: true,
-        },
-      },
-    },
-  });
+          status: true}}}});
 
 const countQueueEntries = async (where) => prisma.visit_queue.count({ where });
 
@@ -330,11 +288,7 @@ const findReminders = async ({ where, take = 8 } = {}) =>
         include: {
           facility: { select: FACILITY_SELECT },
           patient: { select: PATIENT_SELECT },
-          provider: { select: USER_SELECT },
-        },
-      },
-    },
-  });
+          provider: { select: USER_SELECT }}}}});
 
 const countReminders = async (where) => prisma.appointment_reminder.count({ where });
 
@@ -348,11 +302,7 @@ const findFollowUps = async ({ where, take = 8 } = {}) =>
         include: {
           facility: { select: FACILITY_SELECT },
           patient: { select: PATIENT_SELECT },
-          provider: { select: USER_SELECT },
-        },
-      },
-    },
-  });
+          provider: { select: USER_SELECT }}}}});
 
 const countFollowUps = async (where) => prisma.follow_up.count({ where });
 
@@ -373,25 +323,16 @@ const findSchedules = async ({ where, take = 8, dayStart = null, dayEnd = null }
                   {
                     override_date: {
                       ...(dayStart ? { gte: dayStart } : {}),
-                      ...(dayEnd ? { lte: dayEnd } : {}),
-                    },
-                  },
-                  { override_date: null },
-                ],
-              }
-            : {}),
-        },
+                      ...(dayEnd ? { lte: dayEnd } : {})}},
+                  { override_date: null }]}
+            : {})},
         select: {
           id: true,
           human_friendly_id: true,
           override_date: true,
           start_time: true,
           end_time: true,
-          is_available: true,
-        },
-      },
-    },
-  });
+          is_available: true}}}});
 
 const countSchedules = async (where) => prisma.provider_schedule.count({ where });
 
@@ -403,9 +344,7 @@ const findOpenEncounters = async ({ where, take = 12 } = {}) =>
     include: {
       facility: { select: FACILITY_SELECT },
       patient: { select: PATIENT_SELECT },
-      provider: { select: USER_SELECT },
-    },
-  });
+      provider: { select: USER_SELECT }}});
 
 const countOpenEncounters = async (where) => prisma.encounter.count({ where });
 
@@ -417,18 +356,14 @@ const findFacilities = async ({ tenantId = null, search = null } = {}) => {
       ? {
           OR: [
             { name: { contains: resolveTextSearch(search) } },
-            { human_friendly_id: { contains: resolvePublicIdSearch(search) } },
-          ],
-        }
-      : {}),
-  };
+            { human_friendly_id: { contains: resolvePublicIdSearch(search) } }]}
+      : {})};
 
   return prisma.facility.findMany({
     where,
     orderBy: { name: 'asc' },
     take: 30,
-    select: FACILITY_SELECT,
-  });
+    select: FACILITY_SELECT});
 };
 
 const findProviders = async ({ tenantId = null, facilityId = null, search = null } = {}) => {
@@ -444,9 +379,7 @@ const findProviders = async ({ tenantId = null, facilityId = null, search = null
           OR: [
             { provider_schedules: { some: { deleted_at: null } } },
             { appointments: { some: { deleted_at: null } } },
-            { encounters: { some: { deleted_at: null, encounter_type: { in: ['OPD', 'EMERGENCY'] } } } },
-          ],
-        },
+            { encounters: { some: { deleted_at: null, encounter_type: { in: ['OPD', 'EMERGENCY'] } } } }]},
         ...(rawSearch
           ? [
               {
@@ -455,17 +388,11 @@ const findProviders = async ({ tenantId = null, facilityId = null, search = null
                   { email: { contains: rawSearch } },
                   { profile: { first_name: { contains: rawSearch } } },
                   { profile: { middle_name: { contains: rawSearch } } },
-                  { profile: { last_name: { contains: rawSearch } } },
-                ],
-              },
-            ]
-          : []),
-      ],
-    },
+                  { profile: { last_name: { contains: rawSearch } } }]}]
+          : [])]},
     orderBy: [{ email: 'asc' }, { created_at: 'asc' }],
     take: 40,
-    select: USER_SELECT,
-  });
+    select: USER_SELECT});
 };
 
 const LEGACY_MODEL_MAP = Object.freeze({
@@ -475,8 +402,7 @@ const LEGACY_MODEL_MAP = Object.freeze({
   'availability-slots': 'availability_slot',
   'visit-queues': 'visit_queue',
   'opd-flows': 'encounter',
-  'follow-ups': 'follow_up',
-});
+  'follow-ups': 'follow_up'});
 
 const resolveLegacyRecord = async ({ resource, id } = {}) => {
   const model = LEGACY_MODEL_MAP[resource];
@@ -485,13 +411,10 @@ const resolveLegacyRecord = async ({ resource, id } = {}) => {
   return prisma[model].findFirst({
     where: {
       deleted_at: null,
-      OR: [{ id }, { human_friendly_id: String(id || '').trim().toUpperCase() }],
-    },
+      OR: [{ id }, { human_friendly_id: String(id || '').trim().toUpperCase() }]},
     select: {
       id: true,
-      human_friendly_id: true,
-    },
-  });
+      human_friendly_id: true}});
 };
 
 module.exports = {
@@ -519,5 +442,4 @@ module.exports = {
   countOpenEncounters,
   findFacilities,
   findProviders,
-  resolveLegacyRecord,
-};
+  resolveLegacyRecord};

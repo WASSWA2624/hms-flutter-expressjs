@@ -44,7 +44,7 @@ describe('Integration Repository', () => {
           id: mockIntegration.id,
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -86,7 +86,7 @@ describe('Integration Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

@@ -9,8 +9,7 @@ describe('System Change Log Controller', () => {
   const mockRecord = {
     id: 'SCL0000001',
     change_type: 'DATABASE_MIGRATION',
-    details: 'Pending review',
-  };
+    details: 'Pending review'};
 
   let req;
   let res;
@@ -23,14 +22,11 @@ describe('System Change Log Controller', () => {
       body: {},
       user: {
         id: 'USR0000001',
-        tenant_id: 'TEN0000001',
-      },
-      ip: '127.0.0.1',
-    };
+        tenant_id: 'TEN0000001'},
+      ip: '127.0.0.1'};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+      json: jest.fn().mockReturnThis()};
   });
 
   it('passes filters and req.user to listSystemChangeLogs', async () => {
@@ -39,17 +35,14 @@ describe('System Change Log Controller', () => {
       page: '2',
       limit: '5',
       sort_by: 'created_at',
-      order: 'asc',
-    };
+      order: 'asc'};
     systemChangeLogService.listSystemChangeLogs.mockResolvedValue({
       systemChangeLogs: [mockRecord],
       pagination: {
         page: 2,
         limit: 5,
         total: 1,
-        totalPages: 1,
-      },
-    });
+        totalPages: 1}});
 
     await systemChangeLogController.listSystemChangeLogs(req, res);
 

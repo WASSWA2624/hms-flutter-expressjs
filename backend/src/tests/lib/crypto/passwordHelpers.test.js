@@ -4,8 +4,7 @@
 
 jest.mock('bcryptjs', () => ({
   hash: jest.fn(),
-  compare: jest.fn(),
-}));
+  compare: jest.fn()}));
 
 const bcrypt = require('bcryptjs');
 const { hashPassword } = require('@lib/crypto/hashPassword');

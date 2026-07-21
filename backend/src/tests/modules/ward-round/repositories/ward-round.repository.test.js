@@ -27,7 +27,7 @@ describe('Ward Round Repository', () => {
       prisma.ward_round.findFirst.mockResolvedValue(mockWardRound);
       const result = await wardRoundRepository.findById('test-id');
       expect(result).toEqual(mockWardRound);
-      expect(prisma.ward_round.findFirst).toHaveBeenCalledWith({ where: { id: 'test-id', deleted_at: null }, include: {} });
+      expect(prisma.ward_round.findFirst).toHaveBeenCalledWith({ where: { id: 'test-id', deleted_at: null }, include: undefined });
     });
 
     it('should return null if not found', async () => {

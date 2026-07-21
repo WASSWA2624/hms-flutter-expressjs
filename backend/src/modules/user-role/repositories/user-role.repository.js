@@ -15,53 +15,41 @@ const userRoleRelations = {
     select: {
       id: true,
       human_friendly_id: true,
-      email: true,
-    },
-  },
+      email: true}},
   role: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   tenant: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
-      slug: true,
-    },
-  },
-};
+      slug: true}}};
 
 const facilitySelect = {
   id: true,
   human_friendly_id: true,
-  name: true,
-};
+  name: true};
 
 const attachFacility = async (userRole) => {
   if (!userRole) return null;
   if (!userRole.facility_id) {
     return {
       ...userRole,
-      facility: null,
-    };
+      facility: null};
   }
 
   const facility = await prisma.facility.findFirst({
     where: {
       id: userRole.facility_id,
-      deleted_at: null,
-    },
-    select: facilitySelect,
-  });
+      deleted_at: null},
+    select: facilitySelect});
 
   return {
     ...userRole,
-    facility,
-  };
+    facility};
 };
 
 const attachFacilities = async (userRoles) => {
@@ -78,24 +66,20 @@ const attachFacilities = async (userRoles) => {
   if (facilityIds.length === 0) {
     return userRoles.map((userRole) => ({
       ...userRole,
-      facility: null,
-    }));
+      facility: null}));
   }
 
   const facilities = await prisma.facility.findMany({
     where: {
       id: { in: facilityIds },
-      deleted_at: null,
-    },
-    select: facilitySelect,
-  });
+      deleted_at: null},
+    select: facilitySelect});
 
   const facilitiesById = new Map(facilities.map((facility) => [facility.id, facility]));
 
   return userRoles.map((userRole) => ({
     ...userRole,
-    facility: userRole.facility_id ? facilitiesById.get(userRole.facility_id) || null : null,
-  }));
+    facility: userRole.facility_id ? facilitiesById.get(userRole.facility_id) || null : null}));
 };
 
 /**
@@ -111,8 +95,7 @@ const findById = async (id) => {
         id,
         deleted_at: null
       },
-      include: userRoleRelations,
-    });
+      include: userRoleRelations});
 
     return attachFacility(userRole);
   } catch (error) {
@@ -142,8 +125,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       skip,
       take,
       orderBy,
-      include: userRoleRelations,
-    });
+      include: userRoleRelations});
 
     return attachFacilities(userRoles);
   } catch (error) {
@@ -183,14 +165,12 @@ const create = async (data) => {
     user_id: data.user_id,
     role_id: data.role_id,
     tenant_id: data.tenant_id,
-    facility_id: data.facility_id ?? null,
-  };
+    facility_id: data.facility_id ?? null};
 
   const restoreOrReturnExisting = async () => {
     const existing = await prisma.user_role.findFirst({
       where: matchWhere,
-      orderBy: [{ deleted_at: 'asc' }, { updated_at: 'desc' }],
-    });
+      orderBy: [{ deleted_at: 'asc' }, { updated_at: 'desc' }]});
     if (!existing) {
       return null;
     }
@@ -201,9 +181,7 @@ const create = async (data) => {
       where: { id: existing.id },
       data: {
         deleted_at: null,
-        version: { increment: 1 },
-      },
-    });
+        version: { increment: 1 }}});
     return findById(existing.id);
   };
 
@@ -214,8 +192,7 @@ const create = async (data) => {
     }
 
     const userRole = await prisma.user_role.create({
-      data,
-    });
+      data});
 
     return findById(userRole.id);
   } catch (error) {

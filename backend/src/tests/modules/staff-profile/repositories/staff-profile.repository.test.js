@@ -35,7 +35,7 @@ describe('Staff Profile Repository', () => {
       expect(result).toEqual(mockProfile);
       expect(prisma.staff_profile.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -88,7 +88,7 @@ describe('Staff Profile Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

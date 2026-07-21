@@ -15,8 +15,7 @@ const {
   createShiftSwapRequestSchema,
   updateShiftSwapRequestSchema,
   shiftSwapRequestIdParamsSchema,
-  listShiftSwapRequestsQuerySchema,
-} = require('@validations/shift-swap-request/shift-swap-request.schema');
+  listShiftSwapRequestsQuerySchema} = require('@validations/shift-swap-request/shift-swap-request.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

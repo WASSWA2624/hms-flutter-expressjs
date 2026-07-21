@@ -9,8 +9,7 @@ const {
   updateShiftSchema,
   publishShiftSchema,
   shiftIdParamsSchema,
-  listShiftsQuerySchema,
-} = require('@validations/shift/shift.schema');
+  listShiftsQuerySchema} = require('@validations/shift/shift.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

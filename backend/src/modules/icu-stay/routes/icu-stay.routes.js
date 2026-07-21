@@ -25,8 +25,7 @@ const ICU_ALLOWED_ROLES = [
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
-  ROLES.NURSE,
-];
+  ROLES.NURSE];
 
 /**
  * @description List ICU stays with pagination and filters
@@ -50,7 +49,8 @@ const ICU_ALLOWED_ROLES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listIcuStaysQuerySchema }),
+  '/',
+  validateRequest({ query: listIcuStaysQuerySchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -71,7 +71,8 @@ router.get(
  * @throws 404 ICU stay not found
  */
 router.get(
-  '/:id',  validateRequest({ params: icuStayIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: icuStayIdParamsSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -96,7 +97,8 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createIcuStaySchema }),
+  '/',
+  validateRequest({ body: createIcuStaySchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -121,7 +123,8 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: icuStayIdParamsSchema, body: updateIcuStaySchema }),
+  '/:id',
+  validateRequest({ params: icuStayIdParamsSchema, body: updateIcuStaySchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -142,7 +145,8 @@ router.put(
  * @throws 404 ICU stay not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: icuStayIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: icuStayIdParamsSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),

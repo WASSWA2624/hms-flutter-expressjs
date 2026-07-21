@@ -17,23 +17,16 @@ jest.mock('@prisma/client', () => ({
     update: jest.fn()
   },
   user_role: {
-    updateMany: jest.fn(),
-  },
+    updateMany: jest.fn()},
   role_permission: {
-    updateMany: jest.fn(),
-  },
+    updateMany: jest.fn()},
   $transaction: jest.fn(async (callback) => callback({
     role: {
-      update: (...args) => require('@prisma/client').role.update(...args),
-    },
+      update: (...args) => require('@prisma/client').role.update(...args)},
     user_role: {
-      updateMany: (...args) => require('@prisma/client').user_role.updateMany(...args),
-    },
+      updateMany: (...args) => require('@prisma/client').user_role.updateMany(...args)},
     role_permission: {
-      updateMany: (...args) => require('@prisma/client').role_permission.updateMany(...args),
-    },
-  })),
-}));
+      updateMany: (...args) => require('@prisma/client').role_permission.updateMany(...args)}}))}));
 
 const {
   findById,
@@ -220,16 +213,13 @@ describe('Role Repository', () => {
 
       expect(result).toEqual({
         role: mockRole,
-        detached_user_assignments: 2,
-      });
+        detached_user_assignments: 2});
       expect(prisma.user_role.updateMany).toHaveBeenCalledWith({
         where: { role_id: 'role-123', deleted_at: null },
-        data: { deleted_at: expect.any(Date) },
-      });
+        data: { deleted_at: expect.any(Date) }});
       expect(prisma.role_permission.updateMany).toHaveBeenCalledWith({
         where: { role_id: 'role-123', deleted_at: null },
-        data: { deleted_at: expect.any(Date) },
-      });
+        data: { deleted_at: expect.any(Date) }});
       expect(prisma.role.update).toHaveBeenCalledWith({
         where: { id: 'role-123' },
         data: { deleted_at: expect.any(Date) }

@@ -21,8 +21,7 @@ const {
   reverseClinicalRequestBilling,
   extractStoredClinicalBilling,
   buildLabOrderBillingFromRequest,
-  normalizeBillingOfficeClinicalBilling,
-} = require('@lib/billing/clinical-request-billing');
+  normalizeBillingOfficeClinicalBilling} = require('@lib/billing/clinical-request-billing');
 
 const sanitizeString = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -46224,16 +46223,14 @@ const buildRequestedItemPayload = ({
   panelDisplayName = null,
   panelCode = null,
   panelSortOrder = null,
-  panelItemSortOrder = null,
-}) => ({
+  panelItemSortOrder = null}) => ({
   lab_test_id: labTestId,
   status: 'ORDERED',
   panel_id: panelId,
   panel_display_name: panelDisplayName,
   panel_code: panelCode,
   panel_sort_order: panelSortOrder,
-  panel_item_sort_order: panelItemSortOrder,
-});
+  panel_item_sort_order: panelItemSortOrder});
 
 const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, tenantId, userId, ipAddress }) => {
   const items = [];
@@ -46282,8 +46279,7 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
             panelDisplayName,
             panelCode: normalizedPanelCode,
             panelSortOrder: currentPanelSortOrder,
-            panelItemSortOrder: standardCodes.indexOf(standardCode),
-          })
+            panelItemSortOrder: standardCodes.indexOf(standardCode)})
         );
       }
       continue;
@@ -46320,8 +46316,7 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
           panelSortOrder: currentPanelSortOrder,
           panelItemSortOrder: Number.isFinite(Number(panelItem?.sort_order))
             ? Number(panelItem.sort_order)
-            : index,
-        })
+            : index})
       );
     });
   }
@@ -46335,12 +46330,10 @@ const resolveEncounterDisplayMeta = async (encounterId) => {
   }
   const encounter = await prisma.encounter.findFirst({
     where: { id: encounterId, deleted_at: null },
-    select: { id: true, human_friendly_id: true },
-  });
+    select: { id: true, human_friendly_id: true }});
   return {
     encounterId: encounter?.id || encounterId,
-    encounterDisplayId: encounter?.human_friendly_id || encounterId,
-  };
+    encounterDisplayId: encounter?.human_friendly_id || encounterId};
 };
 
 const resolveLabOrderBillingPayload = async ({
@@ -46349,16 +46342,14 @@ const resolveLabOrderBillingPayload = async ({
   requestedPanels,
   tenantId,
   facilityId,
-  shouldReplaceItems = true,
-}) => {
+  shouldReplaceItems = true}) => {
   let resolvedBilling = billing ? normalizeBillingOfficeClinicalBilling(billing) : null;
   if (!resolvedBilling && shouldReplaceItems) {
     resolvedBilling = await buildLabOrderBillingFromRequest({
       requestedTests,
       requestedPanels,
       tenantId,
-      facilityId,
-    });
+      facilityId});
   }
   return resolvedBilling;
 };
@@ -46369,8 +46360,7 @@ const applyLabOrderBilling = async ({
   existingSnapshot = null,
   patientRecord,
   encounterId,
-  description = 'Laboratory order',
-}) => {
+  description = 'Laboratory order'}) => {
   if (!billing || !patientRecord) {
     return;
   }
@@ -46385,8 +46375,7 @@ const applyLabOrderBilling = async ({
       patientId: patientRecord.id,
       description,
       encounterId: encounterMeta.encounterId,
-      encounterDisplayId: encounterMeta.encounterDisplayId,
-    });
+      encounterDisplayId: encounterMeta.encounterDisplayId});
   });
 };
 
@@ -46400,8 +46389,7 @@ const notifyLabOrdersBillingUpdated = async (orderIds = [], actorUserId = null) 
     await publishLabOrderRealtimeUpdate({
       orderRecord,
       action: 'BILLING_UPDATED',
-      actorUserId,
-    });
+      actorUserId});
   }
 };
 
@@ -46422,23 +46410,20 @@ const createLabOrder = async (data, userId, ipAddress) => {
       select: {
         id: true,
         tenant_id: true,
-        facility_id: true,
-      },
+        facility_id: true},
       errorKey: 'errors.patient.not_found'
     });
     payload.patient_id = patientRecord.id;
 
     if (!payload.encounter_id) {
       throw new HttpError('errors.lab_order.encounter_required', 400, [
-        { field: 'encounter_id' },
-      ]);
+        { field: 'encounter_id' }]);
     }
     payload.encounter_id = await resolveLabOrderEncounterId({
       identifier: payload.encounter_id,
       patientId: patientRecord.id,
       tenantId: patientRecord.tenant_id,
-      facilityId: patientRecord.facility_id || null,
-    });
+      facilityId: patientRecord.facility_id || null});
 
     payload.status = payload.status || 'ORDERED';
     delete payload.ordered_at;
@@ -46466,15 +46451,13 @@ const createLabOrder = async (data, userId, ipAddress) => {
       requestedTests,
       requestedPanels,
       tenantId: patientRecord.tenant_id,
-      facilityId: patientRecord.facility_id || null,
-    });
+      facilityId: patientRecord.facility_id || null});
     if (resolvedBilling) {
       await applyLabOrderBilling({
         orderId: labOrder.id,
         billing: resolvedBilling,
         patientRecord,
-        encounterId: payload.encounter_id,
-      });
+        encounterId: payload.encounter_id});
     }
     const createdOrder = await labOrderRepository.findById(labOrder.id, LAB_ORDER_WITH_RELATIONS_INCLUDE);
 
@@ -46489,8 +46472,7 @@ const createLabOrder = async (data, userId, ipAddress) => {
     publishLabOrderRealtimeUpdate({
       orderRecord: createdOrder || labOrder,
       action: 'CREATED',
-      actorUserId: userId,
-    });
+      actorUserId: userId});
 
     return mapLabOrderRecord(createdOrder || labOrder);
   } catch (error) {
@@ -46539,8 +46521,7 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
             identifier: payload.encounter_id,
             patientId: before.patient_id,
             tenantId: before.patient?.tenant_id || tenantId,
-            facilityId: before.patient?.facility_id || null,
-          })
+            facilityId: before.patient?.facility_id || null})
         : null;
     }
 
@@ -46585,8 +46566,7 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
       const patientId = payload.patient_id || before.patient_id;
       const patientRecord = await prisma.patient.findFirst({
         where: { id: patientId, deleted_at: null },
-        select: { id: true, tenant_id: true, facility_id: true },
-      });
+        select: { id: true, tenant_id: true, facility_id: true }});
       if (patientRecord) {
         const resolvedBilling = await resolveLabOrderBillingPayload({
           billing,
@@ -46594,23 +46574,20 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
           requestedPanels,
           tenantId: patientRecord.tenant_id,
           facilityId: patientRecord.facility_id || null,
-          shouldReplaceItems,
-        });
+          shouldReplaceItems});
         if (resolvedBilling) {
           await applyLabOrderBilling({
             orderId: updated.id,
             billing: resolvedBilling,
             existingSnapshot,
             patientRecord,
-            encounterId: payload.encounter_id ?? before.encounter_id,
-          });
+            encounterId: payload.encounter_id ?? before.encounter_id});
         } else if (shouldReplaceItems && existingSnapshot?.invoice_id) {
           await prisma.$transaction(async (tx) => {
             await reverseClinicalRequestBilling(tx, { existingSnapshot });
             await tx.lab_order.update({
               where: { id: updated.id },
-              data: { billing_snapshot: null },
-            });
+              data: { billing_snapshot: null }});
           });
         }
       }
@@ -46619,8 +46596,7 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
         await reverseClinicalRequestBilling(tx, { existingSnapshot });
         await tx.lab_order.update({
           where: { id: updated.id },
-          data: { billing_snapshot: null },
-        });
+          data: { billing_snapshot: null }});
       });
     }
     const labOrder = await labOrderRepository.findById(updated.id, LAB_ORDER_WITH_RELATIONS_INCLUDE);
@@ -46636,8 +46612,7 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
     publishLabOrderRealtimeUpdate({
       orderRecord: labOrder || updated,
       action: 'UPDATED',
-      actorUserId: userId,
-    });
+      actorUserId: userId});
 
     return mapLabOrderRecord(labOrder || updated);
   } catch (error) {
@@ -46669,8 +46644,7 @@ const deleteLabOrder = async (id, data = {}, userId, ipAddress) => {
         await reverseClinicalRequestBilling(tx, { existingSnapshot });
         await tx.lab_order.update({
           where: { id: before.id },
-          data: { billing_snapshot: null },
-        });
+          data: { billing_snapshot: null }});
       });
     }
 
@@ -46687,8 +46661,7 @@ const deleteLabOrder = async (id, data = {}, userId, ipAddress) => {
     publishLabOrderRealtimeUpdate({
       orderRecord: before,
       action: 'DELETED',
-      actorUserId: userId,
-    });
+      actorUserId: userId});
 
     return mapLabOrderRecord(before);
   } catch (error) {
@@ -46705,5 +46678,4 @@ module.exports = {
   createLabOrder,
   updateLabOrder,
   deleteLabOrder,
-  notifyLabOrdersBillingUpdated,
-};
+  notifyLabOrdersBillingUpdated};

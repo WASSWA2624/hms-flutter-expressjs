@@ -41,7 +41,7 @@ describe('Transfer Request Repository', () => {
       expect(result).toEqual(mockTransferRequest);
       expect(prisma.transfer_request.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -94,7 +94,7 @@ describe('Transfer Request Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -108,7 +108,7 @@ describe('Transfer Request Repository', () => {
         skip: 0,
         take: 20,
         orderBy,
-        include: {}
+        include: undefined
       });
     });
 

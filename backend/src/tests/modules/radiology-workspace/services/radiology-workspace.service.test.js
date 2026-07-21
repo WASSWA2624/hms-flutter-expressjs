@@ -2,39 +2,30 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/radiology-workspace/radiology-workspace.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/websocket', () => ({
   emitToUsers: jest.fn(),
   DIAGNOSTIC_EVENTS: {
     RADIOLOGY_WORKFLOW_UPDATED: 'diagnostic.radiology_workflow_updated',
     RADIOLOGY_RESULT_UPDATED: 'diagnostic.radiology_result_updated',
-    RADIOLOGY_RESULT_READY: 'diagnostic.radiology_result_ready',
-  },
-}));
+    RADIOLOGY_RESULT_READY: 'diagnostic.radiology_result_ready'}}));
 jest.mock('@prisma/client', () => ({
   user_role: {
-    findMany: jest.fn(),
-  },
-}));
+    findMany: jest.fn()}}));
 jest.mock('@lib/dicomweb/client', () => ({
   isConfigured: jest.fn(),
   stowStudy: jest.fn(),
-  buildStudyUrl: jest.fn(),
-}));
+  buildStudyUrl: jest.fn()}));
 jest.mock('@services/radiology-order/radiology-order.service', () => ({
-  createRadiologyOrder: jest.fn(),
-}));
+  createRadiologyOrder: jest.fn()}));
 jest.mock('@services/opd-flow/opd-flow.service', () => ({
-  syncDiagnosticsStage: jest.fn().mockResolvedValue(null),
-}));
+  syncDiagnosticsStage: jest.fn().mockResolvedValue(null)}));
 jest.mock('@services/radiology-workspace/radiology.shared', () => {
   const actual = jest.requireActual('@services/radiology-workspace/radiology.shared');
   return {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
-    resolveModelRecordOrThrow: jest.fn(),
-  };
+    resolveModelRecordOrThrow: jest.fn()};
 });
 
 const radiologyWorkspaceRepository = require('@repositories/radiology-workspace/radiology-workspace.repository');
@@ -46,8 +37,7 @@ const prisma = require('@prisma/client');
 const dicomWebClient = require('@lib/dicomweb/client');
 const {
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/radiology-workspace/radiology.shared');
+  resolveModelRecordOrThrow} = require('@services/radiology-workspace/radiology.shared');
 const radiologyWorkspaceService = require('@services/radiology-workspace/radiology-workspace.service');
 
 const now = new Date('2026-02-27T10:20:00.000Z');
@@ -67,23 +57,19 @@ const buildOrder = (overrides = {}) => ({
     tenant_id: 'tenant-internal-1',
     facility_id: 'facility-internal-1',
     first_name: 'Amina',
-    last_name: 'Stone',
-  },
+    last_name: 'Stone'},
   encounter: {
     id: 'encounter-internal-1',
-    human_friendly_id: 'ENC0000001',
-  },
+    human_friendly_id: 'ENC0000001'},
   radiology_test: {
     id: 'rtest-internal-1',
     human_friendly_id: 'RDT0000001',
     name: 'Chest XRay',
     code: 'CXR',
-    modality: 'XRAY',
-  },
+    modality: 'XRAY'},
   results: [],
   imaging_studies: [],
-  ...overrides,
-});
+  ...overrides});
 
 const flushAsync = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -99,15 +85,13 @@ describe('radiology-workspace.service', () => {
     prisma.user_role.findMany.mockResolvedValue([
       { user_id: 'user-1' },
       { user_id: 'actor-1' },
-      { user_id: 'user-2' },
-    ]);
+      { user_id: 'user-2' }]);
   });
 
   it('resolves legacy radiology route identifiers to canonical /radiology routes', async () => {
     resolveModelRecordOrThrow.mockResolvedValue({
       id: '19e508a6-ea17-4c7f-a0f4-b6f0ac401cb5',
-      human_friendly_id: 'RADRES0005',
-    });
+      human_friendly_id: 'RADRES0005'});
 
     const resolved = await radiologyWorkspaceService.resolveLegacyRouteIdentifier(
       'radiology-results',
@@ -119,8 +103,7 @@ describe('radiology-workspace.service', () => {
       resource: 'results',
       identifier: 'RADRES0005',
       route: '/radiology/results/RADRES0005',
-      matched_by: 'uuid',
-    });
+      matched_by: 'uuid'});
   });
 
   it('assignRadiologyOrder persists scheduling fields and emits realtime update', async () => {
@@ -139,16 +122,13 @@ describe('radiology-workspace.service', () => {
         id: 'user-internal-9',
         human_friendly_id: 'USR0000009',
         email: 'tech@example.com',
-        profile: { first_name: 'Ray', last_name: 'Tech' },
-      },
+        profile: { first_name: 'Ray', last_name: 'Tech' }},
       equipment_registry: {
         id: 'equip-internal-1',
         human_friendly_id: 'EQP0000001',
         equipment_name: 'DR Room A',
         equipment_code: 'XR-A',
-        status: 'ACTIVE',
-      },
-    });
+        status: 'ACTIVE'}});
 
     radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -164,8 +144,7 @@ describe('radiology-workspace.service', () => {
         assignee_user_id: 'USR0000009',
         scheduled_at: '2026-03-01T09:00:00.000Z',
         room: 'XRAY-1',
-        equipment_registry_id: 'EQP0000001',
-      },
+        equipment_registry_id: 'EQP0000001'},
       'actor-1',
       '127.0.0.1'
     );
@@ -176,8 +155,7 @@ describe('radiology-workspace.service', () => {
       expect.objectContaining({
         assigned_user_id: 'user-internal-9',
         room: 'XRAY-1',
-        equipment_registry_id: 'equip-internal-1',
-      })
+        equipment_registry_id: 'equip-internal-1'})
     );
     expect(result?.workflow?.order?.id).toBe('RAD0000001');
     expect(result?.assignment?.room).toBe('XRAY-1');
@@ -189,8 +167,7 @@ describe('radiology-workspace.service', () => {
       'diagnostic.radiology_workflow_updated',
       expect.objectContaining({
         action: 'ASSIGN',
-        order_id: 'RAD0000001',
-      })
+        order_id: 'RAD0000001'})
     );
   });
 
@@ -201,10 +178,7 @@ describe('radiology-workspace.service', () => {
         billing: {
           payment_status: 'PENDING',
           total_amount: '80.00',
-          currency: 'USD',
-        },
-      },
-    });
+          currency: 'USD'}}});
 
     radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -215,8 +189,7 @@ describe('radiology-workspace.service', () => {
       radiologyWorkspaceService.startRadiologyOrder('RAD0000001', {}, 'actor-1', '127.0.0.1')
     ).rejects.toMatchObject({
       message: 'errors.radiology_order.payment_required',
-      statusCode: 402,
-    });
+      statusCode: 402});
   });
 
   it('addendumRadiologyResult creates a new version without mutating the FINAL report', async () => {
@@ -232,8 +205,7 @@ describe('radiology-workspace.service', () => {
       reported_at: now,
       created_at: now,
       updated_at: now,
-      attestations: [],
-    };
+      attestations: []};
     const amendedResult = {
       id: 'result-internal-2',
       human_friendly_id: 'RRS0000002',
@@ -246,16 +218,13 @@ describe('radiology-workspace.service', () => {
       reported_at: now,
       created_at: now,
       updated_at: now,
-      attestations: [],
-    };
+      attestations: []};
     const orderWithFinal = buildOrder({
       status: 'IN_PROCESS',
-      results: [finalResult],
-    });
+      results: [finalResult]});
     const orderWithAddendum = buildOrder({
       status: 'IN_PROCESS',
-      results: [amendedResult, finalResult],
-    });
+      results: [amendedResult, finalResult]});
 
     radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
       callback({})
@@ -280,8 +249,7 @@ describe('radiology-workspace.service', () => {
         parent_result_id: 'result-internal-1',
         status: 'AMENDED',
         addendum_text: 'Clarified findings',
-        report_version: 2,
-      })
+        report_version: 2})
     );
     expect(radiologyWorkspaceRepository.txUpdateResult).not.toHaveBeenCalled();
     expect(result?.result?.status).toBe('AMENDED');
@@ -294,9 +262,7 @@ describe('radiology-workspace.service', () => {
       display_id: 'RAD0000001',
       created_orders: [
         { id: 'order-internal-1', display_id: 'RAD0000001' },
-        { id: 'order-internal-2', display_id: 'RAD0000002' },
-      ],
-    });
+        { id: 'order-internal-2', display_id: 'RAD0000002' }]});
     resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
     radiologyWorkspaceRepository.findOrderById.mockResolvedValue(buildOrder());
 
@@ -309,14 +275,10 @@ describe('radiology-workspace.service', () => {
           {
             radiology_test_id: 'RADT000001',
             clinical_note: 'Chest pain',
-            request_details: { modality: 'XRAY', priority: 'URGENT' },
-          },
+            request_details: { modality: 'XRAY', priority: 'URGENT' }},
           {
             radiology_test_id: 'STD_RAD_TEST_RAD-00002',
-            request_details: { modality: 'CT', body_region: 'Head' },
-          },
-        ],
-      },
+            request_details: { modality: 'CT', body_region: 'Head' }}]},
       'actor-1',
       '127.0.0.1'
     );
@@ -331,19 +293,13 @@ describe('radiology-workspace.service', () => {
             clinical_note: 'Chest pain',
             request_details: expect.objectContaining({
               modality: 'XRAY',
-              priority: 'URGENT',
-            }),
-          }),
+              priority: 'URGENT'})}),
           expect.objectContaining({
             radiology_test_id: 'STD_RAD_TEST_RAD-00002',
             clinical_note: 'Persistent request note',
             request_details: expect.objectContaining({
               modality: 'CT',
-              body_region: 'Head',
-            }),
-          }),
-        ],
-      }),
+              body_region: 'Head'})})]}),
       'actor-1',
       '127.0.0.1'
     );
@@ -353,8 +309,7 @@ describe('radiology-workspace.service', () => {
 
   it('keeps legacy single-test workspace order payloads compatible', async () => {
     radiologyOrderService.createRadiologyOrder.mockResolvedValue({
-      display_id: 'RAD0000001',
-    });
+      display_id: 'RAD0000001'});
     resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
     radiologyWorkspaceRepository.findOrderById.mockResolvedValue(buildOrder());
 
@@ -364,8 +319,7 @@ describe('radiology-workspace.service', () => {
         encounter_id: 'ENC0000001',
         radiology_test_id: 'RADT000001',
         notes: 'Legacy clinical note',
-        request_details: { modality: 'XRAY', priority: 'ROUTINE' },
-      },
+        request_details: { modality: 'XRAY', priority: 'ROUTINE' }},
       'actor-1',
       '127.0.0.1'
     );
@@ -378,11 +332,7 @@ describe('radiology-workspace.service', () => {
             clinical_note: 'Legacy clinical note',
             request_details: expect.objectContaining({
               modality: 'XRAY',
-              priority: 'ROUTINE',
-            }),
-          }),
-        ],
-      }),
+              priority: 'ROUTINE'})})]}),
       'actor-1',
       '127.0.0.1'
     );
@@ -395,9 +345,7 @@ describe('radiology-workspace.service', () => {
         human_friendly_id: 'PAT0000001',
         first_name: 'Amina',
         last_name: 'Stone',
-        contacts: [{ value: '+256700000001' }],
-      },
-    ]);
+        contacts: [{ value: '+256700000001' }]}]);
     radiologyWorkspaceRepository.findReferenceEncounters.mockResolvedValue([
       {
         id: 'encounter-internal-1',
@@ -408,27 +356,20 @@ describe('radiology-workspace.service', () => {
           id: 'patient-internal-1',
           human_friendly_id: 'PAT0000001',
           first_name: 'Amina',
-          last_name: 'Stone',
-        },
-      },
-    ]);
+          last_name: 'Stone'}}]);
     radiologyWorkspaceRepository.findReferenceRadiologyTests.mockResolvedValue([
       {
         id: 'rtest-internal-1',
         human_friendly_id: 'RDT0000001',
         name: 'Chest XRay',
         code: 'CXR',
-        modality: 'XRAY',
-      },
-    ]);
+        modality: 'XRAY'}]);
     radiologyWorkspaceRepository.findReferenceUsers.mockResolvedValue([
       {
         id: 'user-internal-1',
         human_friendly_id: 'USR0000001',
         email: 'tech@example.com',
-        profile: { first_name: 'Imani', middle_name: null, last_name: 'Tech' },
-      },
-    ]);
+        profile: { first_name: 'Imani', middle_name: null, last_name: 'Tech' }}]);
 
     const data = await radiologyWorkspaceService.getRadiologyReferenceData(
       { search: 'amina' },
@@ -437,47 +378,40 @@ describe('radiology-workspace.service', () => {
 
     expect(data.patients[0]).toEqual(
       expect.objectContaining({
-        value: 'PAT0000001',
-      })
+        value: 'PAT0000001'})
     );
     expect(data.encounters[0]).toEqual(
       expect.objectContaining({
         value: 'ENC0000001',
-        patient_id: 'PAT0000001',
-      })
+        patient_id: 'PAT0000001'})
     );
     expect(data.radiology_tests[0]).toEqual(
       expect.objectContaining({
-        value: 'RDT0000001',
-      })
+        value: 'RDT0000001'})
     );
     expect(data.assignees[0]).toEqual(
       expect.objectContaining({
-        value: 'USR0000001',
-      })
+        value: 'USR0000001'})
     );
   });
 
   it('creates radiology order and returns workflow payload', async () => {
     resolveModelRecordOrThrow.mockResolvedValueOnce({
       id: 'patient-internal-1',
-      tenant_id: 'tenant-internal-1',
-    });
+      tenant_id: 'tenant-internal-1'});
     resolveModelIdOrThrow
       .mockResolvedValueOnce('encounter-internal-1')
       .mockResolvedValueOnce('rtest-internal-1');
     radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) => callback({}));
     radiologyWorkspaceRepository.txCreateOrder.mockResolvedValue({
-      id: 'order-internal-1',
-    });
+      id: 'order-internal-1'});
     radiologyWorkspaceRepository.txFindOrderById.mockResolvedValue(buildOrder());
 
     const result = await radiologyWorkspaceService.createRadiologyOrder(
       {
         patient_id: 'PAT0000001',
         encounter_id: 'ENC0000001',
-        radiology_test_id: 'RDT0000001',
-      },
+        radiology_test_id: 'RDT0000001'},
       'actor-1',
       '127.0.0.1'
     );
@@ -498,18 +432,14 @@ describe('radiology-workspace.service', () => {
       request_details: {
         modality: 'XRAY',
         body_region: 'Chest',
-        priority: 'ROUTINE',
-      },
-    });
+        priority: 'ROUTINE'}});
     const afterOrder = buildOrder({
       clinical_note: 'Updated notes',
       request_details: {
         modality: 'XRAY',
         body_region: 'Chest',
         laterality: 'LEFT',
-        priority: 'URGENT',
-      },
-    });
+        priority: 'URGENT'}});
 
     radiologyWorkspaceRepository.txFindOrderById
       .mockResolvedValueOnce(beforeOrder)
@@ -521,9 +451,7 @@ describe('radiology-workspace.service', () => {
         clinical_note: 'Updated notes',
         request_details: {
           laterality: 'LEFT',
-          priority: 'URGENT',
-        },
-      },
+          priority: 'URGENT'}},
       'actor-1',
       '127.0.0.1'
     );
@@ -537,15 +465,12 @@ describe('radiology-workspace.service', () => {
           modality: 'XRAY',
           body_region: 'Chest',
           laterality: 'LEFT',
-          priority: 'URGENT',
-        }),
-      }
+          priority: 'URGENT'})}
     );
     expect(response.workflow.order.request_details).toEqual(
       expect.objectContaining({
         laterality: 'LEFT',
-        priority: 'URGENT',
-      })
+        priority: 'URGENT'})
     );
 
     await flushAsync();
@@ -554,16 +479,14 @@ describe('radiology-workspace.service', () => {
       expect.objectContaining({
         action: 'UPDATE_REQUEST_DETAILS',
         entity: 'radiology_order',
-        entity_id: 'order-internal-1',
-      })
+        entity_id: 'order-internal-1'})
     );
     expect(emitToUsers).toHaveBeenCalledWith(
       ['user-1', 'user-2'],
       'diagnostic.radiology_workflow_updated',
       expect.objectContaining({
         action: 'UPDATE_REQUEST_DETAILS',
-        order_id: 'RAD0000001',
-      })
+        order_id: 'RAD0000001'})
     );
   });
 
@@ -575,8 +498,7 @@ describe('radiology-workspace.service', () => {
       radiology_order_id: 'order-internal-1',
       modality: 'XRAY',
       assets: [],
-      pacs_links: [],
-    });
+      pacs_links: []});
     radiologyWorkspaceRepository.findOrderById.mockResolvedValue(buildOrder());
     dicomWebClient.isConfigured.mockReturnValue(false);
 
@@ -589,8 +511,7 @@ describe('radiology-workspace.service', () => {
 
     expect(result).toEqual(
       expect.objectContaining({
-        sync_status: 'FAILED',
-      })
+        sync_status: 'FAILED'})
     );
     expect(result.error).toContain('PACS_DICOMWEB_BASE_URL');
   });
@@ -603,8 +524,7 @@ describe('radiology-workspace.service', () => {
       radiology_order_id: 'order-internal-1',
       modality: 'XRAY',
       assets: [],
-      pacs_links: [],
-    });
+      pacs_links: []});
     radiologyWorkspaceRepository.findOrderById.mockResolvedValue(
       buildOrder({
         imaging_studies: [
@@ -616,10 +536,7 @@ describe('radiology-workspace.service', () => {
             created_at: now,
             updated_at: now,
             assets: [],
-            pacs_links: [],
-          },
-        ],
-      })
+            pacs_links: []}]})
     );
     dicomWebClient.isConfigured.mockReturnValue(true);
     dicomWebClient.stowStudy.mockResolvedValue({ studyUid: '1.2.3' });
@@ -634,8 +551,7 @@ describe('radiology-workspace.service', () => {
       url: 'https://pacs.example/studies/1.2.3',
       created_at: now,
       updated_at: now,
-      imaging_study_id: 'study-internal-1',
-    });
+      imaging_study_id: 'study-internal-1'});
     radiologyWorkspaceRepository.txFindOrderById.mockResolvedValue(
       buildOrder({
         imaging_studies: [
@@ -653,12 +569,7 @@ describe('radiology-workspace.service', () => {
                 human_friendly_id: 'PAC0000001',
                 url: 'https://pacs.example/studies/1.2.3',
                 created_at: now,
-                updated_at: now,
-              },
-            ],
-          },
-        ],
-      })
+                updated_at: now}]}]})
     );
 
     const result = await radiologyWorkspaceService.syncStudyToPacs(
@@ -687,10 +598,7 @@ describe('radiology-workspace.service', () => {
           reported_at: now,
           created_at: now,
           updated_at: now,
-          attestations: [],
-        },
-      ],
-    });
+          attestations: []}]});
 
     const resultWithRequest = {
       ...order.results[0],
@@ -704,10 +612,7 @@ describe('radiology-workspace.service', () => {
           attested_role: 'DOCTOR',
           attested_at: now,
           created_at: now,
-          updated_at: now,
-        },
-      ],
-    };
+          updated_at: now}]};
 
     radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) => callback({}));
     radiologyWorkspaceRepository.txFindResultById
@@ -715,8 +620,7 @@ describe('radiology-workspace.service', () => {
       .mockResolvedValueOnce(resultWithRequest);
     radiologyWorkspaceRepository.txFindResultAttestation.mockResolvedValueOnce(null);
     radiologyWorkspaceRepository.txCreateResultAttestation.mockResolvedValue({
-      id: 'att-request-1',
-    });
+      id: 'att-request-1'});
     radiologyWorkspaceRepository.txFindOrderById.mockResolvedValue(order);
 
     const response = await radiologyWorkspaceService.requestRadiologyResultFinalization(
@@ -744,13 +648,11 @@ describe('radiology-workspace.service', () => {
       reported_at: now,
       created_at: now,
       updated_at: now,
-      attestations: [],
-    });
+      attestations: []});
     radiologyWorkspaceRepository.txFindResultAttestation.mockResolvedValueOnce({
       id: 'att-request-1',
       phase: 'REQUEST',
-      attested_by_user_id: 'actor-1',
-    });
+      attested_by_user_id: 'actor-1'});
 
     await expect(
       radiologyWorkspaceService.attestRadiologyResultFinalization(
@@ -821,8 +723,7 @@ describe('radiology-workspace.service', () => {
       reported_at: now,
       created_at: now,
       updated_at: now,
-      attestations: [],
-    };
+      attestations: []};
     radiologyWorkspaceRepository.txFindOrderById
       .mockResolvedValueOnce(
         buildOrder({ status: 'IN_PROCESS', results: [finalResult] })
@@ -886,8 +787,7 @@ describe('radiology-workspace.service', () => {
       reported_at: now,
       created_at: now,
       updated_at: now,
-      attestations: [],
-    };
+      attestations: []};
     const finalResult = { ...draftResult, status: 'FINAL' };
     radiologyWorkspaceRepository.txFindResultById.mockResolvedValue(draftResult);
     radiologyWorkspaceRepository.txUpdateResult.mockResolvedValue(finalResult);

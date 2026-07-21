@@ -15,8 +15,7 @@ const loadCorsConfig = (overrides = {}) => {
     NODE_ENV: 'development',
     CORS_ORIGINS: 'http://example.com',
     ALLOW_PRIVATE_NETWORK_ORIGINS: 'true',
-    ...overrides,
-  });
+    ...overrides});
   return require('@config/cors');
 };
 
@@ -76,8 +75,7 @@ describe('CORS config', () => {
 
   test('allows local Playwright static-export origin in development', (done) => {
     const { corsOptions } = loadCorsConfig({
-      ALLOW_PRIVATE_NETWORK_ORIGINS: 'false',
-    });
+      ALLOW_PRIVATE_NETWORK_ORIGINS: 'false'});
     corsOptions.origin('http://localhost:8084', (err, allowed) => {
       expect(err).toBeNull();
       expect(allowed).toBe(true);
@@ -88,8 +86,7 @@ describe('CORS config', () => {
   test('allows private-network origin in production when explicitly enabled', (done) => {
     const { corsOptions } = loadCorsConfig({
       NODE_ENV: 'production',
-      ALLOW_PRIVATE_NETWORK_ORIGINS: 'true',
-    });
+      ALLOW_PRIVATE_NETWORK_ORIGINS: 'true'});
     corsOptions.origin('http://192.168.10.22:8081', (err, allowed) => {
       expect(err).toBeNull();
       expect(allowed).toBe(true);
@@ -101,8 +98,7 @@ describe('CORS config', () => {
     const { corsOptions } = loadCorsConfig({
       NODE_ENV: 'production',
       CORS_ORIGINS: 'http://localhost:8081,http://127.0.0.1:8081',
-      ALLOW_PRIVATE_NETWORK_ORIGINS: 'false',
-    });
+      ALLOW_PRIVATE_NETWORK_ORIGINS: 'false'});
     corsOptions.origin('http://localhost:8085', (err, allowed) => {
       expect(err).toBeNull();
       expect(allowed).toBe(true);
@@ -122,8 +118,7 @@ describe('CORS config', () => {
   test('rejects private-network origin in production when disabled', (done) => {
     const { corsOptions } = loadCorsConfig({
       NODE_ENV: 'production',
-      ALLOW_PRIVATE_NETWORK_ORIGINS: 'false',
-    });
+      ALLOW_PRIVATE_NETWORK_ORIGINS: 'false'});
     corsOptions.origin('http://192.168.10.22:8081', (err) => {
       expect(err).toBeInstanceOf(Error);
       expect(err.statusCode).toBe(403);

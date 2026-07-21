@@ -45,7 +45,7 @@ describe('Webhook Subscription Repository', () => {
           id: mockWebhookSubscription.id,
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -87,7 +87,7 @@ describe('Webhook Subscription Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

@@ -41,13 +41,11 @@ describe('Dashboard Widget Service', () => {
   };
   const mockUser = {
     id: mockUserId,
-    tenant_id: mockDashboardWidget.tenant_id,
-  };
+    tenant_id: mockDashboardWidget.tenant_id};
   const mockContext = {
     user: mockUser,
     user_id: mockUserId,
-    ip_address: mockIpAddress,
-  };
+    ip_address: mockIpAddress};
 
   describe('listDashboardWidgets', () => {
     it('should list dashboard widgets with pagination', async () => {
@@ -70,9 +68,7 @@ describe('Dashboard Widget Service', () => {
           display_id: 'DW0001',
           name: mockDashboardWidget.name,
           widget_type: 'SUMMARY',
-          placement: 'home',
-        }),
-      ]);
+          placement: 'home'})]);
       expect(result.pagination).toEqual({
         page: 1,
         limit: 20,
@@ -125,9 +121,7 @@ describe('Dashboard Widget Service', () => {
           tenant_id: mockDashboardWidget.tenant_id,
           OR: [
             { name: { contains: 'dashboard', mode: 'insensitive' } },
-            { placement: { contains: 'dashboard', mode: 'insensitive' } },
-          ],
-        },
+            { placement: { contains: 'dashboard', mode: 'insensitive' } }]},
         0,
         20,
         { sort_order: 'asc' },
@@ -181,8 +175,7 @@ describe('Dashboard Widget Service', () => {
           id: 'DW0001',
           display_id: 'DW0001',
           name: mockDashboardWidget.name,
-          widget_type: 'SUMMARY',
-        })
+          widget_type: 'SUMMARY'})
       );
       expect(dashboardWidgetRepository.findById).toHaveBeenCalledWith(mockDashboardWidget.id);
     });
@@ -229,8 +222,7 @@ describe('Dashboard Widget Service', () => {
           id: 'DW0001',
           display_id: 'DW0001',
           name: mockDashboardWidget.name,
-          widget_type: 'SUMMARY',
-        })
+          widget_type: 'SUMMARY'})
       );
       expect(dashboardWidgetRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -241,8 +233,7 @@ describe('Dashboard Widget Service', () => {
           placement: 'home',
           sort_order: 3,
           is_pinned: true,
-          config_json: createData.config_json,
-        })
+          config_json: createData.config_json})
       );
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: mockDashboardWidget.tenant_id,
@@ -254,9 +245,7 @@ describe('Dashboard Widget Service', () => {
           after: expect.objectContaining({
             id: 'DW0001',
             name: mockDashboardWidget.name,
-            widget_type: 'SUMMARY',
-          }),
-        },
+            widget_type: 'SUMMARY'})},
         ip_address: mockIpAddress
       });
     });
@@ -270,8 +259,7 @@ describe('Dashboard Widget Service', () => {
           {
             name: 'Ops Widget',
             widget_type: 'QUEUE',
-            placement: 'sidebar',
-          },
+            placement: 'sidebar'},
           mockContext
         )
       ).rejects.toMatchObject({ statusCode: 500 });
@@ -308,14 +296,12 @@ describe('Dashboard Widget Service', () => {
         expect.objectContaining({
           id: 'DW0001',
           name: 'Updated Dashboard',
-          version: 2,
-        })
+          version: 2})
       );
       expect(dashboardWidgetRepository.findById).toHaveBeenCalledWith(mockDashboardWidget.id);
       expect(dashboardWidgetRepository.update).toHaveBeenCalledWith(mockDashboardWidget.id, {
         name: 'Updated Dashboard',
-        version: 2,
-      });
+        version: 2});
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: mockDashboardWidget.tenant_id,
         user_id: mockUserId,
@@ -325,13 +311,10 @@ describe('Dashboard Widget Service', () => {
         diff: expect.objectContaining({
           before: expect.objectContaining({
             name: mockDashboardWidget.name,
-            version: 1,
-          }),
+            version: 1}),
           after: expect.objectContaining({
             name: 'Updated Dashboard',
-            version: 2,
-          }),
-        }),
+            version: 2})}),
         ip_address: mockIpAddress
       });
     });
@@ -382,9 +365,7 @@ describe('Dashboard Widget Service', () => {
         diff: {
           before: expect.objectContaining({
             id: 'DW0001',
-            name: mockDashboardWidget.name,
-          }),
-        },
+            name: mockDashboardWidget.name})},
         ip_address: mockIpAddress
       });
     });
@@ -445,15 +426,13 @@ describe('Dashboard Widget Service', () => {
         ['MORTUARY_STAFF', 'mortuary_staff', 'mortuary_staff'],
         ['MORTUARY_MANAGER', 'mortuary_manager', 'mortuary_manager'],
         ['PATIENT', 'patient', 'patient_safe'],
-        ['OTHER', 'other', 'limited'],
-      ];
+        ['OTHER', 'other', 'limited']];
 
       dashboardWidgetRepository.getDashboardSummaryByPack.mockResolvedValue({
         metrics: {},
         trendDates: [],
         statusCounts: {},
-        activity: {},
-      });
+        activity: {}});
 
       for (const [role, profile, pack] of roleCases) {
         const result = await dashboardWidgetService.getDashboardSummary(
@@ -462,8 +441,7 @@ describe('Dashboard Widget Service', () => {
             id: 'user-1',
             roles: [role],
             tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-            facility_id: '770e8400-e29b-41d4-a716-446655440000',
-          }
+            facility_id: '770e8400-e29b-41d4-a716-446655440000'}
         );
 
         expect(result.roleProfile.id).toBe(profile);
@@ -479,12 +457,10 @@ describe('Dashboard Widget Service', () => {
           facilitiesTotal: 4,
           subscriptionsActive: 2,
           subscriptionsTotal: 3,
-          moduleEntitlementIssues: 1,
-        },
+          moduleEntitlementIssues: 1},
         trendDates: [],
         statusCounts: { ACTIVE: 2, TRIAL: 1 },
-        activity: { tenants: 1, subscriptions: 1 },
-      });
+        activity: { tenants: 1, subscriptions: 1 }});
 
       const result = await dashboardWidgetService.getDashboardSummary(
         { days: 7 },
@@ -494,14 +470,12 @@ describe('Dashboard Widget Service', () => {
       expect(dashboardWidgetRepository.getDashboardSummaryByPack).toHaveBeenCalledWith(
         expect.objectContaining({
           packId: 'super_admin',
-          scope: expect.objectContaining({ platform: true }),
-        })
+          scope: expect.objectContaining({ platform: true })})
       );
       expect(result.summaryCards).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ id: 'tenants_active', format: 'ratio' }),
-          expect.objectContaining({ id: 'subscriptions_health', format: 'ratio' }),
-        ])
+          expect.objectContaining({ id: 'subscriptions_health', format: 'ratio' })])
       );
     });
 
@@ -510,41 +484,31 @@ describe('Dashboard Widget Service', () => {
         metrics: { activeAdmissions: 4, medAdminToday: 8, transferQueue: 2, criticalLabs: 1 },
         trendDates: [],
         statusCounts: {},
-        activity: { admissions: 2 },
-      });
+        activity: { admissions: 2 }});
 
       await dashboardWidgetService.getDashboardSummary(
         {
           tenant_id: 'query-tenant-should-be-ignored',
           facility_id: 'query-facility-should-be-ignored',
-          days: 7,
-        },
+          days: 7},
         {
           id: 'user-1',
           roles: ['NURSE'],
           tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-          facility_id: '770e8400-e29b-41d4-a716-446655440000',
-          branch_id: '880e8400-e29b-41d4-a716-446655440000',
-        }
+          facility_id: '770e8400-e29b-41d4-a716-446655440000'}
       );
 
       expect(dashboardWidgetRepository.getDashboardSummaryByPack).toHaveBeenCalledWith(
         expect.objectContaining({
           scope: {
             tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-            facility_id: '770e8400-e29b-41d4-a716-446655440000',
-            branch_id: '880e8400-e29b-41d4-a716-446655440000',
-          },
-        })
+            facility_id: '770e8400-e29b-41d4-a716-446655440000'}})
       );
       expect(dashboardWidgetRepository.countUnreadOpdNotifications).toHaveBeenCalledWith({
         scope: {
           tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-          facility_id: '770e8400-e29b-41d4-a716-446655440000',
-          branch_id: '880e8400-e29b-41d4-a716-446655440000',
-        },
-        userId: 'user-1',
-      });
+          facility_id: '770e8400-e29b-41d4-a716-446655440000'},
+        userId: 'user-1'});
     });
 
     it('shapes payload with aggregate-only contract and strips raw-record fields', async () => {
@@ -554,16 +518,13 @@ describe('Dashboard Widget Service', () => {
           appointmentsToday: 5,
           activeAdmissions: 2,
           openInvoices: 4,
-          paymentsToday: 1000,
-        },
+          paymentsToday: 1000},
         trendDates: [new Date().toISOString()],
         statusCounts: { PAID: 1, OVERDUE: 2 },
         activity: {
           appointments: 7,
           admissions: 2,
-          invoices: 1,
-        },
-      });
+          invoices: 1}});
 
       const result = await dashboardWidgetService.getDashboardSummary(
         { days: 7 },
@@ -571,8 +532,7 @@ describe('Dashboard Widget Service', () => {
           id: 'user-1',
           roles: ['TENANT_ADMIN'],
           tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-          facility_id: '770e8400-e29b-41d4-a716-446655440000',
-        }
+          facility_id: '770e8400-e29b-41d4-a716-446655440000'}
       );
 
       expect(result).toEqual(
@@ -587,8 +547,7 @@ describe('Dashboard Widget Service', () => {
           activity: expect.any(Array),
           hasLiveData: expect.any(Boolean),
           generatedAt: expect.any(String),
-          scope: expect.any(Object),
-        })
+          scope: expect.any(Object)})
       );
 
       const leakageKeys = ['name', 'notes', 'description', 'patient_id', 'staff_id', 'first_name', 'last_name'];
@@ -605,12 +564,10 @@ describe('Dashboard Widget Service', () => {
           appointmentsToday: 2,
           activeAdmissions: 0,
           openInvoices: 0,
-          paymentsToday: 0,
-        },
+          paymentsToday: 0},
         trendDates: [],
         statusCounts: {},
-        activity: {},
-      });
+        activity: {}});
       dashboardWidgetRepository.countUnreadOpdNotifications.mockResolvedValue(3);
 
       const result = await dashboardWidgetService.getDashboardSummary(
@@ -618,33 +575,26 @@ describe('Dashboard Widget Service', () => {
         {
           id: 'user-1',
         roles: ['DOCTOR'],
-        tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-      }
+        tenant_id: '660e8400-e29b-41d4-a716-446655440000'}
       );
 
       expect(result.summaryCards).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             id: 'opd_notifications_attention',
-            value: 3,
-          }),
-        ])
+            value: 3})])
       );
       expect(result.activity).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             id: 'activity_opd_attention',
-            meta: '3 updates',
-          }),
-        ])
+            meta: '3 updates'})])
       );
       expect(result.queue).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             id: 'queue_opd_attention',
-            statusVariant: 'error',
-          }),
-        ])
+            statusVariant: 'error'})])
       );
     });
 
@@ -655,32 +605,27 @@ describe('Dashboard Widget Service', () => {
           inProcess: 1,
           pending: 0,
           critical: 0,
-          completed: 3,
-        },
+          completed: 3},
         trendDates: [],
         statusCounts: {},
-        activity: {},
-      });
+        activity: {}});
 
       const result = await dashboardWidgetService.getDashboardSummary(
         { days: 7 },
         {
           id: 'user-1',
           roles: ['LAB_TECH'],
-          tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-        }
+          tenant_id: '660e8400-e29b-41d4-a716-446655440000'}
       );
 
       expect(dashboardWidgetRepository.countUnreadOpdNotifications).not.toHaveBeenCalled();
       expect(result.summaryCards).not.toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: 'opd_notifications_attention' }),
-        ])
+          expect.objectContaining({ id: 'opd_notifications_attention' })])
       );
       expect(result.queue).not.toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: 'queue_opd_attention' }),
-        ])
+          expect.objectContaining({ id: 'queue_opd_attention' })])
       );
     });
   });

@@ -42,7 +42,7 @@ describe('Coverage Plan Repository', () => {
       expect(result).toEqual(mockCoveragePlan);
       expect(prisma.coverage_plan.findFirst).toHaveBeenCalledWith({
         where: { id: coveragePlanId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 

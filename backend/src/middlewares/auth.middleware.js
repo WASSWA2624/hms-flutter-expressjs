@@ -23,8 +23,7 @@ const API_KEY_ALLOWED_ROUTE_SEGMENTS = new Set([
   'integrations',
   'integration-logs',
   'webhook-subscriptions',
-  'interop',
-]);
+  'interop']);
 
 const isApiKeyContext = (user = {}) =>
   String(user.auth_type || user.authType || '').toLowerCase() === 'api_key';
@@ -45,7 +44,6 @@ const normalizeUserContext = (decoded = {}) => {
     decoded.hospital_id ||
     decoded.hospitalId ||
     null;
-  const branchId = decoded.branch_id || decoded.branchId || null;
   const authType = decoded.auth_type || decoded.authType || 'jwt';
   const apiKeyAuth = String(authType).toLowerCase() === 'api_key';
 
@@ -73,8 +71,6 @@ const normalizeUserContext = (decoded = {}) => {
     tenantId,
     facility_id: facilityId,
     facilityId,
-    branch_id: branchId,
-    branchId,
     auth_type: authType,
     api_key_id: decoded.api_key_id || decoded.apiKeyId || null,
     apiKeyId: decoded.api_key_id || decoded.apiKeyId || null,
@@ -93,8 +89,7 @@ const normalizeUserContext = (decoded = {}) => {
  */
 const getUserPermissions = (user = {}) => {
   const {
-    resolveRequestPermissionNames,
-  } = require('@lib/authorization/effective-access');
+    resolveRequestPermissionNames} = require('@lib/authorization/effective-access');
 
   if (isApiKeyContext(user)) {
     const explicitPermissions = Array.isArray(user.permissions)
@@ -164,8 +159,7 @@ const normalizeApiKeyPermissions = (apiKeyRecord = {}) =>
       return [
         permission?.name,
         permission?.code,
-        entry?.permission_name,
-      ];
+        entry?.permission_name];
     })
     .map((permission) => String(permission || '').trim())
     .filter(Boolean);
@@ -186,14 +180,12 @@ const buildApiKeyUserContext = (apiKeyRecord = {}) => {
     user_id: linkedUser.id || linkedUser.user_id || linkedUser.userId || apiKeyRecord.user_id,
     tenant_id: apiKeyRecord.tenant_id || linkedUser.tenant_id || linkedUser.tenantId || null,
     facility_id: linkedUser.facility_id || linkedUser.facilityId || null,
-    branch_id: linkedUser.branch_id || linkedUser.branchId || null,
     linked_user_roles: linkedRoles,
     role: null,
     roles: [],
     permissions: scopedPermissions,
     auth_type: 'api_key',
-    api_key_id: apiKeyRecord.id,
-  });
+    api_key_id: apiKeyRecord.id});
 };
 
 const parseApiKeyHint = (rawApiKey) => {
@@ -205,8 +197,7 @@ const parseApiKeyHint = (rawApiKey) => {
 
   return {
     hint: hint.trim().toUpperCase(),
-    presentedKey: normalized,
-  };
+    presentedKey: normalized};
 };
 
 const resolveApiKeyCandidates = async (presentedApiKey) => {
@@ -224,8 +215,7 @@ const resolveApiKeyCandidates = async (presentedApiKey) => {
 const authenticateWithApiKey = async (req, apiKey) => {
   if (!isApiKeyAllowedForRoute(req)) {
     recordSecurityEvent('auth.api_key_not_allowed', {
-      'http.route': String(req.originalUrl || req.path || '').split('?')[0],
-    });
+      'http.route': String(req.originalUrl || req.path || '').split('?')[0]});
     throw new HttpError('errors.auth.api_key_not_allowed', 403);
   }
 
@@ -240,8 +230,7 @@ const authenticateWithApiKey = async (req, apiKey) => {
 
   if (!record) {
     recordSecurityEvent('auth.api_key_invalid', {
-      'http.route': String(req.originalUrl || req.path || '').split('?')[0],
-    });
+      'http.route': String(req.originalUrl || req.path || '').split('?')[0]});
     throw new HttpError('errors.auth.api_key_invalid', 401);
   }
 
@@ -257,9 +246,7 @@ const authenticateWithApiKey = async (req, apiKey) => {
     user_agent: req.get?.('user-agent'),
     details: {
       route: String(req.originalUrl || req.path || '').split('?')[0],
-      auth_type: 'api_key',
-    },
-  }).catch(() => {});
+      auth_type: 'api_key'}}).catch(() => {});
 };
 
 /**
@@ -287,8 +274,7 @@ const authenticate = () => {
       
       if (!token && !apiKey) {
         recordSecurityEvent('auth.missing_token', {
-          'http.route': String(req.originalUrl || req.path || '').split('?')[0],
-        });
+          'http.route': String(req.originalUrl || req.path || '').split('?')[0]});
         return next(new HttpError('errors.auth.missing_token', 401));
       }
 
@@ -299,11 +285,9 @@ const authenticate = () => {
           return next();
         } catch (tokenError) {
           recordSecurityEvent('auth.invalid_token', {
-            'http.route': String(req.originalUrl || req.path || '').split('?')[0],
-          });
+            'http.route': String(req.originalUrl || req.path || '').split('?')[0]});
           markSpanError(tokenError, {
-            'hms.security.event': 'auth.invalid_token',
-          });
+            'hms.security.event': 'auth.invalid_token'});
           return next(new HttpError('errors.auth.invalid_token', 401));
         }
       }
@@ -316,11 +300,9 @@ const authenticate = () => {
           return next(apiKeyError);
         }
         recordSecurityEvent('auth.api_key_invalid', {
-          'http.route': String(req.originalUrl || req.path || '').split('?')[0],
-        });
+          'http.route': String(req.originalUrl || req.path || '').split('?')[0]});
         markSpanError(apiKeyError, {
-          'hms.security.event': 'auth.api_key_invalid',
-        });
+          'hms.security.event': 'auth.api_key_invalid'});
         return next(new HttpError('errors.auth.api_key_invalid', 401));
       }
     } catch (err) {
@@ -349,8 +331,7 @@ const authorize = (requiredRole, type = 'role') => {
           recordSecurityEvent('auth.role_denied', {
             'http.route': String(req.originalUrl || req.path || '').split('?')[0],
             'auth.check.type': 'role',
-            'auth.context': 'api_key',
-          });
+            'auth.context': 'api_key'});
           return next(new HttpError('errors.auth.insufficient_permissions', 403));
         }
 
@@ -368,8 +349,7 @@ const authorize = (requiredRole, type = 'role') => {
         if (!hasRequiredRole) {
           recordSecurityEvent('auth.role_denied', {
             'http.route': String(req.originalUrl || req.path || '').split('?')[0],
-            'auth.check.type': 'role',
-          });
+            'auth.check.type': 'role'});
           return next(new HttpError('errors.auth.insufficient_permissions', 403));
         }
       } else if (type === 'permission') {
@@ -384,8 +364,7 @@ const authorize = (requiredRole, type = 'role') => {
         if (!hasRequiredPermission) {
           recordSecurityEvent('auth.permission_denied', {
             'http.route': String(req.originalUrl || req.path || '').split('?')[0],
-            'auth.check.type': 'permission',
-          });
+            'auth.check.type': 'permission'});
           return next(new HttpError('errors.auth.insufficient_permissions', 403));
         }
       }
@@ -426,8 +405,7 @@ const denyRoles = (disallowedRoles) => {
       if (userRoles.some((role) => normalizedDisallowedRoles.has(role))) {
         recordSecurityEvent('auth.role_denied', {
           'http.route': String(req.originalUrl || req.path || '').split('?')[0],
-          'auth.check.type': 'role_denylist',
-        });
+          'auth.check.type': 'role_denylist'});
         return next(new HttpError('errors.auth.insufficient_permissions', 403));
       }
 
@@ -461,6 +439,5 @@ module.exports = {
   denyRoles,
   requireAuth,
   normalizeUserContext,
-  getUserPermissions,
-};
+  getUserPermissions};
 

@@ -7,16 +7,14 @@ const {
   filterSetupModulesForUser,
   isAdminSetupUser,
   isHrSetupOnlyUser,
-  canWriteSetupModule,
-} = require('@lib/setup/hr-facility-setup');
+  canWriteSetupModule} = require('@lib/setup/hr-facility-setup');
 
 const text = (value) => String(value || '').trim();
 
 const GROUPS = Object.freeze([
   { id: 'organization', label_key: 'settings.sidebar.groups.organization' },
   { id: 'usersAndAccess', label_key: 'settings.sidebar.groups.usersAndAccess' },
-  { id: 'security', label_key: 'settings.sidebar.groups.security' },
-]);
+  { id: 'security', label_key: 'settings.sidebar.groups.security' }]);
 
 const MODULE_CATALOG = Object.freeze([
   {
@@ -27,8 +25,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/tenants',
     create_route: '/settings/tenants/create',
     dependencies: [],
-    mandatory: true,
-  },
+    mandatory: true},
   {
     id: 'facility',
     group_id: 'organization',
@@ -37,18 +34,13 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/facilities',
     create_route: '/settings/facilities/create',
     dependencies: ['tenant'],
-    mandatory: true,
-  },
+    mandatory: true},
   {
-    id: 'branch',
     group_id: 'organization',
     label_key: 'settings.tabs.branch',
     icon: 'git-branch-outline',
-    route: '/settings/branches',
-    create_route: '/settings/branches/create',
     dependencies: ['facility'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'department',
     group_id: 'organization',
@@ -57,8 +49,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/departments',
     create_route: '/settings/departments/create',
     dependencies: ['facility'],
-    mandatory: true,
-  },
+    mandatory: true},
   {
     id: 'unit',
     group_id: 'organization',
@@ -67,8 +58,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/units',
     create_route: '/settings/units/create',
     dependencies: ['department'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'room',
     group_id: 'organization',
@@ -77,8 +67,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/rooms',
     create_route: '/settings/rooms/create',
     dependencies: ['ward'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'ward',
     group_id: 'organization',
@@ -87,8 +76,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/wards',
     create_route: '/settings/wards/create',
     dependencies: ['department'],
-    mandatory: true,
-  },
+    mandatory: true},
   {
     id: 'bed',
     group_id: 'organization',
@@ -97,8 +85,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/beds',
     create_route: '/settings/beds/create',
     dependencies: ['ward'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'address',
     group_id: 'organization',
@@ -107,8 +94,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/addresses',
     create_route: '/settings/addresses/create',
     dependencies: ['facility'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'contact',
     group_id: 'organization',
@@ -117,8 +103,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/contacts',
     create_route: '/settings/contacts/create',
     dependencies: ['facility'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'user',
     group_id: 'usersAndAccess',
@@ -127,8 +112,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/users',
     create_route: '/settings/users/create',
     dependencies: ['facility'],
-    mandatory: true,
-  },
+    mandatory: true},
   {
     id: 'user-profile',
     group_id: 'usersAndAccess',
@@ -137,8 +121,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/user-profiles',
     create_route: '/settings/user-profiles/create',
     dependencies: ['user'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'role',
     group_id: 'usersAndAccess',
@@ -147,8 +130,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/roles',
     create_route: '/settings/roles/create',
     dependencies: ['tenant'],
-    mandatory: true,
-  },
+    mandatory: true},
   {
     id: 'permission',
     group_id: 'usersAndAccess',
@@ -157,8 +139,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/permissions',
     create_route: '/settings/permissions/create',
     dependencies: ['tenant'],
-    mandatory: true,
-  },
+    mandatory: true},
   {
     id: 'role-permission',
     group_id: 'usersAndAccess',
@@ -167,8 +148,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/role-permissions',
     create_route: '/settings/role-permissions/create',
     dependencies: ['role', 'permission'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'user-role',
     group_id: 'usersAndAccess',
@@ -177,8 +157,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/user-roles',
     create_route: '/settings/user-roles/create',
     dependencies: ['user', 'role'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'user-session',
     group_id: 'usersAndAccess',
@@ -187,8 +166,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/user-sessions',
     create_route: null,
     dependencies: ['user'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'api-key',
     group_id: 'security',
@@ -197,8 +175,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/api-keys',
     create_route: null,
     dependencies: ['user'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'api-key-permission',
     group_id: 'security',
@@ -207,8 +184,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/api-key-permissions',
     create_route: '/settings/api-key-permissions/create',
     dependencies: ['api-key', 'permission'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'user-mfa',
     group_id: 'security',
@@ -217,8 +193,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/user-mfas',
     create_route: '/settings/user-mfas/create',
     dependencies: ['user'],
-    mandatory: false,
-  },
+    mandatory: false},
   {
     id: 'oauth-account',
     group_id: 'security',
@@ -227,9 +202,7 @@ const MODULE_CATALOG = Object.freeze([
     route: '/settings/oauth-accounts',
     create_route: '/settings/oauth-accounts/create',
     dependencies: ['user'],
-    mandatory: false,
-  },
-]);
+    mandatory: false}]);
 
 const CHECKLIST_ORDER = Object.freeze([
   'tenant',
@@ -239,8 +212,7 @@ const CHECKLIST_ORDER = Object.freeze([
   'bed',
   'user',
   'role',
-  'permission',
-]);
+  'permission']);
 
 const lower = (value) => text(value).toLowerCase();
 
@@ -263,8 +235,7 @@ const visibleChecklistOrder = (user = {}) => {
 
 const normalizeMetric = (value = {}) => ({
   count: Number(value.count || 0),
-  last_updated_at: value.last_updated_at || null,
-});
+  last_updated_at: value.last_updated_at || null});
 
 const buildModuleState = ({ module, metricsMap = {}, canWrite = false }) => {
   const metric = normalizeMetric(metricsMap[module.id]);
@@ -273,8 +244,7 @@ const buildModuleState = ({ module, metricsMap = {}, canWrite = false }) => {
     const dependencyMetric = normalizeMetric(metricsMap[dependencyId]);
     return {
       module_id: dependencyId,
-      is_ready: dependencyMetric.count > 0,
-    };
+      is_ready: dependencyMetric.count > 0};
   });
 
   const hasMissingDependency = dependencyStatuses.some((entry) => !entry.is_ready);
@@ -308,8 +278,7 @@ const buildModuleState = ({ module, metricsMap = {}, canWrite = false }) => {
     can_read: true,
     can_write: canWrite,
     can_create: canCreate,
-    entitlement_state: 'core',
-  };
+    entitlement_state: 'core'};
 };
 
 const buildSummaryCards = (moduleStates = []) =>
@@ -331,8 +300,7 @@ const buildSummaryCards = (moduleStates = []) =>
           ? 'attention'
           : configuredModules === groupModules.length
             ? 'ready'
-            : 'in_progress',
-    };
+            : 'in_progress'};
   });
 
 const buildChecklist = (moduleStates = [], checklistOrder = CHECKLIST_ORDER) => {
@@ -347,16 +315,14 @@ const buildChecklist = (moduleStates = [], checklistOrder = CHECKLIST_ORDER) => 
         completed: moduleState.count > 0,
         route: moduleState.route,
         create_route: moduleState.create_route,
-        priority: index + 1,
-      };
+        priority: index + 1};
     })
     .filter(Boolean);
 
   return {
     completed_count: items.filter((entry) => entry.completed).length,
     total_count: items.length,
-    items,
-  };
+    items};
 };
 
 const buildQuickActions = (moduleStates = []) =>
@@ -377,8 +343,7 @@ const buildQuickActions = (moduleStates = []) =>
       icon: entry.icon,
       label_key: 'settings.workspace.quickActions.createModule',
       route: entry.create_route,
-      can_execute: true,
-    }));
+      can_execute: true}));
 
 const applyModuleFilters = (modules = [], filters = {}) => {
   const search = lower(filters.search);
@@ -397,8 +362,7 @@ const applyModuleFilters = (modules = [], filters = {}) => {
       entry.group_id,
       entry.route,
       entry.create_route || '',
-      entry.label_key,
-    ];
+      entry.label_key];
 
     return searchableFields.some((value) => lower(value).includes(search));
   });
@@ -409,8 +373,7 @@ const buildGroupPayload = (modules = []) =>
     .map((group) => ({
       id: group.id,
       label_key: group.label_key,
-      modules: modules.filter((entry) => entry.group_id === group.id),
-    }))
+      modules: modules.filter((entry) => entry.group_id === group.id)}))
     .filter((group) => group.modules.length > 0);
 
 const buildContext = ({ user = {}, scope = {}, tenant = null, facility = null, state = 'ready' }) => ({
@@ -424,26 +387,21 @@ const buildContext = ({ user = {}, scope = {}, tenant = null, facility = null, s
     scope?.facility_id
   ),
   facility_name: facility?.name || null,
-  facility_type: facility?.facility_type || null,
-});
+  facility_type: facility?.facility_type || null});
 
 const buildReferenceOptions = ({ tenants = [], facilities = [] }) => ({
   tenants: tenants
     .map((entry) => ({
       id: settingsWorkspaceRepository.safePublicId(entry.human_friendly_id, entry.id),
-      label: entry.name,
-    }))
+      label: entry.name}))
     .filter((entry) => entry.id),
   facilities: facilities
     .map((entry) => ({
       id: settingsWorkspaceRepository.safePublicId(entry.human_friendly_id, entry.id),
       label: entry.name,
       meta: {
-        facility_type: entry.facility_type || null,
-      },
-    }))
-    .filter((entry) => entry.id),
-});
+        facility_type: entry.facility_type || null}}))
+    .filter((entry) => entry.id)});
 
 const getWorkspace = async (filters = {}, user = {}) => {
   const scopeResult = await settingsWorkspaceRepository.resolveWorkspaceScope({ filters, user });
@@ -454,8 +412,7 @@ const getWorkspace = async (filters = {}, user = {}) => {
   if (scopeResult.state === 'tenant_context_required') {
     const referenceData = await settingsWorkspaceRepository.findReferenceData({
       scope: null,
-      includeTenants: true,
-    });
+      includeTenants: true});
 
     return {
       state: 'tenant_context_required',
@@ -469,21 +426,17 @@ const getWorkspace = async (filters = {}, user = {}) => {
         group: text(filters.group) || null,
         search: text(filters.search) || '',
         state: text(filters.state) || null,
-        actionable_only: String(filters.actionable_only || '').toLowerCase() === 'true',
-      },
+        actionable_only: String(filters.actionable_only || '').toLowerCase() === 'true'},
       lookups: buildReferenceOptions(referenceData),
       stats: {
         total_modules: moduleCatalog.length,
         configured_modules: 0,
         attention_modules: 0,
-        total_records: 0,
-      },
+        total_records: 0},
       permissions: {
         can_write: writeAllowed,
         can_manage_hr_setup: canAccessHrFacilitySetup(user),
-        is_hr_setup_only: isHrSetupOnlyUser(user),
-      },
-    };
+        is_hr_setup_only: isHrSetupOnlyUser(user)}};
   }
 
   const scope = scopeResult.scope;
@@ -494,16 +447,13 @@ const getWorkspace = async (filters = {}, user = {}) => {
     settingsWorkspaceRepository.findModuleMetrics(scope),
     settingsWorkspaceRepository.findReferenceData({
       scope,
-      includeTenants: roleList(user).includes(ROLES.SUPER_ADMIN),
-    }),
-  ]);
+      includeTenants: roleList(user).includes(ROLES.SUPER_ADMIN)})]);
 
   const moduleStates = moduleCatalog.map((module) =>
     buildModuleState({
       module,
       metricsMap: metrics,
-      canWrite: canWriteSetupModule(user, module.id),
-    })
+      canWrite: canWriteSetupModule(user, module.id)})
   );
 
   const filteredModules = applyModuleFilters(moduleStates, filters);
@@ -518,8 +468,7 @@ const getWorkspace = async (filters = {}, user = {}) => {
       scope,
       tenant: tenantContext,
       facility: facilityContext,
-      state: 'ready',
-    }),
+      state: 'ready'}),
     summary_cards: summaryCards,
     checklist,
     quick_actions: buildQuickActions(moduleStates),
@@ -528,21 +477,17 @@ const getWorkspace = async (filters = {}, user = {}) => {
       group: text(filters.group) || null,
       search: text(filters.search) || '',
       state: text(filters.state) || null,
-      actionable_only: String(filters.actionable_only || '').toLowerCase() === 'true',
-    },
+      actionable_only: String(filters.actionable_only || '').toLowerCase() === 'true'},
     lookups: buildReferenceOptions(referenceData),
     stats: {
       total_modules: moduleCatalog.length,
       configured_modules: moduleStates.filter((entry) => entry.count > 0).length,
       attention_modules: moduleStates.filter((entry) => entry.state === 'attention').length,
-      total_records: moduleStates.reduce((sum, entry) => sum + Number(entry.count || 0), 0),
-    },
+      total_records: moduleStates.reduce((sum, entry) => sum + Number(entry.count || 0), 0)},
     permissions: {
       can_write: writeAllowed,
       can_manage_hr_setup: canAccessHrFacilitySetup(user),
-      is_hr_setup_only: isHrSetupOnlyUser(user),
-    },
-  };
+      is_hr_setup_only: isHrSetupOnlyUser(user)}};
 };
 
 const getReferenceData = async (filters = {}, user = {}) => {
@@ -551,28 +496,23 @@ const getReferenceData = async (filters = {}, user = {}) => {
   if (scopeResult.state === 'tenant_context_required') {
     const referenceData = await settingsWorkspaceRepository.findReferenceData({
       scope: null,
-      includeTenants: true,
-    });
+      includeTenants: true});
 
     return {
       state: 'tenant_context_required',
-      ...buildReferenceOptions(referenceData),
-    };
+      ...buildReferenceOptions(referenceData)};
   }
 
   const scope = scopeResult.scope;
   const referenceData = await settingsWorkspaceRepository.findReferenceData({
     scope,
-    includeTenants: roleList(user).includes(ROLES.SUPER_ADMIN),
-  });
+    includeTenants: roleList(user).includes(ROLES.SUPER_ADMIN)});
 
   return {
     state: 'ready',
-    ...buildReferenceOptions(referenceData),
-  };
+    ...buildReferenceOptions(referenceData)};
 };
 
 module.exports = {
   getReferenceData,
-  getWorkspace,
-};
+  getWorkspace};

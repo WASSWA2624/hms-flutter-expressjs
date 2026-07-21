@@ -14,44 +14,32 @@ describe('module entitlement middleware', () => {
       slug: 'platform-facility-structure',
       extension_json: {
         is_platform_infrastructure: true,
-        api_path_segments: ['branch', 'branches', 'facility'],
-      },
-    },
+        api_path_segments: ['branch', 'branches', 'facility']}},
     {
       slug: 'platform-workspace-shell',
       extension_json: {
         is_platform_infrastructure: true,
-        api_path_segments: ['dashboard-workspace'],
-      },
-    },
-  ];
+        api_path_segments: ['dashboard-workspace']}}];
 
   const loadMiddleware = () => {
     jest.resetModules();
 
     moduleRepository = {
-      count: jest.fn(),
-    };
+      count: jest.fn()};
     moduleSubscriptionRepository = {
-      count: jest.fn(),
-    };
+      count: jest.fn()};
     subscriptionRepository = {
-      count: jest.fn(),
-    };
+      count: jest.fn()};
     prismaMock = {
       module: {
         findMany: jest.fn().mockResolvedValue(platformModules),
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
+        findFirst: jest.fn().mockResolvedValue(null)},
       subscription: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'sub-1',
           tenant_id: 'tenant-1',
           status: 'ACTIVE',
-          plan: { tier_code: 'FREE', extension_json: { allowed_modules: { included: [] } } },
-        }),
-      },
-    };
+          plan: { tier_code: 'FREE', extension_json: { allowed_modules: { included: [] } } }})}};
 
     jest.doMock('@repositories/module/module.repository', () => moduleRepository);
     jest.doMock(
@@ -70,9 +58,7 @@ describe('module entitlement middleware', () => {
   test('allows platform infrastructure paths without commercial entitlement lookup', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
-      path: '/branches',
-      user: { tenant_id: 'tenant-free', roles: ['SUPER_ADMIN'] },
-    };
+      user: { tenant_id: 'tenant-free', roles: ['SUPER_ADMIN'] }};
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -85,8 +71,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/dashboard-workspace/workspace',
-      user: { tenant_id: 'tenant-dashboard', roles: ['SUPER_ADMIN'] },
-    };
+      user: { tenant_id: 'tenant-dashboard', roles: ['SUPER_ADMIN'] }};
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -98,8 +83,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/patient-allergies',
-      user: { tenant_id: 'tenant-patient-core', roles: ['DOCTOR'] },
-    };
+      user: { tenant_id: 'tenant-patient-core', roles: ['DOCTOR'] }};
 
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(1);
@@ -108,15 +92,12 @@ describe('module entitlement middleware', () => {
 
     expect(error).toBeUndefined();
     expect(moduleRepository.count).toHaveBeenCalledWith({
-      slug: 'patient-registry',
-    });
+      slug: 'patient-registry'});
     expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({
         is_active: true,
         module: expect.objectContaining({
-          slug: { in: ['patient-registry'] },
-        }),
-      })
+          slug: { in: ['patient-registry'] }})})
     );
   });
 
@@ -124,16 +105,14 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-no-entitlement', roles: ['NURSE'] },
-    };
+      user: { tenant_id: 'tenant-no-entitlement', roles: ['NURSE'] }};
 
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(0);
     prismaMock.module.findFirst.mockResolvedValue({
       id: 'mod-biomed',
       slug: 'biomedical-engineering-suite',
-      minimum_plan_tier_code: 'ADVANCED',
-    });
+      minimum_plan_tier_code: 'ADVANCED'});
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -146,8 +125,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/ipd-flows',
-      user: { tenant_id: 'tenant-no-ipd', roles: ['NURSE'] },
-    };
+      user: { tenant_id: 'tenant-no-ipd', roles: ['NURSE'] }};
 
     moduleRepository.count.mockImplementation(async (filters = {}) =>
       filters.slug === 'inpatient-bed-management' ? 1 : 0
@@ -156,21 +134,17 @@ describe('module entitlement middleware', () => {
     prismaMock.module.findFirst.mockResolvedValue({
       id: 'mod-ipd',
       slug: 'inpatient-bed-management',
-      minimum_plan_tier_code: 'PRO',
-    });
+      minimum_plan_tier_code: 'PRO'});
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
     expect(moduleRepository.count).toHaveBeenCalledWith({
-      slug: 'inpatient-bed-management',
-    });
+      slug: 'inpatient-bed-management'});
     expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({
         is_active: true,
         module: expect.objectContaining({
-          slug: { in: ['inpatient-bed-management'] },
-        }),
-      })
+          slug: { in: ['inpatient-bed-management'] }})})
     );
     expect(error).toBeDefined();
     expect(error.messageKey).toBe('errors.auth.module_not_entitled');
@@ -190,13 +164,11 @@ describe('module entitlement middleware', () => {
     ['/insurance-claims', 'insurance-claims'],
     ['/api-keys', 'developer-tools'],
     ['/inventory-items', 'inventory-procurement-lite'],
-    ['/purchase-orders', 'inventory-procurement-lite'],
-  ])('maps %s to subscription module slug %s', async (path, expectedSlug) => {
+    ['/purchase-orders', 'inventory-procurement-lite']])('maps %s to subscription module slug %s', async (path, expectedSlug) => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path,
-      user: { tenant_id: 'tenant-entitled-diagnostics', roles: ['DOCTOR'] },
-    };
+      user: { tenant_id: 'tenant-entitled-diagnostics', roles: ['DOCTOR'] }};
 
     moduleRepository.count.mockImplementation(async (filters = {}) =>
       filters.slug === expectedSlug ? 1 : 0
@@ -212,10 +184,7 @@ describe('module entitlement middleware', () => {
         is_active: true,
         module: expect.objectContaining({
           slug: expect.objectContaining({
-            in: expect.arrayContaining([expectedSlug]),
-          }),
-        }),
-      })
+            in: expect.arrayContaining([expectedSlug])})})})
     );
   });
 
@@ -229,13 +198,11 @@ describe('module entitlement middleware', () => {
     ['/biomedical/workspace', 'biomedical-engineering-suite'],
     ['/reports-workspace/workspace', 'reporting-analytics'],
     ['/subscriptions-workspace/workspace', 'subscription-controls'],
-    ['/integrations', 'integrations-core'],
-  ])('maps %s to catalog module slug %s', async (path, expectedSlug) => {
+    ['/integrations', 'integrations-core']])('maps %s to catalog module slug %s', async (path, expectedSlug) => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path,
-      user: { tenant_id: 'tenant-entitled-workspace', roles: ['FACILITY_ADMIN'] },
-    };
+      user: { tenant_id: 'tenant-entitled-workspace', roles: ['FACILITY_ADMIN'] }};
 
     moduleRepository.count.mockImplementation(async (filters = {}) =>
       filters.slug === expectedSlug ? 1 : 0
@@ -252,8 +219,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/mortuary',
-      user: { tenant_id: 'tenant-advanced-demo', roles: ['MORTUARY_MANAGER'] },
-    };
+      user: { tenant_id: 'tenant-advanced-demo', roles: ['MORTUARY_MANAGER'] }};
 
     moduleRepository.count.mockResolvedValue(0);
     subscriptionRepository.count.mockResolvedValue(1);
@@ -267,10 +233,7 @@ describe('module entitlement middleware', () => {
         tenant_id: 'tenant-advanced-demo',
         plan: expect.objectContaining({
           tier_code: expect.objectContaining({
-            in: expect.arrayContaining(['PRO', 'CUSTOM', 'DEVELOPER']),
-          }),
-        }),
-      })
+            in: expect.arrayContaining(['PRO', 'CUSTOM', 'DEVELOPER'])})})})
     );
   });
 
@@ -278,8 +241,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-legacy', roles: ['NURSE'] },
-    };
+      user: { tenant_id: 'tenant-legacy', roles: ['NURSE'] }};
 
     prismaMock.subscription.findFirst.mockResolvedValue(null);
 
@@ -292,9 +254,7 @@ describe('module entitlement middleware', () => {
       expect.objectContaining({
         tenant_id: 'tenant-legacy',
         module: 'biomedical-engineering-suite',
-        reason: 'subscription_required',
-      }),
-    ]);
+        reason: 'subscription_required'})]);
     expect(moduleRepository.count).not.toHaveBeenCalled();
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
@@ -303,8 +263,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/therapy-flows',
-      user: { tenant_id: 'tenant-advanced-demo', roles: ['NURSE'] },
-    };
+      user: { tenant_id: 'tenant-advanced-demo', roles: ['NURSE'] }};
 
     moduleRepository.count.mockResolvedValue(0);
     subscriptionRepository.count.mockResolvedValue(1);
@@ -313,17 +272,13 @@ describe('module entitlement middleware', () => {
 
     expect(error).toBeUndefined();
     expect(moduleRepository.count).toHaveBeenCalledWith({
-      slug: 'physiotherapy',
-    });
+      slug: 'physiotherapy'});
     expect(subscriptionRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-advanced-demo',
         plan: expect.objectContaining({
           tier_code: expect.objectContaining({
-            in: expect.arrayContaining(['PRO', 'ADVANCED', 'CUSTOM', 'DEVELOPER']),
-          }),
-        }),
-      })
+            in: expect.arrayContaining(['PRO', 'ADVANCED', 'CUSTOM', 'DEVELOPER'])})})})
     );
   });
 
@@ -331,8 +286,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-missing-module', roles: ['NURSE'] },
-    };
+      user: { tenant_id: 'tenant-missing-module', roles: ['NURSE'] }};
 
     moduleRepository.count.mockResolvedValue(0);
     subscriptionRepository.count.mockResolvedValue(0);
@@ -346,9 +300,7 @@ describe('module entitlement middleware', () => {
       expect.objectContaining({
         tenant_id: 'tenant-missing-module',
         module: 'biomedical-engineering-suite',
-        reason: 'module_metadata_missing',
-      }),
-    ]);
+        reason: 'module_metadata_missing'})]);
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
@@ -356,8 +308,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-entitled', roles: ['NURSE'] },
-    };
+      user: { tenant_id: 'tenant-entitled', roles: ['NURSE'] }};
 
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(1);
@@ -371,8 +322,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/invoices',
-      user: { tenant_id: 'tenant-legacy-billing', roles: ['BILLING'] },
-    };
+      user: { tenant_id: 'tenant-legacy-billing', roles: ['BILLING'] }};
 
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(1);
@@ -383,9 +333,7 @@ describe('module entitlement middleware', () => {
     expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({
         module: expect.objectContaining({
-          slug: { in: ['billing-payments', 'billing-insurance'] },
-        }),
-      })
+          slug: { in: ['billing-payments', 'billing-insurance'] }})})
     );
   });
 
@@ -395,9 +343,7 @@ describe('module entitlement middleware', () => {
       path: '/subscription-plans',
       user: {
         tenant_id: 'tenant-advanced-demo',
-        roles: ['SUPER_ADMIN'],
-      },
-    };
+        roles: ['SUPER_ADMIN']}};
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -410,16 +356,14 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-admin-no-entitlement', roles: ['TENANT_ADMIN'] },
-    };
+      user: { tenant_id: 'tenant-admin-no-entitlement', roles: ['TENANT_ADMIN'] }};
 
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(0);
     prismaMock.module.findFirst.mockResolvedValue({
       id: 'mod-biomed',
       slug: 'biomedical-engineering-suite',
-      minimum_plan_tier_code: 'ADVANCED',
-    });
+      minimum_plan_tier_code: 'ADVANCED'});
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -432,8 +376,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/subscriptions-workspace/upgrade-context',
-      user: { tenant_id: 'tenant-advanced', roles: ['TENANT_ADMIN'] },
-    };
+      user: { tenant_id: 'tenant-advanced', roles: ['TENANT_ADMIN'] }};
 
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(0);
@@ -448,16 +391,14 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/subscriptions-workspace/workspace',
-      user: { tenant_id: 'tenant-advanced', roles: ['TENANT_ADMIN'] },
-    };
+      user: { tenant_id: 'tenant-advanced', roles: ['TENANT_ADMIN'] }};
 
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(0);
     prismaMock.module.findFirst.mockResolvedValue({
       id: 'mod-subscription-controls',
       slug: 'subscription-controls',
-      minimum_plan_tier_code: 'ADVANCED',
-    });
+      minimum_plan_tier_code: 'ADVANCED'});
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 

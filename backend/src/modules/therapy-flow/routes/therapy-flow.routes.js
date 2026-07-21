@@ -21,8 +21,7 @@ const {
   updatePlanSchema,
   addProgressNoteSchema,
   scheduleFollowUpSchema,
-  closeEpisodeSchema,
-} = require('@validations/therapy-flow/therapy-flow.schema');
+  closeEpisodeSchema} = require('@validations/therapy-flow/therapy-flow.schema');
 
 const THERAPY_READ_SCOPES = [PERMISSIONS.CLINICAL_READ, PERMISSIONS.PATIENT_READ];
 const THERAPY_WRITE_SCOPES = [PERMISSIONS.CLINICAL_WRITE, PERMISSIONS.PATIENT_WRITE];
@@ -47,8 +46,7 @@ router.get(
   '/:id',
   validateRequest({
     params: therapyEpisodeIdParamsSchema,
-    query: getTherapyFlowQuerySchema,
-  }),
+    query: getTherapyFlowQuerySchema}),
   authenticate(),
   authorize(THERAPY_READ_SCOPES, 'permission'),
   therapyFlowController.getTherapyFlowById

@@ -10,8 +10,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolvePublicIdentifier,
-} = require('@lib/billing/identifiers');
+  resolvePublicIdentifier} = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { ELEVATED_ROLES, normalizeRoleName } = require('@config/roles');
 
@@ -45,27 +44,20 @@ const includeRelations = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   user: {
     select: {
       id: true,
       human_friendly_id: true,
       email: true,
       first_name: true,
-      last_name: true,
-    },
-  },
+      last_name: true}},
   patient: {
     select: {
       id: true,
       human_friendly_id: true,
       first_name: true,
-      last_name: true,
-    },
-  },
-};
+      last_name: true}}};
 
 const buildPagination = (page, limit, total) => {
   const totalPages = limit > 0 ? Math.ceil(total / limit) : 0;
@@ -73,8 +65,7 @@ const buildPagination = (page, limit, total) => {
     page,
     limit,
     total,
-    totalPages,
-  };
+    totalPages};
 };
 
 const mapUserLabel = (user = {}) => {
@@ -107,8 +98,7 @@ const mapPhiAccessLog = (record = {}) => {
     reason: record.reason || null,
     accessed_at: record.accessed_at || null,
     created_at: record.created_at || null,
-    updated_at: record.updated_at || null,
-  };
+    updated_at: record.updated_at || null};
 };
 
 const resolvePhiAccessLogId = async (identifier, user = {}) => {
@@ -117,8 +107,7 @@ const resolvePhiAccessLogId = async (identifier, user = {}) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'phi_access_log',
     identifier,
-    where,
-  });
+    where});
   return resolved || identifier;
 };
 
@@ -135,8 +124,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
     const resolvedTenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
       model: 'tenant',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (resolvedTenantId === null) {
       return { where: null, pagination: buildPagination(page, limit, 0) };
     }
@@ -152,8 +140,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
     const resolvedUserId = await resolveIdentifierForFilter({
       value: filters.user_id,
       model: 'user',
-      where: scopedWhere.tenant_id ? { tenant_id: scopedWhere.tenant_id, deleted_at: null } : { deleted_at: null },
-    });
+      where: scopedWhere.tenant_id ? { tenant_id: scopedWhere.tenant_id, deleted_at: null } : { deleted_at: null }});
     if (resolvedUserId === null) {
       return { where: null, pagination: buildPagination(page, limit, 0) };
     }
@@ -166,8 +153,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
     const resolvedPatientId = await resolveIdentifierForFilter({
       value: filters.patient_id,
       model: 'patient',
-      where: scopedWhere.tenant_id ? { tenant_id: scopedWhere.tenant_id, deleted_at: null } : { deleted_at: null },
-    });
+      where: scopedWhere.tenant_id ? { tenant_id: scopedWhere.tenant_id, deleted_at: null } : { deleted_at: null }});
     if (resolvedPatientId === null) {
       return { where: null, pagination: buildPagination(page, limit, 0) };
     }
@@ -200,8 +186,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
       { user: { last_name: { contains: search } } },
       { patient: { first_name: { contains: search } } },
       { patient: { last_name: { contains: search } } },
-      { patient: { human_friendly_id: { contains: search.toUpperCase() } } },
-    ];
+      { patient: { human_friendly_id: { contains: search.toUpperCase() } } }];
   }
 
   return { where: scopedWhere, pagination: null };
@@ -242,24 +227,21 @@ const getPhiAccessLogs = async (filters = {}, page = 1, limit = 20, sortBy = 'ac
       total: 0,
       page: numericPage,
       limit: numericLimit,
-      totalPages: 0,
-    };
+      totalPages: 0};
   }
 
   const skip = (numericPage - 1) * numericLimit;
   const orderBy = { [normalizeSortField(sortBy)]: normalizeOrder(order) };
   const [phiAccessLogs, total] = await Promise.all([
     phiAccessLogRepository.findMany(scoped.where, skip, numericLimit, orderBy, includeRelations),
-    phiAccessLogRepository.count(scoped.where),
-  ]);
+    phiAccessLogRepository.count(scoped.where)]);
 
   return {
     data: phiAccessLogs.map(mapPhiAccessLog),
     total,
     page: numericPage,
     limit: numericLimit,
-    totalPages: numericLimit > 0 ? Math.ceil(total / numericLimit) : 0,
-  };
+    totalPages: numericLimit > 0 ? Math.ceil(total / numericLimit) : 0};
 };
 
 const getPhiAccessLogsByUserId = async (userId, page = 1, limit = 20, sortBy = 'accessed_at', order = 'desc', user = {}) =>
@@ -279,8 +261,7 @@ const resolveCreatePayload = async (data = {}, user = {}) => {
         value: data.tenant_id || actorTenantId,
         model: 'tenant',
         field: 'tenant_id',
-        where: { deleted_at: null },
-      })
+        where: { deleted_at: null }})
     : actorTenantId;
 
   const userId = elevated
@@ -288,8 +269,7 @@ const resolveCreatePayload = async (data = {}, user = {}) => {
         value: data.user_id || actorUserId,
         model: 'user',
         field: 'user_id',
-        where: { tenant_id: tenantId, deleted_at: null },
-      })
+        where: { tenant_id: tenantId, deleted_at: null }})
     : actorUserId;
 
   if (!userId) {
@@ -300,16 +280,14 @@ const resolveCreatePayload = async (data = {}, user = {}) => {
     value: data.patient_id,
     model: 'patient',
     field: 'patient_id',
-    where: { tenant_id: tenantId, deleted_at: null },
-  });
+    where: { tenant_id: tenantId, deleted_at: null }});
 
   return {
     tenant_id: tenantId,
     user_id: userId,
     patient_id: patientId,
     access_scope: data.access_scope,
-    reason: data.reason || null,
-  };
+    reason: data.reason || null};
 };
 
 const createPhiAccessLog = async (data, user = {}, ipAddress) => {
@@ -323,13 +301,11 @@ const createPhiAccessLog = async (data, user = {}, ipAddress) => {
     entity: 'phi_access_log',
     entity_id: createdLog.id,
     diff: { after: createdLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   const createdRecord = await findScopedRecordByIdentifier(createdLog.id, {
     ...user,
-    tenant_id: payload.tenant_id,
-  });
+    tenant_id: payload.tenant_id});
   return mapPhiAccessLog(createdRecord || createdLog);
 };
 
@@ -356,13 +332,11 @@ const updatePhiAccessLog = async (id, data, user = {}, ipAddress) => {
     entity: 'phi_access_log',
     entity_id: existingLog.id,
     diff: { before: existingLog, after: updatedLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   const updatedRecord = await findScopedRecordByIdentifier(updatedLog.id, {
     ...user,
-    tenant_id: existingLog.tenant_id,
-  });
+    tenant_id: existingLog.tenant_id});
   return mapPhiAccessLog(updatedRecord || updatedLog);
 };
 
@@ -381,8 +355,7 @@ const deletePhiAccessLog = async (id, user = {}, ipAddress) => {
     entity: 'phi_access_log',
     entity_id: existingLog.id,
     diff: { before: existingLog, after: deletedLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return mapPhiAccessLog(existingLog);
 };
@@ -393,5 +366,4 @@ module.exports = {
   getPhiAccessLogsByUserId,
   createPhiAccessLog,
   updatePhiAccessLog,
-  deletePhiAccessLog,
-};
+  deletePhiAccessLog};

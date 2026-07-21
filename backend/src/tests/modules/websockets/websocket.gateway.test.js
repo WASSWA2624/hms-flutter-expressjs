@@ -65,11 +65,9 @@ describe('WebSocket gateway', () => {
     const secondTab = socket();
 
     gateway.registerUserConnection('user-1', firstTab, {
-      permissions: ['patient:read'],
-    });
+      permissions: ['patient:read']});
     gateway.registerUserConnection('user-1', secondTab, {
-      permissions: ['patient:read'],
-    });
+      permissions: ['patient:read']});
 
     expect(gateway.getConnectionCount()).toBe(2);
     expect(gateway.getConnectedUsers()).toEqual(['user-1']);
@@ -91,14 +89,11 @@ describe('WebSocket gateway', () => {
     const userTwo = socket();
 
     gateway.registerUserConnection('user-1', userOneTabA, {
-      permissions: ['billing:read'],
-    });
+      permissions: ['billing:read']});
     gateway.registerUserConnection('user-1', userOneTabB, {
-      permissions: ['billing:read'],
-    });
+      permissions: ['billing:read']});
     gateway.registerUserConnection('user-2', userTwo, {
-      permissions: ['billing:read'],
-    });
+      permissions: ['billing:read']});
 
     const count = gateway.broadcast('payment.reconciled', {}, ['user-2']);
 
@@ -118,23 +113,19 @@ describe('WebSocket gateway', () => {
     gateway.registerUserConnection('user-1', allowed, {
       tenant_id: 'tenant-1',
       facility_id: 'facility-1',
-      permissions: ['patient:read'],
-    });
+      permissions: ['patient:read']});
     gateway.registerUserConnection('user-2', otherTenant, {
       tenant_id: 'tenant-2',
       facility_id: 'facility-1',
-      permissions: ['patient:read'],
-    });
+      permissions: ['patient:read']});
     gateway.registerUserConnection('user-3', otherFacility, {
       tenant_id: 'tenant-1',
       facility_id: 'facility-2',
-      permissions: ['patient:read'],
-    });
+      permissions: ['patient:read']});
 
     const count = gateway.broadcast('patient.updated', {
       tenant_id: 'tenant-1',
-      facility_id: 'facility-1',
-    });
+      facility_id: 'facility-1'});
 
     expect(count).toBe(1);
     expect(allowed.send).toHaveBeenCalledTimes(1);
@@ -149,17 +140,14 @@ describe('WebSocket gateway', () => {
     const denied = socket();
     gateway.registerUserConnection('user-1', allowed, {
       tenant_id: 'tenant-1',
-      permissions: ['clinical:read'],
-    });
+      permissions: ['clinical:read']});
     gateway.registerUserConnection('user-2', denied, {
       tenant_id: 'tenant-1',
-      permissions: ['patient:read'],
-    });
+      permissions: ['patient:read']});
 
     const count = gateway.broadcast('clinical.note_updated', {
       tenant_id: 'tenant-1',
-      required_permission: 'clinical:read',
-    });
+      required_permission: 'clinical:read'});
 
     expect(count).toBe(1);
     expect(allowed.send).toHaveBeenCalledTimes(1);

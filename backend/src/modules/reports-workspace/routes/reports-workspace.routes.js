@@ -7,8 +7,7 @@ const { authorize } = require('@middlewares/auth.middleware');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const {
   lookupsQuerySchema,
-  workspaceQuerySchema,
-} = require('@validations/reports-workspace/reports-workspace.schema');
+  workspaceQuerySchema} = require('@validations/reports-workspace/reports-workspace.schema');
 
 const router = express.Router();
 

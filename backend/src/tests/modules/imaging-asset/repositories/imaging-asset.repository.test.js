@@ -41,7 +41,7 @@ describe('Imaging Asset Repository', () => {
       expect(result).toEqual(mockImagingAsset);
       expect(prisma.imaging_asset.findFirst).toHaveBeenCalledWith({
         where: { id: '123e4567-e89b-12d3-a456-426614174000', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -87,7 +87,7 @@ describe('Imaging Asset Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

@@ -5,8 +5,7 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/theatre-flow/theatre-flow.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn().mockResolvedValue({}),
-}));
+  createAuditLog: jest.fn().mockResolvedValue({})}));
 jest.mock('@prisma/client', () => ({
   tenant: { findFirst: jest.fn() },
   facility: { findFirst: jest.fn() },
@@ -23,10 +22,8 @@ jest.mock('@prisma/client', () => ({
   theatre_case: {
     findFirst: jest.fn(),
     update: jest.fn(),
-    create: jest.fn(),
-  },
-  $transaction: jest.fn(),
-}));
+    create: jest.fn()},
+  $transaction: jest.fn()}));
 
 describe('theatre-flow.service', () => {
   beforeEach(() => {
@@ -45,9 +42,7 @@ describe('theatre-flow.service', () => {
         resource_allocations: [],
         anesthesia_observations: [],
         anesthesia_records: [],
-        post_op_notes: [],
-      },
-    ]);
+        post_op_notes: []}]);
     theatreFlowRepository.count.mockResolvedValue(1);
 
     const result = await theatreFlowService.listTheatreFlows({}, 1, 20, 'scheduled_at', 'desc');
@@ -71,8 +66,7 @@ describe('theatre-flow.service', () => {
       resource_allocations: [],
       anesthesia_observations: [],
       anesthesia_records: [],
-      post_op_notes: [],
-    });
+      post_op_notes: []});
 
     const result = await theatreFlowService.getTheatreFlowById('TC-001', { include_timeline: true });
 

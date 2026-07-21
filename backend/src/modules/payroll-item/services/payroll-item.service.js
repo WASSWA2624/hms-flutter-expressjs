@@ -4,8 +4,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -15,14 +14,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const emptyResult = (page, limit) => ({
   payrollItems: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const listPayrollItems = async (filters, page, limit, sortBy, order) => {
   try {
@@ -33,16 +30,14 @@ const listPayrollItems = async (filters, page, limit, sortBy, order) => {
     const payrollRunId = await resolveIdentifierForFilter({
       value: filters.payroll_run_id,
       model: 'payroll_run',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.payroll_run_id && payrollRunId === null) return emptyResult(page, limit);
     if (payrollRunId) whereClause.payroll_run_id = payrollRunId;
 
     const staffProfileId = await resolveIdentifierForFilter({
       value: filters.staff_profile_id,
       model: 'staff_profile',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.staff_profile_id && staffProfileId === null) return emptyResult(page, limit);
     if (staffProfileId) whereClause.staff_profile_id = staffProfileId;
 
@@ -55,13 +50,11 @@ const listPayrollItems = async (filters, page, limit, sortBy, order) => {
 
     const [payrollItems, total] = await Promise.all([
       payrollItemRepository.findMany(whereClause, skip, limit, orderBy),
-      payrollItemRepository.count(whereClause),
-    ]);
+      payrollItemRepository.count(whereClause)]);
 
     return {
       payrollItems,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -73,8 +66,7 @@ const getPayrollItemById = async (id) => {
     const resolvedId = await resolveEntityId({
       model: 'payroll_item',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const payrollItem = await payrollItemRepository.findById(resolvedId);
     if (!payrollItem) throw new HttpError('errors.payroll_item.not_found', 404);
     return payrollItem;
@@ -92,15 +84,12 @@ const createPayrollItem = async (data, userId, ipAddress) => {
         value: data.payroll_run_id,
         model: 'payroll_run',
         field: 'payroll_run_id',
-        where: { deleted_at: null },
-      }),
+        where: { deleted_at: null }}),
       staff_profile_id: await resolveIdentifierForPayload({
         value: data.staff_profile_id,
         model: 'staff_profile',
         field: 'staff_profile_id',
-        where: { deleted_at: null },
-      }),
-    };
+        where: { deleted_at: null }})};
 
     const payrollItem = await payrollItemRepository.create(payload);
     createAuditLog({
@@ -109,8 +98,7 @@ const createPayrollItem = async (data, userId, ipAddress) => {
       entity: 'payroll_item',
       entity_id: payrollItem.id,
       diff: { after: payrollItem },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return payrollItem;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -123,8 +111,7 @@ const updatePayrollItem = async (id, data, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'payroll_item',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await payrollItemRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.payroll_item.not_found', 404);
 
@@ -134,16 +121,14 @@ const updatePayrollItem = async (id, data, userId, ipAddress) => {
         value: data.payroll_run_id,
         model: 'payroll_run',
         field: 'payroll_run_id',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
     if (Object.prototype.hasOwnProperty.call(data, 'staff_profile_id')) {
       payload.staff_profile_id = await resolveIdentifierForPayload({
         value: data.staff_profile_id,
         model: 'staff_profile',
         field: 'staff_profile_id',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
 
     const payrollItem = await payrollItemRepository.update(before.id, payload);
@@ -153,8 +138,7 @@ const updatePayrollItem = async (id, data, userId, ipAddress) => {
       entity: 'payroll_item',
       entity_id: payrollItem.id,
       diff: { before, after: payrollItem },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return payrollItem;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -167,8 +151,7 @@ const deletePayrollItem = async (id, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'payroll_item',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await payrollItemRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.payroll_item.not_found', 404);
 
@@ -179,8 +162,7 @@ const deletePayrollItem = async (id, userId, ipAddress) => {
       entity: 'payroll_item',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -192,5 +174,4 @@ module.exports = {
   getPayrollItemById,
   createPayrollItem,
   updatePayrollItem,
-  deletePayrollItem,
-};
+  deletePayrollItem};

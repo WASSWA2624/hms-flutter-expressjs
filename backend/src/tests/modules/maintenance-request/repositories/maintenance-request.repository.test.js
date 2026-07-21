@@ -23,8 +23,7 @@ jest.mock('@prisma/client', () => ({
 describe('Maintenance Request Repository', () => {
   const defaultIncludeMatcher = expect.objectContaining({
     facility: expect.any(Object),
-    asset: expect.any(Object),
-  });
+    asset: expect.any(Object)});
 
   beforeEach(() => {
     jest.clearAllMocks();

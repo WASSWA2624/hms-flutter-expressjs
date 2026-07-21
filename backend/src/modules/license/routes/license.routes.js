@@ -14,8 +14,7 @@ const {
   createLicenseSchema,
   updateLicenseSchema,
   licenseIdParamsSchema,
-  listLicensesQuerySchema,
-} = require('@validations/license/license.schema');
+  listLicensesQuerySchema} = require('@validations/license/license.schema');
 
 const router = express.Router();
 

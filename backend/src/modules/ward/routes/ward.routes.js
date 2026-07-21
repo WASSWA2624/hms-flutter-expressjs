@@ -25,13 +25,11 @@ const BED_MANAGEMENT_READ_SCOPES = [
   PERMISSIONS.OPERATIONS_READ,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const BED_MANAGEMENT_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 
 /**
  * @description List wards with pagination and filters
@@ -55,12 +53,14 @@ const BED_MANAGEMENT_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listWardsQuerySchema }),
+  '/',
+  validateRequest({ query: listWardsQuerySchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_READ_SCOPES, 'permission'),
   wardController.listWards
 );
+
 
 router.post(
   '/:id/restore',
@@ -84,7 +84,8 @@ router.post(
  * @throws 404 Ward not found
  */
 router.get(
-  '/:id',  validateRequest({ params: wardIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: wardIdParamsSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_READ_SCOPES, 'permission'),
@@ -111,7 +112,8 @@ router.get(
  * @throws 400 Foreign key constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createWardSchema }),
+  '/',
+  validateRequest({ body: createWardSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
@@ -138,7 +140,8 @@ router.post(
  * @throws 400 Foreign key constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: wardIdParamsSchema, body: updateWardSchema }),
+  '/:id',
+  validateRequest({ params: wardIdParamsSchema, body: updateWardSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
@@ -159,7 +162,8 @@ router.put(
  * @throws 404 Ward not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: wardIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: wardIdParamsSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
@@ -180,7 +184,8 @@ router.delete(
  * @throws 404 Ward not found
  */
 router.get(
-  '/:id/beds',  validateRequest({ params: wardIdParamsSchema }),
+  '/:id/beds',
+  validateRequest({ params: wardIdParamsSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_READ_SCOPES, 'permission'),

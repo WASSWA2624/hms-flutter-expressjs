@@ -17,16 +17,12 @@ const {
   buildTenantScopeWhere,
   buildInventoryItemScopeWhere,
   buildInventoryStockScopeWhere,
-  matchesInventoryStockScope,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  matchesInventoryStockScope} = require('@services/pharmacy-workspace/pharmacy.shared');
 
 const INVENTORY_STOCK_SCOPE_INCLUDE = {
   inventory_item: {
     select: {
-      tenant_id: true,
-    },
-  },
-};
+      tenant_id: true}}};
 
 const resolveScopedInventoryItemId = async (identifier, scope, allowNull = false) =>
   resolveModelIdOrThrow({
@@ -34,11 +30,9 @@ const resolveScopedInventoryItemId = async (identifier, scope, allowNull = false
     model: 'inventory_item',
     where: {
       deleted_at: null,
-      ...buildInventoryItemScopeWhere(scope),
-    },
+      ...buildInventoryItemScopeWhere(scope)},
     errorKey: 'errors.inventory_item.not_found',
-    allowNull,
-  });
+    allowNull});
 
 const resolveScopedFacilityId = async (identifier, scope, allowNull = false) =>
   resolveModelIdOrThrow({
@@ -46,11 +40,9 @@ const resolveScopedFacilityId = async (identifier, scope, allowNull = false) =>
     model: 'facility',
     where: {
       deleted_at: null,
-      ...buildTenantScopeWhere(scope),
-    },
+      ...buildTenantScopeWhere(scope)},
     errorKey: 'errors.facility.not_found',
-    allowNull,
-  });
+    allowNull});
 
 const findScopedInventoryStockOrThrow = async (id, user = {}) => {
   const scope = resolveScopedUserContext(user);
@@ -84,8 +76,7 @@ const listInventoryStocks = async (filters, page, limit, sortBy, order, userId, 
 
     // Build filter object
     const whereClause = {
-      ...buildInventoryStockScopeWhere(scope),
-    };
+      ...buildInventoryStockScopeWhere(scope)};
 
     if (filters.inventory_item_id) {
       whereClause.inventory_item_id = await resolveScopedInventoryItemId(filters.inventory_item_id, scope);
@@ -165,8 +156,7 @@ const createInventoryStock = async (data, userId, ipAddress, user = {}) => {
     const payload = {
       ...data,
       inventory_item_id: await resolveScopedInventoryItemId(data.inventory_item_id, scope),
-      facility_id: await resolveScopedFacilityId(data.facility_id || null, scope, true),
-    };
+      facility_id: await resolveScopedFacilityId(data.facility_id || null, scope, true)};
     const inventoryStock = await inventoryStockRepository.create(payload);
 
     // Create audit log (non-blocking)

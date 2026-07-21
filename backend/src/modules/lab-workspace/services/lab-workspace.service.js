@@ -8,8 +8,7 @@ const {
   emitToUser,
   emitToUsers,
   DIAGNOSTIC_EVENTS,
-  NOTIFICATION_EVENTS,
-} = require('@lib/websocket');
+  NOTIFICATION_EVENTS} = require('@lib/websocket');
 const {
   LAB_ORDER_WITH_RELATIONS_INCLUDE,
   buildPagination,
@@ -17,20 +16,17 @@ const {
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
   toDateOrNull,
-  applyDateRangeFilter,
-} = require('@services/lab-workspace/lab.shared');
+  applyDateRangeFilter} = require('@services/lab-workspace/lab.shared');
 const { evaluateLabResult } = require('@services/lab-workspace/lab.interpretation');
 const {
-  resolveFacilityLabTestForInterpretation,
-} = require('@services/facility-lab-catalog/facility-lab-catalog.service');
+  resolveFacilityLabTestForInterpretation} = require('@services/facility-lab-catalog/facility-lab-catalog.service');
 const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
 const {
   toPublicIdentifier,
   mapLabOrderRecord,
   mapLabOrderWorkflowRecord,
   mapLabResultRecord,
-  isLabOrderPaymentSatisfied,
-} = require('@services/lab-workspace/lab.serializer');
+  isLabOrderPaymentSatisfied} = require('@services/lab-workspace/lab.serializer');
 
 const ORDER_COMPLETION_STATES = new Set(['COMPLETED', 'CANCELLED']);
 const SAMPLE_COLLECTABLE_STATES = new Set(['PENDING', 'COLLECTED']);
@@ -40,74 +36,58 @@ const LEGACY_ROUTE_CONFIG = Object.freeze({
   'lab-orders': {
     model: 'lab_order',
     resource: 'orders',
-    route: '/lab/orders',
-  },
+    route: '/lab/orders'},
   'lab-order-items': {
     model: 'lab_order_item',
     resource: 'order-items',
-    route: '/lab/order-items',
-  },
+    route: '/lab/order-items'},
   'lab-samples': {
     model: 'lab_sample',
     resource: 'samples',
-    route: '/lab/samples',
-  },
+    route: '/lab/samples'},
   'lab-results': {
     model: 'lab_result',
     resource: 'results',
-    route: '/lab/results',
-  },
+    route: '/lab/results'},
   'lab-tests': {
     model: 'lab_test',
     resource: 'tests',
-    route: '/lab/tests',
-  },
+    route: '/lab/tests'},
   'lab-panels': {
     model: 'lab_panel',
     resource: 'panels',
-    route: '/lab/panels',
-  },
+    route: '/lab/panels'},
   'lab-qc-logs': {
     model: 'lab_qc_log',
     resource: 'qc-logs',
-    route: '/lab/qc-logs',
-  },
-});
+    route: '/lab/qc-logs'}});
 const REVERSE_STEP_PRIORITY = Object.freeze({
   COLLECT: 1,
   REJECT: 2,
   RECEIVE: 3,
-  RELEASE: 4,
-});
+  RELEASE: 4});
 
 const LAB_ORDER_CONTEXT_PATIENT_INCLUDE = {
   contacts: {
     where: { deleted_at: null },
     orderBy: [
       { is_primary: 'desc' },
-      { updated_at: 'desc' },
-    ],
+      { updated_at: 'desc' }],
     take: 3,
     select: {
       contact_type: true,
       value: true,
-      is_primary: true,
-    },
-  },
+      is_primary: true}},
   identifiers: {
     where: { deleted_at: null },
     orderBy: [
       { is_primary: 'desc' },
-      { updated_at: 'desc' },
-    ],
+      { updated_at: 'desc' }],
     take: 3,
     select: {
       identifier_type: true,
       identifier_value: true,
-      is_primary: true,
-    },
-  },
-};
+      is_primary: true}}};
 
 const LAB_ORDER_CONTEXT_PATIENT_DETAIL_INCLUDE = {
   ...LAB_ORDER_CONTEXT_PATIENT_INCLUDE,
@@ -121,10 +101,7 @@ const LAB_ORDER_CONTEXT_PATIENT_DETAIL_INCLUDE = {
       encounter_type: true,
       status: true,
       started_at: true,
-      ended_at: true,
-    },
-  },
-};
+      ended_at: true}}};
 
 const PATIENT_WORKBENCH_SCAN_LIMIT = 5000;
 const WORKBENCH_VIEWS = new Set(['PATIENTS', 'ORDERS']);
@@ -133,8 +110,7 @@ const LAB_WORKBENCH_SORT_FIELDS = new Set([
   'status',
   'ordered_at',
   'created_at',
-  'updated_at',
-]);
+  'updated_at']);
 
 const resolveWorkbenchOrderBy = (sortBy, order = 'desc') => {
   const direction = String(order || '').trim().toLowerCase() === 'asc'
@@ -243,8 +219,7 @@ const mapLabPatientWorkItem = (records = []) => {
     sample_count: samples.length,
     tests_summary: testsSummary,
     items,
-    samples,
-  };
+    samples};
 };
 
 const summarizeLabPatientGroups = (groups = []) => {
@@ -259,8 +234,7 @@ const summarizeLabPatientGroups = (groups = []) => {
     critical_patients: patientItems.filter((item) => item.items.some((entry) => normalizeStatus(entry?.result_status) === 'CRITICAL')).length,
     completed_patients: patientItems.filter((item) => hasStatus(item, new Set(['COMPLETED']))).length,
     cancelled_patients: patientItems.filter((item) => hasStatus(item, new Set(['CANCELLED']))).length,
-    rejected_sample_patients: patientItems.filter((item) => item.samples.some((entry) => normalizeStatus(entry?.status) === 'REJECTED')).length,
-  };
+    rejected_sample_patients: patientItems.filter((item) => item.samples.some((entry) => normalizeStatus(entry?.status) === 'REJECTED')).length};
 };
 
 const appendAnd = (where, clause) => {
@@ -275,8 +249,7 @@ const buildLabPatientRecordScope = (user = {}) => {
 
   return {
     ...(tenantId ? { tenant_id: tenantId } : {}),
-    ...(facilityId ? { facility_id: facilityId } : {}),
-  };
+    ...(facilityId ? { facility_id: facilityId } : {})};
 };
 
 const buildWorkbenchPatientScope = (user = {}) => {
@@ -287,9 +260,7 @@ const buildWorkbenchPatientScope = (user = {}) => {
   return {
     patient: {
       deleted_at: null,
-      ...scope,
-    },
-  };
+      ...scope}};
 };
 
 const normalizeEnumFilter = (value, fallback) => {
@@ -313,16 +284,11 @@ const ORDER_ITEM_RESULT_INCLUDE = Object.freeze({
       result_kind: true,
       reference_range: true,
       reference_ranges: {
-        orderBy: { sort_order: 'asc' },
-      },
+        orderBy: { sort_order: 'asc' }},
       unit_options: {
-        orderBy: { sort_order: 'asc' },
-      },
+        orderBy: { sort_order: 'asc' }},
       result_options: {
-        orderBy: { sort_order: 'asc' },
-      },
-    },
-  },
+        orderBy: { sort_order: 'asc' }}}},
   lab_order: {
     select: {
       id: true,
@@ -333,12 +299,7 @@ const ORDER_ITEM_RESULT_INCLUDE = Object.freeze({
           tenant_id: true,
           facility_id: true,
           date_of_birth: true,
-          gender: true,
-        },
-      },
-    },
-  },
-});
+          gender: true}}}}});
 
 const payloadHasField = (payload, field) =>
   Object.prototype.hasOwnProperty.call(payload || {}, field);
@@ -388,8 +349,7 @@ const resolveLatestReverseWorkflowTarget = (orderRecord) => {
         kind: 'RELEASE',
         atMs: toTimestampValue(result?.reported_at, result?.updated_at),
         orderItemId: item?.id || null,
-        resultId: result?.id || null,
-      });
+        resultId: result?.id || null});
     });
   });
 
@@ -400,8 +360,7 @@ const resolveLatestReverseWorkflowTarget = (orderRecord) => {
       latest = selectLatestReverseCandidate(latest, {
         kind: 'RECEIVE',
         atMs: toTimestampValue(sample?.received_at, sample?.updated_at),
-        sampleId: sample?.id || null,
-      });
+        sampleId: sample?.id || null});
       return;
     }
 
@@ -409,8 +368,7 @@ const resolveLatestReverseWorkflowTarget = (orderRecord) => {
       latest = selectLatestReverseCandidate(latest, {
         kind: 'REJECT',
         atMs: toTimestampValue(sample?.updated_at, sample?.received_at, sample?.collected_at),
-        sampleId: sample?.id || null,
-      });
+        sampleId: sample?.id || null});
       return;
     }
 
@@ -418,8 +376,7 @@ const resolveLatestReverseWorkflowTarget = (orderRecord) => {
       latest = selectLatestReverseCandidate(latest, {
         kind: 'COLLECT',
         atMs: toTimestampValue(sample?.collected_at, sample?.updated_at),
-        sampleId: sample?.id || null,
-      });
+        sampleId: sample?.id || null});
     }
   });
 
@@ -429,24 +386,19 @@ const resolveLatestReverseWorkflowTarget = (orderRecord) => {
 const syncLabOrderProgress = async (tx, orderId) => {
   const receivedSamples = await labWorkspaceRepository.txCountSamples(tx, {
     lab_order_id: orderId,
-    status: 'RECEIVED',
-  });
+    status: 'RECEIVED'});
   const collectedSamples = await labWorkspaceRepository.txCountSamples(tx, {
     lab_order_id: orderId,
-    status: 'COLLECTED',
-  });
+    status: 'COLLECTED'});
   const completedItems = await labWorkspaceRepository.txCountOrderItems(tx, {
     lab_order_id: orderId,
-    status: 'COMPLETED',
-  });
+    status: 'COMPLETED'});
   const cancelledItems = await labWorkspaceRepository.txCountOrderItems(tx, {
     lab_order_id: orderId,
-    status: 'CANCELLED',
-  });
+    status: 'CANCELLED'});
   const openItems = await labWorkspaceRepository.txCountOrderItems(tx, {
     lab_order_id: orderId,
-    status: { notIn: ['COMPLETED', 'CANCELLED'] },
-  });
+    status: { notIn: ['COMPLETED', 'CANCELLED'] }});
 
   let nextActiveItemStatus = 'ORDERED';
   if (receivedSamples > 0 || completedItems > 0) {
@@ -460,8 +412,7 @@ const syncLabOrderProgress = async (tx, orderId) => {
       tx,
       {
         lab_order_id: orderId,
-        status: { notIn: ['COMPLETED', 'CANCELLED'] },
-      },
+        status: { notIn: ['COMPLETED', 'CANCELLED'] }},
       { status: nextActiveItemStatus }
     );
   }
@@ -475,16 +426,14 @@ const syncLabOrderProgress = async (tx, orderId) => {
     : nextActiveItemStatus;
 
   await labWorkspaceRepository.txUpdateOrder(tx, orderId, {
-    status: nextOrderStatus,
-  });
+    status: nextOrderStatus});
 
   return {
     nextOrderStatus,
     nextActiveItemStatus,
     completedItems,
     cancelledItems,
-    openItems,
-  };
+    openItems};
 };
 
 
@@ -497,18 +446,14 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
     items: {
       some: {
         deleted_at: null,
-        status: { not: 'CANCELLED' },
-      },
-    },
-  });
+        status: { not: 'CANCELLED' }}}});
 
   if (filters.patient_id) {
     where.patient_id = await resolveModelIdOrThrow({
       identifier: filters.patient_id,
       model: 'patient',
       where: { deleted_at: null },
-      errorKey: 'errors.patient.not_found',
-    });
+      errorKey: 'errors.patient.not_found'});
   }
 
   if (filters.encounter_id) {
@@ -516,8 +461,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
       identifier: filters.encounter_id,
       model: 'encounter',
       where: { deleted_at: null },
-      errorKey: 'errors.encounter.not_found',
-    });
+      errorKey: 'errors.encounter.not_found'});
   }
 
   if (filters.status) {
@@ -538,11 +482,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
           deleted_at: null,
           OR: [
             { status: { in: ['COLLECTED', 'IN_PROCESS'] } },
-            { results: { some: { deleted_at: null, status: 'PENDING' } } },
-          ],
-        },
-      },
-    });
+            { results: { some: { deleted_at: null, status: 'PENDING' } } }]}}});
   } else if (stage === 'COMPLETED') {
     appendAnd(where, { status: 'COMPLETED' });
   } else if (stage === 'CANCELLED') {
@@ -558,12 +498,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
           results: {
             some: {
               deleted_at: null,
-              status: 'CRITICAL',
-            },
-          },
-        },
-      },
-    });
+              status: 'CRITICAL'}}}}});
   } else if (criticality === 'NON_CRITICAL') {
     appendAnd(where, {
       items: {
@@ -572,12 +507,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
           results: {
             some: {
               deleted_at: null,
-              status: 'CRITICAL',
-            },
-          },
-        },
-      },
-    });
+              status: 'CRITICAL'}}}}});
   }
 
   const searchTerm = normalizeSearchTerm(filters.search);
@@ -594,9 +524,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
         { items: { some: { lab_test: { human_friendly_id: { contains: searchTerm.upper } } } } },
         { items: { some: { lab_test: { name: { contains: searchTerm.raw } } } } },
         { items: { some: { lab_test: { code: { contains: searchTerm.raw } } } } },
-        { items: { some: { results: { some: { human_friendly_id: { contains: searchTerm.upper } } } } } },
-      ],
-    });
+        { items: { some: { results: { some: { human_friendly_id: { contains: searchTerm.upper } } } } } }]});
   }
 
   return where;
@@ -646,8 +574,7 @@ const mapLabOrderContextPatient = (patient) => {
       patient.id
     ),
     identifier: primaryIdentifierValue(patient),
-    primary_phone: primaryContactValue(patient, 'PHONE'),
-  };
+    primary_phone: primaryContactValue(patient, 'PHONE')};
 };
 
 const mapLabOrderContextEncounter = (encounter) => {
@@ -663,8 +590,7 @@ const mapLabOrderContextEncounter = (encounter) => {
     status: firstNonEmpty(encounter.status),
     type: firstNonEmpty(encounter.encounter_type),
     started_at: encounter.started_at || null,
-    ended_at: encounter.ended_at || null,
-  };
+    ended_at: encounter.ended_at || null};
 };
 
 const buildLabOrderContextPatientWhere = (filters = {}, user = {}) => {
@@ -680,19 +606,12 @@ const buildLabOrderContextPatientWhere = (filters = {}, user = {}) => {
       identifiers: {
         some: {
           deleted_at: null,
-          identifier_value: { contains: searchTerm.raw },
-        },
-      },
-    },
+          identifier_value: { contains: searchTerm.raw }}}},
     {
       contacts: {
         some: {
           deleted_at: null,
-          value: { contains: searchTerm.raw },
-        },
-      },
-    },
-  ];
+          value: { contains: searchTerm.raw }}}}];
 
   return where;
 };
@@ -712,8 +631,7 @@ const searchLabOrderContextPatients = async (filters = {}, user = {}) => {
     return {
       patients: (patients || [])
         .map(mapLabOrderContextPatient)
-        .filter(Boolean),
-    };
+        .filter(Boolean)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -740,8 +658,7 @@ const getLabOrderPatientContext = async (patientId, user = {}) => {
       patient: mapLabOrderContextPatient(patient),
       encounters: (patient.encounters || [])
         .map(mapLabOrderContextEncounter)
-        .filter(Boolean),
-    };
+        .filter(Boolean)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -755,8 +672,7 @@ const mapReleasedResultFromOrder = (orderRecord, releasedResultId) => {
       if (result.id === releasedResultId) {
         return mapLabResultRecord({
           ...result,
-          lab_order_item: item,
-        });
+          lab_order_item: item});
       }
     }
   }
@@ -772,8 +688,7 @@ const mapReleasedResultsFromOrder = (orderRecord, releasedResultIds = []) => {
       if (!ids.has(result.id)) continue;
       const mapped = mapLabResultRecord({
         ...result,
-        lab_order_item: item,
-      });
+        lab_order_item: item});
       if (mapped) results.push(mapped);
     }
   }
@@ -786,15 +701,13 @@ const resolveTargetLabResult = async (tx, item, payload = {}) => {
       identifier: payload.result_id,
       model: 'lab_result',
       where: { deleted_at: null, lab_order_item_id: item.id },
-      errorKey: 'errors.lab_result.not_found',
-    });
+      errorKey: 'errors.lab_result.not_found'});
     return labWorkspaceRepository.txFindResultById(tx, resultId);
   }
 
   const pendingResult = await labWorkspaceRepository.txFindFirstResult(tx, {
     lab_order_item_id: item.id,
-    status: 'PENDING',
-  });
+    status: 'PENDING'});
   if (pendingResult) return pendingResult;
 
   return labWorkspaceRepository.txFindFirstResult(
@@ -807,8 +720,7 @@ const resolveTargetLabResult = async (tx, item, payload = {}) => {
 const persistLabOrderItemResult = async (tx, item, payload = {}) => {
   assertTransition(item.status !== 'CANCELLED', {
     from: item.status,
-    to: 'COMPLETED',
-  });
+    to: 'COMPLETED'});
 
   const targetResult = await resolveTargetLabResult(tx, item, payload);
   const fallbackStatus =
@@ -826,16 +738,14 @@ const persistLabOrderItemResult = async (tx, item, payload = {}) => {
     result_text: payloadHasField(payload, 'result_text')
       ? payload.result_text
       : targetResult?.result_text || null,
-    reported_at: toDateOrNull(payload.reported_at, new Date()),
-  };
+    reported_at: toDateOrNull(payload.reported_at, new Date())};
 
   const patient = item?.lab_order?.patient || {};
   const resolvedTest = await resolveFacilityLabTestForInterpretation({
     tenantId: patient.tenant_id,
     facilityId: patient.facility_id,
     labTestId: item?.lab_test_id || item?.lab_test?.id,
-    masterTest: item?.lab_test || {},
-  });
+    masterTest: item?.lab_test || {}});
 
   const interpretation = evaluateLabResult({
     test: resolvedTest || item?.lab_test || {},
@@ -843,8 +753,7 @@ const persistLabOrderItemResult = async (tx, item, payload = {}) => {
     resultValue: resultData.result_value,
     resultText: resultData.result_text,
     resultUnit: resultData.result_unit,
-    fallbackStatus,
-  });
+    fallbackStatus});
 
   resultData.status = interpretation.status;
   resultData.result_unit = interpretation.result_unit || null;
@@ -860,15 +769,13 @@ const persistLabOrderItemResult = async (tx, item, payload = {}) => {
     ? await labWorkspaceRepository.txUpdateResult(tx, targetResult.id, resultData)
     : await labWorkspaceRepository.txCreateResult(tx, {
         ...resultData,
-        lab_order_item_id: item.id,
-      });
+        lab_order_item_id: item.id});
 
   await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
     status: 'COMPLETED',
     rejection_reason: null,
     rejection_notes: null,
-    rejected_at: null,
-  });
+    rejected_at: null});
 
   return releasedResult;
 };
@@ -880,16 +787,14 @@ const resolveRoleRecipients = async ({ tenantId, facilityId = null, orderRecord 
   if (!tenantId) return [];
   return resolveLabRealtimeRecipients({
     orderRecord: orderRecord || { patient: { tenant_id: tenantId, facility_id: facilityId } },
-    actorUserId,
-  });
+    actorUserId});
 };
 
 const buildLabRealtimePayload = ({
   workflow,
   action,
   resourceType = null,
-  resourceId = null,
-}) => {
+  resourceId = null}) => {
   const order = workflow?.order || null;
   const orderId = String(order?.id || '').trim() || null;
   const patientId = String(order?.patient_id || '').trim() || null;
@@ -907,8 +812,7 @@ const buildLabRealtimePayload = ({
     resource_id: resourceId,
     occurred_at: nowIso,
     target_path: orderId ? `/lab?id=${encodeURIComponent(orderId)}` : '/lab',
-    workflow,
-  };
+    workflow};
 };
 
 const buildLabPatientDisplayName = (orderRecord) => {
@@ -925,8 +829,7 @@ const resolveCriticalNotificationRecipients = (orderRecord, actorUserId = null) 
   const ids = [
     orderRecord?.ordered_by_user_id,
     orderRecord?.ordered_by?.id,
-    orderRecord?.encounter?.provider_user_id,
-  ]
+    orderRecord?.encounter?.provider_user_id]
     .map((value) => String(value || '').trim())
     .filter(Boolean);
   const unique = [...new Set(ids)];
@@ -944,8 +847,7 @@ const resolveCriticalNotificationRecipients = (orderRecord, actorUserId = null) 
 const notifyCriticalLabResults = async ({
   orderRecord,
   releasedResults = [],
-  actorUserId = null,
-}) => {
+  actorUserId = null}) => {
   try {
     const criticalResults = (Array.isArray(releasedResults) ? releasedResults : [])
       .filter((result) => normalizeStatus(result?.status) === 'CRITICAL');
@@ -967,8 +869,7 @@ const notifyCriticalLabResults = async ({
         criticalResults
           .map((result) => String(result?.test_display_name || result?.test_code || '').trim())
           .filter(Boolean)
-      ),
-    ];
+      )];
     const targetPath = orderPublicId
       ? `/lab?id=${encodeURIComponent(orderPublicId)}`
       : '/lab';
@@ -987,8 +888,7 @@ const notifyCriticalLabResults = async ({
       test_names: testNames,
       action: 'CRITICAL',
       occurred_at: new Date().toISOString(),
-      target_path: targetPath,
-    };
+      target_path: targetPath};
 
     if (DIAGNOSTIC_EVENTS?.LAB_RESULT_CRITICAL) {
       emitToUsers(recipients, DIAGNOSTIC_EVENTS.LAB_RESULT_CRITICAL, realtimePayload);
@@ -1008,9 +908,7 @@ const notifyCriticalLabResults = async ({
             message,
             target_path: targetPath,
             context_type: 'lab_order',
-            context_public_id: orderPublicId,
-          },
-        });
+            context_public_id: orderPublicId}});
 
         if (prisma?.notification_delivery?.create) {
           await prisma.notification_delivery
@@ -1019,9 +917,7 @@ const notifyCriticalLabResults = async ({
                 notification_id: notification.id,
                 channel: 'IN_APP',
                 status: 'SENT',
-                sent_at: new Date(),
-              },
-            })
+                sent_at: new Date()}})
             .catch(() => {});
         }
 
@@ -1034,10 +930,8 @@ const notifyCriticalLabResults = async ({
               title: notification.title,
               message: notification.message,
               target_path: notification.target_path,
-              created_at: notification.created_at,
-            },
-            target_path: targetPath,
-          });
+              created_at: notification.created_at},
+            target_path: targetPath});
         }
       } catch (_notificationError) {
         // A single failed notification must not abort the remaining recipients.
@@ -1056,8 +950,7 @@ const publishLabRealtimeUpdates = async ({
   resourceType = null,
   resourceId = null,
   releasedResult = null,
-  releasedResults = null,
-}) => {
+  releasedResults = null}) => {
   try {
     const criticalCandidates = Array.isArray(releasedResults) && releasedResults.length
       ? releasedResults
@@ -1067,8 +960,7 @@ const publishLabRealtimeUpdates = async ({
     notifyCriticalLabResults({
       orderRecord,
       releasedResults: criticalCandidates,
-      actorUserId,
-    }).catch(() => {});
+      actorUserId}).catch(() => {});
 
     const tenantId = orderRecord?.patient?.tenant_id || null;
     if (!tenantId) return;
@@ -1078,8 +970,7 @@ const publishLabRealtimeUpdates = async ({
       tenantId,
       facilityId,
       orderRecord,
-      actorUserId,
-    });
+      actorUserId});
 
     const recipients = recipientUserIds.filter(Boolean);
     if (!recipients.length) return;
@@ -1088,8 +979,7 @@ const publishLabRealtimeUpdates = async ({
       workflow,
       action,
       resourceType,
-      resourceId,
-    });
+      resourceId});
 
     emitToUsers(
       recipients,
@@ -1114,8 +1004,7 @@ const publishLabRealtimeUpdates = async ({
       occurred_at: workflowPayload.occurred_at,
       target_path: releasedResult.id
         ? `/lab/results/${encodeURIComponent(releasedResult.id)}`
-        : workflowPayload.target_path,
-    };
+        : workflowPayload.target_path};
 
     emitToUsers(
       recipients,
@@ -1153,8 +1042,7 @@ const syncOpdFlowForOrder = (orderRecord, { userId = null, trigger = 'LAB_WORKFL
     Promise.resolve(
       opdFlowService.syncDiagnosticsStage(encounterId, {
         user_id: userId || null,
-        trigger,
-      })
+        trigger})
     ).catch(() => {});
   } catch (_error) {
     // OPD orchestration must never block lab workflow updates.
@@ -1169,8 +1057,7 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
 
     const [where, summaryWhere] = await Promise.all([
       buildWorkbenchOrderWhere(filters, { includeSearch: true, user }),
-      buildWorkbenchOrderWhere(filters, { includeSearch: false, user }),
-    ]);
+      buildWorkbenchOrderWhere(filters, { includeSearch: false, user })]);
 
     const [
       orderWorklistRecords,
@@ -1183,8 +1070,7 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
       resultsQueue,
       criticalResults,
       rejectedSamples,
-      summaryOrderRecords,
-    ] = await Promise.all([
+      summaryOrderRecords] = await Promise.all([
       view === 'PATIENTS'
         ? labWorkspaceRepository.findManyOrders(
             where,
@@ -1206,52 +1092,40 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
       labWorkspaceRepository.countOrders(summaryWhere),
       labWorkspaceRepository.countOrders({
         ...summaryWhere,
-        status: { in: ['ORDERED', 'COLLECTED'] },
-      }),
+        status: { in: ['ORDERED', 'COLLECTED'] }}),
       labWorkspaceRepository.countOrders({
         ...summaryWhere,
-        status: 'IN_PROCESS',
-      }),
+        status: 'IN_PROCESS'}),
       labWorkspaceRepository.countOrders({
         ...summaryWhere,
-        status: 'COMPLETED',
-      }),
+        status: 'COMPLETED'}),
       labWorkspaceRepository.countOrders({
         ...summaryWhere,
-        status: 'CANCELLED',
-      }),
+        status: 'CANCELLED'}),
       labWorkspaceRepository.countOrderItems({
         status: { in: ['COLLECTED', 'IN_PROCESS'] },
         lab_order: {
           deleted_at: null,
-          ...summaryWhere,
-        },
-      }),
+          ...summaryWhere}}),
       labWorkspaceRepository.countResults({
         status: 'CRITICAL',
         lab_order_item: {
           deleted_at: null,
           lab_order: {
             deleted_at: null,
-            ...summaryWhere,
-          },
-        },
-      }),
+            ...summaryWhere}}}),
       labWorkspaceRepository.countSamples({
         status: 'REJECTED',
         lab_order: {
           deleted_at: null,
-          ...summaryWhere,
-        },
-      }),
+          ...summaryWhere}}),
       labWorkspaceRepository.findManyOrders(
         summaryWhere,
         0,
         PATIENT_WORKBENCH_SCAN_LIMIT,
         orderBy,
         LAB_ORDER_WITH_RELATIONS_INCLUDE
-      ),
-    ]);
+      )]);
 
     const worklistRecords = toSafeArray(orderWorklistRecords);
     const summaryRecords = toSafeArray(summaryOrderRecords);
@@ -1279,11 +1153,9 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
         completed_orders: toSafeCount(completedOrders),
         cancelled_orders: toSafeCount(cancelledOrders),
         rejected_samples: toSafeCount(rejectedSamples),
-        ...patientSummary,
-      },
+        ...patientSummary},
       worklist,
-      pagination: buildPagination(page, limit, worklistTotal),
-    };
+      pagination: buildPagination(page, limit, worklistTotal)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1296,8 +1168,7 @@ const getLabOrderWorkflow = async (identifier) => {
       identifier,
       model: 'lab_order',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order.not_found',
-    });
+      errorKey: 'errors.lab_order.not_found'});
 
     const orderRecord = await labWorkspaceRepository.findOrderById(
       orderId,
@@ -1320,8 +1191,7 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
       identifier,
       model: 'lab_order',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order.not_found',
-    });
+      errorKey: 'errors.lab_order.not_found'});
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
       const order = await labWorkspaceRepository.txFindOrderById(
@@ -1337,15 +1207,12 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
         throw new HttpError('errors.lab_order.payment_required', 402, [
           {
             field: 'payment_status',
-            payment_status: order?.billing_snapshot?.payment_status || null,
-          },
-        ]);
+            payment_status: order?.billing_snapshot?.payment_status || null}]);
       }
 
       assertTransition(!ORDER_COMPLETION_STATES.has(order.status), {
         from: order.status,
-        to: 'COLLECTED',
-      });
+        to: 'COLLECTED'});
 
       const collectedAt = toDateOrNull(payload.collected_at, new Date());
       let targetSample = null;
@@ -1355,16 +1222,14 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
           identifier: payload.sample_id,
           model: 'lab_sample',
           where: { deleted_at: null, lab_order_id: order.id },
-          errorKey: 'errors.lab_sample.not_found',
-        });
+          errorKey: 'errors.lab_sample.not_found'});
         targetSample = await labWorkspaceRepository.txFindSampleById(tx, sampleId);
         if (!targetSample || targetSample.lab_order_id !== order.id) {
           throw new HttpError('errors.lab_sample.not_found', 404);
         }
         assertTransition(SAMPLE_COLLECTABLE_STATES.has(targetSample.status), {
           from: targetSample.status,
-          to: 'COLLECTED',
-        });
+          to: 'COLLECTED'});
       } else {
         const existing = (order.samples || []).find((sample) =>
           SAMPLE_COLLECTABLE_STATES.has(sample.status)
@@ -1380,14 +1245,12 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
           collected_at: collectedAt,
           rejection_reason: null,
           rejection_notes: null,
-          rejected_at: null,
-        });
+          rejected_at: null});
       } else {
         targetSample = await labWorkspaceRepository.txCreateSample(tx, {
           lab_order_id: order.id,
           status: 'COLLECTED',
-          collected_at: collectedAt,
-        });
+          collected_at: collectedAt});
       }
 
       await labWorkspaceRepository.txUpdateOrderItemsMany(
@@ -1409,8 +1272,7 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
       return {
         beforeStatus: order.status,
         order: refreshedOrder,
-        sampleId: targetSample.id,
-      };
+        sampleId: targetSample.id};
     });
 
     createAuditLog({
@@ -1424,11 +1286,8 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
           before_status: mutation.beforeStatus,
           after_status: mutation.order?.status,
           sample_id: mutation.sampleId,
-          notes: payload.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: payload.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     publishLabRealtimeUpdates({
@@ -1437,8 +1296,7 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
       actorUserId: userId || null,
       action: 'COLLECT',
       resourceType: 'order',
-      resourceId: workflow?.order?.id || null,
-    }).catch(() => {});
+      resourceId: workflow?.order?.id || null}).catch(() => {});
 
     return { workflow };
   } catch (error) {
@@ -1453,8 +1311,7 @@ const receiveLabSample = async (identifier, payload = {}, userId, ipAddress) => 
       identifier,
       model: 'lab_sample',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_sample.not_found',
-    });
+      errorKey: 'errors.lab_sample.not_found'});
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
       const sample = await labWorkspaceRepository.txFindSampleById(tx, sampleId);
@@ -1464,14 +1321,12 @@ const receiveLabSample = async (identifier, payload = {}, userId, ipAddress) => 
 
       assertTransition(sample.status !== 'REJECTED', {
         from: sample.status,
-        to: 'RECEIVED',
-      });
+        to: 'RECEIVED'});
 
       const receivedAt = toDateOrNull(payload.received_at, new Date());
       await labWorkspaceRepository.txUpdateSample(tx, sample.id, {
         status: 'RECEIVED',
-        received_at: receivedAt,
-      });
+        received_at: receivedAt});
 
       const order = await labWorkspaceRepository.txFindOrderById(
         tx,
@@ -1490,8 +1345,7 @@ const receiveLabSample = async (identifier, payload = {}, userId, ipAddress) => 
         tx,
         {
           lab_order_id: order.id,
-          status: { in: ['ORDERED', 'COLLECTED'] },
-        },
+          status: { in: ['ORDERED', 'COLLECTED'] }},
         { status: 'IN_PROCESS' }
       );
 
@@ -1503,8 +1357,7 @@ const receiveLabSample = async (identifier, payload = {}, userId, ipAddress) => 
 
       return {
         beforeStatus: order.status,
-        order: refreshedOrder,
-      };
+        order: refreshedOrder};
     });
 
     createAuditLog({
@@ -1517,11 +1370,8 @@ const receiveLabSample = async (identifier, payload = {}, userId, ipAddress) => 
         metadata: {
           before_order_status: mutation.beforeStatus,
           after_order_status: mutation.order?.status,
-          notes: payload.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: payload.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     publishLabRealtimeUpdates({
@@ -1530,8 +1380,7 @@ const receiveLabSample = async (identifier, payload = {}, userId, ipAddress) => 
       actorUserId: userId || null,
       action: 'RECEIVE',
       resourceType: 'sample',
-      resourceId: identifier,
-    }).catch(() => {});
+      resourceId: identifier}).catch(() => {});
 
     return { workflow };
   } catch (error) {
@@ -1546,8 +1395,7 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
       identifier,
       model: 'lab_sample',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_sample.not_found',
-    });
+      errorKey: 'errors.lab_sample.not_found'});
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
       const sample = await labWorkspaceRepository.txFindSampleById(tx, sampleId);
@@ -1557,15 +1405,13 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
 
       assertTransition(SAMPLE_REJECTABLE_STATES.has(sample.status), {
         from: sample.status,
-        to: 'REJECTED',
-      });
+        to: 'REJECTED'});
 
       await labWorkspaceRepository.txUpdateSample(tx, sample.id, {
         status: 'REJECTED',
         rejection_reason: toText(payload.reason) || null,
         rejection_notes: toText(payload.notes) || null,
-        rejected_at: toDateOrNull(payload.rejected_at, new Date()),
-      });
+        rejected_at: toDateOrNull(payload.rejected_at, new Date())});
 
       const order = await labWorkspaceRepository.txFindOrderById(
         tx,
@@ -1578,8 +1424,7 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
 
       const activeSamples = await labWorkspaceRepository.txCountSamples(tx, {
         lab_order_id: order.id,
-        status: { in: ['PENDING', 'COLLECTED', 'RECEIVED'] },
-      });
+        status: { in: ['PENDING', 'COLLECTED', 'RECEIVED'] }});
 
       if (activeSamples === 0 && !ORDER_COMPLETION_STATES.has(order.status)) {
         await labWorkspaceRepository.txUpdateOrder(tx, order.id, { status: 'ORDERED' });
@@ -1587,8 +1432,7 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
           tx,
           {
             lab_order_id: order.id,
-            status: { in: ['COLLECTED', 'IN_PROCESS'] },
-          },
+            status: { in: ['COLLECTED', 'IN_PROCESS'] }},
           { status: 'ORDERED' }
         );
       }
@@ -1601,8 +1445,7 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
 
       return {
         beforeStatus: order.status,
-        order: refreshedOrder,
-      };
+        order: refreshedOrder};
     });
 
     createAuditLog({
@@ -1616,11 +1459,8 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
           reason: payload.reason || null,
           notes: payload.notes || null,
           before_order_status: mutation.beforeStatus,
-          after_order_status: mutation.order?.status,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          after_order_status: mutation.order?.status}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     publishLabRealtimeUpdates({
@@ -1629,8 +1469,7 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
       actorUserId: userId || null,
       action: 'REJECT',
       resourceType: 'sample',
-      resourceId: identifier,
-    }).catch(() => {});
+      resourceId: identifier}).catch(() => {});
 
     return { workflow };
   } catch (error) {
@@ -1645,8 +1484,7 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
       identifier,
       model: 'lab_order_item',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order_item.not_found',
-    });
+      errorKey: 'errors.lab_order_item.not_found'});
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
       const item = await labWorkspaceRepository.txFindOrderItemById(
@@ -1671,8 +1509,7 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
         beforeOrderStatus: item.lab_order?.status || null,
         order: refreshedOrder,
         progress,
-        releasedResultId: releasedResult.id,
-      };
+        releasedResultId: releasedResult.id};
     });
 
     createAuditLog({
@@ -1687,11 +1524,8 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
           after_order_status: mutation.order?.status || null,
           before_order_status: mutation.beforeOrderStatus,
           released_result_id: mutation.releasedResultId,
-          notes: payload.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: payload.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     const releasedResult = mapReleasedResultFromOrder(
@@ -1705,17 +1539,14 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
       action: 'VERIFY_RESULT',
       resourceType: 'order-item',
       resourceId: identifier,
-      releasedResult,
-    }).catch(() => {});
+      releasedResult}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_RESULT_RELEASED',
-    });
+      trigger: 'LAB_RESULT_RELEASED'});
 
     return {
       workflow,
-      released_result: releasedResult,
-    };
+      released_result: releasedResult};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1728,8 +1559,7 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
       identifier,
       model: 'lab_order',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order.not_found',
-    });
+      errorKey: 'errors.lab_order.not_found'});
 
     const resultPayloads = Array.isArray(payload.results) ? payload.results : [];
     if (!resultPayloads.length) {
@@ -1753,8 +1583,7 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
           identifier: entry.order_item_id,
           model: 'lab_order_item',
           where: { deleted_at: null, lab_order_id: order.id },
-          errorKey: 'errors.lab_order_item.not_found',
-        });
+          errorKey: 'errors.lab_order_item.not_found'});
         const item = await labWorkspaceRepository.txFindOrderItemById(
           tx,
           orderItemId,
@@ -1769,8 +1598,7 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
         itemTransitions.push({
           order_item_id: item.id,
           before_status: item.status,
-          released_result_id: releasedResult.id,
-        });
+          released_result_id: releasedResult.id});
       }
 
       const progress = await syncLabOrderProgress(tx, order.id);
@@ -1785,8 +1613,7 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
         order: refreshedOrder,
         progress,
         releasedResultIds,
-        itemTransitions,
-      };
+        itemTransitions};
     });
 
     createAuditLog({
@@ -1799,11 +1626,8 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
         metadata: {
           before_order_status: mutation.beforeOrderStatus,
           after_order_status: mutation.order?.status || null,
-          item_transitions: mutation.itemTransitions,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          item_transitions: mutation.itemTransitions}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     const releasedResults = mapReleasedResultsFromOrder(
@@ -1818,17 +1642,14 @@ const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress
       resourceType: 'order',
       resourceId: workflow?.order?.id || null,
       releasedResult: releasedResults[0] || null,
-      releasedResults,
-    }).catch(() => {});
+      releasedResults}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_RESULTS_VERIFIED',
-    });
+      trigger: 'LAB_RESULTS_VERIFIED'});
 
     return {
       workflow,
-      released_results: releasedResults,
-    };
+      released_results: releasedResults};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1846,38 +1667,32 @@ const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) =
       identifier,
       model: 'lab_order_item',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order_item.not_found',
-    });
+      errorKey: 'errors.lab_order_item.not_found'});
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
       const item = await labWorkspaceRepository.txFindOrderItemById(tx, orderItemId, {
-        lab_order: { select: { id: true, status: true } },
-      });
+        lab_order: { select: { id: true, status: true } }});
       if (!item) {
         throw new HttpError('errors.lab_order_item.not_found', 404);
       }
       assertTransition(item.status !== 'COMPLETED', {
         from: item.status,
-        to: 'CANCELLED',
-      });
+        to: 'CANCELLED'});
 
       const remainingActiveItems = await labWorkspaceRepository.txCountOrderItems(tx, {
         lab_order_id: item.lab_order_id,
         id: { not: item.id },
-        status: { not: 'CANCELLED' },
-      });
+        status: { not: 'CANCELLED' }});
       if (remainingActiveItems === 0) {
         throw new HttpError('errors.lab_order.at_least_one_active_test_required', 409, [
-          { field: 'lab_order_item_id' },
-        ]);
+          { field: 'lab_order_item_id' }]);
       }
 
       await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
         status: 'CANCELLED',
         rejection_reason: reason,
         rejection_notes: payload.notes || null,
-        rejected_at: toDateOrNull(payload.rejected_at, new Date()),
-      });
+        rejected_at: toDateOrNull(payload.rejected_at, new Date())});
       const progress = await syncLabOrderProgress(tx, item.lab_order_id);
       const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
         tx,
@@ -1889,8 +1704,7 @@ const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) =
         beforeItemStatus: item.status,
         beforeOrderStatus: item.lab_order?.status || null,
         order: refreshedOrder,
-        progress,
-      };
+        progress};
     });
 
     createAuditLog({
@@ -1905,11 +1719,8 @@ const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) =
           notes: payload.notes || null,
           before_item_status: mutation.beforeItemStatus,
           before_order_status: mutation.beforeOrderStatus,
-          after_order_status: mutation.order?.status || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          after_order_status: mutation.order?.status || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     publishLabRealtimeUpdates({
@@ -1918,12 +1729,10 @@ const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) =
       actorUserId: userId || null,
       action: 'REJECT_ORDER_ITEM',
       resourceType: 'order-item',
-      resourceId: identifier,
-    }).catch(() => {});
+      resourceId: identifier}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_ORDER_ITEM_REJECTED',
-    });
+      trigger: 'LAB_ORDER_ITEM_REJECTED'});
 
     return { workflow };
   } catch (error) {
@@ -1943,13 +1752,11 @@ const reopenLabOrderItemResult = async (identifier, payload = {}, userId, ipAddr
       identifier,
       model: 'lab_order_item',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order_item.not_found',
-    });
+      errorKey: 'errors.lab_order_item.not_found'});
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
       const item = await labWorkspaceRepository.txFindOrderItemById(tx, orderItemId, {
-        lab_order: { select: { id: true, status: true } },
-      });
+        lab_order: { select: { id: true, status: true } }});
       if (!item) {
         throw new HttpError('errors.lab_order_item.not_found', 404);
       }
@@ -1965,24 +1772,20 @@ const reopenLabOrderItemResult = async (identifier, payload = {}, userId, ipAddr
 
       assertTransition(normalizeStatus(item.status) === 'COMPLETED', {
         from: item.status,
-        to: 'IN_PROCESS',
-      });
+        to: 'IN_PROCESS'});
       assertTransition(
         RESULT_REOPENABLE_STATES.has(normalizeStatus(result.status)),
         {
           from: result.status,
-          to: 'PENDING',
-        }
+          to: 'PENDING'}
       );
 
       await labWorkspaceRepository.txUpdateResult(tx, result.id, {
         status: 'PENDING',
         result_flag: null,
-        reported_at: null,
-      });
+        reported_at: null});
       await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
-        status: 'IN_PROCESS',
-      });
+        status: 'IN_PROCESS'});
 
       const progress = await syncLabOrderProgress(tx, item.lab_order_id);
       const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
@@ -1996,8 +1799,7 @@ const reopenLabOrderItemResult = async (identifier, payload = {}, userId, ipAddr
         beforeOrderStatus: item.lab_order?.status || null,
         order: refreshedOrder,
         progress,
-        reopenedResultId: result.id,
-      };
+        reopenedResultId: result.id};
     });
 
     createAuditLog({
@@ -2013,11 +1815,8 @@ const reopenLabOrderItemResult = async (identifier, payload = {}, userId, ipAddr
           before_item_status: mutation.beforeItemStatus,
           before_order_status: mutation.beforeOrderStatus,
           after_order_status: mutation.order?.status || null,
-          reopened_result_id: mutation.reopenedResultId,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          reopened_result_id: mutation.reopenedResultId}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     publishLabRealtimeUpdates({
@@ -2026,12 +1825,10 @@ const reopenLabOrderItemResult = async (identifier, payload = {}, userId, ipAddr
       actorUserId: userId || null,
       action: 'REOPEN_RESULT',
       resourceType: 'order-item',
-      resourceId: identifier,
-    }).catch(() => {});
+      resourceId: identifier}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_RESULT_REOPENED',
-    });
+      trigger: 'LAB_RESULT_REOPENED'});
 
     return { workflow };
   } catch (error) {
@@ -2052,8 +1849,7 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
       identifier,
       model: 'lab_order',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order.not_found',
-    });
+      errorKey: 'errors.lab_order.not_found'});
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
       const order = await labWorkspaceRepository.txFindOrderById(
@@ -2068,8 +1864,7 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
       const reverseTarget = resolveLatestReverseWorkflowTarget(order);
       assertTransition(Boolean(reverseTarget), {
         from: order.status,
-        to: 'REVERSED',
-      });
+        to: 'REVERSED'});
 
       if (reverseTarget.kind === 'RELEASE') {
         const item = await labWorkspaceRepository.txFindOrderItemById(
@@ -2086,24 +1881,20 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
 
         assertTransition(normalizeStatus(item.status) === 'COMPLETED', {
           from: item.status,
-          to: 'IN_PROCESS',
-        });
+          to: 'IN_PROCESS'});
         assertTransition(
           RESULT_REOPENABLE_STATES.has(normalizeStatus(result.status)),
           {
             from: result.status,
-            to: 'PENDING',
-          }
+            to: 'PENDING'}
         );
 
         await labWorkspaceRepository.txUpdateResult(tx, result.id, {
           status: 'PENDING',
           result_flag: null,
-          reported_at: null,
-        });
+          reported_at: null});
         await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
-          status: 'IN_PROCESS',
-        });
+          status: 'IN_PROCESS'});
       } else {
         const sample = await labWorkspaceRepository.txFindSampleById(
           tx,
@@ -2116,42 +1907,35 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
         if (reverseTarget.kind === 'RECEIVE') {
           assertTransition(normalizeStatus(sample.status) === 'RECEIVED', {
             from: sample.status,
-            to: 'COLLECTED',
-          });
+            to: 'COLLECTED'});
 
           await labWorkspaceRepository.txUpdateSample(tx, sample.id, {
             status: 'COLLECTED',
-            received_at: null,
-          });
+            received_at: null});
         } else if (reverseTarget.kind === 'REJECT') {
           const restoredStatus = resolveRejectedSampleRestoreStatus(sample);
           assertTransition(Boolean(restoredStatus), {
             from: sample.status,
-            to: restoredStatus || 'PENDING',
-          });
+            to: restoredStatus || 'PENDING'});
 
           await labWorkspaceRepository.txUpdateSample(tx, sample.id, {
             status: restoredStatus,
             ...(restoredStatus === 'PENDING'
               ? {
                   collected_at: null,
-                  received_at: null,
-                }
+                  received_at: null}
               : restoredStatus === 'COLLECTED'
                 ? { received_at: null }
-                : {}),
-          });
+                : {})});
         } else {
           assertTransition(normalizeStatus(sample.status) === 'COLLECTED', {
             from: sample.status,
-            to: 'PENDING',
-          });
+            to: 'PENDING'});
 
           await labWorkspaceRepository.txUpdateSample(tx, sample.id, {
             status: 'PENDING',
             collected_at: null,
-            received_at: null,
-          });
+            received_at: null});
         }
       }
 
@@ -2166,8 +1950,7 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
         beforeOrderStatus: order.status,
         order: refreshedOrder,
         reverseTarget,
-        progress,
-      };
+        progress};
     });
 
     createAuditLog({
@@ -2184,11 +1967,8 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
           reversed_sample_id: mutation.reverseTarget?.sampleId || null,
           reversed_order_item_id: mutation.reverseTarget?.orderItemId || null,
           reversed_result_id: mutation.reverseTarget?.resultId || null,
-          reason,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          reason}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     publishLabRealtimeUpdates({
@@ -2197,12 +1977,10 @@ const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddre
       actorUserId: userId || null,
       action: 'REVERSE',
       resourceType: 'order',
-      resourceId: workflow?.order?.id || null,
-    }).catch(() => {});
+      resourceId: workflow?.order?.id || null}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_WORKFLOW_REVERSED',
-    });
+      trigger: 'LAB_WORKFLOW_REVERSED'});
 
     return { workflow };
   } catch (error) {
@@ -2217,28 +1995,24 @@ const restoreLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
       identifier,
       model: 'lab_order_item',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order_item.not_found',
-    });
+      errorKey: 'errors.lab_order_item.not_found'});
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
       const item = await labWorkspaceRepository.txFindOrderItemById(tx, orderItemId, {
-        lab_order: { select: { id: true, status: true } },
-      });
+        lab_order: { select: { id: true, status: true } }});
       if (!item) {
         throw new HttpError('errors.lab_order_item.not_found', 404);
       }
 
       assertTransition(normalizeStatus(item.status) === 'CANCELLED', {
         from: item.status,
-        to: 'ORDERED',
-      });
+        to: 'ORDERED'});
 
       await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
         status: 'ORDERED',
         rejection_reason: null,
         rejection_notes: null,
-        rejected_at: null,
-      });
+        rejected_at: null});
 
       const progress = await syncLabOrderProgress(tx, item.lab_order_id);
       const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
@@ -2251,8 +2025,7 @@ const restoreLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
         beforeItemStatus: item.status,
         beforeOrderStatus: item.lab_order?.status || null,
         order: refreshedOrder,
-        progress,
-      };
+        progress};
     });
 
     createAuditLog({
@@ -2267,11 +2040,8 @@ const restoreLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
           before_order_status: mutation.beforeOrderStatus,
           after_order_status: mutation.order?.status || null,
           reason: payload.reason || null,
-          notes: payload.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: payload.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     publishLabRealtimeUpdates({
@@ -2280,12 +2050,10 @@ const restoreLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
       actorUserId: userId || null,
       action: 'RESTORE_ORDER_ITEM',
       resourceType: 'order-item',
-      resourceId: identifier,
-    }).catch(() => {});
+      resourceId: identifier}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_ORDER_ITEM_RESTORED',
-    });
+      trigger: 'LAB_ORDER_ITEM_RESTORED'});
 
     return { workflow };
   } catch (error) {
@@ -2300,8 +2068,7 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
       identifier,
       model: 'lab_order',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order.not_found',
-    });
+      errorKey: 'errors.lab_order.not_found'});
 
     const panelId = String(payload?.panel_id || '').trim();
     const requestedItemIds = Array.isArray(payload?.order_item_ids)
@@ -2310,8 +2077,7 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
 
     if (!panelId && requestedItemIds.length === 0) {
       throw new HttpError('errors.validation.field.required', 400, [
-        { field: 'order_item_ids' },
-      ]);
+        { field: 'order_item_ids' }]);
     }
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
@@ -2338,8 +2104,7 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
             identifier: rawId,
             model: 'lab_order_item',
             where: { deleted_at: null, lab_order_id: order.id },
-            errorKey: 'errors.lab_order_item.not_found',
-          });
+            errorKey: 'errors.lab_order_item.not_found'});
           targetIds.push(itemId);
         }
         targetIds = [...new Set(targetIds)];
@@ -2350,12 +2115,10 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
       }
 
       const totalActiveItems = await labWorkspaceRepository.txCountOrderItems(tx, {
-        lab_order_id: order.id,
-      });
+        lab_order_id: order.id});
       if (targetIds.length >= totalActiveItems) {
         throw new HttpError('errors.lab_order.at_least_one_active_test_required', 409, [
-          { field: 'order_item_ids' },
-        ]);
+          { field: 'order_item_ids' }]);
       }
 
       const deletedAt = new Date();
@@ -2382,8 +2145,7 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
         order: refreshedOrder,
         deletedItemIds: targetIds,
         panelId: panelId || null,
-        progress,
-      };
+        progress};
     });
 
     createAuditLog({
@@ -2399,11 +2161,8 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
           panel_id: mutation.panelId,
           deleted_item_count: mutation.deletedItemIds.length,
           reason: payload.reason || null,
-          notes: payload.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: payload.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = mapLabOrderWorkflowRecord(mutation.order);
     publishLabRealtimeUpdates({
@@ -2412,17 +2171,14 @@ const deleteLabOrderItems = async (identifier, payload = {}, userId, ipAddress) 
       actorUserId: userId || null,
       action: 'DELETE_ORDER_ITEMS',
       resourceType: 'order',
-      resourceId: workflow?.order?.id || null,
-    }).catch(() => {});
+      resourceId: workflow?.order?.id || null}).catch(() => {});
     syncOpdFlowForOrder(mutation.order, {
       userId,
-      trigger: 'LAB_ORDER_ITEMS_DELETED',
-    });
+      trigger: 'LAB_ORDER_ITEMS_DELETED'});
 
     return {
       workflow,
-      deleted_item_count: mutation.deletedItemIds.length,
-    };
+      deleted_item_count: mutation.deletedItemIds.length};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -2448,10 +2204,8 @@ const resolveLegacyRouteIdentifier = async (resource, identifier) => {
       where: { deleted_at: null },
       select: {
         id: true,
-        human_friendly_id: true,
-      },
-      errorKey: 'errors.resource.not_found',
-    });
+        human_friendly_id: true},
+      errorKey: 'errors.resource.not_found'});
 
     const publicIdentifier = toPublicIdentifier(
       record?.human_friendly_id,
@@ -2474,8 +2228,7 @@ const resolveLegacyRouteIdentifier = async (resource, identifier) => {
       route: `${config.route}/${encodeURIComponent(safeIdentifier)}`,
       matched_by: isUuidLike(normalizedIdentifier)
         ? 'uuid'
-        : 'human_friendly_id',
-    };
+        : 'human_friendly_id'};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -2497,5 +2250,4 @@ module.exports = {
   reverseLabOrderWorkflow,
   restoreLabOrderItem,
   deleteLabOrderItems,
-  resolveLegacyRouteIdentifier,
-};
+  resolveLegacyRouteIdentifier};

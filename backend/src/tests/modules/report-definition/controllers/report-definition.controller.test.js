@@ -24,11 +24,9 @@ describe('Report Definition Controller', () => {
       user: {
         id: 'user-123',
         tenant_id: 'tenant-123',
-        facility_id: 'facility-123',
-      },
+        facility_id: 'facility-123'},
       ip: '127.0.0.1',
-      get: jest.fn().mockReturnValue('Test Agent'),
-    };
+      get: jest.fn().mockReturnValue('Test Agent')};
     mockRes = {};
   });
 
@@ -37,23 +35,19 @@ describe('Report Definition Controller', () => {
       const mockResult = {
         reportDefinitions: [
           { id: 'report-1', name: 'Report 1' },
-          { id: 'report-2', name: 'Report 2' },
-        ],
+          { id: 'report-2', name: 'Report 2' }],
         pagination: {
           page: 1,
           limit: 20,
           total: 2,
           totalPages: 1,
           hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+          hasPreviousPage: false}};
       mockReq.query = {
         page: '1',
         limit: '20',
         status: 'ACTIVE',
-        search: 'Admissions',
-      };
+        search: 'Admissions'};
       reportDefinitionService.listReportDefinitions.mockResolvedValue(mockResult);
 
       await listReportDefinitions(mockReq, mockRes);
@@ -79,8 +73,7 @@ describe('Report Definition Controller', () => {
     it('passes req.user when loading a single record', async () => {
       const mockReportDefinition = {
         id: 'report-123',
-        name: 'Test Report',
-      };
+        name: 'Test Report'};
       mockReq.params.id = 'report-123';
       reportDefinitionService.getReportDefinitionById.mockResolvedValue(mockReportDefinition);
 
@@ -104,8 +97,7 @@ describe('Report Definition Controller', () => {
       const newData = {
         name: 'New Report',
         dataset_key: 'patient_registrations',
-        definition_json: { columns: ['date'] },
-      };
+        definition_json: { columns: ['date'] }};
       const mockCreated = { id: 'report-123', ...newData };
       mockReq.body = newData;
       reportDefinitionService.createReportDefinition.mockResolvedValue(mockCreated);
@@ -120,8 +112,7 @@ describe('Report Definition Controller', () => {
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
           ip_address: '127.0.0.1',
-          user_agent: 'Test Agent',
-        }
+          user_agent: 'Test Agent'}
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -137,8 +128,7 @@ describe('Report Definition Controller', () => {
       const updateData = { name: 'Updated Report', version: 1 };
       const mockUpdated = {
         id: 'report-123',
-        name: 'Updated Report',
-      };
+        name: 'Updated Report'};
       mockReq.params.id = 'report-123';
       mockReq.body = updateData;
       reportDefinitionService.updateReportDefinition.mockResolvedValue(mockUpdated);
@@ -154,8 +144,7 @@ describe('Report Definition Controller', () => {
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
           ip_address: '127.0.0.1',
-          user_agent: 'Test Agent',
-        }
+          user_agent: 'Test Agent'}
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -181,8 +170,7 @@ describe('Report Definition Controller', () => {
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
           ip_address: '127.0.0.1',
-          user_agent: 'Test Agent',
-        }
+          user_agent: 'Test Agent'}
       );
       expect(sendNoContent).toHaveBeenCalledWith(mockRes);
     });

@@ -3,15 +3,13 @@ const { HttpError } = require('@lib/errors');
 const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelRecordByIdentifier,
-  normalizeIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  normalizeIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { parseRecordSlots } = require('../../staff-availability/lib/availability-slots');
 const {
   listAvailability,
   listApprovedLeaves,
-  listExistingAssignments,
-} = require('./hr-roster-engine-queries');
+  listExistingAssignments} = require('./hr-roster-engine-queries');
 
 const DEFAULT_CONSTRAINTS = Object.freeze({
   max_shifts_per_nurse: null,
@@ -19,8 +17,7 @@ const DEFAULT_CONSTRAINTS = Object.freeze({
   max_hours_per_week: 48,
   min_rest_hours: 10,
   max_consecutive_working_days: 6,
-  skill_matching: false,
-});
+  skill_matching: false});
 
 const normalizeNumber = (value) => {
   const parsed = Number(value);
@@ -100,8 +97,7 @@ const normalizeConstraints = (rosterConstraints = {}, overrideConstraints = {}) 
   const merged = {
     ...DEFAULT_CONSTRAINTS,
     ...(rosterConstraints && typeof rosterConstraints === 'object' ? rosterConstraints : {}),
-    ...(overrideConstraints && typeof overrideConstraints === 'object' ? overrideConstraints : {}),
-  };
+    ...(overrideConstraints && typeof overrideConstraints === 'object' ? overrideConstraints : {})};
 
   return {
     max_shifts_per_nurse: normalizeInt(merged.max_shifts_per_nurse),
@@ -109,8 +105,7 @@ const normalizeConstraints = (rosterConstraints = {}, overrideConstraints = {}) 
     max_hours_per_week: normalizeNumber(merged.max_hours_per_week),
     min_rest_hours: normalizeNumber(merged.min_rest_hours),
     max_consecutive_working_days: normalizeInt(merged.max_consecutive_working_days),
-    skill_matching: Boolean(merged.skill_matching),
-  };
+    skill_matching: Boolean(merged.skill_matching)};
 };
 
 const resolveDisplayId = (record = {}) =>
@@ -122,8 +117,7 @@ const resolveRecordOrThrow = async ({ model, identifier, where = {}, errorKey })
     identifier,
     where,
     includeDeleted: false,
-    select: { id: true, human_friendly_id: true },
-  });
+    select: { id: true, human_friendly_id: true }});
 
   if (!record?.id) {
     throw new HttpError(errorKey, 404);
@@ -142,25 +136,17 @@ const resolveRosterOrThrow = async (rosterIdentifier) => {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      },
+          name: true}},
       department: {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      },
+          name: true}},
       tenant: {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      },
-    },
-  });
+          name: true}}}});
 
   if (!rosterRecord?.id) {
     throw new HttpError('errors.nurse_roster.not_found', 404);
@@ -175,18 +161,14 @@ const listRosterShifts = async (rosterId, periodStart, periodEnd) =>
       deleted_at: null,
       nurse_roster_id: rosterId,
       status: {
-        not: 'CANCELLED',
-      },
+        not: 'CANCELLED'},
       start_time: {
         gte: periodStart,
-        lte: periodEnd,
-      },
-    },
+        lte: periodEnd}},
     include: {
       assignments: {
         where: {
-          deleted_at: null,
-        },
+          deleted_at: null},
         include: {
           staff_profile: {
             select: {
@@ -194,25 +176,16 @@ const listRosterShifts = async (rosterId, periodStart, periodEnd) =>
               human_friendly_id: true,
               department_id: true,
               staff_number: true,
-              position: true,
-            },
-          },
-        },
+              position: true}}},
         orderBy: {
-          assigned_at: 'asc',
-        },
-      },
-    },
+          assigned_at: 'asc'}}},
     orderBy: {
-      start_time: 'asc',
-    },
-  });
+      start_time: 'asc'}});
 
 const listCandidateProfiles = async (roster) => {
   const where = {
     deleted_at: null,
-    tenant_id: roster.tenant_id,
-  };
+    tenant_id: roster.tenant_id};
 
   return prisma.staff_profile.findMany({
     where,
@@ -223,18 +196,12 @@ const listCandidateProfiles = async (roster) => {
           human_friendly_id: true,
           first_name: true,
           last_name: true,
-          email: true,
-        },
-      },
+          email: true}},
       department: {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      },
-    },
-  });
+          name: true}}}});
 };
 
 const listDayOffs = async (profileIds, rosterId) => {
@@ -245,10 +212,7 @@ const listDayOffs = async (profileIds, rosterId) => {
       deleted_at: null,
       nurse_roster_id: rosterId,
       staff_profile_id: {
-        in: profileIds,
-      },
-    },
-  });
+        in: profileIds}}});
 };
 
 const mapRosterShift = (shift) => ({
@@ -265,9 +229,7 @@ const mapRosterShift = (shift) => ({
     staff_profile_display_id: resolveDisplayId(assignment.staff_profile || {}),
     staff_number: assignment.staff_profile?.staff_number || null,
     staff_position: assignment.staff_profile?.position || null,
-    assigned_at: assignment.assigned_at,
-  })),
-});
+    assigned_at: assignment.assigned_at}))});
 
 const buildRosterCoverage = (shifts = []) => {
   const totalShifts = shifts.length;
@@ -278,8 +240,7 @@ const buildRosterCoverage = (shifts = []) => {
     total_shifts: totalShifts,
     assigned_shifts: assignedShifts,
     unassigned_shifts: unassignedShifts,
-    assignment_ratio: totalShifts > 0 ? Number((assignedShifts / totalShifts).toFixed(4)) : 0,
-  };
+    assignment_ratio: totalShifts > 0 ? Number((assignedShifts / totalShifts).toFixed(4)) : 0};
 };
 
 const buildWeeklyMetrics = (intervals, targetWeekKey) => {
@@ -288,8 +249,7 @@ const buildWeeklyMetrics = (intervals, targetWeekKey) => {
   const hours = scoped.reduce((sum, entry) => sum + Math.max(0, hoursBetween(entry.start_time, entry.end_time)), 0);
   return {
     shifts,
-    hours,
-  };
+    hours};
 };
 
 const calculateConsecutiveSpan = (dayKeys = [], candidateDayKey) => {
@@ -367,8 +327,7 @@ const canPassAvailability = (records, shift) => {
         return {
           allowed: false,
           preferred: false,
-          reason: `availability_unavailable_${shiftDayKey || 'day'}`,
-        };
+          reason: `availability_unavailable_${shiftDayKey || 'day'}`};
       }
 
       if (preference === 'PREFERRED') {
@@ -460,8 +419,7 @@ const buildProfileState = ({ profiles, availability, leaves, dayOffs, existingAs
       start_time: entry.shift.start_time,
       end_time: entry.shift.end_time,
       roster_id: entry.shift.nurse_roster_id,
-      source: 'existing',
-    });
+      source: 'existing'});
   }
 
   for (const intervals of assignmentMap.values()) {
@@ -472,8 +430,7 @@ const buildProfileState = ({ profiles, availability, leaves, dayOffs, existingAs
     availabilityMap,
     leaveMap,
     dayOffMap,
-    assignmentMap,
-  };
+    assignmentMap};
 };
 
 const pickBestCandidate = ({
@@ -481,8 +438,7 @@ const pickBestCandidate = ({
   roster,
   profiles,
   state,
-  constraints,
-}) => {
+  constraints}) => {
   const candidateScores = [];
 
   const shiftWeekKey = weekKeyUtc(shift.start_time);
@@ -566,8 +522,7 @@ const pickBestCandidate = ({
       profile,
       score,
       last_assigned_at: lastAssignedAt,
-      weekly_shift_count: weekly.shifts,
-    });
+      weekly_shift_count: weekly.shifts});
   }
 
   if (!candidateScores.length) return null;
@@ -600,8 +555,7 @@ const buildWorkflow = async (rosterIdentifier) => {
       shift_type: shift.shift_type,
       start_time: shift.start_time,
       end_time: shift.end_time,
-      reason: 'UNASSIGNED',
-    }));
+      reason: 'UNASSIGNED'}));
 
   return {
     roster: {
@@ -617,13 +571,11 @@ const buildWorkflow = async (rosterIdentifier) => {
       period_end: roster.period_end,
       status: roster.status,
       published_at: roster.published_at,
-      constraints: roster.constraints || null,
-    },
+      constraints: roster.constraints || null},
     shifts: mappedShifts,
     assignments: mappedShifts.flatMap((shift) => shift.assignments.map((assignment) => ({ ...assignment, shift_id: shift.id }))),
     gaps,
-    coverage,
-  };
+    coverage};
 };
 
 const generateRosterAssignments = async ({
@@ -632,8 +584,7 @@ const generateRosterAssignments = async ({
   replaceExistingAssignments = true,
   dryRun = false,
   userId = null,
-  ipAddress = null,
-}) => {
+  ipAddress = null}) => {
   const normalizedRosterIdentifier = normalizeIdentifier(rosterIdentifier);
   const roster = await resolveRosterOrThrow(normalizedRosterIdentifier);
 
@@ -648,8 +599,7 @@ const generateRosterAssignments = async ({
 
   const [shifts, profiles] = await Promise.all([
     listRosterShifts(roster.id, periodStart, periodEnd),
-    listCandidateProfiles(roster),
-  ]);
+    listCandidateProfiles(roster)]);
 
   const profileIds = profiles.map((profile) => profile.id);
 
@@ -657,16 +607,14 @@ const generateRosterAssignments = async ({
     listAvailability(profileIds, periodStart, periodEnd),
     listApprovedLeaves(profileIds, periodStart, periodEnd),
     listDayOffs(profileIds, roster.id),
-    listExistingAssignments(profileIds, periodStart, periodEnd),
-  ]);
+    listExistingAssignments(profileIds, periodStart, periodEnd)]);
 
   const state = buildProfileState({
     profiles,
     availability,
     leaves: approvedLeaves,
     dayOffs,
-    existingAssignments,
-  });
+    existingAssignments});
 
   const shiftsToGenerate = shifts.filter((shift) => {
     const hasAssignment = Array.isArray(shift.assignments) && shift.assignments.length > 0;
@@ -684,8 +632,7 @@ const generateRosterAssignments = async ({
       roster,
       profiles,
       state,
-      constraints,
-    });
+      constraints});
 
     if (!picked?.profile) {
       unassignedShifts.push({
@@ -694,8 +641,7 @@ const generateRosterAssignments = async ({
         shift_type: shift.shift_type,
         start_time: shift.start_time,
         end_time: shift.end_time,
-        reason: 'NO_ELIGIBLE_CANDIDATE',
-      });
+        reason: 'NO_ELIGIBLE_CANDIDATE'});
       continue;
     }
 
@@ -706,8 +652,7 @@ const generateRosterAssignments = async ({
       staff_profile_display_id: resolveDisplayId(picked.profile),
       staff_number: picked.profile.staff_number || null,
       score: picked.score,
-      assigned_at: new Date(),
-    };
+      assigned_at: new Date()};
 
     plannedAssignments.push(entry);
 
@@ -717,8 +662,7 @@ const generateRosterAssignments = async ({
       start_time: shift.start_time,
       end_time: shift.end_time,
       roster_id: roster.id,
-      source: 'planned',
-    });
+      source: 'planned'});
 
     state.assignmentMap.get(picked.profile.id).sort((left, right) =>
       new Date(left.start_time).getTime() - new Date(right.start_time).getTime()
@@ -732,13 +676,9 @@ const generateRosterAssignments = async ({
           where: {
             deleted_at: null,
             shift_id: {
-              in: shifts.map((shift) => shift.id),
-            },
-          },
+              in: shifts.map((shift) => shift.id)}},
           data: {
-            deleted_at: new Date(),
-          },
-        });
+            deleted_at: new Date()}});
       }
 
       if (plannedAssignments.length > 0) {
@@ -746,9 +686,7 @@ const generateRosterAssignments = async ({
           data: plannedAssignments.map((entry) => ({
             shift_id: entry.shift_id,
             staff_profile_id: entry.staff_profile_id,
-            assigned_at: entry.assigned_at,
-          })),
-        });
+            assigned_at: entry.assigned_at}))});
       }
 
       await tx.nurse_roster.update({
@@ -756,9 +694,7 @@ const generateRosterAssignments = async ({
         data: {
           status: 'DRAFT',
           published_at: null,
-          constraints,
-        },
-      });
+          constraints}});
     });
   }
 
@@ -769,8 +705,7 @@ const generateRosterAssignments = async ({
     total_shifts: totalShifts,
     assigned_shifts: assignedShifts,
     unassigned_shifts: Math.max(0, totalShifts - assignedShifts),
-    assignment_ratio: totalShifts > 0 ? Number((assignedShifts / totalShifts).toFixed(4)) : 0,
-  };
+    assignment_ratio: totalShifts > 0 ? Number((assignedShifts / totalShifts).toFixed(4)) : 0};
 
   createAuditLog({
     user_id: userId,
@@ -788,12 +723,8 @@ const generateRosterAssignments = async ({
           total_shifts: totalShifts,
           assigned_shifts: assignedShifts,
           planned_assignments: newlyAssignedShifts,
-          unassigned_shifts: coverage.unassigned_shifts,
-        },
-      },
-    },
-    ip_address: ipAddress,
-  }).catch(() => {});
+          unassigned_shifts: coverage.unassigned_shifts}}},
+    ip_address: ipAddress}).catch(() => {});
 
   return {
     roster: {
@@ -805,20 +736,17 @@ const generateRosterAssignments = async ({
       status: 'DRAFT',
       period_start: roster.period_start,
       period_end: roster.period_end,
-      constraints,
-    },
+      constraints},
     generation_summary: {
       dry_run: Boolean(dryRun),
       replace_existing_assignments: Boolean(replaceExistingAssignments),
       total_shifts: totalShifts,
       existing_assigned_kept: baselineAssignedShifts,
       newly_assigned: newlyAssignedShifts,
-      unassigned: coverage.unassigned_shifts,
-    },
+      unassigned: coverage.unassigned_shifts},
     coverage,
     assignments: plannedAssignments,
-    unassigned_shifts: unassignedShifts,
-  };
+    unassigned_shifts: unassignedShifts};
 };
 
 module.exports = {
@@ -828,5 +756,4 @@ module.exports = {
   resolveDisplayId,
   listAvailability,
   listApprovedLeaves,
-  listExistingAssignments,
-};
+  listExistingAssignments};

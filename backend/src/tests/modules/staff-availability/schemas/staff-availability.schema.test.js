@@ -1,7 +1,6 @@
 ﻿const {
   createStaffAvailabilitySchema,
-  batchCreateStaffAvailabilitySchema,
-} = require('../../../../modules/staff-availability/schemas/staff-availability.schema');
+  batchCreateStaffAvailabilitySchema} = require('../../../../modules/staff-availability/schemas/staff-availability.schema');
 const { slotsOverlap, normalizeSlotList, parseRecordSlots } = require('../../../../modules/staff-availability/lib/availability-slots');
 const { serializeStaffAvailability } = require('../../../../modules/staff-availability/lib/staff-availability.serializer');
 
@@ -14,11 +13,9 @@ describe('staff-availability.schema contract', () => {
       day_of_week: 1,
       time_slots: [
         { start_time: '08:00', end_time: '10:00' },
-        { start_time: '14:00', end_time: '16:00' },
-      ],
+        { start_time: '14:00', end_time: '16:00' }],
       preference: 'AVAILABLE',
-      effective_from: '2026-06-30T00:00:00.000Z',
-    });
+      effective_from: '2026-06-30T00:00:00.000Z'});
 
     expect(parsed.time_slots).toHaveLength(2);
   });
@@ -29,10 +26,8 @@ describe('staff-availability.schema contract', () => {
       day_of_week: 1,
       time_slots: [
         { start_time: '08:00', end_time: '12:00' },
-        { start_time: '11:00', end_time: '13:00' },
-      ],
-      effective_from: '2026-06-30T00:00:00.000Z',
-    })).toThrow(/overlap/i);
+        { start_time: '11:00', end_time: '13:00' }],
+      effective_from: '2026-06-30T00:00:00.000Z'})).toThrow(/overlap/i);
   });
 
   it('accepts weekly batch payloads with unique days', () => {
@@ -43,14 +38,10 @@ describe('staff-availability.schema contract', () => {
       days: [
         {
           day_of_week: 1,
-          time_slots: [{ start_time: '08:00', end_time: '10:00' }],
-        },
+          time_slots: [{ start_time: '08:00', end_time: '10:00' }]},
         {
           day_of_week: 2,
-          time_slots: [{ start_time: '22:00', end_time: '23:00' }],
-        },
-      ],
-    });
+          time_slots: [{ start_time: '22:00', end_time: '23:00' }]}]});
 
     expect(parsed.days).toHaveLength(2);
   });
@@ -62,41 +53,32 @@ describe('staff-availability.schema contract', () => {
       days: [
         {
           day_of_week: 1,
-          time_slots: [{ start_time: '08:00', end_time: '10:00' }],
-        },
+          time_slots: [{ start_time: '08:00', end_time: '10:00' }]},
         {
           day_of_week: 1,
-          time_slots: [{ start_time: '14:00', end_time: '16:00' }],
-        },
-      ],
-    })).toThrow(/once/i);
+          time_slots: [{ start_time: '14:00', end_time: '16:00' }]}]})).toThrow(/once/i);
   });
 });
 
 describe('availability-slots helpers', () => {
   it('normalizes and parses stored slot json', () => {
     expect(normalizeSlotList([
-      { start_time: '8:00', end_time: '10:00' },
-    ])).toEqual([{ start_time: '08:00', end_time: '10:00' }]);
+      { start_time: '8:00', end_time: '10:00' }])).toEqual([{ start_time: '08:00', end_time: '10:00' }]);
 
     expect(parseRecordSlots({
       start_time: '08:00',
       end_time: '10:00',
       time_slots_json: [
         { start_time: '08:00', end_time: '10:00' },
-        { start_time: '14:00', end_time: '16:00' },
-      ],
-    })).toEqual([
+        { start_time: '14:00', end_time: '16:00' }]})).toEqual([
       { start_time: '08:00', end_time: '10:00' },
-      { start_time: '14:00', end_time: '16:00' },
-    ]);
+      { start_time: '14:00', end_time: '16:00' }]);
   });
 
   it('detects overlapping slot ranges', () => {
     expect(slotsOverlap([
       { start_time: '08:00', end_time: '12:00' },
-      { start_time: '11:00', end_time: '13:00' },
-    ])).toBe(true);
+      { start_time: '11:00', end_time: '13:00' }])).toBe(true);
   });
 });
 
@@ -110,14 +92,11 @@ describe('staff-availability.serializer contract', () => {
       end_time: '10:00',
       time_slots_json: [
         { start_time: '08:00', end_time: '10:00' },
-        { start_time: '14:00', end_time: '16:00' },
-      ],
-    });
+        { start_time: '14:00', end_time: '16:00' }]});
 
     expect(serialized.display_id).toBe('AVL0001');
     expect(serialized.time_slots).toEqual([
       { start_time: '08:00', end_time: '10:00' },
-      { start_time: '14:00', end_time: '16:00' },
-    ]);
+      { start_time: '14:00', end_time: '16:00' }]);
   });
 });

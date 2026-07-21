@@ -12,13 +12,11 @@ const {
   buildPagination,
   normalizeSearchTerm,
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/radiology-workspace/radiology.shared');
+  resolveModelRecordOrThrow} = require('@services/radiology-workspace/radiology.shared');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
 const {
   mapMergedRadiologyTestRecord,
-  mapClinicalCatalogRadiologyTestRow,
-} = require('@services/radiology-workspace/facility-radiology-catalog.merge');
+  mapClinicalCatalogRadiologyTestRow} = require('@services/radiology-workspace/facility-radiology-catalog.merge');
 
 const normalizeText = (value) => String(value || '').trim();
 const isTrue = (value) => String(value || '').toLowerCase() === 'true';
@@ -39,16 +37,14 @@ const resolveRadiologyTestIdOrThrow = async ({
   identifier,
   tenantId,
   context = {},
-  errorKey = 'errors.radiology_test.not_found',
-}) => {
+  errorKey = 'errors.radiology_test.not_found'}) => {
   const standardCode = standardCodeFromIdentifier(identifier);
   if (standardCode) {
     const standardRadiologyTest = await resolveOrCreateStandardRadiologyTest({
       code: standardCode,
       tenantId,
       userId: context.user_id,
-      ipAddress: context.ip_address,
-    });
+      ipAddress: context.ip_address});
     if (standardRadiologyTest?.id) {
       return standardRadiologyTest.id;
     }
@@ -58,24 +54,21 @@ const resolveRadiologyTestIdOrThrow = async ({
     model: 'radiology_test',
     identifier,
     tenantId,
-    errorKey,
-  });
+    errorKey});
 };
 
 const resolveFacilityId = async (context = {}, payload = {}) => {
   const facilityId = await resolveOperationalFacilityId({
     facilityId: payload.facility_id || context.facility_id || null,
     userId: context.user_id || null,
-    tenantId: context.tenant_id || payload.tenant_id || null,
-  });
+    tenantId: context.tenant_id || payload.tenant_id || null});
   if (!facilityId) {
     throw new HttpError('errors.validation.field.required', 400, [{ field: 'facility_id' }]);
   }
   return resolveModelIdOrThrow({
     model: 'facility',
     identifier: facilityId,
-    tenantId: context.tenant_id,
-  });
+    tenantId: context.tenant_id});
 };
 
 const syncLegacyOffering = async ({ tenantId, facilityId, radiologyTestId, isActive }) => {
@@ -84,16 +77,14 @@ const syncLegacyOffering = async ({ tenantId, facilityId, radiologyTestId, isAct
     facility_id: facilityId,
     term_type: 'RADIOLOGY_TEST',
     item_id: radiologyTestId,
-    deleted_at: null,
-  });
+    deleted_at: null});
 
   const data = {
     tenant_id: tenantId,
     facility_id: facilityId,
     term_type: 'RADIOLOGY_TEST',
     item_id: radiologyTestId,
-    is_active: isActive !== false,
-  };
+    is_active: isActive !== false};
 
   if (existing) {
     await clinicalTermRepository.updateFacilityOffering(existing.id, data);
@@ -112,9 +103,7 @@ const buildTestSearchWhere = (tenantId, searchTerm) => {
     OR: [
       { name: { contains: searchTerm.raw } },
       { code: { contains: searchTerm.raw } },
-      { modality: { contains: searchTerm.raw } },
-    ],
-  };
+      { modality: { contains: searchTerm.raw } }]};
 };
 
 const listFacilityRadiologyTests = async (filters, page, limit, sortBy, order, context = {}) => {
@@ -140,12 +129,8 @@ const listFacilityRadiologyTests = async (filters, page, limit, sortBy, order, c
               OR: [
                 { name: { contains: searchTerm.raw } },
                 { code: { contains: searchTerm.raw } },
-                { modality: { contains: searchTerm.raw } },
-              ],
-            },
-          }
-        : {}),
-    };
+                { modality: { contains: searchTerm.raw } }]}}
+        : {})};
     const offerings = await facilityRadiologyCatalogRepository.findTestOfferings(
       offeringWhere,
       skip,
@@ -171,14 +156,12 @@ const listFacilityRadiologyTests = async (filters, page, limit, sortBy, order, c
   const masterWhere = buildTestSearchWhere(tenantId, searchTerm);
   const [masterTests, total] = await Promise.all([
     radiologyTestRepository.findMany(masterWhere, skip, limit, orderBy),
-    radiologyTestRepository.count(masterWhere),
-  ]);
+    radiologyTestRepository.count(masterWhere)]);
   const offeringRows = await facilityRadiologyCatalogRepository.findTestOfferings(
     {
       tenant_id: tenantId,
       facility_id: facilityId,
-      radiology_test_id: { in: masterTests.map((row) => row.id) },
-    },
+      radiology_test_id: { in: masterTests.map((row) => row.id) }},
     0,
     masterTests.length
   );
@@ -197,18 +180,15 @@ const getFacilityRadiologyTest = async (radiologyTestIdentifier, context = {}, f
   const radiologyTestId = await resolveRadiologyTestIdOrThrow({
     identifier: radiologyTestIdentifier,
     tenantId,
-    context,
-  });
+    context});
   const masterTest = await resolveModelRecordOrThrow({
     model: 'radiology_test',
     identifier: radiologyTestId,
-    tenantId,
-  });
+    tenantId});
   const offering = await facilityRadiologyCatalogRepository.findTestOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    radiology_test_id: radiologyTestId,
-  });
+    radiology_test_id: radiologyTestId});
   return mapMergedRadiologyTestRecord(masterTest, offering);
 };
 
@@ -221,19 +201,16 @@ const upsertFacilityRadiologyTestOffering = async (payload = {}, context = {}) =
   const radiologyTestId = await resolveRadiologyTestIdOrThrow({
     identifier: payload.radiology_test_id,
     tenantId,
-    context,
-  });
+    context});
   const masterTest = await resolveModelRecordOrThrow({
     model: 'radiology_test',
     identifier: radiologyTestId,
-    tenantId,
-  });
+    tenantId});
 
   const existing = await facilityRadiologyCatalogRepository.findTestOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    radiology_test_id: radiologyTestId,
-  });
+    radiology_test_id: radiologyTestId});
 
   const writePayload = {
     tenant_id: tenantId,
@@ -242,8 +219,7 @@ const upsertFacilityRadiologyTestOffering = async (payload = {}, context = {}) =
     is_active: payload.is_active !== false,
     sort_order: Number(payload.sort_order || 0),
     unit_price: payload.unit_price,
-    currency: toOptionalText(payload.currency) || masterTest.currency || null,
-  };
+    currency: toOptionalText(payload.currency) || masterTest.currency || null};
 
   const offering = existing
     ? await facilityRadiologyCatalogRepository.updateTestOffering(existing.id, writePayload)
@@ -253,8 +229,7 @@ const upsertFacilityRadiologyTestOffering = async (payload = {}, context = {}) =
     tenantId,
     facilityId,
     radiologyTestId,
-    isActive: offering.is_active,
-  });
+    isActive: offering.is_active});
 
   createAuditLog({
     tenant_id: tenantId,
@@ -263,8 +238,7 @@ const upsertFacilityRadiologyTestOffering = async (payload = {}, context = {}) =
     entity: 'facility_radiology_test_offering',
     entity_id: offering.id,
     diff: { after: offering },
-    ip_address: context.ip_address,
-  }).catch(() => {});
+    ip_address: context.ip_address}).catch(() => {});
 
   return mapMergedRadiologyTestRecord(masterTest, offering);
 };
@@ -282,28 +256,24 @@ const disableFacilityRadiologyTestOffering = async (
   const radiologyTestId = await resolveRadiologyTestIdOrThrow({
     identifier: radiologyTestIdentifier,
     tenantId,
-    context,
-  });
+    context});
   const offering = await facilityRadiologyCatalogRepository.findTestOffering({
     tenant_id: tenantId,
     facility_id: facilityId,
-    radiology_test_id: radiologyTestId,
-  });
+    radiology_test_id: radiologyTestId});
   if (!offering) {
     throw new HttpError('errors.facility_radiology_test_offering.not_found', 404);
   }
 
   const updated = await facilityRadiologyCatalogRepository.updateTestOffering(offering.id, {
     is_active: false,
-    deleted_at: new Date(),
-  });
+    deleted_at: new Date()});
 
   await syncLegacyOffering({
     tenantId,
     facilityId,
     radiologyTestId,
-    isActive: false,
-  });
+    isActive: false});
 
   createAuditLog({
     tenant_id: tenantId,
@@ -312,8 +282,7 @@ const disableFacilityRadiologyTestOffering = async (
     entity: 'facility_radiology_test_offering',
     entity_id: offering.id,
     diff: { before: offering, reason: normalizeText(payload.reason) },
-    ip_address: context.ip_address,
-  }).catch(() => {});
+    ip_address: context.ip_address}).catch(() => {});
 
   return updated;
 };
@@ -338,12 +307,8 @@ const searchFacilityRadiologyCatalog = async (filters = {}, context = {}) => {
             OR: [
               { name: { contains: searchTerm.raw } },
               { code: { contains: searchTerm.raw } },
-              { modality: { contains: searchTerm.raw } },
-            ],
-          },
-        }
-      : {}),
-  };
+              { modality: { contains: searchTerm.raw } }]}}
+      : {})};
   const offerings = await facilityRadiologyCatalogRepository.findTestOfferings(
     offeringWhere,
     0,
@@ -360,5 +325,4 @@ module.exports = {
   getFacilityRadiologyTest,
   upsertFacilityRadiologyTestOffering,
   disableFacilityRadiologyTestOffering,
-  searchFacilityRadiologyCatalog,
-};
+  searchFacilityRadiologyCatalog};

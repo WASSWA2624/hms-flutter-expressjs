@@ -7,8 +7,7 @@ const pharmacyOrderStatusSchema = z.enum([
   'ORDERED',
   'DISPENSED',
   'PARTIALLY_DISPENSED',
-  'CANCELLED',
-]);
+  'CANCELLED']);
 
 const pharmacyOrderPrioritySchema = z.enum(['STAT', 'URGENT', 'ROUTINE', 'NORMAL']);
 
@@ -18,14 +17,12 @@ const stockStatusSchema = z.enum([
   'IN_STOCK',
   'ALMOST_OUT_OF_STOCK',
   'LOW_STOCK',
-  'OUT_OF_STOCK',
-]);
+  'OUT_OF_STOCK']);
 
 const panelSchema = z.enum(['orders', 'inventory']);
 
 const orderWorkflowParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 const orderLocationSchema = z.enum(['OUTPATIENT', 'INPATIENT', 'DISCHARGE']);
 
@@ -41,8 +38,7 @@ const getPharmacyWorkbenchQuerySchema = listQuerySchema.extend({
   to: z.string().datetime().optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 const searchDrugsQuerySchema = listQuerySchema.extend({
   search: z.string().trim().optional(),
@@ -55,49 +51,42 @@ const searchDrugsQuerySchema = listQuerySchema.extend({
     .optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   storage_room_id: uuidOrFriendlyIdentifierSchema.optional(),
-  storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional(),
-});
+  storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional()});
 
 const prepareDispenseLineSchema = z.object({
   order_item_id: uuidOrFriendlyIdentifierSchema,
   quantity: z.coerce.number().int().positive(),
   inventory_item_id: uuidOrFriendlyIdentifierSchema.optional(),
-  notes: z.string().trim().max(255).optional().nullable(),
-});
+  notes: z.string().trim().max(255).optional().nullable()});
 
 const prepareDispenseSchema = z.object({
   dispense_batch_ref: z.string().trim().min(3).max(64).optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   statement: z.string().trim().max(65535).optional().nullable(),
   reason: z.string().trim().max(255).optional().nullable(),
-  items: z.array(prepareDispenseLineSchema).min(1).optional(),
-});
+  items: z.array(prepareDispenseLineSchema).min(1).optional()});
 
 const attestDispenseSchema = z.object({
   dispense_batch_ref: z.string().trim().min(3).max(64),
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   statement: z.string().trim().max(65535).optional().nullable(),
   reason: z.string().trim().max(255).optional().nullable(),
-  attested_at: z.string().datetime().optional(),
-});
+  attested_at: z.string().datetime().optional()});
 
 const cancelPharmacyOrderSchema = z.object({
   reason: z.string().trim().min(2).max(255),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const returnDispenseLineSchema = z.object({
   order_item_id: uuidOrFriendlyIdentifierSchema,
   quantity: z.coerce.number().int().positive(),
-  inventory_item_id: uuidOrFriendlyIdentifierSchema.optional(),
-});
+  inventory_item_id: uuidOrFriendlyIdentifierSchema.optional()});
 
 const returnPharmacyOrderSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   reason: z.string().trim().min(2).max(255).optional().nullable(),
   notes: z.string().trim().max(65535).optional().nullable(),
-  items: z.array(returnDispenseLineSchema).min(1),
-});
+  items: z.array(returnDispenseLineSchema).min(1)});
 
 const getInventoryStockQuerySchema = listQuerySchema.extend({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -108,8 +97,7 @@ const getInventoryStockQuerySchema = listQuerySchema.extend({
   expired_only: z.coerce.boolean().optional(),
   storage_room_id: uuidOrFriendlyIdentifierSchema.optional(),
   storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional(),
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 const adjustInventorySchema = z
   .object({
@@ -126,8 +114,7 @@ const adjustInventorySchema = z
     expiry_alert_lead_days: z.coerce.number().int().min(1).max(730).optional().nullable(),
     storage_room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-    drug_id: uuidOrFriendlyIdentifierSchema.optional(),
-  })
+    drug_id: uuidOrFriendlyIdentifierSchema.optional()})
   .superRefine((data, ctx) => {
     const quantityDelta = Number(data.quantity_delta || 0);
     const hasQuantityChange = quantityDelta !== 0;
@@ -137,16 +124,14 @@ const adjustInventorySchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'errors.validation.required',
-        path: ['quantity_delta'],
-      });
+        path: ['quantity_delta']});
     }
 
     if (data.expiry_date && !data.batch_number) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'errors.validation.required',
-        path: ['batch_number'],
-      });
+        path: ['batch_number']});
     }
   });
 
@@ -169,21 +154,18 @@ const setupPharmacyDrugSchema = z
     storage_room_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     default_storage_shelf_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-    facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  })
+    facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable()})
   .superRefine((data, ctx) => {
     if (data.expiry_date && !data.batch_number) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'errors.validation.required',
-        path: ['batch_number'],
-      });
+        path: ['batch_number']});
     }
   });
 
 const recordOrderBillingSchema = z.object({
-  billing: clinicalRequestBillingSchema,
-});
+  billing: clinicalRequestBillingSchema});
 
 const resolveLegacyRouteParamsSchema = z.object({
   resource: z.enum([
@@ -193,49 +175,40 @@ const resolveLegacyRouteParamsSchema = z.object({
     'inventory-items',
     'inventory-stocks',
     'stock-movements',
-    'drugs',
-  ]),
-  id: uuidOrFriendlyIdentifierSchema,
-});
+    'drugs']),
+  id: uuidOrFriendlyIdentifierSchema});
 
 const getPharmacyStorageLayoutQuerySchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  include_inactive: z.coerce.boolean().optional(),
-});
+  include_inactive: z.coerce.boolean().optional()});
 
 const createPharmacyStorageRoomSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   name: z.string().trim().min(1).max(255),
   code: z.string().trim().max(80).optional().nullable(),
-  is_active: z.coerce.boolean().optional(),
-});
+  is_active: z.coerce.boolean().optional()});
 
 const updatePharmacyStorageRoomSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   code: z.string().trim().max(80).optional().nullable(),
-  is_active: z.coerce.boolean().optional(),
-});
+  is_active: z.coerce.boolean().optional()});
 
 const pharmacyStorageRoomParamsSchema = z.object({
-  roomId: uuidOrFriendlyIdentifierSchema,
-});
+  roomId: uuidOrFriendlyIdentifierSchema});
 
 const createPharmacyStorageShelfSchema = z.object({
   shelf_code: z.string().trim().min(1).max(80),
   label: z.string().trim().max(120).optional().nullable(),
-  is_active: z.coerce.boolean().optional(),
-});
+  is_active: z.coerce.boolean().optional()});
 
 const updatePharmacyStorageShelfSchema = z.object({
   shelf_code: z.string().trim().min(1).max(80).optional(),
   label: z.string().trim().max(120).optional().nullable(),
-  is_active: z.coerce.boolean().optional(),
-});
+  is_active: z.coerce.boolean().optional()});
 
 const pharmacyStorageShelfParamsSchema = z.object({
-  shelfId: uuidOrFriendlyIdentifierSchema,
-});
+  shelfId: uuidOrFriendlyIdentifierSchema});
 
 module.exports = {
   pharmacyOrderStatusSchema,
@@ -260,5 +233,4 @@ module.exports = {
   pharmacyStorageRoomParamsSchema,
   createPharmacyStorageShelfSchema,
   updatePharmacyStorageShelfSchema,
-  pharmacyStorageShelfParamsSchema,
-};
+  pharmacyStorageShelfParamsSchema};

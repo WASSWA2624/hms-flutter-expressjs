@@ -1,8 +1,7 @@
 const { HttpError } = require('@lib/errors');
 const {
   canManageSubscriptionBilling,
-  resolveBillingTenantScope,
-} = require('@lib/subscriptions/access');
+  resolveBillingTenantScope} = require('@lib/subscriptions/access');
 
 describe('subscription access helpers', () => {
   test('canManageSubscriptionBilling allows tenant and facility admins', () => {

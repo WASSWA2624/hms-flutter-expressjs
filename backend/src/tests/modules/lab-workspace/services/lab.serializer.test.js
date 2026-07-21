@@ -13,12 +13,10 @@ const buildOrderRecord = (encounter) => ({
     id: 'patient-internal-1',
     human_friendly_id: 'PAT0000001',
     first_name: 'Amina',
-    last_name: 'Stone',
-  },
+    last_name: 'Stone'},
   encounter,
   items: [],
-  samples: [],
-});
+  samples: []});
 
 describe('lab.serializer encounter context', () => {
   it('maps an OPD encounter as an outpatient source without ward/bed', () => {
@@ -29,8 +27,7 @@ describe('lab.serializer encounter context', () => {
         encounter_type: 'OPD',
         status: 'OPEN',
         provider_user_id: 'doctor-1',
-        admissions: [],
-      })
+        admissions: []})
     );
 
     expect(order.encounter_id).toBe('ENC0000001');
@@ -45,8 +42,7 @@ describe('lab.serializer encounter context', () => {
         id: 'ENC0000001',
         type: 'OPD',
         source: 'OPD',
-        is_inpatient: false,
-      })
+        is_inpatient: false})
     );
   });
 
@@ -71,13 +67,7 @@ describe('lab.serializer encounter context', () => {
                   human_friendly_id: 'BED0000001',
                   label: 'Bed 4',
                   ward: { id: 'ward-1', name: 'Medical Ward' },
-                  room: { id: 'room-1', name: 'Room 2' },
-                },
-              },
-            ],
-          },
-        ],
-      })
+                  room: { id: 'room-1', name: 'Room 2' }}}]}]})
     );
 
     expect(order.encounter_source).toBe('IPD');

@@ -57,10 +57,8 @@ const findByIdentifier = async (identifier, include = {}) => {
     return await prisma.notification_delivery.findFirst({
       where: {
         human_friendly_id: normalized.toUpperCase(),
-        deleted_at: null,
-      },
-      include,
-    });
+        deleted_at: null},
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -87,9 +85,7 @@ const findNotificationByIdentifier = async (identifier) => {
         id: true,
         tenant_id: true,
         user_id: true,
-        human_friendly_id: true,
-      },
-    });
+        human_friendly_id: true}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -157,12 +153,9 @@ const assignHumanFriendlyId = async (id, humanFriendlyId) => {
       where: {
         id,
         deleted_at: null,
-        human_friendly_id: null,
-      },
+        human_friendly_id: null},
       data: {
-        human_friendly_id: humanFriendlyId,
-      },
-    });
+        human_friendly_id: humanFriendlyId}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -177,8 +170,7 @@ const assignHumanFriendlyId = async (id, humanFriendlyId) => {
 const createMany = async (records) => {
   try {
     return await prisma.notification_delivery.createMany({
-      data: records,
-    });
+      data: records});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }

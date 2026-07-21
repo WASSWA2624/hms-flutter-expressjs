@@ -37,8 +37,7 @@ const listNotificationDeliveries = asyncHandler(async (req, res) => {
     channel,
     status,
     retryable,
-    search,
-  };
+    search};
 
   const result = await notificationDeliveryService.listNotificationDeliveries(
     filters,

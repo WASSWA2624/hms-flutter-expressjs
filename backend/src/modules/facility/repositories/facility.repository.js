@@ -64,10 +64,8 @@ const findById = async (id, includeOrOptions = {}, maybeOptions = {}) => {
     return await prisma.facility.findFirst({
       where: {
         id,
-        ...(includeDeleted ? {} : { deleted_at: null }),
-      },
-      include,
-    });
+        ...(includeDeleted ? {} : { deleted_at: null })},
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -101,8 +99,7 @@ const findMany = async (
       skip,
       take,
       orderBy,
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -127,10 +124,8 @@ const findByTenantAndName = async (tenantId, name, excludeFacilityId = null) => 
       where: {
         tenant_id: tenantId,
         deleted_at: null,
-        ...(excludeFacilityId ? { NOT: { id: excludeFacilityId } } : {}),
-      },
-      take: 100,
-    });
+        ...(excludeFacilityId ? { NOT: { id: excludeFacilityId } } : {})},
+      take: 100});
 
     return (
       facilities.find(
@@ -169,8 +164,7 @@ const count = async (filters = {}, { includeDeleted = false } = {}) => {
 const create = async (data) => {
   try {
     return await prisma.facility.create({
-      data,
-    });
+      data});
   } catch (error) {
     if (error.code === 'P2002') {
       const target = error.meta?.target?.[0] || 'field';
@@ -195,8 +189,7 @@ const update = async (id, data) => {
   try {
     return await prisma.facility.update({
       where: { id },
-      data,
-    });
+      data});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.facility.not_found', 404);
@@ -223,8 +216,7 @@ const softDelete = async (id) => {
   try {
     const existing = await prisma.facility.findUnique({
       where: { id },
-      select: { id: true, deleted_at: true },
-    });
+      select: { id: true, deleted_at: true }});
 
     if (!existing || existing.deleted_at) {
       throw Object.assign(new Error('Record not found'), { code: 'P2025' });
@@ -233,9 +225,7 @@ const softDelete = async (id) => {
     return await prisma.facility.update({
       where: { id },
       data: {
-        deleted_at: new Date(),
-      },
-    });
+        deleted_at: new Date()}});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.facility.not_found', 404);
@@ -257,9 +247,7 @@ const restore = async (id) => {
       select: {
         id: true,
         tenant_id: true,
-        deleted_at: true,
-      },
-    });
+        deleted_at: true}});
 
     if (!existing || !existing.deleted_at) {
       throw Object.assign(new Error('Record not found'), { code: 'P2025' });
@@ -267,8 +255,7 @@ const restore = async (id) => {
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: existing.tenant_id },
-      select: { id: true, deleted_at: true },
-    });
+      select: { id: true, deleted_at: true }});
 
     if (!tenant || tenant.deleted_at) {
       throw new HttpError('errors.facility.restore_requires_active_tenant', 409);
@@ -276,8 +263,7 @@ const restore = async (id) => {
 
     return await prisma.facility.update({
       where: { id },
-      data: { deleted_at: null },
-    });
+      data: { deleted_at: null }});
   } catch (error) {
     if (error instanceof HttpError) {
       throw error;
@@ -301,9 +287,7 @@ const permanentDelete = async (id) => {
       where: { id },
       select: {
         id: true,
-        deleted_at: true,
-      },
-    });
+        deleted_at: true}});
 
     if (!existing) {
       return;
@@ -316,8 +300,7 @@ const permanentDelete = async (id) => {
       await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
       try {
         const facilityTables = await listSchemaTablesWithColumn(tx, 'facility_id', {
-          excludeTables: ['facility'],
-        });
+          excludeTables: ['facility']});
 
         for (const tableName of facilityTables) {
           await tx.$executeRawUnsafe(
@@ -341,7 +324,6 @@ const permanentDelete = async (id) => {
 
 /**
  * Find facility branches by facility ID
- * Nested endpoint: GET /facilities/:id/branches
  *
  * @param {string} facilityId - Facility ID
  * @param {number} skip - Number of records to skip
@@ -351,15 +333,12 @@ const permanentDelete = async (id) => {
  */
 const findBranches = async (facilityId, skip = 0, take = 20, orderBy = { created_at: 'desc' }) => {
   try {
-    return await prisma.branch.findMany({
       where: {
         facility_id: facilityId,
-        deleted_at: null,
-      },
+        deleted_at: null},
       skip,
       take,
-      orderBy,
-    });
+      orderBy});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -373,12 +352,9 @@ const findBranches = async (facilityId, skip = 0, take = 20, orderBy = { created
  */
 const countBranches = async (facilityId) => {
   try {
-    return await prisma.branch.count({
       where: {
         facility_id: facilityId,
-        deleted_at: null,
-      },
-    });
+        deleted_at: null}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -396,5 +372,4 @@ module.exports = {
   permanentDelete,
   findBranches,
   countBranches,
-  normalizeFacilityName,
-};
+  normalizeFacilityName};

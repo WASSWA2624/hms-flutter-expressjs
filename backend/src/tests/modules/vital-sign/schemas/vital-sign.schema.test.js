@@ -73,8 +73,7 @@ describe('Vital Sign Schemas', () => {
         value: undefined,
         systolic_value: '122',
         diastolic_value: '78',
-        map_value: '93',
-      };
+        map_value: '93'};
       const result = createVitalSignSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -83,8 +82,7 @@ describe('Vital Sign Schemas', () => {
       const data = {
         ...validData,
         vital_type: 'BLOOD_PRESSURE',
-        value: 'invalid',
-      };
+        value: 'invalid'};
       const result = createVitalSignSchema.safeParse(data);
       expect(result.success).toBe(false);
     });

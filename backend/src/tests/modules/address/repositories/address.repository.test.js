@@ -49,7 +49,6 @@ describe('Address Repository', () => {
         latitude: 40.7128,
         longitude: -74.0060,
         facility_id: null,
-        branch_id: null,
         patient_id: null,
         user_profile_id: null,
         staff_profile_id: null,

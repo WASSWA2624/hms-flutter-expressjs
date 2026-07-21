@@ -49,7 +49,7 @@ describe('Discharge Summary Repository', () => {
       expect(result).toEqual(mockRecord);
       expect(prisma.discharge_summary.findFirst).toHaveBeenCalledWith({
         where: { id: 'discharge-123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 

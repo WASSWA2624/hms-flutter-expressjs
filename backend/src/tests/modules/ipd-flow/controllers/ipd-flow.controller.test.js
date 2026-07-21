@@ -19,16 +19,13 @@ describe('ipd-flow.controller', () => {
       user: {
         id: 'usr-1',
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      },
+        facility_id: 'facility-1'},
       ip: '127.0.0.1',
-      get: jest.fn(() => 'jest-agent'),
-    };
+      get: jest.fn(() => 'jest-agent')};
 
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+      json: jest.fn().mockReturnThis()};
   });
 
   it('lists IPD flows and sends paginated response', async () => {
@@ -40,9 +37,7 @@ describe('ipd-flow.controller', () => {
         total: 1,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      },
-    });
+        hasPreviousPage: false}});
     req.query = { page: '1', limit: '20', stage: 'ADMITTED_IN_BED', queue_scope: 'ALL' };
 
     await ipdFlowController.listIpdFlows(req, res);
@@ -70,8 +65,7 @@ describe('ipd-flow.controller', () => {
     await ipdFlowController.getIpdFlowById(req, res);
 
     expect(ipdFlowService.getIpdFlowById).toHaveBeenCalledWith('ADM0000001', {
-      include_icu: true,
-    });
+      include_icu: true});
     expect(sendSuccess).toHaveBeenCalledWith(res, 200, 'messages.ipd_flow.get.success', expect.any(Object));
   });
 
@@ -88,8 +82,7 @@ describe('ipd-flow.controller', () => {
         tenant_id: 'tenant-1',
         facility_id: 'facility-1',
         ip_address: '127.0.0.1',
-        user_agent: 'jest-agent',
-      }
+        user_agent: 'jest-agent'}
     );
     expect(sendSuccess).toHaveBeenCalledWith(res, 201, 'messages.ipd_flow.start.success', expect.any(Object));
   });
@@ -115,8 +108,7 @@ describe('ipd-flow.controller', () => {
       admission_id: 'ADM0001',
       resource: 'admissions',
       panel: 'snapshot',
-      action: 'open_admission',
-    });
+      action: 'open_admission'});
     req.params = { resource: 'admissions', id: 'ADM0001' };
 
     await ipdFlowController.resolveLegacyRoute(req, res);

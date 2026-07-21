@@ -4,8 +4,7 @@ const {
   deleteFacilityLogoFromStorage,
   buildStableFacilityLogoKey,
   buildFacilityLogoPublicPath,
-  MAX_FACILITY_LOGO_BASENAME,
-} = require('@lib/storage/facility-logo-storage');
+  MAX_FACILITY_LOGO_BASENAME} = require('@lib/storage/facility-logo-storage');
 
 describe('facility-logo-storage', () => {
   describe('buildStableFacilityLogoKey', () => {
@@ -44,8 +43,7 @@ describe('facility-logo-storage', () => {
     it('always targets the stable short key', () => {
       const result = resolveFacilityLogoUploadKey({
         facilityId: 'fbb67a68-8fea-4eed-a072-4869585d8466',
-        existingLogoUrl: null,
-      });
+        existingLogoUrl: null});
       expect(result.storageKey).toBe('logo-585d8466.png');
       expect(result.previousKey).toBeNull();
     });
@@ -54,8 +52,7 @@ describe('facility-logo-storage', () => {
       const result = resolveFacilityLogoUploadKey({
         facilityId: 'fbb67a68-8fea-4eed-a072-4869585d8466',
         existingLogoUrl:
-          'facilities_tenant_fbb67a68-8fea-4eed-a072-4869585d8466_branding_logo.png?v=1',
-      });
+          'facilities_tenant_fbb67a68-8fea-4eed-a072-4869585d8466_branding_logo.png?v=1'});
       expect(result.storageKey).toBe('logo-585d8466.png');
       expect(result.previousKey).toBe(
         'facilities_tenant_fbb67a68-8fea-4eed-a072-4869585d8466_branding_logo.png'
@@ -74,8 +71,7 @@ describe('facility-logo-storage', () => {
   describe('deleteFacilityLogoFromStorage', () => {
     it('deletes the resolved storage key', async () => {
       const storage = {
-        delete: jest.fn().mockResolvedValue(true),
-      };
+        delete: jest.fn().mockResolvedValue(true)};
 
       const deleted = await deleteFacilityLogoFromStorage(
         storage,
@@ -88,8 +84,7 @@ describe('facility-logo-storage', () => {
 
     it('returns false when delete fails', async () => {
       const storage = {
-        delete: jest.fn().mockRejectedValue(new Error('boom')),
-      };
+        delete: jest.fn().mockRejectedValue(new Error('boom'))};
 
       await expect(
         deleteFacilityLogoFromStorage(storage, 'logo-4869585d.png')

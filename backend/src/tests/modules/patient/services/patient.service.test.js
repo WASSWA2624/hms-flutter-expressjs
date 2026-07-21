@@ -37,9 +37,7 @@ describe('Patient Service', () => {
     createAuditLog.mockReturnValue(Promise.resolve());
     mockTransaction = {
       visit_queue: {
-        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
-      },
-    };
+        updateMany: jest.fn().mockResolvedValue({ count: 0 })}};
     prisma.$transaction.mockImplementation(async (callback) => callback(mockTransaction));
     patientContactRepository.findMany.mockResolvedValue([]);
     patientIdentifierRepository.findMany.mockResolvedValue([]);
@@ -117,8 +115,7 @@ describe('Patient Service', () => {
           created_from: '2026-01-01',
           created_to: '2026-01-31',
           appointment_from: '2026-02-01',
-          appointment_to: '2026-02-28',
-        },
+          appointment_to: '2026-02-28'},
         1,
         20,
         'created_at',
@@ -139,9 +136,7 @@ describe('Patient Service', () => {
       expect(whereClause.contacts).toEqual(
         expect.objectContaining({
           some: expect.objectContaining({
-            deleted_at: null,
-          }),
-        })
+            deleted_at: null})})
       );
       expect(whereClause.appointments).toEqual(
         expect.objectContaining({
@@ -150,10 +145,7 @@ describe('Patient Service', () => {
             status: 'CONFIRMED',
             scheduled_start: expect.objectContaining({
               gte: expect.any(Date),
-              lte: expect.any(Date),
-            }),
-          }),
-        })
+              lte: expect.any(Date)})})})
       );
     });
 
@@ -441,8 +433,7 @@ describe('Patient Service', () => {
         id: '550e8400-e29b-41d4-a716-446655440060',
         tenant_id: '550e8400-e29b-41d4-a716-446655440123',
         first_name: 'John',
-        identifiers: [],
-      };
+        identifiers: []};
       const mockAfter = { id: mockBefore.id, first_name: 'John' };
       const contactStore = {
         PHONE: [
@@ -453,8 +444,7 @@ describe('Patient Service', () => {
             contact_type: 'PHONE',
             value: '+256700000001',
             is_primary: true,
-            deleted_at: null,
-          }
+            deleted_at: null}
         ],
         EMAIL: [
           {
@@ -464,10 +454,8 @@ describe('Patient Service', () => {
             contact_type: 'EMAIL',
             value: 'old@example.com',
             is_primary: false,
-            deleted_at: null,
-          }
-        ],
-      };
+            deleted_at: null}
+        ]};
 
       patientRepository.findById
         .mockResolvedValueOnce(mockBefore)
@@ -490,8 +478,7 @@ describe('Patient Service', () => {
       await patientService.updatePatient(
         'PAT0000001',
         {
-          primary_email: 'new@example.com',
-        },
+          primary_email: 'new@example.com'},
         mockUserId,
         mockIpAddress
       );
@@ -500,8 +487,7 @@ describe('Patient Service', () => {
         'contact-email-1',
         {
           value: 'new@example.com',
-          is_primary: false,
-        },
+          is_primary: false},
         expect.anything()
       );
       expect(contactStore.EMAIL[0].is_primary).toBe(false);
@@ -513,8 +499,7 @@ describe('Patient Service', () => {
         id: '550e8400-e29b-41d4-a716-446655440061',
         tenant_id: '550e8400-e29b-41d4-a716-446655440123',
         first_name: 'John',
-        identifiers: [],
-      };
+        identifiers: []};
       const mockAfter = { id: mockBefore.id, first_name: 'John' };
       const contactStore = {
         PHONE: [
@@ -525,8 +510,7 @@ describe('Patient Service', () => {
             contact_type: 'PHONE',
             value: '+256700000001',
             is_primary: true,
-            deleted_at: null,
-          }
+            deleted_at: null}
         ],
         EMAIL: [
           {
@@ -536,10 +520,8 @@ describe('Patient Service', () => {
             contact_type: 'EMAIL',
             value: 'email@example.com',
             is_primary: false,
-            deleted_at: null,
-          }
-        ],
-      };
+            deleted_at: null}
+        ]};
 
       patientRepository.findById
         .mockResolvedValueOnce(mockBefore)
@@ -562,8 +544,7 @@ describe('Patient Service', () => {
       await patientService.updatePatient(
         'PAT0000001',
         {
-          primary_phone: null,
-        },
+          primary_phone: null},
         mockUserId,
         mockIpAddress
       );
@@ -572,8 +553,7 @@ describe('Patient Service', () => {
         'contact-phone-1',
         {
           deleted_at: expect.any(Date),
-          is_primary: false,
-        },
+          is_primary: false},
         expect.anything()
       );
       expect(contactStore.PHONE[0].deleted_at).toEqual(expect.any(Date));
@@ -636,12 +616,10 @@ describe('Patient Service', () => {
         id: '550e8400-e29b-41d4-a716-446655440050',
         tenant_id: '550e8400-e29b-41d4-a716-446655440123',
         first_name: 'John',
-        identifiers: [],
-      };
+        identifiers: []};
       const mockAfter = {
         id: '550e8400-e29b-41d4-a716-446655440050',
-        first_name: 'John',
-      };
+        first_name: 'John'};
       patientRepository.findById
         .mockResolvedValueOnce(mockBefore)
         .mockResolvedValueOnce(mockAfter);
@@ -654,8 +632,7 @@ describe('Patient Service', () => {
         {
           primary_phone: '+256700000099',
           primary_identifier_type: 'national_id',
-          primary_identifier_value: 'CF-1001',
-        },
+          primary_identifier_value: 'CF-1001'},
         mockUserId,
         mockIpAddress
       );
@@ -665,8 +642,7 @@ describe('Patient Service', () => {
         'contact-1',
         {
           value: '+256700000099',
-          is_primary: true,
-        },
+          is_primary: true},
         expect.anything()
       );
       expect(patientIdentifierRepository.update).toHaveBeenCalledWith(
@@ -674,8 +650,7 @@ describe('Patient Service', () => {
         {
           identifier_type: 'NATIONAL_ID',
           identifier_value: 'CF-1001',
-          is_primary: true,
-        },
+          is_primary: true},
         expect.anything()
       );
     });
@@ -701,12 +676,9 @@ describe('Patient Service', () => {
       expect(mockTransaction.visit_queue.updateMany).toHaveBeenCalledWith({
         where: {
           patient_id: '123',
-          deleted_at: null,
-        },
+          deleted_at: null},
         data: {
-          deleted_at: expect.any(Date),
-        },
-      });
+          deleted_at: expect.any(Date)}});
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'DELETE',
         entity: 'patient',
@@ -730,9 +702,7 @@ describe('Patient Service', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             patient_id: '550e8400-e29b-41d4-a716-446655440051',
-            deleted_at: null,
-          }),
-        })
+            deleted_at: null})})
       );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -53,7 +53,7 @@ describe('Clinical Note Repository', () => {
           id: 'note-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 

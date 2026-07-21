@@ -24,8 +24,7 @@ const {
   assertActorCanManageRoleRecord,
   assertRoleNotSystemProtected,
   assertRoleScopeAllowed,
-  assertPermissionIdsAssignable,
-} = require('@lib/authorization/assignable-access');
+  assertPermissionIdsAssignable} = require('@lib/authorization/assignable-access');
 
 const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
 
@@ -81,16 +80,14 @@ const normalizeCreateRolePayload = async (data = {}) => {
   payload.tenant_id = await resolveIdentifierForPayload({
     value: data.tenant_id,
     model: 'tenant',
-    field: 'tenant_id',
-  });
+    field: 'tenant_id'});
 
   if (data.facility_id != null && String(data.facility_id).trim() !== '') {
     payload.facility_id = await resolveIdentifierForPayload({
       value: data.facility_id,
       model: 'facility',
       field: 'facility_id',
-      nullable: true,
-    });
+      nullable: true});
   } else if (data.facility_id === null) {
     payload.facility_id = null;
   }
@@ -253,8 +250,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
           value: roleFields.facility_id,
           model: 'facility',
           field: 'facility_id',
-          nullable: true,
-        });
+          nullable: true});
       } else {
         payload.facility_id = null;
       }
@@ -262,8 +258,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       await assertRoleScopeAllowed(
         {
           tenant_id: before.tenant_id,
-          facility_id: payload.facility_id,
-        },
+          facility_id: payload.facility_id},
         actorUser
       );
     }
@@ -298,8 +293,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       diff: {
         before,
         after: role,
-        ...(shouldSyncPermissions ? { permission_ids: permissionIds } : {}),
-      },
+        ...(shouldSyncPermissions ? { permission_ids: permissionIds } : {})},
       ip_address: ipAddress
     }).catch(() => {});
 
@@ -351,8 +345,7 @@ const deleteRole = async (id, userId, ipAddress, actor = null) => {
       diff: {
         before,
         after: role,
-        detached_user_assignments: detachedUserAssignments,
-      },
+        detached_user_assignments: detachedUserAssignments},
       ip_address: ipAddress
     }).catch(() => {});
 

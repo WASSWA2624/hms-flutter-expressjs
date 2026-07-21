@@ -34,8 +34,7 @@ const createUserSchema = z.object({
   password: z.string().trim().min(8).max(255).optional(),
   password_hash: z.string().trim().min(1).max(255).optional(),
   status: userStatusSchema,
-  permission_ids: permissionIdsSchema,
-});
+  permission_ids: permissionIdsSchema});
 
 /**
  * Update user body validation
@@ -50,8 +49,7 @@ const updateUserSchema = z.object({
   password: z.string().trim().min(8).max(255).optional(),
   password_hash: z.string().trim().min(1).max(255).optional(),
   status: userStatusSchema.optional(),
-  permission_ids: permissionIdsSchema,
-});
+  permission_ids: permissionIdsSchema});
 
 // ==================== URL Params ====================
 

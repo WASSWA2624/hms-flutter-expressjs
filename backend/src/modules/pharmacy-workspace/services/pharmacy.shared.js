@@ -4,8 +4,7 @@ const { ROLES } = require('@config/roles');
 const {
   normalizeIdentifier,
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 const PATIENT_PUBLIC_SELECT = {
   id: true,
@@ -13,28 +12,24 @@ const PATIENT_PUBLIC_SELECT = {
   tenant_id: true,
   facility_id: true,
   first_name: true,
-  last_name: true,
-};
+  last_name: true};
 
 const ENCOUNTER_PUBLIC_SELECT = {
   id: true,
   human_friendly_id: true,
-  encounter_type: true,
-};
+  encounter_type: true};
 
 const INPATIENT_ENCOUNTER_TYPES = Object.freeze([
   'IPD',
   'ICU',
   'THEATRE',
-  'EMERGENCY',
-]);
+  'EMERGENCY']);
 
 const OUTPATIENT_ENCOUNTER_TYPES = Object.freeze(['OPD', 'TELEMEDICINE']);
 
 const PHARMACY_OPEN_ORDER_STATUSES = Object.freeze([
   'ORDERED',
-  'PARTIALLY_DISPENSED',
-]);
+  'PARTIALLY_DISPENSED']);
 
 const resolveOrderLocation = (encounterType) => {
   const normalized = String(encounterType || '').trim().toUpperCase();
@@ -48,8 +43,7 @@ const buildOrderLocationWhere = (location) => {
     case 'INPATIENT':
     case 'WARD':
       return {
-        encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } },
-      };
+        encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } }};
     case 'OUTPATIENT':
     case 'OPD':
       return {
@@ -57,16 +51,11 @@ const buildOrderLocationWhere = (location) => {
           { encounter_id: null },
           {
             encounter: {
-              is: { encounter_type: { in: OUTPATIENT_ENCOUNTER_TYPES } },
-            },
-          },
-        ],
-      };
+              is: { encounter_type: { in: OUTPATIENT_ENCOUNTER_TYPES } }}}]};
     case 'DISCHARGE':
       return {
         status: { in: PHARMACY_OPEN_ORDER_STATUSES },
-        encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } },
-      };
+        encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } }};
     default:
       return null;
   }
@@ -80,8 +69,7 @@ const DRUG_PUBLIC_SELECT = {
   form: true,
   strength: true,
   unit_price: true,
-  currency: true,
-};
+  currency: true};
 
 const INVENTORY_ITEM_PUBLIC_SELECT = {
   id: true,
@@ -90,8 +78,7 @@ const INVENTORY_ITEM_PUBLIC_SELECT = {
   name: true,
   category: true,
   sku: true,
-  unit: true,
-};
+  unit: true};
 
 const PHARMACY_ORDER_WITH_RELATIONS_INCLUDE = {
   patient: { select: PATIENT_PUBLIC_SELECT },
@@ -102,8 +89,7 @@ const PHARMACY_ORDER_WITH_RELATIONS_INCLUDE = {
     include: {
       dispense_logs: {
         where: { deleted_at: null },
-        orderBy: { created_at: 'asc' },
-      },
+        orderBy: { created_at: 'asc' }},
       drug: {
         select: {
           ...DRUG_PUBLIC_SELECT,
@@ -112,32 +98,19 @@ const PHARMACY_ORDER_WITH_RELATIONS_INCLUDE = {
             orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
             include: {
               inventory_item: {
-                select: INVENTORY_ITEM_PUBLIC_SELECT,
-              },
-            },
-          },
-        },
-      },
-    },
-  },
+                select: INVENTORY_ITEM_PUBLIC_SELECT}}}}}}},
   dispense_attestations: {
     where: { deleted_at: null },
-    orderBy: [{ attested_at: 'desc' }, { created_at: 'desc' }],
-  },
-};
+    orderBy: [{ attested_at: 'desc' }, { created_at: 'desc' }]}};
 
 const INVENTORY_STOCK_WITH_RELATIONS_INCLUDE = {
   inventory_item: {
-    select: INVENTORY_ITEM_PUBLIC_SELECT,
-  },
+    select: INVENTORY_ITEM_PUBLIC_SELECT},
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
-};
+      name: true}}};
 
 const buildPagination = (page, limit, total) => {
   const safePage = Number.isFinite(Number(page)) ? Number(page) : 1;
@@ -150,8 +123,7 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: safePage < totalPages,
-    hasPreviousPage: safePage > 1,
-  };
+    hasPreviousPage: safePage > 1};
 };
 
 const normalizeSearchTerm = (value) => {
@@ -160,8 +132,7 @@ const normalizeSearchTerm = (value) => {
 
   return {
     raw: term,
-    upper: term.toUpperCase(),
-  };
+    upper: term.toUpperCase()};
 };
 
 const toDateOrNull = (value, fallback = null) => {
@@ -176,8 +147,7 @@ const resolveModelIdOrThrow = async ({
   model,
   where = {},
   errorKey = 'errors.resource.not_found',
-  allowNull = false,
-}) => {
+  allowNull = false}) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) {
     if (allowNull) return null;
@@ -187,8 +157,7 @@ const resolveModelIdOrThrow = async ({
   const resolved = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where,
-  });
+    where});
 
   if (!resolved) {
     throw new HttpError(errorKey, 404);
@@ -203,8 +172,7 @@ const resolveModelRecordOrThrow = async ({
   where = {},
   include,
   select,
-  errorKey = 'errors.resource.not_found',
-}) => {
+  errorKey = 'errors.resource.not_found'}) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) {
     throw new HttpError(errorKey, 404);
@@ -215,8 +183,7 @@ const resolveModelRecordOrThrow = async ({
     identifier: normalized,
     where,
     include,
-    select,
-  });
+    select});
 
   if (!record) {
     throw new HttpError(errorKey, 404);
@@ -250,8 +217,7 @@ const resolveScopedUserContext = (user = {}) => {
     user: normalizedUser,
     tenant_id: tenantId,
     facility_id: facilityId,
-    can_manage_all_tenants: canManageAllTenants,
-  };
+    can_manage_all_tenants: canManageAllTenants};
 };
 
 const buildTenantScopeWhere = (scope = {}, tenantField = 'tenant_id') => {
@@ -260,8 +226,7 @@ const buildTenantScopeWhere = (scope = {}, tenantField = 'tenant_id') => {
   }
 
   return {
-    [tenantField]: scope.tenant_id,
-  };
+    [tenantField]: scope.tenant_id};
 };
 
 const buildTenantFacilityScopeWhere = (
@@ -290,8 +255,7 @@ const buildOrderScopeWhere = (scope = {}) => {
   if (!Object.keys(patientWhere).length) return {};
 
   return {
-    patient: patientWhere,
-  };
+    patient: patientWhere};
 };
 
 const buildOrderItemScopeWhere = (scope = {}) => {
@@ -299,8 +263,7 @@ const buildOrderItemScopeWhere = (scope = {}) => {
   if (!Object.keys(orderWhere).length) return {};
 
   return {
-    pharmacy_order: orderWhere,
-  };
+    pharmacy_order: orderWhere};
 };
 
 const buildInventoryStockScopeWhere = (scope = {}) => {
@@ -382,5 +345,4 @@ module.exports = {
   buildInventoryStockScopeWhere,
   matchesOrderScope,
   matchesOrderItemScope,
-  matchesInventoryStockScope,
-};
+  matchesInventoryStockScope};

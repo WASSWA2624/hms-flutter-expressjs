@@ -16,16 +16,12 @@ const USER_DETAIL_INCLUDE = Object.freeze({
       id: true,
       human_friendly_id: true,
       name: true,
-      slug: true,
-    },
-  },
+      slug: true}},
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   permissions: {
     where: { deleted_at: null },
     include: {
@@ -34,17 +30,11 @@ const USER_DETAIL_INCLUDE = Object.freeze({
           id: true,
           human_friendly_id: true,
           name: true,
-          description: true,
-        },
-      },
-    },
-  },
-});
+          description: true}}}}});
 
 const resolveInclude = (include = {}) => ({
   ...USER_DETAIL_INCLUDE,
-  ...include,
-});
+  ...include});
 
 const normalizePermissionIds = (value) => (
   Array.isArray(value)
@@ -75,10 +65,8 @@ const findActiveByTenantEmail = async (tenantId, email, excludeUserId = null) =>
       tenant_id: tenantId,
       deleted_at: null,
       email,
-      ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
-    },
-    select: { id: true },
-  });
+      ...(excludeUserId ? { NOT: { id: excludeUserId } } : {})},
+    select: { id: true }});
 };
 
 const findActiveByTenantPhone = async (tenantId, phone, excludeUserId = null) => {
@@ -94,16 +82,13 @@ const findActiveByTenantPhone = async (tenantId, phone, excludeUserId = null) =>
   const baseWhere = {
     tenant_id: tenantId,
     deleted_at: null,
-    ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}),
-  };
+    ...(excludeUserId ? { NOT: { id: excludeUserId } } : {})};
 
   const exactMatch = await prisma.user.findFirst({
     where: {
       ...baseWhere,
-      phone,
-    },
-    select: { id: true },
-  });
+      phone},
+    select: { id: true }});
   if (exactMatch) {
     return exactMatch;
   }
@@ -111,10 +96,8 @@ const findActiveByTenantPhone = async (tenantId, phone, excludeUserId = null) =>
   const candidates = await prisma.user.findMany({
     where: {
       ...baseWhere,
-      phone: { not: null },
-    },
-    select: { id: true, phone: true },
-  });
+      phone: { not: null }},
+    select: { id: true, phone: true }});
 
   return (
     candidates.find(
@@ -128,8 +111,7 @@ const findActiveByTenantPhone = async (tenantId, phone, excludeUserId = null) =>
 const syncUserPermissions = async (tx, userId, permissionIds = []) => {
   const selectedPermissionIds = normalizePermissionIds(permissionIds);
   const existingRecords = await tx.user_permission.findMany({
-    where: { user_id: userId },
-  });
+    where: { user_id: userId }});
   const selectedSet = new Set(selectedPermissionIds);
   const existingByPermissionId = new Map(
     existingRecords.map((record) => [String(record.permission_id ?? '').trim(), record])
@@ -147,8 +129,7 @@ const syncUserPermissions = async (tx, userId, permissionIds = []) => {
       updates.push(
         tx.user_permission.update({
           where: { id: record.id },
-          data: { deleted_at: deletedAt },
-        })
+          data: { deleted_at: deletedAt }})
       );
       return;
     }
@@ -157,8 +138,7 @@ const syncUserPermissions = async (tx, userId, permissionIds = []) => {
       updates.push(
         tx.user_permission.update({
           where: { id: record.id },
-          data: { deleted_at: null },
-        })
+          data: { deleted_at: null }})
       );
     }
   });
@@ -169,9 +149,7 @@ const syncUserPermissions = async (tx, userId, permissionIds = []) => {
       tx.user_permission.create({
         data: {
           user_id: userId,
-          permission_id: permissionId,
-        },
-      })
+          permission_id: permissionId}})
     );
   });
 
@@ -202,8 +180,7 @@ const findById = async (id, include = {}, { includeDeleted = false } = {}) => {
     return await prisma.user.findFirst({
       where: {
         id,
-        ...(includeDeleted ? {} : { deleted_at: null }),
-      },
+        ...(includeDeleted ? {} : { deleted_at: null })},
       include
     });
   } catch (error) {
@@ -255,8 +232,7 @@ const findMany = async (
 const count = async (filters = {}, { includeDeleted = false } = {}) => {
   try {
     return await prisma.user.count({
-      where: buildWhereClause(filters, { includeDeleted }),
-    });
+      where: buildWhereClause(filters, { includeDeleted })});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -284,10 +260,8 @@ const create = async (data) => {
       return await tx.user.findFirst({
         where: {
           id: createdUser.id,
-          deleted_at: null,
-        },
-        include: resolveInclude(),
-      });
+          deleted_at: null},
+        include: resolveInclude()});
     });
   } catch (error) {
     if (error.code === 'P2002') {
@@ -333,9 +307,7 @@ const update = async (id, data) => {
         const existingUser = await tx.user.findFirst({
           where: {
             id,
-            deleted_at: null,
-          },
-        });
+            deleted_at: null}});
 
         if (!existingUser) {
           const notFoundError = new Error('User not found');
@@ -351,10 +323,8 @@ const update = async (id, data) => {
       return await tx.user.findFirst({
         where: {
           id,
-          deleted_at: null,
-        },
-        include: resolveInclude(),
-      });
+          deleted_at: null},
+        include: resolveInclude()});
     });
   } catch (error) {
     if (error.code === 'P2025') {
@@ -403,12 +373,9 @@ const softDelete = async (id) => {
       await tx.user_permission.updateMany({
         where: {
           user_id: id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         data: {
-          deleted_at: deletedAt,
-        },
-      });
+          deleted_at: deletedAt}});
 
       return deletedUser;
     });
@@ -434,9 +401,7 @@ const restore = async (id) => {
         id: true,
         tenant_id: true,
         facility_id: true,
-        deleted_at: true,
-      },
-    });
+        deleted_at: true}});
 
     if (!existing || !existing.deleted_at) {
       throw Object.assign(new Error('Record not found'), { code: 'P2025' });
@@ -444,8 +409,7 @@ const restore = async (id) => {
 
     const tenant = await prisma.tenant.findFirst({
       where: { id: existing.tenant_id, deleted_at: null },
-      select: { id: true },
-    });
+      select: { id: true }});
     if (!tenant) {
       throw new HttpError('errors.user.restore_requires_active_tenant', 409);
     }
@@ -453,8 +417,7 @@ const restore = async (id) => {
     if (existing.facility_id) {
       const facility = await prisma.facility.findFirst({
         where: { id: existing.facility_id, deleted_at: null },
-        select: { id: true },
-      });
+        select: { id: true }});
       if (!facility) {
         throw new HttpError('errors.user.restore_requires_active_facility', 409);
       }
@@ -464,18 +427,14 @@ const restore = async (id) => {
       await tx.user_permission.updateMany({
         where: {
           user_id: id,
-          deleted_at: existing.deleted_at,
-        },
+          deleted_at: existing.deleted_at},
         data: {
-          deleted_at: null,
-        },
-      });
+          deleted_at: null}});
 
       return await tx.user.update({
         where: { id },
         data: { deleted_at: null },
-        include: resolveInclude(),
-      });
+        include: resolveInclude()});
     });
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -495,5 +454,4 @@ module.exports = {
   softDelete,
   restore,
   findActiveByTenantEmail,
-  findActiveByTenantPhone,
-};
+  findActiveByTenantPhone};

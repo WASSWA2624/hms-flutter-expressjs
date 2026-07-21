@@ -17,8 +17,7 @@ const subscriptionStatusSchema = z.enum([
   'ACTIVE',
   'PAST_DUE',
   'CANCELLED',
-  'TRIAL',
-]);
+  'TRIAL']);
 const jsonObjectSchema = z.record(z.string(), z.unknown());
 
 // ==================== Body Schemas ====================
@@ -35,8 +34,7 @@ const createSubscriptionSchema = z.object({
   start_date: z.string().datetime().optional(),
   end_date: z.string().datetime().optional().nullable(),
   entitlement_snapshot_json: jsonObjectSchema.optional().nullable(),
-  extension_json: jsonObjectSchema.optional().nullable(),
-});
+  extension_json: jsonObjectSchema.optional().nullable()});
 
 /**
  * Update subscription body validation
@@ -50,8 +48,7 @@ const updateSubscriptionSchema = z.object({
   start_date: z.string().datetime().optional(),
   end_date: z.string().datetime().optional().nullable(),
   entitlement_snapshot_json: jsonObjectSchema.optional().nullable(),
-  extension_json: jsonObjectSchema.optional().nullable(),
-});
+  extension_json: jsonObjectSchema.optional().nullable()});
 
 /**
  * Upgrade/downgrade request schema

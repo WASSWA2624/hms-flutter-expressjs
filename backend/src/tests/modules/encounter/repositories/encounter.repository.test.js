@@ -56,7 +56,7 @@ describe('Encounter Repository', () => {
           deleted_at: null,
           AND: [{ patient: { deleted_at: null } }]
         }),
-        include: {}
+        include: undefined
       });
     });
 

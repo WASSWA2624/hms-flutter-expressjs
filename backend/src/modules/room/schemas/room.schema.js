@@ -11,8 +11,7 @@ const { z } = require('zod');
 const {
   uuidSchema,
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
 

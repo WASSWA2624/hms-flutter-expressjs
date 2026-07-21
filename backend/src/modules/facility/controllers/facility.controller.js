@@ -28,8 +28,7 @@ const listFacilities = asyncHandler(async (req, res) => {
     facility_type,
     is_active,
     search,
-    include_deleted,
-  } = req.query;
+    include_deleted} = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
@@ -149,8 +148,7 @@ const restoreFacility = asyncHandler(async (req, res) => {
     tenant_id: req.user?.tenant_id,
     facility_id: req.user?.facility_id,
     ip_address: req.ip,
-    user_agent: req.get('user-agent'),
-  };
+    user_agent: req.get('user-agent')};
 
   const facility = await facilityService.restoreFacility(id, context);
 
@@ -164,8 +162,7 @@ const permanentDeleteFacility = asyncHandler(async (req, res) => {
     tenant_id: req.user?.tenant_id,
     facility_id: req.user?.facility_id,
     ip_address: req.ip,
-    user_agent: req.get('user-agent'),
-  };
+    user_agent: req.get('user-agent')};
 
   await facilityService.permanentDeleteFacility(id, context);
 
@@ -174,17 +171,14 @@ const permanentDeleteFacility = asyncHandler(async (req, res) => {
 
 /**
  * Get facility branches with pagination
- * Nested endpoint: GET /facilities/:id/branches
  *
  * @param {Object} req - Express request
  * @param {Object} res - Express response
  * @returns {Promise<void>}
  */
-const getFacilityBranches = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { page, limit, sort_by, order } = req.query;
 
-  const result = await facilityService.getFacilityBranches(
     id,
     page,
     limit,
@@ -194,7 +188,6 @@ const getFacilityBranches = asyncHandler(async (req, res) => {
 
   return sendPaginated(
     res,
-    'messages.facility.branches.list.success',
     result.branches,
     result.pagination
   );
@@ -207,6 +200,4 @@ module.exports = {
   updateFacility,
   deleteFacility,
   restoreFacility,
-  permanentDeleteFacility,
-  getFacilityBranches
-};
+  permanentDeleteFacility};

@@ -17,8 +17,7 @@ jest.mock('@lib/billing/identifiers', () => ({
     if (value === null) return nullable ? null : value;
     return value;
   }),
-  resolveEntityId: jest.fn(async ({ identifier }) => identifier),
-}));
+  resolveEntityId: jest.fn(async ({ identifier }) => identifier)}));
 
 const unitRepository = require('@repositories/unit/unit.repository');
 const { createAuditLog } = require('@lib/audit');

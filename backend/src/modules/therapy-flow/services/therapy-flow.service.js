@@ -11,12 +11,10 @@ const { emitBroadcast } = require('@lib/websocket');
 const {
   applyClinicalRequestBilling,
   extractStoredClinicalBilling,
-  mapClinicalOrderBillingFields,
-} = require('@lib/billing/clinical-request-billing');
+  mapClinicalOrderBillingFields} = require('@lib/billing/clinical-request-billing');
 
 const THERAPY_EVENTS = Object.freeze({
-  THERAPY_FLOW_UPDATED: 'therapy.flow.updated',
-});
+  THERAPY_FLOW_UPDATED: 'therapy.flow.updated'});
 
 const TERMINAL_STATUSES = new Set(['COMPLETED', 'CLOSED']);
 
@@ -29,8 +27,7 @@ const NEXT_STEP_BY_STATUS = Object.freeze({
   FOLLOW_UP_DUE: 'Complete follow-up review.',
   MISSED: 'Reschedule missed session or update plan.',
   COMPLETED: 'Therapy episode completed.',
-  CLOSED: 'Therapy episode closed.',
-});
+  CLOSED: 'Therapy episode closed.'});
 
 const sanitize = (value) => String(value || '').trim();
 const toUpper = (value) => sanitize(value).toUpperCase();
@@ -73,8 +70,7 @@ const resolveUserDisplayName = (user) => {
   const fullName = [
     sanitize(profile?.first_name),
     sanitize(profile?.middle_name),
-    sanitize(profile?.last_name),
-  ]
+    sanitize(profile?.last_name)]
     .filter(Boolean)
     .join(' ')
     .trim();
@@ -107,15 +103,13 @@ const resolveByIdentifier = async (
   if (isUuidLike(normalized)) {
     const byUuid = await delegate.findFirst({
       where: { ...baseWhere, id: normalized.toLowerCase() },
-      ...queryOptions,
-    });
+      ...queryOptions});
     if (byUuid) return byUuid;
   }
 
   return delegate.findFirst({
     where: { ...baseWhere, human_friendly_id: normalized.toUpperCase() },
-    ...queryOptions,
-  });
+    ...queryOptions});
 };
 
 const resolveEpisodeByIdentifier = (tx, identifier) =>
@@ -137,9 +131,7 @@ const resolveEncounterByIdentifier = (tx, identifier) =>
         where: { deleted_at: null, status: 'ADMITTED' },
         orderBy: { admitted_at: 'desc' },
         take: 1,
-        select: { id: true, human_friendly_id: true },
-      },
-    }
+        select: { id: true, human_friendly_id: true }}}
   );
 
 const resolveUserByIdentifier = (tx, identifier, tenantId = null) =>
@@ -152,8 +144,7 @@ const resolveUserByIdentifier = (tx, identifier, tenantId = null) =>
 
 const buildEmptyListResult = (page, limit) => ({
   items: [],
-  pagination: { page, limit, total: 0, total_pages: 0 },
-});
+  pagination: { page, limit, total: 0, total_pages: 0 }});
 
 const getTimeline = (episode) => {
   const extension = episode?.extension_json || {};
@@ -167,8 +158,7 @@ const appendTimelineEvent = (episode, action, context = {}, details = {}) => {
     action,
     occurred_at: new Date().toISOString(),
     user_id: context.user_id || null,
-    details,
-  });
+    details});
   extension.timeline = timeline.slice(0, 200);
   return extension;
 };
@@ -211,8 +201,7 @@ const mapSessionPublic = (session) => {
     attendance_status: session.attendance_status,
     session_note: session.session_note,
     attended_at: session.attended_at,
-    billing: extractStoredClinicalBilling(session.billing_snapshot),
-  };
+    billing: extractStoredClinicalBilling(session.billing_snapshot)};
 };
 
 const mapTherapyWorkItem = (episode) => {
@@ -257,8 +246,7 @@ const mapTherapyWorkItem = (episode) => {
     plan: episode.plan_summary,
     goals: episode.goals,
     instructions: episode.instructions,
-    admission_id: resolvePublicIdentifier(admission),
-  };
+    admission_id: resolvePublicIdentifier(admission)};
 };
 
 const mapTherapyDetail = (episode, options = {}) => {
@@ -287,9 +275,7 @@ const mapTherapyDetail = (episode, options = {}) => {
     source_context: {
       encounter_id: workItem.encounter_id,
       admission_id: workItem.admission_id,
-      referral_id: resolvePublicIdentifier(episode.referral),
-    },
-  };
+      referral_id: resolvePublicIdentifier(episode.referral)}};
 };
 
 const applyQueueScopeFilter = (where, queueScope, now = new Date()) => {
@@ -304,9 +290,7 @@ const applyQueueScopeFilter = (where, queueScope, now = new Date()) => {
       where.sessions = {
         some: {
           deleted_at: null,
-          scheduled_start_at: { gte: dayStart, lte: dayEnd },
-        },
-      };
+          scheduled_start_at: { gte: dayStart, lte: dayEnd }}};
       where.therapy_status = { notIn: ['COMPLETED', 'CLOSED'] };
       break;
     }
@@ -317,25 +301,17 @@ const applyQueueScopeFilter = (where, queueScope, now = new Date()) => {
           sessions: {
             some: {
               deleted_at: null,
-              attendance_status: 'NO_SHOW',
-            },
-          },
-        },
+              attendance_status: 'NO_SHOW'}}},
         {
           sessions: {
             some: {
               deleted_at: null,
               attendance_status: 'SCHEDULED',
-              scheduled_start_at: { lt: startOfDay(now) },
-            },
-          },
-        },
-      ];
+              scheduled_start_at: { lt: startOfDay(now) }}}}];
       break;
     case 'ACTIVE_PLAN':
       where.therapy_status = {
-        in: ['ACTIVE_PLAN', 'SESSION_SCHEDULED'],
-      };
+        in: ['ACTIVE_PLAN', 'SESSION_SCHEDULED']};
       break;
     case 'FOLLOW_UP_DUE':
       where.therapy_status = 'FOLLOW_UP_DUE';
@@ -365,8 +341,7 @@ const publishTherapyRefresh = async (episode, context = {}) => {
     episode_id: episode.id,
     encounter_id: episode.encounter_id,
     therapy_status: episode.therapy_status,
-    updated_by: context.user_id || null,
-  });
+    updated_by: context.user_id || null});
 };
 
 const applySessionBilling = async (tx, { billing, episode, sessionId, existingSnapshot, context }) => {
@@ -382,19 +357,16 @@ const applySessionBilling = async (tx, { billing, episode, sessionId, existingSn
     sourceModule: 'THERAPY',
     sourceId: sessionId,
     mutableUpdate: Boolean(existingSnapshot),
-    description: 'Physiotherapy session',
-  });
+    description: 'Physiotherapy session'});
   if (sessionId && snapshot) {
     await tx.therapy_session.update({
       where: { id: sessionId },
-      data: { billing_snapshot: snapshot },
-    });
+      data: { billing_snapshot: snapshot }});
   }
   const billingFields = mapClinicalOrderBillingFields({ billing_snapshot: snapshot });
   return {
     billingSnapshot: snapshot,
-    billingStatus: billingFields?.billing_status || null,
-  };
+    billingStatus: billingFields?.billing_status || null};
 };
 
 const reloadEpisode = async (episodeId) =>
@@ -408,10 +380,8 @@ const createTherapyReferralInternal = async (tx, data, context = {}) => {
     where: {
       encounter_id: encounter.id,
       deleted_at: null,
-      therapy_status: { notIn: ['COMPLETED', 'CLOSED'] },
-    },
-    orderBy: { created_at: 'desc' },
-  });
+      therapy_status: { notIn: ['COMPLETED', 'CLOSED'] }},
+    orderBy: { created_at: 'desc' }});
   if (existing) return existing;
 
   let admissionId = null;
@@ -458,8 +428,7 @@ const createTherapyReferralInternal = async (tx, data, context = {}) => {
     context,
     {
       source_kind: sourceKind,
-      referral_reason: sanitize(data.referral_reason) || sanitize(data.clinical_indication),
-    }
+      referral_reason: sanitize(data.referral_reason) || sanitize(data.clinical_indication)}
   );
 
   return tx.therapy_episode.create({
@@ -480,9 +449,7 @@ const createTherapyReferralInternal = async (tx, data, context = {}) => {
       therapist_user_id: therapistUserId,
       therapy_status: 'REFERRAL',
       next_step: NEXT_STEP_BY_STATUS.REFERRAL,
-      extension_json: extension,
-    },
-  });
+      extension_json: extension}});
 };
 
 const listTherapyFlows = async (
@@ -557,10 +524,7 @@ const listTherapyFlows = async (
         deleted_at: null,
         scheduled_start_at: {
           ...(filters.scheduled_from ? { gte: toDate(filters.scheduled_from) } : {}),
-          ...(filters.scheduled_to ? { lte: toDate(filters.scheduled_to) } : {}),
-        },
-      },
-    };
+          ...(filters.scheduled_to ? { lte: toDate(filters.scheduled_to) } : {})}}};
   }
 
   if (filters.search) {
@@ -579,20 +543,12 @@ const listTherapyFlows = async (
                 OR: [
                   { human_friendly_id: { contains: upperSearch } },
                   { first_name: { contains: filters.search } },
-                  { last_name: { contains: filters.search } },
-                ],
-              },
-            },
-          ],
-        },
-      },
-    ];
+                  { last_name: { contains: filters.search } }]}}]}}];
   }
 
   const [items, total] = await Promise.all([
     therapyFlowRepository.findMany(where, skip, limit, orderBy),
-    therapyFlowRepository.count(where),
-  ]);
+    therapyFlowRepository.count(where)]);
 
   return {
     items: items.map(mapTherapyWorkItem),
@@ -600,9 +556,7 @@ const listTherapyFlows = async (
       page,
       limit,
       total,
-      total_pages: Math.ceil(total / limit) || 0,
-    },
-  };
+      total_pages: Math.ceil(total / limit) || 0}};
 };
 
 const getTherapyFlowById = async (id, options = {}) => {
@@ -610,8 +564,7 @@ const getTherapyFlowById = async (id, options = {}) => {
   if (!resolved) throw new HttpError('errors.therapy_flow.not_found', 404);
   const full = await therapyFlowRepository.findById(resolved.id);
   return mapTherapyDetail(full, {
-    include_timeline: ['true', '1', true].includes(options.include_timeline),
-  });
+    include_timeline: ['true', '1', true].includes(options.include_timeline)});
 };
 
 const createTherapyReferral = async (data, context = {}) => {
@@ -626,8 +579,7 @@ const createTherapyReferral = async (data, context = {}) => {
     entity: 'therapy_episode',
     entity_id: episode.id,
     diff: { after: episode },
-    ip_address: context.ip_address,
-  }).catch(() => {});
+    ip_address: context.ip_address}).catch(() => {});
 
   const snapshot = await reloadEpisode(episode.id);
   await publishTherapyRefresh(snapshot, context);
@@ -654,8 +606,7 @@ const acceptReferral = async (id, data, context = {}) => {
     }
 
     const extension = appendTimelineEvent(resolved, 'REFERRAL_ACCEPTED', context, {
-      note: sanitize(data.note),
-    });
+      note: sanitize(data.note)});
 
     return tx.therapy_episode.update({
       where: { id: resolved.id },
@@ -664,9 +615,7 @@ const acceptReferral = async (id, data, context = {}) => {
         next_step: NEXT_STEP_BY_STATUS.ACCEPTED,
         therapist_user_id: therapistUserId,
         accepted_at: new Date(),
-        extension_json: extension,
-      },
-    });
+        extension_json: extension}});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -681,8 +630,7 @@ const recordAssessment = async (id, data, context = {}) => {
     ensureEpisodeMutable(resolved);
 
     const extension = appendTimelineEvent(resolved, 'ASSESSMENT_RECORDED', context, {
-      assessment: sanitize(data.assessment),
-    });
+      assessment: sanitize(data.assessment)});
     extension.assessment_text = sanitize(data.assessment);
 
     return tx.therapy_episode.update({
@@ -698,9 +646,7 @@ const recordAssessment = async (id, data, context = {}) => {
         contraindications: sanitize(data.contraindications) || null,
         session_frequency: sanitize(data.session_frequency) || null,
         assessed_at: new Date(),
-        extension_json: extension,
-      },
-    });
+        extension_json: extension}});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -734,8 +680,7 @@ const scheduleSession = async (id, data, context = {}) => {
         episode,
         sessionId: null,
         existingSnapshot: episode.billing_snapshot,
-        context,
-      });
+        context});
       billingSnapshot = billingResult.billingSnapshot;
       billingStatus = billingResult.billingStatus || billingStatus;
     }
@@ -749,13 +694,10 @@ const scheduleSession = async (id, data, context = {}) => {
         location: sanitize(data.location) || null,
         attendance_status: 'SCHEDULED',
         session_note: sanitize(data.reason) || null,
-        billing_snapshot: billingSnapshot,
-      },
-    });
+        billing_snapshot: billingSnapshot}});
 
     const extension = appendTimelineEvent(episode, 'SESSION_SCHEDULED', context, {
-      session_id: session.id,
-    });
+      session_id: session.id});
 
     return tx.therapy_episode.update({
       where: { id: episode.id },
@@ -765,9 +707,7 @@ const scheduleSession = async (id, data, context = {}) => {
         therapist_user_id: therapistUserId,
         billing_status: billingStatus,
         billing_snapshot: billingSnapshot || episode.billing_snapshot,
-        extension_json: extension,
-      },
-    });
+        extension_json: extension}});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -804,8 +744,7 @@ const recordSession = async (id, data, context = {}) => {
         episode,
         sessionId: session.id,
         existingSnapshot: session.billing_snapshot,
-        context,
-      });
+        context});
       billingSnapshot = billingResult.billingSnapshot;
     }
 
@@ -816,23 +755,18 @@ const recordSession = async (id, data, context = {}) => {
         session_note: sanitize(data.note),
         attendance_status: attendance,
         attended_at: attendance === 'ATTENDED' ? new Date() : null,
-        ...(billingSnapshot ? { billing_snapshot: billingSnapshot } : {}),
-      },
-    });
+        ...(billingSnapshot ? { billing_snapshot: billingSnapshot } : {})}});
 
     const extension = appendTimelineEvent(episode, 'SESSION_RECORDED', context, {
       session_id: session.id,
-      attendance_status: attendance,
-    });
+      attendance_status: attendance});
 
     return tx.therapy_episode.update({
       where: { id: episode.id },
       data: {
         therapy_status: 'ACTIVE_PLAN',
         next_step: NEXT_STEP_BY_STATUS.ACTIVE_PLAN,
-        extension_json: extension,
-      },
-    });
+        extension_json: extension}});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -861,9 +795,7 @@ const markAttendance = async (id, data, context = {}) => {
       data: {
         attendance_status: attendance,
         session_note: sanitize(data.note) || undefined,
-        attended_at: attendance === 'ATTENDED' ? new Date() : null,
-      },
-    });
+        attended_at: attendance === 'ATTENDED' ? new Date() : null}});
 
     const nextStatus =
       attendance === 'NO_SHOW'
@@ -874,17 +806,14 @@ const markAttendance = async (id, data, context = {}) => {
 
     const extension = appendTimelineEvent(episode, 'ATTENDANCE_MARKED', context, {
       session_id: session.id,
-      attendance_status: attendance,
-    });
+      attendance_status: attendance});
 
     return tx.therapy_episode.update({
       where: { id: episode.id },
       data: {
         therapy_status: nextStatus,
         next_step: NEXT_STEP_BY_STATUS[nextStatus],
-        extension_json: extension,
-      },
-    });
+        extension_json: extension}});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -915,9 +844,7 @@ const updatePlan = async (id, data, context = {}) => {
           ? toDate(data.plan_started_at)
           : episode.plan_started_at || new Date(),
         plan_ends_at: data.plan_ends_at ? toDate(data.plan_ends_at) : episode.plan_ends_at,
-        extension_json: extension,
-      },
-    });
+        extension_json: extension}});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -937,9 +864,7 @@ const addProgressNote = async (id, data, context = {}) => {
       data: {
         encounter_id: episode.encounter_id,
         author_user_id: context.user_id,
-        note: `Physiotherapy progress note: ${sanitize(data.note)}`,
-      },
-    });
+        note: `Physiotherapy progress note: ${sanitize(data.note)}`}});
 
     const extension = { ...(episode.extension_json || {}) };
     const progressNotes = Array.isArray(extension.progress_notes)
@@ -949,17 +874,14 @@ const addProgressNote = async (id, data, context = {}) => {
       id: noteRecord.id,
       note: sanitize(data.note),
       recorded_at: new Date().toISOString(),
-      author_user_id: context.user_id,
-    });
+      author_user_id: context.user_id});
     extension.progress_notes = progressNotes.slice(0, 100);
     extension.timeline = appendTimelineEvent(episode, 'PROGRESS_NOTE_ADDED', context, {
-      note_id: noteRecord.id,
-    }).timeline;
+      note_id: noteRecord.id}).timeline;
 
     return tx.therapy_episode.update({
       where: { id: episode.id },
-      data: { extension_json: extension },
-    });
+      data: { extension_json: extension }});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -980,9 +902,7 @@ const scheduleFollowUp = async (id, data, context = {}) => {
         encounter_id: episode.encounter_id,
         scheduled_at: toDate(data.scheduled_at),
         status: 'SCHEDULED',
-        notes: sanitize(data.notes) || null,
-      },
-    });
+        notes: sanitize(data.notes) || null}});
 
     const extension = { ...(episode.extension_json || {}) };
     const followUps = Array.isArray(extension.follow_ups) ? [...extension.follow_ups] : [];
@@ -990,21 +910,17 @@ const scheduleFollowUp = async (id, data, context = {}) => {
       id: followUp.id,
       scheduled_at: followUp.scheduled_at,
       notes: followUp.notes,
-      status: followUp.status,
-    });
+      status: followUp.status});
     extension.follow_ups = followUps.slice(0, 50);
     extension.timeline = appendTimelineEvent(episode, 'FOLLOW_UP_SCHEDULED', context, {
-      follow_up_id: followUp.id,
-    }).timeline;
+      follow_up_id: followUp.id}).timeline;
 
     return tx.therapy_episode.update({
       where: { id: episode.id },
       data: {
         therapy_status: 'FOLLOW_UP_DUE',
         next_step: NEXT_STEP_BY_STATUS.FOLLOW_UP_DUE,
-        extension_json: extension,
-      },
-    });
+        extension_json: extension}});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -1019,8 +935,7 @@ const closeEpisode = async (id, data, context = {}) => {
 
     const episode = await therapyFlowRepository.findById(resolved.id);
     const extension = appendTimelineEvent(episode, 'EPISODE_CLOSED', context, {
-      outcome_summary: sanitize(data.outcome_summary),
-    });
+      outcome_summary: sanitize(data.outcome_summary)});
 
     return tx.therapy_episode.update({
       where: { id: episode.id },
@@ -1029,9 +944,7 @@ const closeEpisode = async (id, data, context = {}) => {
         next_step: NEXT_STEP_BY_STATUS.CLOSED,
         outcome_summary: sanitize(data.outcome_summary),
         closed_at: new Date(),
-        extension_json: extension,
-      },
-    });
+        extension_json: extension}});
   });
 
   const snapshot = await reloadEpisode(updated.id);
@@ -1060,8 +973,7 @@ const requestTherapyFromAdmission = async (admissionId, data, context = {}) => {
       referral_reason: sanitize(data.clinical_indication),
       clinical_indication: sanitize(data.clinical_indication),
       therapist_user_id: data.therapist_user_id,
-      notes: sanitize(data.notes),
-    },
+      notes: sanitize(data.notes)},
     context
   );
 };
@@ -1083,5 +995,4 @@ module.exports = {
   closeEpisode,
   requestTherapyFromAdmission,
   mapTherapyWorkItem,
-  mapTherapyDetail,
-};
+  mapTherapyDetail};

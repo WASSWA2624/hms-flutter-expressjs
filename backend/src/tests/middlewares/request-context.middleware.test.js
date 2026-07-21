@@ -13,8 +13,7 @@ const createResponse = () => {
   return {
     locals: {},
     setHeader: jest.fn((name, value) => headers.set(String(name).toLowerCase(), value)),
-    getHeader: jest.fn((name) => headers.get(String(name).toLowerCase())),
-  };
+    getHeader: jest.fn((name) => headers.get(String(name).toLowerCase()))};
 };
 
 describe('request-context middleware', () => {
@@ -59,9 +58,7 @@ describe('request-context middleware', () => {
         role: 'TENANT_ADMIN',
         roles: ['TENANT_ADMIN'],
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-        branch_id: 'branch-1'
-      }
+        facility_id: 'facility-1'}
     };
     const res = createResponse();
     let activeContext = null;
@@ -79,9 +76,7 @@ describe('request-context middleware', () => {
     });
     expect(req.requestContext.scope).toMatchObject({
       tenant_id: 'tenant-1',
-      facility_id: 'facility-1',
-      branch_id: 'branch-1'
-    });
+      facility_id: 'facility-1'});
     expect(activeContext).toBe(req.requestContext);
   });
 
@@ -102,12 +97,9 @@ describe('request-context middleware', () => {
       role: 'DOCTOR',
       roles: ['DOCTOR'],
       tenant_id: 'tenant-2',
-      facility_id: 'facility-2',
-      branch_id: 'branch-2'
-    };
+      facility_id: 'facility-2'};
     req.tenant = { id: 'tenant-2' };
     req.facility = { id: 'facility-2' };
-    req.branch = { id: 'branch-2' };
 
     const hydrateNext = jest.fn();
     hydrateRequestContext()(req, res, hydrateNext);
@@ -119,8 +111,6 @@ describe('request-context middleware', () => {
     });
     expect(req.requestContext.scope).toEqual({
       tenant_id: 'tenant-2',
-      facility_id: 'facility-2',
-      branch_id: 'branch-2'
-    });
+      facility_id: 'facility-2'});
   });
 });

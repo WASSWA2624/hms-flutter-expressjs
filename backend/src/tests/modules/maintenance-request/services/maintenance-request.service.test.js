@@ -10,24 +10,18 @@ jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
   resolveIdentifierForFilter: jest.fn(),
-  resolveIdentifierForPayload: jest.fn(),
-}));
+  resolveIdentifierForPayload: jest.fn()}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(),
-}));
+  resolveModelIdByIdentifier: jest.fn()}));
 jest.mock('@prisma/client', () => ({
   user_role: {
-    findMany: jest.fn(),
-  },
-}));
+    findMany: jest.fn()}}));
 jest.mock('@lib/websocket', () => ({
   emitToUsers: jest.fn(),
   HOUSEKEEPING_EVENTS: {
     HOUSEKEEPING_WORKSPACE_UPDATED: 'HOUSEKEEPING_WORKSPACE_UPDATED',
     MAINTENANCE_REQUEST_TRIAGED: 'MAINTENANCE_REQUEST_TRIAGED',
-    MAINTENANCE_REQUEST_CONVERTED: 'MAINTENANCE_REQUEST_CONVERTED',
-  },
-}));
+    MAINTENANCE_REQUEST_CONVERTED: 'MAINTENANCE_REQUEST_CONVERTED'}}));
 
 const maintenanceRequestService = require('../../../../modules/maintenance-request/services/maintenance-request.service');
 const maintenanceRequestRepository = require('../../../../modules/maintenance-request/repositories/maintenance-request.repository');
@@ -35,8 +29,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const prisma = require('@prisma/client');
 
@@ -57,8 +50,7 @@ describe('Maintenance Request Service', () => {
     it('should list maintenance requests with pagination', async () => {
       const mockRequests = [
         { id: '1', status: 'OPEN' },
-        { id: '2', status: 'IN_PROGRESS' },
-      ];
+        { id: '2', status: 'IN_PROGRESS' }];
 
       maintenanceRequestRepository.findMany.mockResolvedValue(mockRequests);
       maintenanceRequestRepository.count.mockResolvedValue(2);
@@ -73,16 +65,14 @@ describe('Maintenance Request Service', () => {
 
       expect(result.maintenanceRequests).toEqual([
         expect.objectContaining({ id: '1', human_friendly_id: '1', status: 'OPEN' }),
-        expect.objectContaining({ id: '2', human_friendly_id: '2', status: 'IN_PROGRESS' }),
-      ]);
+        expect.objectContaining({ id: '2', human_friendly_id: '2', status: 'IN_PROGRESS' })]);
       expect(result.pagination).toEqual({
         page: 1,
         limit: 20,
         total: 2,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
     });
 
     it('should apply filters correctly', async () => {
@@ -93,8 +83,7 @@ describe('Maintenance Request Service', () => {
         facility_id: '123',
         asset_id: '456',
         status: 'OPEN',
-        search: 'repair',
-      };
+        search: 'repair'};
 
       await maintenanceRequestService.listMaintenanceRequests(filters, 1, 20, null, 'asc');
 
@@ -103,8 +92,7 @@ describe('Maintenance Request Service', () => {
           facility_id: '123',
           asset_id: '456',
           status: 'OPEN',
-          search: 'repair',
-        },
+          search: 'repair'},
         0,
         20,
         { created_at: 'desc' }
@@ -131,8 +119,7 @@ describe('Maintenance Request Service', () => {
         expect.objectContaining({
           id: '1',
           human_friendly_id: '1',
-          status: 'OPEN',
-        })
+          status: 'OPEN'})
       );
       expect(maintenanceRequestRepository.findById).toHaveBeenCalledWith('1');
     });
@@ -152,8 +139,7 @@ describe('Maintenance Request Service', () => {
         facility_id: '123',
         status: 'OPEN',
         description: 'New request',
-        reported_at: '2026-01-19T10:00:00Z',
-      };
+        reported_at: '2026-01-19T10:00:00Z'};
 
       const mockCreated = { id: '1', ...mockData };
       maintenanceRequestRepository.create.mockResolvedValue(mockCreated);
@@ -168,15 +154,13 @@ describe('Maintenance Request Service', () => {
         expect.objectContaining({
           id: '1',
           status: 'OPEN',
-          description: 'New request',
-        })
+          description: 'New request'})
       );
       expect(maintenanceRequestRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           facility_id: '123',
           status: 'OPEN',
-          reported_at: expect.any(Date),
-        })
+          reported_at: expect.any(Date)})
       );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -184,8 +168,7 @@ describe('Maintenance Request Service', () => {
           action: 'CREATE',
           entity: 'maintenance_request',
           entity_id: '1',
-          ip_address: mockIpAddress,
-        })
+          ip_address: mockIpAddress})
       );
     });
 
@@ -193,8 +176,7 @@ describe('Maintenance Request Service', () => {
       const mockData = {
         status: 'OPEN',
         reported_at: '2026-01-19T10:00:00Z',
-        resolved_at: '2026-01-19T15:00:00Z',
-      };
+        resolved_at: '2026-01-19T15:00:00Z'};
 
       maintenanceRequestRepository.create.mockResolvedValue({ id: '1', ...mockData });
 
@@ -203,8 +185,7 @@ describe('Maintenance Request Service', () => {
       expect(maintenanceRequestRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           reported_at: expect.any(Date),
-          resolved_at: expect.any(Date),
-        })
+          resolved_at: expect.any(Date)})
       );
     });
   });
@@ -227,16 +208,14 @@ describe('Maintenance Request Service', () => {
       expect(result).toEqual(
         expect.objectContaining({
           id: '1',
-          status: 'COMPLETED',
-        })
+          status: 'COMPLETED'})
       );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: mockUserId,
           action: 'UPDATE',
           entity: 'maintenance_request',
-          diff: { before: mockBefore, after: mockAfter },
-        })
+          diff: { before: mockBefore, after: mockAfter }})
       );
     });
 
@@ -265,8 +244,7 @@ describe('Maintenance Request Service', () => {
           action: 'DELETE',
           entity: 'maintenance_request',
           entity_id: '1',
-          diff: { before: mockBefore },
-        })
+          diff: { before: mockBefore }})
       );
     });
 
@@ -285,15 +263,13 @@ describe('Maintenance Request Service', () => {
         id: '1',
         status: 'OPEN',
         description: 'Leaking tap',
-        asset: { tenant_id: 'tenant-1' },
-      };
+        asset: { tenant_id: 'tenant-1' }};
       const mockAfter = {
         id: '1',
         status: 'IN_PROGRESS',
         description:
           'Leaking tap\n\n[TRIAGE] assigned_engineer_id=engineer-1; sla_hours=24; triage_summary=Leak confirmed',
-        asset: { tenant_id: 'tenant-1' },
-      };
+        asset: { tenant_id: 'tenant-1' }};
 
       maintenanceRequestRepository.findById.mockResolvedValue(mockBefore);
       maintenanceRequestRepository.update.mockResolvedValue(mockAfter);
@@ -305,8 +281,7 @@ describe('Maintenance Request Service', () => {
           status: 'IN_PROGRESS',
           triage_summary: 'Leak confirmed',
           assigned_engineer: 'USR000001',
-          sla_hours: 24,
-        },
+          sla_hours: 24},
         mockUserId,
         mockIpAddress
       );
@@ -315,15 +290,13 @@ describe('Maintenance Request Service', () => {
         expect.objectContaining({
           id: '1',
           human_friendly_id: '1',
-          status: 'IN_PROGRESS',
-        })
+          status: 'IN_PROGRESS'})
       );
       expect(maintenanceRequestRepository.update).toHaveBeenCalledWith(
         'MR-001',
         expect.objectContaining({
           status: 'IN_PROGRESS',
-          description: expect.stringContaining('[TRIAGE]'),
-        })
+          description: expect.stringContaining('[TRIAGE]')})
       );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -335,18 +308,14 @@ describe('Maintenance Request Service', () => {
             metadata: expect.objectContaining({
               assigned_engineer_id: 'engineer-1',
               sla_hours: 24,
-              triage_summary: 'Leak confirmed',
-            }),
-          }),
-        })
+              triage_summary: 'Leak confirmed'})})})
       );
     });
 
     it('should reject triage for terminal statuses', async () => {
       maintenanceRequestRepository.findById.mockResolvedValue({
         id: '1',
-        status: 'COMPLETED',
-      });
+        status: 'COMPLETED'});
 
       await expect(
         maintenanceRequestService.triageMaintenanceRequest(

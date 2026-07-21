@@ -4,8 +4,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -15,14 +14,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const emptyResult = (page, limit) => ({
   shiftSwapRequests: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const listShiftSwapRequests = async (filters, page, limit, sortBy, order) => {
   try {
@@ -33,24 +30,21 @@ const listShiftSwapRequests = async (filters, page, limit, sortBy, order) => {
     const shiftId = await resolveIdentifierForFilter({
       value: filters.shift_id,
       model: 'shift',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.shift_id && shiftId === null) return emptyResult(page, limit);
     if (shiftId) whereClause.shift_id = shiftId;
 
     const requesterId = await resolveIdentifierForFilter({
       value: filters.requester_staff_id,
       model: 'staff_profile',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.requester_staff_id && requesterId === null) return emptyResult(page, limit);
     if (requesterId) whereClause.requester_staff_id = requesterId;
 
     const targetId = await resolveIdentifierForFilter({
       value: filters.target_staff_id,
       model: 'staff_profile',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.target_staff_id && targetId === null) return emptyResult(page, limit);
     if (targetId) whereClause.target_staff_id = targetId;
 
@@ -58,13 +52,11 @@ const listShiftSwapRequests = async (filters, page, limit, sortBy, order) => {
 
     const [shiftSwapRequests, total] = await Promise.all([
       shiftSwapRequestRepository.findMany(whereClause, skip, limit, orderBy),
-      shiftSwapRequestRepository.count(whereClause),
-    ]);
+      shiftSwapRequestRepository.count(whereClause)]);
 
     return {
       shiftSwapRequests,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -76,8 +68,7 @@ const getShiftSwapRequestById = async (id) => {
     const resolvedId = await resolveEntityId({
       model: 'shift_swap_request',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const shiftSwapRequest = await shiftSwapRequestRepository.findById(resolvedId);
     if (!shiftSwapRequest) throw new HttpError('errors.shift_swap_request.not_found', 404);
     return shiftSwapRequest;
@@ -95,22 +86,18 @@ const createShiftSwapRequest = async (data, userId, ipAddress) => {
         value: data.shift_id,
         model: 'shift',
         field: 'shift_id',
-        where: { deleted_at: null },
-      }),
+        where: { deleted_at: null }}),
       requester_staff_id: await resolveIdentifierForPayload({
         value: data.requester_staff_id,
         model: 'staff_profile',
         field: 'requester_staff_id',
-        where: { deleted_at: null },
-      }),
+        where: { deleted_at: null }}),
       target_staff_id: await resolveIdentifierForPayload({
         value: data.target_staff_id,
         model: 'staff_profile',
         field: 'target_staff_id',
         where: { deleted_at: null },
-        nullable: true,
-      }),
-    };
+        nullable: true})};
 
     const shiftSwapRequest = await shiftSwapRequestRepository.create(payload);
     createAuditLog({
@@ -119,8 +106,7 @@ const createShiftSwapRequest = async (data, userId, ipAddress) => {
       entity: 'shift_swap_request',
       entity_id: shiftSwapRequest.id,
       diff: { after: shiftSwapRequest },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return shiftSwapRequest;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -133,8 +119,7 @@ const updateShiftSwapRequest = async (id, data, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'shift_swap_request',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await shiftSwapRequestRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.shift_swap_request.not_found', 404);
 
@@ -144,16 +129,14 @@ const updateShiftSwapRequest = async (id, data, userId, ipAddress) => {
         value: data.shift_id,
         model: 'shift',
         field: 'shift_id',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
     if (Object.prototype.hasOwnProperty.call(data, 'requester_staff_id')) {
       payload.requester_staff_id = await resolveIdentifierForPayload({
         value: data.requester_staff_id,
         model: 'staff_profile',
         field: 'requester_staff_id',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
     if (Object.prototype.hasOwnProperty.call(data, 'target_staff_id')) {
       payload.target_staff_id = await resolveIdentifierForPayload({
@@ -161,8 +144,7 @@ const updateShiftSwapRequest = async (id, data, userId, ipAddress) => {
         model: 'staff_profile',
         field: 'target_staff_id',
         where: { deleted_at: null },
-        nullable: true,
-      });
+        nullable: true});
     }
 
     const shiftSwapRequest = await shiftSwapRequestRepository.update(before.id, payload);
@@ -172,8 +154,7 @@ const updateShiftSwapRequest = async (id, data, userId, ipAddress) => {
       entity: 'shift_swap_request',
       entity_id: shiftSwapRequest.id,
       diff: { before, after: shiftSwapRequest },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return shiftSwapRequest;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -186,8 +167,7 @@ const deleteShiftSwapRequest = async (id, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'shift_swap_request',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await shiftSwapRequestRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.shift_swap_request.not_found', 404);
 
@@ -198,8 +178,7 @@ const deleteShiftSwapRequest = async (id, userId, ipAddress) => {
       entity: 'shift_swap_request',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -211,5 +190,4 @@ module.exports = {
   getShiftSwapRequestById,
   createShiftSwapRequest,
   updateShiftSwapRequest,
-  deleteShiftSwapRequest,
-};
+  deleteShiftSwapRequest};

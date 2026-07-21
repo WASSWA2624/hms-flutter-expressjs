@@ -1,33 +1,25 @@
 jest.mock('@lib/storage', () => ({
   createStorageService: jest.fn(() => ({
     upload: jest.fn(),
-    delete: jest.fn(),
-  })),
-}));
+    delete: jest.fn()}))}));
 
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 
 jest.mock('@services/notification/notification.service', () => ({
-  createNotification: jest.fn(),
-}));
+  createNotification: jest.fn()}));
 
 jest.mock('@lib/reports/datasets', () => ({
-  executeReportDataset: jest.fn(),
-}));
+  executeReportDataset: jest.fn()}));
 
 jest.mock('@lib/reports/files', () => ({
-  generateReportFile: jest.fn(),
-}));
+  generateReportFile: jest.fn()}));
 
 jest.mock('@lib/logging', () => ({
   logger: {
     warn: jest.fn(),
     info: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+    error: jest.fn()}}));
 
 describe('reports runtime scheduler', () => {
   const loadRuntime = ({ tableRows, reportScheduleError, runImmediate = false } = {}) => {
@@ -38,18 +30,14 @@ describe('reports runtime scheduler', () => {
       report_schedule: {
         findMany: jest.fn(),
         update: jest.fn(),
-        updateMany: jest.fn(),
-      },
+        updateMany: jest.fn()},
       report_run: {
         findMany: jest.fn(),
         findFirst: jest.fn(),
         update: jest.fn(),
-        updateMany: jest.fn(),
-      },
+        updateMany: jest.fn()},
       report_definition: {
-        findFirst: jest.fn(),
-      },
-    };
+        findFirst: jest.fn()}};
 
     if (reportScheduleError) {
       prismaMock.report_schedule.findMany.mockRejectedValue(reportScheduleError);
@@ -84,8 +72,7 @@ describe('reports runtime scheduler', () => {
 
   it('does not start the scheduler when report runtime tables are missing', async () => {
     const { runtime, prismaMock, logger } = loadRuntime({
-      tableRows: [{ table_name: 'report_run' }, { table_name: 'report_definition' }],
-    });
+      tableRows: [{ table_name: 'report_run' }, { table_name: 'report_definition' }]});
 
     const started = await runtime.startReportRunScheduler();
 
@@ -96,8 +83,7 @@ describe('reports runtime scheduler', () => {
       'Reports runtime disabled',
       expect.objectContaining({
         reason: 'missing_report_runtime_tables',
-        missing_tables: ['report_schedule'],
-      })
+        missing_tables: ['report_schedule']})
     );
   });
 
@@ -109,11 +95,9 @@ describe('reports runtime scheduler', () => {
       tableRows: [
         { table_name: 'report_definition' },
         { table_name: 'report_run' },
-        { table_name: 'report_schedule' },
-      ],
+        { table_name: 'report_schedule' }],
       reportScheduleError: missingTableError,
-      runImmediate: true,
-    });
+      runImmediate: true});
 
     const started = await runtime.startReportRunScheduler();
 
@@ -124,8 +108,7 @@ describe('reports runtime scheduler', () => {
       expect.objectContaining({
         reason: 'missing_report_schema_artifact',
         code: 'P2021',
-        context: 'startup',
-      })
+        context: 'startup'})
     );
     expect(global.clearInterval).toHaveBeenCalledTimes(1);
   });
@@ -140,8 +123,7 @@ describe('reports runtime scheduler', () => {
         frequency: 'WEEKLY',
         day_of_week: 1,
         time_of_day: '08:00',
-        timezone: 'UTC',
-      },
+        timezone: 'UTC'},
       reference
     );
 
@@ -158,8 +140,7 @@ describe('reports runtime scheduler', () => {
         frequency: 'MONTHLY',
         day_of_month: 15,
         time_of_day: '08:00',
-        timezone: 'UTC',
-      },
+        timezone: 'UTC'},
       reference
     );
 

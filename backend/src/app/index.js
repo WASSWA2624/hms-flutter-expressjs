@@ -78,8 +78,7 @@ const createApp = () => {
       express.static(path.resolve(process.cwd(), LOCAL_STORAGE_DIR), {
         fallthrough: true,
         index: false,
-        maxAge: '1h',
-      })
+        maxAge: '1h'})
     );
     
     // 3. Cookie parser middleware

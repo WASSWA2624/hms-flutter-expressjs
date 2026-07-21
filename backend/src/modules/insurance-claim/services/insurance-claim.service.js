@@ -12,8 +12,7 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const CLAIM_INCLUDE = {
   coverage_plan: {
@@ -24,17 +23,13 @@ const CLAIM_INCLUDE = {
       name: true,
       provider_name: true,
       coverage_percentage: true,
-      insurance_company_id: true,
-    },
-  },
+      insurance_company_id: true}},
   insurance_company: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
-      code: true,
-    },
-  },
+      code: true}},
   invoice: {
     select: {
       id: true,
@@ -54,12 +49,7 @@ const CLAIM_INCLUDE = {
           copay_amount: true,
           coverage_plan_id: true,
           insurance_company_id: true,
-          total_price: true,
-        },
-      },
-    },
-  },
-};
+          total_price: true}}}}};
 
 const toMoney = (value) => {
   const amount = Number(value);
@@ -91,9 +81,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const resolveTenantIdFromClaim = (record) =>
   record?.invoice?.tenant_id || record?.coverage_plan?.tenant_id || null;
@@ -119,8 +107,7 @@ const mapInsuranceClaimForDisplay = (record) => {
       record?.invoice?.patient?.human_friendly_id,
       record?.invoice?.patient_id
     ),
-    timeline_at: record?.timeline_at || record?.submitted_at || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.submitted_at || record?.created_at || null};
 };
 
 /**
@@ -136,8 +123,7 @@ const listInsuranceClaims = async (filters, page, limit, sortBy, order) => {
     if (filters.coverage_plan_id !== undefined) {
       const coveragePlanId = await resolveIdentifierForFilter({
         value: filters.coverage_plan_id,
-        model: 'coverage_plan',
-      });
+        model: 'coverage_plan'});
       if (coveragePlanId === null) return buildEmptyListResult(page, limit);
       if (coveragePlanId !== undefined) whereClause.coverage_plan_id = coveragePlanId;
     }
@@ -145,8 +131,7 @@ const listInsuranceClaims = async (filters, page, limit, sortBy, order) => {
     if (filters.invoice_id !== undefined) {
       const invoiceId = await resolveIdentifierForFilter({
         value: filters.invoice_id,
-        model: 'invoice',
-      });
+        model: 'invoice'});
       if (invoiceId === null) return buildEmptyListResult(page, limit);
       if (invoiceId !== undefined) whereClause.invoice_id = invoiceId;
     }
@@ -161,8 +146,7 @@ const listInsuranceClaims = async (filters, page, limit, sortBy, order) => {
 
     const [insuranceClaims, total] = await Promise.all([
       insuranceClaimRepository.findMany(whereClause, skip, limit, orderBy, CLAIM_INCLUDE),
-      insuranceClaimRepository.count(whereClause),
-    ]);
+      insuranceClaimRepository.count(whereClause)]);
 
     return {
       insurance_claims: insuranceClaims.map(mapInsuranceClaimForDisplay),
@@ -172,9 +156,7 @@ const listInsuranceClaims = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -188,8 +170,7 @@ const getInsuranceClaimById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_claim',
-      identifier: id,
-    });
+      identifier: id});
 
     const insuranceClaim = await insuranceClaimRepository.findById(resolvedId, CLAIM_INCLUDE);
 
@@ -212,19 +193,16 @@ const createInsuranceClaim = async (data, userId, ipAddress) => {
     const coveragePlanId = await resolveIdentifierForPayload({
       value: data?.coverage_plan_id,
       field: 'coverage_plan_id',
-      model: 'coverage_plan',
-    });
+      model: 'coverage_plan'});
     const invoiceId = await resolveIdentifierForPayload({
       value: data?.invoice_id,
       field: 'invoice_id',
-      model: 'invoice',
-    });
+      model: 'invoice'});
     const insuranceCompanyId = await resolveIdentifierForPayload({
       value: data?.insurance_company_id,
       field: 'insurance_company_id',
       model: 'insurance_company',
-      nullable: true,
-    });
+      nullable: true});
 
     const invoice = await require('@prisma/client').invoice.findFirst({
       where: { id: invoiceId, deleted_at: null },
@@ -233,19 +211,14 @@ const createInsuranceClaim = async (data, userId, ipAddress) => {
           where: { deleted_at: null },
           select: {
             insurer_share: true,
-            coverage_plan_id: true,
-          },
-        },
-      },
-    });
+            coverage_plan_id: true}}}});
     if (!invoice) {
       throw new HttpError('errors.invoice.not_found', 404);
     }
 
     const coveragePlan = await require('@prisma/client').coverage_plan.findFirst({
       where: { id: coveragePlanId, deleted_at: null },
-      select: { id: true, insurance_company_id: true },
-    });
+      select: { id: true, insurance_company_id: true }});
 
     const claimAmount =
       data?.claim_amount != null
@@ -259,8 +232,7 @@ const createInsuranceClaim = async (data, userId, ipAddress) => {
       insurance_company_id:
         insuranceCompanyId || coveragePlan?.insurance_company_id || null,
       claim_amount: claimAmount,
-      status: data?.status || 'SUBMITTED',
-    });
+      status: data?.status || 'SUBMITTED'});
 
     const createdRecord = await insuranceClaimRepository.findById(insuranceClaim.id, CLAIM_INCLUDE);
 
@@ -271,8 +243,7 @@ const createInsuranceClaim = async (data, userId, ipAddress) => {
       entity: 'insurance_claim',
       entity_id: insuranceClaim.id,
       diff: { after: insuranceClaim },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapInsuranceClaimForDisplay(createdRecord || insuranceClaim);
   } catch (error) {
@@ -288,8 +259,7 @@ const updateInsuranceClaim = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_claim',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await insuranceClaimRepository.findById(resolvedId, CLAIM_INCLUDE);
 
@@ -302,15 +272,13 @@ const updateInsuranceClaim = async (id, data, userId, ipAddress) => {
       payload.coverage_plan_id = await resolveIdentifierForPayload({
         value: payload.coverage_plan_id,
         field: 'coverage_plan_id',
-        model: 'coverage_plan',
-      });
+        model: 'coverage_plan'});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'invoice_id')) {
       payload.invoice_id = await resolveIdentifierForPayload({
         value: payload.invoice_id,
         field: 'invoice_id',
-        model: 'invoice',
-      });
+        model: 'invoice'});
     }
 
     const insuranceClaim = await insuranceClaimRepository.update(before.id, payload);
@@ -323,8 +291,7 @@ const updateInsuranceClaim = async (id, data, userId, ipAddress) => {
       entity: 'insurance_claim',
       entity_id: insuranceClaim.id,
       diff: { before, after: insuranceClaim },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapInsuranceClaimForDisplay(updatedRecord || insuranceClaim);
   } catch (error) {
@@ -340,8 +307,7 @@ const deleteInsuranceClaim = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_claim',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await insuranceClaimRepository.findById(resolvedId, CLAIM_INCLUDE);
 
@@ -358,8 +324,7 @@ const deleteInsuranceClaim = async (id, userId, ipAddress) => {
       entity: 'insurance_claim',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -373,8 +338,7 @@ const submitInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_claim',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await insuranceClaimRepository.findById(resolvedId, CLAIM_INCLUDE);
 
@@ -399,19 +363,15 @@ const submitInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
           tenant_id: tenantId,
           OR: [
             { coverage_plan_id: before.coverage_plan_id },
-            { coverage_plan_id: null },
-          ],
-        },
-        orderBy: { updated_at: 'desc' },
-      });
+            { coverage_plan_id: null }]},
+        orderBy: { updated_at: 'desc' }});
 
       if (integration) {
         const adapter = getInsurerAdapter(integration);
         adapterResult = await adapter.submitClaim({
           claim: before,
           invoice: before.invoice,
-          notes: data.notes || null,
-        });
+          notes: data.notes || null});
       }
     }
 
@@ -428,8 +388,7 @@ const submitInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
       ...(adapterResult?.payerReference
         ? { payer_reference: adapterResult.payerReference }
         : {}),
-      ...(data.notes !== undefined ? { notes: data.notes } : {}),
-    });
+      ...(data.notes !== undefined ? { notes: data.notes } : {})});
     const updatedRecord = await insuranceClaimRepository.findById(insuranceClaim.id, CLAIM_INCLUDE);
 
     createAuditLog({
@@ -443,11 +402,8 @@ const submitInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
         after: insuranceClaim,
         metadata: {
           notes: data.notes || null,
-          adapter: adapterResult || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          adapter: adapterResult || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     return mapInsuranceClaimForDisplay(updatedRecord || insuranceClaim);
   } catch (error) {
@@ -463,8 +419,7 @@ const reconcileInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_claim',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await insuranceClaimRepository.findById(resolvedId, CLAIM_INCLUDE);
 
@@ -481,8 +436,7 @@ const reconcileInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
       ...(data.settlement_amount !== undefined ? { settlement_amount: data.settlement_amount } : {}),
       ...(data.payer_reference !== undefined ? { payer_reference: data.payer_reference } : {}),
       ...(data.notes !== undefined ? { notes: data.notes } : {}),
-      ...(before.status === 'REJECTED' && data.status === 'SUBMITTED' ? { resubmitted_at: new Date() } : {}),
-    });
+      ...(before.status === 'REJECTED' && data.status === 'SUBMITTED' ? { resubmitted_at: new Date() } : {})});
     const updatedRecord = await insuranceClaimRepository.findById(insuranceClaim.id, CLAIM_INCLUDE);
 
     createAuditLog({
@@ -495,11 +449,8 @@ const reconcileInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
         before,
         after: insuranceClaim,
         metadata: {
-          notes: data.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: data.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     return mapInsuranceClaimForDisplay(updatedRecord || insuranceClaim);
   } catch (error) {
@@ -515,8 +466,7 @@ const syncInsuranceClaimStatus = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_claim',
-      identifier: id,
-    });
+      identifier: id});
     const before = await insuranceClaimRepository.findById(resolvedId, CLAIM_INCLUDE);
     if (!before) {
       throw new HttpError('errors.insurance_claim.not_found', 404);
@@ -533,8 +483,7 @@ const syncInsuranceClaimStatus = async (id, userId, ipAddress) => {
     if (tenantId) {
       const orFilters = [
         { coverage_plan_id: before.coverage_plan_id },
-        { coverage_plan_id: null, insurance_company_id: null },
-      ];
+        { coverage_plan_id: null, insurance_company_id: null }];
       if (before.insurance_company_id) {
         orFilters.splice(1, 0, { insurance_company_id: before.insurance_company_id });
       }
@@ -543,17 +492,14 @@ const syncInsuranceClaimStatus = async (id, userId, ipAddress) => {
           deleted_at: null,
           is_enabled: true,
           tenant_id: tenantId,
-          OR: orFilters,
-        },
-        orderBy: { updated_at: 'desc' },
-      });
+          OR: orFilters},
+        orderBy: { updated_at: 'desc' }});
 
       if (integration) {
         const adapter = getInsurerAdapter(integration);
         adapterResult = await adapter.getClaimStatus({
           payerReference: before.payer_reference,
-          claim: before,
-        });
+          claim: before});
       }
     }
 
@@ -575,8 +521,7 @@ const syncInsuranceClaimStatus = async (id, userId, ipAddress) => {
             : undefined,
         payer_reference:
           adapterResult.payerReference || before.payer_reference || undefined,
-        notes: adapterResult.message || undefined,
-      },
+        notes: adapterResult.message || undefined},
       userId,
       ipAddress
     );
@@ -598,14 +543,12 @@ const applyInsurerWebhook = async (payload = {}, userId = null, ipAddress = null
     let integration = null;
     if (integrationId) {
       integration = await prisma.insurer_integration.findFirst({
-        where: { id: integrationId, deleted_at: null, is_enabled: true },
-      });
+        where: { id: integrationId, deleted_at: null, is_enabled: true }});
     }
     if (!integration) {
       integration = await prisma.insurer_integration.findFirst({
         where: { deleted_at: null, is_enabled: true },
-        orderBy: { updated_at: 'desc' },
-      });
+        orderBy: { updated_at: 'desc' }});
     }
 
     const adapter = getInsurerAdapter(integration || { adapter_type: 'STUB' });
@@ -617,8 +560,7 @@ const applyInsurerWebhook = async (payload = {}, userId = null, ipAddress = null
 
     const claim = await prisma.insurance_claim.findFirst({
       where: { deleted_at: null, payer_reference: payerReference },
-      orderBy: { updated_at: 'desc' },
-    });
+      orderBy: { updated_at: 'desc' }});
     if (!claim) {
       throw new HttpError('errors.insurance_claim.not_found', 404);
     }
@@ -630,8 +572,7 @@ const applyInsurerWebhook = async (payload = {}, userId = null, ipAddress = null
         status: nextStatus,
         settlement_amount: parsed.settlementAmount,
         payer_reference: payerReference,
-        notes: `Webhook: ${parsed.event || 'claim.status'}`,
-      },
+        notes: `Webhook: ${parsed.event || 'claim.status'}`},
       userId,
       ipAddress
     );
@@ -650,5 +591,4 @@ module.exports = {
   submitInsuranceClaim,
   reconcileInsuranceClaim,
   syncInsuranceClaimStatus,
-  applyInsurerWebhook,
-};
+  applyInsurerWebhook};

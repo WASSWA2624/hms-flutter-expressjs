@@ -40,7 +40,7 @@ describe('Imaging Study Repository', () => {
       expect(result).toEqual(mockImagingStudy);
       expect(prisma.imaging_study.findFirst).toHaveBeenCalledWith({
         where: { id: '123e4567-e89b-12d3-a456-426614174000', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -86,7 +86,7 @@ describe('Imaging Study Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

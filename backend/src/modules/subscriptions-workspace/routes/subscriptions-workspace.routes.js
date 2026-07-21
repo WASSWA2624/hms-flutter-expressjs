@@ -12,17 +12,14 @@ const {
   planDetailQuerySchema,
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
-  workspaceQuerySchema,
-} = require('@validations/subscriptions-workspace/subscriptions-workspace.schema');
+  workspaceQuerySchema} = require('@validations/subscriptions-workspace/subscriptions-workspace.schema');
 
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     files: 1,
-    fileSize: 10 * 1024 * 1024,
-  },
-});
+    fileSize: 10 * 1024 * 1024}});
 
 const requireSubscriptionsWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('subscriptions_workspace_v1')) {

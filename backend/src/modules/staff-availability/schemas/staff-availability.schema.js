@@ -10,11 +10,9 @@ const availabilityStatusEnum = z.enum(['PREFERRED', 'AVAILABLE', 'UNAVAILABLE'])
 
 const availabilitySlotSchema = z.object({
   start_time: timeStringSchema,
-  end_time: timeStringSchema,
-}).refine((slot) => slot.end_time > slot.start_time, {
+  end_time: timeStringSchema}).refine((slot) => slot.end_time > slot.start_time, {
   message: 'End time must be after start time',
-  path: ['end_time'],
-});
+  path: ['end_time']});
 
 const validateNonOverlappingSlots = (timeSlots, ctx, pathPrefix = 'time_slots') => {
   if (!Array.isArray(timeSlots) || timeSlots.length < 2) {
@@ -25,8 +23,7 @@ const validateNonOverlappingSlots = (timeSlots, ctx, pathPrefix = 'time_slots') 
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'Time slots on the same day must not overlap',
-      path: [pathPrefix],
-    });
+      path: [pathPrefix]});
   }
 };
 
@@ -39,14 +36,12 @@ const createStaffAvailabilitySchema = z.object({
   preference: availabilityStatusEnum.default('AVAILABLE'),
   status: availabilityStatusEnum.optional(),
   effective_from: isoDateSchema,
-  effective_to: isoDateSchema.optional().nullable(),
-}).superRefine((data, ctx) => {
+  effective_to: isoDateSchema.optional().nullable()}).superRefine((data, ctx) => {
   if (!data.time_slots && (!data.start_time || !data.end_time)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'A time slot or start/end time is required',
-      path: ['time_slots'],
-    });
+      path: ['time_slots']});
   }
 
   if (data.time_slots) {
@@ -56,8 +51,7 @@ const createStaffAvailabilitySchema = z.object({
 
 const batchAvailabilityDaySchema = z.object({
   day_of_week: z.number().int().min(0).max(6),
-  time_slots: z.array(availabilitySlotSchema).min(1),
-}).superRefine((data, ctx) => {
+  time_slots: z.array(availabilitySlotSchema).min(1)}).superRefine((data, ctx) => {
   validateNonOverlappingSlots(data.time_slots, ctx);
 });
 
@@ -67,16 +61,14 @@ const batchCreateStaffAvailabilitySchema = z.object({
   status: availabilityStatusEnum.optional(),
   effective_from: isoDateSchema,
   effective_to: isoDateSchema.optional().nullable(),
-  days: z.array(batchAvailabilityDaySchema).min(1).max(7),
-}).superRefine((data, ctx) => {
+  days: z.array(batchAvailabilityDaySchema).min(1).max(7)}).superRefine((data, ctx) => {
   const seenDays = new Set();
   data.days.forEach((day, index) => {
     if (seenDays.has(day.day_of_week)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Each day_of_week may only appear once in a batch',
-        path: ['days', index, 'day_of_week'],
-      });
+        path: ['days', index, 'day_of_week']});
       return;
     }
     seenDays.add(day.day_of_week);
@@ -91,8 +83,7 @@ const updateStaffAvailabilitySchema = z.object({
   preference: availabilityStatusEnum.optional(),
   status: availabilityStatusEnum.optional(),
   effective_from: isoDateSchema.optional(),
-  effective_to: isoDateSchema.optional().nullable(),
-}).superRefine((data, ctx) => {
+  effective_to: isoDateSchema.optional().nullable()}).superRefine((data, ctx) => {
   if (data.time_slots) {
     validateNonOverlappingSlots(data.time_slots, ctx);
   }
@@ -104,13 +95,11 @@ const listStaffAvailabilitiesQuerySchema = listQuerySchema.extend({
   staff_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
   day_of_week: z.coerce.number().int().min(0).max(6).optional(),
   preference: availabilityStatusEnum.optional(),
-  status: availabilityStatusEnum.optional(),
-});
+  status: availabilityStatusEnum.optional()});
 
 module.exports = {
   createStaffAvailabilitySchema,
   batchCreateStaffAvailabilitySchema,
   updateStaffAvailabilitySchema,
   staffAvailabilityIdParamsSchema,
-  listStaffAvailabilitiesQuerySchema,
-};
+  listStaffAvailabilitiesQuerySchema};

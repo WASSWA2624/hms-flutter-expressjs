@@ -11,8 +11,7 @@ jest.mock('@repositories/module/module.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(),
-  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 
 const moduleRepository = require('@repositories/module/module.repository');
 const { createAuditLog } = require('@lib/audit');
@@ -22,8 +21,7 @@ const {
   getModuleById,
   createModule,
   updateModule,
-  deleteModule,
-} = require('@services/module/module.service');
+  deleteModule} = require('@services/module/module.service');
 
 describe('Module Service', () => {
   const moduleRecord = {
@@ -34,8 +32,7 @@ describe('Module Service', () => {
     description: 'Test description',
     created_at: new Date('2026-01-01T00:00:00.000Z'),
     updated_at: new Date('2026-01-02T00:00:00.000Z'),
-    version: 3,
-  };
+    version: 3};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -58,20 +55,16 @@ describe('Module Service', () => {
           name: 'Test Module',
           slug: 'test-module',
           description: 'Test description',
-          version: 3,
-        }),
-      ]);
+          version: 3})]);
       expect(result.pagination).toEqual({
         page: 1,
         limit: 20,
         total: 10,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
       expect(moduleRepository.findMany).toHaveBeenCalledWith({}, 0, 20, {
-        created_at: 'desc',
-      });
+        created_at: 'desc'});
     });
 
     it('should filter by search term', async () => {
@@ -85,9 +78,7 @@ describe('Module Service', () => {
         expect.objectContaining({
           OR: expect.arrayContaining([
             { name: { contains: 'test', mode: 'insensitive' } },
-            { description: { contains: 'test', mode: 'insensitive' } },
-          ]),
-        }),
+            { description: { contains: 'test', mode: 'insensitive' } }])}),
         0,
         20,
         { created_at: 'desc' }
@@ -106,11 +97,9 @@ describe('Module Service', () => {
         total: 50,
         totalPages: 3,
         hasNextPage: true,
-        hasPreviousPage: true,
-      });
+        hasPreviousPage: true});
       expect(moduleRepository.findMany).toHaveBeenCalledWith({}, 20, 20, {
-        created_at: 'desc',
-      });
+        created_at: 'desc'});
     });
 
     it('should use custom sort order', async () => {
@@ -120,8 +109,7 @@ describe('Module Service', () => {
       await listModules({}, 1, 20, 'name', 'asc');
 
       expect(moduleRepository.findMany).toHaveBeenCalledWith({}, 0, 20, {
-        name: 'asc',
-      });
+        name: 'asc'});
     });
   });
 
@@ -135,8 +123,7 @@ describe('Module Service', () => {
         expect.objectContaining({
           id: 'MOD0001',
           display_id: 'MOD0001',
-          name: 'Test Module',
-        })
+          name: 'Test Module'})
       );
       expect(moduleRepository.findById).toHaveBeenCalledWith(moduleRecord.id);
     });
@@ -154,19 +141,16 @@ describe('Module Service', () => {
       const moduleData = {
         name: 'New Module',
         slug: 'new-module',
-        description: 'New description',
-      };
+        description: 'New description'};
       const createdRecord = {
         ...moduleRecord,
         name: 'New Module',
         slug: 'new-module',
-        description: 'New description',
-      };
+        description: 'New description'};
       const context = {
         user: { id: 'user-123' },
         ip: '127.0.0.1',
-        tenant_id: 'tenant-123',
-      };
+        tenant_id: 'tenant-123'};
 
       moduleRepository.create.mockResolvedValue(createdRecord);
       moduleRepository.findById.mockResolvedValue(createdRecord);
@@ -178,8 +162,7 @@ describe('Module Service', () => {
           id: 'MOD0001',
           name: 'New Module',
           slug: 'new-module',
-          description: 'New description',
-        })
+          description: 'New description'})
       );
       expect(moduleRepository.create).toHaveBeenCalledWith(
         expect.objectContaining(moduleData)
@@ -191,8 +174,7 @@ describe('Module Service', () => {
         entity_id: createdRecord.id,
         diff: { after: createdRecord },
         ip_address: '127.0.0.1',
-        tenant_id: 'tenant-123',
-      });
+        tenant_id: 'tenant-123'});
     });
 
     it('should create module even if audit log fails', async () => {
@@ -200,8 +182,7 @@ describe('Module Service', () => {
       const context = {
         user: { id: 'user-123' },
         ip: '127.0.0.1',
-        tenant_id: 'tenant-123',
-      };
+        tenant_id: 'tenant-123'};
 
       moduleRepository.create.mockResolvedValue(createdRecord);
       moduleRepository.findById.mockResolvedValue(createdRecord);
@@ -212,8 +193,7 @@ describe('Module Service', () => {
       expect(result).toEqual(
         expect.objectContaining({
           id: 'MOD0001',
-          name: 'New Module',
-        })
+          name: 'New Module'})
       );
     });
   });
@@ -223,13 +203,11 @@ describe('Module Service', () => {
       const existingModule = moduleRecord;
       const updatedModule = {
         ...moduleRecord,
-        name: 'Updated Module',
-      };
+        name: 'Updated Module'};
       const context = {
         user: { id: 'user-123' },
         ip: '127.0.0.1',
-        tenant_id: 'tenant-123',
-      };
+        tenant_id: 'tenant-123'};
 
       moduleRepository.findById
         .mockResolvedValueOnce(existingModule)
@@ -241,12 +219,10 @@ describe('Module Service', () => {
       expect(result).toEqual(
         expect.objectContaining({
           id: 'MOD0001',
-          name: 'Updated Module',
-        })
+          name: 'Updated Module'})
       );
       expect(moduleRepository.update).toHaveBeenCalledWith(moduleRecord.id, {
-        name: 'Updated Module',
-      });
+        name: 'Updated Module'});
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-123',
         action: 'UPDATE',
@@ -254,8 +230,7 @@ describe('Module Service', () => {
         entity_id: updatedModule.id,
         diff: { before: existingModule, after: updatedModule },
         ip_address: '127.0.0.1',
-        tenant_id: 'tenant-123',
-      });
+        tenant_id: 'tenant-123'});
     });
 
     it('should throw HttpError if module not found', async () => {
@@ -275,13 +250,11 @@ describe('Module Service', () => {
       const existingModule = moduleRecord;
       const deletedModule = {
         ...moduleRecord,
-        deleted_at: new Date('2026-01-03T00:00:00.000Z'),
-      };
+        deleted_at: new Date('2026-01-03T00:00:00.000Z')};
       const context = {
         user: { id: 'user-123' },
         ip: '127.0.0.1',
-        tenant_id: 'tenant-123',
-      };
+        tenant_id: 'tenant-123'};
 
       moduleRepository.findById.mockResolvedValue(existingModule);
       moduleRepository.softDelete.mockResolvedValue(deletedModule);
@@ -298,8 +271,7 @@ describe('Module Service', () => {
         entity_id: deletedModule.id,
         diff: { before: existingModule, after: deletedModule },
         ip_address: '127.0.0.1',
-        tenant_id: 'tenant-123',
-      });
+        tenant_id: 'tenant-123'});
     });
 
     it('should throw HttpError if module not found', async () => {

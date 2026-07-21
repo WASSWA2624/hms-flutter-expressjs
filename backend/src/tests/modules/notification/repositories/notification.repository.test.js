@@ -42,7 +42,7 @@ describe('Notification Repository', () => {
       expect(result).toEqual(mockNotification);
       expect(prisma.notification.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -83,7 +83,7 @@ describe('Notification Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

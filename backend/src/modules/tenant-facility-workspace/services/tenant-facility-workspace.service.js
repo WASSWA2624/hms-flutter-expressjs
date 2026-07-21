@@ -8,15 +8,13 @@ const {
   buildFacilityLogoPublicPath,
   deleteFacilityLogoFromStorage,
   buildStableFacilityLogoKey,
-  MAX_FACILITY_LOGO_BASENAME,
-} = require('@lib/storage/facility-logo-storage');
+  MAX_FACILITY_LOGO_BASENAME} = require('@lib/storage/facility-logo-storage');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   canWriteHrFacilitySetup,
-  isHrSetupOnlyUser,
-} = require('@lib/setup/hr-facility-setup');
+  isHrSetupOnlyUser} = require('@lib/setup/hr-facility-setup');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { serializeSubscription } = require('@lib/subscriptions/serializers');
 
@@ -42,8 +40,7 @@ const buildIdentifierMap = (recordGroups = []) => {
 const buildSerializeContext = (tenant, facility, facilityRecords = {}) => {
   const scope = {
     tenant_id: safePublicId(tenant?.human_friendly_id, tenant?.id),
-    facility_id: safePublicId(facility?.human_friendly_id, facility?.id),
-  };
+    facility_id: safePublicId(facility?.human_friendly_id, facility?.id)};
 
   const idMap = buildIdentifierMap([
     tenant ? [tenant] : [],
@@ -53,8 +50,7 @@ const buildSerializeContext = (tenant, facility, facilityRecords = {}) => {
     facilityRecords.units || [],
     facilityRecords.wards || [],
     facilityRecords.rooms || [],
-    facilityRecords.beds || [],
-  ]);
+    facilityRecords.beds || []]);
 
   return { scope, idMap };
 };
@@ -73,8 +69,7 @@ const resolveFk = (value, context, scopeKey = null) => {
 const WRITE_ROLES = new Set([
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-]);
+  ROLES.FACILITY_ADMIN]);
 
 const TENANT_WRITE_ROLES = new Set([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN]);
 
@@ -101,16 +96,14 @@ const canManageTenant = (user = {}) =>
   roleList(user).some((entry) => TENANT_WRITE_ROLES.has(entry)) ||
   hasAnyPermission(user, [
     PERMISSIONS.TENANT_ADMIN,
-    PERMISSIONS.SYSTEM_ADMIN,
-  ]);
+    PERMISSIONS.SYSTEM_ADMIN]);
 
 const canManageFacility = (user = {}) =>
   roleList(user).some((entry) => WRITE_ROLES.has(entry)) ||
   hasAnyPermission(user, [
     PERMISSIONS.FACILITY_ADMIN,
     PERMISSIONS.TENANT_ADMIN,
-    PERMISSIONS.SYSTEM_ADMIN,
-  ]);
+    PERMISSIONS.SYSTEM_ADMIN]);
 
 const canViewSubscriptions = (user = {}) =>
   roleList(user).includes(ROLES.SUPER_ADMIN);
@@ -135,9 +128,7 @@ const serializeTenant = (record) => {
     slug: record.slug || null,
     is_active: Boolean(record.is_active),
     extension_json: {
-      currency,
-    },
-  };
+      currency}};
 };
 
 const serializeFacility = (record, context = null) => {
@@ -164,9 +155,7 @@ const serializeFacility = (record, context = null) => {
     is_active: Boolean(record.is_active),
     extension_json: {
       logo_url: extensionJson.logo_url || null,
-      currency,
-    },
-  };
+      currency}};
 };
 
 const serializeBranch = (record, context = null) => ({
@@ -179,8 +168,7 @@ const serializeBranch = (record, context = null) => ({
     : safePublicId(record.facility_id),
   name: record.name,
   is_active: Boolean(record.is_active),
-  deleted_at: record.deleted_at || null,
-});
+  deleted_at: record.deleted_at || null});
 
 const serializeDepartment = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
@@ -190,15 +178,11 @@ const serializeDepartment = (record, context = null) => ({
   facility_id: context
     ? resolveFk(record.facility_id, context, 'facility_id')
     : safePublicId(record.facility_id),
-  branch_id: context
-    ? resolveFk(record.branch_id, context)
-    : safePublicId(record.branch_id),
   name: record.name,
   short_name: record.short_name || null,
   department_type: record.department_type,
   is_active: Boolean(record.is_active),
-  deleted_at: record.deleted_at || null,
-});
+  deleted_at: record.deleted_at || null});
 
 const serializeUnit = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
@@ -213,8 +197,7 @@ const serializeUnit = (record, context = null) => ({
     : safePublicId(record.department_id),
   name: record.name,
   is_active: Boolean(record.is_active),
-  deleted_at: record.deleted_at || null,
-});
+  deleted_at: record.deleted_at || null});
 
 const serializeWard = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
@@ -230,8 +213,7 @@ const serializeWard = (record, context = null) => ({
   name: record.name,
   ward_type: record.ward_type,
   is_active: Boolean(record.is_active),
-  deleted_at: record.deleted_at || null,
-});
+  deleted_at: record.deleted_at || null});
 
 const serializeRoom = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
@@ -244,8 +226,7 @@ const serializeRoom = (record, context = null) => ({
   ward_id: context ? resolveFk(record.ward_id, context) : safePublicId(record.ward_id),
   name: record.name,
   floor: record.floor || null,
-  deleted_at: record.deleted_at || null,
-});
+  deleted_at: record.deleted_at || null});
 
 const serializeBed = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
@@ -259,8 +240,7 @@ const serializeBed = (record, context = null) => ({
   room_id: context ? resolveFk(record.room_id, context) : safePublicId(record.room_id),
   label: record.label,
   status: record.status,
-  deleted_at: record.deleted_at || null,
-});
+  deleted_at: record.deleted_at || null});
 
 const buildContactAddress = (contacts = [], addresses = []) => {
   const phoneContacts = contacts.filter((entry) => entry.contact_type === 'PHONE');
@@ -276,8 +256,7 @@ const buildContactAddress = (contacts = [], addresses = []) => {
     email: email?.value || null,
     address_line1: address?.line1 || null,
     city: address?.city || null,
-    country: address?.country || null,
-  };
+    country: address?.country || null};
 };
 
 const buildChecklist = ({
@@ -289,12 +268,10 @@ const buildChecklist = ({
   units = [],
   wards = [],
   rooms = [],
-  beds = [],
-}) => {
+  beds = []}) => {
   const hasTenant = Boolean(tenant);
   const hasFacilityIdentity =
     Boolean(facility?.name?.trim()) && Boolean(contactAddress?.phone?.trim());
-  const hasBranchesConfigured = branches.length > 0 || hasFacilityIdentity;
   const hasDepartments = departments.length > 0;
   const hasUnitsConfigured = units.length > 0 || departments.length > 0;
   const hasWardsConfigured = wards.length > 0 || rooms.length > 0 || beds.length > 0;
@@ -306,57 +283,46 @@ const buildChecklist = ({
       id: 'tenant',
       label_key: 'tenant_facility.checklist.tenant',
       completed: hasTenant,
-      priority: 1,
-    },
+      priority: 1},
     {
       id: 'branches',
       label_key: 'tenant_facility.checklist.branches',
-      completed: hasBranchesConfigured,
-      priority: 2,
-    },
+      priority: 2},
     {
       id: 'facility_identity',
       label_key: 'tenant_facility.checklist.identity',
       completed: hasFacilityIdentity,
-      priority: 3,
-    },
+      priority: 3},
     {
       id: 'departments',
       label_key: 'tenant_facility.checklist.departments',
       completed: hasDepartments,
-      priority: 4,
-    },
+      priority: 4},
     {
       id: 'units',
       label_key: 'tenant_facility.checklist.units',
       completed: hasUnitsConfigured,
-      priority: 5,
-    },
+      priority: 5},
     {
       id: 'wards',
       label_key: 'tenant_facility.checklist.wards',
       completed: hasWardsConfigured,
-      priority: 6,
-    },
+      priority: 6},
     {
       id: 'rooms',
       label_key: 'tenant_facility.checklist.rooms',
       completed: hasRoomsConfigured,
-      priority: 7,
-    },
+      priority: 7},
     {
       id: 'beds',
       label_key: 'tenant_facility.checklist.beds',
       completed: hasBedsConfigured,
-      priority: 8,
-    },
-  ];
+      priority: 8}];
 
   return {
     completed_count: items.filter((entry) => entry.completed).length,
     total_count: items.length,
-    items,
-  };
+    items};
 };
 
 const buildSubscriptionSummary = (summaryRecord) => {
@@ -368,8 +334,7 @@ const buildSubscriptionSummary = (summaryRecord) => {
     plan_label: serialized?.plan_label || summaryRecord.subscription?.plan?.name || null,
     status: serialized?.status || summaryRecord.subscription?.status || null,
     active_modules_count: summaryRecord.active_modules_count || 0,
-    subscription_id: serialized?.id || null,
-  };
+    subscription_id: serialized?.id || null};
 };
 
 const selectFacility = (facilities = [], facilityId = null) => {
@@ -407,7 +372,6 @@ const getSetup = async (filters = {}, user = {}) => {
       facility: null,
       facilities: [],
       contact_address: buildContactAddress(),
-      branches: [],
       departments: [],
       units: [],
       wards: [],
@@ -420,16 +384,12 @@ const getSetup = async (filters = {}, user = {}) => {
         can_manage_facility: canManageFacility(user),
         can_manage_hr_setup: canWriteHrFacilitySetup(user),
         can_view_subscriptions: canViewSubscriptions(user),
-        is_hr_setup_only: isHrSetupOnlyUser(user),
-      },
+        is_hr_setup_only: isHrSetupOnlyUser(user)},
       lookups: {
         tenants: tenants.map((entry) => ({
           id: safePublicId(entry.human_friendly_id, entry.id),
-          label: entry.name,
-        })),
-        facilities: [],
-      },
-    };
+          label: entry.name})),
+        facilities: []}};
   }
 
   const scope = scopeResult.scope;
@@ -440,8 +400,7 @@ const getSetup = async (filters = {}, user = {}) => {
     repository.findFacilities(scope.tenant_id),
     canViewSubscriptions(user)
       ? repository.findSubscriptionSummary(scope.tenant_id)
-      : Promise.resolve(null),
-  ]);
+      : Promise.resolve(null)]);
 
   const tenant = tenants[0] || null;
   const selectedFacility = selectFacility(facilities, requestedFacilityId);
@@ -451,12 +410,10 @@ const getSetup = async (filters = {}, user = {}) => {
   const facilityRecords = await repository.findFacilityRecords(
     {
       tenant_id: scope.tenant_id,
-      facility_id: selectedFacility?.id || scope.facility_id || null,
-    },
+      facility_id: selectedFacility?.id || scope.facility_id || null},
     {
       includeDeleted:
-        filters.include_deleted === true || filters.include_deleted === 'true',
-    }
+        filters.include_deleted === true || filters.include_deleted === 'true'}
   );
   const contactAddress = buildContactAddress(
     facilityRecords.contacts,
@@ -494,28 +451,22 @@ const getSetup = async (filters = {}, user = {}) => {
       units: facilityRecords.units,
       wards: facilityRecords.wards,
       rooms: facilityRecords.rooms,
-      beds: facilityRecords.beds,
-    }),
+      beds: facilityRecords.beds}),
     subscription_summary: buildSubscriptionSummary(subscriptionSummary),
     permissions: {
       can_manage_tenant: canManageTenant(user),
       can_manage_facility: canManageFacility(user),
       can_manage_hr_setup: canWriteHrFacilitySetup(user),
       can_view_subscriptions: canViewSubscriptions(user),
-      is_hr_setup_only: isHrSetupOnlyUser(user),
-    },
+      is_hr_setup_only: isHrSetupOnlyUser(user)},
     lookups: {
       tenants: tenants.map((entry) => ({
         id: safePublicId(entry.human_friendly_id, entry.id),
-        label: entry.name,
-      })),
+        label: entry.name})),
       facilities: facilities.map((entry) => ({
         id: safePublicId(entry.human_friendly_id, entry.id),
         label: entry.name,
-        facility_type: entry.facility_type,
-      })),
-    },
-  };
+        facility_type: entry.facility_type}))}};
 
   return payload;
 };
@@ -524,8 +475,7 @@ const ACCEPTED_LOGO_MIME_TYPES = new Set([
   'image/jpeg',
   'image/jpg',
   'image/png',
-  'image/webp',
-]);
+  'image/webp']);
 
 const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 
@@ -535,8 +485,7 @@ const normalizeUploadedLogo = (file = {}) => ({
     .trim()
     .toLowerCase(),
   size: Number(file?.size || 0),
-  buffer: file?.buffer,
-});
+  buffer: file?.buffer});
 
 /** @deprecated Prefer buildStableFacilityLogoKey — kept for tests/compat. */
 const buildFacilityLogoBasename = (facilityName, originalName) => {
@@ -576,8 +525,7 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
   const facilityId = await resolveIdentifierForFilter({
     value: facilityIdentifier,
     model: 'facility',
-    where: { tenant_id: scopeResult.scope.tenant_id },
-  });
+    where: { tenant_id: scopeResult.scope.tenant_id }});
   if (!facilityId) {
     throw new HttpError('errors.facility.not_found', 404);
   }
@@ -597,11 +545,9 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
   const storage = createStorageService();
   const { storageKey, previousKey } = resolveFacilityLogoUploadKey({
     facilityId: facility.id,
-    existingLogoUrl,
-  });
+    existingLogoUrl});
   const uploaded = await storage.upload(normalizedFile.buffer, storageKey, {
-    mimeType: normalizedFile.mimetype,
-  });
+    mimeType: normalizedFile.mimetype});
   const storedPath = uploaded?.path || storageKey;
   // Persist a client-loadable relative URL under /uploads.
   const logoUrl = buildFacilityLogoPublicPath(storedPath, { cacheBust: true });
@@ -609,9 +555,7 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
   await facilityRepository.update(facility.id, {
     extension_json: {
       ...extensionJson,
-      logo_url: logoUrl,
-    },
-  });
+      logo_url: logoUrl}});
 
   if (previousKey) {
     await deleteFacilityLogoFromStorage(storage, previousKey);
@@ -619,8 +563,7 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
 
   return {
     logo_url: logoUrl,
-    facility_id: safePublicId(facility.human_friendly_id, facility.id),
-  };
+    facility_id: safePublicId(facility.human_friendly_id, facility.id)};
 };
 
 const deleteFacilityLogo = async (facilityIdentifier, user = {}) => {
@@ -632,8 +575,7 @@ const deleteFacilityLogo = async (facilityIdentifier, user = {}) => {
   const facilityId = await resolveIdentifierForFilter({
     value: facilityIdentifier,
     model: 'facility',
-    where: { tenant_id: scopeResult.scope.tenant_id },
-  });
+    where: { tenant_id: scopeResult.scope.tenant_id }});
   if (!facilityId) {
     throw new HttpError('errors.facility.not_found', 404);
   }
@@ -658,14 +600,11 @@ const deleteFacilityLogo = async (facilityIdentifier, user = {}) => {
   await facilityRepository.update(facility.id, {
     extension_json: {
       ...extensionJson,
-      logo_url: null,
-    },
-  });
+      logo_url: null}});
 
   return {
     logo_url: null,
-    facility_id: safePublicId(facility.human_friendly_id, facility.id),
-  };
+    facility_id: safePublicId(facility.human_friendly_id, facility.id)};
 };
 
 module.exports = {
@@ -673,5 +612,4 @@ module.exports = {
   buildStableFacilityLogoKey,
   getSetup,
   uploadFacilityLogo,
-  deleteFacilityLogo,
-};
+  deleteFacilityLogo};

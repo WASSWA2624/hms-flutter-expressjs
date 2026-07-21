@@ -12,16 +12,14 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const REFERRAL_TRANSITIONS = Object.freeze({
   REQUESTED: new Set(['APPROVED', 'CANCELLED']),
   APPROVED: new Set(['IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
   IN_PROGRESS: new Set(['COMPLETED', 'CANCELLED']),
   COMPLETED: new Set([]),
-  CANCELLED: new Set([]),
-});
+  CANCELLED: new Set([])});
 
 const sanitizeString = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -29,28 +27,21 @@ const REFERRAL_WITH_RELATIONS_INCLUDE = {
   encounter: {
     select: {
       id: true,
-      human_friendly_id: true,
-    },
-  },
+      human_friendly_id: true}},
   from_department: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
       short_name: true,
-      department_type: true,
-    },
-  },
+      department_type: true}},
   to_department: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
       short_name: true,
-      department_type: true,
-    },
-  },
-};
+      department_type: true}}};
 
 const mapReferralRecord = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -72,8 +63,7 @@ const mapReferralRecord = (record) => {
       sanitizeString(toDepartment?.name) || sanitizeString(toDepartment?.short_name),
     to_department_display_id:
       sanitizeString(toDepartment?.human_friendly_id) ||
-      sanitizeString(record.to_department_id),
-  };
+      sanitizeString(record.to_department_id)};
 };
 
 const fetchReferralForClinicalDisplay = async (id) =>
@@ -101,8 +91,7 @@ const assertTransitionOrThrow = (fromStatus, toStatus) => {
     throw new HttpError('errors.referral.invalid_status_transition', 400, [
       { field: 'status' },
       { from: fromStatus },
-      { to: toStatus },
-    ]);
+      { to: toStatus }]);
   }
 };
 
@@ -112,13 +101,11 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: Math.ceil(total / limit),
   hasNextPage: page < Math.ceil(total / limit),
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const buildEmptyListResult = (page, limit) => ({
   referrals: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const resolveReferralPayload = async (data = {}, { isCreate = false } = {}) => {
   const payload = { ...data };
@@ -128,8 +115,7 @@ const resolveReferralPayload = async (data = {}, { isCreate = false } = {}) => {
       value: payload.encounter_id,
       field: 'encounter_id',
       model: 'encounter',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'from_department_id')) {
@@ -138,8 +124,7 @@ const resolveReferralPayload = async (data = {}, { isCreate = false } = {}) => {
       field: 'from_department_id',
       model: 'department',
       where: { deleted_at: null },
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'to_department_id')) {
@@ -148,8 +133,7 @@ const resolveReferralPayload = async (data = {}, { isCreate = false } = {}) => {
       field: 'to_department_id',
       model: 'department',
       where: { deleted_at: null },
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'external_facility_name')) {
@@ -188,8 +172,7 @@ const listReferrals = async (filters, page, limit, sortBy, order, userId, ipAddr
       const encounterId = await resolveIdentifierForFilter({
         value: filters.encounter_id,
         model: 'encounter',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (encounterId === null) return buildEmptyListResult(page, limit);
       if (encounterId !== undefined) whereClause.encounter_id = encounterId;
     }
@@ -197,8 +180,7 @@ const listReferrals = async (filters, page, limit, sortBy, order, userId, ipAddr
       const fromDepartmentId = await resolveIdentifierForFilter({
         value: filters.from_department_id,
         model: 'department',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (fromDepartmentId === null) return buildEmptyListResult(page, limit);
       if (fromDepartmentId !== undefined) whereClause.from_department_id = fromDepartmentId;
     }
@@ -206,15 +188,13 @@ const listReferrals = async (filters, page, limit, sortBy, order, userId, ipAddr
       const toDepartmentId = await resolveIdentifierForFilter({
         value: filters.to_department_id,
         model: 'department',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (toDepartmentId === null) return buildEmptyListResult(page, limit);
       if (toDepartmentId !== undefined) whereClause.to_department_id = toDepartmentId;
     }
     if (filters.external_facility_name) {
       whereClause.external_facility_name = {
-        contains: sanitizeString(filters.external_facility_name),
-      };
+        contains: sanitizeString(filters.external_facility_name)};
     }
     if (filters.referral_reason_code) {
       whereClause.referral_reason_code = sanitizeString(filters.referral_reason_code);
@@ -229,13 +209,11 @@ const listReferrals = async (filters, page, limit, sortBy, order, userId, ipAddr
         orderBy,
         REFERRAL_WITH_RELATIONS_INCLUDE
       ),
-      referralRepository.count(whereClause),
-    ]);
+      referralRepository.count(whereClause)]);
 
     return {
       referrals: referrals.map(mapReferralRecord),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -268,8 +246,7 @@ const createReferral = async (data, userId, ipAddress) => {
   try {
     const payload = {
       ...(await resolveReferralPayload(data, { isCreate: true })),
-      status: 'REQUESTED',
-    };
+      status: 'REQUESTED'};
 
     const referral = await referralRepository.create(payload);
 
@@ -279,8 +256,7 @@ const createReferral = async (data, userId, ipAddress) => {
       entity: 'referral',
       entity_id: referral.id,
       diff: { after: referral },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return fetchReferralForClinicalDisplay(referral.id);
   } catch (error) {
@@ -319,8 +295,7 @@ const updateReferral = async (id, data, userId, ipAddress) => {
       entity: 'referral',
       entity_id: referral.id,
       diff: { before, after: referral },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return fetchReferralForClinicalDisplay(referral.id);
   } catch (error) {
@@ -348,8 +323,7 @@ const deleteReferral = async (id, userId, ipAddress) => {
       entity: 'referral',
       entity_id: id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -384,11 +358,8 @@ const redeemReferral = async (id, data = {}, userId, ipAddress) => {
         before,
         after: referral,
         metadata: {
-          notes: data.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: data.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     return fetchReferralForClinicalDisplay(referral.id);
   } catch (error) {
@@ -420,10 +391,8 @@ const transitionReferral = async (id, targetStatus, data = {}, userId, ipAddress
       diff: {
         before,
         after: referral,
-        metadata: { notes: data?.notes || null },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+        metadata: { notes: data?.notes || null }},
+      ip_address: ipAddress}).catch(() => {});
 
     return fetchReferralForClinicalDisplay(referral.id);
   } catch (error) {
@@ -450,5 +419,4 @@ module.exports = {
   redeemReferral,
   approveReferral,
   startReferral,
-  cancelReferral,
-};
+  cancelReferral};

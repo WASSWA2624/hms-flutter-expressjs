@@ -43,7 +43,7 @@ describe('PHI Access Log Repository', () => {
 
       expect(prisma.phi_access_log.findFirst).toHaveBeenCalledWith({
         where: { id: mockId, deleted_at: null },
-        include: {}
+        include: undefined
       });
       expect(result).toEqual(mockPhiAccessLog);
     });
@@ -101,7 +101,7 @@ describe('PHI Access Log Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { accessed_at: 'desc' },
-        include: {}
+        include: undefined
       });
       expect(result).toEqual(mockPhiAccessLogs);
     });
@@ -117,7 +117,7 @@ describe('PHI Access Log Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { accessed_at: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

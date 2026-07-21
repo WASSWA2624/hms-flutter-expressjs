@@ -12,8 +12,7 @@ jest.mock('@repositories/role/role.repository');
 jest.mock('@lib/billing/identifiers', () => ({
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
   resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
-  resolveEntityId: jest.fn(async ({ identifier }) => identifier),
-}));
+  resolveEntityId: jest.fn(async ({ identifier }) => identifier)}));
 // Mock audit log
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue({})
@@ -30,8 +29,7 @@ jest.mock('@lib/authorization/assignable-access', () => {
     ...actual,
     assertPermissionIdsAssignable: jest.fn(async (ids = []) =>
       Array.isArray(ids) ? [...ids] : []
-    ),
-  };
+    )};
 });
 
 const roleRepository = require('@repositories/role/role.repository');
@@ -157,8 +155,7 @@ describe('Role Service', () => {
         {
           name: 'New Role',
           tenant_id: 'tenant-1',
-          permission_ids: ['perm-1', 'perm-2'],
-        },
+          permission_ids: ['perm-1', 'perm-2']},
         'user-123',
         '127.0.0.1',
         { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
@@ -195,14 +192,12 @@ describe('Role Service', () => {
         id: 'role-123',
         name: 'Old Name',
         tenant_id: 'tenant-1',
-        permissions: [],
-      };
+        permissions: []};
       const after = {
         id: 'role-123',
         name: 'New Name',
         tenant_id: 'tenant-1',
-        permissions: [],
-      };
+        permissions: []};
       roleRepository.findById.mockResolvedValue(before);
       roleRepository.update.mockResolvedValue(after);
 
@@ -239,25 +234,21 @@ describe('Role Service', () => {
         id: 'role-123',
         name: 'Custom Clerk',
         tenant_id: 'tenant-1',
-        permissions: [],
-      };
+        permissions: []};
       const deleted = {
         id: 'role-123',
         name: 'Custom Clerk',
         tenant_id: 'tenant-1',
-        deleted_at: new Date(),
-      };
+        deleted_at: new Date()};
       roleRepository.findById.mockResolvedValue(before);
       roleRepository.softDelete.mockResolvedValue({
         role: deleted,
-        detached_user_assignments: 3,
-      });
+        detached_user_assignments: 3});
 
       await deleteRole('role-123', 'user-123', '127.0.0.1', {
         id: 'user-123',
         roles: ['TENANT_ADMIN'],
-        tenant_id: 'tenant-1',
-      });
+        tenant_id: 'tenant-1'});
 
       expect(roleRepository.softDelete).toHaveBeenCalledWith('role-123');
       expect(createAuditLog).toHaveBeenCalledWith({
@@ -268,8 +259,7 @@ describe('Role Service', () => {
         diff: {
           before,
           after: deleted,
-          detached_user_assignments: 3,
-        },
+          detached_user_assignments: 3},
         ip_address: '127.0.0.1'
       });
     });

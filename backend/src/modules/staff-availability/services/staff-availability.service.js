@@ -4,16 +4,13 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 const {
   normalizeSlotList,
-  slotsOverlap,
-} = require('../lib/availability-slots');
+  slotsOverlap} = require('../lib/availability-slots');
 const {
   serializeStaffAvailability,
-  serializeStaffAvailabilityList,
-} = require('../lib/staff-availability.serializer');
+  serializeStaffAvailabilityList} = require('../lib/staff-availability.serializer');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -23,8 +20,7 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const normalizeTimeSlotsPayload = (data = {}) => {
@@ -37,8 +33,7 @@ const normalizeTimeSlotsPayload = (data = {}) => {
     if (slotsOverlap(timeSlots)) {
       throw new HttpError('errors.validation.failed', 400, [{
         field: 'time_slots',
-        message: 'Time slots on the same day must not overlap',
-      }]);
+        message: 'Time slots on the same day must not overlap'}]);
     }
 
     payload.start_time = timeSlots[0].start_time;
@@ -48,9 +43,7 @@ const normalizeTimeSlotsPayload = (data = {}) => {
     payload.time_slots_json = normalizeSlotList([
       {
         start_time: String(payload.start_time).trim(),
-        end_time: String(payload.end_time).trim(),
-      },
-    ]);
+        end_time: String(payload.end_time).trim()}]);
     payload.start_time = payload.time_slots_json[0]?.start_time;
     payload.end_time = payload.time_slots_json[0]?.end_time;
   }
@@ -63,8 +56,7 @@ const normalizeTimeSlotsPayload = (data = {}) => {
 
 const emptyResult = (page, limit) => ({
   items: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const list = async (filters, page, limit, sortBy, order) => {
   const skip = (page - 1) * limit;
@@ -74,8 +66,7 @@ const list = async (filters, page, limit, sortBy, order) => {
   const staffProfileId = await resolveIdentifierForFilter({
     value: filters.staff_profile_id,
     model: 'staff_profile',
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
   if (filters.staff_profile_id && staffProfileId === null) return emptyResult(page, limit);
   if (staffProfileId) whereClause.staff_profile_id = staffProfileId;
 
@@ -85,20 +76,17 @@ const list = async (filters, page, limit, sortBy, order) => {
 
   const [items, total] = await Promise.all([
     staffAvailabilityRepository.findMany(whereClause, skip, limit, orderBy),
-    staffAvailabilityRepository.count(whereClause),
-  ]);
+    staffAvailabilityRepository.count(whereClause)]);
   return {
     items: serializeStaffAvailabilityList(items),
-    pagination: buildPagination(page, limit, total),
-  };
+    pagination: buildPagination(page, limit, total)};
 };
 
 const getById = async (id) => {
   const resolvedId = await resolveEntityId({
     model: 'staff_availability',
     identifier: id,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
   const item = await staffAvailabilityRepository.findById(resolvedId);
   if (!item) throw new HttpError('errors.staff_availability.not_found', 404);
   return serializeStaffAvailability(item);
@@ -111,9 +99,7 @@ const create = async (data, userId, ipAddress) => {
       value: data.staff_profile_id,
       model: 'staff_profile',
       field: 'staff_profile_id',
-      where: { deleted_at: null },
-    }),
-  };
+      where: { deleted_at: null }})};
 
   const item = await staffAvailabilityRepository.create(payload);
   createAuditLog({
@@ -122,8 +108,7 @@ const create = async (data, userId, ipAddress) => {
     entity: 'staff_availability',
     entity_id: item.id,
     diff: { after: item },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
   return serializeStaffAvailability(item);
 };
 
@@ -132,16 +117,14 @@ const createBatch = async (data, userId, ipAddress) => {
     value: data.staff_profile_id,
     model: 'staff_profile',
     field: 'staff_profile_id',
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 
   const sharedFields = {
     staff_profile_id: staffProfileId,
     preference: data.preference || 'AVAILABLE',
     status: data.status || data.preference || 'AVAILABLE',
     effective_from: data.effective_from,
-    effective_to: data.effective_to ?? null,
-  };
+    effective_to: data.effective_to ?? null};
 
   const createdItems = [];
   for (const day of data.days) {
@@ -149,8 +132,7 @@ const createBatch = async (data, userId, ipAddress) => {
       normalizeTimeSlotsPayload({
         ...sharedFields,
         day_of_week: day.day_of_week,
-        time_slots: day.time_slots,
-      })
+        time_slots: day.time_slots})
     );
     createdItems.push(item);
     createAuditLog({
@@ -159,8 +141,7 @@ const createBatch = async (data, userId, ipAddress) => {
       entity: 'staff_availability',
       entity_id: item.id,
       diff: { after: item },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   }
 
   return serializeStaffAvailabilityList(createdItems);
@@ -170,8 +151,7 @@ const update = async (id, data, userId, ipAddress) => {
   const resolvedId = await resolveEntityId({
     model: 'staff_availability',
     identifier: id,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
   const before = await staffAvailabilityRepository.findById(resolvedId);
   if (!before) throw new HttpError('errors.staff_availability.not_found', 404);
   const item = await staffAvailabilityRepository.update(before.id, normalizeTimeSlotsPayload(data));
@@ -181,8 +161,7 @@ const update = async (id, data, userId, ipAddress) => {
     entity: 'staff_availability',
     entity_id: before.id,
     diff: { before, after: item },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
   return serializeStaffAvailability(item);
 };
 
@@ -190,8 +169,7 @@ const remove = async (id, userId, ipAddress) => {
   const resolvedId = await resolveEntityId({
     model: 'staff_availability',
     identifier: id,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
   const before = await staffAvailabilityRepository.findById(resolvedId);
   if (!before) throw new HttpError('errors.staff_availability.not_found', 404);
   await staffAvailabilityRepository.softDelete(before.id);
@@ -201,8 +179,7 @@ const remove = async (id, userId, ipAddress) => {
     entity: 'staff_availability',
     entity_id: before.id,
     diff: { before },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 };
 
 module.exports = { list, getById, create, createBatch, update, remove };

@@ -59,7 +59,7 @@ describe('Patient Allergy Repository', () => {
           id: 'allergy-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -121,7 +121,7 @@ describe('Patient Allergy Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -151,7 +151,7 @@ describe('Patient Allergy Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -167,7 +167,7 @@ describe('Patient Allergy Repository', () => {
         skip: 20,
         take: 50,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -183,7 +183,7 @@ describe('Patient Allergy Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { allergen: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

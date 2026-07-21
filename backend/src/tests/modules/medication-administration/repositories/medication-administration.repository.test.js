@@ -49,7 +49,7 @@ describe('Medication Administration Repository', () => {
       expect(result).toEqual(mockRecord);
       expect(prisma.medication_administration.findFirst).toHaveBeenCalledWith({
         where: { id: 'med-123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 

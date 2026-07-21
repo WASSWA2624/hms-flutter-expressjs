@@ -1,8 +1,7 @@
 const {
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
-  workspaceQuerySchema,
-} = require('../../../../modules/subscriptions-workspace/schemas/subscriptions-workspace.schema');
+  workspaceQuerySchema} = require('../../../../modules/subscriptions-workspace/schemas/subscriptions-workspace.schema');
 
 describe('subscriptions-workspace schemas', () => {
   it('accepts UUID and friendly identifiers in workspace query filters', () => {
@@ -11,8 +10,7 @@ describe('subscriptions-workspace schemas', () => {
       plan_id: '550e8400-e29b-41d4-a716-446655440000',
       resource: 'subscriptions',
       panel: 'operations',
-      search: 'Acme',
-    });
+      search: 'Acme'});
 
     expect(result.success).toBe(true);
   });
@@ -21,14 +19,12 @@ describe('subscriptions-workspace schemas', () => {
     expect(
       workspaceQuerySchema.safeParse({
         panel: 'billing',
-        resource: 'subscription-invoices',
-      }).success
+        resource: 'subscription-invoices'}).success
     ).toBe(true);
     expect(
       workspaceQuerySchema.safeParse({
         panel: 'billing',
-        resource: 'unknown-resource',
-      }).success
+        resource: 'unknown-resource'}).success
     ).toBe(false);
   });
 
@@ -37,16 +33,14 @@ describe('subscriptions-workspace schemas', () => {
       workspaceQuerySchema.safeParse({
         panel: 'operations',
         resource: 'subscriptions',
-        datePreset: 'next_30_days',
-      }).success
+        datePreset: 'next_30_days'}).success
     ).toBe(true);
 
     expect(
       workspaceQuerySchema.safeParse({
         panel: 'operations',
         resource: 'subscriptions',
-        datePreset: 'last_365_days',
-      }).success
+        datePreset: 'last_365_days'}).success
     ).toBe(false);
   });
 
@@ -58,8 +52,7 @@ describe('subscriptions-workspace schemas', () => {
   it('validates resolve legacy params contract', () => {
     const result = resolveLegacyParamsSchema.safeParse({
       resource: 'subscriptions',
-      id: 'SUB0100',
-    });
+      id: 'SUB0100'});
     expect(result.success).toBe(true);
   });
 });

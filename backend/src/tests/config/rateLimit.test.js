@@ -7,8 +7,7 @@ const loadRateLimitConfig = (overrides = {}) => {
     DATABASE_URL: 'mysql://test:test@localhost:3306/test_db',
     CORS_ORIGINS: 'http://example.com',
     NODE_ENV: 'development',
-    ...overrides,
-  });
+    ...overrides});
 
   return require('@config/rateLimit');
 };

@@ -171,8 +171,7 @@ describe('Appointment Reminder Schemas', () => {
         appointment_id: '550e8400-e29b-41d4-a716-446655440000',
         channel: 'EMAIL',
         is_sent: 'true',
-        due_state: 'DUE',
-      };
+        due_state: 'DUE'};
       const result = listAppointmentRemindersQuerySchema.safeParse(data);
       expect(result.success).toBe(true);
     });

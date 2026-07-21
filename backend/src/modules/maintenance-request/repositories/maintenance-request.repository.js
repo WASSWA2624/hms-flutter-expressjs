@@ -15,19 +15,14 @@ const DEFAULT_INCLUDE = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   asset: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
       asset_tag: true,
-      tenant_id: true,
-    },
-  },
-};
+      tenant_id: true}}};
 
 const buildWhere = (filters = {}) => {
   const {
@@ -37,8 +32,7 @@ const buildWhere = (filters = {}) => {
 
   const where = {
     deleted_at: null,
-    ...rest,
-  };
+    ...rest};
 
   const normalizedSearch = String(search || '').trim();
   if (!normalizedSearch) return where;
@@ -52,10 +46,7 @@ const buildWhere = (filters = {}) => {
         { description: { contains: normalizedSearch } },
         { facility: { name: { contains: normalizedSearch } } },
         { asset: { name: { contains: normalizedSearch } } },
-        { asset: { asset_tag: { contains: normalizedSearch } } },
-      ],
-    },
-  ];
+        { asset: { asset_tag: { contains: normalizedSearch } } }]}];
 
   return where;
 };
@@ -130,8 +121,7 @@ const create = async (data) => {
   try {
     return await prisma.maintenance_request.create({
       data,
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2002') {
       // Unique constraint violation
@@ -159,8 +149,7 @@ const update = async (id, data) => {
     return await prisma.maintenance_request.update({
       where: { id },
       data,
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.maintenance_request.not_found', 404);
@@ -193,8 +182,7 @@ const softDelete = async (id) => {
       data: {
         deleted_at: new Date()
       },
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.maintenance_request.not_found', 404);

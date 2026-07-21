@@ -11,15 +11,13 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 jest.mock('@repositories/appointment-reminder/appointment-reminder.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 describe('Appointment Reminder Service', () => {
   const reminderId = '550e8400-e29b-41d4-a716-446655440000';
@@ -32,8 +30,7 @@ describe('Appointment Reminder Service', () => {
     appointment_id: appointmentId,
     channel: 'EMAIL',
     scheduled_at: new Date('2026-01-20T08:00:00.000Z'),
-    sent_at: null,
-  };
+    sent_at: null};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -52,9 +49,7 @@ describe('Appointment Reminder Service', () => {
         appointment_id: '550e8400-e29b-41d4-a716-446655440003',
         channel: 'SMS',
         scheduled_at: new Date('2026-01-21T09:00:00.000Z'),
-        sent_at: new Date('2026-01-21T09:05:00.000Z'),
-      },
-    ];
+        sent_at: new Date('2026-01-21T09:05:00.000Z')}];
 
     it('should list reminders with pagination', async () => {
       appointmentReminderRepository.findMany.mockResolvedValue(mockReminders);
@@ -77,8 +72,7 @@ describe('Appointment Reminder Service', () => {
         total: 2,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
     });
 
     it('should apply filters correctly', async () => {
@@ -98,8 +92,7 @@ describe('Appointment Reminder Service', () => {
       expect(appointmentReminderRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           appointment_id: appointmentId,
-          channel: 'EMAIL',
-        }),
+          channel: 'EMAIL'}),
         0,
         20,
         { created_at: 'asc' },
@@ -127,8 +120,7 @@ describe('Appointment Reminder Service', () => {
         total: 42,
         totalPages: 5,
         hasNextPage: true,
-        hasPreviousPage: true,
-      });
+        hasPreviousPage: true});
     });
 
     it('should handle repository errors', async () => {
@@ -155,8 +147,7 @@ describe('Appointment Reminder Service', () => {
 
       expect(appointmentReminderRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          AND: expect.arrayContaining([{ sent_at: { not: null } }]),
-        }),
+          AND: expect.arrayContaining([{ sent_at: { not: null } }])}),
         0,
         20,
         { created_at: 'asc' },
@@ -182,9 +173,7 @@ describe('Appointment Reminder Service', () => {
         expect.objectContaining({
           AND: expect.arrayContaining([
             { sent_at: null },
-            expect.objectContaining({ scheduled_at: expect.any(Object) }),
-          ]),
-        }),
+            expect.objectContaining({ scheduled_at: expect.any(Object) })])}),
         0,
         20,
         { created_at: 'asc' },
@@ -218,8 +207,7 @@ describe('Appointment Reminder Service', () => {
         appointmentReminderService.getAppointmentReminderById(reminderId, userId, ipAddress)
       ).rejects.toMatchObject({
         messageKey: 'errors.appointment_reminder.not_found',
-        statusCode: 404,
-      });
+        statusCode: 404});
     });
   });
 
@@ -232,8 +220,7 @@ describe('Appointment Reminder Service', () => {
         {
           appointment_id: appointmentId,
           channel: 'EMAIL',
-          scheduled_at: new Date('2026-01-20T08:00:00.000Z'),
-        },
+          scheduled_at: new Date('2026-01-20T08:00:00.000Z')},
         userId,
         ipAddress
       );
@@ -242,8 +229,7 @@ describe('Appointment Reminder Service', () => {
       expect(appointmentReminderRepository.create).toHaveBeenCalledWith({
         appointment_id: appointmentId,
         channel: 'EMAIL',
-        scheduled_at: new Date('2026-01-20T08:00:00.000Z'),
-      });
+        scheduled_at: new Date('2026-01-20T08:00:00.000Z')});
       expect(appointmentReminderRepository.findById).toHaveBeenCalledWith(
         reminderId,
         expect.any(Object)
@@ -254,8 +240,7 @@ describe('Appointment Reminder Service', () => {
         entity: 'appointment_reminder',
         entity_id: reminderId,
         diff: { after: mockReminder },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should not throw if audit log fails', async () => {
@@ -267,8 +252,7 @@ describe('Appointment Reminder Service', () => {
         {
           appointment_id: appointmentId,
           channel: 'EMAIL',
-          scheduled_at: new Date('2026-01-20T08:00:00.000Z'),
-        },
+          scheduled_at: new Date('2026-01-20T08:00:00.000Z')},
         userId,
         ipAddress
       );
@@ -281,8 +265,7 @@ describe('Appointment Reminder Service', () => {
     it('should update reminder', async () => {
       const updatedReminder = {
         ...mockReminder,
-        sent_at: new Date('2026-01-20T08:05:00.000Z'),
-      };
+        sent_at: new Date('2026-01-20T08:05:00.000Z')};
 
       resolveModelRecordByIdentifier.mockResolvedValueOnce({ id: reminderId });
       appointmentReminderRepository.findById
@@ -304,8 +287,7 @@ describe('Appointment Reminder Service', () => {
         expect.any(Object)
       );
       expect(appointmentReminderRepository.update).toHaveBeenCalledWith(reminderId, {
-        sent_at: new Date('2026-01-20T08:05:00.000Z'),
-      });
+        sent_at: new Date('2026-01-20T08:05:00.000Z')});
       expect(appointmentReminderRepository.findById).toHaveBeenNthCalledWith(
         2,
         reminderId,
@@ -317,8 +299,7 @@ describe('Appointment Reminder Service', () => {
         entity: 'appointment_reminder',
         entity_id: reminderId,
         diff: { before: mockReminder, after: updatedReminder },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should throw error if reminder not found', async () => {
@@ -354,8 +335,7 @@ describe('Appointment Reminder Service', () => {
         entity: 'appointment_reminder',
         entity_id: reminderId,
         diff: { before: mockReminder },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should throw error if reminder not found', async () => {
@@ -371,8 +351,7 @@ describe('Appointment Reminder Service', () => {
     it('should mark reminder as sent when currently unsent', async () => {
       const sentReminder = {
         ...mockReminder,
-        sent_at: new Date('2026-01-20T08:05:00.000Z'),
-      };
+        sent_at: new Date('2026-01-20T08:05:00.000Z')};
 
       resolveModelRecordByIdentifier.mockResolvedValueOnce({ id: reminderId });
       appointmentReminderRepository.findById
@@ -398,15 +377,13 @@ describe('Appointment Reminder Service', () => {
         entity: 'appointment_reminder',
         entity_id: reminderId,
         diff: { before: mockReminder, after: sentReminder },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should be idempotent when reminder is already sent', async () => {
       const alreadySent = {
         ...mockReminder,
-        sent_at: new Date('2026-01-20T08:00:00.000Z'),
-      };
+        sent_at: new Date('2026-01-20T08:00:00.000Z')};
 
       resolveModelRecordByIdentifier.mockResolvedValueOnce({ id: reminderId });
       appointmentReminderRepository.findById.mockResolvedValueOnce(alreadySent);

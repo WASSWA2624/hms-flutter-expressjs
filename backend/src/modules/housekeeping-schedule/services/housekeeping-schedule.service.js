@@ -15,13 +15,11 @@ const SCHEDULE_SORT_FIELDS = new Set([
   'updated_at',
   'start_date',
   'end_date',
-  'frequency',
-]);
+  'frequency']);
 
 const HOUSEKEEPING_SCHEDULE_INCLUDE = {
   facility: { select: { id: true, human_friendly_id: true, name: true } },
-  room: { select: { id: true, human_friendly_id: true, name: true } },
-};
+  room: { select: { id: true, human_friendly_id: true, name: true } }};
 
 const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object || {}, key);
 const displayId = (record = {}) => resolvePublicIdentifier(record?.display_id, record?.human_friendly_id, record?.id) || record?.id || null;
@@ -34,8 +32,7 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: page * limit < total,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const resolveOrderBy = (sortBy = 'created_at', order = 'desc') => {
   const field = SCHEDULE_SORT_FIELDS.has(sortBy) ? sortBy : 'created_at';
@@ -54,8 +51,7 @@ const mapHousekeepingSchedule = (record) => {
     facility_id: publicRelationId(record, 'facility', 'facility_id'),
     facility_label: record?.facility?.name || null,
     room_id: publicRelationId(record, 'room', 'room_id'),
-    room_label: record?.room?.name || null,
-  };
+    room_label: record?.room?.name || null};
 };
 
 const resolveListFilters = async (filters = {}, page = 1, limit = 20, context = {}) => {
@@ -67,13 +63,11 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20, context = 
     const facilityId = await resolveIdentifierForFilter({
       value: requestedFacility,
       model: 'facility',
-      where: tenantWhere,
-    });
+      where: tenantWhere});
     if (facilityId === null) {
       return {
         housekeepingSchedules: [],
-        pagination: buildPagination(page, limit, 0),
-      };
+        pagination: buildPagination(page, limit, 0)};
     }
     if (facilityId !== undefined) repoFilters.facility_id = facilityId;
   }
@@ -82,13 +76,11 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20, context = 
     const roomId = await resolveIdentifierForFilter({
       value: filters.room_id,
       model: 'room',
-      where: tenantWhere,
-    });
+      where: tenantWhere});
     if (roomId === null) {
       return {
         housekeepingSchedules: [],
-        pagination: buildPagination(page, limit, 0),
-      };
+        pagination: buildPagination(page, limit, 0)};
     }
     if (roomId !== undefined) repoFilters.room_id = roomId;
   }
@@ -110,8 +102,7 @@ const resolvePayload = async (data = {}, context = {}, { defaultFacility = true 
       field: 'facility_id',
       model: 'facility',
       nullable: true,
-      where: tenantWhere,
-    });
+      where: tenantWhere});
   } else if (defaultFacility && context?.facility_id) {
     payload.facility_id = context.facility_id;
   }
@@ -122,8 +113,7 @@ const resolvePayload = async (data = {}, context = {}, { defaultFacility = true 
       field: 'room_id',
       model: 'room',
       nullable: true,
-      where: tenantWhere,
-    });
+      where: tenantWhere});
   }
 
   if (hasOwn(payload, 'start_date') && payload.start_date) {
@@ -140,8 +130,7 @@ const buildScheduleScope = (context = {}) => ({
   ...(context?.facility_id ? { facility_id: context.facility_id } : {}),
   ...(context?.tenant_id
     ? { facility: { tenant_id: context.tenant_id, deleted_at: null } }
-    : {}),
-});
+    : {})});
 
 const resolveScheduleId = (identifier, context = {}) =>
   resolveEntityId({ model: 'housekeeping_schedule', identifier, where: buildScheduleScope(context) });
@@ -154,13 +143,11 @@ const listHousekeepingSchedules = async (filters = {}, page = 1, limit = 20, sor
   const orderBy = resolveOrderBy(sort_by, order);
   const [housekeepingSchedules, total] = await Promise.all([
     housekeepingScheduleRepository.findMany(resolvedFilters, skip, limit, orderBy, HOUSEKEEPING_SCHEDULE_INCLUDE),
-    housekeepingScheduleRepository.count(resolvedFilters),
-  ]);
+    housekeepingScheduleRepository.count(resolvedFilters)]);
 
   return {
     housekeepingSchedules: housekeepingSchedules.map(mapHousekeepingSchedule),
-    pagination: buildPagination(page, limit, total),
-  };
+    pagination: buildPagination(page, limit, total)};
 };
 
 const getHousekeepingScheduleById = async (id, context = {}) => {
@@ -192,9 +179,7 @@ const createHousekeepingSchedule = async (data, context = {}) => {
       room_id: housekeepingSchedule.room_id,
       frequency: housekeepingSchedule.frequency,
       start_date: housekeepingSchedule.start_date,
-      end_date: housekeepingSchedule.end_date,
-    },
-  });
+      end_date: housekeepingSchedule.end_date}});
 
   return mapHousekeepingSchedule(housekeepingSchedule);
 };
@@ -225,17 +210,13 @@ const updateHousekeepingSchedule = async (id, data, context = {}) => {
         room_id: beforeHousekeepingSchedule.room_id,
         frequency: beforeHousekeepingSchedule.frequency,
         start_date: beforeHousekeepingSchedule.start_date,
-        end_date: beforeHousekeepingSchedule.end_date,
-      },
+        end_date: beforeHousekeepingSchedule.end_date},
       after: {
         facility_id: housekeepingSchedule.facility_id,
         room_id: housekeepingSchedule.room_id,
         frequency: housekeepingSchedule.frequency,
         start_date: housekeepingSchedule.start_date,
-        end_date: housekeepingSchedule.end_date,
-      },
-    },
-  });
+        end_date: housekeepingSchedule.end_date}}});
 
   return mapHousekeepingSchedule(housekeepingSchedule);
 };
@@ -262,9 +243,7 @@ const deleteHousekeepingSchedule = async (id, context = {}) => {
     details: {
       facility_id: housekeepingSchedule.facility_id,
       room_id: housekeepingSchedule.room_id,
-      frequency: housekeepingSchedule.frequency,
-    },
-  });
+      frequency: housekeepingSchedule.frequency}});
 };
 
 module.exports = {
@@ -272,5 +251,4 @@ module.exports = {
   getHousekeepingScheduleById,
   createHousekeepingSchedule,
   updateHousekeepingSchedule,
-  deleteHousekeepingSchedule,
-};
+  deleteHousekeepingSchedule};

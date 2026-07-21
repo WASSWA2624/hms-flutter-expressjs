@@ -7,8 +7,7 @@ const {
   filterPermissionRecordsByCeiling,
   isRoleWithinActorCeiling,
   resolveActorAssignablePermissionNames,
-  buildRoleScopeWhere,
-} = require('@lib/authorization/assignable-access');
+  buildRoleScopeWhere} = require('@lib/authorization/assignable-access');
 const { ROLES } = require('@config/roles');
 const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 
@@ -27,8 +26,7 @@ describe('assignable-access', () => {
   describe('resolveActorAssignablePermissionNames', () => {
     it('unions role permission maps for the actor', () => {
       const names = resolveActorAssignablePermissionNames({
-        roles: [ROLES.FACILITY_ADMIN],
-      });
+        roles: [ROLES.FACILITY_ADMIN]});
       expect(names.has(PERMISSIONS.FACILITY_ADMIN)).toBe(true);
       expect(names.has(PERMISSIONS.TENANT_ADMIN)).toBe(false);
       expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(false);
@@ -36,8 +34,7 @@ describe('assignable-access', () => {
 
     it('includes tenant:admin for tenant admins', () => {
       const names = resolveActorAssignablePermissionNames({
-        roles: [ROLES.TENANT_ADMIN],
-      });
+        roles: [ROLES.TENANT_ADMIN]});
       expect(names.has(PERMISSIONS.TENANT_ADMIN)).toBe(true);
       expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(false);
     });
@@ -45,8 +42,7 @@ describe('assignable-access', () => {
     it('keeps a full ceiling for super admins even when JWT permissions are plan-gated', () => {
       const names = resolveActorAssignablePermissionNames({
         roles: [ROLES.SUPER_ADMIN],
-        permissions: [PERMISSIONS.PROFILE_READ, PERMISSIONS.PATIENT_READ],
-      });
+        permissions: [PERMISSIONS.PROFILE_READ, PERMISSIONS.PATIENT_READ]});
       expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(true);
       expect(names.has(PERMISSIONS.MORTUARY_READ)).toBe(true);
       expect(names.has(PERMISSIONS.LAB_WRITE)).toBe(true);
@@ -59,8 +55,7 @@ describe('assignable-access', () => {
         [
           { id: '1', name: PERMISSIONS.FACILITY_ADMIN },
           { id: '2', name: PERMISSIONS.TENANT_ADMIN },
-          { id: '3', name: PERMISSIONS.SYSTEM_ADMIN },
-        ],
+          { id: '3', name: PERMISSIONS.SYSTEM_ADMIN }],
         { roles: [ROLES.FACILITY_ADMIN] }
       );
       expect(filtered.map((entry) => entry.name)).toEqual([PERMISSIONS.FACILITY_ADMIN]);
@@ -71,15 +66,13 @@ describe('assignable-access', () => {
         [
           { id: '1', name: PERMISSIONS.LAB_READ },
           { id: '2', name: PERMISSIONS.PROFILE_READ },
-          { id: '3', name: PERMISSIONS.PHARMACY_READ },
-        ],
+          { id: '3', name: PERMISSIONS.PHARMACY_READ }],
         { roles: [ROLES.FACILITY_ADMIN] },
         new Set(['lab-workflows'])
       );
       expect(filtered.map((entry) => entry.name)).toEqual([
         PERMISSIONS.LAB_READ,
-        PERMISSIONS.PROFILE_READ,
-      ]);
+        PERMISSIONS.PROFILE_READ]);
     });
   });
 
@@ -100,9 +93,7 @@ describe('assignable-access', () => {
             name: 'WARD_CLERK',
             permissions: [
               { permission: { name: PERMISSIONS.PATIENT_READ } },
-              { permission: { name: PERMISSIONS.PROFILE_READ } },
-            ],
-          },
+              { permission: { name: PERMISSIONS.PROFILE_READ } }]},
           { roles: [ROLES.FACILITY_ADMIN] }
         )
       ).toBe(true);
@@ -113,8 +104,7 @@ describe('assignable-access', () => {
         isRoleWithinActorCeiling(
           {
             name: 'DOCTOR',
-            permissions: [],
-          },
+            permissions: []},
           { roles: [ROLES.FACILITY_ADMIN] }
         )
       ).toBe(true);
@@ -125,8 +115,7 @@ describe('assignable-access', () => {
         isRoleWithinActorCeiling(
           {
             name: 'CUSTOM_ADMIN',
-            permissions: [{ permission: { name: PERMISSIONS.SYSTEM_ADMIN } }],
-          },
+            permissions: [{ permission: { name: PERMISSIONS.SYSTEM_ADMIN } }]},
           { roles: [ROLES.TENANT_ADMIN] }
         )
       ).toBe(false);
@@ -138,20 +127,17 @@ describe('assignable-access', () => {
       expect(
         buildRoleScopeWhere({
           tenant_id: 'tenant-1',
-          facility_id: 'facility-1',
-        })
+          facility_id: 'facility-1'})
       ).toEqual({
         deleted_at: null,
         tenant_id: 'tenant-1',
-        OR: [{ facility_id: 'facility-1' }, { facility_id: null }],
-      });
+        OR: [{ facility_id: 'facility-1' }, { facility_id: null }]});
     });
 
     it('filters by tenant only when facility is absent', () => {
       expect(buildRoleScopeWhere({ tenant_id: 'tenant-1' })).toEqual({
         deleted_at: null,
-        tenant_id: 'tenant-1',
-      });
+        tenant_id: 'tenant-1'});
     });
 
     it('excludes tenant-wide roles for facility-only actors', () => {
@@ -163,8 +149,7 @@ describe('assignable-access', () => {
       ).toEqual({
         deleted_at: null,
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      });
+        facility_id: 'facility-1'});
     });
 
     it('supports explicit tenant and facility roleScope filters', () => {
@@ -176,8 +161,7 @@ describe('assignable-access', () => {
       ).toEqual({
         deleted_at: null,
         tenant_id: 'tenant-1',
-        facility_id: null,
-      });
+        facility_id: null});
       expect(
         buildRoleScopeWhere(
           { tenant_id: 'tenant-1', facility_id: 'facility-1' },
@@ -186,8 +170,7 @@ describe('assignable-access', () => {
       ).toEqual({
         deleted_at: null,
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      });
+        facility_id: 'facility-1'});
     });
   });
 

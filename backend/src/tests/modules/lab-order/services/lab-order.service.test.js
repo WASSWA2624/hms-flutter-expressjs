@@ -2,16 +2,14 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/lab-order/lab-order.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/billing/clinical-request-billing', () => {
   const actual = jest.requireActual('@lib/billing/clinical-request-billing');
   return {
     ...actual,
     buildLabOrderBillingFromRequest: jest.fn().mockResolvedValue(null),
     normalizeBillingOfficeClinicalBilling: jest.fn().mockReturnValue(null),
-    persistLabOrderBilling: jest.fn().mockResolvedValue(null),
-  };
+    persistLabOrderBilling: jest.fn().mockResolvedValue(null)};
 });
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
@@ -19,8 +17,7 @@ jest.mock('@services/lab-workspace/lab.shared', () => {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
     resolveModelRecordOrThrow: jest.fn(),
-    resolveLabOrderEncounterId: jest.fn(),
-  };
+    resolveLabOrderEncounterId: jest.fn()};
 });
 
 const labOrderRepository = require('@repositories/lab-order/lab-order.repository');
@@ -28,8 +25,7 @@ const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
-  resolveLabOrderEncounterId,
-} = require('@services/lab-workspace/lab.shared');
+  resolveLabOrderEncounterId} = require('@services/lab-workspace/lab.shared');
 const labOrderService = require('@services/lab-order/lab-order.service');
 
 const mockUserId = 'user-123';
@@ -49,16 +45,13 @@ const buildOrderRecord = (overrides = {}) => ({
     id: 'patient-internal-1',
     human_friendly_id: 'PAT0000001',
     first_name: 'Amina',
-    last_name: 'Stone',
-  },
+    last_name: 'Stone'},
   encounter: {
     id: 'encounter-internal-1',
-    human_friendly_id: 'ENC0000001',
-  },
+    human_friendly_id: 'ENC0000001'},
   items: [],
   samples: [],
-  ...overrides,
-});
+  ...overrides});
 
 describe('lab-order.service', () => {
   beforeEach(() => {
@@ -77,8 +70,7 @@ describe('lab-order.service', () => {
       {
         encounter_id: 'ENC0000001',
         patient_id: 'PAT0000001',
-        search: 'Amina',
-      },
+        search: 'Amina'},
       1,
       20,
       'ordered_at',
@@ -91,23 +83,19 @@ describe('lab-order.service', () => {
       identifier: 'ENC0000001',
       model: 'encounter',
       where: { deleted_at: null },
-      errorKey: 'errors.encounter.not_found',
-    });
+      errorKey: 'errors.encounter.not_found'});
     expect(resolveModelIdOrThrow).toHaveBeenNthCalledWith(2, {
       identifier: 'PAT0000001',
       model: 'patient',
       where: { deleted_at: null },
-      errorKey: 'errors.patient.not_found',
-    });
+      errorKey: 'errors.patient.not_found'});
     expect(labOrderRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         encounter_id: 'encounter-internal-1',
         patient_id: 'patient-internal-1',
         OR: expect.arrayContaining([
           { patient: { first_name: { contains: 'Amina' } } },
-          { patient: { human_friendly_id: { contains: 'AMINA' } } },
-        ]),
-      }),
+          { patient: { human_friendly_id: { contains: 'AMINA' } } }])}),
       0,
       20,
       { ordered_at: 'desc' },
@@ -119,15 +107,12 @@ describe('lab-order.service', () => {
         display_id: 'LAB0000001',
         patient_id: 'PAT0000001',
         patient_display_name: 'Amina Stone',
-        encounter_id: 'ENC0000001',
-      }),
-    ]);
+        encounter_id: 'ENC0000001'})]);
     expect(result.pagination).toMatchObject({
       page: 1,
       limit: 20,
       total: 1,
-      totalPages: 1,
-    });
+      totalPages: 1});
   });
 
   it('gets a lab order by friendly identifier through shared resolution', async () => {
@@ -144,14 +129,12 @@ describe('lab-order.service', () => {
       model: 'lab_order',
       where: { deleted_at: null },
       include: expect.any(Object),
-      errorKey: 'errors.lab_order.not_found',
-    });
+      errorKey: 'errors.lab_order.not_found'});
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LAB0000001',
         patient_id: 'PAT0000001',
-        encounter_id: 'ENC0000001',
-      })
+        encounter_id: 'ENC0000001'})
     );
   });
 
@@ -160,8 +143,7 @@ describe('lab-order.service', () => {
       .mockResolvedValueOnce({
         id: 'patient-internal-1',
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      })
+        facility_id: 'facility-1'})
       .mockResolvedValueOnce({ id: 'lab-test-1' });
     resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
@@ -174,8 +156,7 @@ describe('lab-order.service', () => {
         encounter_id: 'ENC0000001',
         ordered_at: manualOrderedAt,
         status: 'ORDERED',
-        requested_tests: [{ lab_test_id: 'LBT0000001' }],
-      },
+        requested_tests: [{ lab_test_id: 'LBT0000001' }]},
       mockUserId,
       mockIpAddress
     );
@@ -191,11 +172,7 @@ describe('lab-order.service', () => {
             expect.objectContaining({
               lab_test_id: 'lab-test-1',
               status: 'ORDERED',
-              panel_id: null,
-            }),
-          ],
-        },
-      })
+              panel_id: null})]}})
     );
     const createdPayload = labOrderRepository.create.mock.calls[0][0];
     expect(createdPayload.ordered_at.toISOString()).not.toBe(manualOrderedAt);
@@ -205,14 +182,12 @@ describe('lab-order.service', () => {
         action: 'CREATE',
         entity: 'lab_order',
         entity_id: 'order-internal-1',
-        ip_address: mockIpAddress,
-      })
+        ip_address: mockIpAddress})
     );
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LAB0000001',
-        patient_id: 'PAT0000001',
-      })
+        patient_id: 'PAT0000001'})
     );
   });
 
@@ -221,8 +196,7 @@ describe('lab-order.service', () => {
       .mockResolvedValueOnce({
         id: 'patient-internal-1',
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      })
+        facility_id: 'facility-1'})
       .mockResolvedValueOnce({ id: 'lab-test-1' });
     resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
@@ -232,8 +206,7 @@ describe('lab-order.service', () => {
       {
         patient_id: 'PAT0000001',
         encounter_id: 'VIS0000001',
-        requested_tests: [{ lab_test_id: 'LBT0000001' }],
-      },
+        requested_tests: [{ lab_test_id: 'LBT0000001' }]},
       mockUserId,
       mockIpAddress
     );
@@ -242,12 +215,10 @@ describe('lab-order.service', () => {
       identifier: 'VIS0000001',
       patientId: 'patient-internal-1',
       tenantId: 'tenant-1',
-      facilityId: 'facility-1',
-    });
+      facilityId: 'facility-1'});
     expect(labOrderRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        encounter_id: 'encounter-internal-1',
-      })
+        encounter_id: 'encounter-internal-1'})
     );
   });
 
@@ -255,8 +226,7 @@ describe('lab-order.service', () => {
     resolveModelRecordOrThrow
       .mockResolvedValueOnce({
         id: 'patient-internal-1',
-        tenant_id: 'tenant-1',
-      })
+        tenant_id: 'tenant-1'})
       .mockResolvedValueOnce({ id: 'lab-test-1' })
       .mockResolvedValueOnce({
         id: 'lab-panel-1',
@@ -265,18 +235,14 @@ describe('lab-order.service', () => {
         code: 'FBC',
         panel_items: [
           { lab_test_id: 'lab-test-1', sort_order: 0 },
-          { lab_test_id: 'lab-test-2', sort_order: 10 },
-        ],
-      });
+          { lab_test_id: 'lab-test-2', sort_order: 10 }]});
     resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
     labOrderRepository.findById.mockResolvedValue(
       buildOrderRecord({
         items: [
           { id: 'item-1', lab_test_id: 'lab-test-1', status: 'ORDERED' },
-          { id: 'item-2', lab_test_id: 'lab-test-2', status: 'ORDERED' },
-        ],
-      })
+          { id: 'item-2', lab_test_id: 'lab-test-2', status: 'ORDERED' }]})
     );
 
     await labOrderService.createLabOrder(
@@ -284,8 +250,7 @@ describe('lab-order.service', () => {
         patient_id: 'PAT0000001',
         encounter_id: 'ENC0000001',
         requested_tests: [{ lab_test_id: 'LBT0000001' }],
-        requested_panels: [{ lab_panel_id: 'LPN0000001' }],
-      },
+        requested_panels: [{ lab_panel_id: 'LPN0000001' }]},
       mockUserId,
       mockIpAddress
     );
@@ -300,8 +265,7 @@ describe('lab-order.service', () => {
             expect.objectContaining({
               lab_test_id: 'lab-test-1',
               status: 'ORDERED',
-              panel_id: null,
-            }),
+              panel_id: null}),
             expect.objectContaining({
               lab_test_id: 'lab-test-2',
               status: 'ORDERED',
@@ -309,33 +273,26 @@ describe('lab-order.service', () => {
               panel_display_name: 'Full blood count',
               panel_code: 'FBC',
               panel_sort_order: 0,
-              panel_item_sort_order: 10,
-            }),
-          ],
-        },
-      })
+              panel_item_sort_order: 10})]}})
     );
   });
 
   it('rejects lab order create without encounter_id', async () => {
     resolveModelRecordOrThrow.mockResolvedValueOnce({
       id: 'patient-internal-1',
-      tenant_id: 'tenant-1',
-    });
+      tenant_id: 'tenant-1'});
 
     await expect(
       labOrderService.createLabOrder(
         {
           patient_id: 'PAT0000001',
-          requested_tests: [{ lab_test_id: 'LBT0000001' }],
-        },
+          requested_tests: [{ lab_test_id: 'LBT0000001' }]},
         mockUserId,
         mockIpAddress
       )
     ).rejects.toMatchObject({
       message: 'errors.lab_order.encounter_required',
-      statusCode: 400,
-    });
+      statusCode: 400});
   });
 
   it('models the standard CBC offering as a multi-test panel', () => {
@@ -348,8 +305,7 @@ describe('lab-order.service', () => {
       'CBC_MCV',
       'CBC_MCH',
       'CBC_MCHC',
-      'CBC_RDW',
-    ]);
+      'CBC_RDW']);
     expect(labOrderService.STANDARD_LAB_PANELS.CBC_PANEL).not.toContain('CBC');
     expect(labOrderService.STANDARD_LAB_TESTS.CBC).toBeDefined();
   });
@@ -357,8 +313,7 @@ describe('lab-order.service', () => {
   it('rejects creating a lab order without resolved tests', async () => {
     resolveModelRecordOrThrow.mockResolvedValueOnce({
       id: 'patient-internal-1',
-      tenant_id: 'tenant-1',
-    });
+      tenant_id: 'tenant-1'});
     resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
 
     await expect(
@@ -367,15 +322,13 @@ describe('lab-order.service', () => {
           patient_id: 'PAT0000001',
           encounter_id: 'ENC0000001',
           requested_tests: [],
-          requested_panels: [],
-        },
+          requested_panels: []},
         mockUserId,
         mockIpAddress
       )
     ).rejects.toMatchObject({
       message: 'errors.lab_order.no_tests',
-      statusCode: 400,
-    });
+      statusCode: 400});
     expect(labOrderRepository.create).not.toHaveBeenCalled();
   });
 
@@ -383,12 +336,10 @@ describe('lab-order.service', () => {
     resolveModelRecordOrThrow
       .mockResolvedValueOnce({
         id: 'patient-internal-1',
-        tenant_id: 'tenant-1',
-      })
+        tenant_id: 'tenant-1'})
       .mockResolvedValueOnce({
         id: 'lab-panel-1',
-        panel_items: [],
-      });
+        panel_items: []});
     resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
 
     await expect(
@@ -396,15 +347,13 @@ describe('lab-order.service', () => {
         {
           patient_id: 'PAT0000001',
           encounter_id: 'ENC0000001',
-          requested_panels: [{ lab_panel_id: 'LPN0000001' }],
-        },
+          requested_panels: [{ lab_panel_id: 'LPN0000001' }]},
         mockUserId,
         mockIpAddress
       )
     ).rejects.toMatchObject({
       message: 'errors.lab_order.empty_panel',
-      statusCode: 400,
-    });
+      statusCode: 400});
     expect(labOrderRepository.create).not.toHaveBeenCalled();
   });
 
@@ -413,9 +362,7 @@ describe('lab-order.service', () => {
       buildOrderRecord({
         patient: {
           id: 'patient-internal-1',
-          tenant_id: 'tenant-1',
-        },
-      })
+          tenant_id: 'tenant-1'}})
     );
 
     await expect(
@@ -423,15 +370,13 @@ describe('lab-order.service', () => {
         'LAB0000001',
         {
           requested_tests: [],
-          requested_panels: [],
-        },
+          requested_panels: []},
         mockUserId,
         mockIpAddress
       )
     ).rejects.toMatchObject({
       message: 'errors.lab_order.no_tests',
-      statusCode: 400,
-    });
+      statusCode: 400});
     expect(labOrderRepository.update).not.toHaveBeenCalled();
   });
 
@@ -439,8 +384,7 @@ describe('lab-order.service', () => {
     resolveModelRecordOrThrow
       .mockResolvedValueOnce({
         id: 'patient-internal-1',
-        tenant_id: 'tenant-1',
-      })
+        tenant_id: 'tenant-1'})
       .mockResolvedValueOnce({ id: 'lab-test-1' });
     resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
@@ -453,15 +397,13 @@ describe('lab-order.service', () => {
           patient_id: 'PAT0000001',
           encounter_id: 'ENC0000001',
           status: 'ORDERED',
-          requested_tests: [{ lab_test_id: 'LBT0000001' }],
-        },
+          requested_tests: [{ lab_test_id: 'LBT0000001' }]},
         mockUserId,
         mockIpAddress
       )
     ).resolves.toEqual(
       expect.objectContaining({
-        id: 'LAB0000001',
-      })
+        id: 'LAB0000001'})
     );
   });
 
@@ -487,29 +429,24 @@ describe('lab-order.service', () => {
     );
 
     expect(labOrderRepository.update).toHaveBeenCalledWith('order-internal-1', {
-      status: 'COMPLETED',
-    });
+      status: 'COMPLETED'});
     expect(labOrderRepository.softDelete).toHaveBeenCalledWith('order-internal-1');
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'DELETE',
         entity: 'lab_order',
         diff: expect.objectContaining({
-          deletion_reason: 'Duplicate order entered',
-        }),
-      })
+          deletion_reason: 'Duplicate order entered'})})
     );
     expect(updated).toEqual(
       expect.objectContaining({
         id: 'LAB0000001',
-        status: 'COMPLETED',
-      })
+        status: 'COMPLETED'})
     );
     expect(removed).toEqual(
       expect.objectContaining({
         id: 'LAB0000001',
-        status: 'ORDERED',
-      })
+        status: 'ORDERED'})
     );
   });
 
@@ -523,8 +460,7 @@ describe('lab-order.service', () => {
       )
     ).rejects.toMatchObject({
       message: 'errors.validation.required',
-      statusCode: 400,
-    });
+      statusCode: 400});
     expect(labOrderRepository.softDelete).not.toHaveBeenCalled();
   });
 

@@ -15,16 +15,13 @@ jest.mock('@prisma/client', () => ({
     findMany: jest.fn(),
     count: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-  },
-}));
+    update: jest.fn()}}));
 
 describe('KPI Snapshot Repository', () => {
   const includeMatcher = expect.objectContaining({
     tenant: expect.any(Object),
     facility: expect.any(Object),
-    branch: expect.any(Object),
-  });
+    branch: expect.any(Object)});
 
   const mockKpiSnapshot = {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -38,8 +35,7 @@ describe('KPI Snapshot Repository', () => {
     created_at: new Date(),
     updated_at: new Date(),
     deleted_at: null,
-    version: 1,
-  };
+    version: 1};
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -54,8 +50,7 @@ describe('KPI Snapshot Repository', () => {
       expect(result).toEqual(mockKpiSnapshot);
       expect(prisma.kpi_snapshot.findFirst).toHaveBeenCalledWith({
         where: { id: mockKpiSnapshot.id, deleted_at: null },
-        include: includeMatcher,
-      });
+        include: includeMatcher});
     });
 
     it('should return null if KPI snapshot not found', async () => {
@@ -85,27 +80,23 @@ describe('KPI Snapshot Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { recorded_at: 'desc' },
-        include: includeMatcher,
-      });
+        include: includeMatcher});
     });
 
     it('should apply filters correctly', async () => {
       prisma.kpi_snapshot.findMany.mockResolvedValue([mockKpiSnapshot]);
 
       await kpiSnapshotRepository.findMany({
-        where: { tenant_id: mockKpiSnapshot.tenant_id },
-      });
+        where: { tenant_id: mockKpiSnapshot.tenant_id }});
 
       expect(prisma.kpi_snapshot.findMany).toHaveBeenCalledWith({
         where: {
           deleted_at: null,
-          tenant_id: mockKpiSnapshot.tenant_id,
-        },
+          tenant_id: mockKpiSnapshot.tenant_id},
         skip: 0,
         take: 20,
         orderBy: { recorded_at: 'desc' },
-        include: includeMatcher,
-      });
+        include: includeMatcher});
     });
   });
 
@@ -117,8 +108,7 @@ describe('KPI Snapshot Repository', () => {
 
       expect(result).toBe(10);
       expect(prisma.kpi_snapshot.count).toHaveBeenCalledWith({
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     });
   });
 
@@ -130,8 +120,7 @@ describe('KPI Snapshot Repository', () => {
         metric_key: mockKpiSnapshot.metric_key,
         metric_group: mockKpiSnapshot.metric_group,
         threshold_state: mockKpiSnapshot.threshold_state,
-        value: mockKpiSnapshot.value,
-      };
+        value: mockKpiSnapshot.value};
       prisma.kpi_snapshot.create.mockResolvedValue(mockKpiSnapshot);
 
       const result = await kpiSnapshotRepository.create(createData);
@@ -139,8 +128,7 @@ describe('KPI Snapshot Repository', () => {
       expect(result).toEqual(mockKpiSnapshot);
       expect(prisma.kpi_snapshot.create).toHaveBeenCalledWith({
         data: createData,
-        include: includeMatcher,
-      });
+        include: includeMatcher});
     });
   });
 
@@ -156,8 +144,7 @@ describe('KPI Snapshot Repository', () => {
       expect(prisma.kpi_snapshot.update).toHaveBeenCalledWith({
         where: { id: mockKpiSnapshot.id },
         data: updateData,
-        include: includeMatcher,
-      });
+        include: includeMatcher});
     });
   });
 
@@ -171,8 +158,7 @@ describe('KPI Snapshot Repository', () => {
       expect(result.deleted_at).toBeTruthy();
       expect(prisma.kpi_snapshot.update).toHaveBeenCalledWith({
         where: { id: mockKpiSnapshot.id },
-        data: { deleted_at: expect.any(Date) },
-      });
+        data: { deleted_at: expect.any(Date) }});
     });
   });
 });

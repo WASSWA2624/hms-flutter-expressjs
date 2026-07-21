@@ -28,15 +28,13 @@ const SCHEDULING_READ_ROLES = [
   ROLES.NURSE,
   ROLES.RECEPTIONIST,
   ROLES.OPERATIONS,
-  ROLES.HR,
-];
+  ROLES.HR];
 const SCHEDULING_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.HR,
-  ROLES.OPERATIONS,
-];
+  ROLES.OPERATIONS];
 
 /**
  * @description List provider schedules with pagination and filters
@@ -58,7 +56,8 @@ const SCHEDULING_WRITE_ROLES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listProviderSchedulesQuerySchema }),
+  '/',
+  validateRequest({ query: listProviderSchedulesQuerySchema }),
 
   authenticate(),
   authorize(SCHEDULING_READ_ROLES, 'role'),
@@ -79,7 +78,8 @@ router.get(
  * @throws 404 Provider schedule not found
  */
 router.get(
-  '/:id',  validateRequest({ params: providerScheduleIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: providerScheduleIdParamsSchema }),
 
   authenticate(),
   authorize(SCHEDULING_READ_ROLES, 'role'),
@@ -107,7 +107,8 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createProviderScheduleSchema }),
+  '/',
+  validateRequest({ body: createProviderScheduleSchema }),
 
   authenticate(),
   authorize(SCHEDULING_WRITE_ROLES, 'role'),
@@ -135,7 +136,8 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: providerScheduleIdParamsSchema, body: updateProviderScheduleSchema }),
+  '/:id',
+  validateRequest({ params: providerScheduleIdParamsSchema, body: updateProviderScheduleSchema }),
 
   authenticate(),
   authorize(SCHEDULING_WRITE_ROLES, 'role'),
@@ -156,7 +158,8 @@ router.put(
  * @throws 404 Provider schedule not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: providerScheduleIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: providerScheduleIdParamsSchema }),
 
   authenticate(),
   authorize(SCHEDULING_WRITE_ROLES, 'role'),

@@ -14,8 +14,7 @@ const PATIENT_SELECT = {
   first_name: true,
   last_name: true,
   date_of_birth: true,
-  gender: true,
-};
+  gender: true};
 
 const ENCOUNTER_SELECT = {
   id: true,
@@ -33,39 +32,27 @@ const ENCOUNTER_SELECT = {
     take: 1,
     select: {
       id: true,
-      human_friendly_id: true,
-    },
-  },
-};
+      human_friendly_id: true}}};
 
 const BASE_INCLUDE = {
   admission: {
     select: {
       id: true,
-      human_friendly_id: true,
-    },
-  },
+      human_friendly_id: true}},
   emergency_case: {
     select: {
       id: true,
-      human_friendly_id: true,
-    },
-  },
+      human_friendly_id: true}},
   encounter: {
     select: {
       ...ENCOUNTER_SELECT,
       patient: {
-        select: PATIENT_SELECT,
-      },
-    },
-  },
+        select: PATIENT_SELECT}}},
   anesthesia_records: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      updated_at: 'desc',
-    },
+      updated_at: 'desc'},
     include: {
       anesthetist: {
         select: {
@@ -76,68 +63,44 @@ const BASE_INCLUDE = {
             select: {
               first_name: true,
               middle_name: true,
-              last_name: true,
-            },
-          },
+              last_name: true}},
           staff_profile: {
             select: {
               id: true,
-              human_friendly_id: true,
-            },
-          },
-        },
-      },
-    },
-  },
+              human_friendly_id: true}}}}}},
   post_op_notes: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      updated_at: 'desc',
-    },
-  },
+      updated_at: 'desc'}},
   resource_allocations: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      assigned_at: 'desc',
-    },
-  },
+      assigned_at: 'desc'}},
   checklist_items: {
     where: {
-      deleted_at: null,
-    },
-    orderBy: [{ phase: 'asc' }, { item_code: 'asc' }],
-  },
+      deleted_at: null},
+    orderBy: [{ phase: 'asc' }, { item_code: 'asc' }]},
   anesthesia_observations: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      observed_at: 'desc',
-    },
-    take: 120,
-  },
-};
+      observed_at: 'desc'},
+    take: 120}};
 
 const findById = async (id, include = {}) => {
   try {
     return await prisma.theatre_case.findFirst({
       where: {
         id,
-        deleted_at: null,
-      },
+        deleted_at: null},
       include: {
         ...BASE_INCLUDE,
-        ...include,
-      },
-    });
+        ...include}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -152,20 +115,16 @@ const findMany = async (
     return await prisma.theatre_case.findMany({
       where: {
         deleted_at: null,
-        ...filters,
-      },
+        ...filters},
       skip,
       take,
       orderBy,
       include: {
         ...BASE_INCLUDE,
-        ...include,
-      },
-    });
+        ...include}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -174,13 +133,10 @@ const count = async (filters = {}) => {
     return await prisma.theatre_case.count({
       where: {
         deleted_at: null,
-        ...filters,
-      },
-    });
+        ...filters}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -188,6 +144,5 @@ module.exports = {
   BASE_INCLUDE,
   findById,
   findMany,
-  count,
-};
+  count};
 

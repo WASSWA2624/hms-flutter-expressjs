@@ -9,8 +9,7 @@ const {
   currentOfficeContextQuerySchema,
   listOfficeContextsQuerySchema,
   officeContextIdParamsSchema,
-  updateOfficeContextSchema,
-} = require('@validations/office-context/office-context.schema');
+  updateOfficeContextSchema} = require('@validations/office-context/office-context.schema');
 
 const router = express.Router();
 

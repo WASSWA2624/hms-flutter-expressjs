@@ -107,9 +107,7 @@ const createStaffProfile = asyncHandler(async (req, res) => {
     resource: 'staff-profiles',
     displayId: staffProfile?.display_id || staffProfile?.human_friendly_id || null,
     extra: {
-      staff_profile_id: staffProfile?.display_id || staffProfile?.human_friendly_id || null,
-    },
-  }).catch(() => {});
+      staff_profile_id: staffProfile?.display_id || staffProfile?.human_friendly_id || null}}).catch(() => {});
 
   sendSuccess(res, 201, 'messages.staff_profile.create.success', staffProfile);
 });
@@ -136,9 +134,7 @@ const updateStaffProfile = asyncHandler(async (req, res) => {
     resource: 'staff-profiles',
     displayId: staffProfile?.display_id || staffProfile?.human_friendly_id || null,
     extra: {
-      staff_profile_id: staffProfile?.display_id || staffProfile?.human_friendly_id || null,
-    },
-  }).catch(() => {});
+      staff_profile_id: staffProfile?.display_id || staffProfile?.human_friendly_id || null}}).catch(() => {});
 
   sendSuccess(res, 200, 'messages.staff_profile.update.success', staffProfile);
 });

@@ -13,8 +13,7 @@ const {
   resolvePayloadIdentifier,
   resolveScopeIdsForList,
   resolveScopedContext,
-  safeUpper,
-} = require('@lib/reports/api');
+  safeUpper} = require('@lib/reports/api');
 const { serializeKpiSnapshot } = require('@lib/reports/serializers');
 
 const SORT_FIELDS = ['recorded_at', 'created_at', 'updated_at', 'name', 'metric_key', 'threshold_state'];
@@ -34,13 +33,10 @@ const listKpiSnapshots = async (filters = {}, page = 1, limit = 20, sortBy, orde
     tenant_id: scoped.tenant_id,
     ...buildSinceFilter(filters.since),
     ...buildDateWindowFilter({ from: filters.from, to: filters.to, field: 'recorded_at' }),
-    ...buildSearchWhere(filters.search, ['name', 'metric_key', 'metric_group']),
-  };
+    ...buildSearchWhere(filters.search, ['name', 'metric_key', 'metric_group'])};
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
   if (normalizeString(filters.facility_id) && !scoped.facility_id) where.facility_id = '__none__';
-  if (scoped.branch_id) where.branch_id = scoped.branch_id;
-  if (normalizeString(filters.branch_id) && !scoped.branch_id) where.branch_id = '__none__';
   if (normalizeString(filters.metric_key)) where.metric_key = normalizeString(filters.metric_key);
   if (normalizeString(filters.metric_group)) where.metric_group = normalizeString(filters.metric_group);
   if (normalizeString(filters.threshold_state)) where.threshold_state = safeUpper(filters.threshold_state);
@@ -49,13 +45,11 @@ const listKpiSnapshots = async (filters = {}, page = 1, limit = 20, sortBy, orde
   const orderBy = buildSort(sortBy, order, 'recorded_at', SORT_FIELDS);
   const [records, total] = await Promise.all([
     kpiSnapshotRepository.findMany({ where, skip, take: limit, orderBy }),
-    kpiSnapshotRepository.count(where),
-  ]);
+    kpiSnapshotRepository.count(where)]);
 
   return {
     kpiSnapshots: records.map(serializeKpiSnapshot),
-    pagination: buildPagination(page, limit, total),
-  };
+    pagination: buildPagination(page, limit, total)};
 };
 
 const getKpiSnapshotById = async (id, user = {}) => serializeKpiSnapshot(await assertScopedRecord(id, user));
@@ -69,22 +63,15 @@ const createKpiSnapshot = async (data, context = {}) => {
       model: 'facility',
       field: 'facility_id',
       tenant_id: scoped.tenant_id,
-      nullable: true,
-    }),
-    branch_id: await resolvePayloadIdentifier({
-      value: data.branch_id ?? scoped.branch_id,
-      model: 'branch',
-      field: 'branch_id',
+      nullable: true}),
       tenant_id: scoped.tenant_id,
-      nullable: true,
-    }),
+      nullable: true}),
     name: normalizeString(data.name),
     metric_key: normalizeString(data.metric_key),
     metric_group: normalizeString(data.metric_group),
     value: String(data.value),
     threshold_state: safeUpper(data.threshold_state),
-    recorded_at: data.recorded_at ? new Date(data.recorded_at) : new Date(),
-  };
+    recorded_at: data.recorded_at ? new Date(data.recorded_at) : new Date()};
 
   const record = await kpiSnapshotRepository.create(payload);
   await createAuditLog({
@@ -96,8 +83,7 @@ const createKpiSnapshot = async (data, context = {}) => {
     entity_id: record.id,
     diff: { after: serializeKpiSnapshot(record) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeKpiSnapshot(record);
 };
@@ -107,29 +93,20 @@ const updateKpiSnapshot = async (id, data, context = {}) => {
   ensureVersionMatch({
     current,
     expectedVersion: data.version,
-    serializer: serializeKpiSnapshot,
-  });
+    serializer: serializeKpiSnapshot});
 
   const updateData = {
-    version: Number(current.version || 1) + 1,
-  };
+    version: Number(current.version || 1) + 1};
   if (data.facility_id !== undefined) {
     updateData.facility_id = await resolvePayloadIdentifier({
       value: data.facility_id,
       model: 'facility',
       field: 'facility_id',
       tenant_id: current.tenant_id,
-      nullable: true,
-    });
+      nullable: true});
   }
-  if (data.branch_id !== undefined) {
-    updateData.branch_id = await resolvePayloadIdentifier({
-      value: data.branch_id,
-      model: 'branch',
-      field: 'branch_id',
       tenant_id: current.tenant_id,
-      nullable: true,
-    });
+      nullable: true});
   }
   if (data.name !== undefined) updateData.name = normalizeString(data.name);
   if (data.metric_key !== undefined) updateData.metric_key = normalizeString(data.metric_key);
@@ -148,18 +125,15 @@ const updateKpiSnapshot = async (id, data, context = {}) => {
     entity_id: current.id,
     diff: createAuditDiff(current, record, [
       'facility_id',
-      'branch_id',
       'name',
       'metric_key',
       'metric_group',
       'value',
       'threshold_state',
       'recorded_at',
-      'version',
-    ]),
+      'version']),
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeKpiSnapshot(record);
 };
@@ -176,8 +150,7 @@ const deleteKpiSnapshot = async (id, context = {}) => {
     entity_id: current.id,
     diff: { before: serializeKpiSnapshot(current) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 };
 
 module.exports = {
@@ -185,5 +158,4 @@ module.exports = {
   deleteKpiSnapshot,
   getKpiSnapshotById,
   listKpiSnapshots,
-  updateKpiSnapshot,
-};
+  updateKpiSnapshot};

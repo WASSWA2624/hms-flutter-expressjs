@@ -47,7 +47,7 @@ describe('Message Repository', () => {
       expect(result).toEqual(mockMessage);
       expect(prisma.message.findFirst).toHaveBeenCalledWith({
         where: { id: mockMessage.id, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -80,7 +80,7 @@ describe('Message Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -94,7 +94,7 @@ describe('Message Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
   });

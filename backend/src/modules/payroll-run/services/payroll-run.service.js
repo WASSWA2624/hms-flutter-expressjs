@@ -4,8 +4,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -15,14 +14,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const emptyResult = (page, limit) => ({
   payrollRuns: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const listPayrollRuns = async (filters, page, limit, sortBy, order) => {
   try {
@@ -33,8 +30,7 @@ const listPayrollRuns = async (filters, page, limit, sortBy, order) => {
     const tenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
       model: 'tenant',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.tenant_id && tenantId === null) return emptyResult(page, limit);
     if (tenantId) whereClause.tenant_id = tenantId;
 
@@ -54,13 +50,11 @@ const listPayrollRuns = async (filters, page, limit, sortBy, order) => {
 
     const [payrollRuns, total] = await Promise.all([
       payrollRunRepository.findMany(whereClause, skip, limit, orderBy),
-      payrollRunRepository.count(whereClause),
-    ]);
+      payrollRunRepository.count(whereClause)]);
 
     return {
       payrollRuns,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -72,8 +66,7 @@ const getPayrollRunById = async (id) => {
     const resolvedId = await resolveEntityId({
       model: 'payroll_run',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const payrollRun = await payrollRunRepository.findById(resolvedId);
     if (!payrollRun) throw new HttpError('errors.payroll_run.not_found', 404);
     return payrollRun;
@@ -91,9 +84,7 @@ const createPayrollRun = async (data, userId, ipAddress) => {
         value: data.tenant_id,
         model: 'tenant',
         field: 'tenant_id',
-        where: { deleted_at: null },
-      }),
-    };
+        where: { deleted_at: null }})};
     const payrollRun = await payrollRunRepository.create(payload);
     createAuditLog({
       user_id: userId,
@@ -101,8 +92,7 @@ const createPayrollRun = async (data, userId, ipAddress) => {
       entity: 'payroll_run',
       entity_id: payrollRun.id,
       diff: { after: payrollRun },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return payrollRun;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -115,8 +105,7 @@ const updatePayrollRun = async (id, data, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'payroll_run',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await payrollRunRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.payroll_run.not_found', 404);
 
@@ -127,8 +116,7 @@ const updatePayrollRun = async (id, data, userId, ipAddress) => {
       entity: 'payroll_run',
       entity_id: payrollRun.id,
       diff: { before, after: payrollRun },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return payrollRun;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -141,8 +129,7 @@ const deletePayrollRun = async (id, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'payroll_run',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await payrollRunRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.payroll_run.not_found', 404);
 
@@ -153,8 +140,7 @@ const deletePayrollRun = async (id, userId, ipAddress) => {
       entity: 'payroll_run',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -166,5 +152,4 @@ module.exports = {
   getPayrollRunById,
   createPayrollRun,
   updatePayrollRun,
-  deletePayrollRun,
-};
+  deletePayrollRun};

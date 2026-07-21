@@ -13,8 +13,7 @@ const { HttpError } = require('@lib/errors');
 const {
   sanitizeIdentifier,
   resolveEntityId,
-  resolveIdentifierForFilter,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForFilter} = require('@lib/billing/identifiers');
 const { serializeIntegrationLog } = require('@lib/integrations/serializers');
 
 const SORT_FIELDS = new Set(['logged_at', 'created_at', 'updated_at', 'status']);
@@ -32,12 +31,7 @@ const INTEGRATION_LOG_INCLUDE = {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      },
-    },
-  },
-};
+          name: true}}}}};
 
 const buildPagination = (page, limit, total) => ({
   page,
@@ -45,13 +39,11 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: limit > 0 ? page < Math.ceil(total / limit) : false,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const buildEmptyListResult = (page, limit) => ({
   data: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const normalizePage = (value) => {
   const parsed = Number(value);
@@ -77,8 +69,7 @@ const resolveIntegrationLogFilters = async (filters = {}, page, limit) => {
   if (filters.integration_id !== undefined) {
     const integrationId = await resolveIdentifierForFilter({
       value: filters.integration_id,
-      model: 'integration',
-    });
+      model: 'integration'});
     if (integrationId === null) return buildEmptyListResult(page, limit);
     if (integrationId !== undefined) where.integration_id = integrationId;
   }
@@ -92,8 +83,7 @@ const resolveIntegrationLogFilters = async (filters = {}, page, limit) => {
     where.OR = [
       { message: { contains: search } },
       { human_friendly_id: { contains: search.toUpperCase() } },
-      { integration: { name: { contains: search } } },
-    ];
+      { integration: { name: { contains: search } } }];
   }
 
   return where;
@@ -109,8 +99,7 @@ const resolveIntegrationLogFilters = async (filters = {}, page, limit) => {
 const getIntegrationLogById = async (id) => {
   const resolvedId = await resolveEntityId({
     model: 'integration_log',
-    identifier: id,
-  });
+    identifier: id});
   const integrationLog = await integrationLogRepository.findById(resolvedId, INTEGRATION_LOG_INCLUDE);
 
   if (!integrationLog) {
@@ -141,8 +130,7 @@ const getIntegrationLogsByIntegrationId = async (
   const numericLimit = normalizeLimit(limit);
   const resolvedIntegrationId = await resolveIdentifierForFilter({
     value: integrationId,
-    model: 'integration',
-  });
+    model: 'integration'});
 
   if (resolvedIntegrationId === null) {
     return buildEmptyListResult(numericPage, numericLimit);
@@ -151,8 +139,7 @@ const getIntegrationLogsByIntegrationId = async (
   const skip = (numericPage - 1) * numericLimit;
   const orderBy = { [normalizeSortField(sortBy)]: normalizeOrder(order) };
   const where = {
-    integration_id: resolvedIntegrationId || integrationId,
-  };
+    integration_id: resolvedIntegrationId || integrationId};
 
   const [integrationLogs, total] = await Promise.all([
     integrationLogRepository.findMany(
@@ -162,13 +149,11 @@ const getIntegrationLogsByIntegrationId = async (
       orderBy,
       INTEGRATION_LOG_INCLUDE
     ),
-    integrationLogRepository.count(where),
-  ]);
+    integrationLogRepository.count(where)]);
 
   return {
     data: integrationLogs.map(serializeIntegrationLog),
-    pagination: buildPagination(numericPage, numericLimit, total),
-  };
+    pagination: buildPagination(numericPage, numericLimit, total)};
 };
 
 /**
@@ -206,13 +191,11 @@ const listIntegrationLogs = async (
       orderBy,
       INTEGRATION_LOG_INCLUDE
     ),
-    integrationLogRepository.count(resolvedFilters),
-  ]);
+    integrationLogRepository.count(resolvedFilters)]);
 
   return {
     data: integrationLogs.map(serializeIntegrationLog),
-    pagination: buildPagination(numericPage, numericLimit, total),
-  };
+    pagination: buildPagination(numericPage, numericLimit, total)};
 };
 
 /**
@@ -226,8 +209,7 @@ const listIntegrationLogs = async (
 const replayIntegrationLog = async (id, data = {}, context = {}) => {
   const resolvedId = await resolveEntityId({
     model: 'integration_log',
-    identifier: id,
-  });
+    identifier: id});
   const existingLog = await integrationLogRepository.findById(resolvedId, INTEGRATION_LOG_INCLUDE);
 
   if (!existingLog) {
@@ -237,8 +219,7 @@ const replayIntegrationLog = async (id, data = {}, context = {}) => {
   const replayedLog = await integrationLogRepository.create({
     integration_id: existingLog.integration_id,
     status: existingLog.status,
-    message: `[REPLAY] ${existingLog.message || 'No message'}`,
-  });
+    message: `[REPLAY] ${existingLog.message || 'No message'}`});
   const replayedRecord =
     (await integrationLogRepository.findById(replayedLog.id, INTEGRATION_LOG_INCLUDE)) || replayedLog;
 
@@ -252,11 +233,8 @@ const replayIntegrationLog = async (id, data = {}, context = {}) => {
       before: existingLog,
       after: replayedLog,
       metadata: {
-        notes: data.notes || null,
-      },
-    },
-    ip_address: context.ip_address,
-  }).catch(() => {});
+        notes: data.notes || null}},
+    ip_address: context.ip_address}).catch(() => {});
 
   return serializeIntegrationLog(replayedRecord);
 };
@@ -265,5 +243,4 @@ module.exports = {
   getIntegrationLogById,
   getIntegrationLogsByIntegrationId,
   listIntegrationLogs,
-  replayIntegrationLog,
-};
+  replayIntegrationLog};

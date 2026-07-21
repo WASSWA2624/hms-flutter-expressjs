@@ -8,8 +8,7 @@ const buildContext = (req) => ({
   tenant_id: req.user?.tenant_id || req.user?.tenantId || null,
   facility_id: req.user?.facility_id || req.user?.facilityId || null,
   ip_address: req.ip,
-  user_agent: req.get('user-agent'),
-});
+  user_agent: req.get('user-agent')});
 
 const listReportRuns = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, sort_by, order, ...filters } = req.query;
@@ -70,5 +69,4 @@ module.exports = {
   getReportRunById,
   listReportRuns,
   retryReportRun,
-  updateReportRun,
-};
+  updateReportRun};

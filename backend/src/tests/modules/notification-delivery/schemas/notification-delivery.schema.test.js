@@ -2,8 +2,7 @@ const {
   createNotificationDeliverySchema,
   updateNotificationDeliverySchema,
   notificationDeliveryIdParamsSchema,
-  listNotificationDeliveriesQuerySchema,
-} = require('@validations/notification-delivery/notification-delivery.schema');
+  listNotificationDeliveriesQuerySchema} = require('@validations/notification-delivery/notification-delivery.schema');
 
 describe('notification-delivery.schema', () => {
   describe('createNotificationDeliverySchema', () => {
@@ -13,16 +12,14 @@ describe('notification-delivery.schema', () => {
         channel: 'IN_APP',
         status: 'QUEUED',
         recipient_target: 'doctor@example.com',
-        attempt_count: 0,
-      });
+        attempt_count: 0});
       expect(result.success).toBe(true);
     });
 
     it('rejects unsupported channel', () => {
       const result = createNotificationDeliverySchema.safeParse({
         notification_id: 'NTF-1001',
-        channel: 'FAX',
-      });
+        channel: 'FAX'});
       expect(result.success).toBe(false);
     });
 
@@ -30,8 +27,7 @@ describe('notification-delivery.schema', () => {
       const result = createNotificationDeliverySchema.safeParse({
         notification_id: 'NTF-1001',
         channel: 'IN_APP',
-        status: 'PROCESSING',
-      });
+        status: 'PROCESSING'});
       expect(result.success).toBe(false);
     });
   });
@@ -41,8 +37,7 @@ describe('notification-delivery.schema', () => {
       const result = updateNotificationDeliverySchema.safeParse({
         status: 'FAILED',
         retryable: true,
-        error_message: 'Provider timeout',
-      });
+        error_message: 'Provider timeout'});
       expect(result.success).toBe(true);
     });
   });
@@ -51,13 +46,11 @@ describe('notification-delivery.schema', () => {
     it('accepts uuid or friendly id', () => {
       expect(
         notificationDeliveryIdParamsSchema.safeParse({
-          id: '123e4567-e89b-12d3-a456-426614174000',
-        }).success
+          id: '123e4567-e89b-12d3-a456-426614174000'}).success
       ).toBe(true);
       expect(
         notificationDeliveryIdParamsSchema.safeParse({
-          id: 'NDL-1001',
-        }).success
+          id: 'NDL-1001'}).success
       ).toBe(true);
     });
   });
@@ -70,8 +63,7 @@ describe('notification-delivery.schema', () => {
         status: 'DELIVERED',
         retryable: 'false',
         sort_by: 'created_at',
-        order: 'desc',
-      });
+        order: 'desc'});
       expect(result.success).toBe(true);
       expect(result.data.retryable).toBe(false);
     });

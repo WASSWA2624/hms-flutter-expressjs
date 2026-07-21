@@ -17,8 +17,7 @@ const getPharmacyWorkbench = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
-    order = 'desc',
-  } = req.query;
+    order = 'desc'} = req.query;
 
   const data = await pharmacyWorkspaceService.getPharmacyWorkbench(
     {
@@ -30,8 +29,7 @@ const getPharmacyWorkbench = asyncHandler(async (req, res) => {
       to,
       patient_id,
       encounter_id,
-      search,
-    },
+      search},
     Number(page),
     Number(limit),
     sort_by,
@@ -58,8 +56,7 @@ const searchDrugs = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
-    order = 'asc',
-  } = req.query;
+    order = 'asc'} = req.query;
 
   const data = await pharmacyWorkspaceService.searchDrugs(
     {
@@ -68,8 +65,7 @@ const searchDrugs = asyncHandler(async (req, res) => {
       code,
       form,
       strength,
-      stock_status,
-    },
+      stock_status},
     Number(page),
     Number(limit),
     sort_by,
@@ -162,8 +158,7 @@ const getInventoryStock = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
-    order = 'desc',
-  } = req.query;
+    order = 'desc'} = req.query;
 
   const data = await pharmacyWorkspaceService.getInventoryStock(
     {
@@ -173,8 +168,7 @@ const getInventoryStock = asyncHandler(async (req, res) => {
       stock_status,
       expiring_within_days,
       expired_only,
-      search,
-    },
+      search},
     Number(page),
     Number(limit),
     sort_by,
@@ -308,5 +302,4 @@ module.exports = {
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
   deletePharmacyStorageRoom,
-  deletePharmacyStorageShelf,
-};
+  deletePharmacyStorageShelf};

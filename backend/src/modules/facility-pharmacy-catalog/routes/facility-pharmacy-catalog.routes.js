@@ -12,8 +12,7 @@ const {
   upsertFacilityPharmacyOfferingSchema,
   disableFacilityPharmacyOfferingSchema,
   facilityPharmacyDrugParamsSchema,
-  listFacilityPharmacyCatalogQuerySchema,
-} = require('@validations/facility-pharmacy-catalog/facility-pharmacy-catalog.schema');
+  listFacilityPharmacyCatalogQuerySchema} = require('@validations/facility-pharmacy-catalog/facility-pharmacy-catalog.schema');
 
 const router = express.Router();
 
@@ -24,16 +23,14 @@ const PHARMACY_READ_ROLES = [
   ROLES.PHARMACIST,
   ROLES.DOCTOR,
   ROLES.NURSE,
-  ROLES.OPERATIONS,
-];
+  ROLES.OPERATIONS];
 
 const PHARMACY_CONFIG_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.PHARMACIST,
-  ROLES.OPERATIONS,
-];
+  ROLES.OPERATIONS];
 
 router.get(
   '/drugs',
@@ -55,8 +52,7 @@ router.put(
   '/drugs/:drug_id',
   validateRequest({
     params: facilityPharmacyDrugParamsSchema,
-    body: upsertFacilityPharmacyOfferingSchema,
-  }),
+    body: upsertFacilityPharmacyOfferingSchema}),
   authenticate(),
   authorize(PHARMACY_CONFIG_WRITE_ROLES, 'role'),
   facilityPharmacyCatalogController.upsertFacilityPharmacyOffering
@@ -66,8 +62,7 @@ router.delete(
   '/drugs/:drug_id',
   validateRequest({
     params: facilityPharmacyDrugParamsSchema,
-    body: disableFacilityPharmacyOfferingSchema,
-  }),
+    body: disableFacilityPharmacyOfferingSchema}),
   authenticate(),
   authorize(PHARMACY_CONFIG_WRITE_ROLES, 'role'),
   facilityPharmacyCatalogController.disableFacilityPharmacyOffering

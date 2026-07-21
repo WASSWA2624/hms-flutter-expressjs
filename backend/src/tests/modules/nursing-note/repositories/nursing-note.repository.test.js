@@ -53,7 +53,7 @@ describe('Nursing Note Repository', () => {
           id: 'note-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -104,7 +104,7 @@ describe('Nursing Note Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

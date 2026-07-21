@@ -6,8 +6,7 @@ const {
   BILLABLE_SOURCE_MODULES,
   buildConsultationBillingPayload,
   shouldApplyClinicalRequestBilling,
-  buildPendingClinicalRequestBilling,
-} = require('@lib/billing/clinical-request-billing');
+  buildPendingClinicalRequestBilling} = require('@lib/billing/clinical-request-billing');
 const { resolveOfflinePolicy } = require('@config/offline-policies');
 
 describe('billing engine integration helpers', () => {
@@ -17,22 +16,19 @@ describe('billing engine integration helpers', () => {
         consultationFee: '75.00',
         currency: 'USD',
         catalogItemId: 'staff-profile-1',
-        paymentStatus: 'PENDING',
-      });
+        paymentStatus: 'PENDING'});
 
       expect(billing).toEqual(
         expect.objectContaining({
           payment_status: 'PENDING',
           currency: 'USD',
-          total_amount: '75.00',
-        })
+          total_amount: '75.00'})
       );
       expect(billing.line_items[0]).toEqual(
         expect.objectContaining({
           catalog_type: 'CONSULTATION',
           catalog_item_id: 'staff-profile-1',
-          unit_price: '75.00',
-        })
+          unit_price: '75.00'})
       );
       expect(shouldApplyClinicalRequestBilling(billing)).toBe(true);
     });
@@ -41,8 +37,7 @@ describe('billing engine integration helpers', () => {
       expect(
         buildConsultationBillingPayload({
           consultationFee: '0',
-          currency: 'USD',
-        })
+          currency: 'USD'})
       ).toBeNull();
     });
 
@@ -54,17 +49,14 @@ describe('billing engine integration helpers', () => {
           status: 'COMPLETED',
           amount: '40.00',
           method: 'CASH',
-          transaction_ref: 'RCPT-1',
-        },
-      });
+          transaction_ref: 'RCPT-1'}});
 
       expect(billing).toEqual(
         expect.objectContaining({
           payment_status: 'PAID',
           paid_amount: '40.00',
           payment_method: 'CASH',
-          payment_reference: 'RCPT-1',
-        })
+          payment_reference: 'RCPT-1'})
       );
     });
   });
@@ -88,11 +80,8 @@ describe('billing engine integration helpers', () => {
             quantity: 1,
             unit_price: '100.00',
             line_total: '100.00',
-            catalog_type: 'SERVICE',
-          },
-        ],
-        currency: 'USD',
-      });
+            catalog_type: 'SERVICE'}],
+        currency: 'USD'});
 
       expect(billing.line_items[0].catalog_type).toBe('SERVICE');
       expect(shouldApplyClinicalRequestBilling(billing)).toBe(true);
@@ -104,8 +93,7 @@ describe('online-only financial offline policy', () => {
   it('marks payment mutations as online-only and not queueable', () => {
     const policy = resolveOfflinePolicy({
       method: 'POST',
-      path: '/api/v1/payments',
-    });
+      path: '/api/v1/payments'});
     expect(policy.cache).toBe('no-store');
     expect(policy.online_only).toBe(true);
     expect(policy.allow_offline_queue).toBe(false);
@@ -114,8 +102,7 @@ describe('online-only financial offline policy', () => {
   it('marks billing workspace mutations as online-only', () => {
     const policy = resolveOfflinePolicy({
       method: 'POST',
-      path: '/api/v1/billing/invoices/INV-1/payments',
-    });
+      path: '/api/v1/billing/invoices/INV-1/payments'});
     expect(policy.online_only).toBe(true);
     expect(policy.allow_offline_queue).toBe(false);
   });
@@ -137,8 +124,7 @@ describe('online-only financial offline policy', () => {
   it('allows non-financial list GETs to remain sync-capable', () => {
     const policy = resolveOfflinePolicy({
       method: 'GET',
-      path: '/api/v1/appointments',
-    });
+      path: '/api/v1/appointments'});
     expect(policy.cache).toBe('sync');
     expect(policy.online_only).toBe(false);
   });

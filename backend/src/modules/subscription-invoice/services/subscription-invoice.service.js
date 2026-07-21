@@ -10,31 +10,24 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   createSubscriptionPublicId,
-  PUBLIC_ID_PREFIXES,
-} = require('@lib/subscriptions/constants');
+  PUBLIC_ID_PREFIXES} = require('@lib/subscriptions/constants');
 const {
   serializeSubscriptionInvoice,
-  serializeSubscriptionInvoiceCollection,
-} = require('@lib/subscriptions/serializers');
+  serializeSubscriptionInvoiceCollection} = require('@lib/subscriptions/serializers');
 const {
   resolveEntityId,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 const {
   canAccessTenant,
-  resolveUserTenantScope,
-} = require('@lib/subscriptions/access');
+  resolveUserTenantScope} = require('@lib/subscriptions/access');
 
 const INVOICE_INCLUDE = Object.freeze({
   subscription: {
     include: {
       tenant: true,
-      plan: true,
-    },
-  },
-  invoice: true,
-});
+      plan: true}},
+  invoice: true});
 
 const requireTenantScope = (user = {}) => {
   const scope = resolveUserTenantScope(user);
@@ -52,16 +45,13 @@ const emptyList = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const loadSubscriptionInvoiceRecord = async (identifier, user = {}) => {
   const scope = requireTenantScope(user);
   const resolvedId = await resolveEntityId({
     model: 'subscription_invoice',
-    identifier,
-  });
+    identifier});
   const record = await subscriptionInvoiceRepository.findById(resolvedId, INVOICE_INCLUDE);
 
   if (
@@ -85,16 +75,14 @@ const resolveSubscriptionInvoicePayload = async (
     : scope.tenant_id;
 
   const payload = {
-    ...data,
-  };
+    ...data};
 
   if (data.subscription_id !== undefined) {
     payload.subscription_id = await resolveIdentifierForPayload({
       value: data.subscription_id,
       model: 'subscription',
       field: 'subscription_id',
-      where: scopedTenantId ? { tenant_id: scopedTenantId } : {},
-    });
+      where: scopedTenantId ? { tenant_id: scopedTenantId } : {}});
   }
 
   if (data.invoice_id !== undefined) {
@@ -102,8 +90,7 @@ const resolveSubscriptionInvoicePayload = async (
       value: data.invoice_id,
       model: 'invoice',
       field: 'invoice_id',
-      where: scopedTenantId ? { tenant_id: scopedTenantId } : {},
-    });
+      where: scopedTenantId ? { tenant_id: scopedTenantId } : {}});
   }
 
   return payload;
@@ -133,8 +120,7 @@ const listSubscriptionInvoices = async (
     const subscriptionId = await resolveIdentifierForFilter({
       value: filters.subscription_id,
       model: 'subscription',
-      where: !scope.is_elevated ? { tenant_id: scope.tenant_id } : {},
-    });
+      where: !scope.is_elevated ? { tenant_id: scope.tenant_id } : {}});
     if (subscriptionId === null) return emptyList(page, limit);
     if (subscriptionId) {
       where.subscription_id = subscriptionId;
@@ -145,8 +131,7 @@ const listSubscriptionInvoices = async (
     const invoiceId = await resolveIdentifierForFilter({
       value: filters.invoice_id,
       model: 'invoice',
-      where: !scope.is_elevated ? { tenant_id: scope.tenant_id } : {},
-    });
+      where: !scope.is_elevated ? { tenant_id: scope.tenant_id } : {}});
     if (invoiceId === null) return emptyList(page, limit);
     if (invoiceId) {
       where.invoice_id = invoiceId;
@@ -155,8 +140,7 @@ const listSubscriptionInvoices = async (
 
   const [subscriptionInvoices, total] = await Promise.all([
     subscriptionInvoiceRepository.findMany(where, skip, limit, orderBy, INVOICE_INCLUDE),
-    subscriptionInvoiceRepository.count(where),
-  ]);
+    subscriptionInvoiceRepository.count(where)]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -168,9 +152,7 @@ const listSubscriptionInvoices = async (
       total,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-    },
-  };
+      hasPreviousPage: page > 1}};
 };
 
 const createSubscriptionInvoice = async (data, user, ip) => {
@@ -179,8 +161,7 @@ const createSubscriptionInvoice = async (data, user, ip) => {
     ...(await resolveSubscriptionInvoicePayload(data, user, scope.tenant_id)),
     human_friendly_id:
       data.human_friendly_id
-      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.subscription_invoice),
-  });
+      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.subscription_invoice)});
   const subscriptionInvoice = await loadSubscriptionInvoiceRecord(created.id, user);
 
   await createAuditLog({
@@ -190,8 +171,7 @@ const createSubscriptionInvoice = async (data, user, ip) => {
     entity: 'subscription_invoice',
     entity_id: subscriptionInvoice.id,
     diff: { after: subscriptionInvoice },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscriptionInvoice(subscriptionInvoice);
 };
@@ -215,8 +195,7 @@ const updateSubscriptionInvoice = async (id, data, user, ip) => {
     entity: 'subscription_invoice',
     entity_id: subscriptionInvoice.id,
     diff: { before, after: subscriptionInvoice },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscriptionInvoice(subscriptionInvoice);
 };
@@ -232,8 +211,7 @@ const deleteSubscriptionInvoice = async (id, user, ip) => {
     entity: 'subscription_invoice',
     entity_id: subscriptionInvoice.id,
     diff: { before, after: subscriptionInvoice },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   return subscriptionInvoice;
 };
@@ -254,11 +232,8 @@ const collectSubscriptionInvoice = async (id, data = {}, user, ip) => {
       metadata: {
         event: 'collect',
         payment_method: data.payment_method || null,
-        notes: data.notes || null,
-      },
-    },
-    ip_address: ip,
-  }).catch(() => {});
+        notes: data.notes || null}},
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscriptionInvoiceCollection({
     subscription_invoice_id: serializedInvoice.id,
@@ -267,8 +242,7 @@ const collectSubscriptionInvoice = async (id, data = {}, user, ip) => {
     payment_method: data.payment_method || null,
     version: serializedInvoice.version,
     updated_at: serializedInvoice.updated_at,
-    subscription_invoice: serializedInvoice,
-  });
+    subscription_invoice: serializedInvoice});
 };
 
 const retrySubscriptionInvoice = async (id, data = {}, user, ip) => {
@@ -286,11 +260,8 @@ const retrySubscriptionInvoice = async (id, data = {}, user, ip) => {
       before: subscriptionInvoice,
       metadata: {
         event: 'retry',
-        retry_reason: data.retry_reason || null,
-      },
-    },
-    ip_address: ip,
-  }).catch(() => {});
+        retry_reason: data.retry_reason || null}},
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscriptionInvoiceCollection({
     subscription_invoice_id: serializedInvoice.id,
@@ -299,8 +270,7 @@ const retrySubscriptionInvoice = async (id, data = {}, user, ip) => {
     retry_reason: data.retry_reason || null,
     version: serializedInvoice.version,
     updated_at: serializedInvoice.updated_at,
-    subscription_invoice: serializedInvoice,
-  });
+    subscription_invoice: serializedInvoice});
 };
 
 module.exports = {
@@ -310,5 +280,4 @@ module.exports = {
   updateSubscriptionInvoice,
   deleteSubscriptionInvoice,
   collectSubscriptionInvoice,
-  retrySubscriptionInvoice,
-};
+  retrySubscriptionInvoice};

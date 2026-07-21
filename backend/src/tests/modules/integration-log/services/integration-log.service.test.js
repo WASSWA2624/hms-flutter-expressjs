@@ -7,8 +7,7 @@
 
 jest.mock('@repositories/integration-log/integration-log.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/billing/identifiers', () => ({
   sanitizeIdentifier: jest.fn((value) => (typeof value === 'string' ? value.trim() : '')),
   resolvePublicIdentifier: jest.fn((...values) => {
@@ -21,8 +20,7 @@ jest.mock('@lib/billing/identifiers', () => ({
     return null;
   }),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
-  resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
-}));
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value)}));
 
 const integrationLogService = require('@services/integration-log/integration-log.service');
 const integrationLogRepository = require('@repositories/integration-log/integration-log.repository');
@@ -50,11 +48,8 @@ const buildRawIntegrationLog = (overrides = {}) => ({
     tenant: {
       id: '223e4567-e89b-12d3-a456-426614174000',
       human_friendly_id: 'TEN0000001',
-      name: 'Acme Health',
-    },
-  },
-  ...overrides,
-});
+      name: 'Acme Health'}},
+  ...overrides});
 
 describe('Integration Log Service', () => {
   beforeEach(() => {
@@ -74,8 +69,7 @@ describe('Integration Log Service', () => {
 
       expect(identifiers.resolveEntityId).toHaveBeenCalledWith({
         model: 'integration_log',
-        identifier: 'ILG0000001',
-      });
+        identifier: 'ILG0000001'});
       expect(result).toEqual(
         expect.objectContaining({
           id: 'ILG0000001',
@@ -83,8 +77,7 @@ describe('Integration Log Service', () => {
           integration_display_id: 'INT0000001',
           integration_label: 'ADT Feed',
           tenant_id: 'TEN0000001',
-          requires_attention: true,
-        })
+          requires_attention: true})
       );
     });
 
@@ -111,8 +104,7 @@ describe('Integration Log Service', () => {
 
       expect(identifiers.resolveIdentifierForFilter).toHaveBeenCalledWith({
         value: 'INT0000001',
-        model: 'integration',
-      });
+        model: 'integration'});
       expect(integrationLogRepository.findMany).toHaveBeenCalledWith(
         { integration_id: 'INT0000001' },
         0,
@@ -148,8 +140,7 @@ describe('Integration Log Service', () => {
         {
           integration_id: 'INT0000001',
           status: 'ERROR',
-          search: 'timeout',
-        },
+          search: 'timeout'},
         1,
         20,
         'created_at',
@@ -163,9 +154,7 @@ describe('Integration Log Service', () => {
           OR: [
             { message: { contains: 'timeout' } },
             { human_friendly_id: { contains: 'TIMEOUT' } },
-            { integration: { name: { contains: 'timeout' } } },
-          ],
-        }),
+            { integration: { name: { contains: 'timeout' } } }]}),
         0,
         20,
         { created_at: 'asc' },
@@ -179,13 +168,11 @@ describe('Integration Log Service', () => {
     it('creates a replayed log and returns the serialized copy', async () => {
       const existingLog = buildRawIntegrationLog({
         id: 'log-uuid',
-        human_friendly_id: 'ILG0000005',
-      });
+        human_friendly_id: 'ILG0000005'});
       const replayedLog = buildRawIntegrationLog({
         id: 'new-log-uuid',
         human_friendly_id: 'ILG0000006',
-        message: '[REPLAY] Remote endpoint timed out',
-      });
+        message: '[REPLAY] Remote endpoint timed out'});
 
       identifiers.resolveEntityId.mockResolvedValueOnce('log-uuid');
       integrationLogRepository.findById
@@ -195,8 +182,7 @@ describe('Integration Log Service', () => {
         id: 'new-log-uuid',
         integration_id: '123e4567-e89b-12d3-a456-426614174000',
         status: 'ERROR',
-        message: '[REPLAY] Remote endpoint timed out',
-      });
+        message: '[REPLAY] Remote endpoint timed out'});
 
       const result = await integrationLogService.replayIntegrationLog(
         'ILG0000005',
@@ -207,14 +193,12 @@ describe('Integration Log Service', () => {
       expect(integrationLogRepository.create).toHaveBeenCalledWith({
         integration_id: '123e4567-e89b-12d3-a456-426614174000',
         status: 'ERROR',
-        message: '[REPLAY] Remote endpoint timed out',
-      });
+        message: '[REPLAY] Remote endpoint timed out'});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'REPLAY',
           entity: 'integration_log',
-          entity_id: 'new-log-uuid',
-        })
+          entity_id: 'new-log-uuid'})
       );
       expect(result).toEqual(expect.objectContaining({ id: 'ILG0000006' }));
     });

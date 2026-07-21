@@ -18,7 +18,6 @@ describe('Department Schema Validation', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         facility_id: '123e4567-e89b-12d3-a456-426614174001',
-        branch_id: '123e4567-e89b-12d3-a456-426614174002',
         name: 'Emergency Department',
         department_type: 'CLINICAL',
         is_active: true
@@ -48,10 +47,8 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with null branch_id', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
-        branch_id: null,
         name: 'Emergency Department',
         department_type: 'CLINICAL'
       };
@@ -115,10 +112,8 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid branch_id UUID', () => {
       const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
-        branch_id: 'not-a-uuid',
         name: 'Emergency Department',
         department_type: 'CLINICAL'
       };
@@ -190,7 +185,6 @@ describe('Department Schema Validation', () => {
     it('should validate with all fields', () => {
       const validData = {
         facility_id: '123e4567-e89b-12d3-a456-426614174001',
-        branch_id: '123e4567-e89b-12d3-a456-426614174002',
         name: 'Updated Department',
         department_type: 'ADMINISTRATIVE',
         is_active: false
@@ -229,9 +223,7 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with only branch_id', () => {
       const validData = {
-        branch_id: '123e4567-e89b-12d3-a456-426614174002'
       };
       const result = updateDepartmentSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -253,9 +245,7 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with null branch_id', () => {
       const validData = {
-        branch_id: null
       };
       const result = updateDepartmentSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -296,9 +286,7 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid branch_id UUID', () => {
       const invalidData = {
-        branch_id: 'not-a-uuid'
       };
       const result = updateDepartmentSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -386,9 +374,7 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with branch_id filter', () => {
       const validData = {
-        branch_id: '123e4567-e89b-12d3-a456-426614174002'
       };
       const result = listDepartmentsQuerySchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -426,7 +412,6 @@ describe('Department Schema Validation', () => {
         order: 'asc',
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         facility_id: '123e4567-e89b-12d3-a456-426614174001',
-        branch_id: '123e4567-e89b-12d3-a456-426614174002',
         department_type: 'CLINICAL',
         is_active: 'false',
         search: 'department'
@@ -451,9 +436,7 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid branch_id UUID', () => {
       const invalidData = {
-        branch_id: 'not-a-uuid'
       };
       const result = listDepartmentsQuerySchema.safeParse(invalidData);
       expect(result.success).toBe(false);

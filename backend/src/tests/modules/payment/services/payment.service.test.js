@@ -29,8 +29,7 @@ jest.mock('@lib/billing/identifiers', () => ({
     if (value === null && nullable) return null;
     return value;
   },
-  resolveEntityId: async ({ identifier }) => identifier,
-}));
+  resolveEntityId: async ({ identifier }) => identifier}));
 
 describe('Payment Service', () => {
   const userId = 'user-123';
@@ -49,8 +48,7 @@ describe('Payment Service', () => {
       const result = await paymentService.listPayments({}, 1, 20, null, 'asc', userId, ipAddress);
 
       expect(result.payments).toEqual([
-        expect.objectContaining({ id: 'payment-1' }),
-      ]);
+        expect.objectContaining({ id: 'payment-1' })]);
       expect(result.pagination).toMatchObject({
         page: 1,
         limit: 20,

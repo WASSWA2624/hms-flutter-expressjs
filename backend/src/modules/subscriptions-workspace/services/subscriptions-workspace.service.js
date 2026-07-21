@@ -3,8 +3,7 @@ const { ROLES } = require('@config/roles');
 const repository = require('@repositories/subscriptions-workspace/subscriptions-workspace.repository');
 const {
   getUpgradeContext: loadUpgradeContext,
-  submitPaymentRequest: createPaymentRequest,
-} = require('@lib/subscriptions/subscription-payment-request');
+  submitPaymentRequest: createPaymentRequest} = require('@lib/subscriptions/subscription-payment-request');
 const {
   SUBSCRIPTIONS_BILLING_CYCLES,
   SUBSCRIPTIONS_CHANGE_STATUS_VALUES,
@@ -16,8 +15,7 @@ const {
   SUBSCRIPTIONS_PLAN_TIERS,
   SUBSCRIPTIONS_RESOURCE_PANEL_MAP,
   SUBSCRIPTIONS_RESOURCES,
-  SUBSCRIPTIONS_STATUS_VALUES,
-} = require('@lib/subscriptions/constants');
+  SUBSCRIPTIONS_STATUS_VALUES} = require('@lib/subscriptions/constants');
 const {
   safePublicId,
   serializeLicense,
@@ -25,8 +23,7 @@ const {
   serializeModuleSubscription,
   serializeSubscription,
   serializeSubscriptionInvoice,
-  serializeSubscriptionPlan,
-} = require('@lib/subscriptions/serializers');
+  serializeSubscriptionPlan} = require('@lib/subscriptions/serializers');
 const { resolveIdentifierForFilter, resolvePublicIdentifier } = require('@lib/billing/identifiers');
 
 const text = (value) => String(value || '').trim();
@@ -41,8 +38,7 @@ const DATE_PRESET_VALUES = new Set([
   'last_30_days',
   'next_30_days',
   'next_renewal',
-  'custom',
-]);
+  'custom']);
 
 const toDateOrNull = (value, fieldName) => {
   const normalized = text(value);
@@ -143,8 +139,7 @@ const resolveOrderBy = (resource, sortBy, order = 'desc') => {
       ['billing_cycle', 'billing_cycle'],
       ['price', 'price'],
       ['updated_at', 'updated_at'],
-      ['created_at', 'created_at'],
-    ]),
+      ['created_at', 'created_at']]),
     modules: new Map([
       ['display_id', 'human_friendly_id'],
       ['name', 'name'],
@@ -153,8 +148,7 @@ const resolveOrderBy = (resource, sortBy, order = 'desc') => {
       ['is_add_on', 'is_add_on'],
       ['add_on_price', 'add_on_price'],
       ['updated_at', 'updated_at'],
-      ['created_at', 'created_at'],
-    ]),
+      ['created_at', 'created_at']]),
     subscriptions: new Map([
       ['display_id', 'human_friendly_id'],
       ['status', 'status'],
@@ -163,8 +157,7 @@ const resolveOrderBy = (resource, sortBy, order = 'desc') => {
       ['start_date', 'start_date'],
       ['end_date', 'end_date'],
       ['updated_at', 'updated_at'],
-      ['created_at', 'created_at'],
-    ]),
+      ['created_at', 'created_at']]),
     'module-subscriptions': new Map([
       ['display_id', 'human_friendly_id'],
       ['is_active', 'is_active'],
@@ -173,8 +166,7 @@ const resolveOrderBy = (resource, sortBy, order = 'desc') => {
       ['evaluated_plan_fit_status', 'evaluated_plan_fit_status'],
       ['activated_at', 'activated_at'],
       ['updated_at', 'updated_at'],
-      ['created_at', 'created_at'],
-    ]),
+      ['created_at', 'created_at']]),
     licenses: new Map([
       ['display_id', 'human_friendly_id'],
       ['license_type', 'license_type'],
@@ -183,9 +175,7 @@ const resolveOrderBy = (resource, sortBy, order = 'desc') => {
       ['issued_at', 'issued_at'],
       ['expires_at', 'expires_at'],
       ['updated_at', 'updated_at'],
-      ['created_at', 'created_at'],
-    ]),
-  };
+      ['created_at', 'created_at']])};
 
   if (resource === 'subscription-invoices') {
     const invoiceFieldMap = new Map([
@@ -196,8 +186,7 @@ const resolveOrderBy = (resource, sortBy, order = 'desc') => {
       ['total_amount', 'total_amount'],
       ['currency', 'currency'],
       ['issued_at', 'issued_at'],
-      ['paid_at', 'updated_at'],
-    ]);
+      ['paid_at', 'updated_at']]);
 
     if (invoiceFieldMap.has(requestedField)) {
       return { invoice: { [invoiceFieldMap.get(requestedField)]: direction } };
@@ -235,8 +224,7 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const mapSummary = (summary = {}, cohorts = {}) => [
@@ -248,26 +236,22 @@ const mapSummary = (summary = {}, cohorts = {}) => [
   { id: 'past_due_invoices', label: 'Past due invoices', value: numberValue(summary.past_due_invoices) },
   { id: 'denied_modules', label: 'Denied modules', value: numberValue(summary.denied_modules) },
   { id: 'expiring_licenses', label: 'Expiring licenses', value: numberValue(summary.expiring_licenses) },
-  { id: 'approaching_limits', label: 'Approaching limits', value: numberValue(summary.approaching_limits) },
-];
+  { id: 'approaching_limits', label: 'Approaching limits', value: numberValue(summary.approaching_limits) }];
 
 const emptyTenantCohorts = () => ({
   active: { count: 0, accounts: [] },
   not_subscribed: { count: 0, accounts: [] },
-  closed: { count: 0, accounts: [] },
-});
+  closed: { count: 0, accounts: [] }});
 
 const mapTenantCohorts = (cohorts = {}) => {
   const source = cohorts && typeof cohorts === 'object' ? cohorts : {};
   const mapBucket = (bucket = {}) => ({
     count: numberValue(bucket.count),
-    accounts: Array.isArray(bucket.accounts) ? bucket.accounts : [],
-  });
+    accounts: Array.isArray(bucket.accounts) ? bucket.accounts : []});
   return {
     active: mapBucket(source.active),
     not_subscribed: mapBucket(source.not_subscribed),
-    closed: mapBucket(source.closed),
-  };
+    closed: mapBucket(source.closed)};
 };
 
 const mapQueueSummaries = (summary = {}) => [
@@ -275,16 +259,14 @@ const mapQueueSummaries = (summary = {}) => [
   { id: 'past_due_billing', label: 'Past due billing', count: numberValue(summary.past_due_invoices), panel: 'billing', resource: 'subscription-invoices', queue: 'PAST_DUE' },
   { id: 'upgrade_recommended', label: 'Upgrade recommended', count: numberValue(summary.approaching_limits), panel: 'operations', resource: 'subscriptions', queue: 'UPGRADE_RECOMMENDED' },
   { id: 'module_blocked', label: 'Module blocked', count: numberValue(summary.denied_modules), panel: 'operations', resource: 'module-subscriptions', queue: 'MODULE_BLOCKED' },
-  { id: 'pending_changes', label: 'Pending changes', count: numberValue(summary.pending_changes), panel: 'operations', resource: 'subscriptions', queue: 'PENDING_CHANGES' },
-];
+  { id: 'pending_changes', label: 'Pending changes', count: numberValue(summary.pending_changes), panel: 'operations', resource: 'subscriptions', queue: 'PENDING_CHANGES' }];
 
 const mapPanelSummaries = (summary = {}) => [
   { id: 'overview', count: numberValue(summary.pending_changes) + numberValue(summary.past_due_invoices), default_resource: 'subscriptions' },
   { id: 'catalog', count: numberValue(summary.active_subscriptions), default_resource: 'subscription-plans' },
   { id: 'operations', count: numberValue(summary.pending_changes) + numberValue(summary.denied_modules), default_resource: 'subscriptions' },
   { id: 'billing', count: numberValue(summary.past_due_invoices), default_resource: 'subscription-invoices' },
-  { id: 'governance', count: numberValue(summary.expiring_licenses), default_resource: 'licenses' },
-];
+  { id: 'governance', count: numberValue(summary.expiring_licenses), default_resource: 'licenses' }];
 
 const serializeItems = (resource, items = [], { modules = [] } = {}) => {
   if (resource === 'subscription-plans') {
@@ -312,8 +294,7 @@ const mapTimeline = (timeline = {}) => {
       occurred_at: item.updated_at || item.created_at,
       status: item.status,
       resource: 'subscriptions',
-      target_id: item.id,
-    });
+      target_id: item.id});
   });
 
   (timeline.moduleSubscriptions || []).forEach((record) => {
@@ -326,8 +307,7 @@ const mapTimeline = (timeline = {}) => {
       occurred_at: item.updated_at || item.created_at,
       status: item.entitlement_denied ? 'DENIED' : (item.is_active ? 'ACTIVE' : 'INACTIVE'),
       resource: 'module-subscriptions',
-      target_id: item.id,
-    });
+      target_id: item.id});
   });
 
   (timeline.invoices || []).forEach((record) => {
@@ -340,8 +320,7 @@ const mapTimeline = (timeline = {}) => {
       occurred_at: item.updated_at || item.issued_at || item.created_at,
       status: item.invoice_status || item.billing_status,
       resource: 'subscription-invoices',
-      target_id: item.id,
-    });
+      target_id: item.id});
   });
 
   (timeline.licenses || []).forEach((record) => {
@@ -354,8 +333,7 @@ const mapTimeline = (timeline = {}) => {
       occurred_at: item.updated_at || item.issued_at || item.created_at,
       status: item.status,
       resource: 'licenses',
-      target_id: item.id,
-    });
+      target_id: item.id});
   });
 
   return entries
@@ -366,17 +344,14 @@ const mapTimeline = (timeline = {}) => {
 const buildLookups = (lookups = {}) => ({
   tenants: (lookups.tenants || []).map((entry) => ({
     id: safePublicId(entry.human_friendly_id, entry.id),
-    label: entry.name,
-  })),
+    label: entry.name})),
   plans: (lookups.plans || []).map((entry) => ({
     id: safePublicId(entry.human_friendly_id, entry.id),
     label: entry.name,
     subtitle: entry.code || entry.tier_code || null,
     meta: {
       tier_code: entry.tier_code || null,
-      billing_cycle: entry.billing_cycle || null,
-    },
-  })),
+      billing_cycle: entry.billing_cycle || null}})),
   modules: (lookups.modules || []).map((entry) => ({
     id: safePublicId(entry.human_friendly_id, entry.id),
     label: entry.name,
@@ -389,13 +364,10 @@ const buildLookups = (lookups = {}) => ({
       deprecated: Boolean(entry.extension_json?.deprecated),
       is_platform_infrastructure: Boolean(
         entry.extension_json?.is_platform_infrastructure
-      ),
-    },
-  })),
+      )}})),
   module_groups: (lookups.module_groups || []).map((entry) => ({
     id: text(entry.id),
-    label: text(entry.label) || `Group ${text(entry.id)}`,
-  })),
+    label: text(entry.label) || `Group ${text(entry.id)}`})),
   invoices: (lookups.invoices || []).map((entry) => ({
     id: safePublicId(entry.human_friendly_id, entry.id),
     label: safePublicId(entry.human_friendly_id, entry.id),
@@ -405,9 +377,7 @@ const buildLookups = (lookups = {}) => ({
       billing_status: entry.billing_status || null,
       issued_at: entry.issued_at || null,
       total_amount: entry.total_amount != null ? Number(entry.total_amount) : null,
-      currency: entry.currency || null,
-    },
-  })),
+      currency: entry.currency || null}})),
   statuses: SUBSCRIPTIONS_STATUS_VALUES.map((value) => ({ id: value, label: value })),
   change_statuses: SUBSCRIPTIONS_CHANGE_STATUS_VALUES.map((value) => ({ id: value, label: value })),
   fit_statuses: SUBSCRIPTIONS_FIT_STATUS_VALUES.map((value) => ({ id: value, label: value })),
@@ -417,11 +387,9 @@ const buildLookups = (lookups = {}) => ({
   invoice_statuses: ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED'].map((value) => ({ id: value, label: value })),
   eligibility_states: [
     { id: 'ELIGIBLE', label: 'Eligible' },
-    { id: 'DENIED', label: 'Denied' },
-  ],
+    { id: 'DENIED', label: 'Denied' }],
   panels: SUBSCRIPTIONS_PANELS.map((entry) => ({ id: entry.id, label_key: entry.label_key })),
-  resources: SUBSCRIPTIONS_RESOURCES.map((entry) => ({ id: entry, label: entry })),
-});
+  resources: SUBSCRIPTIONS_RESOURCES.map((entry) => ({ id: entry, label: entry }))});
 
 const resolveTenantScope = async (filters = {}, user = {}) => {
   const globalAdmin = isGlobalAdmin(user);
@@ -435,8 +403,7 @@ const resolveTenantScope = async (filters = {}, user = {}) => {
 
     const resolvedTenantId = await resolveIdentifierForFilter({
       value: requestedTenant,
-      model: 'tenant',
-    });
+      model: 'tenant'});
 
     if (resolvedTenantId === null) {
       return { tenant_id: null, global_admin: true };
@@ -472,15 +439,13 @@ const resolveResourceFilters = async (
     ),
     is_add_on: filters.isAddOn ?? filters.is_add_on,
     queue,
-    date_window: resolveDateWindow(filters, resource),
-  };
+    date_window: resolveDateWindow(filters, resource)};
 
   if (filters.planId || filters.plan_id) {
     const planId = await resolveIdentifierForFilter({
       value: filters.planId || filters.plan_id,
       model: 'subscription_plan',
-      where: scope.tenant_id ? { OR: [{ tenant_id: null }, { tenant_id: scope.tenant_id }] } : {},
-    });
+      where: scope.tenant_id ? { OR: [{ tenant_id: null }, { tenant_id: scope.tenant_id }] } : {}});
     if (planId === null) return null;
     resolved.plan_id = planId;
   }
@@ -488,8 +453,7 @@ const resolveResourceFilters = async (
   if (filters.moduleId || filters.module_id) {
     const moduleId = await resolveIdentifierForFilter({
       value: filters.moduleId || filters.module_id,
-      model: 'module',
-    });
+      model: 'module'});
     if (moduleId === null) return null;
     resolved.module_id = moduleId;
   }
@@ -520,8 +484,7 @@ const buildOverview = (records = {}) => {
       title: 'Upgrade recommended',
       description: 'Current usage is approaching or exceeding plan limits.',
       subscription_id: currentSubscription.id,
-      queue: 'UPGRADE_RECOMMENDED',
-    });
+      queue: 'UPGRADE_RECOMMENDED'});
   }
 
   if (numberValue(records.denied_modules_count) > 0) {
@@ -530,8 +493,7 @@ const buildOverview = (records = {}) => {
       type: 'module',
       title: 'Modules blocked by entitlement',
       description: 'Some module subscriptions are denied by the current plan.',
-      queue: 'MODULE_BLOCKED',
-    });
+      queue: 'MODULE_BLOCKED'});
   }
 
   if (nextInvoice?.invoice_status === 'OVERDUE') {
@@ -540,8 +502,7 @@ const buildOverview = (records = {}) => {
       type: 'billing',
       title: 'Billing follow-up needed',
       description: 'A subscription invoice is overdue.',
-      queue: 'PAST_DUE',
-    });
+      queue: 'PAST_DUE'});
   }
 
   if (primaryLicense?.expires_at) {
@@ -550,8 +511,7 @@ const buildOverview = (records = {}) => {
       type: 'license',
       title: 'License expiry approaching',
       description: 'Review upcoming license expirations.',
-      queue: 'EXPIRING_LICENSES',
-    });
+      queue: 'EXPIRING_LICENSES'});
   }
 
   return {
@@ -563,8 +523,7 @@ const buildOverview = (records = {}) => {
             requested_at: currentSubscription.change_requested_at,
             effective_at: currentSubscription.change_effective_at,
             pending_plan_id: currentSubscription.pending_plan_id,
-            pending_plan_label: currentSubscription.pending_plan_label,
-          }
+            pending_plan_label: currentSubscription.pending_plan_label}
         : null,
     current_plan: currentSubscription
       ? {
@@ -572,8 +531,7 @@ const buildOverview = (records = {}) => {
           label: currentSubscription.plan_label,
           code: currentSubscription.plan_code,
           tier_code: currentSubscription.tier_code,
-          billing_cycle: currentSubscription.billing_cycle,
-        }
+          billing_cycle: currentSubscription.billing_cycle}
       : null,
     usage_summary: currentSubscription
       ? {
@@ -583,19 +541,16 @@ const buildOverview = (records = {}) => {
           facilities_used: currentSubscription.facilities_used,
           storage_used_mb: currentSubscription.storage_used_mb,
           modules_used: currentSubscription.modules_used,
-          fit_status: currentSubscription.plan_fit_status,
-        }
+          fit_status: currentSubscription.plan_fit_status}
       : null,
     next_invoice: nextInvoice,
     license_summary: {
       active_count: licenses.filter((entry) => entry.status === 'ACTIVE').length,
       expiring_count: licenses.filter((entry) => entry.expires_at).length,
       primary_license: primaryLicense,
-      items: licenses,
-    },
+      items: licenses},
     tenant_cohorts: tenantCohorts,
-    recommendations,
-  };
+    recommendations};
 };
 
 const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'desc', user = {}) => {
@@ -616,8 +571,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
       pagination: buildPagination(page, limit, 0),
       spotlight: [],
       timeline: [],
-      overview: buildOverview({ tenant_cohorts: emptyTenantCohorts() }),
-    };
+      overview: buildOverview({ tenant_cohorts: emptyTenantCohorts() })};
   }
 
   const resolvedFilters = await resolveResourceFilters(query, scope, resource);
@@ -635,8 +589,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
       pagination: buildPagination(page, limit, 0),
       spotlight: [],
       timeline: [],
-      overview,
-    };
+      overview};
   }
 
   const orderBy = resolveOrderBy(resource, sortBy, order);
@@ -651,10 +604,8 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
       tenant_id: scope.tenant_id,
       skip: (page - 1) * limit,
       take: limit,
-      orderBy,
-    }),
-    repository.findTimeline(scope),
-  ]);
+      orderBy}),
+    repository.findTimeline(scope)]);
 
   const overview = buildOverview(overviewRecords);
   const queueSummaries = mapQueueSummaries(summary);
@@ -684,17 +635,14 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
       eligibilityState: resolvedFilters.eligibility_state || null,
       datePreset: text(query.datePreset || query.date_preset) || null,
       from: text(query.from) || null,
-      to: text(query.to) || null,
-    },
+      to: text(query.to) || null},
     lookups: buildLookups(lookups),
     items: serializeItems(resource, itemsResult.items, {
-      modules: lookups.modules || [],
-    }),
+      modules: lookups.modules || []}),
     pagination: buildPagination(page, limit, numberValue(itemsResult.total)),
     spotlight: queueSummaries.filter((entry) => entry.count > 0).sort((left, right) => right.count - left.count).slice(0, 5),
     timeline: mapTimeline(timeline),
-    overview,
-  };
+    overview};
 };
 
 const getReferenceData = async (query = {}, user = {}) => {
@@ -727,8 +675,7 @@ const resolveLegacyRoute = async (resource, identifier, user = {}) => {
     resource: normalizedResource,
     id: resolvePublicIdentifier(record.human_friendly_id, record.id) || null,
     action: 'view',
-    tenantId: safePublicId(undefined, scope.tenant_id),
-  };
+    tenantId: safePublicId(undefined, scope.tenant_id)};
 };
 
 const getPlanDetail = async (planId, user = {}) => {
@@ -747,13 +694,11 @@ const getPlanDetail = async (planId, user = {}) => {
 
   return {
     plan: serializeSubscriptionPlan(detail.plan, {
-      catalogModules: lookups.modules || [],
-    }),
+      catalogModules: lookups.modules || []}),
     stats: detail.stats,
     active_accounts: detail.active_accounts,
     pending_accounts: detail.pending_accounts,
-    closed_accounts: detail.closed_accounts,
-  };
+    closed_accounts: detail.closed_accounts};
 };
 
 module.exports = {
@@ -762,5 +707,4 @@ module.exports = {
   getUpgradeContext: loadUpgradeContext,
   getWorkspace,
   resolveLegacyRoute,
-  submitPaymentRequest: createPaymentRequest,
-};
+  submitPaymentRequest: createPaymentRequest};

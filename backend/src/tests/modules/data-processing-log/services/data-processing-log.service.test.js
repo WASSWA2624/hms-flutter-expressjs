@@ -1,7 +1,6 @@
 jest.mock('@modules/data-processing-log/repositories/data-processing-log.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: jest.fn((...values) => {
     for (const value of values) {
@@ -17,19 +16,16 @@ jest.mock('@lib/billing/identifiers', () => ({
   ),
   resolveIdentifierForPayload: jest.fn(async ({ value, nullable = false }) =>
     value === undefined ? (nullable ? null : value) : value
-  ),
-}));
+  )}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
-}));
+  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier)}));
 
 const dataProcessingLogService = require('@modules/data-processing-log/services/data-processing-log.service');
 const dataProcessingLogRepository = require('@modules/data-processing-log/repositories/data-processing-log.repository');
 const { createAuditLog } = require('@lib/audit');
 const identifiers = require('@lib/billing/identifiers');
 const {
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { HttpError } = require('@lib/errors');
 
 const buildRawDataProcessingLog = (overrides = {}) => ({
@@ -46,23 +42,19 @@ const buildRawDataProcessingLog = (overrides = {}) => ({
   tenant: {
     id: '550e8400-e29b-41d4-a716-446655440001',
     human_friendly_id: 'TEN0000001',
-    name: 'Acme Health',
-  },
+    name: 'Acme Health'},
   user: {
     id: '550e8400-e29b-41d4-a716-446655440002',
     human_friendly_id: 'USR0000001',
     email: 'jane.doe@example.com',
     first_name: 'Jane',
-    last_name: 'Doe',
-  },
-  ...overrides,
-});
+    last_name: 'Doe'},
+  ...overrides});
 
 describe('Data Processing Log Service', () => {
   const actor = {
     id: '550e8400-e29b-41d4-a716-446655440002',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440001',
-  };
+    tenant_id: '550e8400-e29b-41d4-a716-446655440001'};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -92,8 +84,7 @@ describe('Data Processing Log Service', () => {
         id: 'DPL0000001',
         tenant_id: 'TEN0000001',
         user_id: 'USR0000001',
-        user_label: 'Jane Doe',
-      })
+        user_label: 'Jane Doe'})
     );
     expect(dataProcessingLogRepository.findMany).toHaveBeenCalledWith(
       { id: rawLog.id, tenant_id: actor.tenant_id },
@@ -115,8 +106,7 @@ describe('Data Processing Log Service', () => {
         legal_basis: 'CONSENT',
         date_from: '2026-03-01T00:00:00.000Z',
         date_to: '2026-03-31T23:59:59.999Z',
-        search: 'lab',
-      },
+        search: 'lab'},
       1,
       20,
       'processed_at',
@@ -131,10 +121,8 @@ describe('Data Processing Log Service', () => {
         legal_basis: 'CONSENT',
         processed_at: {
           gte: expect.any(Date),
-          lte: expect.any(Date),
-        },
-        OR: expect.any(Array),
-      }),
+          lte: expect.any(Date)},
+        OR: expect.any(Array)}),
       0,
       20,
       { processed_at: 'desc' },
@@ -145,8 +133,7 @@ describe('Data Processing Log Service', () => {
         total: 1,
         page: 1,
         limit: 20,
-        totalPages: 1,
-      })
+        totalPages: 1})
     );
   });
 
@@ -158,16 +145,14 @@ describe('Data Processing Log Service', () => {
       user_id: actor.id,
       purpose: 'TREATMENT',
       legal_basis: 'CONSENT',
-      details: 'Processed lab request data',
-    });
+      details: 'Processed lab request data'});
     dataProcessingLogRepository.findMany.mockResolvedValue([createdLog]);
 
     const result = await dataProcessingLogService.createDataProcessingLog(
       {
         purpose: 'TREATMENT',
         legal_basis: 'CONSENT',
-        details: 'Processed lab request data',
-      },
+        details: 'Processed lab request data'},
       actor,
       '192.168.1.1'
     );
@@ -177,15 +162,13 @@ describe('Data Processing Log Service', () => {
       user_id: actor.id,
       purpose: 'TREATMENT',
       legal_basis: 'CONSENT',
-      details: 'Processed lab request data',
-    });
+      details: 'Processed lab request data'});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: actor.tenant_id,
         user_id: actor.id,
         action: 'CREATE',
-        entity: 'data_processing_log',
-      })
+        entity: 'data_processing_log'})
     );
     expect(result).toEqual(expect.objectContaining({ id: 'DPL0000001' }));
   });
@@ -194,8 +177,7 @@ describe('Data Processing Log Service', () => {
     const existingLog = buildRawDataProcessingLog();
     const updatedLog = buildRawDataProcessingLog({
       purpose: 'OPERATIONS',
-      legal_basis: 'CONTRACT',
-    });
+      legal_basis: 'CONTRACT'});
     identifiers.resolveIdentifierForPayload.mockImplementation(async ({ field }) => {
       if (field === 'user_id') return '550e8400-e29b-41d4-a716-446655440009';
       return undefined;
@@ -210,8 +192,7 @@ describe('Data Processing Log Service', () => {
       {
         purpose: 'OPERATIONS',
         legal_basis: 'CONTRACT',
-        user_id: 'USR0000009',
-      },
+        user_id: 'USR0000009'},
       actor,
       '192.168.1.1'
     );
@@ -219,8 +200,7 @@ describe('Data Processing Log Service', () => {
     expect(dataProcessingLogRepository.update).toHaveBeenCalledWith(existingLog.id, {
       purpose: 'OPERATIONS',
       legal_basis: 'CONTRACT',
-      user_id: '550e8400-e29b-41d4-a716-446655440009',
-    });
+      user_id: '550e8400-e29b-41d4-a716-446655440009'});
     expect(result).toEqual(expect.objectContaining({ purpose: 'OPERATIONS' }));
   });
 
@@ -249,8 +229,7 @@ describe('Data Processing Log Service', () => {
       expect.objectContaining({
         action: 'DELETE',
         entity: 'data_processing_log',
-        entity_id: existingLog.id,
-      })
+        entity_id: existingLog.id})
     );
     expect(deleted).toEqual(expect.objectContaining({ id: 'DPL0000001' }));
   });

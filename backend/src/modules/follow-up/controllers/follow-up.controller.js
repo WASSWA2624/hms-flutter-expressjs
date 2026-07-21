@@ -37,8 +37,7 @@ const listFollowUps = asyncHandler(async (req, res) => {
     encounter_type,
     status,
     scheduled_before,
-    scheduled_after,
-  };
+    scheduled_after};
 
   const userId = req.user?.id;
   const ipAddress = req.ip;
@@ -145,8 +144,7 @@ const dispatchFollowUpReminders = asyncHandler(async (req, res) => {
   const result = await followUpService.dispatchFollowUpReminders({
     user_id: req.user?.id,
     tenant_id: req.user?.tenant_id,
-    ip_address: req.ip,
-  });
+    ip_address: req.ip});
   sendSuccess(res, 200, 'messages.follow_up.reminders.dispatch.success', result);
 });
 
@@ -164,5 +162,4 @@ module.exports = {
   completeFollowUp,
   cancelFollowUp,
   dispatchFollowUpReminders,
-  getFollowUpReminderDueSummary,
-};
+  getFollowUpReminderDueSummary};

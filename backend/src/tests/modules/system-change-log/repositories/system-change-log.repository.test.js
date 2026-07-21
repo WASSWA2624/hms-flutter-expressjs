@@ -50,7 +50,7 @@ describe('System Change Log Repository', () => {
           id: mockSystemChangeLog.id,
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -87,7 +87,7 @@ describe('System Change Log Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

@@ -25,8 +25,7 @@ describe('Dashboard Widget Controller', () => {
     body: {},
     user: { id: 'user-id-123' },
     ip: '127.0.0.1',
-    get: jest.fn().mockReturnValue('jest-agent'),
-  };
+    get: jest.fn().mockReturnValue('jest-agent')};
 
   const mockRes = {};
 
@@ -136,8 +135,7 @@ describe('Dashboard Widget Controller', () => {
           user: mockReq.user,
           user_id: mockReq.user.id,
           ip_address: mockReq.ip,
-          user_agent: 'jest-agent',
-        }
+          user_agent: 'jest-agent'}
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -164,8 +162,7 @@ describe('Dashboard Widget Controller', () => {
           user: mockReq.user,
           user_id: mockReq.user.id,
           ip_address: mockReq.ip,
-          user_agent: 'jest-agent',
-        }
+          user_agent: 'jest-agent'}
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -189,8 +186,7 @@ describe('Dashboard Widget Controller', () => {
           user: mockReq.user,
           user_id: mockReq.user.id,
           ip_address: mockReq.ip,
-          user_agent: 'jest-agent',
-        }
+          user_agent: 'jest-agent'}
       );
       expect(sendNoContent).toHaveBeenCalledWith(mockRes);
     });
@@ -216,7 +212,6 @@ describe('Dashboard Widget Controller', () => {
         scope: {
           tenant_id: '660e8400-e29b-41d4-a716-446655440000',
           facility_id: null,
-          branch_id: null,
           days: 7
         }
       };

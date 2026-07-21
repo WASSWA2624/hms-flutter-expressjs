@@ -92,11 +92,7 @@ describe('Lab Order Schemas', () => {
               label: 'CBC',
               quantity: 1,
               unit_price: 40,
-              line_total: 40,
-            },
-          ],
-        },
-      });
+              line_total: 40}]}});
 
       expect(result.success).toBe(true);
       expect(result.data.billing.payment_status).toBe('PENDING');

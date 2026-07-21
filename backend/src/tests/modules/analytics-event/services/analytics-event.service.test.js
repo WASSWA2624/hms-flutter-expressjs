@@ -20,8 +20,7 @@ describe('Analytics Event Service', () => {
     user: actor,
     user_id: userId,
     ip_address: '127.0.0.1',
-    user_agent: 'jest-test-agent',
-  };
+    user_agent: 'jest-test-agent'};
 
   const mockAnalyticsEvent = {
     id: '550e8400-e29b-41d4-a716-446655440001',
@@ -38,8 +37,7 @@ describe('Analytics Event Service', () => {
     created_at: new Date('2026-01-19T12:00:00.000Z'),
     updated_at: new Date('2026-01-19T12:00:00.000Z'),
     deleted_at: null,
-    version: 1,
-  };
+    version: 1};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -60,17 +58,14 @@ describe('Analytics Event Service', () => {
           user_id: null,
           event_name: 'page_view',
           event_category: 'navigation',
-          severity: 'INFO',
-        }),
-      ]);
+          severity: 'INFO'})]);
       expect(result.pagination).toMatchObject({
         page: 1,
         limit: 20,
         total: 1,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
     });
   });
 
@@ -84,8 +79,7 @@ describe('Analytics Event Service', () => {
         expect.objectContaining({
           id: 'ANL0000001',
           event_name: 'page_view',
-          severity: 'INFO',
-        })
+          severity: 'INFO'})
       );
     });
   });
@@ -102,8 +96,7 @@ describe('Analytics Event Service', () => {
           entity_public_id: 'KPI0000001',
           severity: 'INFO',
           payload_json: { page: '/dashboard' },
-          occurred_at: '2026-01-19T12:00:00.000Z',
-        },
+          occurred_at: '2026-01-19T12:00:00.000Z'},
         context
       );
 
@@ -111,8 +104,7 @@ describe('Analytics Event Service', () => {
         expect.objectContaining({
           id: 'ANL0000001',
           user_id: null,
-          event_name: 'page_view',
-        })
+          event_name: 'page_view'})
       );
       expect(analyticsEventRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -124,8 +116,7 @@ describe('Analytics Event Service', () => {
           entity_public_id: 'KPI0000001',
           severity: 'INFO',
           payload_json: { page: '/dashboard' },
-          occurred_at: new Date('2026-01-19T12:00:00.000Z'),
-        })
+          occurred_at: new Date('2026-01-19T12:00:00.000Z')})
       );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -137,12 +128,9 @@ describe('Analytics Event Service', () => {
           diff: {
             after: expect.objectContaining({
               id: 'ANL0000001',
-              event_name: 'page_view',
-            }),
-          },
+              event_name: 'page_view'})},
           ip_address: '127.0.0.1',
-          user_agent: 'jest-test-agent',
-        })
+          user_agent: 'jest-test-agent'})
       );
     });
   });
@@ -153,8 +141,7 @@ describe('Analytics Event Service', () => {
         ...mockAnalyticsEvent,
         event_name: 'button_click',
         severity: 'WARNING',
-        version: 2,
-      };
+        version: 2};
       analyticsEventRepository.findById.mockResolvedValue(mockAnalyticsEvent);
       analyticsEventRepository.update.mockResolvedValue(updated);
 
@@ -163,8 +150,7 @@ describe('Analytics Event Service', () => {
         {
           event_name: 'button_click',
           severity: 'WARNING',
-          version: 1,
-        },
+          version: 1},
         context
       );
 
@@ -173,14 +159,12 @@ describe('Analytics Event Service', () => {
           id: 'ANL0000001',
           event_name: 'button_click',
           severity: 'WARNING',
-          version: 2,
-        })
+          version: 2})
       );
       expect(analyticsEventRepository.update).toHaveBeenCalledWith(mockAnalyticsEvent.id, {
         version: 2,
         event_name: 'button_click',
-        severity: 'WARNING',
-      });
+        severity: 'WARNING'});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           tenant_id: tenantId,
@@ -193,10 +177,7 @@ describe('Analytics Event Service', () => {
             after: expect.objectContaining({
               event_name: 'button_click',
               severity: 'WARNING',
-              version: 2,
-            }),
-          }),
-        })
+              version: 2})})})
       );
     });
   });
@@ -206,8 +187,7 @@ describe('Analytics Event Service', () => {
       analyticsEventRepository.findById.mockResolvedValue(mockAnalyticsEvent);
       analyticsEventRepository.softDelete.mockResolvedValue({
         ...mockAnalyticsEvent,
-        deleted_at: new Date(),
-      });
+        deleted_at: new Date()});
 
       await analyticsEventService.deleteAnalyticsEvent(mockAnalyticsEvent.id, context);
 
@@ -222,10 +202,7 @@ describe('Analytics Event Service', () => {
           diff: {
             before: expect.objectContaining({
               id: 'ANL0000001',
-              event_name: 'page_view',
-            }),
-          },
-        })
+              event_name: 'page_view'})}})
       );
     });
   });

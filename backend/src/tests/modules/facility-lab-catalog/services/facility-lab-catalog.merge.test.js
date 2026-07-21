@@ -1,7 +1,6 @@
 const {
   mergeLabTestWithOffering,
-  mapMergedLabTestRecord,
-} = require('@services/lab-workspace/facility-lab-catalog.merge');
+  mapMergedLabTestRecord} = require('@services/lab-workspace/facility-lab-catalog.merge');
 
 describe('facility-lab-catalog.merge', () => {
   const masterTest = {
@@ -13,8 +12,7 @@ describe('facility-lab-catalog.merge', () => {
     unit_options: [{ unit: '10^9/L', is_default: true }],
     result_options: [],
     unit_price: 10,
-    currency: 'UGX',
-  };
+    currency: 'UGX'};
 
   it('returns null when offering is inactive', () => {
     expect(
@@ -30,8 +28,7 @@ describe('facility-lab-catalog.merge', () => {
       currency: 'UGX',
       reference_ranges: [{ id: 'facility-range', normal_min_value: 3, normal_max_value: 9 }],
       unit_options: [],
-      result_options: [],
-    };
+      result_options: []};
 
     const merged = mergeLabTestWithOffering(masterTest, offering);
     expect(merged.unit_price).toBe(25);
@@ -46,8 +43,7 @@ describe('facility-lab-catalog.merge', () => {
       unit_price: 30,
       reference_ranges: [],
       unit_options: [],
-      result_options: [],
-    });
+      result_options: []});
 
     expect(mapped.is_offered_at_facility).toBe(true);
     expect(mapped.facility_offering_id).toBe('offering-1');

@@ -5,14 +5,11 @@ jest.mock('@prisma/client', () => ({
     findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-  },
-}));
+    update: jest.fn()}}));
 
 const prisma = require('@prisma/client');
 const {
-  syncSubscriptionModuleEntitlements,
-} = require('@lib/subscriptions/sync-subscription-module-entitlements');
+  syncSubscriptionModuleEntitlements} = require('@lib/subscriptions/sync-subscription-module-entitlements');
 
 describe('syncSubscriptionModuleEntitlements', () => {
   const modules = [
@@ -20,21 +17,17 @@ describe('syncSubscriptionModuleEntitlements', () => {
       id: 'platform',
       slug: 'platform-identity',
       extension_json: { is_platform_infrastructure: true },
-      minimum_plan_tier_code: 'FREE',
-    },
+      minimum_plan_tier_code: 'FREE'},
     {
       id: 'patient',
       slug: 'patient-registry',
       extension_json: null,
-      minimum_plan_tier_code: 'FREE',
-    },
+      minimum_plan_tier_code: 'FREE'},
     {
       id: 'lab',
       slug: 'lab-workflows',
       extension_json: null,
-      minimum_plan_tier_code: 'ADVANCED',
-    },
-  ];
+      minimum_plan_tier_code: 'ADVANCED'}];
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -53,10 +46,7 @@ describe('syncSubscriptionModuleEntitlements', () => {
         tier_code: 'DEVELOPER',
         extension_json: {
           is_developer_plan: true,
-          includes_all_modules: true,
-        },
-      },
-    });
+          includes_all_modules: true}}});
     try {
       await syncSubscriptionModuleEntitlements('subscription-1');
     } finally {
@@ -79,10 +69,7 @@ describe('syncSubscriptionModuleEntitlements', () => {
       plan: {
         tier_code: 'CUSTOM',
         extension_json: {
-          allowed_modules: { included: ['lab'] },
-        },
-      },
-    });
+          allowed_modules: { included: ['lab'] }}}});
 
     await syncSubscriptionModuleEntitlements('subscription-1');
 

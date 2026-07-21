@@ -57,7 +57,7 @@ describe('Pharmacy Order Repository', () => {
           id: 'order-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -125,7 +125,7 @@ describe('Pharmacy Order Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { ordered_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -155,7 +155,7 @@ describe('Pharmacy Order Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { ordered_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -171,7 +171,7 @@ describe('Pharmacy Order Repository', () => {
         skip: 20,
         take: 50,
         orderBy: { ordered_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -187,7 +187,7 @@ describe('Pharmacy Order Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

@@ -27,8 +27,7 @@ jest.mock('@prisma/client', () => ({
 describe('Dashboard Widget Repository', () => {
   const defaultIncludeMatcher = expect.objectContaining({
     tenant: expect.any(Object),
-    report_definition: expect.any(Object),
-  });
+    report_definition: expect.any(Object)});
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -54,8 +53,7 @@ describe('Dashboard Widget Repository', () => {
       expect(result).toEqual(mockDashboardWidget);
       expect(prisma.dashboard_widget.findFirst).toHaveBeenCalledWith({
         where: { id: mockDashboardWidget.id, deleted_at: null },
-        include: defaultIncludeMatcher,
-      });
+        include: defaultIncludeMatcher});
     });
 
     it('should return null if dashboard widget not found', async () => {
@@ -81,9 +79,7 @@ describe('Dashboard Widget Repository', () => {
         where: { id: mockDashboardWidget.id, deleted_at: null },
         include: expect.objectContaining({
           tenant: true,
-          report_definition: expect.any(Object),
-        }),
-      });
+          report_definition: expect.any(Object)})});
     });
   });
 
@@ -99,8 +95,7 @@ describe('Dashboard Widget Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: defaultIncludeMatcher,
-      });
+        include: defaultIncludeMatcher});
     });
 
     it('should apply filters correctly', async () => {
@@ -114,8 +109,7 @@ describe('Dashboard Widget Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: defaultIncludeMatcher,
-      });
+        include: defaultIncludeMatcher});
     });
 
     it('should apply pagination correctly', async () => {
@@ -128,8 +122,7 @@ describe('Dashboard Widget Repository', () => {
         skip: 10,
         take: 5,
         orderBy: { created_at: 'desc' },
-        include: defaultIncludeMatcher,
-      });
+        include: defaultIncludeMatcher});
     });
 
     it('should apply custom orderBy', async () => {
@@ -142,8 +135,7 @@ describe('Dashboard Widget Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { name: 'asc' },
-        include: defaultIncludeMatcher,
-      });
+        include: defaultIncludeMatcher});
     });
 
     it('should throw HttpError on database error', async () => {
@@ -198,8 +190,7 @@ describe('Dashboard Widget Repository', () => {
       expect(result).toEqual(mockDashboardWidget);
       expect(prisma.dashboard_widget.create).toHaveBeenCalledWith({
         data: createData,
-        include: defaultIncludeMatcher,
-      });
+        include: defaultIncludeMatcher});
     });
 
     it('should throw HttpError on unique constraint violation', async () => {
@@ -239,8 +230,7 @@ describe('Dashboard Widget Repository', () => {
       expect(prisma.dashboard_widget.update).toHaveBeenCalledWith({
         where: { id: mockDashboardWidget.id },
         data: updateData,
-        include: defaultIncludeMatcher,
-      });
+        include: defaultIncludeMatcher});
     });
 
     it('should throw HttpError when dashboard widget not found', async () => {
@@ -399,8 +389,7 @@ describe('Dashboard Widget Repository', () => {
 
       const result = await dashboardWidgetRepository.countUnreadOpdNotifications({
         scope: { tenant_id: 'tenant-1' },
-        userId: 'user-1',
-      });
+        userId: 'user-1'});
 
       expect(result).toBe(5);
       expect(prisma.notification.count).toHaveBeenCalledWith({
@@ -409,9 +398,7 @@ describe('Dashboard Widget Repository', () => {
           read_at: null,
           tenant_id: 'tenant-1',
           user_id: 'user-1',
-          AND: expect.any(Array),
-        }),
-      });
+          AND: expect.any(Array)})});
 
       const whereArg = prisma.notification.count.mock.calls[0]?.[0]?.where;
       expect(whereArg.AND).toEqual(
@@ -422,12 +409,7 @@ describe('Dashboard Widget Repository', () => {
               expect.objectContaining({
                 OR: expect.arrayContaining([
                   expect.objectContaining({ title: { contains: 'OPD flow update' } }),
-                  expect.objectContaining({ message: { contains: 'triage' } }),
-                ]),
-              }),
-            ]),
-          }),
-        ])
+                  expect.objectContaining({ message: { contains: 'triage' } })])})])})])
       );
     });
 

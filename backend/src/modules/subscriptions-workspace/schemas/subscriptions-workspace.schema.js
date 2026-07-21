@@ -6,8 +6,7 @@ const subscriptionsPanelSchema = z.enum([
   'catalog',
   'operations',
   'billing',
-  'governance',
-]);
+  'governance']);
 
 const subscriptionsResourceSchema = z.enum([
   'subscription-plans',
@@ -15,16 +14,14 @@ const subscriptionsResourceSchema = z.enum([
   'subscriptions',
   'module-subscriptions',
   'subscription-invoices',
-  'licenses',
-]);
+  'licenses']);
 
 const subscriptionsDatePresetSchema = z.enum([
   'today',
   'last_30_days',
   'next_30_days',
   'next_renewal',
-  'custom',
-]);
+  'custom']);
 
 const workspaceQuerySchema = listQuerySchema.extend({
   panel: subscriptionsPanelSchema.optional(),
@@ -59,13 +56,11 @@ const workspaceQuerySchema = listQuerySchema.extend({
   datePreset: subscriptionsDatePresetSchema.optional(),
   date_preset: subscriptionsDatePresetSchema.optional(),
   from: z.string().trim().optional(),
-  to: z.string().trim().optional(),
-});
+  to: z.string().trim().optional()});
 
 const referenceDataQuerySchema = z.object({
   tenantId: uuidOrFriendlyIdentifierSchema.optional(),
-  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
-});
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional()});
 
 const paymentRequestBodySchema = z.object({
   target_plan_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -79,18 +74,15 @@ const paymentRequestBodySchema = z.object({
   payer_phone: z.string().trim().max(40).optional().nullable(),
   bank_name: z.string().trim().max(120).optional().nullable(),
   card_holder_name: z.string().trim().max(120).optional().nullable(),
-  card_last_four: z.string().trim().max(4).optional().nullable(),
-});
+  card_last_four: z.string().trim().max(4).optional().nullable()});
 
 const resolveLegacyParamsSchema = z.object({
   resource: subscriptionsResourceSchema,
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 const planDetailQuerySchema = z.object({
   planId: uuidOrFriendlyIdentifierSchema.optional(),
-  plan_id: uuidOrFriendlyIdentifierSchema.optional(),
-}).refine(
+  plan_id: uuidOrFriendlyIdentifierSchema.optional()}).refine(
   (value) => Boolean(value.planId || value.plan_id),
   { message: 'planId is required' }
 );
@@ -102,5 +94,4 @@ module.exports = {
   resolveLegacyParamsSchema,
   subscriptionsPanelSchema,
   subscriptionsResourceSchema,
-  workspaceQuerySchema,
-};
+  workspaceQuerySchema};

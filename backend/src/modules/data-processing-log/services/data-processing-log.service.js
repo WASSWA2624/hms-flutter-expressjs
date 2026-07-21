@@ -10,8 +10,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolvePublicIdentifier,
-} = require('@lib/billing/identifiers');
+  resolvePublicIdentifier} = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { ELEVATED_ROLES, normalizeRoleName } = require('@config/roles');
 
@@ -46,8 +45,7 @@ const buildPagination = (page, limit, total) => {
     page,
     limit,
     total,
-    totalPages,
-  };
+    totalPages};
 };
 
 const mapUserLabel = (user = {}) => {
@@ -72,8 +70,7 @@ const mapDataProcessingLog = (record = {}) => {
     details: record.details || null,
     processed_at: record.processed_at || null,
     created_at: record.created_at || null,
-    updated_at: record.updated_at || null,
-  };
+    updated_at: record.updated_at || null};
 };
 
 const includeRelations = {
@@ -81,19 +78,14 @@ const includeRelations = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   user: {
     select: {
       id: true,
       human_friendly_id: true,
       email: true,
       first_name: true,
-      last_name: true,
-    },
-  },
-};
+      last_name: true}}};
 
 const resolveDataProcessingLogId = async (identifier, user = {}) => {
   const tenantId = getUserTenantId(user);
@@ -101,8 +93,7 @@ const resolveDataProcessingLogId = async (identifier, user = {}) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'data_processing_log',
     identifier,
-    where,
-  });
+    where});
   return resolved || identifier;
 };
 
@@ -119,8 +110,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
     const resolvedTenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
       model: 'tenant',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (resolvedTenantId === null) {
       return { where: null, pagination: buildPagination(page, limit, 0) };
     }
@@ -136,8 +126,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
     const resolvedUserId = await resolveIdentifierForFilter({
       value: filters.user_id,
       model: 'user',
-      where: scopedWhere.tenant_id ? { tenant_id: scopedWhere.tenant_id, deleted_at: null } : { deleted_at: null },
-    });
+      where: scopedWhere.tenant_id ? { tenant_id: scopedWhere.tenant_id, deleted_at: null } : { deleted_at: null }});
     if (resolvedUserId === null) {
       return { where: null, pagination: buildPagination(page, limit, 0) };
     }
@@ -171,8 +160,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
       { details: { contains: search } },
       { user: { email: { contains: search } } },
       { user: { first_name: { contains: search } } },
-      { user: { last_name: { contains: search } } },
-    ];
+      { user: { last_name: { contains: search } } }];
     if (['TREATMENT', 'BILLING', 'OPERATIONS', 'RESEARCH', 'MARKETING'].includes(searchUpper)) {
       scopedWhere.OR.push({ purpose: searchUpper });
     }
@@ -183,8 +171,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
         'LEGAL_OBLIGATION',
         'VITAL_INTERESTS',
         'PUBLIC_INTEREST',
-        'LEGITIMATE_INTERESTS',
-      ].includes(searchUpper)
+        'LEGITIMATE_INTERESTS'].includes(searchUpper)
     ) {
       scopedWhere.OR.push({ legal_basis: searchUpper });
     }
@@ -228,24 +215,21 @@ const getDataProcessingLogs = async (filters = {}, page = 1, limit = 20, sortBy 
       total: 0,
       page: numericPage,
       limit: numericLimit,
-      totalPages: 0,
-    };
+      totalPages: 0};
   }
 
   const skip = (numericPage - 1) * numericLimit;
   const orderBy = { [normalizeSortField(sortBy)]: normalizeOrder(order) };
   const [dataProcessingLogs, total] = await Promise.all([
     dataProcessingLogRepository.findMany(scoped.where, skip, numericLimit, orderBy, includeRelations),
-    dataProcessingLogRepository.count(scoped.where),
-  ]);
+    dataProcessingLogRepository.count(scoped.where)]);
 
   return {
     data: dataProcessingLogs.map(mapDataProcessingLog),
     total,
     page: numericPage,
     limit: numericLimit,
-    totalPages: numericLimit > 0 ? Math.ceil(total / numericLimit) : 0,
-  };
+    totalPages: numericLimit > 0 ? Math.ceil(total / numericLimit) : 0};
 };
 
 const resolveCreatePayload = async (data = {}, user = {}) => {
@@ -262,8 +246,7 @@ const resolveCreatePayload = async (data = {}, user = {}) => {
         value: data.tenant_id || actorTenantId,
         model: 'tenant',
         field: 'tenant_id',
-        where: { deleted_at: null },
-      })
+        where: { deleted_at: null }})
     : actorTenantId;
 
   const userId =
@@ -273,8 +256,7 @@ const resolveCreatePayload = async (data = {}, user = {}) => {
           model: 'user',
           field: 'user_id',
           where: { tenant_id: tenantId, deleted_at: null },
-          nullable: true,
-        })
+          nullable: true})
       : elevated
       ? actorUserId || null
       : actorUserId;
@@ -284,8 +266,7 @@ const resolveCreatePayload = async (data = {}, user = {}) => {
     user_id: userId,
     purpose: data.purpose,
     legal_basis: data.legal_basis,
-    details: data.details || null,
-  };
+    details: data.details || null};
 };
 
 const createDataProcessingLog = async (data, user = {}, ipAddress) => {
@@ -299,13 +280,11 @@ const createDataProcessingLog = async (data, user = {}, ipAddress) => {
     entity: 'data_processing_log',
     entity_id: createdLog.id,
     diff: { after: createdLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   const createdRecord = await findScopedRecordByIdentifier(createdLog.id, {
     ...user,
-    tenant_id: payload.tenant_id,
-  });
+    tenant_id: payload.tenant_id});
   return mapDataProcessingLog(createdRecord || createdLog);
 };
 
@@ -331,8 +310,7 @@ const updateDataProcessingLog = async (id, data, user = {}, ipAddress) => {
       model: 'user',
       field: 'user_id',
       where: { tenant_id: existingLog.tenant_id, deleted_at: null },
-      nullable: true,
-    });
+      nullable: true});
   }
 
   const updatedLog = await dataProcessingLogRepository.update(existingLog.id, payload);
@@ -344,13 +322,11 @@ const updateDataProcessingLog = async (id, data, user = {}, ipAddress) => {
     entity: 'data_processing_log',
     entity_id: existingLog.id,
     diff: { before: existingLog, after: updatedLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   const updatedRecord = await findScopedRecordByIdentifier(updatedLog.id, {
     ...user,
-    tenant_id: existingLog.tenant_id,
-  });
+    tenant_id: existingLog.tenant_id});
   return mapDataProcessingLog(updatedRecord || updatedLog);
 };
 
@@ -369,8 +345,7 @@ const deleteDataProcessingLog = async (id, user = {}, ipAddress) => {
     entity: 'data_processing_log',
     entity_id: existingLog.id,
     diff: { before: existingLog, after: deletedLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return mapDataProcessingLog(existingLog);
 };
@@ -380,5 +355,4 @@ module.exports = {
   getDataProcessingLogs,
   createDataProcessingLog,
   updateDataProcessingLog,
-  deleteDataProcessingLog,
-};
+  deleteDataProcessingLog};

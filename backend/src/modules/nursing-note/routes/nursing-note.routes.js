@@ -25,8 +25,7 @@ const IPD_WRITE_SCOPES = [PERMISSIONS.CLINICAL_WRITE];
 const IPD_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 
 /**
  * @description List nursing notes with pagination and filters
@@ -46,7 +45,8 @@ const IPD_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listNursingNotesQuerySchema }),
+  '/',
+  validateRequest({ query: listNursingNotesQuerySchema }),
 
   authenticate(),
   authorize(IPD_READ_SCOPES, 'permission'),
@@ -67,7 +67,8 @@ router.get(
  * @throws 404 Nursing note not found
  */
 router.get(
-  '/:id',  validateRequest({ params: nursingNoteIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: nursingNoteIdParamsSchema }),
 
   authenticate(),
   authorize(IPD_READ_SCOPES, 'permission'),
@@ -92,7 +93,8 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createNursingNoteSchema }),
+  '/',
+  validateRequest({ body: createNursingNoteSchema }),
 
   authenticate(),
   authorize(IPD_WRITE_SCOPES, 'permission'),
@@ -116,7 +118,8 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: nursingNoteIdParamsSchema, body: updateNursingNoteSchema }),
+  '/:id',
+  validateRequest({ params: nursingNoteIdParamsSchema, body: updateNursingNoteSchema }),
 
   authenticate(),
   authorize(IPD_WRITE_SCOPES, 'permission'),
@@ -137,7 +140,8 @@ router.put(
  * @throws 404 Nursing note not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: nursingNoteIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: nursingNoteIdParamsSchema }),
 
   authenticate(),
   authorize(IPD_ADMIN_SCOPES, 'permission'),

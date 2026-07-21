@@ -74,9 +74,7 @@ describe('rate limit middleware', () => {
       path: '/authenticated-test',
       ip: '127.0.0.1',
       headers: {
-        authorization: 'Bearer test-access-token',
-      },
-    };
+        authorization: 'Bearer test-access-token'}};
 
     for (let index = 0; index < 101; index += 1) {
       const res = createRes();

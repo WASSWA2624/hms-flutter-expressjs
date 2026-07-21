@@ -236,8 +236,7 @@ describe('Notification Schemas', () => {
     it('should accept friendly identifiers in query filters', () => {
       const validData = {
         tenant_id: 'TEN0000001',
-        user_id: 'USR0000003',
-      };
+        user_id: 'USR0000003'};
 
       const result = listNotificationsQuerySchema.safeParse(validData);
       expect(result.success).toBe(true);

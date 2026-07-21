@@ -13,8 +13,7 @@ const { logEndpointPerformance } = require('@lib/performance');
 const {
   recordBusinessEvent,
   recordHttpRequest,
-  setSpanAttributes,
-} = require('@lib/telemetry/metrics');
+  setSpanAttributes} = require('@lib/telemetry/metrics');
 
 const deriveBusinessEvent = (req, res) => {
   if (res.statusCode < 200 || res.statusCode >= 300 || req.method !== 'POST') {
@@ -66,23 +65,20 @@ const performanceMiddleware = () => {
           status_code: statusCode,
           duration_ms: durationMs,
           cache_policy: cachePolicy,
-          tenant_id: req.user?.tenant_id || req.user?.tenantId || null,
-        });
+          tenant_id: req.user?.tenant_id || req.user?.tenantId || null});
 
         const businessEvent = deriveBusinessEvent(req, res);
         if (businessEvent) {
           recordBusinessEvent(businessEvent, {
             'hms.route.family': String(req.baseUrl || '').replace(/^\/api\/v1\//, ''),
-            'hms.status_code': statusCode,
-          });
+            'hms.status_code': statusCode});
         }
       });
 
       setSpanAttributes({
         'hms.request.id': req.requestContext?.request_id || req.request_id || null,
         'hms.tenant.id': req.user?.tenant_id || req.user?.tenantId || null,
-        'hms.offline.policy': cachePolicy,
-      });
+        'hms.offline.policy': cachePolicy});
     });
 
     next();

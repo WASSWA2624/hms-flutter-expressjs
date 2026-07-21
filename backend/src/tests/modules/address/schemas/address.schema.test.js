@@ -281,7 +281,6 @@ describe('Address Schema Validation', () => {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         address_type: 'HOME',
         facility_id: '123e4567-e89b-12d3-a456-426614174001',
-        branch_id: '123e4567-e89b-12d3-a456-426614174002',
         patient_id: '123e4567-e89b-12d3-a456-426614174003',
         city: 'New York',
         state: 'NY',

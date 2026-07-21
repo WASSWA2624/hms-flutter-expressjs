@@ -11,8 +11,7 @@ const { ROLES, normalizeRoleName } = require('@config/roles');
 const ADMIN_ROLES = new Set([
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-]);
+  ROLES.FACILITY_ADMIN]);
 
 const DOCTOR_ROLES = new Set([ROLES.DOCTOR]);
 
@@ -45,5 +44,4 @@ const requireClinicalDeletePrivilege = () => (req, _res, next) => {
 };
 
 module.exports = {
-  requireClinicalDeletePrivilege,
-};
+  requireClinicalDeletePrivilege};

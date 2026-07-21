@@ -12,8 +12,7 @@ const {
   booleanStringSchema,
   dateStringSchema,
   listQuerySchema,
-  uuidSchema,
-} = require('@lib/validation/zod');
+  uuidSchema} = require('@lib/validation/zod');
 
 const RESOURCE_FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
 const BULK_MUTATION_MAX_IDS = 200;
@@ -25,8 +24,7 @@ const NOTIFICATION_TYPES = [
   'LAB',
   'PHARMACY',
   'EMERGENCY',
-  'OTHER',
-];
+  'OTHER'];
 const NOTIFICATION_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const NOTIFICATION_REQUEST_CHANNELS = ['EMAIL', 'IN_APP'];
 const COMMUNICATION_CHANNELS = [
@@ -46,16 +44,14 @@ const COMMUNICATION_CHANNELS = [
   'REDDIT',
   'DISCORD',
   'CALL',
-  'OTHER',
-];
+  'OTHER'];
 const NOTIFICATION_DELIVERY_STATUSES = [
   'QUEUED',
   'SENDING',
   'SENT',
   'DELIVERED',
   'FAILED',
-  'READ',
-];
+  'READ'];
 const HUB_SORT_FIELDS = ['created_at', 'updated_at', 'read_at', 'priority', 'notification_type'];
 
 const resourceFriendlyIdSchema = z
@@ -90,8 +86,7 @@ const notificationFiltersSchema = z.object({
   channel: communicationChannelSchema.optional(),
   delivery_status: deliveryStatusSchema.optional(),
   from_date: dateStringSchema.optional(),
-  to_date: dateStringSchema.optional(),
-});
+  to_date: dateStringSchema.optional()});
 
 // ==================== Body Schemas ====================
 
@@ -111,8 +106,7 @@ const createNotificationSchema = z.object({
   target_path: optionalTrimmedString(255),
   context_type: optionalTrimmedString(80),
   context_public_id: optionalTrimmedString(64),
-  read_at: z.string().datetime().optional().nullable(),
-});
+  read_at: z.string().datetime().optional().nullable()});
 
 /**
  * Update notification body validation
@@ -130,8 +124,7 @@ const updateNotificationSchema = z.object({
   target_path: optionalTrimmedString(255),
   context_type: optionalTrimmedString(80),
   context_public_id: optionalTrimmedString(64),
-  read_at: z.string().datetime().optional().nullable(),
-});
+  read_at: z.string().datetime().optional().nullable()});
 
 // ==================== URL Params ====================
 
@@ -140,8 +133,7 @@ const updateNotificationSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const notificationIdParamsSchema = z.object({
-  id: resourceIdentifierSchema,
-});
+  id: resourceIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -153,8 +145,7 @@ const notificationIdParamsSchema = z.object({
 const listNotificationsQuerySchema = listQuerySchema
   .extend({
     sort_by: z.enum(HUB_SORT_FIELDS).optional(),
-    include_deliveries: booleanStringSchema.optional(),
-  })
+    include_deliveries: booleanStringSchema.optional()})
   .merge(notificationFiltersSchema);
 
 const notificationHubQuerySchema = listNotificationsQuerySchema;
@@ -162,8 +153,7 @@ const notificationHubQuerySchema = listNotificationsQuerySchema;
 const notificationMetricsQuerySchema = notificationFiltersSchema;
 
 const bulkNotificationMutationSchema = z.object({
-  ids: z.array(resourceIdentifierSchema).min(1).max(BULK_MUTATION_MAX_IDS),
-});
+  ids: z.array(resourceIdentifierSchema).min(1).max(BULK_MUTATION_MAX_IDS)});
 
 module.exports = {
   createNotificationSchema,
@@ -176,5 +166,4 @@ module.exports = {
   NOTIFICATION_TYPES,
   NOTIFICATION_PRIORITIES,
   NOTIFICATION_DELIVERY_STATUSES,
-  HUB_SORT_FIELDS,
-};
+  HUB_SORT_FIELDS};

@@ -54,8 +54,7 @@ const {
   findVerificationToken,
   markTokenAsUsed,
   deleteExpiredTokens,
-  getUserFacilities,
-} = require('@repositories/auth/auth.repository');
+  getUserFacilities} = require('@repositories/auth/auth.repository');
 
 const prisma = require('@prisma/client');
 
@@ -110,8 +109,7 @@ describe('Auth Repository', () => {
         id: 'user-123',
         email: 'test@example.com',
         tenant_id: 'tenant-123',
-        roles: [],
-      };
+        roles: []};
 
       prisma.user.findFirst
         .mockRejectedValueOnce(missingTableError)
@@ -171,8 +169,7 @@ describe('Auth Repository', () => {
         id: 'user-123',
         phone: '256701234567',
         tenant_id: 'tenant-123',
-        roles: [],
-      };
+        roles: []};
 
       prisma.user.findFirst
         .mockRejectedValueOnce(missingTableError)
@@ -344,9 +341,7 @@ describe('Auth Repository', () => {
         refresh_token_hash: 'tokenhash',
         user: {
           id: 'user-123',
-          roles: [],
-        },
-      };
+          roles: []}};
 
       prisma.user_session.findFirst
         .mockRejectedValueOnce(missingTableError)
@@ -611,8 +606,7 @@ describe('Auth Repository', () => {
       const mockUser = {
         id: 'user-123',
         email: 'test@example.com',
-        roles: [],
-      };
+        roles: []};
 
       prisma.user.findFirst
         .mockRejectedValueOnce(missingTableError)
@@ -633,9 +627,7 @@ describe('Auth Repository', () => {
           id: 'user-1',
           email: 'test@example.com',
           tenant_id: 'tenant-1',
-          tenant: { id: 'tenant-1', name: 'Tenant 1', slug: 'tenant-1' },
-        },
-      ];
+          tenant: { id: 'tenant-1', name: 'Tenant 1', slug: 'tenant-1' }}];
       prisma.user.findMany.mockResolvedValue(mockUsers);
 
       const result = await findUsersByIdentifier('TEST@EXAMPLE.COM');
@@ -644,21 +636,15 @@ describe('Auth Repository', () => {
       expect(prisma.user.findMany).toHaveBeenCalledWith({
         where: {
           email: 'test@example.com',
-          deleted_at: null,
-        },
+          deleted_at: null},
         include: {
           tenant: {
             select: {
               id: true,
               name: true,
-              slug: true,
-            },
-          },
-        },
+              slug: true}}},
         orderBy: {
-          created_at: 'desc',
-        },
-      });
+          created_at: 'desc'}});
     });
 
     it('should fallback when optional schema fields are missing', async () => {
@@ -671,9 +657,7 @@ describe('Auth Repository', () => {
             id: 'user-1',
             email: 'test@example.com',
             tenant_id: 'tenant-1',
-            tenant: { id: 'tenant-1', name: 'Tenant 1' },
-          },
-        ]);
+            tenant: { id: 'tenant-1', name: 'Tenant 1' }}]);
 
       const result = await findUsersByIdentifier('TEST@EXAMPLE.COM');
 
@@ -682,40 +666,27 @@ describe('Auth Repository', () => {
           id: 'user-1',
           email: 'test@example.com',
           tenant_id: 'tenant-1',
-          tenant: { id: 'tenant-1', name: 'Tenant 1' },
-        },
-      ]);
+          tenant: { id: 'tenant-1', name: 'Tenant 1' }}]);
       expect(prisma.user.findMany).toHaveBeenNthCalledWith(1, {
         where: {
           email: 'test@example.com',
-          deleted_at: null,
-        },
+          deleted_at: null},
         include: {
           tenant: {
             select: {
               id: true,
               name: true,
-              slug: true,
-            },
-          },
-        },
+              slug: true}}},
         orderBy: {
-          created_at: 'desc',
-        },
-      });
+          created_at: 'desc'}});
       expect(prisma.user.findMany).toHaveBeenNthCalledWith(2, {
         where: {
-          email: 'test@example.com',
-        },
+          email: 'test@example.com'},
         include: {
           tenant: {
             select: {
               id: true,
-              name: true,
-            },
-          },
-        },
-      });
+              name: true}}}});
     });
 
     it('should retry once on transient connection timeout', async () => {
@@ -731,9 +702,7 @@ describe('Auth Repository', () => {
           id: 'user-1',
           email: 'test@example.com',
           tenant_id: 'tenant-1',
-          tenant: { id: 'tenant-1', name: 'Tenant 1', slug: 'tenant-1' },
-        },
-      ];
+          tenant: { id: 'tenant-1', name: 'Tenant 1', slug: 'tenant-1' }}];
 
       prisma.user.findMany
         .mockRejectedValueOnce(transientPoolTimeout)
@@ -751,45 +720,35 @@ describe('Auth Repository', () => {
   describe('getUserFacilities', () => {
     it('should return facilities using minimal schema-safe selects', async () => {
       prisma.user.findFirst.mockResolvedValue({
-        facility_id: 'facility-1',
-      });
+        facility_id: 'facility-1'});
       prisma.user_role.findMany.mockResolvedValue([
-        { facility_id: 'facility-2', role: { facility_id: 'facility-3' } },
-      ]);
+        { facility_id: 'facility-2', role: { facility_id: 'facility-3' } }]);
       prisma.facility.findMany.mockResolvedValue([
-        { id: 'facility-1', name: 'Main', facility_type: 'HOSPITAL', tenant_id: 'tenant-1', is_active: true },
-      ]);
+        { id: 'facility-1', name: 'Main', facility_type: 'HOSPITAL', tenant_id: 'tenant-1', is_active: true }]);
 
       const result = await getUserFacilities('user-1', 'tenant-1');
 
       expect(result).toEqual([
-        { id: 'facility-1', name: 'Main', facility_type: 'HOSPITAL', tenant_id: 'tenant-1', is_active: true },
-      ]);
+        { id: 'facility-1', name: 'Main', facility_type: 'HOSPITAL', tenant_id: 'tenant-1', is_active: true }]);
       expect(prisma.user.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'user-1',
           tenant_id: 'tenant-1',
-          deleted_at: null,
-        },
+          deleted_at: null},
         select: {
-          facility_id: true,
-        },
-      });
+          facility_id: true}});
       expect(prisma.facility.findMany).toHaveBeenCalledWith({
         where: {
           id: { in: expect.arrayContaining(['facility-1', 'facility-2', 'facility-3']) },
           tenant_id: 'tenant-1',
           deleted_at: null,
-          is_active: true,
-        },
+          is_active: true},
         select: {
           id: true,
           tenant_id: true,
           name: true,
           facility_type: true,
-          is_active: true,
-        },
-      });
+          is_active: true}});
     });
 
     it('should return empty array when user has no facility assignments', async () => {

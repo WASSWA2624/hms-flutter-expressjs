@@ -10,16 +10,14 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   createSubscriptionPublicId,
-  PUBLIC_ID_PREFIXES,
-} = require('@lib/subscriptions/constants');
+  PUBLIC_ID_PREFIXES} = require('@lib/subscriptions/constants');
 const { serializeModule } = require('@lib/subscriptions/serializers');
 const { resolveEntityId } = require('@lib/billing/identifiers');
 
 const loadModuleRecord = async (identifier) => {
   const resolvedId = await resolveEntityId({
     model: 'module',
-    identifier,
-  });
+    identifier});
   const record = await moduleRepository.findById(resolvedId);
 
   if (!record) {
@@ -43,19 +41,16 @@ const listModules = async (
       { human_friendly_id: { contains: filters.search, mode: 'insensitive' } },
       { name: { contains: filters.search, mode: 'insensitive' } },
       { slug: { contains: filters.search, mode: 'insensitive' } },
-      { description: { contains: filters.search, mode: 'insensitive' } },
-    ];
+      { description: { contains: filters.search, mode: 'insensitive' } }];
   }
 
   const skip = (page - 1) * limit;
   const orderBy = {
-    [sort_by]: order,
-  };
+    [sort_by]: order};
 
   const [modules, total] = await Promise.all([
     moduleRepository.findMany(repoFilters, skip, limit, orderBy),
-    moduleRepository.count(repoFilters),
-  ]);
+    moduleRepository.count(repoFilters)]);
 
   const totalPages = Math.ceil(total / limit);
   const hasNextPage = page < totalPages;
@@ -69,9 +64,7 @@ const listModules = async (
       total,
       totalPages,
       hasNextPage,
-      hasPreviousPage,
-    },
-  };
+      hasPreviousPage}};
 };
 
 const getModuleById = async (id) => {
@@ -84,8 +77,7 @@ const createModule = async (data, context) => {
     ...data,
     human_friendly_id:
       data.human_friendly_id
-      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.module),
-  });
+      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.module)});
   const moduleRecord = await loadModuleRecord(created.id);
 
   createAuditLog({
@@ -95,8 +87,7 @@ const createModule = async (data, context) => {
     entity_id: moduleRecord.id,
     diff: { after: moduleRecord },
     ip_address: context.ip,
-    tenant_id: context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: context.tenant_id || null}).catch(() => {});
 
   return serializeModule(moduleRecord);
 };
@@ -113,8 +104,7 @@ const updateModule = async (id, data, context) => {
     entity_id: updatedModule.id,
     diff: { before: existingModule, after: updatedModule },
     ip_address: context.ip,
-    tenant_id: context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: context.tenant_id || null}).catch(() => {});
 
   return serializeModule(updatedModule);
 };
@@ -130,8 +120,7 @@ const deleteModule = async (id, context) => {
     entity_id: deletedModule.id,
     diff: { before: existingModule, after: deletedModule },
     ip_address: context.ip,
-    tenant_id: context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: context.tenant_id || null}).catch(() => {});
 
   return deletedModule;
 };
@@ -141,5 +130,4 @@ module.exports = {
   getModuleById,
   createModule,
   updateModule,
-  deleteModule,
-};
+  deleteModule};

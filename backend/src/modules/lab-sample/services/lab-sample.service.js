@@ -8,8 +8,7 @@ const {
   normalizeSearchTerm,
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
-  toDateOrNull,
-} = require('@services/lab-workspace/lab.shared');
+  toDateOrNull} = require('@services/lab-workspace/lab.shared');
 const { mapLabSampleRecord } = require('@services/lab-workspace/lab.serializer');
 
 const listLabSamples = async (filters, page, limit, sortBy, order, userId, ipAddress) => {
@@ -24,8 +23,7 @@ const listLabSamples = async (filters, page, limit, sortBy, order, userId, ipAdd
         identifier: filters.lab_order_id,
         model: 'lab_order',
         where: { deleted_at: null },
-        errorKey: 'errors.lab_order.not_found',
-      });
+        errorKey: 'errors.lab_order.not_found'});
     }
 
     if (filters.status) whereClause.status = filters.status;
@@ -38,8 +36,7 @@ const listLabSamples = async (filters, page, limit, sortBy, order, userId, ipAdd
         { lab_order: { human_friendly_id: { contains: searchTerm.upper } } },
         { lab_order: { patient: { human_friendly_id: { contains: searchTerm.upper } } } },
         { lab_order: { patient: { first_name: { contains: searchTerm.raw } } } },
-        { lab_order: { patient: { last_name: { contains: searchTerm.raw } } } },
-      ];
+        { lab_order: { patient: { last_name: { contains: searchTerm.raw } } } }];
     }
 
     const [labSamples, total] = await Promise.all([
@@ -50,13 +47,11 @@ const listLabSamples = async (filters, page, limit, sortBy, order, userId, ipAdd
         orderBy,
         LAB_SAMPLE_WITH_RELATIONS_INCLUDE
       ),
-      labSampleRepository.count(whereClause),
-    ]);
+      labSampleRepository.count(whereClause)]);
 
     return {
       labSamples: labSamples.map((record) => mapLabSampleRecord(record)).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -70,8 +65,7 @@ const getLabSampleById = async (id, userId, ipAddress) => {
       model: 'lab_sample',
       where: { deleted_at: null },
       include: LAB_SAMPLE_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_sample.not_found',
-    });
+      errorKey: 'errors.lab_sample.not_found'});
 
     return mapLabSampleRecord(labSample);
   } catch (error) {
@@ -87,8 +81,7 @@ const createLabSample = async (data, userId, ipAddress) => {
       identifier: payload.lab_order_id,
       model: 'lab_order',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order.not_found',
-    });
+      errorKey: 'errors.lab_order.not_found'});
 
     if (Object.prototype.hasOwnProperty.call(payload, 'collected_at')) {
       payload.collected_at = toDateOrNull(payload.collected_at, null);
@@ -110,8 +103,7 @@ const createLabSample = async (data, userId, ipAddress) => {
       entity: 'lab_sample',
       entity_id: labSample.id,
       diff: { after: createdSample || labSample },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapLabSampleRecord(createdSample || labSample);
   } catch (error) {
@@ -127,8 +119,7 @@ const updateLabSample = async (id, data, userId, ipAddress) => {
       model: 'lab_sample',
       where: { deleted_at: null },
       include: LAB_SAMPLE_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_sample.not_found',
-    });
+      errorKey: 'errors.lab_sample.not_found'});
 
     const payload = { ...data };
     if (Object.prototype.hasOwnProperty.call(payload, 'collected_at')) {
@@ -150,8 +141,7 @@ const updateLabSample = async (id, data, userId, ipAddress) => {
       entity: 'lab_sample',
       entity_id: updated.id,
       diff: { before, after: labSample },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapLabSampleRecord(labSample || updated);
   } catch (error) {
@@ -167,8 +157,7 @@ const deleteLabSample = async (id, userId, ipAddress) => {
       model: 'lab_sample',
       where: { deleted_at: null },
       include: LAB_SAMPLE_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_sample.not_found',
-    });
+      errorKey: 'errors.lab_sample.not_found'});
 
     await labSampleRepository.softDelete(before.id);
 
@@ -178,8 +167,7 @@ const deleteLabSample = async (id, userId, ipAddress) => {
       entity: 'lab_sample',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

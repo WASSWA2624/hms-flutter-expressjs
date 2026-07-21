@@ -26,8 +26,7 @@ const listSessions = asyncHandler(async (req, res) => {
   if (user_id) filters.user_id = user_id;
   if (is_active) filters.is_active = is_active;
   const context = {
-    user_id: requesterUserId,
-  };
+    user_id: requesterUserId};
 
   const result = await sessionService.listSessions(
     filters,
@@ -58,8 +57,7 @@ const getSessionById = asyncHandler(async (req, res) => {
   const requesterUserId = req.user?.userId || req.user?.id;
 
   const session = await sessionService.getSessionById(id, {
-    user_id: requesterUserId,
-  });
+    user_id: requesterUserId});
 
   return sendSuccess(res, 200, 'messages.session.get.success', session);
 });

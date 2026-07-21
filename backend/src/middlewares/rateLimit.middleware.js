@@ -72,8 +72,7 @@ const resolveRequestLimits = (req, config, options) => {
   if (options.windowMs || options.max) {
     return {
       windowMs: options.windowMs || config.windowMs || 15 * 60 * 1000,
-      max: options.max || config.max || 100,
-    };
+      max: options.max || config.max || 100};
   }
 
   const hasAuthenticatedSignal = Boolean(req?.user?.id || getBearerToken(req));
@@ -89,8 +88,7 @@ const resolveRequestLimits = (req, config, options) => {
     max:
       scopedConfig.max ||
       config.max ||
-      100,
-  };
+      100};
 };
 
 /**

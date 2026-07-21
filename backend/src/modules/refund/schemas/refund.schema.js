@@ -9,8 +9,7 @@ const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
   listQuerySchema,
-  decimalStringSchema,
-} = require('@lib/validation/zod');
+  decimalStringSchema} = require('@lib/validation/zod');
 
 /**
  * Create refund body validation

@@ -4,43 +4,32 @@ jest.mock('@lib/billing/clinical-request-billing', () => {
   const actual = jest.requireActual('@lib/billing/clinical-request-billing');
   return {
     ...actual,
-    persistPharmacyOrderBilling: jest.fn(),
-  };
+    persistPharmacyOrderBilling: jest.fn()};
 });
 jest.mock('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
 jest.mock('@repositories/facility-pharmacy-catalog/facility-pharmacy-catalog.repository', () => ({
-  findDrugOfferings: jest.fn().mockResolvedValue([]),
-}));
+  findDrugOfferings: jest.fn().mockResolvedValue([])}));
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/websocket', () => ({
   emitToUsers: jest.fn(),
   PHARMACY_EVENTS: {
     PHARMACY_WORKSPACE_UPDATED: 'pharmacy.workspace_updated',
-    PHARMACY_ORDER_UPDATED: 'pharmacy.order_updated',
-  },
+    PHARMACY_ORDER_UPDATED: 'pharmacy.order_updated'},
   INVENTORY_EVENTS: {
-    INVENTORY_STOCK_UPDATED: 'inventory.stock_updated',
-  },
-}));
+    INVENTORY_STOCK_UPDATED: 'inventory.stock_updated'}}));
 jest.mock('@prisma/client', () => ({
   user_role: {
-    findMany: jest.fn(),
-  },
+    findMany: jest.fn()},
   inventory_stock: {
     fields: {
-      reorder_level: 'reorder_level',
-    },
-  },
-}));
+      reorder_level: 'reorder_level'}}}));
 jest.mock('@services/pharmacy-workspace/pharmacy.shared', () => {
   const actual = jest.requireActual('@services/pharmacy-workspace/pharmacy.shared');
   return {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
-    resolveModelRecordOrThrow: jest.fn(),
-  };
+    resolveModelRecordOrThrow: jest.fn()};
 });
 
 const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
@@ -49,11 +38,9 @@ const { emitToUsers } = require('@lib/websocket');
 const prisma = require('@prisma/client');
 const {
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  resolveModelRecordOrThrow} = require('@services/pharmacy-workspace/pharmacy.shared');
 const {
-  persistPharmacyOrderBilling,
-} = require('@lib/billing/clinical-request-billing');
+  persistPharmacyOrderBilling} = require('@lib/billing/clinical-request-billing');
 const pharmacyWorkspaceService = require('@services/pharmacy-workspace/pharmacy-workspace.service');
 
 const now = new Date('2026-02-27T10:20:00.000Z');
@@ -61,8 +48,7 @@ const mockUser = {
   id: 'actor-1',
   tenant_id: 'tenant-internal-1',
   facility_id: 'facility-internal-1',
-  roles: ['PHARMACIST'],
-};
+  roles: ['PHARMACIST']};
 
 const buildOrder = (overrides = {}) => ({
   id: 'order-internal-1',
@@ -79,12 +65,10 @@ const buildOrder = (overrides = {}) => ({
     tenant_id: 'tenant-internal-1',
     facility_id: 'facility-internal-1',
     first_name: 'Amina',
-    last_name: 'Stone',
-  },
+    last_name: 'Stone'},
   encounter: {
     id: 'encounter-internal-1',
-    human_friendly_id: 'ENC0000001',
-  },
+    human_friendly_id: 'ENC0000001'},
   items: [
     {
       id: 'item-internal-1',
@@ -119,16 +103,9 @@ const buildOrder = (overrides = {}) => ({
               name: 'Paracetamol 500mg',
               category: 'MEDICATION',
               sku: 'PCM',
-              unit: 'tablet',
-            },
-          },
-        ],
-      },
-    },
-  ],
+              unit: 'tablet'}}]}}],
   dispense_attestations: [],
-  ...overrides,
-});
+  ...overrides});
 
 const flushAsync = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -139,15 +116,13 @@ describe('pharmacy-workspace.service', () => {
     prisma.user_role.findMany.mockResolvedValue([
       { user_id: 'user-1' },
       { user_id: 'actor-1' },
-      { user_id: 'user-2' },
-    ]);
+      { user_id: 'user-2' }]);
   });
 
   it('resolves legacy pharmacy identifiers to workspace route', async () => {
     resolveModelRecordOrThrow.mockResolvedValue({
       id: '6b6ee0e3-f57e-4d2a-81d6-c7b87a235cdf',
-      human_friendly_id: 'PHO0000009',
-    });
+      human_friendly_id: 'PHO0000009'});
 
     const resolved = await pharmacyWorkspaceService.resolveLegacyRouteIdentifier(
       'pharmacy-orders',
@@ -160,8 +135,7 @@ describe('pharmacy-workspace.service', () => {
       resource: 'orders',
       identifier: 'PHO0000009',
       route: '/pharmacy/orders/PHO0000009',
-      matched_by: 'uuid',
-    });
+      matched_by: 'uuid'});
   });
 
   it('prepareDispense creates pending dispense logs and emits realtime updates', async () => {
@@ -180,9 +154,7 @@ describe('pharmacy-workspace.service', () => {
           attested_role: 'PHARMACIST',
           attested_at: now,
           created_at: now,
-          updated_at: now,
-        },
-      ],
+          updated_at: now}],
       items: [
         {
           ...orderBefore.items[0],
@@ -195,12 +167,7 @@ describe('pharmacy-workspace.service', () => {
               status: 'PENDING',
               quantity_dispensed: 2,
               created_at: now,
-              updated_at: now,
-            },
-          ],
-        },
-      ],
-    });
+              updated_at: now}]}]});
 
     pharmacyWorkspaceRepository.withTransaction.mockImplementation(async (callback) => callback({}));
     pharmacyWorkspaceRepository.txFindOrderById
@@ -216,8 +183,7 @@ describe('pharmacy-workspace.service', () => {
       'PHO0000001',
       {
         dispense_batch_ref: 'DSPBATCH001',
-        items: [{ order_item_id: 'POI0000001', quantity: 2 }],
-      },
+        items: [{ order_item_id: 'POI0000001', quantity: 2 }]},
       'actor-1',
       'PHARMACIST',
       '127.0.0.1',
@@ -233,8 +199,7 @@ describe('pharmacy-workspace.service', () => {
       ['user-1', 'user-2'],
       'pharmacy.workspace_updated',
       expect.objectContaining({
-        action: 'PREPARE_DISPENSE',
-      })
+        action: 'PREPARE_DISPENSE'})
     );
   });
 
@@ -253,10 +218,7 @@ describe('pharmacy-workspace.service', () => {
           attested_role: 'PHARMACIST',
           attested_at: now,
           created_at: now,
-          updated_at: now,
-        },
-      ],
-    });
+          updated_at: now}]});
 
     pharmacyWorkspaceRepository.withTransaction.mockImplementation(async (callback) => callback({}));
     pharmacyWorkspaceRepository.txFindOrderById.mockResolvedValue(orderWithPendingBatch);
@@ -269,15 +231,13 @@ describe('pharmacy-workspace.service', () => {
         'PHO0000001',
         {
           dispense_batch_ref: 'DSPBATCH002',
-          items: [{ order_item_id: 'POI0000001', quantity: 2 }],
-        },
+          items: [{ order_item_id: 'POI0000001', quantity: 2 }]},
         'actor-2',
         'PHARMACIST',
         '127.0.0.1',
         {
           ...mockUser,
-          id: 'actor-2',
-        }
+          id: 'actor-2'}
       )
     ).rejects.toBeInstanceOf(HttpError);
 
@@ -290,9 +250,7 @@ describe('pharmacy-workspace.service', () => {
       encounter: {
         id: 'encounter-internal-1',
         human_friendly_id: 'ENC0000001',
-        encounter_type: 'IPD',
-      },
-    });
+        encounter_type: 'IPD'}});
 
     pharmacyWorkspaceRepository.findManyOrders.mockResolvedValue([inpatientOrder]);
     pharmacyWorkspaceRepository.countOrders.mockResolvedValue(0);
@@ -348,8 +306,7 @@ describe('pharmacy-workspace.service', () => {
       .mockResolvedValueOnce({
         id: 'att-prep-1',
         phase: 'PREPARE',
-        attested_by_user_id: 'actor-1',
-      })
+        attested_by_user_id: 'actor-1'})
       .mockResolvedValueOnce(null);
 
     await expect(
@@ -373,10 +330,7 @@ describe('pharmacy-workspace.service', () => {
           findFirst: jest.fn().mockResolvedValue({
             id: 'patient-internal-1',
             tenant_id: 'tenant-internal-1',
-            facility_id: 'facility-internal-1',
-          }),
-        },
-      };
+            facility_id: 'facility-internal-1'})}};
       return callback(tx);
     });
     pharmacyWorkspaceRepository.txFindOrderById

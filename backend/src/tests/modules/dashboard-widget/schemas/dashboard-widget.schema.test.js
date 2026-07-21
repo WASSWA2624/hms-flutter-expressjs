@@ -282,11 +282,10 @@ describe('Dashboard Widget Schemas', () => {
       }
     });
 
-    it('should validate tenant/facility/branch UUID filters', () => {
+    it('should validate tenant/facility UUID filters', () => {
       const result = dashboardSummaryQuerySchema.safeParse({
         tenant_id: '550e8400-e29b-41d4-a716-446655440000',
         facility_id: '550e8400-e29b-41d4-a716-446655440001',
-        branch_id: '550e8400-e29b-41d4-a716-446655440002',
         days: 30
       });
       expect(result.success).toBe(true);

@@ -45,7 +45,7 @@ describe('Provider Schedule Repository', () => {
       expect(result).toEqual(mockSchedule);
       expect(prisma.provider_schedule.findFirst).toHaveBeenCalledWith({
         where: { id: scheduleId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -119,7 +119,7 @@ describe('Provider Schedule Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

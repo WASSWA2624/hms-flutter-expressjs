@@ -7,8 +7,7 @@ const mortuaryPanelSchema = z.enum([
   'storage',
   'custody',
   'release',
-  'reporting',
-]);
+  'reporting']);
 
 const mortuaryResourceSchema = z.enum([
   'mortuary-cases',
@@ -19,16 +18,14 @@ const mortuaryResourceSchema = z.enum([
   'mortuary-viewings',
   'mortuary-post-mortem-requests',
   'mortuary-release-authorisations',
-  'mortuary-billable-events',
-]);
+  'mortuary-billable-events']);
 
 const mortuaryQueueSchema = z.enum([
   'IDENTIFICATION_PENDING',
   'STORAGE_EXCEPTIONS',
   'RELEASE_READY',
   'UNSETTLED_BILLING',
-  'POST_MORTEM_PENDING',
-]);
+  'POST_MORTEM_PENDING']);
 
 const workspaceQuerySchema = listQuerySchema.extend({
   panel: mortuaryPanelSchema.optional(),
@@ -42,18 +39,15 @@ const workspaceQuerySchema = listQuerySchema.extend({
   storage_slot_id: uuidOrFriendlyIdentifierSchema.optional(),
   date_preset: z.enum(['today', 'next_7_days', 'overdue', 'this_month']).optional(),
   id: uuidOrFriendlyIdentifierSchema.optional(),
-  action: z.enum(['view', 'create', 'edit', 'release', 'audit']).optional(),
-});
+  action: z.enum(['view', 'create', 'edit', 'release', 'audit']).optional()});
 
 const lookupsQuerySchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 module.exports = {
   mortuaryPanelSchema,
   mortuaryResourceSchema,
   mortuaryQueueSchema,
   workspaceQuerySchema,
-  lookupsQuerySchema,
-};
+  lookupsQuerySchema};

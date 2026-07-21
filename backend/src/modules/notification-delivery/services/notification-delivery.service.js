@@ -18,14 +18,12 @@ const DELIVERY_SORT_FIELDS = new Set([
   'sent_at',
   'delivered_at',
   'status',
-  'channel',
-]);
+  'channel']);
 
 const ADMIN_NOTIFICATION_ROLES = new Set([
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-]);
+  ROLES.FACILITY_ADMIN]);
 
 const normalizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
@@ -60,20 +58,13 @@ const includeDeliveryRelations = {
           id: true,
           human_friendly_id: true,
           slug: true,
-          name: true,
-        },
-      },
+          name: true}},
       user: {
         select: {
           id: true,
           human_friendly_id: true,
           email: true,
-          phone: true,
-        },
-      },
-    },
-  },
-};
+          phone: true}}}}};
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -83,8 +74,7 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const mapDeliveryRecord = (record = {}) => ({
@@ -116,16 +106,14 @@ const mapDeliveryRecord = (record = {}) => ({
   retryable: Boolean(record.retryable),
   error_message: record.error_message || null,
   created_at: record.created_at || null,
-  updated_at: record.updated_at || null,
-});
+  updated_at: record.updated_at || null});
 
 const ensureDeliveryPublicIds = async (rows = []) => {
   const missing = (Array.isArray(rows) ? rows : [])
     .filter((entry) => !safePublicId(entry?.human_friendly_id))
     .map((entry) => ({
       id: entry.id,
-      generated: notificationDeliveryRepository.createPublicId('NDL'),
-    }));
+      generated: notificationDeliveryRepository.createPublicId('NDL')}));
 
   await Promise.all(
     missing.map((entry) =>
@@ -172,8 +160,7 @@ const resolveDeliveryWhere = async (filters = {}, actor = {}) => {
   const notificationWhere = {
     deleted_at: null,
     ...(globalAdmin ? {} : { tenant_id: tenantId }),
-    ...(adminAccess ? {} : { user_id: userId }),
-  };
+    ...(adminAccess ? {} : { user_id: userId })};
 
   if (filters.notification_id) {
     const notification = await notificationDeliveryRepository.findNotificationByIdentifier(
@@ -201,11 +188,7 @@ const resolveDeliveryWhere = async (filters = {}, actor = {}) => {
           OR: [
             { title: { contains: search } },
             { message: { contains: search } },
-            { human_friendly_id: { contains: searchUpper } },
-          ],
-        },
-      },
-    ];
+            { human_friendly_id: { contains: searchUpper } }]}}];
   }
 
   where.notification = notificationWhere;
@@ -226,8 +209,7 @@ const listNotificationDeliveries = async (filters, page, limit, sortBy, order, a
     if (where === null) {
       return {
         notificationDeliveries: [],
-        pagination: buildPagination(numericPage, numericLimit, 0),
-      };
+        pagination: buildPagination(numericPage, numericLimit, 0)};
     }
 
     const skip = (numericPage - 1) * numericLimit;
@@ -241,14 +223,12 @@ const listNotificationDeliveries = async (filters, page, limit, sortBy, order, a
         orderBy,
         includeDeliveryRelations
       ),
-      notificationDeliveryRepository.count(where),
-    ]);
+      notificationDeliveryRepository.count(where)]);
 
     await ensureDeliveryPublicIds(rows);
     return {
       notificationDeliveries: rows.map(mapDeliveryRecord),
-      pagination: buildPagination(numericPage, numericLimit, total),
-    };
+      pagination: buildPagination(numericPage, numericLimit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -312,13 +292,11 @@ const createNotificationDelivery = async (data, actor = {}, ipAddress) => {
       entity: 'notification_delivery',
       entity_id: created.id,
       diff: { after: hydrated },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     if (notification.user_id) {
       emitToUser(notification.user_id, NOTIFICATION_EVENTS.NOTIFICATION_DELIVERY_UPDATED, {
-        delivery: mapped,
-      });
+        delivery: mapped});
     }
 
     return mapped;
@@ -362,13 +340,11 @@ const updateNotificationDelivery = async (id, data, actor = {}, ipAddress) => {
       entity: 'notification_delivery',
       entity_id: before.id,
       diff: { before, after },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     if (after?.notification?.user_id) {
       emitToUser(after.notification.user_id, NOTIFICATION_EVENTS.NOTIFICATION_DELIVERY_UPDATED, {
-        delivery: mapped,
-      });
+        delivery: mapped});
     }
 
     return mapped;
@@ -395,8 +371,7 @@ const deleteNotificationDelivery = async (id, actor = {}, ipAddress) => {
       entity: 'notification_delivery',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -408,5 +383,4 @@ module.exports = {
   getNotificationDeliveryById,
   createNotificationDelivery,
   updateNotificationDelivery,
-  deleteNotificationDelivery,
-};
+  deleteNotificationDelivery};

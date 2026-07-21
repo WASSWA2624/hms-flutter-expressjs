@@ -5,20 +5,16 @@ jest.mock('@prisma/client', () => ({
     count: jest.fn(),
     create: jest.fn(),
     createMany: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   role: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   role_permission: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
-}));
+    create: jest.fn()}}));
 
 const prisma = require('@prisma/client');
 const {
@@ -27,8 +23,7 @@ const {
   clearAccessCatalogCache,
   ensureTenantAccessCatalog,
   ensureTenantPermissionCatalog,
-  refreshTenantAccessCatalog,
-} = require('@lib/authorization/permission-catalog-sync');
+  refreshTenantAccessCatalog} = require('@lib/authorization/permission-catalog-sync');
 
 describe('permission-catalog-sync', () => {
   beforeEach(() => {
@@ -48,22 +43,19 @@ describe('permission-catalog-sync', () => {
     prisma.permission.findMany.mockResolvedValue(
       CANONICAL_PERMISSION_KEYS.map((name) => ({
         id: `perm-${name}`,
-        name,
-      }))
+        name}))
     );
     prisma.role.findMany.mockResolvedValue(
       SYSTEM_ROLE_CODES.map((name) => ({
         id: `role-${name}`,
-        name,
-      }))
+        name}))
     );
 
     const result = await ensureTenantAccessCatalog('tenant-uuid');
 
     expect(result).toEqual({
       permissions: CANONICAL_PERMISSION_KEYS.length,
-      roles: SYSTEM_ROLE_CODES.length,
-    });
+      roles: SYSTEM_ROLE_CODES.length});
     expect(prisma.permission.createMany).not.toHaveBeenCalled();
     expect(prisma.role.create).not.toHaveBeenCalled();
   });
@@ -72,20 +64,17 @@ describe('permission-catalog-sync', () => {
     prisma.permission.findMany.mockResolvedValue(
       CANONICAL_PERMISSION_KEYS.map((name) => ({
         id: `perm-${name}`,
-        name,
-      }))
+        name}))
     );
     prisma.role.findMany.mockResolvedValue(
       SYSTEM_ROLE_CODES.filter((name) => name !== 'DOCTOR').map((name) => ({
         id: `role-${name}`,
-        name,
-      }))
+        name}))
     );
     prisma.role.findFirst.mockResolvedValue(null);
     prisma.role.create.mockImplementation(async ({ data }) => ({
       id: `role-${data.name}`,
-      ...data,
-    }));
+      ...data}));
     prisma.role_permission.findFirst.mockResolvedValue(null);
     prisma.role_permission.create.mockResolvedValue({});
 
@@ -96,9 +85,7 @@ describe('permission-catalog-sync', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           name: 'DOCTOR',
-          display_name: 'Doctor',
-        }),
-      })
+          display_name: 'Doctor'})})
     );
   });
 
@@ -106,14 +93,12 @@ describe('permission-catalog-sync', () => {
     prisma.permission.findMany.mockResolvedValue(
       CANONICAL_PERMISSION_KEYS.map((name) => ({
         id: `perm-${name}`,
-        name,
-      }))
+        name}))
     );
     prisma.role.findMany.mockResolvedValue(
       SYSTEM_ROLE_CODES.map((name) => ({
         id: `role-${name}`,
-        name,
-      }))
+        name}))
     );
 
     await ensureTenantAccessCatalog('tenant-uuid');
@@ -126,30 +111,25 @@ describe('permission-catalog-sync', () => {
   it('refreshes metadata when explicitly requested', async () => {
     prisma.permission.findFirst.mockResolvedValue({
       id: 'perm-existing',
-      name: 'patient:read',
-    });
+      name: 'patient:read'});
     prisma.permission.update.mockImplementation(async ({ data }) => ({
       id: 'perm-existing',
       name: 'patient:read',
-      ...data,
-    }));
+      ...data}));
     prisma.permission.findMany.mockResolvedValue(
       CANONICAL_PERMISSION_KEYS.map((name) => ({
         id: `perm-${name}`,
-        name,
-      }))
+        name}))
     );
     prisma.permission.count.mockResolvedValue(CANONICAL_PERMISSION_KEYS.length);
     prisma.role.count.mockResolvedValue(SYSTEM_ROLE_CODES.length);
     prisma.role.findFirst.mockResolvedValue({
       id: 'role-existing',
-      name: 'DOCTOR',
-    });
+      name: 'DOCTOR'});
     prisma.role.update.mockImplementation(async ({ data }) => ({
       id: 'role-existing',
       name: 'DOCTOR',
-      ...data,
-    }));
+      ...data}));
     prisma.role_permission.findFirst.mockResolvedValue({ id: 'link-existing' });
 
     await refreshTenantAccessCatalog('tenant-uuid');
@@ -167,9 +147,7 @@ describe('permission-catalog-sync', () => {
         {
           id: 'perm-new',
           name: 'patient:read',
-          display_name: 'Patient — Read',
-        },
-      ]);
+          display_name: 'Patient — Read'}]);
     prisma.permission.createMany.mockResolvedValue({ count: 1 });
 
     const result = await ensureTenantPermissionCatalog('tenant-uuid');

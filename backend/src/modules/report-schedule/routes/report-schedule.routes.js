@@ -7,8 +7,7 @@ const {
   createReportScheduleSchema,
   listReportSchedulesQuerySchema,
   reportScheduleIdParamsSchema,
-  updateReportScheduleSchema,
-} = require('@validations/report-schedule/report-schedule.schema');
+  updateReportScheduleSchema} = require('@validations/report-schedule/report-schedule.schema');
 
 const router = express.Router();
 

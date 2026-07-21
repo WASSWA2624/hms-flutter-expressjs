@@ -40,7 +40,7 @@ describe('NotificationDelivery Repository', () => {
       expect(result).toEqual(mockDelivery);
       expect(prisma.notification_delivery.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 

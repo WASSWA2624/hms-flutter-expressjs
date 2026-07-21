@@ -10,8 +10,7 @@
 const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 // ==================== Enums ====================
 
@@ -33,8 +32,7 @@ const leaveTypeEnum = z.enum([
   'UNPAID',
   'STUDY',
   'EMERGENCY',
-  'OTHER',
-]);
+  'OTHER']);
 
 /**
  * Half-day period enum (matches Prisma schema)
@@ -59,15 +57,13 @@ const leaveDurationRefinement = (value, ctx) => {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'errors.staff_leave.half_day_period_required',
-      path: ['half_day_period'],
-    });
+      path: ['half_day_period']});
   }
   if (!sameCalendarDay(value.start_date, value.end_date)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'errors.staff_leave.half_day_single_day_only',
-      path: ['end_date'],
-    });
+      path: ['end_date']});
   }
 };
 
@@ -88,8 +84,7 @@ const createStaffLeaveSchema = z
     half_day_period: leaveHalfDayPeriodEnum.optional().nullable(),
     reason: z.string().trim().optional().nullable(),
     handover_notes: z.string().trim().optional().nullable(),
-    covering_staff_profile_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  })
+    covering_staff_profile_id: uuidOrFriendlyIdentifierSchema.optional().nullable()})
   .superRefine(leaveDurationRefinement);
 
 /**
@@ -107,8 +102,7 @@ const updateStaffLeaveSchema = z
     half_day_period: leaveHalfDayPeriodEnum.optional().nullable(),
     reason: z.string().trim().optional().nullable(),
     handover_notes: z.string().trim().optional().nullable(),
-    covering_staff_profile_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  })
+    covering_staff_profile_id: uuidOrFriendlyIdentifierSchema.optional().nullable()})
   .superRefine((value, ctx) => {
     if (value.start_date == null || value.end_date == null) {
       return;
@@ -118,8 +112,7 @@ const updateStaffLeaveSchema = z
         is_half_day: value.is_half_day === true,
         half_day_period: value.half_day_period,
         start_date: value.start_date,
-        end_date: value.end_date,
-      },
+        end_date: value.end_date},
       ctx
     );
   });
@@ -131,8 +124,7 @@ const updateStaffLeaveSchema = z
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const staffLeaveIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -144,8 +136,7 @@ const staffLeaveIdParamsSchema = z.object({
 const listStaffLeavesQuerySchema = listQuerySchema.extend({
   staff_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: leaveStatusEnum.optional(),
-  leave_type: leaveTypeEnum.optional(),
-});
+  leave_type: leaveTypeEnum.optional()});
 
 module.exports = {
   createStaffLeaveSchema,
@@ -154,5 +145,4 @@ module.exports = {
   listStaffLeavesQuerySchema,
   leaveStatusEnum,
   leaveTypeEnum,
-  leaveHalfDayPeriodEnum,
-};
+  leaveHalfDayPeriodEnum};

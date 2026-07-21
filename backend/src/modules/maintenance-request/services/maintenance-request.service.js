@@ -15,8 +15,7 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: page * limit < total,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const mapMaintenanceRequest = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -33,8 +32,7 @@ const mapMaintenanceRequest = (record) => {
     asset_id: resolvePublicIdentifier(record?.asset?.human_friendly_id, record?.asset_id),
     asset_label: record?.asset?.name || record?.asset?.asset_tag || null,
     created_at: record.created_at || null,
-    updated_at: record.updated_at || null,
-  };
+    updated_at: record.updated_at || null};
 };
 
 const resolveListFilters = async (filters = {}, page = 1, limit = 20) => {
@@ -43,13 +41,11 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20) => {
   if (filters.facility_id !== undefined) {
     const facilityId = await resolveIdentifierForFilter({
       value: filters.facility_id,
-      model: 'facility',
-    });
+      model: 'facility'});
     if (facilityId === null) {
       return {
         maintenanceRequests: [],
-        pagination: buildPagination(page, limit, 0),
-      };
+        pagination: buildPagination(page, limit, 0)};
     }
     if (facilityId !== undefined) resolvedFilters.facility_id = facilityId;
   }
@@ -57,13 +53,11 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20) => {
   if (filters.asset_id !== undefined) {
     const assetId = await resolveIdentifierForFilter({
       value: filters.asset_id,
-      model: 'asset',
-    });
+      model: 'asset'});
     if (assetId === null) {
       return {
         maintenanceRequests: [],
-        pagination: buildPagination(page, limit, 0),
-      };
+        pagination: buildPagination(page, limit, 0)};
     }
     if (assetId !== undefined) resolvedFilters.asset_id = assetId;
   }
@@ -84,8 +78,7 @@ const resolvePayload = async (data = {}, existing = null) => {
       field: 'facility_id',
       model: 'facility',
       nullable: true,
-      where: tenantId ? { tenant_id: tenantId } : {},
-    });
+      where: tenantId ? { tenant_id: tenantId } : {}});
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'asset_id')) {
@@ -94,8 +87,7 @@ const resolvePayload = async (data = {}, existing = null) => {
       field: 'asset_id',
       model: 'asset',
       nullable: true,
-      where: tenantId ? { tenant_id: tenantId } : {},
-    });
+      where: tenantId ? { tenant_id: tenantId } : {}});
   }
 
   if (payload.reported_at) payload.reported_at = new Date(payload.reported_at);
@@ -109,8 +101,7 @@ const resolvePayload = async (data = {}, existing = null) => {
 const resolveRequestId = async (identifier) => {
   const resolvedId = await resolveModelIdByIdentifier({
     model: 'maintenance_request',
-    identifier,
-  });
+    identifier});
 
   return resolvedId || identifier;
 };
@@ -123,12 +114,9 @@ const findRecipientIds = async (tenantId) => {
       deleted_at: null,
       role: {
         name: { in: ['BIOMED', 'OPERATIONS', 'FACILITY_ADMIN', 'TENANT_ADMIN'] },
-        deleted_at: null,
-      },
-      user: { deleted_at: null },
-    },
-    select: { user_id: true },
-  });
+        deleted_at: null},
+      user: { deleted_at: null }},
+    select: { user_id: true }});
   return Array.from(new Set(rows.map((entry) => entry.user_id).filter(Boolean)));
 };
 
@@ -141,8 +129,7 @@ const emitMaintenanceRequestUpdate = async (record, event) => {
     maintenance_request_id: displayId(record),
     status: record?.status || null,
     asset_id: resolvePublicIdentifier(record?.asset?.human_friendly_id, record?.asset_id),
-    facility_id: resolvePublicIdentifier(record?.facility?.human_friendly_id, record?.facility_id),
-  };
+    facility_id: resolvePublicIdentifier(record?.facility?.human_friendly_id, record?.facility_id)};
 
   emitToUsers(recipientIds, event, payload);
   emitToUsers(recipientIds, HOUSEKEEPING_EVENTS.HOUSEKEEPING_WORKSPACE_UPDATED, payload);
@@ -158,13 +145,11 @@ const listMaintenanceRequests = async (filters, page, limit, sortBy, order) => {
 
     const [maintenanceRequests, total] = await Promise.all([
       maintenanceRequestRepository.findMany(resolvedFilters, skip, limit, orderBy),
-      maintenanceRequestRepository.count(resolvedFilters),
-    ]);
+      maintenanceRequestRepository.count(resolvedFilters)]);
 
     return {
       maintenanceRequests: maintenanceRequests.map(mapMaintenanceRequest),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -199,8 +184,7 @@ const createMaintenanceRequest = async (data, userId, ipAddress) => {
       entity: 'maintenance_request',
       entity_id: maintenanceRequest.id,
       diff: { after: maintenanceRequest },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     await emitMaintenanceRequestUpdate(maintenanceRequest, HOUSEKEEPING_EVENTS.HOUSEKEEPING_WORKSPACE_UPDATED);
     return mapMaintenanceRequest(maintenanceRequest);
@@ -229,8 +213,7 @@ const updateMaintenanceRequest = async (id, data, userId, ipAddress) => {
       entity: 'maintenance_request',
       entity_id: maintenanceRequest.id,
       diff: { before, after: maintenanceRequest },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     await emitMaintenanceRequestUpdate(maintenanceRequest, HOUSEKEEPING_EVENTS.HOUSEKEEPING_WORKSPACE_UPDATED);
     return mapMaintenanceRequest(maintenanceRequest);
@@ -258,8 +241,7 @@ const deleteMaintenanceRequest = async (id, userId, ipAddress) => {
       entity: 'maintenance_request',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -282,8 +264,7 @@ const triageMaintenanceRequest = async (id, data = {}, userId, ipAddress) => {
     const engineerId = await resolveIdentifierForFilter({
       value: data.assigned_engineer,
       model: 'user',
-      where: before?.asset?.tenant_id ? { tenant_id: before.asset.tenant_id } : {},
-    });
+      where: before?.asset?.tenant_id ? { tenant_id: before.asset.tenant_id } : {}});
 
     const summaryParts = [];
     if (engineerId) summaryParts.push(`assigned_engineer_id=${engineerId}`);
@@ -291,8 +272,7 @@ const triageMaintenanceRequest = async (id, data = {}, userId, ipAddress) => {
     if (data.triage_summary) summaryParts.push(`triage_summary=${data.triage_summary}`);
 
     const updateData = {
-      status: data.status || 'IN_PROGRESS',
-    };
+      status: data.status || 'IN_PROGRESS'};
 
     if (summaryParts.length > 0) {
       const existingDescription = before.description ? `${before.description}\n\n` : '';
@@ -313,11 +293,8 @@ const triageMaintenanceRequest = async (id, data = {}, userId, ipAddress) => {
         metadata: {
           assigned_engineer_id: engineerId || null,
           sla_hours: data.sla_hours || null,
-          triage_summary: data.triage_summary || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          triage_summary: data.triage_summary || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     await emitMaintenanceRequestUpdate(maintenanceRequest, HOUSEKEEPING_EVENTS.MAINTENANCE_REQUEST_TRIAGED);
     return mapMaintenanceRequest(maintenanceRequest);
@@ -341,28 +318,23 @@ const convertMaintenanceRequestToWorkOrder = async (id, data = {}, userId, ipAdd
       value: data.equipment_registry_id,
       field: 'equipment_registry_id',
       model: 'equipment_registry',
-      where: tenantId ? { tenant_id: tenantId } : {},
-    });
+      where: tenantId ? { tenant_id: tenantId } : {}});
     const assignedEngineerUserId = await resolveIdentifierForPayload({
       value: data.assigned_engineer_user_id,
       field: 'assigned_engineer_user_id',
       model: 'user',
       nullable: true,
-      where: tenantId ? { tenant_id: tenantId } : {},
-    });
+      where: tenantId ? { tenant_id: tenantId } : {}});
 
     const [updatedRequest, workOrder] = await prisma.$transaction(async (tx) => {
       const updated = await tx.maintenance_request.update({
         where: { id: resolvedId },
         data: {
           status: 'IN_PROGRESS',
-          description: [requestRecord.description, data.notes ? `[CONVERT] ${data.notes}` : null].filter(Boolean).join('\n\n'),
-        },
+          description: [requestRecord.description, data.notes ? `[CONVERT] ${data.notes}` : null].filter(Boolean).join('\n\n')},
         include: {
           facility: { select: { id: true, human_friendly_id: true, name: true } },
-          asset: { select: { id: true, human_friendly_id: true, name: true, asset_tag: true, tenant_id: true } },
-        },
-      });
+          asset: { select: { id: true, human_friendly_id: true, name: true, asset_tag: true, tenant_id: true } }}});
 
       const createdWorkOrder = await tx.equipment_work_order.create({
         data: {
@@ -377,9 +349,7 @@ const convertMaintenanceRequestToWorkOrder = async (id, data = {}, userId, ipAdd
           reported_by_user_id: userId || null,
           assigned_engineer_user_id: assignedEngineerUserId || null,
           downtime_started_at: data.downtime_started_at ? new Date(data.downtime_started_at) : null,
-          opened_at: new Date(),
-        },
-      });
+          opened_at: new Date()}});
 
       return [updated, createdWorkOrder];
     });
@@ -392,9 +362,7 @@ const convertMaintenanceRequestToWorkOrder = async (id, data = {}, userId, ipAdd
               id: true,
               human_friendly_id: true,
               equipment_name: true,
-              equipment_code: true,
-            },
-          })
+              equipment_code: true}})
         : Promise.resolve(null),
       assignedEngineerUserId
         ? prisma.user.findUnique({
@@ -403,11 +371,8 @@ const convertMaintenanceRequestToWorkOrder = async (id, data = {}, userId, ipAdd
               id: true,
               human_friendly_id: true,
               email: true,
-              position_title: true,
-            },
-          })
-        : Promise.resolve(null),
-    ]);
+              position_title: true}})
+        : Promise.resolve(null)]);
 
     createAuditLog({
       tenant_id: tenantId,
@@ -421,11 +386,8 @@ const convertMaintenanceRequestToWorkOrder = async (id, data = {}, userId, ipAdd
         metadata: {
           equipment_work_order_id: workOrder.id,
           equipment_registry_id: equipmentRegistryId,
-          assigned_engineer_user_id: assignedEngineerUserId || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          assigned_engineer_user_id: assignedEngineerUserId || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     await emitMaintenanceRequestUpdate(updatedRequest, HOUSEKEEPING_EVENTS.MAINTENANCE_REQUEST_CONVERTED);
 
@@ -448,9 +410,7 @@ const convertMaintenanceRequestToWorkOrder = async (id, data = {}, userId, ipAdd
           assignedEngineerUserId
         ),
         assigned_engineer_label:
-          assignedEngineer?.email || assignedEngineer?.position_title || null,
-      },
-    };
+          assignedEngineer?.email || assignedEngineer?.position_title || null}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -464,5 +424,4 @@ module.exports = {
   updateMaintenanceRequest,
   deleteMaintenanceRequest,
   triageMaintenanceRequest,
-  convertMaintenanceRequestToWorkOrder,
-};
+  convertMaintenanceRequestToWorkOrder};

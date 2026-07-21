@@ -79,8 +79,7 @@ describe('opd-flow.controller', () => {
       resource: 'emergency-cases',
       resource_id: 'EMC00001',
       panel: 'queue',
-      action: 'open_case',
-    });
+      action: 'open_case'});
     req.params = { resource: 'emergency-cases', id: 'EMC00001' };
 
     await opdFlowController.resolveLegacyRoute(req, res);

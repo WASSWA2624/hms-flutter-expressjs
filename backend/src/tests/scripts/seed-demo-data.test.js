@@ -87,9 +87,7 @@ describe('seed-demo-data script', () => {
         drug_batches_per_tenant: 72,
         facilities_seeded: 1,
         stock_records_seeded: 72,
-        stock_movements_seeded: 72,
-      },
-    }));
+        stock_movements_seeded: 72}}));
     const seedClinicalPack = jest.fn(async () => ({ patients: { 'free:p1': { id: 'patient-1' } } }));
     const seedOperationsPack = jest.fn(async () => ({ inventoryItems: {}, suppliers: {} }));
     const seedCommunicationsPack = jest.fn(async () => ({ conversations: { unreadDirect: { id: 'conv-1' } } }));
@@ -105,8 +103,7 @@ describe('seed-demo-data script', () => {
       dayCloses: { approved: { id: 'dcl-1' } },
       handovers: { accepted: { id: 'hnd-1' } },
       custodySnapshots: { finalized: { id: 'cus-1' } },
-      closeoutPacks: { ready: { id: 'clp-1' } },
-    }));
+      closeoutPacks: { ready: { id: 'clp-1' } }}));
     const seedFillerPack = jest.fn(async () => ({ skipped: true, reason: 'target_count_zero', created: 0, processed: 0 }));
     const verifyDemoData = jest.fn(async () => ({ ok: true, errors: [], summary: {} }));
 
@@ -114,18 +111,15 @@ describe('seed-demo-data script', () => {
     jest.doMock('../../../scripts/seeders/seed-runtime', () => ({
       createSeedContext: jest.fn(() => ({
         randomSeed: 20260302,
-        prisma: { $disconnect: jest.fn() },
-      })),
+        prisma: { $disconnect: jest.fn() }})),
       DEFAULT_RANDOM_SEED: 20260302,
       deterministicUuid: (value) => `uuid-${value}`,
-      prisma: { $disconnect: jest.fn() },
-    }));
+      prisma: { $disconnect: jest.fn() }}));
     jest.doMock('../../../scripts/seeders/seed-org-pack', () => ({ seedOrgPack }));
     jest.doMock('../../../scripts/seeders/seed-access-pack', () => ({ seedAccessPack }));
     jest.doMock('../../../scripts/seeders/seed-subscriptions-pack', () => ({ seedSubscriptionsPack }));
     jest.doMock('../../../scripts/seeders/seed-clinical-catalog-pack', () => ({
-      seedClinicalCatalogPack,
-    }));
+      seedClinicalCatalogPack}));
     jest.doMock('../../../scripts/seeders/seed-clinical-pack', () => ({ seedClinicalPack }));
     jest.doMock('../../../scripts/seeders/seed-operations-pack', () => ({ seedOperationsPack }));
     jest.doMock('../../../scripts/seeders/seed-communications-pack', () => ({ seedCommunicationsPack }));

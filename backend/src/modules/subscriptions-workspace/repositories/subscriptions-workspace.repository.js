@@ -3,14 +3,12 @@ const { HttpError } = require('@lib/errors');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const {
   SUBSCRIPTIONS_PENDING_CHANGE_STATUSES,
-  SUBSCRIPTIONS_WARNING_FIT_STATUSES,
-} = require('@lib/subscriptions/constants');
+  SUBSCRIPTIONS_WARNING_FIT_STATUSES} = require('@lib/subscriptions/constants');
 
 const tenantSelect = {
   id: true,
   human_friendly_id: true,
-  name: true,
-};
+  name: true};
 
 const subscriptionPlanSelect = {
   id: true,
@@ -24,8 +22,7 @@ const subscriptionPlanSelect = {
   max_facilities: true,
   max_storage_mb: true,
   max_modules: true,
-  plan_fit_warning_percent: true,
-};
+  plan_fit_warning_percent: true};
 
 const moduleSelect = {
   id: true,
@@ -37,8 +34,7 @@ const moduleSelect = {
   is_add_on: true,
   add_on_price: true,
   add_on_billing_cycle: true,
-  extension_json: true,
-};
+  extension_json: true};
 
 const invoiceSelect = {
   id: true,
@@ -48,8 +44,7 @@ const invoiceSelect = {
   total_amount: true,
   currency: true,
   issued_at: true,
-  updated_at: true,
-};
+  updated_at: true};
 
 const invoiceLookupSelect = {
   id: true,
@@ -58,8 +53,7 @@ const invoiceLookupSelect = {
   billing_status: true,
   issued_at: true,
   total_amount: true,
-  currency: true,
-};
+  currency: true};
 
 const mapError = (error) => {
   throw new HttpError('errors.database.unexpected', 500, [{ originalError: error?.message }]);
@@ -67,15 +61,13 @@ const mapError = (error) => {
 
 const tenantScopedWhere = (tenantId) => ({
   deleted_at: null,
-  ...(tenantId ? { tenant_id: tenantId } : {}),
-});
+  ...(tenantId ? { tenant_id: tenantId } : {})});
 
 const subscriptionPlanWhere = (tenantId) => {
   if (!tenantId) return { deleted_at: null };
   return {
     deleted_at: null,
-    OR: [{ tenant_id: null }, { tenant_id: tenantId }],
-  };
+    OR: [{ tenant_id: null }, { tenant_id: tenantId }]};
 };
 
 const normalizeDate = (value) => {
@@ -93,8 +85,7 @@ const mergeNestedCondition = (target, path, condition) => {
   if (tail.length === 0) {
     target[head] = {
       ...(target[head] || {}),
-      ...condition,
-    };
+      ...condition};
     return;
   }
 
@@ -116,8 +107,7 @@ const applyDateWindow = (where, dateWindow = null) => {
 
   const condition = {
     ...(fromDate ? { gte: fromDate } : {}),
-    ...(toDate ? { lte: toDate } : {}),
-  };
+    ...(toDate ? { lte: toDate } : {})};
 
   mergeNestedCondition(where, field.split('.'), condition);
 };
@@ -138,8 +128,7 @@ const mapTenantAccount = (tenant, subscription = null, statusOverride = null) =>
   plan_label: subscription?.plan?.name || null,
   plan_code: subscription?.plan?.code || null,
   start_date: subscription?.start_date || null,
-  end_date: subscription?.end_date || null,
-});
+  end_date: subscription?.end_date || null});
 
 const classifyTenantCohorts = (tenants = [], subscriptions = []) => {
   const subscriptionsByTenant = new Map();
@@ -183,17 +172,13 @@ const classifyTenantCohorts = (tenants = [], subscriptions = []) => {
   return {
     active: {
       count: active.length,
-      accounts: active,
-    },
+      accounts: active},
     not_subscribed: {
       count: notSubscribed.length,
-      accounts: notSubscribed,
-    },
+      accounts: notSubscribed},
     closed: {
       count: closed.length,
-      accounts: closed,
-    },
-  };
+      accounts: closed}};
 };
 
 const findTenantCohorts = async ({ tenant_id: tenantId } = {}) => {
@@ -202,21 +187,16 @@ const findTenantCohorts = async ({ tenant_id: tenantId } = {}) => {
       prisma.tenant.findMany({
         where: {
           deleted_at: null,
-          ...(tenantId ? { id: tenantId } : {}),
-        },
+          ...(tenantId ? { id: tenantId } : {})},
         orderBy: { name: 'asc' },
         take: 500,
-        select: tenantSelect,
-      }),
+        select: tenantSelect}),
       prisma.subscription.findMany({
         where: tenantScopedWhere(tenantId),
         orderBy: [{ updated_at: 'desc' }],
         take: 2000,
         include: {
-          plan: { select: subscriptionPlanSelect },
-        },
-      }),
-    ]);
+          plan: { select: subscriptionPlanSelect }}})]);
 
     return classifyTenantCohorts(tenants, subscriptions);
   } catch (error) {
@@ -236,34 +216,25 @@ const findSummary = async ({ tenant_id: tenantId } = {}) => {
       pastDueInvoices,
       deniedModules,
       expiringLicenses,
-      approachingLimits,
-    ] = await Promise.all([
+      approachingLimits] = await Promise.all([
       prisma.subscription.count({
-        where: { ...subscriptionWhere, status: { in: ['ACTIVE', 'TRIAL'] } },
-      }),
+        where: { ...subscriptionWhere, status: { in: ['ACTIVE', 'TRIAL'] } }}),
       prisma.subscription.count({
         where: {
           ...subscriptionWhere,
-          change_status: { in: SUBSCRIPTIONS_PENDING_CHANGE_STATUSES },
-        },
-      }),
+          change_status: { in: SUBSCRIPTIONS_PENDING_CHANGE_STATUSES }}}),
       prisma.subscription_invoice.count({
         where: {
           deleted_at: null,
           subscription: subscriptionWhere,
           invoice: {
             deleted_at: null,
-            OR: [{ status: 'OVERDUE' }, { billing_status: 'PARTIAL' }],
-          },
-        },
-      }),
+            OR: [{ status: 'OVERDUE' }, { billing_status: 'PARTIAL' }]}}}),
       prisma.module_subscription.count({
         where: {
           deleted_at: null,
           entitlement_denied: true,
-          subscription: subscriptionWhere,
-        },
-      }),
+          subscription: subscriptionWhere}}),
       prisma.license.count({
         where: {
           ...tenantScopedWhere(tenantId),
@@ -271,17 +242,11 @@ const findSummary = async ({ tenant_id: tenantId } = {}) => {
           expires_at: {
             not: null,
             gte: now,
-            lte: expiringThreshold,
-          },
-        },
-      }),
+            lte: expiringThreshold}}}),
       prisma.subscription.count({
         where: {
           ...subscriptionWhere,
-          plan_fit_status: { in: SUBSCRIPTIONS_WARNING_FIT_STATUSES },
-        },
-      }),
-    ]);
+          plan_fit_status: { in: SUBSCRIPTIONS_WARNING_FIT_STATUSES }}})]);
 
     return {
       active_subscriptions: activeSubscriptions,
@@ -289,8 +254,7 @@ const findSummary = async ({ tenant_id: tenantId } = {}) => {
       past_due_invoices: pastDueInvoices,
       denied_modules: deniedModules,
       expiring_licenses: expiringLicenses,
-      approaching_limits: approachingLimits,
-    };
+      approaching_limits: approachingLimits};
   } catch (error) {
     mapError(error);
   }
@@ -302,34 +266,27 @@ const findLookups = async ({ tenant_id: tenantId } = {}) => {
       prisma.tenant.findMany({
         where: {
           deleted_at: null,
-          ...(tenantId ? { id: tenantId } : {}),
-        },
+          ...(tenantId ? { id: tenantId } : {})},
         orderBy: { name: 'asc' },
         take: 100,
-        select: tenantSelect,
-      }),
+        select: tenantSelect}),
       prisma.subscription_plan.findMany({
         where: subscriptionPlanWhere(tenantId),
         orderBy: [{ tier_code: 'asc' }, { name: 'asc' }],
         take: 100,
-        select: subscriptionPlanSelect,
-      }),
+        select: subscriptionPlanSelect}),
       prisma.module.findMany({
         where: { deleted_at: null },
         orderBy: [{ module_group: 'asc' }, { name: 'asc' }],
         take: 100,
-        select: moduleSelect,
-      }),
+        select: moduleSelect}),
       prisma.invoice.findMany({
         where: {
           deleted_at: null,
-          ...(tenantId ? { tenant_id: tenantId } : {}),
-        },
+          ...(tenantId ? { tenant_id: tenantId } : {})},
         orderBy: [{ issued_at: 'desc' }],
         take: 100,
-        select: invoiceLookupSelect,
-      }),
-    ]);
+        select: invoiceLookupSelect})]);
 
     const module_groups = [...new Set(
       (modules || [])
@@ -339,16 +296,14 @@ const findLookups = async ({ tenant_id: tenantId } = {}) => {
       .sort((left, right) => Number(left) - Number(right))
       .map((entry) => ({
         id: String(entry),
-        label: `Group ${entry}`,
-      }));
+        label: `Group ${entry}`}));
 
     return {
       invoices,
       module_groups,
       modules,
       plans,
-      tenants,
-    };
+      tenants};
   } catch (error) {
     mapError(error);
   }
@@ -364,15 +319,13 @@ const findOverview = async ({ tenant_id: tenantId } = {}) => {
         next_invoice: null,
         licenses: [],
         denied_modules_count: 0,
-        tenant_cohorts: tenantCohorts,
-      };
+        tenant_cohorts: tenantCohorts};
     }
 
     const currentSubscription = await prisma.subscription.findFirst({
       where: {
         ...tenantScopedWhere(tenantId),
-        status: { in: ACTIVE_SUBSCRIPTION_STATUSES },
-      },
+        status: { in: ACTIVE_SUBSCRIPTION_STATUSES }},
       orderBy: [{ updated_at: 'desc' }],
       include: {
         tenant: { select: tenantSelect },
@@ -380,10 +333,7 @@ const findOverview = async ({ tenant_id: tenantId } = {}) => {
         pending_plan: { select: subscriptionPlanSelect },
         module_subscriptions: {
           where: { deleted_at: null },
-          include: { module: { select: moduleSelect } },
-        },
-      },
-    });
+          include: { module: { select: moduleSelect } }}}});
 
     const [nextInvoice, licenses, deniedModulesCount] = await Promise.all([
       prisma.subscription_invoice.findFirst({
@@ -392,42 +342,31 @@ const findOverview = async ({ tenant_id: tenantId } = {}) => {
           subscription: tenantScopedWhere(tenantId),
           invoice: {
             deleted_at: null,
-            status: { in: ['DRAFT', 'SENT', 'OVERDUE'] },
-          },
-        },
+            status: { in: ['DRAFT', 'SENT', 'OVERDUE'] }}},
         orderBy: [{ created_at: 'desc' }],
         include: {
           subscription: {
             include: {
               tenant: { select: tenantSelect },
-              plan: { select: subscriptionPlanSelect },
-            },
-          },
-          invoice: { select: invoiceSelect },
-        },
-      }),
+              plan: { select: subscriptionPlanSelect }}},
+          invoice: { select: invoiceSelect }}}),
       prisma.license.findMany({
         where: tenantScopedWhere(tenantId),
         orderBy: [{ expires_at: 'asc' }, { updated_at: 'desc' }],
         take: 10,
-        include: { tenant: { select: tenantSelect } },
-      }),
+        include: { tenant: { select: tenantSelect } }}),
       prisma.module_subscription.count({
         where: {
           deleted_at: null,
           entitlement_denied: true,
-          subscription: tenantScopedWhere(tenantId),
-        },
-      }),
-    ]);
+          subscription: tenantScopedWhere(tenantId)}})]);
 
     return {
       current_subscription: currentSubscription,
       next_invoice: nextInvoice,
       licenses,
       denied_modules_count: deniedModulesCount,
-      tenant_cohorts: tenantCohorts,
-    };
+      tenant_cohorts: tenantCohorts};
   } catch (error) {
     mapError(error);
   }
@@ -447,9 +386,7 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
         OR: [
           { name: { contains: search } },
           { code: { contains: search } },
-          { human_friendly_id: { contains: search.toUpperCase() } },
-        ],
-      }];
+          { human_friendly_id: { contains: search.toUpperCase() } }]}];
     }
     applyDateWindow(where, dateWindow);
     return where;
@@ -465,8 +402,7 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
         { name: { contains: search } },
         { slug: { contains: search } },
         { description: { contains: search } },
-        { human_friendly_id: { contains: search.toUpperCase() } },
-      ];
+        { human_friendly_id: { contains: search.toUpperCase() } }];
     }
     applyDateWindow(where, dateWindow);
     return where;
@@ -493,8 +429,7 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
         { human_friendly_id: { contains: search.toUpperCase() } },
         { tenant: { name: { contains: search } } },
         { plan: { name: { contains: search } } },
-        { plan: { code: { contains: search } } },
-      ];
+        { plan: { code: { contains: search } } }];
     }
     applyDateWindow(where, dateWindow);
     return where;
@@ -503,8 +438,7 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
   if (resource === 'module-subscriptions') {
     const where = {
       deleted_at: null,
-      subscription: tenantScopedWhere(tenantId),
-    };
+      subscription: tenantScopedWhere(tenantId)};
     if (filters.module_id) where.module_id = filters.module_id;
     if (filters.fit_status) where.evaluated_plan_fit_status = String(filters.fit_status).trim().toUpperCase();
     if (filters.eligibility_state === 'DENIED' || queue === 'MODULE_BLOCKED') where.entitlement_denied = true;
@@ -516,8 +450,7 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
         { human_friendly_id: { contains: search.toUpperCase() } },
         { module: { name: { contains: search } } },
         { module: { slug: { contains: search } } },
-        { subscription: { human_friendly_id: { contains: search.toUpperCase() } } },
-      ];
+        { subscription: { human_friendly_id: { contains: search.toUpperCase() } } }];
     }
     applyDateWindow(where, dateWindow);
     return where;
@@ -526,19 +459,16 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
   if (resource === 'subscription-invoices') {
     const where = {
       deleted_at: null,
-      subscription: tenantScopedWhere(tenantId),
-    };
+      subscription: tenantScopedWhere(tenantId)};
     if (filters.invoice_status) {
       where.invoice = {
         ...(where.invoice || {}),
-        status: String(filters.invoice_status).trim().toUpperCase(),
-      };
+        status: String(filters.invoice_status).trim().toUpperCase()};
     }
     if (filters.status) {
       where.invoice = {
         ...(where.invoice || {}),
-        billing_status: String(filters.status).trim().toUpperCase(),
-      };
+        billing_status: String(filters.status).trim().toUpperCase()};
     }
     if (
       queue === 'PAST_DUE' ||
@@ -546,16 +476,14 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
     ) {
       where.invoice = {
         ...(where.invoice || {}),
-        OR: [{ status: 'OVERDUE' }, { billing_status: 'PARTIAL' }],
-      };
+        OR: [{ status: 'OVERDUE' }, { billing_status: 'PARTIAL' }]};
     }
     if (filters.plan_id) where.subscription = { ...where.subscription, plan_id: filters.plan_id };
     if (search) {
       where.OR = [
         { human_friendly_id: { contains: search.toUpperCase() } },
         { subscription: { human_friendly_id: { contains: search.toUpperCase() } } },
-        { invoice: { human_friendly_id: { contains: search.toUpperCase() } } },
-      ];
+        { invoice: { human_friendly_id: { contains: search.toUpperCase() } } }];
     }
     applyDateWindow(where, dateWindow);
     return where;
@@ -570,16 +498,14 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
   if (search) {
     where.OR = [
       { human_friendly_id: { contains: search.toUpperCase() } },
-      { tenant: { name: { contains: search } } },
-    ];
+      { tenant: { name: { contains: search } } }];
   }
   if ((queue === 'EXPIRING_LICENSES' || queue === 'RENEWALS_DUE') && !dateWindow) {
     const now = new Date();
     const nextThirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     where.expires_at = {
       gte: now,
-      lte: nextThirtyDays,
-    };
+      lte: nextThirtyDays};
   }
   applyDateWindow(where, dateWindow);
   return where;
@@ -598,11 +524,8 @@ const findItems = async ({ resource, filters = {}, tenant_id: tenantId, skip = 0
           orderBy,
           include: {
             tenant: { select: tenantSelect },
-            _count: { select: { subscriptions: true } },
-          },
-        }),
-        prisma.subscription_plan.count({ where }),
-      ]);
+            _count: { select: { subscriptions: true } }}}),
+        prisma.subscription_plan.count({ where })]);
       return { items, total };
     }
 
@@ -613,10 +536,8 @@ const findItems = async ({ resource, filters = {}, tenant_id: tenantId, skip = 0
           skip,
           take,
           orderBy,
-          include: { _count: { select: { subscriptions: true } } },
-        }),
-        prisma.module.count({ where }),
-      ]);
+          include: { _count: { select: { subscriptions: true } } }}),
+        prisma.module.count({ where })]);
       return { items, total };
     }
 
@@ -633,12 +554,8 @@ const findItems = async ({ resource, filters = {}, tenant_id: tenantId, skip = 0
             pending_plan: { select: subscriptionPlanSelect },
             module_subscriptions: {
               where: { deleted_at: null },
-              select: { id: true, is_active: true, deleted_at: true },
-            },
-          },
-        }),
-        prisma.subscription.count({ where }),
-      ]);
+              select: { id: true, is_active: true, deleted_at: true }}}}),
+        prisma.subscription.count({ where })]);
       return { items, total };
     }
 
@@ -654,13 +571,8 @@ const findItems = async ({ resource, filters = {}, tenant_id: tenantId, skip = 0
             subscription: {
               include: {
                 tenant: { select: tenantSelect },
-                plan: { select: subscriptionPlanSelect },
-              },
-            },
-          },
-        }),
-        prisma.module_subscription.count({ where }),
-      ]);
+                plan: { select: subscriptionPlanSelect }}}}}),
+        prisma.module_subscription.count({ where })]);
       return { items, total };
     }
 
@@ -675,14 +587,9 @@ const findItems = async ({ resource, filters = {}, tenant_id: tenantId, skip = 0
             subscription: {
               include: {
                 tenant: { select: tenantSelect },
-                plan: { select: subscriptionPlanSelect },
-              },
-            },
-            invoice: { select: invoiceSelect },
-          },
-        }),
-        prisma.subscription_invoice.count({ where }),
-      ]);
+                plan: { select: subscriptionPlanSelect }}},
+            invoice: { select: invoiceSelect }}}),
+        prisma.subscription_invoice.count({ where })]);
       return { items, total };
     }
 
@@ -692,10 +599,8 @@ const findItems = async ({ resource, filters = {}, tenant_id: tenantId, skip = 0
         skip,
         take,
         orderBy,
-        include: { tenant: { select: tenantSelect } },
-      }),
-      prisma.license.count({ where }),
-    ]);
+        include: { tenant: { select: tenantSelect } }}),
+      prisma.license.count({ where })]);
     return { items, total };
   } catch (error) {
     mapError(error);
@@ -713,9 +618,7 @@ const findTimeline = async ({ tenant_id: tenantId } = {}, take = 20) => {
         include: {
           tenant: { select: tenantSelect },
           plan: { select: subscriptionPlanSelect },
-          pending_plan: { select: subscriptionPlanSelect },
-        },
-      }),
+          pending_plan: { select: subscriptionPlanSelect }}}),
       prisma.module_subscription.findMany({
         where: { deleted_at: null, subscription: subscriptionWhere },
         take,
@@ -725,11 +628,7 @@ const findTimeline = async ({ tenant_id: tenantId } = {}, take = 20) => {
           subscription: {
             include: {
               tenant: { select: tenantSelect },
-              plan: { select: subscriptionPlanSelect },
-            },
-          },
-        },
-      }),
+              plan: { select: subscriptionPlanSelect }}}}}),
       prisma.subscription_invoice.findMany({
         where: { deleted_at: null, subscription: subscriptionWhere },
         take,
@@ -738,19 +637,13 @@ const findTimeline = async ({ tenant_id: tenantId } = {}, take = 20) => {
           subscription: {
             include: {
               tenant: { select: tenantSelect },
-              plan: { select: subscriptionPlanSelect },
-            },
-          },
-          invoice: { select: invoiceSelect },
-        },
-      }),
+              plan: { select: subscriptionPlanSelect }}},
+          invoice: { select: invoiceSelect }}}),
       prisma.license.findMany({
         where: subscriptionWhere,
         take,
         orderBy: [{ updated_at: 'desc' }],
-        include: { tenant: { select: tenantSelect } },
-      }),
-    ]);
+        include: { tenant: { select: tenantSelect } }})]);
 
     return { invoices, licenses, moduleSubscriptions, subscriptions };
   } catch (error) {
@@ -766,8 +659,7 @@ const resolveLegacyRecord = async (resource, identifier, tenantId = '') => {
     subscriptions: 'subscription',
     'module-subscriptions': 'module_subscription',
     'subscription-invoices': 'subscription_invoice',
-    licenses: 'license',
-  };
+    licenses: 'license'};
   const model = mapping[normalizedResource];
   if (!model) return null;
 
@@ -775,16 +667,14 @@ const resolveLegacyRecord = async (resource, identifier, tenantId = '') => {
     if (!tenantId) return {};
     if (normalizedResource === 'subscription-plans') {
       return {
-        OR: [{ tenant_id: null }, { tenant_id: tenantId }],
-      };
+        OR: [{ tenant_id: null }, { tenant_id: tenantId }]};
     }
     if (normalizedResource === 'subscriptions' || normalizedResource === 'licenses') {
       return { tenant_id: tenantId };
     }
     if (normalizedResource === 'module-subscriptions' || normalizedResource === 'subscription-invoices') {
       return {
-        subscription: { tenant_id: tenantId },
-      };
+        subscription: { tenant_id: tenantId }};
     }
     return {};
   })();
@@ -793,8 +683,7 @@ const resolveLegacyRecord = async (resource, identifier, tenantId = '') => {
     model,
     identifier,
     where,
-    select: { id: true, human_friendly_id: true },
-  });
+    select: { id: true, human_friendly_id: true }});
 };
 
 const findPlanDetail = async (planIdentifier) => {
@@ -805,9 +694,7 @@ const findPlanDetail = async (planIdentifier) => {
       where: { deleted_at: null },
       include: {
         tenant: { select: tenantSelect },
-        _count: { select: { subscriptions: true } },
-      },
-    });
+        _count: { select: { subscriptions: true } }}});
     if (!plan) {
       return null;
     }
@@ -817,17 +704,13 @@ const findPlanDetail = async (planIdentifier) => {
         deleted_at: null,
         OR: [
           { plan_id: plan.id },
-          { pending_plan_id: plan.id },
-        ],
-      },
+          { pending_plan_id: plan.id }]},
       orderBy: { updated_at: 'desc' },
       take: 500,
       include: {
         tenant: { select: tenantSelect },
         plan: { select: subscriptionPlanSelect },
-        pending_plan: { select: subscriptionPlanSelect },
-      },
-    });
+        pending_plan: { select: subscriptionPlanSelect }}});
 
     const active = [];
     const pending = [];
@@ -852,8 +735,7 @@ const findPlanDetail = async (planIdentifier) => {
               tenant,
               {
                 ...subscription,
-                plan: subscription.pending_plan || subscription.plan,
-              },
+                plan: subscription.pending_plan || subscription.plan},
               changeStatus || 'PENDING'
             )
           );
@@ -889,12 +771,10 @@ const findPlanDetail = async (planIdentifier) => {
         active_count: active.length,
         pending_count: pending.length,
         closed_count: closed.length,
-        total_count: active.length + pending.length + closed.length,
-      },
+        total_count: active.length + pending.length + closed.length},
       active_accounts: active,
       pending_accounts: pending,
-      closed_accounts: closed,
-    };
+      closed_accounts: closed};
   } catch (error) {
     if (error && error.code === 'P2025') return null;
     throw error;
@@ -909,5 +789,4 @@ module.exports = {
   findSummary,
   findTenantCohorts,
   findTimeline,
-  resolveLegacyRecord,
-};
+  resolveLegacyRecord};

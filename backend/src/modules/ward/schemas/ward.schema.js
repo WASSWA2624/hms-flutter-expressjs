@@ -10,8 +10,7 @@
 const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
 
@@ -25,8 +24,7 @@ const createWardSchema = z.object({
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255),
   ward_type: z.enum(['GENERAL', 'ICU', 'MATERNITY', 'PEDIATRIC', 'SURGICAL', 'OTHER']),
-  is_active: z.boolean().optional(),
-});
+  is_active: z.boolean().optional()});
 
 /**
  * Update ward body validation
@@ -38,8 +36,7 @@ const updateWardSchema = z.object({
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255).optional(),
   ward_type: z.enum(['GENERAL', 'ICU', 'MATERNITY', 'PEDIATRIC', 'SURGICAL', 'OTHER']).optional(),
-  is_active: z.boolean().optional(),
-});
+  is_active: z.boolean().optional()});
 
 // ==================== URL Params ====================
 
@@ -48,8 +45,7 @@ const updateWardSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const wardIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -65,12 +61,10 @@ const listWardsQuerySchema = listQuerySchema.extend({
   ward_type: z.enum(['GENERAL', 'ICU', 'MATERNITY', 'PEDIATRIC', 'SURGICAL', 'OTHER']).optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),
-  include_deleted: z.enum(['true', 'false']).optional(),
-});
+  include_deleted: z.enum(['true', 'false']).optional()});
 
 module.exports = {
   createWardSchema,
   updateWardSchema,
   wardIdParamsSchema,
-  listWardsQuerySchema,
-};
+  listWardsQuerySchema};

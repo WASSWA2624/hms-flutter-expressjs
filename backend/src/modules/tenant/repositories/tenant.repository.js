@@ -16,25 +16,19 @@ const TENANT_ADMIN_RELATION_INCLUDE = Object.freeze({
       deleted_at: null,
       role: {
         deleted_at: null,
-        name: 'TENANT_ADMIN',
-      },
+        name: 'TENANT_ADMIN'},
       user: {
-        deleted_at: null,
-      },
-    },
+        deleted_at: null}},
     orderBy: [
       { created_at: 'asc' },
-      { id: 'asc' },
-    ],
+      { id: 'asc' }],
     take: 1,
     include: {
       role: {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      },
+          name: true}},
       user: {
         select: {
           id: true,
@@ -47,21 +41,12 @@ const TENANT_ADMIN_RELATION_INCLUDE = Object.freeze({
             select: {
               first_name: true,
               middle_name: true,
-              last_name: true,
-            },
-          },
+              last_name: true}},
           facility: {
             select: {
               id: true,
               human_friendly_id: true,
-              name: true,
-            },
-          },
-        },
-      },
-    },
-  },
-});
+              name: true}}}}}}});
 
 const TENANT_SLUG_MAX_LENGTH = 191;
 const RELEASED_SLUG_SUFFIX = '__deleted__';
@@ -154,10 +139,8 @@ const findById = async (id, { includeDeleted = false } = {}) => {
     return await prisma.tenant.findFirst({
       where: {
         id,
-        ...(includeDeleted ? {} : { deleted_at: null }),
-      },
-      include: TENANT_ADMIN_RELATION_INCLUDE,
-    });
+        ...(includeDeleted ? {} : { deleted_at: null })},
+      include: TENANT_ADMIN_RELATION_INCLUDE});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -187,8 +170,7 @@ const findMany = async (
       skip,
       take,
       orderBy,
-      include: TENANT_ADMIN_RELATION_INCLUDE,
-    });
+      include: TENANT_ADMIN_RELATION_INCLUDE});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -250,9 +232,7 @@ const createWithDefaultFacility = async (data, options = {}) => {
           tenant_id: tenant.id,
           name: facilityName,
           facility_type: 'HOSPITAL',
-          is_active: true,
-        },
-      });
+          is_active: true}});
 
       return { tenant, facility };
     });
@@ -320,36 +300,28 @@ const softDelete = async (id) => {
       const facilities = await tx.facility.findMany({
         where: {
           tenant_id: id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         select: {
           id: true,
           tenant_id: true,
           name: true,
           facility_type: true,
-          is_active: true,
-        },
-      });
+          is_active: true}});
 
       if (facilities.length > 0) {
         await tx.facility.updateMany({
           where: {
             tenant_id: id,
-            deleted_at: null,
-          },
+            deleted_at: null},
           data: {
-            deleted_at: deletedAt,
-          },
-        });
+            deleted_at: deletedAt}});
       }
 
       const tenant = await tx.tenant.update({
         where: { id },
         data: {
           deleted_at: deletedAt,
-          ...(releasedSlug ? { slug: releasedSlug } : {}),
-        },
-      });
+          ...(releasedSlug ? { slug: releasedSlug } : {})}});
 
       return { tenant, facilities };
     });
@@ -375,9 +347,7 @@ const restore = async (id) => {
       select: {
         id: true,
         slug: true,
-        deleted_at: true,
-      },
-    });
+        deleted_at: true}});
 
     if (!existing || !existing.deleted_at) {
       throw Object.assign(new Error('Record not found'), { code: 'P2025' });
@@ -390,10 +360,8 @@ const restore = async (id) => {
         where: {
           slug: restoredSlug,
           deleted_at: null,
-          id: { not: id },
-        },
-        select: { id: true },
-      });
+          id: { not: id }},
+        select: { id: true }});
       if (conflict) {
         throw new HttpError('errors.database.unique_field', 409, [{ field: 'slug' }]);
       }
@@ -403,37 +371,29 @@ const restore = async (id) => {
       const facilities = await tx.facility.findMany({
         where: {
           tenant_id: id,
-          deleted_at: existing.deleted_at,
-        },
+          deleted_at: existing.deleted_at},
         select: {
           id: true,
           tenant_id: true,
           name: true,
           facility_type: true,
-          is_active: true,
-        },
-      });
+          is_active: true}});
 
       if (facilities.length > 0) {
         await tx.facility.updateMany({
           where: {
             tenant_id: id,
-            deleted_at: existing.deleted_at,
-          },
+            deleted_at: existing.deleted_at},
           data: {
-            deleted_at: null,
-          },
-        });
+            deleted_at: null}});
       }
 
       const tenant = await tx.tenant.update({
         where: { id },
         data: {
           deleted_at: null,
-          ...(restoredSlug ? { slug: restoredSlug } : {}),
-        },
-        include: TENANT_ADMIN_RELATION_INCLUDE,
-      });
+          ...(restoredSlug ? { slug: restoredSlug } : {})},
+        include: TENANT_ADMIN_RELATION_INCLUDE});
 
       return { tenant, facilities };
     });
@@ -482,9 +442,7 @@ const permanentDelete = async (id) => {
       where: { id },
       select: {
         id: true,
-        deleted_at: true,
-      },
-    });
+        deleted_at: true}});
 
     if (!existing) {
       return { facilityIds: [] };
@@ -498,14 +456,12 @@ const permanentDelete = async (id) => {
       try {
         const facilityRows = await tx.facility.findMany({
           where: { tenant_id: id },
-          select: { id: true },
-        });
+          select: { id: true }});
         const facilityIds = facilityRows.map((row) => row.id);
 
         if (facilityIds.length > 0) {
           const facilityTables = await listSchemaTablesWithColumn(tx, 'facility_id', {
-            excludeTables: ['facility'],
-          });
+            excludeTables: ['facility']});
           const placeholders = facilityIds.map(() => '?').join(', ');
 
           for (const tableName of facilityTables) {
@@ -517,8 +473,7 @@ const permanentDelete = async (id) => {
         }
 
         const tenantTables = await listSchemaTablesWithColumn(tx, 'tenant_id', {
-          excludeTables: ['tenant'],
-        });
+          excludeTables: ['tenant']});
 
         for (const tableName of tenantTables) {
           await tx.$executeRawUnsafe(
@@ -552,5 +507,4 @@ module.exports = {
   restore,
   permanentDelete,
   releaseSlugFromSoftDeletedTenants,
-  parseRestoredSlug,
-};
+  parseRestoredSlug};

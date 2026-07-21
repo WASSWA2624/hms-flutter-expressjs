@@ -12,34 +12,29 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 // Mock dependencies
 jest.mock('@repositories/drug/drug.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/identifiers/service-identifier-resolution', () => ({
   resolveIdentifierForFilter: jest.fn(),
-  resolveIdentifierForPayload: jest.fn(),
-}));
+  resolveIdentifierForPayload: jest.fn()}));
 
 const mockUser = {
   id: 'user-123',
   tenant_id: 'tenant-123',
-  roles: ['PHARMACIST'],
-};
+  roles: ['PHARMACIST']};
 
 const mockSuperAdminUser = {
   id: 'super-admin-1',
-  roles: ['SUPER_ADMIN'],
-};
+  roles: ['SUPER_ADMIN']};
 
 const buildScopedDrug = (overrides = {}) => ({
   id: '123',
   tenant_id: 'tenant-123',
   name: 'Paracetamol',
-  ...overrides,
-});
+  ...overrides});
 
 describe('Drug Service', () => {
   const mockUserId = 'user-123';
@@ -190,8 +185,7 @@ describe('Drug Service', () => {
       expect(resolveIdentifierForFilter).toHaveBeenCalledWith({
         value: 'TEN-ALPHA01',
         model: 'tenant',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       expect(drugRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ tenant_id: 'tenant-uuid-1' }),
         expect.any(Number),
@@ -222,9 +216,7 @@ describe('Drug Service', () => {
           total: 0,
           totalPages: 0,
           hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      });
+          hasPreviousPage: false}});
       expect(drugRepository.findMany).not.toHaveBeenCalled();
       expect(drugRepository.count).not.toHaveBeenCalled();
     });
@@ -291,8 +283,7 @@ describe('Drug Service', () => {
       expect(result).toEqual(mockDrug);
       expect(drugRepository.create).toHaveBeenCalledWith({
         ...mockData,
-        tenant_id: 'tenant-123',
-      });
+        tenant_id: 'tenant-123'});
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         tenant_id: 'tenant-123',
         user_id: mockUserId,
@@ -330,12 +321,10 @@ describe('Drug Service', () => {
         value: 'TEN-ALPHA01',
         field: 'tenant_id',
         model: 'tenant',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       expect(drugRepository.create).toHaveBeenCalledWith({
         tenant_id: 'tenant-uuid-1',
-        name: 'Paracetamol',
-      });
+        name: 'Paracetamol'});
     });
 
     it('should handle unexpected errors', async () => {
@@ -365,8 +354,7 @@ describe('Drug Service', () => {
       expect(result).toEqual(mockAfter);
       expect(drugRepository.update).toHaveBeenCalledWith('123', {
         name: 'Paracetamol Updated',
-        tenant_id: 'tenant-123',
-      });
+        tenant_id: 'tenant-123'});
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         tenant_id: 'tenant-123',
         user_id: mockUserId,

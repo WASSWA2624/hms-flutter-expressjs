@@ -4,33 +4,26 @@ jest.mock('@lib/billing/identifiers', () => ({
     const match = values.find((value) => value != null && String(value).trim() !== '');
     return match == null ? null : String(match);
   }),
-  resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null),
-}));
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null)}));
 jest.mock('@lib/authorization/permission-catalog-sync', () => ({
   ensureTenantAccessCatalog: jest.fn().mockResolvedValue({
     permissions: 62,
-    roles: 40,
-  }),
+    roles: 40}),
   ensureTenantPermissionCatalog: jest.fn().mockResolvedValue([
     {
       id: 'perm-uuid',
       human_friendly_id: 'PRM0001',
       name: 'clinical:read',
-      display_name: 'Clinical Read',
-    },
-  ]),
+      display_name: 'Clinical Read'}]),
   restoreTenantRolePermissionDefaults: jest.fn().mockResolvedValue({
     permissions: 62,
     roles: 40,
     role_permissions_added: 2,
     role_permissions_removed: 1,
     before: { DOCTOR: ['clinical:read', 'billing:write'] },
-    after: { DOCTOR: ['clinical:read'] },
-  }),
-}));
+    after: { DOCTOR: ['clinical:read'] }})}));
 jest.mock('@middlewares/live-access.middleware', () => ({
-  clearLiveAccessCaches: jest.fn(),
-}));
+  clearLiveAccessCaches: jest.fn()}));
 
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
@@ -45,8 +38,7 @@ describe('access-admin-workspace service', () => {
 
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'ready',
-      scope: { tenant_id: 'tenant-uuid', facility_id: 'facility-uuid' },
-    });
+      scope: { tenant_id: 'tenant-uuid', facility_id: 'facility-uuid' }});
     repository.findSummary.mockResolvedValue({
       total_users: 12,
       active_users: 10,
@@ -54,40 +46,30 @@ describe('access-admin-workspace service', () => {
       total_roles: 8,
       total_permissions: 40,
       total_assignments: 15,
-      demo_users: 3,
-    });
+      demo_users: 3});
     repository.findLookups.mockResolvedValue({
       tenants: [
         {
           id: 'tenant-uuid',
           human_friendly_id: 'TEN0001',
-          name: 'DemoCare General Hospital',
-        },
-      ],
+          name: 'DemoCare General Hospital'}],
       facilities: [
         {
           id: 'facility-uuid',
           human_friendly_id: 'FAC0001',
           name: 'Main Campus',
-          facility_type: 'HOSPITAL',
-        },
-      ],
+          facility_type: 'HOSPITAL'}],
       roles: [
         {
           id: 'role-uuid',
           human_friendly_id: 'ROL0001',
           name: 'DOCTOR',
-          facility_id: 'facility-uuid',
-        },
-      ],
+          facility_id: 'facility-uuid'}],
       permissions: [
         {
           id: 'perm-uuid',
           human_friendly_id: 'PRM0001',
-          name: 'clinical:read',
-        },
-      ],
-    });
+          name: 'clinical:read'}]});
     repository.findUsers.mockResolvedValue({
       items: [
         {
@@ -103,24 +85,16 @@ describe('access-admin-workspace service', () => {
               role: {
                 id: 'role-uuid',
                 human_friendly_id: 'ROL0001',
-                name: 'DOCTOR',
-              },
-            },
-          ],
+                name: 'DOCTOR'}}],
           profile: {
             first_name: 'Jordan',
-            last_name: 'Demo',
-          },
-          staff_profile: null,
-        },
-      ],
-      total: 1,
-    });
+            last_name: 'Demo'},
+          staff_profile: null}],
+      total: 1});
     repository.findModuleEntitlements.mockResolvedValue({
       items: [],
       total: 0,
-      subscription: null,
-    });
+      subscription: null});
     repository.isDemoUser.mockImplementation((user) =>
       String(user.email || '').trim().toLowerCase() === 'doctor@hosspi.com'
     );
@@ -157,16 +131,13 @@ describe('access-admin-workspace service', () => {
   it('syncs catalog for explicit tenant when super admin requests reference data', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'tenant_context_required',
-      scope: null,
-    });
+      scope: null});
     repository.findLookups.mockResolvedValue({
       tenants: [
         {
           id: 'tenant-uuid',
           human_friendly_id: 'TEN0001',
-          name: 'DemoCare General Hospital',
-        },
-      ],
+          name: 'DemoCare General Hospital'}],
       facilities: [],
       roles: [],
       permissions: [
@@ -174,10 +145,7 @@ describe('access-admin-workspace service', () => {
           id: 'perm-uuid',
           human_friendly_id: 'PRM0001',
           name: 'clinical:read',
-          display_name: 'Clinical Read',
-        },
-      ],
-    });
+          display_name: 'Clinical Read'}]});
 
     const lookups = await service.getReferenceData(
       { tenantId: 'TEN0001' },
@@ -192,26 +160,20 @@ describe('access-admin-workspace service', () => {
   it('returns empty permissions when tenant context is required', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'tenant_context_required',
-      scope: null,
-    });
+      scope: null});
     repository.findLookups.mockResolvedValue({
       tenants: [
         {
           id: 'tenant-uuid',
           human_friendly_id: 'TEN0001',
-          name: 'DemoCare General Hospital',
-        },
-      ],
+          name: 'DemoCare General Hospital'}],
       facilities: [],
       roles: [],
       permissions: [
         {
           id: 'perm-uuid',
           human_friendly_id: 'PRM0001',
-          name: 'clinical:read',
-        },
-      ],
-    });
+          name: 'clinical:read'}]});
 
     const lookups = await service.getReferenceData({}, { roles: ['SUPER_ADMIN'] });
 
@@ -223,8 +185,7 @@ describe('access-admin-workspace service', () => {
   it('returns tenant context required state without scope', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'tenant_context_required',
-      scope: null,
-    });
+      scope: null});
 
     const data = await service.getWorkspace({}, 1, 20, { roles: ['SUPER_ADMIN'] });
 
@@ -236,14 +197,12 @@ describe('access-admin-workspace service', () => {
     repository.findUserByIdentifier.mockResolvedValue({
       id: 'user-uuid',
       human_friendly_id: 'USR0001',
-      email: 'doctor@hosspi.com',
-    });
+      email: 'doctor@hosspi.com'});
     repository.resetDemoUserPassword.mockResolvedValue({});
 
     const data = await service.resetDemoUserPassword('USR0001', {
       roles: ['TENANT_ADMIN'],
-      tenant_id: 'tenant-uuid',
-    });
+      tenant_id: 'tenant-uuid'});
 
     expect(data.user_id).toBe('USR0001');
     expect(repository.resetDemoUserPassword).toHaveBeenCalled();

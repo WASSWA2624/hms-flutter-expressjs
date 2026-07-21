@@ -14,8 +14,7 @@ describe('clinical-catalog.service listClinicalCatalogSearch', () => {
   const context = {
     user_id: 'user-1',
     tenant_id: 'tenant-1',
-    facility_id: null,
-  };
+    facility_id: null};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -24,15 +23,13 @@ describe('clinical-catalog.service listClinicalCatalogSearch', () => {
   it('delegates offered lab catalog search with resolved facility id', async () => {
     authRepository.getUserFacilities.mockResolvedValue([{ id: 'facility-1' }]);
     facilityLabCatalogService.searchFacilityLabCatalog.mockResolvedValue([
-      { id: 'LAB0000001', term_type: 'LAB_TEST' },
-    ]);
+      { id: 'LAB0000001', term_type: 'LAB_TEST' }]);
 
     const result = await clinicalCatalogService.listClinicalCatalogSearch(
       {
         term_type: 'LAB_TEST',
         offered_only: 'true',
-        source: 'FACILITY',
-      },
+        source: 'FACILITY'},
       context
     );
 
@@ -40,8 +37,7 @@ describe('clinical-catalog.service listClinicalCatalogSearch', () => {
       expect.objectContaining({
         term_type: 'LAB_TEST',
         offered_only: 'true',
-        facility_id: 'facility-1',
-      }),
+        facility_id: 'facility-1'}),
       context
     );
     expect(result).toEqual([{ id: 'LAB0000001', term_type: 'LAB_TEST' }]);
@@ -54,16 +50,14 @@ describe('clinical-catalog.service listClinicalCatalogSearch', () => {
       {
         term_type: 'LAB_PANEL',
         offered_only: 'true',
-        facility_id: 'facility-explicit',
-      },
+        facility_id: 'facility-explicit'},
       context
     );
 
     expect(authRepository.getUserFacilities).not.toHaveBeenCalled();
     expect(facilityLabCatalogService.searchFacilityLabCatalog).toHaveBeenCalledWith(
       expect.objectContaining({
-        facility_id: 'facility-explicit',
-      }),
+        facility_id: 'facility-explicit'}),
       context
     );
   });
@@ -78,13 +72,11 @@ describe('clinical-catalog.service listClinicalCatalogSearch', () => {
       clinicalCatalogService.listClinicalCatalogSearch(
         {
           term_type: 'LAB_TEST',
-          offered_only: 'true',
-        },
+          offered_only: 'true'},
         context
       )
     ).rejects.toMatchObject({
       statusCode: 400,
-      messageKey: 'errors.validation.field.required',
-    });
+      messageKey: 'errors.validation.field.required'});
   });
 });

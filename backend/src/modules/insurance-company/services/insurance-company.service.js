@@ -14,13 +14,11 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const INSURANCE_COMPANY_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
-  _count: { select: { schemes: true } },
-};
+  _count: { select: { schemes: true } }};
 
 const mapCoveragePlanForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -33,8 +31,7 @@ const mapCoveragePlanForDisplay = (record) => {
       record?.tenant?.human_friendly_id,
       record?.tenant_id
     ),
-    timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null};
 };
 
 const buildEmptyListResult = (page, limit) => ({
@@ -45,9 +42,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const mapInsuranceCompanyForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -60,8 +55,7 @@ const mapInsuranceCompanyForDisplay = (record) => {
       record?.tenant?.human_friendly_id,
       record?.tenant_id
     ),
-    timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null};
 };
 
 /**
@@ -77,8 +71,7 @@ const listInsuranceCompanies = async (filters, page, limit, sortBy, order) => {
     if (filters.tenant_id !== undefined) {
       const tenantId = await resolveIdentifierForFilter({
         value: filters.tenant_id,
-        model: 'tenant',
-      });
+        model: 'tenant'});
       if (tenantId === null) return buildEmptyListResult(page, limit);
       if (tenantId !== undefined) whereClause.tenant_id = tenantId;
     }
@@ -93,8 +86,7 @@ const listInsuranceCompanies = async (filters, page, limit, sortBy, order) => {
       whereClause.OR = [
         { name: { contains: search } },
         { code: { contains: search } },
-        { human_friendly_id: { contains: search.toUpperCase() } },
-      ];
+        { human_friendly_id: { contains: search.toUpperCase() } }];
     }
 
     const [insuranceCompanies, total] = await Promise.all([
@@ -105,8 +97,7 @@ const listInsuranceCompanies = async (filters, page, limit, sortBy, order) => {
         orderBy,
         INSURANCE_COMPANY_INCLUDE
       ),
-      insuranceCompanyRepository.count(whereClause),
-    ]);
+      insuranceCompanyRepository.count(whereClause)]);
 
     return {
       insuranceCompanies: insuranceCompanies.map(mapInsuranceCompanyForDisplay),
@@ -116,9 +107,7 @@ const listInsuranceCompanies = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -132,8 +121,7 @@ const getInsuranceCompanyById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_company',
-      identifier: id,
-    });
+      identifier: id});
 
     const insuranceCompany = await insuranceCompanyRepository.findById(
       resolvedId,
@@ -158,8 +146,7 @@ const listInsuranceCompanySchemes = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_company',
-      identifier: id,
-    });
+      identifier: id});
 
     const insuranceCompany = await insuranceCompanyRepository.findById(resolvedId);
 
@@ -190,13 +177,11 @@ const createInsuranceCompany = async (data, userId, ipAddress) => {
     const tenantId = await resolveIdentifierForPayload({
       value: data?.tenant_id,
       field: 'tenant_id',
-      model: 'tenant',
-    });
+      model: 'tenant'});
 
     const insuranceCompany = await insuranceCompanyRepository.create({
       ...data,
-      tenant_id: tenantId,
-    });
+      tenant_id: tenantId});
 
     const createdRecord = await insuranceCompanyRepository.findById(
       insuranceCompany.id,
@@ -210,8 +195,7 @@ const createInsuranceCompany = async (data, userId, ipAddress) => {
       entity: 'insurance_company',
       entity_id: insuranceCompany.id,
       diff: { after: insuranceCompany },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapInsuranceCompanyForDisplay(createdRecord || insuranceCompany);
   } catch (error) {
@@ -227,8 +211,7 @@ const updateInsuranceCompany = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_company',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await insuranceCompanyRepository.findById(resolvedId, INSURANCE_COMPANY_INCLUDE);
 
@@ -249,8 +232,7 @@ const updateInsuranceCompany = async (id, data, userId, ipAddress) => {
       entity: 'insurance_company',
       entity_id: insuranceCompany.id,
       diff: { before, after: insuranceCompany },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapInsuranceCompanyForDisplay(updatedRecord || insuranceCompany);
   } catch (error) {
@@ -266,8 +248,7 @@ const deleteInsuranceCompany = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurance_company',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await insuranceCompanyRepository.findById(resolvedId, INSURANCE_COMPANY_INCLUDE);
 
@@ -284,8 +265,7 @@ const deleteInsuranceCompany = async (id, userId, ipAddress) => {
       entity: 'insurance_company',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -298,5 +278,4 @@ module.exports = {
   listInsuranceCompanySchemes,
   createInsuranceCompany,
   updateInsuranceCompany,
-  deleteInsuranceCompany,
-};
+  deleteInsuranceCompany};

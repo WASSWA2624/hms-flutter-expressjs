@@ -7,8 +7,7 @@
 
 jest.mock('@repositories/integration/integration.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/billing/identifiers', () => ({
   sanitizeIdentifier: jest.fn((value) => (typeof value === 'string' ? value.trim() : '')),
   resolvePublicIdentifier: jest.fn((...values) => {
@@ -22,8 +21,7 @@ jest.mock('@lib/billing/identifiers', () => ({
   }),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
-  resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-}));
+  resolveIdentifierForPayload: jest.fn(async ({ value }) => value)}));
 
 const integrationService = require('@services/integration/integration.service');
 const integrationRepository = require('@repositories/integration/integration.repository');
@@ -45,14 +43,11 @@ const buildRawIntegration = (overrides = {}) => ({
   tenant: {
     id: '223e4567-e89b-12d3-a456-426614174000',
     human_friendly_id: 'TEN0000001',
-    name: 'Acme Health',
-  },
+    name: 'Acme Health'},
   _count: {
     logs: 4,
-    webhooks: 2,
-  },
-  ...overrides,
-});
+    webhooks: 2},
+  ...overrides});
 
 describe('Integration Service', () => {
   beforeEach(() => {
@@ -72,14 +67,12 @@ describe('Integration Service', () => {
 
       expect(identifiers.resolveEntityId).toHaveBeenCalledWith({
         model: 'integration',
-        identifier: 'INT0000001',
-      });
+        identifier: 'INT0000001'});
       expect(integrationRepository.findById).toHaveBeenCalledWith(
         'INT0000001',
         expect.objectContaining({
           tenant: expect.any(Object),
-          _count: expect.any(Object),
-        })
+          _count: expect.any(Object)})
       );
       expect(result).toEqual(
         expect.objectContaining({
@@ -91,8 +84,7 @@ describe('Integration Service', () => {
           name: 'ADT Feed',
           log_count: 4,
           webhook_subscription_count: 2,
-          has_config: true,
-        })
+          has_config: true})
       );
     });
 
@@ -102,10 +94,7 @@ describe('Integration Service', () => {
           endpoint: 'https://hl7.example.test',
           signing_secret: 'super-secret-value',
           nested: {
-            api_key: 'hidden-key',
-          },
-        },
-      });
+            api_key: 'hidden-key'}}});
       integrationRepository.findById.mockResolvedValue(rawIntegration);
 
       const result = await integrationService.getIntegrationById('INT0000001');
@@ -114,9 +103,7 @@ describe('Integration Service', () => {
         endpoint: 'https://hl7.example.test',
         signing_secret: '[REDACTED]',
         nested: {
-          api_key: '[REDACTED]',
-        },
-      });
+          api_key: '[REDACTED]'}});
     });
 
     it('throws HttpError when the integration is not found', async () => {
@@ -138,16 +125,14 @@ describe('Integration Service', () => {
           integration_type: 'HL7',
           status: 'ACTIVE',
           name: 'ADT',
-          search: 'feed',
-        },
+          search: 'feed'},
         1,
         20
       );
 
       expect(identifiers.resolveIdentifierForFilter).toHaveBeenCalledWith({
         value: 'TEN0000001',
-        model: 'tenant',
-      });
+        model: 'tenant'});
       expect(integrationRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           tenant_id: 'TEN0000001',
@@ -156,9 +141,7 @@ describe('Integration Service', () => {
           name: { contains: 'ADT' },
           OR: [
             { name: { contains: 'feed' } },
-            { human_friendly_id: { contains: 'FEED' } },
-          ],
-        }),
+            { human_friendly_id: { contains: 'FEED' } }]}),
         0,
         20,
         { created_at: 'desc' },
@@ -171,8 +154,7 @@ describe('Integration Service', () => {
         total: 1,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
     });
 
     it('returns an empty page when a filter cannot be resolved', async () => {
@@ -189,9 +171,7 @@ describe('Integration Service', () => {
           total: 0,
           totalPages: 0,
           hasNextPage: false,
-          hasPreviousPage: true,
-        },
-      });
+          hasPreviousPage: true}});
     });
   });
 
@@ -200,8 +180,7 @@ describe('Integration Service', () => {
       const rawIntegration = buildRawIntegration();
       integrationRepository.create.mockResolvedValue({
         id: rawIntegration.id,
-        tenant_id: rawIntegration.tenant_id,
-      });
+        tenant_id: rawIntegration.tenant_id});
       integrationRepository.findById.mockResolvedValue(rawIntegration);
 
       const result = await integrationService.createIntegration(
@@ -209,33 +188,28 @@ describe('Integration Service', () => {
           tenant_id: 'TEN0000001',
           integration_type: 'HL7',
           status: 'ACTIVE',
-          name: 'ADT Feed',
-        },
+          name: 'ADT Feed'},
         {
           user_id: 'USR0000001',
           tenant_id: 'TEN0000001',
-          ip_address: '127.0.0.1',
-        }
+          ip_address: '127.0.0.1'}
       );
 
       expect(identifiers.resolveIdentifierForPayload).toHaveBeenCalledWith({
         value: 'TEN0000001',
         field: 'tenant_id',
-        model: 'tenant',
-      });
+        model: 'tenant'});
       expect(integrationRepository.create).toHaveBeenCalledWith({
         tenant_id: 'TEN0000001',
         integration_type: 'HL7',
         status: 'ACTIVE',
-        name: 'ADT Feed',
-      });
+        name: 'ADT Feed'});
       expect(result).toEqual(expect.objectContaining({ id: 'INT0000001', tenant_id: 'TEN0000001' }));
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'CREATE',
           entity: 'integration',
-          entity_id: rawIntegration.id,
-        })
+          entity_id: rawIntegration.id})
       );
     });
   });
@@ -244,14 +218,12 @@ describe('Integration Service', () => {
     it('updates by underlying UUID even when routed by public ID', async () => {
       const existingIntegration = buildRawIntegration({
         id: 'integration-uuid',
-        human_friendly_id: 'INT0000020',
-      });
+        human_friendly_id: 'INT0000020'});
       const updatedIntegration = buildRawIntegration({
         id: 'integration-uuid',
         human_friendly_id: 'INT0000020',
         name: 'Updated Feed',
-        status: 'ERROR',
-      });
+        status: 'ERROR'});
 
       identifiers.resolveEntityId.mockResolvedValueOnce('integration-uuid');
       integrationRepository.findById
@@ -260,8 +232,7 @@ describe('Integration Service', () => {
       integrationRepository.update.mockResolvedValue({
         id: 'integration-uuid',
         name: 'Updated Feed',
-        status: 'ERROR',
-      });
+        status: 'ERROR'});
 
       const result = await integrationService.updateIntegration(
         'INT0000020',
@@ -271,13 +242,11 @@ describe('Integration Service', () => {
 
       expect(integrationRepository.update).toHaveBeenCalledWith('integration-uuid', {
         name: 'Updated Feed',
-        status: 'ERROR',
-      });
+        status: 'ERROR'});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'UPDATE',
-          entity_id: 'integration-uuid',
-        })
+          entity_id: 'integration-uuid'})
       );
       expect(result).toEqual(expect.objectContaining({ id: 'INT0000020', status: 'ERROR' }));
     });
@@ -295,27 +264,23 @@ describe('Integration Service', () => {
     it('soft deletes using the resolved primary key', async () => {
       const existingIntegration = buildRawIntegration({
         id: 'integration-uuid',
-        human_friendly_id: 'INT0000021',
-      });
+        human_friendly_id: 'INT0000021'});
       const deletedIntegration = {
         ...existingIntegration,
-        deleted_at: '2026-03-08T14:00:00.000Z',
-      };
+        deleted_at: '2026-03-08T14:00:00.000Z'};
 
       identifiers.resolveEntityId.mockResolvedValueOnce('integration-uuid');
       integrationRepository.findById.mockResolvedValue(existingIntegration);
       integrationRepository.softDelete.mockResolvedValue(deletedIntegration);
 
       const result = await integrationService.deleteIntegration('INT0000021', {
-        user_id: 'USR0000001',
-      });
+        user_id: 'USR0000001'});
 
       expect(integrationRepository.softDelete).toHaveBeenCalledWith('integration-uuid');
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'DELETE',
-          entity_id: 'integration-uuid',
-        })
+          entity_id: 'integration-uuid'})
       );
       expect(result).toEqual(deletedIntegration);
     });
@@ -328,8 +293,7 @@ describe('Integration Service', () => {
 
       const result = await integrationService.testIntegrationConnection('INT0000001', {
         timeout_ms: 5000,
-        dry_run: true,
-      });
+        dry_run: true});
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -338,8 +302,7 @@ describe('Integration Service', () => {
           integration_label: 'ADT Feed',
           connected: true,
           timeout_ms: 5000,
-          dry_run: true,
-        })
+          dry_run: true})
       );
     });
   });
@@ -351,8 +314,7 @@ describe('Integration Service', () => {
 
       const result = await integrationService.syncIntegrationNow('INT0000001', {
         force: true,
-        scope: 'delta',
-      });
+        scope: 'delta'});
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -361,8 +323,7 @@ describe('Integration Service', () => {
           integration_label: 'ADT Feed',
           queued: true,
           forced: true,
-          scope: 'delta',
-        })
+          scope: 'delta'})
       );
     });
   });

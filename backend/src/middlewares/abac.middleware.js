@@ -16,8 +16,7 @@ const {
   resolveOfficeScopedContext,
   resolvePatientContext,
   resolvePaymentContext,
-  resolveRefundContext,
-} = require('@lib/authorization/access.repository');
+  resolveRefundContext} = require('@lib/authorization/access.repository');
 const { recordSecurityEvent, recordWorkflowEvent } = require('@lib/telemetry/metrics');
 
 const ELEVATED_ROLE_SET = new Set(ELEVATED_ROLES);
@@ -66,21 +65,18 @@ const buildSubject = async (req, classifier) => {
   const permissions = getUserPermissions(user);
   const scope = await findUserScopeContext({
     user_id: user.id || user.user_id || user.userId,
-    facility_id: user.facility_id || user.facilityId || null,
-  });
+    facility_id: user.facility_id || user.facilityId || null});
 
   return {
     user_id: user.id || user.user_id || user.userId || null,
     tenant_id: user.tenant_id || user.tenantId || null,
     facility_id: user.facility_id || user.facilityId || null,
-    branch_id: user.branch_id || user.branchId || null,
     roles,
     permissions,
     department_id: scope?.department_id || null,
     has_active_shift: scope?.has_active_shift || false,
     active_shift_id: scope?.active_shift_id || null,
-    resource_type: classifier.resource_type,
-  };
+    resource_type: classifier.resource_type};
 };
 
 const resolveContextFromBody = async (classifier, req) => {
@@ -111,23 +107,19 @@ const resolveByAdmissionId = async (admissionId) => {
   const admission = await prisma.admission.findFirst({
     where: {
       id: admissionId,
-      deleted_at: null,
-    },
+      deleted_at: null},
     select: {
       id: true,
       tenant_id: true,
       facility_id: true,
-      patient_id: true,
-    },
-  });
+      patient_id: true}});
 
   if (!admission) return null;
   return {
     id: admission.id,
     tenant_id: admission.tenant_id,
     facility_id: admission.facility_id || null,
-    patient_id: admission.patient_id,
-  };
+    patient_id: admission.patient_id};
 };
 
 const RESOURCE_CLASSIFIERS = Object.freeze({
@@ -135,102 +127,83 @@ const RESOURCE_CLASSIFIERS = Object.freeze({
     resource_type: 'patient',
     patient_linked: true,
     resolveById: resolvePatientContext,
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   encounters: {
     resource_type: 'encounter',
     patient_linked: true,
     resolveById: resolveEncounterContext,
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'clinical-notes': {
     resource_type: 'clinical_note',
     patient_linked: true,
     resolveById: resolveClinicalNoteContext,
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'nursing-notes': {
     resource_type: 'nursing_note',
     patient_linked: true,
     resolveById: (identifier) => resolveAdmissionBackedContext('nursing_note', identifier),
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'medication-administrations': {
     resource_type: 'medication_administration',
     patient_linked: true,
     resolveById: (identifier) => resolveAdmissionBackedContext('medication_administration', identifier),
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   refunds: {
     resource_type: 'refund',
     patient_linked: true,
     billing_sensitive: true,
     resolveById: resolveRefundContext,
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'equipment-work-orders': {
     resource_type: 'equipment_work_order',
     assigned_work: true,
     resolveById: resolveEquipmentWorkOrderContext,
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'audit-logs': {
     resource_type: 'audit_log',
-    compliance: true,
-  },
+    compliance: true},
   'phi-access-logs': {
     resource_type: 'phi_access_log',
-    compliance: true,
-  },
+    compliance: true},
   'data-processing-logs': {
     resource_type: 'data_processing_log',
-    compliance: true,
-  },
+    compliance: true},
   'breach-notifications': {
     resource_type: 'breach_notification',
-    compliance: true,
-  },
+    compliance: true},
   'system-change-logs': {
     resource_type: 'system_change_log',
-    compliance: true,
-  },
+    compliance: true},
   'office-contexts': {
     resource_type: 'office_context',
     office_scoped: true,
     resolveById: (identifier) => resolveOfficeScopedContext('office_context', identifier),
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'shift-closes': {
     resource_type: 'shift_close',
     office_scoped: true,
     resolveById: (identifier) => resolveOfficeScopedContext('shift_close', identifier),
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'day-closes': {
     resource_type: 'day_close',
     office_scoped: true,
     resolveById: (identifier) => resolveOfficeScopedContext('day_close', identifier),
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   handovers: {
     resource_type: 'handover',
     office_scoped: true,
     resolveById: (identifier) => resolveOfficeScopedContext('handover', identifier),
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'custody-snapshots': {
     resource_type: 'custody_snapshot',
     office_scoped: true,
     resolveById: (identifier) => resolveOfficeScopedContext('custody_snapshot', identifier),
-    enforce_scope: true,
-  },
+    enforce_scope: true},
   'closeout-packs': {
     resource_type: 'closeout_pack',
     office_scoped: true,
     resolveById: (identifier) => resolveOfficeScopedContext('closeout_pack', identifier),
-    enforce_scope: true,
-  },
-});
+    enforce_scope: true}});
 
 const resolveObjectContext = async (classifier, req) => {
   if (!classifier) return null;
@@ -288,10 +261,6 @@ const checkImplicitDenial = ({ classifier, subject, object, action }) => {
     return 'facility_scope_mismatch';
   }
 
-  if (classifier.office_scoped && object.branch_id && subject.branch_id && object.branch_id !== subject.branch_id) {
-    return 'branch_scope_mismatch';
-  }
-
   if (classifier.patient_linked && subject.roles.includes('NURSE') && !subject.has_active_shift) {
     return 'active_shift_required';
   }
@@ -310,9 +279,7 @@ const recordPhiAccess = ({ subject, object, breakGlass }) => {
       user_id: subject.user_id,
       patient_id: object.patient_id,
       access_scope: 'PATIENT',
-      reason: breakGlass ? 'Emergency break-glass access' : 'Scoped patient-linked access',
-    },
-  }).catch(() => {});
+      reason: breakGlass ? 'Emergency break-glass access' : 'Scoped patient-linked access'}}).catch(() => {});
 };
 
 const auditDecision = ({ req, classifier, object, decision, reason, breakGlass }) => {
@@ -327,11 +294,8 @@ const auditDecision = ({ req, classifier, object, decision, reason, breakGlass }
         decision,
         reason,
         break_glass: Boolean(breakGlass),
-        patient_id: object?.patient_id || null,
-      },
-    },
-    ip_address: req.ip,
-  }).catch(() => {});
+        patient_id: object?.patient_id || null}},
+    ip_address: req.ip}).catch(() => {});
 };
 
 const enforceAbacAccess = () => async (req, res, next) => {
@@ -343,9 +307,7 @@ const enforceAbacAccess = () => async (req, res, next) => {
 
     if (classifier.enforce_scope && !hasElevatedRole(req.user.roles || [])) {
       setScopeIfMissing(req.query, 'facility_id', req.user.facility_id || req.user.facilityId || null);
-      setScopeIfMissing(req.query, 'branch_id', req.user.branch_id || req.user.branchId || null);
       setScopeIfMissing(req.body, 'facility_id', req.user.facility_id || req.user.facilityId || null);
-      setScopeIfMissing(req.body, 'branch_id', req.user.branch_id || req.user.branchId || null);
     }
 
     const action = toAction(req);
@@ -357,11 +319,9 @@ const enforceAbacAccess = () => async (req, res, next) => {
     const policies = await findApplicablePolicies({
       tenant_id: subject.tenant_id,
       facility_id: subject.facility_id,
-      branch_id: subject.branch_id,
       department_id: subject.department_id,
       resource_type: classifier.resource_type,
-      action,
-    });
+      action});
 
     const evaluation = evaluatePolicies({
       policies,
@@ -370,9 +330,7 @@ const enforceAbacAccess = () => async (req, res, next) => {
       environment: {
         method: req.method,
         path: req.path,
-        action,
-      },
-    });
+        action}});
 
     let denialReason = evaluation.winner && evaluation.allowed === false
       ? `policy:${evaluation.winner.id}`
@@ -385,8 +343,7 @@ const enforceAbacAccess = () => async (req, res, next) => {
         user_id: subject.user_id,
         patient_id: object?.patient_id || null,
         target_resource_type: classifier.resource_type,
-        target_resource_id: object?.id || null,
-      });
+        target_resource_id: object?.id || null});
 
       if (breakGlass) {
         denialReason = null;
@@ -400,28 +357,24 @@ const enforceAbacAccess = () => async (req, res, next) => {
         object,
         decision: 'DENY',
         reason: denialReason || 'policy_denied',
-        breakGlass,
-      });
+        breakGlass});
       recordSecurityEvent('abac.denied', {
         'hms.resource.type': classifier.resource_type,
-        'hms.action': action,
-      });
+        'hms.action': action});
       return next(new HttpError('errors.auth.insufficient_permissions', 403));
     }
 
     if (breakGlass) {
       recordWorkflowEvent('break_glass.override_granted', {
         'hms.resource.type': classifier.resource_type,
-        'hms.action': action,
-      });
+        'hms.action': action});
       auditDecision({
         req,
         classifier,
         object,
         decision: 'ALLOW',
         reason: 'break_glass',
-        breakGlass,
-      });
+        breakGlass});
     }
 
     if (classifier.patient_linked && object?.patient_id) {
@@ -433,8 +386,7 @@ const enforceAbacAccess = () => async (req, res, next) => {
       action,
       object,
       matched_policy_id: evaluation.winner?.id || null,
-      break_glass_access_id: breakGlass?.id || null,
-    };
+      break_glass_access_id: breakGlass?.id || null};
 
     return next();
   } catch (error) {
@@ -443,5 +395,4 @@ const enforceAbacAccess = () => async (req, res, next) => {
 };
 
 module.exports = {
-  enforceAbacAccess,
-};
+  enforceAbacAccess};

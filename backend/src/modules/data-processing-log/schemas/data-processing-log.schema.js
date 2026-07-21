@@ -10,8 +10,7 @@
 const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
 
@@ -24,8 +23,7 @@ const createDataProcessingLogSchema = z.object({
   user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   purpose: z.enum(['TREATMENT', 'BILLING', 'OPERATIONS', 'RESEARCH', 'MARKETING']),
   legal_basis: z.enum(['CONSENT', 'CONTRACT', 'LEGAL_OBLIGATION', 'VITAL_INTERESTS', 'PUBLIC_INTEREST', 'LEGITIMATE_INTERESTS']),
-  details: z.string().trim().optional().nullable(),
-});
+  details: z.string().trim().optional().nullable()});
 
 /**
  * Update data processing log body validation
@@ -45,8 +43,7 @@ const updateDataProcessingLogSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const dataProcessingLogIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -62,8 +59,7 @@ const listDataProcessingLogsQuerySchema = listQuerySchema.extend({
   legal_basis: z.enum(['CONSENT', 'CONTRACT', 'LEGAL_OBLIGATION', 'VITAL_INTERESTS', 'PUBLIC_INTEREST', 'LEGITIMATE_INTERESTS']).optional(),
   search: z.string().trim().max(120).optional(),
   date_from: z.string().datetime().optional(),
-  date_to: z.string().datetime().optional(),
-});
+  date_to: z.string().datetime().optional()});
 
 module.exports = {
   createDataProcessingLogSchema,

@@ -28,8 +28,7 @@ const createLabResultSchema = z.object({
   reported_at: z.string().datetime().optional().nullable(),
   interpretation_override: z.boolean().optional(),
   reference_range_override: z.string().trim().max(255).optional().nullable(),
-  result_flag_override: z.string().trim().max(40).optional().nullable(),
-});
+  result_flag_override: z.string().trim().max(40).optional().nullable()});
 
 /**
  * Update lab result body validation
@@ -44,8 +43,7 @@ const updateLabResultSchema = z.object({
   reported_at: z.string().datetime().optional().nullable(),
   interpretation_override: z.boolean().optional(),
   reference_range_override: z.string().trim().max(255).optional().nullable(),
-  result_flag_override: z.string().trim().max(40).optional().nullable(),
-});
+  result_flag_override: z.string().trim().max(40).optional().nullable()});
 
 /**
  * Release lab result body validation

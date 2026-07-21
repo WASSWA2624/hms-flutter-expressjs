@@ -5,16 +5,14 @@ const {
   rosterGenerateSchema,
   rosterPublishSchema,
   shiftOverrideSchema,
-  resolveLegacyParamsSchema,
-} = require('@validations/hr-workspace/hr-workspace.schema');
+  resolveLegacyParamsSchema} = require('@validations/hr-workspace/hr-workspace.schema');
 
 describe('hr-workspace schemas', () => {
   it('accepts UUID and friendly identifiers in workspace query filters', () => {
     const result = workspaceQuerySchema.safeParse({
       facility_id: 'FAC1234',
       department_id: '550e8400-e29b-41d4-a716-446655440000',
-      search: 'night shift',
-    });
+      search: 'night shift'});
     expect(result.success).toBe(true);
   });
 
@@ -40,16 +38,14 @@ describe('hr-workspace schemas', () => {
   it('requires publish_note when allow_partial_publish is true to be validated downstream', () => {
     const valid = rosterPublishSchema.safeParse({
       allow_partial_publish: true,
-      publish_note: 'Coverage gap acknowledged',
-    });
+      publish_note: 'Coverage gap acknowledged'});
     expect(valid.success).toBe(true);
   });
 
   it('validates shift override payload with friendly staff identifier', () => {
     const result = shiftOverrideSchema.safeParse({
       staff_profile_id: 'SPF0012',
-      reason: 'Emergency backfill',
-    });
+      reason: 'Emergency backfill'});
     expect(result.success).toBe(true);
   });
 
@@ -57,8 +53,7 @@ describe('hr-workspace schemas', () => {
     expect(
       resolveLegacyParamsSchema.safeParse({
         resource: 'shift-assignments',
-        id: 'SAS0233',
-      }).success
+        id: 'SAS0233'}).success
     ).toBe(true);
   });
 });

@@ -42,7 +42,7 @@ describe('Shift Repository', () => {
       expect(result).toEqual(mockShift);
       expect(prisma.shift.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -95,7 +95,7 @@ describe('Shift Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -109,7 +109,7 @@ describe('Shift Repository', () => {
         skip: 0,
         take: 20,
         orderBy,
-        include: {}
+        include: undefined
       });
     });
 

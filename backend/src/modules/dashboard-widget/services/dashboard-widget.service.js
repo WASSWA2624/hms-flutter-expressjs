@@ -16,8 +16,7 @@ const {
   resolvePackId: resolveSharedPackId,
   resolveProfileId: resolveSharedProfileId,
   resolveScope: resolveSharedScope,
-  sanitizeSummaryPayload: sanitizeSharedSummaryPayload,
-} = require('@lib/dashboard/summary');
+  sanitizeSummaryPayload: sanitizeSharedSummaryPayload} = require('@lib/dashboard/summary');
 const { HttpError } = require('@lib/errors');
 const { ROLES, ROLE_HIERARCHY, normalizeRoleName } = require('@config/roles');
 const {
@@ -31,8 +30,7 @@ const {
   resolvePayloadIdentifier,
   resolveScopeIdsForList,
   resolveScopedContext,
-  safeUpper,
-} = require('@lib/reports/api');
+  safeUpper} = require('@lib/reports/api');
 const { serializeDashboardWidget } = require('@lib/reports/serializers');
 
 const ROLE_PACKS = dashboardWidgetRepository.__private__?.ROLE_PACKS || {
@@ -180,38 +178,28 @@ const resolvePackId = (profileId) => PROFILE_TO_PACK[profileId] || ROLE_PACKS.AD
 const resolveScope = async (query = {}, user = {}, effectiveRole = null) => {
   const userScope = {
     tenant_id: user.tenant_id || user.tenantId || null,
-    facility_id: user.facility_id || user.facilityId || null,
-    branch_id: user.branch_id || user.branchId || null
-  };
+    facility_id: user.facility_id || user.facilityId || null};
 
   if (effectiveRole === ROLES.SUPER_ADMIN) {
     const tenantId = query.tenant_id || userScope.tenant_id || null;
     const facilityId = query.facility_id || userScope.facility_id || null;
-    const branchId = query.branch_id || userScope.branch_id || null;
 
     if (!tenantId) {
       return {
         tenant_id: null,
         facility_id: null,
-        branch_id: null,
-        platform: true,
-      };
+        platform: true};
     }
 
     let resolvedFacilityId = facilityId;
-    if (branchId) {
-      const branchFacilityId = await dashboardWidgetRepository.resolveBranchFacilityScope(tenantId, branchId);
       if (resolvedFacilityId && branchFacilityId && resolvedFacilityId !== branchFacilityId) {
-        throw new HttpError('errors.validation.invalid', 422, [{ field: 'branch_id' }]);
       }
       if (!resolvedFacilityId) resolvedFacilityId = branchFacilityId;
     }
 
     return {
       tenant_id: tenantId,
-      facility_id: resolvedFacilityId || null,
-      branch_id: branchId
-    };
+      facility_id: resolvedFacilityId || null};
   }
 
   if (!userScope.tenant_id) {
@@ -251,7 +239,7 @@ const buildTrendPoints = (dateValues = [], days = 7) => {
 
 const buildDistribution = (statusCounts = {}) => {
   const colors = ['#2563eb', '#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6'];
-  const entries = Object.entries(statusCounts || {}).filter(([, value]) => Number(value || 0) > 0);
+  const entries = Object.entries(statusCounts || {}).filter(([ value]) => Number(value || 0) > 0);
   const segments = entries.map(([status, value], index) => ({
     id: String(status).toLowerCase(),
     label: String(status).replace(/_/g, ' '),
@@ -387,8 +375,7 @@ const metricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'unassigned_shifts', label: 'Unassigned shifts', value: metrics.unassignedShifts || 0 },
       { id: 'attended_today', label: 'Attended today', value: metrics.attendedToday || 0 },
       { id: 'missed_shifts_today', label: 'Missed shifts today', value: metrics.missedShiftsToday || 0 },
-      { id: 'payroll_pending', label: 'Payroll pending', value: metrics.payrollPending || 0 },
-    ];
+      { id: 'payroll_pending', label: 'Payroll pending', value: metrics.payrollPending || 0 }];
   }
 
   if (packId === ROLE_PACKS.BIOMED) {
@@ -446,8 +433,7 @@ const listDashboardWidgets = async (filters, page, limit, sortBy, order, user = 
     const whereClause = {
       tenant_id: scoped.tenant_id,
       ...buildSinceFilter(filters.since),
-      ...buildSearchWhere(filters.search, ['name', 'placement']),
-    };
+      ...buildSearchWhere(filters.search, ['name', 'placement'])};
 
     if (scoped.report_definition_id) whereClause.report_definition_id = scoped.report_definition_id;
     if (normalizeString(filters.report_definition_id) && !scoped.report_definition_id) {
@@ -468,8 +454,7 @@ const listDashboardWidgets = async (filters, page, limit, sortBy, order, user = 
 
     return {
       dashboardWidgets: dashboardWidgets.map(serializeDashboardWidget),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -495,16 +480,14 @@ const createDashboardWidget = async (data, context = {}) => {
         model: 'report_definition',
         field: 'report_definition_id',
         tenant_id: scoped.tenant_id,
-        nullable: true,
-      }),
+        nullable: true}),
       name: normalizeString(data.name),
       widget_type: safeUpper(data.widget_type),
       role_scope_json: data.role_scope_json || null,
       placement: normalizeString(data.placement) || null,
       sort_order: Number(data.sort_order || 0),
       is_pinned: Boolean(data.is_pinned),
-      config_json: data.config_json || {},
-    };
+      config_json: data.config_json || {}};
 
     const dashboardWidget = await dashboardWidgetRepository.create(payload);
 
@@ -531,20 +514,17 @@ const updateDashboardWidget = async (id, data, context = {}) => {
     ensureVersionMatch({
       current: before,
       expectedVersion: data.version,
-      serializer: serializeDashboardWidget,
-    });
+      serializer: serializeDashboardWidget});
 
     const updateData = {
-      version: Number(before.version || 1) + 1,
-    };
+      version: Number(before.version || 1) + 1};
     if (data.report_definition_id !== undefined) {
       updateData.report_definition_id = await resolvePayloadIdentifier({
         value: data.report_definition_id,
         model: 'report_definition',
         field: 'report_definition_id',
         tenant_id: before.tenant_id,
-        nullable: true,
-      });
+        nullable: true});
     }
     if (data.name !== undefined) updateData.name = normalizeString(data.name);
     if (data.widget_type !== undefined) updateData.widget_type = safeUpper(data.widget_type);
@@ -569,8 +549,7 @@ const updateDashboardWidget = async (id, data, context = {}) => {
         'placement',
         'sort_order',
         'is_pinned',
-        'version',
-      ]),
+        'version']),
       ip_address: context.ip_address
     });
 
@@ -614,8 +593,7 @@ const getDashboardSummary = async (query = {}, user = {}) => {
     return await buildSharedDashboardSummary({
       query,
       user,
-      repository: dashboardWidgetRepository,
-    });
+      repository: dashboardWidgetRepository});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

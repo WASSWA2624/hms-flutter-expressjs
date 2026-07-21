@@ -30,17 +30,14 @@ const {
   patientMergePreviewSchema,
   patientMergeSchema,
   patientDuplicateDismissSchema,
-  patientDocumentUploadBodySchema,
-} = require('@validations/patient/patient.schema');
+  patientDocumentUploadBodySchema} = require('@validations/patient/patient.schema');
 const { listQuerySchema } = require('@lib/validation/zod');
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     files: 5,
-    fileSize: 10 * 1024 * 1024,
-  },
-});
+    fileSize: 10 * 1024 * 1024}});
 
 router.use(authenticate(), denyRoles(STAFF_PATIENT_FLOW_DENIED_ROLES));
 
@@ -129,8 +126,7 @@ router.post(
   '/duplicates/:reviewId/dismiss',
   validateRequest({
     params: patientDuplicateDismissParamsSchema,
-    body: patientDuplicateDismissSchema,
-  }),
+    body: patientDuplicateDismissSchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_WRITE, 'permission'),
   patientController.dismissDuplicateCandidate
@@ -140,8 +136,7 @@ router.get(
   '/:patientId/workspace',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.getPatientWorkspace
@@ -151,8 +146,7 @@ router.get(
   '/:patientId/timeline',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientTimeline
@@ -162,8 +156,7 @@ router.get(
   '/:patientId/consents',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientConsents
@@ -173,8 +166,7 @@ router.get(
   '/:patientId/appointments',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientAppointments
@@ -184,8 +176,7 @@ router.get(
   '/:patientId/visit-queue',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientVisitQueueEntries
@@ -195,8 +186,7 @@ router.get(
   '/:patientId/encounters',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientEncounters
@@ -206,8 +196,7 @@ router.get(
   '/:patientId/admissions',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientAdmissions
@@ -217,8 +206,7 @@ router.get(
   '/:patientId/follow-ups',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientFollowUps
@@ -228,8 +216,7 @@ router.get(
   '/:patientId/referrals',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientReferrals
@@ -239,8 +226,7 @@ router.get(
   '/:patientId/invoices',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientInvoices
@@ -250,8 +236,7 @@ router.get(
   '/:patientId/payments',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientPayments
@@ -261,8 +246,7 @@ router.get(
   '/:patientId/phi-access-logs',
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    query: patientWorkspaceListQuerySchema,
-  }),
+    query: patientWorkspaceListQuerySchema}),
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.listPatientPhiAccessLogs
@@ -275,8 +259,7 @@ router.post(
   upload.array('files', 5),
   validateRequest({
     params: patientWorkspaceParamsSchema,
-    body: patientDocumentUploadBodySchema,
-  }),
+    body: patientDocumentUploadBodySchema}),
   patientController.uploadPatientDocuments
 );
 

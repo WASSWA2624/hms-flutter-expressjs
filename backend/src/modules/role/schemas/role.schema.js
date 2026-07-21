@@ -30,8 +30,7 @@ const createRoleSchema = z.object({
   name: z.string().trim().min(1).max(120),
   display_name: z.string().trim().min(1).max(160).optional().nullable(),
   description: z.string().trim().min(1).max(255).optional().nullable(),
-  permission_ids: permissionIdsSchema,
-});
+  permission_ids: permissionIdsSchema});
 
 /**
  * Update role body validation
@@ -43,8 +42,7 @@ const updateRoleSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   display_name: z.string().trim().min(1).max(160).optional().nullable(),
   description: z.string().trim().min(1).max(255).optional().nullable(),
-  permission_ids: permissionIdsSchema,
-});
+  permission_ids: permissionIdsSchema});
 
 // ==================== URL Params ====================
 

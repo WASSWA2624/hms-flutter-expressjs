@@ -201,5 +201,4 @@ module.exports = {
   submitInsuranceClaim,
   reconcileInsuranceClaim,
   syncInsuranceClaimStatus,
-  applyInsurerWebhook,
-};
+  applyInsurerWebhook};

@@ -26,23 +26,20 @@ const CONTACT_READ_SCOPES = [
   PERMISSIONS.OPERATIONS_READ,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const CONTACT_WRITE_SCOPES = [
   PERMISSIONS.PROFILE_UPDATE,
   PERMISSIONS.PATIENT_WRITE,
   PERMISSIONS.OPERATIONS_WRITE,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const CONTACT_DELETE_SCOPES = [
   PERMISSIONS.PATIENT_DELETE,
   PERMISSIONS.OPERATIONS_WRITE,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 
 /**
  * @description List contacts with pagination and filters
@@ -58,7 +55,6 @@ const CONTACT_DELETE_SCOPES = [
  * @queryParams {string} [tenant_id] - Filter by tenant ID (UUID)
  * @queryParams {string} [contact_type] - Filter by contact type (PHONE, EMAIL, FAX, OTHER)
  * @queryParams {string} [facility_id] - Filter by facility ID (UUID)
- * @queryParams {string} [branch_id] - Filter by branch ID (UUID)
  * @queryParams {string} [patient_id] - Filter by patient ID (UUID)
  * @queryParams {string} [user_profile_id] - Filter by user profile ID (UUID)
  * @queryParams {string} [staff_profile_id] - Filter by staff profile ID (UUID)
@@ -70,7 +66,8 @@ const CONTACT_DELETE_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listContactsQuerySchema }),
+  '/',
+  validateRequest({ query: listContactsQuerySchema }),
 
   authenticate(),
   authorize(CONTACT_READ_SCOPES, 'permission'),
@@ -91,7 +88,8 @@ router.get(
  * @throws 404 Contact not found
  */
 router.get(
-  '/:id',  validateRequest({ params: contactIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: contactIdParamsSchema }),
 
   authenticate(),
   authorize(CONTACT_READ_SCOPES, 'permission'),
@@ -111,7 +109,6 @@ router.get(
  * @bodyParams {string} value - Contact value (required, max 255 chars)
  * @bodyParams {boolean} [is_primary=false] - Is primary contact
  * @bodyParams {string} [facility_id] - Facility ID (UUID)
- * @bodyParams {string} [branch_id] - Branch ID (UUID)
  * @bodyParams {string} [patient_id] - Patient ID (UUID)
  * @bodyParams {string} [user_profile_id] - User profile ID (UUID)
  * @bodyParams {string} [staff_profile_id] - Staff profile ID (UUID)
@@ -122,7 +119,8 @@ router.get(
  * @throws 400 Foreign key constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createContactSchema }),
+  '/',
+  validateRequest({ body: createContactSchema }),
 
   authenticate(),
   authorize(CONTACT_WRITE_SCOPES, 'permission'),
@@ -141,7 +139,6 @@ router.post(
  * @bodyParams {string} [value] - Contact value (max 255 chars)
  * @bodyParams {boolean} [is_primary] - Is primary contact
  * @bodyParams {string} [facility_id] - Facility ID (UUID)
- * @bodyParams {string} [branch_id] - Branch ID (UUID)
  * @bodyParams {string} [patient_id] - Patient ID (UUID)
  * @bodyParams {string} [user_profile_id] - User profile ID (UUID)
  * @bodyParams {string} [staff_profile_id] - Staff profile ID (UUID)
@@ -153,7 +150,8 @@ router.post(
  * @throws 400 Foreign key constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: contactIdParamsSchema, body: updateContactSchema }),
+  '/:id',
+  validateRequest({ params: contactIdParamsSchema, body: updateContactSchema }),
 
   authenticate(),
   authorize(CONTACT_WRITE_SCOPES, 'permission'),
@@ -174,7 +172,8 @@ router.put(
  * @throws 404 Contact not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: contactIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: contactIdParamsSchema }),
 
   authenticate(),
   authorize(CONTACT_DELETE_SCOPES, 'permission'),

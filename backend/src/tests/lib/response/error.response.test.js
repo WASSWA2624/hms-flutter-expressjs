@@ -117,8 +117,7 @@ describe('response error helpers', () => {
 
     const schema = z.object({
       old_password: z.string(),
-      new_password: z.string().min(8, 'errors.validation.password.min_length'),
-    });
+      new_password: z.string().min(8, 'errors.validation.password.min_length')});
 
     let validationError;
     try {
@@ -134,13 +133,10 @@ describe('response error helpers', () => {
       expect.arrayContaining([
         expect.objectContaining({
           field: 'old_password',
-          message: 'old_password is required',
-        }),
+          message: 'old_password is required'}),
         expect.objectContaining({
           field: 'new_password',
-          message: 'Password must be at least 8 characters',
-        }),
-      ])
+          message: 'Password must be at least 8 characters'})])
     );
   });
 
@@ -162,8 +158,6 @@ describe('response error helpers', () => {
     expect(res.payload.errors).toEqual([
       expect.objectContaining({
         field: 'tenant_id',
-        message: 'tenant_id is required',
-      }),
-    ]);
+        message: 'tenant_id is required'})]);
   });
 });

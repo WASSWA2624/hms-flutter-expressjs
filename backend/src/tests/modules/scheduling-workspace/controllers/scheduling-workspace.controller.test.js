@@ -13,12 +13,10 @@ describe('scheduling-workspace.controller', () => {
     jest.clearAllMocks();
     req = {
       query: {},
-      params: {},
-    };
+      params: {}};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+      json: jest.fn().mockReturnThis()};
   });
 
   it('loads workspace payload', async () => {

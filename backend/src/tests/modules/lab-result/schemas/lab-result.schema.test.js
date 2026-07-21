@@ -118,8 +118,7 @@ describe('Lab Result Schemas', () => {
         ...validData,
         interpretation_override: true,
         reference_range_override: '10 - 18 (manual)',
-        result_flag_override: 'HIGH',
-      });
+        result_flag_override: 'HIGH'});
       expect(result.success).toBe(true);
     });
 

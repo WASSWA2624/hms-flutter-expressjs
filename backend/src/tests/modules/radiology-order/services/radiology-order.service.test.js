@@ -12,12 +12,10 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 const {
   normalizeIdentifier,
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { resolveLabOrderEncounterId } = require('@services/lab-workspace/lab.shared');
 const prisma = require('@prisma/client');
 
@@ -25,32 +23,24 @@ const prisma = require('@prisma/client');
 jest.mock('@repositories/radiology-order/radiology-order.repository');
 jest.mock('@lib/audit');
 jest.mock('@services/lab-workspace/lab.shared', () => ({
-  resolveLabOrderEncounterId: jest.fn(),
-}));
+  resolveLabOrderEncounterId: jest.fn()}));
 jest.mock('@prisma/client', () => ({
   patient: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   radiology_test: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   encounter: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   clinical_note: {
-    create: jest.fn(),
-  },
-  $transaction: jest.fn(async (callback) => callback({})),
-}));
+    create: jest.fn()},
+  $transaction: jest.fn(async (callback) => callback({}))}));
 jest.mock('@lib/identifiers/service-identifier-resolution', () => ({
   resolveIdentifierForFilter: jest.fn(),
-  resolveIdentifierForPayload: jest.fn(),
-}));
+  resolveIdentifierForPayload: jest.fn()}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   normalizeIdentifier: jest.fn((value) => value),
-  resolveModelIdByIdentifier: jest.fn(),
-}));
+  resolveModelIdByIdentifier: jest.fn()}));
 
 describe('Radiology Order Service', () => {
   beforeEach(() => {
@@ -67,13 +57,11 @@ describe('Radiology Order Service', () => {
     resolveLabOrderEncounterId.mockImplementation(async ({ identifier }) => identifier);
     prisma.patient.findFirst.mockResolvedValue({
       tenant_id: 'tenant-1',
-      facility_id: 'facility-1',
-    });
+      facility_id: 'facility-1'});
     prisma.radiology_test.findFirst.mockResolvedValue(null);
     prisma.radiology_test.create.mockImplementation(async (args) => ({
       id: 'created-radiology-test-id',
-      ...args.data,
-    }));
+      ...args.data}));
     prisma.clinical_note.create.mockResolvedValue({});
     radiologyOrderRepository.findById.mockImplementation(async (id) => ({
       id,
@@ -81,8 +69,7 @@ describe('Radiology Order Service', () => {
       patient_id: '550e8400-e29b-41d4-a716-446655440002',
       radiology_test_id: '550e8400-e29b-41d4-a716-446655440003',
       status: 'ORDERED',
-      ordered_at: new Date('2026-01-19T09:00:00.000Z'),
-    }));
+      ordered_at: new Date('2026-01-19T09:00:00.000Z')}));
   });
 
   describe('listRadiologyOrders', () => {
@@ -299,14 +286,12 @@ describe('Radiology Order Service', () => {
     it('defaults status and ordered timestamp when omitted', async () => {
       radiologyOrderRepository.create.mockImplementation(async (payload) => ({
         id: '550e8400-e29b-41d4-a716-446655440099',
-        ...payload,
-      }));
+        ...payload}));
 
       const result = await radiologyOrderService.createRadiologyOrder(
         {
           patient_id: '550e8400-e29b-41d4-a716-446655440002',
-          radiology_test_id: '550e8400-e29b-41d4-a716-446655440003',
-        },
+          radiology_test_id: '550e8400-e29b-41d4-a716-446655440003'},
         'user-id',
         '127.0.0.1'
       );
@@ -316,8 +301,7 @@ describe('Radiology Order Service', () => {
           patient_id: '550e8400-e29b-41d4-a716-446655440002',
           radiology_test_id: '550e8400-e29b-41d4-a716-446655440003',
           status: 'ORDERED',
-          ordered_at: expect.any(Date),
-        })
+          ordered_at: expect.any(Date)})
       );
       expect(result.status).toBe('ORDERED');
       expect(result.ordered_at).toBeInstanceOf(Date);
@@ -373,8 +357,7 @@ describe('Radiology Order Service', () => {
       await radiologyOrderService.createRadiologyOrder(
         {
           ...createData,
-          encounter_id: 'VIS0000003',
-        },
+          encounter_id: 'VIS0000003'},
         'user-id',
         '127.0.0.1',
       );
@@ -383,12 +366,10 @@ describe('Radiology Order Service', () => {
         identifier: 'VIS0000003',
         patientId: createData.patient_id,
         tenantId: 'tenant-1',
-        facilityId: 'facility-1',
-      });
+        facilityId: 'facility-1'});
       expect(radiologyOrderRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          encounter_id: 'encounter-internal-1',
-        }),
+          encounter_id: 'encounter-internal-1'}),
       );
     });
   });

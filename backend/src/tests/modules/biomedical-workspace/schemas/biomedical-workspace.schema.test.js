@@ -1,6 +1,5 @@
 const {
-  faultReportSchema,
-} = require('../../../../modules/biomedical-workspace/schemas/biomedical-workspace.schema');
+  faultReportSchema} = require('../../../../modules/biomedical-workspace/schemas/biomedical-workspace.schema');
 
 describe('biomedical-workspace.schema', () => {
   it('accepts a fault report with a registered equipment id', () => {
@@ -13,8 +12,7 @@ describe('biomedical-workspace.schema', () => {
       severity: 'HIGH',
       priority: 'HIGH',
       symptoms: '',
-      description: '',
-    });
+      description: ''});
 
     expect(result.success).toBe(true);
   });
@@ -24,16 +22,13 @@ describe('biomedical-workspace.schema', () => {
       reported_equipment_name: 'Portable suction trolley',
       source_scope: 'dashboard_workspace',
       source_route: '/dashboard',
-      severity: 'HIGH',
-    });
+      severity: 'HIGH'});
 
     expect(result.success).toBe(false);
     expect(result.error.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: ['equipment_id'],
-        }),
-      ])
+          path: ['equipment_id']})])
     );
   });
 
@@ -41,16 +36,13 @@ describe('biomedical-workspace.schema', () => {
     const result = faultReportSchema.safeParse({
       source_scope: 'dashboard_workspace',
       source_route: '/dashboard',
-      severity: 'HIGH',
-    });
+      severity: 'HIGH'});
 
     expect(result.success).toBe(false);
     expect(result.error.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: ['equipment_id'],
-        }),
-      ])
+          path: ['equipment_id']})])
     );
   });
 });

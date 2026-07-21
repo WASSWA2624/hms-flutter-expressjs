@@ -15,7 +15,6 @@ describe('tenant scope middleware', () => {
         id: 'user-1',
         tenantId: 'tenant-1',
         facility_id: 'facility-1',
-        branchId: 'branch-1',
         roles: ['NURSE']
       }
     };
@@ -25,10 +24,8 @@ describe('tenant scope middleware', () => {
     expect(error).toBeUndefined();
     expect(req.user.tenant_id).toBe('tenant-1');
     expect(req.user.facility_id).toBe('facility-1');
-    expect(req.user.branch_id).toBe('branch-1');
     expect(req.tenant).toEqual({ id: 'tenant-1' });
     expect(req.facility).toEqual({ id: 'facility-1' });
-    expect(req.branch).toEqual({ id: 'branch-1' });
   });
 
   test('enforceTenantScope injects missing scope fields from authenticated user', async () => {
@@ -37,7 +34,6 @@ describe('tenant scope middleware', () => {
         id: 'user-2',
         tenant_id: 'tenant-2',
         facility_id: 'facility-2',
-        branch_id: 'branch-2',
         roles: ['NURSE']
       },
       query: {},
@@ -49,10 +45,8 @@ describe('tenant scope middleware', () => {
     expect(error).toBeUndefined();
     expect(req.query.tenant_id).toBe('tenant-2');
     expect(req.query.facility_id).toBe('facility-2');
-    expect(req.query.branch_id).toBe('branch-2');
     expect(req.body.tenant_id).toBe('tenant-2');
     expect(req.body.facility_id).toBe('facility-2');
-    expect(req.body.branch_id).toBe('branch-2');
   });
 
   test('enforceTenantScope normalizes cross-scope payload values for non-elevated roles', async () => {

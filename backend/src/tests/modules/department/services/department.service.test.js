@@ -92,16 +92,13 @@ describe('Department Service', () => {
       );
     });
 
-    it('should filter by branch_id', async () => {
       const mockDepartments = [{ id: 'dept-1', name: 'Emergency' }];
       departmentRepository.findMany.mockResolvedValue(mockDepartments);
       departmentRepository.count.mockResolvedValue(1);
 
-      const result = await listDepartments({ branch_id: 'branch-123' }, 1, 20);
 
       expect(result.departments).toEqual(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
-        { branch_id: 'branch-123' },
         0,
         20,
         { created_at: 'desc' }
@@ -213,7 +210,6 @@ describe('Department Service', () => {
         id: 'dept-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'Emergency Department',
         department_type: 'CLINICAL',
         is_active: true
@@ -240,7 +236,6 @@ describe('Department Service', () => {
       const departmentData = {
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'New Department',
         department_type: 'CLINICAL',
         is_active: true
@@ -279,7 +274,6 @@ describe('Department Service', () => {
         details: {
           tenant_id: mockCreatedDepartment.tenant_id,
           facility_id: mockCreatedDepartment.facility_id,
-          branch_id: mockCreatedDepartment.branch_id,
           name: mockCreatedDepartment.name,
           department_type: mockCreatedDepartment.department_type,
           is_active: mockCreatedDepartment.is_active
@@ -297,7 +291,6 @@ describe('Department Service', () => {
         id: 'dept-new',
         ...departmentData,
         facility_id: null,
-        branch_id: null,
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -339,7 +332,6 @@ describe('Department Service', () => {
         id: 'dept-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'Emergency Department',
         department_type: 'CLINICAL',
         is_active: true
@@ -377,14 +369,12 @@ describe('Department Service', () => {
         details: {
           before: {
             facility_id: mockBeforeDepartment.facility_id,
-            branch_id: mockBeforeDepartment.branch_id,
             name: mockBeforeDepartment.name,
             department_type: mockBeforeDepartment.department_type,
             is_active: mockBeforeDepartment.is_active
           },
           after: {
             facility_id: mockUpdatedDepartment.facility_id,
-            branch_id: mockUpdatedDepartment.branch_id,
             name: mockUpdatedDepartment.name,
             department_type: mockUpdatedDepartment.department_type,
             is_active: mockUpdatedDepartment.is_active
@@ -427,7 +417,6 @@ describe('Department Service', () => {
         id: 'dept-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'Emergency Department',
         department_type: 'CLINICAL',
         is_active: true
@@ -459,7 +448,6 @@ describe('Department Service', () => {
         details: {
           tenant_id: mockDepartment.tenant_id,
           facility_id: mockDepartment.facility_id,
-          branch_id: mockDepartment.branch_id,
           name: mockDepartment.name,
           department_type: mockDepartment.department_type
         }

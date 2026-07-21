@@ -35,7 +35,7 @@ describe('Inventory Item Repository', () => {
       expect(result).toEqual(mockItem);
       expect(prisma.inventory_item.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -89,7 +89,7 @@ describe('Inventory Item Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -102,7 +102,7 @@ describe('Inventory Item Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { name: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

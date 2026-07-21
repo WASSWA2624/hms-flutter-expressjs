@@ -54,7 +54,7 @@ describe('Diagnosis Repository', () => {
           id: 'diag-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 

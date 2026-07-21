@@ -2,12 +2,10 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
   mapClinicalOrderBillingFields,
   mapCatalogUnitPriceFields,
-  extractStoredClinicalBilling,
-} = require('@lib/billing/clinical-request-billing');
+  extractStoredClinicalBilling} = require('@lib/billing/clinical-request-billing');
 const {
   buildLabReferenceRangeRowSummary,
-  buildLabReferenceRangeSummary,
-} = require('@services/lab-workspace/lab.configuration');
+  buildLabReferenceRangeSummary} = require('@services/lab-workspace/lab.configuration');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -16,8 +14,7 @@ const LAB_PAYMENT_SATISFIED_STATUSES = new Set([
   'PAID',
   'NOT_REQUIRED',
   'NO_CHARGE',
-  'NOT_BILLED',
-]);
+  'NOT_BILLED']);
 
 const resolveLabOrderPaymentStatus = (order = {}) => {
   const billingFields = mapClinicalOrderBillingFields(order);
@@ -68,8 +65,7 @@ const REVERSE_STEP_PRIORITY = Object.freeze({
   COLLECT: 1,
   REJECT: 2,
   RECEIVE: 3,
-  RELEASE: 4,
-});
+  RELEASE: 4});
 
 const toTimestampValue = (...candidates) => {
   for (const candidate of candidates) {
@@ -102,8 +98,7 @@ const resolveLatestReverseWorkflowTarget = (record) => {
       if (!RESULT_REOPENABLE_STATES.has(toText(result?.status).toUpperCase())) return;
       latest = selectLatestReverseCandidate(latest, {
         kind: 'RELEASE',
-        atMs: toTimestampValue(result?.reported_at, result?.updated_at),
-      });
+        atMs: toTimestampValue(result?.reported_at, result?.updated_at)});
     });
   });
 
@@ -112,22 +107,19 @@ const resolveLatestReverseWorkflowTarget = (record) => {
     if (sampleStatus === 'RECEIVED') {
       latest = selectLatestReverseCandidate(latest, {
         kind: 'RECEIVE',
-        atMs: toTimestampValue(sample?.received_at, sample?.updated_at),
-      });
+        atMs: toTimestampValue(sample?.received_at, sample?.updated_at)});
       return;
     }
     if (sampleStatus === 'REJECTED') {
       latest = selectLatestReverseCandidate(latest, {
         kind: 'REJECT',
-        atMs: toTimestampValue(sample?.updated_at, sample?.received_at, sample?.collected_at),
-      });
+        atMs: toTimestampValue(sample?.updated_at, sample?.received_at, sample?.collected_at)});
       return;
     }
     if (sampleStatus === 'COLLECTED') {
       latest = selectLatestReverseCandidate(latest, {
         kind: 'COLLECT',
-        atMs: toTimestampValue(sample?.collected_at, sample?.updated_at),
-      });
+        atMs: toTimestampValue(sample?.collected_at, sample?.updated_at)});
     }
   });
 
@@ -173,8 +165,7 @@ const mapLabReferenceRangeRecord = (record) => {
     version: Number.isFinite(Number(record.version)) ? Number(record.version) : 1,
     sort_order:
       Number.isFinite(Number(record.sort_order)) ? Number(record.sort_order) : 0,
-    summary: buildLabReferenceRangeRowSummary(record) || null,
-  };
+    summary: buildLabReferenceRangeRowSummary(record) || null};
 };
 
 const mapLabUnitOptionRecord = (record) => {
@@ -186,8 +177,7 @@ const mapLabUnitOptionRecord = (record) => {
     ucum_code: toText(record.ucum_code) || null,
     is_default: Boolean(record.is_default),
     sort_order:
-      Number.isFinite(Number(record.sort_order)) ? Number(record.sort_order) : 0,
-  };
+      Number.isFinite(Number(record.sort_order)) ? Number(record.sort_order) : 0};
 };
 
 const mapLabResultOptionRecord = (record) => {
@@ -205,8 +195,7 @@ const mapLabResultOptionRecord = (record) => {
     result_flag: toText(record.result_flag) || null,
     is_positive: Boolean(record.is_positive),
     sort_order:
-      Number.isFinite(Number(record.sort_order)) ? Number(record.sort_order) : 0,
-  };
+      Number.isFinite(Number(record.sort_order)) ? Number(record.sort_order) : 0};
 };
 
 const mapLabPanelItemRecord = (record) => {
@@ -221,8 +210,7 @@ const mapLabPanelItemRecord = (record) => {
     is_required: typeof record.is_required === 'boolean' ? record.is_required : true,
     instructions: toText(record.instructions) || null,
     sort_order:
-      Number.isFinite(Number(record.sort_order)) ? Number(record.sort_order) : 0,
-  };
+      Number.isFinite(Number(record.sort_order)) ? Number(record.sort_order) : 0};
 };
 
 const mapLabTestRecord = (record) => {
@@ -257,8 +245,7 @@ const mapLabTestRecord = (record) => {
     ...mapCatalogUnitPriceFields(record),
     tenant_id: toPublicIdentifier(record.tenant?.human_friendly_id, record.tenant_id),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapLabPanelRecord = (record) => {
@@ -279,8 +266,7 @@ const mapLabPanelRecord = (record) => {
     ...mapCatalogUnitPriceFields(record),
     tenant_id: toPublicIdentifier(record.tenant?.human_friendly_id, record.tenant_id),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapLabOrderItemRecord = (record) => {
@@ -354,8 +340,7 @@ const mapLabOrderItemRecord = (record) => {
     rejection_notes: toText(record.rejection_notes) || null,
     rejected_at: toIsoDateTime(record.rejected_at),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapLabSampleRecord = (record) => {
@@ -376,8 +361,7 @@ const mapLabSampleRecord = (record) => {
     rejection_notes: toText(record.rejection_notes) || null,
     rejected_at: toIsoDateTime(record.rejected_at),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapLabResultRecord = (record) => {
@@ -418,8 +402,7 @@ const mapLabResultRecord = (record) => {
     test_display_name: toText(test?.name) || toText(test?.code) || null,
     test_code: toText(test?.code) || null,
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapLabQcLogRecord = (record) => {
@@ -436,16 +419,14 @@ const mapLabQcLogRecord = (record) => {
     test_code: toText(test?.code) || null,
     logged_at: toIsoDateTime(record.logged_at),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const ENCOUNTER_TYPE_SOURCE = Object.freeze({
   OPD: 'OPD',
   EMERGENCY: 'EMERGENCY',
   INPATIENT: 'IPD',
-  IPD: 'IPD',
-});
+  IPD: 'IPD'});
 
 const mapLabOrderEncounterContext = (encounter) => {
   if (!encounter || typeof encounter !== 'object') return null;
@@ -477,8 +458,7 @@ const mapLabOrderEncounterContext = (encounter) => {
     ward: wardName,
     room: roomName,
     bed: bedLabel,
-    location_label: locationLabel,
-  };
+    location_label: locationLabel};
 };
 
 const mapLabOrderRecord = (record, options = {}) => {
@@ -492,14 +472,12 @@ const mapLabOrderRecord = (record, options = {}) => {
   const items = includeChildren && Array.isArray(record.items)
     ? record.items.map((entry) => mapLabOrderItemRecord({
         ...entry,
-        lab_order: record,
-      })).filter(Boolean)
+        lab_order: record})).filter(Boolean)
     : [];
   const samples = includeChildren && Array.isArray(record.samples)
     ? record.samples.map((entry) => mapLabSampleRecord({
         ...entry,
-        lab_order: record,
-      })).filter(Boolean)
+        lab_order: record})).filter(Boolean)
     : [];
 
   const rankedItemStatuses = items.map((entry) => toLabOrderStatusRank(entry?.status));
@@ -536,8 +514,7 @@ const mapLabOrderRecord = (record, options = {}) => {
     sample_count: samples.length,
     items,
     samples,
-    ...mapClinicalOrderBillingFields(record),
-  };
+    ...mapClinicalOrderBillingFields(record)};
 };
 
 const mapLabOrderWorkflowRecord = (record) => {
@@ -548,9 +525,7 @@ const mapLabOrderWorkflowRecord = (record) => {
       id: 'ordered',
       type: 'ORDER_PLACED',
       at: order.ordered_at || order.created_at,
-      label: 'Order requested',
-    },
-  ];
+      label: 'Order requested'}];
 
   order.samples.forEach((sample, index) => {
     if (sample.collected_at) {
@@ -558,16 +533,14 @@ const mapLabOrderWorkflowRecord = (record) => {
         id: `sample-collected-${sample.id || index}`,
         type: 'SAMPLE_COLLECTED',
         at: sample.collected_at,
-        label: `Sample ${sample.display_id || index + 1} collected`,
-      });
+        label: `Sample ${sample.display_id || index + 1} collected`});
     }
     if (sample.received_at) {
       timeline.push({
         id: `sample-received-${sample.id || index}`,
         type: 'SAMPLE_RECEIVED',
         at: sample.received_at,
-        label: `Sample ${sample.display_id || index + 1} received`,
-      });
+        label: `Sample ${sample.display_id || index + 1} received`});
     }
   });
 
@@ -576,8 +549,7 @@ const mapLabOrderWorkflowRecord = (record) => {
     (item?.results || []).forEach((result) => {
       const mapped = mapLabResultRecord({
         ...result,
-        lab_order_item: item,
-      });
+        lab_order_item: item});
       if (mapped) {
         results.push(mapped);
         if (mapped.reported_at) {
@@ -585,8 +557,7 @@ const mapLabOrderWorkflowRecord = (record) => {
             id: `result-${mapped.id || `${item.id}-reported`}`,
             type: 'RESULT_REPORTED',
             at: mapped.reported_at,
-            label: `Result reported for ${mapped.test_display_name || mapped.lab_test_id || 'test item'}`,
-          });
+            label: `Result reported for ${mapped.test_display_name || mapped.lab_test_id || 'test item'}`});
         }
       }
     });
@@ -616,9 +587,7 @@ const mapLabOrderWorkflowRecord = (record) => {
       can_verify_result: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
       can_verify_all: order.items.filter((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())).length > 1,
       can_reject_order_item: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
-      can_reverse_workflow: Boolean(resolveLatestReverseWorkflowTarget(record)),
-    },
-  };
+      can_reverse_workflow: Boolean(resolveLatestReverseWorkflowTarget(record))}};
 };
 
 module.exports = {
@@ -637,5 +606,4 @@ module.exports = {
   mapLabSampleRecord,
   mapLabResultRecord,
   mapLabQcLogRecord,
-  mapLabOrderWorkflowRecord,
-};
+  mapLabOrderWorkflowRecord};

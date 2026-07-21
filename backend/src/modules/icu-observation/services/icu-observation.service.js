@@ -42,14 +42,7 @@ const ICU_OBSERVATION_INCLUDE = {
               id: true,
               human_friendly_id: true,
               first_name: true,
-              last_name: true,
-            },
-          },
-        },
-      },
-    },
-  },
-};
+              last_name: true}}}}}}};
 
 const mapIcuStayRelation = (stay) => {
   if (!stay) return null;
@@ -74,12 +67,9 @@ const mapIcuStayRelation = (stay) => {
                   stay.admission.patient
                 ),
                 first_name: stay.admission.patient.first_name || null,
-                last_name: stay.admission.patient.last_name || null,
-              }
-            : null,
-        }
-      : null,
-  };
+                last_name: stay.admission.patient.last_name || null}
+            : null}
+      : null};
 };
 
 const mapIcuObservationRecord = (record) => {
@@ -97,8 +87,7 @@ const mapIcuObservationRecord = (record) => {
     observation: record.observation || null,
     created_at: record.created_at || null,
     updated_at: record.updated_at || null,
-    icu_stay: mapIcuStayRelation(record.icu_stay),
-  };
+    icu_stay: mapIcuStayRelation(record.icu_stay)};
 };
 
 const buildEmptyPagination = (page, limit) => ({
@@ -107,15 +96,13 @@ const buildEmptyPagination = (page, limit) => ({
   total: 0,
   totalPages: 0,
   hasNextPage: false,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const resolveIcuObservation = async (identifier) =>
   resolveModelIdByIdentifier({
     model: 'icu_observation',
     identifier,
-    select: { id: true },
-  });
+    select: { id: true }});
 
 const resolveIcuStay = async (identifier) =>
   resolveModelIdByIdentifier({
@@ -123,9 +110,7 @@ const resolveIcuStay = async (identifier) =>
     identifier,
     select: {
       id: true,
-      admission: { select: { tenant_id: true } },
-    },
-  });
+      admission: { select: { tenant_id: true } }}});
 
 const resolveAuditTenantId = (record, fallback = null) =>
   record?.icu_stay?.admission?.tenant_id || fallback || null;
@@ -141,8 +126,7 @@ const listIcuObservations = async (filters, page, limit, sortBy, order) => {
       if (!resolvedIcuStay?.id) {
         return {
           icu_observations: [],
-          pagination: buildEmptyPagination(page, limit),
-        };
+          pagination: buildEmptyPagination(page, limit)};
       }
       whereClause.icu_stay_id = resolvedIcuStay.id;
     }
@@ -169,8 +153,7 @@ const listIcuObservations = async (filters, page, limit, sortBy, order) => {
         orderBy,
         ICU_OBSERVATION_INCLUDE
       ),
-      icuObservationRepository.count(whereClause),
-    ]);
+      icuObservationRepository.count(whereClause)]);
 
     return {
       icu_observations: icuObservations.map(mapIcuObservationRecord),
@@ -180,14 +163,11 @@ const listIcuObservations = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -210,8 +190,7 @@ const getIcuObservationById = async (id) => {
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -220,14 +199,12 @@ const createIcuObservation = async (data, userId, ipAddress) => {
     const resolvedIcuStay = await resolveIcuStay(data?.icu_stay_id);
     if (!resolvedIcuStay?.id) {
       throw new HttpError('errors.icu_stay.not_found', 404, [
-        { field: 'icu_stay_id' },
-      ]);
+        { field: 'icu_stay_id' }]);
     }
 
     const createdIcuObservation = await icuObservationRepository.create({
       ...data,
-      icu_stay_id: resolvedIcuStay.id,
-    });
+      icu_stay_id: resolvedIcuStay.id});
     const icuObservation =
       (await icuObservationRepository.findById(
         createdIcuObservation.id,
@@ -244,15 +221,13 @@ const createIcuObservation = async (data, userId, ipAddress) => {
       entity: 'icu_observation',
       entity_id: icuObservation.id,
       diff: { after: icuObservation },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapIcuObservationRecord(icuObservation);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -288,15 +263,13 @@ const updateIcuObservation = async (id, data, userId, ipAddress) => {
       entity: 'icu_observation',
       entity_id: icuObservation.id,
       diff: { before, after: icuObservation },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapIcuObservationRecord(icuObservation);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -324,13 +297,11 @@ const deleteIcuObservation = async (id, userId, ipAddress) => {
       entity: 'icu_observation',
       entity_id: resolvedIcuObservation.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -339,5 +310,4 @@ module.exports = {
   getIcuObservationById,
   createIcuObservation,
   updateIcuObservation,
-  deleteIcuObservation,
-};
+  deleteIcuObservation};

@@ -6,105 +6,78 @@ jest.mock("@lib/websocket", () => ({
   emitToUser: jest.fn(),
   emitToUsers: jest.fn(),
   IPD_EVENTS: {
-    IPD_FLOW_UPDATED: "ipd.flow.updated",
-  },
+    IPD_FLOW_UPDATED: "ipd.flow.updated"},
   ADMISSION_BED_EVENTS: {
     PATIENT_ADMITTED: "admission.patient_admitted",
     PATIENT_TRANSFERRED: "admission.patient_transferred",
     PATIENT_DISCHARGED: "admission.patient_discharged",
-    BED_ASSIGNMENT_CHANGED: "admission.bed_assignment_changed",
-  },
+    BED_ASSIGNMENT_CHANGED: "admission.bed_assignment_changed"},
   NOTIFICATION_EVENTS: {
-    NOTIFICATION_CREATED: "notification.created",
-  },
-}));
+    NOTIFICATION_CREATED: "notification.created"}}));
 jest.mock("@prisma/client", () => ({
   $transaction: jest.fn(),
   admission: {
     findFirst: jest.fn(),
     update: jest.fn(),
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   tenant: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   facility: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   patient: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   encounter: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   bed: {
     findFirst: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   ward: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   user: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   staff_profile: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   transfer_request: {
     findFirst: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   bed_assignment: {
     findFirst: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   ward_round: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   nursing_note: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   medication_administration: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   pharmacy_order_item: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   follow_up: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   discharge_summary: {
     findFirst: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   icu_stay: {
     findFirst: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   icu_observation: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   critical_alert: {
     findFirst: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   user_role: {
-    findMany: jest.fn(),
-  },
+    findMany: jest.fn()},
   notification: {
-    create: jest.fn(),
-  },
-}));
+    create: jest.fn()}}));
 
 const ipdFlowRepository = require("@repositories/ipd-flow/ipd-flow.repository");
 const prisma = require("@prisma/client");
@@ -131,11 +104,8 @@ const buildActiveBedAssignment = () => ({
       id: "ward-1",
       human_friendly_id: "WRD0000001",
       name: "Ward A",
-      ward_type: "GENERAL",
-    },
-    room: null,
-  },
-});
+      ward_type: "GENERAL"},
+    room: null}});
 
 const buildAdmission = (overrides = {}) => ({
   id: "adm-1",
@@ -152,14 +122,12 @@ const buildAdmission = (overrides = {}) => ({
   tenant: {
     id: "tenant-1",
     human_friendly_id: "TEN0000001",
-    name: "Demo Tenant",
-  },
+    name: "Demo Tenant"},
   facility: {
     id: "facility-1",
     human_friendly_id: "FAC0000001",
     name: "Main Facility",
-    facility_type: "HOSPITAL",
-  },
+    facility_type: "HOSPITAL"},
   patient: {
     id: "pat-1",
     human_friendly_id: "PAT0000001",
@@ -168,8 +136,7 @@ const buildAdmission = (overrides = {}) => ({
     date_of_birth: null,
     gender: "MALE",
     tenant_id: "tenant-1",
-    facility_id: "facility-1",
-  },
+    facility_id: "facility-1"},
   encounter: null,
   bed_assignments: [],
   transfer_requests: [],
@@ -178,8 +145,7 @@ const buildAdmission = (overrides = {}) => ({
   ward_rounds: [],
   nursing_notes: [],
   medication_administrations: [],
-  ...overrides,
-});
+  ...overrides});
 
 describe("ipd-flow.service", () => {
   beforeEach(() => {
@@ -197,8 +163,7 @@ describe("ipd-flow.service", () => {
       message: data.message,
       read_at: null,
       created_at: now,
-      updated_at: now,
-    }));
+      updated_at: now}));
   });
 
   it("rejects assigning an unavailable bed", async () => {
@@ -207,22 +172,18 @@ describe("ipd-flow.service", () => {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce({ id: "adm-1" })
-          .mockResolvedValueOnce(buildAdmission()),
-      },
+          .mockResolvedValueOnce(buildAdmission())},
       bed: {
         findFirst: jest
           .fn()
-          .mockResolvedValue({ id: "bed-1", status: "OCCUPIED" }),
-      },
-    };
+          .mockResolvedValue({ id: "bed-1", status: "OCCUPIED" })}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     await expect(
       ipdFlowService.assignBed("ADM0000001", { bed_id: "BED0000001" }, {}),
     ).rejects.toMatchObject({
-      messageKey: "errors.ipd_flow.bed_not_available",
-    });
+      messageKey: "errors.ipd_flow.bed_not_available"});
   });
 
   it("rejects assigning a bed when active bed assignment already exists", async () => {
@@ -233,17 +194,14 @@ describe("ipd-flow.service", () => {
           .mockResolvedValueOnce({ id: "adm-1" })
           .mockResolvedValueOnce(
             buildAdmission({ bed_assignments: [buildActiveBedAssignment()] }),
-          ),
-      },
-    };
+          )}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     await expect(
       ipdFlowService.assignBed("ADM0000001", { bed_id: "BED0000001" }, {}),
     ).rejects.toMatchObject({
-      messageKey: "errors.ipd_flow.active_bed_exists",
-    });
+      messageKey: "errors.ipd_flow.active_bed_exists"});
   });
 
   it("rejects releasing a bed when no active assignment exists", async () => {
@@ -252,17 +210,14 @@ describe("ipd-flow.service", () => {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce({ id: "adm-1" })
-          .mockResolvedValueOnce(buildAdmission()),
-      },
-    };
+          .mockResolvedValueOnce(buildAdmission())}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     await expect(
       ipdFlowService.releaseBed("ADM0000001", {}, {}),
     ).rejects.toMatchObject({
-      messageKey: "errors.ipd_flow.active_bed_required",
-    });
+      messageKey: "errors.ipd_flow.active_bed_required"});
   });
 
   it("releases the active bed and marks it cleaning", async () => {
@@ -274,28 +229,21 @@ describe("ipd-flow.service", () => {
           .mockResolvedValueOnce({ id: "adm-1" })
           .mockResolvedValueOnce(
             buildAdmission({ bed_assignments: [activeBed] }),
-          ),
-      },
+          )},
       bed_assignment: {
         update: jest.fn().mockResolvedValue({
           ...activeBed,
-          released_at: now,
-        }),
-      },
+          released_at: now})},
       bed: {
         update: jest.fn().mockResolvedValue({
           id: "bed-1",
-          status: "CLEANING",
-        }),
-      },
-    };
+          status: "CLEANING"})}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
     prisma.user_role.findMany.mockResolvedValue([
       { user_id: "actor-1" },
-      { user_id: "nurse-2" },
-    ]);
+      { user_id: "nurse-2" }]);
     ipdFlowRepository.findById.mockResolvedValue(
       buildAdmission({
         bed_assignments: [
@@ -304,11 +252,7 @@ describe("ipd-flow.service", () => {
             released_at: now,
             bed: {
               ...activeBed.bed,
-              status: "CLEANING",
-            },
-          },
-        ],
-      }),
+              status: "CLEANING"}}]}),
     );
 
     const flow = await ipdFlowService.releaseBed(
@@ -317,27 +261,22 @@ describe("ipd-flow.service", () => {
       {
         user_id: "actor-1",
         tenant_id: "tenant-1",
-        facility_id: "facility-1",
-      },
+        facility_id: "facility-1"},
     );
 
     expect(tx.bed_assignment.update).toHaveBeenCalledWith({
       where: { id: "ba-1" },
-      data: { released_at: now },
-    });
+      data: { released_at: now }});
     expect(tx.bed.update).toHaveBeenCalledWith({
       where: { id: "bed-1" },
-      data: { status: "CLEANING" },
-    });
+      data: { status: "CLEANING" }});
     expect(flow).toEqual(
       expect.objectContaining({
         id: "ADM0000001",
         human_friendly_id: "ADM0000001",
         flow: expect.objectContaining({
           has_active_bed: false,
-          stage: "ADMITTED_PENDING_BED",
-        }),
-      }),
+          stage: "ADMITTED_PENDING_BED"})}),
     );
 
     const emittedEvents = emitToUsers.mock.calls.map((call) => call[1]);
@@ -358,21 +297,15 @@ describe("ipd-flow.service", () => {
                   id: "tr-1",
                   status: "REQUESTED",
                   requested_at: now,
-                  deleted_at: null,
-                },
-              ],
-            }),
-          ),
-      },
-    };
+                  deleted_at: null}]}),
+          )}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     await expect(
       ipdFlowService.updateTransfer("ADM0000001", { action: "START" }, {}),
     ).rejects.toMatchObject({
-      messageKey: "errors.ipd_flow.invalid_transfer_transition",
-    });
+      messageKey: "errors.ipd_flow.invalid_transfer_transition"});
   });
 
   it("rejects request transfer when an open transfer already exists", async () => {
@@ -389,13 +322,8 @@ describe("ipd-flow.service", () => {
                   id: "tr-1",
                   status: "REQUESTED",
                   requested_at: now,
-                  deleted_at: null,
-                },
-              ],
-            }),
-          ),
-      },
-    };
+                  deleted_at: null}]}),
+          )}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
@@ -406,8 +334,7 @@ describe("ipd-flow.service", () => {
         {},
       ),
     ).rejects.toMatchObject({
-      messageKey: "errors.ipd_flow.invalid_transfer_transition",
-    });
+      messageKey: "errors.ipd_flow.invalid_transfer_transition"});
   });
 
   it("rejects request transfer when destination ward is missing", async () => {
@@ -418,14 +345,10 @@ describe("ipd-flow.service", () => {
           .mockResolvedValueOnce({ id: "adm-1" })
           .mockResolvedValueOnce(
             buildAdmission({
-              bed_assignments: [buildActiveBedAssignment()],
-            }),
-          ),
-      },
+              bed_assignments: [buildActiveBedAssignment()]}),
+          )},
       ward: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-    };
+        findFirst: jest.fn().mockResolvedValue(null)}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
@@ -436,8 +359,7 @@ describe("ipd-flow.service", () => {
         {},
       ),
     ).rejects.toMatchObject({
-      messageKey: "errors.ward.not_found",
-    });
+      messageKey: "errors.ward.not_found"});
   });
 
   it("rejects transfer completion when destination bed is missing", async () => {
@@ -454,21 +376,15 @@ describe("ipd-flow.service", () => {
                   id: "tr-1",
                   status: "IN_PROGRESS",
                   requested_at: now,
-                  deleted_at: null,
-                },
-              ],
-            }),
-          ),
-      },
-    };
+                  deleted_at: null}]}),
+          )}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     await expect(
       ipdFlowService.updateTransfer("ADM0000001", { action: "COMPLETE" }, {}),
     ).rejects.toMatchObject({
-      messageKey: "errors.ipd_flow.transfer_destination_bed_required",
-    });
+      messageKey: "errors.ipd_flow.transfer_destination_bed_required"});
   });
 
   it("rejects discharge finalization while a transfer is still active", async () => {
@@ -484,13 +400,8 @@ describe("ipd-flow.service", () => {
                   id: "tr-1",
                   status: "IN_PROGRESS",
                   requested_at: now,
-                  deleted_at: null,
-                },
-              ],
-            }),
-          ),
-      },
-    };
+                  deleted_at: null}]}),
+          )}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
@@ -501,8 +412,7 @@ describe("ipd-flow.service", () => {
         {},
       ),
     ).rejects.toMatchObject({
-      messageKey: "errors.ipd_flow.transfer_must_be_resolved_before_discharge",
-    });
+      messageKey: "errors.ipd_flow.transfer_must_be_resolved_before_discharge"});
   });
 
   it("resolves admissions by human-friendly ID", async () => {
@@ -514,9 +424,7 @@ describe("ipd-flow.service", () => {
     expect(prisma.admission.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          human_friendly_id: "ADM0000001",
-        }),
-      }),
+          human_friendly_id: "ADM0000001"})}),
     );
     expect(result.admission.id).toBe("ADM0000001");
     expect(result.admission.tenant_id).toBeUndefined();
@@ -531,9 +439,7 @@ describe("ipd-flow.service", () => {
     expect(ipdFlowRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         status: {
-          notIn: ["DISCHARGED", "CANCELLED"],
-        },
-      }),
+          notIn: ["DISCHARGED", "CANCELLED"]}}),
       0,
       20,
       expect.any(Object),
@@ -547,8 +453,7 @@ describe("ipd-flow.service", () => {
       .mockResolvedValueOnce({
         id: "adm-1",
         human_friendly_id: "ADM0000001",
-        status: "ADMITTED",
-      });
+        status: "ADMITTED"});
 
     const resolution = await ipdFlowService.resolveLegacyRoute(
       "admissions",
@@ -560,8 +465,7 @@ describe("ipd-flow.service", () => {
         admission_id: "ADM0000001",
         resource: "admissions",
         panel: "snapshot",
-        action: "open_admission",
-      }),
+        action: "open_admission"}),
     );
   });
 
@@ -570,14 +474,11 @@ describe("ipd-flow.service", () => {
       id: "obs-1",
       human_friendly_id: "OBS0000001",
       icu_stay: {
-        admission_id: "adm-1",
-      },
-    });
+        admission_id: "adm-1"}});
     prisma.admission.findFirst.mockResolvedValue({
       id: "adm-1",
       human_friendly_id: "ADM0000001",
-      status: "ADMITTED",
-    });
+      status: "ADMITTED"});
 
     const resolution = await ipdFlowService.resolveLegacyRoute(
       "icu-observations",
@@ -589,8 +490,7 @@ describe("ipd-flow.service", () => {
         admission_id: "ADM0000001",
         resource: "icu-observations",
         panel: "observations",
-        action: "add_icu_observation",
-      }),
+        action: "add_icu_observation"}),
     );
   });
 
@@ -600,12 +500,9 @@ describe("ipd-flow.service", () => {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce({ id: "adm-1" })
-          .mockResolvedValueOnce(buildAdmission({ icu_stays: [] })),
-      },
+          .mockResolvedValueOnce(buildAdmission({ icu_stays: [] }))},
       icu_stay: {
-        create: jest.fn().mockResolvedValue({ id: "icu-1" }),
-      },
-    };
+        create: jest.fn().mockResolvedValue({ id: "icu-1" })}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
@@ -619,10 +516,7 @@ describe("ipd-flow.service", () => {
             ended_at: null,
             created_at: now,
             observations: [],
-            alerts: [],
-          },
-        ],
-      }),
+            alerts: []}]}),
     );
 
     const snapshot = await ipdFlowService.startIcuStay(
@@ -634,15 +528,12 @@ describe("ipd-flow.service", () => {
     expect(tx.icu_stay.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          admission_id: "adm-1",
-        }),
-      }),
+          admission_id: "adm-1"})}),
     );
     expect(snapshot).toEqual(
       expect.objectContaining({
         icu_status: "ACTIVE",
-        active_icu_stay_id: "ICU0000001",
-      }),
+        active_icu_stay_id: "ICU0000001"}),
     );
   });
 
@@ -668,18 +559,10 @@ describe("ipd-flow.service", () => {
                       severity: "CRITICAL",
                       message: "Escalating trend",
                       created_at: now,
-                      deleted_at: null,
-                    },
-                  ],
-                },
-              ],
-            }),
-          ),
-      },
+                      deleted_at: null}]}]}),
+          )},
       critical_alert: {
-        update: jest.fn().mockResolvedValue({ id: "alert-1" }),
-      },
-    };
+        update: jest.fn().mockResolvedValue({ id: "alert-1" })}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
@@ -692,10 +575,7 @@ describe("ipd-flow.service", () => {
             started_at: now,
             ended_at: null,
             observations: [],
-            alerts: [],
-          },
-        ],
-      }),
+            alerts: []}]}),
     );
 
     const snapshot = await ipdFlowService.resolveCriticalAlert(
@@ -706,13 +586,11 @@ describe("ipd-flow.service", () => {
 
     expect(tx.critical_alert.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "alert-1" },
-      }),
+        where: { id: "alert-1" }}),
     );
     expect(snapshot).toEqual(
       expect.objectContaining({
-        has_critical_alert: false,
-      }),
+        has_critical_alert: false}),
     );
   });
 
@@ -722,11 +600,9 @@ describe("ipd-flow.service", () => {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce({ id: "adm-1" })
-          .mockResolvedValueOnce(buildAdmission()),
-      },
+          .mockResolvedValueOnce(buildAdmission())},
       user: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
+        findFirst: jest.fn().mockResolvedValue(null)},
       staff_profile: {
         findFirst: jest.fn().mockResolvedValue({
           id: "sp-1",
@@ -734,14 +610,9 @@ describe("ipd-flow.service", () => {
           user_id: "user-7",
           user: {
             id: "user-7",
-            human_friendly_id: "USR0000007",
-          },
-        }),
-      },
+            human_friendly_id: "USR0000007"}})},
       nursing_note: {
-        create: jest.fn().mockResolvedValue({ id: "nn-1" }),
-      },
-    };
+        create: jest.fn().mockResolvedValue({ id: "nn-1" })}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
@@ -760,42 +631,31 @@ describe("ipd-flow.service", () => {
               profile: {
                 first_name: "Grace",
                 middle_name: null,
-                last_name: "Auma",
-              },
-            },
-          },
-        ],
-      }),
+                last_name: "Auma"}}}]}),
     );
 
     const snapshot = await ipdFlowService.addNursingNote(
       "ADM0000001",
       {
         nurse_user_id: "STF0000001",
-        note: "Stable after admission.",
-      },
+        note: "Stable after admission."},
       { tenant_id: "tenant-1", facility_id: "facility-1" },
     );
 
     expect(tx.staff_profile.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          human_friendly_id: "STF0000001",
-        }),
-      }),
+          human_friendly_id: "STF0000001"})}),
     );
     expect(tx.nursing_note.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          nurse_user_id: "user-7",
-        }),
-      }),
+          nurse_user_id: "user-7"})}),
     );
     expect(snapshot.nursing_notes[0]).toEqual(
       expect.objectContaining({
         nurse_user_id: "USR0000007",
-        nurse_name: "Grace Auma",
-      }),
+        nurse_name: "Grace Auma"}),
     );
   });
 
@@ -807,16 +667,12 @@ describe("ipd-flow.service", () => {
           .mockResolvedValueOnce({ id: "adm-1" })
           .mockResolvedValueOnce(
             buildAdmission({
-              encounter_id: "enc-1",
-            }),
-          ),
-      },
+              encounter_id: "enc-1"}),
+          )},
       encounter: {
         findFirst: jest.fn().mockResolvedValue({
           id: "enc-1",
-          human_friendly_id: "ENC0000001",
-        }),
-      },
+          human_friendly_id: "ENC0000001"})},
       pharmacy_order_item: {
         findFirst: jest.fn().mockResolvedValue({
           id: "poi-1",
@@ -830,23 +686,16 @@ describe("ipd-flow.service", () => {
             human_friendly_id: "DRG0000001",
             name: "Paracetamol",
             form: "Tablet",
-            strength: "500 mg",
-          },
+            strength: "500 mg"},
           pharmacy_order: {
             id: "po-1",
             human_friendly_id: "PO0000001",
             status: "ORDERED",
-            ordered_at: now,
-          },
-        }),
-      },
+            ordered_at: now}})},
       medication_administration: {
-        create: jest.fn().mockResolvedValue({ id: "med-1" }),
-      },
+        create: jest.fn().mockResolvedValue({ id: "med-1" })},
       follow_up: {
-        create: jest.fn().mockResolvedValue({ id: "fu-1" }),
-      },
-    };
+        create: jest.fn().mockResolvedValue({ id: "fu-1" })}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
@@ -871,9 +720,7 @@ describe("ipd-flow.service", () => {
               completed_at: null,
               notes:
                 "Paracetamol 500 mg reminder 1/2 | BID\n" +
-                'IPD_MEDICATION_REMINDER::{"kind":"IPD_MEDICATION_REMINDER","admission_public_id":"ADM0000001","encounter_public_id":"ENC0000001","prescription_public_id":"RX0000001","medication_label":"Paracetamol 500 mg","dose":"500","unit":"mg","route":"ORAL","frequency":"BID","occurrence":1,"total_occurrences":2}',
-            },
-          ],
+                'IPD_MEDICATION_REMINDER::{"kind":"IPD_MEDICATION_REMINDER","admission_public_id":"ADM0000001","encounter_public_id":"ENC0000001","prescription_public_id":"RX0000001","medication_label":"Paracetamol 500 mg","dose":"500","unit":"mg","route":"ORAL","frequency":"BID","occurrence":1,"total_occurrences":2}'}],
           pharmacy_orders: [
             {
               id: "po-1",
@@ -893,14 +740,7 @@ describe("ipd-flow.service", () => {
                     human_friendly_id: "DRG0000001",
                     name: "Paracetamol",
                     form: "Tablet",
-                    strength: "500 mg",
-                  },
-                },
-              ],
-            },
-          ],
-        },
-      }),
+                    strength: "500 mg"}}]}]}}),
     );
 
     const snapshot = await ipdFlowService.addMedicationAdministration(
@@ -915,8 +755,7 @@ describe("ipd-flow.service", () => {
         administered_at: "2026-02-01T10:00:00.000Z",
         schedule_reminders: true,
         reminder_first_at: "2026-02-01T22:00:00.000Z",
-        reminder_occurrences: 2,
-      },
+        reminder_occurrences: 2},
       { tenant_id: "tenant-1", facility_id: "facility-1" },
     );
 
@@ -926,100 +765,78 @@ describe("ipd-flow.service", () => {
           prescription_id: "poi-1",
           dose: "500",
           unit: "mg",
-          route: "ORAL",
-        }),
-      }),
+          route: "ORAL"})}),
     );
     expect(tx.follow_up.create).toHaveBeenCalledTimes(2);
     expect(tx.follow_up.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           encounter_id: "enc-1",
-          notes: expect.stringContaining("IPD_MEDICATION_REMINDER::"),
-        }),
-      }),
+          notes: expect.stringContaining("IPD_MEDICATION_REMINDER::")})}),
     );
     expect(snapshot.medication_suggestions[0]).toEqual(
       expect.objectContaining({
         id: "RX0000001",
-        medication_label: expect.stringContaining("Paracetamol"),
-      }),
+        medication_label: expect.stringContaining("Paracetamol")}),
     );
     expect(snapshot.medication_reminders[0]).toEqual(
       expect.objectContaining({
         prescription_id: "RX0000001",
         medication_label: "Paracetamol 500 mg",
-        frequency: "BID",
-      }),
+        frequency: "BID"}),
     );
     expect(snapshot.timeline).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          type: "MEDICATION_REMINDER",
-        }),
-      ]),
+          type: "MEDICATION_REMINDER"})]),
     );
   });
 
   it("emits ipd.flow.updated and compatibility admission events on start", async () => {
     const tx = {
       tenant: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
+        findFirst: jest.fn().mockResolvedValue(null)},
       facility: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
+        findFirst: jest.fn().mockResolvedValue(null)},
       patient: {
         findFirst: jest.fn().mockResolvedValue({
           id: "pat-1",
           tenant_id: "tenant-1",
-          facility_id: "facility-1",
-        }),
-      },
+          facility_id: "facility-1"})},
       encounter: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
+        findFirst: jest.fn().mockResolvedValue(null)},
       admission: {
         findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({ id: "adm-1" }),
-      },
+        create: jest.fn().mockResolvedValue({ id: "adm-1" })},
       bed: {
         findFirst: jest.fn().mockResolvedValue({
           id: "bed-1",
           status: "AVAILABLE",
           ward_id: "ward-1",
           tenant_id: "tenant-1",
-          facility_id: "facility-1",
-        }),
-        update: jest.fn().mockResolvedValue({ id: "bed-1" }),
-      },
+          facility_id: "facility-1"}),
+        update: jest.fn().mockResolvedValue({ id: "bed-1" })},
       bed_assignment: {
-        create: jest.fn().mockResolvedValue({ id: "ba-1" }),
-      },
-    };
+        create: jest.fn().mockResolvedValue({ id: "ba-1" })}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
     prisma.user_role.findMany.mockResolvedValue([
       { user_id: "actor-1" },
-      { user_id: "nurse-2" },
-    ]);
+      { user_id: "nurse-2" }]);
     ipdFlowRepository.findById.mockResolvedValue(
       buildAdmission({
-        bed_assignments: [buildActiveBedAssignment()],
-      }),
+        bed_assignments: [buildActiveBedAssignment()]}),
     );
 
     await ipdFlowService.startIpdFlow(
       {
         patient_id: "PAT0000001",
-        bed_id: "BED0000001",
-      },
+        bed_id: "BED0000001"},
       {
         user_id: "actor-1",
         tenant_id: "tenant-1",
-        facility_id: "facility-1",
-      },
+        facility_id: "facility-1"},
     );
 
     expect(emitToUsers).toHaveBeenCalledWith(
@@ -1028,8 +845,7 @@ describe("ipd-flow.service", () => {
       expect.objectContaining({
         admission_id: "ADM0000001",
         action: "START",
-        target_path: expect.stringContaining("/ipd?id="),
-      }),
+        target_path: expect.stringContaining("/ipd?id=")}),
     );
 
     const flowEventPayload = emitToUsers.mock.calls.find(

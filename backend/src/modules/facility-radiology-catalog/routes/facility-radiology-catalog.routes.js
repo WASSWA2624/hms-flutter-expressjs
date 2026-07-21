@@ -13,8 +13,7 @@ const {
   disableFacilityRadiologyOfferingSchema,
   facilityRadiologyTestParamsSchema,
   listFacilityRadiologyCatalogQuerySchema,
-  searchFacilityRadiologyCatalogQuerySchema,
-} = require('@validations/facility-radiology-catalog/facility-radiology-catalog.schema');
+  searchFacilityRadiologyCatalogQuerySchema} = require('@validations/facility-radiology-catalog/facility-radiology-catalog.schema');
 
 const router = express.Router();
 
@@ -25,16 +24,14 @@ const RADIOLOGY_READ_ROLES = [
   ROLES.DOCTOR,
   ROLES.NURSE,
   ROLES.RADIOLOGY_TECH,
-  ROLES.SONOGRAPHER,
-];
+  ROLES.SONOGRAPHER];
 
 const RADIOLOGY_CONFIG_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.RADIOLOGY_TECH,
-  ROLES.SONOGRAPHER,
-];
+  ROLES.SONOGRAPHER];
 
 router.get(
   '/search',
@@ -64,8 +61,7 @@ router.put(
   '/tests/:radiology_test_id',
   validateRequest({
     params: facilityRadiologyTestParamsSchema,
-    body: upsertFacilityRadiologyTestOfferingSchema,
-  }),
+    body: upsertFacilityRadiologyTestOfferingSchema}),
   authenticate(),
   authorize(RADIOLOGY_CONFIG_WRITE_ROLES, 'role'),
   facilityRadiologyCatalogController.upsertFacilityRadiologyTestOffering
@@ -75,8 +71,7 @@ router.delete(
   '/tests/:radiology_test_id',
   validateRequest({
     params: facilityRadiologyTestParamsSchema,
-    body: disableFacilityRadiologyOfferingSchema,
-  }),
+    body: disableFacilityRadiologyOfferingSchema}),
   authenticate(),
   authorize(RADIOLOGY_CONFIG_WRITE_ROLES, 'role'),
   facilityRadiologyCatalogController.disableFacilityRadiologyTestOffering

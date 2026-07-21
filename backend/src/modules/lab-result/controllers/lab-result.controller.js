@@ -21,8 +21,7 @@ const listLabResults = asyncHandler(async (req, res) => {
   const filters = {
     lab_order_item_id,
     status,
-    search,
-  };
+    search};
 
   const userId = req.user?.id;
   const ipAddress = req.ip;

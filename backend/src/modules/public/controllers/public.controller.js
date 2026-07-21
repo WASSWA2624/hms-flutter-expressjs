@@ -47,7 +47,6 @@ const listPublicProviders = asyncHandler(async (req, res) => {
   sendPaginated(res, 'messages.public.providers.list.success', result.items, result.pagination);
 });
 
-const listPublicBranches = asyncHandler(async (req, res) => {
   const {
     search,
     page = DEFAULT_PAGE,
@@ -56,7 +55,6 @@ const listPublicBranches = asyncHandler(async (req, res) => {
     order = 'asc'
   } = req.query;
 
-  const result = await publicService.listPublicBranches(
     { search },
     parseInt(page, 10),
     parseInt(limit, 10),
@@ -64,11 +62,8 @@ const listPublicBranches = asyncHandler(async (req, res) => {
     order
   );
 
-  sendPaginated(res, 'messages.public.branches.list.success', result.items, result.pagination);
 });
 
 module.exports = {
   listPublicServices,
-  listPublicProviders,
-  listPublicBranches
-};
+  listPublicProviders};

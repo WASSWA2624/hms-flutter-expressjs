@@ -14,9 +14,7 @@ const findTenantByIdentifier = async (identifier, client = prisma) => {
     return await client.tenant.findFirst({
       where: {
         deleted_at: null,
-        human_friendly_id: normalized,
-      },
-    });
+        human_friendly_id: normalized}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -31,9 +29,7 @@ const findFacilityByIdentifier = async (identifier, tenantId = null, client = pr
       where: {
         deleted_at: null,
         ...(tenantId ? { tenant_id: tenantId } : {}),
-        human_friendly_id: normalized,
-      },
-    });
+        human_friendly_id: normalized}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -46,10 +42,8 @@ const findDoctorRole = async (tenantId, facilityId = null, client = prisma) => {
         deleted_at: null,
         tenant_id: tenantId,
         name: 'DOCTOR',
-        OR: [{ facility_id: facilityId }, { facility_id: null }],
-      },
-      orderBy: [{ facility_id: 'desc' }, { created_at: 'asc' }],
-    });
+        OR: [{ facility_id: facilityId }, { facility_id: null }]},
+      orderBy: [{ facility_id: 'desc' }, { created_at: 'asc' }]});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -74,9 +68,7 @@ const findRoleByIdentifier = async (identifier, tenantId, client = prisma) => {
       where: {
         deleted_at: null,
         tenant_id: tenantId,
-        human_friendly_id: normalized,
-      },
-    });
+        human_friendly_id: normalized}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -93,15 +85,10 @@ const findStaffPositionByIdentifier = async (identifier, tenantId, facilityId = 
         tenant_id: tenantId,
         AND: [
           {
-            OR: [{ facility_id: facilityId }, { facility_id: null }],
-          },
+            OR: [{ facility_id: facilityId }, { facility_id: null }]},
           {
-            human_friendly_id: normalized,
-          },
-        ],
-      },
-      orderBy: [{ facility_id: 'desc' }, { created_at: 'asc' }],
-    });
+            human_friendly_id: normalized}]},
+      orderBy: [{ facility_id: 'desc' }, { created_at: 'asc' }]});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -117,10 +104,8 @@ const findStaffPositionByName = async (name, tenantId, facilityId = null, client
         deleted_at: null,
         tenant_id: tenantId,
         name: normalized,
-        OR: [{ facility_id: facilityId }, { facility_id: null }],
-      },
-      orderBy: [{ facility_id: 'desc' }, { created_at: 'asc' }],
-    });
+        OR: [{ facility_id: facilityId }, { facility_id: null }]},
+      orderBy: [{ facility_id: 'desc' }, { created_at: 'asc' }]});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -147,11 +132,8 @@ const findDoctorByIdentifier = async (identifier, tenantId = null, include = {},
         ...(tenantId ? { tenant_id: tenantId } : {}),
         human_friendly_id: normalized,
         staff_profile: {
-          isNot: null,
-        },
-      },
-      include,
-    });
+          isNot: null}},
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -161,8 +143,7 @@ const findDoctorById = async (id, include = {}, client = prisma) => {
   try {
     return await client.user.findFirst({
       where: { id, deleted_at: null },
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -175,8 +156,7 @@ const findManyDoctors = async (where = {}, skip = 0, take = 20, orderBy = { crea
       skip,
       take,
       orderBy,
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -196,8 +176,7 @@ const findRecurringSchedules = async ({
   providerUserId,
   dayOfWeek,
   timezone,
-  excludeScheduleIds = [],
-}, client = prisma) => {
+  excludeScheduleIds = []}, client = prisma) => {
   try {
     return await client.provider_schedule.findMany({
       where: {
@@ -208,17 +187,14 @@ const findRecurringSchedules = async ({
         day_of_week: dayOfWeek,
         schedule_type: 'RECURRING',
         timezone,
-        ...(excludeScheduleIds.length > 0 ? { id: { notIn: excludeScheduleIds } } : {}),
-      },
+        ...(excludeScheduleIds.length > 0 ? { id: { notIn: excludeScheduleIds } } : {})},
       select: {
         id: true,
         start_time: true,
         end_time: true,
         effective_from: true,
         effective_to: true,
-        human_friendly_id: true,
-      },
-    });
+        human_friendly_id: true}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -231,31 +207,25 @@ const findAvailabilitySlots = async ({
   timezone,
   dayStart,
   dayEnd,
-  excludeScheduleIds = [],
-}, client = prisma) => {
+  excludeScheduleIds = []}, client = prisma) => {
   try {
     return await client.availability_slot.findMany({
       where: {
         deleted_at: null,
         override_date: {
           gte: dayStart,
-          lte: dayEnd,
-        },
+          lte: dayEnd},
         schedule: {
           deleted_at: null,
           tenant_id: tenantId,
           facility_id: facilityId ?? null,
           provider_user_id: providerUserId,
           timezone,
-          ...(excludeScheduleIds.length > 0 ? { id: { notIn: excludeScheduleIds } } : {}),
-        },
-      },
+          ...(excludeScheduleIds.length > 0 ? { id: { notIn: excludeScheduleIds } } : {})}},
       select: {
         start_time: true,
         end_time: true,
-        is_available: true,
-      },
-    });
+        is_available: true}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -275,8 +245,7 @@ const findProviderSchedules = async (where = {}, orderBy = [{ day_of_week: 'asc'
   try {
     return await client.provider_schedule.findMany({
       where,
-      orderBy,
-    });
+      orderBy});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -306,8 +275,7 @@ const updateUser = async (id, data, client = prisma) => {
   try {
     return await client.user.update({
       where: { id },
-      data,
-    });
+      data});
   } catch (error) {
     if (error.code === 'P2025') throw new HttpError('errors.user.not_found', 404);
     if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409);
@@ -320,8 +288,7 @@ const createUserRoles = async (data = [], client = prisma) => {
   try {
     return await client.user_role.createMany({
       data,
-      skipDuplicates: true,
-    });
+      skipDuplicates: true});
   } catch (error) {
     if (error.code === 'P2003') throw new HttpError('errors.database.foreign_key_field', 400);
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -340,8 +307,7 @@ const softDeleteUserRoles = async (ids = [], client = prisma) => {
   try {
     return await client.user_role.updateMany({
       where: { id: { in: ids } },
-      data: { deleted_at: new Date() },
-    });
+      data: { deleted_at: new Date() }});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -352,9 +318,7 @@ const findStaffProfileByUserId = async (userId, client = prisma) => {
     return await client.staff_profile.findFirst({
       where: {
         deleted_at: null,
-        user_id: userId,
-      },
-    });
+        user_id: userId}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -374,8 +338,7 @@ const updateStaffProfile = async (id, data, client = prisma) => {
   try {
     return await client.staff_profile.update({
       where: { id },
-      data,
-    });
+      data});
   } catch (error) {
     if (error.code === 'P2025') throw new HttpError('errors.staff_profile.not_found', 404);
     if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409);
@@ -389,10 +352,8 @@ const softDeleteAvailabilitySlotsByScheduleIds = async (scheduleIds = [], client
     return await client.availability_slot.updateMany({
       where: {
         deleted_at: null,
-        schedule_id: { in: scheduleIds },
-      },
-      data: { deleted_at: new Date() },
-    });
+        schedule_id: { in: scheduleIds }},
+      data: { deleted_at: new Date() }});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -403,10 +364,8 @@ const softDeleteProviderSchedules = async (scheduleIds = [], client = prisma) =>
     return await client.provider_schedule.updateMany({
       where: {
         deleted_at: null,
-        id: { in: scheduleIds },
-      },
-      data: { deleted_at: new Date() },
-    });
+        id: { in: scheduleIds }},
+      data: { deleted_at: new Date() }});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -440,5 +399,4 @@ module.exports = {
   softDeleteProviderSchedules,
   softDeleteUserRoles,
   updateStaffProfile,
-  updateUser,
-};
+  updateUser};

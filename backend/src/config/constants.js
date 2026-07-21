@@ -263,7 +263,6 @@ const SEED_CANONICAL_PLAN_DEFINITIONS = Object.freeze([
     max_modules: 20,
     extension_json: {
       price_notes: { monthly: 39, yearly: 390, extra_user_monthly: 6, extra_user_yearly: 60 },
-      branch_allowance: { included_branches: 2 },
       support: 'email_48_72h'
     }
   },

@@ -10,8 +10,7 @@ const {
   createReportRun,
   downloadReportRun,
   updateReportRun,
-  deleteReportRun,
-} = require('@controllers/report-run/report-run.controller');
+  deleteReportRun} = require('@controllers/report-run/report-run.controller');
 
 describe('Report Run Controller', () => {
   let mockReq;
@@ -26,17 +25,14 @@ describe('Report Run Controller', () => {
       user: {
         id: 'user-123',
         tenant_id: 'tenant-123',
-        facility_id: 'facility-123',
-      },
+        facility_id: 'facility-123'},
       ip: '127.0.0.1',
-      get: jest.fn().mockReturnValue('Test Agent'),
-    };
+      get: jest.fn().mockReturnValue('Test Agent')};
     mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
       send: jest.fn(),
-      setHeader: jest.fn(),
-    };
+      setHeader: jest.fn()};
   });
 
   describe('listReportRuns', () => {
@@ -44,17 +40,14 @@ describe('Report Run Controller', () => {
       const mockResult = {
         reportRuns: [
           { id: 'run-1', status: 'COMPLETED' },
-          { id: 'run-2', status: 'PENDING' },
-        ],
+          { id: 'run-2', status: 'PENDING' }],
         pagination: {
           page: 1,
           limit: 20,
           total: 2,
           totalPages: 1,
           hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+          hasPreviousPage: false}};
       mockReq.query = { page: '1', limit: '20', status: 'FAILED', format: 'PDF' };
       reportRunService.listReportRuns.mockResolvedValue(mockResult);
 
@@ -81,8 +74,7 @@ describe('Report Run Controller', () => {
     it('passes req.user when loading a single run', async () => {
       const mockReportRun = {
         id: 'run-123',
-        status: 'COMPLETED',
-      };
+        status: 'COMPLETED'};
       mockReq.params.id = 'run-123';
       reportRunService.getReportRunById.mockResolvedValue(mockReportRun);
 
@@ -105,8 +97,7 @@ describe('Report Run Controller', () => {
     it('builds mutation context from the authenticated user', async () => {
       const newData = {
         report_definition_id: 'report-def-123',
-        format: 'PDF',
-      };
+        format: 'PDF'};
       const mockCreated = { id: 'run-123', ...newData };
       mockReq.body = newData;
       reportRunService.createReportRun.mockResolvedValue(mockCreated);
@@ -121,8 +112,7 @@ describe('Report Run Controller', () => {
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
           ip_address: '127.0.0.1',
-          user_agent: 'Test Agent',
-        }
+          user_agent: 'Test Agent'}
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -138,8 +128,7 @@ describe('Report Run Controller', () => {
       const updateData = { status: 'COMPLETED', version: 1 };
       const mockUpdated = {
         id: 'run-123',
-        status: 'COMPLETED',
-      };
+        status: 'COMPLETED'};
       mockReq.params.id = 'run-123';
       mockReq.body = updateData;
       reportRunService.updateReportRun.mockResolvedValue(mockUpdated);
@@ -155,8 +144,7 @@ describe('Report Run Controller', () => {
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
           ip_address: '127.0.0.1',
-          user_agent: 'Test Agent',
-        }
+          user_agent: 'Test Agent'}
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -179,8 +167,7 @@ describe('Report Run Controller', () => {
         'run-123',
         expect.objectContaining({
           user: mockReq.user,
-          user_id: 'user-123',
-        })
+          user_id: 'user-123'})
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -196,8 +183,7 @@ describe('Report Run Controller', () => {
       const payload = {
         buffer: Buffer.from('file'),
         file_name: 'report.pdf',
-        mime_type: 'application/pdf',
-      };
+        mime_type: 'application/pdf'};
       mockReq.params.id = 'run-123';
       reportRunService.downloadReportRun.mockResolvedValue(payload);
 
@@ -207,8 +193,7 @@ describe('Report Run Controller', () => {
         'run-123',
         expect.objectContaining({
           user: mockReq.user,
-          user_id: 'user-123',
-        })
+          user_id: 'user-123'})
       );
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
       expect(mockRes.setHeader).toHaveBeenCalledWith(
@@ -235,8 +220,7 @@ describe('Report Run Controller', () => {
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
           ip_address: '127.0.0.1',
-          user_agent: 'Test Agent',
-        }
+          user_agent: 'Test Agent'}
       );
       expect(sendNoContent).toHaveBeenCalledWith(mockRes);
     });

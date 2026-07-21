@@ -29,8 +29,7 @@ jest.mock('@lib/billing/identifiers', () => ({
     if (value === null && nullable) return null;
     return value;
   },
-  resolveEntityId: async ({ identifier }) => identifier,
-}));
+  resolveEntityId: async ({ identifier }) => identifier}));
 
 describe('Invoice Item Service', () => {
   const userId = 'user-123';
@@ -49,8 +48,7 @@ describe('Invoice Item Service', () => {
       const result = await invoiceItemService.listInvoiceItems({}, 1, 20, null, 'desc');
 
       expect(result.invoiceItems).toEqual([
-        expect.objectContaining({ id: 'item-1' }),
-      ]);
+        expect.objectContaining({ id: 'item-1' })]);
       expect(result.pagination).toMatchObject({
         page: 1,
         limit: 20,
@@ -74,9 +72,7 @@ describe('Invoice Item Service', () => {
         expect.objectContaining({
           invoice_id: 'invoice-1',
           OR: expect.arrayContaining([
-            expect.objectContaining({ description: { contains: 'consult' } }),
-          ]),
-        }),
+            expect.objectContaining({ description: { contains: 'consult' } })])}),
         0,
         20,
         { created_at: 'asc' },

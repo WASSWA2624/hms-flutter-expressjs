@@ -16,14 +16,11 @@ jest.mock('@prisma/client', () => ({
     count: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
-  },
+    delete: jest.fn()},
   facility: {
     findMany: jest.fn(),
-    updateMany: jest.fn(),
-  },
-  $transaction: jest.fn(),
-}));
+    updateMany: jest.fn()},
+  $transaction: jest.fn()}));
 
 const {
   findById,
@@ -71,19 +68,12 @@ describe('Tenant Repository', () => {
               deleted_at: null,
               role: {
                 deleted_at: null,
-                name: 'TENANT_ADMIN',
-              },
+                name: 'TENANT_ADMIN'},
               user: {
-                deleted_at: null,
-              },
-            }),
+                deleted_at: null}}),
             include: expect.objectContaining({
               role: expect.any(Object),
-              user: expect.any(Object),
-            }),
-          }),
-        }),
-      });
+              user: expect.any(Object)})})})});
     });
 
     it('should return null if tenant not found', async () => {
@@ -131,10 +121,7 @@ describe('Tenant Repository', () => {
         orderBy: { created_at: 'desc' },
         include: expect.objectContaining({
           user_roles: expect.objectContaining({
-            take: 1,
-          }),
-        }),
-      });
+            take: 1})})});
     });
 
     it('should find tenants with filters', async () => {
@@ -161,10 +148,7 @@ describe('Tenant Repository', () => {
         orderBy: { created_at: 'desc' },
         include: expect.objectContaining({
           user_roles: expect.objectContaining({
-            take: 1,
-          }),
-        }),
-      });
+            take: 1})})});
     });
 
     it('should find tenants with custom sort order', async () => {
@@ -180,10 +164,7 @@ describe('Tenant Repository', () => {
         orderBy: { name: 'asc' },
         include: expect.objectContaining({
           user_roles: expect.objectContaining({
-            take: 1,
-          }),
-        }),
-      });
+            take: 1})})});
     });
 
     it('should throw HttpError on database error', async () => {
@@ -354,9 +335,7 @@ describe('Tenant Repository', () => {
           tenant_id: 'tenant-123',
           name: 'Main',
           facility_type: 'HOSPITAL',
-          is_active: true,
-        },
-      ];
+          is_active: true}];
       prisma.tenant.findUnique.mockResolvedValue({
         id: 'tenant-123',
         slug: 'test-hospital',
@@ -366,12 +345,9 @@ describe('Tenant Repository', () => {
         const tx = {
           facility: {
             findMany: jest.fn().mockResolvedValue(mockFacilities),
-            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-          },
+            updateMany: jest.fn().mockResolvedValue({ count: 1 })},
           tenant: {
-            update: jest.fn().mockResolvedValue(mockDeletedTenant),
-          },
-        };
+            update: jest.fn().mockResolvedValue(mockDeletedTenant)}};
         return callback(tx);
       });
 
@@ -379,8 +355,7 @@ describe('Tenant Repository', () => {
 
       expect(result).toEqual({
         tenant: mockDeletedTenant,
-        facilities: mockFacilities,
-      });
+        facilities: mockFacilities});
       expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
         where: { id: 'tenant-123' },
         select: {

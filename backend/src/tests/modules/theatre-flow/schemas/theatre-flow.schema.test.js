@@ -3,8 +3,7 @@ const {
   theatreCaseIdParamsSchema,
   startTheatreFlowSchema,
   assignResourceSchema,
-  reopenRecordSchema,
-} = require('@validations/theatre-flow/theatre-flow.schema');
+  reopenRecordSchema} = require('@validations/theatre-flow/theatre-flow.schema');
 
 describe('theatre-flow.schema', () => {
   it('validates list query with friendly ids', () => {
@@ -13,8 +12,7 @@ describe('theatre-flow.schema', () => {
       queue_scope: 'ACTIVE',
       finalized: 'true',
       page: '1',
-      limit: '20',
-    });
+      limit: '20'});
     expect(result.success).toBe(true);
   });
 
@@ -27,8 +25,7 @@ describe('theatre-flow.schema', () => {
     const result = startTheatreFlowSchema.safeParse({
       encounter_id: 'ENC-0001',
       workflow_stage: 'PRE_OP',
-      status: 'SCHEDULED',
-    });
+      status: 'SCHEDULED'});
     expect(result.success).toBe(true);
   });
 
@@ -36,16 +33,14 @@ describe('theatre-flow.schema', () => {
     const result = assignResourceSchema.safeParse({
       resource_type: 'STAFF',
       resource_id: 'STF-332',
-      staff_role: 'ANESTHETIST',
-    });
+      staff_role: 'ANESTHETIST'});
     expect(result.success).toBe(true);
   });
 
   it('requires reopen reason', () => {
     const result = reopenRecordSchema.safeParse({
       record_type: 'ALL',
-      reason: 'x',
-    });
+      reason: 'x'});
     expect(result.success).toBe(false);
   });
 });

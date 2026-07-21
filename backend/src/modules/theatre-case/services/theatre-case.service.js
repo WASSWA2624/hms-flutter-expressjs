@@ -11,8 +11,7 @@ const { HttpError } = require('@lib/errors');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 const sanitize = (value) => String(value || '').trim();
 
@@ -43,9 +42,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const resolveFilterIdentifier = async ({ value, model, where = {} }) => {
   if (value === undefined) return undefined;
@@ -57,8 +54,7 @@ const resolveFilterIdentifier = async ({ value, model, where = {} }) => {
   const resolvedId = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where,
-  });
+    where});
 
   if (resolvedId) return resolvedId;
   if (isUuidLike(normalized)) return normalized;
@@ -70,8 +66,7 @@ const resolvePayloadIdentifier = async ({
   field,
   model,
   where = {},
-  nullable = false,
-}) => {
+  nullable = false}) => {
   if (value === undefined) return undefined;
   if (value === null) {
     if (nullable) return null;
@@ -87,8 +82,7 @@ const resolvePayloadIdentifier = async ({
   const resolvedId = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where,
-  });
+    where});
 
   if (resolvedId) return resolvedId;
   if (isUuidLike(normalized)) return normalized;
@@ -100,8 +94,7 @@ const resolveTheatreCaseRecordByIdentifier = async (identifier) => {
   const resolved = await resolveModelRecordByIdentifier({
     model: 'theatre_case',
     identifier,
-    select: { id: true },
-  });
+    select: { id: true }});
   if (!resolved?.id) return null;
   return theatreCaseRepository.findById(resolved.id);
 };
@@ -113,8 +106,7 @@ const resolveTheatreCasePayloadIdentifiers = async (data = {}) => {
     payload.encounter_id = await resolvePayloadIdentifier({
       value: payload.encounter_id,
       field: 'encounter_id',
-      model: 'encounter',
-    });
+      model: 'encounter'});
   }
 
   if (payload.room_id !== undefined) {
@@ -122,8 +114,7 @@ const resolveTheatreCasePayloadIdentifiers = async (data = {}) => {
       value: payload.room_id,
       field: 'room_id',
       model: 'room',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (payload.surgeon_user_id !== undefined) {
@@ -131,8 +122,7 @@ const resolveTheatreCasePayloadIdentifiers = async (data = {}) => {
       value: payload.surgeon_user_id,
       field: 'surgeon_user_id',
       model: 'user',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (payload.anesthetist_user_id !== undefined) {
@@ -140,8 +130,7 @@ const resolveTheatreCasePayloadIdentifiers = async (data = {}) => {
       value: payload.anesthetist_user_id,
       field: 'anesthetist_user_id',
       model: 'user',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   return payload;
@@ -163,9 +152,7 @@ const createDisplayResolver = () => {
       where,
       select: {
         id: true,
-        human_friendly_id: true,
-      },
-    });
+        human_friendly_id: true}});
 
     const value =
       resolveDisplayIdentifier(record) || (isUuidLike(normalized) ? null : normalized);
@@ -186,12 +173,10 @@ const mapTheatreCaseForDisplay = async (record, resolveDisplayId) => {
     patient_display_name: resolvePatientDisplayName(patient),
     room_display_id: null,
     surgeon_user_display_id: null,
-    anesthetist_user_display_id: null,
-  };
+    anesthetist_user_display_id: null};
 
   const encounterScope = {
-    tenant_id: encounter?.tenant_id || undefined,
-  };
+    tenant_id: encounter?.tenant_id || undefined};
 
   if (record?.room_id) {
     mapped.room_display_id = await resolveDisplayId('room', record.room_id, encounterScope);
@@ -224,8 +209,7 @@ const listTheatreCases = async (filters, page, limit, sortBy, order) => {
 
     const encounterId = await resolveFilterIdentifier({
       value: filters.encounter_id,
-      model: 'encounter',
-    });
+      model: 'encounter'});
     if (filters.encounter_id !== undefined && encounterId === null) {
       return buildEmptyListResult(page, limit);
     }
@@ -233,22 +217,19 @@ const listTheatreCases = async (filters, page, limit, sortBy, order) => {
 
     const patientId = await resolveFilterIdentifier({
       value: filters.patient_id,
-      model: 'patient',
-    });
+      model: 'patient'});
     if (filters.patient_id !== undefined && patientId === null) {
       return buildEmptyListResult(page, limit);
     }
     if (patientId) {
       whereClause.encounter = {
         ...(whereClause.encounter || {}),
-        patient_id: patientId,
-      };
+        patient_id: patientId};
     }
 
     const roomId = await resolveFilterIdentifier({
       value: filters.room_id,
-      model: 'room',
-    });
+      model: 'room'});
     if (filters.room_id !== undefined && roomId === null) {
       return buildEmptyListResult(page, limit);
     }
@@ -256,8 +237,7 @@ const listTheatreCases = async (filters, page, limit, sortBy, order) => {
 
     const surgeonUserId = await resolveFilterIdentifier({
       value: filters.surgeon_user_id,
-      model: 'user',
-    });
+      model: 'user'});
     if (filters.surgeon_user_id !== undefined && surgeonUserId === null) {
       return buildEmptyListResult(page, limit);
     }
@@ -265,8 +245,7 @@ const listTheatreCases = async (filters, page, limit, sortBy, order) => {
 
     const anesthetistUserId = await resolveFilterIdentifier({
       value: filters.anesthetist_user_id,
-      model: 'user',
-    });
+      model: 'user'});
     if (filters.anesthetist_user_id !== undefined && anesthetistUserId === null) {
       return buildEmptyListResult(page, limit);
     }
@@ -302,20 +281,12 @@ const listTheatreCases = async (filters, page, limit, sortBy, order) => {
                   OR: [
                     { human_friendly_id: { contains: upperSearchTerm } },
                     { first_name: { contains: searchTerm } },
-                    { last_name: { contains: searchTerm } },
-                  ],
-                },
-              },
-            ],
-          },
-        },
-      ];
+                    { last_name: { contains: searchTerm } }]}}]}}];
     }
 
     const [theatreCases, total] = await Promise.all([
       theatreCaseRepository.findMany(whereClause, skip, limit, orderBy),
-      theatreCaseRepository.count(whereClause),
-    ]);
+      theatreCaseRepository.count(whereClause)]);
 
     const resolveDisplayId = createDisplayResolver();
     const mappedCases = await Promise.all(
@@ -330,14 +301,11 @@ const listTheatreCases = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -354,8 +322,7 @@ const getTheatreCaseById = async (id) => {
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -374,16 +341,14 @@ const createTheatreCase = async (data, userId, ipAddress) => {
       entity: 'theatre_case',
       entity_id: theatreCase.id,
       diff: { after: createdRecord || theatreCase },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     const resolveDisplayId = createDisplayResolver();
     return mapTheatreCaseForDisplay(createdRecord || theatreCase, resolveDisplayId);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -410,18 +375,15 @@ const updateTheatreCase = async (id, data, userId, ipAddress) => {
       entity_id: existingTheatreCase.id,
       diff: {
         before: existingTheatreCase,
-        after: updatedRecord,
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+        after: updatedRecord},
+      ip_address: ipAddress}).catch(() => {});
 
     const resolveDisplayId = createDisplayResolver();
     return mapTheatreCaseForDisplay(updatedRecord, resolveDisplayId);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -441,13 +403,11 @@ const deleteTheatreCase = async (id, userId, ipAddress) => {
       entity: 'theatre_case',
       entity_id: existingTheatreCase.id,
       diff: { before: existingTheatreCase },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -456,5 +416,4 @@ module.exports = {
   getTheatreCaseById,
   createTheatreCase,
   updateTheatreCase,
-  deleteTheatreCase,
-};
+  deleteTheatreCase};

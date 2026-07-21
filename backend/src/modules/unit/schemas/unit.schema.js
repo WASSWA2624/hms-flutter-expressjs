@@ -10,8 +10,7 @@
 const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
 
@@ -24,8 +23,7 @@ const createUnitSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255),
-  is_active: z.boolean().optional(),
-});
+  is_active: z.boolean().optional()});
 
 /**
  * Update unit body validation
@@ -36,8 +34,7 @@ const updateUnitSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255).optional(),
-  is_active: z.boolean().optional(),
-});
+  is_active: z.boolean().optional()});
 
 // ==================== URL Params ====================
 
@@ -46,8 +43,7 @@ const updateUnitSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const unitIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -62,12 +58,10 @@ const listUnitsQuerySchema = listQuerySchema.extend({
   department_id: uuidOrFriendlyIdentifierSchema.optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),
-  include_deleted: z.enum(['true', 'false']).optional(),
-});
+  include_deleted: z.enum(['true', 'false']).optional()});
 
 module.exports = {
   createUnitSchema,
   updateUnitSchema,
   unitIdParamsSchema,
-  listUnitsQuerySchema,
-};
+  listUnitsQuerySchema};

@@ -1,26 +1,21 @@
 jest.mock('@lib/logging', () => ({
-  logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() },
-}));
+  logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() }}));
 
 jest.mock('@lib/realtime/recipients', () => ({
-  findRealtimeRecipientUserIds: jest.fn(async () => ['billing-1', 'reception-1']),
-}));
+  findRealtimeRecipientUserIds: jest.fn(async () => ['billing-1', 'reception-1'])}));
 
 jest.mock('@lib/websocket', () => ({
   publishDomainEvent: jest.fn(),
   BILLING_EVENTS: {
     BILLING_INVOICE_ISSUED: 'billing.invoice_issued',
     INVOICE_UPDATED: 'invoice.updated',
-    BILLING_BALANCE_UPDATED: 'billing.balance_updated',
-  },
-}));
+    BILLING_BALANCE_UPDATED: 'billing.balance_updated'}}));
 
 const { findRealtimeRecipientUserIds } = require('@lib/realtime/recipients');
 const { publishDomainEvent, BILLING_EVENTS } = require('@lib/websocket');
 const {
   publishIssuedInvoiceBillingEvents,
-  publishUpdatedInvoiceBillingEvents,
-} = require('@lib/billing/realtime');
+  publishUpdatedInvoiceBillingEvents} = require('@lib/billing/realtime');
 
 describe('billing realtime helpers', () => {
   beforeEach(() => {
@@ -38,23 +33,19 @@ describe('billing realtime helpers', () => {
         encounter_id: 'encounter-1',
         billing_status: 'ISSUED',
         status: 'SENT',
-        total_amount: '25000.00',
-      },
-      actorUserId: 'usr-1',
-    });
+        total_amount: '25000.00'},
+      actorUserId: 'usr-1'});
 
     expect(findRealtimeRecipientUserIds).toHaveBeenCalledWith(
       expect.objectContaining({
         tenantId: 'tenant-1',
         facilityId: 'facility-1',
-        roles: expect.arrayContaining(['BILLING', 'RECEPTIONIST']),
-      })
+        roles: expect.arrayContaining(['BILLING', 'RECEPTIONIST'])})
     );
     expect(publishDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         event: BILLING_EVENTS.BILLING_INVOICE_ISSUED,
-        recipient_user_ids: ['billing-1', 'reception-1'],
-      })
+        recipient_user_ids: ['billing-1', 'reception-1']})
     );
     expect(publishDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({ event: BILLING_EVENTS.INVOICE_UPDATED })
@@ -70,17 +61,14 @@ describe('billing realtime helpers', () => {
         id: 'inv-2',
         tenant_id: 'tenant-1',
         billing_status: 'CANCELLED',
-        status: 'CANCELLED',
-      },
+        status: 'CANCELLED'},
       action: 'CANCELLED',
-      actorUserId: 'usr-1',
-    });
+      actorUserId: 'usr-1'});
 
     expect(publishDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         event: BILLING_EVENTS.INVOICE_UPDATED,
-        payload: expect.objectContaining({ action: 'CANCELLED' }),
-      })
+        payload: expect.objectContaining({ action: 'CANCELLED' })})
     );
     expect(publishDomainEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ event: BILLING_EVENTS.BILLING_INVOICE_ISSUED })

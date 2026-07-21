@@ -40,8 +40,7 @@ describe('Report Definition Repository', () => {
         creator: { id: 'user-123', human_friendly_id: 'USR-001', email: 'test@example.com' },
         schedules: [],
         runs: [],
-        _count: { schedules: 0 },
-      };
+        _count: { schedules: 0 }};
       prisma.report_definition.findFirst.mockResolvedValue(mockReportDefinition);
 
       const result = await findById('report-123');
@@ -50,23 +49,17 @@ describe('Report Definition Repository', () => {
       expect(prisma.report_definition.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'report-123',
-          deleted_at: null,
-        },
+          deleted_at: null},
         include: expect.objectContaining({
           tenant: {
-            select: { id: true, human_friendly_id: true, name: true },
-          },
+            select: { id: true, human_friendly_id: true, name: true }},
           facility: {
-            select: { id: true, human_friendly_id: true, name: true },
-          },
+            select: { id: true, human_friendly_id: true, name: true }},
           creator: {
-            select: { id: true, human_friendly_id: true, email: true },
-          },
+            select: { id: true, human_friendly_id: true, email: true }},
           schedules: expect.any(Object),
           runs: expect.any(Object),
-          _count: expect.any(Object),
-        }),
-      });
+          _count: expect.any(Object)})});
     });
 
     it('returns null when the report definition does not exist', async () => {
@@ -90,23 +83,20 @@ describe('Report Definition Repository', () => {
     it('uses the object-based query contract for list calls', async () => {
       const mockReportDefinitions = [
         { id: 'report-1', name: 'Report 1', tenant_id: 'tenant-123' },
-        { id: 'report-2', name: 'Report 2', tenant_id: 'tenant-123' },
-      ];
+        { id: 'report-2', name: 'Report 2', tenant_id: 'tenant-123' }];
       prisma.report_definition.findMany.mockResolvedValue(mockReportDefinitions);
 
       const result = await findMany({
         where: { tenant_id: 'tenant-123' },
         skip: 10,
         take: 5,
-        orderBy: { name: 'asc' },
-      });
+        orderBy: { name: 'asc' }});
 
       expect(result).toEqual(mockReportDefinitions);
       expect(prisma.report_definition.findMany).toHaveBeenCalledWith({
         where: {
           deleted_at: null,
-          tenant_id: 'tenant-123',
-        },
+          tenant_id: 'tenant-123'},
         skip: 10,
         take: 5,
         orderBy: { name: 'asc' },
@@ -116,9 +106,7 @@ describe('Report Definition Repository', () => {
           creator: expect.any(Object),
           schedules: expect.any(Object),
           runs: expect.any(Object),
-          _count: expect.any(Object),
-        }),
-      });
+          _count: expect.any(Object)})});
     });
 
     it('counts with the deleted-at guard preserved', async () => {
@@ -130,9 +118,7 @@ describe('Report Definition Repository', () => {
       expect(prisma.report_definition.count).toHaveBeenCalledWith({
         where: {
           deleted_at: null,
-          tenant_id: 'tenant-123',
-        },
-      });
+          tenant_id: 'tenant-123'}});
     });
 
     it('should throw HttpError on database error', async () => {
@@ -151,8 +137,7 @@ describe('Report Definition Repository', () => {
         facility_id: 'facility-123',
         name: 'New Report',
         dataset_key: 'patient_registrations',
-        created_by: 'user-123',
-      };
+        created_by: 'user-123'};
       const mockCreated = { id: 'report-123', ...newData };
       prisma.report_definition.create.mockResolvedValue(mockCreated);
 
@@ -167,9 +152,7 @@ describe('Report Definition Repository', () => {
           creator: expect.any(Object),
           schedules: expect.any(Object),
           runs: expect.any(Object),
-          _count: expect.any(Object),
-        }),
-      });
+          _count: expect.any(Object)})});
     });
 
     it('should throw HttpError on unique constraint violation', async () => {
@@ -215,9 +198,7 @@ describe('Report Definition Repository', () => {
           creator: expect.any(Object),
           schedules: expect.any(Object),
           runs: expect.any(Object),
-          _count: expect.any(Object),
-        }),
-      });
+          _count: expect.any(Object)})});
     });
 
     it('should throw HttpError if report definition not found', async () => {

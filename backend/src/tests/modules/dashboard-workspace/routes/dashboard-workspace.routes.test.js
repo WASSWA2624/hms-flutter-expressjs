@@ -1,9 +1,7 @@
 jest.mock('@config/feature-flags', () => ({
-  isFeatureEnabled: jest.fn(),
-}));
+  isFeatureEnabled: jest.fn()}));
 jest.mock('@middlewares/auth.middleware', () => ({
-  authorize: jest.fn(() => (_req, _res, next) => next()),
-}));
+  authorize: jest.fn(() => (_req, _res, next) => next())}));
 
 const { HttpError } = require('@lib/errors');
 const { isFeatureEnabled } = require('@config/feature-flags');

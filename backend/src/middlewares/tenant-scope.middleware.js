@@ -2,13 +2,13 @@
  * Tenant and facility scope middleware
  *
  * Ensures authenticated request context uses canonical scope values and prevents
- * cross-tenant/facility/branch access via crafted query/body values.
+ * cross-tenant/facility access via crafted query/body values.
  */
 
 const { normalizeUserContext } = require('@middlewares/auth.middleware');
 const { ELEVATED_ROLES, normalizeRoleName } = require('@config/roles');
 
-const SCOPE_FIELDS = ['tenant_id', 'facility_id', 'branch_id'];
+const SCOPE_FIELDS = ['tenant_id', 'facility_id'];
 const ELEVATED_ROLE_SET = new Set(ELEVATED_ROLES);
 
 const hasElevatedRole = (roles = []) =>
@@ -75,11 +75,9 @@ const hydrateRequestScope = () => (req, res, next) => {
 
     const tenantId = req.user.tenant_id || null;
     const facilityId = req.user.facility_id || null;
-    const branchId = req.user.branch_id || null;
 
     req.tenant = tenantId ? { id: tenantId } : null;
     req.facility = facilityId ? { id: facilityId } : null;
-    req.branch = branchId ? { id: branchId } : null;
 
     return next();
   } catch (error) {
@@ -88,7 +86,7 @@ const hydrateRequestScope = () => (req, res, next) => {
 };
 
 /**
- * Enforce tenant/facility/branch scope consistency for query/body payloads.
+ * Enforce tenant/facility scope consistency for query/body payloads.
  */
 const enforceTenantScope = () => (req, res, next) => {
   try {

@@ -33,8 +33,7 @@ jest.mock('@lib/billing/identifiers', () => ({
     if (value === null && nullable) return null;
     return value;
   },
-  resolveEntityId: async ({ identifier }) => identifier,
-}));
+  resolveEntityId: async ({ identifier }) => identifier}));
 
 describe('Pricing Rule Service', () => {
   beforeEach(() => {

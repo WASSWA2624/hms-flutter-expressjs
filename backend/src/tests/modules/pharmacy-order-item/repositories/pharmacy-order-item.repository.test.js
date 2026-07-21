@@ -36,7 +36,7 @@ describe('Pharmacy Order Item Repository', () => {
       expect(result).toEqual({ id: 'item-1' });
       expect(prisma.pharmacy_order_item.findFirst).toHaveBeenCalledWith({
         where: { id: 'item-1', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -56,7 +56,7 @@ describe('Pharmacy Order Item Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
   });

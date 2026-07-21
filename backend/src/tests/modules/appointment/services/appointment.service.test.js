@@ -13,19 +13,16 @@ const { HttpError } = require('@lib/errors');
 const opdFlowService = require('@services/opd-flow/opd-flow.service');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 // Mock dependencies
 jest.mock('@repositories/appointment/appointment.repository');
 jest.mock('@lib/audit');
 jest.mock('@services/opd-flow/opd-flow.service', () => ({
-  startOpdFlow: jest.fn(),
-}));
+  startOpdFlow: jest.fn()}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 describe('Appointment Service', () => {
   beforeEach(() => {
@@ -38,8 +35,7 @@ describe('Appointment Service', () => {
       if (model === 'appointment') {
         return {
           id: identifier,
-          tenant_id: 'tenant-1',
-        };
+          tenant_id: 'tenant-1'};
       }
       return { id: identifier };
     });
@@ -320,18 +316,15 @@ describe('Appointment Service', () => {
         id: appointmentId,
         status: 'SCHEDULED',
         scheduled_start: '2026-07-20T08:00:00.000Z',
-        scheduled_end: '2026-07-20T08:30:00.000Z',
-      };
+        scheduled_end: '2026-07-20T08:30:00.000Z'};
       const after = {
         ...before,
         scheduled_start: '2026-07-21T10:00:00.000Z',
-        scheduled_end: '2026-07-21T10:30:00.000Z',
-      };
+        scheduled_end: '2026-07-21T10:30:00.000Z'};
       const scheduleUpdate = {
         scheduled_start: after.scheduled_start,
         scheduled_end: after.scheduled_end,
-        status: 'SCHEDULED',
-      };
+        status: 'SCHEDULED'};
 
       appointmentRepository.findById
         .mockResolvedValueOnce(before)
@@ -352,8 +345,7 @@ describe('Appointment Service', () => {
         entity: 'appointment',
         entity_id: appointmentId,
         diff: { before, after },
-        ip_address: '127.0.0.1',
-      });
+        ip_address: '127.0.0.1'});
     });
 
     it('should auto-start OPD flow when status transitions to IN_PROGRESS', async () => {
@@ -361,12 +353,10 @@ describe('Appointment Service', () => {
         id: appointmentId,
         status: 'CONFIRMED',
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      };
+        facility_id: 'facility-1'};
       const inProgressAfter = {
         ...inProgressBefore,
-        status: 'IN_PROGRESS',
-      };
+        status: 'IN_PROGRESS'};
 
       appointmentRepository.findById
         .mockResolvedValueOnce(inProgressBefore)
@@ -386,14 +376,12 @@ describe('Appointment Service', () => {
           appointment_id: appointmentId,
           arrival_mode: 'ONLINE_APPOINTMENT',
           tenant_id: 'tenant-1',
-          facility_id: 'facility-1',
-        }),
+          facility_id: 'facility-1'}),
         expect.objectContaining({
           user_id: 'user-id',
           tenant_id: 'tenant-1',
           facility_id: 'facility-1',
-          ip_address: '127.0.0.1',
-        })
+          ip_address: '127.0.0.1'})
       );
     });
 
@@ -402,12 +390,10 @@ describe('Appointment Service', () => {
         id: appointmentId,
         status: 'IN_PROGRESS',
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      };
+        facility_id: 'facility-1'};
       const inProgressAfter = {
         ...inProgressBefore,
-        reason: 'Updated note',
-      };
+        reason: 'Updated note'};
 
       appointmentRepository.findById
         .mockResolvedValueOnce(inProgressBefore)
@@ -429,12 +415,10 @@ describe('Appointment Service', () => {
         id: appointmentId,
         status: 'CONFIRMED',
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      };
+        facility_id: 'facility-1'};
       const inProgressAfter = {
         ...inProgressBefore,
-        status: 'IN_PROGRESS',
-      };
+        status: 'IN_PROGRESS'};
 
       appointmentRepository.findById
         .mockResolvedValueOnce(inProgressBefore)

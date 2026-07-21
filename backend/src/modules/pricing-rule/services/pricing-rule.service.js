@@ -13,12 +13,10 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const PRICING_RULE_INCLUDE = {
-  tenant: { select: { id: true, human_friendly_id: true } },
-};
+  tenant: { select: { id: true, human_friendly_id: true } }};
 
 const buildEmptyListResult = (page, limit) => ({
   pricingRules: [],
@@ -28,9 +26,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const mapPricingRuleForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -43,8 +39,7 @@ const mapPricingRuleForDisplay = (record) => {
       record?.tenant?.human_friendly_id,
       record?.tenant_id
     ),
-    timeline_at: record?.timeline_at || record?.effective_from || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.effective_from || record?.created_at || null};
 };
 
 /**
@@ -60,8 +55,7 @@ const listPricingRules = async (filters, page, limit, sortBy, order) => {
     if (filters.tenant_id !== undefined) {
       const tenantId = await resolveIdentifierForFilter({
         value: filters.tenant_id,
-        model: 'tenant',
-      });
+        model: 'tenant'});
       if (tenantId === null) return buildEmptyListResult(page, limit);
       if (tenantId !== undefined) whereClause.tenant_id = tenantId;
     }
@@ -74,14 +68,12 @@ const listPricingRules = async (filters, page, limit, sortBy, order) => {
       whereClause.OR = [
         { name: { contains: search } },
         { description: { contains: search } },
-        { human_friendly_id: { contains: search.toUpperCase() } },
-      ];
+        { human_friendly_id: { contains: search.toUpperCase() } }];
     }
 
     const [pricingRules, total] = await Promise.all([
       pricingRuleRepository.findMany(whereClause, skip, limit, orderBy, PRICING_RULE_INCLUDE),
-      pricingRuleRepository.count(whereClause),
-    ]);
+      pricingRuleRepository.count(whereClause)]);
 
     return {
       pricingRules: pricingRules.map(mapPricingRuleForDisplay),
@@ -91,9 +83,7 @@ const listPricingRules = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -107,8 +97,7 @@ const getPricingRuleById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'pricing_rule',
-      identifier: id,
-    });
+      identifier: id});
 
     const pricingRule = await pricingRuleRepository.findById(resolvedId, PRICING_RULE_INCLUDE);
 
@@ -131,13 +120,11 @@ const createPricingRule = async (data, userId, ipAddress) => {
     const tenantId = await resolveIdentifierForPayload({
       value: data?.tenant_id,
       field: 'tenant_id',
-      model: 'tenant',
-    });
+      model: 'tenant'});
 
     const pricingRule = await pricingRuleRepository.create({
       ...data,
-      tenant_id: tenantId,
-    });
+      tenant_id: tenantId});
 
     const createdRecord = await pricingRuleRepository.findById(pricingRule.id, PRICING_RULE_INCLUDE);
 
@@ -148,8 +135,7 @@ const createPricingRule = async (data, userId, ipAddress) => {
       entity: 'pricing_rule',
       entity_id: pricingRule.id,
       diff: { after: pricingRule },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapPricingRuleForDisplay(createdRecord || pricingRule);
   } catch (error) {
@@ -165,8 +151,7 @@ const updatePricingRule = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'pricing_rule',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await pricingRuleRepository.findById(resolvedId, PRICING_RULE_INCLUDE);
 
@@ -184,8 +169,7 @@ const updatePricingRule = async (id, data, userId, ipAddress) => {
       entity: 'pricing_rule',
       entity_id: pricingRule.id,
       diff: { before, after: pricingRule },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapPricingRuleForDisplay(updatedRecord || pricingRule);
   } catch (error) {
@@ -201,8 +185,7 @@ const deletePricingRule = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'pricing_rule',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await pricingRuleRepository.findById(resolvedId, PRICING_RULE_INCLUDE);
 
@@ -219,8 +202,7 @@ const deletePricingRule = async (id, userId, ipAddress) => {
       entity: 'pricing_rule',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -232,5 +214,4 @@ module.exports = {
   getPricingRuleById,
   createPricingRule,
   updatePricingRule,
-  deletePricingRule,
-};
+  deletePricingRule};

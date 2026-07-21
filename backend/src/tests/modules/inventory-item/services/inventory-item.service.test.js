@@ -18,16 +18,14 @@ jest.mock('@lib/audit');
 const mockUser = {
   id: 'user-123',
   tenant_id: 'tenant-123',
-  roles: ['PHARMACIST'],
-};
+  roles: ['PHARMACIST']};
 
 const buildScopedInventoryItem = (overrides = {}) => ({
   id: '123',
   tenant_id: 'tenant-123',
   name: 'Surgical Gloves',
   category: 'SUPPLY',
-  ...overrides,
-});
+  ...overrides});
 
 describe('Inventory Item Service', () => {
   const mockUserId = 'user-123';
@@ -264,8 +262,7 @@ describe('Inventory Item Service', () => {
       expect(result).toEqual(mockItem);
       expect(inventoryItemRepository.create).toHaveBeenCalledWith({
         ...mockData,
-        tenant_id: 'tenant-123',
-      });
+        tenant_id: 'tenant-123'});
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: 'tenant-123',
         user_id: mockUserId,
@@ -322,8 +319,7 @@ describe('Inventory Item Service', () => {
       expect(inventoryItemRepository.findById).toHaveBeenCalledWith('123');
       expect(inventoryItemRepository.update).toHaveBeenCalledWith('123', {
         ...mockData,
-        tenant_id: 'tenant-123',
-      });
+        tenant_id: 'tenant-123'});
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: 'tenant-123',
         user_id: mockUserId,

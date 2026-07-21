@@ -157,5 +157,4 @@ module.exports = {
   createRoom,
   updateRoom,
   deleteRoom,
-  restoreRoom,
-};
+  restoreRoom};

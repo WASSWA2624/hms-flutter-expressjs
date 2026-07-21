@@ -4,23 +4,18 @@
 
 jest.mock('@prisma/client', () => ({
   tenant: {
-    findMany: jest.fn(),
-  },
+    findMany: jest.fn()},
   facility: {
-    findMany: jest.fn(),
-  },
+    findMany: jest.fn()},
   role: {
     findFirst: jest.fn(),
-    create: jest.fn(),
-  },
-  $disconnect: jest.fn(),
-}));
+    create: jest.fn()},
+  $disconnect: jest.fn()}));
 
 const prisma = require('@prisma/client');
 const {
   parseCliArgs,
-  backfillAmbulanceOperatorRole,
-} = require('../../../scripts/backfill-ambulance-operator-role');
+  backfillAmbulanceOperatorRole} = require('../../../scripts/backfill-ambulance-operator-role');
 
 describe('backfill-ambulance-operator-role script', () => {
   beforeEach(() => {
@@ -31,13 +26,11 @@ describe('backfill-ambulance-operator-role script', () => {
     it('supports --dry-run and --tenant-id in equals and split forms', () => {
       expect(parseCliArgs(['--dry-run', '--tenant-id=tenant-a'])).toEqual({
         dryRun: true,
-        tenantId: 'tenant-a',
-      });
+        tenantId: 'tenant-a'});
 
       expect(parseCliArgs(['--tenant-id', 'tenant-b'])).toEqual({
         dryRun: false,
-        tenantId: 'tenant-b',
-      });
+        tenantId: 'tenant-b'});
     });
 
     it('throws when --tenant-id value is missing', () => {
@@ -54,15 +47,13 @@ describe('backfill-ambulance-operator-role script', () => {
       prisma.tenant.findMany.mockResolvedValue([{ id: 'tenant-1', name: 'Tenant One' }]);
       prisma.facility.findMany.mockResolvedValue([
         { id: 'facility-1', name: 'Facility One' },
-        { id: 'facility-2', name: 'Facility Two' },
-      ]);
+        { id: 'facility-2', name: 'Facility Two' }]);
       prisma.role.findFirst
         .mockResolvedValueOnce({ id: 'existing-role' })
         .mockResolvedValueOnce(null);
 
       const summary = await backfillAmbulanceOperatorRole({
-        dryRun: true,
-      });
+        dryRun: true});
 
       expect(summary).toEqual({
         dryRun: true,
@@ -72,8 +63,7 @@ describe('backfill-ambulance-operator-role script', () => {
         rolesCreated: 0,
         rolesSkipped: 1,
         rolesWouldCreate: 1,
-        failures: 0,
-      });
+        failures: 0});
       expect(prisma.role.create).not.toHaveBeenCalled();
     });
 
@@ -85,8 +75,7 @@ describe('backfill-ambulance-operator-role script', () => {
 
       const summary = await backfillAmbulanceOperatorRole({
         dryRun: false,
-        tenantId: 'tenant-1',
-      });
+        tenantId: 'tenant-1'});
 
       expect(summary).toEqual({
         dryRun: false,
@@ -96,16 +85,13 @@ describe('backfill-ambulance-operator-role script', () => {
         rolesCreated: 1,
         rolesSkipped: 0,
         rolesWouldCreate: 0,
-        failures: 0,
-      });
+        failures: 0});
       expect(prisma.role.create).toHaveBeenCalledWith({
         data: {
           tenant_id: 'tenant-1',
           facility_id: null,
           name: 'AMBULANCE_OPERATOR',
-          description: 'Default AMBULANCE_OPERATOR role',
-        },
-      });
+          description: 'Default AMBULANCE_OPERATOR role'}});
     });
   });
 });

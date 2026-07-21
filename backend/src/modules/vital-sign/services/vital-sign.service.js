@@ -14,8 +14,7 @@ const { HttpError } = require('@lib/errors');
 const clinicalAlertThresholdService = require('@services/clinical-alert-threshold/clinical-alert-threshold.service');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const BLOOD_PRESSURE_VALUE_REGEX = /^(\d{2,3}(?:\.\d{1,2})?)\s*\/\s*(\d{2,3}(?:\.\d{1,2})?)$/;
 
@@ -25,21 +24,18 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: Math.ceil(total / limit),
   hasNextPage: page < Math.ceil(total / limit),
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const buildEmptyListResult = (page, limit) => ({
   vitalSigns: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const resolveVitalSignId = (id) =>
   resolveIdentifierForPayload({
     value: id,
     field: 'id',
     model: 'vital_sign',
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 
 const toFiniteNumber = (value) => {
   if (value === null || value === undefined) return null;
@@ -99,8 +95,7 @@ const normalizeBloodPressurePayload = (input = {}) => {
   if (!Number.isFinite(systolic) || !Number.isFinite(diastolic)) {
     throw new HttpError('errors.validation.required', 400, [
       { field: 'systolic_value' },
-      { field: 'diastolic_value' },
-    ]);
+      { field: 'diastolic_value' }]);
   }
 
   const mapValue = roundToTwo(toFiniteNumber(input.map_value)) ?? computeMap(systolic, diastolic);
@@ -108,15 +103,13 @@ const normalizeBloodPressurePayload = (input = {}) => {
     value: `${formatBpComponent(systolic)}/${formatBpComponent(diastolic)}`,
     systolic_value: systolic,
     diastolic_value: diastolic,
-    map_value: mapValue,
-  };
+    map_value: mapValue};
 };
 
 const assertNoDuplicateVitalSignForEncounter = async ({
   encounterId,
   vitalType,
-  excludeId = null,
-}) => {
+  excludeId = null}) => {
   const normalizedEncounterId = String(encounterId || '').trim();
   const normalizedVitalType = String(vitalType || '').trim().toUpperCase();
   if (!normalizedEncounterId || !normalizedVitalType) return;
@@ -124,8 +117,7 @@ const assertNoDuplicateVitalSignForEncounter = async ({
   const matches = await vitalSignRepository.findMany(
     {
       encounter_id: normalizedEncounterId,
-      vital_type: normalizedVitalType,
-    },
+      vital_type: normalizedVitalType},
     0,
     2,
     { recorded_at: 'desc' }
@@ -135,8 +127,7 @@ const assertNoDuplicateVitalSignForEncounter = async ({
   if (duplicate) {
     throw new HttpError('errors.vital_sign.duplicate_for_encounter', 409, [
       { field: 'vital_type' },
-      { field: 'encounter_id' },
-    ]);
+      { field: 'encounter_id' }]);
   }
 };
 
@@ -174,8 +165,7 @@ const resolveVitalSignPayload = async (input = {}) => {
       value: payload.encounter_id,
       field: 'encounter_id',
       model: 'encounter',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
   }
   return payload;
 };
@@ -204,8 +194,7 @@ const listVitalSigns = async (filters, page, limit, sortBy, order, userId, ipAdd
       const encounterId = await resolveIdentifierForFilter({
         value: filters.encounter_id,
         model: 'encounter',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (encounterId === null) return buildEmptyListResult(page, limit);
       if (encounterId !== undefined) whereClause.encounter_id = encounterId;
     }
@@ -268,8 +257,7 @@ const createVitalSign = async (data, userId, ipAddress) => {
     const normalizedPayload = normalizeVitalSignPayload(resolvedPayload);
     await assertNoDuplicateVitalSignForEncounter({
       encounterId: normalizedPayload.encounter_id,
-      vitalType: normalizedPayload.vital_type,
-    });
+      vitalType: normalizedPayload.vital_type});
     const vitalSign = await vitalSignRepository.create(normalizedPayload);
 
     // Create audit log (non-blocking)
@@ -286,19 +274,16 @@ const createVitalSign = async (data, userId, ipAddress) => {
     try {
       const encounter = await prisma.encounter.findFirst({
         where: { id: vitalSign.encounter_id, deleted_at: null },
-        include: { patient: true },
-      });
+        include: { patient: true }});
       if (encounter) {
         await clinicalAlertThresholdService.evaluateVitalAndCreateAlerts(
           {
             vitalSign,
             encounter,
-            patient: encounter.patient || null,
-          },
+            patient: encounter.patient || null},
           {
             user_id: userId,
-            ip_address: ipAddress,
-          }
+            ip_address: ipAddress}
         );
       }
     } catch (_error) {
@@ -345,8 +330,7 @@ const updateVitalSign = async (id, data, userId, ipAddress) => {
       await assertNoDuplicateVitalSignForEncounter({
         encounterId: normalizedEncounterId,
         vitalType: normalizedVitalType,
-        excludeId: resolvedId,
-      });
+        excludeId: resolvedId});
     }
     const vitalSign = await vitalSignRepository.update(
       resolvedId,
@@ -384,8 +368,7 @@ const deleteVitalSign = async (id, data = {}, userId, ipAddress) => {
     const deletionReason = String(data?.reason || '').trim();
     if (!deletionReason) {
       throw new HttpError('errors.validation.required', 400, [
-        { field: 'reason' },
-      ]);
+        { field: 'reason' }]);
     }
 
     // Get current state for audit

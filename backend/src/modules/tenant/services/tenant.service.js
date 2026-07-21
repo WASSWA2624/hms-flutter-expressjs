@@ -51,9 +51,7 @@ const resolveTenantId = async (identifier) => {
     model: 'tenant',
     identifier: normalized,
     additionalFriendlyMatchers: [
-      (value) => ({ slug: value.toLowerCase() }),
-    ],
-  });
+      (value) => ({ slug: value.toLowerCase() })]});
 
   return resolved || normalized;
 };
@@ -112,8 +110,7 @@ const buildPrimaryTenantAdmin = (userRole = null) => {
     role_human_friendly_id: normalizeString(role.human_friendly_id),
     role_name: normalizeString(role.name || 'TENANT_ADMIN'),
     user_role_id: normalizeString(userRole?.id),
-    user_role_human_friendly_id: normalizeString(userRole?.human_friendly_id),
-  };
+    user_role_human_friendly_id: normalizeString(userRole?.human_friendly_id)};
 };
 
 const normalizeTenantRecord = (tenant) => {
@@ -123,8 +120,7 @@ const normalizeTenantRecord = (tenant) => {
     ...tenant,
     resource_uuid: tenant.id,
     display_id:
-      resolvePublicIdentifier(tenant.human_friendly_id, tenant.id) || tenant.id,
-  };
+      resolvePublicIdentifier(tenant.human_friendly_id, tenant.id) || tenant.id};
 
   if (!Array.isArray(tenant.user_roles)) {
     return normalized;
@@ -133,8 +129,7 @@ const normalizeTenantRecord = (tenant) => {
   const { user_roles, ...tenantRecord } = normalized;
   return {
     ...tenantRecord,
-    primary_tenant_admin: buildPrimaryTenantAdmin(user_roles[0] || null),
-  };
+    primary_tenant_admin: buildPrimaryTenantAdmin(user_roles[0] || null)};
 };
 
 /**
@@ -181,8 +176,7 @@ const listTenants = async (filters = {}, page = 1, limit = 20, sort_by = 'create
   const orderBy = includeDeleted
     ? [
         { deleted_at: 'asc' },
-        { [resolvedSortBy]: resolvedOrder },
-      ]
+        { [resolvedSortBy]: resolvedOrder }]
     : { [resolvedSortBy]: resolvedOrder };
 
   const listOptions = { includeDeleted };
@@ -251,8 +245,7 @@ const createTenant = async (data, context = {}) => {
   const { tenant, facility } = await tenantRepository.createWithDefaultFacility(
     data,
     {
-      facilityName: buildDefaultFacilityName(data?.name),
-    },
+      facilityName: buildDefaultFacilityName(data?.name)},
   );
 
   // Create audit log
@@ -269,8 +262,7 @@ const createTenant = async (data, context = {}) => {
       name: tenant.name,
       slug: tenant.slug,
       is_active: tenant.is_active,
-      default_facility_id: facility.id,
-    }
+      default_facility_id: facility.id}
   });
 
   await createAuditLog({
@@ -287,8 +279,7 @@ const createTenant = async (data, context = {}) => {
       name: facility.name,
       facility_type: facility.facility_type,
       is_active: facility.is_active,
-      bootstrap: true,
-    }
+      bootstrap: true}
   });
 
   await publishTenantRealtimeEvent(
@@ -309,8 +300,7 @@ const createTenant = async (data, context = {}) => {
     payload: {
       is_active: facility.is_active !== false,
       name: facility.name || null,
-      bootstrap: true,
-    }
+      bootstrap: true}
   });
 
   return normalizeTenantRecord(tenant);
@@ -353,8 +343,7 @@ const updateTenant = async (id, data, context = {}) => {
         : {};
     const mergedExtension = {
       ...previousExtension,
-      ...data.extension_json,
-    };
+      ...data.extension_json};
     for (const [key, value] of Object.entries(mergedExtension)) {
       if (value === null || value === undefined) {
         delete mergedExtension[key];
@@ -362,8 +351,7 @@ const updateTenant = async (id, data, context = {}) => {
     }
     data = {
       ...data,
-      extension_json: mergedExtension,
-    };
+      extension_json: mergedExtension};
   }
 
   // Update tenant
@@ -430,9 +418,7 @@ const deleteTenant = async (id, context = {}) => {
         includeDeleted: true,
         select: { id: true, deleted_at: true },
         additionalFriendlyMatchers: [
-          (value) => ({ slug: value.toLowerCase() }),
-        ],
-      });
+          (value) => ({ slug: value.toLowerCase() })]});
       if (deletedTenant?.deleted_at) {
         return;
       }
@@ -454,8 +440,7 @@ const deleteTenant = async (id, context = {}) => {
     details: {
       name: tenant.name,
       slug: tenant.slug,
-      cascaded_facility_ids: facilities.map((facility) => facility.id),
-    }
+      cascaded_facility_ids: facilities.map((facility) => facility.id)}
   });
 
   for (const facility of facilities) {
@@ -471,8 +456,7 @@ const deleteTenant = async (id, context = {}) => {
       details: {
         name: facility.name,
         facility_type: facility.facility_type,
-        cascaded_from_tenant: true,
-      }
+        cascaded_from_tenant: true}
     });
 
     await publishPlatformRealtimeEvent({
@@ -486,8 +470,7 @@ const deleteTenant = async (id, context = {}) => {
       payload: {
         is_active: facility.is_active !== false,
         name: facility.name || null,
-        cascaded_from_tenant: true,
-      }
+        cascaded_from_tenant: true}
     });
   }
 
@@ -510,9 +493,7 @@ const resolveTenantIdIncludingDeleted = async (identifier) => {
     identifier: normalized,
     includeDeleted: true,
     additionalFriendlyMatchers: [
-      (value) => ({ slug: value.toLowerCase() }),
-    ],
-  });
+      (value) => ({ slug: value.toLowerCase() })]});
 
   return resolved || normalized;
 };
@@ -522,14 +503,11 @@ const assertNoActiveSubscriptions = async (tenantId) => {
     where: {
       tenant_id: tenantId,
       deleted_at: null,
-      status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
-    },
-  });
+      status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }}});
 
   if (activeSubscriptions > 0) {
     throw new HttpError('errors.tenant.permanent_delete_blocked', 409, [
-      { reason: 'active_subscription' },
-    ]);
+      { reason: 'active_subscription' }]);
   }
 };
 
@@ -553,9 +531,7 @@ const restoreTenant = async (id, context = {}) => {
     details: {
       name: tenant.name,
       slug: tenant.slug,
-      cascaded_facility_ids: facilities.map((facility) => facility.id),
-    },
-  });
+      cascaded_facility_ids: facilities.map((facility) => facility.id)}});
 
   for (const facility of facilities) {
     await createAuditLog({
@@ -570,9 +546,7 @@ const restoreTenant = async (id, context = {}) => {
       details: {
         name: facility.name,
         facility_type: facility.facility_type,
-        cascaded_from_tenant: true,
-      },
-    });
+        cascaded_from_tenant: true}});
 
     await publishPlatformRealtimeEvent({
       event: PLATFORM_ADMIN_EVENTS.FACILITY_CREATED,
@@ -585,9 +559,7 @@ const restoreTenant = async (id, context = {}) => {
       payload: {
         is_active: facility.is_active !== false,
         name: facility.name || null,
-        cascaded_from_tenant_restore: true,
-      },
-    });
+        cascaded_from_tenant_restore: true}});
   }
 
   await publishTenantRealtimeEvent(
@@ -630,9 +602,7 @@ const permanentDeleteTenant = async (id, context = {}) => {
     details: {
       name: tenant.name,
       slug: tenant.slug,
-      irreversible: true,
-    },
-  });
+      irreversible: true}});
 
   const { facilityIds } = await tenantRepository.permanentDelete(tenantId);
 
@@ -644,9 +614,7 @@ const permanentDeleteTenant = async (id, context = {}) => {
     payload: {
       name: tenant.name,
       permanent: true,
-      cascaded_facility_ids: facilityIds,
-    },
-  });
+      cascaded_facility_ids: facilityIds}});
 };
 
 module.exports = {
@@ -656,5 +624,4 @@ module.exports = {
   updateTenant,
   deleteTenant,
   restoreTenant,
-  permanentDeleteTenant,
-};
+  permanentDeleteTenant};

@@ -11,8 +11,7 @@ const { z } = require('zod');
 const {
   uuidSchema,
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 const REFERRAL_STATUS_VALUES = ['REQUESTED', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 
@@ -34,8 +33,7 @@ const createReferralSchema = z.object({
   notes: optionalText(10000),
   from_department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   to_department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  status: z.enum(REFERRAL_STATUS_VALUES).optional(),
-});
+  status: z.enum(REFERRAL_STATUS_VALUES).optional()});
 
 /**
  * Update referral body validation
@@ -50,24 +48,21 @@ const updateReferralSchema = z.object({
   notes: optionalText(10000),
   from_department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   to_department_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  status: z.enum(REFERRAL_STATUS_VALUES).optional(),
-});
+  status: z.enum(REFERRAL_STATUS_VALUES).optional()});
 
 /**
  * Redeem referral body validation
  * Used for POST /referrals/:id/redeem endpoint
  */
 const redeemReferralSchema = z.object({
-  notes: z.string().trim().max(10000).optional().nullable(),
-});
+  notes: z.string().trim().max(10000).optional().nullable()});
 
 /**
  * Referral transition action body validation
  * Used for POST /referrals/:id/approve|start|cancel endpoints
  */
 const transitionReferralSchema = z.object({
-  notes: z.string().trim().max(10000).optional().nullable(),
-});
+  notes: z.string().trim().max(10000).optional().nullable()});
 
 // ==================== URL Params ====================
 
@@ -76,8 +71,7 @@ const transitionReferralSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const referralIdParamsSchema = z.object({
-  id: uuidSchema,
-});
+  id: uuidSchema});
 
 // ==================== Query Params ====================
 
@@ -92,8 +86,7 @@ const listReferralsQuerySchema = listQuerySchema.extend({
   to_department_id: uuidOrFriendlyIdentifierSchema.optional(),
   external_facility_name: z.string().trim().optional(),
   referral_reason_code: z.string().trim().optional(),
-  status: z.enum(REFERRAL_STATUS_VALUES).optional(),
-});
+  status: z.enum(REFERRAL_STATUS_VALUES).optional()});
 
 module.exports = {
   createReferralSchema,
@@ -102,5 +95,4 @@ module.exports = {
   transitionReferralSchema,
   referralIdParamsSchema,
   listReferralsQuerySchema,
-  REFERRAL_STATUS_VALUES,
-};
+  REFERRAL_STATUS_VALUES};

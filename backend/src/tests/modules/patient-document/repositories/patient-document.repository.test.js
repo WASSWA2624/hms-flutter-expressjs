@@ -59,7 +59,7 @@ describe('Patient Document Repository', () => {
           id: 'doc-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -121,7 +121,7 @@ describe('Patient Document Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -150,7 +150,7 @@ describe('Patient Document Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -166,7 +166,7 @@ describe('Patient Document Repository', () => {
         skip: 20,
         take: 50,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -182,7 +182,7 @@ describe('Patient Document Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { document_type: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

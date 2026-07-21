@@ -10,19 +10,16 @@ describe('ipd-flow.routes RBAC wiring', () => {
     const controller = new Proxy(
       {},
       {
-        get: () => jest.fn(),
-      }
+        get: () => jest.fn()}
     );
 
     jest.isolateModules(() => {
       jest.doMock('@middlewares/auth.middleware', () => ({
         authenticate,
         authorize,
-        denyRoles,
-      }));
+        denyRoles}));
       jest.doMock('@middlewares/validate.middleware', () => ({
-        validateRequest,
-      }));
+        validateRequest}));
       jest.doMock('@controllers/ipd-flow/ipd-flow.controller', () => controller);
       subject = require('@routes/ipd-flow/ipd-flow.routes');
     });
@@ -33,12 +30,10 @@ describe('ipd-flow.routes RBAC wiring', () => {
   const READ_SCOPES = [
     PERMISSIONS.CLINICAL_READ,
     PERMISSIONS.OPERATIONS_READ,
-    PERMISSIONS.BILLING_READ,
-  ];
+    PERMISSIONS.BILLING_READ];
   const OPERATIONAL_WRITE_SCOPES = [
     PERMISSIONS.CLINICAL_WRITE,
-    PERMISSIONS.OPERATIONS_WRITE,
-  ];
+    PERMISSIONS.OPERATIONS_WRITE];
   const CLINICAL_WRITE_SCOPES = [PERMISSIONS.CLINICAL_WRITE];
 
   beforeEach(() => {

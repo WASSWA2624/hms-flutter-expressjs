@@ -26,14 +26,12 @@ const SETUP_READ_SCOPES = [
   PERMISSIONS.HR_READ,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const SETUP_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
   PERMISSIONS.SYSTEM_ADMIN,
-  PERMISSIONS.HR_WRITE,
-];
+  PERMISSIONS.HR_WRITE];
 
 /**
  * @description List departments with pagination and filters
@@ -48,7 +46,6 @@ const SETUP_ADMIN_SCOPES = [
  * @queryParams {string} [order=desc] - Sort order (asc/desc)
  * @queryParams {string} [tenant_id] - Filter by tenant ID (UUID)
  * @queryParams {string} [facility_id] - Filter by facility ID (UUID)
- * @queryParams {string} [branch_id] - Filter by branch ID (UUID)
  * @queryParams {string} [department_type] - Filter by department type
  * @queryParams {string} [is_active] - Filter by active status (true/false)
  * @queryParams {string} [search] - Search by name
@@ -57,12 +54,14 @@ const SETUP_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listDepartmentsQuerySchema }),
+  '/',
+  validateRequest({ query: listDepartmentsQuerySchema }),
 
   authenticate(),
   authorize(SETUP_READ_SCOPES, 'permission'),
   departmentController.listDepartments
 );
+
 
 router.post(
   '/:id/restore',
@@ -86,7 +85,8 @@ router.post(
  * @throws 404 Department not found
  */
 router.get(
-  '/:id',  validateRequest({ params: departmentIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: departmentIdParamsSchema }),
 
   authenticate(),
   authorize(SETUP_READ_SCOPES, 'permission'),
@@ -103,7 +103,6 @@ router.get(
  * @queryParams None
  * @bodyParams {string} tenant_id - Tenant ID (required, UUID)
  * @bodyParams {string} [facility_id] - Facility ID (UUID)
- * @bodyParams {string} [branch_id] - Branch ID (UUID)
  * @bodyParams {string} name - Department name (required, max 255 chars)
  * @bodyParams {string} department_type - Department type (required)
  * @bodyParams {boolean} [is_active=true] - Active status
@@ -113,7 +112,8 @@ router.get(
  * @throws 400 Foreign key constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createDepartmentSchema }),
+  '/',
+  validateRequest({ body: createDepartmentSchema }),
 
   authenticate(),
   authorize(SETUP_ADMIN_SCOPES, 'permission'),
@@ -129,7 +129,6 @@ router.post(
  * @urlParams {string} id - Department ID (UUID)
  * @queryParams None
  * @bodyParams {string} [facility_id] - Facility ID (UUID)
- * @bodyParams {string} [branch_id] - Branch ID (UUID)
  * @bodyParams {string} [name] - Department name (max 255 chars)
  * @bodyParams {string} [department_type] - Department type
  * @bodyParams {boolean} [is_active] - Active status
@@ -140,7 +139,8 @@ router.post(
  * @throws 400 Foreign key constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: departmentIdParamsSchema, body: updateDepartmentSchema }),
+  '/:id',
+  validateRequest({ params: departmentIdParamsSchema, body: updateDepartmentSchema }),
 
   authenticate(),
   authorize(SETUP_ADMIN_SCOPES, 'permission'),
@@ -161,7 +161,8 @@ router.put(
  * @throws 404 Department not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: departmentIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: departmentIdParamsSchema }),
 
   authenticate(),
   authorize(SETUP_ADMIN_SCOPES, 'permission'),
@@ -183,7 +184,8 @@ router.delete(
  * @throws 404 Department not found
  */
 router.get(
-  '/:id/units',  validateRequest({ params: departmentIdParamsSchema }),
+  '/:id/units',
+  validateRequest({ params: departmentIdParamsSchema }),
 
   authenticate(),
   authorize(SETUP_READ_SCOPES, 'permission'),

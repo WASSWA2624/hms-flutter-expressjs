@@ -10,13 +10,10 @@ const FACILITY_TEST_OFFERING_INCLUDE = {
     include: {
       reference_ranges: { orderBy: { sort_order: 'asc' } },
       unit_options: { orderBy: { sort_order: 'asc' } },
-      result_options: { orderBy: { sort_order: 'asc' } },
-    },
-  },
+      result_options: { orderBy: { sort_order: 'asc' } }}},
   reference_ranges: { orderBy: { sort_order: 'asc' } },
   unit_options: { orderBy: { sort_order: 'asc' } },
-  result_options: { orderBy: { sort_order: 'asc' } },
-};
+  result_options: { orderBy: { sort_order: 'asc' } }};
 
 const FACILITY_PANEL_OFFERING_INCLUDE = {
   lab_panel: {
@@ -30,21 +27,13 @@ const FACILITY_PANEL_OFFERING_INCLUDE = {
               human_friendly_id: true,
               name: true,
               code: true,
-              unit: true,
-            },
-          },
-        },
-      },
-    },
-  },
-};
+              unit: true}}}}}}};
 
 const findTestOffering = async (where = {}, include = FACILITY_TEST_OFFERING_INCLUDE) => {
   try {
     return await prisma.facility_lab_test_offering.findFirst({
       where: { deleted_at: null, ...where },
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -63,8 +52,7 @@ const findTestOfferings = async (
       skip,
       take,
       orderBy,
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -73,8 +61,7 @@ const findTestOfferings = async (
 const countTestOfferings = async (filters = {}) => {
   try {
     return await prisma.facility_lab_test_offering.count({
-      where: { deleted_at: null, ...filters },
-    });
+      where: { deleted_at: null, ...filters }});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -96,8 +83,7 @@ const updateTestOffering = async (id, data) => {
     return await prisma.facility_lab_test_offering.update({
       where: { id },
       data,
-      include: FACILITY_TEST_OFFERING_INCLUDE,
-    });
+      include: FACILITY_TEST_OFFERING_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.facility_lab_test_offering.not_found', 404);
@@ -110,8 +96,7 @@ const findPanelOffering = async (where = {}, include = FACILITY_PANEL_OFFERING_I
   try {
     return await prisma.facility_lab_panel_offering.findFirst({
       where: { deleted_at: null, ...where },
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -130,8 +115,7 @@ const findPanelOfferings = async (
       skip,
       take,
       orderBy,
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -140,8 +124,7 @@ const findPanelOfferings = async (
 const countPanelOfferings = async (filters = {}) => {
   try {
     return await prisma.facility_lab_panel_offering.count({
-      where: { deleted_at: null, ...filters },
-    });
+      where: { deleted_at: null, ...filters }});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -163,8 +146,7 @@ const updatePanelOffering = async (id, data) => {
     return await prisma.facility_lab_panel_offering.update({
       where: { id },
       data,
-      include: FACILITY_PANEL_OFFERING_INCLUDE,
-    });
+      include: FACILITY_PANEL_OFFERING_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.facility_lab_panel_offering.not_found', 404);
@@ -185,5 +167,4 @@ module.exports = {
   findPanelOfferings,
   countPanelOfferings,
   createPanelOffering,
-  updatePanelOffering,
-};
+  updatePanelOffering};

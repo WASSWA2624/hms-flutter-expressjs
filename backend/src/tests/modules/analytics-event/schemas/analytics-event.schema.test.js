@@ -9,8 +9,7 @@ const {
   createAnalyticsEventSchema,
   updateAnalyticsEventSchema,
   analyticsEventIdParamsSchema,
-  listAnalyticsEventsQuerySchema,
-} = require('@modules/analytics-event/schemas/analytics-event.schema');
+  listAnalyticsEventsQuerySchema} = require('@modules/analytics-event/schemas/analytics-event.schema');
 
 describe('Analytics Event Schemas', () => {
   describe('createAnalyticsEventSchema', () => {
@@ -20,8 +19,7 @@ describe('Analytics Event Schemas', () => {
       event_name: 'page_view',
       event_category: 'navigation',
       severity: 'INFO',
-      payload_json: { page: '/dashboard', duration: 5000 },
-    };
+      payload_json: { page: '/dashboard', duration: 5000 }};
 
     it('should validate correct analytics event data', () => {
       expect(createAnalyticsEventSchema.safeParse(validData).success).toBe(true);
@@ -43,7 +41,6 @@ describe('Analytics Event Schemas', () => {
       expect(createAnalyticsEventSchema.safeParse({ ...validData, tenant_id: undefined }).success).toBe(true);
       expect(createAnalyticsEventSchema.safeParse({ ...validData, user_id: null }).success).toBe(true);
       expect(createAnalyticsEventSchema.safeParse({ ...validData, facility_id: null }).success).toBe(true);
-      expect(createAnalyticsEventSchema.safeParse({ ...validData, branch_id: null }).success).toBe(true);
     });
 
     it('should accept payload_json as optional and reject arrays', () => {
@@ -61,8 +58,7 @@ describe('Analytics Event Schemas', () => {
         event_name: '  page_view  ',
         event_category: '  navigation  ',
         entity_type: '  report  ',
-        entity_public_id: '  KPI0000001  ',
-      });
+        entity_public_id: '  KPI0000001  '});
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -82,8 +78,7 @@ describe('Analytics Event Schemas', () => {
           event_category: 'interaction',
           severity: 'WARNING',
           payload_json: { button: 'submit' },
-          version: 2,
-        }).success
+          version: 2}).success
       ).toBe(true);
     });
 
@@ -116,7 +111,6 @@ describe('Analytics Event Schemas', () => {
           tenant_id: '550e8400-e29b-41d4-a716-446655440000',
           user_id: '660e8400-e29b-41d4-a716-446655440000',
           facility_id: '770e8400-e29b-41d4-a716-446655440000',
-          branch_id: '880e8400-e29b-41d4-a716-446655440000',
           event_category: 'navigation',
           entity_type: 'report',
           severity: 'ERROR',
@@ -127,8 +121,7 @@ describe('Analytics Event Schemas', () => {
           page: '1',
           limit: '20',
           sort_by: 'event_name',
-          order: 'asc',
-        }).success
+          order: 'asc'}).success
       ).toBe(true);
     });
   });

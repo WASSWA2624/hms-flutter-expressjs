@@ -1,30 +1,23 @@
 jest.mock('@lib/notifications', () => ({
-  sendEmail: jest.fn(),
-}));
+  sendEmail: jest.fn()}));
 
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 
 jest.mock('@lib/logging', () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+    error: jest.fn()}}));
 
 jest.mock('@lib/websocket', () => ({
   emitToUser: jest.fn(),
   NOTIFICATION_EVENTS: {
-    NOTIFICATION_DELIVERY_UPDATED: 'notification.delivery_updated',
-  },
-}));
+    NOTIFICATION_DELIVERY_UPDATED: 'notification.delivery_updated'}}));
 
 jest.mock('@lib/telemetry/metrics', () => ({
   markSpanError: jest.fn(),
-  recordBackgroundJob: jest.fn(),
-}));
+  recordBackgroundJob: jest.fn()}));
 
 describe('notification delivery runtime', () => {
   const buildDelivery = (overrides = {}) => ({
@@ -46,11 +39,8 @@ describe('notification delivery runtime', () => {
       target_path: '/reports',
       user: {
         email: 'doctor@example.com',
-        phone: '+256700000000',
-      },
-    },
-    ...overrides,
-  });
+        phone: '+256700000000'}},
+    ...overrides});
 
   const loadRuntime = ({ tableRows, deliveries = [], runImmediate = false } = {}) => {
     jest.resetModules();
@@ -74,11 +64,7 @@ describe('notification delivery runtime', () => {
           retryable: false,
           error_message: null,
           notification: {
-            user_id: 'user-1',
-          },
-        }),
-      },
-    };
+            user_id: 'user-1'}})}};
 
     jest.doMock('@prisma/client', () => prismaMock);
 
@@ -109,11 +95,9 @@ describe('notification delivery runtime', () => {
     const { runtime, prismaMock, sendEmail } = loadRuntime({
       tableRows: [
         { table_name: 'notification' },
-        { table_name: 'notification_delivery' },
-      ],
+        { table_name: 'notification_delivery' }],
       deliveries: [buildDelivery()],
-      runImmediate: true,
-    });
+      runImmediate: true});
 
     sendEmail.mockResolvedValue({ sent: true, provider: 'smtp' });
 
@@ -125,31 +109,25 @@ describe('notification delivery runtime', () => {
     expect(prismaMock.notification_delivery.findMany).toHaveBeenCalled();
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
       to: 'doctor@example.com',
-      subject: 'Queue update',
-    }));
+      subject: 'Queue update'}));
     expect(prismaMock.notification_delivery.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           id: 'delivery-1',
-          status: 'QUEUED',
-        }),
-      })
+          status: 'QUEUED'})})
     );
     expect(prismaMock.notification_delivery.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'delivery-1' },
         data: expect.objectContaining({
           status: 'SENT',
-          provider_name: 'smtp',
-        }),
-      })
+          provider_name: 'smtp'})})
     );
   });
 
   it('does not start when required notification tables are missing', async () => {
     const { runtime, prismaMock, logger } = loadRuntime({
-      tableRows: [{ table_name: 'notification' }],
-    });
+      tableRows: [{ table_name: 'notification' }]});
 
     const started = await runtime.startNotificationDeliveryRuntime();
 
@@ -160,8 +138,7 @@ describe('notification delivery runtime', () => {
       'Notification delivery runtime disabled',
       expect.objectContaining({
         reason: 'missing_notification_runtime_tables',
-        missing_tables: ['notification_delivery'],
-      })
+        missing_tables: ['notification_delivery']})
     );
   });
 });

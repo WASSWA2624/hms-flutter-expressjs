@@ -41,7 +41,7 @@ describe('Lab Sample Repository', () => {
       expect(result).toEqual(mockLabSample);
       expect(prisma.lab_sample.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -94,7 +94,7 @@ describe('Lab Sample Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

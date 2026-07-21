@@ -9,8 +9,7 @@ const {
   releaseLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
   sampleWorkflowParamsSchema,
-  searchLabOrderContextPatientsQuerySchema,
-} = require('@validations/lab-workspace/lab-workspace.schema');
+  searchLabOrderContextPatientsQuerySchema} = require('@validations/lab-workspace/lab-workspace.schema');
 
 describe('lab-workspace schemas', () => {
   it('accepts valid workbench filters', () => {
@@ -24,8 +23,7 @@ describe('lab-workspace schemas', () => {
       to: '2026-03-31T23:59:59.000Z',
       patient_id: 'PAT000001',
       encounter_id: 'ENC000001',
-      search: 'CBC',
-    });
+      search: 'CBC'});
 
     expect(result.success).toBe(true);
   });
@@ -34,8 +32,7 @@ describe('lab-workspace schemas', () => {
     expect(
       getLabWorkbenchQuerySchema.safeParse({
         stage: 'UNKNOWN',
-        criticality: 'SEVERE',
-      }).success
+        criticality: 'SEVERE'}).success
     ).toBe(false);
   });
 
@@ -43,8 +40,7 @@ describe('lab-workspace schemas', () => {
     expect(
       searchLabOrderContextPatientsQuerySchema.safeParse({
         search: 'Amina PAT000001',
-        limit: '8',
-      }).success
+        limit: '8'}).success
     ).toBe(true);
     expect(
       labOrderContextPatientParamsSchema.safeParse({ id: 'PAT000001' }).success
@@ -62,21 +58,18 @@ describe('lab-workspace schemas', () => {
       collectLabOrderSchema.safeParse({
         sample_id: 'LSP000001',
         collected_at: '2026-03-11T08:30:00.000Z',
-        notes: 'Collected from OPD',
-      }).success
+        notes: 'Collected from OPD'}).success
     ).toBe(true);
 
     expect(
       receiveLabSampleSchema.safeParse({
-        received_at: '2026-03-11T08:45:00.000Z',
-      }).success
+        received_at: '2026-03-11T08:45:00.000Z'}).success
     ).toBe(true);
 
     expect(
       rejectLabSampleSchema.safeParse({
         reason: 'Hemolysed specimen',
-        notes: 'Request recollection',
-      }).success
+        notes: 'Request recollection'}).success
     ).toBe(true);
 
     expect(
@@ -86,14 +79,12 @@ describe('lab-workspace schemas', () => {
         result_value: '12.8',
         result_unit: 'mg/dL',
         result_text: 'Critical potassium level',
-        reported_at: '2026-03-11T09:30:00.000Z',
-      }).success
+        reported_at: '2026-03-11T09:30:00.000Z'}).success
     ).toBe(true);
 
     expect(
       reverseLabOrderWorkflowSchema.safeParse({
-        reason: 'Released by mistake',
-      }).success
+        reason: 'Released by mistake'}).success
     ).toBe(true);
   });
 });

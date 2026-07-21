@@ -12,9 +12,7 @@ const listAvailability = async (profileIds, periodStart, periodEnd) => {
       deleted_at: null,
       staff_profile_id: { in: profileIds },
       effective_from: { lte: periodEnd },
-      OR: [{ effective_to: null }, { effective_to: { gte: periodStart } }],
-    },
-  });
+      OR: [{ effective_to: null }, { effective_to: { gte: periodStart } }]}});
 };
 
 const listApprovedLeaves = async (profileIds, periodStart, periodEnd) => {
@@ -26,9 +24,7 @@ const listApprovedLeaves = async (profileIds, periodStart, periodEnd) => {
       status: 'APPROVED',
       staff_profile_id: { in: profileIds },
       start_date: { lte: periodEnd },
-      end_date: { gte: periodStart },
-    },
-  });
+      end_date: { gte: periodStart }}});
 };
 
 const listExistingAssignments = async (profileIds, periodStart, periodEnd) => {
@@ -41,9 +37,7 @@ const listExistingAssignments = async (profileIds, periodStart, periodEnd) => {
       shift: {
         deleted_at: null,
         start_time: { lte: periodEnd },
-        end_time: { gte: periodStart },
-      },
-    },
+        end_time: { gte: periodStart }}},
     include: {
       shift: {
         select: {
@@ -51,15 +45,10 @@ const listExistingAssignments = async (profileIds, periodStart, periodEnd) => {
           human_friendly_id: true,
           start_time: true,
           end_time: true,
-          nurse_roster_id: true,
-        },
-      },
-    },
-  });
+          nurse_roster_id: true}}}});
 };
 
 module.exports = {
   listAvailability,
   listApprovedLeaves,
-  listExistingAssignments,
-};
+  listExistingAssignments};

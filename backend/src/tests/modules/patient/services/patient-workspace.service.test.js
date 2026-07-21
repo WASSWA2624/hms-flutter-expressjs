@@ -1,38 +1,31 @@
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 
 jest.mock('@lib/storage', () => ({
   createStorageService: jest.fn(),
-  sanitizeFilename: jest.fn((value) => value),
-}));
+  sanitizeFilename: jest.fn((value) => value)}));
 
 jest.mock('@lib/billing/identifiers', () => ({
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
   resolvePublicIdentifier: jest.fn((...values) =>
     values.find((value) => typeof value === 'string' && value.trim()) || null
-  ),
-}));
+  )}));
 
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 jest.mock('@lib/logging', () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+    error: jest.fn()}}));
 
 const prisma = require('@prisma/client');
 const { logger } = require('@lib/logging');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const {
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const subject = require('@services/patient/patient-workspace.service');
 
 const createPatientRecord = (overrides = {}) => ({
@@ -51,8 +44,7 @@ const createPatientRecord = (overrides = {}) => ({
   extension_json: {},
   created_at: '2026-03-01T00:00:00.000Z',
   updated_at: '2026-03-02T00:00:00.000Z',
-  ...overrides,
-});
+  ...overrides});
 
 describe('patient-workspace service', () => {
   beforeEach(() => {
@@ -60,47 +52,35 @@ describe('patient-workspace service', () => {
 
     prisma.patient = {
       count: jest.fn(),
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.visit_queue = {
       count: jest.fn(),
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.admission = {
       count: jest.fn(),
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.invoice = {
       count: jest.fn(),
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.follow_up = {
       count: jest.fn(),
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.consent = {
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.appointment = {
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.encounter = {
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.patient_document = {
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.referral = {
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.payment = {
-      findMany: jest.fn(),
-    };
+      findMany: jest.fn()};
     prisma.phi_access_log = {
       findFirst: jest.fn(),
       findMany: jest.fn(),
-      create: jest.fn(),
-    };
+      create: jest.fn()};
 
     prisma.patient.count
       .mockResolvedValueOnce(5)
@@ -127,8 +107,7 @@ describe('patient-workspace service', () => {
     resolveModelRecordByIdentifier.mockResolvedValue(
       createPatientRecord({
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001',
-      })
+        facility_id: 'FAC0001'})
     );
 
     prisma.patient.findMany.mockImplementation(async (args = {}) => {
@@ -138,9 +117,7 @@ describe('patient-workspace service', () => {
             id: 'patient-2',
             human_friendly_id: 'PAT0002',
             first_name: 'Missing',
-            last_name: 'Docs',
-          }),
-        ];
+            last_name: 'Docs'})];
       }
 
       if (args?.take === 6) {
@@ -154,8 +131,7 @@ describe('patient-workspace service', () => {
   it('returns partial overview data when a non-critical section query fails', async () => {
     const result = await subject.getPatientWorkspaceOverview({
       tenant_id: 'TEN0001',
-      facility_id: 'FAC0001',
-    });
+      facility_id: 'FAC0001'});
 
     expect(result.metrics).toEqual(
       expect.objectContaining({
@@ -164,8 +140,7 @@ describe('patient-workspace service', () => {
         waiting_queue: 1,
         active_admissions: 0,
         unpaid_invoices: 0,
-        due_follow_ups: 2,
-      })
+        due_follow_ups: 2})
     );
     expect(result.recent_patients).toHaveLength(1);
     expect(result.missing_documents).toHaveLength(1);
@@ -173,23 +148,18 @@ describe('patient-workspace service', () => {
     expect(result.duplicate_queue).toEqual([]);
     expect(prisma.visit_queue.count).toHaveBeenCalledWith({
       where: expect.objectContaining({
-        patient: { deleted_at: null },
-      }),
-    });
+        patient: { deleted_at: null }})});
     expect(prisma.visit_queue.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          patient: { deleted_at: null },
-        }),
-      })
+          patient: { deleted_at: null }})})
     );
     expect(logger.error).toHaveBeenCalledWith(
       'Patient workspace overview section failed',
       expect.objectContaining({
         section: 'metrics.unpaid_invoices',
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001',
-      })
+        facility_id: 'FAC0001'})
     );
   });
 
@@ -200,29 +170,24 @@ describe('patient-workspace service', () => {
       'PAT0001',
       {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001',
-      },
+        facility_id: 'FAC0001'},
       {
         user_id: 'legacy-user-id',
-        ip_address: '127.0.0.1',
-      }
+        ip_address: '127.0.0.1'}
     );
 
     expect(result).toEqual(
       expect.objectContaining({
         patient: expect.objectContaining({
-          human_friendly_id: 'PAT0001',
-        }),
+          human_friendly_id: 'PAT0001'}),
         snapshot: expect.any(Object),
-        timeline: expect.any(Array),
-      })
+        timeline: expect.any(Array)})
     );
     expect(logger.warn).toHaveBeenCalledWith(
       'Patient PHI access log skipped',
       expect.objectContaining({
         patient_id: 'patient-1',
-        user_id: 'legacy-user-id',
-      })
+        user_id: 'legacy-user-id'})
     );
   });
 
@@ -232,20 +197,14 @@ describe('patient-workspace service', () => {
         {
           id: 'tenant-1',
           human_friendly_id: 'TEN0001',
-          name: 'DemoCare',
-        },
-      ]),
-    };
+          name: 'DemoCare'}])};
     prisma.facility = {
       findMany: jest.fn().mockResolvedValue([
         {
           id: 'facility-1',
           human_friendly_id: 'FAC0001',
           name: 'DemoCare General Hospital',
-          tenant_id: 'tenant-1',
-        },
-      ]),
-    };
+          tenant_id: 'tenant-1'}])};
     prisma.ward = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.room = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.bed = { findMany: jest.fn().mockResolvedValue([]) };
@@ -254,25 +213,19 @@ describe('patient-workspace service', () => {
       {},
       {
         user: {
-          roles: ['SUPER_ADMIN'],
-        },
-      }
+          roles: ['SUPER_ADMIN']}}
     );
 
     expect(prisma.tenant.findMany).toHaveBeenCalled();
     expect(result.tenants).toEqual([
       expect.objectContaining({
         human_friendly_id: 'TEN0001',
-        label: 'DemoCare',
-      }),
-    ]);
+        label: 'DemoCare'})]);
     expect(result.facilities).toEqual([
       expect.objectContaining({
         human_friendly_id: 'FAC0001',
         label: 'DemoCare General Hospital',
-        tenant_id: 'TEN0001',
-      }),
-    ]);
+        tenant_id: 'TEN0001'})]);
   });
 
   it('resolves bed ward and room links to public identifiers', async () => {
@@ -283,10 +236,7 @@ describe('patient-workspace service', () => {
           id: 'facility-uuid-1',
           human_friendly_id: 'FAC0001',
           name: 'DemoCare General Hospital',
-          tenant_id: 'tenant-uuid-1',
-        },
-      ]),
-    };
+          tenant_id: 'tenant-uuid-1'}])};
     prisma.ward = {
       findMany: jest.fn().mockResolvedValue([
         {
@@ -294,10 +244,7 @@ describe('patient-workspace service', () => {
           human_friendly_id: 'WRD0001',
           facility_id: 'facility-uuid-1',
           name: 'Medical ward',
-          ward_type: 'GENERAL',
-        },
-      ]),
-    };
+          ward_type: 'GENERAL'}])};
     prisma.room = {
       findMany: jest.fn().mockResolvedValue([
         {
@@ -306,10 +253,7 @@ describe('patient-workspace service', () => {
           facility_id: 'facility-uuid-1',
           ward_id: 'ward-uuid-1',
           name: 'Room 101',
-          floor: '1',
-        },
-      ]),
-    };
+          floor: '1'}])};
     prisma.bed = {
       findMany: jest.fn().mockResolvedValue([
         {
@@ -319,19 +263,14 @@ describe('patient-workspace service', () => {
           ward_id: 'ward-uuid-1',
           room_id: 'room-uuid-1',
           label: 'Bed A',
-          status: 'AVAILABLE',
-        },
-      ]),
-    };
+          status: 'AVAILABLE'}])};
 
     const result = await subject.getPatientWorkspaceReferenceData(
       {},
       {
         user: {
           roles: ['DOCTOR'],
-          facility_id: 'facility-uuid-1',
-        },
-      },
+          facility_id: 'facility-uuid-1'}},
     );
 
     expect(result.beds).toEqual([
@@ -339,19 +278,15 @@ describe('patient-workspace service', () => {
         human_friendly_id: 'BED0001',
         facility_id: 'FAC0001',
         ward_id: 'WRD0001',
-        room_id: 'ROM0001',
-      }),
-    ]);
+        room_id: 'ROM0001'})]);
     expect(result.rooms[0]).toEqual(
       expect.objectContaining({
         ward_id: 'WRD0001',
-        facility_id: 'FAC0001',
-      }),
+        facility_id: 'FAC0001'}),
     );
     expect(result.wards[0]).toEqual(
       expect.objectContaining({
-        facility_id: 'FAC0001',
-      }),
+        facility_id: 'FAC0001'}),
     );
   });
 
@@ -367,23 +302,16 @@ describe('patient-workspace service', () => {
           {
             contact_type: 'PHONE',
             value: '+256 700 000 001',
-            is_primary: true,
-          },
+            is_primary: true},
           {
             contact_type: 'EMAIL',
             value: 'jane@example.com',
-            is_primary: false,
-          },
-        ],
+            is_primary: false}],
         identifiers: [
           {
             identifier_type: 'NATIONAL_ID',
             identifier_value: 'CM9001',
-            is_primary: true,
-          },
-        ],
-      }),
-    ]);
+            is_primary: true}]})]);
 
     const result = await subject.listDuplicateCandidates(
       {
@@ -394,8 +322,7 @@ describe('patient-workspace service', () => {
         phone: '+256700000001',
         email: ' JANE@example.com ',
         identifier_type: 'NATIONAL_ID',
-        identifier_value: 'cm9001',
-      },
+        identifier_value: 'cm9001'},
       { tenant_id: 'TEN0001', facility_id: 'FAC0001' },
       1,
       8
@@ -407,9 +334,7 @@ describe('patient-workspace service', () => {
           tenant_id: 'TEN0001',
           facility_id: 'FAC0001',
           deleted_at: null,
-          is_active: true,
-        }),
-      })
+          is_active: true})})
     );
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toEqual(
@@ -423,21 +348,16 @@ describe('patient-workspace service', () => {
           'EMAIL_MATCH',
           'NAME_MATCH',
           'DOB_MATCH',
-          'GENDER_MATCH',
-        ]),
+          'GENDER_MATCH']),
         field_comparisons: expect.arrayContaining([
           expect.objectContaining({
             field: 'IDENTIFIER',
             status: 'MATCH',
-            contribution: 100,
-          }),
+            contribution: 100}),
           expect.objectContaining({
             field: 'EMAIL',
             status: 'MATCH',
-            contribution: 45,
-          }),
-        ]),
-      })
+            contribution: 45})])})
     );
   });
 
@@ -453,11 +373,7 @@ describe('patient-workspace service', () => {
           {
             contact_type: 'PHONE',
             value: '+256700000999',
-            is_primary: true,
-          },
-        ],
-      }),
-    ]);
+            is_primary: true}]})]);
 
     const result = await subject.listDuplicateCandidates(
       {
@@ -465,8 +381,7 @@ describe('patient-workspace service', () => {
         last_name: 'Smith',
         date_of_birth: '1990-01-01',
         gender: 'FEMALE',
-        phone: '+256700000999',
-      },
+        phone: '+256700000999'},
       { tenant_id: 'TEN0001' },
       1,
       8
@@ -479,8 +394,7 @@ describe('patient-workspace service', () => {
     expect(result.items[0].field_comparisons).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ field: 'NAME', status: 'SIMILAR' }),
-        expect.objectContaining({ field: 'GENDER', status: 'CONFLICT' }),
-      ])
+        expect.objectContaining({ field: 'GENDER', status: 'CONFLICT' })])
     );
   });
 });

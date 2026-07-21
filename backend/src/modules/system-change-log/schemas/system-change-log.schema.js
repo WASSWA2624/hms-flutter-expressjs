@@ -10,8 +10,7 @@
 const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
 
@@ -57,8 +56,7 @@ const implementSystemChangeLogSchema = z.object({
  * Used for GET /:id, PUT /:id, DELETE /:id, POST /:id/approve, and POST /:id/implement endpoints
  */
 const systemChangeLogIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -73,8 +71,7 @@ const listSystemChangeLogsQuerySchema = listQuerySchema.extend({
   change_type: z.string().trim().optional(),
   search: z.string().trim().max(120).optional(),
   from_date: z.string().datetime().optional(),
-  to_date: z.string().datetime().optional(),
-});
+  to_date: z.string().datetime().optional()});
 
 module.exports = {
   createSystemChangeLogSchema,

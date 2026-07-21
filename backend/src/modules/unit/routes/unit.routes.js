@@ -27,15 +27,13 @@ const SETUP_READ_SCOPES = [
   PERMISSIONS.UNIT_READ,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const SETUP_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
   PERMISSIONS.SYSTEM_ADMIN,
   PERMISSIONS.HR_WRITE,
-  PERMISSIONS.UNIT_MANAGE,
-];
+  PERMISSIONS.UNIT_MANAGE];
 
 /**
  * @description List units with pagination and filters
@@ -58,12 +56,14 @@ const SETUP_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listUnitsQuerySchema }),
+  '/',
+  validateRequest({ query: listUnitsQuerySchema }),
 
   authenticate(),
   authorize(SETUP_READ_SCOPES, 'permission'),
   unitController.listUnits
 );
+
 
 router.post(
   '/:id/restore',
@@ -87,7 +87,8 @@ router.post(
  * @throws 404 Unit not found
  */
 router.get(
-  '/:id',  validateRequest({ params: unitIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: unitIdParamsSchema }),
 
   authenticate(),
   authorize(SETUP_READ_SCOPES, 'permission'),
@@ -113,7 +114,8 @@ router.get(
  * @throws 400 Foreign key constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createUnitSchema }),
+  '/',
+  validateRequest({ body: createUnitSchema }),
 
   authenticate(),
   authorize(SETUP_ADMIN_SCOPES, 'permission'),
@@ -139,7 +141,8 @@ router.post(
  * @throws 400 Foreign key constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: unitIdParamsSchema, body: updateUnitSchema }),
+  '/:id',
+  validateRequest({ params: unitIdParamsSchema, body: updateUnitSchema }),
 
   authenticate(),
   authorize(SETUP_ADMIN_SCOPES, 'permission'),
@@ -160,7 +163,8 @@ router.put(
  * @throws 404 Unit not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: unitIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: unitIdParamsSchema }),
 
   authenticate(),
   authorize(SETUP_ADMIN_SCOPES, 'permission'),

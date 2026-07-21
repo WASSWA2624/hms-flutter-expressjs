@@ -82,8 +82,7 @@ const directScope = (scope = {}, options = {}) => {
 
 const staffPositionScope = (scope = {}) => {
   const where = {
-    deleted_at: null,
-  };
+    deleted_at: null};
   if (scope.tenant_id) where.tenant_id = scope.tenant_id;
   if (scope.facility_id) where.facility_id = scope.facility_id;
   return where;
@@ -165,17 +164,12 @@ const widgetInclude = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   report_definition: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
-};
+      name: true}}};
 
 const countByStatuses = async (model, where, statuses = [], field = 'status') => {
   const counts = await Promise.all(
@@ -292,12 +286,8 @@ const resolvePatientPortalPatient = async ({ scope = {}, userId = null, user = {
   });
 };
 
-const resolveBranchFacilityScope = async (tenantId, branchId) => {
   try {
-    if (!tenantId || !branchId) return null;
-    const branch = await prisma.branch.findFirst({
       where: {
-        id: branchId,
         tenant_id: tenantId,
         deleted_at: null
       },
@@ -306,7 +296,6 @@ const resolveBranchFacilityScope = async (tenantId, branchId) => {
       }
     });
     if (!branch) {
-      throw new HttpError('errors.validation.invalid', 422, [{ field: 'branch_id' }]);
     }
     return branch.facility_id || null;
   } catch (error) {
@@ -331,8 +320,7 @@ const findById = async (id, include = {}) => {
       },
       include: {
         ...widgetInclude,
-        ...include,
-      }
+        ...include}
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -364,8 +352,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       orderBy,
       include: {
         ...widgetInclude,
-        ...include,
-      }
+        ...include}
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -486,11 +473,7 @@ const countUnreadOpdNotifications = async ({ scope = {}, userId = null } = {}) =
             { message: { contains: 'triage' } },
             { message: { contains: 'vitals' } },
             { message: { contains: 'doctor review' } },
-            { message: { contains: 'disposition' } },
-          ],
-        },
-      ],
-    };
+            { message: { contains: 'disposition' } }]}]};
 
     const where = {
       deleted_at: null,
@@ -557,16 +540,14 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         moduleEntitlementIssues,
         tenantsWithoutSubscription,
         trendDates,
-        subscriptionStatusCounts,
-      ] = await Promise.all([
+        subscriptionStatusCounts] = await Promise.all([
         prisma.tenant.count({ where: { deleted_at: null } }),
         prisma.tenant.count({ where: { deleted_at: null, is_active: true } }),
         prisma.facility.count({ where: { deleted_at: null } }),
         prisma.facility.count({ where: { deleted_at: null, is_active: true } }),
         prisma.subscription.count({ where: { deleted_at: null } }),
         prisma.subscription.count({
-          where: { deleted_at: null, status: { in: ['ACTIVE', 'TRIAL'] } },
-        }),
+          where: { deleted_at: null, status: { in: ['ACTIVE', 'TRIAL'] } }}),
         prisma.subscription.count({
           where: {
             deleted_at: null,
@@ -574,28 +555,18 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
               { status: 'PAST_DUE' },
               {
                 status: { in: ['ACTIVE', 'TRIAL'] },
-                end_date: { lte: shiftDays(todayStart, 30) },
-              },
-            ],
-          },
-        }),
+                end_date: { lte: shiftDays(todayStart, 30) }}]}}),
         prisma.subscription.count({
           where: {
             deleted_at: null,
-            plan_fit_status: { in: ['APPROACHING_LIMIT', 'EXCEEDED'] },
-          },
-        }),
+            plan_fit_status: { in: ['APPROACHING_LIMIT', 'EXCEEDED'] }}}),
         prisma.tenant.count({
           where: {
             deleted_at: null,
             subscriptions: {
               none: {
                 deleted_at: null,
-                status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
-              },
-            },
-          },
-        }),
+                status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }}}}}),
         selectDateSeries(
           prisma.tenant,
           { deleted_at: null, created_at: { gte: trendStart } },
@@ -605,12 +576,10 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           prisma.subscription,
           { deleted_at: null },
           ['ACTIVE', 'TRIAL', 'PAST_DUE', 'CANCELLED']
-        ),
-      ]);
+        )]);
 
       const statusCounts = {
-        ...subscriptionStatusCounts,
-      };
+        ...subscriptionStatusCounts};
       if (tenantsWithoutSubscription > 0) {
         statusCounts.NONE = tenantsWithoutSubscription;
       }
@@ -626,19 +595,14 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           subscriptionsTotal,
           subscriptionsActive,
           subscriptionsExpiring,
-          moduleEntitlementIssues,
-        },
+          moduleEntitlementIssues},
         trendDates,
         statusCounts,
         activity: {
           tenants: await prisma.tenant.count({
-            where: { deleted_at: null, updated_at: { gte: window24h } },
-          }),
+            where: { deleted_at: null, updated_at: { gte: window24h } }}),
           subscriptions: await prisma.subscription.count({
-            where: { deleted_at: null, updated_at: { gte: window24h } },
-          }),
-        },
-      };
+            where: { deleted_at: null, updated_at: { gte: window24h } }})}};
     }
 
     if (packId === ROLE_PACKS.TENANT_ADMIN) {
@@ -651,12 +615,10 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
             activeUsers: 0,
             usersTotal: 0,
             moduleAdoption: 0,
-            subscriptionHealth: 0,
-          },
+            subscriptionHealth: 0},
           trendDates: [],
           statusCounts: { ACTIVE: 0, INACTIVE: 0, DENIED: 0 },
-          activity: { facilities: 0 },
-        };
+          activity: { facilities: 0 }};
       }
 
       const facilityWhere = { deleted_at: null, tenant_id: tenantId };
@@ -668,8 +630,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         activeUsers,
         subscription,
         trendDates,
-        facilitiesUpdated24h,
-      ] = await Promise.all([
+        facilitiesUpdated24h] = await Promise.all([
         prisma.facility.count({ where: facilityWhere }),
         prisma.facility.count({ where: { ...facilityWhere, is_active: true } }),
         prisma.user.count({ where: userWhere }),
@@ -677,33 +638,24 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           where: {
             tenant_id: tenantId,
             deleted_at: null,
-            status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
-          },
+            status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }},
           include: {
             plan: {
               select: {
-                max_modules: true,
-              },
-            },
+                max_modules: true}},
             module_subscriptions: {
               where: { deleted_at: null },
               select: {
                 is_active: true,
-                entitlement_denied: true,
-              },
-            },
-          },
-          orderBy: { updated_at: 'desc' },
-        }),
+                entitlement_denied: true}}},
+          orderBy: { updated_at: 'desc' }}),
         selectDateSeries(
           prisma.facility,
           { ...facilityWhere, created_at: { gte: trendStart } },
           'created_at'
         ),
         prisma.facility.count({
-          where: { ...facilityWhere, updated_at: { gte: window24h } },
-        }),
-      ]);
+          where: { ...facilityWhere, updated_at: { gte: window24h } }})]);
 
       const moduleSubscriptions = subscription?.module_subscriptions || [];
       const activeModules = moduleSubscriptions.filter(
@@ -735,18 +687,14 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           activeUsers,
           usersTotal: activeUsers,
           moduleAdoption,
-          subscriptionHealth,
-        },
+          subscriptionHealth},
         trendDates,
         statusCounts: {
           ACTIVE: activeModules,
           INACTIVE: inactiveModules,
-          DENIED: deniedModules,
-        },
+          DENIED: deniedModules},
         activity: {
-          facilities: facilitiesUpdated24h,
-        },
-      };
+          facilities: facilitiesUpdated24h}};
     }
 
     if (packId === ROLE_PACKS.PATIENT_SAFE) {
@@ -859,8 +807,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     const providerTodayWhere = {
       ...providerWhere,
       scheduled_start: { gte: todayStart, lt: endOfToday },
-      status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
-    };
+      status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] }};
     const providerLabAuthorship = providerUserId
       ? {
           OR: [
@@ -868,26 +815,14 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
               lab_order_item: {
                 is: {
                   lab_order: {
-                    is: { ordered_by_user_id: providerUserId, deleted_at: null },
-                  },
-                },
-              },
-            },
+                    is: { ordered_by_user_id: providerUserId, deleted_at: null }}}}},
             {
               lab_order_item: {
                 is: {
                   lab_order: {
                     is: {
                       encounter: {
-                        is: { provider_user_id: providerUserId, deleted_at: null },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          ],
-        }
+                        is: { provider_user_id: providerUserId, deleted_at: null }}}}}}}]}
       : {};
     const providerRadiologyAuthorship = providerUserId
       ? {
@@ -895,22 +830,16 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
             is: {
               deleted_at: null,
               encounter: {
-                is: { provider_user_id: providerUserId, deleted_at: null },
-              },
-            },
-          },
-        }
+                is: { provider_user_id: providerUserId, deleted_at: null }}}}}
       : {};
     const providerReleasedLabWhere = {
       ...labResultWhere,
       status: { in: ['NORMAL', 'ABNORMAL', 'CRITICAL'] },
-      ...providerLabAuthorship,
-    };
+      ...providerLabAuthorship};
     const providerRadiologyReadyWhere = {
       ...radiologyResultWhere,
       status: { in: ['FINAL', 'AMENDED'] },
-      ...providerRadiologyAuthorship,
-    };
+      ...providerRadiologyAuthorship};
     const followUpWhere = {
       deleted_at: null,
       status: 'SCHEDULED',
@@ -919,32 +848,25 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         deleted_at: null,
         provider_user_id: providerUserId,
         ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-        ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
-      },
-    };
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {})}};
 
     const [
       assigned,
       inProgress,
       completed,
       resultsPendingReview,
-      followUpsDue,
-    ] = await Promise.all([
+      followUpsDue] = await Promise.all([
       prisma.appointment.count({ where: providerTodayWhere }),
       prisma.appointment.count({ where: { ...providerWhere, status: 'IN_PROGRESS' } }),
       prisma.appointment.count({
         where: {
           ...providerWhere,
           status: 'COMPLETED',
-          scheduled_start: { gte: todayStart, lt: endOfToday },
-        },
-      }),
+          scheduled_start: { gte: todayStart, lt: endOfToday }}}),
       Promise.all([
         prisma.lab_result.count({ where: providerReleasedLabWhere }),
-        prisma.radiology_result.count({ where: providerRadiologyReadyWhere }),
-      ]).then(([labCount, radiologyCount]) => labCount + radiologyCount),
-      prisma.follow_up.count({ where: followUpWhere }),
-    ]);
+        prisma.radiology_result.count({ where: providerRadiologyReadyWhere })]).then(([labCount, radiologyCount]) => labCount + radiologyCount),
+      prisma.follow_up.count({ where: followUpWhere })]);
 
     return {
       metrics: {
@@ -952,8 +874,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         inProgress,
         completed,
         resultsPendingReview,
-        followUpsDue,
-      },
+        followUpsDue},
       trendDates: await selectDateSeries(
         prisma.appointment,
         { ...providerWhere, scheduled_start: { gte: trendStart } },
@@ -966,16 +887,11 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
       ),
       activity: {
         consultations: await prisma.appointment.count({
-          where: { ...providerWhere, updated_at: { gte: window24h } },
-        }),
+          where: { ...providerWhere, updated_at: { gte: window24h } }}),
         labs: await prisma.lab_result.count({
-          where: { ...providerReleasedLabWhere, updated_at: { gte: window24h } },
-        }),
+          where: { ...providerReleasedLabWhere, updated_at: { gte: window24h } }}),
         followUps: await prisma.follow_up.count({
-          where: { ...followUpWhere, updated_at: { gte: window24h } },
-        }),
-      },
-    };
+          where: { ...followUpWhere, updated_at: { gte: window24h } }})}};
   }
 
     if (packId === ROLE_PACKS.NURSE) {
@@ -987,43 +903,31 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         appointmentsToday,
         emergencyCasesToday,
         theatreCasesToday,
-        radiologyPending,
-      ] = await Promise.all([
+        radiologyPending] = await Promise.all([
         prisma.admission.count({ where: { ...admissionWhere, status: 'ADMITTED' } }),
         prisma.medication_administration.count({
           where: {
             deleted_at: null,
             admission: admissionWhere,
-            administered_at: { gte: todayStart },
-          },
-        }),
+            administered_at: { gte: todayStart }}}),
         prisma.transfer_request.count({
           where: {
             deleted_at: null,
             admission: admissionWhere,
-            status: { in: ['REQUESTED', 'IN_PROGRESS'] },
-          },
-        }),
+            status: { in: ['REQUESTED', 'IN_PROGRESS'] }}}),
         prisma.lab_result.count({ where: { ...labResultWhere, status: 'CRITICAL' } }),
         prisma.appointment.count({
           where: {
             ...appointmentWhere,
-            status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
-          },
-        }),
+            status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] }}}),
         prisma.emergency_case.count({
-          where: { ...emergencyCaseWhere, created_at: { gte: todayStart } },
-        }),
+          where: { ...emergencyCaseWhere, created_at: { gte: todayStart } }}),
         prisma.theatre_case.count({
           where: {
             ...theatreCaseWhere,
-            status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
-          },
-        }),
+            status: { in: ['SCHEDULED', 'IN_PROGRESS'] }}}),
         prisma.radiology_result.count({
-          where: { ...radiologyResultWhere, status: 'DRAFT' },
-        }),
-      ]);
+          where: { ...radiologyResultWhere, status: 'DRAFT' }})]);
       return {
         metrics: {
           activeAdmissions,
@@ -1033,8 +937,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           appointmentsToday,
           emergencyCasesToday,
           theatreCasesToday,
-          radiologyPending,
-        },
+          radiologyPending},
         trendDates: await selectDateSeries(
           prisma.medication_administration,
           { deleted_at: null, admission: admissionWhere, administered_at: { gte: trendStart } },
@@ -1047,16 +950,11 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         ),
         activity: {
           meds: await prisma.medication_administration.count({
-            where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } },
-          }),
+            where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } }}),
           transfers: await prisma.transfer_request.count({
-            where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } },
-          }),
+            where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } }}),
           admissions: await prisma.admission.count({
-            where: { ...admissionWhere, updated_at: { gte: window24h } },
-          }),
-        },
-      };
+            where: { ...admissionWhere, updated_at: { gte: window24h } }})}};
     }
 
     if (packId === ROLE_PACKS.LAB_TECH) {
@@ -1661,8 +1559,7 @@ const findNurseStaffContext = async (userId, scope = {}) => {
       where: {
         deleted_at: null,
         user_id: userId,
-        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-      },
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})},
       select: {
         department_id: true,
         position: true,
@@ -1670,14 +1567,11 @@ const findNurseStaffContext = async (userId, scope = {}) => {
         department: {
           select: {
             name: true,
-            short_name: true,
-          },
-        },
+            short_name: true}},
         assignments: {
           where: {
             deleted_at: null,
-            OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
-          },
+            OR: [{ end_date: null }, { end_date: { gte: new Date() } }]},
           orderBy: { start_date: 'desc' },
           take: 1,
           select: {
@@ -1686,18 +1580,10 @@ const findNurseStaffContext = async (userId, scope = {}) => {
             department: {
               select: {
                 name: true,
-                short_name: true,
-              },
-            },
+                short_name: true}},
             unit: {
               select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
+                name: true}}}}}});
 
     if (!profile) return null;
 
@@ -1713,8 +1599,7 @@ const findNurseStaffContext = async (userId, scope = {}) => {
       profile.department?.short_name,
       unitName,
       profile.position,
-      profile.practitioner_type,
-    ]
+      profile.practitioner_type]
       .filter(Boolean)
       .join(' ');
 
@@ -1722,8 +1607,7 @@ const findNurseStaffContext = async (userId, scope = {}) => {
       nurse_context: inferNurseContext(combined),
       department_id: assignment?.department_id || profile.department_id || null,
       unit_id: assignment?.unit_id || null,
-      department_name: departmentName,
-    };
+      department_name: departmentName};
   } catch (error) {
     return null;
   }

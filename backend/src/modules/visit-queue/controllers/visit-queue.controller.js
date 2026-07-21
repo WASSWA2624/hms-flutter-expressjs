@@ -22,8 +22,7 @@ const normalizeScopeValue = (value) => {
 const hasGlobalScopeAccess = (user = {}) => {
   const roles = [
     ...(Array.isArray(user.roles) ? user.roles : []),
-    user.role,
-  ]
+    user.role]
     .map((role) => String(role || '').trim().toUpperCase())
     .filter(Boolean);
 
@@ -44,8 +43,7 @@ const buildVisitQueueScope = (req = {}) => {
 
   return {
     ...(tenantId ? { tenant_id: tenantId } : {}),
-    ...(facilityId ? { facility_id: facilityId } : {}),
-  };
+    ...(facilityId ? { facility_id: facilityId } : {})};
 };
 
 /**
@@ -67,8 +65,7 @@ const listVisitQueues = asyncHandler(async (req, res) => {
     appointment_id,
     provider_user_id,
     status,
-    search,
-  } = req.query;
+    search} = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
@@ -123,8 +120,7 @@ const createVisitQueue = asyncHandler(async (req, res) => {
   const data = {
     ...req.body,
     tenant_id: scope.tenant_id ?? req.body?.tenant_id ?? null,
-    facility_id: scope.facility_id ?? req.body?.facility_id ?? null,
-  };
+    facility_id: scope.facility_id ?? req.body?.facility_id ?? null};
   
   // Build context for audit log
   const context = {
@@ -154,8 +150,7 @@ const updateVisitQueue = asyncHandler(async (req, res) => {
     ...req.body,
     ...(scope.facility_id && Object.prototype.hasOwnProperty.call(req.body || {}, 'facility_id')
       ? { facility_id: scope.facility_id }
-      : {}),
-  };
+      : {})};
   
   // Build context for audit log
   const context = {

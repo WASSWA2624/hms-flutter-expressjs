@@ -7,8 +7,7 @@ const { validateRequest } = require('@middlewares/validate.middleware');
 const settingsWorkspaceController = require('@controllers/settings-workspace/settings-workspace.controller');
 const {
   referenceDataQuerySchema,
-  workspaceQuerySchema,
-} = require('@validations/settings-workspace/settings-workspace.schema');
+  workspaceQuerySchema} = require('@validations/settings-workspace/settings-workspace.schema');
 
 const router = express.Router();
 
@@ -16,8 +15,7 @@ const SETTINGS_WORKSPACE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.HR,
-];
+  ROLES.HR];
 
 const requireSettingsWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('settings_workspace_v1')) {

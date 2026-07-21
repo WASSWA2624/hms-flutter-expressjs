@@ -4,17 +4,14 @@
 
 jest.mock('jsonwebtoken', () => ({
   sign: jest.fn(),
-  verify: jest.fn(),
-}));
+  verify: jest.fn()}));
 
 jest.mock('@config/jwt', () => ({
   accessTokenExpiration: '15m',
-  algorithm: 'HS512',
-}));
+  algorithm: 'HS512'}));
 
 jest.mock('@config/env', () => ({
-  JWT_SECRET: 'test-secret-test-secret-test-secret-123',
-}));
+  JWT_SECRET: 'test-secret-test-secret-test-secret-123'}));
 
 const jwt = require('jsonwebtoken');
 const { generateToken } = require('@lib/jwt/generateToken');

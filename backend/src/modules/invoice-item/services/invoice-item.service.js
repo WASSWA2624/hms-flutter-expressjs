@@ -13,8 +13,7 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const INVOICE_TENANT_INCLUDE = {
   invoice: {
@@ -34,9 +33,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const mapInvoiceItemForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -54,8 +51,7 @@ const mapInvoiceItemForDisplay = (record) => {
       record?.invoice?.patient?.human_friendly_id,
       record?.invoice?.patient_id
     ),
-    timeline_at: record?.timeline_at || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.created_at || null};
 };
 
 /**
@@ -77,8 +73,7 @@ const listInvoiceItems = async (filters, page, limit, sortBy, order) => {
     if (filters.invoice_id !== undefined) {
       const invoiceId = await resolveIdentifierForFilter({
         value: filters.invoice_id,
-        model: 'invoice',
-      });
+        model: 'invoice'});
       if (invoiceId === null) return buildEmptyListResult(page, limit);
       if (invoiceId !== undefined) whereClause.invoice_id = invoiceId;
     }
@@ -86,8 +81,7 @@ const listInvoiceItems = async (filters, page, limit, sortBy, order) => {
     if (search) {
       whereClause.OR = [
         { description: { contains: search } },
-        { human_friendly_id: { contains: search.toUpperCase() } },
-      ];
+        { human_friendly_id: { contains: search.toUpperCase() } }];
     }
 
     const [invoiceItems, total] = await Promise.all([
@@ -97,10 +91,7 @@ const listInvoiceItems = async (filters, page, limit, sortBy, order) => {
             id: true,
             human_friendly_id: true,
             patient_id: true,
-            patient: { select: { id: true, human_friendly_id: true } },
-          },
-        },
-      }),
+            patient: { select: { id: true, human_friendly_id: true } }}}}),
       invoiceItemRepository.count(whereClause)
     ]);
 
@@ -131,18 +122,14 @@ const getInvoiceItemById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'invoice_item',
-      identifier: id,
-    });
+      identifier: id});
     const invoiceItem = await invoiceItemRepository.findById(resolvedId, {
       invoice: {
         select: {
           id: true,
           human_friendly_id: true,
           patient_id: true,
-          patient: { select: { id: true, human_friendly_id: true } },
-        },
-      },
-    });
+          patient: { select: { id: true, human_friendly_id: true } }}}});
 
     if (!invoiceItem) {
       throw new HttpError('errors.invoice_item.not_found', 404);
@@ -168,12 +155,10 @@ const createInvoiceItem = async (data, userId, ipAddress) => {
     const invoiceId = await resolveIdentifierForPayload({
       value: data?.invoice_id,
       field: 'invoice_id',
-      model: 'invoice',
-    });
+      model: 'invoice'});
     const invoiceItem = await invoiceItemRepository.create({
       ...data,
-      invoice_id: invoiceId,
-    });
+      invoice_id: invoiceId});
     const createdWithInvoice = await invoiceItemRepository.findById(invoiceItem.id, INVOICE_TENANT_INCLUDE);
     const tenantId = resolveTenantId(createdWithInvoice);
     const createdRecord = await invoiceItemRepository.findById(invoiceItem.id, {
@@ -182,10 +167,7 @@ const createInvoiceItem = async (data, userId, ipAddress) => {
           id: true,
           human_friendly_id: true,
           patient_id: true,
-          patient: { select: { id: true, human_friendly_id: true } },
-        },
-      },
-    });
+          patient: { select: { id: true, human_friendly_id: true } }}}});
 
     createAuditLog({
       tenant_id: tenantId,
@@ -217,8 +199,7 @@ const updateInvoiceItem = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'invoice_item',
-      identifier: id,
-    });
+      identifier: id});
     const before = await invoiceItemRepository.findById(resolvedId, INVOICE_TENANT_INCLUDE);
     if (!before) {
       throw new HttpError('errors.invoice_item.not_found', 404);
@@ -229,8 +210,7 @@ const updateInvoiceItem = async (id, data, userId, ipAddress) => {
       payload.invoice_id = await resolveIdentifierForPayload({
         value: payload.invoice_id,
         field: 'invoice_id',
-        model: 'invoice',
-      });
+        model: 'invoice'});
     }
 
     const invoiceItem = await invoiceItemRepository.update(before.id, payload);
@@ -242,10 +222,7 @@ const updateInvoiceItem = async (id, data, userId, ipAddress) => {
           id: true,
           human_friendly_id: true,
           patient_id: true,
-          patient: { select: { id: true, human_friendly_id: true } },
-        },
-      },
-    });
+          patient: { select: { id: true, human_friendly_id: true } }}}});
 
     createAuditLog({
       tenant_id: tenantId,
@@ -276,8 +253,7 @@ const deleteInvoiceItem = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'invoice_item',
-      identifier: id,
-    });
+      identifier: id});
     const before = await invoiceItemRepository.findById(resolvedId, INVOICE_TENANT_INCLUDE);
     if (!before) {
       throw new HttpError('errors.invoice_item.not_found', 404);

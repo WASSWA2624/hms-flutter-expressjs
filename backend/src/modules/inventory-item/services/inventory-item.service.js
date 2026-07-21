@@ -12,8 +12,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveScopedUserContext,
-  buildTenantScopeWhere,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  buildTenantScopeWhere} = require('@services/pharmacy-workspace/pharmacy.shared');
 
 const findScopedInventoryItemOrThrow = async (id, user = {}) => {
   const scope = resolveScopedUserContext(user);
@@ -51,8 +50,7 @@ const listInventoryItems = async (filters, page, limit, sortBy, order, userId, i
 
     // Build filter object
     const whereClause = {
-      ...buildTenantScopeWhere(scope),
-    };
+      ...buildTenantScopeWhere(scope)};
 
     if (scope.can_manage_all_tenants && filters.tenant_id) whereClause.tenant_id = filters.tenant_id;
     if (filters.name) whereClause.name = { contains: filters.name };
@@ -124,8 +122,7 @@ const createInventoryItem = async (data, userId, ipAddress, user = {}) => {
     const scope = resolveScopedUserContext(user);
     const payload = {
       ...data,
-      ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {}),
-    };
+      ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {})};
     const inventoryItem = await inventoryItemRepository.create(payload);
 
     // Create audit log (non-blocking)
@@ -163,8 +160,7 @@ const updateInventoryItem = async (id, data, userId, ipAddress, user = {}) => {
     const { scope, inventoryItem: before } = await findScopedInventoryItemOrThrow(id, user);
     const payload = {
       ...data,
-      ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {}),
-    };
+      ...(!scope.can_manage_all_tenants ? { tenant_id: scope.tenant_id } : {})};
     const inventoryItem = await inventoryItemRepository.update(id, payload);
 
     // Create audit log (non-blocking)

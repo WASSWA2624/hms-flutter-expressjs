@@ -28,8 +28,7 @@ const CONTACT_TYPE_VALUES = [
   'REDDIT',
   'DISCORD',
   'FAX',
-  'OTHER',
-];
+  'OTHER'];
 const PHONE_LIKE_CONTACT_TYPES = new Set(['PHONE', 'WHATSAPP', 'FAX']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\+?[0-9 ()-]{6,40}$/;
@@ -43,8 +42,7 @@ const validateContactValue = (payload, ctx) => {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['value'],
-      message: 'errors.patient_contact.invalid_phone',
-    });
+      message: 'errors.patient_contact.invalid_phone'});
     return;
   }
 
@@ -52,8 +50,7 @@ const validateContactValue = (payload, ctx) => {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['value'],
-      message: 'errors.patient_contact.invalid_email',
-    });
+      message: 'errors.patient_contact.invalid_email'});
   }
 };
 

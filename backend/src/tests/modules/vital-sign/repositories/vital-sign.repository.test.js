@@ -42,7 +42,7 @@ describe('Vital Sign Repository', () => {
       expect(result).toEqual(mockVitalSign);
       expect(prisma.vital_sign.findFirst).toHaveBeenCalledWith({
         where: { id: mockVitalSign.id, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 

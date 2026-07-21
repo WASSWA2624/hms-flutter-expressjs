@@ -23,8 +23,7 @@ const {
   pharmacyStorageRoomParamsSchema,
   createPharmacyStorageShelfSchema,
   updatePharmacyStorageShelfSchema,
-  pharmacyStorageShelfParamsSchema,
-} = require('@validations/pharmacy-workspace/pharmacy-workspace.schema');
+  pharmacyStorageShelfParamsSchema} = require('@validations/pharmacy-workspace/pharmacy-workspace.schema');
 
 const router = express.Router();
 
@@ -156,8 +155,7 @@ router.put(
   '/storage/rooms/:roomId',
   validateRequest({
     params: pharmacyStorageRoomParamsSchema,
-    body: updatePharmacyStorageRoomSchema,
-  }),
+    body: updatePharmacyStorageRoomSchema}),
   authenticate(),
   authorize(INVENTORY_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.updatePharmacyStorageRoom
@@ -167,8 +165,7 @@ router.post(
   '/storage/rooms/:roomId/shelves',
   validateRequest({
     params: pharmacyStorageRoomParamsSchema,
-    body: createPharmacyStorageShelfSchema,
-  }),
+    body: createPharmacyStorageShelfSchema}),
   authenticate(),
   authorize(INVENTORY_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.createPharmacyStorageShelf
@@ -178,8 +175,7 @@ router.put(
   '/storage/shelves/:shelfId',
   validateRequest({
     params: pharmacyStorageShelfParamsSchema,
-    body: updatePharmacyStorageShelfSchema,
-  }),
+    body: updatePharmacyStorageShelfSchema}),
   authenticate(),
   authorize(INVENTORY_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.updatePharmacyStorageShelf

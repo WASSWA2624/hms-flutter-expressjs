@@ -30,30 +30,26 @@ const findManyOrders = async (where, skip, take, orderBy, include) =>
       skip,
       take,
       orderBy,
-      include,
-    })
+      include})
   );
 
 const countOrders = async (where) =>
   withDbErrorHandling(() =>
     prisma.pharmacy_order.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const findOrderById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.pharmacy_order.findFirst({
       where: { id, deleted_at: null },
-      include,
-    })
+      include})
   );
 
 const countDispenseAttestations = async (where) =>
   withDbErrorHandling(() =>
     prisma.pharmacy_dispense_attestation.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const findManyInventoryStocks = async (where, skip, take, orderBy, include) =>
@@ -63,15 +59,13 @@ const findManyInventoryStocks = async (where, skip, take, orderBy, include) =>
       skip,
       take,
       orderBy,
-      include,
-    })
+      include})
   );
 
 const countInventoryStocks = async (where) =>
   withDbErrorHandling(() =>
     prisma.inventory_stock.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const findInventoryStockMetrics = async (where) =>
@@ -80,9 +74,7 @@ const findInventoryStockMetrics = async (where) =>
       where: { deleted_at: null, ...(where || {}) },
       select: {
         quantity: true,
-        reorder_level: true,
-      },
-    })
+        reorder_level: true}})
   );
 
 const findManyDrugs = async (where, skip, take, orderBy, include) =>
@@ -92,15 +84,13 @@ const findManyDrugs = async (where, skip, take, orderBy, include) =>
       skip,
       take,
       orderBy,
-      include,
-    })
+      include})
   );
 
 const countDrugs = async (where) =>
   withDbErrorHandling(() =>
     prisma.drug.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const withTransaction = async (callback) =>
@@ -109,57 +99,47 @@ const withTransaction = async (callback) =>
 const txFindOrderById = async (tx, id, include) =>
   tx.pharmacy_order.findFirst({
     where: { id, deleted_at: null },
-    include,
-  });
+    include});
 
 const txUpdateOrder = async (tx, id, data) =>
   tx.pharmacy_order.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txFindStockByInventoryItemAndFacility = async (tx, inventoryItemId, facilityId = null, include) =>
   tx.inventory_stock.findFirst({
     where: {
       deleted_at: null,
       inventory_item_id: inventoryItemId,
-      facility_id: facilityId,
-    },
-    include,
-  });
+      facility_id: facilityId},
+    include});
 
 const txCreateInventoryStock = async (tx, data) =>
   tx.inventory_stock.create({
-    data,
-  });
+    data});
 
 const txUpdateInventoryStock = async (tx, id, data) =>
   tx.inventory_stock.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txCreateStockMovement = async (tx, data) =>
   tx.stock_movement.create({
-    data,
-  });
+    data});
 
 const txCreateDispenseLog = async (tx, data) =>
   tx.dispense_log.create({
-    data,
-  });
+    data});
 
 const txUpdateDispenseLog = async (tx, id, data) =>
   tx.dispense_log.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txUpdateManyDispenseLogs = async (tx, where, data) =>
   tx.dispense_log.updateMany({
     where: { deleted_at: null, ...(where || {}) },
-    data,
-  });
+    data});
 
 const txFindDispenseLogsByBatch = async (tx, pharmacyOrderId, batchRef, include = undefined) =>
   tx.dispense_log.findMany({
@@ -168,17 +148,13 @@ const txFindDispenseLogsByBatch = async (tx, pharmacyOrderId, batchRef, include 
       dispense_batch_ref: batchRef,
       pharmacy_order_item: {
         deleted_at: null,
-        pharmacy_order_id: pharmacyOrderId,
-      },
-    },
+        pharmacy_order_id: pharmacyOrderId}},
     orderBy: { created_at: 'asc' },
-    include,
-  });
+    include});
 
 const txCreateDispenseAttestation = async (tx, data) =>
   tx.pharmacy_dispense_attestation.create({
-    data,
-  });
+    data});
 
 const txFindDispenseAttestation = async (tx, pharmacyOrderId, batchRef, phase) =>
   tx.pharmacy_dispense_attestation.findFirst({
@@ -186,29 +162,23 @@ const txFindDispenseAttestation = async (tx, pharmacyOrderId, batchRef, phase) =
       deleted_at: null,
       pharmacy_order_id: pharmacyOrderId,
       dispense_batch_ref: batchRef,
-      phase,
-    },
-    orderBy: { created_at: 'desc' },
-  });
+      phase},
+    orderBy: { created_at: 'desc' }});
 
 const txFindManyDispenseAttestations = async (tx, where, orderBy = { created_at: 'desc' }) =>
   tx.pharmacy_dispense_attestation.findMany({
     where: { deleted_at: null, ...(where || {}) },
-    orderBy,
-  });
+    orderBy});
 
 const txFindInventoryMapByDrug = async (tx, drugId, tenantId = null) =>
   tx.drug_inventory_map.findFirst({
     where: {
       deleted_at: null,
       drug_id: drugId,
-      ...(tenantId ? { tenant_id: tenantId } : {}),
-    },
+      ...(tenantId ? { tenant_id: tenantId } : {})},
     orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
     include: {
-      inventory_item: true,
-    },
-  });
+      inventory_item: true}});
 
 const txFindInventoryMapByDrugAndItem = async (tx, drugId, inventoryItemId, tenantId = null) =>
   tx.drug_inventory_map.findFirst({
@@ -216,12 +186,9 @@ const txFindInventoryMapByDrugAndItem = async (tx, drugId, inventoryItemId, tena
       deleted_at: null,
       drug_id: drugId,
       inventory_item_id: inventoryItemId,
-      ...(tenantId ? { tenant_id: tenantId } : {}),
-    },
+      ...(tenantId ? { tenant_id: tenantId } : {})},
     include: {
-      inventory_item: true,
-    },
-  });
+      inventory_item: true}});
 
 const findDrugInventoryMapsByInventoryItemIds = async (inventoryItemIds = []) =>
   withDbErrorHandling(() => {
@@ -232,13 +199,10 @@ const findDrugInventoryMapsByInventoryItemIds = async (inventoryItemIds = []) =>
     return prisma.drug_inventory_map.findMany({
       where: {
         deleted_at: null,
-        inventory_item_id: { in: normalized },
-      },
+        inventory_item_id: { in: normalized }},
       select: {
         drug_id: true,
-        inventory_item_id: true,
-      },
-    });
+        inventory_item_id: true}});
   });
 
 const findDrugBatchesByDrugIds = async (drugIds = []) =>
@@ -248,16 +212,13 @@ const findDrugBatchesByDrugIds = async (drugIds = []) =>
     return prisma.drug_batch.findMany({
       where: {
         deleted_at: null,
-        drug_id: { in: normalized },
-      },
+        drug_id: { in: normalized }},
       select: {
         id: true,
         drug_id: true,
         batch_number: true,
         expiry_date: true,
-        quantity: true,
-      },
-    });
+        quantity: true}});
   });
 
 const findInventoryItemIdsByBatchFilters = async (tenantId, filters = {}) =>
@@ -272,16 +233,14 @@ const findInventoryItemIdsByBatchFilters = async (tenantId, filters = {}) =>
       horizon.setDate(horizon.getDate() + Number(filters.expiring_within_days));
       batchWhere.expiry_date = {
         gte: now,
-        lte: horizon,
-      };
+        lte: horizon};
     } else {
       return null;
     }
 
     const batches = await prisma.drug_batch.findMany({
       where: batchWhere,
-      select: { drug_id: true },
-    });
+      select: { drug_id: true }});
     const drugIds = Array.from(new Set(batches.map((row) => row.drug_id).filter(Boolean)));
     if (!drugIds.length) return [];
 
@@ -289,10 +248,8 @@ const findInventoryItemIdsByBatchFilters = async (tenantId, filters = {}) =>
       where: {
         deleted_at: null,
         tenant_id: tenantId,
-        drug_id: { in: drugIds },
-      },
-      select: { inventory_item_id: true },
-    });
+        drug_id: { in: drugIds }},
+      select: { inventory_item_id: true }});
 
     return Array.from(new Set(maps.map((row) => row.inventory_item_id).filter(Boolean)));
   });
@@ -309,11 +266,8 @@ const countInventoryRowsWithExpiringBatches = async (tenantId, facilityId, days 
         quantity: { gt: 0 },
         expiry_date: {
           gte: now,
-          lte: horizon,
-        },
-      },
-      select: { drug_id: true },
-    });
+          lte: horizon}},
+      select: { drug_id: true }});
     const drugIds = Array.from(new Set(batches.map((row) => row.drug_id).filter(Boolean)));
     if (!drugIds.length) return 0;
 
@@ -321,10 +275,8 @@ const countInventoryRowsWithExpiringBatches = async (tenantId, facilityId, days 
       where: {
         deleted_at: null,
         tenant_id: tenantId,
-        drug_id: { in: drugIds },
-      },
-      select: { inventory_item_id: true },
-    });
+        drug_id: { in: drugIds }},
+      select: { inventory_item_id: true }});
     const inventoryItemIds = Array.from(
       new Set(maps.map((row) => row.inventory_item_id).filter(Boolean))
     );
@@ -334,9 +286,7 @@ const countInventoryRowsWithExpiringBatches = async (tenantId, facilityId, days 
       where: {
         deleted_at: null,
         inventory_item_id: { in: inventoryItemIds },
-        ...(facilityId ? { facility_id: facilityId } : {}),
-      },
-    });
+        ...(facilityId ? { facility_id: facilityId } : {})}});
   });
 
 const txCreateDrug = async (tx, data) => tx.drug.create({ data });
@@ -350,27 +300,22 @@ const txFindDrugBatchByDrugAndNumber = async (tx, drugId, batchNumber) =>
     where: {
       deleted_at: null,
       drug_id: drugId,
-      batch_number: batchNumber,
-    },
-  });
+      batch_number: batchNumber}});
 
 const txCreateDrugBatch = async (tx, data) => tx.drug_batch.create({ data });
 
 const txUpdateDrugBatch = async (tx, id, data) =>
   tx.drug_batch.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txFindInventoryMapByInventoryItem = async (tx, inventoryItemId, tenantId = null) =>
   tx.drug_inventory_map.findFirst({
     where: {
       deleted_at: null,
       inventory_item_id: inventoryItemId,
-      ...(tenantId ? { tenant_id: tenantId } : {}),
-    },
-    orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
-  });
+      ...(tenantId ? { tenant_id: tenantId } : {})},
+    orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }]});
 
 module.exports = {
   findManyOrders,
@@ -408,5 +353,4 @@ module.exports = {
   txFindDrugBatchByDrugAndNumber,
   txCreateDrugBatch,
   txUpdateDrugBatch,
-  txFindInventoryMapByInventoryItem,
-};
+  txFindInventoryMapByInventoryItem};

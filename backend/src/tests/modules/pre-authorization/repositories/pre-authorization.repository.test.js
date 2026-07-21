@@ -35,7 +35,7 @@ describe('Pre-Authorization Repository', () => {
       expect(result).toEqual(mockAuth);
       expect(prisma.pre_authorization.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 

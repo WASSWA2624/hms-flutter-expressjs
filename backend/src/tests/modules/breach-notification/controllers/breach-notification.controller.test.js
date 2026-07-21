@@ -9,8 +9,7 @@ describe('Breach Notification Controller', () => {
   const mockRecord = {
     id: 'BRN0000001',
     severity: 'HIGH',
-    status: 'OPEN',
-  };
+    status: 'OPEN'};
 
   let req;
   let res;
@@ -23,14 +22,11 @@ describe('Breach Notification Controller', () => {
       body: {},
       user: {
         id: 'USR0000001',
-        tenant_id: 'TEN0000001',
-      },
-      ip: '127.0.0.1',
-    };
+        tenant_id: 'TEN0000001'},
+      ip: '127.0.0.1'};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+      json: jest.fn().mockReturnThis()};
   });
 
   it('passes filters and req.user to listBreachNotifications', async () => {
@@ -39,17 +35,14 @@ describe('Breach Notification Controller', () => {
       page: '2',
       limit: '10',
       sort_by: 'reported_at',
-      order: 'asc',
-    };
+      order: 'asc'};
     breachNotificationService.listBreachNotifications.mockResolvedValue({
       breachNotifications: [mockRecord],
       pagination: {
         page: 2,
         limit: 10,
         total: 1,
-        totalPages: 1,
-      },
-    });
+        totalPages: 1}});
 
     await breachNotificationController.listBreachNotifications(req, res);
 
@@ -75,8 +68,7 @@ describe('Breach Notification Controller', () => {
     breachNotificationService.updateBreachNotification.mockResolvedValue(mockRecord);
     breachNotificationService.resolveBreachNotification.mockResolvedValue({
       ...mockRecord,
-      status: 'RESOLVED',
-    });
+      status: 'RESOLVED'});
     breachNotificationService.deleteBreachNotification.mockResolvedValue(undefined);
 
     req.params.id = 'BRN0000001';
@@ -125,8 +117,7 @@ describe('Breach Notification Controller', () => {
   it('passes a null resolution date when resolved_at is omitted', async () => {
     breachNotificationService.resolveBreachNotification.mockResolvedValue({
       ...mockRecord,
-      status: 'RESOLVED',
-    });
+      status: 'RESOLVED'});
     req.params.id = 'BRN0000001';
 
     await breachNotificationController.resolveBreachNotification(req, res);

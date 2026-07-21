@@ -6,8 +6,7 @@ describe('lab-workspace.routes contract', () => {
       .filter((layer) => layer.route)
       .map((layer) => ({
         path: layer.route.path,
-        methods: Object.keys(layer.route.methods),
-      }));
+        methods: Object.keys(layer.route.methods)}));
 
     expect(routes).toEqual(
       expect.arrayContaining([
@@ -20,8 +19,7 @@ describe('lab-workspace.routes contract', () => {
         { path: '/orders/:id/reverse', methods: ['post'] },
         { path: '/samples/:id/receive', methods: ['post'] },
         { path: '/samples/:id/reject', methods: ['post'] },
-        { path: '/order-items/:id/release', methods: ['post'] },
-      ])
+        { path: '/order-items/:id/release', methods: ['post'] }])
     );
   });
 });

@@ -8,8 +8,7 @@ const {
   normalizeSearchTerm,
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
-  toDateOrNull,
-} = require('@services/lab-workspace/lab.shared');
+  toDateOrNull} = require('@services/lab-workspace/lab.shared');
 const { toOptionalText } = require('@services/lab-workspace/lab.configuration');
 const { evaluateLabResult } = require('@services/lab-workspace/lab.interpretation');
 const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
@@ -44,8 +43,7 @@ const buildLabResultRealtimePayload = ({ resultRecord, action }) => {
     resource_id: resourceId,
     occurred_at: new Date().toISOString(),
     target_path: orderId ? `/lab?id=${orderId}` : '/lab',
-    result,
-  };
+    result};
 };
 
 const publishLabResultRealtimeUpdate = async ({ resultRecord, action, actorUserId = null }) => {
@@ -74,37 +72,25 @@ const resolveInterpretationContext = async (labOrderItemIdentifier) =>
       lab_test: {
         include: {
           reference_ranges: {
-            orderBy: { sort_order: 'asc' },
-          },
+            orderBy: { sort_order: 'asc' }},
           unit_options: {
-            orderBy: { sort_order: 'asc' },
-          },
+            orderBy: { sort_order: 'asc' }},
           result_options: {
-            orderBy: { sort_order: 'asc' },
-          },
-        },
-      },
+            orderBy: { sort_order: 'asc' }}}},
       lab_order: {
         include: {
           patient: {
             select: {
               id: true,
               date_of_birth: true,
-              gender: true,
-            },
-          },
-        },
-      },
-    },
-    errorKey: 'errors.lab_order_item.not_found',
-  });
+              gender: true}}}}},
+    errorKey: 'errors.lab_order_item.not_found'});
 
 const applyInterpretationIfNeeded = ({
   payload,
   itemContext,
   shouldInterpret,
-  fallbackStatus = 'PENDING',
-}) => {
+  fallbackStatus = 'PENDING'}) => {
   const nextPayload = { ...payload };
   const interpretationOverride = Boolean(nextPayload.interpretation_override);
 
@@ -144,8 +130,7 @@ const applyInterpretationIfNeeded = ({
     resultValue: nextPayload.result_value,
     resultText: nextPayload.result_text,
     resultUnit: nextPayload.result_unit,
-    fallbackStatus,
-  });
+    fallbackStatus});
 
   nextPayload.status = interpretation.status;
   nextPayload.result_unit = interpretation.result_unit || null;
@@ -170,8 +155,7 @@ const listLabResults = async (filters, page, limit, sortBy, order, userId, ipAdd
         identifier: filters.lab_order_item_id,
         model: 'lab_order_item',
         where: { deleted_at: null },
-        errorKey: 'errors.lab_order_item.not_found',
-      });
+        errorKey: 'errors.lab_order_item.not_found'});
     }
     if (filters.status) whereClause.status = filters.status;
 
@@ -190,8 +174,7 @@ const listLabResults = async (filters, page, limit, sortBy, order, userId, ipAdd
         { lab_order_item: { lab_test: { code: { contains: searchTerm.raw } } } },
         { lab_order_item: { lab_order: { patient: { human_friendly_id: { contains: searchTerm.upper } } } } },
         { lab_order_item: { lab_order: { patient: { first_name: { contains: searchTerm.raw } } } } },
-        { lab_order_item: { lab_order: { patient: { last_name: { contains: searchTerm.raw } } } } },
-      ];
+        { lab_order_item: { lab_order: { patient: { last_name: { contains: searchTerm.raw } } } } }];
     }
 
     const [labResults, total] = await Promise.all([
@@ -202,13 +185,11 @@ const listLabResults = async (filters, page, limit, sortBy, order, userId, ipAdd
         orderBy,
         LAB_RESULT_WITH_RELATIONS_INCLUDE
       ),
-      labResultRepository.count(whereClause),
-    ]);
+      labResultRepository.count(whereClause)]);
 
     return {
       labResults: labResults.map((record) => mapLabResultRecord(record)).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -222,8 +203,7 @@ const getLabResultById = async (id, userId, ipAddress) => {
       model: 'lab_result',
       where: { deleted_at: null },
       include: LAB_RESULT_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_result.not_found',
-    });
+      errorKey: 'errors.lab_result.not_found'});
     return mapLabResultRecord(labResult);
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -238,8 +218,7 @@ const createLabResult = async (data, userId, ipAddress) => {
       identifier: payload.lab_order_item_id,
       model: 'lab_order_item',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_order_item.not_found',
-    });
+      errorKey: 'errors.lab_order_item.not_found'});
     if (Object.prototype.hasOwnProperty.call(payload, 'reported_at')) {
       payload.reported_at = toDateOrNull(payload.reported_at, null);
     }
@@ -256,8 +235,7 @@ const createLabResult = async (data, userId, ipAddress) => {
       payload,
       itemContext,
       shouldInterpret,
-      fallbackStatus: payload.status || 'PENDING',
-    });
+      fallbackStatus: payload.status || 'PENDING'});
 
     const labResult = await labResultRepository.create(interpretedPayload);
     const createdResult = await labResultRepository.findById(
@@ -271,13 +249,11 @@ const createLabResult = async (data, userId, ipAddress) => {
       entity: 'lab_result',
       entity_id: labResult.id,
       diff: { after: createdResult || labResult },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     publishLabResultRealtimeUpdate({
       resultRecord: createdResult || labResult,
       action: 'CREATED',
-      actorUserId: userId,
-    });
+      actorUserId: userId});
 
     return mapLabResultRecord(createdResult || labResult);
   } catch (error) {
@@ -293,8 +269,7 @@ const updateLabResult = async (id, data, userId, ipAddress) => {
       model: 'lab_result',
       where: { deleted_at: null },
       include: LAB_RESULT_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_result.not_found',
-    });
+      errorKey: 'errors.lab_result.not_found'});
 
     const payload = { ...data };
     if (Object.prototype.hasOwnProperty.call(payload, 'lab_order_item_id') && payload.lab_order_item_id) {
@@ -302,8 +277,7 @@ const updateLabResult = async (id, data, userId, ipAddress) => {
         identifier: payload.lab_order_item_id,
         model: 'lab_order_item',
         where: { deleted_at: null },
-        errorKey: 'errors.lab_order_item.not_found',
-      });
+        errorKey: 'errors.lab_order_item.not_found'});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'reported_at')) {
       payload.reported_at = toDateOrNull(payload.reported_at, null);
@@ -338,12 +312,10 @@ const updateLabResult = async (id, data, userId, ipAddress) => {
         result_value: nextResultValue,
         result_unit: nextResultUnit,
         result_text: nextResultText,
-        status: nextStatus,
-      },
+        status: nextStatus},
       itemContext,
       shouldInterpret,
-      fallbackStatus: nextStatus || 'PENDING',
-    });
+      fallbackStatus: nextStatus || 'PENDING'});
 
     const updated = await labResultRepository.update(before.id, updatedPayload);
     const labResult = await labResultRepository.findById(updated.id, LAB_RESULT_WITH_RELATIONS_INCLUDE);
@@ -354,13 +326,11 @@ const updateLabResult = async (id, data, userId, ipAddress) => {
       entity: 'lab_result',
       entity_id: updated.id,
       diff: { before, after: labResult },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     publishLabResultRealtimeUpdate({
       resultRecord: labResult || updated,
       action: 'UPDATED',
-      actorUserId: userId,
-    });
+      actorUserId: userId});
 
     return mapLabResultRecord(labResult || updated);
   } catch (error) {
@@ -376,8 +346,7 @@ const deleteLabResult = async (id, userId, ipAddress) => {
       model: 'lab_result',
       where: { deleted_at: null },
       include: LAB_RESULT_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_result.not_found',
-    });
+      errorKey: 'errors.lab_result.not_found'});
 
     await labResultRepository.softDelete(before.id);
 
@@ -387,13 +356,11 @@ const deleteLabResult = async (id, userId, ipAddress) => {
       entity: 'lab_result',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     publishLabResultRealtimeUpdate({
       resultRecord: before,
       action: 'DELETED',
-      actorUserId: userId,
-    });
+      actorUserId: userId});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -407,8 +374,7 @@ const releaseLabResult = async (id, data = {}, userId, ipAddress) => {
       model: 'lab_result',
       where: { deleted_at: null },
       include: LAB_RESULT_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_result.not_found',
-    });
+      errorKey: 'errors.lab_result.not_found'});
 
     if (before.status !== 'PENDING') {
       throw new HttpError('errors.lab_result.already_released', 400);
@@ -425,15 +391,13 @@ const releaseLabResult = async (id, data = {}, userId, ipAddress) => {
           : (before.result_unit || before?.lab_order_item?.lab_test?.unit || null),
       result_text:
         Object.prototype.hasOwnProperty.call(data, 'result_text') ? data.result_text : before.result_text,
-      reported_at: toDateOrNull(data.reported_at, new Date()),
-    };
+      reported_at: toDateOrNull(data.reported_at, new Date())};
 
     const updateData = applyInterpretationIfNeeded({
       payload: basePayload,
       itemContext,
       shouldInterpret: true,
-      fallbackStatus: basePayload.status || 'NORMAL',
-    });
+      fallbackStatus: basePayload.status || 'NORMAL'});
 
     const updated = await labResultRepository.update(before.id, updateData);
     const labResult = await labResultRepository.findById(updated.id, LAB_RESULT_WITH_RELATIONS_INCLUDE);
@@ -447,16 +411,12 @@ const releaseLabResult = async (id, data = {}, userId, ipAddress) => {
         before,
         after: labResult,
         metadata: {
-          notes: data.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: data.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
     publishLabResultRealtimeUpdate({
       resultRecord: labResult || updated,
       action: 'RELEASED',
-      actorUserId: userId,
-    });
+      actorUserId: userId});
 
     return mapLabResultRecord(labResult || updated);
   } catch (error) {

@@ -4,8 +4,7 @@
 
 const loadReadinessModule = ({
   prismaClient = null,
-  mysqlCreateConnectionImpl = null,
-} = {}) => {
+  mysqlCreateConnectionImpl = null} = {}) => {
   jest.resetModules();
   delete globalThis.prisma;
 
@@ -20,17 +19,13 @@ const loadReadinessModule = ({
     });
 
   jest.doMock('@lib/logging', () => ({
-    logger: { warn, error, info },
-  }));
+    logger: { warn, error, info }}));
   jest.doMock('@lib/dates', () => ({
-    getCurrentISO,
-  }));
+    getCurrentISO}));
   jest.doMock('@config/env', () => ({
-    DATABASE_URL: 'mysql://demo:demo@localhost:3306/hms_db',
-  }));
+    DATABASE_URL: 'mysql://demo:demo@localhost:3306/hms_db'}));
   jest.doMock('mysql2/promise', () => ({
-    createConnection,
-  }));
+    createConnection}));
 
   if (prismaClient) {
     globalThis.prisma = prismaClient;
@@ -51,16 +46,14 @@ describe('readinessCheck helper', () => {
     const createConnectionMock = jest.fn();
     const { readinessCheck, createConnection } = loadReadinessModule({
       prismaClient: { $queryRaw: prismaQuery },
-      mysqlCreateConnectionImpl: createConnectionMock,
-    });
+      mysqlCreateConnectionImpl: createConnectionMock});
 
     const result = await readinessCheck();
 
     expect(result).toEqual({
       status: 'ready',
       timestamp: '2026-02-15T00:00:00.000Z',
-      checks: { database: 'ok' },
-    });
+      checks: { database: 'ok' }});
     expect(prismaQuery).toHaveBeenCalledTimes(1);
     expect(createConnection).not.toHaveBeenCalled();
   });
@@ -71,8 +64,7 @@ describe('readinessCheck helper', () => {
     const createConnection = jest.fn().mockResolvedValue({ query, end });
 
     const { readinessCheck } = loadReadinessModule({
-      mysqlCreateConnectionImpl: createConnection,
-    });
+      mysqlCreateConnectionImpl: createConnection});
 
     const result = await readinessCheck();
 
@@ -90,8 +82,7 @@ describe('readinessCheck helper', () => {
     const createConnection = jest.fn().mockResolvedValue({ query, end });
     const { readinessCheck } = loadReadinessModule({
       prismaClient: { $queryRaw: prismaQuery },
-      mysqlCreateConnectionImpl: createConnection,
-    });
+      mysqlCreateConnectionImpl: createConnection});
 
     const result = await readinessCheck();
 
@@ -106,8 +97,7 @@ describe('readinessCheck helper', () => {
     const createConnection = jest.fn().mockRejectedValue(new Error('mysql down'));
     const { readinessCheck, warn } = loadReadinessModule({
       prismaClient: { $queryRaw: prismaQuery },
-      mysqlCreateConnectionImpl: createConnection,
-    });
+      mysqlCreateConnectionImpl: createConnection});
 
     const result = await readinessCheck();
 
@@ -124,8 +114,7 @@ describe('readinessCheck helper', () => {
     const createConnection = jest.fn().mockRejectedValue(new Error('mysql down'));
     const { readinessCheck } = loadReadinessModule({
       prismaClient: { $queryRaw: prismaQuery },
-      mysqlCreateConnectionImpl: createConnection,
-    });
+      mysqlCreateConnectionImpl: createConnection});
 
     const startedAt = Date.now();
     const result = await readinessCheck();
@@ -142,8 +131,7 @@ describe('readinessCheck helper', () => {
   it('caches successful readiness checks for ttl window', async () => {
     const prismaQuery = jest.fn().mockResolvedValue([{ ok: 1 }]);
     const { readinessCheck } = loadReadinessModule({
-      prismaClient: { $queryRaw: prismaQuery },
-    });
+      prismaClient: { $queryRaw: prismaQuery }});
 
     const first = await readinessCheck();
     const second = await readinessCheck();

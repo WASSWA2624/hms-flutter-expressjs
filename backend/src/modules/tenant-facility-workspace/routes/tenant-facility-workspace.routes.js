@@ -8,24 +8,20 @@ const { validateRequest } = require('@middlewares/validate.middleware');
 const tenantFacilityWorkspaceController = require('@controllers/tenant-facility-workspace/tenant-facility-workspace.controller');
 const {
   facilityLogoParamsSchema,
-  setupQuerySchema,
-} = require('@validations/tenant-facility-workspace/tenant-facility-workspace.schema');
+  setupQuerySchema} = require('@validations/tenant-facility-workspace/tenant-facility-workspace.schema');
 
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     files: 1,
-    fileSize: 5 * 1024 * 1024,
-  },
-});
+    fileSize: 5 * 1024 * 1024}});
 
 const TENANT_FACILITY_WORKSPACE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.HR,
-];
+  ROLES.HR];
 
 const requireTenantFacilityWorkspaceV1 = (_req, _res, next) => {
   if (!isFeatureEnabled('tenant_facility_workspace_v1')) {

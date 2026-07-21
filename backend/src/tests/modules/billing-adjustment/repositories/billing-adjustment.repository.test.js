@@ -58,7 +58,7 @@ describe('Billing Adjustment Repository', () => {
           id: 'adjustment-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -122,7 +122,7 @@ describe('Billing Adjustment Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -152,7 +152,7 @@ describe('Billing Adjustment Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -166,7 +166,7 @@ describe('Billing Adjustment Repository', () => {
         skip: 20,
         take: 50,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -180,7 +180,7 @@ describe('Billing Adjustment Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { amount: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

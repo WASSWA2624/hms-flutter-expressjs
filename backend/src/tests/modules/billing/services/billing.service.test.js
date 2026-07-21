@@ -1,27 +1,21 @@
 jest.mock('@repositories/billing/billing.repository', () => ({
   createApproval: jest.fn(),
-  findApprovalById: jest.fn(),
-}));
+  findApprovalById: jest.fn()}));
 
 jest.mock('@config/feature-flags', () => ({
-  isFeatureEnabled: jest.fn(() => true),
-}));
+  isFeatureEnabled: jest.fn(() => true)}));
 
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 jest.mock('@lib/notifications/sendEmail', () => ({
-  sendEmail: jest.fn(async () => ({ sent: true, provider: 'smtp' })),
-}));
+  sendEmail: jest.fn(async () => ({ sent: true, provider: 'smtp' }))}));
 
 jest.mock('@lib/billing/pdf', () => ({
-  generateInvoicePdfBuffer: jest.fn(async () => Buffer.from('pdf')),
-}));
+  generateInvoicePdfBuffer: jest.fn(async () => Buffer.from('pdf'))}));
 
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(async () => {}),
-}));
+  createAuditLog: jest.fn(async () => {})}));
 
 const billingRepository = require('@repositories/billing/billing.repository');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
@@ -43,8 +37,7 @@ describe('billing.service', () => {
             facility_id: 'facility-1',
             status: 'SENT',
             billing_status: 'ISSUED',
-            total_amount: '100.00',
-          };
+            total_amount: '100.00'};
         }
         return null;
       });
@@ -53,21 +46,18 @@ describe('billing.service', () => {
         id: 'app-1',
         human_friendly_id: 'APP0001',
         status: 'PENDING',
-        approval_type: 'ADJUSTMENT',
-      });
+        approval_type: 'ADJUSTMENT'});
       billingRepository.findApprovalById.mockResolvedValue({
         id: 'app-1',
         human_friendly_id: 'APP0001',
         status: 'PENDING',
-        approval_type: 'ADJUSTMENT',
-      });
+        approval_type: 'ADJUSTMENT'});
 
       const result = await billingService.requestAdjustment(
         {
           invoice_id: 'INV0001',
           amount: '60.00',
-          reason: 'Manual correction',
-        },
+          reason: 'Manual correction'},
         { id: 'user-1', tenant_id: 'tenant-1', facility_id: 'facility-1' },
         '127.0.0.1'
       );
@@ -87,8 +77,7 @@ describe('billing.service', () => {
             status: 'PENDING',
             requested_by_user_id: 'user-1',
             approval_type: 'REFUND',
-            target_entity_id: 'pay-1',
-          };
+            target_entity_id: 'pay-1'};
         }
         return null;
       });
@@ -102,8 +91,7 @@ describe('billing.service', () => {
         )
       ).rejects.toMatchObject({
         messageKey: 'errors.billing_approval.separation_of_duties',
-        statusCode: 400,
-      });
+        statusCode: 400});
     });
   });
 });

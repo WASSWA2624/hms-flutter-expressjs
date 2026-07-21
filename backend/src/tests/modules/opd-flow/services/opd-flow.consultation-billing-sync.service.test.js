@@ -1,8 +1,7 @@
 jest.mock('@repositories/opd-flow/opd-flow.repository');
 jest.mock('@lib/audit', () => ({ createAuditLog: jest.fn().mockResolvedValue({}) }));
 jest.mock('@services/ipd-flow/ipd-flow.service', () => ({
-  emitAdmissionRefreshEvent: jest.fn().mockResolvedValue(null),
-}));
+  emitAdmissionRefreshEvent: jest.fn().mockResolvedValue(null)}));
 jest.mock(
   '@services/clinical-alert-threshold/clinical-alert-threshold.service',
   () => ({ evaluateVitalAndCreateAlerts: jest.fn().mockResolvedValue(null) })
@@ -16,15 +15,12 @@ jest.mock('@lib/websocket', () => ({
   BILLING_EVENTS: {
     BILLING_INVOICE_ISSUED: 'billing.invoice_issued',
     INVOICE_UPDATED: 'invoice.updated',
-    BILLING_BALANCE_UPDATED: 'billing.balance_updated',
-  },
-}));
+    BILLING_BALANCE_UPDATED: 'billing.balance_updated'}}));
 
 jest.mock('@lib/billing/realtime', () => ({
   publishIssuedInvoiceBillingEvents: jest.fn(async () => {}),
   publishUpdatedInvoiceBillingEvents: jest.fn(async () => {}),
-  publishBillingRealtimeUpdate: jest.fn(async () => {}),
-}));
+  publishBillingRealtimeUpdate: jest.fn(async () => {})}));
 
 jest.mock('@lib/billing/financials', () => ({
   recalculateInvoiceStateTx: jest.fn(async () => ({
@@ -33,21 +29,16 @@ jest.mock('@lib/billing/financials', () => ({
       human_friendly_id: 'INV0001',
       billing_status: 'PAID',
       total_amount: '50.00',
-      currency: 'UGX',
-    },
+      currency: 'UGX'},
     financials: {
       balance_due: 0,
       net_paid_total: 50,
       effective_total: 50,
-      gross_paid_total: 50,
-    },
-  })),
+      gross_paid_total: 50}})),
   computeInvoiceFinancials: jest.fn(() => ({
     balance_due: 0,
     net_paid_total: 50,
-    effective_total: 50,
-  })),
-}));
+    effective_total: 50}))}));
 
 jest.mock('@prisma/client', () => ({
   $transaction: jest.fn(),
@@ -56,8 +47,7 @@ jest.mock('@prisma/client', () => ({
   billable_charge_event: { findFirst: jest.fn() },
   user_role: { findMany: jest.fn().mockResolvedValue([]) },
   notification: { create: jest.fn() },
-  notification_delivery: { createMany: jest.fn() },
-}));
+  notification_delivery: { createMany: jest.fn() }}));
 
 const prisma = require('@prisma/client');
 const opdFlowService = require('@services/opd-flow/opd-flow.service');
@@ -84,17 +74,13 @@ describe('syncConsultationBillingFromInvoicePayment', () => {
           consultation_fee: '50.00',
           require_payment: true,
           is_paid: false,
-          payment_status: 'PENDING',
-        },
-        timeline: [],
-      },
-    },
+          payment_status: 'PENDING'},
+        timeline: []}},
     patient: { id: 'patient-1', human_friendly_id: 'PAT0001' },
     provider: null,
     tenant: { id: 'tenant-1', human_friendly_id: 'TEN0001' },
     facility: { id: 'facility-1', human_friendly_id: 'FAC0001' },
-    ...overrides,
-  });
+    ...overrides});
 
   const mockPaidInvoice = () => ({
     id: 'inv-1',
@@ -104,8 +90,7 @@ describe('syncConsultationBillingFromInvoicePayment', () => {
     patient_id: 'patient-1',
     currency: 'UGX',
     billing_status: 'PAID',
-    total_amount: '50.00',
-  });
+    total_amount: '50.00'});
 
   it('marks consultation paid and advances Payment due to Waiting vitals via charge event', async () => {
     const encounter = buildEncounter();
@@ -114,11 +99,9 @@ describe('syncConsultationBillingFromInvoicePayment', () => {
     prisma.$transaction.mockImplementation(async (callback) => {
       const tx = {
         invoice: {
-          findFirst: jest.fn(async () => mockPaidInvoice()),
-        },
+          findFirst: jest.fn(async () => mockPaidInvoice())},
         billable_charge_event: {
-          findFirst: jest.fn(async () => ({ encounter_id: 'encounter-1' })),
-        },
+          findFirst: jest.fn(async () => ({ encounter_id: 'encounter-1' }))},
         encounter: {
           findFirst: jest.fn(async () => encounter),
           findMany: jest.fn(async () => []),
@@ -126,11 +109,8 @@ describe('syncConsultationBillingFromInvoicePayment', () => {
             persistedFlow = data.extension_json.opd_flow;
             return {
               ...encounter,
-              extension_json: data.extension_json,
-            };
-          }),
-        },
-      };
+              extension_json: data.extension_json};
+          })}};
       return callback(tx);
     });
 
@@ -140,10 +120,8 @@ describe('syncConsultationBillingFromInvoicePayment', () => {
         id: 'pay-1',
         status: 'COMPLETED',
         amount: '50.00',
-        paid_at: new Date('2026-07-21T06:00:00.000Z'),
-      },
-      context: { user_id: 'billing-1', tenant_id: 'tenant-1' },
-    });
+        paid_at: new Date('2026-07-21T06:00:00.000Z')},
+      context: { user_id: 'billing-1', tenant_id: 'tenant-1' }});
 
     expect(persistedFlow?.stage).toBe('WAITING_VITALS');
     expect(persistedFlow?.next_step).toBe('RECORD_VITALS');
@@ -159,11 +137,9 @@ describe('syncConsultationBillingFromInvoicePayment', () => {
     prisma.$transaction.mockImplementation(async (callback) => {
       const tx = {
         invoice: {
-          findFirst: jest.fn(async () => mockPaidInvoice()),
-        },
+          findFirst: jest.fn(async () => mockPaidInvoice())},
         billable_charge_event: {
-          findFirst: jest.fn(async () => null),
-        },
+          findFirst: jest.fn(async () => null)},
         encounter: {
           findFirst: jest.fn(async () => null),
           findMany: jest.fn(async ({ where } = {}) => {
@@ -176,11 +152,8 @@ describe('syncConsultationBillingFromInvoicePayment', () => {
             persistedFlow = data.extension_json.opd_flow;
             return {
               ...encounter,
-              extension_json: data.extension_json,
-            };
-          }),
-        },
-      };
+              extension_json: data.extension_json};
+          })}};
       return callback(tx);
     });
 
@@ -190,10 +163,8 @@ describe('syncConsultationBillingFromInvoicePayment', () => {
         id: 'pay-1',
         status: 'COMPLETED',
         amount: '50.00',
-        paid_at: new Date('2026-07-21T06:00:00.000Z'),
-      },
-      context: { user_id: 'billing-1', tenant_id: 'tenant-1' },
-    });
+        paid_at: new Date('2026-07-21T06:00:00.000Z')},
+      context: { user_id: 'billing-1', tenant_id: 'tenant-1' }});
 
     expect(persistedFlow?.stage).toBe('WAITING_VITALS');
     expect(persistedFlow?.consultation?.is_paid).toBe(true);

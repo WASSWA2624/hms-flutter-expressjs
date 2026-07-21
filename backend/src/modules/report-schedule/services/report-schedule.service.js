@@ -13,14 +13,12 @@ const {
   resolvePayloadIdentifier,
   resolveScopeIdsForList,
   resolveScopedContext,
-  safeUpper,
-} = require('@lib/reports/api');
+  safeUpper} = require('@lib/reports/api');
 const {
   REPORT_DEFAULT_RETENTION_DAYS,
   REPORT_FORMATS,
   REPORT_SCHEDULE_FREQUENCIES,
-  REPORT_SCHEDULE_STATUSES,
-} = require('@lib/reports/constants');
+  REPORT_SCHEDULE_STATUSES} = require('@lib/reports/constants');
 const { serializeReportSchedule } = require('@lib/reports/serializers');
 
 const SORT_FIELDS = ['next_run_at', 'created_at', 'updated_at', 'name', 'status', 'frequency'];
@@ -46,8 +44,7 @@ const normalizeScheduleInput = (input = {}, current = {}) => {
         ? input.day_of_month === null
           ? null
           : Number(input.day_of_month)
-        : current.day_of_month ?? null,
-  };
+        : current.day_of_month ?? null};
 
   if (frequency === 'WEEKLY' && (schedule.day_of_week === null || schedule.day_of_week === undefined)) {
     schedule.day_of_week = 1;
@@ -73,8 +70,7 @@ const listReportSchedules = async (filters = {}, page = 1, limit = 20, sortBy, o
   const where = {
     tenant_id: scoped.tenant_id,
     ...buildSinceFilter(filters.since),
-    ...buildSearchWhere(filters.search, ['name']),
-  };
+    ...buildSearchWhere(filters.search, ['name'])};
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
   if (normalizeString(filters.facility_id) && !scoped.facility_id) where.facility_id = '__none__';
@@ -87,13 +83,11 @@ const listReportSchedules = async (filters = {}, page = 1, limit = 20, sortBy, o
   const orderBy = buildSort(sortBy, order, 'next_run_at', SORT_FIELDS);
   const [records, total] = await Promise.all([
     reportScheduleRepository.findMany({ where, skip, take: limit, orderBy }),
-    reportScheduleRepository.count(where),
-  ]);
+    reportScheduleRepository.count(where)]);
 
   return {
     reportSchedules: records.map(serializeReportSchedule),
-    pagination: buildPagination(page, limit, total),
-  };
+    pagination: buildPagination(page, limit, total)};
 };
 
 const getReportScheduleById = async (id, user = {}) => serializeReportSchedule(await assertScopedSchedule(id, user));
@@ -109,14 +103,12 @@ const createReportSchedule = async (data, context = {}) => {
       model: 'facility',
       field: 'facility_id',
       tenant_id: scoped.tenant_id,
-      nullable: true,
-    }),
+      nullable: true}),
     report_definition_id: await resolvePayloadIdentifier({
       value: data.report_definition_id,
       model: 'report_definition',
       field: 'report_definition_id',
-      tenant_id: scoped.tenant_id,
-    }),
+      tenant_id: scoped.tenant_id}),
     created_by: context.user_id || null,
     name: normalizeString(data.name),
     status: safeUpper(data.status) || REPORT_SCHEDULE_STATUSES[0],
@@ -127,8 +119,7 @@ const createReportSchedule = async (data, context = {}) => {
     timezone: scheduleInput.timezone,
     format: safeUpper(data.format) || REPORT_FORMATS[0],
     parameter_overrides_json: data.parameter_overrides_json || null,
-    retention_days: data.retention_days || REPORT_DEFAULT_RETENTION_DAYS,
-  };
+    retention_days: data.retention_days || REPORT_DEFAULT_RETENTION_DAYS};
   payload.next_run_at = getNextScheduledTime(payload, new Date());
 
   const record = await reportScheduleRepository.create(payload);
@@ -141,8 +132,7 @@ const createReportSchedule = async (data, context = {}) => {
     entity_id: record.id,
     diff: { after: serializeReportSchedule(record) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportSchedule(record);
 };
@@ -152,13 +142,11 @@ const updateReportSchedule = async (id, data, context = {}) => {
   ensureVersionMatch({
     current,
     expectedVersion: data.version,
-    serializer: serializeReportSchedule,
-  });
+    serializer: serializeReportSchedule});
 
   const scheduleInput = normalizeScheduleInput(data, current);
   const updateData = {
-    version: Number(current.version || 1) + 1,
-  };
+    version: Number(current.version || 1) + 1};
 
   if (data.facility_id !== undefined) {
     updateData.facility_id = await resolvePayloadIdentifier({
@@ -166,16 +154,14 @@ const updateReportSchedule = async (id, data, context = {}) => {
       model: 'facility',
       field: 'facility_id',
       tenant_id: current.tenant_id,
-      nullable: true,
-    });
+      nullable: true});
   }
   if (data.report_definition_id !== undefined) {
     updateData.report_definition_id = await resolvePayloadIdentifier({
       value: data.report_definition_id,
       model: 'report_definition',
       field: 'report_definition_id',
-      tenant_id: current.tenant_id,
-    });
+      tenant_id: current.tenant_id});
   }
   if (data.name !== undefined) updateData.name = normalizeString(data.name);
   if (data.status !== undefined) updateData.status = safeUpper(data.status);
@@ -191,8 +177,7 @@ const updateReportSchedule = async (id, data, context = {}) => {
     {
       ...current,
       ...updateData,
-      ...scheduleInput,
-    },
+      ...scheduleInput},
     new Date()
   );
 
@@ -217,11 +202,9 @@ const updateReportSchedule = async (id, data, context = {}) => {
       'format',
       'retention_days',
       'next_run_at',
-      'version',
-    ]),
+      'version']),
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportSchedule(record);
 };
@@ -234,8 +217,7 @@ const setScheduleStatus = async (id, status, context = {}) => {
     next_run_at:
       status === REPORT_SCHEDULE_STATUSES[0]
         ? getNextScheduledTime(current, new Date())
-        : current.next_run_at,
-  });
+        : current.next_run_at});
 
   await createAuditLog({
     tenant_id: current.tenant_id,
@@ -246,8 +228,7 @@ const setScheduleStatus = async (id, status, context = {}) => {
     entity_id: current.id,
     diff: createAuditDiff(current, record, ['status', 'next_run_at', 'version']),
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportSchedule(record);
 };
@@ -270,8 +251,7 @@ const deleteReportSchedule = async (id, context = {}) => {
     entity_id: current.id,
     diff: { before: serializeReportSchedule(current) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 };
 
 module.exports = {
@@ -281,5 +261,4 @@ module.exports = {
   listReportSchedules,
   pauseReportSchedule,
   resumeReportSchedule,
-  updateReportSchedule,
-};
+  updateReportSchedule};

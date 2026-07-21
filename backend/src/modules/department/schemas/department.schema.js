@@ -22,7 +22,6 @@ const {
 const createDepartmentSchema = z.object({
   tenant_id: uuidSchema,
   facility_id: uuidSchema.optional().nullable(),
-  branch_id: uuidSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255),
   short_name: z.string().trim().min(1).max(50).optional().nullable(),
   department_type: z.enum(['CLINICAL', 'ADMINISTRATIVE', 'SUPPORT', 'DIAGNOSTICS', 'OTHER']),
@@ -36,7 +35,6 @@ const createDepartmentSchema = z.object({
  */
 const updateDepartmentSchema = z.object({
   facility_id: uuidSchema.optional().nullable(),
-  branch_id: uuidSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255).optional(),
   short_name: z.string().trim().min(1).max(50).optional().nullable(),
   department_type: z.enum(['CLINICAL', 'ADMINISTRATIVE', 'SUPPORT', 'DIAGNOSTICS', 'OTHER']).optional(),
@@ -63,7 +61,6 @@ const departmentIdParamsSchema = z.object({
 const listDepartmentsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidSchema.optional(),
   facility_id: uuidSchema.optional(),
-  branch_id: uuidSchema.optional(),
   department_type: z.enum(['CLINICAL', 'ADMINISTRATIVE', 'SUPPORT', 'DIAGNOSTICS', 'OTHER']).optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),

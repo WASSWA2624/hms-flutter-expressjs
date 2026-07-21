@@ -17,8 +17,7 @@ jest.mock('@prisma/client', () => ({
   },
   facility: {
     findFirst: jest.fn(),
-    findMany: jest.fn(),
-  }
+    findMany: jest.fn()}
 }));
 
 const {
@@ -47,13 +46,11 @@ describe('User-Role Repository', () => {
         facility_id: 'facility-123',
         user: { id: 'user-123', email: 'alice@example.com' },
         role: { id: 'role-123', name: 'Admin' },
-        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' },
-      };
+        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' }};
       const facility = {
         id: 'facility-123',
         human_friendly_id: 'FAC-001',
-        name: 'Main Campus',
-      };
+        name: 'Main Campus'};
       prisma.user_role.findFirst.mockResolvedValue(mock);
       prisma.facility.findFirst.mockResolvedValue(facility);
 
@@ -61,30 +58,23 @@ describe('User-Role Repository', () => {
 
       expect(result).toEqual({
         ...mock,
-        facility,
-      });
+        facility});
       expect(prisma.user_role.findFirst).toHaveBeenCalledWith(expect.objectContaining({
         where: {
           id: 'ur-123',
-          deleted_at: null,
-        },
+          deleted_at: null},
         include: expect.objectContaining({
           user: expect.any(Object),
           role: expect.any(Object),
-          tenant: expect.any(Object),
-        }),
-      }));
+          tenant: expect.any(Object)})}));
       expect(prisma.facility.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'facility-123',
-          deleted_at: null,
-        },
+          deleted_at: null},
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      });
+          name: true}});
     });
 
     it('should attach null facility when facility_id is missing', async () => {
@@ -93,16 +83,14 @@ describe('User-Role Repository', () => {
         user_id: 'user-123',
         role_id: 'role-123',
         tenant_id: 'tenant-123',
-        facility_id: null,
-      };
+        facility_id: null};
       prisma.user_role.findFirst.mockResolvedValue(mock);
 
       const result = await findById('ur-123');
 
       expect(result).toEqual({
         ...mock,
-        facility: null,
-      });
+        facility: null});
       expect(prisma.facility.findFirst).not.toHaveBeenCalled();
     });
   });
@@ -113,21 +101,16 @@ describe('User-Role Repository', () => {
         {
           id: 'ur-1',
           tenant: { id: 'tenant-1', name: 'Tenant One' },
-          facility_id: 'facility-1',
-        },
+          facility_id: 'facility-1'},
         {
           id: 'ur-2',
           tenant: { id: 'tenant-2', name: 'Tenant Two' },
-          facility_id: null,
-        },
-      ];
+          facility_id: null}];
       const facilities = [
         {
           id: 'facility-1',
           human_friendly_id: 'FAC-001',
-          name: 'Main Campus',
-        },
-      ];
+          name: 'Main Campus'}];
       prisma.user_role.findMany.mockResolvedValue(mocks);
       prisma.facility.findMany.mockResolvedValue(facilities);
 
@@ -136,31 +119,23 @@ describe('User-Role Repository', () => {
       expect(result).toEqual([
         {
           ...mocks[0],
-          facility: facilities[0],
-        },
+          facility: facilities[0]},
         {
           ...mocks[1],
-          facility: null,
-        },
-      ]);
+          facility: null}]);
       expect(prisma.user_role.findMany).toHaveBeenCalledWith(expect.objectContaining({
         include: expect.objectContaining({
           user: expect.any(Object),
           role: expect.any(Object),
-          tenant: expect.any(Object),
-        }),
-      }));
+          tenant: expect.any(Object)})}));
       expect(prisma.facility.findMany).toHaveBeenCalledWith({
         where: {
           id: { in: ['facility-1'] },
-          deleted_at: null,
-        },
+          deleted_at: null},
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      });
+          name: true}});
     });
   });
 
@@ -179,19 +154,16 @@ describe('User-Role Repository', () => {
         user_id: 'user-123',
         role_id: 'role-123',
         tenant_id: 'tenant-123',
-        facility_id: 'facility-123',
-      };
+        facility_id: 'facility-123'};
       const enriched = {
         ...created,
         user: { id: 'user-123', email: 'alice@example.com' },
         role: { id: 'role-123', name: 'Admin' },
-        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' },
-      };
+        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' }};
       const facility = {
         id: 'facility-123',
         human_friendly_id: 'FAC-001',
-        name: 'Main Campus',
-      };
+        name: 'Main Campus'};
       prisma.user_role.findFirst
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(enriched);
@@ -201,8 +173,7 @@ describe('User-Role Repository', () => {
       const result = await create(created);
 
       expect(prisma.user_role.create).toHaveBeenCalledWith({
-        data: created,
-      });
+        data: created});
       expect(prisma.user_role.findFirst).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({
@@ -210,23 +181,18 @@ describe('User-Role Repository', () => {
             user_id: 'user-123',
             role_id: 'role-123',
             tenant_id: 'tenant-123',
-            facility_id: 'facility-123',
-          },
-        })
+            facility_id: 'facility-123'}})
       );
       expect(prisma.user_role.findFirst).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
           where: {
             id: 'ur-123',
-            deleted_at: null,
-          },
-        })
+            deleted_at: null}})
       );
       expect(result).toEqual({
         ...enriched,
-        facility,
-      });
+        facility});
     });
 
     it('should restore a soft-deleted user-role instead of failing unique', async () => {
@@ -236,15 +202,13 @@ describe('User-Role Repository', () => {
         role_id: 'role-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        deleted_at: new Date('2026-01-01T00:00:00.000Z'),
-      };
+        deleted_at: new Date('2026-01-01T00:00:00.000Z')};
       const restored = {
         ...softDeleted,
         deleted_at: null,
         user: { id: 'user-123', email: 'alice@example.com' },
         role: { id: 'role-123', name: 'Admin' },
-        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' },
-      };
+        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' }};
       prisma.user_role.findFirst
         .mockResolvedValueOnce(softDeleted)
         .mockResolvedValueOnce(restored);
@@ -255,21 +219,17 @@ describe('User-Role Repository', () => {
         user_id: 'user-123',
         role_id: 'role-123',
         tenant_id: 'tenant-123',
-        facility_id: 'facility-123',
-      });
+        facility_id: 'facility-123'});
 
       expect(prisma.user_role.create).not.toHaveBeenCalled();
       expect(prisma.user_role.update).toHaveBeenCalledWith({
         where: { id: 'ur-123' },
         data: {
           deleted_at: null,
-          version: { increment: 1 },
-        },
-      });
+          version: { increment: 1 }}});
       expect(result).toEqual({
         ...restored,
-        facility: null,
-      });
+        facility: null});
     });
 
     it('should return an active user-role when already assigned', async () => {
@@ -282,8 +242,7 @@ describe('User-Role Repository', () => {
         deleted_at: null,
         user: { id: 'user-123', email: 'alice@example.com' },
         role: { id: 'role-123', name: 'Admin' },
-        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' },
-      };
+        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' }};
       prisma.user_role.findFirst
         .mockResolvedValueOnce(active)
         .mockResolvedValueOnce(active);
@@ -292,15 +251,13 @@ describe('User-Role Repository', () => {
         user_id: 'user-123',
         role_id: 'role-123',
         tenant_id: 'tenant-123',
-        facility_id: null,
-      });
+        facility_id: null});
 
       expect(prisma.user_role.create).not.toHaveBeenCalled();
       expect(prisma.user_role.update).not.toHaveBeenCalled();
       expect(result).toEqual({
         ...active,
-        facility: null,
-      });
+        facility: null});
     });
   });
 
@@ -309,8 +266,7 @@ describe('User-Role Repository', () => {
       const updated = { id: 'ur-123', role_id: 'role-456', facility_id: null };
       const enriched = {
         ...updated,
-        role: { id: 'role-456', name: 'Billing' },
-      };
+        role: { id: 'role-456', name: 'Billing' }};
       prisma.user_role.update.mockResolvedValue(updated);
       prisma.user_role.findFirst.mockResolvedValue(enriched);
 
@@ -318,12 +274,10 @@ describe('User-Role Repository', () => {
 
       expect(prisma.user_role.update).toHaveBeenCalledWith({
         where: { id: 'ur-123' },
-        data: { role_id: 'role-456' },
-      });
+        data: { role_id: 'role-456' }});
       expect(result).toEqual({
         ...enriched,
-        facility: null,
-      });
+        facility: null});
     });
   });
 

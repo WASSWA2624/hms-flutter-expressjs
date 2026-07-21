@@ -5,8 +5,7 @@
 const {
   buildPendingClinicalRequestBilling,
   normalizeBillingOfficeClinicalBilling,
-  resolveInvoicePaymentStatus,
-} = require('@lib/billing/clinical-request-billing');
+  resolveInvoicePaymentStatus} = require('@lib/billing/clinical-request-billing');
 
 describe('clinical-request-billing helpers', () => {
   it('buildPendingClinicalRequestBilling returns pending payload with totals', () => {
@@ -17,18 +16,14 @@ describe('clinical-request-billing helpers', () => {
           label: 'Complete blood count',
           quantity: 1,
           unit_price: '25.00',
-          line_total: '25.00',
-        },
-      ],
-      currency: 'USD',
-    });
+          line_total: '25.00'}],
+      currency: 'USD'});
 
     expect(billing).toEqual(
       expect.objectContaining({
         payment_status: 'PENDING',
         currency: 'USD',
-        total_amount: '25.00',
-      })
+        total_amount: '25.00'})
     );
     expect(billing.line_items).toHaveLength(1);
   });
@@ -45,16 +40,12 @@ describe('clinical-request-billing helpers', () => {
           label: 'Complete blood count',
           quantity: 1,
           unit_price: '25.00',
-          line_total: '25.00',
-        },
-      ],
-    });
+          line_total: '25.00'}]});
 
     expect(billing).toEqual(
       expect.objectContaining({
         payment_status: 'PENDING',
-        total_amount: '25.00',
-      })
+        total_amount: '25.00'})
     );
     expect(billing.paid_amount).toBeUndefined();
     expect(billing.payment_method).toBeUndefined();
@@ -69,18 +60,14 @@ describe('clinical-request-billing helpers', () => {
           quantity: 24,
           unit_price: '500.00',
           line_total: '12000.00',
-          price_source: 'PHARMACY',
-        },
-      ],
-      currency: 'TZS',
-    });
+          price_source: 'PHARMACY'}],
+      currency: 'TZS'});
 
     expect(billing.line_items[0]).toEqual(
       expect.objectContaining({
         id: 'item-1',
         unit_price: '500.00',
-        price_source: 'PHARMACY',
-      })
+        price_source: 'PHARMACY'})
     );
   });
 
@@ -89,8 +76,7 @@ describe('clinical-request-billing helpers', () => {
       resolveInvoicePaymentStatus({
         billing_status: 'PAID',
         total_amount: '40.00',
-        payments: [],
-      })
+        payments: []})
     ).toBe('PAID');
   });
 
@@ -99,8 +85,7 @@ describe('clinical-request-billing helpers', () => {
       resolveInvoicePaymentStatus({
         billing_status: 'PARTIAL',
         total_amount: '40.00',
-        payments: [{ status: 'COMPLETED', amount: '10.00' }],
-      })
+        payments: [{ status: 'COMPLETED', amount: '10.00' }]})
     ).toBe('PARTIAL');
   });
 });

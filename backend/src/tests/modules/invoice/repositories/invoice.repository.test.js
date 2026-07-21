@@ -46,7 +46,7 @@ describe('Invoice Repository', () => {
       expect(result).toEqual(mockInvoice);
       expect(prisma.invoice.findFirst).toHaveBeenCalledWith({
         where: { id: invoiceId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -120,7 +120,7 @@ describe('Invoice Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

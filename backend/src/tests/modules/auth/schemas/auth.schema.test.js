@@ -250,8 +250,7 @@ describe('Auth Schema Validation', () => {
         facility_name: 'Mirembe Clinic',
         admin_name: 'Jane Doe',
         facility_type: 'CLINIC',
-        interests: 'a'.repeat(2001),
-      };
+        interests: 'a'.repeat(2001)};
       const result = registerBodySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
     });

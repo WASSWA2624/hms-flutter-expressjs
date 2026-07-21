@@ -13,13 +13,11 @@ const {
   resolvePayloadIdentifier,
   resolveScopeIdsForList,
   resolveScopedContext,
-  safeUpper,
-} = require('@lib/reports/api');
+  safeUpper} = require('@lib/reports/api');
 const {
   REPORT_DATASET_MAP,
   REPORT_DEFINITION_STATUSES,
-  REPORT_FORMATS,
-} = require('@lib/reports/constants');
+  REPORT_FORMATS} = require('@lib/reports/constants');
 const { serializeReportDefinition, serializeReportRun } = require('@lib/reports/serializers');
 
 const SORT_FIELDS = ['created_at', 'updated_at', 'name', 'status', 'dataset_key'];
@@ -36,8 +34,7 @@ const ensureDatasetDefinition = (datasetKey, definitionJson = {}) => {
     default_filters: definitionJson.default_filters || [],
     group_by: Array.isArray(definitionJson.group_by) ? definitionJson.group_by : [],
     sort: Array.isArray(definitionJson.sort) ? definitionJson.sort : [],
-    visualization: definitionJson.visualization || dataset.visualization,
-  };
+    visualization: definitionJson.visualization || dataset.visualization};
 };
 
 const buildListWhere = async (filters = {}, user = {}) => {
@@ -45,8 +42,7 @@ const buildListWhere = async (filters = {}, user = {}) => {
   const where = {
     tenant_id: scoped.tenant_id,
     ...buildSinceFilter(filters.since),
-    ...buildSearchWhere(filters.search, ['name', 'description', 'dataset_key', 'category']),
-  };
+    ...buildSearchWhere(filters.search, ['name', 'description', 'dataset_key', 'category'])};
 
   if (scoped.facility_id) where.facility_id = scoped.facility_id;
   if (normalizeString(filters.facility_id) && !scoped.facility_id) where.facility_id = '__none__';
@@ -69,13 +65,11 @@ const listReportDefinitions = async (filters = {}, page = 1, limit = 20, sortBy,
 
   const [records, total] = await Promise.all([
     reportDefinitionRepository.findMany({ where, skip, take: limit, orderBy }),
-    reportDefinitionRepository.count(where),
-  ]);
+    reportDefinitionRepository.count(where)]);
 
   return {
     reportDefinitions: records.map(serializeReportDefinition),
-    pagination: buildPagination(page, limit, total),
-  };
+    pagination: buildPagination(page, limit, total)};
 };
 
 const getReportDefinitionById = async (id, user = {}) => {
@@ -95,8 +89,7 @@ const createReportDefinition = async (data, context = {}) => {
   const datasetKey = normalizeString(data.dataset_key);
   const definitionJson = ensureDatasetDefinition(datasetKey, {
     ...(data.definition_json || {}),
-    dataset_key: datasetKey,
-  });
+    dataset_key: datasetKey});
   const dataset = REPORT_DATASET_MAP[datasetKey];
 
   const payload = {
@@ -106,8 +99,7 @@ const createReportDefinition = async (data, context = {}) => {
       model: 'facility',
       field: 'facility_id',
       tenant_id: scoped.tenant_id,
-      nullable: true,
-    }),
+      nullable: true}),
     created_by: context.user_id || null,
     name: normalizeString(data.name),
     description: normalizeString(data.description) || null,
@@ -116,8 +108,7 @@ const createReportDefinition = async (data, context = {}) => {
     status: safeUpper(data.status) || REPORT_DEFINITION_STATUSES[0],
     default_format: safeUpper(data.default_format) || REPORT_FORMATS[0],
     definition_json: definitionJson,
-    parameter_schema_json: data.parameter_schema_json || null,
-  };
+    parameter_schema_json: data.parameter_schema_json || null};
 
   const record = await reportDefinitionRepository.create(payload);
   await createAuditLog({
@@ -129,8 +120,7 @@ const createReportDefinition = async (data, context = {}) => {
     entity_id: record.id,
     diff: { after: serializeReportDefinition(record) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportDefinition(record);
 };
@@ -145,8 +135,7 @@ const updateReportDefinition = async (id, data, context = {}) => {
   ensureVersionMatch({
     current,
     expectedVersion: data.version,
-    serializer: serializeReportDefinition,
-  });
+    serializer: serializeReportDefinition});
 
   const nextDatasetKey = normalizeString(data.dataset_key) || current.dataset_key;
   const dataset = REPORT_DATASET_MAP[nextDatasetKey];
@@ -158,8 +147,7 @@ const updateReportDefinition = async (id, data, context = {}) => {
       model: 'facility',
       field: 'facility_id',
       tenant_id: scoped.tenant_id,
-      nullable: true,
-    });
+      nullable: true});
   }
   if (data.name !== undefined) updateData.name = normalizeString(data.name);
   if (data.description !== undefined) updateData.description = normalizeString(data.description) || null;
@@ -172,8 +160,7 @@ const updateReportDefinition = async (id, data, context = {}) => {
     updateData.definition_json = ensureDatasetDefinition(nextDatasetKey, {
       ...(current.definition_json || {}),
       ...(data.definition_json || {}),
-      dataset_key: nextDatasetKey,
-    });
+      dataset_key: nextDatasetKey});
   }
   updateData.version = Number(current.version || 1) + 1;
 
@@ -193,11 +180,9 @@ const updateReportDefinition = async (id, data, context = {}) => {
       'status',
       'default_format',
       'facility_id',
-      'version',
-    ]),
+      'version']),
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportDefinition(record);
 };
@@ -219,8 +204,7 @@ const deleteReportDefinition = async (id, context = {}) => {
     entity_id: current.id,
     diff: { before: serializeReportDefinition(current) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 };
 
 const runReportDefinitionNow = async (id, payload = {}, context = {}) => {
@@ -237,14 +221,12 @@ const runReportDefinitionNow = async (id, payload = {}, context = {}) => {
       model: 'facility',
       field: 'facility_id',
       tenant_id: scoped.tenant_id,
-      nullable: true,
-    }),
+      nullable: true}),
     requested_by_user_id: context.user_id || null,
     trigger_type: 'MANUAL',
     format: safeUpper(payload.format) || definition.default_format || REPORT_FORMATS[0],
     parameters_json: payload.parameters_json || {},
-    retention_days: payload.retention_days,
-  });
+    retention_days: payload.retention_days});
 
   await createAuditLog({
     tenant_id: definition.tenant_id,
@@ -255,8 +237,7 @@ const runReportDefinitionNow = async (id, payload = {}, context = {}) => {
     entity_id: run.id,
     diff: { after: serializeReportRun(run) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return serializeReportRun(run);
 };
@@ -267,5 +248,4 @@ module.exports = {
   getReportDefinitionById,
   listReportDefinitions,
   runReportDefinitionNow,
-  updateReportDefinition,
-};
+  updateReportDefinition};

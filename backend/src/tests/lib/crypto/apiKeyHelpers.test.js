@@ -20,8 +20,7 @@ describe('api key helpers', () => {
     const argon2Mock = {
       argon2id: 'argon2id',
       hash,
-      verify,
-    };
+      verify};
 
     const { hashApiKey, verifyApiKey } = loadApiKeyHelpers(() => argon2Mock);
 
@@ -32,8 +31,7 @@ describe('api key helpers', () => {
       type: 'argon2id',
       memoryCost: 65536,
       timeCost: 3,
-      parallelism: 4,
-    });
+      parallelism: 4});
     expect(verify).toHaveBeenCalledWith('$argon2id$hash', 'plain-api-key');
   });
 
@@ -41,8 +39,7 @@ describe('api key helpers', () => {
     const argon2Mock = {
       argon2id: 'argon2id',
       hash: jest.fn(),
-      verify: jest.fn(),
-    };
+      verify: jest.fn()};
 
     const { hashApiKey, verifyApiKey } = loadApiKeyHelpers(() => argon2Mock);
 

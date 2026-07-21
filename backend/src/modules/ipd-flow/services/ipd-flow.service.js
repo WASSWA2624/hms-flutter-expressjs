@@ -11,21 +11,18 @@ const {
   emitToUsers,
   IPD_EVENTS,
   ADMISSION_BED_EVENTS,
-  NOTIFICATION_EVENTS,
-} = require("@lib/websocket");
+  NOTIFICATION_EVENTS} = require("@lib/websocket");
 const { ROLES } = require("@config/roles");
 const {
   buildIpdMedicationReminderNote,
   normalizeMedicationFrequency,
   parseIpdMedicationReminderNote,
-  resolveMedicationFrequencyIntervalHours,
-} = require("@lib/clinical/ipdMedicationReminder");
+  resolveMedicationFrequencyIntervalHours} = require("@lib/clinical/ipdMedicationReminder");
 const {
   persistWardRoundBilling,
   persistAdmissionBilling,
   persistNursingServiceBilling,
-  mapClinicalOrderBillingFields,
-} = require("@lib/billing/clinical-request-billing");
+  mapClinicalOrderBillingFields} = require("@lib/billing/clinical-request-billing");
 
 const UUID_LIKE_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -39,36 +36,30 @@ const STAGES = Object.freeze({
   TRANSFER_IN_PROGRESS: "TRANSFER_IN_PROGRESS",
   DISCHARGE_PLANNED: "DISCHARGE_PLANNED",
   DISCHARGED: "DISCHARGED",
-  CANCELLED: "CANCELLED",
-});
+  CANCELLED: "CANCELLED"});
 
 const TRANSFER_ACTIONS = Object.freeze({
   APPROVE: "APPROVE",
   START: "START",
   COMPLETE: "COMPLETE",
-  CANCEL: "CANCEL",
-});
+  CANCEL: "CANCEL"});
 
 const QUEUE_SCOPES = Object.freeze({
   ACTIVE: "ACTIVE",
-  ALL: "ALL",
-});
+  ALL: "ALL"});
 const ICU_QUEUE_SCOPES = Object.freeze({
   ALL: "ALL",
   WITH_ICU: "WITH_ICU",
-  ACTIVE: "ACTIVE",
-});
+  ACTIVE: "ACTIVE"});
 const ICU_STATUSES = Object.freeze({
   ACTIVE: "ACTIVE",
   ENDED: "ENDED",
-  NONE: "NONE",
-});
+  NONE: "NONE"});
 const CRITICAL_SEVERITY_ORDER = Object.freeze({
   LOW: 1,
   MEDIUM: 2,
   HIGH: 3,
-  CRITICAL: 4,
-});
+  CRITICAL: 4});
 const TERMINAL_STAGES = new Set([STAGES.DISCHARGED, STAGES.CANCELLED]);
 const OT_ACTIVE_STAGES = new Set([
   "SIGN_IN",
@@ -76,8 +67,7 @@ const OT_ACTIVE_STAGES = new Set([
   "INTRA_OP",
   "SIGN_OUT",
   "POST_OP",
-  "PACU_HANDOFF",
-]);
+  "PACU_HANDOFF"]);
 const ACTIVE_THEATRE_STATUSES = new Set(["SCHEDULED", "IN_PROGRESS"]);
 const DEFAULT_DISCHARGE_CLEARANCE = Object.freeze({
   summary_ready: false,
@@ -87,8 +77,7 @@ const DEFAULT_DISCHARGE_CLEARANCE = Object.freeze({
   nursing_cleared: false,
   documents_ready: false,
   patient_exited: false,
-  override_reason: null,
-});
+  override_reason: null});
 const DISCHARGE_CLEARANCE_KEYS = Object.freeze(
   Object.keys(DEFAULT_DISCHARGE_CLEARANCE).filter(
     (key) => key !== "override_reason",
@@ -102,77 +91,64 @@ const LEGACY_ROUTE_CONFIG = Object.freeze({
     delegate: "admission",
     admissionField: "id",
     panel: "snapshot",
-    action: "open_admission",
-  },
+    action: "open_admission"},
   "bed-assignments": {
     delegate: "bed_assignment",
     admissionField: "admission_id",
     panel: "beds",
-    action: "manage_bed",
-  },
+    action: "manage_bed"},
   "ward-rounds": {
     delegate: "ward_round",
     admissionField: "admission_id",
     panel: "rounds",
-    action: "add_ward_round",
-  },
+    action: "add_ward_round"},
   "nursing-notes": {
     delegate: "nursing_note",
     admissionField: "admission_id",
     panel: "nursing",
-    action: "add_nursing_note",
-  },
+    action: "add_nursing_note"},
   "medication-administrations": {
     delegate: "medication_administration",
     admissionField: "admission_id",
     panel: "medication",
-    action: "add_medication",
-  },
+    action: "add_medication"},
   "discharge-summaries": {
     delegate: "discharge_summary",
     admissionField: "admission_id",
     panel: "discharge",
-    action: "plan_discharge",
-  },
+    action: "plan_discharge"},
   "transfer-requests": {
     delegate: "transfer_request",
     admissionField: "admission_id",
     panel: "transfer",
-    action: "manage_transfer",
-  },
+    action: "manage_transfer"},
   "icu-stays": {
     delegate: "icu_stay",
     admissionField: "admission_id",
     panel: "stays",
-    action: "manage_icu_stay",
-  },
+    action: "manage_icu_stay"},
   "icu-observations": {
     delegate: "icu_observation",
     admissionField: "icu_stay.admission_id",
     panel: "observations",
-    action: "add_icu_observation",
-  },
+    action: "add_icu_observation"},
   "critical-alerts": {
     delegate: "critical_alert",
     admissionField: "icu_stay.admission_id",
     panel: "alerts",
-    action: "add_critical_alert",
-  },
-});
+    action: "add_critical_alert"}});
 
 const TERMINAL_ADMISSION_STATUSES = new Set(["DISCHARGED", "CANCELLED"]);
 const OPEN_TRANSFER_STATUSES = new Set([
   "REQUESTED",
   "APPROVED",
-  "IN_PROGRESS",
-]);
+  "IN_PROGRESS"]);
 const IPD_RECIPIENT_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
-  ROLES.NURSE,
-];
+  ROLES.NURSE];
 
 const toDate = (value, fallback = new Date()) => {
   if (!value) return fallback;
@@ -239,14 +215,12 @@ const parseDoseAndUnit = (value) => {
   if (matched) {
     return {
       dose: sanitizeIdentifier(matched[1]) || null,
-      unit: sanitizeIdentifier(matched[2]) || null,
-    };
+      unit: sanitizeIdentifier(matched[2]) || null};
   }
 
   return {
     dose: text,
-    unit: null,
-  };
+    unit: null};
 };
 
 const buildMedicationSuggestionLabel = ({
@@ -254,8 +228,7 @@ const buildMedicationSuggestionLabel = ({
   strength,
   dosage,
   route,
-  frequency,
-}) => {
+  frequency}) => {
   return [drugName, dosage || strength, route, frequency]
     .map(sanitizeIdentifier)
     .filter(Boolean)
@@ -279,8 +252,7 @@ const mapMedicationSuggestion = (item) => {
       strength: sanitizeIdentifier(item?.drug?.strength),
       dosage: dosageLabel,
       route,
-      frequency,
-    }) ||
+      frequency}) ||
     drugName ||
     dosageLabel;
 
@@ -299,8 +271,7 @@ const mapMedicationSuggestion = (item) => {
     ordered_at: item?.pharmacy_order?.ordered_at || null,
     dosage: dosageLabel || null,
     form: sanitizeIdentifier(item?.drug?.form) || null,
-    strength: sanitizeIdentifier(item?.drug?.strength) || null,
-  };
+    strength: sanitizeIdentifier(item?.drug?.strength) || null};
 };
 
 const buildMedicationSuggestions = (admission) => {
@@ -327,8 +298,7 @@ const buildMedicationSuggestions = (admission) => {
 
 const OPEN_PHARMACY_ORDER_STATUSES = Object.freeze([
   "ORDERED",
-  "PARTIALLY_DISPENSED",
-]);
+  "PARTIALLY_DISPENSED"]);
 
 const buildPharmacyClearance = (admission) => {
   const orders = Array.isArray(admission?.encounter?.pharmacy_orders)
@@ -347,9 +317,7 @@ const buildPharmacyClearance = (admission) => {
       id: resolvePublicIdentifier(order),
       status: sanitizeIdentifier(order?.status) || null,
       ordered_at: order?.ordered_at || null,
-      item_count: Array.isArray(order?.items) ? order.items.length : 0,
-    })),
-  };
+      item_count: Array.isArray(order?.items) ? order.items.length : 0}))};
 };
 
 const mapMedicationReminder = (entry) => {
@@ -378,8 +346,7 @@ const mapMedicationReminder = (entry) => {
     occurrence: Number(metadata.occurrence || 0),
     total_occurrences: Number(metadata.total_occurrences || 0),
     admission_id: metadata.admission_public_id || null,
-    encounter_id: metadata.encounter_public_id || null,
-  };
+    encounter_id: metadata.encounter_public_id || null};
 };
 
 const buildMedicationReminders = (admission) => {
@@ -403,8 +370,7 @@ const buildMedicationReminderSchedule = ({
   administeredAt,
   reminderFirstAt,
   occurrences,
-  intervalHours,
-}) => {
+  intervalHours}) => {
   const safeOccurrences = Math.max(1, Number(occurrences || 1));
   const firstAt = toDate(reminderFirstAt || administeredAt, administeredAt);
 
@@ -450,17 +416,14 @@ const resolveByIdentifier = async (
 
   const baseWhere = {
     deleted_at: null,
-    ...(where || {}),
-  };
+    ...(where || {})};
 
   if (isUuidLike(normalized)) {
     const byUuid = await delegate.findFirst({
       where: {
         ...baseWhere,
-        id: normalized.toLowerCase(),
-      },
-      ...queryShape,
-    });
+        id: normalized.toLowerCase()},
+      ...queryShape});
 
     if (byUuid) return byUuid;
   }
@@ -468,10 +431,8 @@ const resolveByIdentifier = async (
   return delegate.findFirst({
     where: {
       ...baseWhere,
-      human_friendly_id: normalized.toUpperCase(),
-    },
-    ...queryShape,
-  });
+      human_friendly_id: normalized.toUpperCase()},
+    ...queryShape});
 };
 
 const resolveAdmissionByIdentifier = (tx, identifier) =>
@@ -484,8 +445,7 @@ const resolveAdmissionByIdentifier = (tx, identifier) =>
       tenant_id: true,
       facility_id: true,
       status: true,
-      patient_id: true,
-    },
+      patient_id: true},
   );
 
 const resolveTenantByIdentifier = (tx, identifier) =>
@@ -498,8 +458,7 @@ const resolveFacilityByIdentifier = (tx, identifier, tenantId = null) =>
     tenantId ? { tenant_id: tenantId } : {},
     {
       id: true,
-      tenant_id: true,
-    },
+      tenant_id: true},
   );
 
 const resolvePatientByIdentifier = (
@@ -513,13 +472,11 @@ const resolvePatientByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
       tenant_id: true,
-      facility_id: true,
-    },
+      facility_id: true},
   );
 
 const resolveEncounterByIdentifier = (
@@ -533,14 +490,12 @@ const resolveEncounterByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
       tenant_id: true,
       facility_id: true,
-      patient_id: true,
-    },
+      patient_id: true},
   );
 
 const resolvePharmacyOrderItemByIdentifier = async (
@@ -557,10 +512,7 @@ const resolvePharmacyOrderItemByIdentifier = async (
         is: {
           deleted_at: null,
           ...(encounterId ? { encounter_id: encounterId } : {}),
-          ...(patientId ? { patient_id: patientId } : {}),
-        },
-      },
-    },
+          ...(patientId ? { patient_id: patientId } : {})}}},
     {
       id: true,
       human_friendly_id: true,
@@ -574,18 +526,13 @@ const resolvePharmacyOrderItemByIdentifier = async (
           human_friendly_id: true,
           name: true,
           form: true,
-          strength: true,
-        },
-      },
+          strength: true}},
       pharmacy_order: {
         select: {
           id: true,
           human_friendly_id: true,
           status: true,
-          ordered_at: true,
-        },
-      },
-    },
+          ordered_at: true}}},
   );
 
 const resolveBedByIdentifier = (
@@ -599,8 +546,7 @@ const resolveBedByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
       status: true,
@@ -609,8 +555,7 @@ const resolveBedByIdentifier = (
       tenant_id: true,
       facility_id: true,
       human_friendly_id: true,
-      label: true,
-    },
+      label: true},
   );
 
 const resolveWardByIdentifier = (
@@ -624,15 +569,13 @@ const resolveWardByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
       name: true,
       tenant_id: true,
       facility_id: true,
-      human_friendly_id: true,
-    },
+      human_friendly_id: true},
   );
 
 const resolveRoomByIdentifier = (
@@ -646,16 +589,14 @@ const resolveRoomByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
       ward_id: true,
       tenant_id: true,
       facility_id: true,
       human_friendly_id: true,
-      name: true,
-    },
+      name: true},
   );
 
 const resolveUserByIdentifier = (
@@ -669,11 +610,9 @@ const resolveUserByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
-      id: true,
-    },
+      id: true},
   );
 
 const resolveStaffProfileByIdentifier = (
@@ -687,8 +626,7 @@ const resolveStaffProfileByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { user: { facility_id: facilityId } } : {}),
-    },
+      ...(facilityId ? { user: { facility_id: facilityId } } : {})},
     {
       id: true,
       human_friendly_id: true,
@@ -696,10 +634,7 @@ const resolveStaffProfileByIdentifier = (
       user: {
         select: {
           id: true,
-          human_friendly_id: true,
-        },
-      },
-    },
+          human_friendly_id: true}}},
   );
 
 const resolveTransferByIdentifier = (tx, identifier, admissionId = null) =>
@@ -710,8 +645,7 @@ const resolveTransferByIdentifier = (tx, identifier, admissionId = null) =>
     {
       id: true,
       admission_id: true,
-      status: true,
-    },
+      status: true},
   );
 
 const resolveIcuStayByIdentifier = (tx, identifier, admissionId = null) =>
@@ -722,8 +656,7 @@ const resolveIcuStayByIdentifier = (tx, identifier, admissionId = null) =>
     {
       id: true,
       admission_id: true,
-      ended_at: true,
-    },
+      ended_at: true},
   );
 
 const resolveCriticalAlertByIdentifier = (tx, identifier) =>
@@ -733,8 +666,7 @@ const resolveCriticalAlertByIdentifier = (tx, identifier) =>
     {},
     {
       id: true,
-      icu_stay_id: true,
-    },
+      icu_stay_id: true},
   );
 
 const getActiveBedAssignment = (admission) =>
@@ -853,8 +785,7 @@ const deriveIpdStage = ({
   activeBedAssignment,
   openTransferRequest,
   latestDischargeSummary,
-  activeTheatreCase = null,
-}) => {
+  activeTheatreCase = null}) => {
   const admissionStatus = String(admission?.status || "").toUpperCase();
   if (admissionStatus === "CANCELLED") return STAGES.CANCELLED;
   if (admissionStatus === "DISCHARGED") return STAGES.DISCHARGED;
@@ -910,8 +841,7 @@ const buildFlowSummary = (snapshot) => ({
   next_step: snapshot?.flow?.next_step || null,
   admission_status: snapshot?.admission?.status || null,
   has_active_bed: Boolean(snapshot?.active_bed_assignment),
-  transfer_status: snapshot?.open_transfer_request?.status || null,
-});
+  transfer_status: snapshot?.open_transfer_request?.status || null});
 
 const buildIcuOverlay = (admission) => {
   const icuStays = getIcuStays(admission);
@@ -923,8 +853,7 @@ const buildIcuOverlay = (admission) => {
     .flatMap((stay) =>
       getIcuStayObservations(stay).map((entry) => ({
         ...entry,
-        icu_stay_id: stay.id,
-      })),
+        icu_stay_id: stay.id})),
     )
     .sort((left, right) => {
       const leftTs =
@@ -938,8 +867,7 @@ const buildIcuOverlay = (admission) => {
     .flatMap((stay) =>
       getIcuStayAlerts(stay).map((entry) => ({
         ...entry,
-        icu_stay_id: stay.id,
-      })),
+        icu_stay_id: stay.id})),
     )
     .sort((left, right) => {
       const leftTs = new Date(left?.created_at || 0).getTime() || 0;
@@ -970,10 +898,8 @@ const buildIcuOverlay = (admission) => {
       ).length,
       CRITICAL: targetAlerts.filter(
         (entry) => String(entry?.severity || "").toUpperCase() === "CRITICAL",
-      ).length,
-    },
-    recent: targetAlerts.slice(0, 10),
-  };
+      ).length},
+    recent: targetAlerts.slice(0, 10)};
 
   return {
     status: deriveIcuStatus(admission),
@@ -984,8 +910,7 @@ const buildIcuOverlay = (admission) => {
     recent_stays: recentStays,
     recent_observations: allObservations.slice(0, 12),
     critical_alert_summary: criticalAlertSummary,
-    recent_alerts: allAlerts.slice(0, 12),
-  };
+    recent_alerts: allAlerts.slice(0, 12)};
 };
 
 const mapTheatreCaseSummary = (theatreCase) => {
@@ -1008,8 +933,7 @@ const mapTheatreCaseSummary = (theatreCase) => {
     stage_notes: theatreCase.stage_notes || null,
     post_op_note: latestPostOp?.note || null,
     post_op_status: sanitizeIdentifier(latestPostOp?.record_status) || null,
-    room_label: sanitizeIdentifier(theatreCase.room?.name) || null,
-  };
+    room_label: sanitizeIdentifier(theatreCase.room?.name) || null};
 };
 
 const buildTheatreOverlay = (admission) => {
@@ -1034,8 +958,7 @@ const buildTheatreOverlay = (admission) => {
           (Array.isArray(handoverCase.post_op_notes)
             ? handoverCase.post_op_notes[0]?.note
             : null) || null,
-        completed_at: handoverCase.completed_at || null,
-      }
+        completed_at: handoverCase.completed_at || null}
     : null;
 
   return {
@@ -1046,8 +969,7 @@ const buildTheatreOverlay = (admission) => {
         : "NONE",
     active_case: mapTheatreCaseSummary(activeCase),
     latest_completed_case: mapTheatreCaseSummary(latestCompleted),
-    handover_summary: handoverSummary,
-  };
+    handover_summary: handoverSummary};
 };
 
 const buildIpdSnapshot = (admission, options = {}) => {
@@ -1064,8 +986,7 @@ const buildIpdSnapshot = (admission, options = {}) => {
     activeBedAssignment,
     openTransferRequest,
     latestDischargeSummary,
-    activeTheatreCase,
-  });
+    activeTheatreCase});
 
   const snapshot = {
     admission: {
@@ -1079,8 +1000,7 @@ const buildIpdSnapshot = (admission, options = {}) => {
       admitted_at: admission.admitted_at,
       discharged_at: admission.discharged_at || null,
       created_at: admission.created_at,
-      updated_at: admission.updated_at,
-    },
+      updated_at: admission.updated_at},
     patient: admission.patient || null,
     encounter: admission.encounter || null,
     facility: admission.facility || null,
@@ -1113,11 +1033,9 @@ const buildIpdSnapshot = (admission, options = {}) => {
       next_step: deriveNextStep(stage, openTransferRequest),
       transfer_status: openTransferRequest?.status || null,
       has_active_bed: Boolean(activeBedAssignment),
-      admission_status: admission.status,
-    },
+      admission_status: admission.status},
     icu: includeIcu ? buildIcuOverlay(admission) : null,
-    theatre: buildTheatreOverlay(admission),
-  };
+    theatre: buildTheatreOverlay(admission)};
 
   snapshot.flow_summary = buildFlowSummary(snapshot);
   return snapshot;
@@ -1128,8 +1046,7 @@ const mapPublicWard = (ward) => {
   return {
     id: resolvePublicIdentifier(ward),
     name: sanitizeIdentifier(ward.name) || null,
-    ward_type: sanitizeIdentifier(ward.ward_type) || null,
-  };
+    ward_type: sanitizeIdentifier(ward.ward_type) || null};
 };
 
 const mapPublicRoom = (room) => {
@@ -1137,8 +1054,7 @@ const mapPublicRoom = (room) => {
   return {
     id: resolvePublicIdentifier(room),
     name: sanitizeIdentifier(room.name) || null,
-    floor: room.floor ?? null,
-  };
+    floor: room.floor ?? null};
 };
 
 const mapPublicBed = (bed) => {
@@ -1148,8 +1064,7 @@ const mapPublicBed = (bed) => {
     label: sanitizeIdentifier(bed.label) || null,
     status: sanitizeIdentifier(bed.status) || null,
     ward: mapPublicWard(bed.ward),
-    room: mapPublicRoom(bed.room),
-  };
+    room: mapPublicRoom(bed.room)};
 };
 
 const mapPublicBedAssignment = (assignment) => {
@@ -1158,8 +1073,7 @@ const mapPublicBedAssignment = (assignment) => {
     id: resolvePublicIdentifier(assignment),
     assigned_at: assignment.assigned_at || null,
     released_at: assignment.released_at || null,
-    bed: mapPublicBed(assignment.bed),
-  };
+    bed: mapPublicBed(assignment.bed)};
 };
 
 const mapPublicTransferRequest = (request) => {
@@ -1169,8 +1083,7 @@ const mapPublicTransferRequest = (request) => {
     status: sanitizeIdentifier(request.status) || null,
     requested_at: request.requested_at || null,
     from_ward: mapPublicWard(request.from_ward),
-    to_ward: mapPublicWard(request.to_ward),
-  };
+    to_ward: mapPublicWard(request.to_ward)};
 };
 
 const mapPublicDischargeSummary = (summary) => {
@@ -1184,8 +1097,7 @@ const mapPublicDischargeSummary = (summary) => {
     created_at: summary.created_at || null,
     updated_at: summary.updated_at || null,
     clearance_snapshot: clearance,
-    clearance_phase: deriveClearancePhase(summary.status, clearance),
-  };
+    clearance_phase: deriveClearancePhase(summary.status, clearance)};
 };
 
 const normalizeDischargeClearance = (value) => {
@@ -1196,11 +1108,9 @@ const normalizeDischargeClearance = (value) => {
     ...Object.fromEntries(
       DISCHARGE_CLEARANCE_KEYS.map((key) => [
         key,
-        Boolean(source[key]),
-      ]),
+        Boolean(source[key])]),
     ),
-    override_reason: sanitizeIdentifier(source.override_reason) || null,
-  };
+    override_reason: sanitizeIdentifier(source.override_reason) || null};
 };
 
 const deriveClearancePhase = (status, clearance = DEFAULT_DISCHARGE_CLEARANCE) => {
@@ -1245,8 +1155,7 @@ const mapPublicPendingOrder = (entry) => {
     kind: sanitizeIdentifier(entry.kind) || null,
     status: sanitizeIdentifier(entry.status) || null,
     label: sanitizeIdentifier(entry.label) || null,
-    ordered_at: entry.ordered_at || null,
-  };
+    ordered_at: entry.ordered_at || null};
 };
 
 const buildPendingDischargeOrders = async (encounterId) => {
@@ -1257,77 +1166,63 @@ const buildPendingDischargeOrders = async (encounterId) => {
           where: {
             encounter_id: encounterId,
             deleted_at: null,
-            status: { in: PENDING_LAB_ORDER_STATUSES },
-          },
+            status: { in: PENDING_LAB_ORDER_STATUSES }},
           select: {
             id: true,
             human_friendly_id: true,
             status: true,
-            ordered_at: true,
-          },
+            ordered_at: true},
           orderBy: { ordered_at: "desc" },
-          take: 20,
-        })
+          take: 20})
       : [],
     prisma.radiology_order?.findMany
       ? prisma.radiology_order.findMany({
           where: {
             encounter_id: encounterId,
             deleted_at: null,
-            status: { in: PENDING_RADIOLOGY_ORDER_STATUSES },
-          },
+            status: { in: PENDING_RADIOLOGY_ORDER_STATUSES }},
           select: {
             id: true,
             human_friendly_id: true,
             status: true,
-            ordered_at: true,
-          },
+            ordered_at: true},
           orderBy: { ordered_at: "desc" },
-          take: 20,
-        })
+          take: 20})
       : [],
     prisma.pharmacy_order?.findMany
       ? prisma.pharmacy_order.findMany({
           where: {
             encounter_id: encounterId,
             deleted_at: null,
-            status: { in: PENDING_PHARMACY_ORDER_STATUSES },
-          },
+            status: { in: PENDING_PHARMACY_ORDER_STATUSES }},
           select: {
             id: true,
             human_friendly_id: true,
             status: true,
-            ordered_at: true,
-          },
+            ordered_at: true},
           orderBy: { ordered_at: "desc" },
-          take: 20,
-        })
-      : [],
-  ]);
+          take: 20})
+      : []]);
 
   return [
     ...labOrders.map((entry) =>
       mapPublicPendingOrder({
         ...entry,
         kind: "lab_order",
-        label: "Lab order",
-      }),
+        label: "Lab order"}),
     ),
     ...radiologyOrders.map((entry) =>
       mapPublicPendingOrder({
         ...entry,
         kind: "radiology_order",
-        label: "Radiology order",
-      }),
+        label: "Radiology order"}),
     ),
     ...pharmacyOrders.map((entry) =>
       mapPublicPendingOrder({
         ...entry,
         kind: "pharmacy_order",
-        label: "Pharmacy order",
-      }),
-    ),
-  ].filter(Boolean);
+        label: "Pharmacy order"}),
+    )].filter(Boolean);
 };
 
 const resolveSourceContext = (encounter) => {
@@ -1344,8 +1239,7 @@ const resolveSourceContext = (encounter) => {
     kind: sourceKind,
     encounter_type: sanitizeIdentifier(encounter.encounter_type) || null,
     encounter_status: sanitizeIdentifier(encounter.status) || null,
-    started_at: encounter.started_at || null,
-  };
+    started_at: encounter.started_at || null};
 };
 
 const enrichIpdSnapshotForDetail = async (snapshot) => {
@@ -1354,8 +1248,7 @@ const enrichIpdSnapshotForDetail = async (snapshot) => {
   return {
     ...snapshot,
     source_context: resolveSourceContext(snapshot?.encounter),
-    pending_discharge_orders: pendingOrders,
-  };
+    pending_discharge_orders: pendingOrders};
 };
 
 const mapPublicWardRound = (round) => {
@@ -1365,8 +1258,7 @@ const mapPublicWardRound = (round) => {
     round_at: round.round_at || null,
     notes: round.notes || null,
     created_at: round.created_at || null,
-    ...mapClinicalOrderBillingFields(round),
-  };
+    ...mapClinicalOrderBillingFields(round)};
 };
 
 const resolveUserDisplayName = (user) => {
@@ -1387,8 +1279,7 @@ const mapPublicNursingNote = (note) => {
       sanitizeIdentifier(note.nurse?.email) ||
       null,
     note: note.note || null,
-    created_at: note.created_at || null,
-  };
+    created_at: note.created_at || null};
 };
 
 const mapPublicMedicationAdministration = (entry) => {
@@ -1400,8 +1291,7 @@ const mapPublicMedicationAdministration = (entry) => {
     dose: entry.dose || null,
     unit: entry.unit || null,
     route: sanitizeIdentifier(entry.route) || null,
-    created_at: entry.created_at || null,
-  };
+    created_at: entry.created_at || null};
 };
 
 const mapPublicMedicationSuggestion = (entry) => {
@@ -1421,8 +1311,7 @@ const mapPublicMedicationSuggestion = (entry) => {
     ordered_at: entry.ordered_at || null,
     dosage: sanitizeIdentifier(entry.dosage) || null,
     form: sanitizeIdentifier(entry.form) || null,
-    strength: sanitizeIdentifier(entry.strength) || null,
-  };
+    strength: sanitizeIdentifier(entry.strength) || null};
 };
 
 const mapPublicMedicationReminder = (entry) => {
@@ -1443,8 +1332,7 @@ const mapPublicMedicationReminder = (entry) => {
     occurrence: Number(entry.occurrence || 0),
     total_occurrences: Number(entry.total_occurrences || 0),
     admission_id: sanitizeIdentifier(entry.admission_id) || null,
-    encounter_id: sanitizeIdentifier(entry.encounter_id) || null,
-  };
+    encounter_id: sanitizeIdentifier(entry.encounter_id) || null};
 };
 
 const mapPublicPharmacyClearance = (clearance) => {
@@ -1457,10 +1345,8 @@ const mapPublicPharmacyClearance = (clearance) => {
         id: sanitizeIdentifier(order?.id) || null,
         status: sanitizeIdentifier(order?.status) || null,
         ordered_at: order?.ordered_at || null,
-        item_count: Number(order?.item_count || 0),
-      }))
-      .filter((order) => Boolean(order.id)),
-  };
+        item_count: Number(order?.item_count || 0)}))
+      .filter((order) => Boolean(order.id))};
 };
 
 const mapPublicIcuStay = (stay) => {
@@ -1470,8 +1356,7 @@ const mapPublicIcuStay = (stay) => {
     display_id: resolvePublicIdentifier(stay),
     started_at: stay.started_at || null,
     ended_at: stay.ended_at || null,
-    created_at: stay.created_at || null,
-  };
+    created_at: stay.created_at || null};
 };
 
 const mapPublicIcuObservation = (entry) => {
@@ -1482,8 +1367,7 @@ const mapPublicIcuObservation = (entry) => {
     icu_stay_id: toPublicScalarIdentifier(entry.icu_stay_id),
     observed_at: entry.observed_at || null,
     observation: entry.observation || null,
-    created_at: entry.created_at || null,
-  };
+    created_at: entry.created_at || null};
 };
 
 const mapPublicCriticalAlert = (entry) => {
@@ -1494,8 +1378,7 @@ const mapPublicCriticalAlert = (entry) => {
     icu_stay_id: toPublicScalarIdentifier(entry.icu_stay_id),
     severity: sanitizeIdentifier(entry.severity) || null,
     message: entry.message || null,
-    created_at: entry.created_at || null,
-  };
+    created_at: entry.created_at || null};
 };
 
 const mapPublicIcuOverlay = (overlay) => {
@@ -1543,16 +1426,13 @@ const mapPublicIcuOverlay = (overlay) => {
         HIGH: Number(overlay?.critical_alert_summary?.by_severity?.HIGH || 0),
         CRITICAL: Number(
           overlay?.critical_alert_summary?.by_severity?.CRITICAL || 0,
-        ),
-      },
+        )},
       recent: (Array.isArray(overlay?.critical_alert_summary?.recent)
         ? overlay.critical_alert_summary.recent
         : []
       )
         .map(mapPublicCriticalAlert)
-        .filter(Boolean),
-    },
-  };
+        .filter(Boolean)}};
 };
 
 const mapPublicTheatreCaseSummary = (entry) => {
@@ -1571,8 +1451,7 @@ const mapPublicTheatreCaseSummary = (entry) => {
     stage_notes: entry.stage_notes || null,
     post_op_note: entry.post_op_note || null,
     post_op_status: sanitizeIdentifier(entry.post_op_status) || null,
-    room_label: sanitizeIdentifier(entry.room_label) || null,
-  };
+    room_label: sanitizeIdentifier(entry.room_label) || null};
 };
 
 const mapPublicTheatreOverlay = (overlay) => {
@@ -1595,10 +1474,8 @@ const mapPublicTheatreOverlay = (overlay) => {
             null,
           stage_notes: overlay.handover_summary.stage_notes || null,
           post_op_note: overlay.handover_summary.post_op_note || null,
-          completed_at: overlay.handover_summary.completed_at || null,
-        }
-      : null,
-  };
+          completed_at: overlay.handover_summary.completed_at || null}
+      : null};
 };
 
 const buildPublicTimeline = (snapshot) => {
@@ -1609,8 +1486,7 @@ const buildPublicTimeline = (snapshot) => {
       events.push({
         type: "WARD_ROUND",
         at: round.round_at || round.created_at || null,
-        label: round.notes || "Ward round recorded",
-      });
+        label: round.notes || "Ward round recorded"});
     },
   );
 
@@ -1621,8 +1497,7 @@ const buildPublicTimeline = (snapshot) => {
     events.push({
       type: "NURSING_NOTE",
       at: note.created_at || null,
-      label: note.note || "Nursing note recorded",
-    });
+      label: note.note || "Nursing note recorded"});
   });
 
   (Array.isArray(snapshot?.medication_administrations)
@@ -1634,8 +1509,7 @@ const buildPublicTimeline = (snapshot) => {
       at: entry.administered_at || entry.created_at || null,
       label: sanitizeIdentifier(entry.dose)
         ? `Dose ${entry.dose}${entry.unit ? ` ${entry.unit}` : ""}`
-        : "Medication recorded",
-    });
+        : "Medication recorded"});
   });
 
   (Array.isArray(snapshot?.medication_reminders)
@@ -1648,8 +1522,7 @@ const buildPublicTimeline = (snapshot) => {
       label:
         sanitizeIdentifier(entry.medication_label) ||
         sanitizeIdentifier(entry.note) ||
-        "Medication reminder scheduled",
-    });
+        "Medication reminder scheduled"});
   });
 
   (Array.isArray(snapshot?.transfer_requests)
@@ -1659,8 +1532,7 @@ const buildPublicTimeline = (snapshot) => {
     events.push({
       type: "TRANSFER",
       at: request.requested_at || null,
-      label: `Transfer ${sanitizeIdentifier(request.status) || "UPDATED"}`,
-    });
+      label: `Transfer ${sanitizeIdentifier(request.status) || "UPDATED"}`});
   });
 
   (Array.isArray(snapshot?.icu?.recent_observations)
@@ -1671,8 +1543,7 @@ const buildPublicTimeline = (snapshot) => {
       type: "ICU_OBSERVATION",
       at: entry.observed_at || entry.created_at || null,
       label:
-        sanitizeIdentifier(entry.observation) || "ICU observation recorded",
-    });
+        sanitizeIdentifier(entry.observation) || "ICU observation recorded"});
   });
 
   (Array.isArray(snapshot?.icu?.recent_alerts)
@@ -1682,8 +1553,7 @@ const buildPublicTimeline = (snapshot) => {
     events.push({
       type: "CRITICAL_ALERT",
       at: entry.created_at || null,
-      label: `${sanitizeIdentifier(entry.severity) || "ALERT"}: ${sanitizeIdentifier(entry.message) || "Critical alert raised"}`,
-    });
+      label: `${sanitizeIdentifier(entry.severity) || "ALERT"}: ${sanitizeIdentifier(entry.message) || "Critical alert raised"}`});
   });
 
   return events
@@ -1720,21 +1590,18 @@ const toPublicIpdSnapshot = (snapshot) => {
       admitted_at: snapshot?.admission?.admitted_at || null,
       discharged_at: snapshot?.admission?.discharged_at || null,
       created_at: snapshot?.admission?.created_at || null,
-      updated_at: snapshot?.admission?.updated_at || null,
-    },
+      updated_at: snapshot?.admission?.updated_at || null},
     tenant: snapshot?.tenant
       ? {
           id: resolvePublicIdentifier(snapshot.tenant),
-          name: sanitizeIdentifier(snapshot.tenant.name) || null,
-        }
+          name: sanitizeIdentifier(snapshot.tenant.name) || null}
       : null,
     facility: snapshot?.facility
       ? {
           id: resolvePublicIdentifier(snapshot.facility),
           name: sanitizeIdentifier(snapshot.facility.name) || null,
           facility_type:
-            sanitizeIdentifier(snapshot.facility.facility_type) || null,
-        }
+            sanitizeIdentifier(snapshot.facility.facility_type) || null}
       : null,
     patient: snapshot?.patient
       ? {
@@ -1742,8 +1609,7 @@ const toPublicIpdSnapshot = (snapshot) => {
           first_name: snapshot.patient.first_name || null,
           last_name: snapshot.patient.last_name || null,
           date_of_birth: snapshot.patient.date_of_birth || null,
-          gender: sanitizeIdentifier(snapshot.patient.gender) || null,
-        }
+          gender: sanitizeIdentifier(snapshot.patient.gender) || null}
       : null,
     encounter: snapshot?.encounter
       ? {
@@ -1753,8 +1619,7 @@ const toPublicIpdSnapshot = (snapshot) => {
           status: sanitizeIdentifier(snapshot.encounter.status) || null,
           started_at: snapshot.encounter.started_at || null,
           ended_at: snapshot.encounter.ended_at || null,
-          provider_user_id: null,
-        }
+          provider_user_id: null}
       : null,
     active_bed_assignment: activeBed,
     open_transfer_request: openTransfer,
@@ -1811,8 +1676,7 @@ const toPublicIpdSnapshot = (snapshot) => {
         sanitizeIdentifier(snapshot?.flow?.transfer_status) || null,
       has_active_bed: Boolean(snapshot?.flow?.has_active_bed),
       admission_status:
-        sanitizeIdentifier(snapshot?.flow?.admission_status) || null,
-    },
+        sanitizeIdentifier(snapshot?.flow?.admission_status) || null},
     flow_summary: {
       stage: sanitizeIdentifier(snapshot?.flow_summary?.stage) || null,
       next_step: sanitizeIdentifier(snapshot?.flow_summary?.next_step) || null,
@@ -1820,8 +1684,7 @@ const toPublicIpdSnapshot = (snapshot) => {
         sanitizeIdentifier(snapshot?.flow_summary?.admission_status) || null,
       has_active_bed: Boolean(snapshot?.flow_summary?.has_active_bed),
       transfer_status:
-        sanitizeIdentifier(snapshot?.flow_summary?.transfer_status) || null,
-    },
+        sanitizeIdentifier(snapshot?.flow_summary?.transfer_status) || null},
     stage: sanitizeIdentifier(snapshot?.flow?.stage) || null,
     next_step: sanitizeIdentifier(snapshot?.flow?.next_step) || null,
     transfer_status:
@@ -1850,8 +1713,7 @@ const toPublicIpdSnapshot = (snapshot) => {
     theatre: theatreOverlay,
     theatre_status: sanitizeIdentifier(theatreOverlay?.status) || null,
     active_theatre_case_id: theatreOverlay?.active_case?.id || null,
-    theatre_handover_summary: theatreOverlay?.handover_summary || null,
-  };
+    theatre_handover_summary: theatreOverlay?.handover_summary || null};
 
   publicSnapshot.timeline = buildPublicTimeline(publicSnapshot);
   return publicSnapshot;
@@ -1902,8 +1764,7 @@ const toQueueCardDto = (snapshot) => {
       null,
     theatre_status: publicSnapshot?.theatre_status || null,
     active_theatre_case_id: publicSnapshot?.active_theatre_case_id || null,
-    theatre_handover_summary: publicSnapshot?.theatre_handover_summary || null,
-  };
+    theatre_handover_summary: publicSnapshot?.theatre_handover_summary || null};
 };
 
 const matchesDerivedFilters = (snapshot, filters = {}) => {
@@ -1992,11 +1853,9 @@ const DETAILED_SNAPSHOT_INCLUDE = {
       provider_user_id: true,
       follow_ups: {
         where: {
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: {
-          scheduled_at: "asc",
-        },
+          scheduled_at: "asc"},
         take: 20,
         select: {
           id: true,
@@ -2004,16 +1863,12 @@ const DETAILED_SNAPSHOT_INCLUDE = {
           scheduled_at: true,
           status: true,
           completed_at: true,
-          created_at: true,
-        },
-      },
+          created_at: true}},
       theatre_cases: {
         where: {
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: {
-          scheduled_at: "desc",
-        },
+          scheduled_at: "desc"},
         take: 5,
         include: {
           post_op_notes: {
@@ -2025,18 +1880,12 @@ const DETAILED_SNAPSHOT_INCLUDE = {
               human_friendly_id: true,
               note: true,
               record_status: true,
-              created_at: true,
-            },
-          },
-        },
-      },
+              created_at: true}}}},
       pharmacy_orders: {
         where: {
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: {
-          ordered_at: "desc",
-        },
+          ordered_at: "desc"},
         take: 10,
         select: {
           id: true,
@@ -2045,11 +1894,9 @@ const DETAILED_SNAPSHOT_INCLUDE = {
           ordered_at: true,
           items: {
             where: {
-              deleted_at: null,
-            },
+              deleted_at: null},
             orderBy: {
-              created_at: "desc",
-            },
+              created_at: "desc"},
             select: {
               id: true,
               human_friendly_id: true,
@@ -2063,16 +1910,7 @@ const DETAILED_SNAPSHOT_INCLUDE = {
                   human_friendly_id: true,
                   name: true,
                   form: true,
-                  strength: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-};
+                  strength: true}}}}}}}}};
 
 const getIpdSnapshotByIdInternal = async (id, options = {}) => {
   const includeIcu = Boolean(options?.include_icu);
@@ -2096,8 +1934,7 @@ const getIpdFlowById = async (id, options = {}) =>
   toPublicIpdSnapshot(
     await enrichIpdSnapshotForDetail(
       await getIpdSnapshotByIdInternal(id, {
-        include_icu: toBooleanFlag(options?.include_icu, false),
-      }),
+        include_icu: toBooleanFlag(options?.include_icu, false)}),
     ),
   );
 
@@ -2131,8 +1968,7 @@ const listIpdFlows = async (
     const tenant = await resolveTenantByIdentifier(prisma, filters.tenant_id);
     if (!tenant)
       throw new HttpError("errors.tenant.not_found", 404, [
-        { field: "tenant_id" },
-      ]);
+        { field: "tenant_id" }]);
     where.tenant_id = tenant.id;
   }
 
@@ -2144,8 +1980,7 @@ const listIpdFlows = async (
     );
     if (!facility)
       throw new HttpError("errors.facility.not_found", 404, [
-        { field: "facility_id" },
-      ]);
+        { field: "facility_id" }]);
     where.facility_id = facility.id;
     if (!where.tenant_id) where.tenant_id = facility.tenant_id;
   }
@@ -2160,8 +1995,7 @@ const listIpdFlows = async (
 
     if (!patient)
       throw new HttpError("errors.ipd_flow.patient_not_found", 404, [
-        { field: "patient_id" },
-      ]);
+        { field: "patient_id" }]);
     where.patient_id = patient.id;
   }
 
@@ -2172,18 +2006,14 @@ const listIpdFlows = async (
   if (includeIcu && icuQueueScope === ICU_QUEUE_SCOPES.WITH_ICU) {
     where.icu_stays = {
       some: {
-        deleted_at: null,
-      },
-    };
+        deleted_at: null}};
   }
 
   if (includeIcu && icuQueueScope === ICU_QUEUE_SCOPES.ACTIVE) {
     where.icu_stays = {
       some: {
         deleted_at: null,
-        ended_at: null,
-      },
-    };
+        ended_at: null}};
   }
 
   const searchText = sanitizeIdentifier(filters.search);
@@ -2193,8 +2023,7 @@ const listIpdFlows = async (
       { patient: { is: { human_friendly_id: { contains: searchText } } } },
       { patient: { is: { first_name: { contains: searchText } } } },
       { patient: { is: { last_name: { contains: searchText } } } },
-      { encounter: { is: { human_friendly_id: { contains: searchText } } } },
-    ];
+      { encounter: { is: { human_friendly_id: { contains: searchText } } } }];
   }
 
   let wardId = null;
@@ -2224,8 +2053,7 @@ const listIpdFlows = async (
 
   if (hasDerivedFilters) {
     const rows = await ipdFlowRepository.findMany(where, 0, 300, {
-      [sortBy || "admitted_at"]: direction,
-    });
+      [sortBy || "admitted_at"]: direction});
     const filtered = rows
       .map((row) => buildIpdSnapshot(row, { include_icu: includeIcu }))
       .filter((snapshot) =>
@@ -2241,8 +2069,7 @@ const listIpdFlows = async (
           critical_severity: includeIcu ? filters.critical_severity : undefined,
           has_critical_alert: includeIcu
             ? filters.has_critical_alert
-            : undefined,
-        }),
+            : undefined}),
       );
 
     const items = filtered.slice(skip, skip + currentLimit).map(toQueueCardDto);
@@ -2255,17 +2082,13 @@ const listIpdFlows = async (
         total: filtered.length,
         totalPages: Math.ceil(filtered.length / currentLimit) || 1,
         hasNextPage: skip + currentLimit < filtered.length,
-        hasPreviousPage: currentPage > 1,
-      },
-    };
+        hasPreviousPage: currentPage > 1}};
   }
 
   const [rows, total] = await Promise.all([
     ipdFlowRepository.findMany(where, skip, currentLimit, {
-      [sortBy || "admitted_at"]: direction,
-    }),
-    ipdFlowRepository.count(where),
-  ]);
+      [sortBy || "admitted_at"]: direction}),
+    ipdFlowRepository.count(where)]);
 
   return {
     items: rows.map((row) =>
@@ -2277,9 +2100,7 @@ const listIpdFlows = async (
       total,
       totalPages: Math.ceil(total / currentLimit) || 1,
       hasNextPage: skip + currentLimit < total,
-      hasPreviousPage: currentPage > 1,
-    },
-  };
+      hasPreviousPage: currentPage > 1}};
 };
 
 const resolveLegacyRoute = async (resource, id) => {
@@ -2299,9 +2120,7 @@ const resolveLegacyRoute = async (resource, id) => {
     select: {
       id: true,
       human_friendly_id: true,
-      [config.admissionField]: true,
-    },
-  };
+      [config.admissionField]: true}};
 
   if (isNestedAdmissionField) {
     const [relationName, relationField] = String(config.admissionField).split(
@@ -2311,11 +2130,7 @@ const resolveLegacyRoute = async (resource, id) => {
       include: {
         [relationName]: {
           select: {
-            [relationField]: true,
-          },
-        },
-      },
-    };
+            [relationField]: true}}}};
   }
 
   const resolvedResource = await resolveByIdentifier(
@@ -2339,14 +2154,11 @@ const resolveLegacyRoute = async (resource, id) => {
   const admission = await prisma.admission.findFirst({
     where: {
       id: admissionInternalId,
-      deleted_at: null,
-    },
+      deleted_at: null},
     select: {
       id: true,
       human_friendly_id: true,
-      status: true,
-    },
-  });
+      status: true}});
 
   if (!admission) throw new HttpError("errors.ipd_flow.not_found", 404);
 
@@ -2361,8 +2173,7 @@ const resolveLegacyRoute = async (resource, id) => {
         ? STAGES.DISCHARGED
         : String(admission.status || "").toUpperCase() === "CANCELLED"
           ? STAGES.CANCELLED
-          : null,
-  };
+          : null};
 };
 
 const ensureAdmissionIsMutable = (admission) => {
@@ -2376,38 +2187,28 @@ const fetchAdmissionForMutation = async (tx, admissionId) => {
   const admission = await tx.admission.findFirst({
     where: {
       id: admissionId,
-      deleted_at: null,
-    },
+      deleted_at: null},
     include: {
       bed_assignments: {
         where: { deleted_at: null },
         orderBy: { assigned_at: "desc" },
-        include: { bed: true },
-      },
+        include: { bed: true }},
       transfer_requests: {
         where: { deleted_at: null },
-        orderBy: { requested_at: "desc" },
-      },
+        orderBy: { requested_at: "desc" }},
       discharge_summaries: {
         where: { deleted_at: null },
-        orderBy: { updated_at: "desc" },
-      },
+        orderBy: { updated_at: "desc" }},
       icu_stays: {
         where: { deleted_at: null },
         orderBy: { started_at: "desc" },
         include: {
           observations: {
             where: { deleted_at: null },
-            orderBy: { observed_at: "desc" },
-          },
+            orderBy: { observed_at: "desc" }},
           alerts: {
             where: { deleted_at: null },
-            orderBy: { created_at: "desc" },
-          },
-        },
-      },
-    },
-  });
+            orderBy: { created_at: "desc" }}}}}});
 
   if (!admission) throw new HttpError("errors.ipd_flow.not_found", 404);
   return admission;
@@ -2430,15 +2231,13 @@ const buildRealtimePayload = ({ snapshot, transition }) => {
     flow_summary: snapshot?.flow_summary || null,
     target_path: admissionPublicId
       ? `/ipd?id=${encodeURIComponent(admissionPublicId)}`
-      : "/ipd",
-  };
+      : "/ipd"};
 };
 
 const resolveRoleRecipients = async ({
   tenantId,
   facilityId = null,
-  roles = [],
-}) => {
+  roles = []}) => {
   if (!tenantId || !Array.isArray(roles) || roles.length === 0) return [];
 
   if (!prisma?.user_role?.findMany) return [];
@@ -2449,18 +2248,13 @@ const resolveRoleRecipients = async ({
       tenant_id: tenantId,
       role: {
         name: {
-          in: roles,
-        },
-        deleted_at: null,
-      },
+          in: roles},
+        deleted_at: null},
       ...(facilityId
         ? { OR: [{ facility_id: null }, { facility_id: facilityId }] }
-        : {}),
-    },
+        : {})},
     select: {
-      user_id: true,
-    },
-  });
+      user_id: true}});
 
   return rows.map((item) => item.user_id).filter(Boolean);
 };
@@ -2468,8 +2262,7 @@ const resolveRoleRecipients = async ({
 const createAndEmitNotifications = async ({
   payload,
   recipientUserIds,
-  tenantId,
-}) => {
+  tenantId}) => {
   if (!Array.isArray(recipientUserIds) || recipientUserIds.length === 0) return;
   if (!prisma?.notification?.create) return;
 
@@ -2488,9 +2281,7 @@ const createAndEmitNotifications = async ({
               ? "HIGH"
               : "MEDIUM",
           title,
-          message,
-        },
-      });
+          message}});
 
       emitToUser(
         notification.user_id,
@@ -2507,10 +2298,8 @@ const createAndEmitNotifications = async ({
             read_at: notification.read_at || null,
             created_at: notification.created_at,
             updated_at: notification.updated_at,
-            target_path: payload.target_path,
-          },
-          target_path: payload.target_path,
-        },
+            target_path: payload.target_path},
+          target_path: payload.target_path},
       );
     } catch (_error) {
       // ignore notification errors
@@ -2537,8 +2326,7 @@ const publishIpdRealtimeUpdates = async ({
   context,
   compatibilitySignals = [],
   tenantInternalId = null,
-  facilityInternalId = null,
-}) => {
+  facilityInternalId = null}) => {
   try {
     const payload = buildRealtimePayload({ snapshot, transition });
     const resolvedTenantId = tenantInternalId || context?.tenant_id || null;
@@ -2547,8 +2335,7 @@ const publishIpdRealtimeUpdates = async ({
     const recipientUserIds = await resolveRoleRecipients({
       tenantId: resolvedTenantId,
       facilityId: resolvedFacilityId,
-      roles: IPD_RECIPIENT_ROLES,
-    });
+      roles: IPD_RECIPIENT_ROLES});
 
     const recipients = recipientUserIds.filter(
       (userId) => userId && userId !== context?.user_id,
@@ -2565,8 +2352,7 @@ const publishIpdRealtimeUpdates = async ({
       stage_to: payload.stage_to,
       action: payload.action,
       occurred_at: payload.occurred_at,
-      target_path: payload.target_path,
-    };
+      target_path: payload.target_path};
 
     buildCompatibilityEvents(compatibilitySignals).forEach((eventName) => {
       emitToUsers(recipients, eventName, compatibilityPayload);
@@ -2575,8 +2361,7 @@ const publishIpdRealtimeUpdates = async ({
     await createAndEmitNotifications({
       payload,
       recipientUserIds: recipients,
-      tenantId: resolvedTenantId,
-    });
+      tenantId: resolvedTenantId});
   } catch (_error) {
     // realtime should not block workflow
   }
@@ -2588,8 +2373,7 @@ const writeAuditLog = ({
   tenantId,
   action,
   after,
-  metadata = {},
-}) => {
+  metadata = {}}) => {
   createAuditLog({
     tenant_id: tenantId,
     user_id: context?.user_id,
@@ -2598,10 +2382,8 @@ const writeAuditLog = ({
     entity_id: admissionId,
     diff: {
       after,
-      metadata,
-    },
-    ip_address: context?.ip_address,
-  }).catch(() => {});
+      metadata},
+    ip_address: context?.ip_address}).catch(() => {});
 };
 
 const finalizeAction = async ({ result, context, metadata = {} }) => {
@@ -2609,16 +2391,14 @@ const finalizeAction = async ({ result, context, metadata = {} }) => {
   const internalSnapshot = await getIpdSnapshotByIdInternal(
     result.admission_id,
     {
-      include_icu: includeIcu,
-    },
+      include_icu: includeIcu},
   );
   const snapshot = toPublicIpdSnapshot(internalSnapshot);
   await publishIpdRealtimeUpdates({
     snapshot,
     transition: {
       ...result.transition,
-      stage_to: snapshot?.flow?.stage || null,
-    },
+      stage_to: snapshot?.flow?.stage || null},
     context,
     compatibilitySignals: result.compatibilitySignals,
     tenantInternalId:
@@ -2627,8 +2407,7 @@ const finalizeAction = async ({ result, context, metadata = {} }) => {
       context?.tenant_id ||
       null,
     facilityInternalId:
-      internalSnapshot?.admission?.facility_id || context?.facility_id || null,
-  });
+      internalSnapshot?.admission?.facility_id || context?.facility_id || null});
 
   writeAuditLog({
     context,
@@ -2638,9 +2417,7 @@ const finalizeAction = async ({ result, context, metadata = {} }) => {
     after: snapshot,
     metadata: {
       ...metadata,
-      include_icu: undefined,
-    },
-  });
+      include_icu: undefined}});
 
   return snapshot;
 };
@@ -2653,15 +2430,13 @@ const startIpdFlow = async (data, context = {}) => {
       : null;
     if (data?.tenant_id && !tenantFromPayload) {
       throw new HttpError("errors.tenant.not_found", 404, [
-        { field: "tenant_id" },
-      ]);
+        { field: "tenant_id" }]);
     }
 
     const tenantId = tenantFromPayload?.id || context?.tenant_id || null;
     if (!tenantId) {
       throw new HttpError("errors.validation.field.required", 400, [
-        { field: "tenant_id" },
-      ]);
+        { field: "tenant_id" }]);
     }
 
     let facilityId = context?.facility_id || null;
@@ -2676,8 +2451,7 @@ const startIpdFlow = async (data, context = {}) => {
         );
         if (!facility) {
           throw new HttpError("errors.facility.not_found", 404, [
-            { field: "facility_id" },
-          ]);
+            { field: "facility_id" }]);
         }
         facilityId = facility.id;
       }
@@ -2691,8 +2465,7 @@ const startIpdFlow = async (data, context = {}) => {
     );
     if (!patient) {
       throw new HttpError("errors.ipd_flow.patient_not_found", 404, [
-        { field: "patient_id" },
-      ]);
+        { field: "patient_id" }]);
     }
 
     if (!facilityId && patient.facility_id) {
@@ -2709,8 +2482,7 @@ const startIpdFlow = async (data, context = {}) => {
       );
       if (!requestedWard) {
         throw new HttpError("errors.ward.not_found", 404, [
-          { field: "ward_id" },
-        ]);
+          { field: "ward_id" }]);
       }
       if (!facilityId && requestedWard.facility_id) {
         facilityId = requestedWard.facility_id;
@@ -2727,21 +2499,18 @@ const startIpdFlow = async (data, context = {}) => {
       );
       if (!requestedRoom) {
         throw new HttpError("errors.room.not_found", 404, [
-          { field: "room_id" },
-        ]);
+          { field: "room_id" }]);
       }
       if (requestedWard && requestedRoom.ward_id !== requestedWard.id) {
         throw new HttpError("errors.validation.invalid", 400, [
-          { field: "room_id" },
-        ]);
+          { field: "room_id" }]);
       }
       if (!facilityId && requestedRoom.facility_id) {
         facilityId = requestedRoom.facility_id;
       }
       if (facilityId && requestedRoom.facility_id !== facilityId) {
         throw new HttpError("errors.validation.invalid", 400, [
-          { field: "room_id" },
-        ]);
+          { field: "room_id" }]);
       }
     }
 
@@ -2755,33 +2524,28 @@ const startIpdFlow = async (data, context = {}) => {
       );
       if (!requestedBed) {
         throw new HttpError("errors.bed.not_found", 404, [
-          { field: "bed_id" },
-        ]);
+          { field: "bed_id" }]);
       }
       if (!facilityId && requestedBed.facility_id) {
         facilityId = requestedBed.facility_id;
       }
       if (facilityId && requestedBed.facility_id !== facilityId) {
         throw new HttpError("errors.validation.invalid", 400, [
-          { field: "bed_id" },
-        ]);
+          { field: "bed_id" }]);
       }
       if (requestedWard && requestedBed.ward_id !== requestedWard.id) {
         throw new HttpError("errors.validation.invalid", 400, [
-          { field: "bed_id" },
-        ]);
+          { field: "bed_id" }]);
       }
       if (requestedRoom && requestedBed.room_id !== requestedRoom.id) {
         throw new HttpError("errors.validation.invalid", 400, [
-          { field: "bed_id" },
-        ]);
+          { field: "bed_id" }]);
       }
     }
 
     if (patient.facility_id && facilityId && patient.facility_id !== facilityId) {
       throw new HttpError("errors.validation.invalid", 400, [
-        { field: "patient_id" },
-      ]);
+        { field: "patient_id" }]);
     }
 
     let encounterId = null;
@@ -2794,13 +2558,11 @@ const startIpdFlow = async (data, context = {}) => {
       );
       if (!encounter) {
         throw new HttpError("errors.encounter.not_found", 404, [
-          { field: "encounter_id" },
-        ]);
+          { field: "encounter_id" }]);
       }
       if (encounter.patient_id !== patient.id) {
         throw new HttpError("errors.validation.invalid", 400, [
-          { field: "encounter_id" },
-        ]);
+          { field: "encounter_id" }]);
       }
       encounterId = encounter.id;
     }
@@ -2813,8 +2575,7 @@ const startIpdFlow = async (data, context = {}) => {
         status: { notIn: Array.from(TERMINAL_ADMISSION_STATUSES) },
         ...(facilityId
           ? { OR: [{ facility_id: facilityId }, { facility_id: null }] }
-          : {}),
-      },
+          : {})},
       orderBy: { admitted_at: "desc" },
       include: {
         bed_assignments: {
@@ -2825,13 +2586,7 @@ const startIpdFlow = async (data, context = {}) => {
             bed: {
               select: {
                 id: true,
-                status: true,
-              },
-            },
-          },
-        },
-      },
-    });
+                status: true}}}}}});
 
     const admission = existingAdmission
       ? await tx.admission.update({
@@ -2840,9 +2595,7 @@ const startIpdFlow = async (data, context = {}) => {
             facility_id: facilityId || existingAdmission.facility_id,
             encounter_id: encounterId || existingAdmission.encounter_id,
             status: "ADMITTED",
-            discharged_at: null,
-          },
-        })
+            discharged_at: null}})
       : await tx.admission.create({
           data: {
             tenant_id: tenantId,
@@ -2850,9 +2603,7 @@ const startIpdFlow = async (data, context = {}) => {
             patient_id: patient.id,
             encounter_id: encounterId,
             status: "ADMITTED",
-            admitted_at: admittedAt,
-          },
-        });
+            admitted_at: admittedAt}});
 
     const compatibilitySignals = ["PATIENT_ADMITTED"];
     const activeBedAssignment = existingAdmission
@@ -2868,22 +2619,18 @@ const startIpdFlow = async (data, context = {}) => {
       } else {
         if (requestedBedStatus !== "AVAILABLE") {
           throw new HttpError("errors.ipd_flow.bed_not_available", 400, [
-            { field: "bed_id" },
-          ]);
+            { field: "bed_id" }]);
         }
 
         await tx.bed_assignment.create({
           data: {
             admission_id: admission.id,
             bed_id: requestedBed.id,
-            assigned_at: admittedAt,
-          },
-        });
+            assigned_at: admittedAt}});
 
         await tx.bed.update({
           where: { id: requestedBed.id },
-          data: { status: "OCCUPIED" },
-        });
+          data: { status: "OCCUPIED" }});
 
         compatibilitySignals.push("BED_ASSIGNMENT_CHANGED");
       }
@@ -2899,8 +2646,7 @@ const startIpdFlow = async (data, context = {}) => {
         patientId: patient.id,
         encounterId: encounterId || null,
         description: "Admission fee",
-        actorUserId: context.user_id || null,
-      });
+        actorUserId: context.user_id || null});
     }
 
     return {
@@ -2910,10 +2656,8 @@ const startIpdFlow = async (data, context = {}) => {
         action: existingAdmission ? "START_UPDATE" : "START",
         stage_from: null,
         stage_to: null,
-        occurred_at: admittedAt.toISOString(),
-      },
-      compatibilitySignals,
-    };
+        occurred_at: admittedAt.toISOString()},
+      compatibilitySignals};
   });
 
   return finalizeAction({ result, context, metadata: { operation: "start" } });
@@ -2928,15 +2672,13 @@ const requestIpdAdmission = async (data, context = {}) => {
       : null;
     if (data?.tenant_id && !tenantFromPayload) {
       throw new HttpError("errors.tenant.not_found", 404, [
-        { field: "tenant_id" },
-      ]);
+        { field: "tenant_id" }]);
     }
 
     const tenantId = tenantFromPayload?.id || context?.tenant_id || null;
     if (!tenantId) {
       throw new HttpError("errors.validation.field.required", 400, [
-        { field: "tenant_id" },
-      ]);
+        { field: "tenant_id" }]);
     }
 
     let facilityId = context?.facility_id || null;
@@ -2951,8 +2693,7 @@ const requestIpdAdmission = async (data, context = {}) => {
         );
         if (!facility) {
           throw new HttpError("errors.facility.not_found", 404, [
-            { field: "facility_id" },
-          ]);
+            { field: "facility_id" }]);
         }
         facilityId = facility.id;
       }
@@ -2966,8 +2707,7 @@ const requestIpdAdmission = async (data, context = {}) => {
     );
     if (!patient) {
       throw new HttpError("errors.ipd_flow.patient_not_found", 404, [
-        { field: "patient_id" },
-      ]);
+        { field: "patient_id" }]);
     }
 
     if (!facilityId && patient.facility_id) {
@@ -2976,8 +2716,7 @@ const requestIpdAdmission = async (data, context = {}) => {
 
     if (patient.facility_id && facilityId && patient.facility_id !== facilityId) {
       throw new HttpError("errors.validation.invalid", 400, [
-        { field: "patient_id" },
-      ]);
+        { field: "patient_id" }]);
     }
 
     let encounterId = null;
@@ -2990,13 +2729,11 @@ const requestIpdAdmission = async (data, context = {}) => {
       );
       if (!encounter) {
         throw new HttpError("errors.encounter.not_found", 404, [
-          { field: "encounter_id" },
-        ]);
+          { field: "encounter_id" }]);
       }
       if (encounter.patient_id !== patient.id) {
         throw new HttpError("errors.validation.invalid", 400, [
-          { field: "encounter_id" },
-        ]);
+          { field: "encounter_id" }]);
       }
       encounterId = encounter.id;
     }
@@ -3009,10 +2746,8 @@ const requestIpdAdmission = async (data, context = {}) => {
         status: { notIn: Array.from(TERMINAL_ADMISSION_STATUSES) },
         ...(facilityId
           ? { OR: [{ facility_id: facilityId }, { facility_id: null }] }
-          : {}),
-      },
-      orderBy: { created_at: "desc" },
-    });
+          : {})},
+      orderBy: { created_at: "desc" }});
 
     if (
       existingAdmission &&
@@ -3029,9 +2764,7 @@ const requestIpdAdmission = async (data, context = {}) => {
             encounter_id: encounterId || existingAdmission.encounter_id,
             status: "REQUESTED",
             discharged_at: null,
-            updated_at: requestedAt,
-          },
-        })
+            updated_at: requestedAt}})
       : await tx.admission.create({
           data: {
             tenant_id: tenantId,
@@ -3039,9 +2772,7 @@ const requestIpdAdmission = async (data, context = {}) => {
             patient_id: patient.id,
             encounter_id: encounterId,
             status: "REQUESTED",
-            admitted_at: requestedAt,
-          },
-        });
+            admitted_at: requestedAt}});
 
     const requestNote = [data?.reason, data?.notes]
       .map((value) => sanitizeIdentifier(value))
@@ -3055,11 +2786,9 @@ const requestIpdAdmission = async (data, context = {}) => {
         action: existingAdmission ? "REQUEST_UPDATE" : "REQUEST",
         stage_from: null,
         stage_to: STAGES.ADMISSION_REQUESTED,
-        occurred_at: requestedAt.toISOString(),
-      },
+        occurred_at: requestedAt.toISOString()},
       compatibilitySignals: ["ADMISSION_REQUESTED"],
-      request_note: requestNote || null,
-    };
+      request_note: requestNote || null};
   });
 
   return finalizeAction({
@@ -3068,9 +2797,7 @@ const requestIpdAdmission = async (data, context = {}) => {
     metadata: {
       operation: "request_admission",
       reason: sanitizeIdentifier(data?.reason) || null,
-      notes: sanitizeIdentifier(data?.notes) || null,
-    },
-  });
+      notes: sanitizeIdentifier(data?.notes) || null}});
 };
 
 const approveAdmission = async (id, data, context = {}) => {
@@ -3096,17 +2823,14 @@ const approveAdmission = async (id, data, context = {}) => {
       admission,
       activeBedAssignment: null,
       openTransferRequest: getOpenTransferRequest(admission),
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     await tx.admission.update({
       where: { id: admission.id },
       data: {
         status: "ADMITTED",
         admitted_at: approvedAt,
-        updated_at: approvedAt,
-      },
-    });
+        updated_at: approvedAt}});
 
     const compatibilitySignals = ["PATIENT_ADMITTED"];
     let requestedBed = null;
@@ -3122,22 +2846,18 @@ const approveAdmission = async (id, data, context = {}) => {
       }
       if (String(requestedBed.status || "").toUpperCase() !== "AVAILABLE") {
         throw new HttpError("errors.ipd_flow.bed_not_available", 400, [
-          { field: "bed_id" },
-        ]);
+          { field: "bed_id" }]);
       }
 
       await tx.bed_assignment.create({
         data: {
           admission_id: admission.id,
           bed_id: requestedBed.id,
-          assigned_at: approvedAt,
-        },
-      });
+          assigned_at: approvedAt}});
 
       await tx.bed.update({
         where: { id: requestedBed.id },
-        data: { status: "OCCUPIED" },
-      });
+        data: { status: "OCCUPIED" }});
 
       compatibilitySignals.push("BED_ASSIGNMENT_CHANGED");
     }
@@ -3151,17 +2871,14 @@ const approveAdmission = async (id, data, context = {}) => {
         stage_to: requestedBed
           ? STAGES.ADMITTED_IN_BED
           : STAGES.ADMITTED_PENDING_BED,
-        occurred_at: approvedAt.toISOString(),
-      },
-      compatibilitySignals,
-    };
+        occurred_at: approvedAt.toISOString()},
+      compatibilitySignals};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "approve_admission" },
-  });
+    metadata: { operation: "approve_admission" }});
 };
 
 const assignBed = async (id, data, context = {}) => {
@@ -3193,29 +2910,24 @@ const assignBed = async (id, data, context = {}) => {
       throw new HttpError("errors.bed.not_found", 404, [{ field: "bed_id" }]);
     if (String(bed.status || "").toUpperCase() !== "AVAILABLE") {
       throw new HttpError("errors.ipd_flow.bed_not_available", 400, [
-        { field: "bed_id" },
-      ]);
+        { field: "bed_id" }]);
     }
 
     const stageBefore = deriveIpdStage({
       admission,
       activeBedAssignment: null,
       openTransferRequest: getOpenTransferRequest(admission),
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     await tx.bed_assignment.create({
       data: {
         admission_id: admission.id,
         bed_id: bed.id,
-        assigned_at: assignedAt,
-      },
-    });
+        assigned_at: assignedAt}});
 
     await tx.bed.update({
       where: { id: bed.id },
-      data: { status: "OCCUPIED" },
-    });
+      data: { status: "OCCUPIED" }});
 
     return {
       admission_id: admission.id,
@@ -3224,17 +2936,14 @@ const assignBed = async (id, data, context = {}) => {
         action: "ASSIGN_BED",
         stage_from: stageBefore,
         stage_to: null,
-        occurred_at: assignedAt.toISOString(),
-      },
-      compatibilitySignals: ["BED_ASSIGNMENT_CHANGED"],
-    };
+        occurred_at: assignedAt.toISOString()},
+      compatibilitySignals: ["BED_ASSIGNMENT_CHANGED"]};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "assign_bed" },
-  });
+    metadata: { operation: "assign_bed" }});
 };
 
 const releaseBed = async (id, data, context = {}) => {
@@ -3256,18 +2965,15 @@ const releaseBed = async (id, data, context = {}) => {
       admission,
       activeBedAssignment,
       openTransferRequest: getOpenTransferRequest(admission),
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     await tx.bed_assignment.update({
       where: { id: activeBedAssignment.id },
-      data: { released_at: releasedAt },
-    });
+      data: { released_at: releasedAt }});
 
     await tx.bed.update({
       where: { id: activeBedAssignment.bed_id },
-      data: { status: "CLEANING" },
-    });
+      data: { status: "CLEANING" }});
 
     return {
       admission_id: admission.id,
@@ -3276,17 +2982,14 @@ const releaseBed = async (id, data, context = {}) => {
         action: "RELEASE_BED",
         stage_from: stageBefore,
         stage_to: null,
-        occurred_at: releasedAt.toISOString(),
-      },
-      compatibilitySignals: ["BED_ASSIGNMENT_CHANGED"],
-    };
+        occurred_at: releasedAt.toISOString()},
+      compatibilitySignals: ["BED_ASSIGNMENT_CHANGED"]};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "release_bed" },
-  });
+    metadata: { operation: "release_bed" }});
 };
 
 const rejectAdmissionRequest = async (id, data, context = {}) => {
@@ -3294,8 +2997,7 @@ const rejectAdmissionRequest = async (id, data, context = {}) => {
   const reason = sanitizeIdentifier(data?.reason);
   if (!reason) {
     throw new HttpError("errors.validation.field.required", 400, [
-      { field: "reason" },
-    ]);
+      { field: "reason" }]);
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -3310,28 +3012,23 @@ const rejectAdmissionRequest = async (id, data, context = {}) => {
       admission,
       activeBedAssignment,
       openTransferRequest: getOpenTransferRequest(admission),
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     if (activeBedAssignment) {
       await tx.bed_assignment.update({
         where: { id: activeBedAssignment.id },
-        data: { released_at: rejectedAt },
-      });
+        data: { released_at: rejectedAt }});
 
       await tx.bed.update({
         where: { id: activeBedAssignment.bed_id },
-        data: { status: "AVAILABLE" },
-      });
+        data: { status: "AVAILABLE" }});
     }
 
     await tx.admission.update({
       where: { id: admission.id },
       data: {
         status: "CANCELLED",
-        updated_at: rejectedAt,
-      },
-    });
+        updated_at: rejectedAt}});
 
     return {
       admission_id: admission.id,
@@ -3340,11 +3037,9 @@ const rejectAdmissionRequest = async (id, data, context = {}) => {
         action: "REJECT_ADMISSION",
         stage_from: stageBefore,
         stage_to: STAGES.CANCELLED,
-        occurred_at: rejectedAt.toISOString(),
-      },
+        occurred_at: rejectedAt.toISOString()},
       compatibilitySignals: activeBedAssignment ? ["BED_ASSIGNMENT_CHANGED"] : [],
-      rejection_reason: reason,
-    };
+      rejection_reason: reason};
   });
 
   return finalizeAction({
@@ -3352,9 +3047,7 @@ const rejectAdmissionRequest = async (id, data, context = {}) => {
     context,
     metadata: {
       operation: "reject_admission",
-      rejection_reason: reason,
-    },
-  });
+      rejection_reason: reason}});
 };
 
 const requestTransfer = async (id, data, context = {}) => {
@@ -3383,8 +3076,7 @@ const requestTransfer = async (id, data, context = {}) => {
       );
       if (!fromWard)
         throw new HttpError("errors.ward.not_found", 404, [
-          { field: "from_ward_id" },
-        ]);
+          { field: "from_ward_id" }]);
       fromWardId = fromWard.id;
     }
 
@@ -3396,15 +3088,13 @@ const requestTransfer = async (id, data, context = {}) => {
     );
     if (!toWard)
       throw new HttpError("errors.ward.not_found", 404, [
-        { field: "to_ward_id" },
-      ]);
+        { field: "to_ward_id" }]);
 
     const stageBefore = deriveIpdStage({
       admission,
       activeBedAssignment,
       openTransferRequest: null,
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     await tx.transfer_request.create({
       data: {
@@ -3412,9 +3102,7 @@ const requestTransfer = async (id, data, context = {}) => {
         from_ward_id: fromWardId,
         to_ward_id: toWard.id,
         status: "REQUESTED",
-        requested_at: requestedAt,
-      },
-    });
+        requested_at: requestedAt}});
 
     return {
       admission_id: admission.id,
@@ -3423,17 +3111,14 @@ const requestTransfer = async (id, data, context = {}) => {
         action: "REQUEST_TRANSFER",
         stage_from: stageBefore,
         stage_to: null,
-        occurred_at: requestedAt.toISOString(),
-      },
-      compatibilitySignals: ["PATIENT_TRANSFERRED"],
-    };
+        occurred_at: requestedAt.toISOString()},
+      compatibilitySignals: ["PATIENT_TRANSFERRED"]};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "request_transfer" },
-  });
+    metadata: { operation: "request_transfer" }});
 };
 const resolveTransferForAction = async (
   tx,
@@ -3452,9 +3137,7 @@ const resolveTransferForAction = async (
     return tx.transfer_request.findFirst({
       where: {
         id: transfer.id,
-        deleted_at: null,
-      },
-    });
+        deleted_at: null}});
   }
 
   return getOpenTransferRequest(admission);
@@ -3514,12 +3197,9 @@ const resolveCriticalAlertForAction = async (
       where: {
         id: resolvedAlert.icu_stay_id,
         admission_id: admission.id,
-        deleted_at: null,
-      },
+        deleted_at: null},
       select: {
-        id: true,
-      },
-    });
+        id: true}});
 
     if (!stay)
       throw new HttpError("errors.ipd_flow.critical_alert_not_found", 404);
@@ -3546,8 +3226,7 @@ const resolveAdmissionNurseForAction = async (
     sanitizeIdentifier(identifier) || sanitizeIdentifier(context?.user_id);
   if (!nurseIdentifier) {
     throw new HttpError("errors.validation.field.required", 400, [
-      { field: "nurse_user_id" },
-    ]);
+      { field: "nurse_user_id" }]);
   }
 
   const directUser = await resolveUserByIdentifier(
@@ -3567,13 +3246,11 @@ const resolveAdmissionNurseForAction = async (
   if (staffProfile?.user_id) {
     return {
       id: staffProfile.user_id,
-      human_friendly_id: staffProfile.user?.human_friendly_id || null,
-    };
+      human_friendly_id: staffProfile.user?.human_friendly_id || null};
   }
 
   throw new HttpError("errors.user.not_found", 404, [
-    { field: "nurse_user_id" },
-  ]);
+    { field: "nurse_user_id" }]);
 };
 
 const updateTransfer = async (id, data, context = {}) => {
@@ -3602,8 +3279,7 @@ const updateTransfer = async (id, data, context = {}) => {
       admission,
       activeBedAssignment,
       openTransferRequest: transferRequest,
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     const occurredAt = new Date();
     const compatibilitySignals = ["PATIENT_TRANSFERRED"];
@@ -3613,23 +3289,20 @@ const updateTransfer = async (id, data, context = {}) => {
         throw new HttpError("errors.ipd_flow.invalid_transfer_transition", 400);
       await tx.transfer_request.update({
         where: { id: transferRequest.id },
-        data: { status: "APPROVED" },
-      });
+        data: { status: "APPROVED" }});
     } else if (action === TRANSFER_ACTIONS.START) {
       if (transferStatus !== "APPROVED")
         throw new HttpError("errors.ipd_flow.invalid_transfer_transition", 400);
       await tx.transfer_request.update({
         where: { id: transferRequest.id },
-        data: { status: "IN_PROGRESS" },
-      });
+        data: { status: "IN_PROGRESS" }});
     } else if (action === TRANSFER_ACTIONS.CANCEL) {
       if (!OPEN_TRANSFER_STATUSES.has(transferStatus)) {
         throw new HttpError("errors.ipd_flow.invalid_transfer_transition", 400);
       }
       await tx.transfer_request.update({
         where: { id: transferRequest.id },
-        data: { status: "CANCELLED" },
-      });
+        data: { status: "CANCELLED" }});
     } else if (action === TRANSFER_ACTIONS.COMPLETE) {
       if (transferStatus !== "IN_PROGRESS")
         throw new HttpError("errors.ipd_flow.invalid_transfer_transition", 400);
@@ -3651,42 +3324,33 @@ const updateTransfer = async (id, data, context = {}) => {
       );
       if (!destinationBed)
         throw new HttpError("errors.bed.not_found", 404, [
-          { field: "to_bed_id" },
-        ]);
+          { field: "to_bed_id" }]);
       if (String(destinationBed.status || "").toUpperCase() !== "AVAILABLE") {
         throw new HttpError("errors.ipd_flow.bed_not_available", 400, [
-          { field: "to_bed_id" },
-        ]);
+          { field: "to_bed_id" }]);
       }
 
       await tx.bed_assignment.update({
         where: { id: activeBedAssignment.id },
-        data: { released_at: occurredAt },
-      });
+        data: { released_at: occurredAt }});
       await tx.bed.update({
         where: { id: activeBedAssignment.bed_id },
-        data: { status: "AVAILABLE" },
-      });
+        data: { status: "AVAILABLE" }});
 
       await tx.bed_assignment.create({
         data: {
           admission_id: admission.id,
           bed_id: destinationBed.id,
-          assigned_at: occurredAt,
-        },
-      });
+          assigned_at: occurredAt}});
       await tx.bed.update({
         where: { id: destinationBed.id },
-        data: { status: "OCCUPIED" },
-      });
+        data: { status: "OCCUPIED" }});
 
       await tx.transfer_request.update({
         where: { id: transferRequest.id },
         data: {
           status: "COMPLETED",
-          to_ward_id: destinationBed.ward_id,
-        },
-      });
+          to_ward_id: destinationBed.ward_id}});
 
       compatibilitySignals.push("BED_ASSIGNMENT_CHANGED");
     } else {
@@ -3700,17 +3364,14 @@ const updateTransfer = async (id, data, context = {}) => {
         action: `TRANSFER_${action}`,
         stage_from: stageBefore,
         stage_to: null,
-        occurred_at: occurredAt.toISOString(),
-      },
-      compatibilitySignals,
-    };
+        occurred_at: occurredAt.toISOString()},
+      compatibilitySignals};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "update_transfer" },
-  });
+    metadata: { operation: "update_transfer" }});
 };
 
 const addWardRound = async (id, data, context = {}) => {
@@ -3727,16 +3388,13 @@ const addWardRound = async (id, data, context = {}) => {
       admission,
       activeBedAssignment: getActiveBedAssignment(admission),
       openTransferRequest: getOpenTransferRequest(admission),
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     const wardRound = await tx.ward_round.create({
       data: {
         admission_id: admission.id,
         round_at: roundAt,
-        notes: data?.notes || null,
-      },
-    });
+        notes: data?.notes || null}});
 
     if (data?.billing) {
       await persistWardRoundBilling(tx, {
@@ -3745,8 +3403,7 @@ const addWardRound = async (id, data, context = {}) => {
         tenantId: admission.tenant_id,
         facilityId: admission.facility_id || null,
         patientId: admission.patient_id,
-        description: "Doctor review (ward round)",
-      });
+        description: "Doctor review (ward round)"});
     }
 
     return {
@@ -3756,25 +3413,21 @@ const addWardRound = async (id, data, context = {}) => {
         action: "ADD_WARD_ROUND",
         stage_from: stageBefore,
         stage_to: null,
-        occurred_at: roundAt.toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: roundAt.toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "add_ward_round" },
-  });
+    metadata: { operation: "add_ward_round" }});
 };
 
 const addNursingNote = async (id, data, context = {}) => {
   const note = String(data?.note || "").trim();
   if (!note)
     throw new HttpError("errors.ipd_flow.nursing_note_required", 400, [
-      { field: "note" },
-    ]);
+      { field: "note" }]);
 
   const result = await prisma.$transaction(async (tx) => {
     const resolved = await resolveAdmissionByIdentifier(tx, id);
@@ -3794,16 +3447,13 @@ const addNursingNote = async (id, data, context = {}) => {
       admission,
       activeBedAssignment: getActiveBedAssignment(admission),
       openTransferRequest: getOpenTransferRequest(admission),
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     const nursingNote = await tx.nursing_note.create({
       data: {
         admission_id: admission.id,
         nurse_user_id: nurse.id,
-        note,
-      },
-    });
+        note}});
 
     if (data?.billing) {
       await persistNursingServiceBilling(tx, {
@@ -3814,8 +3464,7 @@ const addNursingNote = async (id, data, context = {}) => {
         patientId: admission.patient_id,
         encounterId: admission.encounter_id || null,
         description: "Nursing service",
-        actorUserId: context.user_id || nurse.id || null,
-      });
+        actorUserId: context.user_id || nurse.id || null});
     }
 
     return {
@@ -3825,25 +3474,21 @@ const addNursingNote = async (id, data, context = {}) => {
         action: "ADD_NURSING_NOTE",
         stage_from: stageBefore,
         stage_to: null,
-        occurred_at: new Date().toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: new Date().toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "add_nursing_note" },
-  });
+    metadata: { operation: "add_nursing_note" }});
 };
 
 const addMedicationAdministration = async (id, data, context = {}) => {
   const dose = String(data?.dose || "").trim();
   if (!dose)
     throw new HttpError("errors.ipd_flow.medication_dose_required", 400, [
-      { field: "dose" },
-    ]);
+      { field: "dose" }]);
 
   const result = await prisma.$transaction(async (tx) => {
     const resolved = await resolveAdmissionByIdentifier(tx, id);
@@ -3931,8 +3576,7 @@ const addMedicationAdministration = async (id, data, context = {}) => {
       admission,
       activeBedAssignment: getActiveBedAssignment(admission),
       openTransferRequest: getOpenTransferRequest(admission),
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     if (administrationStatus === "GIVEN") {
       await tx.medication_administration.create({
@@ -3942,9 +3586,7 @@ const addMedicationAdministration = async (id, data, context = {}) => {
           administered_at: administeredAt,
           dose,
           unit: data?.unit || null,
-          route: data?.route || "ORAL",
-        },
-      });
+          route: data?.route || "ORAL"}});
     }
 
     if ((administrationStatus !== "GIVEN" || administrationNote) && context?.user_id) {
@@ -3955,12 +3597,9 @@ const addMedicationAdministration = async (id, data, context = {}) => {
           note: [
             `[MEDICATION ${administrationStatus}]`,
             [medicationLabel, dose, data?.unit, data?.route].filter(Boolean).join(" "),
-            administrationNote,
-          ]
+            administrationNote]
             .filter(Boolean)
-            .join(" - "),
-        },
-      });
+            .join(" - ")}});
     }
 
     if (scheduleReminders && administrationStatus === "GIVEN") {
@@ -3970,13 +3609,10 @@ const addMedicationAdministration = async (id, data, context = {}) => {
             ? await tx.encounter.findFirst({
                 where: {
                   id: admission.encounter_id,
-                  deleted_at: null,
-                },
+                  deleted_at: null},
                 select: {
                   id: true,
-                  human_friendly_id: true,
-                },
-              })
+                  human_friendly_id: true}})
             : null,
         ) || null;
 
@@ -3984,8 +3620,7 @@ const addMedicationAdministration = async (id, data, context = {}) => {
         administeredAt,
         reminderFirstAt: firstReminderAt,
         occurrences: reminderOccurrences,
-        intervalHours: reminderIntervalHours || 1,
-      });
+        intervalHours: reminderIntervalHours || 1});
 
       for (const [index, scheduledAt] of schedule.entries()) {
         await tx.follow_up.create({
@@ -4003,10 +3638,7 @@ const addMedicationAdministration = async (id, data, context = {}) => {
               encounterPublicId,
               prescriptionPublicId,
               occurrence: index + 1,
-              totalOccurrences: reminderOccurrences,
-            }),
-          },
-        });
+              totalOccurrences: reminderOccurrences})}});
       }
     }
 
@@ -4017,25 +3649,21 @@ const addMedicationAdministration = async (id, data, context = {}) => {
         action: "ADD_MEDICATION_ADMINISTRATION",
         stage_from: stageBefore,
         stage_to: null,
-        occurred_at: new Date().toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: new Date().toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "add_medication_administration" },
-  });
+    metadata: { operation: "add_medication_administration" }});
 };
 
 const planDischarge = async (id, data, context = {}) => {
   const summary = String(data?.summary || "").trim();
   if (!summary) {
     throw new HttpError("errors.ipd_flow.discharge_summary_required", 400, [
-      { field: "summary" },
-    ]);
+      { field: "summary" }]);
   }
 
   const plannedDischargeAt = data?.discharged_at
@@ -4061,8 +3689,7 @@ const planDischarge = async (id, data, context = {}) => {
       admission,
       activeBedAssignment: getActiveBedAssignment(admission),
       openTransferRequest: null,
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     const latestDischargeSummary = getLatestDischargeSummary(admission);
     const latestStatus = String(
@@ -4080,10 +3707,7 @@ const planDischarge = async (id, data, context = {}) => {
             ...normalizeDischargeClearance(
               latestDischargeSummary.clearance_snapshot,
             ),
-            summary_ready: true,
-          }),
-        },
-      });
+            summary_ready: true})}});
     } else {
       await tx.discharge_summary.create({
         data: {
@@ -4092,10 +3716,7 @@ const planDischarge = async (id, data, context = {}) => {
           status: "PLANNED",
           discharged_at: plannedDischargeAt,
           clearance_snapshot: normalizeDischargeClearance({
-            summary_ready: true,
-          }),
-        },
-      });
+            summary_ready: true})}});
     }
 
     return {
@@ -4105,17 +3726,14 @@ const planDischarge = async (id, data, context = {}) => {
         action: "PLAN_DISCHARGE",
         stage_from: stageBefore,
         stage_to: null,
-        occurred_at: new Date().toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: new Date().toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "plan_discharge" },
-  });
+    metadata: { operation: "plan_discharge" }});
 };
 
 const updateDischargeClearance = async (id, data, context = {}) => {
@@ -4129,8 +3747,7 @@ const updateDischargeClearance = async (id, data, context = {}) => {
     const latestDischargeSummary = getLatestDischargeSummary(admission);
     if (!latestDischargeSummary) {
       throw new HttpError("errors.ipd_flow.discharge_summary_required", 400, [
-        { field: "summary" },
-      ]);
+        { field: "summary" }]);
     }
 
     const latestStatus = String(
@@ -4148,9 +3765,7 @@ const updateDischargeClearance = async (id, data, context = {}) => {
     await tx.discharge_summary.update({
       where: { id: latestDischargeSummary.id },
       data: {
-        clearance_snapshot: nextClearance,
-      },
-    });
+        clearance_snapshot: nextClearance}});
 
     return {
       admission_id: admission.id,
@@ -4161,28 +3776,23 @@ const updateDischargeClearance = async (id, data, context = {}) => {
           admission,
           activeBedAssignment: getActiveBedAssignment(admission),
           openTransferRequest: getOpenTransferRequest(admission),
-          latestDischargeSummary,
-        }),
+          latestDischargeSummary}),
         stage_to: null,
-        occurred_at: new Date().toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: new Date().toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "update_discharge_clearance" },
-  });
+    metadata: { operation: "update_discharge_clearance" }});
 };
 
 const TERMINAL_ENCOUNTER_STATUSES = new Set(["CLOSED", "CANCELLED"]);
 const OPEN_APPOINTMENT_STATUSES = new Set([
   "SCHEDULED",
   "CONFIRMED",
-  "IN_PROGRESS",
-]);
+  "IN_PROGRESS"]);
 const OPEN_QUEUE_STATUSES = new Set(["SCHEDULED", "CONFIRMED", "IN_PROGRESS"]);
 
 const closeEncounterForPatientDischarge = async (tx, encounter, closedAt) => {
@@ -4203,30 +3813,26 @@ const closeEncounterForPatientDischarge = async (tx, encounter, closedAt) => {
   if (flow.visit_queue_id && tx.visit_queue?.update) {
     await tx.visit_queue.update({
       where: { id: flow.visit_queue_id },
-      data: { status: "COMPLETED" },
-    });
+      data: { status: "COMPLETED" }});
   }
 
   if (flow.appointment_id && tx.appointment?.findFirst) {
     const appointment = await tx.appointment.findFirst({
-      where: { id: flow.appointment_id, deleted_at: null },
-    });
+      where: { id: flow.appointment_id, deleted_at: null }});
     if (
       appointment &&
       OPEN_APPOINTMENT_STATUSES.has(String(appointment.status || "").toUpperCase())
     ) {
       await tx.appointment.update({
         where: { id: appointment.id },
-        data: { status: "COMPLETED" },
-      });
+        data: { status: "COMPLETED" }});
     }
   }
 
   if (flow.emergency_case_id && tx.emergency_case?.update) {
     await tx.emergency_case.update({
       where: { id: flow.emergency_case_id },
-      data: { status: "CLOSED" },
-    });
+      data: { status: "CLOSED" }});
   }
 
   if (flow.stage) {
@@ -4243,9 +3849,7 @@ const closeEncounterForPatientDischarge = async (tx, encounter, closedAt) => {
       status: "CLOSED",
       active_opd_lock_key: null,
       ended_at: closedAt,
-      extension_json: extensionJson,
-    },
-  });
+      extension_json: extensionJson}});
 
   return true;
 };
@@ -4264,8 +3868,7 @@ const closePatientOpenWorkOnDischarge = async (
 
   if (admission.encounter_id && tx.encounter?.findFirst) {
     const admissionEncounter = await tx.encounter.findFirst({
-      where: { id: admission.encounter_id, deleted_at: null },
-    });
+      where: { id: admission.encounter_id, deleted_at: null }});
     if (
       await closeEncounterForPatientDischarge(
         tx,
@@ -4284,10 +3887,8 @@ const closePatientOpenWorkOnDischarge = async (
         patient_id: patientId,
         tenant_id: tenantId,
         deleted_at: null,
-        status: { notIn: ["CLOSED", "CANCELLED"] },
-      },
-      select: { id: true, status: true, extension_json: true },
-    });
+        status: { notIn: ["CLOSED", "CANCELLED"] }},
+      select: { id: true, status: true, extension_json: true }});
 
     for (const encounter of openEncounters) {
       if (closedEncounterIds.has(encounter.id)) continue;
@@ -4306,10 +3907,8 @@ const closePatientOpenWorkOnDischarge = async (
         patient_id: patientId,
         tenant_id: tenantId,
         deleted_at: null,
-        status: { in: [...OPEN_QUEUE_STATUSES] },
-      },
-      data: { status: "COMPLETED" },
-    });
+        status: { in: [...OPEN_QUEUE_STATUSES] }},
+      data: { status: "COMPLETED" }});
   }
 
   if (tx.appointment?.updateMany) {
@@ -4318,10 +3917,8 @@ const closePatientOpenWorkOnDischarge = async (
         patient_id: patientId,
         tenant_id: tenantId,
         deleted_at: null,
-        status: { in: [...OPEN_APPOINTMENT_STATUSES] },
-      },
-      data: { status: "COMPLETED" },
-    });
+        status: { in: [...OPEN_APPOINTMENT_STATUSES] }},
+      data: { status: "COMPLETED" }});
   }
 
   return signals;
@@ -4351,16 +3948,14 @@ const finalizeDischarge = async (id, data, context = {}) => {
       admission,
       activeBedAssignment,
       openTransferRequest: null,
-      latestDischargeSummary: getLatestDischargeSummary(admission),
-    });
+      latestDischargeSummary: getLatestDischargeSummary(admission)});
 
     const latestDischargeSummary = getLatestDischargeSummary(admission);
     const summary =
       payloadSummary || String(latestDischargeSummary?.summary || "").trim();
     if (!summary) {
       throw new HttpError("errors.ipd_flow.discharge_summary_required", 400, [
-        { field: "summary" },
-      ]);
+        { field: "summary" }]);
     }
 
     const clearance = normalizeDischargeClearance(
@@ -4382,10 +3977,7 @@ const finalizeDischarge = async (id, data, context = {}) => {
           clearance_snapshot: normalizeDischargeClearance({
             ...clearance,
             override_reason: overrideReason,
-            patient_exited: true,
-          }),
-        },
-      });
+            patient_exited: true})}});
     } else {
       await tx.discharge_summary.create({
         data: {
@@ -4401,10 +3993,7 @@ const finalizeDischarge = async (id, data, context = {}) => {
             nursing_cleared: true,
             documents_ready: true,
             patient_exited: true,
-            override_reason: overrideReason,
-          }),
-        },
-      });
+            override_reason: overrideReason})}});
     }
 
     const compatibilitySignals = ["PATIENT_DISCHARGED"];
@@ -4412,12 +4001,10 @@ const finalizeDischarge = async (id, data, context = {}) => {
     if (activeBedAssignment) {
       await tx.bed_assignment.update({
         where: { id: activeBedAssignment.id },
-        data: { released_at: dischargedAt },
-      });
+        data: { released_at: dischargedAt }});
       await tx.bed.update({
         where: { id: activeBedAssignment.bed_id },
-        data: { status: "CLEANING" },
-      });
+        data: { status: "CLEANING" }});
       compatibilitySignals.push("BED_ASSIGNMENT_CHANGED");
     }
 
@@ -4425,9 +4012,7 @@ const finalizeDischarge = async (id, data, context = {}) => {
       where: { id: admission.id },
       data: {
         status: "DISCHARGED",
-        discharged_at: dischargedAt,
-      },
-    });
+        discharged_at: dischargedAt}});
 
     const closedWorkSignals = await closePatientOpenWorkOnDischarge(
       tx,
@@ -4443,17 +4028,14 @@ const finalizeDischarge = async (id, data, context = {}) => {
         action: "FINALIZE_DISCHARGE",
         stage_from: stageBefore,
         stage_to: STAGES.DISCHARGED,
-        occurred_at: dischargedAt.toISOString(),
-      },
-      compatibilitySignals,
-    };
+        occurred_at: dischargedAt.toISOString()},
+      compatibilitySignals};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "finalize_discharge" },
-  });
+    metadata: { operation: "finalize_discharge" }});
 };
 
 const startIcuStay = async (id, data, context = {}) => {
@@ -4473,9 +4055,7 @@ const startIcuStay = async (id, data, context = {}) => {
     await tx.icu_stay.create({
       data: {
         admission_id: admission.id,
-        started_at: startedAt,
-      },
-    });
+        started_at: startedAt}});
 
     return {
       admission_id: admission.id,
@@ -4486,20 +4066,16 @@ const startIcuStay = async (id, data, context = {}) => {
           admission,
           activeBedAssignment: getActiveBedAssignment(admission),
           openTransferRequest: getOpenTransferRequest(admission),
-          latestDischargeSummary: getLatestDischargeSummary(admission),
-        }),
+          latestDischargeSummary: getLatestDischargeSummary(admission)}),
         stage_to: null,
-        occurred_at: startedAt.toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: startedAt.toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "start_icu_stay", include_icu: true },
-  });
+    metadata: { operation: "start_icu_stay", include_icu: true }});
 };
 
 const endIcuStay = async (id, data, context = {}) => {
@@ -4518,14 +4094,12 @@ const endIcuStay = async (id, data, context = {}) => {
       data?.icu_stay_id,
       {
         requireActive: true,
-        allowLatestFallback: false,
-      },
+        allowLatestFallback: false},
     );
 
     await tx.icu_stay.update({
       where: { id: stay.id },
-      data: { ended_at: endedAt },
-    });
+      data: { ended_at: endedAt }});
 
     return {
       admission_id: admission.id,
@@ -4536,20 +4110,16 @@ const endIcuStay = async (id, data, context = {}) => {
           admission,
           activeBedAssignment: getActiveBedAssignment(admission),
           openTransferRequest: getOpenTransferRequest(admission),
-          latestDischargeSummary: getLatestDischargeSummary(admission),
-        }),
+          latestDischargeSummary: getLatestDischargeSummary(admission)}),
         stage_to: null,
-        occurred_at: endedAt.toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: endedAt.toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "end_icu_stay", include_icu: true },
-  });
+    metadata: { operation: "end_icu_stay", include_icu: true }});
 };
 
 const addIcuObservation = async (id, data, context = {}) => {
@@ -4557,8 +4127,7 @@ const addIcuObservation = async (id, data, context = {}) => {
   const observation = String(data?.observation || "").trim();
   if (!observation) {
     throw new HttpError("errors.validation.field.required", 400, [
-      { field: "observation" },
-    ]);
+      { field: "observation" }]);
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -4574,17 +4143,14 @@ const addIcuObservation = async (id, data, context = {}) => {
       data?.icu_stay_id,
       {
         requireActive: true,
-        allowLatestFallback: false,
-      },
+        allowLatestFallback: false},
     );
 
     await tx.icu_observation.create({
       data: {
         icu_stay_id: stay.id,
         observed_at: observedAt,
-        observation,
-      },
-    });
+        observation}});
 
     return {
       admission_id: admission.id,
@@ -4595,20 +4161,16 @@ const addIcuObservation = async (id, data, context = {}) => {
           admission,
           activeBedAssignment: getActiveBedAssignment(admission),
           openTransferRequest: getOpenTransferRequest(admission),
-          latestDischargeSummary: getLatestDischargeSummary(admission),
-        }),
+          latestDischargeSummary: getLatestDischargeSummary(admission)}),
         stage_to: null,
-        occurred_at: observedAt.toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: observedAt.toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "add_icu_observation", include_icu: true },
-  });
+    metadata: { operation: "add_icu_observation", include_icu: true }});
 };
 
 const addCriticalAlert = async (id, data, context = {}) => {
@@ -4618,8 +4180,7 @@ const addCriticalAlert = async (id, data, context = {}) => {
     .toUpperCase();
   if (!message) {
     throw new HttpError("errors.validation.field.required", 400, [
-      { field: "message" },
-    ]);
+      { field: "message" }]);
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -4635,17 +4196,14 @@ const addCriticalAlert = async (id, data, context = {}) => {
       data?.icu_stay_id,
       {
         requireActive: true,
-        allowLatestFallback: false,
-      },
+        allowLatestFallback: false},
     );
 
     await tx.critical_alert.create({
       data: {
         icu_stay_id: stay.id,
         severity,
-        message,
-      },
-    });
+        message}});
 
     return {
       admission_id: admission.id,
@@ -4656,20 +4214,16 @@ const addCriticalAlert = async (id, data, context = {}) => {
           admission,
           activeBedAssignment: getActiveBedAssignment(admission),
           openTransferRequest: getOpenTransferRequest(admission),
-          latestDischargeSummary: getLatestDischargeSummary(admission),
-        }),
+          latestDischargeSummary: getLatestDischargeSummary(admission)}),
         stage_to: null,
-        occurred_at: new Date().toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: new Date().toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "add_critical_alert", include_icu: true },
-  });
+    metadata: { operation: "add_critical_alert", include_icu: true }});
 };
 
 const resolveCriticalAlert = async (id, data, context = {}) => {
@@ -4691,9 +4245,7 @@ const resolveCriticalAlert = async (id, data, context = {}) => {
     await tx.critical_alert.update({
       where: { id: alert.id },
       data: {
-        deleted_at: new Date(),
-      },
-    });
+        deleted_at: new Date()}});
 
     return {
       admission_id: admission.id,
@@ -4704,20 +4256,16 @@ const resolveCriticalAlert = async (id, data, context = {}) => {
           admission,
           activeBedAssignment: getActiveBedAssignment(admission),
           openTransferRequest: getOpenTransferRequest(admission),
-          latestDischargeSummary: getLatestDischargeSummary(admission),
-        }),
+          latestDischargeSummary: getLatestDischargeSummary(admission)}),
         stage_to: null,
-        occurred_at: new Date().toISOString(),
-      },
-      compatibilitySignals: [],
-    };
+        occurred_at: new Date().toISOString()},
+      compatibilitySignals: []};
   });
 
   return finalizeAction({
     result,
     context,
-    metadata: { operation: "resolve_critical_alert", include_icu: true },
-  });
+    metadata: { operation: "resolve_critical_alert", include_icu: true }});
 };
 
 const emitAdmissionRefreshEvent = async (admissionIdentifier, context = {}) => {
@@ -4733,8 +4281,7 @@ const emitAdmissionRefreshEvent = async (admissionIdentifier, context = {}) => {
         action: "OPD_ADMITTED",
         stage_from: null,
         stage_to: snapshot?.flow?.stage || null,
-        occurred_at: new Date().toISOString(),
-      },
+        occurred_at: new Date().toISOString()},
       context,
       compatibilitySignals: ["PATIENT_ADMITTED"],
       tenantInternalId:
@@ -4742,8 +4289,7 @@ const emitAdmissionRefreshEvent = async (admissionIdentifier, context = {}) => {
       facilityInternalId:
         internalSnapshot?.admission?.facility_id ||
         context?.facility_id ||
-        null,
-    });
+        null});
     return snapshot;
   } catch (_error) {
     return null;
@@ -4782,5 +4328,4 @@ module.exports = {
   addIcuObservation,
   addCriticalAlert,
   resolveCriticalAlert,
-  emitAdmissionRefreshEvent,
-};
+  emitAdmissionRefreshEvent};

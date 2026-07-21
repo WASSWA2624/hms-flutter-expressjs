@@ -8,8 +8,7 @@ const {
   practitionerTypeOptions,
   compensationPayTypeOptions,
   staffPositionCatalogOptions,
-  staffPositionLabelKeyForName,
-} = require('@lib/hr/reference-data');
+  staffPositionLabelKeyForName} = require('@lib/hr/reference-data');
 
 describe('hr reference-data constants', () => {
   it('includes a comprehensive global staff position catalog', () => {
@@ -21,8 +20,7 @@ describe('hr reference-data constants', () => {
         'Ward Manager',
         'Midwife',
         'Mortuary Attendant',
-        'Chief Nursing Officer',
-      ])
+        'Chief Nursing Officer'])
     );
     for (const entry of STAFF_POSITION_CATALOG) {
       expect(entry.labelKey).toMatch(/^labels\.hr\.reference\.staff_position\./);
@@ -39,8 +37,7 @@ describe('hr reference-data constants', () => {
         'SURGEON',
         'OBGYN',
         'NURSE_PRACTITIONER',
-        'ORTHOPAEDIC_SURGEON',
-      ])
+        'ORTHOPAEDIC_SURGEON'])
     );
     const options = practitionerTypeOptions();
     expect(options).toEqual(
@@ -48,9 +45,7 @@ describe('hr reference-data constants', () => {
         expect.objectContaining({
           value: 'MO',
           label_key: 'labels.hr.reference.practitioner_type.mo',
-          label: expect.stringContaining('Medical Officer'),
-        }),
-      ])
+          label: expect.stringContaining('Medical Officer')})])
     );
   });
 
@@ -61,13 +56,10 @@ describe('hr reference-data constants', () => {
       expect.arrayContaining([
         expect.objectContaining({
           value: 'PER_CONSULTATION',
-          label_key: 'labels.hr.reference.compensation_pay_type.per_consultation',
-        }),
+          label_key: 'labels.hr.reference.compensation_pay_type.per_consultation'}),
         expect.objectContaining({
           value: 'PER_MONTH',
-          label_key: 'labels.hr.reference.compensation_pay_type.per_month',
-        }),
-      ])
+          label_key: 'labels.hr.reference.compensation_pay_type.per_month'})])
     );
   });
 
@@ -79,22 +71,17 @@ describe('hr reference-data constants', () => {
       expect.arrayContaining([
         expect.objectContaining({
           value: 'ANNUAL',
-          label_key: 'labels.hr.reference.leave_type.annual',
-        }),
+          label_key: 'labels.hr.reference.leave_type.annual'}),
         expect.objectContaining({
           value: 'SICK',
-          label_key: 'labels.hr.reference.leave_type.sick',
-        }),
-      ])
+          label_key: 'labels.hr.reference.leave_type.sick'})])
     );
     const halfDayPeriods = leaveHalfDayPeriodOptions();
     expect(halfDayPeriods).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           value: 'MORNING',
-          label_key: 'labels.hr.reference.leave_half_day_period.morning',
-        }),
-      ])
+          label_key: 'labels.hr.reference.leave_half_day_period.morning'})])
     );
   });
 
@@ -119,8 +106,7 @@ describe('hr reference-data constants', () => {
       expect.objectContaining({
         value: expect.any(String),
         label: expect.any(String),
-        label_key: expect.stringMatching(/^labels\.hr\.reference\.staff_position\./),
-      })
+        label_key: expect.stringMatching(/^labels\.hr\.reference\.staff_position\./)})
     );
   });
 });

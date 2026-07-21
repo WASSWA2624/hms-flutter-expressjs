@@ -4,14 +4,12 @@ const { listQuerySchema, uuidOrFriendlyIdentifierSchema } = require('@lib/valida
 const settingsWorkspaceGroupSchema = z.enum([
   'organization',
   'usersAndAccess',
-  'security',
-]);
+  'security']);
 
 const settingsWorkspaceStateSchema = z.enum([
   'configured',
   'empty',
-  'attention',
-]);
+  'attention']);
 
 const workspaceQuerySchema = listQuerySchema.extend({
   tenantId: uuidOrFriendlyIdentifierSchema.optional(),
@@ -21,19 +19,16 @@ const workspaceQuerySchema = listQuerySchema.extend({
   group: settingsWorkspaceGroupSchema.optional(),
   search: z.string().trim().max(120).optional(),
   state: settingsWorkspaceStateSchema.optional(),
-  actionable_only: z.enum(['true', 'false']).optional(),
-});
+  actionable_only: z.enum(['true', 'false']).optional()});
 
 const referenceDataQuerySchema = z.object({
   tenantId: uuidOrFriendlyIdentifierSchema.optional(),
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facilityId: uuidOrFriendlyIdentifierSchema.optional(),
-  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-});
+  facility_id: uuidOrFriendlyIdentifierSchema.optional()});
 
 module.exports = {
   referenceDataQuerySchema,
   settingsWorkspaceGroupSchema,
   settingsWorkspaceStateSchema,
-  workspaceQuerySchema,
-};
+  workspaceQuerySchema};

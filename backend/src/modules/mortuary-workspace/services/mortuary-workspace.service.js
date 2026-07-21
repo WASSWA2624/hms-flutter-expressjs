@@ -8,8 +8,7 @@ const DEFAULT_RESOURCE_BY_PANEL = Object.freeze({
   storage: 'mortuary-storage-assignments',
   custody: 'mortuary-custody-events',
   release: 'mortuary-release-authorisations',
-  reporting: 'mortuary-post-mortem-requests',
-});
+  reporting: 'mortuary-post-mortem-requests'});
 
 const PANEL_DEFINITIONS = Object.freeze([
   { id: 'overview', label_key: 'mortuary.panels.overview', default_resource: 'mortuary-cases' },
@@ -17,16 +16,14 @@ const PANEL_DEFINITIONS = Object.freeze([
   { id: 'storage', label_key: 'mortuary.panels.storage', default_resource: 'mortuary-storage-assignments' },
   { id: 'custody', label_key: 'mortuary.panels.custody', default_resource: 'mortuary-custody-events' },
   { id: 'release', label_key: 'mortuary.panels.release', default_resource: 'mortuary-release-authorisations' },
-  { id: 'reporting', label_key: 'mortuary.panels.reporting', default_resource: 'mortuary-post-mortem-requests' },
-]);
+  { id: 'reporting', label_key: 'mortuary.panels.reporting', default_resource: 'mortuary-post-mortem-requests' }]);
 
 const QUEUE_DEFINITIONS = Object.freeze([
   { id: 'IDENTIFICATION_PENDING', label_key: 'mortuary.queues.identificationPending', panel: 'intake', resource: 'mortuary-cases' },
   { id: 'STORAGE_EXCEPTIONS', label_key: 'mortuary.queues.storageExceptions', panel: 'storage', resource: 'mortuary-storage-assignments' },
   { id: 'RELEASE_READY', label_key: 'mortuary.queues.releaseReady', panel: 'release', resource: 'mortuary-release-authorisations' },
   { id: 'UNSETTLED_BILLING', label_key: 'mortuary.queues.unsettledBilling', panel: 'release', resource: 'mortuary-billable-events' },
-  { id: 'POST_MORTEM_PENDING', label_key: 'mortuary.queues.postMortemPending', panel: 'reporting', resource: 'mortuary-post-mortem-requests' },
-]);
+  { id: 'POST_MORTEM_PENDING', label_key: 'mortuary.queues.postMortemPending', panel: 'reporting', resource: 'mortuary-post-mortem-requests' }]);
 
 const CASE_STATUS_OPTIONS = Object.freeze([
   'RECEIVED',
@@ -36,22 +33,19 @@ const CASE_STATUS_OPTIONS = Object.freeze([
   'READY_FOR_RELEASE',
   'RELEASED',
   'CLOSED',
-  'CANCELLED',
-]);
+  'CANCELLED']);
 
 const IDENTIFICATION_STATUS_OPTIONS = Object.freeze([
   'UNVERIFIED',
   'PARTIAL',
-  'VERIFIED',
-]);
+  'VERIFIED']);
 
 const STORAGE_SLOT_STATUS_OPTIONS = Object.freeze([
   'AVAILABLE',
   'OCCUPIED',
   'HELD',
   'OUT_OF_SERVICE',
-  'CLEANING',
-]);
+  'CLEANING']);
 
 const POST_MORTEM_STATUS_OPTIONS = Object.freeze([
   'REQUESTED',
@@ -59,15 +53,13 @@ const POST_MORTEM_STATUS_OPTIONS = Object.freeze([
   'SCHEDULED',
   'IN_PROGRESS',
   'COMPLETED',
-  'CANCELLED',
-]);
+  'CANCELLED']);
 
 const RELEASE_STATUS_OPTIONS = Object.freeze([
   'DRAFT',
   'APPROVED',
   'RELEASED',
-  'CANCELLED',
-]);
+  'CANCELLED']);
 
 const SORT_FIELDS_BY_RESOURCE = Object.freeze({
   'mortuary-cases': new Set(['received_at', 'updated_at', 'created_at', 'release_ready_at', 'released_at']),
@@ -78,8 +70,7 @@ const SORT_FIELDS_BY_RESOURCE = Object.freeze({
   'mortuary-viewings': new Set(['scheduled_at', 'updated_at', 'created_at', 'completed_at']),
   'mortuary-post-mortem-requests': new Set(['scheduled_at', 'updated_at', 'created_at', 'completed_at']),
   'mortuary-release-authorisations': new Set(['approved_at', 'released_at', 'updated_at', 'created_at']),
-  'mortuary-billable-events': new Set(['charged_at', 'settled_at', 'updated_at', 'created_at']),
-});
+  'mortuary-billable-events': new Set(['charged_at', 'settled_at', 'updated_at', 'created_at'])});
 
 const DEFAULT_SORT_BY_RESOURCE = Object.freeze({
   'mortuary-cases': 'received_at',
@@ -90,8 +81,7 @@ const DEFAULT_SORT_BY_RESOURCE = Object.freeze({
   'mortuary-viewings': 'scheduled_at',
   'mortuary-post-mortem-requests': 'created_at',
   'mortuary-release-authorisations': 'created_at',
-  'mortuary-billable-events': 'charged_at',
-});
+  'mortuary-billable-events': 'charged_at'});
 
 const normalizeString = (value) => String(value || '').trim();
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
@@ -102,8 +92,7 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: page * limit < total,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const buildWorkspacePath = (params = {}) => {
   const query = new URLSearchParams();
@@ -119,8 +108,7 @@ const buildWorkspacePath = (params = {}) => {
     'storageSlotId',
     'datePreset',
     'id',
-    'action',
-  ].forEach((key) => {
+    'action'].forEach((key) => {
     const value = normalizeString(params[key]);
     if (value) query.set(key, value);
   });
@@ -141,8 +129,7 @@ const mapLookupOption = (record, label, subtitle = null, meta = null) => ({
   id: safePublicId(record?.human_friendly_id, record?.id),
   label,
   subtitle,
-  meta,
-});
+  meta});
 
 const mapEnumOptions = (values) =>
   values.map((value) => ({ id: value, label: value, subtitle: null, meta: null }));
@@ -152,8 +139,7 @@ const mapSummaryCards = (summary = {}) => [
   { id: 'identification_pending', label_key: 'mortuary.summary.identificationPending', value: Number(summary.identification_pending || 0) },
   { id: 'in_storage', label_key: 'mortuary.summary.inStorage', value: Number(summary.in_storage || 0) },
   { id: 'release_ready', label_key: 'mortuary.summary.releaseReady', value: Number(summary.release_ready || 0) },
-  { id: 'unsettled_billing', label_key: 'mortuary.summary.unsettledBilling', value: Number(summary.unsettled_billing || 0) },
-];
+  { id: 'unsettled_billing', label_key: 'mortuary.summary.unsettledBilling', value: Number(summary.unsettled_billing || 0) }];
 
 const mapQueueSummaries = (queueCounts = {}) =>
   QUEUE_DEFINITIONS.map((definition) => ({
@@ -165,9 +151,7 @@ const mapQueueSummaries = (queueCounts = {}) =>
     target_path: buildWorkspacePath({
       panel: definition.panel,
       resource: definition.resource,
-      queue: definition.id,
-    }),
-  }));
+      queue: definition.id})}));
 
 const mapPanelSummaries = (summary = {}, queueCounts = {}) =>
   PANEL_DEFINITIONS.map((panel) => {
@@ -190,9 +174,7 @@ const mapPanelSummaries = (summary = {}, queueCounts = {}) =>
       count,
       target_path: buildWorkspacePath({
         panel: panel.id,
-        resource: panel.default_resource,
-      }),
-    };
+        resource: panel.default_resource})};
   });
 
 const mapSpotlight = (queueCounts = {}) =>
@@ -216,8 +198,7 @@ const mapCaseSummary = (mortuaryCase = {}) => {
       mortuaryCase.deceased_profile?.human_friendly_id,
       mortuaryCase.deceased_profile?.id
     ),
-    deceased_profile_label: mortuaryCase.deceased_profile?.display_name || null,
-  };
+    deceased_profile_label: mortuaryCase.deceased_profile?.display_name || null};
 };
 
 const mapStorageAssignment = (assignment = null) => {
@@ -243,8 +224,7 @@ const mapStorageAssignment = (assignment = null) => {
     storage_slot_id: slotPublicId,
     storage_slot_label:
       assignment.storage_slot?.label || assignment.storage_slot?.slot_code || null,
-    storage_slot_status: assignment.storage_slot?.status || null,
-  };
+    storage_slot_status: assignment.storage_slot?.status || null};
 };
 
 const mapTimelineEvent = (event = {}) => ({
@@ -259,8 +239,7 @@ const mapTimelineEvent = (event = {}) => ({
   reason: event.reason || null,
   notes: event.notes || null,
   created_at: event.created_at || null,
-  updated_at: event.updated_at || null,
-});
+  updated_at: event.updated_at || null});
 
 const mapCaseItem = (resource, item = {}) => {
   const publicId = safePublicId(item.human_friendly_id, item.id);
@@ -312,8 +291,7 @@ const mapCaseItem = (resource, item = {}) => {
       status: entry.status || null,
       authorised_by_name: entry.authorised_by_name || null,
       attendee_summary: entry.attendee_summary || null,
-      completed_at: entry.completed_at || null,
-    })),
+      completed_at: entry.completed_at || null})),
     post_mortem_requests: (item.post_mortem_requests || []).map((entry) => ({
       id: safePublicId(entry.human_friendly_id, entry.id),
       human_friendly_id: safePublicId(entry.human_friendly_id, entry.id),
@@ -323,8 +301,7 @@ const mapCaseItem = (resource, item = {}) => {
       diagnostics_reference_id: entry.diagnostics_reference_id || null,
       scheduled_at: entry.scheduled_at || null,
       completed_at: entry.completed_at || null,
-      report_received_at: entry.report_received_at || null,
-    })),
+      report_received_at: entry.report_received_at || null})),
     release_authorisations: (item.release_authorisations || []).map((entry) => ({
       id: safePublicId(entry.human_friendly_id, entry.id),
       human_friendly_id: safePublicId(entry.human_friendly_id, entry.id),
@@ -336,8 +313,7 @@ const mapCaseItem = (resource, item = {}) => {
       status: entry.status || null,
       approved_by_name: entry.approved_by_name || null,
       approved_at: entry.approved_at || null,
-      released_at: entry.released_at || null,
-    })),
+      released_at: entry.released_at || null})),
     billable_events: (item.billable_events || []).map((entry) => ({
       id: safePublicId(entry.human_friendly_id, entry.id),
       human_friendly_id: safePublicId(entry.human_friendly_id, entry.id),
@@ -348,18 +324,15 @@ const mapCaseItem = (resource, item = {}) => {
       status: entry.status || null,
       billing_reference_id: entry.billing_reference_id || null,
       charged_at: entry.charged_at || null,
-      settled_at: entry.settled_at || null,
-    })),
+      settled_at: entry.settled_at || null})),
     target_path: buildWorkspacePath({
       panel: 'overview',
       resource,
       id: publicId,
-      action: 'view',
-    }),
+      action: 'view'}),
     timeline_at: item.updated_at || item.received_at || item.created_at || null,
     created_at: item.created_at || null,
-    updated_at: item.updated_at || null,
-  };
+    updated_at: item.updated_at || null};
 };
 
 const mapRelatedCaseResourceItem = (resource, item = {}) => {
@@ -381,11 +354,9 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
     target_path: buildWorkspacePath({
       resource,
       id: publicId,
-      action: 'view',
-    }),
+      action: 'view'}),
     created_at: item.created_at || null,
-    updated_at: item.updated_at || null,
-  };
+    updated_at: item.updated_at || null};
 
   if (resource === 'mortuary-storage-assignments') {
     return {
@@ -393,8 +364,7 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
       ...storageAssignment,
       status: item.assignment_status || null,
       subtitle: storageAssignment?.storage_slot_label || storageAssignment?.storage_unit_label || null,
-      timeline_at: item.assigned_at || item.updated_at || item.created_at || null,
-    };
+      timeline_at: item.assigned_at || item.updated_at || item.created_at || null};
   }
 
   if (resource === 'mortuary-custody-events') {
@@ -403,8 +373,7 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
       ...mapTimelineEvent(item),
       status: item.event_type || null,
       subtitle: item.location_label || item.actor_name || null,
-      timeline_at: item.event_at || item.updated_at || item.created_at || null,
-    };
+      timeline_at: item.event_at || item.updated_at || item.created_at || null};
   }
 
   if (resource === 'mortuary-viewings') {
@@ -416,8 +385,7 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
       authorised_by_name: item.authorised_by_name || null,
       attendee_summary: item.attendee_summary || null,
       completed_at: item.completed_at || null,
-      timeline_at: item.scheduled_at || item.updated_at || item.created_at || null,
-    };
+      timeline_at: item.scheduled_at || item.updated_at || item.created_at || null};
   }
 
   if (resource === 'mortuary-post-mortem-requests') {
@@ -431,8 +399,7 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
       scheduled_at: item.scheduled_at || null,
       completed_at: item.completed_at || null,
       report_received_at: item.report_received_at || null,
-      timeline_at: item.scheduled_at || item.updated_at || item.created_at || null,
-    };
+      timeline_at: item.scheduled_at || item.updated_at || item.created_at || null};
   }
 
   if (resource === 'mortuary-release-authorisations') {
@@ -449,8 +416,7 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
       approved_by_name: item.approved_by_name || null,
       approved_at: item.approved_at || null,
       released_at: item.released_at || null,
-      timeline_at: item.released_at || item.approved_at || item.updated_at || item.created_at || null,
-    };
+      timeline_at: item.released_at || item.approved_at || item.updated_at || item.created_at || null};
   }
 
   return {
@@ -464,8 +430,7 @@ const mapRelatedCaseResourceItem = (resource, item = {}) => {
     billing_reference_id: item.billing_reference_id || null,
     charged_at: item.charged_at || null,
     settled_at: item.settled_at || null,
-    timeline_at: item.charged_at || item.updated_at || item.created_at || null,
-  };
+    timeline_at: item.charged_at || item.updated_at || item.created_at || null};
 };
 
 const mapStorageUnitItem = (resource, item = {}) => ({
@@ -484,8 +449,7 @@ const mapStorageUnitItem = (resource, item = {}) => ({
   timeline_at: item.updated_at || item.created_at || null,
   target_path: buildWorkspacePath({ panel: 'storage', resource, id: safePublicId(item.human_friendly_id, item.id), action: 'view' }),
   created_at: item.created_at || null,
-  updated_at: item.updated_at || null,
-});
+  updated_at: item.updated_at || null});
 
 const mapStorageSlotItem = (resource, item = {}) => {
   const activeAssignment = mapStorageAssignment(item.assignments?.[0]);
@@ -510,8 +474,7 @@ const mapStorageSlotItem = (resource, item = {}) => {
     timeline_at: item.updated_at || item.created_at || null,
     target_path: buildWorkspacePath({ panel: 'storage', resource, id: safePublicId(item.human_friendly_id, item.id), action: 'view' }),
     created_at: item.created_at || null,
-    updated_at: item.updated_at || null,
-  };
+    updated_at: item.updated_at || null};
 };
 
 const mapItem = (resource, item) => {
@@ -528,26 +491,21 @@ const resolveScopedFilters = async (filters = {}, user = {}) => {
   const facilityId = await resolveIdentifierForFilter({
     value: facilityValue,
     model: 'facility',
-    where: tenantWhere,
-  });
+    where: tenantWhere});
   const facilityWhere = {
     ...tenantWhere,
-    ...(facilityId ? { facility_id: facilityId } : {}),
-  };
+    ...(facilityId ? { facility_id: facilityId } : {})};
 
   const storageUnitId = await resolveIdentifierForFilter({
     value: filters.storage_unit_id,
     model: 'mortuary_storage_unit',
-    where: facilityWhere,
-  });
+    where: facilityWhere});
   const storageSlotId = await resolveIdentifierForFilter({
     value: filters.storage_slot_id,
     model: 'mortuary_storage_slot',
     where: {
       ...facilityWhere,
-      ...(storageUnitId ? { storage_unit_id: storageUnitId } : {}),
-    },
-  });
+      ...(storageUnitId ? { storage_unit_id: storageUnitId } : {})}});
 
   return {
     tenantId,
@@ -560,8 +518,7 @@ const resolveScopedFilters = async (filters = {}, user = {}) => {
     queue: normalizeString(filters.queue) || undefined,
     datePreset: normalizeString(filters.date_preset) || undefined,
     id: normalizeString(filters.id) || undefined,
-    action: normalizeString(filters.action) || undefined,
-  };
+    action: normalizeString(filters.action) || undefined};
 };
 
 const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 'desc', user = {}) => {
@@ -582,10 +539,8 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 
       filters: scopedFilters,
       skip,
       take: limit,
-      orderBy,
-    }),
-    mortuaryWorkspaceRepository.findLookups(scopedFilters),
-  ]);
+      orderBy}),
+    mortuaryWorkspaceRepository.findLookups(scopedFilters)]);
 
   return {
     summary: mapSummaryCards(summary),
@@ -603,27 +558,23 @@ const getWorkspace = async (filters = {}, page = 1, limit = 20, sortBy, order = 
       storage_slot_id: safePublicId(undefined, scopedFilters.storageSlotId),
       date_preset: normalizeString(filters.date_preset) || null,
       id: normalizeString(filters.id) || null,
-      action: normalizeString(filters.action) || null,
-    },
+      action: normalizeString(filters.action) || null},
     lookups: mapLookups(lookups),
     items: (listResult.items || []).map((item) => mapItem(resource, item)),
     pagination: buildPagination(page, limit, Number(listResult.total || 0)),
     spotlight: mapSpotlight(queueCounts),
-    last_updated_at: new Date(),
-  };
+    last_updated_at: new Date()};
 };
 
 const mapLookups = (lookups = {}) => ({
   facilities: (lookups.facilities || []).map((entry) =>
     mapLookupOption(entry, entry.name, entry.facility_type || null, {
-      facility_type: entry.facility_type || null,
-    })
+      facility_type: entry.facility_type || null})
   ),
   storage_units: (lookups.storageUnits || []).map((entry) =>
     mapLookupOption(entry, entry.name, entry.location_label || entry.unit_type || null, {
       unit_type: entry.unit_type || null,
-      status: entry.status || null,
-    })
+      status: entry.status || null})
   ),
   storage_slots: (lookups.storageSlots || []).map((entry) =>
     mapLookupOption(
@@ -636,8 +587,7 @@ const mapLookups = (lookups = {}) => ({
         storage_unit_id: safePublicId(
           entry.storage_unit?.human_friendly_id,
           entry.storage_unit?.id
-        ),
-      }
+        )}
     )
   ),
   deceased_profiles: (lookups.deceasedProfiles || []).map((entry) =>
@@ -669,9 +619,7 @@ const mapLookups = (lookups = {}) => ({
     id: entry.id,
     label: entry.id,
     subtitle: entry.panel,
-    meta: { resource: entry.resource },
-  })),
-});
+    meta: { resource: entry.resource }}))});
 
 const getLookups = async (filters = {}, user = {}) => {
   const scopedFilters = await resolveScopedFilters(filters, user);
@@ -681,5 +629,4 @@ const getLookups = async (filters = {}, user = {}) => {
 
 module.exports = {
   getWorkspace,
-  getLookups,
-};
+  getLookups};

@@ -8,8 +8,7 @@ const {
   listReportDefinitionsQuerySchema,
   reportDefinitionIdParamsSchema,
   runReportDefinitionNowSchema,
-  updateReportDefinitionSchema,
-} = require('@validations/report-definition/report-definition.schema');
+  updateReportDefinitionSchema} = require('@validations/report-definition/report-definition.schema');
 
 const router = express.Router();
 

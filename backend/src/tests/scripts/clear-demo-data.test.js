@@ -2,8 +2,7 @@ const mockPrisma = {
   $queryRaw: jest.fn(),
   $executeRawUnsafe: jest.fn(),
   $transaction: jest.fn(async (callback) => callback(mockPrisma)),
-  $disconnect: jest.fn(),
-};
+  $disconnect: jest.fn()};
 
 jest.mock('@prisma/client', () => mockPrisma);
 
@@ -26,8 +25,7 @@ describe('clear-demo-data script', () => {
       { table_name: 'user' },
       { table_name: '_prisma_migrations' },
       { table_name: 'tenant' },
-      { table_name: 'invoice' },
-    ]);
+      { table_name: 'invoice' }]);
 
     const { clearDemoData } = require('../../../scripts/clear-demo-data');
     await clearDemoData({ confirm: true });
@@ -44,8 +42,7 @@ describe('clear-demo-data script', () => {
     mockPrisma.$queryRaw.mockResolvedValue([
       { table_name: '_prisma_migrations' },
       { table_name: 'conversation' },
-      { table_name: 'notification' },
-    ]);
+      { table_name: 'notification' }]);
 
     const { clearDemoData } = require('../../../scripts/clear-demo-data');
     await clearDemoData({ dryRun: true });

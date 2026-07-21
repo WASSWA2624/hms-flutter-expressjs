@@ -6,8 +6,7 @@ const buildContext = (req) => ({
   user: req.user || {},
   user_id: req.user?.id || req.user?.user_id || null,
   ip_address: req.ip,
-  user_agent: req.get('user-agent'),
-});
+  user_agent: req.get('user-agent')});
 
 const listKpiSnapshots = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, sort_by, order, ...filters } = req.query;
@@ -48,5 +47,4 @@ module.exports = {
   deleteKpiSnapshot,
   getKpiSnapshotById,
   listKpiSnapshots,
-  updateKpiSnapshot,
-};
+  updateKpiSnapshot};

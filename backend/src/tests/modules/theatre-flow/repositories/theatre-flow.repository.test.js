@@ -6,9 +6,7 @@ jest.mock('@prisma/client', () => ({
   theatre_case: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
-    count: jest.fn(),
-  },
-}));
+    count: jest.fn()}}));
 
 describe('theatre-flow.repository', () => {
   beforeEach(() => {
@@ -21,8 +19,7 @@ describe('theatre-flow.repository', () => {
     expect(result).toEqual({ id: 'TC-001' });
     expect(prisma.theatre_case.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ id: 'TC-001', deleted_at: null }),
-      })
+        where: expect.objectContaining({ id: 'TC-001', deleted_at: null })})
     );
   });
 
@@ -34,8 +31,7 @@ describe('theatre-flow.repository', () => {
       expect.objectContaining({
         where: expect.objectContaining({ status: 'SCHEDULED', deleted_at: null }),
         skip: 0,
-        take: 10,
-      })
+        take: 10})
     );
   });
 

@@ -49,7 +49,7 @@ describe('Appointment Repository', () => {
           deleted_at: null,
           AND: [{ patient: { deleted_at: null } }]
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -134,7 +134,7 @@ describe('Appointment Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

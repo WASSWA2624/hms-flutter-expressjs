@@ -26,11 +26,7 @@ const buildInternalCriticalAlert = () => ({
         id: '550e8400-e29b-41d4-a716-446655440340',
         human_friendly_id: 'PAT-001',
         first_name: 'Jane',
-        last_name: 'Doe',
-      },
-    },
-  },
-});
+        last_name: 'Doe'}}}});
 
 describe('Critical Alert Service', () => {
   beforeEach(() => {
@@ -56,15 +52,13 @@ describe('Critical Alert Service', () => {
       admission_display_id: 'ADM-001',
       patient_display_id: 'PAT-001',
       patient_display_name: 'Jane Doe',
-      severity: 'CRITICAL',
-    });
+      severity: 'CRITICAL'});
   });
 
   it('resolves ICU stay filters before querying the repository', async () => {
     resolveModelIdByIdentifier.mockResolvedValueOnce({
       id: '550e8400-e29b-41d4-a716-446655440320',
-      admission: { tenant_id: 'tenant-001' },
-    });
+      admission: { tenant_id: 'tenant-001' }});
     criticalAlertRepository.findMany.mockResolvedValue([]);
     criticalAlertRepository.count.mockResolvedValue(0);
 
@@ -79,8 +73,7 @@ describe('Critical Alert Service', () => {
     expect(criticalAlertRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         icu_stay_id: '550e8400-e29b-41d4-a716-446655440320',
-        severity: 'CRITICAL',
-      }),
+        severity: 'CRITICAL'}),
       0,
       20,
       { created_at: 'desc' },
@@ -91,19 +84,16 @@ describe('Critical Alert Service', () => {
   it('creates critical alerts with internal ids and tenant-aware audit logs', async () => {
     resolveModelIdByIdentifier.mockResolvedValueOnce({
       id: '550e8400-e29b-41d4-a716-446655440320',
-      admission: { tenant_id: 'tenant-001' },
-    });
+      admission: { tenant_id: 'tenant-001' }});
     criticalAlertRepository.create.mockResolvedValue({
-      id: '550e8400-e29b-41d4-a716-446655440310',
-    });
+      id: '550e8400-e29b-41d4-a716-446655440310'});
     criticalAlertRepository.findById.mockResolvedValue(buildInternalCriticalAlert());
 
     const result = await criticalAlertService.createCriticalAlert(
       {
         icu_stay_id: 'ICU-001',
         severity: 'CRITICAL',
-        message: 'Sustained hypotension',
-      },
+        message: 'Sustained hypotension'},
       'user-001',
       '127.0.0.1'
     );
@@ -111,26 +101,22 @@ describe('Critical Alert Service', () => {
     expect(criticalAlertRepository.create).toHaveBeenCalledWith({
       icu_stay_id: '550e8400-e29b-41d4-a716-446655440320',
       severity: 'CRITICAL',
-      message: 'Sustained hypotension',
-    });
+      message: 'Sustained hypotension'});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-001',
         action: 'CREATE',
-        entity: 'critical_alert',
-      })
+        entity: 'critical_alert'})
     );
     expect(result.id).toBe('ICALERT-001');
   });
 
   it('updates and deletes by resolved public identifier', async () => {
     resolveModelIdByIdentifier.mockResolvedValue({
-      id: '550e8400-e29b-41d4-a716-446655440310',
-    });
+      id: '550e8400-e29b-41d4-a716-446655440310'});
     criticalAlertRepository.findById.mockResolvedValue(buildInternalCriticalAlert());
     criticalAlertRepository.update.mockResolvedValue({
-      id: '550e8400-e29b-41d4-a716-446655440310',
-    });
+      id: '550e8400-e29b-41d4-a716-446655440310'});
     criticalAlertRepository.softDelete.mockResolvedValue({});
 
     await criticalAlertService.updateCriticalAlert(
@@ -155,8 +141,7 @@ describe('Critical Alert Service', () => {
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-001',
-        action: 'DELETE',
-      })
+        action: 'DELETE'})
     );
   });
 

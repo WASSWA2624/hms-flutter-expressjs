@@ -25,28 +25,21 @@ const ALLOWED_PROVIDER_SCHEDULE_SORT_FIELDS = new Set([
   'effective_from',
   'effective_to',
   'start_time',
-  'end_time',
-]);
+  'end_time']);
 
 const PROVIDER_SCHEDULE_INCLUDE = {
   tenant: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   provider: {
     include: {
-      profile: true,
-    },
-  },
+      profile: true}},
   facility: true,
   slots: {
     where: { deleted_at: null },
-    orderBy: [{ override_date: 'asc' }, { start_time: 'asc' }],
-  },
-};
+    orderBy: [{ override_date: 'asc' }, { start_time: 'asc' }]}};
 
 const resolveSortBy = (value, fallback = 'created_at') => {
   const normalized = String(value || '').trim();
@@ -124,8 +117,7 @@ const resolveEntityIdentifier = async ({ value, field, model, where = {}, nullab
   const resolvedId = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where,
-  });
+    where});
 
   if (resolvedId) return resolvedId;
   if (isUuid(normalized)) return normalized;
@@ -168,8 +160,7 @@ const ensureDateOrder = (startAt, endAt, fieldNameStart, fieldNameEnd) => {
   if (startAt.getTime() >= endAt.getTime()) {
     throw new HttpError('errors.validation.invalid', 400, [
       { field: fieldNameStart },
-      { field: fieldNameEnd },
-    ]);
+      { field: fieldNameEnd }]);
   }
 };
 
@@ -197,15 +188,13 @@ const normalizeOverridePayload = (overrides = []) =>
     );
     if (!overrideDate) {
       throw new HttpError('errors.validation.field.required', 400, [
-        { field: `schedule_overrides.${index}.override_date` },
-      ]);
+        { field: `schedule_overrides.${index}.override_date` }]);
     }
     return {
       override_date: overrideDate,
       start_time: startTime,
       end_time: endTime,
-      is_available: entry?.is_available !== false,
-    };
+      is_available: entry?.is_available !== false};
   });
 
 const resolveUserByIdentifier = async (identifier, tenantId = null) => {
@@ -217,15 +206,13 @@ const resolveUserByIdentifier = async (identifier, tenantId = null) => {
 
   const where = {
     deleted_at: null,
-    ...(tenantId ? { tenant_id: tenantId } : {}),
-  };
+    ...(tenantId ? { tenant_id: tenantId } : {})};
 
   const userWhere = isUuid(normalized)
     ? { ...where, id: normalized }
     : {
         ...where,
-        OR: [{ human_friendly_id: normalized.toUpperCase() }, { email: normalized }, { phone: normalized }],
-      };
+        OR: [{ human_friendly_id: normalized.toUpperCase() }, { email: normalized }, { phone: normalized }]};
 
   return prisma.user.findFirst({ where: userWhere });
 };
@@ -244,10 +231,8 @@ const resolveProviderScheduleByIdentifier = async (identifier) => {
   return prisma.provider_schedule.findFirst({
     where: {
       human_friendly_id: normalized.toUpperCase(),
-      deleted_at: null,
-    },
-    include: PROVIDER_SCHEDULE_INCLUDE,
-  });
+      deleted_at: null},
+    include: PROVIDER_SCHEDULE_INCLUDE});
 };
 
 const validateRecurringConflicts = async ({
@@ -260,8 +245,7 @@ const validateRecurringConflicts = async ({
   timezone,
   effectiveFrom,
   effectiveTo,
-  excludeScheduleId = null,
-}) => {
+  excludeScheduleId = null}) => {
   const existing = await prisma.provider_schedule.findMany({
     where: {
       deleted_at: null,
@@ -271,17 +255,14 @@ const validateRecurringConflicts = async ({
       schedule_type: 'RECURRING',
       day_of_week: dayOfWeek,
       timezone,
-      ...(excludeScheduleId ? { id: { not: excludeScheduleId } } : {}),
-    },
+      ...(excludeScheduleId ? { id: { not: excludeScheduleId } } : {})},
     select: {
       id: true,
       start_time: true,
       end_time: true,
       effective_from: true,
       effective_to: true,
-      human_friendly_id: true,
-    },
-  });
+      human_friendly_id: true}});
 
   for (const schedule of existing) {
     const overlapsEffectiveRange = dateRangesOverlap(
@@ -298,8 +279,7 @@ const validateRecurringConflicts = async ({
         { field: 'end_time' },
         { field: 'day_of_week' },
         { field: 'provider_user_id' },
-        { field: 'conflicting_schedule_id', value: schedule.human_friendly_id || schedule.id },
-      ]);
+        { field: 'conflicting_schedule_id', value: schedule.human_friendly_id || schedule.id }]);
     }
   }
 };
@@ -310,8 +290,7 @@ const validateOverrideConflicts = async ({
   providerUserId,
   timezone,
   overrides,
-  excludeScheduleId = null,
-}) => {
+  excludeScheduleId = null}) => {
   if (!Array.isArray(overrides) || overrides.length === 0) return;
 
   const internalByDate = new Map();
@@ -321,8 +300,7 @@ const validateOverrideConflicts = async ({
     for (const row of existing) {
       if (row.is_available && item.is_available && intervalsOverlap(row.start_time, row.end_time, item.start_time, item.end_time)) {
         throw new HttpError('errors.provider_schedule.override_overlap_detected', 409, [
-          { field: 'schedule_overrides' },
-        ]);
+          { field: 'schedule_overrides' }]);
       }
     }
     existing.push(item);
@@ -339,17 +317,14 @@ const validateOverrideConflicts = async ({
         deleted_at: null,
         override_date: {
           gte: dayStart,
-          lte: dayEnd,
-        },
+          lte: dayEnd},
         schedule: {
           deleted_at: null,
           tenant_id: tenantId,
           facility_id: facilityId ?? null,
           provider_user_id: providerUserId,
           timezone,
-          ...(excludeScheduleId ? { id: { not: excludeScheduleId } } : {}),
-        },
-      },
+          ...(excludeScheduleId ? { id: { not: excludeScheduleId } } : {})}},
       select: {
         id: true,
         start_time: true,
@@ -358,11 +333,7 @@ const validateOverrideConflicts = async ({
         schedule: {
           select: {
             id: true,
-            human_friendly_id: true,
-          },
-        },
-      },
-    });
+            human_friendly_id: true}}}});
 
     for (const row of existingRows) {
       if (!row.is_available || !item.is_available) continue;
@@ -371,9 +342,7 @@ const validateOverrideConflicts = async ({
         { field: 'schedule_overrides' },
         {
           field: 'conflicting_schedule_id',
-          value: row.schedule?.human_friendly_id || row.schedule?.id || null,
-        },
-      ]);
+          value: row.schedule?.human_friendly_id || row.schedule?.id || null}]);
     }
   }
 };
@@ -418,8 +387,7 @@ const extractSchedulePayload = (data = {}, fallback = {}) => {
     effective_to: effectiveTo,
     day_of_week: dayOfWeek,
     start_time: startTime,
-    end_time: endTime,
-  };
+    end_time: endTime};
 
   return payload;
 };
@@ -449,8 +417,7 @@ const listProviderSchedules = async (filters, page, limit, sortBy, order) => {
       if (normalized) {
         const resolvedTenantId = await resolveModelIdByIdentifier({
           model: 'tenant',
-          identifier: normalized,
-        });
+          identifier: normalized});
         if (!resolvedTenantId && !isUuid(normalized)) {
           return {
             schedules: [],
@@ -460,9 +427,7 @@ const listProviderSchedules = async (filters, page, limit, sortBy, order) => {
               total: 0,
               totalPages: 0,
               hasNextPage: false,
-              hasPreviousPage: page > 1,
-            },
-          };
+              hasPreviousPage: page > 1}};
         }
         tenantId = resolvedTenantId || normalized;
         whereClause.tenant_id = tenantId;
@@ -475,8 +440,7 @@ const listProviderSchedules = async (filters, page, limit, sortBy, order) => {
         const resolvedFacilityId = await resolveModelIdByIdentifier({
           model: 'facility',
           identifier: normalized,
-          where: tenantId ? { tenant_id: tenantId } : {},
-        });
+          where: tenantId ? { tenant_id: tenantId } : {}});
         if (!resolvedFacilityId && !isUuid(normalized)) {
           return {
             schedules: [],
@@ -486,9 +450,7 @@ const listProviderSchedules = async (filters, page, limit, sortBy, order) => {
               total: 0,
               totalPages: 0,
               hasNextPage: false,
-              hasPreviousPage: page > 1,
-            },
-          };
+              hasPreviousPage: page > 1}};
         }
         whereClause.facility_id = resolvedFacilityId || normalized;
       } else {
@@ -510,17 +472,14 @@ const listProviderSchedules = async (filters, page, limit, sortBy, order) => {
             total: 0,
             totalPages: 0,
             hasNextPage: false,
-            hasPreviousPage: page > 1,
-          },
-        };
+            hasPreviousPage: page > 1}};
       }
       whereClause.provider_user_id = resolvedProvider.id;
     }
 
     const [schedules, total] = await Promise.all([
       providerScheduleRepository.findMany(whereClause, skip, limit, orderBy, PROVIDER_SCHEDULE_INCLUDE),
-      providerScheduleRepository.count(whereClause),
-    ]);
+      providerScheduleRepository.count(whereClause)]);
 
     return {
       schedules: withProviderScheduleProjectionList(schedules),
@@ -530,9 +489,7 @@ const listProviderSchedules = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -574,15 +531,13 @@ const createProviderSchedule = async (data, userId, ipAddress) => {
     const tenantId = await resolveEntityIdentifier({
       value: data.tenant_id,
       field: 'tenant_id',
-      model: 'tenant',
-    });
+      model: 'tenant'});
     const facilityId = await resolveEntityIdentifier({
       value: data.facility_id,
       field: 'facility_id',
       model: 'facility',
       where: tenantId ? { tenant_id: tenantId } : {},
-      nullable: true,
-    });
+      nullable: true});
 
     const provider = await resolveUserByIdentifier(data.provider_user_id, tenantId || null);
     if (!provider) {
@@ -594,8 +549,7 @@ const createProviderSchedule = async (data, userId, ipAddress) => {
         ...data,
         tenant_id: tenantId,
         facility_id: facilityId,
-        provider_user_id: provider.id,
-      },
+        provider_user_id: provider.id},
       {}
     );
     const overrides = normalizeOverridePayload(data.schedule_overrides || []);
@@ -610,8 +564,7 @@ const createProviderSchedule = async (data, userId, ipAddress) => {
         endTime: schedulePayload.end_time,
         timezone: schedulePayload.timezone,
         effectiveFrom: schedulePayload.effective_from,
-        effectiveTo: schedulePayload.effective_to,
-      });
+        effectiveTo: schedulePayload.effective_to});
     }
 
     await validateOverrideConflicts({
@@ -619,8 +572,7 @@ const createProviderSchedule = async (data, userId, ipAddress) => {
       facilityId: schedulePayload.facility_id,
       providerUserId: schedulePayload.provider_user_id,
       timezone: schedulePayload.timezone,
-      overrides,
-    });
+      overrides});
 
     const createdSchedule = await prisma.$transaction(async (tx) => {
       const created = await tx.provider_schedule.create({
@@ -634,9 +586,7 @@ const createProviderSchedule = async (data, userId, ipAddress) => {
           effective_to: schedulePayload.effective_to ?? null,
           day_of_week: schedulePayload.day_of_week,
           start_time: schedulePayload.start_time,
-          end_time: schedulePayload.end_time,
-        },
-      });
+          end_time: schedulePayload.end_time}});
 
       if (overrides.length > 0) {
         await tx.availability_slot.createMany({
@@ -645,15 +595,12 @@ const createProviderSchedule = async (data, userId, ipAddress) => {
             override_date: entry.override_date,
             start_time: entry.start_time,
             end_time: entry.end_time,
-            is_available: entry.is_available !== false,
-          })),
-        });
+            is_available: entry.is_available !== false}))});
       }
 
       return tx.provider_schedule.findFirst({
         where: { id: created.id, deleted_at: null },
-        include: PROVIDER_SCHEDULE_INCLUDE,
-      });
+        include: PROVIDER_SCHEDULE_INCLUDE});
     });
 
     // Create audit log (non-blocking)
@@ -663,8 +610,7 @@ const createProviderSchedule = async (data, userId, ipAddress) => {
       entity: 'provider_schedule',
       entity_id: createdSchedule.id,
       diff: { after: createdSchedule },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return withProviderScheduleProjection(createdSchedule);
   } catch (error) {
@@ -698,8 +644,7 @@ const updateProviderSchedule = async (id, data, userId, ipAddress) => {
         field: 'facility_id',
         model: 'facility',
         where: before.tenant_id ? { tenant_id: before.tenant_id } : {},
-        nullable: true,
-      });
+        nullable: true});
     }
 
     if (payload.provider_user_id !== undefined) {
@@ -727,8 +672,7 @@ const updateProviderSchedule = async (id, data, userId, ipAddress) => {
         timezone: mergedSchedulePayload.timezone,
         effectiveFrom: mergedSchedulePayload.effective_from,
         effectiveTo: mergedSchedulePayload.effective_to,
-        excludeScheduleId: before.id,
-      });
+        excludeScheduleId: before.id});
     }
 
     if (overrides !== null) {
@@ -738,8 +682,7 @@ const updateProviderSchedule = async (id, data, userId, ipAddress) => {
         providerUserId: mergedSchedulePayload.provider_user_id,
         timezone: mergedSchedulePayload.timezone,
         overrides,
-        excludeScheduleId: before.id,
-      });
+        excludeScheduleId: before.id});
     }
 
     const updatedSchedule = await prisma.$transaction(async (tx) => {
@@ -775,20 +718,15 @@ const updateProviderSchedule = async (id, data, userId, ipAddress) => {
           end_time:
             mergedSchedulePayload.end_time !== undefined
               ? mergedSchedulePayload.end_time
-              : before.end_time,
-        },
-      });
+              : before.end_time}});
 
       if (overrides !== null) {
         await tx.availability_slot.updateMany({
           where: {
             schedule_id: before.id,
-            deleted_at: null,
-          },
+            deleted_at: null},
           data: {
-            deleted_at: new Date(),
-          },
-        });
+            deleted_at: new Date()}});
 
         if (overrides.length > 0) {
           await tx.availability_slot.createMany({
@@ -797,16 +735,13 @@ const updateProviderSchedule = async (id, data, userId, ipAddress) => {
               override_date: entry.override_date,
               start_time: entry.start_time,
               end_time: entry.end_time,
-              is_available: entry.is_available !== false,
-            })),
-          });
+              is_available: entry.is_available !== false}))});
         }
       }
 
       return tx.provider_schedule.findFirst({
         where: { id: updated.id, deleted_at: null },
-        include: PROVIDER_SCHEDULE_INCLUDE,
-      });
+        include: PROVIDER_SCHEDULE_INCLUDE});
     });
 
     // Create audit log (non-blocking)
@@ -816,8 +751,7 @@ const updateProviderSchedule = async (id, data, userId, ipAddress) => {
       entity: 'provider_schedule',
       entity_id: updatedSchedule.id,
       diff: { before, after: updatedSchedule },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return withProviderScheduleProjection(updatedSchedule);
   } catch (error) {
@@ -847,18 +781,13 @@ const deleteProviderSchedule = async (id, userId, ipAddress) => {
       await tx.availability_slot.updateMany({
         where: {
           schedule_id: before.id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         data: {
-          deleted_at: new Date(),
-        },
-      });
+          deleted_at: new Date()}});
       await tx.provider_schedule.update({
         where: { id: before.id },
         data: {
-          deleted_at: new Date(),
-        },
-      });
+          deleted_at: new Date()}});
     });
 
     // Create audit log (non-blocking)
@@ -868,8 +797,7 @@ const deleteProviderSchedule = async (id, userId, ipAddress) => {
       entity: 'provider_schedule',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -881,5 +809,4 @@ module.exports = {
   getProviderScheduleById,
   createProviderSchedule,
   updateProviderSchedule,
-  deleteProviderSchedule,
-};
+  deleteProviderSchedule};

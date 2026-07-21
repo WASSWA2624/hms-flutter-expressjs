@@ -34,8 +34,7 @@ jest.mock('@lib/billing/identifiers', () => ({
     if (value === null && nullable) return null;
     return value;
   },
-  resolveEntityId: async ({ identifier }) => identifier,
-}));
+  resolveEntityId: async ({ identifier }) => identifier}));
 
 describe('Billing Adjustment Service', () => {
   beforeEach(() => {
@@ -58,8 +57,7 @@ describe('Billing Adjustment Service', () => {
       expect(result.billingAdjustments).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ id: '1', invoice_id: 'invoice-1' }),
-          expect.objectContaining({ id: '2', invoice_id: 'invoice-2' }),
-        ])
+          expect.objectContaining({ id: '2', invoice_id: 'invoice-2' })])
       );
       expect(result).toHaveProperty('pagination');
       expect(result.pagination).toMatchObject({
@@ -114,9 +112,7 @@ describe('Billing Adjustment Service', () => {
       expect(billingAdjustmentRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           OR: expect.arrayContaining([
-            expect.objectContaining({ reason: { contains: 'discount' } }),
-          ]),
-        }),
+            expect.objectContaining({ reason: { contains: 'discount' } })])}),
         expect.any(Number),
         expect.any(Number),
         expect.any(Object),

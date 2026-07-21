@@ -15,20 +15,15 @@ const prisma = require('@prisma/client');
 jest.mock('@repositories/provider-schedule/provider-schedule.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(),
-}));
+  resolveModelIdByIdentifier: jest.fn()}));
 jest.mock('@prisma/client', () => ({
   user: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   provider_schedule: {
-    findMany: jest.fn(),
-  },
+    findMany: jest.fn()},
   availability_slot: {
-    findMany: jest.fn(),
-  },
-  $transaction: jest.fn(),
-}));
+    findMany: jest.fn()},
+  $transaction: jest.fn()}));
 
 describe('Provider Schedule Service', () => {
   const tenantId = '550e8400-e29b-41d4-a716-446655440001';
@@ -40,13 +35,10 @@ describe('Provider Schedule Service', () => {
     provider_schedule: {
       create: jest.fn(),
       update: jest.fn(),
-      findFirst: jest.fn(),
-    },
+      findFirst: jest.fn()},
     availability_slot: {
       createMany: jest.fn(),
-      updateMany: jest.fn(),
-    },
-  };
+      updateMany: jest.fn()}};
 
   const mockProvider = {
     id: providerUserId,
@@ -56,9 +48,7 @@ describe('Provider Schedule Service', () => {
     profile: {
       first_name: 'Grace',
       middle_name: 'A',
-      last_name: 'Nakalema',
-    },
-  };
+      last_name: 'Nakalema'}};
 
   const buildSchedule = (overrides = {}) => ({
     id: scheduleId,
@@ -75,17 +65,14 @@ describe('Provider Schedule Service', () => {
     tenant: {
       id: tenantId,
       human_friendly_id: 'TEN0000001',
-      name: 'Tenant A',
-    },
+      name: 'Tenant A'},
     facility: {
       id: facilityId,
       human_friendly_id: 'FAC0000001',
-      name: 'Main Facility',
-    },
+      name: 'Main Facility'},
     provider: mockProvider,
     slots: [],
-    ...overrides,
-  });
+    ...overrides});
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -115,17 +102,14 @@ describe('Provider Schedule Service', () => {
           tenant_id: 'TEN0000001',
           facility_id: 'FAC0000001',
           provider_user_id: 'USR0000001',
-          provider_display_name: 'Grace A Nakalema',
-        }),
-      ]);
+          provider_display_name: 'Grace A Nakalema'})]);
       expect(result.pagination).toMatchObject({
         page: 1,
         limit: 20,
         total: 1,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
     });
 
     it('should apply filters correctly', async () => {
@@ -136,8 +120,7 @@ describe('Provider Schedule Service', () => {
         {
           tenant_id: tenantId,
           provider_user_id: providerUserId,
-          day_of_week: 1,
-        },
+          day_of_week: 1},
         1,
         20,
         null,
@@ -148,8 +131,7 @@ describe('Provider Schedule Service', () => {
         expect.objectContaining({
           tenant_id: tenantId,
           provider_user_id: providerUserId,
-          day_of_week: 1,
-        }),
+          day_of_week: 1}),
         0,
         20,
         { created_at: 'asc' },
@@ -176,8 +158,7 @@ describe('Provider Schedule Service', () => {
         expect.objectContaining({
           id: scheduleId,
           tenant_id: 'TEN0000001',
-          provider_display_name: 'Grace A Nakalema',
-        })
+          provider_display_name: 'Grace A Nakalema'})
       );
       expect(providerScheduleRepository.findById).toHaveBeenCalledWith(
         scheduleId,
@@ -190,8 +171,7 @@ describe('Provider Schedule Service', () => {
 
       await expect(providerScheduleService.getProviderScheduleById(scheduleId)).rejects.toMatchObject({
         messageKey: 'errors.provider_schedule.not_found',
-        statusCode: 404,
-      });
+        statusCode: 404});
     });
   });
 
@@ -203,8 +183,7 @@ describe('Provider Schedule Service', () => {
       day_of_week: 1,
       start_time: '2026-01-20T08:00:00.000Z',
       end_time: '2026-01-20T17:00:00.000Z',
-      effective_from: '2026-01-01T00:00:00.000Z',
-    };
+      effective_from: '2026-01-01T00:00:00.000Z'};
 
     it('should create a schedule', async () => {
       const result = await providerScheduleService.createProviderSchedule(scheduleData, 'user-id', '127.0.0.1');
@@ -214,8 +193,7 @@ describe('Provider Schedule Service', () => {
           id: scheduleId,
           tenant_id: 'TEN0000001',
           facility_id: 'FAC0000001',
-          provider_user_id: 'USR0000001',
-        })
+          provider_user_id: 'USR0000001'})
       );
       expect(tx.provider_schedule.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -224,16 +202,13 @@ describe('Provider Schedule Service', () => {
           provider_user_id: providerUserId,
           day_of_week: 1,
           start_time: new Date('2026-01-20T08:00:00.000Z'),
-          end_time: new Date('2026-01-20T17:00:00.000Z'),
-        }),
-      });
+          end_time: new Date('2026-01-20T17:00:00.000Z')})});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 'user-id',
           action: 'CREATE',
           entity: 'provider_schedule',
-          entity_id: scheduleId,
-        })
+          entity_id: scheduleId})
       );
     });
   });
@@ -256,8 +231,7 @@ describe('Provider Schedule Service', () => {
         expect.objectContaining({
           id: scheduleId,
           day_of_week: 3,
-          provider_user_id: 'USR0000001',
-        })
+          provider_user_id: 'USR0000001'})
       );
       expect(providerScheduleRepository.findById).toHaveBeenCalledWith(
         scheduleId,
@@ -268,9 +242,7 @@ describe('Provider Schedule Service', () => {
         data: expect.objectContaining({
           day_of_week: 3,
           start_time: existingSchedule.start_time,
-          end_time: existingSchedule.end_time,
-        }),
-      });
+          end_time: existingSchedule.end_time})});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 'user-id',
@@ -279,9 +251,7 @@ describe('Provider Schedule Service', () => {
           entity_id: scheduleId,
           diff: expect.objectContaining({
             before: existingSchedule,
-            after: updatedSchedule,
-          }),
-        })
+            after: updatedSchedule})})
       );
     });
 
@@ -292,8 +262,7 @@ describe('Provider Schedule Service', () => {
         providerScheduleService.updateProviderSchedule(scheduleId, { day_of_week: 3 }, 'user-id', '127.0.0.1')
       ).rejects.toMatchObject({
         messageKey: 'errors.provider_schedule.not_found',
-        statusCode: 404,
-      });
+        statusCode: 404});
     });
   });
 
@@ -311,16 +280,14 @@ describe('Provider Schedule Service', () => {
       expect(tx.availability_slot.updateMany).toHaveBeenCalled();
       expect(tx.provider_schedule.update).toHaveBeenCalledWith({
         where: { id: scheduleId },
-        data: { deleted_at: expect.any(Date) },
-      });
+        data: { deleted_at: expect.any(Date) }});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 'user-id',
           action: 'DELETE',
           entity: 'provider_schedule',
           entity_id: scheduleId,
-          diff: expect.objectContaining({ before: existingSchedule }),
-        })
+          diff: expect.objectContaining({ before: existingSchedule })})
       );
     });
 
@@ -331,8 +298,7 @@ describe('Provider Schedule Service', () => {
         providerScheduleService.deleteProviderSchedule(scheduleId, 'user-id', '127.0.0.1')
       ).rejects.toMatchObject({
         messageKey: 'errors.provider_schedule.not_found',
-        statusCode: 404,
-      });
+        statusCode: 404});
     });
   });
 });

@@ -9,8 +9,7 @@ const {
   createKpiSnapshotSchema,
   updateKpiSnapshotSchema,
   kpiSnapshotIdParamsSchema,
-  listKpiSnapshotsQuerySchema,
-} = require('@modules/kpi-snapshot/schemas/kpi-snapshot.schema');
+  listKpiSnapshotsQuerySchema} = require('@modules/kpi-snapshot/schemas/kpi-snapshot.schema');
 
 describe('KPI Snapshot Schemas', () => {
   describe('createKpiSnapshotSchema', () => {
@@ -20,8 +19,7 @@ describe('KPI Snapshot Schemas', () => {
       metric_key: 'daily_revenue',
       metric_group: 'finance',
       threshold_state: 'NORMAL',
-      value: '12500.50',
-    };
+      value: '12500.50'};
 
     it('should validate correct KPI snapshot data', () => {
       expect(createKpiSnapshotSchema.safeParse(validData).success).toBe(true);
@@ -43,8 +41,7 @@ describe('KPI Snapshot Schemas', () => {
       expect(
         createKpiSnapshotSchema.safeParse({
           ...validData,
-          recorded_at: '2026-01-19T12:00:00Z',
-        }).success
+          recorded_at: '2026-01-19T12:00:00Z'}).success
       ).toBe(true);
     });
 
@@ -59,8 +56,7 @@ describe('KPI Snapshot Schemas', () => {
         name: '  Revenue  ',
         metric_key: '  daily_revenue  ',
         metric_group: '  finance  ',
-        value: '  123.45  ',
-      });
+        value: '  123.45  '});
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -81,8 +77,7 @@ describe('KPI Snapshot Schemas', () => {
           metric_group: 'finance',
           threshold_state: 'WARNING',
           value: '15000.75',
-          version: 2,
-        }).success
+          version: 2}).success
       ).toBe(true);
     });
 
@@ -115,7 +110,6 @@ describe('KPI Snapshot Schemas', () => {
         listKpiSnapshotsQuerySchema.safeParse({
           tenant_id: '550e8400-e29b-41d4-a716-446655440000',
           facility_id: '550e8400-e29b-41d4-a716-446655440001',
-          branch_id: '550e8400-e29b-41d4-a716-446655440002',
           metric_key: 'daily_revenue',
           metric_group: 'finance',
           threshold_state: 'CRITICAL',
@@ -126,8 +120,7 @@ describe('KPI Snapshot Schemas', () => {
           page: '1',
           limit: '20',
           sort_by: 'name',
-          order: 'asc',
-        }).success
+          order: 'asc'}).success
       ).toBe(true);
     });
   });

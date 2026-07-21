@@ -4,18 +4,15 @@ const { HttpError } = require('@lib/errors');
 const DEFAULT_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
   facility: { select: { id: true, human_friendly_id: true } },
-  branch: { select: { id: true, human_friendly_id: true } },
   shift: { select: { id: true, human_friendly_id: true } },
   opened_by: { select: { id: true, human_friendly_id: true } },
-  current_holder: { select: { id: true, human_friendly_id: true } },
-};
+  current_holder: { select: { id: true, human_friendly_id: true } }};
 
 const findById = async (id, include = DEFAULT_INCLUDE) => {
   try {
     return await prisma.office_context.findFirst({
       where: { id, deleted_at: null },
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -28,8 +25,7 @@ const findMany = async (where = {}, skip = 0, take = 20, orderBy = { opened_at: 
       skip,
       take,
       orderBy,
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -38,8 +34,7 @@ const findMany = async (where = {}, skip = 0, take = 20, orderBy = { opened_at: 
 const count = async (where = {}) => {
   try {
     return await prisma.office_context.count({
-      where: { deleted_at: null, ...where },
-    });
+      where: { deleted_at: null, ...where }});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -51,11 +46,9 @@ const findCurrent = async (where = {}, include = DEFAULT_INCLUDE) => {
       where: {
         deleted_at: null,
         status: { in: ['OPEN', 'HANDOVER_PENDING'] },
-        ...where,
-      },
+        ...where},
       include,
-      orderBy: [{ office_date: 'desc' }, { opened_at: 'desc' }],
-    });
+      orderBy: [{ office_date: 'desc' }, { opened_at: 'desc' }]});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -76,8 +69,7 @@ const update = async (id, data) => {
     return await prisma.office_context.update({
       where: { id },
       data,
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') throw new HttpError('errors.office_context.not_found', 404);
     if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409);
@@ -95,5 +87,4 @@ module.exports = {
   findCurrent,
   findMany,
   softDelete,
-  update,
-};
+  update};

@@ -5,8 +5,7 @@ const reportsWorkspaceService = require('@services/reports-workspace/reports-wor
 const { sendSuccess } = require('@lib/response');
 const {
   getLookups,
-  getWorkspace,
-} = require('@controllers/reports-workspace/reports-workspace.controller');
+  getWorkspace} = require('@controllers/reports-workspace/reports-workspace.controller');
 
 describe('Reports Workspace Controller', () => {
   let mockReq;
@@ -19,9 +18,7 @@ describe('Reports Workspace Controller', () => {
       user: {
         id: 'user-123',
         tenant_id: 'tenant-123',
-        facility_id: 'facility-123',
-      },
-    };
+        facility_id: 'facility-123'}};
     mockRes = {};
   });
 
@@ -32,8 +29,7 @@ describe('Reports Workspace Controller', () => {
       page: '2',
       limit: '10',
       sort_by: 'queued_at',
-      order: 'asc',
-    };
+      order: 'asc'};
     reportsWorkspaceService.getWorkspace.mockResolvedValue(payload);
 
     await getWorkspace(mockReq, mockRes);

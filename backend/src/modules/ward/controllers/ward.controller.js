@@ -175,5 +175,4 @@ module.exports = {
   updateWard,
   deleteWard,
   restoreWard,
-  getWardBeds,
-};
+  getWardBeds};

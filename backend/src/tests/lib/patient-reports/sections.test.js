@@ -2,8 +2,7 @@ const {
   filterAuthorizedSections,
   isSectionAuthorized,
   listAuthorizedSectionDefs,
-  REPORT_TYPES,
-} = require('@lib/patient-reports/sections');
+  REPORT_TYPES} = require('@lib/patient-reports/sections');
 const { PERMISSIONS } = require('@config/permissions');
 
 describe('patient-reports sections catalog', () => {

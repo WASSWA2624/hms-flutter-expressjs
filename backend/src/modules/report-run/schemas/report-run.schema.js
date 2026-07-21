@@ -2,13 +2,11 @@ const { z } = require('zod');
 const {
   listQuerySchema,
   nonNegativeIntSchema,
-  uuidOrFriendlyIdentifierSchema,
-} = require('@lib/validation/zod');
+  uuidOrFriendlyIdentifierSchema} = require('@lib/validation/zod');
 const {
   REPORT_FORMATS,
   REPORT_RUN_STATUSES,
-  REPORT_TRIGGER_TYPES,
-} = require('@lib/reports/constants');
+  REPORT_TRIGGER_TYPES} = require('@lib/reports/constants');
 
 const createReportRunSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -16,8 +14,7 @@ const createReportRunSchema = z.object({
   report_definition_id: uuidOrFriendlyIdentifierSchema,
   format: z.enum(REPORT_FORMATS).optional(),
   parameters_json: z.object({}).passthrough().optional().nullable(),
-  retention_days: nonNegativeIntSchema.optional(),
-});
+  retention_days: nonNegativeIntSchema.optional()});
 
 const updateReportRunSchema = z.object({
   status: z.enum(REPORT_RUN_STATUSES).optional(),
@@ -25,17 +22,14 @@ const updateReportRunSchema = z.object({
   completed_at: z.string().datetime().optional().nullable(),
   expires_at: z.string().datetime().optional().nullable(),
   output_file_name: z.string().trim().max(255).optional().nullable(),
-  version: z.coerce.number().int().positive().optional(),
-});
+  version: z.coerce.number().int().positive().optional()});
 
 const reportRunIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 const reportRunMutationBodySchema = z.object({
   format: z.enum(REPORT_FORMATS).optional(),
-  retention_days: nonNegativeIntSchema.optional(),
-});
+  retention_days: nonNegativeIntSchema.optional()});
 
 const listReportRunsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -49,13 +43,11 @@ const listReportRunsQuerySchema = listQuerySchema.extend({
   search: z.string().trim().optional(),
   since: z.string().datetime().optional(),
   from: z.string().datetime().optional(),
-  to: z.string().datetime().optional(),
-});
+  to: z.string().datetime().optional()});
 
 module.exports = {
   createReportRunSchema,
   listReportRunsQuerySchema,
   reportRunIdParamsSchema,
   reportRunMutationBodySchema,
-  updateReportRunSchema,
-};
+  updateReportRunSchema};

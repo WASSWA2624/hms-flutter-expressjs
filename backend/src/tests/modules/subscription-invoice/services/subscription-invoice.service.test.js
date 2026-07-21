@@ -9,8 +9,7 @@ jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 
 const buildRecord = (overrides = {}) => ({
   id: 'subscription-invoice-uuid',
@@ -22,8 +21,7 @@ const buildRecord = (overrides = {}) => ({
     tenant_id: 'tenant-uuid',
     tenant: { id: 'tenant-uuid', human_friendly_id: 'TEN0001', name: 'Acme' },
     plan_id: 'plan-uuid',
-    plan: { id: 'plan-uuid', human_friendly_id: 'PLAN0001', name: 'Pro', code: 'PRO' },
-  },
+    plan: { id: 'plan-uuid', human_friendly_id: 'PLAN0001', name: 'Pro', code: 'PRO' }},
   invoice_id: 'invoice-uuid',
   invoice: {
     id: 'invoice-uuid',
@@ -32,10 +30,8 @@ const buildRecord = (overrides = {}) => ({
     billing_status: 'PENDING',
     total_amount: 120,
     currency: 'USD',
-    issued_at: '2026-03-01T00:00:00.000Z',
-  },
-  ...overrides,
-});
+    issued_at: '2026-03-01T00:00:00.000Z'},
+  ...overrides});
 
 describe('Subscription Invoice Service', () => {
   beforeEach(() => {
@@ -55,8 +51,7 @@ describe('Subscription Invoice Service', () => {
         subscription_label: 'SUB0001',
         invoice_id: 'INV0001',
         invoice_display_id: 'INV0001',
-        tenant_label: 'Acme',
-      })
+        tenant_label: 'Acme'})
     );
   });
 
@@ -65,9 +60,7 @@ describe('Subscription Invoice Service', () => {
       buildRecord(),
       buildRecord({
         id: 'subscription-invoice-uuid-2',
-        human_friendly_id: 'SUBINV0002',
-      }),
-    ]);
+        human_friendly_id: 'SUBINV0002'})]);
     subscriptionInvoiceRepository.count.mockResolvedValue(2);
 
     const result = await subscriptionInvoiceService.listSubscriptionInvoices(
@@ -85,15 +78,13 @@ describe('Subscription Invoice Service', () => {
     );
     expect(result.subscriptionInvoices).toEqual([
       expect.objectContaining({ id: 'SUBINV0001' }),
-      expect.objectContaining({ id: 'SUBINV0002' }),
-    ]);
+      expect.objectContaining({ id: 'SUBINV0002' })]);
   });
 
   it('creates a subscription invoice, reloads it, and audits the change', async () => {
     const created = buildRecord({
       id: 'subscription-invoice-uuid-2',
-      human_friendly_id: 'SUBINV0002',
-    });
+      human_friendly_id: 'SUBINV0002'});
     subscriptionInvoiceRepository.create.mockResolvedValue({ id: created.id });
     subscriptionInvoiceRepository.findById.mockResolvedValue(created);
 
@@ -101,8 +92,7 @@ describe('Subscription Invoice Service', () => {
       {
         subscription_id: 'SUB0001',
         invoice_id: 'INV0002',
-        human_friendly_id: 'SUBINV0002',
-      },
+        human_friendly_id: 'SUBINV0002'},
       { id: 'user-1', role: 'SUPER_ADMIN' },
       '127.0.0.1'
     );
@@ -111,8 +101,7 @@ describe('Subscription Invoice Service', () => {
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'CREATE',
-        entity: 'subscription_invoice',
-      })
+        entity: 'subscription_invoice'})
     );
   });
 
@@ -130,8 +119,7 @@ describe('Subscription Invoice Service', () => {
       expect.objectContaining({
         subscription_invoice_id: 'SUBINV0001',
         collected: true,
-        payment_method: 'cash',
-      })
+        payment_method: 'cash'})
     );
   });
 

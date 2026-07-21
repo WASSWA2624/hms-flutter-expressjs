@@ -18,8 +18,7 @@ const {
   filterAuthorizedSections,
   isSectionAuthorized,
   listAuthorizedSectionDefs,
-  SECTION_BY_ID,
-} = require('@lib/patient-reports/sections');
+  SECTION_BY_ID} = require('@lib/patient-reports/sections');
 
 const JOB_TTL_MS = 24 * 60 * 60 * 1000;
 const LARGE_REPORT_ROW_THRESHOLD = 200;
@@ -31,15 +30,13 @@ const buildContext = (req = {}) => ({
   user: req.user || null,
   ip_address: req.ip || req.ip_address || null,
   user_agent: req.get?.('user-agent') || req.user_agent || null,
-  permissions: getUserPermissions(req.user || req),
-});
+  permissions: getUserPermissions(req.user || req)});
 
 const resolvePatientId = async (identifier, tenantId) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'patient',
     identifier,
-    where: tenantId ? { tenant_id: tenantId } : undefined,
-  });
+    where: tenantId ? { tenant_id: tenantId } : undefined});
   return resolved || null;
 };
 
@@ -50,17 +47,14 @@ const resolveEncounterId = async (identifier, tenantId, patientId) => {
     identifier,
     where: {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(patientId ? { patient_id: patientId } : {}),
-    },
-  });
+      ...(patientId ? { patient_id: patientId } : {})}});
   return resolved || null;
 };
 
 const resolveJobId = async (identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'patient_report_job',
-    identifier,
-  });
+    identifier});
   return resolved || identifier;
 };
 
@@ -87,17 +81,14 @@ const assertPatientAccess = async (patientId, context = {}) => {
       id: patientId,
       deleted_at: null,
       ...(context.tenant_id ? { tenant_id: context.tenant_id } : {}),
-      ...(context.facility_id ? { facility_id: context.facility_id } : {}),
-    },
+      ...(context.facility_id ? { facility_id: context.facility_id } : {})},
     select: {
       id: true,
       human_friendly_id: true,
       tenant_id: true,
       facility_id: true,
       first_name: true,
-      last_name: true,
-    },
-  });
+      last_name: true}});
   if (!patient) {
     throw new HttpError('errors.patient.not_found', 404);
   }
@@ -147,27 +138,23 @@ const withPeriod = (where, field, period) => {
   if (!period?.start || !period?.end) return where;
   return {
     ...where,
-    [field]: { gte: period.start, lte: period.end },
-  };
+    [field]: { gte: period.start, lte: period.end }};
 };
 
 const encounterScopedWhere = (patientId, encounterId) => ({
   patient_id: patientId,
   deleted_at: null,
-  ...(encounterId ? { id: encounterId } : {}),
-});
+  ...(encounterId ? { id: encounterId } : {})});
 
 const countSectionData = async ({
   sectionId,
   patientId,
   encounterId,
-  period,
-}) => {
+  period}) => {
   const patientBase = {
     deleted_at: null,
     patient_id: patientId,
-    ...(encounterId ? { encounter_id: encounterId } : {}),
-  };
+    ...(encounterId ? { encounter_id: encounterId } : {})};
 
   switch (sectionId) {
     case 'patient_information':
@@ -178,19 +165,16 @@ const countSectionData = async ({
           encounterScopedWhere(patientId, encounterId),
           'started_at',
           period
-        ),
-      });
+        )});
     case 'vitals':
       return prisma.vital_sign.count({
         where: withPeriod(
           {
             deleted_at: null,
-            encounter: encounterScopedWhere(patientId, encounterId),
-          },
+            encounter: encounterScopedWhere(patientId, encounterId)},
           'recorded_at',
           period
-        ),
-      });
+        )});
     case 'clinical_notes':
     case 'doctors_notes':
     case 'findings':
@@ -198,23 +182,19 @@ const countSectionData = async ({
         where: withPeriod(
           {
             deleted_at: null,
-            encounter: encounterScopedWhere(patientId, encounterId),
-          },
+            encounter: encounterScopedWhere(patientId, encounterId)},
           'created_at',
           period
-        ),
-      });
+        )});
     case 'diagnoses':
       return prisma.diagnosis.count({
         where: withPeriod(
           {
             deleted_at: null,
-            encounter: encounterScopedWhere(patientId, encounterId),
-          },
+            encounter: encounterScopedWhere(patientId, encounterId)},
           'created_at',
           period
-        ),
-      });
+        )});
     case 'laboratory_results':
       return prisma.lab_result.count({
         where: withPeriod(
@@ -222,88 +202,70 @@ const countSectionData = async ({
             deleted_at: null,
             lab_order_item: {
               deleted_at: null,
-              lab_order: patientBase,
-            },
-          },
+              lab_order: patientBase}},
           'created_at',
           period
-        ),
-      });
+        )});
     case 'radiology_reports':
       return prisma.radiology_result.count({
         where: withPeriod(
           {
             deleted_at: null,
-            radiology_order: patientBase,
-          },
+            radiology_order: patientBase},
           'created_at',
           period
-        ),
-      });
+        )});
     case 'procedures':
       return prisma.procedure.count({
         where: withPeriod(
           {
             deleted_at: null,
-            encounter: encounterScopedWhere(patientId, encounterId),
-          },
+            encounter: encounterScopedWhere(patientId, encounterId)},
           'created_at',
           period
-        ),
-      });
+        )});
     case 'prescriptions':
     case 'medications':
       return prisma.pharmacy_order.count({
-        where: withPeriod(patientBase, 'ordered_at', period),
-      });
+        where: withPeriod(patientBase, 'ordered_at', period)});
     case 'billing_information':
       return prisma.invoice.count({
         where: withPeriod(
           { deleted_at: null, patient_id: patientId },
           'issued_at',
           period
-        ),
-      });
+        )});
     case 'appointments':
       return prisma.appointment.count({
         where: withPeriod(
           { deleted_at: null, patient_id: patientId },
           'scheduled_start',
           period
-        ),
-      });
+        )});
     case 'admissions':
       return prisma.admission.count({
-        where: withPeriod(patientBase, 'admitted_at', period),
-      });
+        where: withPeriod(patientBase, 'admitted_at', period)});
     case 'allergies':
       return prisma.patient_allergy.count({
-        where: { deleted_at: null, patient_id: patientId },
-      });
+        where: { deleted_at: null, patient_id: patientId }});
     case 'medical_history':
       return prisma.patient_medical_history.count({
-        where: { deleted_at: null, patient_id: patientId },
-      });
+        where: { deleted_at: null, patient_id: patientId }});
     case 'identifiers':
       return prisma.patient_identifier.count({
-        where: { deleted_at: null, patient_id: patientId },
-      });
+        where: { deleted_at: null, patient_id: patientId }});
     case 'contacts':
       return prisma.patient_contact.count({
-        where: { deleted_at: null, patient_id: patientId },
-      });
+        where: { deleted_at: null, patient_id: patientId }});
     case 'guardians':
       return prisma.patient_guardian.count({
-        where: { deleted_at: null, patient_id: patientId },
-      });
+        where: { deleted_at: null, patient_id: patientId }});
     case 'documents':
       return prisma.patient_document.count({
-        where: { deleted_at: null, patient_id: patientId },
-      });
+        where: { deleted_at: null, patient_id: patientId }});
     case 'consents':
       return prisma.consent.count({
-        where: { deleted_at: null, patient_id: patientId },
-      });
+        where: { deleted_at: null, patient_id: patientId }});
     default:
       return 0;
   }
@@ -314,8 +276,7 @@ const recordPhiReportAccess = async ({
   context,
   reportType,
   action,
-  sections = [],
-}) => {
+  sections = []}) => {
   const userId = context.user_id;
   if (!userId || !patient?.id) return;
 
@@ -328,9 +289,7 @@ const recordPhiReportAccess = async ({
         user_id: userId,
         patient_id: patient.id,
         access_scope: 'PATIENT',
-        reason,
-      },
-    });
+        reason}});
 
     await createAuditLog({
       tenant_id: patient.tenant_id,
@@ -345,19 +304,15 @@ const recordPhiReportAccess = async ({
           report_type: reportType,
           action,
           sections,
-          accessed_at: created.accessed_at,
-        },
-      },
+          accessed_at: created.accessed_at}},
       ip_address: context.ip_address,
-      user_agent: context.user_agent,
-    });
+      user_agent: context.user_agent});
   } catch (error) {
     logger.warn('Patient report PHI access log skipped', {
       patient_id: patient.id,
       report_type: reportType,
       action,
-      error: error?.message || 'Unknown error',
-    });
+      error: error?.message || 'Unknown error'});
   }
 };
 
@@ -402,8 +357,7 @@ const serializeJob = (record) => {
     expires_at: record?.expires_at || null,
     created_at: record?.created_at || null,
     updated_at: record?.updated_at || null,
-    version: Number(record?.version || 1),
-  };
+    version: Number(record?.version || 1)};
 };
 
 const buildStoragePath = (tenantId, fileName, createdAt = new Date()) => {
@@ -417,8 +371,7 @@ const buildReportRows = async ({
   encounterId,
   sections,
   period,
-  permissions,
-}) => {
+  permissions}) => {
   const rows = [];
   const authorized = filterAuthorizedSections(sections, permissions);
 
@@ -426,14 +379,12 @@ const buildReportRows = async ({
     section: 'patient_information',
     field: 'patient_id',
     value: resolvePublicIdentifier(patient.human_friendly_id, patient.id),
-    occurred_at: null,
-  });
+    occurred_at: null});
   rows.push({
     section: 'patient_information',
     field: 'patient_name',
     value: [patient.first_name, patient.last_name].filter(Boolean).join(' '),
-    occurred_at: null,
-  });
+    occurred_at: null});
 
   for (const sectionId of authorized) {
     if (sectionId === 'patient_information') continue;
@@ -443,15 +394,13 @@ const buildReportRows = async ({
       sectionId,
       patientId: patient.id,
       encounterId,
-      period,
-    });
+      period});
 
     rows.push({
       section: sectionId,
       field: 'record_count',
       value: String(count),
-      occurred_at: null,
-    });
+      occurred_at: null});
 
     if (count <= 0) continue;
 
@@ -462,8 +411,7 @@ const buildReportRows = async ({
           {
             deleted_at: null,
             patient_id: patient.id,
-            ...(encounterId ? { id: encounterId } : {}),
-          },
+            ...(encounterId ? { id: encounterId } : {})},
           'started_at',
           period
         ),
@@ -472,11 +420,9 @@ const buildReportRows = async ({
           encounter_type: true,
           status: true,
           started_at: true,
-          ended_at: true,
-        },
+          ended_at: true},
         orderBy: { started_at: 'asc' },
-        take: 100,
-      });
+        take: 100});
       encounters.forEach((entry) => {
         rows.push({
           section: sectionId,
@@ -485,12 +431,10 @@ const buildReportRows = async ({
             resolvePublicIdentifier(entry.human_friendly_id, null),
             entry.encounter_type,
             entry.status,
-            entry.started_at?.toISOString?.() || '',
-          ]
+            entry.started_at?.toISOString?.() || '']
             .filter(Boolean)
             .join(' | '),
-          occurred_at: entry.started_at,
-        });
+          occurred_at: entry.started_at});
       });
     }
 
@@ -499,8 +443,7 @@ const buildReportRows = async ({
         where: withPeriod(
           {
             deleted_at: null,
-            encounter: encounterScopedWhere(patient.id, encounterId),
-          },
+            encounter: encounterScopedWhere(patient.id, encounterId)},
           'recorded_at',
           period
         ),
@@ -509,11 +452,9 @@ const buildReportRows = async ({
           recorded_at: true,
           vital_type: true,
           value: true,
-          unit: true,
-        },
+          unit: true},
         orderBy: { recorded_at: 'asc' },
-        take: 100,
-      });
+        take: 100});
       vitals.forEach((entry) => {
         rows.push({
           section: sectionId,
@@ -522,12 +463,10 @@ const buildReportRows = async ({
             resolvePublicIdentifier(entry.human_friendly_id, null),
             entry.vital_type,
             entry.value,
-            entry.unit,
-          ]
+            entry.unit]
             .filter(Boolean)
             .join(' | '),
-          occurred_at: entry.recorded_at,
-        });
+          occurred_at: entry.recorded_at});
       });
     }
 
@@ -541,33 +480,26 @@ const buildReportRows = async ({
               lab_order: {
                 deleted_at: null,
                 patient_id: patient.id,
-                ...(encounterId ? { encounter_id: encounterId } : {}),
-              },
-            },
-          },
+                ...(encounterId ? { encounter_id: encounterId } : {})}}},
           'created_at',
           period
         ),
         select: {
           human_friendly_id: true,
           status: true,
-          created_at: true,
-        },
+          created_at: true},
         orderBy: { created_at: 'asc' },
-        take: 100,
-      });
+        take: 100});
       results.forEach((entry) => {
         rows.push({
           section: sectionId,
           field: 'lab_result',
           value: [
             resolvePublicIdentifier(entry.human_friendly_id, null),
-            entry.status,
-          ]
+            entry.status]
             .filter(Boolean)
             .join(' | '),
-          occurred_at: entry.created_at,
-        });
+          occurred_at: entry.created_at});
       });
     }
 
@@ -579,32 +511,26 @@ const buildReportRows = async ({
             radiology_order: {
               patient_id: patient.id,
               deleted_at: null,
-              ...(encounterId ? { encounter_id: encounterId } : {}),
-            },
-          },
+              ...(encounterId ? { encounter_id: encounterId } : {})}},
           'created_at',
           period
         ),
         select: {
           human_friendly_id: true,
           status: true,
-          created_at: true,
-        },
+          created_at: true},
         orderBy: { created_at: 'asc' },
-        take: 100,
-      });
+        take: 100});
       results.forEach((entry) => {
         rows.push({
           section: sectionId,
           field: 'radiology_result',
           value: [
             resolvePublicIdentifier(entry.human_friendly_id, null),
-            entry.status,
-          ]
+            entry.status]
             .filter(Boolean)
             .join(' | '),
-          occurred_at: entry.created_at,
-        });
+          occurred_at: entry.created_at});
       });
     }
 
@@ -613,8 +539,7 @@ const buildReportRows = async ({
         where: withPeriod(
           {
             deleted_at: null,
-            patient_id: patient.id,
-          },
+            patient_id: patient.id},
           'issued_at',
           period
         ),
@@ -623,11 +548,9 @@ const buildReportRows = async ({
           status: true,
           total_amount: true,
           currency: true,
-          issued_at: true,
-        },
+          issued_at: true},
         orderBy: { issued_at: 'asc' },
-        take: 100,
-      });
+        take: 100});
       invoices.forEach((entry) => {
         rows.push({
           section: sectionId,
@@ -636,12 +559,10 @@ const buildReportRows = async ({
             resolvePublicIdentifier(entry.human_friendly_id, null),
             entry.status,
             entry.total_amount != null ? String(entry.total_amount) : null,
-            entry.currency,
-          ]
+            entry.currency]
             .filter(Boolean)
             .join(' | '),
-          occurred_at: entry.issued_at,
-        });
+          occurred_at: entry.issued_at});
       });
     }
   }
@@ -674,24 +595,21 @@ const processJob = async (jobId, context = {}) => {
     await patientReportRepository.update(jobId, {
       status: 'PROCESSING',
       started_at: new Date(),
-      version: Number(record.version || 1) + 1,
-    });
+      version: Number(record.version || 1) + 1});
 
     const rows = await buildReportRows({
       patient,
       encounterId: record.encounter_id,
       sections: authorizedSections,
       period,
-      permissions,
-    });
+      permissions});
 
     const rendered = await generateReportFile({
       title: `Patient Report ${resolvePublicIdentifier(patient.human_friendly_id, patient.id)}`,
       subtitle: `${record.report_type} · ${authorizedSections.join(', ')}`,
       columns: ['section', 'field', 'value'],
       rows,
-      format: record.format || 'PDF',
-    });
+      format: record.format || 'PDF'});
 
     const checksum = crypto.createHash('sha256').update(rendered.buffer).digest('hex');
     const storage = createStorageService();
@@ -706,9 +624,7 @@ const processJob = async (jobId, context = {}) => {
       metadata: {
         patient_report_job_id: record.id,
         patient_id: patient.id,
-        report_type: record.report_type,
-      },
-    });
+        report_type: record.report_type}});
 
     const updated = await patientReportRepository.update(jobId, {
       status: 'READY',
@@ -721,8 +637,7 @@ const processJob = async (jobId, context = {}) => {
       error_message: null,
       completed_at: new Date(),
       expires_at: new Date(Date.now() + JOB_TTL_MS),
-      version: Number(record.version || 1) + 2,
-    });
+      version: Number(record.version || 1) + 2});
 
     await createAuditLog({
       tenant_id: updated.tenant_id,
@@ -733,14 +648,12 @@ const processJob = async (jobId, context = {}) => {
       entity_id: updated.id,
       diff: { after: serializeJob(updated) },
       ip_address: context.ip_address,
-      user_agent: context.user_agent,
-    });
+      user_agent: context.user_agent});
 
     recordBackgroundJob('patient_report_job.completed', {
       'hms.patient_report_job.id':
         updated.human_friendly_id || updated.id,
-      'hms.patient_report_job.status': updated.status,
-    });
+      'hms.patient_report_job.status': updated.status});
 
     return serializeJob(updated);
   } catch (error) {
@@ -748,8 +661,7 @@ const processJob = async (jobId, context = {}) => {
       status: 'FAILED',
       error_message: error?.message || 'Report generation failed',
       completed_at: new Date(),
-      version: Number(record.version || 1) + 1,
-    });
+      version: Number(record.version || 1) + 1});
 
     await createAuditLog({
       tenant_id: failed.tenant_id,
@@ -760,12 +672,10 @@ const processJob = async (jobId, context = {}) => {
       entity_id: failed.id,
       diff: { after: serializeJob(failed) },
       ip_address: context.ip_address,
-      user_agent: context.user_agent,
-    });
+      user_agent: context.user_agent});
 
     recordBackgroundJob('patient_report_job.failed', {
-      'hms.patient_report_job.id': failed.human_friendly_id || failed.id,
-    });
+      'hms.patient_report_job.id': failed.human_friendly_id || failed.id});
 
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.patient_report.generation_failed', 500);
@@ -789,8 +699,7 @@ const listSections = async (query = {}, context = {}) => {
     mode: query.period_mode,
     single_date: query.single_date,
     start_date: query.start_date,
-    end_date: query.end_date,
-  });
+    end_date: query.end_date});
 
   const defs = listAuthorizedSectionDefs(permissions);
   const sections = [];
@@ -800,8 +709,7 @@ const listSections = async (query = {}, context = {}) => {
       sectionId: def.id,
       patientId: patient.id,
       encounterId,
-      period,
-    });
+      period});
     const hasData = count > 0 || Boolean(def.always_available);
     sections.push({
       id: def.id,
@@ -810,8 +718,7 @@ const listSections = async (query = {}, context = {}) => {
       has_data: hasData,
       count,
       enabled: hasData,
-      selected_by_default: hasData,
-    });
+      selected_by_default: hasData});
   }
 
   await recordPhiReportAccess({
@@ -821,8 +728,7 @@ const listSections = async (query = {}, context = {}) => {
       ? REPORT_TYPES.ENCOUNTER_CLINICAL
       : REPORT_TYPES.PATIENT_CLINICAL,
     action: REPORT_ACTIONS.ACCESS,
-    sections: sections.map((entry) => entry.id),
-  });
+    sections: sections.map((entry) => entry.id)});
 
   return {
     patient_id: resolvePublicIdentifier(patient.human_friendly_id, patient.id),
@@ -832,8 +738,7 @@ const listSections = async (query = {}, context = {}) => {
     report_type: encounterId
       ? REPORT_TYPES.ENCOUNTER_CLINICAL
       : REPORT_TYPES.PATIENT_CLINICAL,
-    sections: sections.sort((a, b) => a.sort_order - b.sort_order),
-  };
+    sections: sections.sort((a, b) => a.sort_order - b.sort_order)};
 };
 
 const createJob = async (payload = {}, context = {}) => {
@@ -859,8 +764,7 @@ const createJob = async (payload = {}, context = {}) => {
   );
   if (unauthorized.length > 0) {
     throw new HttpError('errors.patient_report.unauthorized_sections', 403, [
-      { field: 'sections', sections: unauthorized },
-    ]);
+      { field: 'sections', sections: unauthorized }]);
   }
 
   const authorizedSections = filterAuthorizedSections(requestedSections, permissions);
@@ -876,8 +780,7 @@ const createJob = async (payload = {}, context = {}) => {
       sectionId,
       patientId: patient.id,
       encounterId,
-      period,
-    });
+      period});
     if (count > 0 || def?.always_available) {
       effectiveSections.push(sectionId);
     }
@@ -909,11 +812,9 @@ const createJob = async (payload = {}, context = {}) => {
     period_json: payload.period || {
       mode: period.mode,
       start_date: period.start,
-      end_date: period.end,
-    },
+      end_date: period.end},
     queued_at: new Date(),
-    expires_at: new Date(Date.now() + JOB_TTL_MS),
-  });
+    expires_at: new Date(Date.now() + JOB_TTL_MS)});
 
   await createAuditLog({
     tenant_id: job.tenant_id,
@@ -924,21 +825,18 @@ const createJob = async (payload = {}, context = {}) => {
     entity_id: job.id,
     diff: { after: serializeJob(job) },
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   await recordPhiReportAccess({
     patient,
     context,
     reportType,
     action,
-    sections: effectiveSections,
-  });
+    sections: effectiveSections});
 
   recordBackgroundJob('patient_report_job.queued', {
     'hms.patient_report_job.id': publicId,
-    'hms.patient_report_job.report_type': reportType,
-  });
+    'hms.patient_report_job.report_type': reportType});
 
   // Estimate size; large reports stay async via setImmediate.
   let estimatedRows = 0;
@@ -947,8 +845,7 @@ const createJob = async (payload = {}, context = {}) => {
       sectionId,
       patientId: patient.id,
       encounterId,
-      period,
-    });
+      period});
   }
 
   if (estimatedRows >= LARGE_REPORT_ROW_THRESHOLD || payload.async === true) {
@@ -956,8 +853,7 @@ const createJob = async (payload = {}, context = {}) => {
       processJob(job.id, context).catch((error) => {
         logger.warn('Async patient report job failed', {
           job_id: job.id,
-          error: error?.message || 'Unknown error',
-        });
+          error: error?.message || 'Unknown error'});
       });
     });
     return serializeJob(job);
@@ -981,8 +877,7 @@ const getJobById = async (id, context = {}) => {
     const expired = await patientReportRepository.update(record.id, {
       status: 'CANCELLED',
       error_message: 'Report expired',
-      version: Number(record.version || 1) + 1,
-    });
+      version: Number(record.version || 1) + 1});
     return serializeJob(expired);
   }
 
@@ -1014,14 +909,12 @@ const downloadJob = async (id, context = {}) => {
     context,
     reportType: record.report_type,
     action: REPORT_ACTIONS.DOWNLOAD,
-    sections: Array.isArray(record.sections_json) ? record.sections_json : [],
-  });
+    sections: Array.isArray(record.sections_json) ? record.sections_json : []});
 
   return {
     buffer,
     file_name: record.output_file_name || 'patient-report.pdf',
-    mime_type: record.output_mime_type || 'application/pdf',
-  };
+    mime_type: record.output_mime_type || 'application/pdf'};
 };
 
 const recordPrintEvent = async (payload = {}, context = {}) => {
@@ -1044,8 +937,7 @@ const recordPrintEvent = async (payload = {}, context = {}) => {
     context,
     reportType,
     action,
-    sections,
-  });
+    sections});
 
   await createAuditLog({
     tenant_id: patient.tenant_id,
@@ -1061,19 +953,15 @@ const recordPrintEvent = async (payload = {}, context = {}) => {
         report_type: reportType,
         action,
         sections,
-        timestamp: new Date().toISOString(),
-      },
-    },
+        timestamp: new Date().toISOString()}},
     ip_address: context.ip_address,
-    user_agent: context.user_agent,
-  });
+    user_agent: context.user_agent});
 
   return {
     recorded: true,
     report_type: reportType,
     action,
-    sections,
-  };
+    sections};
 };
 
 module.exports = {
@@ -1084,5 +972,4 @@ module.exports = {
   listSections,
   processJob,
   recordPrintEvent,
-  serializeJob,
-};
+  serializeJob};

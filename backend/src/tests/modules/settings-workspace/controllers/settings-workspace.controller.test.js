@@ -12,12 +12,10 @@ describe('settings-workspace controller', () => {
   beforeEach(() => {
     req = {
       query: {},
-      user: { id: 'user-1', role: 'TENANT_ADMIN' },
-    };
+      user: { id: 'user-1', role: 'TENANT_ADMIN' }};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+      json: jest.fn()};
   });
 
   afterEach(() => {

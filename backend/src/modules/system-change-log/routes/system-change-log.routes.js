@@ -17,14 +17,12 @@ const {
   approveSystemChangeLogSchema,
   implementSystemChangeLogSchema,
   systemChangeLogIdParamsSchema,
-  listSystemChangeLogsQuerySchema,
-} = require('@validations/system-change-log/system-change-log.schema');
+  listSystemChangeLogsQuerySchema} = require('@validations/system-change-log/system-change-log.schema');
 
 const COMPLIANCE_READ_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const COMPLIANCE_WRITE_SCOPES = COMPLIANCE_READ_SCOPES;
 
 router.get(

@@ -108,8 +108,7 @@ describe('Unit Schema Validation', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         department_id: 'DEPT001',
-        name: 'ICU Unit',
-      };
+        name: 'ICU Unit'};
       const result = createUnitSchema.safeParse(validData);
       expect(result.success).toBe(true);
       if (result.success) {

@@ -55,7 +55,6 @@ describe('Contact Schema Validation', () => {
         contact_type: 'PHONE',
         value: '+1234567890',
         facility_id: null,
-        branch_id: null,
         patient_id: null,
         user_profile_id: null,
         staff_profile_id: null,
@@ -123,8 +122,7 @@ describe('Contact Schema Validation', () => {
         tenant_id: 'TEN0001',
         contact_type: 'PHONE',
         value: '+1234567890',
-        facility_id: 'FAC0001',
-      };
+        facility_id: 'FAC0001'};
       const result = createContactSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
@@ -220,9 +218,7 @@ describe('Contact Schema Validation', () => {
 
     it('should validate with null values', () => {
       const validData = {
-        facility_id: null,
-        branch_id: null
-      };
+        facility_id: null};
       const result = updateContactSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
@@ -263,8 +259,7 @@ describe('Contact Schema Validation', () => {
 
     it('should accept friendly contact identifiers', () => {
       const validData = {
-        id: 'CTC0001',
-      };
+        id: 'CTC0001'};
       const result = contactIdParamsSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
@@ -307,7 +302,6 @@ describe('Contact Schema Validation', () => {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         contact_type: 'PHONE',
         facility_id: '123e4567-e89b-12d3-a456-426614174001',
-        branch_id: '123e4567-e89b-12d3-a456-426614174002',
         patient_id: '123e4567-e89b-12d3-a456-426614174003',
         user_profile_id: '123e4567-e89b-12d3-a456-426614174004',
         staff_profile_id: '123e4567-e89b-12d3-a456-426614174005',
@@ -346,8 +340,7 @@ describe('Contact Schema Validation', () => {
     it('should accept friendly tenant filters', () => {
       const validData = {
         tenant_id: 'TEN0001',
-        facility_id: 'FAC0001',
-      };
+        facility_id: 'FAC0001'};
       const result = listContactsQuerySchema.safeParse(validData);
       expect(result.success).toBe(true);
     });

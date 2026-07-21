@@ -14,8 +14,7 @@ const {
   updateFollowUpSchema,
   transitionFollowUpSchema,
   followUpIdParamsSchema,
-  listFollowUpsQuerySchema,
-} = require('@validations/follow-up/follow-up.schema');
+  listFollowUpsQuerySchema} = require('@validations/follow-up/follow-up.schema');
 
 router.get(
   '/',

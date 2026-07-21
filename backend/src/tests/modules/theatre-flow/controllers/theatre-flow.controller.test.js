@@ -16,8 +16,7 @@ describe('theatre-flow.controller', () => {
       body: {},
       user: { id: 'user-1', tenant_id: 'TEN-1', facility_id: 'FAC-1', roles: ['DOCTOR'] },
       ip: '127.0.0.1',
-      get: jest.fn(() => 'jest-agent'),
-    };
+      get: jest.fn(() => 'jest-agent')};
     res = {};
     jest.clearAllMocks();
   });
@@ -25,8 +24,7 @@ describe('theatre-flow.controller', () => {
   it('lists theatre flows with pagination envelope', async () => {
     theatreFlowService.listTheatreFlows.mockResolvedValue({
       items: [{ id: 'TC-001' }],
-      pagination: { page: 1, limit: 20, total: 1, totalPages: 1, hasNextPage: false, hasPreviousPage: false },
-    });
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1, hasNextPage: false, hasPreviousPage: false }});
 
     await theatreFlowController.listTheatreFlows(req, res);
 

@@ -1,24 +1,17 @@
 const mockPrisma = {
   equipment_registry: {
-    count: jest.fn(),
-  },
+    count: jest.fn()},
   equipment_maintenance_plan: {
-    count: jest.fn(),
-  },
+    count: jest.fn()},
   equipment_work_order: {
-    count: jest.fn(),
-  },
+    count: jest.fn()},
   equipment_downtime_log: {
-    count: jest.fn(),
-  },
+    count: jest.fn()},
   equipment_recall_notice: {
-    count: jest.fn(),
-  },
+    count: jest.fn()},
   equipment_disposal_transfer: {
     findMany: jest.fn(),
-    count: jest.fn(),
-  },
-};
+    count: jest.fn()}};
 
 jest.mock('@prisma/client', () => mockPrisma);
 
@@ -42,17 +35,14 @@ describe('biomedical-workspace.repository', () => {
       tenantId: 'tenant-1',
       facilityId: 'facility-1',
       equipmentId: 'equipment-1',
-      engineerId: 'engineer-1',
-    });
+      engineerId: 'engineer-1'});
 
     expect(mockPrisma.equipment_registry.count).toHaveBeenCalledWith({
       where: {
         tenant_id: 'tenant-1',
         deleted_at: null,
         facility_id: 'facility-1',
-        id: 'equipment-1',
-      },
-    });
+        id: 'equipment-1'}});
 
     expect(mockPrisma.equipment_maintenance_plan.count).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -61,9 +51,7 @@ describe('biomedical-workspace.repository', () => {
           deleted_at: null,
           equipment_registry_id: 'equipment-1',
           equipment_registry: { facility_id: 'facility-1' },
-          is_active: true,
-        }),
-      })
+          is_active: true})})
     );
 
     expect(mockPrisma.equipment_work_order.count).toHaveBeenCalledWith(
@@ -73,9 +61,7 @@ describe('biomedical-workspace.repository', () => {
           deleted_at: null,
           equipment_registry_id: 'equipment-1',
           assigned_engineer_user_id: 'engineer-1',
-          equipment_registry: { facility_id: 'facility-1' },
-        }),
-      })
+          equipment_registry: { facility_id: 'facility-1' }})})
     );
   });
 
@@ -84,17 +70,14 @@ describe('biomedical-workspace.repository', () => {
       tenantId: 'tenant-1',
       facilityId: 'facility-1',
       equipmentId: 'equipment-1',
-      engineerId: 'engineer-1',
-    });
+      engineerId: 'engineer-1'});
 
     expect(mockPrisma.equipment_maintenance_plan.count).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           tenant_id: 'tenant-1',
           equipment_registry_id: 'equipment-1',
-          equipment_registry: { facility_id: 'facility-1' },
-        }),
-      })
+          equipment_registry: { facility_id: 'facility-1' }})})
     );
 
     expect(mockPrisma.equipment_work_order.count).toHaveBeenNthCalledWith(
@@ -104,9 +87,7 @@ describe('biomedical-workspace.repository', () => {
           tenant_id: 'tenant-1',
           equipment_registry_id: 'equipment-1',
           assigned_engineer_user_id: 'engineer-1',
-          equipment_registry: { facility_id: 'facility-1' },
-        }),
-      })
+          equipment_registry: { facility_id: 'facility-1' }})})
     );
 
     expect(mockPrisma.equipment_work_order.count).toHaveBeenNthCalledWith(
@@ -116,9 +97,7 @@ describe('biomedical-workspace.repository', () => {
           tenant_id: 'tenant-1',
           equipment_registry_id: 'equipment-1',
           assigned_engineer_user_id: 'engineer-1',
-          equipment_registry: { facility_id: 'facility-1' },
-        }),
-      })
+          equipment_registry: { facility_id: 'facility-1' }})})
     );
   });
 
@@ -128,12 +107,10 @@ describe('biomedical-workspace.repository', () => {
       filters: {
         tenantId: 'tenant-1',
         facilityId: 'facility-1',
-        equipmentId: 'equipment-1',
-      },
+        equipmentId: 'equipment-1'},
       skip: 0,
       take: 20,
-      orderBy: { updated_at: 'desc' },
-    });
+      orderBy: { updated_at: 'desc' }});
 
     expect(mockPrisma.equipment_disposal_transfer.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -141,17 +118,13 @@ describe('biomedical-workspace.repository', () => {
           tenant_id: 'tenant-1',
           deleted_at: null,
           equipment_registry_id: 'equipment-1',
-          equipment_registry: { facility_id: 'facility-1' },
-        }),
-      })
+          equipment_registry: { facility_id: 'facility-1' }})})
     );
 
     expect(mockPrisma.equipment_disposal_transfer.count).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          equipment_registry: { facility_id: 'facility-1' },
-        }),
-      })
+          equipment_registry: { facility_id: 'facility-1' }})})
     );
   });
 });

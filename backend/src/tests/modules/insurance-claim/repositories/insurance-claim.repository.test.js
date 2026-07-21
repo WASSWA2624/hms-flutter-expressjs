@@ -40,7 +40,7 @@ describe('Insurance Claim Repository', () => {
       expect(result).toEqual(mockClaim);
       expect(prisma.insurance_claim.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -92,7 +92,7 @@ describe('Insurance Claim Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

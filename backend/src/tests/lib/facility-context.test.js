@@ -17,8 +17,7 @@ describe('facility-context', () => {
       resolveOperationalFacilityId({
         facilityId: 'facility-1',
         userId: 'user-1',
-        tenantId: 'tenant-1',
-      })
+        tenantId: 'tenant-1'})
     ).resolves.toBe('facility-1');
     expect(authRepository.getUserFacilities).not.toHaveBeenCalled();
   });
@@ -29,22 +28,19 @@ describe('facility-context', () => {
     await expect(
       resolveOperationalFacilityId({
         userId: 'user-1',
-        tenantId: 'tenant-1',
-      })
+        tenantId: 'tenant-1'})
     ).resolves.toBe('facility-2');
   });
 
   it('returns null when the user has multiple facilities and none is selected', async () => {
     authRepository.getUserFacilities.mockResolvedValue([
       { id: 'facility-2' },
-      { id: 'facility-3' },
-    ]);
+      { id: 'facility-3' }]);
 
     await expect(
       resolveOperationalFacilityId({
         userId: 'user-1',
-        tenantId: 'tenant-1',
-      })
+        tenantId: 'tenant-1'})
     ).resolves.toBeNull();
   });
 });

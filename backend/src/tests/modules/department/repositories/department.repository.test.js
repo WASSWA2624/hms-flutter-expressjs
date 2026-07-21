@@ -40,7 +40,6 @@ describe('Department Repository', () => {
         id: 'department-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'Emergency Department',
         department_type: 'CLINICAL',
         is_active: true,
@@ -86,7 +85,6 @@ describe('Department Repository', () => {
           id: 'department-1',
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
-          branch_id: 'branch-123',
           name: 'Emergency Department',
           department_type: 'CLINICAL',
           is_active: true
@@ -95,7 +93,6 @@ describe('Department Repository', () => {
           id: 'department-2',
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
-          branch_id: 'branch-123',
           name: 'Radiology',
           department_type: 'DIAGNOSTICS',
           is_active: true
@@ -120,7 +117,6 @@ describe('Department Repository', () => {
           id: 'department-1',
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
-          branch_id: 'branch-123',
           name: 'Emergency Department',
           department_type: 'CLINICAL',
           is_active: true
@@ -212,7 +208,6 @@ describe('Department Repository', () => {
       const departmentData = {
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'New Department',
         department_type: 'CLINICAL',
         is_active: true
@@ -291,7 +286,6 @@ describe('Department Repository', () => {
         id: 'department-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         ...updateData,
         created_at: new Date('2026-01-19'),
         updated_at: new Date(),
@@ -356,7 +350,6 @@ describe('Department Repository', () => {
         id: 'department-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'Emergency Department',
         department_type: 'CLINICAL',
         is_active: true,

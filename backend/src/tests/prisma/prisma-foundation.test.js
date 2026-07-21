@@ -54,8 +54,7 @@ console.log('ok');
     const output = execFileSync(process.execPath, ['-e', bootstrapScript], {
       cwd: process.cwd(),
       encoding: 'utf8',
-      timeout: 8000,
-    });
+      timeout: 8000});
 
     expect(output).toContain('ok');
   });

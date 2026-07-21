@@ -13,8 +13,7 @@ const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForFilter } = require('@lib/identifiers/service-identifier-resolution');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
@@ -66,9 +65,7 @@ const buildRoomListResult = (rooms, page, limit, total) => {
       total,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-    },
-  };
+      hasPreviousPage: page > 1}};
 };
 
 const resolveRoomFilterId = async (filters, field, model) => {
@@ -76,8 +73,7 @@ const resolveRoomFilterId = async (filters, field, model) => {
   return resolveIdentifierForFilter({
     value: filters[field],
     model,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 };
 
 const resolveRoomId = async (identifier, { includeDeleted = false } = {}) => {
@@ -88,16 +84,14 @@ const resolveRoomId = async (identifier, { includeDeleted = false } = {}) => {
     const resolved = await resolveModelIdByIdentifier({
       model: 'room',
       identifier: normalized,
-      includeDeleted: true,
-    });
+      includeDeleted: true});
     return resolved || normalized;
   }
 
   return resolveIdentifierForFilter({
     value: normalized,
     model: 'room',
-    where: { deleted_at: null },
-  }) || normalized;
+    where: { deleted_at: null }}) || normalized;
 };
 
 const listRooms = async (filters = {}, page = 1, limit = 20, sort_by = 'created_at', order = 'desc') => {
@@ -120,8 +114,7 @@ const listRooms = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
   if (filters.search) {
     repoFilters.name = {
       contains: String(filters.search || '').trim(),
-      mode: 'insensitive',
-    };
+      mode: 'insensitive'};
   }
 
   const skip = (page - 1) * limit;
@@ -132,8 +125,7 @@ const listRooms = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
 
   const [rooms, total] = await Promise.all([
     roomRepository.findMany(repoFilters, skip, limit, orderBy, listOptions),
-    roomRepository.count(repoFilters, listOptions),
-  ]);
+    roomRepository.count(repoFilters, listOptions)]);
 
   return buildRoomListResult(rooms, page, limit, total);
 };
@@ -291,8 +283,7 @@ const deleteRoom = async (id, context = {}) => {
         model: 'room',
         identifier: candidate,
         includeDeleted: true,
-        select: { id: true, deleted_at: true },
-      });
+        select: { id: true, deleted_at: true }});
       if (deletedRoom?.deleted_at) {
         return;
       }
@@ -346,15 +337,12 @@ const restoreRoom = async (id, context = {}) => {
       tenant_id: room.tenant_id,
       facility_id: room.facility_id,
       ward_id: room.ward_id,
-      name: room.name,
-    },
-  });
+      name: room.name}});
 
   await publishFacilityLayoutRealtimeEvent(room, 'room', context.user_id, {
     operation: 'restored',
     name: room.name,
-    ward_id: room.ward_id,
-  });
+    ward_id: room.ward_id});
 
   return room;
 };
@@ -365,5 +353,4 @@ module.exports = {
   createRoom,
   updateRoom,
   deleteRoom,
-  restoreRoom,
-};
+  restoreRoom};

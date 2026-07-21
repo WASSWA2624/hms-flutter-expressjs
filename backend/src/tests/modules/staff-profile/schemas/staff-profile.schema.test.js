@@ -14,16 +14,12 @@ describe('staff-profile.schema contract', () => {
           pay_type: 'PER_MONTH',
           rate: 3000,
           currency: 'USD',
-          effective_from: '2026-01-01',
-        },
+          effective_from: '2026-01-01'},
         {
           pay_type: 'PER_MONTH',
           rate: 3200,
           currency: 'USD',
-          effective_from: '2026-02-01',
-        },
-      ],
-    });
+          effective_from: '2026-02-01'}]});
 
     expect(result.success).toBe(false);
   });
@@ -36,16 +32,12 @@ describe('staff-profile.schema contract', () => {
           rate: 3000,
           currency: 'USD',
           effective_from: '2026-01-01',
-          metadata_json: { pay_frequency: 'MONTHLY' },
-        },
+          metadata_json: { pay_frequency: 'MONTHLY' }},
         {
           pay_type: 'PER_CONSULTATION',
           rate: 75,
           currency: 'USD',
-          effective_from: '2026-01-01',
-        },
-      ],
-    });
+          effective_from: '2026-01-01'}]});
 
     expect(result.success).toBe(true);
   });

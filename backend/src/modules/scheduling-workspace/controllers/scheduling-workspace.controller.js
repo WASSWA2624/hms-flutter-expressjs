@@ -29,5 +29,4 @@ const resolveLegacyRoute = asyncHandler(async (req, res) => {
 module.exports = {
   getWorkspace,
   getReferenceData,
-  resolveLegacyRoute,
-};
+  resolveLegacyRoute};

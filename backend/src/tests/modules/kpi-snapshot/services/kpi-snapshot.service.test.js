@@ -20,8 +20,7 @@ describe('KPI Snapshot Service', () => {
     user,
     user_id: userId,
     ip_address: '127.0.0.1',
-    user_agent: 'jest-test-agent',
-  };
+    user_agent: 'jest-test-agent'};
 
   const mockKpiSnapshot = {
     id: '550e8400-e29b-41d4-a716-446655440001',
@@ -36,8 +35,7 @@ describe('KPI Snapshot Service', () => {
     created_at: new Date('2026-01-19T12:00:00.000Z'),
     updated_at: new Date('2026-01-19T12:00:00.000Z'),
     deleted_at: null,
-    version: 1,
-  };
+    version: 1};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -59,17 +57,14 @@ describe('KPI Snapshot Service', () => {
           metric_key: 'daily_revenue',
           metric_group: 'finance',
           threshold_state: 'NORMAL',
-          value: 12500.5,
-        }),
-      ]);
+          value: 12500.5})]);
       expect(result.pagination).toMatchObject({
         page: 1,
         limit: 20,
         total: 1,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
     });
 
     it('should apply date range filters', async () => {
@@ -80,8 +75,7 @@ describe('KPI Snapshot Service', () => {
         {
           from: '2026-01-01T00:00:00Z',
           to: '2026-01-31T23:59:59Z',
-          metric_key: 'daily_revenue',
-        },
+          metric_key: 'daily_revenue'},
         1,
         20,
         null,
@@ -96,10 +90,7 @@ describe('KPI Snapshot Service', () => {
             metric_key: 'daily_revenue',
             recorded_at: expect.objectContaining({
               gte: expect.any(Date),
-              lte: expect.any(Date),
-            }),
-          }),
-        })
+              lte: expect.any(Date)})})})
       );
     });
   });
@@ -113,8 +104,7 @@ describe('KPI Snapshot Service', () => {
       expect(result).toEqual(
         expect.objectContaining({
           id: 'KPI0000001',
-          value: 12500.5,
-        })
+          value: 12500.5})
       );
     });
   });
@@ -130,16 +120,14 @@ describe('KPI Snapshot Service', () => {
           metric_group: 'finance',
           threshold_state: 'NORMAL',
           value: '12500.50',
-          recorded_at: '2026-01-19T12:00:00.000Z',
-        },
+          recorded_at: '2026-01-19T12:00:00.000Z'},
         context
       );
 
       expect(result).toEqual(
         expect.objectContaining({
           id: 'KPI0000001',
-          value: 12500.5,
-        })
+          value: 12500.5})
       );
       expect(kpiSnapshotRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -149,8 +137,7 @@ describe('KPI Snapshot Service', () => {
           metric_group: 'finance',
           threshold_state: 'NORMAL',
           value: '12500.50',
-          recorded_at: new Date('2026-01-19T12:00:00.000Z'),
-        })
+          recorded_at: new Date('2026-01-19T12:00:00.000Z')})
       );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -162,12 +149,9 @@ describe('KPI Snapshot Service', () => {
           diff: {
             after: expect.objectContaining({
               id: 'KPI0000001',
-              value: 12500.5,
-            }),
-          },
+              value: 12500.5})},
           ip_address: '127.0.0.1',
-          user_agent: 'jest-test-agent',
-        })
+          user_agent: 'jest-test-agent'})
       );
     });
   });
@@ -177,8 +161,7 @@ describe('KPI Snapshot Service', () => {
       const updated = {
         ...mockKpiSnapshot,
         value: '15000.00',
-        version: 2,
-      };
+        version: 2};
       kpiSnapshotRepository.findById.mockResolvedValue(mockKpiSnapshot);
       kpiSnapshotRepository.update.mockResolvedValue(updated);
 
@@ -186,8 +169,7 @@ describe('KPI Snapshot Service', () => {
         mockKpiSnapshot.id,
         {
           value: '15000.00',
-          version: 1,
-        },
+          version: 1},
         context
       );
 
@@ -195,13 +177,11 @@ describe('KPI Snapshot Service', () => {
         expect.objectContaining({
           id: 'KPI0000001',
           value: 15000,
-          version: 2,
-        })
+          version: 2})
       );
       expect(kpiSnapshotRepository.update).toHaveBeenCalledWith(mockKpiSnapshot.id, {
         version: 2,
-        value: '15000.00',
-      });
+        value: '15000.00'});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           tenant_id: tenantId,
@@ -211,9 +191,7 @@ describe('KPI Snapshot Service', () => {
           entity_id: mockKpiSnapshot.id,
           diff: expect.objectContaining({
             before: expect.objectContaining({ value: '12500.50', version: 1 }),
-            after: expect.objectContaining({ value: '15000.00', version: 2 }),
-          }),
-        })
+            after: expect.objectContaining({ value: '15000.00', version: 2 })})})
       );
     });
   });
@@ -223,8 +201,7 @@ describe('KPI Snapshot Service', () => {
       kpiSnapshotRepository.findById.mockResolvedValue(mockKpiSnapshot);
       kpiSnapshotRepository.softDelete.mockResolvedValue({
         ...mockKpiSnapshot,
-        deleted_at: new Date(),
-      });
+        deleted_at: new Date()});
 
       await kpiSnapshotService.deleteKpiSnapshot(mockKpiSnapshot.id, context);
 
@@ -239,10 +216,7 @@ describe('KPI Snapshot Service', () => {
           diff: {
             before: expect.objectContaining({
               id: 'KPI0000001',
-              value: 12500.5,
-            }),
-          },
-        })
+              value: 12500.5})}})
       );
     });
   });

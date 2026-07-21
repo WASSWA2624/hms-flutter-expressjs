@@ -13,8 +13,7 @@ const buildAuditContext = (req) => ({
   facility_id: req.user?.facility_id,
   roles: Array.isArray(req.user?.roles) ? req.user.roles : [],
   ip_address: req.ip,
-  user_agent: req.get('user-agent'),
-});
+  user_agent: req.get('user-agent')});
 
 const listTheatreFlows = asyncHandler(async (req, res) => {
   const {
@@ -37,8 +36,7 @@ const listTheatreFlows = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by = 'scheduled_at',
-    order = 'desc',
-  } = req.query;
+    order = 'desc'} = req.query;
 
   const result = await theatreFlowService.listTheatreFlows(
     {
@@ -57,8 +55,7 @@ const listTheatreFlows = asyncHandler(async (req, res) => {
       scheduled_from,
       scheduled_to,
       finalized,
-      search,
-    },
+      search},
     Number(page),
     Number(limit),
     sort_by,
@@ -75,8 +72,7 @@ const listTheatreFlows = asyncHandler(async (req, res) => {
 
 const getTheatreFlowById = asyncHandler(async (req, res) => {
   const flow = await theatreFlowService.getTheatreFlowById(req.params.id, {
-    include_timeline: req.query?.include_timeline,
-  });
+    include_timeline: req.query?.include_timeline});
   return sendSuccess(res, 200, 'messages.theatre_flow.get.success', flow);
 });
 
@@ -240,6 +236,5 @@ module.exports = {
   assignResource,
   releaseResource,
   finalizeRecord,
-  reopenRecord,
-};
+  reopenRecord};
 

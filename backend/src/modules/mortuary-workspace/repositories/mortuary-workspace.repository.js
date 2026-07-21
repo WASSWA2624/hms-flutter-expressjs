@@ -5,29 +5,25 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const ACTIVE_STORAGE_ASSIGNMENT_WHERE = Object.freeze({
   deleted_at: null,
   assignment_status: 'ACTIVE',
-  ended_at: null,
-});
+  ended_at: null});
 
 const BILLING_SETTLED_STATUSES = Object.freeze(['SETTLED', 'PAID', 'CANCELLED']);
 const POST_MORTEM_ACTIVE_STATUSES = Object.freeze([
   'REQUESTED',
   'APPROVED',
   'SCHEDULED',
-  'IN_PROGRESS',
-]);
+  'IN_PROGRESS']);
 const STORAGE_EXCEPTION_STATUSES = Object.freeze([
   'HELD',
   'OUT_OF_SERVICE',
-  'CLEANING',
-]);
+  'CLEANING']);
 
 const normalizeString = (value) => String(value || '').trim();
 
 const buildBaseWhere = ({ tenantId, facilityId }) => ({
   deleted_at: null,
   tenant_id: tenantId || '__missing_tenant__',
-  ...(facilityId ? { facility_id: facilityId } : {}),
-});
+  ...(facilityId ? { facility_id: facilityId } : {})});
 
 const appendAnd = (where, clause) => {
   if (!clause || Object.keys(clause).length === 0) return where;
@@ -52,8 +48,7 @@ const appendSearchFilter = (where, search, clauses) => {
   if (!normalized) return where;
 
   return appendAnd(where, {
-    OR: clauses(normalized, normalized.toUpperCase()),
-  });
+    OR: clauses(normalized, normalized.toUpperCase())});
 };
 
 const getDateWindow = (preset) => {
@@ -98,9 +93,7 @@ const appendCaseQueueFilter = (where, queue) => {
     return appendAnd(where, {
       OR: [
         { status: 'IDENTIFICATION_PENDING' },
-        { identification_status: { not: 'VERIFIED' } },
-      ],
-    });
+        { identification_status: { not: 'VERIFIED' } }]});
   }
 
   if (queue === 'STORAGE_EXCEPTIONS') {
@@ -110,11 +103,7 @@ const appendCaseQueueFilter = (where, queue) => {
           deleted_at: null,
           OR: [
             { assignment_status: { not: 'ACTIVE' } },
-            { storage_slot: { status: { in: STORAGE_EXCEPTION_STATUSES } } },
-          ],
-        },
-      },
-    });
+            { storage_slot: { status: { in: STORAGE_EXCEPTION_STATUSES } } }]}}});
   }
 
   if (queue === 'RELEASE_READY') {
@@ -123,11 +112,7 @@ const appendCaseQueueFilter = (where, queue) => {
         { status: 'READY_FOR_RELEASE' },
         {
           release_authorisations: {
-            some: { deleted_at: null, status: 'APPROVED', released_at: null },
-          },
-        },
-      ],
-    });
+            some: { deleted_at: null, status: 'APPROVED', released_at: null }}}]});
   }
 
   if (queue === 'UNSETTLED_BILLING') {
@@ -138,12 +123,7 @@ const appendCaseQueueFilter = (where, queue) => {
           billable_events: {
             some: {
               deleted_at: null,
-              status: { notIn: BILLING_SETTLED_STATUSES },
-            },
-          },
-        },
-      ],
-    });
+              status: { notIn: BILLING_SETTLED_STATUSES }}}}]});
   }
 
   if (queue === 'POST_MORTEM_PENDING') {
@@ -154,12 +134,7 @@ const appendCaseQueueFilter = (where, queue) => {
           post_mortem_requests: {
             some: {
               deleted_at: null,
-              status: { in: POST_MORTEM_ACTIVE_STATUSES },
-            },
-          },
-        },
-      ],
-    });
+              status: { in: POST_MORTEM_ACTIVE_STATUSES }}}}]});
   }
 
   return where;
@@ -178,10 +153,7 @@ const buildCaseWhere = (filters = {}) => {
         some: {
           ...ACTIVE_STORAGE_ASSIGNMENT_WHERE,
           ...(filters.storageUnitId ? { storage_unit_id: filters.storageUnitId } : {}),
-          ...(filters.storageSlotId ? { storage_slot_id: filters.storageSlotId } : {}),
-        },
-      },
-    });
+          ...(filters.storageSlotId ? { storage_slot_id: filters.storageSlotId } : {})}}});
   }
 
   appendCaseQueueFilter(where, filters.queue);
@@ -197,8 +169,7 @@ const buildCaseWhere = (filters = {}) => {
     { deceased_profile: { human_friendly_id: { contains: upperSearch } } },
     { patient: { human_friendly_id: { contains: upperSearch } } },
     { patient: { first_name: { contains: search } } },
-    { patient: { last_name: { contains: search } } },
-  ]);
+    { patient: { last_name: { contains: search } } }]);
 
   return where;
 };
@@ -211,8 +182,7 @@ const buildStorageUnitWhere = (filters = {}) => {
     { human_friendly_id: { contains: upperSearch } },
     { name: { contains: search } },
     { unit_type: { contains: search } },
-    { location_label: { contains: search } },
-  ]);
+    { location_label: { contains: search } }]);
   return where;
 };
 
@@ -227,8 +197,7 @@ const buildStorageSlotWhere = (filters = {}) => {
     { slot_code: { contains: search } },
     { label: { contains: search } },
     { temperature_zone: { contains: search } },
-    { storage_unit: { name: { contains: search } } },
-  ]);
+    { storage_unit: { name: { contains: search } } }]);
   return where;
 };
 
@@ -241,9 +210,7 @@ const buildStorageAssignmentWhere = (filters = {}) => {
     appendAnd(where, {
       OR: [
         { assignment_status: { not: 'ACTIVE' } },
-        { storage_slot: { status: { in: STORAGE_EXCEPTION_STATUSES } } },
-      ],
-    });
+        { storage_slot: { status: { in: STORAGE_EXCEPTION_STATUSES } } }]});
   }
   applyDatePreset(where, 'assigned_at', filters.datePreset);
   appendIdentifierFilter(where, filters.id);
@@ -253,8 +220,7 @@ const buildStorageAssignmentWhere = (filters = {}) => {
     { mortuary_case: { deceased_profile: { display_name: { contains: search } } } },
     { storage_unit: { name: { contains: search } } },
     { storage_slot: { slot_code: { contains: search } } },
-    { storage_slot: { label: { contains: search } } },
-  ]);
+    { storage_slot: { label: { contains: search } } }]);
   return where;
 };
 
@@ -270,8 +236,7 @@ const buildCustodyEventWhere = (filters = {}) => {
     { location_label: { contains: search } },
     { reason: { contains: search } },
     { mortuary_case: { human_friendly_id: { contains: upperSearch } } },
-    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } },
-  ]);
+    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } }]);
   return where;
 };
 
@@ -285,8 +250,7 @@ const buildViewingWhere = (filters = {}) => {
     { authorised_by_name: { contains: search } },
     { attendee_summary: { contains: search } },
     { mortuary_case: { human_friendly_id: { contains: upperSearch } } },
-    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } },
-  ]);
+    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } }]);
   return where;
 };
 
@@ -303,8 +267,7 @@ const buildPostMortemWhere = (filters = {}) => {
     { requested_by_name: { contains: search } },
     { diagnostics_reference_id: { contains: search } },
     { mortuary_case: { human_friendly_id: { contains: upperSearch } } },
-    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } },
-  ]);
+    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } }]);
   return where;
 };
 
@@ -324,8 +287,7 @@ const buildReleaseWhere = (filters = {}) => {
     { verification_reference: { contains: search } },
     { funeral_service_name: { contains: search } },
     { mortuary_case: { human_friendly_id: { contains: upperSearch } } },
-    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } },
-  ]);
+    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } }]);
   return where;
 };
 
@@ -342,8 +304,7 @@ const buildBillableEventWhere = (filters = {}) => {
     { event_type: { contains: search } },
     { billing_reference_id: { contains: search } },
     { mortuary_case: { human_friendly_id: { contains: upperSearch } } },
-    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } },
-  ]);
+    { mortuary_case: { deceased_profile: { display_name: { contains: search } } } }]);
   return where;
 };
 
@@ -361,10 +322,7 @@ const CASE_SUMMARY_SELECT = Object.freeze({
       id: true,
       human_friendly_id: true,
       display_name: true,
-      external_reference: true,
-    },
-  },
-});
+      external_reference: true}}});
 
 const caseSelect = {
   id: true,
@@ -384,25 +342,20 @@ const caseSelect = {
   created_at: true,
   updated_at: true,
   facility: {
-    select: { id: true, human_friendly_id: true, name: true },
-  },
+    select: { id: true, human_friendly_id: true, name: true }},
   patient: {
     select: {
       id: true,
       human_friendly_id: true,
       first_name: true,
-      last_name: true,
-    },
-  },
+      last_name: true}},
   deceased_profile: {
     select: {
       id: true,
       human_friendly_id: true,
       display_name: true,
       date_of_death: true,
-      external_reference: true,
-    },
-  },
+      external_reference: true}},
   storage_assignments: {
     where: ACTIVE_STORAGE_ASSIGNMENT_WHERE,
     orderBy: { assigned_at: 'desc' },
@@ -414,8 +367,7 @@ const caseSelect = {
       assigned_at: true,
       ended_at: true,
       storage_unit: {
-        select: { id: true, human_friendly_id: true, name: true, unit_type: true },
-      },
+        select: { id: true, human_friendly_id: true, name: true, unit_type: true }},
       storage_slot: {
         select: {
           id: true,
@@ -423,11 +375,7 @@ const caseSelect = {
           slot_code: true,
           label: true,
           status: true,
-          temperature_zone: true,
-        },
-      },
-    },
-  },
+          temperature_zone: true}}}},
   custody_events: {
     where: { deleted_at: null },
     orderBy: { event_at: 'desc' },
@@ -443,9 +391,7 @@ const caseSelect = {
       reason: true,
       notes: true,
       created_at: true,
-      updated_at: true,
-    },
-  },
+      updated_at: true}},
   viewings: {
     where: { deleted_at: null },
     orderBy: { scheduled_at: 'desc' },
@@ -457,9 +403,7 @@ const caseSelect = {
       status: true,
       authorised_by_name: true,
       attendee_summary: true,
-      completed_at: true,
-    },
-  },
+      completed_at: true}},
   post_mortem_requests: {
     where: { deleted_at: null },
     orderBy: { created_at: 'desc' },
@@ -473,9 +417,7 @@ const caseSelect = {
       diagnostics_reference_id: true,
       scheduled_at: true,
       completed_at: true,
-      report_received_at: true,
-    },
-  },
+      report_received_at: true}},
   release_authorisations: {
     where: { deleted_at: null },
     orderBy: { created_at: 'desc' },
@@ -491,9 +433,7 @@ const caseSelect = {
       status: true,
       approved_by_name: true,
       approved_at: true,
-      released_at: true,
-    },
-  },
+      released_at: true}},
   billable_events: {
     where: { deleted_at: null },
     orderBy: { charged_at: 'desc' },
@@ -508,17 +448,13 @@ const caseSelect = {
       status: true,
       billing_reference_id: true,
       charged_at: true,
-      settled_at: true,
-    },
-  },
-};
+      settled_at: true}}};
 
 const RESOURCE_CONFIG = Object.freeze({
   'mortuary-cases': {
     delegate: 'mortuary_case',
     where: buildCaseWhere,
-    query: { select: caseSelect },
-  },
+    query: { select: caseSelect }},
   'mortuary-storage-units': {
     delegate: 'mortuary_storage_unit',
     where: buildStorageUnitWhere,
@@ -535,10 +471,7 @@ const RESOURCE_CONFIG = Object.freeze({
         created_at: true,
         updated_at: true,
         facility: { select: { id: true, human_friendly_id: true, name: true } },
-        _count: { select: { slots: true, assignments: true } },
-      },
-    },
-  },
+        _count: { select: { slots: true, assignments: true } }}}},
   'mortuary-storage-slots': {
     delegate: 'mortuary_storage_slot',
     where: buildStorageSlotWhere,
@@ -557,8 +490,7 @@ const RESOURCE_CONFIG = Object.freeze({
         updated_at: true,
         facility: { select: { id: true, human_friendly_id: true, name: true } },
         storage_unit: {
-          select: { id: true, human_friendly_id: true, name: true, unit_type: true },
-        },
+          select: { id: true, human_friendly_id: true, name: true, unit_type: true }},
         assignments: {
           where: ACTIVE_STORAGE_ASSIGNMENT_WHERE,
           orderBy: { assigned_at: 'desc' },
@@ -568,12 +500,7 @@ const RESOURCE_CONFIG = Object.freeze({
             human_friendly_id: true,
             assignment_status: true,
             assigned_at: true,
-            mortuary_case: { select: CASE_SUMMARY_SELECT },
-          },
-        },
-      },
-    },
-  },
+            mortuary_case: { select: CASE_SUMMARY_SELECT }}}}}},
   'mortuary-storage-assignments': {
     delegate: 'mortuary_storage_assignment',
     where: buildStorageAssignmentWhere,
@@ -591,20 +518,14 @@ const RESOURCE_CONFIG = Object.freeze({
         facility: { select: { id: true, human_friendly_id: true, name: true } },
         mortuary_case: { select: CASE_SUMMARY_SELECT },
         storage_unit: {
-          select: { id: true, human_friendly_id: true, name: true, unit_type: true },
-        },
+          select: { id: true, human_friendly_id: true, name: true, unit_type: true }},
         storage_slot: {
           select: {
             id: true,
             human_friendly_id: true,
             slot_code: true,
             label: true,
-            status: true,
-          },
-        },
-      },
-    },
-  },
+            status: true}}}}},
   'mortuary-custody-events': {
     delegate: 'mortuary_custody_event',
     where: buildCustodyEventWhere,
@@ -623,10 +544,7 @@ const RESOURCE_CONFIG = Object.freeze({
         created_at: true,
         updated_at: true,
         facility: { select: { id: true, human_friendly_id: true, name: true } },
-        mortuary_case: { select: CASE_SUMMARY_SELECT },
-      },
-    },
-  },
+        mortuary_case: { select: CASE_SUMMARY_SELECT }}}},
   'mortuary-viewings': {
     delegate: 'mortuary_viewing',
     where: buildViewingWhere,
@@ -643,10 +561,7 @@ const RESOURCE_CONFIG = Object.freeze({
         created_at: true,
         updated_at: true,
         facility: { select: { id: true, human_friendly_id: true, name: true } },
-        mortuary_case: { select: CASE_SUMMARY_SELECT },
-      },
-    },
-  },
+        mortuary_case: { select: CASE_SUMMARY_SELECT }}}},
   'mortuary-post-mortem-requests': {
     delegate: 'mortuary_post_mortem_request',
     where: buildPostMortemWhere,
@@ -665,10 +580,7 @@ const RESOURCE_CONFIG = Object.freeze({
         created_at: true,
         updated_at: true,
         facility: { select: { id: true, human_friendly_id: true, name: true } },
-        mortuary_case: { select: CASE_SUMMARY_SELECT },
-      },
-    },
-  },
+        mortuary_case: { select: CASE_SUMMARY_SELECT }}}},
   'mortuary-release-authorisations': {
     delegate: 'mortuary_release_authorisation',
     where: buildReleaseWhere,
@@ -689,10 +601,7 @@ const RESOURCE_CONFIG = Object.freeze({
         created_at: true,
         updated_at: true,
         facility: { select: { id: true, human_friendly_id: true, name: true } },
-        mortuary_case: { select: CASE_SUMMARY_SELECT },
-      },
-    },
-  },
+        mortuary_case: { select: CASE_SUMMARY_SELECT }}}},
   'mortuary-billable-events': {
     delegate: 'mortuary_billable_event',
     where: buildBillableEventWhere,
@@ -712,11 +621,7 @@ const RESOURCE_CONFIG = Object.freeze({
         created_at: true,
         updated_at: true,
         facility: { select: { id: true, human_friendly_id: true, name: true } },
-        mortuary_case: { select: CASE_SUMMARY_SELECT },
-      },
-    },
-  },
-});
+        mortuary_case: { select: CASE_SUMMARY_SELECT }}}}});
 
 const findSummary = async ({ tenantId, facilityId }) => {
   try {
@@ -725,26 +630,20 @@ const findSummary = async ({ tenantId, facilityId }) => {
       await Promise.all([
         prisma.mortuary_case.count({ where: base }),
         prisma.mortuary_case.count({
-          where: buildCaseWhere({ tenantId, facilityId, queue: 'IDENTIFICATION_PENDING' }),
-        }),
+          where: buildCaseWhere({ tenantId, facilityId, queue: 'IDENTIFICATION_PENDING' })}),
         prisma.mortuary_case.count({
-          where: { ...base, status: 'IN_STORAGE' },
-        }),
+          where: { ...base, status: 'IN_STORAGE' }}),
         prisma.mortuary_case.count({
-          where: buildCaseWhere({ tenantId, facilityId, queue: 'RELEASE_READY' }),
-        }),
+          where: buildCaseWhere({ tenantId, facilityId, queue: 'RELEASE_READY' })}),
         prisma.mortuary_case.count({
-          where: buildCaseWhere({ tenantId, facilityId, queue: 'UNSETTLED_BILLING' }),
-        }),
-      ]);
+          where: buildCaseWhere({ tenantId, facilityId, queue: 'UNSETTLED_BILLING' })})]);
 
     return {
       total_cases: totalCases,
       identification_pending: identificationPending,
       in_storage: inStorage,
       release_ready: releaseReady,
-      unsettled_billing: unsettledBilling,
-    };
+      unsettled_billing: unsettledBilling};
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -755,40 +654,30 @@ const findQueueCounts = async ({ tenantId, facilityId }) => {
     const [identificationPending, storageExceptions, releaseReady, unsettledBilling, postMortemPending] =
       await Promise.all([
         prisma.mortuary_case.count({
-          where: buildCaseWhere({ tenantId, facilityId, queue: 'IDENTIFICATION_PENDING' }),
-        }),
+          where: buildCaseWhere({ tenantId, facilityId, queue: 'IDENTIFICATION_PENDING' })}),
         prisma.mortuary_storage_slot.count({
           where: {
             ...buildBaseWhere({ tenantId, facilityId }),
-            status: { in: STORAGE_EXCEPTION_STATUSES },
-          },
-        }),
+            status: { in: STORAGE_EXCEPTION_STATUSES }}}),
         prisma.mortuary_case.count({
-          where: buildCaseWhere({ tenantId, facilityId, queue: 'RELEASE_READY' }),
-        }),
+          where: buildCaseWhere({ tenantId, facilityId, queue: 'RELEASE_READY' })}),
         prisma.mortuary_billable_event.count({
           where: buildBillableEventWhere({
             tenantId,
             facilityId,
-            queue: 'UNSETTLED_BILLING',
-          }),
-        }),
+            queue: 'UNSETTLED_BILLING'})}),
         prisma.mortuary_post_mortem_request.count({
           where: buildPostMortemWhere({
             tenantId,
             facilityId,
-            queue: 'POST_MORTEM_PENDING',
-          }),
-        }),
-      ]);
+            queue: 'POST_MORTEM_PENDING'})})]);
 
     return {
       IDENTIFICATION_PENDING: identificationPending,
       STORAGE_EXCEPTIONS: storageExceptions,
       RELEASE_READY: releaseReady,
       UNSETTLED_BILLING: unsettledBilling,
-      POST_MORTEM_PENDING: postMortemPending,
-    };
+      POST_MORTEM_PENDING: postMortemPending};
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -806,10 +695,8 @@ const findItems = async ({ resource, filters, skip, take, orderBy }) => {
         skip,
         take,
         orderBy,
-        ...config.query,
-      }),
-      delegate.count({ where }),
-    ]);
+        ...config.query}),
+      delegate.count({ where })]);
 
     return { items, total };
   } catch (error) {
@@ -826,9 +713,7 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
       ? {
           OR: [
             { human_friendly_id: { contains: upperSearch } },
-            { name: { contains: normalizedSearch } },
-          ],
-        }
+            { name: { contains: normalizedSearch } }]}
       : {};
 
     const [facilities, storageUnits, storageSlots, deceasedProfiles, patients, sourceWorkflows] =
@@ -841,20 +726,15 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
               ? {
                   OR: [
                     { name: { contains: normalizedSearch } },
-                    { human_friendly_id: { contains: upperSearch } },
-                  ],
-                }
-              : {}),
-          },
+                    { human_friendly_id: { contains: upperSearch } }]}
+              : {})},
           take: 50,
           orderBy: { name: 'asc' },
-          select: { id: true, human_friendly_id: true, name: true, facility_type: true },
-        }),
+          select: { id: true, human_friendly_id: true, name: true, facility_type: true }}),
         prisma.mortuary_storage_unit.findMany({
           where: {
             ...base,
-            ...searchClause,
-          },
+            ...searchClause},
           take: 50,
           orderBy: { name: 'asc' },
           select: {
@@ -863,9 +743,7 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
             name: true,
             unit_type: true,
             status: true,
-            location_label: true,
-          },
-        }),
+            location_label: true}}),
         prisma.mortuary_storage_slot.findMany({
           where: {
             ...buildBaseWhere({ tenantId, facilityId }),
@@ -876,11 +754,8 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
                     { human_friendly_id: { contains: upperSearch } },
                     { slot_code: { contains: normalizedSearch } },
                     { label: { contains: normalizedSearch } },
-                    { storage_unit: { name: { contains: normalizedSearch } } },
-                  ],
-                }
-              : {}),
-          },
+                    { storage_unit: { name: { contains: normalizedSearch } } }]}
+              : {})},
           take: 100,
           orderBy: { slot_code: 'asc' },
           select: {
@@ -891,10 +766,7 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
             status: true,
             temperature_zone: true,
             storage_unit: {
-              select: { id: true, human_friendly_id: true, name: true },
-            },
-          },
-        }),
+              select: { id: true, human_friendly_id: true, name: true }}}}),
         prisma.mortuary_deceased_profile.findMany({
           where: {
             ...buildBaseWhere({ tenantId, facilityId }),
@@ -903,11 +775,8 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
                   OR: [
                     { human_friendly_id: { contains: upperSearch } },
                     { display_name: { contains: normalizedSearch } },
-                    { external_reference: { contains: normalizedSearch } },
-                  ],
-                }
-              : {}),
-          },
+                    { external_reference: { contains: normalizedSearch } }]}
+              : {})},
           take: 50,
           orderBy: { display_name: 'asc' },
           select: {
@@ -915,9 +784,7 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
             human_friendly_id: true,
             display_name: true,
             external_reference: true,
-            date_of_death: true,
-          },
-        }),
+            date_of_death: true}}),
         prisma.patient.findMany({
           where: {
             tenant_id: tenantId || '__missing_tenant__',
@@ -928,31 +795,23 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
                   OR: [
                     { human_friendly_id: { contains: upperSearch } },
                     { first_name: { contains: normalizedSearch } },
-                    { last_name: { contains: normalizedSearch } },
-                  ],
-                }
-              : {}),
-          },
+                    { last_name: { contains: normalizedSearch } }]}
+              : {})},
           take: 50,
           orderBy: { last_name: 'asc' },
           select: {
             id: true,
             human_friendly_id: true,
             first_name: true,
-            last_name: true,
-          },
-        }),
+            last_name: true}}),
         prisma.mortuary_case.findMany({
           where: {
             ...base,
-            source_workflow: { not: null },
-          },
+            source_workflow: { not: null }},
           distinct: ['source_workflow'],
           take: 50,
           orderBy: { source_workflow: 'asc' },
-          select: { source_workflow: true },
-        }),
-      ]);
+          select: { source_workflow: true }})]);
 
     return {
       facilities,
@@ -960,8 +819,7 @@ const findLookups = async ({ tenantId, facilityId, storageUnitId, search }) => {
       storageSlots,
       deceasedProfiles,
       patients,
-      sourceWorkflows,
-    };
+      sourceWorkflows};
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -974,5 +832,4 @@ module.exports = {
   findItems,
   findLookups,
   findQueueCounts,
-  findSummary,
-};
+  findSummary};

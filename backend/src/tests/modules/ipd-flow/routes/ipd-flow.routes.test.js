@@ -40,8 +40,7 @@ describe('ipd-flow.routes contract', () => {
       'POST /:id/update-discharge-clearance',
       'POST /:id/update-transfer',
       'POST /request',
-      'POST /start',
-    ]);
+      'POST /start']);
   });
 
   it('applies validation/auth middleware before handlers', () => {

@@ -32,8 +32,7 @@ const QUEUE_SCOPE_VALUES = [
   'ACTIVE_PLAN',
   'FOLLOW_UP_DUE',
   'COMPLETED',
-  'ALL',
-];
+  'ALL'];
 
 const THERAPY_STATUS_VALUES = [
   'REFERRAL',
@@ -44,22 +43,19 @@ const THERAPY_STATUS_VALUES = [
   'FOLLOW_UP_DUE',
   'MISSED',
   'COMPLETED',
-  'CLOSED',
-];
+  'CLOSED'];
 
 const ATTENDANCE_VALUES = [
   'SCHEDULED',
   'ATTENDED',
   'NO_SHOW',
   'CANCELLED',
-  'RESCHEDULED',
-];
+  'RESCHEDULED'];
 
 const SOURCE_KIND_VALUES = ['OPD', 'IPD', 'EMERGENCY', 'TRIAGE'];
 
 const therapyEpisodeIdParamsSchema = z.object({
-  id: identifierSchema,
-});
+  id: identifierSchema});
 
 const listTherapyFlowsQuerySchema = listQuerySchema.extend({
   tenant_id: optionalIdentifierSchema,
@@ -72,14 +68,12 @@ const listTherapyFlowsQuerySchema = listQuerySchema.extend({
   source_kind: z.enum(SOURCE_KIND_VALUES).optional(),
   scheduled_from: z.string().datetime().optional(),
   scheduled_to: z.string().datetime().optional(),
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 const getTherapyFlowQuerySchema = z.object({
   include_timeline: z
     .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
-    .optional(),
-});
+    .optional()});
 
 const createTherapyReferralSchema = z.object({
   encounter_id: identifierSchema,
@@ -91,13 +85,11 @@ const createTherapyReferralSchema = z.object({
   referral_reason: z.string().trim().max(2000).optional().nullable(),
   priority: z.string().trim().max(40).optional().nullable(),
   therapist_user_id: optionalIdentifierSchema,
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const acceptReferralSchema = z.object({
   note: z.string().trim().max(65535).optional().nullable(),
-  therapist_user_id: optionalIdentifierSchema,
-});
+  therapist_user_id: optionalIdentifierSchema});
 
 const recordAssessmentSchema = z.object({
   assessment: z.string().trim().min(1).max(65535),
@@ -105,8 +97,7 @@ const recordAssessmentSchema = z.object({
   plan: z.string().trim().max(65535).optional().nullable(),
   instructions: z.string().trim().max(65535).optional().nullable(),
   contraindications: z.string().trim().max(65535).optional().nullable(),
-  session_frequency: z.string().trim().max(120).optional().nullable(),
-});
+  session_frequency: z.string().trim().max(120).optional().nullable()});
 
 const scheduleSessionSchema = z.object({
   therapist_user_id: optionalIdentifierSchema,
@@ -114,21 +105,18 @@ const scheduleSessionSchema = z.object({
   scheduled_end_at: z.string().datetime().optional().nullable(),
   location: z.string().trim().max(255).optional().nullable(),
   reason: z.string().trim().max(2000).optional().nullable(),
-  billing: clinicalRequestBillingSchema.optional().nullable(),
-});
+  billing: clinicalRequestBillingSchema.optional().nullable()});
 
 const recordSessionSchema = z.object({
   session_id: optionalIdentifierSchema,
   note: z.string().trim().min(1).max(65535),
   attendance_status: z.enum(ATTENDANCE_VALUES).optional(),
-  billing: clinicalRequestBillingSchema.optional().nullable(),
-});
+  billing: clinicalRequestBillingSchema.optional().nullable()});
 
 const markAttendanceSchema = z.object({
   session_id: identifierSchema,
   attendance_status: z.enum(ATTENDANCE_VALUES),
-  note: z.string().trim().max(65535).optional().nullable(),
-});
+  note: z.string().trim().max(65535).optional().nullable()});
 
 const updatePlanSchema = z.object({
   plan: z.string().trim().min(1).max(65535),
@@ -137,28 +125,23 @@ const updatePlanSchema = z.object({
   contraindications: z.string().trim().max(65535).optional().nullable(),
   session_frequency: z.string().trim().max(120).optional().nullable(),
   plan_started_at: z.string().datetime().optional().nullable(),
-  plan_ends_at: z.string().datetime().optional().nullable(),
-});
+  plan_ends_at: z.string().datetime().optional().nullable()});
 
 const addProgressNoteSchema = z.object({
-  note: z.string().trim().min(1).max(65535),
-});
+  note: z.string().trim().min(1).max(65535)});
 
 const scheduleFollowUpSchema = z.object({
   scheduled_at: z.string().datetime(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const closeEpisodeSchema = z.object({
-  outcome_summary: z.string().trim().min(1).max(65535),
-});
+  outcome_summary: z.string().trim().min(1).max(65535)});
 
 const requestTherapySchema = z.object({
   clinical_indication: z.string().trim().min(1).max(2000),
   priority: z.string().trim().max(40).optional().nullable(),
   therapist_user_id: optionalIdentifierSchema,
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 module.exports = {
   therapyEpisodeIdParamsSchema,
@@ -176,5 +159,4 @@ module.exports = {
   closeEpisodeSchema,
   requestTherapySchema,
   QUEUE_SCOPE_VALUES,
-  THERAPY_STATUS_VALUES,
-};
+  THERAPY_STATUS_VALUES};

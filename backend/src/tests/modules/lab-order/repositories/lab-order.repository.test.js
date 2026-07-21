@@ -40,7 +40,7 @@ describe('Lab Order Repository', () => {
       expect(result).toEqual(mockLabOrder);
       expect(prisma.lab_order.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -98,7 +98,7 @@ describe('Lab Order Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -112,7 +112,7 @@ describe('Lab Order Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -126,7 +126,7 @@ describe('Lab Order Repository', () => {
         skip: 0,
         take: 20,
         orderBy,
-        include: {}
+        include: undefined
       });
     });
 

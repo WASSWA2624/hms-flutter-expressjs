@@ -23,8 +23,7 @@ const TRIAGE_LEVEL_VALUES = [
   'IMMEDIATE',
   'URGENT',
   'LESS_URGENT',
-  'NON_URGENT',
-];
+  'NON_URGENT'];
 
 // ==================== Body Schemas ====================
 

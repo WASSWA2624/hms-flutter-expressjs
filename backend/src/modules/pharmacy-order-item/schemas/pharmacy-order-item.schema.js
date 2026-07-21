@@ -27,8 +27,7 @@ const MEDICATION_ROUTE_VALUES = [
   'OTIC',
   'NASAL',
   'INTRADERMAL',
-  'OTHER',
-];
+  'OTHER'];
 
 const MEDICATION_FREQUENCY_VALUES = [
   'ONCE',
@@ -44,8 +43,7 @@ const MEDICATION_FREQUENCY_VALUES = [
   'WEEKLY',
   'PRN',
   'STAT',
-  'CUSTOM',
-];
+  'CUSTOM'];
 
 const sharedPharmacyOrderItemFields = {
   quantity: z.coerce.number().int().positive(),
@@ -74,8 +72,7 @@ const refinePharmacyOrderItem = (value, ctx) => {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['dose_amount'],
-      message: 'errors.validation.required',
-    });
+      message: 'errors.validation.required'});
   }
 
   if (
@@ -86,8 +83,7 @@ const refinePharmacyOrderItem = (value, ctx) => {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['duration_unit'],
-      message: 'errors.validation.required',
-    });
+      message: 'errors.validation.required'});
   }
 
   if (
@@ -97,8 +93,7 @@ const refinePharmacyOrderItem = (value, ctx) => {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['instructions'],
-      message: 'errors.validation.required',
-    });
+      message: 'errors.validation.required'});
   }
 };
 
@@ -109,8 +104,7 @@ const createPharmacyOrderItemSchema = z
   .object({
     pharmacy_order_id: uuidOrFriendlyIdentifierSchema,
     drug_id: uuidOrFriendlyIdentifierSchema,
-    ...sharedPharmacyOrderItemFields,
-  })
+    ...sharedPharmacyOrderItemFields})
   .superRefine(refinePharmacyOrderItem);
 
 /**
@@ -123,10 +117,8 @@ const updatePharmacyOrderItemSchema = z
     ...Object.fromEntries(
       Object.entries(sharedPharmacyOrderItemFields).map(([key, value]) => [
         key,
-        value.optional(),
-      ])
-    ),
-  })
+        value.optional()])
+    )})
   .superRefine((value, ctx) => {
     if (
       value.dose_amount !== undefined ||

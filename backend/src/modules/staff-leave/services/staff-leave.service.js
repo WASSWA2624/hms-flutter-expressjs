@@ -4,8 +4,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -15,14 +14,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const emptyResult = (page, limit) => ({
   staffLeaves: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const listStaffLeaves = async (filters, page, limit, sortBy, order) => {
   try {
@@ -33,8 +30,7 @@ const listStaffLeaves = async (filters, page, limit, sortBy, order) => {
     const staffProfileId = await resolveIdentifierForFilter({
       value: filters.staff_profile_id,
       model: 'staff_profile',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.staff_profile_id && staffProfileId === null) return emptyResult(page, limit);
     if (staffProfileId) whereClause.staff_profile_id = staffProfileId;
 
@@ -43,13 +39,11 @@ const listStaffLeaves = async (filters, page, limit, sortBy, order) => {
 
     const [staffLeaves, total] = await Promise.all([
       staffLeaveRepository.findMany(whereClause, skip, limit, orderBy),
-      staffLeaveRepository.count(whereClause),
-    ]);
+      staffLeaveRepository.count(whereClause)]);
 
     return {
       staffLeaves,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -61,8 +55,7 @@ const getStaffLeaveById = async (id) => {
     const resolvedId = await resolveEntityId({
       model: 'staff_leave',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const staffLeave = await staffLeaveRepository.findById(resolvedId);
     if (!staffLeave) throw new HttpError('errors.staff_leave.not_found', 404);
     return staffLeave;
@@ -80,17 +73,14 @@ const createStaffLeave = async (data, userId, ipAddress) => {
         value: data.staff_profile_id,
         model: 'staff_profile',
         field: 'staff_profile_id',
-        where: { deleted_at: null },
-      }),
-    };
+        where: { deleted_at: null }})};
 
     if (data.covering_staff_profile_id) {
       payload.covering_staff_profile_id = await resolveIdentifierForPayload({
         value: data.covering_staff_profile_id,
         model: 'staff_profile',
         field: 'covering_staff_profile_id',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     } else if (data.covering_staff_profile_id === null) {
       payload.covering_staff_profile_id = null;
     }
@@ -107,8 +97,7 @@ const createStaffLeave = async (data, userId, ipAddress) => {
       entity: 'staff_leave',
       entity_id: staffLeave.id,
       diff: { after: staffLeave },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return staffLeave;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -121,8 +110,7 @@ const updateStaffLeave = async (id, data, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'staff_leave',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await staffLeaveRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.staff_leave.not_found', 404);
 
@@ -133,8 +121,7 @@ const updateStaffLeave = async (id, data, userId, ipAddress) => {
             value: data.covering_staff_profile_id,
             model: 'staff_profile',
             field: 'covering_staff_profile_id',
-            where: { deleted_at: null },
-          })
+            where: { deleted_at: null }})
         : null;
     }
     if (payload.is_half_day === false) {
@@ -148,8 +135,7 @@ const updateStaffLeave = async (id, data, userId, ipAddress) => {
       entity: 'staff_leave',
       entity_id: staffLeave.id,
       diff: { before, after: staffLeave },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return staffLeave;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -162,8 +148,7 @@ const deleteStaffLeave = async (id, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'staff_leave',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await staffLeaveRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.staff_leave.not_found', 404);
 
@@ -174,8 +159,7 @@ const deleteStaffLeave = async (id, userId, ipAddress) => {
       entity: 'staff_leave',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -187,5 +171,4 @@ module.exports = {
   getStaffLeaveById,
   createStaffLeave,
   updateStaffLeave,
-  deleteStaffLeave,
-};
+  deleteStaffLeave};

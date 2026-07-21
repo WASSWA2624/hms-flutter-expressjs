@@ -15,8 +15,7 @@ const TASK_SORT_FIELDS = new Set([
   'updated_at',
   'scheduled_at',
   'completed_at',
-  'status',
-]);
+  'status']);
 
 const HOUSEKEEPING_TASK_INCLUDE = {
   facility: { select: { id: true, human_friendly_id: true, name: true } },
@@ -27,10 +26,7 @@ const HOUSEKEEPING_TASK_INCLUDE = {
       human_friendly_id: true,
       staff_number: true,
       position: true,
-      user: { select: { email: true } },
-    },
-  },
-};
+      user: { select: { email: true } }}}};
 
 const normalizeString = (value) => String(value || '').trim();
 const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object || {}, key);
@@ -44,8 +40,7 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: page * limit < total,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const resolveOrderBy = (sortBy = 'created_at', order = 'desc') => {
   const field = TASK_SORT_FIELDS.has(sortBy) ? sortBy : 'created_at';
@@ -67,8 +62,7 @@ const mapHousekeepingTask = (record) => {
     room_label: record?.room?.name || null,
     assigned_to_staff_id: publicRelationId(record, 'assigned_to', 'assigned_to_staff_id'),
     assigned_to_staff_label:
-      record?.assigned_to?.staff_number || record?.assigned_to?.user?.email || null,
-  };
+      record?.assigned_to?.staff_number || record?.assigned_to?.user?.email || null};
 };
 
 const resolveListFilters = async (filters = {}, page = 1, limit = 20, context = {}) => {
@@ -80,13 +74,11 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20, context = 
     const facilityId = await resolveIdentifierForFilter({
       value: requestedFacility,
       model: 'facility',
-      where: tenantWhere,
-    });
+      where: tenantWhere});
     if (facilityId === null) {
       return {
         housekeepingTasks: [],
-        pagination: buildPagination(page, limit, 0),
-      };
+        pagination: buildPagination(page, limit, 0)};
     }
     if (facilityId !== undefined) repoFilters.facility_id = facilityId;
   }
@@ -95,13 +87,11 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20, context = 
     const roomId = await resolveIdentifierForFilter({
       value: filters.room_id,
       model: 'room',
-      where: tenantWhere,
-    });
+      where: tenantWhere});
     if (roomId === null) {
       return {
         housekeepingTasks: [],
-        pagination: buildPagination(page, limit, 0),
-      };
+        pagination: buildPagination(page, limit, 0)};
     }
     if (roomId !== undefined) repoFilters.room_id = roomId;
   }
@@ -110,13 +100,11 @@ const resolveListFilters = async (filters = {}, page = 1, limit = 20, context = 
     const staffId = await resolveIdentifierForFilter({
       value: filters.assigned_to_staff_id,
       model: 'staff_profile',
-      where: tenantWhere,
-    });
+      where: tenantWhere});
     if (staffId === null) {
       return {
         housekeepingTasks: [],
-        pagination: buildPagination(page, limit, 0),
-      };
+        pagination: buildPagination(page, limit, 0)};
     }
     if (staffId !== undefined) repoFilters.assigned_to_staff_id = staffId;
   }
@@ -136,8 +124,7 @@ const resolvePayload = async (data = {}, context = {}, { defaultFacility = true 
       field: 'facility_id',
       model: 'facility',
       nullable: true,
-      where: tenantWhere,
-    });
+      where: tenantWhere});
   } else if (defaultFacility && context?.facility_id) {
     payload.facility_id = context.facility_id;
   }
@@ -148,8 +135,7 @@ const resolvePayload = async (data = {}, context = {}, { defaultFacility = true 
       field: 'room_id',
       model: 'room',
       nullable: true,
-      where: tenantWhere,
-    });
+      where: tenantWhere});
   }
 
   if (hasOwn(payload, 'assigned_to_staff_id')) {
@@ -158,8 +144,7 @@ const resolvePayload = async (data = {}, context = {}, { defaultFacility = true 
       field: 'assigned_to_staff_id',
       model: 'staff_profile',
       nullable: true,
-      where: tenantWhere,
-    });
+      where: tenantWhere});
   }
 
   if (hasOwn(payload, 'scheduled_at') && payload.scheduled_at) {
@@ -176,8 +161,7 @@ const buildTaskScope = (context = {}) => ({
   ...(context?.facility_id ? { facility_id: context.facility_id } : {}),
   ...(context?.tenant_id
     ? { facility: { tenant_id: context.tenant_id, deleted_at: null } }
-    : {}),
-});
+    : {})});
 
 const resolveTaskId = (identifier, context = {}) =>
   resolveEntityId({ model: 'housekeeping_task', identifier, where: buildTaskScope(context) });
@@ -190,13 +174,11 @@ const listHousekeepingTasks = async (filters = {}, page = 1, limit = 20, sort_by
   const orderBy = resolveOrderBy(sort_by, order);
   const [housekeepingTasks, total] = await Promise.all([
     housekeepingTaskRepository.findMany(resolvedFilters, skip, limit, orderBy, HOUSEKEEPING_TASK_INCLUDE),
-    housekeepingTaskRepository.count(resolvedFilters),
-  ]);
+    housekeepingTaskRepository.count(resolvedFilters)]);
 
   return {
     housekeepingTasks: housekeepingTasks.map(mapHousekeepingTask),
-    pagination: buildPagination(page, limit, total),
-  };
+    pagination: buildPagination(page, limit, total)};
 };
 
 const getHousekeepingTaskById = async (id, context = {}) => {
@@ -229,9 +211,7 @@ const createHousekeepingTask = async (data, context = {}) => {
       assigned_to_staff_id: housekeepingTask.assigned_to_staff_id,
       status: housekeepingTask.status,
       scheduled_at: housekeepingTask.scheduled_at,
-      completed_at: housekeepingTask.completed_at,
-    },
-  });
+      completed_at: housekeepingTask.completed_at}});
 
   return mapHousekeepingTask(housekeepingTask);
 };
@@ -263,18 +243,14 @@ const updateHousekeepingTask = async (id, data, context = {}) => {
         assigned_to_staff_id: beforeHousekeepingTask.assigned_to_staff_id,
         status: beforeHousekeepingTask.status,
         scheduled_at: beforeHousekeepingTask.scheduled_at,
-        completed_at: beforeHousekeepingTask.completed_at,
-      },
+        completed_at: beforeHousekeepingTask.completed_at},
       after: {
         facility_id: housekeepingTask.facility_id,
         room_id: housekeepingTask.room_id,
         assigned_to_staff_id: housekeepingTask.assigned_to_staff_id,
         status: housekeepingTask.status,
         scheduled_at: housekeepingTask.scheduled_at,
-        completed_at: housekeepingTask.completed_at,
-      },
-    },
-  });
+        completed_at: housekeepingTask.completed_at}}});
 
   return mapHousekeepingTask(housekeepingTask);
 };
@@ -302,9 +278,7 @@ const deleteHousekeepingTask = async (id, context = {}) => {
       facility_id: housekeepingTask.facility_id,
       room_id: housekeepingTask.room_id,
       assigned_to_staff_id: housekeepingTask.assigned_to_staff_id,
-      status: housekeepingTask.status,
-    },
-  });
+      status: housekeepingTask.status}});
 };
 
 module.exports = {
@@ -312,5 +286,4 @@ module.exports = {
   getHousekeepingTaskById,
   createHousekeepingTask,
   updateHousekeepingTask,
-  deleteHousekeepingTask,
-};
+  deleteHousekeepingTask};

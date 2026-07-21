@@ -961,7 +961,6 @@ model tenant {
   version                  Int       @default(1)
 
   facilities                      facility[]
-  branches                        branch[]
   departments                     department[]
   units                           unit[]
   wards                           ward[]
@@ -1108,7 +1107,6 @@ model facility {
   version                  Int          @default(1)
 
   tenant                          tenant                           @relation(fields: [tenant_id], references: [id])
-  branches                        branch[]
   departments                     department[]
   units                           unit[]
   wards                           ward[]
@@ -1189,45 +1187,12 @@ model facility {
   @@index([human_friendly_id])
 }
 
-model branch {
-  id                String    @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?   @db.VarChar(32)
-  tenant_id         String    @db.VarChar(36)
-  facility_id       String?   @db.VarChar(36)
-  name              String    @db.VarChar(255)
-  is_active         Boolean   @default(true)
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
-  deleted_at        DateTime?
-  version           Int       @default(1)
-
-  tenant      tenant       @relation(fields: [tenant_id], references: [id])
-  facility    facility?    @relation(fields: [facility_id], references: [id])
-  departments department[]
-  addresses   address[]    @relation("branch_address")
-  contacts    contact[]    @relation("branch_contact")
-  kpi_snapshots kpi_snapshot[] @relation("kpi_snapshot_branch")
-  analytics_events analytics_event[] @relation("analytics_event_branch")
-  abac_policies      abac_policy[]
-  break_glass_accesses break_glass_access[]
-  office_contexts    office_context[]
-  shift_closes       shift_close[]
-  day_closes         day_close[]
-  handovers          handover[]
-  custody_snapshots  custody_snapshot[]
-  closeout_packs     closeout_pack[]
-
-  @@index([tenant_id])
-  @@index([deleted_at])
-  @@index([human_friendly_id])
-}
 
 model department {
   id                String         @id @default(uuid()) @db.VarChar(36)
   human_friendly_id String?        @db.VarChar(32)
   tenant_id         String         @db.VarChar(36)
   facility_id       String?        @db.VarChar(36)
-  branch_id         String?        @db.VarChar(36)
   name              String         @db.VarChar(255)
   short_name        String?        @db.VarChar(50)
   department_type   DepartmentType
@@ -1239,7 +1204,6 @@ model department {
 
   tenant            tenant             @relation(fields: [tenant_id], references: [id])
   facility          facility?          @relation(fields: [facility_id], references: [id])
-  branch            branch?            @relation(fields: [branch_id], references: [id])
   units             unit[]
   wards             ward[]
   staff_positions   staff_position[]
@@ -1252,7 +1216,6 @@ model department {
   unit_management_assignments unit_management_assignment[]
 
   @@index([tenant_id])
-  @@index([branch_id])
   @@index([department_type])
   @@index([deleted_at])
   @@index([human_friendly_id])
@@ -1382,7 +1345,6 @@ model address {
   latitude          Decimal?    @db.Decimal(10, 7)
   longitude         Decimal?    @db.Decimal(10, 7)
   facility_id       String?     @db.VarChar(36)
-  branch_id         String?     @db.VarChar(36)
   patient_id        String?     @db.VarChar(36)
   user_profile_id   String?     @db.VarChar(36)
   staff_profile_id  String?     @db.VarChar(36)
@@ -1394,14 +1356,12 @@ model address {
 
   tenant        tenant         @relation(fields: [tenant_id], references: [id])
   facility      facility?      @relation("facility_address", fields: [facility_id], references: [id])
-  branch        branch?        @relation("branch_address", fields: [branch_id], references: [id])
   patient       patient?       @relation("patient_address", fields: [patient_id], references: [id])
   user_profile  user_profile?  @relation("user_profile_address", fields: [user_profile_id], references: [id])
   staff_profile staff_profile? @relation("staff_profile_address", fields: [staff_profile_id], references: [id])
   supplier      supplier?      @relation("supplier_address", fields: [supplier_id], references: [id])
 
   @@index([tenant_id])
-  @@index([branch_id])
   @@index([patient_id])
   @@index([user_profile_id])
   @@index([staff_profile_id])
@@ -1418,7 +1378,6 @@ model contact {
   value             String      @db.VarChar(255)
   is_primary        Boolean     @default(false)
   facility_id       String?     @db.VarChar(36)
-  branch_id         String?     @db.VarChar(36)
   patient_id        String?     @db.VarChar(36)
   user_profile_id   String?     @db.VarChar(36)
   staff_profile_id  String?     @db.VarChar(36)
@@ -1430,7 +1389,6 @@ model contact {
 
   tenant        tenant         @relation(fields: [tenant_id], references: [id])
   facility      facility?      @relation("facility_contact", fields: [facility_id], references: [id])
-  branch        branch?        @relation("branch_contact", fields: [branch_id], references: [id])
   patient       patient?       @relation("patient_contact", fields: [patient_id], references: [id])
   user_profile  user_profile?  @relation("user_profile_contact", fields: [user_profile_id], references: [id])
   staff_profile staff_profile? @relation("staff_profile_contact", fields: [staff_profile_id], references: [id])
@@ -1438,7 +1396,6 @@ model contact {
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([patient_id])
   @@index([user_profile_id])
   @@index([staff_profile_id])
@@ -5318,7 +5275,6 @@ model abac_policy {
   human_friendly_id            String?          @db.VarChar(32)
   tenant_id                    String           @db.VarChar(36)
   facility_id                  String?          @db.VarChar(36)
-  branch_id                    String?          @db.VarChar(36)
   department_id                String?          @db.VarChar(36)
   name                         String           @db.VarChar(255)
   description                  String?          @db.Text
@@ -5340,14 +5296,12 @@ model abac_policy {
 
   tenant       tenant      @relation(fields: [tenant_id], references: [id])
   facility     facility?   @relation(fields: [facility_id], references: [id])
-  branch       branch?     @relation(fields: [branch_id], references: [id])
   department   department? @relation(fields: [department_id], references: [id])
   created_by   user?       @relation("abac_policy_created_by", fields: [created_by_user_id], references: [id])
   updated_by   user?       @relation("abac_policy_updated_by", fields: [updated_by_user_id], references: [id])
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([department_id])
   @@index([resource_type])
   @@index([action])
@@ -5365,7 +5319,6 @@ model break_glass_access {
   human_friendly_id     String?                 @db.VarChar(32)
   tenant_id             String                  @db.VarChar(36)
   facility_id           String?                 @db.VarChar(36)
-  branch_id             String?                 @db.VarChar(36)
   patient_id            String?                 @db.VarChar(36)
   target_resource_type  String                  @db.VarChar(120)
   target_resource_id    String?                 @db.VarChar(36)
@@ -5392,7 +5345,6 @@ model break_glass_access {
 
   tenant        tenant                @relation(fields: [tenant_id], references: [id])
   facility      facility?             @relation(fields: [facility_id], references: [id])
-  branch        branch?               @relation(fields: [branch_id], references: [id])
   patient       patient?              @relation(fields: [patient_id], references: [id])
   requested_by  user                  @relation("break_glass_requested_by", fields: [requested_by_user_id], references: [id])
   approved_by   user?                 @relation("break_glass_approved_by", fields: [approved_by_user_id], references: [id])
@@ -5401,7 +5353,6 @@ model break_glass_access {
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([patient_id])
   @@index([target_resource_type])
   @@index([target_resource_id])
@@ -5448,7 +5399,6 @@ model office_context {
   human_friendly_id       String?              @db.VarChar(32)
   tenant_id               String               @db.VarChar(36)
   facility_id             String?              @db.VarChar(36)
-  branch_id               String?              @db.VarChar(36)
   shift_id                String               @db.VarChar(36)
   opened_by_user_id       String               @db.VarChar(36)
   current_holder_user_id  String?              @db.VarChar(36)
@@ -5467,7 +5417,6 @@ model office_context {
 
   tenant          tenant             @relation(fields: [tenant_id], references: [id])
   facility        facility?          @relation(fields: [facility_id], references: [id])
-  branch          branch?            @relation(fields: [branch_id], references: [id])
   shift           shift              @relation(fields: [shift_id], references: [id])
   opened_by       user               @relation("office_context_opened_by", fields: [opened_by_user_id], references: [id])
   current_holder  user?              @relation("office_context_current_holder", fields: [current_holder_user_id], references: [id])
@@ -5479,7 +5428,6 @@ model office_context {
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([shift_id])
   @@index([opened_by_user_id])
   @@index([current_holder_user_id])
@@ -5494,7 +5442,6 @@ model shift_close {
   human_friendly_id    String?           @db.VarChar(32)
   tenant_id            String            @db.VarChar(36)
   facility_id          String?           @db.VarChar(36)
-  branch_id            String?           @db.VarChar(36)
   office_context_id    String            @db.VarChar(36)
   shift_id             String            @db.VarChar(36)
   closed_by_user_id    String            @db.VarChar(36)
@@ -5518,7 +5465,6 @@ model shift_close {
 
   tenant          tenant         @relation(fields: [tenant_id], references: [id])
   facility        facility?      @relation(fields: [facility_id], references: [id])
-  branch          branch?        @relation(fields: [branch_id], references: [id])
   office_context  office_context @relation(fields: [office_context_id], references: [id])
   shift           shift          @relation(fields: [shift_id], references: [id])
   closed_by       user           @relation("shift_close_closed_by", fields: [closed_by_user_id], references: [id])
@@ -5527,7 +5473,6 @@ model shift_close {
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([office_context_id])
   @@index([shift_id])
   @@index([closed_by_user_id])
@@ -5545,7 +5490,6 @@ model day_close {
   human_friendly_id     String?           @db.VarChar(32)
   tenant_id             String            @db.VarChar(36)
   facility_id           String?           @db.VarChar(36)
-  branch_id             String?           @db.VarChar(36)
   office_context_id     String            @db.VarChar(36)
   submitted_by_user_id  String            @db.VarChar(36)
   approved_by_user_id   String?           @db.VarChar(36)
@@ -5566,7 +5510,6 @@ model day_close {
 
   tenant         tenant         @relation(fields: [tenant_id], references: [id])
   facility       facility?      @relation(fields: [facility_id], references: [id])
-  branch         branch?        @relation(fields: [branch_id], references: [id])
   office_context office_context @relation(fields: [office_context_id], references: [id])
   submitted_by   user           @relation("day_close_submitted_by", fields: [submitted_by_user_id], references: [id])
   approved_by    user?          @relation("day_close_approved_by", fields: [approved_by_user_id], references: [id])
@@ -5574,7 +5517,6 @@ model day_close {
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([office_context_id])
   @@index([submitted_by_user_id])
   @@index([approved_by_user_id])
@@ -5591,7 +5533,6 @@ model handover {
   human_friendly_id String?      @db.VarChar(32)
   tenant_id       String         @db.VarChar(36)
   facility_id     String?        @db.VarChar(36)
-  branch_id       String?        @db.VarChar(36)
   office_context_id String       @db.VarChar(36)
   from_user_id    String         @db.VarChar(36)
   to_user_id      String         @db.VarChar(36)
@@ -5609,7 +5550,6 @@ model handover {
 
   tenant         tenant         @relation(fields: [tenant_id], references: [id])
   facility       facility?      @relation(fields: [facility_id], references: [id])
-  branch         branch?        @relation(fields: [branch_id], references: [id])
   office_context office_context @relation(fields: [office_context_id], references: [id])
   from_user      user           @relation("handover_from_user", fields: [from_user_id], references: [id])
   to_user        user           @relation("handover_to_user", fields: [to_user_id], references: [id])
@@ -5617,7 +5557,6 @@ model handover {
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([office_context_id])
   @@index([from_user_id])
   @@index([to_user_id])
@@ -5633,7 +5572,6 @@ model custody_snapshot {
   human_friendly_id          String?                @db.VarChar(32)
   tenant_id                  String                 @db.VarChar(36)
   facility_id                String?                @db.VarChar(36)
-  branch_id                  String?                @db.VarChar(36)
   office_context_id          String                 @db.VarChar(36)
   captured_by_user_id        String                 @db.VarChar(36)
   status                     CustodySnapshotStatus  @default(DRAFT)
@@ -5651,14 +5589,12 @@ model custody_snapshot {
 
   tenant         tenant         @relation(fields: [tenant_id], references: [id])
   facility       facility?      @relation(fields: [facility_id], references: [id])
-  branch         branch?        @relation(fields: [branch_id], references: [id])
   office_context office_context @relation(fields: [office_context_id], references: [id])
   captured_by    user           @relation("custody_snapshot_captured_by", fields: [captured_by_user_id], references: [id])
   closeout_packs closeout_pack[]
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([office_context_id])
   @@index([captured_by_user_id])
   @@index([status])
@@ -5673,7 +5609,6 @@ model closeout_pack {
   human_friendly_id         String?            @db.VarChar(32)
   tenant_id                 String             @db.VarChar(36)
   facility_id               String?            @db.VarChar(36)
-  branch_id                 String?            @db.VarChar(36)
   office_context_id         String             @db.VarChar(36)
   shift_close_id            String?            @db.VarChar(36)
   day_close_id              String?            @db.VarChar(36)
@@ -5699,7 +5634,6 @@ model closeout_pack {
 
   tenant           tenant            @relation(fields: [tenant_id], references: [id])
   facility         facility?         @relation(fields: [facility_id], references: [id])
-  branch           branch?           @relation(fields: [branch_id], references: [id])
   office_context   office_context    @relation(fields: [office_context_id], references: [id])
   shift_close      shift_close?      @relation(fields: [shift_close_id], references: [id])
   day_close        day_close?        @relation(fields: [day_close_id], references: [id])
@@ -5709,7 +5643,6 @@ model closeout_pack {
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([office_context_id])
   @@index([shift_close_id])
   @@index([day_close_id])
@@ -6871,7 +6804,6 @@ model kpi_snapshot {
   human_friendly_id String?   @db.VarChar(32)
   tenant_id         String    @db.VarChar(36)
   facility_id       String?   @db.VarChar(36)
-  branch_id         String?   @db.VarChar(36)
   name              String    @db.VarChar(255)
   metric_key        String    @db.VarChar(80)
   metric_group      String    @db.VarChar(80)
@@ -6885,11 +6817,9 @@ model kpi_snapshot {
 
   tenant   tenant   @relation(fields: [tenant_id], references: [id])
   facility facility? @relation("kpi_snapshot_facility", fields: [facility_id], references: [id])
-  branch   branch?   @relation("kpi_snapshot_branch", fields: [branch_id], references: [id])
 
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([metric_key])
   @@index([metric_group])
   @@index([threshold_state])
@@ -6904,7 +6834,6 @@ model analytics_event {
   tenant_id         String    @db.VarChar(36)
   user_id           String?   @db.VarChar(36)
   facility_id       String?   @db.VarChar(36)
-  branch_id         String?   @db.VarChar(36)
   event_name        String    @db.VarChar(255)
   event_category    String    @db.VarChar(80)
   entity_type       String?   @db.VarChar(80)
@@ -6920,12 +6849,10 @@ model analytics_event {
   tenant   tenant   @relation(fields: [tenant_id], references: [id])
   user     user?    @relation(fields: [user_id], references: [id])
   facility facility? @relation("analytics_event_facility", fields: [facility_id], references: [id])
-  branch   branch?   @relation("analytics_event_branch", fields: [branch_id], references: [id])
 
   @@index([tenant_id])
   @@index([user_id])
   @@index([facility_id])
-  @@index([branch_id])
   @@index([event_name])
   @@index([event_category])
   @@index([entity_type])

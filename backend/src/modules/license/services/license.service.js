@@ -10,18 +10,15 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   createSubscriptionPublicId,
-  PUBLIC_ID_PREFIXES,
-} = require('@lib/subscriptions/constants');
+  PUBLIC_ID_PREFIXES} = require('@lib/subscriptions/constants');
 const { serializeLicense } = require('@lib/subscriptions/serializers');
 const {
   resolveEntityId,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 const {
   canAccessTenant,
-  resolveUserTenantScope,
-} = require('@lib/subscriptions/access');
+  resolveUserTenantScope} = require('@lib/subscriptions/access');
 
 const requireTenantScope = (user = {}) => {
   const scope = resolveUserTenantScope(user);
@@ -39,17 +36,14 @@ const emptyList = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const loadLicenseRecord = async (identifier, user = {}) => {
   const scope = requireTenantScope(user);
   const resolvedId = await resolveEntityId({
     model: 'license',
     identifier,
-    where: scope.is_elevated ? {} : { tenant_id: scope.tenant_id },
-  });
+    where: scope.is_elevated ? {} : { tenant_id: scope.tenant_id }});
   const record = await licenseRepository.findById(resolvedId);
 
   if (!record || !canAccessTenant(scope, record.tenant_id)) {
@@ -62,8 +56,7 @@ const loadLicenseRecord = async (identifier, user = {}) => {
 const resolveLicensePayload = async (data = {}, context = {}) => {
   const scope = requireTenantScope(context.user);
   const payload = {
-    ...data,
-  };
+    ...data};
 
   if (!scope.is_elevated) {
     payload.tenant_id = scope.tenant_id;
@@ -74,8 +67,7 @@ const resolveLicensePayload = async (data = {}, context = {}) => {
     payload.tenant_id = await resolveIdentifierForPayload({
       value: data.tenant_id,
       model: 'tenant',
-      field: 'tenant_id',
-    });
+      field: 'tenant_id'});
   }
 
   return payload;
@@ -95,8 +87,7 @@ const listLicenses = async (
   if (filters.tenant_id) {
     const requestedTenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
-      model: 'tenant',
-    });
+      model: 'tenant'});
 
     if (requestedTenantId === null) {
       return emptyList(page, limit);
@@ -125,13 +116,11 @@ const listLicenses = async (
 
   const skip = (page - 1) * limit;
   const orderBy = {
-    [sort_by]: order,
-  };
+    [sort_by]: order};
 
   const [licenses, total] = await Promise.all([
     licenseRepository.findMany(repoFilters, skip, limit, orderBy),
-    licenseRepository.count(repoFilters),
-  ]);
+    licenseRepository.count(repoFilters)]);
 
   const totalPages = Math.ceil(total / limit);
   const hasNextPage = page < totalPages;
@@ -145,9 +134,7 @@ const listLicenses = async (
       total,
       totalPages,
       hasNextPage,
-      hasPreviousPage,
-    },
-  };
+      hasPreviousPage}};
 };
 
 const getLicenseById = async (id, user = {}) => {
@@ -161,14 +148,12 @@ const createLicense = async (data, context) => {
     ...(await resolveLicensePayload(
       {
         ...data,
-        tenant_id: scope.is_elevated ? data.tenant_id : scope.tenant_id,
-      },
+        tenant_id: scope.is_elevated ? data.tenant_id : scope.tenant_id},
       context
     )),
     human_friendly_id:
       data.human_friendly_id
-      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.license),
-  });
+      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.license)});
   const license = await loadLicenseRecord(created.id, context.user);
 
   createAuditLog({
@@ -178,8 +163,7 @@ const createLicense = async (data, context) => {
     entity_id: license.id,
     diff: { after: license },
     ip_address: context.ip,
-    tenant_id: license.tenant_id || context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: license.tenant_id || context.tenant_id || null}).catch(() => {});
 
   return serializeLicense(license);
 };
@@ -199,8 +183,7 @@ const updateLicense = async (id, data, context) => {
     entity_id: updatedLicense.id,
     diff: { before: existingLicense, after: updatedLicense },
     ip_address: context.ip,
-    tenant_id: existingLicense.tenant_id || context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: existingLicense.tenant_id || context.tenant_id || null}).catch(() => {});
 
   return serializeLicense(updatedLicense);
 };
@@ -216,8 +199,7 @@ const deleteLicense = async (id, context) => {
     entity_id: deletedLicense.id,
     diff: { before: existingLicense, after: deletedLicense },
     ip_address: context.ip,
-    tenant_id: existingLicense.tenant_id || context.tenant_id || null,
-  }).catch(() => {});
+    tenant_id: existingLicense.tenant_id || context.tenant_id || null}).catch(() => {});
 
   return deletedLicense;
 };
@@ -227,5 +209,4 @@ module.exports = {
   getLicenseById,
   createLicense,
   updateLicense,
-  deleteLicense,
-};
+  deleteLicense};

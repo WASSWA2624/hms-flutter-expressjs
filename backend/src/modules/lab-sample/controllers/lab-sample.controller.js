@@ -37,8 +37,7 @@ const listLabSamples = asyncHandler(async (req, res) => {
     status,
     created_at_from,
     created_at_to,
-    search,
-  };
+    search};
 
   const userId = req.user?.id;
   const ipAddress = req.ip;

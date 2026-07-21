@@ -19,8 +19,7 @@ const getRadiologyWorkbench = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
-    order = 'desc',
-  } = req.query;
+    order = 'desc'} = req.query;
 
   const data = await radiologyWorkspaceService.getRadiologyWorkbench(
     {
@@ -34,8 +33,7 @@ const getRadiologyWorkbench = asyncHandler(async (req, res) => {
       to,
       patient_id,
       encounter_id,
-      search,
-    },
+      search},
     Number(page),
     Number(limit),
     sort_by,
@@ -48,8 +46,7 @@ const getRadiologyWorkbench = asyncHandler(async (req, res) => {
 const getRadiologyReferenceData = asyncHandler(async (req, res) => {
   const data = await radiologyWorkspaceService.getRadiologyReferenceData(req.query, {
     tenant_id: req.user?.tenant_id,
-    facility_id: req.user?.facility_id,
-  });
+    facility_id: req.user?.facility_id});
   return sendSuccess(res, 200, 'messages.radiology_workspace.reference_data.success', data);
 });
 
@@ -60,8 +57,7 @@ const createRadiologyOrder = asyncHandler(async (req, res) => {
     req.ip,
     {
       tenant_id: req.user?.tenant_id,
-      facility_id: req.user?.facility_id,
-    }
+      facility_id: req.user?.facility_id}
   );
   return sendSuccess(res, 201, 'messages.radiology_workspace.order.create_success', data);
 });
@@ -240,5 +236,4 @@ module.exports = {
   requestRadiologyResultFinalization,
   attestRadiologyResultFinalization,
   addendumRadiologyResult,
-  resolveLegacyRoute,
-};
+  resolveLegacyRoute};

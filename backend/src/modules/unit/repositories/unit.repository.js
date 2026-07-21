@@ -32,9 +32,7 @@ const findById = async (id, { includeDeleted = false } = {}) => {
     return await prisma.unit.findFirst({
       where: {
         id,
-        ...(includeDeleted ? {} : { deleted_at: null }),
-      },
-    });
+        ...(includeDeleted ? {} : { deleted_at: null })}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -63,8 +61,7 @@ const findMany = async (
       where: buildWhereClause(filters, { includeDeleted }),
       skip,
       take,
-      orderBy,
-    });
+      orderBy});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -81,8 +78,7 @@ const findMany = async (
 const count = async (filters = {}, { includeDeleted = false } = {}) => {
   try {
     return await prisma.unit.count({
-      where: buildWhereClause(filters, { includeDeleted }),
-    });
+      where: buildWhereClause(filters, { includeDeleted })});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -97,8 +93,7 @@ const count = async (filters = {}, { includeDeleted = false } = {}) => {
 const create = async (data) => {
   try {
     return await prisma.unit.create({
-      data,
-    });
+      data});
   } catch (error) {
     if (error.code === 'P2002') {
       const target = error.meta?.target?.[0] || 'field';
@@ -123,8 +118,7 @@ const update = async (id, data) => {
   try {
     return await prisma.unit.update({
       where: { id },
-      data,
-    });
+      data});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.unit.not_found', 404);
@@ -152,9 +146,7 @@ const softDelete = async (id) => {
     return await prisma.unit.update({
       where: { id },
       data: {
-        deleted_at: new Date(),
-      },
-    });
+        deleted_at: new Date()}});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.unit.not_found', 404);
@@ -188,5 +180,4 @@ module.exports = {
   create,
   update,
   softDelete,
-  restore,
-};
+  restore};

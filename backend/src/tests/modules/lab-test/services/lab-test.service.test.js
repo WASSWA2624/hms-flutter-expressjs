@@ -2,23 +2,20 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/lab-test/lab-test.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
-    resolveModelRecordOrThrow: jest.fn(),
-  };
+    resolveModelRecordOrThrow: jest.fn()};
 });
 
 const labTestRepository = require('@repositories/lab-test/lab-test.repository');
 const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/lab-workspace/lab.shared');
+  resolveModelRecordOrThrow} = require('@services/lab-workspace/lab.shared');
 const labTestService = require('@services/lab-test/lab-test.service');
 
 const mockUserId = 'user-123';
@@ -44,9 +41,7 @@ const buildLabTestRecord = (overrides = {}) => ({
       unit: 'g/dL',
       ucum_code: 'g/dL',
       is_default: true,
-      sort_order: 0,
-    },
-  ],
+      sort_order: 0}],
   reference_ranges: [
     {
       id: 'range-internal-1',
@@ -59,9 +54,7 @@ const buildLabTestRecord = (overrides = {}) => ({
       normal_max_value: '18.0000',
       reference_text: null,
       notes: null,
-      sort_order: 0,
-    },
-  ],
+      sort_order: 0}],
   result_options: [
     {
       id: 'result-option-internal-1',
@@ -71,17 +64,13 @@ const buildLabTestRecord = (overrides = {}) => ({
       status: 'ABNORMAL',
       result_flag: 'POSITIVE',
       is_positive: true,
-      sort_order: 0,
-    },
-  ],
+      sort_order: 0}],
   created_at: now,
   updated_at: now,
   tenant: {
     id: 'tenant-internal-1',
-    human_friendly_id: 'TEN0000001',
-  },
-  ...overrides,
-});
+    human_friendly_id: 'TEN0000001'},
+  ...overrides});
 
 describe('lab-test.service', () => {
   beforeEach(() => {
@@ -99,8 +88,7 @@ describe('lab-test.service', () => {
         tenant_id: 'TEN0000001',
         name: 'Blood',
         code: 'CBC',
-        search: 'blood',
-      },
+        search: 'blood'},
       1,
       20,
       'name',
@@ -113,8 +101,7 @@ describe('lab-test.service', () => {
       identifier: 'TEN0000001',
       model: 'tenant',
       where: { deleted_at: null },
-      errorKey: 'errors.tenant.not_found',
-    });
+      errorKey: 'errors.tenant.not_found'});
     expect(labTestRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-internal-1',
@@ -123,9 +110,7 @@ describe('lab-test.service', () => {
         OR: expect.arrayContaining([
           { name: { contains: 'blood' } },
           { human_friendly_id: { contains: 'BLOOD' } },
-          { tenant: { human_friendly_id: { contains: 'BLOOD' } } },
-        ]),
-      }),
+          { tenant: { human_friendly_id: { contains: 'BLOOD' } } }])}),
       0,
       20,
       { name: 'asc' },
@@ -147,31 +132,22 @@ describe('lab-test.service', () => {
         unit_options: [
           expect.objectContaining({
             unit: 'g/dL',
-            is_default: true,
-          }),
-        ],
+            is_default: true})],
         reference_ranges: [
           expect.objectContaining({
             label: 'Adult',
             unit: 'g/dL',
-            gender: 'MALE',
-          }),
-        ],
+            gender: 'MALE'})],
         result_options: [
           expect.objectContaining({
             value: 'POSITIVE',
             result_flag: 'POSITIVE',
-            is_positive: true,
-          }),
-        ],
-      }),
-    ]);
+            is_positive: true})]})]);
     expect(result.pagination).toMatchObject({
       page: 1,
       limit: 20,
       total: 1,
-      totalPages: 1,
-    });
+      totalPages: 1});
   });
 
   it('gets a lab test by friendly identifier through shared resolution', async () => {
@@ -188,13 +164,11 @@ describe('lab-test.service', () => {
       model: 'lab_test',
       where: { deleted_at: null },
       include: expect.any(Object),
-      errorKey: 'errors.lab_test.not_found',
-    });
+      errorKey: 'errors.lab_test.not_found'});
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LBT0000001',
-        tenant_id: 'TEN0000001',
-      })
+        tenant_id: 'TEN0000001'})
     );
   });
 
@@ -202,8 +176,7 @@ describe('lab-test.service', () => {
     const createdRecord = buildLabTestRecord();
     const updatedRecord = buildLabTestRecord({
       name: 'Updated CBC',
-      code: 'UCBC',
-    });
+      code: 'UCBC'});
 
     resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
     resolveModelRecordOrThrow.mockResolvedValue(createdRecord);
@@ -228,9 +201,7 @@ describe('lab-test.service', () => {
             label: 'Default',
             unit: 'g/dL',
             ucum_code: 'g/dL',
-            is_default: true,
-          },
-        ],
+            is_default: true}],
         reference_range: '13 - 18',
         reference_ranges: [
           {
@@ -240,9 +211,7 @@ describe('lab-test.service', () => {
             age_min_value: '18',
             age_min_unit: 'YEAR',
             normal_min_value: '13',
-            normal_max_value: '18',
-          },
-        ],
+            normal_max_value: '18'}],
         result_options: [
           {
             value: 'POSITIVE',
@@ -250,10 +219,7 @@ describe('lab-test.service', () => {
             aliases: ['Reactive'],
             status: 'ABNORMAL',
             result_flag: 'POSITIVE',
-            is_positive: true,
-          },
-        ],
-      },
+            is_positive: true}]},
       mockUserId,
       mockIpAddress
     );
@@ -272,9 +238,7 @@ describe('lab-test.service', () => {
           {
             label: 'Default',
             unit: 'g/dL',
-            is_default: true,
-          },
-        ],
+            is_default: true}],
         reference_ranges: [
           {
             label: 'Women',
@@ -283,19 +247,14 @@ describe('lab-test.service', () => {
             age_min_value: '18',
             age_min_unit: 'YEAR',
             normal_min_value: '12',
-            normal_max_value: '16',
-          },
-        ],
+            normal_max_value: '16'}],
         result_options: [
           {
             value: 'NEGATIVE',
             label: 'Negative',
             status: 'NORMAL',
             result_flag: 'NEGATIVE',
-            is_positive: false,
-          },
-        ],
-      },
+            is_positive: false}]},
       mockUserId,
       mockIpAddress
     );
@@ -316,10 +275,7 @@ describe('lab-test.service', () => {
             unit: 'g/dL',
             ucum_code: 'g/dL',
             is_default: true,
-            sort_order: 0,
-          },
-        ],
-      },
+            sort_order: 0}]},
       reference_range: '13 - 18',
       reference_ranges: {
         create: [
@@ -337,10 +293,7 @@ describe('lab-test.service', () => {
             critical_max_value: null,
             reference_text: null,
             notes: null,
-            sort_order: 0,
-          },
-        ],
-      },
+            sort_order: 0}]},
       result_options: {
         create: [
           {
@@ -350,11 +303,7 @@ describe('lab-test.service', () => {
             status: 'ABNORMAL',
             result_flag: 'POSITIVE',
             is_positive: true,
-            sort_order: 0,
-          },
-        ],
-      },
-    });
+            sort_order: 0}]}});
     expect(labTestRepository.update).toHaveBeenCalledWith('lab-test-internal-1', {
       tenant_id: 'tenant-internal-1',
       name: 'Updated CBC',
@@ -372,10 +321,7 @@ describe('lab-test.service', () => {
             unit: 'g/dL',
             ucum_code: null,
             is_default: true,
-            sort_order: 0,
-          },
-        ],
-      },
+            sort_order: 0}]},
       reference_ranges: {
         deleteMany: {},
         create: [
@@ -393,10 +339,7 @@ describe('lab-test.service', () => {
             critical_max_value: null,
             reference_text: null,
             notes: null,
-            sort_order: 0,
-          },
-        ],
-      },
+            sort_order: 0}]},
       result_options: {
         deleteMany: {},
         create: [
@@ -407,27 +350,21 @@ describe('lab-test.service', () => {
             status: 'NORMAL',
             result_flag: 'NEGATIVE',
             is_positive: false,
-            sort_order: 0,
-          },
-        ],
-      },
-    });
+            sort_order: 0}]}});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: mockUserId,
         action: 'CREATE',
         entity: 'lab_test',
         entity_id: 'lab-test-internal-1',
-        ip_address: mockIpAddress,
-      })
+        ip_address: mockIpAddress})
     );
     expect(created).toEqual(expect.objectContaining({ id: 'LBT0000001' }));
     expect(updated).toEqual(
       expect.objectContaining({
         id: 'LBT0000001',
         name: 'Updated CBC',
-        code: 'UCBC',
-      })
+        code: 'UCBC'})
     );
   });
 
@@ -448,15 +385,12 @@ describe('lab-test.service', () => {
         action: 'DELETE',
         entity: 'lab_test',
         diff: expect.objectContaining({
-          deletion_reason: 'Duplicate catalog test',
-        }),
-      })
+          deletion_reason: 'Duplicate catalog test'})})
     );
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LBT0000001',
-        name: 'Complete Blood Count',
-      })
+        name: 'Complete Blood Count'})
     );
   });
 
@@ -470,8 +404,7 @@ describe('lab-test.service', () => {
       )
     ).rejects.toMatchObject({
       message: 'errors.validation.required',
-      statusCode: 400,
-    });
+      statusCode: 400});
     expect(labTestRepository.softDelete).not.toHaveBeenCalled();
   });
 

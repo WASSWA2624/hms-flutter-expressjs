@@ -11,8 +11,7 @@ const { z } = require('zod');
 const {
   booleanStringSchema,
   listQuerySchema,
-  uuidSchema,
-} = require('@lib/validation/zod');
+  uuidSchema} = require('@lib/validation/zod');
 
 const RESOURCE_FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
 const resourceFriendlyIdSchema = z
@@ -41,16 +40,14 @@ const COMMUNICATION_CHANNELS = [
   'REDDIT',
   'DISCORD',
   'CALL',
-  'OTHER',
-];
+  'OTHER'];
 const NOTIFICATION_DELIVERY_STATUSES = [
   'QUEUED',
   'SENDING',
   'SENT',
   'DELIVERED',
   'FAILED',
-  'READ',
-];
+  'READ'];
 const DELIVERY_SORT_FIELDS = ['created_at', 'updated_at', 'sent_at', 'delivered_at', 'status', 'channel'];
 
 const channelSchema = z.enum(COMMUNICATION_CHANNELS);
@@ -74,8 +71,7 @@ const createNotificationDeliverySchema = z.object({
   delivered_at: z.string().datetime().optional().nullable(),
   failed_at: z.string().datetime().optional().nullable(),
   error_message: z.string().trim().max(2000).optional().nullable(),
-  retryable: z.boolean().optional(),
-});
+  retryable: z.boolean().optional()});
 
 /**
  * Update notification-delivery body validation
@@ -94,8 +90,7 @@ const updateNotificationDeliverySchema = z.object({
   delivered_at: z.string().datetime().optional().nullable(),
   failed_at: z.string().datetime().optional().nullable(),
   error_message: z.string().trim().max(2000).optional().nullable(),
-  retryable: z.boolean().optional(),
-});
+  retryable: z.boolean().optional()});
 
 // ==================== URL Params ====================
 
@@ -104,8 +99,7 @@ const updateNotificationDeliverySchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const notificationDeliveryIdParamsSchema = z.object({
-  id: resourceIdentifierSchema,
-});
+  id: resourceIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -121,8 +115,7 @@ const listNotificationDeliveriesQuerySchema = listQuerySchema.extend({
   status: deliveryStatusSchema.optional(),
   retryable: booleanStringSchema.optional(),
   include_notification: booleanStringSchema.optional(),
-  search: z.string().trim().max(120).optional(),
-});
+  search: z.string().trim().max(120).optional()});
 
 module.exports = {
   createNotificationDeliverySchema,
@@ -130,5 +123,4 @@ module.exports = {
   notificationDeliveryIdParamsSchema,
   listNotificationDeliveriesQuerySchema,
   COMMUNICATION_CHANNELS,
-  NOTIFICATION_DELIVERY_STATUSES,
-};
+  NOTIFICATION_DELIVERY_STATUSES};

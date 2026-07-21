@@ -21,14 +21,12 @@ const HUB_SORT_FIELDS = new Set([
   'updated_at',
   'read_at',
   'priority',
-  'notification_type',
-]);
+  'notification_type']);
 
 const ADMIN_NOTIFICATION_ROLES = new Set([
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-]);
+  ROLES.FACILITY_ADMIN]);
 const DEFAULT_DELIVERY_CHANNELS = ['IN_APP'];
 const DELIVERY_CHANNEL_LIMIT = 5;
 const SUPPORTED_DELIVERY_CHANNELS = new Set(['EMAIL', 'IN_APP']);
@@ -57,9 +55,7 @@ const assertSupportedDeliveryChannels = (channels = []) => {
       throw new HttpError('errors.validation.invalid', 400, [
         {
           field: 'delivery_channels',
-          message: 'errors.notification_delivery.channel_not_supported',
-        },
-      ]);
+          message: 'errors.notification_delivery.channel_not_supported'}]);
     }
   });
 };
@@ -84,9 +80,7 @@ const assertDeliveryTargets = (notification = {}, channels = []) => {
       throw new HttpError('errors.validation.invalid', 400, [
         {
           field: 'delivery_channels',
-          message: 'errors.notification_delivery.target_missing',
-        },
-      ]);
+          message: 'errors.notification_delivery.target_missing'}]);
     }
   });
 };
@@ -126,14 +120,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const buildEmptyListResult = (page, limit) => ({
   notifications: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const resolveHubSortField = (value) => {
   const normalized = normalizeIdentifier(value);
@@ -146,17 +138,13 @@ const includeNotificationRelations = (includeDeliveries = true) => ({
       id: true,
       human_friendly_id: true,
       slug: true,
-      name: true,
-    },
-  },
+      name: true}},
   user: {
     select: {
       id: true,
       human_friendly_id: true,
       email: true,
-      phone: true,
-    },
-  },
+      phone: true}},
   ...(includeDeliveries
     ? {
         deliveries: {
@@ -174,13 +162,9 @@ const includeNotificationRelations = (includeDeliveries = true) => ({
             failed_at: true,
             retryable: true,
             error_message: true,
-            updated_at: true,
-          },
-          orderBy: [{ updated_at: 'desc' }, { created_at: 'desc' }],
-        },
-      }
-    : {}),
-});
+            updated_at: true},
+          orderBy: [{ updated_at: 'desc' }, { created_at: 'desc' }]}}
+    : {})});
 
 const resolveTenantIdentifierForFilter = async (identifier) => {
   const normalized = normalizeIdentifier(identifier);
@@ -241,16 +225,14 @@ const resolveUserIdentifierOrThrow = async (identifier, tenantId = null) => {
 };
 
 const resolveNotificationSortOrder = (sortBy, order) => ({
-  [resolveHubSortField(sortBy)]: normalizeOrder(order),
-});
+  [resolveHubSortField(sortBy)]: normalizeOrder(order)});
 
 const ensureNotificationPublicIds = async (notifications = []) => {
   const missing = (Array.isArray(notifications) ? notifications : [])
     .filter((entry) => !safePublicId(entry?.human_friendly_id))
     .map((entry) => ({
       id: entry.id,
-      generated: notificationRepository.createPublicId('NTF'),
-    }));
+      generated: notificationRepository.createPublicId('NTF')}));
 
   await Promise.all(
     missing.map((entry) =>
@@ -275,10 +257,7 @@ const mergeDeliveryFilter = (where = {}, extraFilter = {}) => {
       some: {
         ...existingSome,
         deleted_at: null,
-        ...extraFilter,
-      },
-    },
-  };
+        ...extraFilter}}};
 };
 
 const mapNotificationDelivery = (delivery = {}) => ({
@@ -293,8 +272,7 @@ const mapNotificationDelivery = (delivery = {}) => ({
   delivered_at: delivery.delivered_at || null,
   failed_at: delivery.failed_at || null,
   error_message: delivery.error_message || null,
-  updated_at: delivery.updated_at || null,
-});
+  updated_at: delivery.updated_at || null});
 
 const buildDeliverySummary = (deliveries = []) => {
   const rows = Array.isArray(deliveries) ? deliveries : [];
@@ -309,8 +287,7 @@ const buildDeliverySummary = (deliveries = []) => {
     retryable: 0,
     last_status: null,
     last_updated_at: null,
-    channels: [],
-  };
+    channels: []};
 
   const channelMap = new Map();
   rows.forEach((delivery, index) => {
@@ -365,8 +342,7 @@ const mapNotificationRecord = (record = {}, { includeDeliveries = true } = {}) =
     created_at: record.created_at || null,
     updated_at: record.updated_at || null,
     delivery_summary: buildDeliverySummary(deliveryRows),
-    deliveries: includeDeliveries ? deliveryRows.map(mapNotificationDelivery) : [],
-  };
+    deliveries: includeDeliveries ? deliveryRows.map(mapNotificationDelivery) : []};
 };
 
 const createNotificationDeliveries = async (notification = {}, requestedChannels = []) => {
@@ -388,8 +364,7 @@ const createNotificationDeliveries = async (notification = {}, requestedChannels
       sent_at: channel === 'IN_APP' ? now : null,
       delivered_at: channel === 'IN_APP' ? now : null,
       retryable: channel !== 'IN_APP',
-      error_message: null,
-    };
+      error_message: null};
   });
   if (deliveryRecords.length === 1) {
     await notificationDeliveryRepository.create(deliveryRecords[0]);
@@ -460,10 +435,7 @@ const buildScopeWhere = async (filters = {}, actor = {}) => {
             { title: { contains: search } },
             { message: { contains: search } },
             { human_friendly_id: { contains: searchUpper } },
-            { context_public_id: { contains: searchUpper } },
-          ],
-        },
-      ];
+            { context_public_id: { contains: searchUpper } }]}];
     }
   }
 
@@ -472,9 +444,7 @@ const buildScopeWhere = async (filters = {}, actor = {}) => {
       some: {
         deleted_at: null,
         ...(filters.channel ? { channel: filters.channel } : {}),
-        ...(filters.delivery_status ? { status: filters.delivery_status } : {}),
-      },
-    };
+        ...(filters.delivery_status ? { status: filters.delivery_status } : {})}};
   }
 
   return where;
@@ -535,8 +505,7 @@ const listNotifications = async (filters, page, limit, sortBy, order, actor) => 
         orderBy,
         includeNotificationRelations(includeDeliveries)
       ),
-      notificationRepository.count(where),
-    ]);
+      notificationRepository.count(where)]);
 
     await ensureNotificationPublicIds(rows);
 
@@ -544,8 +513,7 @@ const listNotifications = async (filters, page, limit, sortBy, order, actor) => 
       notifications: rows.map((entry) =>
         mapNotificationRecord(entry, { includeDeliveries })
       ),
-      pagination: buildPagination(numericPage, numericLimit, total),
-    };
+      pagination: buildPagination(numericPage, numericLimit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -647,13 +615,11 @@ const createNotification = async (data, actor = {}, ipAddress) => {
       entity: 'notification',
       entity_id: notification.id,
       diff: { after: hydrated },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     if (notification.user_id) {
       emitToUser(notification.user_id, NOTIFICATION_EVENTS.NOTIFICATION_CREATED, {
-        notification: mapped,
-      });
+        notification: mapped});
     }
 
     return mapped;
@@ -717,15 +683,13 @@ const updateNotification = async (id, data, actor = {}, ipAddress) => {
       entity: 'notification',
       entity_id: before.id,
       diff: { before, after },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     const targetUserId = after?.user_id || before.user_id;
     if (targetUserId) {
       emitToUser(targetUserId, NOTIFICATION_EVENTS.NOTIFICATION_DELIVERY_UPDATED, {
         notification: mapped,
-        read_state_updated: true,
-      });
+        read_state_updated: true});
     }
 
     return mapped;
@@ -750,8 +714,7 @@ const deleteNotification = async (id, actor = {}, ipAddress) => {
       entity: 'notification',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -770,8 +733,7 @@ const setNotificationReadState = async (id, isRead, actor = {}, ipAddress) => {
   }
 
   const updated = await notificationRepository.update(before.id, {
-    read_at: isRead ? new Date() : null,
-  });
+    read_at: isRead ? new Date() : null});
   const after = await notificationRepository.findById(
     updated.id,
     includeNotificationRelations(true)
@@ -786,14 +748,12 @@ const setNotificationReadState = async (id, isRead, actor = {}, ipAddress) => {
     entity: 'notification',
     entity_id: before.id,
     diff: { before, after },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   if (after.user_id) {
     emitToUser(after.user_id, NOTIFICATION_EVENTS.NOTIFICATION_DELIVERY_UPDATED, {
       notification: mapped,
-      read_state_updated: true,
-    });
+      read_state_updated: true});
   }
 
   return mapped;
@@ -820,8 +780,7 @@ const bulkUpdateReadState = async (ids = [], isRead = true, actor = {}, ipAddres
   const targetIds = scopedRecords.map((entry) => entry.id);
   const readWhere = {
     id: { in: targetIds },
-    ...(isRead ? { read_at: null } : { read_at: { not: null } }),
-  };
+    ...(isRead ? { read_at: null } : { read_at: { not: null } })};
   const readUpdate = { read_at: isRead ? new Date() : null };
   const updateResult = await notificationRepository.updateMany(readWhere, readUpdate);
 
@@ -844,10 +803,8 @@ const bulkUpdateReadState = async (ids = [], isRead = true, actor = {}, ipAddres
       entity_id: entry.id,
       diff: {
         before: { read_at: entry.read_at },
-        after: { read_at: readUpdate.read_at },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+        after: { read_at: readUpdate.read_at }},
+      ip_address: ipAddress}).catch(() => {});
   });
 
   afterRows.forEach((entry) => {
@@ -856,15 +813,13 @@ const bulkUpdateReadState = async (ids = [], isRead = true, actor = {}, ipAddres
     emitToUser(entry.user_id, NOTIFICATION_EVENTS.NOTIFICATION_DELIVERY_UPDATED, {
       notification: mapped || null,
       read_state_updated: true,
-      bulk: true,
-    });
+      bulk: true});
   });
 
   return {
     processed_count: scopedRecords.length,
     affected_count: Number(updateResult?.count || 0),
-    notifications: mappedRows,
-  };
+    notifications: mappedRows};
 };
 
 const bulkArchiveNotifications = async (ids = [], actor = {}, ipAddress) => {
@@ -901,16 +856,13 @@ const bulkArchiveNotifications = async (ids = [], actor = {}, ipAddress) => {
       entity_id: entry.id,
       diff: {
         before: entry,
-        after: { deleted_at: deletedAt },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+        after: { deleted_at: deletedAt }},
+      ip_address: ipAddress}).catch(() => {});
   });
 
   return {
     processed_count: scopedRecords.length,
-    archived_count: Number(archiveResult?.count || 0),
-  };
+    archived_count: Number(archiveResult?.count || 0)};
 };
 
 const getNotificationMetrics = async (filters = {}, actor = {}) => {
@@ -923,8 +875,7 @@ const getNotificationMetrics = async (filters = {}, actor = {}) => {
       attention_required: 0,
       failed_deliveries: 0,
       retryable_deliveries: 0,
-      last_received_at: null,
-    };
+      last_received_at: null};
   }
 
   const [total, unread, attentionRequired, failedDeliveries, retryableDeliveries, lastNotification] =
@@ -934,14 +885,12 @@ const getNotificationMetrics = async (filters = {}, actor = {}) => {
       notificationRepository.count({
         ...where,
         read_at: null,
-        priority: { in: ['HIGH', 'URGENT'] },
-      }),
+        priority: { in: ['HIGH', 'URGENT'] }}),
       notificationRepository.count(mergeDeliveryFilter(where, { status: 'FAILED' })),
       notificationRepository.count(
         mergeDeliveryFilter(where, { status: 'FAILED', retryable: true })
       ),
-      notificationRepository.findMany(where, 0, 1, { created_at: 'desc' }),
-    ]);
+      notificationRepository.findMany(where, 0, 1, { created_at: 'desc' })]);
 
   return {
     total,
@@ -950,8 +899,7 @@ const getNotificationMetrics = async (filters = {}, actor = {}) => {
     attention_required: attentionRequired,
     failed_deliveries: failedDeliveries,
     retryable_deliveries: retryableDeliveries,
-    last_received_at: Array.isArray(lastNotification) ? lastNotification[0]?.created_at || null : null,
-  };
+    last_received_at: Array.isArray(lastNotification) ? lastNotification[0]?.created_at || null : null};
 };
 
 const getNotificationHub = async (filters = {}, page = 1, limit = 20, sortBy, order, actor = {}) => {
@@ -961,8 +909,7 @@ const getNotificationHub = async (filters = {}, page = 1, limit = 20, sortBy, or
   return {
     summary: metrics,
     timeline: listResult.notifications,
-    pagination: listResult.pagination,
-  };
+    pagination: listResult.pagination};
 };
 
 module.exports = {
@@ -975,5 +922,4 @@ module.exports = {
   bulkUpdateReadState,
   bulkArchiveNotifications,
   getNotificationMetrics,
-  getNotificationHub,
-};
+  getNotificationHub};

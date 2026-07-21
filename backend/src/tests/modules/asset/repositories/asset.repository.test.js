@@ -41,7 +41,7 @@ describe('Asset Repository', () => {
       expect(result).toEqual(mockAsset);
       expect(prisma.asset.findFirst).toHaveBeenCalledWith({
         where: { id: mockAsset.id, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -78,7 +78,7 @@ describe('Asset Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

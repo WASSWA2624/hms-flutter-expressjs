@@ -15,8 +15,7 @@ const {
   updateModuleSubscriptionSchema,
   moduleSubscriptionActivationSchema,
   moduleSubscriptionIdParamsSchema,
-  listModuleSubscriptionsQuerySchema,
-} = require('@validations/module-subscription/module-subscription.schema');
+  listModuleSubscriptionsQuerySchema} = require('@validations/module-subscription/module-subscription.schema');
 
 const router = express.Router();
 
@@ -48,8 +47,7 @@ router.put(
   '/:id',
   validateRequest({
     params: moduleSubscriptionIdParamsSchema,
-    body: updateModuleSubscriptionSchema,
-  }),
+    body: updateModuleSubscriptionSchema}),
   authenticate(),
   authorize(PERMISSIONS.SUBSCRIPTIONS_WRITE, 'permission'),
   moduleSubscriptionController.updateModuleSubscription
@@ -67,8 +65,7 @@ router.post(
   '/:id/activate',
   validateRequest({
     params: moduleSubscriptionIdParamsSchema,
-    body: moduleSubscriptionActivationSchema,
-  }),
+    body: moduleSubscriptionActivationSchema}),
   authenticate(),
   authorize(PERMISSIONS.SUBSCRIPTIONS_WRITE, 'permission'),
   moduleSubscriptionController.activateModuleSubscription
@@ -78,8 +75,7 @@ router.post(
   '/:id/deactivate',
   validateRequest({
     params: moduleSubscriptionIdParamsSchema,
-    body: moduleSubscriptionActivationSchema,
-  }),
+    body: moduleSubscriptionActivationSchema}),
   authenticate(),
   authorize(PERMISSIONS.SUBSCRIPTIONS_WRITE, 'permission'),
   moduleSubscriptionController.deactivateModuleSubscription

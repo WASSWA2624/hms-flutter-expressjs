@@ -12,12 +12,10 @@ describe('dashboard-workspace controller', () => {
   beforeEach(() => {
     req = {
       query: {},
-      user: { id: 'user-1' },
-    };
+      user: { id: 'user-1' }};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+      json: jest.fn()};
   });
 
   afterEach(() => {

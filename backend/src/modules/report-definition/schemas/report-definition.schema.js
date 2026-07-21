@@ -2,13 +2,11 @@ const { z } = require('zod');
 const {
   listQuerySchema,
   nonNegativeIntSchema,
-  uuidOrFriendlyIdentifierSchema,
-} = require('@lib/validation/zod');
+  uuidOrFriendlyIdentifierSchema} = require('@lib/validation/zod');
 const {
   REPORT_DATASETS,
   REPORT_DEFINITION_STATUSES,
-  REPORT_FORMATS,
-} = require('@lib/reports/constants');
+  REPORT_FORMATS} = require('@lib/reports/constants');
 
 const reportDatasetKeys = REPORT_DATASETS.map((entry) => entry.key);
 
@@ -21,13 +19,11 @@ const reportDefinitionDslSchema = z.object({
     .array(
       z.object({
         field: z.string().trim().min(1),
-        direction: z.enum(['asc', 'desc']).default('asc'),
-      })
+        direction: z.enum(['asc', 'desc']).default('asc')})
     )
     .optional()
     .default([]),
-  visualization: z.string().trim().min(1).max(80).optional().nullable(),
-});
+  visualization: z.string().trim().min(1).max(80).optional().nullable()});
 
 const createReportDefinitionSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -39,8 +35,7 @@ const createReportDefinitionSchema = z.object({
   status: z.enum(REPORT_DEFINITION_STATUSES).optional(),
   default_format: z.enum(REPORT_FORMATS).optional(),
   definition_json: reportDefinitionDslSchema,
-  parameter_schema_json: z.object({}).passthrough().optional().nullable(),
-});
+  parameter_schema_json: z.object({}).passthrough().optional().nullable()});
 
 const updateReportDefinitionSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
@@ -52,19 +47,16 @@ const updateReportDefinitionSchema = z.object({
   default_format: z.enum(REPORT_FORMATS).optional(),
   definition_json: reportDefinitionDslSchema.optional(),
   parameter_schema_json: z.object({}).passthrough().optional().nullable(),
-  version: z.coerce.number().int().positive().optional(),
-});
+  version: z.coerce.number().int().positive().optional()});
 
 const runReportDefinitionNowSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   format: z.enum(REPORT_FORMATS).optional(),
   parameters_json: z.object({}).passthrough().optional().nullable(),
-  retention_days: nonNegativeIntSchema.optional(),
-});
+  retention_days: nonNegativeIntSchema.optional()});
 
 const reportDefinitionIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 const listReportDefinitionsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -75,8 +67,7 @@ const listReportDefinitionsQuerySchema = listQuerySchema.extend({
   dataset_key: z.enum(reportDatasetKeys).optional(),
   category: z.string().trim().optional(),
   status: z.enum(REPORT_DEFINITION_STATUSES).optional(),
-  since: z.string().datetime().optional(),
-});
+  since: z.string().datetime().optional()});
 
 module.exports = {
   createReportDefinitionSchema,
@@ -84,5 +75,4 @@ module.exports = {
   reportDefinitionDslSchema,
   reportDefinitionIdParamsSchema,
   runReportDefinitionNowSchema,
-  updateReportDefinitionSchema,
-};
+  updateReportDefinitionSchema};

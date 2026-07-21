@@ -15,8 +15,7 @@ const {
   updateLabResultSchema,
   releaseLabResultSchema,
   labResultIdParamsSchema,
-  listLabResultsQuerySchema,
-} = require('@validations/lab-result/lab-result.schema');
+  listLabResultsQuerySchema} = require('@validations/lab-result/lab-result.schema');
 
 const router = express.Router();
 
@@ -26,15 +25,13 @@ const LAB_READ_ROLES = [
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
   ROLES.NURSE,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 const LAB_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 router.get(
   '/',

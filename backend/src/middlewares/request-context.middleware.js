@@ -6,7 +6,7 @@
  * - request_id
  * - actor identity (when authenticated)
  * - locale metadata
- * - tenant/facility/branch scope
+ * - tenant/facility scope
  */
 
 const crypto = require('crypto');
@@ -83,17 +83,15 @@ const buildActorContext = (user) => {
  * Build tenancy scope context.
  *
  * @param {Object} req - Express request
- * @returns {{tenant_id: string|null, facility_id: string|null, branch_id: string|null}} Scope context
+ * @returns {{tenant_id: string|null, facility_id: string|null}} Scope context
  */
 const buildScopeContext = (req) => {
   const tenantId = pickString(req?.tenant?.id, req?.user?.tenant_id, req?.user?.tenantId);
   const facilityId = pickString(req?.facility?.id, req?.user?.facility_id, req?.user?.facilityId);
-  const branchId = pickString(req?.branch?.id, req?.user?.branch_id, req?.user?.branchId);
 
   return {
     tenant_id: tenantId,
-    facility_id: facilityId,
-    branch_id: branchId
+    facility_id: facilityId
   };
 };
 

@@ -14,8 +14,7 @@ const moduleSubscriptionRepository = require('@repositories/module-subscription/
 const subscriptionRepository = require('@repositories/subscription/subscription.repository');
 const { recordSecurityEvent } = require('@lib/telemetry/metrics');
 const {
-  evaluateModuleEntitlement,
-} = require('@lib/subscriptions/policies');
+  evaluateModuleEntitlement} = require('@lib/subscriptions/policies');
 const { PLAN_TIER_RANK } = require('@lib/subscriptions/plan-module-matrix');
 const { canManageSubscriptionBilling } = require('@lib/subscriptions/access');
 const { ROLES, normalizeRoleName } = require('@config/roles');
@@ -32,13 +31,11 @@ const platformInfrastructureCache = new Map();
 // Legacy fallbacks when a commercial module row is missing from older DBs.
 const CORE_MODULE_METADATA_FALLBACKS = Object.freeze({
   mortuary: Object.freeze({ minimumPlanTierCode: 'PRO' }),
-  physiotherapy: Object.freeze({ minimumPlanTierCode: 'ADVANCED' }),
-});
+  physiotherapy: Object.freeze({ minimumPlanTierCode: 'ADVANCED' })});
 
 const IRREGULAR_PATH_SEGMENTS = {
   branches: 'branch',
-  diagnoses: 'diagnosis',
-};
+  diagnoses: 'diagnosis'};
 
 /**
  * Routing dictionary: API path segment → commercial module slug.
@@ -237,15 +234,13 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   interop: 'integrations-core',
   'api-keys': 'developer-tools',
   'api-key-permissions': 'developer-tools',
-  'developer-tools': 'developer-tools',
-});
+  'developer-tools': 'developer-tools'});
 
 /** Legacy commercial slugs that still satisfy a newer product slug. */
 const LEGACY_MODULE_SLUG_ALIASES = Object.freeze({
   'billing-payments': Object.freeze(['billing-insurance']),
   'insurance-claims': Object.freeze(['billing-insurance', 'insurance']),
-  'inventory-procurement-lite': Object.freeze(['inventory-procurement']),
-});
+  'inventory-procurement-lite': Object.freeze(['inventory-procurement'])});
 
 const trimExpiredEntries = (cache) => {
   const now = Date.now();
@@ -280,8 +275,7 @@ const getCached = (cache, key) => {
 const setCached = (cache, key, value) => {
   cache.set(key, {
     value,
-    expiresAt: Date.now() + CACHE_TTL_MS,
-  });
+    expiresAt: Date.now() + CACHE_TTL_MS});
   enforceCacheLimit(cache);
 };
 
@@ -299,7 +293,7 @@ const resolveEligiblePlanTiers = (minimumPlanTierCode) => {
   if (minimumRank === undefined) return [];
 
   return Object.entries(PLAN_TIER_RANK)
-    .filter(([, rank]) => rank >= minimumRank)
+    .filter(([ rank]) => rank >= minimumRank)
     .map(([tier]) => tier);
 };
 
@@ -352,8 +346,7 @@ const loadPlatformInfrastructureSegments = async () => {
   const modules = await prisma.module.findMany({
     where: { deleted_at: null },
     select: { slug: true, extension_json: true },
-    take: 500,
-  });
+    take: 500});
 
   const segments = new Set();
   for (const entry of modules) {
@@ -413,11 +406,9 @@ const loadActiveSubscriptionWithPlan = async (tenantId) => {
       tenant_id: tenantId,
       deleted_at: null,
       status: { in: ['ACTIVE', 'TRIAL'] },
-      OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
-    },
+      OR: [{ end_date: null }, { end_date: { gte: new Date() } }]},
     include: { plan: true },
-    orderBy: { updated_at: 'desc' },
-  });
+    orderBy: { updated_at: 'desc' }});
 
   setCached(subscriptionStateCache, cacheKey, subscription || false);
   return subscription || null;
@@ -430,23 +421,19 @@ const tenantHasModuleAccess = async (tenantId, moduleSlug) => {
 
   const candidateSlugs = [
     moduleSlug,
-    ...(LEGACY_MODULE_SLUG_ALIASES[moduleSlug] || []),
-  ];
+    ...(LEGACY_MODULE_SLUG_ALIASES[moduleSlug] || [])];
 
   const activeSubscriptionCount = await moduleSubscriptionRepository.count({
     is_active: true,
     entitlement_denied: false,
     module: {
       slug: { in: candidateSlugs },
-      deleted_at: null,
-    },
+      deleted_at: null},
     subscription: {
       tenant_id: tenantId,
       deleted_at: null,
       status: { in: ['ACTIVE', 'TRIAL'] },
-      OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
-    },
-  });
+      OR: [{ end_date: null }, { end_date: { gte: new Date() } }]}});
 
   if (activeSubscriptionCount > 0) {
     setCached(entitlementCache, cacheKey, true);
@@ -456,9 +443,7 @@ const tenantHasModuleAccess = async (tenantId, moduleSlug) => {
   const [subscription, moduleRecord] = await Promise.all([
     loadActiveSubscriptionWithPlan(tenantId),
     prisma.module.findFirst({
-      where: { slug: moduleSlug, deleted_at: null },
-    }),
-  ]);
+      where: { slug: moduleSlug, deleted_at: null }})]);
 
   if (!subscription || !moduleRecord) {
     setCached(entitlementCache, cacheKey, false);
@@ -468,8 +453,7 @@ const tenantHasModuleAccess = async (tenantId, moduleSlug) => {
   const evaluation = evaluateModuleEntitlement({
     subscriptionRecord: subscription,
     moduleRecord,
-    planRecord: subscription.plan || {},
-  });
+    planRecord: subscription.plan || {}});
 
   const allowed = Boolean(evaluation.eligible);
   setCached(entitlementCache, cacheKey, allowed);
@@ -504,9 +488,7 @@ const tenantHasFallbackModuleAccess = async (tenantId, moduleSlug) => {
       status: { in: ['ACTIVE', 'TRIAL'] },
       OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
       plan: {
-        tier_code: { in: eligiblePlanTiers },
-      },
-    })) > 0;
+        tier_code: { in: eligiblePlanTiers }}})) > 0;
 
   setCached(fallbackEntitlementCache, cacheKey, allowed);
   return allowed;
@@ -570,32 +552,26 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
     const tenantId = user.tenant_id || user.tenantId || null;
     if (!tenantId) {
       recordSecurityEvent('module.entitlement_denied', {
-        'hms.module.slug': moduleSlug,
-      });
+        'hms.module.slug': moduleSlug});
       return next(
         new HttpError('errors.auth.module_not_entitled', 403, [
           {
             tenant_id: null,
             module: moduleSlug,
-            reason: 'missing_tenant_scope',
-          },
-        ])
+            reason: 'missing_tenant_scope'}])
       );
     }
 
     const hasSubscription = await tenantHasActiveSubscription(tenantId);
     if (!hasSubscription) {
       recordSecurityEvent('module.entitlement_denied', {
-        'hms.module.slug': moduleSlug,
-      });
+        'hms.module.slug': moduleSlug});
       return next(
         new HttpError('errors.auth.module_not_entitled', 403, [
           {
             tenant_id: tenantId,
             module: moduleSlug,
-            reason: 'subscription_required',
-          },
-        ])
+            reason: 'subscription_required'}])
       );
     }
 
@@ -608,28 +584,23 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
       if (fallbackAllowed) return next();
 
       recordSecurityEvent('module.entitlement_denied', {
-        'hms.module.slug': moduleSlug,
-      });
+        'hms.module.slug': moduleSlug});
       return next(
         new HttpError('errors.auth.module_not_entitled', 403, [
           {
             tenant_id: tenantId,
             module: moduleSlug,
-            reason: 'module_metadata_missing',
-          },
-        ])
+            reason: 'module_metadata_missing'}])
       );
     }
 
     const allowed = await tenantHasModuleAccess(tenantId, moduleSlug);
     if (!allowed) {
       recordSecurityEvent('module.entitlement_denied', {
-        'hms.module.slug': moduleSlug,
-      });
+        'hms.module.slug': moduleSlug});
       return next(
         new HttpError('errors.auth.module_not_entitled', 403, [
-          { tenant_id: tenantId, module: moduleSlug },
-        ])
+          { tenant_id: tenantId, module: moduleSlug }])
       );
     }
 
@@ -644,5 +615,4 @@ module.exports = {
   resolveModuleSlugFromPath,
   loadPlatformInfrastructureSegments,
   clearModuleEntitlementCaches,
-  isTenantSubscriptionBillingFlowPath,
-};
+  isTenantSubscriptionBillingFlowPath};

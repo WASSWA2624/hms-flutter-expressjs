@@ -8,8 +8,7 @@ const {
   dashboardSummaryQuerySchema,
   dashboardWidgetIdParamsSchema,
   listDashboardWidgetsQuerySchema,
-  updateDashboardWidgetSchema,
-} = require('@validations/dashboard-widget/dashboard-widget.schema');
+  updateDashboardWidgetSchema} = require('@validations/dashboard-widget/dashboard-widget.schema');
 
 const router = express.Router();
 

@@ -70,10 +70,8 @@ const findByIdentifier = async (identifier, include = {}) => {
     return await prisma.notification.findFirst({
       where: {
         human_friendly_id: normalized.toUpperCase(),
-        deleted_at: null,
-      },
-      include,
-    });
+        deleted_at: null},
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -112,10 +110,8 @@ const findManyByIdentifiers = async (identifiers = [], where = {}, include = {})
       where: {
         deleted_at: null,
         ...where,
-        ...identifierWhere,
-      },
-      include,
-    });
+        ...identifierWhere},
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -138,18 +134,14 @@ const findTenantByIdentifier = async (identifier) => {
           deleted_at: null,
           OR: [
             { human_friendly_id: normalized.toUpperCase() },
-            { slug: normalized.toLowerCase() },
-          ],
-        };
+            { slug: normalized.toLowerCase() }]};
 
     return await prisma.tenant.findFirst({
       where,
       select: {
         id: true,
         human_friendly_id: true,
-        slug: true,
-      },
-    });
+        slug: true}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -169,8 +161,7 @@ const findUserByIdentifier = async (identifier, tenantId = null) => {
 
     const baseWhere = {
       deleted_at: null,
-      ...(tenantId ? { tenant_id: tenantId } : {}),
-    };
+      ...(tenantId ? { tenant_id: tenantId } : {})};
 
     const where = isUuid(normalized)
       ? { ...baseWhere, id: normalized }
@@ -179,9 +170,7 @@ const findUserByIdentifier = async (identifier, tenantId = null) => {
           OR: [
             { human_friendly_id: normalized.toUpperCase() },
             { email: normalized.toLowerCase() },
-            { phone: normalized },
-          ],
-        };
+            { phone: normalized }]};
 
     return await prisma.user.findFirst({
       where,
@@ -190,9 +179,7 @@ const findUserByIdentifier = async (identifier, tenantId = null) => {
         tenant_id: true,
         human_friendly_id: true,
         email: true,
-        phone: true,
-      },
-    });
+        phone: true}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -212,8 +199,7 @@ const findTemplateByIdentifier = async (identifier, tenantId = null) => {
 
     const baseWhere = {
       deleted_at: null,
-      ...(tenantId ? { tenant_id: tenantId } : {}),
-    };
+      ...(tenantId ? { tenant_id: tenantId } : {})};
 
     const where = isUuid(normalized)
       ? { ...baseWhere, id: normalized }
@@ -221,9 +207,7 @@ const findTemplateByIdentifier = async (identifier, tenantId = null) => {
           ...baseWhere,
           OR: [
             { human_friendly_id: normalized.toUpperCase() },
-            { name: normalized },
-          ],
-        };
+            { name: normalized }]};
 
     return await prisma.template.findFirst({
       where,
@@ -231,9 +215,7 @@ const findTemplateByIdentifier = async (identifier, tenantId = null) => {
         id: true,
         tenant_id: true,
         human_friendly_id: true,
-        name: true,
-      },
-    });
+        name: true}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -300,10 +282,8 @@ const updateMany = async (where = {}, data = {}) => {
     return await prisma.notification.updateMany({
       where: {
         deleted_at: null,
-        ...where,
-      },
-      data,
-    });
+        ...where},
+      data});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -322,12 +302,9 @@ const assignHumanFriendlyId = async (id, humanFriendlyId) => {
       where: {
         id,
         deleted_at: null,
-        human_friendly_id: null,
-      },
+        human_friendly_id: null},
       data: {
-        human_friendly_id: humanFriendlyId,
-      },
-    });
+        human_friendly_id: humanFriendlyId}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }

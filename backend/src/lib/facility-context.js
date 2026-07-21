@@ -7,8 +7,7 @@ const authRepository = require('@repositories/auth/auth.repository');
 const resolveOperationalFacilityId = async ({
   facilityId = null,
   userId = null,
-  tenantId = null,
-} = {}) => {
+  tenantId = null} = {}) => {
   if (facilityId) {
     return facilityId;
   }
@@ -21,5 +20,4 @@ const resolveOperationalFacilityId = async ({
 };
 
 module.exports = {
-  resolveOperationalFacilityId,
-};
+  resolveOperationalFacilityId};

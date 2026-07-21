@@ -12,15 +12,13 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const PRE_AUTH_INCLUDE = {
   coverage_plan: { select: { id: true, human_friendly_id: true, tenant_id: true, name: true, provider_name: true } },
   patient: { select: { id: true, human_friendly_id: true, first_name: true, last_name: true } },
   encounter: { select: { id: true, human_friendly_id: true } },
-  admission: { select: { id: true, human_friendly_id: true } },
-};
+  admission: { select: { id: true, human_friendly_id: true } }};
 
 const buildEmptyListResult = (page, limit) => ({
   pre_authorizations: [],
@@ -30,9 +28,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const resolveTenantIdFromPreAuthorization = (record) => record?.coverage_plan?.tenant_id || null;
 
@@ -62,8 +58,7 @@ const mapPreAuthorizationForDisplay = (record) => {
       record?.admission?.human_friendly_id,
       record?.admission_id
     ),
-    timeline_at: record?.timeline_at || record?.approved_at || record?.requested_at || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.approved_at || record?.requested_at || record?.created_at || null};
 };
 
 const resolveOptionalIdentifier = async ({ value, field, model }) => {
@@ -85,8 +80,7 @@ const listPreAuthorizations = async (filters, page, limit, sortBy, order) => {
     if (filters.coverage_plan_id !== undefined) {
       const coveragePlanId = await resolveIdentifierForFilter({
         value: filters.coverage_plan_id,
-        model: 'coverage_plan',
-      });
+        model: 'coverage_plan'});
       if (coveragePlanId === null) return buildEmptyListResult(page, limit);
       if (coveragePlanId !== undefined) whereClause.coverage_plan_id = coveragePlanId;
     }
@@ -94,8 +88,7 @@ const listPreAuthorizations = async (filters, page, limit, sortBy, order) => {
     if (filters.patient_id !== undefined) {
       const patientId = await resolveIdentifierForFilter({
         value: filters.patient_id,
-        model: 'patient',
-      });
+        model: 'patient'});
       if (patientId === null) return buildEmptyListResult(page, limit);
       if (patientId !== undefined) whereClause.patient_id = patientId;
     }
@@ -103,8 +96,7 @@ const listPreAuthorizations = async (filters, page, limit, sortBy, order) => {
     if (filters.encounter_id !== undefined) {
       const encounterId = await resolveIdentifierForFilter({
         value: filters.encounter_id,
-        model: 'encounter',
-      });
+        model: 'encounter'});
       if (encounterId === null) return buildEmptyListResult(page, limit);
       if (encounterId !== undefined) whereClause.encounter_id = encounterId;
     }
@@ -112,8 +104,7 @@ const listPreAuthorizations = async (filters, page, limit, sortBy, order) => {
     if (filters.admission_id !== undefined) {
       const admissionId = await resolveIdentifierForFilter({
         value: filters.admission_id,
-        model: 'admission',
-      });
+        model: 'admission'});
       if (admissionId === null) return buildEmptyListResult(page, limit);
       if (admissionId !== undefined) whereClause.admission_id = admissionId;
     }
@@ -134,8 +125,7 @@ const listPreAuthorizations = async (filters, page, limit, sortBy, order) => {
 
     const [preAuthorizations, total] = await Promise.all([
       preAuthorizationRepository.findMany(whereClause, skip, limit, orderBy, PRE_AUTH_INCLUDE),
-      preAuthorizationRepository.count(whereClause),
-    ]);
+      preAuthorizationRepository.count(whereClause)]);
 
     return {
       pre_authorizations: preAuthorizations.map(mapPreAuthorizationForDisplay),
@@ -145,9 +135,7 @@ const listPreAuthorizations = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -161,8 +149,7 @@ const getPreAuthorizationById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'pre_authorization',
-      identifier: id,
-    });
+      identifier: id});
 
     const preAuthorization = await preAuthorizationRepository.findById(resolvedId, PRE_AUTH_INCLUDE);
 
@@ -185,25 +172,21 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
     const coveragePlanId = await resolveIdentifierForPayload({
       value: data?.coverage_plan_id,
       field: 'coverage_plan_id',
-      model: 'coverage_plan',
-    });
+      model: 'coverage_plan'});
 
     const payload = { ...data, coverage_plan_id: coveragePlanId };
     payload.patient_id = await resolveOptionalIdentifier({
       value: data?.patient_id,
       field: 'patient_id',
-      model: 'patient',
-    });
+      model: 'patient'});
     payload.encounter_id = await resolveOptionalIdentifier({
       value: data?.encounter_id,
       field: 'encounter_id',
-      model: 'encounter',
-    });
+      model: 'encounter'});
     payload.admission_id = await resolveOptionalIdentifier({
       value: data?.admission_id,
       field: 'admission_id',
-      model: 'admission',
-    });
+      model: 'admission'});
 
     // When an insurer integration is configured, request authorization via adapter.
     // Manual Claims desk still works without an integration (status stays PENDING).
@@ -213,8 +196,7 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
       const { getInsurerAdapter } = require('@lib/insurer/adapter');
       const coveragePlan = await prisma.coverage_plan.findFirst({
         where: { id: coveragePlanId, deleted_at: null },
-        include: { insurance_company: true },
-      });
+        include: { insurance_company: true }});
       const tenantId = coveragePlan?.tenant_id || null;
       if (tenantId) {
         const integrations = await prisma.insurer_integration.findMany({
@@ -227,11 +209,8 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
               { coverage_plan_id: null },
               ...(coveragePlan?.insurance_company_id
                 ? [{ insurance_company_id: coveragePlan.insurance_company_id }]
-                : []),
-            ],
-          },
-          orderBy: { updated_at: 'desc' },
-        });
+                : [])]},
+          orderBy: { updated_at: 'desc' }});
         const integration =
           integrations.find((row) => row.coverage_plan_id === coveragePlanId) ||
           integrations.find(
@@ -251,18 +230,15 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
               where: {
                 deleted_at: null,
                 patient_id: payload.patient_id,
-                coverage_plan_id: coveragePlanId,
-              },
-              orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }],
-            });
+                coverage_plan_id: coveragePlanId},
+              orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }]});
             memberId = enrollment?.member_id || null;
           }
           adapterResult = await adapter.authorize({
             memberId,
             amount: payload.approved_amount ?? null,
             reason: payload.reason || null,
-            coveragePlan,
-          });
+            coveragePlan});
           if (adapterResult?.status === 'DENIED' || adapterResult?.approved === false) {
             payload.status = 'DENIED';
           } else if (adapterResult?.status === 'PARTIAL') {
@@ -299,8 +275,7 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
       entity: 'pre_authorization',
       entity_id: preAuthorization.id,
       diff: { after: preAuthorization, adapter: adapterResult },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapPreAuthorizationForDisplay(createdRecord || preAuthorization);
   } catch (error) {
@@ -316,8 +291,7 @@ const updatePreAuthorization = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'pre_authorization',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await preAuthorizationRepository.findById(resolvedId, PRE_AUTH_INCLUDE);
 
@@ -330,29 +304,25 @@ const updatePreAuthorization = async (id, data, userId, ipAddress) => {
       payload.coverage_plan_id = await resolveIdentifierForPayload({
         value: payload.coverage_plan_id,
         field: 'coverage_plan_id',
-        model: 'coverage_plan',
-      });
+        model: 'coverage_plan'});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'patient_id')) {
       payload.patient_id = await resolveOptionalIdentifier({
         value: payload.patient_id,
         field: 'patient_id',
-        model: 'patient',
-      });
+        model: 'patient'});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'encounter_id')) {
       payload.encounter_id = await resolveOptionalIdentifier({
         value: payload.encounter_id,
         field: 'encounter_id',
-        model: 'encounter',
-      });
+        model: 'encounter'});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'admission_id')) {
       payload.admission_id = await resolveOptionalIdentifier({
         value: payload.admission_id,
         field: 'admission_id',
-        model: 'admission',
-      });
+        model: 'admission'});
     }
 
     if (payload.status === 'APPROVED' && !payload.approved_at) {
@@ -369,8 +339,7 @@ const updatePreAuthorization = async (id, data, userId, ipAddress) => {
       entity: 'pre_authorization',
       entity_id: preAuthorization.id,
       diff: { before, after: preAuthorization },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapPreAuthorizationForDisplay(updatedRecord || preAuthorization);
   } catch (error) {
@@ -386,8 +355,7 @@ const deletePreAuthorization = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'pre_authorization',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await preAuthorizationRepository.findById(resolvedId, PRE_AUTH_INCLUDE);
 
@@ -404,8 +372,7 @@ const deletePreAuthorization = async (id, userId, ipAddress) => {
       entity: 'pre_authorization',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -417,5 +384,4 @@ module.exports = {
   getPreAuthorizationById,
   createPreAuthorization,
   updatePreAuthorization,
-  deletePreAuthorization,
-};
+  deletePreAuthorization};

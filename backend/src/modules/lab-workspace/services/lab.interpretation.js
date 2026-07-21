@@ -1,8 +1,7 @@
 const {
   buildAppliedReferenceRangeSnapshot,
   buildLabReferenceRangeRowSummary,
-  toOptionalText,
-} = require('@services/lab-workspace/lab.configuration');
+  toOptionalText} = require('@services/lab-workspace/lab.configuration');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -78,8 +77,7 @@ const findQualitativeOption = (test = {}, resultValue, resultText) => {
     const tokens = new Set([
       normalizeToken(option?.value),
       normalizeToken(option?.label),
-      ...normalizeAliases(option?.aliases_json || option?.aliases),
-    ]);
+      ...normalizeAliases(option?.aliases_json || option?.aliases)]);
     tokens.delete('');
     if (!tokens.size) continue;
 
@@ -110,8 +108,7 @@ const findHeuristicTextFlag = (resultValue, resultText) => {
       status: 'NORMAL',
       result_flag: 'NEGATIVE',
       is_positive: false,
-      source: 'HEURISTIC_NEGATIVE',
-    };
+      source: 'HEURISTIC_NEGATIVE'};
   }
 
   if (containsAny(['POSITIVE', 'REACTIVE', 'DETECTED', 'PRESENT'])) {
@@ -119,8 +116,7 @@ const findHeuristicTextFlag = (resultValue, resultText) => {
       status: 'ABNORMAL',
       result_flag: 'POSITIVE',
       is_positive: true,
-      source: 'HEURISTIC_POSITIVE',
-    };
+      source: 'HEURISTIC_POSITIVE'};
   }
 
   if (containsAny(['TRACE', 'EQUIVOCAL', 'INDETERMINATE'])) {
@@ -128,8 +124,7 @@ const findHeuristicTextFlag = (resultValue, resultText) => {
       status: 'ABNORMAL',
       result_flag: 'INDETERMINATE',
       is_positive: false,
-      source: 'HEURISTIC_INDETERMINATE',
-    };
+      source: 'HEURISTIC_INDETERMINATE'};
   }
 
   return null;
@@ -281,8 +276,7 @@ const emptyAppliedRangeFields = () => ({
   reference_range_label: null,
   reference_range_summary: null,
   applied_reference_range_id: null,
-  applied_reference_range_json: null,
-});
+  applied_reference_range_json: null});
 
 const evaluateLabResult = ({
   test = {},
@@ -292,8 +286,7 @@ const evaluateLabResult = ({
   resultUnit = null,
   method = null,
   at = new Date(),
-  fallbackStatus = 'PENDING',
-} = {}) => {
+  fallbackStatus = 'PENDING'} = {}) => {
   const resolvedUnit = toOptionalText(resultUnit) || resolveDefaultUnit(test);
   const resolvedMethod = toOptionalText(method) || toOptionalText(test?.method);
   const qualitativeOption = findQualitativeOption(test, resultValue, resultText);
@@ -304,16 +297,14 @@ const evaluateLabResult = ({
       is_positive: Boolean(qualitativeOption.is_positive),
       result_unit: resolvedUnit,
       ...emptyAppliedRangeFields(),
-      source: 'QUALITATIVE_OPTION',
-    };
+      source: 'QUALITATIVE_OPTION'};
   }
 
   const numericValue = toNumberOrNull(resultValue);
   if (numericValue != null) {
     const matchedRange = selectReferenceRange(test, patient, resolvedUnit, {
       method: resolvedMethod,
-      at,
-    });
+      at});
     const numericEvaluation = matchedRange
       ? evaluateNumericRange(matchedRange, numericValue)
       : null;
@@ -326,8 +317,7 @@ const evaluateLabResult = ({
         reference_range_summary: buildLabReferenceRangeRowSummary(matchedRange) || null,
         applied_reference_range_id: toOptionalText(matchedRange?.id),
         applied_reference_range_json: applied,
-        source: 'NUMERIC_RANGE',
-      };
+        source: 'NUMERIC_RANGE'};
     }
   }
 
@@ -336,8 +326,7 @@ const evaluateLabResult = ({
     return {
       ...heuristicFlag,
       result_unit: resolvedUnit,
-      ...emptyAppliedRangeFields(),
-    };
+      ...emptyAppliedRangeFields()};
   }
 
   return {
@@ -346,8 +335,7 @@ const evaluateLabResult = ({
     is_positive: false,
     result_unit: resolvedUnit,
     ...emptyAppliedRangeFields(),
-    source: 'FALLBACK',
-  };
+    source: 'FALLBACK'};
 };
 
 module.exports = {
@@ -358,5 +346,4 @@ module.exports = {
   matchesReferenceRange,
   resolveDefaultUnit,
   resolvePatientAgeInDays,
-  selectReferenceRange,
-};
+  selectReferenceRange};

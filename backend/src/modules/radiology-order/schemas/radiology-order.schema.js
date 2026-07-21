@@ -49,8 +49,7 @@ const requestDetailsSchema = z
     standard_study_code: z.string().trim().max(80).optional().nullable(),
     body_region: z.string().trim().max(120).optional().nullable(),
     laterality: z.string().trim().max(40).optional().nullable(),
-    priority: z.string().trim().max(40).optional().nullable(),
-  })
+    priority: z.string().trim().max(40).optional().nullable()})
   .passthrough()
   .optional()
   .nullable();
@@ -60,8 +59,7 @@ const requestedRadiologyTestSchema = z
     radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     new_test: newRadiologyTestSchema.optional().nullable(),
     clinical_note: z.string().trim().max(5000).optional().nullable(),
-    request_details: requestDetailsSchema,
-  })
+    request_details: requestDetailsSchema})
   .superRefine((value, ctx) => {
     if (value.radiology_test_id || value.new_test?.name) return;
     ctx.addIssue({

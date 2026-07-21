@@ -54,7 +54,7 @@ describe('publishDomainEvent', () => {
 
     expect(sent).toBe(2);
     expect(sendToUser).toHaveBeenCalledTimes(2);
-    const [, event, payload] = sendToUser.mock.calls[0];
+    const [ event, payload] = sendToUser.mock.calls[0];
     expect(event).toBe('payment.reconciled');
     expect(payload).toMatchObject({
       event: 'payment.reconciled',

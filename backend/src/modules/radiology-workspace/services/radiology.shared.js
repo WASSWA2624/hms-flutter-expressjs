@@ -2,8 +2,7 @@ const { HttpError } = require('@lib/errors');
 const {
   normalizeIdentifier,
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 const PATIENT_PUBLIC_SELECT = {
   id: true,
@@ -11,18 +10,15 @@ const PATIENT_PUBLIC_SELECT = {
   tenant_id: true,
   facility_id: true,
   first_name: true,
-  last_name: true,
-};
+  last_name: true};
 
 const ENCOUNTER_PUBLIC_SELECT = {
   id: true,
-  human_friendly_id: true,
-};
+  human_friendly_id: true};
 
 const TENANT_PUBLIC_SELECT = {
   id: true,
-  human_friendly_id: true,
-};
+  human_friendly_id: true};
 
 const RADIOLOGY_TEST_PUBLIC_SELECT = {
   id: true,
@@ -32,8 +28,7 @@ const RADIOLOGY_TEST_PUBLIC_SELECT = {
   code: true,
   modality: true,
   created_at: true,
-  updated_at: true,
-};
+  updated_at: true};
 
 const ASSIGNED_USER_PUBLIC_SELECT = {
   id: true,
@@ -42,10 +37,7 @@ const ASSIGNED_USER_PUBLIC_SELECT = {
   profile: {
     select: {
       first_name: true,
-      last_name: true,
-    },
-  },
-};
+      last_name: true}}};
 
 const EQUIPMENT_REGISTRY_PUBLIC_SELECT = {
   id: true,
@@ -53,8 +45,7 @@ const EQUIPMENT_REGISTRY_PUBLIC_SELECT = {
   equipment_name: true,
   name: true,
   equipment_code: true,
-  status: true,
-};
+  status: true};
 
 const RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE = {
   patient: { select: PATIENT_PUBLIC_SELECT },
@@ -68,18 +59,13 @@ const RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE = {
     include: {
       attestations: {
         where: { deleted_at: null },
-        orderBy: [{ attested_at: 'desc' }, { created_at: 'desc' }],
-      },
+        orderBy: [{ attested_at: 'desc' }, { created_at: 'desc' }]},
       parent_result: {
         select: {
           id: true,
           human_friendly_id: true,
           report_version: true,
-          status: true,
-        },
-      },
-    },
-  },
+          status: true}}}},
   imaging_studies: {
     where: { deleted_at: null },
     orderBy: { created_at: 'asc' },
@@ -87,15 +73,10 @@ const RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE = {
       equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
       assets: {
         where: { deleted_at: null },
-        orderBy: { created_at: 'asc' },
-      },
+        orderBy: { created_at: 'asc' }},
       pacs_links: {
         where: { deleted_at: null },
-        orderBy: { created_at: 'desc' },
-      },
-    },
-  },
-};
+        orderBy: { created_at: 'desc' }}}}};
 
 const RADIOLOGY_STUDY_WITH_RELATIONS_INCLUDE = {
   radiology_order: {
@@ -104,47 +85,35 @@ const RADIOLOGY_STUDY_WITH_RELATIONS_INCLUDE = {
       encounter: { select: ENCOUNTER_PUBLIC_SELECT },
       radiology_test: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
       assigned_user: { select: ASSIGNED_USER_PUBLIC_SELECT },
-      equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
-    },
-  },
+      equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT }}},
   equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
   assets: {
     where: { deleted_at: null },
-    orderBy: { created_at: 'asc' },
-  },
+    orderBy: { created_at: 'asc' }},
   pacs_links: {
     where: { deleted_at: null },
-    orderBy: { created_at: 'desc' },
-  },
-};
+    orderBy: { created_at: 'desc' }}};
 
 const RADIOLOGY_RESULT_WITH_RELATIONS_INCLUDE = {
   attestations: {
     where: { deleted_at: null },
-    orderBy: [{ attested_at: 'desc' }, { created_at: 'desc' }],
-  },
+    orderBy: [{ attested_at: 'desc' }, { created_at: 'desc' }]},
   parent_result: {
     select: {
       id: true,
       human_friendly_id: true,
       report_version: true,
-      status: true,
-    },
-  },
+      status: true}},
   radiology_order: {
     include: {
       patient: { select: PATIENT_PUBLIC_SELECT },
       encounter: { select: ENCOUNTER_PUBLIC_SELECT },
       radiology_test: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
       assigned_user: { select: ASSIGNED_USER_PUBLIC_SELECT },
-      equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
-    },
-  },
-};
+      equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT }}}};
 
 const RADIOLOGY_TEST_WITH_RELATIONS_INCLUDE = {
-  tenant: { select: TENANT_PUBLIC_SELECT },
-};
+  tenant: { select: TENANT_PUBLIC_SELECT }};
 
 const buildPagination = (page, limit, total) => {
   const safePage = Number.isFinite(Number(page)) ? Number(page) : 1;
@@ -157,8 +126,7 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: safePage < totalPages,
-    hasPreviousPage: safePage > 1,
-  };
+    hasPreviousPage: safePage > 1};
 };
 
 const normalizeSearchTerm = (value) => {
@@ -166,8 +134,7 @@ const normalizeSearchTerm = (value) => {
   if (!term) return null;
   return {
     raw: term,
-    upper: term.toUpperCase(),
-  };
+    upper: term.toUpperCase()};
 };
 
 const toDateOrNull = (value, fallback = null) => {
@@ -182,8 +149,7 @@ const resolveModelIdOrThrow = async ({
   model,
   where = {},
   errorKey = 'errors.resource.not_found',
-  allowNull = false,
-}) => {
+  allowNull = false}) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) {
     if (allowNull) return null;
@@ -193,8 +159,7 @@ const resolveModelIdOrThrow = async ({
   const resolved = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where,
-  });
+    where});
 
   if (!resolved) {
     throw new HttpError(errorKey, 404);
@@ -209,8 +174,7 @@ const resolveModelRecordOrThrow = async ({
   where = {},
   include,
   select,
-  errorKey = 'errors.resource.not_found',
-}) => {
+  errorKey = 'errors.resource.not_found'}) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) {
     throw new HttpError(errorKey, 404);
@@ -221,8 +185,7 @@ const resolveModelRecordOrThrow = async ({
     identifier: normalized,
     where,
     include,
-    select,
-  });
+    select});
 
   if (!record) {
     throw new HttpError(errorKey, 404);
@@ -255,5 +218,4 @@ module.exports = {
   toDateOrNull,
   resolveModelIdOrThrow,
   resolveModelRecordOrThrow,
-  applyDateRangeFilter,
-};
+  applyDateRangeFilter};

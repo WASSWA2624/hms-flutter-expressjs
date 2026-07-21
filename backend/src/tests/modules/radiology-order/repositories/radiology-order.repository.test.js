@@ -49,7 +49,7 @@ describe('Radiology Order Repository', () => {
       expect(result).toEqual(mockRadiologyOrder);
       expect(prisma.radiology_order.findFirst).toHaveBeenCalledWith({
         where: { id: radiologyOrderId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -127,7 +127,7 @@ describe('Radiology Order Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

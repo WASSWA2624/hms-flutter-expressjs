@@ -14,8 +14,7 @@ const BCRYPT_PREFIX_REGEX = /^\$2[aby]\$\d{2}\$/;
 const {
   PRACTITIONER_TYPES,
   CONSULTATION_FEE_PRACTITIONER_TYPES,
-  CLINICAL_PRESCRIBER_ROLE_NAMES,
-} = require('@lib/hr/reference-data');
+  CLINICAL_PRESCRIBER_ROLE_NAMES} = require('@lib/hr/reference-data');
 const ROLE_DOCTOR = 'DOCTOR';
 const CLINICAL_ROLE_NAMES = CLINICAL_PRESCRIBER_ROLE_NAMES;
 const CONSULTATION_ELIGIBLE_TYPES = Array.from(CONSULTATION_FEE_PRACTITIONER_TYPES);
@@ -769,8 +768,7 @@ const createDoctor = async (data, actorUserId, ipAddress) => {
       practitioner_type: normalizedStaffProfilePayload.practitioner_type,
       consultation_fee: normalizedStaffProfilePayload.consultation_fee,
       consultation_currency: normalizedStaffProfilePayload.consultation_currency,
-      is_fee_overridden: normalizedStaffProfilePayload.is_fee_overridden,
-    });
+      is_fee_overridden: normalizedStaffProfilePayload.is_fee_overridden});
 
     await tx.staff_profile.create({ data: staffProfilePayload });
 
@@ -921,8 +919,7 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
     } else {
       const staffProfilePayload = await staffProfileService.buildStaffProfileCreateData({
         ...staffProfileData,
-        user_id: before.id,
-      });
+        user_id: before.id});
       await tx.staff_profile.create({ data: staffProfilePayload });
     }
 

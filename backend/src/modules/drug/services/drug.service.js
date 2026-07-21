@@ -12,12 +12,10 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveScopedUserContext,
-  buildTenantScopeWhere,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  buildTenantScopeWhere} = require('@services/pharmacy-workspace/pharmacy.shared');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 
@@ -27,8 +25,7 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: Math.ceil(total / limit),
   hasNextPage: page < Math.ceil(total / limit),
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const findScopedDrugOrThrow = async (id, user = {}) => {
   const scope = resolveScopedUserContext(user);
@@ -53,17 +50,9 @@ const buildDrugStockInclude = (scope = {}) => ({
           stocks: {
             where: {
               deleted_at: null,
-              ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
-            },
+              ...(scope.facility_id ? { facility_id: scope.facility_id } : {})},
             select: {
-              quantity: true,
-            },
-          },
-        },
-      },
-    },
-  },
-});
+              quantity: true}}}}}}});
 
 const attachAvailableStock = (drug = {}) => {
   const stockLevel = (drug.inventory_maps || []).reduce((total, map) => {
@@ -79,8 +68,7 @@ const attachAvailableStock = (drug = {}) => {
     ...drug,
     quantity_on_hand: stockLevel,
     available_quantity: stockLevel,
-    stock_level: stockLevel,
-  };
+    stock_level: stockLevel};
 };
 
 /**
@@ -104,20 +92,17 @@ const listDrugs = async (filters, page, limit, sortBy, order, userId, ipAddress,
 
     // Build filter object
     const whereClause = {
-      ...buildTenantScopeWhere(scope),
-    };
+      ...buildTenantScopeWhere(scope)};
 
     if (scope.can_manage_all_tenants && filters.tenant_id) {
       const tenantId = await resolveIdentifierForFilter({
         value: filters.tenant_id,
         model: 'tenant',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (tenantId === null) {
         return {
           drugs: [],
-          pagination: buildPagination(page, limit, 0),
-        };
+          pagination: buildPagination(page, limit, 0)};
       }
       if (tenantId !== undefined) {
         whereClause.tenant_id = tenantId;
@@ -197,8 +182,7 @@ const createDrug = async (data, userId, ipAddress, user = {}) => {
         value: payload.tenant_id,
         field: 'tenant_id',
         model: 'tenant',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
     const drug = await drugRepository.create(payload);
 
@@ -243,8 +227,7 @@ const updateDrug = async (id, data, userId, ipAddress, user = {}) => {
         value: payload.tenant_id,
         field: 'tenant_id',
         model: 'tenant',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
     const drug = await drugRepository.update(id, payload);
 

@@ -20,20 +20,14 @@ const DEFAULT_INCLUDE = {
           id: true,
           human_friendly_id: true,
           first_name: true,
-          last_name: true,
-        },
-      },
-    },
-  },
-};
+          last_name: true}}}}};
 
 const SEARCHABLE_TRIAGE_LEVELS = new Set([
   'LEVEL_1',
   'LEVEL_2',
   'LEVEL_3',
   'LEVEL_4',
-  'LEVEL_5',
-]);
+  'LEVEL_5']);
 const SEARCHABLE_TRIAGE_LEVEL_ALIAS_MAP = Object.freeze({
   LEVEL_1: 'LEVEL_1',
   LEVEL_2: 'LEVEL_2',
@@ -43,13 +37,11 @@ const SEARCHABLE_TRIAGE_LEVEL_ALIAS_MAP = Object.freeze({
   IMMEDIATE: 'LEVEL_1',
   URGENT: 'LEVEL_2',
   LESS_URGENT: 'LEVEL_3',
-  NON_URGENT: 'LEVEL_4',
-});
+  NON_URGENT: 'LEVEL_4'});
 
 const buildWhere = (filters = {}) => {
   const where = {
-    deleted_at: null,
-  };
+    deleted_at: null};
 
   const {
     search,
@@ -68,8 +60,7 @@ const buildWhere = (filters = {}) => {
     { emergency_case: { patient: { human_friendly_id: { contains: searchUpper } } } },
     { emergency_case: { patient: { first_name: { contains: normalizedSearch } } } },
     { emergency_case: { patient: { last_name: { contains: normalizedSearch } } } },
-    { notes: { contains: normalizedSearch } },
-  ];
+    { notes: { contains: normalizedSearch } }];
 
   const mappedTriageLevel = SEARCHABLE_TRIAGE_LEVEL_ALIAS_MAP[searchUpper];
   if (mappedTriageLevel && SEARCHABLE_TRIAGE_LEVELS.has(mappedTriageLevel)) {
@@ -78,8 +69,7 @@ const buildWhere = (filters = {}) => {
 
   where.AND = [
     ...(Array.isArray(where.AND) ? where.AND : []),
-    { OR: searchClauses },
-  ];
+    { OR: searchClauses }];
 
   return where;
 };
@@ -163,8 +153,7 @@ const create = async (data, dbClient = prisma) => {
   try {
     return await dbClient.triage_assessment.create({
       data,
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2002') {
       // Unique constraint violation
@@ -192,8 +181,7 @@ const update = async (id, data) => {
     return await prisma.triage_assessment.update({
       where: { id },
       data,
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.triage_assessment.not_found', 404);
@@ -226,8 +214,7 @@ const softDelete = async (id) => {
       data: {
         deleted_at: new Date()
       },
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.triage_assessment.not_found', 404);

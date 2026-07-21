@@ -32,8 +32,7 @@ const resolveUserId = async (identifier, { includeDeleted = false } = {}) => {
     const resolved = await resolveModelIdByIdentifier({
       model: 'user',
       identifier: normalized,
-      includeDeleted: true,
-    });
+      includeDeleted: true});
     return resolved || normalized;
   }
 
@@ -95,24 +94,17 @@ const USER_LIST_INCLUDE = Object.freeze({
       id: true,
       human_friendly_id: true,
       name: true,
-      slug: true,
-    },
-  },
+      slug: true}},
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   profile: {
     select: {
       first_name: true,
       middle_name: true,
-      last_name: true,
-    },
-  },
-});
+      last_name: true}}});
 
 const USER_DETAIL_INCLUDE = Object.freeze({
   tenant: {
@@ -120,16 +112,12 @@ const USER_DETAIL_INCLUDE = Object.freeze({
       id: true,
       human_friendly_id: true,
       name: true,
-      slug: true,
-    },
-  },
+      slug: true}},
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   permissions: {
     where: { deleted_at: null },
     include: {
@@ -138,12 +126,7 @@ const USER_DETAIL_INCLUDE = Object.freeze({
           id: true,
           human_friendly_id: true,
           name: true,
-          description: true,
-        },
-      },
-    },
-  },
-});
+          description: true}}}}});
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 
@@ -156,8 +139,7 @@ const assertTenantUserContactAvailable = async ({
   tenantId,
   email,
   phone,
-  excludeUserId = null,
-}) => {
+  excludeUserId = null}) => {
   const resolvedTenantId = String(tenantId || '').trim();
   if (!resolvedTenantId) {
     return;
@@ -176,8 +158,7 @@ const assertTenantUserContactAvailable = async ({
     if (existingEmail) {
       conflicts.push({
         field: 'email',
-        message: 'errors.user.email_exists_in_tenant',
-      });
+        message: 'errors.user.email_exists_in_tenant'});
     }
   }
 
@@ -190,8 +171,7 @@ const assertTenantUserContactAvailable = async ({
     if (existingPhone) {
       conflicts.push({
         field: 'phone',
-        message: 'errors.user.phone_exists_in_tenant',
-      });
+        message: 'errors.user.phone_exists_in_tenant'});
     }
   }
 
@@ -242,8 +222,7 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
         resolveIdentifierForPayload({
           value: permissionId,
           model: 'permission',
-          field: 'permission_ids',
-        })
+          field: 'permission_ids'})
       )
     );
   }
@@ -252,8 +231,7 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
     next.tenant_id = await resolveIdentifierForPayload({
       value: next.tenant_id,
       model: 'tenant',
-      field: 'tenant_id',
-    });
+      field: 'tenant_id'});
   }
 
   if (next.facility_id !== undefined) {
@@ -261,8 +239,7 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
       value: next.facility_id,
       model: 'facility',
       field: 'facility_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (typeof next.email === 'string') {
@@ -306,15 +283,13 @@ const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress)
       whereClause.tenant_id = await resolveIdentifierForPayload({
         value: filters.tenant_id,
         model: 'tenant',
-        field: 'tenant_id',
-      });
+        field: 'tenant_id'});
     }
     if (filters.facility_id) {
       whereClause.facility_id = await resolveIdentifierForPayload({
         value: filters.facility_id,
         model: 'facility',
-        field: 'facility_id',
-      });
+        field: 'facility_id'});
     }
     if (filters.position_title) whereClause.position_title = { contains: filters.position_title };
     if (filters.status) whereClause.status = filters.status;
@@ -335,12 +310,7 @@ const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress)
               OR: [
                 { first_name: { contains: searchTerm } },
                 { middle_name: { contains: searchTerm } },
-                { last_name: { contains: searchTerm } },
-              ],
-            },
-          },
-        },
-      ];
+                { last_name: { contains: searchTerm } }]}}}];
     }
 
     const listOptions = { includeDeleted };
@@ -406,8 +376,7 @@ const createUser = async (data, userId, ipAddress) => {
     await assertTenantUserContactAvailable({
       tenantId: normalizedPayload.tenant_id,
       email: normalizedPayload.email,
-      phone: normalizedPayload.phone,
-    });
+      phone: normalizedPayload.phone});
     const user = await userRepository.create(normalizedPayload);
 
     // Create audit log (non-blocking)
@@ -458,8 +427,7 @@ const updateUser = async (id, data, userId, ipAddress) => {
       tenantId: normalizedPayload.tenant_id ?? before.tenant_id,
       email: normalizedPayload.email ?? before.email,
       phone: normalizedPayload.phone ?? before.phone,
-      excludeUserId: resolvedUserId,
-    });
+      excludeUserId: resolvedUserId});
     const user = await userRepository.update(resolvedUserId, normalizedPayload);
 
     // Create audit log (non-blocking)
@@ -541,8 +509,7 @@ const restoreUser = async (id, userId, ipAddress) => {
       entity: 'user',
       entity_id: resolvedUserId,
       diff: { after: user },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     await publishUserRealtimeEvent(
       PLATFORM_ADMIN_EVENTS.USER_RESTORED,
@@ -563,5 +530,4 @@ module.exports = {
   createUser,
   updateUser,
   deleteUser,
-  restoreUser,
-};
+  restoreUser};

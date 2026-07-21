@@ -11,8 +11,7 @@ jest.mock('@lib/jwt');
 jest.mock('@lib/audit');
 jest.mock('@lib/notifications');
 jest.mock('@lib/subscriptions/tenant-entitlements', () => ({
-  resolveTenantModuleEntitlements: jest.fn().mockResolvedValue([]),
-}));
+  resolveTenantModuleEntitlements: jest.fn().mockResolvedValue([])}));
 jest.mock('@lib/subscriptions/tenant-subscription-summary', () => ({
   resolveTenantSubscriptionSummary: jest.fn().mockResolvedValue({
     subscription_id: null,
@@ -26,26 +25,20 @@ jest.mock('@lib/subscriptions/tenant-subscription-summary', () => ({
     header_state: 'expired',
     next_plan_id: null,
     next_plan_label: 'Basic',
-    next_tier_code: 'BASIC',
-  }),
+    next_tier_code: 'BASIC'}),
   resolvePlatformAdminContact: jest.fn().mockReturnValue({
     email: null,
-    phone: null,
-  }),
-}));
+    phone: null})}));
 jest.mock('@lib/authorization/org-admin-contacts', () => ({
   resolveOrgAdminContacts: jest.fn().mockResolvedValue({
     tenant_admins: [],
-    facility_admins: [],
-  }),
-}));
+    facility_admins: []})}));
 jest.mock('@config/env', () => ({
   JWT_SECRET: '12345678901234567890123456789012',
   APP_PUBLIC_URL: 'http://localhost:8081',
   APP_DISPLAY_NAME: 'Hospital Management System',
   ALLOW_PLAINTEXT_PASSWORD_EMAIL: false,
-  AUTH_SESSION_TTL_DAYS: 7,
-}));
+  AUTH_SESSION_TTL_DAYS: 7}));
 
 const authService = require('@services/auth/auth.service');
 const authRepository = require('@repositories/auth/auth.repository');
@@ -55,8 +48,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { sendEmail } = require('@lib/notifications');
 const {
-  resolveTenantModuleEntitlements,
-} = require('@lib/subscriptions/tenant-entitlements');
+  resolveTenantModuleEntitlements} = require('@lib/subscriptions/tenant-entitlements');
 
 describe('Auth Service', () => {
   beforeEach(() => {
@@ -67,14 +59,11 @@ describe('Auth Service', () => {
       {
         module_slug: 'patient-registry',
         is_active: true,
-        plan_tier_code: 'BASIC',
-      },
+        plan_tier_code: 'BASIC'},
       {
         module_slug: 'encounters-vitals',
         is_active: true,
-        plan_tier_code: 'BASIC',
-      },
-    ]);
+        plan_tier_code: 'BASIC'}]);
   });
 
   const expectMinimalVerificationEmail = () => {
@@ -84,8 +73,7 @@ describe('Auth Service', () => {
       subject: 'HOSSPI HMS',
       attachments: expect.any(Array),
       html: expect.stringContaining('HOSSPI HMS'),
-      text: expect.stringContaining('HOSSPI HMS'),
-    }));
+      text: expect.stringContaining('HOSSPI HMS')}));
     expect(lastEmailCall.html).toMatch(/>\s*\d{6}\s*</);
     expect(lastEmailCall.text).toMatch(/\b\d{6}\b/);
     expect(lastEmailCall.html).toContain('cid:hms-app-logo');
@@ -105,8 +93,7 @@ describe('Auth Service', () => {
       'thanks for registering',
       'This code expires',
       'Regards',
-      'Password used',
-    ].forEach((removedContent) => {
+      'Password used'].forEach((removedContent) => {
       expect(lastEmailCall.html).not.toContain(removedContent);
       expect(lastEmailCall.text).not.toContain(removedContent);
     });
@@ -145,12 +132,10 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('user');
       expect(result.user).not.toHaveProperty('password_hash');
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: [],
-      }));
+        permissions: []}));
       expect(authRepository.createSession).toHaveBeenCalled();
       expect(authRepository.createSession).toHaveBeenCalledWith(expect.objectContaining({
-        expires_at: expect.any(Date),
-      }));
+        expires_at: expect.any(Date)}));
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'USER_LOGIN'
       }));
@@ -160,8 +145,7 @@ describe('Auth Service', () => {
       const loginData = {
         email: 'test@example.com',
         password: 'Password123!',
-        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-      };
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000'};
 
       const mockUser = {
         id: 'user-123',
@@ -171,17 +155,12 @@ describe('Auth Service', () => {
         password_hash: 'hashedpassword',
         permissions: [
           { permission_id: 'perm-1', permission: { id: 'perm-1', name: 'patient:read' } },
-          { permission_id: 'perm-2', permission: { id: 'perm-2', name: 'patient:write' } },
-        ],
+          { permission_id: 'perm-2', permission: { id: 'perm-2', name: 'patient:write' } }],
         roles: [{
           role: {
             name: 'DOCTOR',
             permissions: [
-              { permission_id: 'perm-3', permission: { id: 'perm-3', name: 'clinical:read' } },
-            ],
-          },
-        }],
-      };
+              { permission_id: 'perm-3', permission: { id: 'perm-3', name: 'clinical:read' } }]}}]};
 
       authRepository.findUserByEmailAndTenant.mockResolvedValue(mockUser);
       comparePassword.mockResolvedValue(true);
@@ -193,8 +172,7 @@ describe('Auth Service', () => {
       const result = await authService.login(loginData);
 
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: ['patient:read', 'patient:write', 'clinical:read'],
-      }));
+        permissions: ['patient:read', 'patient:write', 'clinical:read']}));
       expect(result.user.permissions).toEqual(['patient:read', 'patient:write', 'clinical:read']);
       expect(result.user.permission_names).toEqual(['patient:read', 'patient:write', 'clinical:read']);
       expect(result.user.direct_permissions).toEqual(['patient:read', 'patient:write']);
@@ -250,8 +228,7 @@ describe('Auth Service', () => {
         .rejects
         .toMatchObject({
           statusCode: 401,
-          messageKey: 'errors.auth.user_not_found',
-        });
+          messageKey: 'errors.auth.user_not_found'});
     });
 
     it('should reject login with invalid phone credentials', async () => {
@@ -270,8 +247,7 @@ describe('Auth Service', () => {
         .rejects
         .toMatchObject({
           statusCode: 401,
-          messageKey: 'errors.auth.user_not_found',
-        });
+          messageKey: 'errors.auth.user_not_found'});
     });
 
     it('should reject login for inactive user', async () => {
@@ -320,15 +296,13 @@ describe('Auth Service', () => {
         .rejects
         .toMatchObject({
           statusCode: 401,
-          messageKey: 'errors.auth.wrong_password',
-        });
+          messageKey: 'errors.auth.wrong_password'});
     });
 
     it('should require email verification for pending user when tenant is not provided', async () => {
       const loginData = {
         email: 'pending@example.com',
-        password: 'Password123!',
-      };
+        password: 'Password123!'};
 
       authRepository.findUsersByIdentifier.mockResolvedValue([
         {
@@ -336,23 +310,19 @@ describe('Auth Service', () => {
           email: 'pending@example.com',
           tenant_id: 'tenant-123',
           status: 'PENDING',
-          password_hash: 'hashedpassword',
-        },
-      ]);
+          password_hash: 'hashedpassword'}]);
 
       await expect(authService.login(loginData))
         .rejects
         .toMatchObject({
           statusCode: 403,
-          messageKey: 'errors.auth.email_verification_required',
-        });
+          messageKey: 'errors.auth.email_verification_required'});
     });
 
     it('hydrates roles before issuing a token when tenant selection is implicit', async () => {
       const loginData = {
         email: 'tenant-admin@example.com',
-        password: 'Password123!',
-      };
+        password: 'Password123!'};
 
       authRepository.findUsersByIdentifier.mockResolvedValue([
         {
@@ -360,9 +330,7 @@ describe('Auth Service', () => {
           email: 'tenant-admin@example.com',
           tenant_id: 'tenant-123',
           status: 'ACTIVE',
-          password_hash: 'hashedpassword',
-        },
-      ]);
+          password_hash: 'hashedpassword'}]);
       authRepository.findUserById.mockResolvedValue({
         id: 'user-123',
         email: 'tenant-admin@example.com',
@@ -370,8 +338,7 @@ describe('Auth Service', () => {
         facility_id: 'facility-123',
         status: 'ACTIVE',
         password_hash: 'hashedpassword',
-        roles: [{ role: { name: 'TENANT_ADMIN', permissions: [] } }],
-      });
+        roles: [{ role: { name: 'TENANT_ADMIN', permissions: [] } }]});
       comparePassword.mockResolvedValue(true);
       generateToken.mockReturnValue('access-token');
       generateRefreshToken.mockReturnValue('refresh-token');
@@ -382,19 +349,16 @@ describe('Auth Service', () => {
 
       expect(authRepository.findUserById).toHaveBeenCalledWith('user-123');
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        roles: ['TENANT_ADMIN'],
-      }));
+        roles: ['TENANT_ADMIN']}));
       expect(result.user.roles).toEqual([
-        { role: { name: 'TENANT_ADMIN', permissions: [] } },
-      ]);
+        { role: { name: 'TENANT_ADMIN', permissions: [] } }]);
     });
 
     it('should allow privileged users to login without MFA', async () => {
       const loginData = {
         email: 'tenant-admin@example.com',
         password: 'Password123!',
-        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-      };
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000'};
 
       const mockUser = {
         id: 'user-123',
@@ -402,8 +366,7 @@ describe('Auth Service', () => {
         tenant_id: '550e8400-e29b-41d4-a716-446655440000',
         status: 'ACTIVE',
         password_hash: 'hashedpassword',
-        roles: [{ role: { name: 'TENANT_ADMIN' } }],
-      };
+        roles: [{ role: { name: 'TENANT_ADMIN' } }]};
 
       authRepository.findUserByEmailAndTenant.mockResolvedValue(mockUser);
       comparePassword.mockResolvedValue(true);
@@ -418,16 +381,14 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('refresh_token', 'refresh-token');
       expect(authRepository.createSession).toHaveBeenCalled();
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        roles: ['TENANT_ADMIN'],
-      }));
+        roles: ['TENANT_ADMIN']}));
     });
 
     it('should require facility selection when user has multiple facilities and no facility_id is provided', async () => {
       const loginData = {
         email: 'multifacility@example.com',
         password: 'Password123!',
-        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-      };
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000'};
 
       const mockUser = {
         id: 'user-123',
@@ -436,8 +397,7 @@ describe('Auth Service', () => {
         facility_id: 'facility-legacy-default',
         status: 'ACTIVE',
         password_hash: 'hashedpassword',
-        roles: [{ role: { name: 'DOCTOR' } }],
-      };
+        roles: [{ role: { name: 'DOCTOR' } }]};
 
       authRepository.findUserByEmailAndTenant.mockResolvedValue(mockUser);
       comparePassword.mockResolvedValue(true);
@@ -445,14 +405,11 @@ describe('Auth Service', () => {
         {
           id: 'facility-1',
           name: 'Facility One',
-          facility_type: 'HOSPITAL',
-        },
+          facility_type: 'HOSPITAL'},
         {
           id: 'facility-2',
           name: 'Facility Two',
-          facility_type: 'CLINIC',
-        },
-      ]);
+          facility_type: 'CLINIC'}]);
 
       const result = await authService.login(loginData);
 
@@ -460,10 +417,8 @@ describe('Auth Service', () => {
         requires_facility_selection: true,
         facilities: [
           { id: 'facility-1', name: 'Facility One', facility_type: 'HOSPITAL' },
-          { id: 'facility-2', name: 'Facility Two', facility_type: 'CLINIC' },
-        ],
-        tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-      });
+          { id: 'facility-2', name: 'Facility Two', facility_type: 'CLINIC' }],
+        tenant_id: '550e8400-e29b-41d4-a716-446655440000'});
       expect(generateToken).not.toHaveBeenCalled();
       expect(authRepository.createSession).not.toHaveBeenCalled();
     });
@@ -480,8 +435,7 @@ describe('Auth Service', () => {
         phone: '256701234567',
         interests: 'Billing; Telemedicine\nEMR',
         ip_address: '127.0.0.1',
-        user_agent: 'Mozilla',
-      };
+        user_agent: 'Mozilla'};
 
       const mockUser = {
         id: 'user-123',
@@ -520,8 +474,7 @@ describe('Auth Service', () => {
           user_id: 'user-123',
           email: 'newuser@example.com',
           account_status: 'PENDING',
-          interests: 'Billing, Telemedicine, EMR',
-        })
+          interests: 'Billing, Telemedicine, EMR'})
       );
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'USER_REGISTERED'
@@ -573,8 +526,7 @@ describe('Auth Service', () => {
         expect.objectContaining({
           user_id: 'user-pending-123',
           email: 'pending@example.com',
-          account_status: 'PENDING',
-        })
+          account_status: 'PENDING'})
       );
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'USER_REGISTERED_EXISTING_EMAIL'
@@ -587,8 +539,7 @@ describe('Auth Service', () => {
         password: 'Password123!',
         facility_name: 'Different Facility Name',
         admin_name: 'Jane Doe',
-        facility_type: 'CLINIC',
-      };
+        facility_type: 'CLINIC'};
 
       authRepository.findUserByEmail.mockResolvedValue({
         id: 'user-active-123',
@@ -598,8 +549,7 @@ describe('Auth Service', () => {
         status: 'ACTIVE',
         profile: { first_name: 'Jane', last_name: 'Doe' },
         tenant: { name: 'City Hospital' },
-        facility: { name: 'City Hospital', facility_type: 'HOSPITAL' },
-      });
+        facility: { name: 'City Hospital', facility_type: 'HOSPITAL' }});
       authRepository.createVerificationToken.mockResolvedValue({});
       createAuditLog.mockResolvedValue({});
 
@@ -621,8 +571,7 @@ describe('Auth Service', () => {
           user_id: 'user-active-123',
           email: 'existing@example.com',
           account_status: 'ACTIVE',
-          registration_attempt_increment: 1,
-        })
+          registration_attempt_increment: 1})
       );
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'USER_REGISTERED_EXISTING_EMAIL'
@@ -648,10 +597,7 @@ describe('Auth Service', () => {
             role: {
               name: 'DOCTOR',
               permissions: [
-                { permission: { name: 'clinical:read' } },
-              ],
-            },
-          }]
+                { permission: { name: 'clinical:read' } }]}}]
         }
       };
 
@@ -667,8 +613,7 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('access_token', 'new-access-token');
       expect(result).toHaveProperty('refresh_token', 'new-refresh-token');
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: ['clinical:read'],
-      }));
+        permissions: ['clinical:read']}));
       expect(authRepository.revokeSession).toHaveBeenCalledWith('session-123');
       expect(authRepository.createSession).toHaveBeenCalled();
     });
@@ -851,9 +796,7 @@ describe('Auth Service', () => {
         password_hash: 'hashed',
         profile: {},
         permissions: [
-          { permission_id: 'perm-1', permission: { id: 'perm-1', name: 'patient:read' } },
-        ],
-      };
+          { permission_id: 'perm-1', permission: { id: 'perm-1', name: 'patient:read' } }]};
 
       authRepository.findUserById.mockResolvedValue(mockUser);
 

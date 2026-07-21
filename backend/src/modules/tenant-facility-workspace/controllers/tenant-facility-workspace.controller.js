@@ -39,5 +39,4 @@ const deleteFacilityLogo = asyncHandler(async (req, res) => {
 module.exports = {
   getSetup,
   uploadFacilityLogo,
-  deleteFacilityLogo,
-};
+  deleteFacilityLogo};

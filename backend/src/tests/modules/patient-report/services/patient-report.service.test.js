@@ -18,47 +18,37 @@ jest.mock('@prisma/client', () => ({
   patient_guardian: { count: jest.fn() },
   patient_document: { count: jest.fn() },
   consent: { count: jest.fn() },
-  phi_access_log: { create: jest.fn() },
-}));
+  phi_access_log: { create: jest.fn() }}));
 
 jest.mock('@repositories/patient-report/patient-report.repository', () => ({
   create: jest.fn(),
   findById: jest.fn(),
   update: jest.fn(),
   findMany: jest.fn(),
-  count: jest.fn(),
-}));
+  count: jest.fn()}));
 
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn().mockResolvedValue(undefined),
-}));
+  createAuditLog: jest.fn().mockResolvedValue(undefined)}));
 
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(),
-}));
+  resolveModelIdByIdentifier: jest.fn()}));
 
 jest.mock('@lib/reports/files', () => ({
-  generateReportFile: jest.fn(),
-}));
+  generateReportFile: jest.fn()}));
 
 jest.mock('@lib/storage', () => ({
   createStorageService: jest.fn(() => ({
     upload: jest.fn().mockResolvedValue({ path: 'patient-reports/t/file.pdf' }),
-    download: jest.fn().mockResolvedValue(Buffer.from('pdf')),
-  })),
-}));
+    download: jest.fn().mockResolvedValue(Buffer.from('pdf'))}))}));
 
 jest.mock('@lib/telemetry/metrics', () => ({
-  recordBackgroundJob: jest.fn(),
-}));
+  recordBackgroundJob: jest.fn()}));
 
 jest.mock('@middlewares/auth.middleware', () => ({
-  getUserPermissions: jest.fn(),
-}));
+  getUserPermissions: jest.fn()}));
 
 jest.mock('@lib/logging', () => ({
-  logger: { warn: jest.fn(), info: jest.fn(), error: jest.fn() },
-}));
+  logger: { warn: jest.fn(), info: jest.fn(), error: jest.fn() }}));
 
 const prisma = require('@prisma/client');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
@@ -72,8 +62,7 @@ describe('patient-report.service', () => {
     getUserPermissions.mockReturnValue([
       PERMISSIONS.PATIENT_READ,
       PERMISSIONS.LAB_READ,
-      PERMISSIONS.CLINICAL_READ,
-    ]);
+      PERMISSIONS.CLINICAL_READ]);
     resolveModelIdByIdentifier.mockResolvedValue('patient-internal-1');
     prisma.patient.findFirst.mockResolvedValue({
       id: 'patient-internal-1',
@@ -81,12 +70,10 @@ describe('patient-report.service', () => {
       tenant_id: 'tenant-1',
       facility_id: 'facility-1',
       first_name: 'Ada',
-      last_name: 'Lovelace',
-    });
+      last_name: 'Lovelace'});
     prisma.phi_access_log.create.mockResolvedValue({
       id: 'phi-1',
-      accessed_at: new Date(),
-    });
+      accessed_at: new Date()});
     prisma.encounter.count.mockResolvedValue(2);
     prisma.vital_sign.count.mockResolvedValue(0);
     prisma.clinical_note.count.mockResolvedValue(0);
@@ -117,9 +104,7 @@ describe('patient-report.service', () => {
         permissions: [
           PERMISSIONS.PATIENT_READ,
           PERMISSIONS.LAB_READ,
-          PERMISSIONS.CLINICAL_READ,
-        ],
-      }
+          PERMISSIONS.CLINICAL_READ]}
     );
 
     const vitals = result.sections.find((entry) => entry.id === 'vitals');
@@ -139,16 +124,13 @@ describe('patient-report.service', () => {
       patientReportService.createJob(
         {
           patient_id: 'PAT-1',
-          sections: ['billing_information'],
-        },
+          sections: ['billing_information']},
         {
           tenant_id: 'tenant-1',
           user_id: 'user-1',
-          permissions: [PERMISSIONS.PATIENT_READ],
-        }
+          permissions: [PERMISSIONS.PATIENT_READ]}
       )
     ).rejects.toMatchObject({
-      statusCode: 403,
-    });
+      statusCode: 403});
   });
 });

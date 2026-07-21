@@ -92,8 +92,7 @@ const runWithoutTenantGuard = (callback) => {
   return runWithRequestContext(
     {
       ...parent,
-      bypassTenantGuard: true,
-    },
+      bypassTenantGuard: true},
     callback
   );
 };

@@ -24,8 +24,7 @@ const {
   AUTH_EVENTS,
   ACCESS_CONTROL_EVENTS,
   LAST_OFFICE_EVENTS,
-  BILLING_EVENTS,
-} = require('@lib/websocket/events');
+  BILLING_EVENTS} = require('@lib/websocket/events');
 const { getWebSocketServer } = require('@websockets/server');
 const { verifyToken } = require('@lib/jwt');
 const rolesConfig = require('@config/roles');
@@ -34,11 +33,9 @@ const { normalizeRoleName } = require('@config/roles');
 const { WS_MAX_CONNECTIONS, WS_HEARTBEAT_INTERVAL, WS_HEARTBEAT_TIMEOUT } = require('@config/env');
 const authRepository = require('@repositories/auth/auth.repository');
 const {
-  resolveTenantModuleEntitlements,
-} = require('@lib/subscriptions/tenant-entitlements');
+  resolveTenantModuleEntitlements} = require('@lib/subscriptions/tenant-entitlements');
 const {
-  resolveEffectiveAccess,
-} = require('@lib/authorization/effective-access');
+  resolveEffectiveAccess} = require('@lib/authorization/effective-access');
 
 /**
  * Map of UserID → Set<WebSocket> connections.
@@ -116,13 +113,11 @@ const EVENT_PERMISSION_PREFIXES = Object.freeze([
   [['patient.'], 'patient:read'],
   [
     ['clinical.', 'encounter.', 'admission.', 'nursing.', 'medication.'],
-    'clinical:read',
-  ],
+    'clinical:read'],
   [['lab.'], 'lab:read'],
   [['radiology.'], 'radiology:read'],
   [['pharmacy.'], 'pharmacy:read'],
-  [['billing.', 'payment.', 'invoice.', 'refund.'], 'billing:read'],
-]);
+  [['billing.', 'payment.', 'invoice.', 'refund.'], 'billing:read']]);
 
 const permissionForEvent = (event) => {
   const normalized = String(event || '').trim().toLowerCase();
@@ -143,8 +138,7 @@ const canConnectionReceivePayload = (ws, payload = {}, event = null) => {
       ? payload.required_permissions
       : []),
     ...(payload?.required_permission ? [payload.required_permission] : []),
-    ...(inferredPermission ? [inferredPermission] : []),
-  ]
+    ...(inferredPermission ? [inferredPermission] : [])]
     .map((permission) => String(permission || '').trim())
     .filter(Boolean);
   const tenantId = normalizedScopeValue(payload?.tenant_id);
@@ -396,8 +390,7 @@ const checkWebSocketRBAC = (user, requiredRole, type = 'role') => {
     const {
       getRoleNames,
       resolveRequestPermissionNames,
-      userHasSuperAdminRole,
-    } = require('@lib/authorization/effective-access');
+      userHasSuperAdminRole} = require('@lib/authorization/effective-access');
 
     if (userHasSuperAdminRole(user)) {
       return true;
@@ -451,61 +444,44 @@ const getSensitiveEvents = () => {
       value: [
         permissions.BREAK_GLASS_REQUEST || 'break_glass:request',
         permissions.BREAK_GLASS_REVIEW || 'break_glass:review',
-        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve',
-      ],
-    },
+        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve']},
     [ACCESS_CONTROL_EVENTS.BREAK_GLASS_REVIEWED]: {
       type: 'permission',
       value: [
         permissions.BREAK_GLASS_REVIEW || 'break_glass:review',
-        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve',
-      ],
-    },
+        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve']},
     [ACCESS_CONTROL_EVENTS.BREAK_GLASS_REVOKED]: {
       type: 'permission',
       value: [
         permissions.BREAK_GLASS_REQUEST || 'break_glass:request',
         permissions.BREAK_GLASS_REVIEW || 'break_glass:review',
-        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve',
-      ],
-    },
+        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve']},
     [LAST_OFFICE_EVENTS.SHIFT_CLOSE_APPROVED]: {
       type: 'permission',
       value: [
         permissions.LAST_OFFICE_APPROVE || 'last_office:approve',
-        permissions.LAST_OFFICE_READ || 'last_office:read',
-      ],
-    },
+        permissions.LAST_OFFICE_READ || 'last_office:read']},
     [LAST_OFFICE_EVENTS.DAY_CLOSE_APPROVED]: {
       type: 'permission',
       value: [
         permissions.LAST_OFFICE_APPROVE || 'last_office:approve',
-        permissions.LAST_OFFICE_READ || 'last_office:read',
-      ],
-    },
+        permissions.LAST_OFFICE_READ || 'last_office:read']},
     [LAST_OFFICE_EVENTS.CLOSEOUT_PACK_READY]: {
       type: 'role',
       value: [
         roles.TENANT_ADMIN || 'TENANT_ADMIN',
         roles.FACILITY_ADMIN || 'FACILITY_ADMIN',
-        roles.SUPER_ADMIN || 'SUPER_ADMIN',
-      ],
-    },
+        roles.SUPER_ADMIN || 'SUPER_ADMIN']},
     [BILLING_EVENTS.BILLING_REFUND_PROCESSED]: {
       type: 'permission',
       value: [
         permissions.BILLING_WRITE || 'billing:write',
-        permissions.FINANCIAL_APPROVE || 'financial:approve',
-      ],
-    },
+        permissions.FINANCIAL_APPROVE || 'financial:approve']},
     'mortuary.release_approved': {
       type: 'permission',
       value: [
         permissions.MORTUARY_RELEASE || 'mortuary:release',
-        permissions.MORTUARY_APPROVE || 'mortuary:approve',
-      ],
-    },
-  };
+        permissions.MORTUARY_APPROVE || 'mortuary:approve']}};
 };
 
 /**
@@ -820,13 +796,11 @@ const authenticateConnection = async (ws, token) => {
         ...liveUser,
         tenant_id: tenantId,
         facility_id:
-          decoded.facility_id || decoded.facilityId || liveUser.facility_id,
-      },
+          decoded.facility_id || decoded.facilityId || liveUser.facility_id},
       {
         moduleEntitlements: entitlements,
         applyPlanGate: true,
-        applyAssignedModuleGate: true,
-      }
+        applyAssignedModuleGate: true}
     );
 
     return {
@@ -834,8 +808,7 @@ const authenticateConnection = async (ws, token) => {
       roles: liveUser.roles,
       permissions: access.permissions,
       assigned_modules: access.assigned_modules,
-      module_entitlements: entitlements,
-    };
+      module_entitlements: entitlements};
   } catch (err) {
     // Log authentication failure (but don't expose sensitive details)
     logger.warn('WebSocket authentication failed', {

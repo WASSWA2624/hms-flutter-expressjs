@@ -7,8 +7,7 @@ const {
   createPatientReportJobSchema,
   listSectionsQuerySchema,
   patientReportJobIdParamsSchema,
-  recordPrintEventSchema,
-} = require('@validations/patient-report/patient-report.schema');
+  recordPrintEventSchema} = require('@validations/patient-report/patient-report.schema');
 
 const router = express.Router();
 

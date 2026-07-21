@@ -13,8 +13,7 @@ const buildAuditContext = (req) => ({
   facility_id: req.user?.facility_id,
   roles: Array.isArray(req.user?.roles) ? req.user.roles : [],
   ip_address: req.ip,
-  user_agent: req.get('user-agent'),
-});
+  user_agent: req.get('user-agent')});
 
 const listTherapyFlows = asyncHandler(async (req, res) => {
   const {
@@ -32,8 +31,7 @@ const listTherapyFlows = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by = 'updated_at',
-    order = 'desc',
-  } = req.query;
+    order = 'desc'} = req.query;
 
   const result = await therapyFlowService.listTherapyFlows(
     {
@@ -47,8 +45,7 @@ const listTherapyFlows = asyncHandler(async (req, res) => {
       source_kind,
       scheduled_from,
       scheduled_to,
-      search,
-    },
+      search},
     Number(page),
     Number(limit),
     sort_by,
@@ -65,8 +62,7 @@ const listTherapyFlows = asyncHandler(async (req, res) => {
 
 const getTherapyFlowById = asyncHandler(async (req, res) => {
   const flow = await therapyFlowService.getTherapyFlowById(req.params.id, {
-    include_timeline: req.query?.include_timeline,
-  });
+    include_timeline: req.query?.include_timeline});
   return sendSuccess(res, 200, 'messages.therapy_flow.get.success', flow);
 });
 
@@ -171,5 +167,4 @@ module.exports = {
   updatePlan,
   addProgressNote,
   scheduleFollowUp,
-  closeEpisode,
-};
+  closeEpisode};

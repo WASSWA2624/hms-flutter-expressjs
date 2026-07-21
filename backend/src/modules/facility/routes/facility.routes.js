@@ -26,13 +26,11 @@ const FACILITY_READ_SCOPES = [
   PERMISSIONS.OPERATIONS_READ,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const FACILITY_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const PLATFORM_FACILITY_SCOPES = [PERMISSIONS.SYSTEM_ADMIN];
 
 /**
@@ -178,7 +176,6 @@ router.delete(
 /**
  * @description Get facility branches with pagination
  * @method GET
- * @route /api/v1/facilities/:id/branches
  * @authentication Required (JWT)
  * @permissions Authenticated users
  * @urlParams {string} id - Facility ID (UUID)
@@ -192,14 +189,12 @@ router.delete(
  * @throws 404 Facility not found
  */
 router.get(
-  '/:id/branches',
   validateRequest({ 
     params: facilityIdParamsSchema,
     query: listQuerySchema 
   }),
   authenticate(),
   authorize(FACILITY_READ_SCOPES, 'permission'),
-  facilityController.getFacilityBranches
 );
 
 module.exports = router;

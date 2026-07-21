@@ -42,5 +42,4 @@ module.exports = {
   createShiftClose,
   getShiftCloseById,
   listShiftCloses,
-  updateShiftClose,
-};
+  updateShiftClose};

@@ -11,18 +11,15 @@ jest.mock('@lib/billing/identifiers', () => ({
   }),
   resolveIdentifierForFilter: jest.fn(async ({ value }) =>
     value === undefined ? undefined : value
-  ),
-}));
+  )}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
-}));
+  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier)}));
 
 const auditLogService = require('@modules/audit-log/services/audit-log.service');
 const auditLogRepository = require('@modules/audit-log/repositories/audit-log.repository');
 const identifiers = require('@lib/billing/identifiers');
 const {
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { HttpError } = require('@lib/errors');
 
 const buildRawAuditLog = (overrides = {}) => ({
@@ -40,23 +37,19 @@ const buildRawAuditLog = (overrides = {}) => ({
   tenant: {
     id: '550e8400-e29b-41d4-a716-446655440001',
     human_friendly_id: 'TEN0000001',
-    name: 'Acme Health',
-  },
+    name: 'Acme Health'},
   user: {
     id: '550e8400-e29b-41d4-a716-446655440002',
     human_friendly_id: 'USR0000001',
     email: 'jane.doe@example.com',
     first_name: 'Jane',
-    last_name: 'Doe',
-  },
-  ...overrides,
-});
+    last_name: 'Doe'},
+  ...overrides});
 
 describe('Audit Log Service', () => {
   const scopedUser = {
     id: '550e8400-e29b-41d4-a716-446655440099',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440001',
-  };
+    tenant_id: '550e8400-e29b-41d4-a716-446655440001'};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -76,8 +69,7 @@ describe('Audit Log Service', () => {
     expect(resolveModelIdByIdentifier).toHaveBeenCalledWith({
       model: 'audit_log',
       identifier: 'AUD0000001',
-      where: { tenant_id: scopedUser.tenant_id },
-    });
+      where: { tenant_id: scopedUser.tenant_id }});
     expect(auditLogRepository.findMany).toHaveBeenCalledWith(
       { id: rawAuditLog.id, tenant_id: scopedUser.tenant_id },
       0,
@@ -92,8 +84,7 @@ describe('Audit Log Service', () => {
         user_id: 'USR0000001',
         user_label: 'Jane Doe',
         entity_id: 'PAT0000001',
-        entity_reference: 'PAT0000001',
-      })
+        entity_reference: 'PAT0000001'})
     );
   });
 
@@ -116,8 +107,7 @@ describe('Audit Log Service', () => {
         action: 'CREATE',
         entity: 'patient',
         entity_id: 'PAT0000001',
-        search: 'jane',
-      },
+        search: 'jane'},
       2,
       10,
       'action',
@@ -128,8 +118,7 @@ describe('Audit Log Service', () => {
     expect(identifiers.resolveIdentifierForFilter).toHaveBeenCalledWith({
       value: 'USR0000001',
       model: 'user',
-      where: { tenant_id: scopedUser.tenant_id },
-    });
+      where: { tenant_id: scopedUser.tenant_id }});
     expect(auditLogRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: scopedUser.tenant_id,
@@ -137,8 +126,7 @@ describe('Audit Log Service', () => {
         action: 'CREATE',
         entity: 'patient',
         entity_id: 'PAT0000001',
-        OR: expect.any(Array),
-      }),
+        OR: expect.any(Array)}),
       10,
       10,
       { action: 'asc' },
@@ -149,8 +137,7 @@ describe('Audit Log Service', () => {
         total: 1,
         page: 2,
         limit: 10,
-        totalPages: 1,
-      })
+        totalPages: 1})
     );
     expect(result.data[0]).toEqual(expect.objectContaining({ id: 'AUD0000001' }));
   });
@@ -175,8 +162,7 @@ describe('Audit Log Service', () => {
       total: 0,
       page: 1,
       limit: 20,
-      totalPages: 0,
-    });
+      totalPages: 0});
   });
 
   it('reuses the list path for user-specific and entity-specific helper queries', async () => {
@@ -195,8 +181,7 @@ describe('Audit Log Service', () => {
     expect(auditLogRepository.findMany).toHaveBeenLastCalledWith(
       expect.objectContaining({
         tenant_id: scopedUser.tenant_id,
-        user_id: 'USR0000001',
-      }),
+        user_id: 'USR0000001'}),
       0,
       20,
       { created_at: 'desc' },
@@ -219,8 +204,7 @@ describe('Audit Log Service', () => {
       expect.objectContaining({
         tenant_id: scopedUser.tenant_id,
         entity: 'patient',
-        entity_id: 'PAT0000001',
-      }),
+        entity_id: 'PAT0000001'}),
       0,
       20,
       { created_at: 'desc' },

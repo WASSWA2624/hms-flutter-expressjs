@@ -25,8 +25,7 @@ const {
   finalizeRadiologyResultSchema,
   requestFinalizationRadiologyResultSchema,
   attestFinalizationRadiologyResultSchema,
-  addendumRadiologyResultSchema,
-} = require('@validations/radiology-workspace/radiology-workspace.schema');
+  addendumRadiologyResultSchema} = require('@validations/radiology-workspace/radiology-workspace.schema');
 
 const router = express.Router();
 
@@ -39,8 +38,7 @@ const RADIOLOGY_READ_ROLES = [
   ROLES.LAB_TECH,
   ROLES.RADIOLOGY_TECH,
   ROLES.RADIOLOGIST,
-  ROLES.MEDICAL_RECORDS_CLERK,
-];
+  ROLES.MEDICAL_RECORDS_CLERK];
 
 const RADIOLOGY_MUTATION_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -48,8 +46,7 @@ const RADIOLOGY_MUTATION_ROLES = [
   ROLES.FACILITY_ADMIN,
   ROLES.RADIOLOGY_TECH,
   ROLES.RADIOLOGIST,
-  ROLES.MEDICAL_RECORDS_CLERK,
-];
+  ROLES.MEDICAL_RECORDS_CLERK];
 
 const resolveLegacyRouteParamsSchema = z.object({
   resource: z.enum([
@@ -58,10 +55,8 @@ const resolveLegacyRouteParamsSchema = z.object({
     'radiology-tests',
     'imaging-studies',
     'imaging-assets',
-    'pacs-links',
-  ]),
-  id: uuidOrFriendlyIdentifierSchema,
-});
+    'pacs-links']),
+  id: uuidOrFriendlyIdentifierSchema});
 
 router.get(
   '/workbench',
@@ -107,8 +102,7 @@ router.put(
   '/orders/:id/request-details',
   validateRequest({
     params: orderWorkflowParamsSchema,
-    body: updateRadiologyOrderRequestDetailsSchema,
-  }),
+    body: updateRadiologyOrderRequestDetailsSchema}),
   authenticate(),
   authorize(RADIOLOGY_MUTATION_ROLES, 'role'),
   radiologyWorkspaceController.updateRadiologyOrderRequestDetails

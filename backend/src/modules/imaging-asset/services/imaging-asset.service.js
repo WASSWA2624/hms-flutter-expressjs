@@ -12,12 +12,10 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   normalizeIdentifier,
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -27,14 +25,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const buildEmptyListResult = (page, limit) => ({
   imagingAssets: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const resolveResourceId = async (model, identifier) => {
   const normalized = normalizeIdentifier(identifier);
@@ -43,8 +39,7 @@ const resolveResourceId = async (model, identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 
   return resolved || normalized;
 };
@@ -73,8 +68,7 @@ const listImagingAssets = async (filters, page, limit, sortBy, order, userId, ip
       const studyId = await resolveIdentifierForFilter({
         value: filters.imaging_study_id,
         model: 'imaging_study',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (studyId === null) return buildEmptyListResult(page, limit);
       if (studyId !== undefined) whereClause.imaging_study_id = studyId;
     }
@@ -87,8 +81,7 @@ const listImagingAssets = async (filters, page, limit, sortBy, order, userId, ip
 
     return {
       imagingAssets,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -136,9 +129,7 @@ const createImagingAsset = async (data, userId, ipAddress) => {
         value: data.imaging_study_id,
         field: 'imaging_study_id',
         model: 'imaging_study',
-        where: { deleted_at: null },
-      }),
-    };
+        where: { deleted_at: null }})};
     const imagingAsset = await imagingAssetRepository.create(normalizedData);
 
     // Create audit log (non-blocking)
@@ -185,8 +176,7 @@ const updateImagingAsset = async (id, data, userId, ipAddress) => {
         value: payload.imaging_study_id,
         field: 'imaging_study_id',
         model: 'imaging_study',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
 
     const imagingAsset = await imagingAssetRepository.update(resolvedId, payload);

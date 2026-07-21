@@ -4,8 +4,7 @@
 
 const {
   mapMergedRadiologyTestRecord,
-  mapClinicalCatalogRadiologyTestRow,
-} = require('@services/radiology-workspace/facility-radiology-catalog.merge');
+  mapClinicalCatalogRadiologyTestRow} = require('@services/radiology-workspace/facility-radiology-catalog.merge');
 
 describe('facility-radiology-catalog.merge', () => {
   const masterTest = {
@@ -17,16 +16,14 @@ describe('facility-radiology-catalog.merge', () => {
     unit_price: 10000,
     currency: 'UGX',
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+    updated_at: new Date().toISOString()};
 
   const offering = {
     id: 'offering-1',
     is_active: true,
     sort_order: 0,
     unit_price: 25000,
-    currency: 'UGX',
-  };
+    currency: 'UGX'};
 
   it('maps merged radiology test with facility offering', () => {
     const mapped = mapMergedRadiologyTestRecord(masterTest, offering);
@@ -36,16 +33,14 @@ describe('facility-radiology-catalog.merge', () => {
       is_offered_at_facility: true,
       facility_offering_id: 'offering-1',
       unit_price: '25000.00',
-      currency: 'UGX',
-    });
+      currency: 'UGX'});
   });
 
   it('maps clinical catalog row for active offering', () => {
     const pelvicTest = {
       ...masterTest,
       name: 'Transvaginal Pelvic Ultrasound',
-      modality: 'ULTRASOUND',
-    };
+      modality: 'ULTRASOUND'};
     const mapped = mapClinicalCatalogRadiologyTestRow(pelvicTest, offering);
     expect(mapped).toMatchObject({
       term_type: 'RADIOLOGY_TEST',
@@ -55,9 +50,7 @@ describe('facility-radiology-catalog.merge', () => {
       metadata: {
         modality: 'ULTRASOUND',
         body_region: 'Pelvis',
-        facility_offering_id: 'offering-1',
-      },
-    });
+        facility_offering_id: 'offering-1'}});
     expect(mapped.metadata.body_region).not.toBe('FACILITY');
   });
 });

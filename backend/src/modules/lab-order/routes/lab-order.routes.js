@@ -15,8 +15,7 @@ const {
   updateLabOrderSchema,
   deleteLabOrderSchema,
   labOrderIdParamsSchema,
-  listLabOrdersQuerySchema,
-} = require('@validations/lab-order/lab-order.schema');
+  listLabOrdersQuerySchema} = require('@validations/lab-order/lab-order.schema');
 
 const router = express.Router();
 
@@ -26,15 +25,13 @@ const LAB_READ_ROLES = [
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
   ROLES.NURSE,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 const LAB_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 const LAB_REQUEST_ROLES = LAB_READ_ROLES;
 

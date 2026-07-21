@@ -6,8 +6,7 @@ describe('patient-report.routes contract', () => {
       .filter((layer) => layer.route)
       .map((layer) => ({
         path: layer.route.path,
-        methods: Object.keys(layer.route.methods).sort(),
-      }));
+        methods: Object.keys(layer.route.methods).sort()}));
 
     expect(routes).toEqual(
       expect.arrayContaining([
@@ -15,8 +14,7 @@ describe('patient-report.routes contract', () => {
         { path: '/print-events', methods: ['post'] },
         { path: '/jobs', methods: ['post'] },
         { path: '/jobs/:id', methods: ['get'] },
-        { path: '/jobs/:id/download', methods: ['get'] },
-      ])
+        { path: '/jobs/:id/download', methods: ['get'] }])
     );
   });
 });

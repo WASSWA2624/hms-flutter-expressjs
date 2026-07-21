@@ -16,8 +16,7 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 
 const PAYMENT_REALTIME_RECIPIENT_ROLES = Object.freeze([
@@ -107,9 +106,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const mapPaymentForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -122,8 +119,7 @@ const mapPaymentForDisplay = (record) => {
           refund?.payment_display_id,
           record?.human_friendly_id,
           record?.id
-        ),
-      }))
+        )}))
     : record.refunds;
 
   return {
@@ -150,8 +146,7 @@ const mapPaymentForDisplay = (record) => {
       record?.invoice_id
     ),
     timeline_at: record?.timeline_at || record?.paid_at || record?.created_at || null,
-    refunds: mappedRefunds,
-  };
+    refunds: mappedRefunds};
 };
 
 const resolveListFilters = async (filters = {}, page, limit) => {
@@ -160,8 +155,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   if (filters.tenant_id !== undefined) {
     const tenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
-      model: 'tenant',
-    });
+      model: 'tenant'});
     if (tenantId === null) return buildEmptyListResult(page, limit);
     if (tenantId !== undefined) whereClause.tenant_id = tenantId;
   }
@@ -170,8 +164,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
     const facilityId = await resolveIdentifierForFilter({
       value: filters.facility_id,
       model: 'facility',
-      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-    });
+      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
     if (facilityId === null) return buildEmptyListResult(page, limit);
     if (facilityId !== undefined) whereClause.facility_id = facilityId;
   }
@@ -180,8 +173,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
     const patientId = await resolveIdentifierForFilter({
       value: filters.patient_id,
       model: 'patient',
-      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-    });
+      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
     if (patientId === null) return buildEmptyListResult(page, limit);
     if (patientId !== undefined) whereClause.patient_id = patientId;
   }
@@ -190,8 +182,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
     const invoiceId = await resolveIdentifierForFilter({
       value: filters.invoice_id,
       model: 'invoice',
-      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-    });
+      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
     if (invoiceId === null) return buildEmptyListResult(page, limit);
     if (invoiceId !== undefined) whereClause.invoice_id = invoiceId;
   }
@@ -210,8 +201,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
     whereClause.OR = [
       { transaction_ref: { contains: search } },
       { human_friendly_id: { contains: search.toUpperCase() } },
-      { id: { contains: search } },
-    ];
+      { id: { contains: search } }];
   }
 
   return whereClause;
@@ -241,8 +231,7 @@ const listPayments = async (filters, page, limit, sortBy, order) => {
         tenant: { select: { id: true, human_friendly_id: true } },
         facility: { select: { id: true, human_friendly_id: true } },
         patient: { select: { id: true, human_friendly_id: true } },
-        invoice: { select: { id: true, human_friendly_id: true } },
-      }),
+        invoice: { select: { id: true, human_friendly_id: true } }}),
       paymentRepository.count(whereClause)
     ]);
 
@@ -273,8 +262,7 @@ const getPaymentById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'payment',
-      identifier: id,
-    });
+      identifier: id});
     const payment = await paymentRepository.findById(resolvedId, {
       tenant: true,
       facility: true,
@@ -307,44 +295,38 @@ const createPayment = async (data, userId, ipAddress) => {
     const tenantId = await resolveIdentifierForPayload({
       value: data?.tenant_id,
       field: 'tenant_id',
-      model: 'tenant',
-    });
+      model: 'tenant'});
     const facilityId = await resolveIdentifierForPayload({
       value: data?.facility_id,
       field: 'facility_id',
       model: 'facility',
       where: tenantId ? { tenant_id: tenantId } : {},
-      nullable: true,
-    });
+      nullable: true});
     const patientId = await resolveIdentifierForPayload({
       value: data?.patient_id,
       field: 'patient_id',
       model: 'patient',
       where: tenantId ? { tenant_id: tenantId } : {},
-      nullable: true,
-    });
+      nullable: true});
     const invoiceId = await resolveIdentifierForPayload({
       value: data?.invoice_id,
       field: 'invoice_id',
       model: 'invoice',
-      where: tenantId ? { tenant_id: tenantId } : {},
-    });
+      where: tenantId ? { tenant_id: tenantId } : {}});
 
     const payload = {
       ...data,
       tenant_id: tenantId,
       facility_id: facilityId,
       patient_id: patientId,
-      invoice_id: invoiceId,
-    };
+      invoice_id: invoiceId};
 
     const payment = await paymentRepository.create(payload);
     const createdRecord = await paymentRepository.findById(payment.id, {
       tenant: { select: { id: true, human_friendly_id: true } },
       facility: { select: { id: true, human_friendly_id: true } },
       patient: { select: { id: true, human_friendly_id: true } },
-      invoice: { select: { id: true, human_friendly_id: true } },
-    });
+      invoice: { select: { id: true, human_friendly_id: true } }});
 
     createAuditLog({
       tenant_id: payment.tenant_id || tenantId,
@@ -378,8 +360,7 @@ const updatePayment = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'payment',
-      identifier: id,
-    });
+      identifier: id});
     const before = await paymentRepository.findById(resolvedId);
     if (!before) {
       throw new HttpError('errors.payment.not_found', 404);
@@ -392,8 +373,7 @@ const updatePayment = async (id, data, userId, ipAddress) => {
         field: 'facility_id',
         model: 'facility',
         where: before.tenant_id ? { tenant_id: before.tenant_id } : {},
-        nullable: true,
-      });
+        nullable: true});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'patient_id')) {
       payload.patient_id = await resolveIdentifierForPayload({
@@ -401,23 +381,20 @@ const updatePayment = async (id, data, userId, ipAddress) => {
         field: 'patient_id',
         model: 'patient',
         where: before.tenant_id ? { tenant_id: before.tenant_id } : {},
-        nullable: true,
-      });
+        nullable: true});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'invoice_id')) {
       payload.invoice_id = await resolveIdentifierForPayload({
         value: payload.invoice_id,
         field: 'invoice_id',
         model: 'invoice',
-        where: before.tenant_id ? { tenant_id: before.tenant_id } : {},
-      });
+        where: before.tenant_id ? { tenant_id: before.tenant_id } : {}});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'tenant_id')) {
       payload.tenant_id = await resolveIdentifierForPayload({
         value: payload.tenant_id,
         field: 'tenant_id',
-        model: 'tenant',
-      });
+        model: 'tenant'});
     }
 
     const payment = await paymentRepository.update(before.id, payload);
@@ -425,8 +402,7 @@ const updatePayment = async (id, data, userId, ipAddress) => {
       tenant: { select: { id: true, human_friendly_id: true } },
       facility: { select: { id: true, human_friendly_id: true } },
       patient: { select: { id: true, human_friendly_id: true } },
-      invoice: { select: { id: true, human_friendly_id: true } },
-    });
+      invoice: { select: { id: true, human_friendly_id: true } }});
     const tenantId = payment.tenant_id || before.tenant_id;
 
     createAuditLog({
@@ -460,8 +436,7 @@ const deletePayment = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'payment',
-      identifier: id,
-    });
+      identifier: id});
     const before = await paymentRepository.findById(resolvedId);
     if (!before) {
       throw new HttpError('errors.payment.not_found', 404);
@@ -499,8 +474,7 @@ const reconcilePayment = async (id, data = {}, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'payment',
-      identifier: id,
-    });
+      identifier: id});
     const before = await paymentRepository.findById(resolvedId);
     if (!before) {
       throw new HttpError('errors.payment.not_found', 404);
@@ -514,8 +488,7 @@ const reconcilePayment = async (id, data = {}, userId, ipAddress) => {
       tenant: { select: { id: true, human_friendly_id: true } },
       facility: { select: { id: true, human_friendly_id: true } },
       patient: { select: { id: true, human_friendly_id: true } },
-      invoice: { select: { id: true, human_friendly_id: true } },
-    });
+      invoice: { select: { id: true, human_friendly_id: true } }});
 
     createAuditLog({
       tenant_id: before.tenant_id,
@@ -552,8 +525,7 @@ const getPaymentChannelBreakdown = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'payment',
-      identifier: id,
-    });
+      identifier: id});
     const payment = await paymentRepository.findById(resolvedId);
     if (!payment) {
       throw new HttpError('errors.payment.not_found', 404);

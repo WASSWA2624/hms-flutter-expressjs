@@ -10,8 +10,7 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/role-permission/role-permission.repository');
 jest.mock('@lib/billing/identifiers', () => ({
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-  resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null)}));
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue({})
 }));
@@ -45,10 +44,7 @@ describe('Role-Permission Service', () => {
           permission: {
             id: 'perm-uuid',
             human_friendly_id: 'PRM0001',
-            name: 'clinical:read',
-          },
-        },
-      ];
+            name: 'clinical:read'}}];
       rolePermissionRepository.findMany.mockResolvedValue(mocks);
       rolePermissionRepository.count.mockResolvedValue(1);
 
@@ -60,10 +56,7 @@ describe('Role-Permission Service', () => {
           permission_id: 'PRM0001',
           permission: expect.objectContaining({
             id: 'PRM0001',
-            name: 'clinical:read',
-          }),
-        }),
-      ]);
+            name: 'clinical:read'})})]);
     });
 
     it('should resolve friendly role_id before querying', async () => {
@@ -126,8 +119,7 @@ describe('Role-Permission Service', () => {
       expect(result).toEqual(mock);
       expect(rolePermissionRepository.create).toHaveBeenCalledWith({
         role_id: 'ROL0001',
-        permission_id: 'PRM0001',
-      });
+        permission_id: 'PRM0001'});
       expect(createAuditLog).toHaveBeenCalled();
     });
   });

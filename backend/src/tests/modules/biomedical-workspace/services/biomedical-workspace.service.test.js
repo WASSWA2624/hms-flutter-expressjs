@@ -1,11 +1,8 @@
 const mockPrisma = {
   notification: {
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   notification_delivery: {
-    createMany: jest.fn(),
-  },
-};
+    createMany: jest.fn()}};
 
 jest.mock('@prisma/client', () => mockPrisma);
 
@@ -16,8 +13,7 @@ const {
   emitToUser,
   emitToUsers,
   BIOMEDICAL_EVENTS,
-  NOTIFICATION_EVENTS,
-} = require('@lib/websocket');
+  NOTIFICATION_EVENTS} = require('@lib/websocket');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 
@@ -28,20 +24,15 @@ jest.mock('@lib/websocket', () => ({
   emitToUsers: jest.fn(),
   BIOMEDICAL_EVENTS: {
     BIOMEDICAL_FAULT_REPORTED: 'biomedical.fault_reported',
-    BIOMEDICAL_WORKSPACE_UPDATED: 'biomedical.workspace_updated',
-  },
+    BIOMEDICAL_WORKSPACE_UPDATED: 'biomedical.workspace_updated'},
   NOTIFICATION_EVENTS: {
-    NOTIFICATION_CREATED: 'notification.created',
-  },
-}));
+    NOTIFICATION_CREATED: 'notification.created'}}));
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: (...values) =>
     values.find((entry) => typeof entry === 'string' && entry.trim()) || null,
-  resolveIdentifierForFilter: jest.fn(),
-}));
+  resolveIdentifierForFilter: jest.fn()}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(),
-}));
+  resolveModelIdByIdentifier: jest.fn()}));
 
 describe('biomedical-workspace.service', () => {
   beforeEach(() => {
@@ -55,8 +46,7 @@ describe('biomedical-workspace.service', () => {
       read_at: null,
       created_at: new Date('2026-03-03T08:00:00.000Z'),
       updated_at: new Date('2026-03-03T08:00:00.000Z'),
-      ...data,
-    }));
+      ...data}));
     mockPrisma.notification_delivery.createMany.mockResolvedValue({ count: 0 });
   });
 
@@ -65,31 +55,25 @@ describe('biomedical-workspace.service', () => {
       id: 'equipment-uuid',
       human_friendly_id: 'EQ-001',
       equipment_name: 'Defibrillator',
-      equipment_code: 'DEF-01',
-    });
+      equipment_code: 'DEF-01'});
     biomedicalWorkspaceRepository.createFaultReport.mockResolvedValue({
       workOrder: {
         id: 'work-order-uuid',
         human_friendly_id: 'BWO-001',
         status: 'OPEN',
-        priority: 'CRITICAL',
-      },
+        priority: 'CRITICAL'},
       incidentReport: {
         id: 'incident-uuid',
         human_friendly_id: 'BIR-001',
         status: 'OPEN',
-        severity: 'CRITICAL',
-      },
+        severity: 'CRITICAL'},
       downtimeLog: {
         id: 'downtime-uuid',
-        human_friendly_id: 'BDT-001',
-      },
-      clinicalAlert: null,
-    });
+        human_friendly_id: 'BDT-001'},
+      clinicalAlert: null});
     biomedicalWorkspaceRepository.findNotificationRecipients.mockResolvedValue([
       'user-1',
-      'user-2',
-    ]);
+      'user-2']);
 
     const result = await biomedicalWorkspaceService.createFaultReport(
       {
@@ -104,13 +88,11 @@ describe('biomedical-workspace.service', () => {
         patient_safety_risk: true,
         description: 'Unit shuts down unexpectedly',
         evidence_manifest: [{ kind: 'photo' }],
-        context: { encounter_id: 'ENC-001' },
-      },
+        context: { encounter_id: 'ENC-001' }},
       {
         id: 'user-77',
         tenant_id: 'tenant-1',
-        facility_id: 'FAC-001',
-      },
+        facility_id: 'FAC-001'},
       '127.0.0.1'
     );
 
@@ -118,31 +100,26 @@ describe('biomedical-workspace.service', () => {
       expect.objectContaining({
         tenantId: 'tenant-1',
         reportedByUserId: 'user-77',
-        equipment: expect.objectContaining({ id: 'equipment-uuid' }),
-      })
+        equipment: expect.objectContaining({ id: 'equipment-uuid' })})
     );
     expect(result).toEqual(
       expect.objectContaining({
         equipment_work_order: expect.objectContaining({
           id: 'BWO-001',
           human_friendly_id: 'BWO-001',
-          status: 'OPEN',
-        }),
+          status: 'OPEN'}),
         fault_report: expect.objectContaining({
           id: 'BIR-001',
-          severity: 'CRITICAL',
-        }),
+          severity: 'CRITICAL'}),
         deep_link:
-          '/biomedical?panel=work-orders&resource=equipment-work-orders&queue=OPEN_WORK_ORDERS&id=BWO-001&action=triage',
-      })
+          '/biomedical?panel=work-orders&resource=equipment-work-orders&queue=OPEN_WORK_ORDERS&id=BWO-001&action=triage'})
     );
     expect(result.maintenance_request).toBeUndefined();
     expect(emitToUsers).toHaveBeenCalledWith(
       ['user-1', 'user-2'],
       BIOMEDICAL_EVENTS.BIOMEDICAL_FAULT_REPORTED,
       expect.objectContaining({
-        equipment_work_order_id: 'BWO-001',
-      })
+        equipment_work_order_id: 'BWO-001'})
     );
     expect(mockPrisma.notification.create).toHaveBeenCalledTimes(2);
     expect(emitToUser).toHaveBeenCalledWith(
@@ -150,8 +127,7 @@ describe('biomedical-workspace.service', () => {
       NOTIFICATION_EVENTS.NOTIFICATION_CREATED,
       expect.objectContaining({
         target_path:
-          '/biomedical?panel=work-orders&resource=equipment-work-orders&queue=OPEN_WORK_ORDERS&id=BWO-001&action=triage',
-      })
+          '/biomedical?panel=work-orders&resource=equipment-work-orders&queue=OPEN_WORK_ORDERS&id=BWO-001&action=triage'})
     );
   });
 
@@ -172,19 +148,16 @@ describe('biomedical-workspace.service', () => {
           priority: 'HIGH',
           symptoms: '',
           description: '',
-          patient_safety_risk: false,
-        },
+          patient_safety_risk: false},
         {
           id: 'user-77',
           tenant_id: 'tenant-1',
-          facility_id: 'FAC-001',
-        },
+          facility_id: 'FAC-001'},
         '127.0.0.1'
       )
     ).rejects.toMatchObject({
       statusCode: 400,
-      details: expect.arrayContaining([expect.objectContaining({ field: 'equipment_id' })]),
-    });
+      details: expect.arrayContaining([expect.objectContaining({ field: 'equipment_id' })])});
 
     expect(biomedicalWorkspaceRepository.resolveEquipmentRegistry).not.toHaveBeenCalled();
     expect(biomedicalWorkspaceRepository.createFaultReport).not.toHaveBeenCalled();

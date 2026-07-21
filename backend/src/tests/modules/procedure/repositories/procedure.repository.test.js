@@ -54,7 +54,7 @@ describe('Procedure Repository', () => {
           id: 'proc-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 

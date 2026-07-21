@@ -14,8 +14,7 @@ const {
   sanitizeIdentifier,
   resolveEntityId,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 const { serializeIntegration } = require('@lib/integrations/serializers');
 
 const SORT_FIELDS = new Set(['created_at', 'updated_at', 'name', 'status', 'integration_type']);
@@ -25,16 +24,11 @@ const INTEGRATION_INCLUDE = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   _count: {
     select: {
       logs: true,
-      webhooks: true,
-    },
-  },
-};
+      webhooks: true}}};
 
 const buildPagination = (page, limit, total) => ({
   page,
@@ -42,13 +36,11 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: limit > 0 ? page < Math.ceil(total / limit) : false,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const buildEmptyListResult = (page, limit) => ({
   data: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const normalizePage = (value) => {
   const parsed = Number(value);
@@ -74,8 +66,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   if (filters.tenant_id !== undefined) {
     const tenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
-      model: 'tenant',
-    });
+      model: 'tenant'});
     if (tenantId === null) return buildEmptyListResult(page, limit);
     if (tenantId !== undefined) where.tenant_id = tenantId;
   }
@@ -91,16 +82,14 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   const name = sanitizeIdentifier(filters.name);
   if (name) {
     where.name = {
-      contains: name,
-    };
+      contains: name};
   }
 
   const search = sanitizeIdentifier(filters.search);
   if (search) {
     where.OR = [
       { name: { contains: search } },
-      { human_friendly_id: { contains: search.toUpperCase() } },
-    ];
+      { human_friendly_id: { contains: search.toUpperCase() } }];
   }
 
   return where;
@@ -112,8 +101,7 @@ const resolveCreatePayload = async (data = {}) => {
   payload.tenant_id = await resolveIdentifierForPayload({
     value: payload.tenant_id,
     field: 'tenant_id',
-    model: 'tenant',
-  });
+    model: 'tenant'});
 
   return payload;
 };
@@ -128,8 +116,7 @@ const resolveCreatePayload = async (data = {}) => {
 const getIntegrationById = async (id) => {
   const resolvedId = await resolveEntityId({
     model: 'integration',
-    identifier: id,
-  });
+    identifier: id});
   const integration = await integrationRepository.findById(resolvedId, INTEGRATION_INCLUDE);
 
   if (!integration) {
@@ -168,13 +155,11 @@ const listIntegrations = async (
 
   const [integrations, total] = await Promise.all([
     integrationRepository.findMany(resolvedFilters, skip, numericLimit, orderBy, INTEGRATION_INCLUDE),
-    integrationRepository.count(resolvedFilters),
-  ]);
+    integrationRepository.count(resolvedFilters)]);
 
   return {
     data: integrations.map(serializeIntegration),
-    pagination: buildPagination(numericPage, numericLimit, total),
-  };
+    pagination: buildPagination(numericPage, numericLimit, total)};
 };
 
 /**
@@ -195,8 +180,7 @@ const createIntegration = async (data, auditContext) => {
     entity: 'integration',
     entity_id: integration.id,
     new_values: integration,
-    ...auditContext,
-  });
+    ...auditContext});
 
   return serializeIntegration(createdRecord);
 };
@@ -213,8 +197,7 @@ const createIntegration = async (data, auditContext) => {
 const updateIntegration = async (id, data, auditContext) => {
   const resolvedId = await resolveEntityId({
     model: 'integration',
-    identifier: id,
-  });
+    identifier: id});
   const existingIntegration = await integrationRepository.findById(resolvedId, INTEGRATION_INCLUDE);
 
   if (!existingIntegration) {
@@ -231,8 +214,7 @@ const updateIntegration = async (id, data, auditContext) => {
     entity_id: existingIntegration.id,
     old_values: existingIntegration,
     new_values: updated,
-    ...auditContext,
-  });
+    ...auditContext});
 
   return serializeIntegration(updatedRecord);
 };
@@ -248,8 +230,7 @@ const updateIntegration = async (id, data, auditContext) => {
 const deleteIntegration = async (id, auditContext) => {
   const resolvedId = await resolveEntityId({
     model: 'integration',
-    identifier: id,
-  });
+    identifier: id});
   const existingIntegration = await integrationRepository.findById(resolvedId, INTEGRATION_INCLUDE);
 
   if (!existingIntegration) {
@@ -263,8 +244,7 @@ const deleteIntegration = async (id, auditContext) => {
     entity: 'integration',
     entity_id: existingIntegration.id,
     old_values: existingIntegration,
-    ...auditContext,
-  });
+    ...auditContext});
 
   return deleted;
 };
@@ -280,8 +260,7 @@ const deleteIntegration = async (id, auditContext) => {
 const testIntegrationConnection = async (id, data = {}, auditContext = {}) => {
   const resolvedId = await resolveEntityId({
     model: 'integration',
-    identifier: id,
-  });
+    identifier: id});
   const integration = await integrationRepository.findById(resolvedId, INTEGRATION_INCLUDE);
 
   if (!integration) {
@@ -298,8 +277,7 @@ const testIntegrationConnection = async (id, data = {}, auditContext = {}) => {
     connected: hasConfig,
     tested_at: new Date().toISOString(),
     timeout_ms: data.timeout_ms || 10000,
-    dry_run: Boolean(data.dry_run),
-  };
+    dry_run: Boolean(data.dry_run)};
 
   await createAuditLog({
     action: 'TEST_CONNECTION',
@@ -307,8 +285,7 @@ const testIntegrationConnection = async (id, data = {}, auditContext = {}) => {
     entity_id: integration.id,
     old_values: integration,
     new_values: result,
-    ...auditContext,
-  }).catch(() => {});
+    ...auditContext}).catch(() => {});
 
   return result;
 };
@@ -324,8 +301,7 @@ const testIntegrationConnection = async (id, data = {}, auditContext = {}) => {
 const syncIntegrationNow = async (id, data = {}, auditContext = {}) => {
   const resolvedId = await resolveEntityId({
     model: 'integration',
-    identifier: id,
-  });
+    identifier: id});
   const integration = await integrationRepository.findById(resolvedId, INTEGRATION_INCLUDE);
 
   if (!integration) {
@@ -341,8 +317,7 @@ const syncIntegrationNow = async (id, data = {}, auditContext = {}) => {
     queued: true,
     forced: Boolean(data.force),
     scope: data.scope || 'full',
-    queued_at: new Date().toISOString(),
-  };
+    queued_at: new Date().toISOString()};
 
   await createAuditLog({
     action: 'SYNC_NOW',
@@ -350,8 +325,7 @@ const syncIntegrationNow = async (id, data = {}, auditContext = {}) => {
     entity_id: integration.id,
     old_values: integration,
     new_values: result,
-    ...auditContext,
-  }).catch(() => {});
+    ...auditContext}).catch(() => {});
 
   return result;
 };
@@ -363,5 +337,4 @@ module.exports = {
   updateIntegration,
   deleteIntegration,
   testIntegrationConnection,
-  syncIntegrationNow,
-};
+  syncIntegrationNow};

@@ -17,15 +17,13 @@ const {
   sanitizeIdentifier,
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const {
   PRACTITIONER_TYPES,
-  CONSULTATION_FEE_PRACTITIONER_TYPES,
-} = require('@lib/hr/reference-data');
+  CONSULTATION_FEE_PRACTITIONER_TYPES} = require('@lib/hr/reference-data');
 const ALLOWED_SORT_FIELDS = new Set([
   'created_at',
   'updated_at',
@@ -33,16 +31,13 @@ const ALLOWED_SORT_FIELDS = new Set([
   'staff_number',
   'position',
   'practitioner_type',
-  'human_friendly_id',
-]);
+  'human_friendly_id']);
 
 const STAFF_PROFILE_INCLUDE = {
   tenant: {
     select: {
       id: true,
-      human_friendly_id: true,
-    },
-  },
+      human_friendly_id: true}},
   user: {
     include: {
       profile: true
@@ -51,9 +46,7 @@ const STAFF_PROFILE_INCLUDE = {
   department: true,
   compensations: {
     where: { deleted_at: null },
-    orderBy: { effective_from: 'desc' },
-  },
-};
+    orderBy: { effective_from: 'desc' }}};
 
 const normalizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
 const isUuid = (value) => UUID_REGEX.test(normalizeIdentifier(value));
@@ -103,8 +96,7 @@ const mapStaffProfileForDisplay = (record) => {
       record?.department?.human_friendly_id,
       record?.department_id
     ),
-    timeline_at: record?.updated_at || record?.created_at || null,
-  };
+    timeline_at: record?.updated_at || record?.created_at || null};
 };
 
 const normalizePractitionerType = (value) => {
@@ -184,8 +176,7 @@ const extractCompensations = (data = {}) => {
     metadata_json:
       entry.metadata_json && typeof entry.metadata_json === 'object'
         ? entry.metadata_json
-        : null,
-  }));
+        : null}));
 };
 
 const syncStaffCompensations = async (staffProfileId, compensations) => {
@@ -195,10 +186,8 @@ const syncStaffCompensations = async (staffProfileId, compensations) => {
     await tx.staff_compensation.updateMany({
       where: {
         staff_profile_id: staffProfileId,
-        deleted_at: null,
-      },
-      data: { deleted_at: new Date() },
-    });
+        deleted_at: null},
+      data: { deleted_at: new Date() }});
 
     for (const compensation of compensations) {
       await tx.staff_compensation.create({
@@ -209,9 +198,7 @@ const syncStaffCompensations = async (staffProfileId, compensations) => {
           currency: compensation.currency,
           effective_from: compensation.effective_from,
           effective_to: compensation.effective_to,
-          metadata_json: compensation.metadata_json || undefined,
-        },
-      });
+          metadata_json: compensation.metadata_json || undefined}});
     }
   });
 };
@@ -225,8 +212,7 @@ const stripNestedStaffProfilePayload = (data = {}) => {
 const upsertStaffPositionCatalogEntry = async ({
   tenantId,
   facilityId = null,
-  positionName,
-}) => {
+  positionName}) => {
   const normalizedName = normalizeIdentifier(positionName);
   if (!normalizedName || !tenantId || !prisma?.staff_position?.findFirst) {
     return null;
@@ -239,11 +225,8 @@ const upsertStaffPositionCatalogEntry = async ({
       name: normalizedName,
       ...(facilityId
         ? {
-            OR: [{ facility_id: facilityId }, { facility_id: null }],
-          }
-        : { facility_id: null }),
-    },
-  });
+            OR: [{ facility_id: facilityId }, { facility_id: null }]}
+        : { facility_id: null })}});
   if (existing) {
     return existing;
   }
@@ -253,9 +236,7 @@ const upsertStaffPositionCatalogEntry = async ({
       tenant_id: tenantId,
       facility_id: facilityId || null,
       name: normalizedName,
-      is_active: true,
-    },
-  });
+      is_active: true}});
 };
 
 const resolveUserByIdentifier = async (identifier, tenantId = null) => {
@@ -312,14 +293,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const emptyResult = (page, limit) => ({
   staffProfiles: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 /**
  * List staff profiles with pagination and filtering
@@ -345,16 +324,14 @@ const listStaffProfiles = async (filters, page, limit, sortBy, order, userId, ip
     const tenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
       model: 'tenant',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.tenant_id && tenantId === null) return emptyResult(page, limit);
     if (tenantId) whereClause.tenant_id = tenantId;
 
     const departmentId = await resolveIdentifierForFilter({
       value: filters.department_id,
       model: 'department',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.department_id && departmentId === null) return emptyResult(page, limit);
     if (departmentId) whereClause.department_id = departmentId;
 
@@ -436,8 +413,7 @@ const listStaffProfiles = async (filters, page, limit, sortBy, order, userId, ip
 
     return {
       staffProfiles: healedProfiles.map(mapStaffProfileForDisplay),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -478,8 +454,7 @@ const buildStaffProfileCreateData = async (data) => {
     value: data.tenant_id,
     model: 'tenant',
     field: 'tenant_id',
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
   const shouldGenerateStaffNumber =
     data.generate_staff_number === true ||
     (data.generate_staff_number !== false && !normalizeIdentifier(data.staff_number));
@@ -488,8 +463,7 @@ const buildStaffProfileCreateData = async (data) => {
     model: 'department',
     field: 'department_id',
     where: { deleted_at: null },
-    nullable: true,
-  });
+    nullable: true});
 
   const resolvedUser = await resolveUserByIdentifier(data.user_id, tenantId || null);
   if (!resolvedUser) {
@@ -501,8 +475,7 @@ const buildStaffProfileCreateData = async (data) => {
       ...stripNestedStaffProfilePayload(data),
       tenant_id: tenantId,
       department_id: departmentId,
-      user_id: resolvedUser.id,
-    },
+      user_id: resolvedUser.id},
     { isEdit: false },
   );
 
@@ -533,8 +506,7 @@ const createStaffProfile = async (data, userId, ipAddress) => {
     await upsertStaffPositionCatalogEntry({
       tenantId: payload.tenant_id,
       facilityId: data.facility_id || null,
-      positionName: payload.position,
-    });
+      positionName: payload.position});
     await syncStaffCompensations(createdProfile.id, requestedCompensations);
     const createdWithRelations = await staffProfileRepository.findById(
       createdProfile.id,
@@ -585,15 +557,13 @@ const updateStaffProfile = async (id, data, userId, ipAddress) => {
         model: 'department',
         field: 'department_id',
         where: { deleted_at: null },
-        nullable: true,
-      });
+        nullable: true});
     }
     const updatedProfile = await staffProfileRepository.update(before.id, payload);
     if (Object.prototype.hasOwnProperty.call(data, 'position')) {
       await upsertStaffPositionCatalogEntry({
         tenantId: before.tenant_id,
-        positionName: payload.position,
-      });
+        positionName: payload.position});
     }
     await syncStaffCompensations(updatedProfile.id, requestedCompensations);
     const updatedWithRelations = await staffProfileRepository.findById(
@@ -660,5 +630,4 @@ module.exports = {
   buildStaffProfileCreateData,
   createStaffProfile,
   updateStaffProfile,
-  deleteStaffProfile,
-};
+  deleteStaffProfile};

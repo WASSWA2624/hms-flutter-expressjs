@@ -16,11 +16,9 @@ const {
   sanitizeIdentifier,
   resolveEntityId,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 const {
-  serializeWebhookSubscription,
-} = require('@lib/integrations/serializers');
+  serializeWebhookSubscription} = require('@lib/integrations/serializers');
 const crypto = require('crypto');
 
 const SORT_FIELDS = new Set(['created_at', 'updated_at', 'event', 'is_active']);
@@ -30,17 +28,14 @@ const WEBHOOK_SIGNING_SECRET_KEYS = new Set([
   'signingsecret',
   'webhooksigningsecret',
   'signingsecret',
-  'secret',
-]);
+  'secret']);
 
 const WEBHOOK_SUBSCRIPTION_INCLUDE = {
   tenant: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   integration: {
     select: {
       id: true,
@@ -48,10 +43,7 @@ const WEBHOOK_SUBSCRIPTION_INCLUDE = {
       name: true,
       integration_type: true,
       status: true,
-      config_json: true,
-    },
-  },
-};
+      config_json: true}}};
 
 const buildPagination = (page, limit, total) => ({
   page,
@@ -59,13 +51,11 @@ const buildPagination = (page, limit, total) => ({
   total,
   totalPages: limit > 0 ? Math.ceil(total / limit) : 0,
   hasNextPage: limit > 0 ? page < Math.ceil(total / limit) : false,
-  hasPreviousPage: page > 1,
-});
+  hasPreviousPage: page > 1});
 
 const buildEmptyListResult = (page, limit) => ({
   data: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const normalizePage = (value) => {
   const parsed = Number(value);
@@ -91,8 +81,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   if (filters.tenant_id !== undefined) {
     const tenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
-      model: 'tenant',
-    });
+      model: 'tenant'});
     if (tenantId === null) return buildEmptyListResult(page, limit);
     if (tenantId !== undefined) where.tenant_id = tenantId;
   }
@@ -101,8 +90,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
     const integrationId = await resolveIdentifierForFilter({
       value: filters.integration_id,
       model: 'integration',
-      where: where.tenant_id ? { tenant_id: where.tenant_id } : {},
-    });
+      where: where.tenant_id ? { tenant_id: where.tenant_id } : {}});
     if (integrationId === null) return buildEmptyListResult(page, limit);
     if (integrationId !== undefined) where.integration_id = integrationId;
   }
@@ -110,8 +98,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   const event = sanitizeIdentifier(filters.event);
   if (event) {
     where.event = {
-      contains: event,
-    };
+      contains: event};
   }
 
   if (typeof filters.is_active === 'boolean') {
@@ -124,8 +111,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
       { event: { contains: search } },
       { target_url: { contains: search } },
       { human_friendly_id: { contains: search.toUpperCase() } },
-      { integration: { name: { contains: search } } },
-    ];
+      { integration: { name: { contains: search } } }];
   }
 
   return where;
@@ -136,15 +122,13 @@ const resolveCreatePayload = async (data = {}) => {
   const tenantId = await resolveIdentifierForPayload({
     value: payload.tenant_id,
     field: 'tenant_id',
-    model: 'tenant',
-  });
+    model: 'tenant'});
   const integrationId = await resolveIdentifierForPayload({
     value: payload.integration_id,
     field: 'integration_id',
     model: 'integration',
     where: tenantId ? { tenant_id: tenantId } : {},
-    nullable: true,
-  });
+    nullable: true});
 
   payload.tenant_id = tenantId;
   payload.integration_id = integrationId;
@@ -162,8 +146,7 @@ const resolveUpdatePayload = async (data = {}, existingWebhookSubscription = nul
       where: existingWebhookSubscription?.tenant_id
         ? { tenant_id: existingWebhookSubscription.tenant_id }
         : {},
-      nullable: true,
-    });
+      nullable: true});
   }
 
   return payload;
@@ -218,8 +201,7 @@ const deliverWebhookReplay = async (webhookSubscription, replayPayload) => {
     'user-agent': 'hms-backend/webhooks',
     'x-hms-webhook-event': replayPayload.event,
     'x-hms-webhook-delivery-id': replayPayload.delivery_id,
-    'x-hms-webhook-timestamp': timestamp,
-  };
+    'x-hms-webhook-timestamp': timestamp};
 
   if (signingSecret) {
     headers['x-hms-webhook-signature'] = createWebhookSignature(
@@ -239,8 +221,7 @@ const deliverWebhookReplay = async (webhookSubscription, replayPayload) => {
         body: requestBody,
         signal: globalThis.AbortSignal?.timeout
           ? globalThis.AbortSignal.timeout(WEBHOOK_REQUEST_TIMEOUT_MS)
-          : undefined,
-      });
+          : undefined});
       const responseBody = truncateText(await httpResponse.text(), 4000);
 
       if (!httpResponse.ok) {
@@ -254,16 +235,14 @@ const deliverWebhookReplay = async (webhookSubscription, replayPayload) => {
         status: httpResponse.status,
         body: responseBody,
         signed: Boolean(signingSecret),
-        attempt_count: attemptCount,
-      };
+        attempt_count: attemptCount};
     },
     {
       maxAttempts: 3,
       initialDelayMs: 500,
       maxDelayMs: 5000,
       shouldRetry: (error) =>
-        isTransientError(error) || Number(error?.statusCode || 0) === 429,
-    }
+        isTransientError(error) || Number(error?.statusCode || 0) === 429}
   );
 
   return response;
@@ -273,8 +252,7 @@ const logWebhookReplayDelivery = async ({
   webhookSubscription,
   replayPayload,
   deliveryResult,
-  deliveryError,
-}) => {
+  deliveryError}) => {
   if (!webhookSubscription?.integration_id) {
     return;
   }
@@ -290,8 +268,7 @@ const logWebhookReplayDelivery = async ({
   await integrationLogRepository.create({
     integration_id: webhookSubscription.integration_id,
     status: deliveryError ? 'ERROR' : 'ACTIVE',
-    message,
-  }).catch(() => {});
+    message}).catch(() => {});
 };
 
 /**
@@ -304,8 +281,7 @@ const logWebhookReplayDelivery = async ({
 const getWebhookSubscriptionById = async (id) => {
   const resolvedId = await resolveEntityId({
     model: 'webhook_subscription',
-    identifier: id,
-  });
+    identifier: id});
   const webhookSubscription = await webhookSubscriptionRepository.findById(
     resolvedId,
     WEBHOOK_SUBSCRIPTION_INCLUDE
@@ -353,13 +329,11 @@ const listWebhookSubscriptions = async (
       orderBy,
       WEBHOOK_SUBSCRIPTION_INCLUDE
     ),
-    webhookSubscriptionRepository.count(resolvedFilters),
-  ]);
+    webhookSubscriptionRepository.count(resolvedFilters)]);
 
   return {
     data: webhookSubscriptions.map(serializeWebhookSubscription),
-    pagination: buildPagination(numericPage, numericLimit, total),
-  };
+    pagination: buildPagination(numericPage, numericLimit, total)};
 };
 
 /**
@@ -383,8 +357,7 @@ const createWebhookSubscription = async (data, auditContext) => {
     entity: 'webhook_subscription',
     entity_id: webhookSubscription.id,
     new_values: webhookSubscription,
-    ...auditContext,
-  });
+    ...auditContext});
 
   return serializeWebhookSubscription(createdRecord);
 };
@@ -401,8 +374,7 @@ const createWebhookSubscription = async (data, auditContext) => {
 const updateWebhookSubscription = async (id, data, auditContext) => {
   const resolvedId = await resolveEntityId({
     model: 'webhook_subscription',
-    identifier: id,
-  });
+    identifier: id});
   const existingWebhookSubscription = await webhookSubscriptionRepository.findById(
     resolvedId,
     WEBHOOK_SUBSCRIPTION_INCLUDE
@@ -424,8 +396,7 @@ const updateWebhookSubscription = async (id, data, auditContext) => {
     entity_id: existingWebhookSubscription.id,
     old_values: existingWebhookSubscription,
     new_values: updated,
-    ...auditContext,
-  });
+    ...auditContext});
 
   return serializeWebhookSubscription(updatedRecord);
 };
@@ -441,8 +412,7 @@ const updateWebhookSubscription = async (id, data, auditContext) => {
 const deleteWebhookSubscription = async (id, auditContext) => {
   const resolvedId = await resolveEntityId({
     model: 'webhook_subscription',
-    identifier: id,
-  });
+    identifier: id});
   const existingWebhookSubscription = await webhookSubscriptionRepository.findById(
     resolvedId,
     WEBHOOK_SUBSCRIPTION_INCLUDE
@@ -459,8 +429,7 @@ const deleteWebhookSubscription = async (id, auditContext) => {
     entity: 'webhook_subscription',
     entity_id: existingWebhookSubscription.id,
     old_values: existingWebhookSubscription,
-    ...auditContext,
-  });
+    ...auditContext});
 
   return deleted;
 };
@@ -476,8 +445,7 @@ const deleteWebhookSubscription = async (id, auditContext) => {
 const replayWebhookSubscription = async (id, data = {}, auditContext = {}) => {
   const resolvedId = await resolveEntityId({
     model: 'webhook_subscription',
-    identifier: id,
-  });
+    identifier: id});
   const webhookSubscription = await webhookSubscriptionRepository.findById(
     resolvedId,
     WEBHOOK_SUBSCRIPTION_INCLUDE
@@ -500,8 +468,7 @@ const replayWebhookSubscription = async (id, data = {}, auditContext = {}) => {
     integration_id: serializedWebhookSubscription.integration_id,
     tenant_id: serializedWebhookSubscription.tenant_id,
     data: payloadJson,
-    notes,
-  };
+    notes};
 
   let deliveryResult = null;
   let deliveryError = null;
@@ -515,8 +482,7 @@ const replayWebhookSubscription = async (id, data = {}, auditContext = {}) => {
     webhookSubscription,
     replayPayload,
     deliveryResult,
-    deliveryError,
-  });
+    deliveryError});
 
   const replayResult = {
     webhook_subscription_id: serializedWebhookSubscription.id,
@@ -536,8 +502,7 @@ const replayWebhookSubscription = async (id, data = {}, auditContext = {}) => {
     http_status: deliveryResult?.status || deliveryError?.statusCode || null,
     error: deliveryError
       ? truncateText(deliveryError.responseBody || deliveryError.message)
-      : null,
-  };
+      : null};
 
   await createAuditLog({
     action: 'REPLAY',
@@ -545,8 +510,7 @@ const replayWebhookSubscription = async (id, data = {}, auditContext = {}) => {
     entity_id: webhookSubscription.id,
     old_values: webhookSubscription,
     new_values: replayResult,
-    ...auditContext,
-  }).catch(() => {});
+    ...auditContext}).catch(() => {});
 
   if (deliveryError) {
     throw new HttpError('errors.service.unavailable', 503, [
@@ -554,9 +518,7 @@ const replayWebhookSubscription = async (id, data = {}, auditContext = {}) => {
         field: 'webhook_delivery',
         webhook_subscription_id: serializedWebhookSubscription.id,
         delivery_id: deliveryId,
-        http_status: deliveryError.statusCode || null,
-      },
-    ]);
+        http_status: deliveryError.statusCode || null}]);
   }
 
   return replayResult;
@@ -568,5 +530,4 @@ module.exports = {
   createWebhookSubscription,
   updateWebhookSubscription,
   deleteWebhookSubscription,
-  replayWebhookSubscription,
-};
+  replayWebhookSubscription};

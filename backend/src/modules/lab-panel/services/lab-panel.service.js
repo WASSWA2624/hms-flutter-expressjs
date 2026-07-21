@@ -6,11 +6,9 @@ const {
   buildPagination,
   normalizeSearchTerm,
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/lab-workspace/lab.shared');
+  resolveModelRecordOrThrow} = require('@services/lab-workspace/lab.shared');
 const {
-  normalizeLabPanelItems,
-} = require('@services/lab-workspace/lab.configuration');
+  normalizeLabPanelItems} = require('@services/lab-workspace/lab.configuration');
 const { mapLabPanelRecord } = require('@services/lab-workspace/lab.serializer');
 const { STANDARD_LAB_PANELS, STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
 
@@ -39,8 +37,7 @@ const standardLabPanelMatchesFilters = (key, testCodes, filters = {}) => {
     key,
     'STANDARD',
     ...testCodes,
-    ...testCodes.map((testCode) => STANDARD_LAB_TESTS[testCode]?.name),
-  ].some((value) => includesIgnoreCase(value, search));
+    ...testCodes.map((testCode) => STANDARD_LAB_TESTS[testCode]?.name)].some((value) => includesIgnoreCase(value, search));
 };
 
 const standardLabPanelRecord = ([key, testCodes]) => ({
@@ -63,11 +60,9 @@ const standardLabPanelRecord = ([key, testCodes]) => ({
       unit: definition.unit || null,
       is_required: true,
       instructions: null,
-      sort_order: index,
-    };
+      sort_order: index};
   }),
-  test_count: testCodes.length,
-});
+  test_count: testCodes.length});
 
 const mergeStandardLabPanels = ({ mappedRecords, filters, limit, sortBy, order }) => {
   if (String(filters.include_standard_catalog || '').toLowerCase() !== 'true') {
@@ -104,11 +99,8 @@ const resolvePanelItems = async (items, tenantId) => {
         model: 'lab_test',
         where: {
           deleted_at: null,
-          tenant_id: tenantId,
-        },
-        errorKey: 'errors.lab_test.not_found',
-      }),
-    }))
+          tenant_id: tenantId},
+        errorKey: 'errors.lab_test.not_found'})}))
   );
 };
 
@@ -120,8 +112,7 @@ const buildPanelWritePayload = async (data = {}, tenantId, options = {}) => {
     const resolvedItems = await resolvePanelItems(payload.panel_items, tenantId);
     payload.panel_items = {
       ...(includeDeleteMany ? { deleteMany: {} } : {}),
-      create: resolvedItems,
-    };
+      create: resolvedItems};
   } else {
     delete payload.panel_items;
   }
@@ -140,8 +131,7 @@ const listLabPanels = async (filters, page, limit, sortBy, order, userId, ipAddr
         identifier: filters.tenant_id,
         model: 'tenant',
         where: { deleted_at: null },
-        errorKey: 'errors.tenant.not_found',
-      });
+        errorKey: 'errors.tenant.not_found'});
     }
 
     if (filters.code) whereClause.code = { contains: filters.code };
@@ -156,8 +146,7 @@ const listLabPanels = async (filters, page, limit, sortBy, order, userId, ipAddr
         { code: { contains: searchTerm.raw } },
         { category: { contains: searchTerm.raw } },
         { description: { contains: searchTerm.raw } },
-        { tenant: { human_friendly_id: { contains: searchTerm.upper } } },
-      ];
+        { tenant: { human_friendly_id: { contains: searchTerm.upper } } }];
     }
 
     const [labPanels, total] = await Promise.all([
@@ -168,16 +157,14 @@ const listLabPanels = async (filters, page, limit, sortBy, order, userId, ipAddr
         orderBy,
         LAB_PANEL_WITH_RELATIONS_INCLUDE
       ),
-      labPanelRepository.count(whereClause),
-    ]);
+      labPanelRepository.count(whereClause)]);
     const mappedLabPanels = labPanels.map((record) => mapLabPanelRecord(record)).filter(Boolean);
     const mergedLabPanels = mergeStandardLabPanels({
       mappedRecords: mappedLabPanels,
       filters,
       limit,
       sortBy,
-      order,
-    });
+      order});
 
     return {
       labPanels: mergedLabPanels,
@@ -187,8 +174,7 @@ const listLabPanels = async (filters, page, limit, sortBy, order, userId, ipAddr
         String(filters.include_standard_catalog || '').toLowerCase() === 'true'
           ? Math.max(total, mergedLabPanels.length)
           : total
-      ),
-    };
+      )};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -202,8 +188,7 @@ const getLabPanelById = async (id, userId, ipAddress) => {
       model: 'lab_panel',
       where: { deleted_at: null },
       include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_panel.not_found',
-    });
+      errorKey: 'errors.lab_panel.not_found'});
 
     return mapLabPanelRecord(labPanel);
   } catch (error) {
@@ -218,11 +203,9 @@ const createLabPanel = async (data, userId, ipAddress) => {
       identifier: data.tenant_id,
       model: 'tenant',
       where: { deleted_at: null },
-      errorKey: 'errors.tenant.not_found',
-    });
+      errorKey: 'errors.tenant.not_found'});
     const payload = await buildPanelWritePayload(data, tenantId, {
-      includeDeleteMany: false,
-    });
+      includeDeleteMany: false});
     payload.tenant_id = tenantId;
 
     const labPanel = await labPanelRepository.create(payload);
@@ -234,8 +217,7 @@ const createLabPanel = async (data, userId, ipAddress) => {
       entity: 'lab_panel',
       entity_id: labPanel.id,
       diff: { after: created || labPanel },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapLabPanelRecord(created || labPanel);
   } catch (error) {
@@ -251,8 +233,7 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
       model: 'lab_panel',
       where: { deleted_at: null },
       include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_panel.not_found',
-    });
+      errorKey: 'errors.lab_panel.not_found'});
 
     let tenantId = before.tenant_id;
     if (Object.prototype.hasOwnProperty.call(data, 'tenant_id') && data.tenant_id) {
@@ -260,12 +241,10 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
         identifier: data.tenant_id,
         model: 'tenant',
         where: { deleted_at: null },
-        errorKey: 'errors.tenant.not_found',
-      });
+        errorKey: 'errors.tenant.not_found'});
     }
     const payload = await buildPanelWritePayload(data, tenantId, {
-      includeDeleteMany: true,
-    });
+      includeDeleteMany: true});
     if (hasOwn(data, 'tenant_id') && data.tenant_id) {
       payload.tenant_id = tenantId;
     }
@@ -279,8 +258,7 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
       entity: 'lab_panel',
       entity_id: updated.id,
       diff: { before, after: labPanel },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapLabPanelRecord(labPanel || updated);
   } catch (error) {
@@ -294,8 +272,7 @@ const deleteLabPanel = async (id, data = {}, userId, ipAddress) => {
     const deletionReason = normalizeText(data?.reason);
     if (!deletionReason) {
       throw new HttpError('errors.validation.required', 400, [
-        { field: 'reason' },
-      ]);
+        { field: 'reason' }]);
     }
 
     const before = await resolveModelRecordOrThrow({
@@ -303,8 +280,7 @@ const deleteLabPanel = async (id, data = {}, userId, ipAddress) => {
       model: 'lab_panel',
       where: { deleted_at: null },
       include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_panel.not_found',
-    });
+      errorKey: 'errors.lab_panel.not_found'});
 
     const labPanel = await labPanelRepository.softDelete(before.id);
 
@@ -314,8 +290,7 @@ const deleteLabPanel = async (id, data = {}, userId, ipAddress) => {
       entity: 'lab_panel',
       entity_id: labPanel.id,
       diff: { before, deletion_reason: deletionReason },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapLabPanelRecord(before);
   } catch (error) {

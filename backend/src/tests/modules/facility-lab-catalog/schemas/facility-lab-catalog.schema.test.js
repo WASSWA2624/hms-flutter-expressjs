@@ -5,8 +5,7 @@
 const {
   listFacilityLabCatalogQuerySchema,
   searchFacilityLabCatalogQuerySchema,
-  facilityLabTestParamsSchema,
-} = require('@validations/facility-lab-catalog/facility-lab-catalog.schema');
+  facilityLabTestParamsSchema} = require('@validations/facility-lab-catalog/facility-lab-catalog.schema');
 
 describe('Facility Lab Catalog Schema Validation', () => {
   describe('listFacilityLabCatalogQuerySchema', () => {
@@ -15,8 +14,7 @@ describe('Facility Lab Catalog Schema Validation', () => {
         tenant_id: 'TEN0000001',
         facility_id: 'FAC0000001',
         limit: '100',
-        page: '1',
-      });
+        page: '1'});
 
       expect(result.success).toBe(true);
     });
@@ -25,8 +23,7 @@ describe('Facility Lab Catalog Schema Validation', () => {
       const result = listFacilityLabCatalogQuerySchema.safeParse({
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         facility_id: '223e4567-e89b-12d3-a456-426614174001',
-        limit: 100,
-      });
+        limit: 100});
 
       expect(result.success).toBe(true);
     });
@@ -35,8 +32,7 @@ describe('Facility Lab Catalog Schema Validation', () => {
       const result = listFacilityLabCatalogQuerySchema.safeParse({
         tenant_id: 'TEN0000001',
         facility_id: 'FAC0000001',
-        limit: '200',
-      });
+        limit: '200'});
 
       expect(result.success).toBe(false);
     });
@@ -44,8 +40,7 @@ describe('Facility Lab Catalog Schema Validation', () => {
     it('should reject invalid tenant identifiers', () => {
       const result = listFacilityLabCatalogQuerySchema.safeParse({
         tenant_id: 'not-a-valid-id',
-        facility_id: 'FAC0000001',
-      });
+        facility_id: 'FAC0000001'});
 
       expect(result.success).toBe(false);
     });
@@ -57,8 +52,7 @@ describe('Facility Lab Catalog Schema Validation', () => {
         tenant_id: 'TEN0000001',
         facility_id: 'FAC0000001',
         term_type: 'LAB_TEST',
-        q: 'cbc',
-      });
+        q: 'cbc'});
 
       expect(result.success).toBe(true);
     });
@@ -67,8 +61,7 @@ describe('Facility Lab Catalog Schema Validation', () => {
   describe('facilityLabTestParamsSchema', () => {
     it('should accept standard catalog lab test identifiers', () => {
       const result = facilityLabTestParamsSchema.safeParse({
-        lab_test_id: 'STD_LAB_TEST:CBC',
-      });
+        lab_test_id: 'STD_LAB_TEST:CBC'});
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -78,16 +71,14 @@ describe('Facility Lab Catalog Schema Validation', () => {
 
     it('should accept friendly lab test identifiers', () => {
       const result = facilityLabTestParamsSchema.safeParse({
-        lab_test_id: 'LBT0000001',
-      });
+        lab_test_id: 'LBT0000001'});
 
       expect(result.success).toBe(true);
     });
 
     it('should reject invalid lab test identifiers', () => {
       const result = facilityLabTestParamsSchema.safeParse({
-        lab_test_id: 'not-a-valid-id',
-      });
+        lab_test_id: 'not-a-valid-id'});
 
       expect(result.success).toBe(false);
     });

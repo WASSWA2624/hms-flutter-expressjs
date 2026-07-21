@@ -23,5 +23,4 @@ const getLookups = asyncHandler(async (req, res) => {
 
 module.exports = {
   getWorkspace,
-  getLookups,
-};
+  getLookups};

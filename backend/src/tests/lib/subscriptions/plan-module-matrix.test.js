@@ -2,8 +2,7 @@ const {
   COMMERCIAL_MODULE_MATRIX,
   PLATFORM_INFRASTRUCTURE_MODULES,
   modulesForPlanTier,
-  isEligibleForTier,
-} = require('@lib/subscriptions/plan-module-matrix');
+  isEligibleForTier} = require('@lib/subscriptions/plan-module-matrix');
 
 describe('plan-module-matrix', () => {
   test('defines platform infrastructure modules with path segments', () => {
@@ -17,15 +16,13 @@ describe('plan-module-matrix', () => {
 
   test('Free tier is limited to identity, registry, and minimal reports', () => {
     const freeSlugs = modulesForPlanTier('FREE', {
-      includeLegacyAliases: false,
-    }).map((entry) => entry.slug);
+      includeLegacyAliases: false}).map((entry) => entry.slug);
 
     expect(freeSlugs).toEqual(
       expect.arrayContaining([
         'auth-rbac-basics',
         'patient-registry',
-        'reporting-analytics',
-      ])
+        'reporting-analytics'])
     );
     expect(freeSlugs).not.toContain('radiology-workflows');
     expect(freeSlugs).not.toContain('inpatient-bed-management');
@@ -54,8 +51,7 @@ describe('plan-module-matrix', () => {
         'billing-payments',
         'notifications-communications',
         'inpatient-bed-management',
-        'subscription-controls',
-      ])
+        'subscription-controls'])
     );
     expect(added).not.toContain('lab-workflows');
     expect(added).not.toContain('radiology-workflows');
@@ -77,41 +73,35 @@ describe('plan-module-matrix', () => {
         'reporting-analytics',
         'icu-critical-care',
         'hr-rosters',
-        'integrations-core',
-      ])
+        'integrations-core'])
     );
 
     const advanced = modulesForPlanTier('ADVANCED', {
-      includeLegacyAliases: false,
-    }).map((entry) => entry.slug);
+      includeLegacyAliases: false}).map((entry) => entry.slug);
     expect(advanced).toEqual(
       expect.arrayContaining([
         'lab-workflows',
         'radiology-workflows',
         'insurance-claims',
-        'physiotherapy',
-      ])
+        'physiotherapy'])
     );
     expect(advanced).not.toContain('icu-critical-care');
     expect(advanced).not.toContain('hr-rosters');
     expect(advanced).not.toContain('developer-tools');
 
     const custom = modulesForPlanTier('CUSTOM', {
-      includeLegacyAliases: false,
-    }).map((entry) => entry.slug);
+      includeLegacyAliases: false}).map((entry) => entry.slug);
     expect(custom).toEqual(
       expect.arrayContaining([
         'subscription-controls',
         'compliance-audit-core',
         'advanced-analytics',
-        'sms-credits',
-      ])
+        'sms-credits'])
     );
     expect(custom).not.toContain('developer-tools');
 
     const developer = modulesForPlanTier('DEVELOPER', {
-      includeLegacyAliases: false,
-    }).map((entry) => entry.slug);
+      includeLegacyAliases: false}).map((entry) => entry.slug);
     expect(developer).toContain('developer-tools');
   });
 

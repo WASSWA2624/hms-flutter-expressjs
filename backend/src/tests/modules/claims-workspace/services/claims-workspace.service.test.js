@@ -8,8 +8,7 @@ jest.mock('@repositories/claims-workspace/claims-workspace.repository', () => ({
   findManyInsuranceCompanies: jest.fn(),
   findManyInvoices: jest.fn(),
   countEnrollments: jest.fn(),
-  countInvoicesReadyToClaim: jest.fn(),
-}));
+  countInvoicesReadyToClaim: jest.fn()}));
 
 const claimsWorkspaceRepository = require('@repositories/claims-workspace/claims-workspace.repository');
 const claimsWorkspaceService = require('@services/claims-workspace/claims-workspace.service');
@@ -28,8 +27,7 @@ const preAuth = (overrides = {}) => ({
   consumed_amount: '125000',
   requested_at: new Date('2026-05-17T08:00:00.000Z'),
   created_at: new Date('2026-05-17T08:00:00.000Z'),
-  ...overrides,
-});
+  ...overrides});
 
 const claim = (overrides = {}) => ({
   id: 'claim-1',
@@ -44,13 +42,11 @@ const claim = (overrides = {}) => ({
     facility_id: 'facility-1',
     currency: 'UGX',
     total_amount: '125000',
-    patient: { id: 'patient-1', human_friendly_id: 'PAT0001', first_name: 'Ada', last_name: 'Lovelace' },
-  },
+    patient: { id: 'patient-1', human_friendly_id: 'PAT0001', first_name: 'Ada', last_name: 'Lovelace' }},
   status: 'SUBMITTED',
   submitted_at: new Date('2026-05-18T09:00:00.000Z'),
   created_at: new Date('2026-05-18T09:00:00.000Z'),
-  ...overrides,
-});
+  ...overrides});
 
 describe('claims-workspace.service', () => {
   beforeEach(() => {
@@ -114,14 +110,11 @@ describe('claims-workspace.service', () => {
   describe('getLookups', () => {
     it('returns coverage plans and billable invoices', async () => {
       claimsWorkspaceRepository.findManyCoveragePlans.mockResolvedValue([
-        { id: 'plan-1', human_friendly_id: 'COV0001', name: 'Corporate Plan', provider_name: 'Acme', coverage_percentage: 80, tenant_id: 'tenant-1' },
-      ]);
+        { id: 'plan-1', human_friendly_id: 'COV0001', name: 'Corporate Plan', provider_name: 'Acme', coverage_percentage: 80, tenant_id: 'tenant-1' }]);
       claimsWorkspaceRepository.findManyInsuranceCompanies.mockResolvedValue([
-        { id: 'co-1', human_friendly_id: 'INS0001', name: 'Acme', code: 'ACME', is_active: true },
-      ]);
+        { id: 'co-1', human_friendly_id: 'INS0001', name: 'Acme', code: 'ACME', is_active: true }]);
       claimsWorkspaceRepository.findManyInvoices.mockResolvedValue([
-        claim().invoice,
-      ]);
+        claim().invoice]);
 
       const result = await claimsWorkspaceService.getLookups({}, user);
 

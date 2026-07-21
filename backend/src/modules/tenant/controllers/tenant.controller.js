@@ -145,8 +145,7 @@ const restoreTenant = asyncHandler(async (req, res) => {
     tenant_id: req.user?.tenant_id,
     facility_id: req.user?.facility_id,
     ip_address: req.ip,
-    user_agent: req.get('user-agent'),
-  };
+    user_agent: req.get('user-agent')};
 
   const tenant = await tenantService.restoreTenant(id, context);
 
@@ -160,8 +159,7 @@ const permanentDeleteTenant = asyncHandler(async (req, res) => {
     tenant_id: req.user?.tenant_id,
     facility_id: req.user?.facility_id,
     ip_address: req.ip,
-    user_agent: req.get('user-agent'),
-  };
+    user_agent: req.get('user-agent')};
 
   await tenantService.permanentDeleteTenant(id, context);
 
@@ -175,5 +173,4 @@ module.exports = {
   updateTenant,
   deleteTenant,
   restoreTenant,
-  permanentDeleteTenant,
-};
+  permanentDeleteTenant};

@@ -30,8 +30,7 @@ const createTheatreCaseSchema = z.object({
   completed_at: z.string().datetime().optional().nullable(),
   cancelled_at: z.string().datetime().optional().nullable(),
   workflow_stage: z.string().trim().max(80).optional().nullable(),
-  stage_notes: z.string().trim().optional().nullable(),
-});
+  stage_notes: z.string().trim().optional().nullable()});
 
 /**
  * Update theatre case body validation
@@ -50,8 +49,7 @@ const updateTheatreCaseSchema = z.object({
   completed_at: z.string().datetime().optional().nullable(),
   cancelled_at: z.string().datetime().optional().nullable(),
   workflow_stage: z.string().trim().max(80).optional().nullable(),
-  stage_notes: z.string().trim().optional().nullable(),
-});
+  stage_notes: z.string().trim().optional().nullable()});
 
 // ==================== URL Params ====================
 
@@ -79,8 +77,7 @@ const listTheatreCasesQuerySchema = listQuerySchema.extend({
   status: z.enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
   scheduled_from: z.string().datetime().optional(),
   scheduled_to: z.string().datetime().optional(),
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 module.exports = {
   createTheatreCaseSchema,

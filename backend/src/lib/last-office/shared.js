@@ -35,7 +35,6 @@ const serializeBase = (record) => ({
   human_friendly_id: resolveDisplayIdentifier(record?.human_friendly_id, record?.id),
   tenant_id: resolveDisplayIdentifier(record?.tenant?.human_friendly_id, record?.tenant_id),
   facility_id: resolveDisplayIdentifier(record?.facility?.human_friendly_id, record?.facility_id),
-  branch_id: resolveDisplayIdentifier(record?.branch?.human_friendly_id, record?.branch_id),
   version: Number(record?.version || 1),
   etag: record?.etag || null,
   created_at: record?.created_at || null,
@@ -150,7 +149,6 @@ const buildContext = (req) => ({
   user_id: req.user?.id || req.user?.user_id || null,
   tenant_id: req.user?.tenant_id || req.user?.tenantId || req.body?.tenant_id || null,
   facility_id: req.user?.facility_id || req.user?.facilityId || req.body?.facility_id || null,
-  branch_id: req.user?.branch_id || req.user?.branchId || req.body?.branch_id || null,
   ip_address: req.ip,
   user_agent: req.get ? req.get('user-agent') : null,
 });
@@ -172,13 +170,6 @@ const resolveScopedIdentifiers = async ({ payload = {}, context = {} } = {}) => 
     nullable: true,
     where: { tenant_id: context.tenant_id || payload.tenant_id || undefined },
   }),
-  branch_id: await resolveIdentifierForPayload({
-    value: payload.branch_id ?? context.branch_id,
-    field: 'branch_id',
-    model: 'branch',
-    nullable: true,
-    where: { tenant_id: context.tenant_id || payload.tenant_id || undefined },
-  }),
 });
 
 const resolveListScopedIdentifiers = async ({ filters = {}, context = {} } = {}) => ({
@@ -186,11 +177,6 @@ const resolveListScopedIdentifiers = async ({ filters = {}, context = {} } = {})
   facility_id: await resolveIdentifierForFilter({
     value: filters.facility_id ?? context.facility_id,
     model: 'facility',
-    where: { tenant_id: context.tenant_id || filters.tenant_id || undefined },
-  }),
-  branch_id: await resolveIdentifierForFilter({
-    value: filters.branch_id ?? context.branch_id,
-    model: 'branch',
     where: { tenant_id: context.tenant_id || filters.tenant_id || undefined },
   }),
 });

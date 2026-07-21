@@ -2,8 +2,7 @@ const {
   auditLogIdParamsSchema,
   userIdParamsSchema,
   entityParamsSchema,
-  listAuditLogsQuerySchema,
-} = require('@modules/audit-log/schemas/audit-log.schema');
+  listAuditLogsQuerySchema} = require('@modules/audit-log/schemas/audit-log.schema');
 
 describe('Audit Log Schemas', () => {
   it('accepts UUIDs and friendly identifiers for route params', () => {
@@ -18,14 +17,12 @@ describe('Audit Log Schemas', () => {
     expect(
       entityParamsSchema.safeParse({
         entity: 'patient',
-        entityId: 'PAT0000001',
-      }).success
+        entityId: 'PAT0000001'}).success
     ).toBe(true);
     expect(
       entityParamsSchema.safeParse({
         entity: 'patient',
-        entityId: 'x'.repeat(65),
-      }).success
+        entityId: 'x'.repeat(65)}).success
     ).toBe(false);
   });
 
@@ -43,8 +40,7 @@ describe('Audit Log Schemas', () => {
       page: '1',
       limit: '20',
       sort_by: 'created_at',
-      order: 'desc',
-    });
+      order: 'desc'});
 
     expect(result.success).toBe(true);
   });

@@ -45,7 +45,7 @@ describe('Admission Repository', () => {
           deleted_at: null,
           AND: [{ patient: { deleted_at: null } }]
         },
-        include: {}
+        include: undefined
       });
       expect(result).toEqual(mockAdmission);
     });
@@ -86,7 +86,7 @@ describe('Admission Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
       expect(result).toEqual(mockAdmissions);
     });

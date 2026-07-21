@@ -56,5 +56,4 @@ module.exports = {
   getUpgradeContext,
   getWorkspace,
   resolveLegacyRoute,
-  submitPaymentRequest,
-};
+  submitPaymentRequest};

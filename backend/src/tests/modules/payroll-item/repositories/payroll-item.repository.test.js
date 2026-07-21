@@ -41,7 +41,7 @@ describe('Payroll Item Repository', () => {
       expect(result).toEqual(mockPayrollItem);
       expect(prisma.payroll_item.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -95,7 +95,7 @@ describe('Payroll Item Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -108,7 +108,7 @@ describe('Payroll Item Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { amount: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

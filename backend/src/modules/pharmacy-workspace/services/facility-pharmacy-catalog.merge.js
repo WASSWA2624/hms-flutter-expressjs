@@ -22,8 +22,7 @@ const mergeDrugWithOffering = (masterDrug = {}, offering = null) => {
     return {
       ...masterDrug,
       pharmacy_unit_price: pharmacyUnitPrice,
-      pharmacy_currency: pharmacyCurrency,
-    };
+      pharmacy_currency: pharmacyCurrency};
   }
 
   return {
@@ -33,8 +32,7 @@ const mergeDrugWithOffering = (masterDrug = {}, offering = null) => {
     facility_unit_price: offering.unit_price,
     facility_currency: toOptionalText(offering.currency) || pharmacyCurrency || null,
     facility_offering_id: offering.id,
-    is_offered_at_facility: true,
-  };
+    is_offered_at_facility: true};
 };
 
 const mapMergedDrugRecord = (masterDrug, offering = null) => {
@@ -46,12 +44,10 @@ const mapMergedDrugRecord = (masterDrug, offering = null) => {
 
   const pharmacyPriceFields = mapCatalogUnitPriceFields({
     unit_price: merged.pharmacy_unit_price,
-    currency: merged.pharmacy_currency,
-  });
+    currency: merged.pharmacy_currency});
   const facilityPriceFields = mapCatalogUnitPriceFields({
     unit_price: merged.facility_unit_price,
-    currency: merged.facility_currency,
-  });
+    currency: merged.facility_currency});
 
   return {
     ...mapped,
@@ -66,11 +62,9 @@ const mapMergedDrugRecord = (masterDrug, offering = null) => {
     facility_offering_id: offering?.id || null,
     offering_is_active: offering?.is_active ?? false,
     offering_sort_order: offering?.sort_order ?? 0,
-    uses_platform_defaults: !offering,
-  };
+    uses_platform_defaults: !offering};
 };
 
 module.exports = {
   mergeDrugWithOffering,
-  mapMergedDrugRecord,
-};
+  mapMergedDrugRecord};

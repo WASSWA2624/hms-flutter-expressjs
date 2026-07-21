@@ -57,7 +57,7 @@ describe('Dispense Log Repository', () => {
           id: 'dispense-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -119,7 +119,7 @@ describe('Dispense Log Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -136,7 +136,7 @@ describe('Dispense Log Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -150,7 +150,7 @@ describe('Dispense Log Repository', () => {
         skip: 20,
         take: 10,
         orderBy: { dispensed_at: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

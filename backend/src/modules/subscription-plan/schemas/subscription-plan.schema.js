@@ -36,8 +36,7 @@ const createSubscriptionPlanSchema = z.object({
   plan_fit_warning_percent: z.number().min(0).max(100).optional().nullable(),
   limit_policy_json: jsonObjectSchema.optional().nullable(),
   add_on_eligibility_json: jsonObjectSchema.optional().nullable(),
-  extension_json: jsonObjectSchema.optional().nullable(),
-});
+  extension_json: jsonObjectSchema.optional().nullable()});
 
 /**
  * Update subscription plan body validation
@@ -57,8 +56,7 @@ const updateSubscriptionPlanSchema = z.object({
   plan_fit_warning_percent: z.number().min(0).max(100).optional().nullable(),
   limit_policy_json: jsonObjectSchema.optional().nullable(),
   add_on_eligibility_json: jsonObjectSchema.optional().nullable(),
-  extension_json: jsonObjectSchema.optional().nullable(),
-});
+  extension_json: jsonObjectSchema.optional().nullable()});
 
 // ==================== URL Params ====================
 

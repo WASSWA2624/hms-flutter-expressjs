@@ -225,8 +225,7 @@ describe('Availability Slot Schemas', () => {
     it('should preserve missing is_available filter as undefined', () => {
       const result = listAvailabilitySlotsQuerySchema.safeParse({
         page: '1',
-        limit: '20',
-      });
+        limit: '20'});
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.is_available).toBeUndefined();

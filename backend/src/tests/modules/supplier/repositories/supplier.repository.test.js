@@ -48,7 +48,7 @@ describe('Supplier Repository', () => {
           id: '550e8400-e29b-41d4-a716-446655440000',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -99,7 +99,7 @@ describe('Supplier Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -121,7 +121,7 @@ describe('Supplier Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

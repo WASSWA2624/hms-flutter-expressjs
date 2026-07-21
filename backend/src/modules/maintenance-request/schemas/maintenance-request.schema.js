@@ -67,8 +67,7 @@ const convertToWorkOrderSchema = z.object({
   title: z.string().trim().min(2).max(255),
   description: z.string().trim().max(10000).optional().nullable(),
   downtime_started_at: z.string().datetime().optional().nullable(),
-  notes: z.string().trim().max(10000).optional().nullable(),
-});
+  notes: z.string().trim().max(10000).optional().nullable()});
 
 // ==================== URL Params ====================
 

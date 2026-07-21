@@ -12,16 +12,14 @@ const buildEnv = (overrides = {}) => ({
   SMTP_FROM_NAME: null,
   SMTP_REPLY_TO: null,
   SMTP_NO_REPLY_ADDRESS: null,
-  ...overrides,
-});
+  ...overrides});
 
 const loadSendEmail = ({ envOverrides = {}, nodemailerFactory } = {}) => {
   jest.resetModules();
 
   const logger = {
     warn: jest.fn(),
-    error: jest.fn(),
-  };
+    error: jest.fn()};
 
   jest.doMock('@config/env', () => buildEnv(envOverrides));
   jest.doMock('@lib/logging', () => ({ logger }));
@@ -46,14 +44,12 @@ describe('sendEmail helper', () => {
     const result = await sendEmail({
       to: 'patient@example.com',
       subject: 'Test subject',
-      text: 'Test body',
-    });
+      text: 'Test body'});
 
     expect(result).toEqual({ sent: false, provider: 'skipped' });
     expect(logger.warn).toHaveBeenCalledWith('SMTP not configured; email delivery skipped.', {
       recipient: ['pa***@example.com'],
-      subject: 'Test subject',
-    });
+      subject: 'Test subject'});
   });
 
   it('skips delivery when nodemailer is unavailable', async () => {
@@ -63,24 +59,20 @@ describe('sendEmail helper', () => {
         SMTP_PORT: 587,
         SMTP_USER: 'mailer@example.com',
         SMTP_PASS: 'secret',
-        SMTP_FROM: '"Mailer" <mailer@example.com>',
-      },
+        SMTP_FROM: '"Mailer" <mailer@example.com>'},
       nodemailerFactory: () => {
         throw new Error('nodemailer missing');
-      },
-    });
+      }});
 
     const result = await sendEmail({
       to: 'patient@example.com',
       subject: 'Test subject',
-      text: 'Test body',
-    });
+      text: 'Test body'});
 
     expect(result).toEqual({ sent: false, provider: 'skipped' });
     expect(logger.warn).toHaveBeenCalledWith('nodemailer missing; email delivery skipped.', {
       recipient: ['pa***@example.com'],
-      subject: 'Test subject',
-    });
+      subject: 'Test subject'});
   });
 
   it('sends email through SMTP when configuration and dependency are available', async () => {
@@ -97,16 +89,13 @@ describe('sendEmail helper', () => {
         SMTP_FROM_NAME: 'HMS Mailer',
         SMTP_FROM: '"HMS Team" <team@example.com>',
         SMTP_REPLY_TO: 'support@example.com',
-        SMTP_NO_REPLY_ADDRESS: 'no-reply@example.com',
-      },
-      nodemailerFactory: () => ({ createTransport }),
-    });
+        SMTP_NO_REPLY_ADDRESS: 'no-reply@example.com'},
+      nodemailerFactory: () => ({ createTransport })});
 
     const result = await sendEmail({
       to: ['patient@example.com'],
       subject: 'Subject line',
-      text: 'Body text',
-    });
+      text: 'Body text'});
 
     expect(result).toEqual({ sent: true, provider: 'smtp' });
     expect(createTransport).toHaveBeenCalledWith({
@@ -115,9 +104,7 @@ describe('sendEmail helper', () => {
       secure: false,
       auth: {
         user: 'mailer@example.com',
-        pass: 'secret',
-      },
-    });
+        pass: 'secret'}});
     expect(sendMail).toHaveBeenCalledWith(
       expect.objectContaining({
         from: '"HMS Mailer" <no-reply@example.com>',
@@ -125,11 +112,9 @@ describe('sendEmail helper', () => {
         to: ['patient@example.com'],
         envelope: {
           from: 'no-reply@example.com',
-          to: ['patient@example.com'],
-        },
+          to: ['patient@example.com']},
         subject: 'Subject line',
-        text: 'Body text',
-      })
+        text: 'Body text'})
     );
     expect(logger.error).not.toHaveBeenCalled();
   });

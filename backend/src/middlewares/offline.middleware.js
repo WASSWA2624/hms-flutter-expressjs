@@ -510,8 +510,7 @@ const offlineSupportMiddleware = () => {
 
         if (
           shouldReturnNotModified(req, String(etag), lastModifiedDate, {
-            isCollection: isCollectionPayload(nextPayload),
-          })
+            isCollection: isCollectionPayload(nextPayload)})
         ) {
           res.status(304);
           return {

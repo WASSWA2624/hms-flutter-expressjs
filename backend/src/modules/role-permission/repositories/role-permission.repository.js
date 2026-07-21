@@ -56,11 +56,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
           select: {
             id: true,
             human_friendly_id: true,
-            name: true,
-          },
-        },
-      },
-    });
+            name: true}}}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }

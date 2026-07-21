@@ -1,7 +1,6 @@
 const {
   sanitizeFriendlyIds,
-  isUuidLike,
-} = require('@lib/identifiers/sanitize-friendly-ids');
+  isUuidLike} = require('@lib/identifiers/sanitize-friendly-ids');
 
 describe('sanitize-friendly-ids', () => {
   const uuidValue = '550e8400-e29b-41d4-a716-446655440000';
@@ -18,9 +17,7 @@ describe('sanitize-friendly-ids', () => {
       patient_id: uuidValue,
       patient: {
         id: 'c56a4180-65aa-42ec-a945-5fd21dec0538',
-        human_friendly_id: 'PAT0000001',
-      },
-    };
+        human_friendly_id: 'PAT0000001'}};
 
     const sanitized = sanitizeFriendlyIds(payload);
     expect(sanitized.id).toBe(uuidValue);
@@ -33,9 +30,7 @@ describe('sanitize-friendly-ids', () => {
       id: uuidValue,
       provider_user_id: 'c56a4180-65aa-42ec-a945-5fd21dec0538',
       nested: {
-        reference_id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
-      },
-    };
+        reference_id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8'}};
 
     const sanitized = sanitizeFriendlyIds(payload);
     expect(sanitized.id).toBe(uuidValue);
@@ -50,9 +45,7 @@ describe('sanitize-friendly-ids', () => {
       human_friendly_id: 'USR0000002',
       created_at: createdAt,
       nested: {
-        updated_at: createdAt,
-      },
-    };
+        updated_at: createdAt}};
 
     const sanitized = sanitizeFriendlyIds(payload);
     expect(sanitized.id).toBe(uuidValue);

@@ -14,8 +14,7 @@ const {
   createLabQcLogSchema,
   updateLabQcLogSchema,
   labQcLogIdParamsSchema,
-  listLabQcLogsQuerySchema,
-} = require('@validations/lab-qc-log/lab-qc-log.schema');
+  listLabQcLogsQuerySchema} = require('@validations/lab-qc-log/lab-qc-log.schema');
 
 const router = express.Router();
 
@@ -25,15 +24,13 @@ const LAB_READ_ROLES = [
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
   ROLES.NURSE,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 const LAB_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 router.get(
   '/',

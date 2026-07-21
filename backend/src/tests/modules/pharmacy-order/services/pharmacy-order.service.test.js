@@ -12,8 +12,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  resolveModelRecordOrThrow} = require('@services/pharmacy-workspace/pharmacy.shared');
 
 // Mock dependencies
 jest.mock('@repositories/pharmacy-order/pharmacy-order.repository');
@@ -23,16 +22,14 @@ jest.mock('@services/pharmacy-workspace/pharmacy.shared', () => {
   return {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
-    resolveModelRecordOrThrow: jest.fn(),
-  };
+    resolveModelRecordOrThrow: jest.fn()};
 });
 
 const mockUser = {
   id: 'user-123',
   tenant_id: 'tenant-123',
   facility_id: 'facility-123',
-  roles: ['PHARMACIST'],
-};
+  roles: ['PHARMACIST']};
 
 const buildScopedOrder = (overrides = {}) => ({
   id: '123',
@@ -40,10 +37,8 @@ const buildScopedOrder = (overrides = {}) => ({
   status: 'ORDERED',
   patient: {
     tenant_id: 'tenant-123',
-    facility_id: 'facility-123',
-  },
-  ...overrides,
-});
+    facility_id: 'facility-123'},
+  ...overrides});
 
 describe('Pharmacy Order Service', () => {
   const mockUserId = 'user-123';
@@ -230,8 +225,7 @@ describe('Pharmacy Order Service', () => {
         expect.objectContaining({
           identifier: 'PHO-B1DEB9CE0C',
           model: 'pharmacy_order',
-          errorKey: 'errors.pharmacy_order.not_found',
-        })
+          errorKey: 'errors.pharmacy_order.not_found'})
       );
     });
 
@@ -250,9 +244,7 @@ describe('Pharmacy Order Service', () => {
         buildScopedOrder({
           patient: {
             tenant_id: 'tenant-other',
-            facility_id: 'facility-other',
-          },
-        })
+            facility_id: 'facility-other'}})
       );
 
       await expect(
@@ -291,8 +283,7 @@ describe('Pharmacy Order Service', () => {
       expect(pharmacyOrderRepository.create).toHaveBeenCalledWith({
         ...mockData,
         patient_id: 'patient-123',
-        encounter_id: 'encounter-123',
-      });
+        encounter_id: 'encounter-123'});
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         tenant_id: 'tenant-123',
         user_id: mockUserId,
@@ -336,8 +327,7 @@ describe('Pharmacy Order Service', () => {
       expect(result).toEqual(mockAfter);
       expect(resolveModelRecordOrThrow).toHaveBeenCalled();
       expect(pharmacyOrderRepository.update).toHaveBeenCalledWith('order-uuid-123', {
-        status: 'DISPENSED',
-      });
+        status: 'DISPENSED'});
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         tenant_id: 'tenant-123',
         user_id: mockUserId,
@@ -431,8 +421,7 @@ describe('Pharmacy Order Service', () => {
       const mockAfter = {
         id: 'order-uuid-123',
         patient_id: 'patient-123',
-        status: 'DISPENSED',
-      };
+        status: 'DISPENSED'};
       resolveModelRecordOrThrow.mockResolvedValue(mockBefore);
       pharmacyOrderRepository.update.mockResolvedValue(mockAfter);
 
@@ -446,8 +435,7 @@ describe('Pharmacy Order Service', () => {
 
       expect(result).toEqual(mockAfter);
       expect(pharmacyOrderRepository.update).toHaveBeenCalledWith('order-uuid-123', {
-        status: 'DISPENSED',
-      });
+        status: 'DISPENSED'});
     });
   });
 });

@@ -6,15 +6,13 @@ const {
   buildPagination,
   normalizeSearchTerm,
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/lab-workspace/lab.shared');
+  resolveModelRecordOrThrow} = require('@services/lab-workspace/lab.shared');
 const {
   buildLabReferenceRangeSummary,
   normalizeLabResultOptions,
   normalizeLabReferenceRanges,
   normalizeLabUnitOptions,
-  toOptionalText,
-} = require('@services/lab-workspace/lab.configuration');
+  toOptionalText} = require('@services/lab-workspace/lab.configuration');
 const { mapLabTestRecord } = require('@services/lab-workspace/lab.serializer');
 const { STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
 
@@ -40,8 +38,7 @@ const standardLabTestMatchesFilters = (key, definition, filters = {}) => {
     definition.specimen_type,
     definition.result_kind,
     definition.unit,
-    definition.description,
-  ].some((value) => includesIgnoreCase(value, search));
+    definition.description].some((value) => includesIgnoreCase(value, search));
 };
 
 const standardLabTestRecord = ([key, definition]) => ({
@@ -56,8 +53,7 @@ const standardLabTestRecord = ([key, definition]) => ({
   unit: definition.unit,
   description: definition.description,
   status: 'STANDARD',
-  source: 'STANDARD_LAB_CATALOG',
-});
+  source: 'STANDARD_LAB_CATALOG'});
 
 const mergeStandardLabTests = ({ mappedRecords, dbRecords, filters, limit, sortBy, order }) => {
   if (String(filters.include_standard_catalog || '').toLowerCase() !== 'true') {
@@ -94,16 +90,14 @@ const buildNestedChildWritePayload = (entries = [], options = {}) => {
 
   if (!preserveExisting) {
     return {
-      create: entries.map(withoutChildIdentifier),
-    };
+      create: entries.map(withoutChildIdentifier)};
   }
 
   const existingRows = entries.filter((entry) => toOptionalText(entry.id));
   const existingIds = existingRows.map((entry) => entry.id);
   const createRows = entries.filter((entry) => !toOptionalText(entry.id));
   const payload = {
-    deleteMany: existingIds.length > 0 ? { id: { notIn: existingIds } } : {},
-  };
+    deleteMany: existingIds.length > 0 ? { id: { notIn: existingIds } } : {}};
 
   if (createRows.length > 0) {
     payload.create = createRows.map(withoutChildIdentifier);
@@ -112,8 +106,7 @@ const buildNestedChildWritePayload = (entries = [], options = {}) => {
   if (existingRows.length > 0) {
     payload.update = existingRows.map((entry) => ({
       where: { id: entry.id },
-      data: withoutChildIdentifier(entry),
-    }));
+      data: withoutChildIdentifier(entry)}));
   }
 
   return payload;
@@ -137,8 +130,7 @@ const buildLabTestWritePayload = (data = {}, options = {}) => {
 
   if (hasReferenceRanges) {
     payload.reference_ranges = buildNestedChildWritePayload(normalizedRanges, {
-      preserveExisting: preserveExistingChildren,
-    });
+      preserveExisting: preserveExistingChildren});
   } else {
     delete payload.reference_ranges;
   }
@@ -157,8 +149,7 @@ const buildLabTestWritePayload = (data = {}, options = {}) => {
 
   if (hasUnitOptions) {
     payload.unit_options = buildNestedChildWritePayload(normalizedUnitOptions, {
-      preserveExisting: preserveExistingChildren,
-    });
+      preserveExisting: preserveExistingChildren});
     payload.unit = defaultUnitOption?.unit || fallbackUnit || null;
   } else if (options.createDefaultUnitOption && fallbackUnit) {
     payload.unit_options = {
@@ -168,10 +159,7 @@ const buildLabTestWritePayload = (data = {}, options = {}) => {
           unit: fallbackUnit,
           ucum_code: null,
           is_default: true,
-          sort_order: 0,
-        },
-      ],
-    };
+          sort_order: 0}]};
     payload.unit = fallbackUnit;
   } else {
     delete payload.unit_options;
@@ -179,8 +167,7 @@ const buildLabTestWritePayload = (data = {}, options = {}) => {
 
   if (hasResultOptions) {
     payload.result_options = buildNestedChildWritePayload(normalizedResultOptions, {
-      preserveExisting: preserveExistingChildren,
-    });
+      preserveExisting: preserveExistingChildren});
   } else {
     delete payload.result_options;
   }
@@ -200,8 +187,7 @@ const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddre
         identifier: filters.tenant_id,
         model: 'tenant',
         where: { deleted_at: null },
-        errorKey: 'errors.tenant.not_found',
-      });
+        errorKey: 'errors.tenant.not_found'});
     }
 
     if (filters.code) whereClause.code = { contains: filters.code };
@@ -213,8 +199,7 @@ const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddre
     if (filters.result_kind) whereClause.result_kind = filters.result_kind;
     if (String(filters.include_pending_review || '').toLowerCase() !== 'true') {
       whereClause.NOT = {
-        description: { startsWith: 'PENDING LAB CATALOG REVIEW' },
-      };
+        description: { startsWith: 'PENDING LAB CATALOG REVIEW' }};
     }
 
     const searchTerm = normalizeSearchTerm(filters.search);
@@ -226,8 +211,7 @@ const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddre
         { category: { contains: searchTerm.raw } },
         { specimen_type: { contains: searchTerm.raw } },
         { description: { contains: searchTerm.raw } },
-        { tenant: { human_friendly_id: { contains: searchTerm.upper } } },
-      ];
+        { tenant: { human_friendly_id: { contains: searchTerm.upper } } }];
     }
 
     const [labTests, total] = await Promise.all([
@@ -238,8 +222,7 @@ const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddre
         orderBy,
         LAB_TEST_WITH_RELATIONS_INCLUDE
       ),
-      labTestRepository.count(whereClause),
-    ]);
+      labTestRepository.count(whereClause)]);
     const mappedLabTests = labTests.map((record) => mapLabTestRecord(record)).filter(Boolean);
     const mergedLabTests = mergeStandardLabTests({
       mappedRecords: mappedLabTests,
@@ -247,8 +230,7 @@ const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddre
       filters,
       limit,
       sortBy,
-      order,
-    });
+      order});
 
     return {
       labTests: mergedLabTests,
@@ -258,8 +240,7 @@ const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddre
         String(filters.include_standard_catalog || '').toLowerCase() === 'true'
           ? Math.max(total, mergedLabTests.length)
           : total
-      ),
-    };
+      )};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -273,8 +254,7 @@ const getLabTestById = async (id, userId, ipAddress) => {
       model: 'lab_test',
       where: { deleted_at: null },
       include: LAB_TEST_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_test.not_found',
-    });
+      errorKey: 'errors.lab_test.not_found'});
 
     return mapLabTestRecord(labTest);
   } catch (error) {
@@ -287,14 +267,12 @@ const createLabTest = async (data, userId, ipAddress) => {
   try {
     const payload = buildLabTestWritePayload(data, {
       createDefaultUnitOption: true,
-      includeDeleteMany: false,
-    });
+      includeDeleteMany: false});
     payload.tenant_id = await resolveModelIdOrThrow({
       identifier: payload.tenant_id,
       model: 'tenant',
       where: { deleted_at: null },
-      errorKey: 'errors.tenant.not_found',
-    });
+      errorKey: 'errors.tenant.not_found'});
 
     const labTest = await labTestRepository.create(payload);
     const created = await labTestRepository.findById(labTest.id, LAB_TEST_WITH_RELATIONS_INCLUDE);
@@ -305,8 +283,7 @@ const createLabTest = async (data, userId, ipAddress) => {
       entity: 'lab_test',
       entity_id: labTest.id,
       diff: { after: created || labTest },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapLabTestRecord(created || labTest);
   } catch (error) {
@@ -322,8 +299,7 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
       model: 'lab_test',
       where: { deleted_at: null },
       include: LAB_TEST_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_test.not_found',
-    });
+      errorKey: 'errors.lab_test.not_found'});
 
     const payload = buildLabTestWritePayload(data, { includeDeleteMany: true });
     if (Object.prototype.hasOwnProperty.call(payload, 'tenant_id') && payload.tenant_id) {
@@ -331,8 +307,7 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
         identifier: payload.tenant_id,
         model: 'tenant',
         where: { deleted_at: null },
-        errorKey: 'errors.tenant.not_found',
-      });
+        errorKey: 'errors.tenant.not_found'});
     }
 
     const updated = await labTestRepository.update(before.id, payload);
@@ -344,8 +319,7 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
       entity: 'lab_test',
       entity_id: updated.id,
       diff: { before, after: labTest },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapLabTestRecord(labTest || updated);
   } catch (error) {
@@ -359,8 +333,7 @@ const deleteLabTest = async (id, data = {}, userId, ipAddress) => {
     const deletionReason = normalizeText(data?.reason);
     if (!deletionReason) {
       throw new HttpError('errors.validation.required', 400, [
-        { field: 'reason' },
-      ]);
+        { field: 'reason' }]);
     }
 
     const before = await resolveModelRecordOrThrow({
@@ -368,8 +341,7 @@ const deleteLabTest = async (id, data = {}, userId, ipAddress) => {
       model: 'lab_test',
       where: { deleted_at: null },
       include: LAB_TEST_WITH_RELATIONS_INCLUDE,
-      errorKey: 'errors.lab_test.not_found',
-    });
+      errorKey: 'errors.lab_test.not_found'});
 
     const labTest = await labTestRepository.softDelete(before.id);
 
@@ -379,8 +351,7 @@ const deleteLabTest = async (id, data = {}, userId, ipAddress) => {
       entity: 'lab_test',
       entity_id: labTest.id,
       diff: { before, deletion_reason: deletionReason },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapLabTestRecord(before);
   } catch (error) {

@@ -50,8 +50,7 @@ const buildPatientScope = (req = {}) => {
 const buildUserContext = (req = {}) => ({
   user_id: req.user?.id || null,
   ip_address: req.ip,
-  user: req.user || {},
-});
+  user: req.user || {}});
 
 /**
  * List patients with pagination
@@ -192,8 +191,7 @@ const updatePatient = asyncHandler(async (req, res) => {
   const ipAddress = req.ip;
   const scope = buildPatientScope(req);
   const payload = {
-    ...req.body,
-  };
+    ...req.body};
 
   if (
     scope.facility_id &&
@@ -724,5 +722,4 @@ module.exports = {
   dismissDuplicateCandidate,
   uploadPatientDocuments,
   previewPatientDocument,
-  downloadPatientDocument,
-};
+  downloadPatientDocument};

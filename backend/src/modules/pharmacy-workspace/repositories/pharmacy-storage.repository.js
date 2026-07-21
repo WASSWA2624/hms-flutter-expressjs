@@ -14,8 +14,7 @@ const withDbErrorHandling = async (operation) => {
 
 const ACTIVE_STORAGE_WHERE = {
   deleted_at: null,
-  is_active: true,
-};
+  is_active: true};
 
 const findManyStorageRooms = async (where = {}, skip = 0, limit = 100, orderBy = { name: 'asc' }) =>
   withDbErrorHandling(() =>
@@ -27,17 +26,13 @@ const findManyStorageRooms = async (where = {}, skip = 0, limit = 100, orderBy =
       include: {
         shelves: {
           where: { deleted_at: null },
-          orderBy: [{ is_active: 'desc' }, { shelf_code: 'asc' }],
-        },
-      },
-    })
+          orderBy: [{ is_active: 'desc' }, { shelf_code: 'asc' }]}}})
   );
 
 const countStorageRooms = async (where = {}) =>
   withDbErrorHandling(() =>
     prisma.pharmacy_storage_room.count({
-      where: { deleted_at: null, ...where },
-    })
+      where: { deleted_at: null, ...where }})
   );
 
 const findStorageRoomById = async (id, includeInactive = false) =>
@@ -46,15 +41,11 @@ const findStorageRoomById = async (id, includeInactive = false) =>
       where: {
         deleted_at: null,
         ...(includeInactive ? {} : { is_active: true }),
-        OR: [{ id }, { human_friendly_id: id }],
-      },
+        OR: [{ id }, { human_friendly_id: id }]},
       include: {
         shelves: {
           where: { deleted_at: null },
-          orderBy: [{ is_active: 'desc' }, { shelf_code: 'asc' }],
-        },
-      },
-    })
+          orderBy: [{ is_active: 'desc' }, { shelf_code: 'asc' }]}}})
   );
 
 const findStorageShelfById = async (id, includeInactive = false) =>
@@ -63,12 +54,9 @@ const findStorageShelfById = async (id, includeInactive = false) =>
       where: {
         deleted_at: null,
         ...(includeInactive ? {} : { is_active: true }),
-        OR: [{ id }, { human_friendly_id: id }],
-      },
+        OR: [{ id }, { human_friendly_id: id }]},
       include: {
-        storage_room: true,
-      },
-    })
+        storage_room: true}})
   );
 
 const txCreateStorageRoom = async (tx, data) => tx.pharmacy_storage_room.create({ data });
@@ -76,34 +64,29 @@ const txCreateStorageRoom = async (tx, data) => tx.pharmacy_storage_room.create(
 const txUpdateStorageRoom = async (tx, id, data) =>
   tx.pharmacy_storage_room.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txCreateStorageShelf = async (tx, data) => tx.pharmacy_storage_shelf.create({ data });
 
 const txUpdateStorageShelf = async (tx, id, data) =>
   tx.pharmacy_storage_shelf.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txSoftDeleteStorageRoom = async (tx, id, deletedAt = new Date()) =>
   tx.pharmacy_storage_room.update({
     where: { id },
-    data: { deleted_at: deletedAt, is_active: false },
-  });
+    data: { deleted_at: deletedAt, is_active: false }});
 
 const txSoftDeleteShelvesForRoom = async (tx, storageRoomId, deletedAt = new Date()) =>
   tx.pharmacy_storage_shelf.updateMany({
     where: { storage_room_id: storageRoomId, deleted_at: null },
-    data: { deleted_at: deletedAt, is_active: false },
-  });
+    data: { deleted_at: deletedAt, is_active: false }});
 
 const txSoftDeleteStorageShelf = async (tx, id, deletedAt = new Date()) =>
   tx.pharmacy_storage_shelf.update({
     where: { id },
-    data: { deleted_at: deletedAt, is_active: false },
-  });
+    data: { deleted_at: deletedAt, is_active: false }});
 
 const findDrugBatchesWithStorageByDrugIds = async (drugIds = []) =>
   withDbErrorHandling(() => {
@@ -112,8 +95,7 @@ const findDrugBatchesWithStorageByDrugIds = async (drugIds = []) =>
     return prisma.drug_batch.findMany({
       where: {
         deleted_at: null,
-        drug_id: { in: normalized },
-      },
+        drug_id: { in: normalized }},
       select: {
         id: true,
         drug_id: true,
@@ -128,9 +110,7 @@ const findDrugBatchesWithStorageByDrugIds = async (drugIds = []) =>
             human_friendly_id: true,
             name: true,
             code: true,
-            is_active: true,
-          },
-        },
+            is_active: true}},
         storage_shelf: {
           select: {
             id: true,
@@ -138,12 +118,8 @@ const findDrugBatchesWithStorageByDrugIds = async (drugIds = []) =>
             shelf_code: true,
             label: true,
             is_active: true,
-            storage_room_id: true,
-          },
-        },
-      },
-      orderBy: [{ quantity: 'desc' }, { expiry_date: 'asc' }, { created_at: 'desc' }],
-    });
+            storage_room_id: true}}},
+      orderBy: [{ quantity: 'desc' }, { expiry_date: 'asc' }, { created_at: 'desc' }]});
   });
 
 const findInventoryItemIdsByStorageFilters = async (tenantId, filters = {}) =>
@@ -161,8 +137,7 @@ const findInventoryItemIdsByStorageFilters = async (tenantId, filters = {}) =>
 
     const batches = await prisma.drug_batch.findMany({
       where: batchWhere,
-      select: { drug_id: true },
-    });
+      select: { drug_id: true }});
     const drugIds = Array.from(new Set(batches.map((row) => row.drug_id).filter(Boolean)));
     if (!drugIds.length) return [];
 
@@ -170,10 +145,8 @@ const findInventoryItemIdsByStorageFilters = async (tenantId, filters = {}) =>
       where: {
         deleted_at: null,
         tenant_id: tenantId,
-        drug_id: { in: drugIds },
-      },
-      select: { inventory_item_id: true },
-    });
+        drug_id: { in: drugIds }},
+      select: { inventory_item_id: true }});
     return Array.from(new Set(maps.map((row) => row.inventory_item_id).filter(Boolean)));
   });
 
@@ -192,8 +165,7 @@ const findDrugIdsByStorageFilters = async (tenantId, filters = {}) =>
 
     const batches = await prisma.drug_batch.findMany({
       where: batchWhere,
-      select: { drug_id: true },
-    });
+      select: { drug_id: true }});
     return Array.from(new Set(batches.map((row) => row.drug_id).filter(Boolean)));
   });
 
@@ -212,5 +184,4 @@ module.exports = {
   txSoftDeleteStorageShelf,
   findDrugBatchesWithStorageByDrugIds,
   findInventoryItemIdsByStorageFilters,
-  findDrugIdsByStorageFilters,
-};
+  findDrugIdsByStorageFilters};

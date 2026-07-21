@@ -6,9 +6,7 @@ jest.mock('@lib/logging', () => ({
   logger: {
     warn: jest.fn(),
     error: jest.fn(),
-    info: jest.fn(),
-  },
-}));
+    info: jest.fn()}}));
 
 const prisma = require('@prisma/client');
 const { logger } = require('@lib/logging');
@@ -47,8 +45,7 @@ describe('createAuditLog helper', () => {
       entity: 'invoice',
       entity_id: 'inv-1',
       diff: { after: { id: 'inv-1' } },
-      ip_address: '127.0.0.1',
-    });
+      ip_address: '127.0.0.1'});
 
     await flushImmediate();
 
@@ -60,9 +57,7 @@ describe('createAuditLog helper', () => {
         entity: 'invoice',
         entity_id: 'inv-1',
         diff_json: { after: { id: 'inv-1' } },
-        ip_address: '127.0.0.1',
-      }),
-    });
+        ip_address: '127.0.0.1'})});
   });
 
   it('infers tenant_id from diff payload when not provided explicitly', async () => {
@@ -94,8 +89,7 @@ describe('createAuditLog helper', () => {
       action: 'ACCESS',
       entity: 'authorization',
       entity_id: '/api/v1/auth/login',
-      user_id: null,
-    });
+      user_id: null});
 
     await flushImmediate();
 
@@ -105,8 +99,7 @@ describe('createAuditLog helper', () => {
       expect.objectContaining({
         action: 'ACCESS',
         entity: 'authorization',
-        entity_id: '/api/v1/auth/login',
-      })
+        entity_id: '/api/v1/auth/login'})
     );
   });
 
@@ -143,8 +136,7 @@ describe('createAuditLog helper', () => {
       entity: 'shift',
       entity_id: 'shift-1',
       diff: 'payload',
-      ip: '10.0.0.1',
-    });
+      ip: '10.0.0.1'});
 
     await flushImmediate();
 
@@ -153,11 +145,8 @@ describe('createAuditLog helper', () => {
         action: 'ACCESS',
         diff_json: {
           details: 'payload',
-          original_action: 'PUBLISH_SHIFT',
-        },
-        ip_address: '10.0.0.1',
-      }),
-    });
+          original_action: 'PUBLISH_SHIFT'},
+        ip_address: '10.0.0.1'})});
   });
 
   it('maps workflow mutation actions to UPDATE and preserves the original action', async () => {
@@ -168,8 +157,7 @@ describe('createAuditLog helper', () => {
       action: 'discharge',
       entity: 'admission',
       entity_id: 'adm-1',
-      diff: { after: { id: 'adm-1', status: 'DISCHARGED' } },
-    });
+      diff: { after: { id: 'adm-1', status: 'DISCHARGED' } }});
 
     await flushImmediate();
 
@@ -178,10 +166,7 @@ describe('createAuditLog helper', () => {
         action: 'UPDATE',
         diff_json: {
           after: { id: 'adm-1', status: 'DISCHARGED' },
-          original_action: 'DISCHARGE',
-        },
-      }),
-    });
+          original_action: 'DISCHARGE'}})});
   });
 
   it('logs persistence failures but does not throw', async () => {
@@ -191,8 +176,7 @@ describe('createAuditLog helper', () => {
       tenant_id: 'tenant-1',
       action: 'UPDATE',
       entity: 'patient',
-      entity_id: 'patient-1',
-    });
+      entity_id: 'patient-1'});
 
     await flushImmediate();
 
@@ -213,8 +197,7 @@ describe('createAuditLog helper', () => {
       tenant_id: 'tenant-1',
       action: 'DELETE',
       entity: 'user',
-      entity_id: 'user-1',
-    });
+      entity_id: 'user-1'});
 
     expect(logger.error).toHaveBeenCalledWith(
       'Failed to schedule audit log creation',
@@ -232,9 +215,7 @@ describe('createAuditLog helper', () => {
       logger: {
         warn: warnMock,
         error: jest.fn(),
-        info: jest.fn(),
-      },
-    }));
+        info: jest.fn()}}));
     jest.doMock('@prisma/client', () => {
       throw new Error('missing prisma');
     });
@@ -248,16 +229,14 @@ describe('createAuditLog helper', () => {
       tenant_id: 'tenant-1',
       action: 'CREATE',
       entity: 'user',
-      entity_id: 'user-1',
-    });
+      entity_id: 'user-1'});
 
     expect(warnMock).toHaveBeenCalledWith(
       'Prisma client not available, skipping audit log creation',
       expect.objectContaining({
         action: 'CREATE',
         entity: 'user',
-        entity_id: 'user-1',
-      })
+        entity_id: 'user-1'})
     );
   });
 });

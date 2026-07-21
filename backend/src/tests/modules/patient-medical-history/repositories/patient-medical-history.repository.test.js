@@ -58,7 +58,7 @@ describe('Patient Medical History Repository', () => {
           id: 'history-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -120,7 +120,7 @@ describe('Patient Medical History Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -147,7 +147,7 @@ describe('Patient Medical History Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -163,7 +163,7 @@ describe('Patient Medical History Repository', () => {
         skip: 20,
         take: 50,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -179,7 +179,7 @@ describe('Patient Medical History Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { diagnosis_date: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

@@ -12,13 +12,11 @@ const {
   persistTheatreCaseBilling,
   reverseClinicalRequestBilling,
   extractStoredClinicalBilling,
-  mapClinicalOrderBillingFields,
-} = require('@lib/billing/clinical-request-billing');
+  mapClinicalOrderBillingFields} = require('@lib/billing/clinical-request-billing');
 
 const QUEUE_SCOPES = Object.freeze({
   ACTIVE: 'ACTIVE',
-  ALL: 'ALL',
-});
+  ALL: 'ALL'});
 
 const ACTIVE_CASE_STATUSES = new Set(['SCHEDULED', 'IN_PROGRESS']);
 const TERMINAL_CASE_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
@@ -30,14 +28,12 @@ const THEATRE_STAGE_SEQUENCE = Object.freeze([
   'SIGN_OUT',
   'POST_OP',
   'PACU_HANDOFF',
-  'COMPLETED',
-]);
+  'COMPLETED']);
 const REQUIRED_CHECKLIST_PHASES_FOR_CLOSURE = Object.freeze([
   'SIGN_IN',
   'TIME_OUT',
   'SIGN_OUT',
-  'PACU_HANDOFF',
-]);
+  'PACU_HANDOFF']);
 const STAGE_INDEX = new Map(
   THEATRE_STAGE_SEQUENCE.map((stage, index) => [stage, index])
 );
@@ -45,35 +41,29 @@ const REOPEN_ALLOWED_ROLES = new Set([
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.DOCTOR,
-]);
+  ROLES.DOCTOR]);
 
 const LEGACY_ROUTE_CONFIG = Object.freeze({
   'theatre-cases': {
     delegate: 'theatre_case',
     caseField: 'id',
     panel: 'snapshot',
-    action: 'open_case',
-  },
+    action: 'open_case'},
   'anesthesia-records': {
     delegate: 'anesthesia_record',
     caseField: 'theatre_case_id',
     panel: 'anesthesia',
-    action: 'open_anesthesia',
-  },
+    action: 'open_anesthesia'},
   'post-op-notes': {
     delegate: 'post_op_note',
     caseField: 'theatre_case_id',
     panel: 'post-op',
-    action: 'open_post_op',
-  },
-});
+    action: 'open_post_op'}});
 
 const RESOURCE_TYPE_CONFIG = Object.freeze({
   ROOM: {
     model: 'room',
-    resolveLabel: (record) => sanitize(record?.name),
-  },
+    resolveLabel: (record) => sanitize(record?.name)},
   STAFF: {
     model: 'staff_profile',
     resolveLabel: (record) => {
@@ -81,22 +71,18 @@ const RESOURCE_TYPE_CONFIG = Object.freeze({
       const fullName = [
         sanitize(profile?.first_name),
         sanitize(profile?.middle_name),
-        sanitize(profile?.last_name),
-      ]
+        sanitize(profile?.last_name)]
         .filter(Boolean)
         .join(' ')
         .trim();
       return fullName || sanitize(record?.staff_number) || null;
-    },
-  },
+    }},
   EQUIPMENT: {
     model: 'equipment_registry',
     resolveLabel: (record) =>
       sanitize(record?.equipment_name) ||
       sanitize(record?.name) ||
-      sanitize(record?.equipment_code),
-  },
-});
+      sanitize(record?.equipment_code)}});
 
 const sanitize = (value) => String(value || '').trim();
 const toUpper = (value) => sanitize(value).toUpperCase();
@@ -126,9 +112,7 @@ const assertStageTransitionAllowed = (currentStage, nextStage) => {
   throw new HttpError('errors.theatre_flow.stage_transition_invalid', 400, [
     {
       current_stage: normalizedCurrentStage,
-      next_stage: normalizedNextStage,
-    },
-  ]);
+      next_stage: normalizedNextStage}]);
 };
 
 const parseBoolean = (value, fallback = false) => {
@@ -177,8 +161,7 @@ const resolveUserDisplayName = (user) => {
   const fullName = [
     sanitize(profile?.first_name),
     sanitize(profile?.middle_name),
-    sanitize(profile?.last_name),
-  ]
+    sanitize(profile?.last_name)]
     .filter(Boolean)
     .join(' ')
     .trim();
@@ -205,27 +188,22 @@ const resolveByIdentifier = async (
   const queryShape = normalizeQueryOptions(queryOptions);
   const baseWhere = {
     deleted_at: null,
-    ...(where || {}),
-  };
+    ...(where || {})};
 
   if (isUuidLike(normalized)) {
     const byUuid = await delegate.findFirst({
       where: {
         ...baseWhere,
-        id: normalized.toLowerCase(),
-      },
-      ...queryShape,
-    });
+        id: normalized.toLowerCase()},
+      ...queryShape});
     if (byUuid) return byUuid;
   }
 
   return delegate.findFirst({
     where: {
       ...baseWhere,
-      human_friendly_id: normalized.toUpperCase(),
-    },
-    ...queryShape,
-  });
+      human_friendly_id: normalized.toUpperCase()},
+    ...queryShape});
 };
 
 const resolveTheatreCaseByIdentifier = (tx, identifier) =>
@@ -234,8 +212,7 @@ const resolveTheatreCaseByIdentifier = (tx, identifier) =>
     encounter_id: true,
     status: true,
     completed_at: true,
-    workflow_stage: true,
-  });
+    workflow_stage: true});
 
 const resolveEncounterByIdentifier = (tx, identifier) =>
   resolveByIdentifier(tx.encounter, identifier, {}, {
@@ -247,9 +224,7 @@ const resolveEncounterByIdentifier = (tx, identifier) =>
       where: { deleted_at: null },
       orderBy: { admitted_at: 'desc' },
       take: 1,
-      select: { id: true },
-    },
-  });
+      select: { id: true }}});
 
 const resolveAdmissionByIdentifier = (
   tx,
@@ -262,13 +237,11 @@ const resolveAdmissionByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
       human_friendly_id: true,
-      encounter_id: true,
-    }
+      encounter_id: true}
   );
 
 const resolveEmergencyCaseByIdentifier = (
@@ -282,12 +255,10 @@ const resolveEmergencyCaseByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
-      human_friendly_id: true,
-    }
+      human_friendly_id: true}
   );
 
 const resolveRoomByIdentifier = (tx, identifier, tenantId = null, facilityId = null) =>
@@ -296,13 +267,11 @@ const resolveRoomByIdentifier = (tx, identifier, tenantId = null, facilityId = n
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
       human_friendly_id: true,
-      name: true,
-    }
+      name: true}
   );
 
 const resolveUserByIdentifier = (tx, identifier, tenantId = null, facilityId = null) =>
@@ -311,8 +280,7 @@ const resolveUserByIdentifier = (tx, identifier, tenantId = null, facilityId = n
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})},
     {
       id: true,
       human_friendly_id: true,
@@ -321,10 +289,7 @@ const resolveUserByIdentifier = (tx, identifier, tenantId = null, facilityId = n
         select: {
           first_name: true,
           middle_name: true,
-          last_name: true,
-        },
-      },
-    }
+          last_name: true}}}
   );
 
 const resolveStaffProfileByIdentifier = (
@@ -338,8 +303,7 @@ const resolveStaffProfileByIdentifier = (
     identifier,
     {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { user: { facility_id: facilityId } } : {}),
-    },
+      ...(facilityId ? { user: { facility_id: facilityId } } : {})},
     {
       id: true,
       human_friendly_id: true,
@@ -354,12 +318,7 @@ const resolveStaffProfileByIdentifier = (
             select: {
               first_name: true,
               middle_name: true,
-              last_name: true,
-            },
-          },
-        },
-      },
-    }
+              last_name: true}}}}}
   );
 
 const resolveEquipmentByIdentifier = (tx, identifier, tenantId = null) =>
@@ -367,15 +326,13 @@ const resolveEquipmentByIdentifier = (tx, identifier, tenantId = null) =>
     tx.equipment_registry,
     identifier,
     {
-      ...(tenantId ? { tenant_id: tenantId } : {}),
-    },
+      ...(tenantId ? { tenant_id: tenantId } : {})},
     {
       id: true,
       human_friendly_id: true,
       equipment_name: true,
       equipment_code: true,
-      name: true,
-    }
+      name: true}
   );
 
 const resolveAnesthesiaRecordByIdentifier = (
@@ -390,8 +347,7 @@ const resolveAnesthesiaRecordByIdentifier = (
     {
       id: true,
       theatre_case_id: true,
-      record_status: true,
-    }
+      record_status: true}
   );
 
 const resolvePostOpNoteByIdentifier = (tx, identifier, theatreCaseId = null) =>
@@ -402,8 +358,7 @@ const resolvePostOpNoteByIdentifier = (tx, identifier, theatreCaseId = null) =>
     {
       id: true,
       theatre_case_id: true,
-      record_status: true,
-    }
+      record_status: true}
   );
 
 const resolveResourceAllocationByIdentifier = (
@@ -420,8 +375,7 @@ const resolveResourceAllocationByIdentifier = (
       theatre_case_id: true,
       resource_type: true,
       resource_id: true,
-      released_at: true,
-    }
+      released_at: true}
   );
 
 const createResourceLookupResolver = () => {
@@ -450,8 +404,7 @@ const createResourceLookupResolver = () => {
   };
 
   return {
-    read,
-  };
+    read};
 };
 
 const mapResourceAllocation = async (entry, lookupResolver) => {
@@ -478,8 +431,7 @@ const mapResourceAllocation = async (entry, lookupResolver) => {
     assigned_by_user_display_id: toPublicScalarIdentifier(entry?.assigned_by_user_id),
     released_by_user_display_id: toPublicScalarIdentifier(entry?.released_by_user_id),
     created_at: entry?.created_at || null,
-    updated_at: entry?.updated_at || null,
-  };
+    updated_at: entry?.updated_at || null};
 };
 
 const mapChecklistItem = (entry) => ({
@@ -493,8 +445,7 @@ const mapChecklistItem = (entry) => ({
   notes: sanitize(entry?.notes) || null,
   checked_by_user_display_id: toPublicScalarIdentifier(entry?.checked_by_user_id),
   created_at: entry?.created_at || null,
-  updated_at: entry?.updated_at || null,
-});
+  updated_at: entry?.updated_at || null});
 
 const mapAnesthesiaObservation = (entry) => ({
   id: resolvePublicIdentifier(entry),
@@ -510,8 +461,7 @@ const mapAnesthesiaObservation = (entry) => ({
   notes: sanitize(entry?.notes) || null,
   observed_by_user_display_id: toPublicScalarIdentifier(entry?.observed_by_user_id),
   created_at: entry?.created_at || null,
-  updated_at: entry?.updated_at || null,
-});
+  updated_at: entry?.updated_at || null});
 
 const mapAnesthesiaRecord = (entry) => ({
   id: resolvePublicIdentifier(entry),
@@ -529,8 +479,7 @@ const mapAnesthesiaRecord = (entry) => ({
   finalized_by_user_display_id: toPublicScalarIdentifier(entry?.finalized_by_user_id),
   reopened_by_user_display_id: toPublicScalarIdentifier(entry?.reopened_by_user_id),
   created_at: entry?.created_at || null,
-  updated_at: entry?.updated_at || null,
-});
+  updated_at: entry?.updated_at || null});
 
 const mapPostOpNote = (entry) => ({
   id: resolvePublicIdentifier(entry),
@@ -545,8 +494,7 @@ const mapPostOpNote = (entry) => ({
   finalized_by_user_display_id: toPublicScalarIdentifier(entry?.finalized_by_user_id),
   reopened_by_user_display_id: toPublicScalarIdentifier(entry?.reopened_by_user_id),
   created_at: entry?.created_at || null,
-  updated_at: entry?.updated_at || null,
-});
+  updated_at: entry?.updated_at || null});
 
 const buildTimeline = (snapshot) => {
   const timeline = [];
@@ -555,29 +503,25 @@ const buildTimeline = (snapshot) => {
     timeline.push({
       type: 'CASE_SCHEDULED',
       at: snapshot.scheduled_at,
-      label: 'Case scheduled',
-    });
+      label: 'Case scheduled'});
   }
   if (snapshot?.started_at) {
     timeline.push({
       type: 'CASE_STARTED',
       at: snapshot.started_at,
-      label: 'Case started',
-    });
+      label: 'Case started'});
   }
   if (snapshot?.completed_at) {
     timeline.push({
       type: 'CASE_COMPLETED',
       at: snapshot.completed_at,
-      label: 'Case completed',
-    });
+      label: 'Case completed'});
   }
   if (snapshot?.cancelled_at) {
     timeline.push({
       type: 'CASE_CANCELLED',
       at: snapshot.cancelled_at,
-      label: 'Case cancelled',
-    });
+      label: 'Case cancelled'});
   }
 
   for (const item of Array.isArray(snapshot?.checklist_items)
@@ -587,8 +531,7 @@ const buildTimeline = (snapshot) => {
     timeline.push({
       type: 'CHECKLIST',
       at: item.checked_at,
-      label: `${item.phase || 'CHECKLIST'} | ${item.item_label || item.item_code}`,
-    });
+      label: `${item.phase || 'CHECKLIST'} | ${item.item_label || item.item_code}`});
   }
 
   for (const item of Array.isArray(snapshot?.anesthesia_observations)
@@ -597,8 +540,7 @@ const buildTimeline = (snapshot) => {
     timeline.push({
       type: 'ANESTHESIA_OBSERVATION',
       at: item.observed_at || item.created_at,
-      label: item.notes || item.metric_key || item.observation_type || 'Observation recorded',
-    });
+      label: item.notes || item.metric_key || item.observation_type || 'Observation recorded'});
   }
 
   for (const entry of Array.isArray(snapshot?.resource_allocations)
@@ -607,14 +549,12 @@ const buildTimeline = (snapshot) => {
     timeline.push({
       type: 'RESOURCE_ASSIGNED',
       at: entry.assigned_at || entry.created_at,
-      label: `${entry.resource_type || 'RESOURCE'} assigned`,
-    });
+      label: `${entry.resource_type || 'RESOURCE'} assigned`});
     if (entry.released_at) {
       timeline.push({
         type: 'RESOURCE_RELEASED',
         at: entry.released_at,
-        label: `${entry.resource_type || 'RESOURCE'} released`,
-      });
+        label: `${entry.resource_type || 'RESOURCE'} released`});
     }
   }
 
@@ -627,8 +567,7 @@ const buildTimeline = (snapshot) => {
       label:
         record.record_status === 'FINAL'
           ? 'Anesthesia record finalized'
-          : 'Anesthesia record updated',
-    });
+          : 'Anesthesia record updated'});
   }
 
   for (const record of Array.isArray(snapshot?.post_op_notes)
@@ -638,8 +577,7 @@ const buildTimeline = (snapshot) => {
       type: 'POST_OP_NOTE',
       at: record.updated_at || record.created_at,
       label:
-        record.record_status === 'FINAL' ? 'Post-op note finalized' : 'Post-op note updated',
-    });
+        record.record_status === 'FINAL' ? 'Post-op note finalized' : 'Post-op note updated'});
   }
 
   return timeline
@@ -701,8 +639,7 @@ const mapTheatreSnapshot = async (snapshot, options = {}) => {
   const checklistSummary = {
     total: checklistItems.length,
     completed: checklistItems.filter((entry) => Boolean(entry.is_checked)).length,
-    pending: checklistItems.filter((entry) => !entry.is_checked).length,
-  };
+    pending: checklistItems.filter((entry) => !entry.is_checked).length};
 
   const flowSummary = {
     stage: sanitize(snapshot.workflow_stage) || null,
@@ -710,8 +647,7 @@ const mapTheatreSnapshot = async (snapshot, options = {}) => {
     anesthesia_status: latestAnesthesia?.record_status || null,
     post_op_status: latestPostOp?.record_status || null,
     checklist_completed: checklistSummary.completed,
-    checklist_total: checklistSummary.total,
-  };
+    checklist_total: checklistSummary.total};
 
   return {
     id: caseDisplayId,
@@ -768,10 +704,8 @@ const mapTheatreSnapshot = async (snapshot, options = {}) => {
           resource_allocations: resourceAllocations,
           anesthesia_observations: anesthesiaObservations,
           anesthesia_records: anesthesiaRecords,
-          post_op_notes: postOpNotes,
-        })
-      : [],
-  };
+          post_op_notes: postOpNotes})
+      : []};
 };
 
 const buildEmptyListResult = (page, limit) => ({
@@ -782,9 +716,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const getTheatreFlowByIdInternal = async (id) => {
   const resolved = await resolveTheatreCaseByIdentifier(prisma, id);
@@ -801,18 +733,15 @@ const assertNoActiveDuplicateResource = async ({
   tx,
   theatreCaseId,
   resourceType,
-  resourceId,
-}) => {
+  resourceId}) => {
   const existing = await tx.theatre_case_resource_allocation.findFirst({
     where: {
       theatre_case_id: theatreCaseId,
       deleted_at: null,
       released_at: null,
       resource_type: resourceType,
-      resource_id: resourceId,
-    },
-    select: { id: true },
-  });
+      resource_id: resourceId},
+    select: { id: true }});
 
   if (existing) {
     throw new HttpError('errors.theatre_flow.resource_already_assigned', 409);
@@ -824,8 +753,7 @@ const assertAnesthesiaRecordReadyForFinalization = async (tx, theatreCaseId, tar
     where: {
       id: targetId,
       theatre_case_id: theatreCaseId,
-      deleted_at: null,
-    },
+      deleted_at: null},
     select: {
       id: true,
       notes: true,
@@ -834,12 +762,7 @@ const assertAnesthesiaRecordReadyForFinalization = async (tx, theatreCaseId, tar
           anesthesia_observations: {
             where: { deleted_at: null },
             select: { id: true },
-            take: 1,
-          },
-        },
-      },
-    },
-  });
+            take: 1}}}}});
 
   const hasNotes = Boolean(sanitize(record?.notes));
   const hasObservations = Boolean(
@@ -857,13 +780,10 @@ const assertPostOpRecordReadyForFinalization = async (tx, theatreCaseId, targetI
     where: {
       id: targetId,
       theatre_case_id: theatreCaseId,
-      deleted_at: null,
-    },
+      deleted_at: null},
     select: {
       id: true,
-      note: true,
-    },
-  });
+      note: true}});
 
   if (!sanitize(record?.note)) {
     throw new HttpError('errors.theatre_flow.post_op_documentation_incomplete', 400);
@@ -876,12 +796,9 @@ const assertChecklistReadyForClosure = async (tx, theatreCaseId) => {
       theatre_case_id: theatreCaseId,
       deleted_at: null,
       phase: {
-        in: REQUIRED_CHECKLIST_PHASES_FOR_CLOSURE,
-      },
-      is_checked: true,
-    },
-    select: { phase: true },
-  });
+        in: REQUIRED_CHECKLIST_PHASES_FOR_CLOSURE},
+      is_checked: true},
+    select: { phase: true }});
 
   const completedPhases = new Set(
     checklistItems.map((entry) => toUpper(entry?.phase)).filter(Boolean)
@@ -892,8 +809,7 @@ const assertChecklistReadyForClosure = async (tx, theatreCaseId) => {
 
   if (missingPhases.length > 0) {
     throw new HttpError('errors.theatre_flow.checklist_incomplete', 400, [
-      { missing_phases: missingPhases },
-    ]);
+      { missing_phases: missingPhases }]);
   }
 };
 
@@ -910,11 +826,8 @@ const finalizeAction = async ({ theatreCaseId, action, context = {}, details = {
       after: snapshot,
       metadata: {
         operation: action,
-        ...details,
-      },
-    },
-    ip_address: context.ip_address || null,
-  }).catch(() => {});
+        ...details}},
+    ip_address: context.ip_address || null}).catch(() => {});
 
   return mapTheatreSnapshot(snapshot, { include_timeline: true });
 };
@@ -960,8 +873,7 @@ const listTheatreFlows = async (
       filters.patient_id,
       {
         ...(tenant?.id ? { tenant_id: tenant.id } : {}),
-        ...(facility?.id ? { facility_id: facility.id } : {}),
-      },
+        ...(facility?.id ? { facility_id: facility.id } : {})},
       { id: true }
     );
     if (!patient) return buildEmptyListResult(page, limit);
@@ -1013,18 +925,14 @@ const listTheatreFlows = async (
     where.anesthesia_records = {
       some: {
         deleted_at: null,
-        record_status: toUpper(filters.anesthesia_status),
-      },
-    };
+        record_status: toUpper(filters.anesthesia_status)}};
   }
 
   if (filters.post_op_status) {
     where.post_op_notes = {
       some: {
         deleted_at: null,
-        record_status: toUpper(filters.post_op_status),
-      },
-    };
+        record_status: toUpper(filters.post_op_status)}};
   }
 
   if (filters.finalized !== undefined) {
@@ -1036,19 +944,12 @@ const listTheatreFlows = async (
           anesthesia_records: {
             some: {
               deleted_at: null,
-              record_status: 'FINAL',
-            },
-          },
-        },
+              record_status: 'FINAL'}}},
         {
           post_op_notes: {
             some: {
               deleted_at: null,
-              record_status: 'FINAL',
-            },
-          },
-        },
-      ];
+              record_status: 'FINAL'}}}];
     }
   }
 
@@ -1078,34 +979,20 @@ const listTheatreFlows = async (
                 OR: [
                   { human_friendly_id: { contains: upperSearch } },
                   { first_name: { contains: searchTerm } },
-                  { last_name: { contains: searchTerm } },
-                ],
-              },
-            },
-          ],
-        },
-      },
+                  { last_name: { contains: searchTerm } }]}}]}},
       {
         anesthesia_records: {
           some: {
-            notes: { contains: searchTerm },
-          },
-        },
-      },
+            notes: { contains: searchTerm }}}},
       {
         post_op_notes: {
           some: {
-            note: { contains: searchTerm },
-          },
-        },
-      },
-    ];
+            note: { contains: searchTerm }}}}];
   }
 
   const [records, total] = await Promise.all([
     theatreFlowRepository.findMany(where, skip, limit, orderBy),
-    theatreFlowRepository.count(where),
-  ]);
+    theatreFlowRepository.count(where)]);
 
   const lookupResolver = createResourceLookupResolver();
   const items = await Promise.all(
@@ -1122,9 +1009,7 @@ const listTheatreFlows = async (
       total,
       totalPages: Math.ceil(total / limit),
       hasNextPage: page < Math.ceil(total / limit),
-      hasPreviousPage: page > 1,
-    },
-  };
+      hasPreviousPage: page > 1}};
 };
 
 const resolveLegacyRoute = async (resource, id) => {
@@ -1136,8 +1021,7 @@ const resolveLegacyRoute = async (resource, id) => {
   const resolvedResource = await resolveByIdentifier(delegate, id, {}, {
     id: true,
     human_friendly_id: true,
-    theatre_case_id: true,
-  });
+    theatre_case_id: true});
 
   if (!resolvedResource) throw new HttpError('errors.theatre_flow.legacy_resource_not_found', 404);
 
@@ -1151,14 +1035,11 @@ const resolveLegacyRoute = async (resource, id) => {
   const theatreCase = await prisma.theatre_case.findFirst({
     where: {
       id: theatreCaseId,
-      deleted_at: null,
-    },
+      deleted_at: null},
     select: {
       id: true,
       human_friendly_id: true,
-      workflow_stage: true,
-    },
-  });
+      workflow_stage: true}});
   if (!theatreCase) throw new HttpError('errors.theatre_flow.not_found', 404);
 
   return {
@@ -1167,15 +1048,13 @@ const resolveLegacyRoute = async (resource, id) => {
     resource_id: resolvePublicIdentifier(resolvedResource),
     panel: config.panel,
     action: config.action,
-    stage_hint: sanitize(theatreCase.workflow_stage).toUpperCase() || null,
-  };
+    stage_hint: sanitize(theatreCase.workflow_stage).toUpperCase() || null};
 };
 
 const getTheatreFlowById = async (id, options = {}) => {
   const snapshot = await getTheatreFlowByIdInternal(id);
   return mapTheatreSnapshot(snapshot, {
-    include_timeline: parseBoolean(options?.include_timeline, true),
-  });
+    include_timeline: parseBoolean(options?.include_timeline, true)});
 };
 
 const startTheatreFlow = async (data, context = {}) => {
@@ -1198,8 +1077,7 @@ const startTheatreFlow = async (data, context = {}) => {
       workflow_stage: requestedStage,
       stage_notes: sanitize(data?.stage_notes) || null,
       procedure_name: sanitize(data?.procedure_name) || null,
-      source_kind: toUpper(data?.source_kind) || null,
-    };
+      source_kind: toUpper(data?.source_kind) || null};
 
     if (data.admission_id) {
       const admission = await resolveAdmissionByIdentifier(
@@ -1265,8 +1143,7 @@ const startTheatreFlow = async (data, context = {}) => {
 
     const theatreCase = await tx.theatre_case.create({
       data: payload,
-      select: { id: true },
-    });
+      select: { id: true }});
 
     if (data?.billing) {
       await persistTheatreCaseBilling(tx, {
@@ -1275,8 +1152,7 @@ const startTheatreFlow = async (data, context = {}) => {
         tenantId: encounter.tenant_id,
         facilityId: encounter.facility_id || null,
         patientId: encounter.patient_id,
-        description: 'Theatre / operation',
-      });
+        description: 'Theatre / operation'});
     }
 
     return theatreCase.id;
@@ -1286,8 +1162,7 @@ const startTheatreFlow = async (data, context = {}) => {
     theatreCaseId: result,
     action: 'START',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const updateStage = async (id, data, context = {}) => {
@@ -1332,21 +1207,18 @@ const updateStage = async (id, data, context = {}) => {
     await tx.theatre_case.update({
       where: { id: theatreCase.id },
       data: payload,
-      select: { id: true },
-    });
+      select: { id: true }});
 
     if (payload.status === 'CANCELLED') {
       const billed = await tx.theatre_case.findFirst({
         where: { id: theatreCase.id },
-        select: { billing_snapshot: true },
-      });
+        select: { billing_snapshot: true }});
       const existingSnapshot = extractStoredClinicalBilling(billed || {});
       if (existingSnapshot?.invoice_id) {
         await reverseClinicalRequestBilling(tx, { existingSnapshot });
         await tx.theatre_case.update({
           where: { id: theatreCase.id },
-          data: { billing_snapshot: null },
-        });
+          data: { billing_snapshot: null }});
       }
     }
 
@@ -1357,8 +1229,7 @@ const updateStage = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'UPDATE_STAGE',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const upsertAnesthesiaRecord = async (id, data, context = {}) => {
@@ -1382,16 +1253,12 @@ const upsertAnesthesiaRecord = async (id, data, context = {}) => {
       target = await tx.anesthesia_record.findFirst({
         where: {
           theatre_case_id: theatreCase.id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: {
-          updated_at: 'desc',
-        },
+          updated_at: 'desc'},
         select: {
           id: true,
-          record_status: true,
-        },
-      });
+          record_status: true}});
     }
 
     let anesthetistUserId = undefined;
@@ -1405,11 +1272,7 @@ const upsertAnesthesiaRecord = async (id, data, context = {}) => {
             encounter: {
               select: {
                 tenant_id: true,
-                facility_id: true,
-              },
-            },
-          },
-        });
+                facility_id: true}}}});
         const anesthetist = await resolveUserByIdentifier(
           tx,
           data.anesthetist_user_id,
@@ -1433,20 +1296,16 @@ const upsertAnesthesiaRecord = async (id, data, context = {}) => {
           ...(anesthetistUserId !== undefined
             ? { anesthetist_user_id: anesthetistUserId }
             : {}),
-          ...(data.record_status ? { record_status: toUpper(data.record_status) } : {}),
-        },
-        select: { id: true },
-      });
+          ...(data.record_status ? { record_status: toUpper(data.record_status) } : {})},
+        select: { id: true }});
     } else {
       await tx.anesthesia_record.create({
         data: {
           theatre_case_id: theatreCase.id,
           anesthetist_user_id: anesthetistUserId || null,
           notes: sanitize(data.notes) || null,
-          record_status: toUpper(data.record_status) || 'DRAFT',
-        },
-        select: { id: true },
-      });
+          record_status: toUpper(data.record_status) || 'DRAFT'},
+        select: { id: true }});
     }
 
     return theatreCase.id;
@@ -1456,8 +1315,7 @@ const upsertAnesthesiaRecord = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'UPSERT_ANESTHESIA_RECORD',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const addAnesthesiaObservation = async (id, data, context = {}) => {
@@ -1485,10 +1343,8 @@ const addAnesthesiaObservation = async (id, data, context = {}) => {
         metric_value: sanitize(data.metric_value) || null,
         unit: sanitize(data.unit) || null,
         notes: sanitize(data.notes) || null,
-        observed_by_user_id: observedByUserId,
-      },
-      select: { id: true },
-    });
+        observed_by_user_id: observedByUserId},
+      select: { id: true }});
 
     return theatreCase.id;
   });
@@ -1497,8 +1353,7 @@ const addAnesthesiaObservation = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'ADD_ANESTHESIA_OBSERVATION',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const upsertPostOpNote = async (id, data, context = {}) => {
@@ -1519,16 +1374,12 @@ const upsertPostOpNote = async (id, data, context = {}) => {
       target = await tx.post_op_note.findFirst({
         where: {
           theatre_case_id: theatreCase.id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: {
-          updated_at: 'desc',
-        },
+          updated_at: 'desc'},
         select: {
           id: true,
-          record_status: true,
-        },
-      });
+          record_status: true}});
     }
 
     if (target) {
@@ -1540,19 +1391,15 @@ const upsertPostOpNote = async (id, data, context = {}) => {
         where: { id: target.id },
         data: {
           note: sanitize(data.note),
-          ...(data.record_status ? { record_status: toUpper(data.record_status) } : {}),
-        },
-        select: { id: true },
-      });
+          ...(data.record_status ? { record_status: toUpper(data.record_status) } : {})},
+        select: { id: true }});
     } else {
       await tx.post_op_note.create({
         data: {
           theatre_case_id: theatreCase.id,
           note: sanitize(data.note),
-          record_status: toUpper(data.record_status) || 'DRAFT',
-        },
-        select: { id: true },
-      });
+          record_status: toUpper(data.record_status) || 'DRAFT'},
+        select: { id: true }});
     }
 
     return theatreCase.id;
@@ -1562,8 +1409,7 @@ const upsertPostOpNote = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'UPSERT_POST_OP_NOTE',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const toggleChecklistItem = async (id, data, context = {}) => {
@@ -1580,8 +1426,7 @@ const toggleChecklistItem = async (id, data, context = {}) => {
         { theatre_case_id: theatreCase.id },
         {
           id: true,
-          is_checked: true,
-        }
+          is_checked: true}
       );
     } else {
       checklistItem = await tx.theatre_case_checklist_item.findFirst({
@@ -1589,13 +1434,10 @@ const toggleChecklistItem = async (id, data, context = {}) => {
           theatre_case_id: theatreCase.id,
           phase: toUpper(data.phase),
           item_code: sanitize(data.item_code),
-          deleted_at: null,
-        },
+          deleted_at: null},
         select: {
           id: true,
-          is_checked: true,
-        },
-      });
+          is_checked: true}});
     }
 
     const nextChecked =
@@ -1616,10 +1458,8 @@ const toggleChecklistItem = async (id, data, context = {}) => {
           ...(data.notes !== undefined ? { notes: sanitize(data.notes) || null } : {}),
           ...(data.item_label !== undefined
             ? { item_label: sanitize(data.item_label) || sanitize(data.item_code) }
-            : {}),
-        },
-        select: { id: true },
-      });
+            : {})},
+        select: { id: true }});
     } else {
       await tx.theatre_case_checklist_item.create({
         data: {
@@ -1630,10 +1470,8 @@ const toggleChecklistItem = async (id, data, context = {}) => {
           is_checked: nextChecked,
           checked_at: checkedAt,
           checked_by_user_id: checkedByUserId,
-          notes: sanitize(data.notes) || null,
-        },
-        select: { id: true },
-      });
+          notes: sanitize(data.notes) || null},
+        select: { id: true }});
     }
 
     return theatreCase.id;
@@ -1643,8 +1481,7 @@ const toggleChecklistItem = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'TOGGLE_CHECKLIST_ITEM',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const assignResource = async (id, data, context = {}) => {
@@ -1659,11 +1496,7 @@ const assignResource = async (id, data, context = {}) => {
         encounter: {
           select: {
             tenant_id: true,
-            facility_id: true,
-          },
-        },
-      },
-    });
+            facility_id: true}}}});
 
     const tenantId = flowScope?.encounter?.tenant_id || null;
     const facilityId = flowScope?.encounter?.facility_id || null;
@@ -1707,8 +1540,7 @@ const assignResource = async (id, data, context = {}) => {
       tx,
       theatreCaseId: theatreCase.id,
       resourceType,
-      resourceId: resolvedResource.id,
-    });
+      resourceId: resolvedResource.id});
 
     await tx.theatre_case_resource_allocation.create({
       data: {
@@ -1716,17 +1548,14 @@ const assignResource = async (id, data, context = {}) => {
         resource_type: resourceType,
         resource_id: resolvedResource.id,
         assigned_by_user_id: context.user_id || null,
-        notes: sanitize(data.notes) || null,
-      },
-      select: { id: true },
-    });
+        notes: sanitize(data.notes) || null},
+      select: { id: true }});
 
     if (Object.keys(caseUpdate).length > 0) {
       await tx.theatre_case.update({
         where: { id: theatreCase.id },
         data: caseUpdate,
-        select: { id: true },
-      });
+        select: { id: true }});
     }
 
     return theatreCase.id;
@@ -1736,8 +1565,7 @@ const assignResource = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'ASSIGN_RESOURCE',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const releaseResource = async (id, data, context = {}) => {
@@ -1780,17 +1608,13 @@ const releaseResource = async (id, data, context = {}) => {
           deleted_at: null,
           released_at: null,
           ...(resourceType ? { resource_type: resourceType } : {}),
-          ...(resourceId ? { resource_id: resourceId } : {}),
-        },
+          ...(resourceId ? { resource_id: resourceId } : {})},
         orderBy: {
-          assigned_at: 'desc',
-        },
+          assigned_at: 'desc'},
         select: {
           id: true,
           resource_type: true,
-          resource_id: true,
-        },
-      });
+          resource_id: true}});
       if (!allocation) throw new HttpError('errors.theatre_flow.resource_allocation_not_found', 404);
     }
 
@@ -1799,21 +1623,17 @@ const releaseResource = async (id, data, context = {}) => {
       data: {
         released_at: toDate(data.released_at),
         released_by_user_id: context.user_id || null,
-        ...(data.notes !== undefined ? { notes: sanitize(data.notes) || null } : {}),
-      },
-      select: { id: true },
-    });
+        ...(data.notes !== undefined ? { notes: sanitize(data.notes) || null } : {})},
+      select: { id: true }});
 
     if (toUpper(allocation.resource_type) === 'ROOM') {
       const current = await tx.theatre_case.findFirst({
         where: { id: theatreCase.id },
-        select: { room_id: true },
-      });
+        select: { room_id: true }});
       if (current?.room_id && current.room_id === allocation.resource_id) {
         await tx.theatre_case.update({
           where: { id: theatreCase.id },
-          data: { room_id: null },
-        });
+          data: { room_id: null }});
       }
     } else if (toUpper(allocation.resource_type) === 'STAFF') {
       const staff = await resolveStaffProfileByIdentifier(tx, allocation.resource_id);
@@ -1822,17 +1642,14 @@ const releaseResource = async (id, data, context = {}) => {
           where: { id: theatreCase.id },
           select: {
             surgeon_user_id: true,
-            anesthetist_user_id: true,
-          },
-        });
+            anesthetist_user_id: true}});
         const patch = {};
         if (current?.surgeon_user_id === staff.user_id) patch.surgeon_user_id = null;
         if (current?.anesthetist_user_id === staff.user_id) patch.anesthetist_user_id = null;
         if (Object.keys(patch).length > 0) {
           await tx.theatre_case.update({
             where: { id: theatreCase.id },
-            data: patch,
-          });
+            data: patch});
         }
       }
     }
@@ -1844,8 +1661,7 @@ const releaseResource = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'RELEASE_RESOURCE',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const finalizeRecord = async (id, data, context = {}) => {
@@ -1871,13 +1687,10 @@ const finalizeRecord = async (id, data, context = {}) => {
         target = await tx.anesthesia_record.findFirst({
           where: {
             theatre_case_id: theatreCase.id,
-            deleted_at: null,
-          },
+            deleted_at: null},
           orderBy: {
-            updated_at: 'desc',
-          },
-          select: { id: true },
-        });
+            updated_at: 'desc'},
+          select: { id: true }});
       }
       if (!target) throw new HttpError('errors.theatre_flow.anesthesia_record_not_found', 404);
       await assertAnesthesiaRecordReadyForFinalization(tx, theatreCase.id, target.id);
@@ -1887,9 +1700,7 @@ const finalizeRecord = async (id, data, context = {}) => {
         data: {
           record_status: 'FINAL',
           finalized_at: finalizedAt,
-          finalized_by_user_id: context.user_id || null,
-        },
-      });
+          finalized_by_user_id: context.user_id || null}});
     };
 
     const finalizePostOp = async () => {
@@ -1900,13 +1711,10 @@ const finalizeRecord = async (id, data, context = {}) => {
         target = await tx.post_op_note.findFirst({
           where: {
             theatre_case_id: theatreCase.id,
-            deleted_at: null,
-          },
+            deleted_at: null},
           orderBy: {
-            updated_at: 'desc',
-          },
-          select: { id: true },
-        });
+            updated_at: 'desc'},
+          select: { id: true }});
       }
       if (!target) throw new HttpError('errors.theatre_flow.post_op_note_not_found', 404);
       await assertPostOpRecordReadyForFinalization(tx, theatreCase.id, target.id);
@@ -1916,9 +1724,7 @@ const finalizeRecord = async (id, data, context = {}) => {
         data: {
           record_status: 'FINAL',
           finalized_at: finalizedAt,
-          finalized_by_user_id: context.user_id || null,
-        },
-      });
+          finalized_by_user_id: context.user_id || null}});
     };
 
     if (recordType === 'ANESTHESIA') {
@@ -1934,20 +1740,15 @@ const finalizeRecord = async (id, data, context = {}) => {
       tx.anesthesia_record.findFirst({
         where: {
           theatre_case_id: theatreCase.id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: { updated_at: 'desc' },
-        select: { record_status: true },
-      }),
+        select: { record_status: true }}),
       tx.post_op_note.findFirst({
         where: {
           theatre_case_id: theatreCase.id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: { updated_at: 'desc' },
-        select: { record_status: true },
-      }),
-    ]);
+        select: { record_status: true }})]);
 
     if (
       toUpper(latestAnesthesia?.record_status) === 'FINAL' &&
@@ -1959,9 +1760,7 @@ const finalizeRecord = async (id, data, context = {}) => {
         data: {
           status: 'COMPLETED',
           workflow_stage: 'COMPLETED',
-          completed_at: theatreCase.completed_at || finalizedAt,
-        },
-      });
+          completed_at: theatreCase.completed_at || finalizedAt}});
     }
 
     return theatreCase.id;
@@ -1971,8 +1770,7 @@ const finalizeRecord = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'FINALIZE_RECORD',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 const reopenRecord = async (id, data, context = {}) => {
@@ -2004,11 +1802,9 @@ const reopenRecord = async (id, data, context = {}) => {
         target = await tx.anesthesia_record.findFirst({
           where: {
             theatre_case_id: theatreCase.id,
-            deleted_at: null,
-          },
+            deleted_at: null},
           orderBy: { updated_at: 'desc' },
-          select: { id: true, record_status: true },
-        });
+          select: { id: true, record_status: true }});
       }
       if (!target) throw new HttpError('errors.theatre_flow.anesthesia_record_not_found', 404);
       if (toUpper(target.record_status) !== 'FINAL') {
@@ -2021,9 +1817,7 @@ const reopenRecord = async (id, data, context = {}) => {
           record_status: 'DRAFT',
           reopened_at: reopenedAt,
           reopened_by_user_id: context.user_id || null,
-          reopen_reason: reason,
-        },
-      });
+          reopen_reason: reason}});
     };
 
     const reopenPostOp = async () => {
@@ -2034,11 +1828,9 @@ const reopenRecord = async (id, data, context = {}) => {
         target = await tx.post_op_note.findFirst({
           where: {
             theatre_case_id: theatreCase.id,
-            deleted_at: null,
-          },
+            deleted_at: null},
           orderBy: { updated_at: 'desc' },
-          select: { id: true, record_status: true },
-        });
+          select: { id: true, record_status: true }});
       }
       if (!target) throw new HttpError('errors.theatre_flow.post_op_note_not_found', 404);
       if (toUpper(target.record_status) !== 'FINAL') {
@@ -2051,9 +1843,7 @@ const reopenRecord = async (id, data, context = {}) => {
           record_status: 'DRAFT',
           reopened_at: reopenedAt,
           reopened_by_user_id: context.user_id || null,
-          reopen_reason: reason,
-        },
-      });
+          reopen_reason: reason}});
     };
 
     if (recordType === 'ANESTHESIA') {
@@ -2070,9 +1860,7 @@ const reopenRecord = async (id, data, context = {}) => {
       data: {
         status: 'IN_PROGRESS',
         workflow_stage: sanitize(theatreCase.workflow_stage) || 'POST_OP',
-        completed_at: null,
-      },
-    });
+        completed_at: null}});
 
     return theatreCase.id;
   });
@@ -2081,8 +1869,7 @@ const reopenRecord = async (id, data, context = {}) => {
     theatreCaseId: result,
     action: 'REOPEN_RECORD',
     context,
-    details: { payload: data },
-  });
+    details: { payload: data }});
 };
 
 module.exports = {
@@ -2098,5 +1885,4 @@ module.exports = {
   assignResource,
   releaseResource,
   finalizeRecord,
-  reopenRecord,
-};
+  reopenRecord};

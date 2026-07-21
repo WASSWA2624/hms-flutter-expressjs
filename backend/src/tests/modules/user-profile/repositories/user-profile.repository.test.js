@@ -44,7 +44,7 @@ describe('User Profile Repository', () => {
       expect(result).toEqual(mockProfile);
       expect(prisma.user_profile.findFirst).toHaveBeenCalledWith({
         where: { id: profileId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -118,7 +118,7 @@ describe('User Profile Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

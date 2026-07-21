@@ -30,44 +30,38 @@ const findManyOrders = async (where, skip, take, orderBy, include) =>
       skip,
       take,
       orderBy,
-      include,
-    })
+      include})
   );
 
 const countOrders = async (where) =>
   withDbErrorHandling(() =>
     prisma.radiology_order.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const countStudies = async (where) =>
   withDbErrorHandling(() =>
     prisma.imaging_study.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const countResults = async (where) =>
   withDbErrorHandling(() =>
     prisma.radiology_result.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const countAssets = async (where) =>
   withDbErrorHandling(() =>
     prisma.imaging_asset.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const findOrderById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.radiology_order.findFirst({
       where: { id, deleted_at: null },
-      include,
-    })
+      include})
   );
 
 const findReferencePatients = async ({ where = {}, take = 20 } = {}) =>
@@ -84,12 +78,8 @@ const findReferencePatients = async ({ where = {}, take = 20 } = {}) =>
         contacts: {
           where: { deleted_at: null },
           select: {
-            value: true,
-          },
-          take: 2,
-        },
-      },
-    })
+            value: true},
+          take: 2}}})
   );
 
 const findReferenceEncounters = async ({ where = {}, take = 20 } = {}) =>
@@ -108,11 +98,7 @@ const findReferenceEncounters = async ({ where = {}, take = 20 } = {}) =>
             id: true,
             human_friendly_id: true,
             first_name: true,
-            last_name: true,
-          },
-        },
-      },
-    })
+            last_name: true}}}})
   );
 
 const findReferenceRadiologyTests = async ({ where = {}, take = 20 } = {}) =>
@@ -126,9 +112,7 @@ const findReferenceRadiologyTests = async ({ where = {}, take = 20 } = {}) =>
         human_friendly_id: true,
         name: true,
         code: true,
-        modality: true,
-      },
-    })
+        modality: true}})
   );
 
 const findReferenceUsers = async ({ where = {}, take = 20 } = {}) =>
@@ -145,27 +129,21 @@ const findReferenceUsers = async ({ where = {}, take = 20 } = {}) =>
           select: {
             first_name: true,
             middle_name: true,
-            last_name: true,
-          },
-        },
-      },
-    })
+            last_name: true}}}})
   );
 
 const findStudyById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.imaging_study.findFirst({
       where: { id, deleted_at: null },
-      include,
-    })
+      include})
   );
 
 const findResultById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.radiology_result.findFirst({
       where: { id, deleted_at: null },
-      include,
-    })
+      include})
   );
 
 const withTransaction = async (callback) =>
@@ -174,98 +152,81 @@ const withTransaction = async (callback) =>
 const txFindOrderById = async (tx, id, include) =>
   tx.radiology_order.findFirst({
     where: { id, deleted_at: null },
-    include,
-  });
+    include});
 
 const txCreateOrder = async (tx, data) =>
   tx.radiology_order.create({
-    data,
-  });
+    data});
 
 const txUpdateOrder = async (tx, id, data) =>
   tx.radiology_order.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txFindStudyById = async (tx, id, include) =>
   tx.imaging_study.findFirst({
     where: { id, deleted_at: null },
-    include,
-  });
+    include});
 
 const txCreateStudy = async (tx, data) =>
   tx.imaging_study.create({
-    data,
-  });
+    data});
 
 const txFindFirstStudy = async (tx, where, orderBy = { created_at: 'desc' }, include = undefined) =>
   tx.imaging_study.findFirst({
     where: { deleted_at: null, ...(where || {}) },
     orderBy,
-    include,
-  });
+    include});
 
 const txCreateAsset = async (tx, data) =>
   tx.imaging_asset.create({
-    data,
-  });
+    data});
 
 const txFindFirstAsset = async (tx, where, orderBy = { created_at: 'desc' }, include = undefined) =>
   tx.imaging_asset.findFirst({
     where: { deleted_at: null, ...(where || {}) },
     orderBy,
-    include,
-  });
+    include});
 
 const txFindResultById = async (tx, id, include) =>
   tx.radiology_result.findFirst({
     where: { id, deleted_at: null },
-    include,
-  });
+    include});
 
 const txFindFirstResult = async (tx, where, orderBy = { created_at: 'desc' }, include = undefined) =>
   tx.radiology_result.findFirst({
     where: { deleted_at: null, ...(where || {}) },
     orderBy,
-    include,
-  });
+    include});
 
 const txCreateResult = async (tx, data) =>
   tx.radiology_result.create({
-    data,
-  });
+    data});
 
 const txUpdateResult = async (tx, id, data) =>
   tx.radiology_result.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txCreateResultAttestation = async (tx, data) =>
   tx.radiology_result_attestation.create({
-    data,
-  });
+    data});
 
 const txFindResultAttestation = async (tx, radiologyResultId, phase) =>
   tx.radiology_result_attestation.findFirst({
     where: {
       deleted_at: null,
       radiology_result_id: radiologyResultId,
-      phase,
-    },
-    orderBy: { created_at: 'desc' },
-  });
+      phase},
+    orderBy: { created_at: 'desc' }});
 
 const txCreatePacsLink = async (tx, data) =>
   tx.pacs_link.create({
-    data,
-  });
+    data});
 
 const txCountStudies = async (tx, where) =>
   tx.imaging_study.count({
-    where: { deleted_at: null, ...(where || {}) },
-  });
+    where: { deleted_at: null, ...(where || {}) }});
 
 module.exports = {
   findManyOrders,
@@ -296,5 +257,4 @@ module.exports = {
   txCreateResultAttestation,
   txFindResultAttestation,
   txCreatePacsLink,
-  txCountStudies,
-};
+  txCountStudies};

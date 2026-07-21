@@ -20,8 +20,7 @@ const {
   sanitizeIdentifier,
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 
 const MAX_SEARCH_TOKENS = 5;
 const CONTACT_TYPE_VALUES = new Set([
@@ -1421,12 +1420,9 @@ const deletePatient = async (id, userId, ipAddress, scope = {}) => {
       await tx.visit_queue.updateMany({
         where: {
           patient_id: before.id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         data: {
-          deleted_at: deletedAt,
-        },
-      });
+          deleted_at: deletedAt}});
     });
 
     // Create audit log (non-blocking)

@@ -25,8 +25,7 @@ const ICU_ALLOWED_ROLES = [
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
-  ROLES.NURSE,
-];
+  ROLES.NURSE];
 
 /**
  * @description List critical alerts with pagination and filters
@@ -47,7 +46,8 @@ const ICU_ALLOWED_ROLES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listCriticalAlertsQuerySchema }),
+  '/',
+  validateRequest({ query: listCriticalAlertsQuerySchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -68,7 +68,8 @@ router.get(
  * @throws 404 Critical alert not found
  */
 router.get(
-  '/:id',  validateRequest({ params: criticalAlertIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: criticalAlertIdParamsSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -93,7 +94,8 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createCriticalAlertSchema }),
+  '/',
+  validateRequest({ body: createCriticalAlertSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -118,7 +120,8 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: criticalAlertIdParamsSchema, body: updateCriticalAlertSchema }),
+  '/:id',
+  validateRequest({ params: criticalAlertIdParamsSchema, body: updateCriticalAlertSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),
@@ -139,7 +142,8 @@ router.put(
  * @throws 404 Critical alert not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: criticalAlertIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: criticalAlertIdParamsSchema }),
 
   authenticate(),
   authorize(ICU_ALLOWED_ROLES, 'role'),

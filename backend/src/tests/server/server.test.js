@@ -64,25 +64,20 @@ describe('server bootstrap', () => {
     jest.doMock('@app/index', () => jest.fn(() => ({ listen: listenSpy })));
     jest.doMock('@lib/logging', () => ({ logger }));
     jest.doMock('@lib/health/startupDatabaseCheck', () => ({
-      assertDatabaseConnection,
-    }));
+      assertDatabaseConnection}));
     jest.doMock('@lib/reports/runtime', () => ({
       startReportRunScheduler,
-      stopReportRunScheduler,
-    }));
+      stopReportRunScheduler}));
     jest.doMock('@lib/notifications/runtime', () => ({
       startNotificationDeliveryRuntime,
-      stopNotificationDeliveryRuntime,
-    }));
+      stopNotificationDeliveryRuntime}));
     jest.doMock('@lib/authorization/break-glass-expiry', () => ({
       startBreakGlassExpiryRuntime,
-      stopBreakGlassExpiryRuntime,
-    }));
+      stopBreakGlassExpiryRuntime}));
     jest.doMock(
       '@lib/subscriptions/sync-subscription-module-entitlements',
       () => ({
-        syncActiveSubscriptionModuleEntitlements,
-      })
+        syncActiveSubscriptionModuleEntitlements})
     );
     jest.doMock('@websockets/server', () => ({
       initializeWebSocketServer,

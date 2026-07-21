@@ -10,8 +10,7 @@ const {
   listReportSchedules,
   pauseReportSchedule,
   resumeReportSchedule,
-  updateReportSchedule,
-} = require('@controllers/report-schedule/report-schedule.controller');
+  updateReportSchedule} = require('@controllers/report-schedule/report-schedule.controller');
 
 describe('Report Schedule Controller', () => {
   let mockReq;
@@ -26,11 +25,9 @@ describe('Report Schedule Controller', () => {
       user: {
         id: 'user-123',
         tenant_id: 'tenant-123',
-        facility_id: 'facility-123',
-      },
+        facility_id: 'facility-123'},
       ip: '127.0.0.1',
-      get: jest.fn().mockReturnValue('Test Agent'),
-    };
+      get: jest.fn().mockReturnValue('Test Agent')};
     mockRes = {};
   });
 
@@ -43,9 +40,7 @@ describe('Report Schedule Controller', () => {
         total: 1,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      },
-    };
+        hasPreviousPage: false}};
     mockReq.query = { page: '1', limit: '20', status: 'ACTIVE' };
     reportScheduleService.listReportSchedules.mockResolvedValue(payload);
 
@@ -102,16 +97,14 @@ describe('Report Schedule Controller', () => {
         user: mockReq.user,
         user_id: 'user-123',
         ip_address: '127.0.0.1',
-        user_agent: 'Test Agent',
-      })
+        user_agent: 'Test Agent'})
     );
     expect(reportScheduleService.updateReportSchedule).toHaveBeenCalledWith(
       'report-schedule-123',
       mockReq.body,
       expect.objectContaining({
         user: mockReq.user,
-        user_id: 'user-123',
-      })
+        user_id: 'user-123'})
     );
   });
 

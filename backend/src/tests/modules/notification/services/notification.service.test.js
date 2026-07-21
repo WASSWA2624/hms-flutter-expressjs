@@ -11,16 +11,13 @@ jest.mock('@lib/websocket', () => ({
   emitToUser: jest.fn(),
   NOTIFICATION_EVENTS: {
     NOTIFICATION_CREATED: 'notification.created',
-    NOTIFICATION_DELIVERY_UPDATED: 'notification.delivery_updated',
-  },
-}));
+    NOTIFICATION_DELIVERY_UPDATED: 'notification.delivery_updated'}}));
 
 describe('notification.service', () => {
   const actor = {
     id: '123e4567-e89b-12d3-a456-426614174099',
     tenant_id: '123e4567-e89b-12d3-a456-426614174010',
-    roles: ['DOCTOR'],
-  };
+    roles: ['DOCTOR']};
 
   const notificationRecord = {
     id: '123e4567-e89b-12d3-a456-426614174001',
@@ -41,14 +38,12 @@ describe('notification.service', () => {
       id: actor.tenant_id,
       human_friendly_id: 'TEN-1001',
       slug: 'tenant-1001',
-      name: 'Tenant 1001',
-    },
+      name: 'Tenant 1001'},
     user: {
       id: actor.id,
       human_friendly_id: 'USR-3001',
       email: 'doctor@example.com',
-      phone: '+256700000000',
-    },
+      phone: '+256700000000'},
     deliveries: [
       {
         id: '123e4567-e89b-12d3-a456-426614174777',
@@ -63,10 +58,7 @@ describe('notification.service', () => {
         failed_at: null,
         retryable: false,
         error_message: null,
-        updated_at: new Date('2026-03-01T10:00:01.000Z'),
-      },
-    ],
-  };
+        updated_at: new Date('2026-03-01T10:00:01.000Z')}]};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -88,8 +80,7 @@ describe('notification.service', () => {
         id: 'NTF-0001',
         tenant_id: 'TEN-1001',
         user_id: 'USR-3001',
-        unread: true,
-      })
+        unread: true})
     );
     expect(result.pagination.total).toBe(1);
     expect(notificationRepository.findMany).toHaveBeenCalled();
@@ -100,20 +91,17 @@ describe('notification.service', () => {
     notificationRepository.create.mockResolvedValue({
       ...notificationRecord,
       id: '123e4567-e89b-12d3-a456-426614174500',
-      human_friendly_id: 'NTF-9000',
-    });
+      human_friendly_id: 'NTF-9000'});
     notificationRepository.findById
       .mockResolvedValueOnce({
         ...notificationRecord,
         id: '123e4567-e89b-12d3-a456-426614174500',
         human_friendly_id: 'NTF-9000',
-        deliveries: [],
-      })
+        deliveries: []})
       .mockResolvedValueOnce({
         ...notificationRecord,
         id: '123e4567-e89b-12d3-a456-426614174500',
-        human_friendly_id: 'NTF-9000',
-      });
+        human_friendly_id: 'NTF-9000'});
 
     const result = await notificationService.createNotification(
       {
@@ -121,8 +109,7 @@ describe('notification.service', () => {
         notification_type: 'SYSTEM',
         priority: 'MEDIUM',
         title: 'Create',
-        message: 'Create message',
-      },
+        message: 'Create message'},
       actor,
       '127.0.0.1'
     );
@@ -131,22 +118,19 @@ describe('notification.service', () => {
       expect.objectContaining({
         tenant_id: actor.tenant_id,
         user_id: actor.id,
-        human_friendly_id: 'NTF-9000',
-      })
+        human_friendly_id: 'NTF-9000'})
     );
     expect(notificationDeliveryRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         notification_id: '123e4567-e89b-12d3-a456-426614174500',
         channel: 'IN_APP',
-        status: 'DELIVERED',
-      })
+        status: 'DELIVERED'})
     );
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: actor.tenant_id,
         action: 'CREATE',
-        entity: 'notification',
-      })
+        entity: 'notification'})
     );
     expect(emitToUser).toHaveBeenCalled();
     expect(result.id).toBe('NTF-9000');
@@ -161,8 +145,7 @@ describe('notification.service', () => {
           priority: 'MEDIUM',
           title: 'Create',
           message: 'Create message',
-          delivery_channels: ['SMS'],
-        },
+          delivery_channels: ['SMS']},
         actor,
         '127.0.0.1'
       )
@@ -176,8 +159,7 @@ describe('notification.service', () => {
     const adminActor = {
       id: '123e4567-e89b-12d3-a456-426614174200',
       tenant_id: actor.tenant_id,
-      roles: ['TENANT_ADMIN'],
-    };
+      roles: ['TENANT_ADMIN']};
 
     await expect(
       notificationService.createNotification(
@@ -188,8 +170,7 @@ describe('notification.service', () => {
           priority: 'MEDIUM',
           title: 'Create',
           message: 'Create message',
-          delivery_channels: ['EMAIL'],
-        },
+          delivery_channels: ['EMAIL']},
         adminActor,
         '127.0.0.1'
       )
@@ -204,8 +185,7 @@ describe('notification.service', () => {
     notificationRepository.update.mockResolvedValue({ id: notificationRecord.id });
     notificationRepository.findById.mockResolvedValue({
       ...notificationRecord,
-      read_at: new Date('2026-03-01T11:00:00.000Z'),
-    });
+      read_at: new Date('2026-03-01T11:00:00.000Z')});
 
     const result = await notificationService.setNotificationReadState(
       'NTF-0001',
@@ -222,8 +202,7 @@ describe('notification.service', () => {
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: actor.tenant_id,
-        action: 'UPDATE',
-      })
+        action: 'UPDATE'})
     );
     expect(emitToUser).toHaveBeenCalled();
   });
@@ -236,9 +215,7 @@ describe('notification.service', () => {
           tenant_id: actor.tenant_id,
           user_id: actor.id,
           read_at: null,
-          human_friendly_id: 'NTF-0001',
-        },
-      ])
+          human_friendly_id: 'NTF-0001'}])
       .mockResolvedValueOnce([notificationRecord]);
     notificationRepository.updateMany.mockResolvedValue({ count: 1 });
 
@@ -262,8 +239,7 @@ describe('notification.service', () => {
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(1);
     notificationRepository.findMany.mockResolvedValueOnce([
-      { created_at: new Date('2026-03-03T09:00:00.000Z') },
-    ]);
+      { created_at: new Date('2026-03-03T09:00:00.000Z') }]);
 
     const metrics = await notificationService.getNotificationMetrics({}, actor);
 
@@ -273,8 +249,7 @@ describe('notification.service', () => {
         unread: 4,
         read: 6,
         attention_required: 2,
-        failed_deliveries: 1,
-      })
+        failed_deliveries: 1})
     );
   });
 
@@ -283,8 +258,7 @@ describe('notification.service', () => {
       notificationService.listNotifications({}, 1, 20, 'created_at', 'desc', {
         id: '',
         tenant_id: '',
-        roles: ['DOCTOR'],
-      })
+        roles: ['DOCTOR']})
     ).rejects.toThrow('errors.auth.insufficient_permissions');
   });
 });

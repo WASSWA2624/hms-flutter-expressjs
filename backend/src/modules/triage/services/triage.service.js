@@ -883,8 +883,7 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
               source_id: encounter.id,
               source_title: 'Triage routing',
               referral_reason: normalizeNotes(data?.reason) || 'Physiotherapy referral',
-              notes: normalizeNotes(data?.notes),
-            },
+              notes: normalizeNotes(data?.notes)},
             context
           );
           flow.therapy_episode_id = therapyEpisode.id;

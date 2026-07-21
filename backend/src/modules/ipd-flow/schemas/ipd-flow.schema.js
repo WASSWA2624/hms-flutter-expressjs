@@ -8,8 +8,7 @@
 const { z } = require("zod");
 const { listQuerySchema } = require("@lib/validation/zod");
 const {
-  clinicalRequestBillingSchema,
-} = require("@lib/billing/clinical-request-billing.schema");
+  clinicalRequestBillingSchema} = require("@lib/billing/clinical-request-billing.schema");
 
 const UUID_LIKE_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -47,8 +46,7 @@ const workflowStageSchema = z.enum([
   "TRANSFER_IN_PROGRESS",
   "DISCHARGE_PLANNED",
   "DISCHARGED",
-  "CANCELLED",
-]);
+  "CANCELLED"]);
 
 const workflowStageListSchema = z.preprocess(
   (value) => {
@@ -70,8 +68,7 @@ const transferStatusSchema = z.enum([
   "APPROVED",
   "IN_PROGRESS",
   "COMPLETED",
-  "CANCELLED",
-]);
+  "CANCELLED"]);
 const transferActionSchema = z.enum(["APPROVE", "START", "COMPLETE", "CANCEL"]);
 const medicationRouteSchema = z.enum([
   "ORAL",
@@ -79,8 +76,7 @@ const medicationRouteSchema = z.enum([
   "IM",
   "TOPICAL",
   "INHALATION",
-  "OTHER",
-]);
+  "OTHER"]);
 const queueScopeSchema = z.enum(["ACTIVE", "ALL"]);
 const icuQueueScopeSchema = z
   .enum(["ALL", "WITH_ICU", "ACTIVE"])
@@ -98,8 +94,7 @@ const legacyResourceSchema = z.enum([
   "transfer-requests",
   "icu-stays",
   "icu-observations",
-  "critical-alerts",
-]);
+  "critical-alerts"]);
 
 const booleanFlagSchema = z
   .union([
@@ -113,13 +108,11 @@ const booleanFlagSchema = z
         if (parsed === null) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Invalid boolean flag",
-          });
+            message: "Invalid boolean flag"});
           return z.NEVER;
         }
         return parsed;
-      }),
-  ])
+      })])
   .optional();
 
 const listIpdFlowsQuerySchema = listQuerySchema.extend({
@@ -137,21 +130,17 @@ const listIpdFlowsQuerySchema = listQuerySchema.extend({
   icu_status: icuStatusSchema.optional(),
   critical_severity: criticalSeveritySchema.optional(),
   has_critical_alert: booleanFlagSchema,
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 const admissionIdParamsSchema = z.object({
-  id: identifierSchema,
-});
+  id: identifierSchema});
 
 const resolveLegacyRouteParamsSchema = z.object({
   resource: legacyResourceSchema,
-  id: identifierSchema,
-});
+  id: identifierSchema});
 
 const getIpdFlowQuerySchema = z.object({
-  include_icu: booleanFlagSchema,
-});
+  include_icu: booleanFlagSchema});
 
 const startIpdFlowSchema = z.object({
   tenant_id: identifierSchema.optional(),
@@ -161,8 +150,7 @@ const startIpdFlowSchema = z.object({
   ward_id: optionalIdentifierSchema,
   room_id: optionalIdentifierSchema,
   bed_id: optionalIdentifierSchema,
-  billing: clinicalRequestBillingSchema.optional().nullable(),
-});
+  billing: clinicalRequestBillingSchema.optional().nullable()});
 
 const requestIpdAdmissionSchema = z.object({
   tenant_id: identifierSchema.optional(),
@@ -170,67 +158,56 @@ const requestIpdAdmissionSchema = z.object({
   patient_id: identifierSchema,
   encounter_id: optionalIdentifierSchema,
   reason: z.string().trim().min(2).max(5000).optional().nullable(),
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const approveAdmissionSchema = z.object({
   bed_id: optionalIdentifierSchema,
-  assigned_at: z.string().datetime().optional(),
-});
+  assigned_at: z.string().datetime().optional()});
 
 const assignBedSchema = z.object({
   bed_id: identifierSchema,
-  assigned_at: z.string().datetime().optional(),
-});
+  assigned_at: z.string().datetime().optional()});
 
 const releaseBedSchema = z.object({
-  released_at: z.string().datetime().optional(),
-});
+  released_at: z.string().datetime().optional()});
 
 const rejectAdmissionSchema = z.object({
-  reason: z.string().trim().min(2).max(5000),
-});
+  reason: z.string().trim().min(2).max(5000)});
 
 const requestTransferSchema = z.object({
   from_ward_id: optionalIdentifierSchema,
   to_ward_id: identifierSchema,
-  requested_at: z.string().datetime().optional(),
-});
+  requested_at: z.string().datetime().optional()});
 
 const requestTherapySchema = z.object({
   clinical_indication: z.string().trim().min(1).max(2000),
   priority: z.string().trim().max(40).optional().nullable(),
   therapist_user_id: optionalIdentifierSchema,
-  notes: z.string().trim().max(65535).optional().nullable(),
-});
+  notes: z.string().trim().max(65535).optional().nullable()});
 
 const updateTransferSchema = z
   .object({
     transfer_request_id: optionalIdentifierSchema,
     action: transferActionSchema,
-    to_bed_id: optionalIdentifierSchema,
-  })
+    to_bed_id: optionalIdentifierSchema})
   .superRefine((value, ctx) => {
     if (value.action === "COMPLETE" && !value.to_bed_id) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["to_bed_id"],
-        message: "to_bed_id is required for COMPLETE action",
-      });
+        message: "to_bed_id is required for COMPLETE action"});
     }
   });
 
 const addWardRoundSchema = z.object({
   round_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable(),
-  billing: clinicalRequestBillingSchema.optional().nullable(),
-});
+  billing: clinicalRequestBillingSchema.optional().nullable()});
 
 const addNursingNoteSchema = z.object({
   nurse_user_id: optionalIdentifierSchema,
   note: z.string().trim().min(1).max(65535),
-  billing: clinicalRequestBillingSchema.optional().nullable(),
-});
+  billing: clinicalRequestBillingSchema.optional().nullable()});
 
 const addMedicationAdministrationSchema = z.object({
   prescription_id: optionalIdentifierSchema,
@@ -256,19 +233,16 @@ const addMedicationAdministrationSchema = z.object({
     .positive()
     .max(168)
     .optional()
-    .nullable(),
-});
+    .nullable()});
 
 const planDischargeSchema = z.object({
   summary: z.string().trim().min(1).max(65535),
-  discharged_at: z.string().datetime().optional().nullable(),
-});
+  discharged_at: z.string().datetime().optional().nullable()});
 
 const finalizeDischargeSchema = z.object({
   summary: z.string().trim().max(65535).optional().nullable(),
   discharged_at: z.string().datetime().optional(),
-  override_reason: z.string().trim().max(2000).optional().nullable(),
-});
+  override_reason: z.string().trim().max(2000).optional().nullable()});
 
 const updateDischargeClearanceSchema = z.object({
   summary_ready: z.boolean().optional(),
@@ -278,33 +252,27 @@ const updateDischargeClearanceSchema = z.object({
   nursing_cleared: z.boolean().optional(),
   documents_ready: z.boolean().optional(),
   patient_exited: z.boolean().optional(),
-  override_reason: z.string().trim().max(2000).optional().nullable(),
-});
+  override_reason: z.string().trim().max(2000).optional().nullable()});
 
 const startIcuStaySchema = z.object({
-  started_at: z.string().datetime().optional(),
-});
+  started_at: z.string().datetime().optional()});
 
 const endIcuStaySchema = z.object({
   icu_stay_id: optionalIdentifierSchema,
-  ended_at: z.string().datetime().optional(),
-});
+  ended_at: z.string().datetime().optional()});
 
 const addIcuObservationSchema = z.object({
   icu_stay_id: optionalIdentifierSchema,
   observed_at: z.string().datetime().optional(),
-  observation: z.string().trim().min(1).max(5000),
-});
+  observation: z.string().trim().min(1).max(5000)});
 
 const addCriticalAlertSchema = z.object({
   icu_stay_id: optionalIdentifierSchema,
   severity: criticalSeveritySchema,
-  message: z.string().trim().min(1).max(2000),
-});
+  message: z.string().trim().min(1).max(2000)});
 
 const resolveCriticalAlertSchema = z.object({
-  critical_alert_id: optionalIdentifierSchema,
-});
+  critical_alert_id: optionalIdentifierSchema});
 
 module.exports = {
   listIpdFlowsQuerySchema,
@@ -337,5 +305,4 @@ module.exports = {
   icuStatusSchema,
   criticalSeveritySchema,
   legacyResourceSchema,
-  resolveLegacyRouteParamsSchema,
-};
+  resolveLegacyRouteParamsSchema};

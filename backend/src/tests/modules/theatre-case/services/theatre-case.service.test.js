@@ -11,8 +11,7 @@ const theatreCaseRepository = require('@repositories/theatre-case/theatre-case.r
 const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { HttpError } = require('@lib/errors');
 
 // Mock dependencies
@@ -20,8 +19,7 @@ jest.mock('@repositories/theatre-case/theatre-case.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 describe('Theatre Case Service', () => {
   const userId = 'user-123';
@@ -50,8 +48,7 @@ describe('Theatre Case Service', () => {
       const result = await theatreCaseService.listTheatreCases({}, 1, 20, 'created_at', 'desc', userId, ipAddress);
 
       expect(result.theatre_cases).toEqual([
-        expect.objectContaining(mockTheatreCases[0]),
-      ]);
+        expect.objectContaining(mockTheatreCases[0])]);
       expect(result.pagination).toEqual({
         page: 1,
         limit: 20,
@@ -189,8 +186,7 @@ describe('Theatre Case Service', () => {
       expect(resolveModelRecordByIdentifier).toHaveBeenCalledWith(
         expect.objectContaining({
           model: 'theatre_case',
-          identifier: 'THC-1001',
-        })
+          identifier: 'THC-1001'})
       );
       expect(theatreCaseRepository.findById).toHaveBeenCalledWith(mockTheatreCase.id);
     });
@@ -224,10 +220,8 @@ describe('Theatre Case Service', () => {
         entity: 'theatre_case',
         entity_id: mockCreatedTheatreCase.id,
         diff: {
-          after: mockCreatedTheatreCase,
-        },
-        ip_address: ipAddress,
-      });
+          after: mockCreatedTheatreCase},
+        ip_address: ipAddress});
     });
 
     it('should throw HttpError on repository error', async () => {
@@ -289,8 +283,7 @@ describe('Theatre Case Service', () => {
           before: mockExistingTheatreCase,
           after: mockUpdatedTheatreCase
         },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should throw HttpError when theatre case not found', async () => {
@@ -339,8 +332,7 @@ describe('Theatre Case Service', () => {
         entity: 'theatre_case',
         entity_id: theatreCaseId,
         diff: { before: mockExistingTheatreCase },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should throw HttpError when theatre case not found', async () => {

@@ -2,13 +2,11 @@ const { z } = require('zod');
 const {
   listQuerySchema,
   nonNegativeIntSchema,
-  uuidOrFriendlyIdentifierSchema,
-} = require('@lib/validation/zod');
+  uuidOrFriendlyIdentifierSchema} = require('@lib/validation/zod');
 const {
   REPORT_FORMATS,
   REPORT_SCHEDULE_FREQUENCIES,
-  REPORT_SCHEDULE_STATUSES,
-} = require('@lib/reports/constants');
+  REPORT_SCHEDULE_STATUSES} = require('@lib/reports/constants');
 
 const createReportScheduleSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -23,16 +21,13 @@ const createReportScheduleSchema = z.object({
   timezone: z.string().trim().min(2).max(80).optional(),
   format: z.enum(REPORT_FORMATS).optional(),
   parameter_overrides_json: z.object({}).passthrough().optional().nullable(),
-  retention_days: nonNegativeIntSchema.optional(),
-});
+  retention_days: nonNegativeIntSchema.optional()});
 
 const updateReportScheduleSchema = createReportScheduleSchema.partial().extend({
-  version: z.coerce.number().int().positive().optional(),
-});
+  version: z.coerce.number().int().positive().optional()});
 
 const reportScheduleIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 const listReportSchedulesQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
@@ -41,12 +36,10 @@ const listReportSchedulesQuerySchema = listQuerySchema.extend({
   status: z.enum(REPORT_SCHEDULE_STATUSES).optional(),
   frequency: z.enum(REPORT_SCHEDULE_FREQUENCIES).optional(),
   search: z.string().trim().optional(),
-  since: z.string().datetime().optional(),
-});
+  since: z.string().datetime().optional()});
 
 module.exports = {
   createReportScheduleSchema,
   listReportSchedulesQuerySchema,
   reportScheduleIdParamsSchema,
-  updateReportScheduleSchema,
-};
+  updateReportScheduleSchema};

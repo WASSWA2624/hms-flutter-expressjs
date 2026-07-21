@@ -39,8 +39,7 @@ const applyDatePreset = (where, field, datePreset) => {
 const buildTaskWhere = ({ tenantId, facilityId, roomId, assigneeId, status, search, queue, datePreset }) => {
   const where = {
     deleted_at: null,
-    facility: tenantId ? { tenant_id: tenantId, deleted_at: null } : { deleted_at: null },
-  };
+    facility: tenantId ? { tenant_id: tenantId, deleted_at: null } : { deleted_at: null }};
 
   if (facilityId) where.facility_id = facilityId;
   if (roomId) where.room_id = roomId;
@@ -67,10 +66,7 @@ const buildTaskWhere = ({ tenantId, facilityId, roomId, assigneeId, status, sear
           { room: { name: { contains: normalizedSearch } } },
           { facility: { name: { contains: normalizedSearch } } },
           { assigned_to: { staff_number: { contains: normalizedSearch } } },
-          { assigned_to: { user: { email: { contains: normalizedSearch } } } },
-        ],
-      },
-    ];
+          { assigned_to: { user: { email: { contains: normalizedSearch } } } }]}];
   }
 
   return where;
@@ -79,8 +75,7 @@ const buildTaskWhere = ({ tenantId, facilityId, roomId, assigneeId, status, sear
 const buildScheduleWhere = ({ tenantId, facilityId, roomId, search, datePreset }) => {
   const where = {
     deleted_at: null,
-    facility: tenantId ? { tenant_id: tenantId, deleted_at: null } : { deleted_at: null },
-  };
+    facility: tenantId ? { tenant_id: tenantId, deleted_at: null } : { deleted_at: null }};
 
   if (facilityId) where.facility_id = facilityId;
   if (roomId) where.room_id = roomId;
@@ -101,10 +96,7 @@ const buildScheduleWhere = ({ tenantId, facilityId, roomId, search, datePreset }
           { human_friendly_id: { contains: upperSearch } },
           { frequency: { contains: normalizedSearch } },
           { room: { name: { contains: normalizedSearch } } },
-          { facility: { name: { contains: normalizedSearch } } },
-        ],
-      },
-    ];
+          { facility: { name: { contains: normalizedSearch } } }]}];
   }
 
   return where;
@@ -115,9 +107,7 @@ const buildMaintenanceRequestWhere = ({ tenantId, facilityId, status, search, qu
     deleted_at: null,
     OR: [
       { facility: tenantId ? { tenant_id: tenantId, deleted_at: null } : { deleted_at: null } },
-      { asset: { tenant_id: tenantId, deleted_at: null } },
-    ],
-  };
+      { asset: { tenant_id: tenantId, deleted_at: null } }]};
 
   if (facilityId) where.facility_id = facilityId;
   if (status) where.status = status;
@@ -144,10 +134,7 @@ const buildMaintenanceRequestWhere = ({ tenantId, facilityId, status, search, qu
           { description: { contains: normalizedSearch } },
           { facility: { name: { contains: normalizedSearch } } },
           { asset: { name: { contains: normalizedSearch } } },
-          { asset: { asset_tag: { contains: normalizedSearch } } },
-        ],
-      },
-    ];
+          { asset: { asset_tag: { contains: normalizedSearch } } }]}];
   }
 
   return where;
@@ -156,8 +143,7 @@ const buildMaintenanceRequestWhere = ({ tenantId, facilityId, status, search, qu
 const buildAssetWhere = ({ tenantId, facilityId, status, search, datePreset }) => {
   const where = {
     deleted_at: null,
-    tenant_id: tenantId,
-  };
+    tenant_id: tenantId};
 
   if (facilityId) where.facility_id = facilityId;
   if (status) where.status = status;
@@ -172,10 +158,7 @@ const buildAssetWhere = ({ tenantId, facilityId, status, search, datePreset }) =
         OR: [
           { human_friendly_id: { contains: upperSearch } },
           { name: { contains: normalizedSearch } },
-          { asset_tag: { contains: normalizedSearch } },
-        ],
-      },
-    ];
+          { asset_tag: { contains: normalizedSearch } }]}];
   }
 
   return where;
@@ -187,9 +170,7 @@ const buildServiceLogWhere = ({ tenantId, facilityId, search, datePreset }) => {
     asset: {
       tenant_id: tenantId,
       deleted_at: null,
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
-  };
+      ...(facilityId ? { facility_id: facilityId } : {})}};
 
   applyDatePreset(where, 'serviced_at', datePreset);
 
@@ -203,10 +184,7 @@ const buildServiceLogWhere = ({ tenantId, facilityId, search, datePreset }) => {
           { human_friendly_id: { contains: upperSearch } },
           { notes: { contains: normalizedSearch } },
           { asset: { name: { contains: normalizedSearch } } },
-          { asset: { asset_tag: { contains: normalizedSearch } } },
-        ],
-      },
-    ];
+          { asset: { asset_tag: { contains: normalizedSearch } } }]}];
   }
 
   return where;
@@ -222,21 +200,15 @@ const RESOURCE_INCLUDES = {
         human_friendly_id: true,
         staff_number: true,
         position: true,
-        user: { select: { email: true } },
-      },
-    },
-  },
+        user: { select: { email: true } }}}},
   'housekeeping-schedules': {
     facility: { select: { id: true, human_friendly_id: true, name: true } },
-    room: { select: { id: true, human_friendly_id: true, name: true } },
-  },
+    room: { select: { id: true, human_friendly_id: true, name: true } }},
   'maintenance-requests': {
     facility: { select: { id: true, human_friendly_id: true, name: true } },
-    asset: { select: { id: true, human_friendly_id: true, name: true, asset_tag: true } },
-  },
+    asset: { select: { id: true, human_friendly_id: true, name: true, asset_tag: true } }},
   assets: {
-    facility: { select: { id: true, human_friendly_id: true, name: true } },
-  },
+    facility: { select: { id: true, human_friendly_id: true, name: true } }},
   'asset-service-logs': {
     asset: {
       select: {
@@ -245,19 +217,14 @@ const RESOURCE_INCLUDES = {
         name: true,
         asset_tag: true,
         facility_id: true,
-        facility: { select: { id: true, human_friendly_id: true, name: true } },
-      },
-    },
-  },
-};
+        facility: { select: { id: true, human_friendly_id: true, name: true } }}}}};
 
 const SORT_FIELDS_BY_RESOURCE = {
   'housekeeping-tasks': new Set(['created_at', 'updated_at', 'scheduled_at', 'completed_at', 'status']),
   'housekeeping-schedules': new Set(['created_at', 'updated_at', 'start_date', 'end_date', 'frequency']),
   'maintenance-requests': new Set(['created_at', 'updated_at', 'reported_at', 'resolved_at', 'status']),
   assets: new Set(['created_at', 'updated_at', 'name', 'asset_tag', 'status']),
-  'asset-service-logs': new Set(['created_at', 'updated_at', 'serviced_at']),
-};
+  'asset-service-logs': new Set(['created_at', 'updated_at', 'serviced_at'])};
 
 const resolveOrderBy = (resource, orderBy = {}) => {
   const entries = Object.entries(orderBy || {});
@@ -277,41 +244,30 @@ const findSummary = async ({ tenantId, facilityId }) => {
     prisma.housekeeping_task.count({
       where: {
         ...buildTaskWhere({ tenantId, facilityId }),
-        status: { in: ['PENDING', 'IN_PROGRESS'] },
-      },
-    }),
+        status: { in: ['PENDING', 'IN_PROGRESS'] }}}),
     prisma.housekeeping_task.count({
       where: {
         ...buildTaskWhere({ tenantId, facilityId }),
         status: 'COMPLETED',
-        completed_at: { gte: todayStart, lt: todayEnd },
-      },
-    }),
+        completed_at: { gte: todayStart, lt: todayEnd }}}),
     prisma.maintenance_request.count({
       where: {
         ...buildMaintenanceRequestWhere({ tenantId, facilityId }),
-        status: { in: ['OPEN', 'IN_PROGRESS'] },
-      },
-    }),
+        status: { in: ['OPEN', 'IN_PROGRESS'] }}}),
     prisma.maintenance_request.count({
-      where: buildMaintenanceRequestWhere({ tenantId, facilityId, queue: 'OVERDUE_REQUESTS' }),
-    }),
+      where: buildMaintenanceRequestWhere({ tenantId, facilityId, queue: 'OVERDUE_REQUESTS' })}),
     prisma.asset.count({
       where: {
         tenant_id: tenantId,
         deleted_at: null,
-        ...(facilityId ? { facility_id: facilityId } : {}),
-      },
-    }),
-  ]);
+        ...(facilityId ? { facility_id: facilityId } : {})}})]);
 
   return {
     pending_tasks: pendingTasks,
     completed_today: completedToday,
     open_requests: openRequests,
     overdue_requests: overdueRequests,
-    total_assets: totalAssets,
-  };
+    total_assets: totalAssets};
 };
 
 const findQueueCounts = async ({ tenantId, facilityId }) => {
@@ -320,16 +276,14 @@ const findQueueCounts = async ({ tenantId, facilityId }) => {
     prisma.housekeeping_task.count({ where: buildTaskWhere({ tenantId, facilityId, queue: 'OVERDUE_TASKS' }) }),
     prisma.maintenance_request.count({ where: buildMaintenanceRequestWhere({ tenantId, facilityId, queue: 'OPEN_REQUESTS' }) }),
     prisma.maintenance_request.count({ where: buildMaintenanceRequestWhere({ tenantId, facilityId, queue: 'OVERDUE_REQUESTS' }) }),
-    prisma.asset_service_log.count({ where: buildServiceLogWhere({ tenantId, facilityId }) }),
-  ]);
+    prisma.asset_service_log.count({ where: buildServiceLogWhere({ tenantId, facilityId }) })]);
 
   return {
     TODAY: todayTasks,
     OVERDUE_TASKS: overdueTasks,
     OPEN_REQUESTS: openRequests,
     OVERDUE_REQUESTS: overdueRequests,
-    SERVICE_HISTORY: historyItems,
-  };
+    SERVICE_HISTORY: historyItems};
 };
 
 const findItems = async ({ resource, filters, skip, take, orderBy }) => {
@@ -339,8 +293,7 @@ const findItems = async ({ resource, filters, skip, take, orderBy }) => {
       const where = buildTaskWhere(filters);
       const [items, total] = await Promise.all([
         prisma.housekeeping_task.findMany({ where, skip, take, orderBy: safeOrderBy, include: RESOURCE_INCLUDES[resource] }),
-        prisma.housekeeping_task.count({ where }),
-      ]);
+        prisma.housekeeping_task.count({ where })]);
       return { items, total };
     }
 
@@ -348,8 +301,7 @@ const findItems = async ({ resource, filters, skip, take, orderBy }) => {
       const where = buildScheduleWhere(filters);
       const [items, total] = await Promise.all([
         prisma.housekeeping_schedule.findMany({ where, skip, take, orderBy: safeOrderBy, include: RESOURCE_INCLUDES[resource] }),
-        prisma.housekeeping_schedule.count({ where }),
-      ]);
+        prisma.housekeeping_schedule.count({ where })]);
       return { items, total };
     }
 
@@ -357,8 +309,7 @@ const findItems = async ({ resource, filters, skip, take, orderBy }) => {
       const where = buildMaintenanceRequestWhere(filters);
       const [items, total] = await Promise.all([
         prisma.maintenance_request.findMany({ where, skip, take, orderBy: safeOrderBy, include: RESOURCE_INCLUDES[resource] }),
-        prisma.maintenance_request.count({ where }),
-      ]);
+        prisma.maintenance_request.count({ where })]);
       return { items, total };
     }
 
@@ -366,8 +317,7 @@ const findItems = async ({ resource, filters, skip, take, orderBy }) => {
       const where = buildAssetWhere(filters);
       const [items, total] = await Promise.all([
         prisma.asset.findMany({ where, skip, take, orderBy: safeOrderBy, include: RESOURCE_INCLUDES[resource] }),
-        prisma.asset.count({ where }),
-      ]);
+        prisma.asset.count({ where })]);
       return { items, total };
     }
 
@@ -375,8 +325,7 @@ const findItems = async ({ resource, filters, skip, take, orderBy }) => {
       const where = buildServiceLogWhere(filters);
       const [items, total] = await Promise.all([
         prisma.asset_service_log.findMany({ where, skip, take, orderBy: safeOrderBy, include: RESOURCE_INCLUDES[resource] }),
-        prisma.asset_service_log.count({ where }),
-      ]);
+        prisma.asset_service_log.count({ where })]);
       return { items, total };
     }
 
@@ -398,12 +347,10 @@ const findLookups = async ({ tenantId, facilityId, search }) => {
           deleted_at: null,
           ...(normalizedSearch
             ? { OR: [{ name: { contains: normalizedSearch } }, { human_friendly_id: { contains: searchUpper } }] }
-            : {}),
-        },
+            : {})},
         take: 50,
         orderBy: { name: 'asc' },
-        select: { id: true, human_friendly_id: true, name: true, facility_type: true },
-      }),
+        select: { id: true, human_friendly_id: true, name: true, facility_type: true }}),
       prisma.room.findMany({
         where: {
           tenant_id: tenantId,
@@ -411,12 +358,10 @@ const findLookups = async ({ tenantId, facilityId, search }) => {
           ...(facilityId ? { facility_id: facilityId } : {}),
           ...(normalizedSearch
             ? { OR: [{ name: { contains: normalizedSearch } }, { human_friendly_id: { contains: searchUpper } }] }
-            : {}),
-        },
+            : {})},
         take: 50,
         orderBy: { name: 'asc' },
-        select: { id: true, human_friendly_id: true, name: true, floor: true, facility: { select: { name: true } } },
-      }),
+        select: { id: true, human_friendly_id: true, name: true, floor: true, facility: { select: { name: true } } }}),
       prisma.asset.findMany({
         where: {
           tenant_id: tenantId,
@@ -427,15 +372,11 @@ const findLookups = async ({ tenantId, facilityId, search }) => {
                 OR: [
                   { name: { contains: normalizedSearch } },
                   { asset_tag: { contains: normalizedSearch } },
-                  { human_friendly_id: { contains: searchUpper } },
-                ],
-              }
-            : {}),
-        },
+                  { human_friendly_id: { contains: searchUpper } }]}
+            : {})},
         take: 50,
         orderBy: { name: 'asc' },
-        select: { id: true, human_friendly_id: true, name: true, asset_tag: true, status: true },
-      }),
+        select: { id: true, human_friendly_id: true, name: true, asset_tag: true, status: true }}),
       prisma.staff_profile.findMany({
         where: {
           tenant_id: tenantId,
@@ -445,11 +386,8 @@ const findLookups = async ({ tenantId, facilityId, search }) => {
                 OR: [
                   { staff_number: { contains: normalizedSearch } },
                   { human_friendly_id: { contains: searchUpper } },
-                  { user: { email: { contains: normalizedSearch } } },
-                ],
-              }
-            : {}),
-        },
+                  { user: { email: { contains: normalizedSearch } } }]}
+            : {})},
         take: 50,
         orderBy: { staff_number: 'asc' },
         select: {
@@ -457,10 +395,7 @@ const findLookups = async ({ tenantId, facilityId, search }) => {
           human_friendly_id: true,
           staff_number: true,
           position: true,
-          user: { select: { email: true } },
-        },
-      }),
-    ]);
+          user: { select: { email: true } }}})]);
 
     return { facilities, rooms, assets, assignees };
   } catch (error) {
@@ -472,5 +407,4 @@ module.exports = {
   findSummary,
   findQueueCounts,
   findItems,
-  findLookups,
-};
+  findLookups};

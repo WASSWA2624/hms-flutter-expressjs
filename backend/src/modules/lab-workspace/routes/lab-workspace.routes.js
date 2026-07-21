@@ -28,8 +28,7 @@ const {
   reopenLabOrderItemResultSchema,
   restoreLabOrderItemSchema,
   deleteLabOrderItemsSchema,
-  sampleWorkflowParamsSchema,
-} = require('@validations/lab-workspace/lab-workspace.schema');
+  sampleWorkflowParamsSchema} = require('@validations/lab-workspace/lab-workspace.schema');
 
 const router = express.Router();
 
@@ -39,15 +38,13 @@ const LAB_READ_ROLES = [
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
   ROLES.NURSE,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 const LAB_MUTATION_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 const resolveLegacyRouteParamsSchema = z.object({
   resource: z.enum([
@@ -57,10 +54,8 @@ const resolveLegacyRouteParamsSchema = z.object({
     'lab-results',
     'lab-tests',
     'lab-panels',
-    'lab-qc-logs',
-  ]),
-  id: uuidOrFriendlyIdentifierSchema,
-});
+    'lab-qc-logs']),
+  id: uuidOrFriendlyIdentifierSchema});
 
 router.get(
   '/workbench',
@@ -130,8 +125,7 @@ router.post(
   '/order-items/:id/release',
   validateRequest({
     params: orderItemWorkflowParamsSchema,
-    body: releaseLabOrderItemSchema,
-  }),
+    body: releaseLabOrderItemSchema}),
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.releaseLabOrderItem
@@ -141,8 +135,7 @@ router.post(
   '/orders/:id/verify-results',
   validateRequest({
     params: orderWorkflowParamsSchema,
-    body: verifyLabOrderResultsSchema,
-  }),
+    body: verifyLabOrderResultsSchema}),
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.verifyLabOrderResults
@@ -152,8 +145,7 @@ router.post(
   '/order-items/:id/reject',
   validateRequest({
     params: orderItemWorkflowParamsSchema,
-    body: rejectLabOrderItemSchema,
-  }),
+    body: rejectLabOrderItemSchema}),
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.rejectLabOrderItem
@@ -163,8 +155,7 @@ router.post(
   '/orders/:id/reverse',
   validateRequest({
     params: orderWorkflowParamsSchema,
-    body: reverseLabOrderWorkflowSchema,
-  }),
+    body: reverseLabOrderWorkflowSchema}),
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.reverseLabOrderWorkflow
@@ -174,8 +165,7 @@ router.post(
   '/order-items/:id/reopen-result',
   validateRequest({
     params: orderItemWorkflowParamsSchema,
-    body: reopenLabOrderItemResultSchema,
-  }),
+    body: reopenLabOrderItemResultSchema}),
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.reopenLabOrderItemResult
@@ -185,8 +175,7 @@ router.post(
   '/order-items/:id/restore',
   validateRequest({
     params: orderItemWorkflowParamsSchema,
-    body: restoreLabOrderItemSchema,
-  }),
+    body: restoreLabOrderItemSchema}),
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.restoreLabOrderItem
@@ -196,8 +185,7 @@ router.post(
   '/orders/:id/delete-items',
   validateRequest({
     params: orderWorkflowParamsSchema,
-    body: deleteLabOrderItemsSchema,
-  }),
+    body: deleteLabOrderItemsSchema}),
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.deleteLabOrderItems

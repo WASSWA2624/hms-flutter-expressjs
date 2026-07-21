@@ -11,8 +11,7 @@ describe('settings-workspace repository', () => {
         'findTenantContext',
         'findFacilityContext',
         'findModuleMetrics',
-        'safePublicId',
-      ])
+        'safePublicId'])
     );
   });
 });

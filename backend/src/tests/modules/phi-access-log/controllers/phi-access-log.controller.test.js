@@ -17,14 +17,11 @@ describe('PHI Access Log Controller', () => {
       body: {},
       user: {
         id: 'USR0000001',
-        tenant_id: 'TEN0000001',
-      },
-      ip: '192.168.1.1',
-    };
+        tenant_id: 'TEN0000001'},
+      ip: '192.168.1.1'};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+      json: jest.fn()};
   });
 
   it('passes req.user to getPhiAccessLogById', async () => {
@@ -54,15 +51,13 @@ describe('PHI Access Log Controller', () => {
       page: '2',
       limit: '15',
       sort_by: 'created_at',
-      order: 'asc',
-    };
+      order: 'asc'};
     phiAccessLogService.getPhiAccessLogs.mockResolvedValue({
       data: [],
       total: 0,
       page: 2,
       limit: 15,
-      totalPages: 0,
-    });
+      totalPages: 0});
 
     await phiAccessLogController.getPhiAccessLogs(req, res);
 
@@ -70,8 +65,7 @@ describe('PHI Access Log Controller', () => {
       expect.objectContaining({
         tenant_id: 'TEN0000001',
         patient_id: 'PAT0000001',
-        access_scope: 'PATIENT',
-      }),
+        access_scope: 'PATIENT'}),
       2,
       15,
       'created_at',
@@ -88,8 +82,7 @@ describe('PHI Access Log Controller', () => {
       total: 0,
       page: 1,
       limit: 20,
-      totalPages: 0,
-    });
+      totalPages: 0});
 
     await phiAccessLogController.getPhiAccessLogsByUserId(req, res);
 
@@ -111,8 +104,7 @@ describe('PHI Access Log Controller', () => {
     req.body = {
       patient_id: 'PAT0000001',
       access_scope: 'PATIENT',
-      reason: 'Clinical review',
-    };
+      reason: 'Clinical review'};
 
     await phiAccessLogController.createPhiAccessLog(req, res);
     expect(phiAccessLogService.createPhiAccessLog).toHaveBeenCalledWith(

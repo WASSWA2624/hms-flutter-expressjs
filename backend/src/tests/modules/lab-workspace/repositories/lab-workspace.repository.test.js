@@ -2,23 +2,17 @@ jest.mock('@prisma/client', () => ({
   lab_order: {
     findMany: jest.fn(),
     count: jest.fn(),
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   lab_order_item: {
-    count: jest.fn(),
-  },
+    count: jest.fn()},
   lab_sample: {
-    count: jest.fn(),
-  },
+    count: jest.fn()},
   lab_result: {
-    count: jest.fn(),
-  },
+    count: jest.fn()},
   patient: {
     findMany: jest.fn(),
-    findFirst: jest.fn(),
-  },
-  $transaction: jest.fn(),
-}));
+    findFirst: jest.fn()},
+  $transaction: jest.fn()}));
 
 const prisma = require('@prisma/client');
 const subject = require('@repositories/lab-workspace/lab-workspace.repository');
@@ -42,13 +36,11 @@ describe('lab-workspace.repository', () => {
     expect(prisma.lab_order.findMany).toHaveBeenCalledWith({
       where: {
         deleted_at: null,
-        status: 'ORDERED',
-      },
+        status: 'ORDERED'},
       skip: 10,
       take: 25,
       orderBy: { ordered_at: 'desc' },
-      include: { patient: true },
-    });
+      include: { patient: true }});
   });
 
   it('countResults applies soft-delete protection', async () => {
@@ -59,9 +51,7 @@ describe('lab-workspace.repository', () => {
     expect(prisma.lab_result.count).toHaveBeenCalledWith({
       where: {
         deleted_at: null,
-        status: 'CRITICAL',
-      },
-    });
+        status: 'CRITICAL'}});
   });
 
   it('findManyPatients applies soft-delete protection and query options', async () => {
@@ -78,13 +68,11 @@ describe('lab-workspace.repository', () => {
     expect(prisma.patient.findMany).toHaveBeenCalledWith({
       where: {
         deleted_at: null,
-        tenant_id: 'tenant-1',
-      },
+        tenant_id: 'tenant-1'},
       skip: 0,
       take: 8,
       orderBy: { updated_at: 'desc' },
-      include: { contacts: true },
-    });
+      include: { contacts: true }});
   });
 
   it('findPatientById applies soft-delete protection and scope', async () => {
@@ -100,10 +88,8 @@ describe('lab-workspace.repository', () => {
       where: {
         id: 'PAT000001',
         deleted_at: null,
-        tenant_id: 'tenant-1',
-      },
-      include: { encounters: true },
-    });
+        tenant_id: 'tenant-1'},
+      include: { encounters: true }});
   });
 
   it('withTransaction delegates to prisma.$transaction', async () => {

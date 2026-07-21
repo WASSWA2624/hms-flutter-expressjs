@@ -2,8 +2,7 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
   mapClinicalOrderBillingFields,
   mapCatalogUnitPriceFields,
-  extractStoredClinicalBilling,
-} = require('@lib/billing/clinical-request-billing');
+  extractStoredClinicalBilling} = require('@lib/billing/clinical-request-billing');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -12,8 +11,7 @@ const RADIOLOGY_PAYMENT_SATISFIED_STATUSES = new Set([
   'PAID',
   'NOT_REQUIRED',
   'NO_CHARGE',
-  'NOT_BILLED',
-]);
+  'NOT_BILLED']);
 
 const resolveRadiologyOrderPaymentStatus = (order = {}) => {
   const billingFields = mapClinicalOrderBillingFields(order);
@@ -67,8 +65,7 @@ const mapRadiologyTestRecord = (record) => {
     ...mapCatalogUnitPriceFields(record),
     tenant_id: toPublicIdentifier(record.tenant?.human_friendly_id, record.tenant_id),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapImagingAssetRecord = (record) => {
@@ -85,8 +82,7 @@ const mapImagingAssetRecord = (record) => {
     file_name: toText(record.file_name) || null,
     content_type: toText(record.content_type) || null,
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapEquipmentRegistrySummary = (record) => {
@@ -102,8 +98,7 @@ const mapEquipmentRegistrySummary = (record) => {
     display_id: publicId,
     equipment_name: name,
     equipment_code: toText(record.equipment_code) || null,
-    status: toText(record.status) || null,
-  };
+    status: toText(record.status) || null};
 };
 
 const mapPacsLinkRecord = (record) => {
@@ -119,8 +114,7 @@ const mapPacsLinkRecord = (record) => {
     url: toText(record.url) || null,
     expires_at: toIsoDateTime(record.expires_at),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapImagingStudyRecord = (record) => {
@@ -158,8 +152,7 @@ const mapImagingStudyRecord = (record) => {
     pacs_link_count: pacsLinks.length,
     last_pacs_url: toText(pacsLinks[0]?.url) || null,
     assets,
-    pacs_links: pacsLinks,
-  };
+    pacs_links: pacsLinks};
 };
 
 const mapRadiologyResultAttestationRecord = (record) => {
@@ -179,8 +172,7 @@ const mapRadiologyResultAttestationRecord = (record) => {
     reason: toText(record.reason) || null,
     attested_at: toIsoDateTime(record.attested_at),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapRadiologyResultRecord = (record) => {
@@ -229,13 +221,11 @@ const mapRadiologyResultRecord = (record) => {
       attested: Boolean(attestAttestation),
       attested_at: attestAttestation?.attested_at || null,
       attested_by_role: attestAttestation?.attested_role || null,
-      pending_attestation: Boolean(requestAttestation) && !Boolean(attestAttestation),
-    },
+      pending_attestation: Boolean(requestAttestation) && !Boolean(attestAttestation)},
     attestations,
     reported_at: toIsoDateTime(record.reported_at),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapRadiologyOrderRecord = (record, options = {}) => {
@@ -271,8 +261,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
   const studies = includeChildren && Array.isArray(record.imaging_studies)
     ? record.imaging_studies.map((entry) => mapImagingStudyRecord({
         ...entry,
-        radiology_order: record,
-      })).filter(Boolean)
+        radiology_order: record})).filter(Boolean)
     : [];
 
   const finalResultCount = results.filter((entry) => entry.status === 'FINAL').length;
@@ -319,8 +308,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
       ),
       new_test_name: toText(requestDetails.new_test_name) || null,
       modality,
-      ...(storedBilling ? { billing: storedBilling } : {}),
-    },
+      ...(storedBilling ? { billing: storedBilling } : {})},
     requested_tests: [
       {
         radiology_test_id: toPublicIdentifier(test?.human_friendly_id, record.radiology_test_id),
@@ -329,9 +317,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
         modality,
         body_region: toText(requestDetails.body_region) || null,
         laterality: toText(requestDetails.laterality) || null,
-        priority: toText(requestDetails.priority) || null,
-      },
-    ].filter(
+        priority: toText(requestDetails.priority) || null}].filter(
       (entry) => entry.radiology_test_id || entry.test_display_name || entry.modality
     ),
     ordered_at: toIsoDateTime(record.ordered_at),
@@ -346,8 +332,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
     results,
     imaging_studies: studies,
     billing_gate_blocked: !paymentSatisfied,
-    ...mapClinicalOrderBillingFields(record),
-  };
+    ...mapClinicalOrderBillingFields(record)};
 };
 
 const mapRadiologyOrderWorkflowRecord = (record) => {
@@ -359,9 +344,7 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
       id: 'order-placed',
       type: 'ORDER_PLACED',
       at: order.ordered_at || order.created_at,
-      label: 'Radiology order created',
-    },
-  ];
+      label: 'Radiology order created'}];
 
   order.imaging_studies.forEach((study, index) => {
     if (study.performed_at) {
@@ -369,8 +352,7 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
         id: `study-performed-${study.id || index}`,
         type: 'STUDY_PERFORMED',
         at: study.performed_at,
-        label: `Study ${study.display_id || index + 1} performed`,
-      });
+        label: `Study ${study.display_id || index + 1} performed`});
     }
 
     study.assets.forEach((asset, assetIndex) => {
@@ -378,8 +360,7 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
         id: `asset-uploaded-${asset.id || `${study.id}-${assetIndex}`}`,
         type: 'ASSET_UPLOADED',
         at: asset.created_at,
-        label: `Asset ${asset.file_name || asset.display_id || assetIndex + 1} captured`,
-      });
+        label: `Asset ${asset.file_name || asset.display_id || assetIndex + 1} captured`});
     });
 
     study.pacs_links.forEach((link, linkIndex) => {
@@ -387,8 +368,7 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
         id: `pacs-synced-${link.id || `${study.id}-${linkIndex}`}`,
         type: 'PACS_SYNCED',
         at: link.created_at,
-        label: `Study ${study.display_id || index + 1} synced to PACS`,
-      });
+        label: `Study ${study.display_id || index + 1} synced to PACS`});
     });
   });
 
@@ -397,8 +377,7 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
       id: `result-${result.id || index}`,
       type: `RESULT_${toText(result.status).toUpperCase() || 'UPDATED'}`,
       at: result.reported_at || result.updated_at || result.created_at,
-      label: `Report ${result.status || 'updated'} for ${order.test_display_name || 'study'}`,
-    });
+      label: `Report ${result.status || 'updated'} for ${order.test_display_name || 'study'}`});
   });
 
   timeline.sort((a, b) => {
@@ -427,8 +406,7 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
       id: 'order-scheduled',
       type: 'ORDER_SCHEDULED',
       at: order.scheduled_at || order.updated_at || order.ordered_at,
-      label: 'Study scheduled / assigned',
-    });
+      label: 'Study scheduled / assigned'});
     timeline.sort((a, b) => {
       const left = Date.parse(a.at || '');
       const right = Date.parse(b.at || '');
@@ -457,9 +435,7 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
       can_add_addendum: hasFinalResult,
       can_pacs_sync: order.imaging_studies.some((study) => study.asset_count > 0),
       billing_gate_blocked: !paymentSatisfied,
-      has_assignment: hasAssignment,
-    },
-  };
+      has_assignment: hasAssignment}};
 };
 
 module.exports = {
@@ -474,5 +450,4 @@ module.exports = {
   mapImagingStudyRecord,
   mapImagingAssetRecord,
   mapPacsLinkRecord,
-  mapRadiologyOrderWorkflowRecord,
-};
+  mapRadiologyOrderWorkflowRecord};

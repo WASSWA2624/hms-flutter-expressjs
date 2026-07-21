@@ -4,15 +4,13 @@ const { HttpError } = require('@lib/errors');
 const facilitySelect = {
   id: true,
   human_friendly_id: true,
-  name: true,
-};
+  name: true};
 
 const branchSelect = {
   id: true,
   human_friendly_id: true,
   name: true,
-  facility_id: true,
-};
+  facility_id: true};
 
 const userSelect = {
   id: true,
@@ -21,10 +19,7 @@ const userSelect = {
   profile: {
     select: {
       first_name: true,
-      last_name: true,
-    },
-  },
-};
+      last_name: true}}};
 
 const mapError = (error) => {
   throw new HttpError('errors.database.unexpected', 500, [{ originalError: error?.message }]);
@@ -33,9 +28,7 @@ const mapError = (error) => {
 const baseScope = (scope = {}, { includeFacility = true, includeBranch = true } = {}) => ({
   deleted_at: null,
   ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-  ...(includeFacility && scope.facility_id ? { facility_id: scope.facility_id } : {}),
-  ...(includeBranch && scope.branch_id ? { branch_id: scope.branch_id } : {}),
-});
+  ...(includeFacility && scope.facility_id ? { facility_id: scope.facility_id } : {})});
 
 const findSummary = async (scope = {}) => {
   try {
@@ -46,8 +39,7 @@ const findSummary = async (scope = {}) => {
     const reportingScope = baseScope(scope, { includeBranch: false });
     const widgetScope = baseScope(scope, {
       includeFacility: false,
-      includeBranch: false,
-    });
+      includeBranch: false});
     const granularScope = baseScope(scope);
 
     const [
@@ -62,8 +54,7 @@ const findSummary = async (scope = {}) => {
       staleWidgets,
       criticalKpis,
       warningKpis,
-      recentActivity,
-    ] = await Promise.all([
+      recentActivity] = await Promise.all([
       prisma.report_definition.count({ where: reportingScope }),
       prisma.report_definition.count({ where: { ...reportingScope, status: 'ACTIVE' } }),
       prisma.report_run.count({ where: { ...reportingScope, status: 'QUEUED' } }),
@@ -78,10 +69,7 @@ const findSummary = async (scope = {}) => {
       prisma.analytics_event.count({
         where: {
           ...granularScope,
-          occurred_at: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
-        },
-      }),
-    ]);
+          occurred_at: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) }}})]);
 
     return {
       total_definitions: totalDefinitions,
@@ -95,8 +83,7 @@ const findSummary = async (scope = {}) => {
       stale_widgets: staleWidgets,
       critical_kpis: criticalKpis,
       warning_kpis: warningKpis,
-      recent_activity: recentActivity,
-    };
+      recent_activity: recentActivity};
   } catch (error) {
     mapError(error);
   }
@@ -108,30 +95,22 @@ const findLookups = async (scope = {}) => {
       prisma.facility.findMany({
         where: {
           tenant_id: scope.tenant_id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: { name: 'asc' },
-        select: facilitySelect,
-      }),
-      prisma.branch.findMany({
+        select: facilitySelect}),
         where: {
           tenant_id: scope.tenant_id,
           deleted_at: null,
-          ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
-        },
+          ...(scope.facility_id ? { facility_id: scope.facility_id } : {})},
         orderBy: { name: 'asc' },
-        select: branchSelect,
-      }),
+        select: branchSelect}),
       prisma.user.findMany({
         where: {
           tenant_id: scope.tenant_id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         take: 100,
         orderBy: { email: 'asc' },
-        select: userSelect,
-      }),
-    ]);
+        select: userSelect})]);
 
     return { facilities, branches, users };
   } catch (error) {
@@ -161,14 +140,9 @@ const findItems = async ({ resource, where = {}, skip = 0, take = 20, orderBy = 
                 report_definition: { select: { id: true, human_friendly_id: true, name: true } },
                 requested_by: { select: userSelect },
                 facility: { select: facilitySelect },
-                schedule: { select: { id: true, human_friendly_id: true, name: true, retention_days: true } },
-              },
-            },
-            _count: { select: { schedules: { where: { deleted_at: null } } } },
-          },
-        }),
-        prisma.report_definition.count({ where: { deleted_at: null, ...where } }),
-      ]);
+                schedule: { select: { id: true, human_friendly_id: true, name: true, retention_days: true } }}},
+            _count: { select: { schedules: { where: { deleted_at: null } } } }}}),
+        prisma.report_definition.count({ where: { deleted_at: null, ...where } })]);
       return { items, total };
     }
 
@@ -183,11 +157,8 @@ const findItems = async ({ resource, where = {}, skip = 0, take = 20, orderBy = 
             report_definition: { select: { id: true, human_friendly_id: true, name: true, default_format: true } },
             requested_by: { select: userSelect },
             facility: { select: facilitySelect },
-            schedule: { select: { id: true, human_friendly_id: true, name: true, retention_days: true, status: true } },
-          },
-        }),
-        prisma.report_run.count({ where: { deleted_at: null, ...where } }),
-      ]);
+            schedule: { select: { id: true, human_friendly_id: true, name: true, retention_days: true, status: true } }}}),
+        prisma.report_run.count({ where: { deleted_at: null, ...where } })]);
       return { items, total };
     }
 
@@ -200,11 +171,8 @@ const findItems = async ({ resource, where = {}, skip = 0, take = 20, orderBy = 
           orderBy,
           include: {
             tenant: { select: { id: true, human_friendly_id: true, name: true } },
-            report_definition: { select: { id: true, human_friendly_id: true, name: true } },
-          },
-        }),
-        prisma.dashboard_widget.count({ where: { deleted_at: null, ...where } }),
-      ]);
+            report_definition: { select: { id: true, human_friendly_id: true, name: true } }}}),
+        prisma.dashboard_widget.count({ where: { deleted_at: null, ...where } })]);
       return { items, total };
     }
 
@@ -217,12 +185,8 @@ const findItems = async ({ resource, where = {}, skip = 0, take = 20, orderBy = 
           orderBy,
           include: {
             tenant: { select: { id: true, human_friendly_id: true, name: true } },
-            facility: { select: facilitySelect },
-            branch: { select: branchSelect },
-          },
-        }),
-        prisma.kpi_snapshot.count({ where: { deleted_at: null, ...where } }),
-      ]);
+            facility: { select: facilitySelect }}}),
+        prisma.kpi_snapshot.count({ where: { deleted_at: null, ...where } })]);
       return { items, total };
     }
 
@@ -235,12 +199,8 @@ const findItems = async ({ resource, where = {}, skip = 0, take = 20, orderBy = 
         include: {
           tenant: { select: { id: true, human_friendly_id: true, name: true } },
           user: { select: userSelect },
-          facility: { select: facilitySelect },
-          branch: { select: branchSelect },
-        },
-      }),
-      prisma.analytics_event.count({ where: { deleted_at: null, ...where } }),
-    ]);
+          facility: { select: facilitySelect }}}),
+      prisma.analytics_event.count({ where: { deleted_at: null, ...where } })]);
     return { items, total };
   } catch (error) {
     mapError(error);
@@ -259,9 +219,7 @@ const findTimeline = async (scope = {}, take = 20) => {
           report_definition: { select: { id: true, human_friendly_id: true, name: true } },
           requested_by: { select: userSelect },
           facility: { select: facilitySelect },
-          schedule: { select: { id: true, human_friendly_id: true, name: true } },
-        },
-      }),
+          schedule: { select: { id: true, human_friendly_id: true, name: true } }}}),
       prisma.report_schedule.findMany({
         where: common,
         take,
@@ -269,32 +227,22 @@ const findTimeline = async (scope = {}, take = 20) => {
         include: {
           report_definition: { select: { id: true, human_friendly_id: true, name: true } },
           facility: { select: facilitySelect },
-          creator: { select: userSelect },
-        },
-      }),
+          creator: { select: userSelect }}}),
       prisma.kpi_snapshot.findMany({
         where: {
           ...baseScope(scope),
-          threshold_state: { in: ['WARNING', 'CRITICAL'] },
-        },
+          threshold_state: { in: ['WARNING', 'CRITICAL'] }},
         take,
         orderBy: [{ recorded_at: 'desc' }],
         include: {
-          facility: { select: facilitySelect },
-          branch: { select: branchSelect },
-        },
-      }),
+          facility: { select: facilitySelect }}}),
       prisma.analytics_event.findMany({
         where: baseScope(scope),
         take,
         orderBy: [{ occurred_at: 'desc' }],
         include: {
           user: { select: userSelect },
-          facility: { select: facilitySelect },
-          branch: { select: branchSelect },
-        },
-      }),
-    ]);
+          facility: { select: facilitySelect }}})]);
 
     return { runs, schedules, kpis, events };
   } catch (error) {
@@ -306,5 +254,4 @@ module.exports = {
   findItems,
   findLookups,
   findSummary,
-  findTimeline,
-};
+  findTimeline};

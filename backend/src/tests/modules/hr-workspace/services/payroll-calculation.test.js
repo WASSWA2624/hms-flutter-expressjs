@@ -3,8 +3,7 @@ const {
   computeEligibleWorkdays,
   daysBetweenInclusive,
   overlapDaysInclusive,
-  sumCompensationAmounts,
-} = require('../../../../modules/hr-workspace/services/payroll-calculation');
+  sumCompensationAmounts} = require('../../../../modules/hr-workspace/services/payroll-calculation');
 
 describe('payroll-calculation', () => {
   const periodStart = new Date('2026-01-01T00:00:00.000Z');
@@ -16,8 +15,7 @@ describe('payroll-calculation', () => {
       totalHours: 40,
       periodStart,
       periodEnd,
-      eligibleWorkdays: { eligibleDays: 20, eligibleDayKeys: [] },
-    });
+      eligibleWorkdays: { eligibleDays: 20, eligibleDayKeys: [] }});
 
     expect(result.amount).toBe(2000);
     expect(result.calculation.quantity).toBe(40);
@@ -33,19 +31,15 @@ describe('payroll-calculation', () => {
           day_of_week: 1,
           preference: 'AVAILABLE',
           effective_from: periodStart,
-          effective_to: null,
-        },
-      ],
+          effective_to: null}],
       assignments: [],
-      leaves: [],
-    });
+      leaves: []});
 
     const result = calculateCompensationAmount({
       compensation: { pay_type: 'PER_DAY', rate: 100, currency: 'USD' },
       periodStart,
       periodEnd,
-      eligibleWorkdays,
-    });
+      eligibleWorkdays});
 
     expect(result.calculation.unit).toBe('days');
     expect(result.amount).toBeGreaterThan(0);
@@ -60,17 +54,11 @@ describe('payroll-calculation', () => {
         {
           shift: {
             start_time: new Date('2026-01-10T08:00:00.000Z'),
-            end_time: new Date('2026-01-10T16:00:00.000Z'),
-          },
-        },
-      ],
+            end_time: new Date('2026-01-10T16:00:00.000Z')}}],
       leaves: [
         {
           start_date: new Date('2026-01-10T00:00:00.000Z'),
-          end_date: new Date('2026-01-10T23:59:59.999Z'),
-        },
-      ],
-    });
+          end_date: new Date('2026-01-10T23:59:59.999Z')}]});
     const withoutLeave = computeEligibleWorkdays({
       periodStart,
       periodEnd,
@@ -79,12 +67,8 @@ describe('payroll-calculation', () => {
         {
           shift: {
             start_time: new Date('2026-01-10T08:00:00.000Z'),
-            end_time: new Date('2026-01-10T16:00:00.000Z'),
-          },
-        },
-      ],
-      leaves: [],
-    });
+            end_time: new Date('2026-01-10T16:00:00.000Z')}}],
+      leaves: []});
 
     expect(withLeave.eligibleDays).toBe(0);
     expect(withoutLeave.eligibleDays).toBe(1);
@@ -98,12 +82,10 @@ describe('payroll-calculation', () => {
         currency: 'USD',
         effective_from: periodStart,
         effective_to: null,
-        metadata_json: { pay_frequency: 'MONTHLY' },
-      },
+        metadata_json: { pay_frequency: 'MONTHLY' }},
       periodStart,
       periodEnd,
-      eligibleWorkdays: { eligibleDays: 10, eligibleDayKeys: [] },
-    });
+      eligibleWorkdays: { eligibleDays: 10, eligibleDayKeys: [] }});
 
     expect(result.amount).toBe(3100);
     expect(result.calculation.formula).toBe('rate * eligible_days / period_days');
@@ -115,15 +97,13 @@ describe('payroll-calculation', () => {
       periodStart,
       periodEnd,
       consultationCount: 4,
-      eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] },
-    });
+      eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] }});
     const procedure = calculateCompensationAmount({
       compensation: { pay_type: 'PER_PROCEDURE', rate: 500, currency: 'USD' },
       periodStart,
       periodEnd,
       procedureCount: 2,
-      eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] },
-    });
+      eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] }});
 
     expect(consultation.amount).toBe(300);
     expect(procedure.amount).toBe(1000);
@@ -137,8 +117,7 @@ describe('payroll-calculation', () => {
       periodStart,
       periodEnd,
       procedureCount: 0,
-      eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] },
-    });
+      eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] }});
 
     expect(result.amount).toBe(0);
     expect(result.warning).toBe('zero_quantity');
@@ -150,23 +129,19 @@ describe('payroll-calculation', () => {
         compensation: { pay_type: 'PER_MONTH', rate: 3000, currency: 'USD', effective_from: periodStart },
         periodStart,
         periodEnd,
-        eligibleWorkdays: { eligibleDays: 20, eligibleDayKeys: [] },
-      }),
+        eligibleWorkdays: { eligibleDays: 20, eligibleDayKeys: [] }}),
       calculateCompensationAmount({
         compensation: { pay_type: 'PER_CONSULTATION', rate: 50, currency: 'USD' },
         periodStart,
         periodEnd,
         consultationCount: 10,
-        eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] },
-      }),
+        eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] }}),
       calculateCompensationAmount({
         compensation: { pay_type: 'PER_PROCEDURE', rate: 200, currency: 'USD' },
         periodStart,
         periodEnd,
         procedureCount: 3,
-        eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] },
-      }),
-    ];
+        eligibleWorkdays: { eligibleDays: 0, eligibleDayKeys: [] }})];
 
     const summary = sumCompensationAmounts(calculations);
     expect(summary.amount).toBe(4100);

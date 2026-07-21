@@ -41,8 +41,7 @@ describe('Emergency Response Service', () => {
 
       expect(result.items).toEqual([
         expect.objectContaining(mockResponses[0]),
-        expect.objectContaining(mockResponses[1]),
-      ]);
+        expect.objectContaining(mockResponses[1])]);
       expect(result.items[0]).toEqual(expect.objectContaining({ display_id: '1' }));
       expect(result.total).toBe(2);
       expect(result.totalPages).toBe(1);

@@ -2,8 +2,7 @@ const {
   createDoctorSchema,
   updateDoctorSchema,
   doctorIdParamsSchema,
-  listDoctorsQuerySchema,
-} = require('@validations/doctor/doctor.schema');
+  listDoctorsQuerySchema} = require('@validations/doctor/doctor.schema');
 
 describe('doctor.schema', () => {
   describe('createDoctorSchema', () => {
@@ -20,8 +19,7 @@ describe('doctor.schema', () => {
         consultation_fee: '120.00',
         consultation_currency: 'usd',
         is_fee_overridden: true,
-        role_ids: ['rol0000001'],
-      });
+        role_ids: ['rol0000001']});
 
       expect(result.success).toBe(true);
       expect(result.data.tenant_id).toBe('TEN0000001');
@@ -36,8 +34,7 @@ describe('doctor.schema', () => {
         email: 'doctor@hms.test',
         password: 'StrongP@ssword1',
         practitioner_type: 'MO',
-        position_title: '   ',
-      });
+        position_title: '   '});
 
       expect(result.success).toBe(false);
     });
@@ -48,8 +45,7 @@ describe('doctor.schema', () => {
         email: 'doctor@hms.test',
         password: 'StrongP@ssword1',
         practitioner_type: 'MO',
-        position_title: 'Medical Officer',
-      });
+        position_title: 'Medical Officer'});
 
       expect(result.success).toBe(false);
     });
@@ -62,8 +58,7 @@ describe('doctor.schema', () => {
         practitioner_type: 'SPECIALIST',
         consultation_fee: '200.00',
         consultation_currency: 'EUR',
-        is_fee_overridden: true,
-      });
+        is_fee_overridden: true});
 
       expect(result.success).toBe(true);
     });
@@ -83,8 +78,7 @@ describe('doctor.schema', () => {
         tenant_id: 'ten0000001',
         facility_id: 'fac0000001',
         practitioner_type: 'MO',
-        search: 'neurologist',
-      });
+        search: 'neurologist'});
 
       expect(result.success).toBe(true);
       expect(result.data.tenant_id).toBe('TEN0000001');

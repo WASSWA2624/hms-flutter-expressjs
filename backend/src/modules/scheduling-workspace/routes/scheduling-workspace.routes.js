@@ -6,8 +6,7 @@ const schedulingWorkspaceController = require('@controllers/scheduling-workspace
 const {
   workspaceQuerySchema,
   referenceDataQuerySchema,
-  resolveLegacyParamsSchema,
-} = require('@validations/scheduling-workspace/scheduling-workspace.schema');
+  resolveLegacyParamsSchema} = require('@validations/scheduling-workspace/scheduling-workspace.schema');
 
 const router = express.Router();
 
@@ -16,8 +15,7 @@ const READ_PERMISSIONS = [
   PERMISSIONS.CLINICAL_READ,
   PERMISSIONS.BILLING_READ,
   PERMISSIONS.OPERATIONS_READ,
-  PERMISSIONS.EMERGENCY_READ,
-];
+  PERMISSIONS.EMERGENCY_READ];
 
 router.use(authenticate());
 

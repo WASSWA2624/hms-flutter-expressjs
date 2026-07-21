@@ -41,23 +41,19 @@ describe('Report Run Repository', () => {
           name: 'Monthly Report',
           dataset_key: 'patient_registrations',
           default_format: 'PDF',
-          facility_id: 'facility-123',
-        },
+          facility_id: 'facility-123'},
         requested_by: {
           id: 'user-123',
           human_friendly_id: 'USR-001',
           email: 'test@example.com',
-          profile: { first_name: 'Test' },
-        },
+          profile: { first_name: 'Test' }},
         facility: { id: 'facility-123', human_friendly_id: 'FAC-001', name: 'Main Facility' },
         schedule: {
           id: 'schedule-123',
           human_friendly_id: 'SCH-001',
           name: 'Nightly',
           retention_days: 30,
-          status: 'ACTIVE',
-        },
-      };
+          status: 'ACTIVE'}};
       prisma.report_run.findFirst.mockResolvedValue(mockReportRun);
 
       const result = await findById('run-123');
@@ -66,15 +62,12 @@ describe('Report Run Repository', () => {
       expect(prisma.report_run.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'run-123',
-          deleted_at: null,
-        },
+          deleted_at: null},
         include: expect.objectContaining({
           facility: expect.any(Object),
           report_definition: expect.any(Object),
           requested_by: expect.any(Object),
-          schedule: expect.any(Object),
-        }),
-      });
+          schedule: expect.any(Object)})});
     });
 
     it('should return null if report run not found', async () => {
@@ -98,24 +91,21 @@ describe('Report Run Repository', () => {
     it('uses the object-based query contract for list calls', async () => {
       const mockReportRuns = [
         { id: 'run-1', report_definition_id: 'report-1', status: 'COMPLETED' },
-        { id: 'run-2', report_definition_id: 'report-2', status: 'PENDING' },
-      ];
+        { id: 'run-2', report_definition_id: 'report-2', status: 'PENDING' }];
       prisma.report_run.findMany.mockResolvedValue(mockReportRuns);
 
       const result = await findMany({
         where: { tenant_id: 'tenant-123', status: 'COMPLETED' },
         skip: 5,
         take: 10,
-        orderBy: { queued_at: 'asc' },
-      });
+        orderBy: { queued_at: 'asc' }});
 
       expect(result).toEqual(mockReportRuns);
       expect(prisma.report_run.findMany).toHaveBeenCalledWith({
         where: {
           deleted_at: null,
           tenant_id: 'tenant-123',
-          status: 'COMPLETED',
-        },
+          status: 'COMPLETED'},
         skip: 5,
         take: 10,
         orderBy: { queued_at: 'asc' },
@@ -123,9 +113,7 @@ describe('Report Run Repository', () => {
           facility: expect.any(Object),
           report_definition: expect.any(Object),
           requested_by: expect.any(Object),
-          schedule: expect.any(Object),
-        }),
-      });
+          schedule: expect.any(Object)})});
     });
 
     it('counts with the deleted-at guard preserved', async () => {
@@ -137,9 +125,7 @@ describe('Report Run Repository', () => {
       expect(prisma.report_run.count).toHaveBeenCalledWith({
         where: {
           deleted_at: null,
-          status: 'FAILED',
-        },
-      });
+          status: 'FAILED'}});
     });
 
     it('should throw HttpError on database error', async () => {
@@ -157,8 +143,7 @@ describe('Report Run Repository', () => {
         tenant_id: 'tenant-123',
         report_definition_id: 'report-def-123',
         format: 'PDF',
-        requested_by_user_id: 'user-123',
-      };
+        requested_by_user_id: 'user-123'};
       const mockCreated = { id: 'run-123', ...newData };
       prisma.report_run.create.mockResolvedValue(mockCreated);
 
@@ -171,9 +156,7 @@ describe('Report Run Repository', () => {
           facility: expect.any(Object),
           report_definition: expect.any(Object),
           requested_by: expect.any(Object),
-          schedule: expect.any(Object),
-        }),
-      });
+          schedule: expect.any(Object)})});
     });
 
     it('should throw HttpError on foreign key constraint violation', async () => {
@@ -205,9 +188,7 @@ describe('Report Run Repository', () => {
           facility: expect.any(Object),
           report_definition: expect.any(Object),
           requested_by: expect.any(Object),
-          schedule: expect.any(Object),
-        }),
-      });
+          schedule: expect.any(Object)})});
     });
 
     it('should throw HttpError if report run not found', async () => {

@@ -40,8 +40,7 @@ describe('Ambulance Service', () => {
       expect(result.ambulances).toEqual(
         expect.arrayContaining([
           expect.objectContaining(mockAmbulances[0]),
-          expect.objectContaining(mockAmbulances[1]),
-        ])
+          expect.objectContaining(mockAmbulances[1])])
       );
       expect(result.ambulances[0]).toEqual(expect.objectContaining({ display_id: 'ambulance-1' }));
       expect(result.pagination).toEqual({

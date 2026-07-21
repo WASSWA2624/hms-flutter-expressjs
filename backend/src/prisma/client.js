@@ -55,8 +55,7 @@ const {
   PRISMA_POOL_CONNECTION_LIMIT,
   PRISMA_POOL_CONNECT_TIMEOUT_MS,
   PRISMA_POOL_ACQUIRE_TIMEOUT_MS,
-  PRISMA_MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL,
-} = loadEnvConfig();
+  PRISMA_MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL} = loadEnvConfig();
 
 const FRIENDLY_ID_PREFIX_LENGTH = 3;
 const DEFAULT_FRIENDLY_ID_PADDING = 7;
@@ -72,8 +71,7 @@ const isUniqueConstraintError = (error) => {
     error.meta?.cause,
     error.meta?.driverAdapterError?.message,
     error.meta?.driverAdapterError?.cause?.message,
-    error.cause?.message,
-  ]
+    error.cause?.message]
     .filter(Boolean)
     .join(' ');
 
@@ -109,8 +107,7 @@ const MODEL_PREFIX_OVERRIDES = Object.freeze({
   invoice: 'INV',
   payment: 'PAY',
   role: 'ROL',
-  permission: 'PER',
-});
+  permission: 'PER'});
 
 const ROLE_PREFIX_MAP = Object.freeze({
   SUPER_ADMIN: 'SUP',
@@ -137,8 +134,7 @@ const ROLE_PREFIX_MAP = Object.freeze({
   PATIENT: 'PAT',
   BIOMED: 'BIO',
   HOUSE_KEEPER: 'HOU',
-  OTHER: 'OTH',
-});
+  OTHER: 'OTH'});
 
 const FACILITY_SCOPED_ROLES = new Set([
   'DOCTOR',
@@ -159,8 +155,7 @@ const FACILITY_SCOPED_ROLES = new Set([
   'HOUSEKEEPING_MANAGER',
   'BIOMED_MANAGER',
   'MORTUARY_STAFF',
-  'MORTUARY_MANAGER',
-]);
+  'MORTUARY_MANAGER']);
 
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
 const isFriendlyId = (value) => typeof value === 'string' && FRIENDLY_ID_REGEX.test(value);
@@ -201,8 +196,7 @@ const resolveRoleNameForUserRole = async (prismaClient, data = {}) => {
 
   const role = await prismaClient.role.findUnique({
     where: { id: roleId },
-    select: { name: true },
-  });
+    select: { name: true }});
 
   return role?.name || null;
 };
@@ -383,10 +377,7 @@ const withHumanFriendlyIdSupport = (prismaClient) =>
         async count({ args, query }) {
           args.where = appendFriendlyIdSearchTerm(rewriteHumanFriendlyIdFilters(args.where));
           return query(args);
-        },
-      },
-    },
-  });
+        }}}});
 
 const buildPrismaMariaDbUrl = (databaseUrl) => {
   let parsed;
@@ -434,8 +425,7 @@ const basePrisma =
   globalForPrisma.basePrisma ||
   new PrismaClient({
     adapter: adapter,
-    log: isDevelopment ? ['error', 'warn'] : ['error'],
-  });
+    log: isDevelopment ? ['error', 'warn'] : ['error']});
 
 if (isDevelopment || NODE_ENV !== 'production') {
   globalForPrisma.basePrisma = basePrisma;

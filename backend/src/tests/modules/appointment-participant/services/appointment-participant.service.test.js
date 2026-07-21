@@ -12,16 +12,14 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 // Mock dependencies
 jest.mock('@repositories/appointment-participant/appointment-participant.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 describe('Appointment Participant Service', () => {
   beforeEach(() => {
@@ -33,8 +31,7 @@ describe('Appointment Participant Service', () => {
       if (model === 'appointment') {
         return {
           id: identifier,
-          tenant_id: 'tenant-1',
-        };
+          tenant_id: 'tenant-1'};
       }
       return { id: identifier };
     });

@@ -5,12 +5,10 @@
  */
 
 const {
-  clinicalRequestBillingSchema,
-} = require('@lib/billing/clinical-request-billing.schema');
+  clinicalRequestBillingSchema} = require('@lib/billing/clinical-request-billing.schema');
 const {
   shouldApplyClinicalRequestBilling,
-  resolveScopedBillingAmount,
-} = require('@lib/billing/clinical-request-billing');
+  resolveScopedBillingAmount} = require('@lib/billing/clinical-request-billing');
 
 describe('Clinical request billing schema', () => {
   it('accepts a pay-now billing payload', () => {
@@ -26,10 +24,7 @@ describe('Clinical request billing schema', () => {
           label: 'CBC',
           quantity: 1,
           unit_price: 25,
-          line_total: 25,
-        },
-      ],
-    });
+          line_total: 25}]});
 
     expect(result.success).toBe(true);
     expect(result.data.payment_status).toBe('PAID');
@@ -39,8 +34,7 @@ describe('Clinical request billing schema', () => {
   it('defaults missing payment status to NOT_BILLED', () => {
     const result = clinicalRequestBillingSchema.safeParse({
       currency: 'USD',
-      total_amount: 10,
-    });
+      total_amount: 10});
 
     expect(result.success).toBe(true);
     expect(result.data.payment_status).toBe('NOT_BILLED');
@@ -52,8 +46,7 @@ describe('Clinical request billing helpers', () => {
     expect(
       shouldApplyClinicalRequestBilling({
         payment_status: 'NOT_BILLED',
-        total_amount: 10,
-      })
+        total_amount: 10})
     ).toBe(false);
   });
 
@@ -61,8 +54,7 @@ describe('Clinical request billing helpers', () => {
     expect(
       resolveScopedBillingAmount({
         total_amount: 100,
-        line_amount: 40,
-      })
+        line_amount: 40})
     ).toBe('40.00');
   });
 });

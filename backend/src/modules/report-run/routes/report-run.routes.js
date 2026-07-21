@@ -8,8 +8,7 @@ const {
   listReportRunsQuerySchema,
   reportRunIdParamsSchema,
   reportRunMutationBodySchema,
-  updateReportRunSchema,
-} = require('@validations/report-run/report-run.schema');
+  updateReportRunSchema} = require('@validations/report-run/report-run.schema');
 
 const router = express.Router();
 

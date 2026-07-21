@@ -4,8 +4,7 @@ const subject = require('../../../../modules/hr-workspace/services/hr-workspace.
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || undefined),
-  resolveIdentifierForPayload: jest.fn(async ({ value }) => value || null),
-}));
+  resolveIdentifierForPayload: jest.fn(async ({ value }) => value || null)}));
 
 describe('hr-workspace.service contract', () => {
   beforeEach(() => {
@@ -13,21 +12,17 @@ describe('hr-workspace.service contract', () => {
     prisma.staff_position = {
       findMany: jest.fn().mockResolvedValue([]),
       count: jest.fn().mockResolvedValue(0),
-      create: jest.fn().mockResolvedValue({ id: 'pos-1', name: 'Nurse' }),
-    };
+      create: jest.fn().mockResolvedValue({ id: 'pos-1', name: 'Nurse' })};
     prisma.facility = {
       findMany: jest.fn().mockResolvedValue([]),
-      findFirst: jest.fn().mockResolvedValue({ tenant_id: 'tenant-1' }),
-    };
+      findFirst: jest.fn().mockResolvedValue({ tenant_id: 'tenant-1' })};
     prisma.department = {
       findMany: jest.fn().mockResolvedValue([]),
       count: jest.fn().mockResolvedValue(1),
-      create: jest.fn().mockResolvedValue({ id: 'dept-1', name: 'Emergency' }),
-    };
+      create: jest.fn().mockResolvedValue({ id: 'dept-1', name: 'Emergency' })};
     prisma.unit = {
       findMany: jest.fn().mockResolvedValue([]),
-      create: jest.fn().mockResolvedValue({ id: 'unit-1' }),
-    };
+      create: jest.fn().mockResolvedValue({ id: 'unit-1' })};
     prisma.room = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.staff_profile = { findMany: jest.fn().mockResolvedValue([]) };
     prisma.nurse_roster = { findMany: jest.fn().mockResolvedValue([]) };
@@ -58,8 +53,7 @@ describe('hr-workspace.service contract', () => {
         'rejectLeave',
         'previewPayrollRun',
         'processPayrollRun',
-        'resolveLegacyRouteIdentifier',
-      ])
+        'resolveLegacyRouteIdentifier'])
     );
   });
 
@@ -76,11 +70,7 @@ describe('hr-workspace.service contract', () => {
           email: 'nurse@example.com',
           profile: {
             first_name: 'Grace',
-            last_name: 'Nakato',
-          },
-        },
-      },
-    ]);
+            last_name: 'Nakato'}}}]);
 
     const result = await subject.getReferenceData({});
 
@@ -93,22 +83,14 @@ describe('hr-workspace.service contract', () => {
               profile: {
                 select: {
                   first_name: true,
-                  last_name: true,
-                },
-              },
-            },
-          },
-        }),
-      })
+                  last_name: true}}}}})})
     );
     expect(result.staff_profiles).toEqual([
       expect.objectContaining({
         value: 'STF0001',
         label: 'STAFF-01 | Grace Nakato | Nurse',
         display_id: 'STF0001',
-        department_id: 'department-uuid',
-      }),
-    ]);
+        department_id: 'department-uuid'})]);
   });
 
   it('builds shift options with searchable labels', async () => {
@@ -124,8 +106,7 @@ describe('hr-workspace.service contract', () => {
         shift_template: {
           id: 'template-uuid',
           human_friendly_id: 'SHT0001',
-          name: 'Morning Ward',
-        },
+          name: 'Morning Ward'},
         nurse_roster: {
           id: 'roster-uuid',
           human_friendly_id: 'RST0001',
@@ -133,11 +114,7 @@ describe('hr-workspace.service contract', () => {
             id: 'department-uuid',
             human_friendly_id: 'DEP0001',
             name: 'Emergency',
-            short_name: 'ER',
-          },
-        },
-      },
-    ]);
+            short_name: 'ER'}}}]);
 
     const result = await subject.getReferenceData({});
 
@@ -145,9 +122,7 @@ describe('hr-workspace.service contract', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           deleted_at: null,
-          status: 'SCHEDULED',
-        }),
-      })
+          status: 'SCHEDULED'})})
     );
     expect(result.shifts).toEqual([
       expect.objectContaining({
@@ -156,9 +131,7 @@ describe('hr-workspace.service contract', () => {
         shift_type: 'DAY',
         status: 'SCHEDULED',
         department_name: 'Emergency',
-        shift_template_name: 'Morning Ward',
-      }),
-    ]);
+        shift_template_name: 'Morning Ward'})]);
     expect(result.shifts[0].label).toContain('Morning Ward');
     expect(result.shifts[0].label).toContain('Emergency');
     expect(result.shifts[0].label).toContain('SHF0001');
@@ -185,21 +158,16 @@ describe('hr-workspace.service contract', () => {
         expect.objectContaining({
           value: 'MO',
           label_key: 'labels.hr.reference.practitioner_type.mo',
-          label: expect.stringContaining('Medical Officer'),
-        }),
+          label: expect.stringContaining('Medical Officer')}),
         expect.objectContaining({
           value: 'SPECIALIST',
-          label_key: 'labels.hr.reference.practitioner_type.specialist',
-        }),
-      ])
+          label_key: 'labels.hr.reference.practitioner_type.specialist'})])
     );
     expect(result.compensation_pay_types).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           value: 'PER_MONTH',
-          label_key: 'labels.hr.reference.compensation_pay_type.per_month',
-        }),
-      ])
+          label_key: 'labels.hr.reference.compensation_pay_type.per_month'})])
     );
   });
 
@@ -211,13 +179,10 @@ describe('hr-workspace.service contract', () => {
       expect.arrayContaining([
         expect.objectContaining({
           value: 'Nurse',
-          label_key: 'labels.hr.reference.staff_position.nurse',
-        }),
+          label_key: 'labels.hr.reference.staff_position.nurse'}),
         expect.objectContaining({
           value: 'Doctor',
-          label_key: 'labels.hr.reference.staff_position.doctor',
-        }),
-      ])
+          label_key: 'labels.hr.reference.staff_position.doctor'})])
     );
   });
 
@@ -228,34 +193,26 @@ describe('hr-workspace.service contract', () => {
         human_friendly_id: null,
         name: 'Emergency',
         short_name: 'ER',
-        facility_id: 'facility-1',
-      },
-    ]);
+        facility_id: 'facility-1'}]);
     prisma.role.findMany.mockResolvedValue([
       {
         id: 'role-uuid',
         human_friendly_id: null,
         name: 'NURSE',
-        permissions: [{ permission_id: 'perm-1' }],
-      },
-    ]);
+        permissions: [{ permission_id: 'perm-1' }]}]);
 
     const result = await subject.getReferenceData({});
 
     expect(result.departments).toEqual([
       expect.objectContaining({
         value: 'department-uuid',
-        label: 'Emergency',
-      }),
-    ]);
+        label: 'Emergency'})]);
     expect(result.roles).toEqual([
       expect.objectContaining({
         value: 'role-uuid',
         label: expect.stringContaining('NURSE'),
         name: 'NURSE',
-        permission_count: 1,
-      }),
-    ]);
+        permission_count: 1})]);
   });
 
   it('queries active users through the roles relation', async () => {
@@ -266,18 +223,11 @@ describe('hr-workspace.service contract', () => {
         where: expect.objectContaining({
           roles: expect.objectContaining({
             none: expect.objectContaining({
-              role: expect.objectContaining({ name: 'PATIENT' }),
-            }),
-          }),
-        }),
+              role: expect.objectContaining({ name: 'PATIENT' })})})}),
         select: expect.objectContaining({
           roles: expect.objectContaining({
             select: expect.objectContaining({
-              role: expect.objectContaining({ select: { name: true } }),
-            }),
-          }),
-        }),
-      })
+              role: expect.objectContaining({ select: { name: true } })})})})})
     );
   });
 });

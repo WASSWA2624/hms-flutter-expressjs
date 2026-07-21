@@ -14,8 +14,7 @@ const {
   updateVitalSignSchema,
   deleteVitalSignSchema,
   vitalSignIdParamsSchema,
-  listVitalSignsQuerySchema,
-} = require('@validations/vital-sign/vital-sign.schema');
+  listVitalSignsQuerySchema} = require('@validations/vital-sign/vital-sign.schema');
 
 router.get(
   '/',

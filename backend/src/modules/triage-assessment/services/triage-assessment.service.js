@@ -14,8 +14,7 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const sanitizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
 const toPublicIdentifier = (value) => {
@@ -46,8 +45,7 @@ const TRIAGE_LEVEL_ALIAS_MAP = Object.freeze({
   IMMEDIATE: 'LEVEL_1',
   URGENT: 'LEVEL_2',
   LESS_URGENT: 'LEVEL_3',
-  NON_URGENT: 'LEVEL_4',
-});
+  NON_URGENT: 'LEVEL_4'});
 
 const normalizeTriageLevel = (value) => {
   const normalized = sanitizeIdentifier(value).toUpperCase();
@@ -60,8 +58,7 @@ const buildEmptyListResult = (page, limit) => ({
   total: 0,
   page,
   limit,
-  totalPages: 0,
-});
+  totalPages: 0});
 
 const mapTriageAssessmentForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -78,8 +75,7 @@ const mapTriageAssessmentForDisplay = (record) => {
       record.patient_display_id,
       record.emergency_case?.patient?.human_friendly_id
     ),
-    patient_display_name: record.patient_display_name || resolvePatientDisplayName(record.emergency_case?.patient),
-  };
+    patient_display_name: record.patient_display_name || resolvePatientDisplayName(record.emergency_case?.patient)};
 };
 
 const resolveTriageAssessmentId = async (id) => {
@@ -88,8 +84,7 @@ const resolveTriageAssessmentId = async (id) => {
 
   const resolvedId = await resolveModelIdByIdentifier({
     model: 'triage_assessment',
-    identifier: normalized,
-  });
+    identifier: normalized});
 
   return resolvedId || normalized;
 };
@@ -100,8 +95,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   if (filters.emergency_case_id !== undefined) {
     const emergencyCaseId = await resolveIdentifierForFilter({
       value: filters.emergency_case_id,
-      model: 'emergency_case',
-    });
+      model: 'emergency_case'});
     if (emergencyCaseId === null) return buildEmptyListResult(page, limit);
     if (emergencyCaseId !== undefined) resolvedFilters.emergency_case_id = emergencyCaseId;
   }
@@ -123,8 +117,7 @@ const resolveCreatePayload = async (data = {}) => {
   payload.emergency_case_id = await resolveIdentifierForPayload({
     value: payload.emergency_case_id,
     field: 'emergency_case_id',
-    model: 'emergency_case',
-  });
+    model: 'emergency_case'});
   const mappedTriageLevel = normalizeTriageLevel(payload.triage_level);
   if (!mappedTriageLevel) {
     throw new HttpError('errors.validation.invalid', 400, [{ field: 'triage_level' }]);
@@ -140,8 +133,7 @@ const resolveUpdatePayload = async (data = {}) => {
     payload.emergency_case_id = await resolveIdentifierForPayload({
       value: payload.emergency_case_id,
       field: 'emergency_case_id',
-      model: 'emergency_case',
-    });
+      model: 'emergency_case'});
   }
 
   if (payload.triage_level !== undefined) {
@@ -182,16 +174,14 @@ const listTriageAssessments = async (
 
   const [items, total] = await Promise.all([
     triageAssessmentRepository.findMany(resolvedFilters, skip, limit, orderBy),
-    triageAssessmentRepository.count(resolvedFilters),
-  ]);
+    triageAssessmentRepository.count(resolvedFilters)]);
 
   return {
     items: items.map(mapTriageAssessmentForDisplay),
     total,
     page,
     limit,
-    totalPages: Math.ceil(total / limit),
-  };
+    totalPages: Math.ceil(total / limit)};
 };
 
 /**
@@ -229,8 +219,7 @@ const createTriageAssessment = async (data, user) => {
     resource_id: triageAssessment.id,
     user_id: user.id,
     tenant_id: user.tenant_id,
-    details: { data: payload },
-  });
+    details: { data: payload }});
 
   return mapTriageAssessmentForDisplay(triageAssessment);
 };
@@ -260,8 +249,7 @@ const updateTriageAssessment = async (id, data, user) => {
     resource_id: existing.id,
     user_id: user.id,
     tenant_id: user.tenant_id,
-    details: { before: existing, after: payload },
-  });
+    details: { before: existing, after: payload }});
 
   return mapTriageAssessmentForDisplay(updated);
 };
@@ -289,8 +277,7 @@ const deleteTriageAssessment = async (id, user) => {
     resource_id: existing.id,
     user_id: user.id,
     tenant_id: user.tenant_id,
-    details: { data: existing },
-  });
+    details: { data: existing }});
 
   return mapTriageAssessmentForDisplay(deleted);
 };
@@ -300,5 +287,4 @@ module.exports = {
   getTriageAssessmentById,
   createTriageAssessment,
   updateTriageAssessment,
-  deleteTriageAssessment,
-};
+  deleteTriageAssessment};

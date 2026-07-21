@@ -17,12 +17,10 @@ jest.mock('@lib/billing/identifiers', () => ({
     if (value === null) return nullable ? null : value;
     return value;
   }),
-  resolveEntityId: jest.fn(async ({ identifier }) => identifier),
-}));
+  resolveEntityId: jest.fn(async ({ identifier }) => identifier)}));
 jest.mock('@lib/websocket', () => ({
   publishCrudRealtimeEvent: jest.fn().mockResolvedValue(undefined),
-  FACILITY_LAYOUT_EVENTS: { FACILITY_LAYOUT_UPDATED: 'facility_layout_updated' },
-}));
+  FACILITY_LAYOUT_EVENTS: { FACILITY_LAYOUT_UPDATED: 'facility_layout_updated' }}));
 
 const wardRepository = require('@repositories/ward/ward.repository');
 const { createAuditLog } = require('@lib/audit');

@@ -13,8 +13,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 // Mock dependencies
 jest.mock('@repositories/shift/shift.repository');
@@ -22,8 +21,7 @@ jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
   resolveIdentifierForFilter: jest.fn(),
   resolveIdentifierForPayload: jest.fn(),
-  resolveEntityId: jest.fn(),
-}));
+  resolveEntityId: jest.fn()}));
 
 describe('Shift Service', () => {
   const userId = 'user-123';

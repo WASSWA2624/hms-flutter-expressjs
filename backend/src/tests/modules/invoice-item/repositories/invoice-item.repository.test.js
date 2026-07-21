@@ -39,7 +39,7 @@ describe('Invoice Item Repository', () => {
       expect(result).toEqual(mockItem);
       expect(prisma.invoice_item.findFirst).toHaveBeenCalledWith({
         where: { id: 'item-1', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -61,7 +61,7 @@ describe('Invoice Item Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
   });

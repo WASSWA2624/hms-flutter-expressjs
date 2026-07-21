@@ -8,8 +8,7 @@ const {
   createStaffLeaveSchema,
   updateStaffLeaveSchema,
   staffLeaveIdParamsSchema,
-  listStaffLeavesQuerySchema,
-} = require('@validations/staff-leave/staff-leave.schema');
+  listStaffLeavesQuerySchema} = require('@validations/staff-leave/staff-leave.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

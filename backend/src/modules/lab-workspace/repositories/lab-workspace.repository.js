@@ -30,36 +30,31 @@ const findManyOrders = async (where, skip, take, orderBy, include) =>
       skip,
       take,
       orderBy,
-      include,
-    })
+      include})
   );
 
 const countOrders = async (where) =>
   withDbErrorHandling(() =>
     prisma.lab_order.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const countOrderItems = async (where) =>
   withDbErrorHandling(() =>
     prisma.lab_order_item.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const countSamples = async (where) =>
   withDbErrorHandling(() =>
     prisma.lab_sample.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const countResults = async (where) =>
   withDbErrorHandling(() =>
     prisma.lab_result.count({
-      where: { deleted_at: null, ...(where || {}) },
-    })
+      where: { deleted_at: null, ...(where || {}) }})
   );
 
 const findManyPatients = async (where, skip, take, orderBy, include) =>
@@ -69,24 +64,21 @@ const findManyPatients = async (where, skip, take, orderBy, include) =>
       skip,
       take,
       orderBy,
-      include,
-    })
+      include})
   );
 
 const findPatientById = async (id, where, include) =>
   withDbErrorHandling(() =>
     prisma.patient.findFirst({
       where: { id, deleted_at: null, ...(where || {}) },
-      include,
-    })
+      include})
   );
 
 const findOrderById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.lab_order.findFirst({
       where: { id, deleted_at: null },
-      include,
-    })
+      include})
   );
 
 const withTransaction = async (callback) =>
@@ -95,101 +87,84 @@ const withTransaction = async (callback) =>
 const txFindOrderById = async (tx, id, include) =>
   tx.lab_order.findFirst({
     where: { id, deleted_at: null },
-    include,
-  });
+    include});
 
 const txFindSampleById = async (tx, id, include) =>
   tx.lab_sample.findFirst({
     where: { id, deleted_at: null },
-    include,
-  });
+    include});
 
 const txFindOrderItemById = async (tx, id, include) =>
   tx.lab_order_item.findFirst({
     where: { id, deleted_at: null },
-    include,
-  });
+    include});
 
 const txFindResultById = async (tx, id, include) =>
   tx.lab_result.findFirst({
     where: { id, deleted_at: null },
-    include,
-  });
+    include});
 
 const txFindFirstSample = async (tx, where, orderBy = { created_at: 'asc' }) =>
   tx.lab_sample.findFirst({
     where: { deleted_at: null, ...(where || {}) },
-    orderBy,
-  });
+    orderBy});
 
 const txCreateSample = async (tx, data) =>
   tx.lab_sample.create({
-    data,
-  });
+    data});
 
 const txUpdateSample = async (tx, id, data) =>
   tx.lab_sample.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txUpdateOrder = async (tx, id, data) =>
   tx.lab_order.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txUpdateOrderItemsMany = async (tx, where, data) =>
   tx.lab_order_item.updateMany({
     where: { deleted_at: null, ...(where || {}) },
-    data,
-  });
+    data});
 
 const txUpdateOrderItem = async (tx, id, data) =>
   tx.lab_order_item.update({
     where: { id },
-    data,
-  });
+    data});
 
 const txUpdateResultsMany = async (tx, where, data) =>
   tx.lab_result.updateMany({
     where: { deleted_at: null, ...(where || {}) },
-    data,
-  });
+    data});
 
 const txFindManyOrderItems = async (tx, where, select) =>
   tx.lab_order_item.findMany({
     where: { deleted_at: null, ...(where || {}) },
-    ...(select ? { select } : {}),
-  });
+    ...(select ? { select } : {})});
 
 const txCountOrderItems = async (tx, where) =>
   tx.lab_order_item.count({
-    where: { deleted_at: null, ...(where || {}) },
-  });
+    where: { deleted_at: null, ...(where || {}) }});
 
 const txCountSamples = async (tx, where) =>
   tx.lab_sample.count({
-    where: { deleted_at: null, ...(where || {}) },
-  });
+    where: { deleted_at: null, ...(where || {}) }});
 
 const txFindFirstResult = async (tx, where, orderBy = { created_at: 'asc' }, include = undefined) =>
   tx.lab_result.findFirst({
     where: { deleted_at: null, ...(where || {}) },
     orderBy,
-    include,
-  });
+    include});
 
 const txCreateResult = async (tx, data) =>
   tx.lab_result.create({
-    data,
-  });
+    data});
 
 const txUpdateResult = async (tx, id, data) =>
   tx.lab_result.update({
     where: { id },
-    data,
-  });
+    data});
 
 module.exports = {
   findManyOrders,
@@ -217,5 +192,4 @@ module.exports = {
   txCountSamples,
   txFindFirstResult,
   txCreateResult,
-  txUpdateResult,
-};
+  txUpdateResult};

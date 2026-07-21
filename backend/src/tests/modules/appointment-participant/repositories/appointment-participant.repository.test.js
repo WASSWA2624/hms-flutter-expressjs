@@ -43,7 +43,7 @@ describe('Appointment Participant Repository', () => {
       expect(result).toEqual(mockParticipant);
       expect(prisma.appointment_participant.findFirst).toHaveBeenCalledWith({
         where: { id: participantId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -115,7 +115,7 @@ describe('Appointment Participant Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

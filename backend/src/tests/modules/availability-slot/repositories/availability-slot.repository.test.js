@@ -44,7 +44,7 @@ describe('Availability Slot Repository', () => {
       expect(result).toEqual(mockSlot);
       expect(prisma.availability_slot.findFirst).toHaveBeenCalledWith({
         where: { id: slotId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -116,7 +116,7 @@ describe('Availability Slot Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

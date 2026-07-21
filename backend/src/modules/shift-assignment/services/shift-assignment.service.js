@@ -4,8 +4,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.ceil(total / limit);
@@ -15,14 +14,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const emptyResult = (page, limit) => ({
   shiftAssignments: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const listShiftAssignments = async (filters, page, limit, sortBy, order) => {
   try {
@@ -33,16 +30,14 @@ const listShiftAssignments = async (filters, page, limit, sortBy, order) => {
     const shiftId = await resolveIdentifierForFilter({
       value: filters.shift_id,
       model: 'shift',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.shift_id && shiftId === null) return emptyResult(page, limit);
     if (shiftId) whereClause.shift_id = shiftId;
 
     const staffProfileId = await resolveIdentifierForFilter({
       value: filters.staff_profile_id,
       model: 'staff_profile',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.staff_profile_id && staffProfileId === null) return emptyResult(page, limit);
     if (staffProfileId) whereClause.staff_profile_id = staffProfileId;
 
@@ -54,13 +49,11 @@ const listShiftAssignments = async (filters, page, limit, sortBy, order) => {
 
     const [shiftAssignments, total] = await Promise.all([
       shiftAssignmentRepository.findMany(whereClause, skip, limit, orderBy),
-      shiftAssignmentRepository.count(whereClause),
-    ]);
+      shiftAssignmentRepository.count(whereClause)]);
 
     return {
       shiftAssignments,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -72,8 +65,7 @@ const getShiftAssignmentById = async (id) => {
     const resolvedId = await resolveEntityId({
       model: 'shift_assignment',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const shiftAssignment = await shiftAssignmentRepository.findById(resolvedId);
     if (!shiftAssignment) throw new HttpError('errors.shift_assignment.not_found', 404);
     return shiftAssignment;
@@ -91,15 +83,12 @@ const createShiftAssignment = async (data, userId, ipAddress) => {
         value: data.shift_id,
         model: 'shift',
         field: 'shift_id',
-        where: { deleted_at: null },
-      }),
+        where: { deleted_at: null }}),
       staff_profile_id: await resolveIdentifierForPayload({
         value: data.staff_profile_id,
         model: 'staff_profile',
         field: 'staff_profile_id',
-        where: { deleted_at: null },
-      }),
-    };
+        where: { deleted_at: null }})};
 
     const shiftAssignment = await shiftAssignmentRepository.create(payload);
     createAuditLog({
@@ -108,8 +97,7 @@ const createShiftAssignment = async (data, userId, ipAddress) => {
       entity: 'shift_assignment',
       entity_id: shiftAssignment.id,
       diff: { after: shiftAssignment },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return shiftAssignment;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -122,8 +110,7 @@ const updateShiftAssignment = async (id, data, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'shift_assignment',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await shiftAssignmentRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.shift_assignment.not_found', 404);
 
@@ -133,16 +120,14 @@ const updateShiftAssignment = async (id, data, userId, ipAddress) => {
         value: data.shift_id,
         model: 'shift',
         field: 'shift_id',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
     if (Object.prototype.hasOwnProperty.call(data, 'staff_profile_id')) {
       payload.staff_profile_id = await resolveIdentifierForPayload({
         value: data.staff_profile_id,
         model: 'staff_profile',
         field: 'staff_profile_id',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
 
     const shiftAssignment = await shiftAssignmentRepository.update(before.id, payload);
@@ -152,8 +137,7 @@ const updateShiftAssignment = async (id, data, userId, ipAddress) => {
       entity: 'shift_assignment',
       entity_id: shiftAssignment.id,
       diff: { before, after: shiftAssignment },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return shiftAssignment;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -166,8 +150,7 @@ const deleteShiftAssignment = async (id, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'shift_assignment',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await shiftAssignmentRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.shift_assignment.not_found', 404);
 
@@ -178,8 +161,7 @@ const deleteShiftAssignment = async (id, userId, ipAddress) => {
       entity: 'shift_assignment',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -191,5 +173,4 @@ module.exports = {
   getShiftAssignmentById,
   createShiftAssignment,
   updateShiftAssignment,
-  deleteShiftAssignment,
-};
+  deleteShiftAssignment};

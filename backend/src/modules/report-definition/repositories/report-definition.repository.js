@@ -6,32 +6,24 @@ const baseSelect = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   creator: {
     select: {
       id: true,
       human_friendly_id: true,
-      email: true,
-    },
-  },
+      email: true}},
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   schedules: {
     where: { deleted_at: null },
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
-      status: true,
-    },
-  },
+      status: true}},
   runs: {
     where: { deleted_at: null },
     take: 1,
@@ -41,16 +33,12 @@ const baseSelect = {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      },
+          name: true}},
       report_definition: {
         select: {
           id: true,
           human_friendly_id: true,
-          name: true,
-        },
-      },
+          name: true}},
       requested_by: {
         select: {
           id: true,
@@ -58,29 +46,17 @@ const baseSelect = {
           email: true,
           profile: {
             select: {
-              first_name: true,
-            },
-          },
-        },
-      },
+              first_name: true}}}},
       schedule: {
         select: {
           id: true,
           human_friendly_id: true,
           name: true,
-          retention_days: true,
-        },
-      },
-    },
-  },
+          retention_days: true}}}},
   _count: {
     select: {
       schedules: {
-        where: { deleted_at: null },
-      },
-    },
-  },
-};
+        where: { deleted_at: null }}}}};
 
 const mapError = (error, fallbackKey = 'errors.database.unexpected') => {
   if (error?.code === 'P2025') {
@@ -102,10 +78,8 @@ const findById = async (id) => {
     return await prisma.report_definition.findFirst({
       where: {
         id,
-        deleted_at: null,
-      },
-      include: baseSelect,
-    });
+        deleted_at: null},
+      include: baseSelect});
   } catch (error) {
     mapError(error);
   }
@@ -116,13 +90,11 @@ const findMany = async ({ where = {}, skip = 0, take = 20, orderBy = { updated_a
     return await prisma.report_definition.findMany({
       where: {
         deleted_at: null,
-        ...where,
-      },
+        ...where},
       skip,
       take,
       orderBy,
-      include: baseSelect,
-    });
+      include: baseSelect});
   } catch (error) {
     mapError(error);
   }
@@ -133,9 +105,7 @@ const count = async (where = {}) => {
     return await prisma.report_definition.count({
       where: {
         deleted_at: null,
-        ...where,
-      },
-    });
+        ...where}});
   } catch (error) {
     mapError(error);
   }
@@ -145,8 +115,7 @@ const create = async (data) => {
   try {
     return await prisma.report_definition.create({
       data,
-      include: baseSelect,
-    });
+      include: baseSelect});
   } catch (error) {
     mapError(error);
   }
@@ -157,8 +126,7 @@ const update = async (id, data) => {
     return await prisma.report_definition.update({
       where: { id },
       data,
-      include: baseSelect,
-    });
+      include: baseSelect});
   } catch (error) {
     mapError(error);
   }
@@ -169,9 +137,7 @@ const softDelete = async (id) => {
     return await prisma.report_definition.update({
       where: { id },
       data: {
-        deleted_at: new Date(),
-      },
-    });
+        deleted_at: new Date()}});
   } catch (error) {
     mapError(error);
   }
@@ -183,5 +149,4 @@ module.exports = {
   findById,
   findMany,
   softDelete,
-  update,
-};
+  update};

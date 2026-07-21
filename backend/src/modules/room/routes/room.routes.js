@@ -25,13 +25,11 @@ const BED_MANAGEMENT_READ_SCOPES = [
   PERMISSIONS.OPERATIONS_READ,
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const BED_MANAGEMENT_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 
 /**
  * @description List rooms with pagination and filters
@@ -53,12 +51,14 @@ const BED_MANAGEMENT_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listRoomsQuerySchema }),
+  '/',
+  validateRequest({ query: listRoomsQuerySchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_READ_SCOPES, 'permission'),
   roomController.listRooms
 );
+
 
 router.post(
   '/:id/restore',
@@ -82,7 +82,8 @@ router.post(
  * @throws 404 Room not found
  */
 router.get(
-  '/:id',  validateRequest({ params: roomIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: roomIdParamsSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_READ_SCOPES, 'permission'),
@@ -108,7 +109,8 @@ router.get(
  * @throws 400 Foreign key constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createRoomSchema }),
+  '/',
+  validateRequest({ body: createRoomSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
@@ -134,7 +136,8 @@ router.post(
  * @throws 400 Foreign key constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: roomIdParamsSchema, body: updateRoomSchema }),
+  '/:id',
+  validateRequest({ params: roomIdParamsSchema, body: updateRoomSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
@@ -155,7 +158,8 @@ router.put(
  * @throws 404 Room not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: roomIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: roomIdParamsSchema }),
 
   authenticate(),
   authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),

@@ -34,7 +34,7 @@ describe('Subscription Plan Repository', () => {
       expect(result).toEqual(mockPlan);
       expect(prisma.subscription_plan.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -78,7 +78,7 @@ describe('Subscription Plan Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

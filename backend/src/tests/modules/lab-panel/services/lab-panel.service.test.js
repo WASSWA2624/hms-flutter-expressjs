@@ -2,23 +2,20 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/lab-panel/lab-panel.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
-    resolveModelRecordOrThrow: jest.fn(),
-  };
+    resolveModelRecordOrThrow: jest.fn()};
 });
 
 const labPanelRepository = require('@repositories/lab-panel/lab-panel.repository');
 const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/lab-workspace/lab.shared');
+  resolveModelRecordOrThrow} = require('@services/lab-workspace/lab.shared');
 const labPanelService = require('@services/lab-panel/lab-panel.service');
 
 const mockUserId = 'user-123';
@@ -45,18 +42,13 @@ const buildPanelRecord = (overrides = {}) => ({
         human_friendly_id: 'LBT0000001',
         name: 'Glucose',
         code: 'GLU',
-        unit: 'mg/dL',
-      },
-    },
-  ],
+        unit: 'mg/dL'}}],
   created_at: now,
   updated_at: now,
   tenant: {
     id: 'tenant-internal-1',
-    human_friendly_id: 'TEN0000001',
-  },
-  ...overrides,
-});
+    human_friendly_id: 'TEN0000001'},
+  ...overrides});
 
 describe('lab-panel.service', () => {
   beforeEach(() => {
@@ -72,8 +64,7 @@ describe('lab-panel.service', () => {
     const result = await labPanelService.listLabPanels(
       {
         tenant_id: 'TEN0000001',
-        search: 'metabolic',
-      },
+        search: 'metabolic'},
       1,
       20,
       'name',
@@ -86,16 +77,13 @@ describe('lab-panel.service', () => {
       identifier: 'TEN0000001',
       model: 'tenant',
       where: { deleted_at: null },
-      errorKey: 'errors.tenant.not_found',
-    });
+      errorKey: 'errors.tenant.not_found'});
     expect(labPanelRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-internal-1',
         OR: expect.arrayContaining([
           { name: { contains: 'metabolic' } },
-          { human_friendly_id: { contains: 'METABOLIC' } },
-        ]),
-      }),
+          { human_friendly_id: { contains: 'METABOLIC' } }])}),
       0,
       20,
       { name: 'asc' },
@@ -112,11 +100,7 @@ describe('lab-panel.service', () => {
         panel_items: [
           expect.objectContaining({
             lab_test_id: 'LBT0000001',
-            test_display_name: 'Glucose',
-          }),
-        ],
-      }),
-    ]);
+            test_display_name: 'Glucose'})]})]);
   });
 
   it('gets a lab panel by friendly identifier through shared resolution', async () => {
@@ -133,13 +117,11 @@ describe('lab-panel.service', () => {
       model: 'lab_panel',
       where: { deleted_at: null },
       include: expect.any(Object),
-      errorKey: 'errors.lab_panel.not_found',
-    });
+      errorKey: 'errors.lab_panel.not_found'});
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LBP0000001',
-        tenant_id: 'TEN0000001',
-      })
+        tenant_id: 'TEN0000001'})
     );
   });
 
@@ -159,11 +141,7 @@ describe('lab-panel.service', () => {
             human_friendly_id: 'LBT0000002',
             name: 'Calcium',
             code: 'CA',
-            unit: 'mg/dL',
-          },
-        },
-      ],
-    });
+            unit: 'mg/dL'}}]});
     resolveModelIdOrThrow
       .mockResolvedValueOnce('tenant-internal-1')
       .mockResolvedValueOnce('lab-test-internal-1')
@@ -187,10 +165,7 @@ describe('lab-panel.service', () => {
           {
             lab_test_id: 'LBT0000001',
             is_required: true,
-            instructions: 'Collect fasting sample',
-          },
-        ],
-      },
+            instructions: 'Collect fasting sample'}]},
       mockUserId,
       mockIpAddress
     );
@@ -205,10 +180,7 @@ describe('lab-panel.service', () => {
           {
             lab_test_id: 'LBT0000002',
             is_required: false,
-            instructions: 'Optional add-on',
-          },
-        ],
-      },
+            instructions: 'Optional add-on'}]},
       mockUserId,
       mockIpAddress
     );
@@ -225,11 +197,7 @@ describe('lab-panel.service', () => {
             lab_test_id: 'lab-test-internal-1',
             is_required: true,
             instructions: 'Collect fasting sample',
-            sort_order: 0,
-          },
-        ],
-      },
-    });
+            sort_order: 0}]}});
     expect(labPanelRepository.update).toHaveBeenCalledWith('panel-internal-1', {
       tenant_id: 'tenant-internal-1',
       name: 'Updated Panel',
@@ -242,28 +210,21 @@ describe('lab-panel.service', () => {
             lab_test_id: 'lab-test-internal-2',
             is_required: false,
             instructions: 'Optional add-on',
-            sort_order: 0,
-          },
-        ],
-      },
-    });
+            sort_order: 0}]}});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'CREATE',
         entity: 'lab_panel',
-        ip_address: mockIpAddress,
-      })
+        ip_address: mockIpAddress})
     );
     expect(created).toEqual(
       expect.objectContaining({
-        id: 'LBP0000001',
-      })
+        id: 'LBP0000001'})
     );
     expect(updated).toEqual(
       expect.objectContaining({
         id: 'LBP0000001',
-        name: 'Updated Panel',
-      })
+        name: 'Updated Panel'})
     );
   });
 
@@ -284,15 +245,12 @@ describe('lab-panel.service', () => {
         action: 'DELETE',
         entity: 'lab_panel',
         diff: expect.objectContaining({
-          deletion_reason: 'Duplicate panel configuration',
-        }),
-      })
+          deletion_reason: 'Duplicate panel configuration'})})
     );
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LBP0000001',
-        name: 'Complete Metabolic Panel',
-      })
+        name: 'Complete Metabolic Panel'})
     );
   });
 
@@ -306,8 +264,7 @@ describe('lab-panel.service', () => {
       )
     ).rejects.toMatchObject({
       message: 'errors.validation.required',
-      statusCode: 400,
-    });
+      statusCode: 400});
     expect(labPanelRepository.softDelete).not.toHaveBeenCalled();
   });
 

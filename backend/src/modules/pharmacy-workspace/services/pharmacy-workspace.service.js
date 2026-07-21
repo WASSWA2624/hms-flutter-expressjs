@@ -13,8 +13,7 @@ const { emitToUsers, PHARMACY_EVENTS, INVENTORY_EVENTS } = require('@lib/websock
 const {
   reverseClinicalRequestBilling,
   extractStoredClinicalBilling,
-  persistPharmacyOrderBilling,
-} = require('@lib/billing/clinical-request-billing');
+  persistPharmacyOrderBilling} = require('@lib/billing/clinical-request-billing');
 const { ROLES } = require('@config/roles');
 const {
   PHARMACY_ORDER_WITH_RELATIONS_INCLUDE,
@@ -39,16 +38,14 @@ const {
   matchesInventoryStockScope,
   buildOrderLocationWhere,
   INPATIENT_ENCOUNTER_TYPES,
-  PHARMACY_OPEN_ORDER_STATUSES,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  PHARMACY_OPEN_ORDER_STATUSES} = require('@services/pharmacy-workspace/pharmacy.shared');
 const {
   toPublicIdentifier,
   mapPharmacyOrderRecord,
   mapPharmacyOrderWorkflowRecord,
   mapInventoryStockRecord,
   mapDrugRecord,
-  buildBatchMetaByInventoryItemId,
-} = require('@services/pharmacy-workspace/pharmacy.serializer');
+  buildBatchMetaByInventoryItemId} = require('@services/pharmacy-workspace/pharmacy.serializer');
 const { mapMergedDrugRecord } = require('@services/pharmacy-workspace/facility-pharmacy-catalog.merge');
 const {
   resolveStorageAssignment,
@@ -60,8 +57,7 @@ const {
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
   deletePharmacyStorageRoom,
-  deletePharmacyStorageShelf,
-} = require('@services/pharmacy-workspace/pharmacy-storage.service');
+  deletePharmacyStorageShelf} = require('@services/pharmacy-workspace/pharmacy-storage.service');
 const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
 
@@ -72,46 +68,37 @@ const PHARMACY_RECIPIENT_ROLES = [
   ROLES.PHARMACIST,
   ROLES.DOCTOR,
   ROLES.NURSE,
-  ROLES.OPERATIONS,
-];
+  ROLES.OPERATIONS];
 
 const LEGACY_ROUTE_CONFIG = Object.freeze({
   'pharmacy-orders': {
     model: 'pharmacy_order',
     resource: 'orders',
-    route: '/pharmacy/orders',
-  },
+    route: '/pharmacy/orders'},
   'pharmacy-order-items': {
     model: 'pharmacy_order_item',
     resource: 'order-items',
-    route: '/pharmacy/order-items',
-  },
+    route: '/pharmacy/order-items'},
   'dispense-logs': {
     model: 'dispense_log',
     resource: 'dispense-logs',
-    route: '/pharmacy/dispense-logs',
-  },
+    route: '/pharmacy/dispense-logs'},
   'inventory-items': {
     model: 'inventory_item',
     resource: 'inventory-items',
-    route: '/pharmacy?panel=inventory&item=',
-  },
+    route: '/pharmacy?panel=inventory&item='},
   'inventory-stocks': {
     model: 'inventory_stock',
     resource: 'inventory-stock',
-    route: '/pharmacy?panel=inventory&stock=',
-  },
+    route: '/pharmacy?panel=inventory&stock='},
   'stock-movements': {
     model: 'stock_movement',
     resource: 'stock-movements',
-    route: '/pharmacy?panel=inventory&movement=',
-  },
+    route: '/pharmacy?panel=inventory&movement='},
   drugs: {
     model: 'drug',
     resource: 'drugs',
-    route: '/pharmacy/drugs',
-  },
-});
+    route: '/pharmacy/drugs'}});
 
 const resolveOfferingsByDrugIds = async (orderRecord, scope = {}) => {
   const facilityId = scope.facility_id;
@@ -130,8 +117,7 @@ const resolveOfferingsByDrugIds = async (orderRecord, scope = {}) => {
       tenant_id: scope.tenant_id,
       facility_id: facilityId,
       drug_id: { in: drugIds },
-      is_active: true,
-    },
+      is_active: true},
     0,
     drugIds.length
   );
@@ -161,8 +147,7 @@ const STOCK_STATUS = Object.freeze({
   IN_STOCK: 'IN_STOCK',
   ALMOST_OUT_OF_STOCK: 'ALMOST_OUT_OF_STOCK',
   LOW_STOCK: 'LOW_STOCK',
-  OUT_OF_STOCK: 'OUT_OF_STOCK',
-});
+  OUT_OF_STOCK: 'OUT_OF_STOCK'});
 
 const EXPIRING_SOON_DAYS = 30;
 
@@ -194,8 +179,7 @@ const summarizeStockMetrics = (records = [], extra = {}) =>
       almost_out_of_stock_rows: 0,
       pending_stock_rows: 0,
       out_of_stock_rows: 0,
-      expiring_soon_rows: Number(extra.expiring_soon_rows || 0),
-    }
+      expiring_soon_rows: Number(extra.expiring_soon_rows || 0)}
   );
 
 const needsPostStockStatusFilter = (filters = {}) => {
@@ -237,8 +221,7 @@ const upsertDrugBatchForReceipt = async (
     expiryAlertLeadDays = null,
     quantityDelta,
     storageRoomId = null,
-    storageShelfId = null,
-  }
+    storageShelfId = null}
 ) => {
   if (!drugId || !batchNumber || quantityDelta <= 0) return null;
 
@@ -255,8 +238,7 @@ const upsertDrugBatchForReceipt = async (
       ...(expiryDate ? { expiry_date: expiryDate } : {}),
       ...(expiryAlertLeadDays != null ? { expiry_alert_lead_days: expiryAlertLeadDays } : {}),
       ...(storageRoomId ? { storage_room_id: storageRoomId } : {}),
-      ...(storageShelfId ? { storage_shelf_id: storageShelfId } : {}),
-    });
+      ...(storageShelfId ? { storage_shelf_id: storageShelfId } : {})});
   }
 
   return pharmacyWorkspaceRepository.txCreateDrugBatch(tx, {
@@ -267,8 +249,7 @@ const upsertDrugBatchForReceipt = async (
     expiry_alert_lead_days: expiryAlertLeadDays,
     quantity: quantityDelta,
     storage_room_id: storageRoomId,
-    storage_shelf_id: storageShelfId,
-  });
+    storage_shelf_id: storageShelfId});
 };
 
 const buildDrugStockInclude = (scope = {}) => ({
@@ -282,23 +263,13 @@ const buildDrugStockInclude = (scope = {}) => ({
           stocks: {
             where: {
               deleted_at: null,
-              ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
-            },
+              ...(scope.facility_id ? { facility_id: scope.facility_id } : {})},
             include: {
               facility: {
                 select: {
                   id: true,
                   human_friendly_id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-});
+                  name: true}}}}}}}}});
 
 const resolveScopedOrderId = async (identifier, scope) =>
   resolveModelIdOrThrow({
@@ -306,10 +277,8 @@ const resolveScopedOrderId = async (identifier, scope) =>
     model: 'pharmacy_order',
     where: {
       deleted_at: null,
-      ...buildOrderScopeWhere(scope),
-    },
-    errorKey: 'errors.pharmacy_order.not_found',
-  });
+      ...buildOrderScopeWhere(scope)},
+    errorKey: 'errors.pharmacy_order.not_found'});
 
 const resolveScopedInventoryItemId = async (identifier, scope) =>
   resolveModelIdOrThrow({
@@ -317,10 +286,8 @@ const resolveScopedInventoryItemId = async (identifier, scope) =>
     model: 'inventory_item',
     where: {
       deleted_at: null,
-      ...buildInventoryItemScopeWhere(scope),
-    },
-    errorKey: 'errors.inventory_item.not_found',
-  });
+      ...buildInventoryItemScopeWhere(scope)},
+    errorKey: 'errors.inventory_item.not_found'});
 
 const resolveScopedFacilityId = async (identifier, scope, allowNull = false) =>
   resolveModelIdOrThrow({
@@ -328,11 +295,9 @@ const resolveScopedFacilityId = async (identifier, scope, allowNull = false) =>
     model: 'facility',
     where: {
       deleted_at: null,
-      ...buildTenantScopeWhere(scope),
-    },
+      ...buildTenantScopeWhere(scope)},
     errorKey: 'errors.facility.not_found',
-    allowNull,
-  });
+    allowNull});
 
 const ensureScopedOrderRecord = (orderRecord, scope) => {
   if (!orderRecord || !matchesOrderScope(orderRecord, scope)) {
@@ -358,8 +323,7 @@ const buildLegacyScopeWhere = (model, scope) => {
       const orderItemScope = buildOrderItemScopeWhere(scope);
       return hasKeys(orderItemScope)
         ? {
-            pharmacy_order_item: orderItemScope,
-          }
+            pharmacy_order_item: orderItemScope}
         : {};
     }
     case 'inventory_item':
@@ -410,14 +374,10 @@ const resolveRoleRecipients = async ({ tenantId, facilityId = null }) => {
       tenant_id: tenantId,
       role: {
         name: { in: PHARMACY_RECIPIENT_ROLES },
-        deleted_at: null,
-      },
-      ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {}),
-    },
+        deleted_at: null},
+      ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {})},
     select: {
-      user_id: true,
-    },
-  });
+      user_id: true}});
 
   return rows.map((item) => item.user_id).filter(Boolean);
 };
@@ -427,8 +387,7 @@ const buildPharmacyRealtimePayload = ({
   action,
   resourceType = null,
   resourceId = null,
-  batchRef = null,
-}) => {
+  batchRef = null}) => {
   const order = workflow?.order || null;
   const orderId = String(order?.id || '').trim() || null;
   const patientId = String(order?.patient_id || '').trim() || null;
@@ -447,8 +406,7 @@ const buildPharmacyRealtimePayload = ({
     dispense_batch_ref: batchRef || null,
     occurred_at: nowIso,
     target_path: orderId ? `/pharmacy?id=${encodeURIComponent(orderId)}` : '/pharmacy',
-    workflow,
-  };
+    workflow};
 };
 
 const publishPharmacyRealtimeUpdates = async ({
@@ -459,8 +417,7 @@ const publishPharmacyRealtimeUpdates = async ({
   resourceType = null,
   resourceId = null,
   batchRef = null,
-  stockRecords = [],
-}) => {
+  stockRecords = []}) => {
   try {
     const tenantId = orderRecord?.patient?.tenant_id || null;
     if (!tenantId) return;
@@ -475,8 +432,7 @@ const publishPharmacyRealtimeUpdates = async ({
       action,
       resourceType,
       resourceId,
-      batchRef,
-    });
+      batchRef});
 
     emitToUsers(recipients, PHARMACY_EVENTS.PHARMACY_WORKSPACE_UPDATED, workflowPayload);
 
@@ -491,8 +447,7 @@ const publishPharmacyRealtimeUpdates = async ({
       resource_id: workflowPayload.resource_id,
       dispense_batch_ref: workflowPayload.dispense_batch_ref,
       occurred_at: workflowPayload.occurred_at,
-      target_path: workflowPayload.target_path,
-    });
+      target_path: workflowPayload.target_path});
 
     if (!Array.isArray(stockRecords) || !stockRecords.length) return;
 
@@ -505,8 +460,7 @@ const publishPharmacyRealtimeUpdates = async ({
       order_public_id: workflowPayload.order_public_id,
       dispense_batch_ref: workflowPayload.dispense_batch_ref,
       occurred_at: workflowPayload.occurred_at,
-      stocks: stockPayload,
-    });
+      stocks: stockPayload});
   } catch (_error) {
     // realtime delivery must not block business mutations
   }
@@ -535,8 +489,7 @@ const computeItemDispensedMetrics = (item) => {
     returned,
     pending,
     netDispensed,
-    remaining,
-  };
+    remaining};
 };
 
 const resolveOrderItemByIdentifier = (orderRecord, identifier) => {
@@ -563,8 +516,7 @@ const resolveInventoryMapForItem = async ({
   tx,
   item,
   tenantId,
-  inventoryItemIdentifier = null,
-}) => {
+  inventoryItemIdentifier = null}) => {
   const mappings = Array.isArray(item?.drug?.inventory_maps) ? item.drug.inventory_maps : [];
 
   if (inventoryItemIdentifier) {
@@ -587,10 +539,8 @@ const resolveInventoryMapForItem = async ({
       model: 'inventory_item',
       where: {
         deleted_at: null,
-        ...(tenantId ? { tenant_id: tenantId } : {}),
-      },
-      errorKey: 'errors.inventory_item.not_found',
-    });
+        ...(tenantId ? { tenant_id: tenantId } : {})},
+      errorKey: 'errors.inventory_item.not_found'});
 
     const explicitMap = await pharmacyWorkspaceRepository.txFindInventoryMapByDrugAndItem(
       tx,
@@ -656,15 +606,14 @@ const listPendingAttestationBatchRefs = (orderRecord) => {
   });
 
   return Array.from(phasesByBatch.entries())
-    .filter(([, phases]) => phases.has('PREPARE') && !phases.has('ATTEST'))
+    .filter(([ phases]) => phases.has('PREPARE') && !phases.has('ATTEST'))
     .map(([batchRef]) => batchRef);
 };
 
 const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
   const includeSearch = options.includeSearch !== false;
   const where = {
-    ...buildOrderScopeWhere(scope),
-  };
+    ...buildOrderScopeWhere(scope)};
 
   if (filters.patient_id) {
     where.patient_id = await resolveModelIdOrThrow({
@@ -672,10 +621,8 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
       model: 'patient',
       where: {
         deleted_at: null,
-        ...buildPatientScopeWhere(scope),
-      },
-      errorKey: 'errors.patient.not_found',
-    });
+        ...buildPatientScopeWhere(scope)},
+      errorKey: 'errors.patient.not_found'});
   }
 
   if (filters.encounter_id) {
@@ -684,10 +631,8 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
       model: 'encounter',
       where: {
         deleted_at: null,
-        ...buildEncounterScopeWhere(scope),
-      },
-      errorKey: 'errors.encounter.not_found',
-    });
+        ...buildEncounterScopeWhere(scope)},
+      errorKey: 'errors.encounter.not_found'});
   }
 
   if (filters.status) {
@@ -703,9 +648,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
     appendAnd(where, {
       OR: [
         { billing_snapshot: { path: '$.payment_status', equals: 'UNPAID' } },
-        { billing_snapshot: { path: '$.payment_status', equals: 'PARTIAL' } },
-      ],
-    });
+        { billing_snapshot: { path: '$.payment_status', equals: 'PARTIAL' } }]});
   }
 
   applyDateRangeFilter(where, 'ordered_at', filters.from, filters.to);
@@ -728,18 +671,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
                       stocks: {
                         some: {
                           deleted_at: null,
-                          quantity: { lte: 0 },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      ],
-    });
+                          quantity: { lte: 0 }}}}}}}}}}]});
   }
 
   if (filters.urgent === true) {
@@ -747,10 +679,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
       items: {
         some: {
           deleted_at: null,
-          frequency: 'STAT',
-        },
-      },
-    });
+          frequency: 'STAT'}}});
   }
 
   if (filters.priority) {
@@ -760,21 +689,14 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
         items: {
           some: {
             deleted_at: null,
-            frequency: 'STAT',
-          },
-        },
-      });
+            frequency: 'STAT'}}});
     } else if (normalizedPriority === 'ROUTINE' || normalizedPriority === 'NORMAL') {
       appendAnd(where, {
         NOT: {
           items: {
             some: {
               deleted_at: null,
-              frequency: 'STAT',
-            },
-          },
-        },
-      });
+              frequency: 'STAT'}}}});
     }
   }
 
@@ -791,9 +713,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
         { items: { some: { drug: { human_friendly_id: { contains: searchTerm.upper } } } } },
         { items: { some: { drug: { name: { contains: searchTerm.raw } } } } },
         { items: { some: { drug: { code: { contains: searchTerm.raw } } } } },
-        { items: { some: { dispense_logs: { some: { dispense_batch_ref: { contains: searchTerm.upper } } } } } },
-      ],
-    });
+        { items: { some: { dispense_logs: { some: { dispense_batch_ref: { contains: searchTerm.upper } } } } } }]});
   }
 
   return where;
@@ -802,8 +722,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, scope, options = {}) => {
 const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
   const includeSearch = options.includeSearch !== false;
   const where = {
-    ...buildInventoryStockScopeWhere(scope),
-  };
+    ...buildInventoryStockScopeWhere(scope)};
 
   if (filters.facility_id) {
     where.facility_id = await resolveScopedFacilityId(filters.facility_id, scope);
@@ -822,11 +741,7 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
         {
           AND: [
             { reorder_level: { gt: 0 } },
-            { quantity: { lte: prisma.inventory_stock.fields.reorder_level } },
-          ],
-        },
-      ],
-    });
+            { quantity: { lte: prisma.inventory_stock.fields.reorder_level } }]}]});
   }
 
   const stockStatus = String(filters.stock_status || '').trim().toUpperCase();
@@ -837,9 +752,7 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
       AND: [
         { quantity: { gt: 0 } },
         { reorder_level: { gt: 0 } },
-        { quantity: { lte: prisma.inventory_stock.fields.reorder_level } },
-      ],
-    });
+        { quantity: { lte: prisma.inventory_stock.fields.reorder_level } }]});
   }
 
   if (filters.expired_only === true || filters.expiring_within_days) {
@@ -848,8 +761,7 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
       filters
     );
     where.inventory_item_id = {
-      in: inventoryItemIds?.length ? inventoryItemIds : ['__no_match__'],
-    };
+      in: inventoryItemIds?.length ? inventoryItemIds : ['__no_match__']};
   }
 
   if (filters.storage_room_id || filters.storage_shelf_id) {
@@ -857,8 +769,7 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
     const storageAssignment = await resolveStorageAssignment(
       {
         storage_room_id: filters.storage_room_id || null,
-        storage_shelf_id: filters.storage_shelf_id || null,
-      },
+        storage_shelf_id: filters.storage_shelf_id || null},
       scope,
       facilityId
     );
@@ -866,12 +777,10 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
       scope.tenant_id,
       {
         storage_room_id: storageAssignment.storageRoomId,
-        storage_shelf_id: storageAssignment.storageShelfId,
-      }
+        storage_shelf_id: storageAssignment.storageShelfId}
     );
     where.inventory_item_id = {
-      in: inventoryItemIds?.length ? inventoryItemIds : ['__no_match__'],
-    };
+      in: inventoryItemIds?.length ? inventoryItemIds : ['__no_match__']};
   }
 
   const searchTerm = normalizeSearchTerm(filters.search);
@@ -881,9 +790,7 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
         { human_friendly_id: { contains: searchTerm.upper } },
         { inventory_item: { human_friendly_id: { contains: searchTerm.upper } } },
         { inventory_item: { name: { contains: searchTerm.raw } } },
-        { inventory_item: { sku: { contains: searchTerm.raw } } },
-      ],
-    });
+        { inventory_item: { sku: { contains: searchTerm.raw } } }]});
   }
 
   return where;
@@ -892,8 +799,7 @@ const buildInventoryStockWhere = async (filters = {}, scope, options = {}) => {
 const buildDrugWhere = (filters = {}, scope, options = {}) => {
   const includeSearch = options.includeSearch !== false;
   const where = {
-    ...buildDrugScopeWhere(scope),
-  };
+    ...buildDrugScopeWhere(scope)};
 
   if (filters.id) where.id = filters.id;
   if (filters.name) where.name = { contains: String(filters.name).trim() };
@@ -909,9 +815,7 @@ const buildDrugWhere = (filters = {}, scope, options = {}) => {
         { name: { contains: searchTerm.raw } },
         { code: { contains: searchTerm.raw } },
         { form: { contains: searchTerm.raw } },
-        { strength: { contains: searchTerm.raw } },
-      ],
-    });
+        { strength: { contains: searchTerm.raw } }]});
   }
 
   return where;
@@ -921,8 +825,7 @@ const buildDischargeSummaryWhere = (summaryWhere) => {
   const where = { ...summaryWhere };
   appendAnd(where, {
     status: { in: PHARMACY_OPEN_ORDER_STATUSES },
-    encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } },
-  });
+    encounter: { is: { encounter_type: { in: INPATIENT_ENCOUNTER_TYPES } } }});
   return where;
 };
 
@@ -931,9 +834,7 @@ const buildPendingPaymentWhere = (baseWhere) => {
   appendAnd(where, {
     OR: [
       { billing_snapshot: { path: '$.payment_status', equals: 'UNPAID' } },
-      { billing_snapshot: { path: '$.payment_status', equals: 'PARTIAL' } },
-    ],
-  });
+      { billing_snapshot: { path: '$.payment_status', equals: 'PARTIAL' } }]});
   return where;
 };
 
@@ -958,8 +859,7 @@ const buildWorkbenchSummary = async (summaryWhere, summaryBaseWhere = summaryWhe
     wardQueue,
     pendingPaymentQueue,
     preparedAttestations,
-    completedAttestations,
-  ] = await Promise.all([
+    completedAttestations] = await Promise.all([
     pharmacyWorkspaceRepository.countOrders(summaryWhere),
     pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'ORDERED' }),
     pharmacyWorkspaceRepository.countOrders({ ...summaryWhere, status: 'PARTIALLY_DISPENSED' }),
@@ -977,17 +877,12 @@ const buildWorkbenchSummary = async (summaryWhere, summaryBaseWhere = summaryWhe
       phase: 'PREPARE',
       pharmacy_order: {
         deleted_at: null,
-        ...summaryWhere,
-      },
-    }),
+        ...summaryWhere}}),
     pharmacyWorkspaceRepository.countDispenseAttestations({
       phase: 'ATTEST',
       pharmacy_order: {
         deleted_at: null,
-        ...summaryWhere,
-      },
-    }),
-  ]);
+        ...summaryWhere}})]);
 
   return {
     total_orders: totalOrders,
@@ -999,8 +894,7 @@ const buildWorkbenchSummary = async (summaryWhere, summaryBaseWhere = summaryWhe
     outpatient_queue: outpatientQueue,
     ward_queue: wardQueue,
     pending_payment_queue: pendingPaymentQueue,
-    pending_attestations: Math.max(0, preparedAttestations - completedAttestations),
-  };
+    pending_attestations: Math.max(0, preparedAttestations - completedAttestations)};
 };
 
 const getPharmacyWorkbench = async (filters, page, limit, sortBy, order, user = {}) => {
@@ -1016,8 +910,7 @@ const getPharmacyWorkbench = async (filters, page, limit, sortBy, order, user = 
         { ...filters, location: undefined, pending_payment: undefined },
         scope,
         { includeSearch: false }
-      ),
-    ]);
+      )]);
 
     const [worklistRecords, total, summary] = await Promise.all([
       pharmacyWorkspaceRepository.findManyOrders(
@@ -1028,14 +921,12 @@ const getPharmacyWorkbench = async (filters, page, limit, sortBy, order, user = 
         PHARMACY_ORDER_WITH_RELATIONS_INCLUDE
       ),
       pharmacyWorkspaceRepository.countOrders(where),
-      buildWorkbenchSummary(summaryWhere, summaryBaseWhere),
-    ]);
+      buildWorkbenchSummary(summaryWhere, summaryBaseWhere)]);
 
     return {
       summary,
       worklist: worklistRecords.map((record) => mapPharmacyOrderRecord(record)).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1077,15 +968,13 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
       (await resolveOperationalFacilityId({
         facilityId: filters?.facility_id || null,
         userId: scope.user_id || null,
-        tenantId: scope.tenant_id || null,
-      }));
+        tenantId: scope.tenant_id || null}));
 
     if (filters.storage_room_id || filters.storage_shelf_id) {
       const storageAssignment = await resolveStorageAssignment(
         {
           storage_room_id: filters.storage_room_id || null,
-          storage_shelf_id: filters.storage_shelf_id || null,
-        },
+          storage_shelf_id: filters.storage_shelf_id || null},
         scope,
         facilityId
       );
@@ -1093,8 +982,7 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
         scope.tenant_id,
         {
           storage_room_id: storageAssignment.storageRoomId,
-          storage_shelf_id: storageAssignment.storageShelfId,
-        }
+          storage_shelf_id: storageAssignment.storageShelfId}
       );
       where.id = { in: drugIds?.length ? drugIds : ['__no_match__'] };
     }
@@ -1107,8 +995,7 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
         orderBy,
         buildDrugStockInclude(scope)
       ),
-      pharmacyWorkspaceRepository.countDrugs(where),
-    ]);
+      pharmacyWorkspaceRepository.countDrugs(where)]);
 
     let offeringByDrugId = new Map();
     const facilityIdForOfferings = facilityId;
@@ -1119,8 +1006,7 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
           tenant_id: scope.tenant_id,
           facility_id: facilityId,
           drug_id: { in: records.map((row) => row.id) },
-          is_active: true,
-        },
+          is_active: true},
         0,
         records.length
       );
@@ -1138,11 +1024,9 @@ const searchDrugs = async (filters, page, limit, sortBy, order, user = {}) => {
     return {
       summary: {
         total_drugs: total,
-        returned_drugs: drugs.length,
-      },
+        returned_drugs: drugs.length},
       drugs,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1174,8 +1058,7 @@ const createPharmacyOrder = async (payload = {}, userId, ipAddress, user = {}) =
       actorUserId: userId || null,
       action: 'CREATE_ORDER',
       resourceType: 'order',
-      resourceId: workflow?.order?.id || null,
-    }).catch(() => {});
+      resourceId: workflow?.order?.id || null}).catch(() => {});
 
     const orderSummary = await buildWorkbenchSummary(
       await buildWorkbenchOrderWhere({}, scope, { includeSearch: false })
@@ -1183,8 +1066,7 @@ const createPharmacyOrder = async (payload = {}, userId, ipAddress, user = {}) =
 
     return {
       workflow,
-      order_summary: orderSummary,
-    };
+      order_summary: orderSummary};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1210,8 +1092,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
 
       assertTransition(['ORDERED', 'PARTIALLY_DISPENSED'].includes(order.status), {
         from: order.status,
-        to: 'PREPARE_DISPENSE',
-      });
+        to: 'PREPARE_DISPENSE'});
 
       const existingPrepare = await pharmacyWorkspaceRepository.txFindDispenseAttestation(
         tx,
@@ -1235,8 +1116,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
         return {
           order: refreshedOrder,
           batchRef,
-          prepareAttestation: existingPrepare,
-        };
+          prepareAttestation: existingPrepare};
       }
 
       const pendingBatchRefs = listPendingAttestationBatchRefs(order).filter(
@@ -1245,16 +1125,14 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
       assertTransition(pendingBatchRefs.length === 0, {
         reason: 'pending_attestation_exists',
         requested_batch_ref: batchRef,
-        pending_batch_refs: pendingBatchRefs,
-      });
+        pending_batch_refs: pendingBatchRefs});
 
       const explicitLines = Array.isArray(payload.items) && payload.items.length ? payload.items : null;
       const sourceItems = explicitLines
         ? explicitLines
         : (order.items || []).map((item) => ({
             order_item_id: item.human_friendly_id || item.id,
-            quantity: computeItemDispensedMetrics(item).remaining,
-          }));
+            quantity: computeItemDispensedMetrics(item).remaining}));
 
       const targetLines = [];
       for (const line of sourceItems) {
@@ -1266,21 +1144,18 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
         const quantity = Number(line.quantity || 0);
         assertTransition(Number.isFinite(quantity) && quantity > 0, {
           reason: 'invalid_quantity',
-          order_item_id: line.order_item_id,
-        });
+          order_item_id: line.order_item_id});
 
         const metrics = computeItemDispensedMetrics(orderItem);
         assertTransition(quantity <= metrics.remaining, {
           reason: 'quantity_exceeds_remaining',
           order_item_id: line.order_item_id,
           remaining: metrics.remaining,
-          requested: quantity,
-        });
+          requested: quantity});
 
         targetLines.push({
           orderItem,
-          quantity,
-        });
+          quantity});
       }
 
       if (!targetLines.length) {
@@ -1292,8 +1167,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
           pharmacy_order_item_id: line.orderItem.id,
           dispense_batch_ref: batchRef,
           status: 'PENDING',
-          quantity_dispensed: line.quantity,
-        });
+          quantity_dispensed: line.quantity});
       }
 
       const prepareAttestation = await pharmacyWorkspaceRepository.txCreateDispenseAttestation(tx, {
@@ -1305,8 +1179,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
         statement: payload.statement || null,
         reason: payload.reason || null,
         ip_address: ipAddress || null,
-        attested_at: new Date(),
-      });
+        attested_at: new Date()});
 
       const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
         tx,
@@ -1317,8 +1190,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
       return {
         order: refreshedOrder,
         batchRef,
-        prepareAttestation,
-      };
+        prepareAttestation};
     });
 
     createAuditLog({
@@ -1329,11 +1201,8 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
       diff: {
         metadata: {
           dispense_batch_ref: mutation.batchRef,
-          line_count: Array.isArray(payload.items) ? payload.items.length : null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          line_count: Array.isArray(payload.items) ? payload.items.length : null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
@@ -1344,8 +1213,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
       action: 'PREPARE_DISPENSE',
       resourceType: 'dispense_batch',
       resourceId: mutation.batchRef,
-      batchRef: mutation.batchRef,
-    }).catch(() => {});
+      batchRef: mutation.batchRef}).catch(() => {});
 
     const orderSummary = await buildWorkbenchSummary(
       await buildWorkbenchOrderWhere({}, scope, { includeSearch: false })
@@ -1354,8 +1222,7 @@ const prepareDispense = async (identifier, payload = {}, userId, userRole, ipAdd
     return {
       workflow,
       dispense_batch_ref: mutation.batchRef,
-      order_summary: orderSummary,
-    };
+      order_summary: orderSummary};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1384,8 +1251,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
 
       assertTransition(['ORDERED', 'PARTIALLY_DISPENSED'].includes(order.status), {
         from: order.status,
-        to: 'ATTEST_DISPENSE',
-      });
+        to: 'ATTEST_DISPENSE'});
 
       const prepareAttestation = await pharmacyWorkspaceRepository.txFindDispenseAttestation(
         tx,
@@ -1395,8 +1261,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       );
       assertTransition(Boolean(prepareAttestation), {
         reason: 'prepare_required',
-        dispense_batch_ref: batchRef,
-      });
+        dispense_batch_ref: batchRef});
 
       const existingAttest = await pharmacyWorkspaceRepository.txFindDispenseAttestation(
         tx,
@@ -1414,8 +1279,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
           order: refreshedOrder,
           batchRef,
           stockRecords: [],
-          attestation: existingAttest,
-        };
+          attestation: existingAttest};
       }
 
       if (String(prepareAttestation.attested_by_user_id || '') === String(userId || '')) {
@@ -1435,14 +1299,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
                     where: { deleted_at: null },
                     orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
                     include: {
-                      inventory_item: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        }
+                      inventory_item: true}}}}}}}
       );
 
       const pendingOnly = pendingLogs.filter(
@@ -1450,8 +1307,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       );
       assertTransition(pendingOnly.length > 0, {
         reason: 'pending_logs_required',
-        dispense_batch_ref: batchRef,
-      });
+        dispense_batch_ref: batchRef});
 
       const resolvedFacilityId = await resolveScopedFacilityId(
         payload.facility_id || order.patient?.facility_id || null,
@@ -1472,13 +1328,11 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
           tx,
           item: orderItem,
           tenantId: order.patient?.tenant_id || null,
-          inventoryItemIdentifier: null,
-        });
+          inventoryItemIdentifier: null});
 
         if (!inventoryMap) {
           throw new HttpError('errors.pharmacy_workspace.inventory_map.required', 400, [
-            { order_item_id: orderItem.id },
-          ]);
+            { order_item_id: orderItem.id }]);
         }
 
         const stockDelta = normalizeStockDeductionQuantity(
@@ -1494,8 +1348,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
         );
         if (!stockRecord) {
           throw new HttpError('errors.pharmacy_workspace.stock.not_found', 404, [
-            { inventory_item_id: inventoryMap.inventory_item_id },
-          ]);
+            { inventory_item_id: inventoryMap.inventory_item_id }]);
         }
         const stock = ensureScopedInventoryStockRecord(stockRecord, scope);
 
@@ -1503,12 +1356,10 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
           reason: 'insufficient_stock',
           inventory_item_id: inventoryMap.inventory_item_id,
           available: Number(stock.quantity || 0),
-          required: stockDelta,
-        });
+          required: stockDelta});
 
         const updatedStock = await pharmacyWorkspaceRepository.txUpdateInventoryStock(tx, stock.id, {
-          quantity: Number(stock.quantity || 0) - stockDelta,
-        });
+          quantity: Number(stock.quantity || 0) - stockDelta});
 
         await pharmacyWorkspaceRepository.txCreateStockMovement(tx, {
           inventory_item_id: inventoryMap.inventory_item_id,
@@ -1516,18 +1367,15 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
           movement_type: 'OUTBOUND',
           reason: 'DISPENSE',
           quantity: stockDelta,
-          occurred_at: attestedAt,
-        });
+          occurred_at: attestedAt});
 
         await pharmacyWorkspaceRepository.txUpdateDispenseLog(tx, log.id, {
           status: 'DISPENSED',
-          dispensed_at: attestedAt,
-        });
+          dispensed_at: attestedAt});
 
         stockRecords.push({
           ...stock,
-          ...updatedStock,
-        });
+          ...updatedStock});
       }
 
       const attestRecord = await pharmacyWorkspaceRepository.txCreateDispenseAttestation(tx, {
@@ -1539,8 +1387,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
         statement: payload.statement || null,
         reason: payload.reason || null,
         ip_address: ipAddress || null,
-        attested_at: attestedAt,
-      });
+        attested_at: attestedAt});
 
       let refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
         tx,
@@ -1551,8 +1398,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       const rolledUpStatus = rollupOrderStatus(refreshedOrder);
       if (refreshedOrder.status !== rolledUpStatus) {
         await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
-          status: rolledUpStatus,
-        });
+          status: rolledUpStatus});
         refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
           tx,
           order.id,
@@ -1564,8 +1410,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
         order: refreshedOrder,
         batchRef,
         stockRecords,
-        attestation: attestRecord,
-      };
+        attestation: attestRecord};
     });
 
     createAuditLog({
@@ -1576,11 +1421,8 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       diff: {
         metadata: {
           dispense_batch_ref: mutation.batchRef,
-          attestation_id: mutation.attestation?.id || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          attestation_id: mutation.attestation?.id || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
@@ -1592,8 +1434,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       resourceType: 'dispense_batch',
       resourceId: mutation.batchRef,
       batchRef: mutation.batchRef,
-      stockRecords: mutation.stockRecords,
-    }).catch(() => {});
+      stockRecords: mutation.stockRecords}).catch(() => {});
 
     const stockSummaryWhere = await buildInventoryStockWhere({}, scope, { includeSearch: false });
     const stockSummary = summarizeStockMetrics(
@@ -1608,8 +1449,7 @@ const attestDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       dispense_batch_ref: mutation.batchRef,
       order_summary: orderSummary,
       stocks: mutation.stockRecords.map((record) => mapInventoryStockRecord(record)).filter(Boolean),
-      stock_summary: stockSummary,
-    };
+      stock_summary: stockSummary};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1633,33 +1473,27 @@ const cancelPharmacyOrder = async (identifier, payload = {}, userId, _userRole, 
 
       assertTransition(['ORDERED', 'PARTIALLY_DISPENSED'].includes(order.status), {
         from: order.status,
-        to: 'CANCELLED',
-      });
+        to: 'CANCELLED'});
 
       await pharmacyWorkspaceRepository.txUpdateManyDispenseLogs(
         tx,
         {
           status: 'PENDING',
           pharmacy_order_item: {
-            pharmacy_order_id: order.id,
-          },
-        },
+            pharmacy_order_id: order.id}},
         {
-          status: 'CANCELLED',
-        }
+          status: 'CANCELLED'}
       );
 
       await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
-        status: 'CANCELLED',
-      });
+        status: 'CANCELLED'});
 
       const existingSnapshot = extractStoredClinicalBilling(order);
       if (existingSnapshot?.invoice_id) {
         await reverseClinicalRequestBilling(tx, { existingSnapshot });
         await tx.pharmacy_order.update({
           where: { id: order.id },
-          data: { billing_snapshot: null },
-        });
+          data: { billing_snapshot: null }});
       }
 
       const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
@@ -1679,11 +1513,8 @@ const cancelPharmacyOrder = async (identifier, payload = {}, userId, _userRole, 
       diff: {
         metadata: {
           reason: payload.reason || null,
-          notes: payload.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          notes: payload.notes || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
@@ -1693,8 +1524,7 @@ const cancelPharmacyOrder = async (identifier, payload = {}, userId, _userRole, 
       actorUserId: userId || null,
       action: 'CANCEL_ORDER',
       resourceType: 'order',
-      resourceId: workflow?.order?.id || null,
-    }).catch(() => {});
+      resourceId: workflow?.order?.id || null}).catch(() => {});
 
     const orderSummary = await buildWorkbenchSummary(
       await buildWorkbenchOrderWhere({}, scope, { includeSearch: false })
@@ -1702,8 +1532,7 @@ const cancelPharmacyOrder = async (identifier, payload = {}, userId, _userRole, 
 
     return {
       workflow,
-      order_summary: orderSummary,
-    };
+      order_summary: orderSummary};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1727,8 +1556,7 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
 
       assertTransition(['DISPENSED', 'PARTIALLY_DISPENSED'].includes(order.status), {
         from: order.status,
-        to: 'RETURN',
-      });
+        to: 'RETURN'});
 
       const resolvedFacilityId = await resolveScopedFacilityId(
         payload.facility_id || order.patient?.facility_id || null,
@@ -1748,27 +1576,23 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
         const quantity = Number(line.quantity || 0);
         assertTransition(Number.isFinite(quantity) && quantity > 0, {
           reason: 'invalid_return_quantity',
-          order_item_id: line.order_item_id,
-        });
+          order_item_id: line.order_item_id});
 
         const metrics = computeItemDispensedMetrics(orderItem);
         assertTransition(quantity <= metrics.netDispensed, {
           reason: 'return_exceeds_dispensed',
           order_item_id: line.order_item_id,
           dispensed: metrics.netDispensed,
-          requested: quantity,
-        });
+          requested: quantity});
 
         const inventoryMap = await resolveInventoryMapForItem({
           tx,
           item: orderItem,
           tenantId: order.patient?.tenant_id || null,
-          inventoryItemIdentifier: line.inventory_item_id || null,
-        });
+          inventoryItemIdentifier: line.inventory_item_id || null});
         if (!inventoryMap) {
           throw new HttpError('errors.pharmacy_workspace.inventory_map.required', 400, [
-            { order_item_id: orderItem.id },
-          ]);
+            { order_item_id: orderItem.id }]);
         }
 
         const stockDelta = normalizeStockDeductionQuantity(quantity, inventoryMap.deduction_factor);
@@ -1785,15 +1609,13 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
             inventory_item_id: inventoryMap.inventory_item_id,
             facility_id: resolvedFacilityId,
             quantity: 0,
-            reorder_level: 0,
-          });
+            reorder_level: 0});
         } else {
           ensureScopedInventoryStockRecord(stock, scope);
         }
 
         const updatedStock = await pharmacyWorkspaceRepository.txUpdateInventoryStock(tx, stock.id, {
-          quantity: Number(stock.quantity || 0) + stockDelta,
-        });
+          quantity: Number(stock.quantity || 0) + stockDelta});
 
         await pharmacyWorkspaceRepository.txCreateStockMovement(tx, {
           inventory_item_id: inventoryMap.inventory_item_id,
@@ -1801,21 +1623,18 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
           movement_type: 'INBOUND',
           reason: 'RETURN',
           quantity: stockDelta,
-          occurred_at: returnedAt,
-        });
+          occurred_at: returnedAt});
 
         await pharmacyWorkspaceRepository.txCreateDispenseLog(tx, {
           pharmacy_order_item_id: orderItem.id,
           dispense_batch_ref: null,
           status: 'RETURNED',
           quantity_dispensed: quantity,
-          dispensed_at: returnedAt,
-        });
+          dispensed_at: returnedAt});
 
         stockRecords.push({
           ...stock,
-          ...updatedStock,
-        });
+          ...updatedStock});
       }
 
       let refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
@@ -1827,8 +1646,7 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       const rolledUpStatus = rollupOrderStatus(refreshedOrder);
       if (refreshedOrder.status !== rolledUpStatus) {
         await pharmacyWorkspaceRepository.txUpdateOrder(tx, order.id, {
-          status: rolledUpStatus,
-        });
+          status: rolledUpStatus});
         refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
           tx,
           order.id,
@@ -1845,13 +1663,11 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
         statement: payload.notes || null,
         reason: payload.reason || 'RETURN',
         ip_address: ipAddress || null,
-        attested_at: returnedAt,
-      });
+        attested_at: returnedAt});
 
       return {
         order: refreshedOrder,
-        stockRecords,
-      };
+        stockRecords};
     });
 
     createAuditLog({
@@ -1862,11 +1678,8 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       diff: {
         metadata: {
           item_count: Array.isArray(payload.items) ? payload.items.length : 0,
-          reason: payload.reason || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          reason: payload.reason || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
@@ -1877,8 +1690,7 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       action: 'RETURN_DISPENSE',
       resourceType: 'order',
       resourceId: workflow?.order?.id || null,
-      stockRecords: mutation.stockRecords,
-    }).catch(() => {});
+      stockRecords: mutation.stockRecords}).catch(() => {});
 
     const stockSummaryWhere = await buildInventoryStockWhere({}, scope, { includeSearch: false });
     const stockSummary = summarizeStockMetrics(
@@ -1892,8 +1704,7 @@ const returnDispense = async (identifier, payload = {}, userId, userRole, ipAddr
       workflow,
       order_summary: orderSummary,
       stocks: mutation.stockRecords.map((record) => mapInventoryStockRecord(record)).filter(Boolean),
-      stock_summary: stockSummary,
-    };
+      stock_summary: stockSummary};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1909,8 +1720,7 @@ const getInventoryStock = async (filters, page, limit, sortBy, order, user = {})
 
     const [where, summaryWhere] = await Promise.all([
       buildInventoryStockWhere(filters, scope, { includeSearch: true }),
-      buildInventoryStockWhere(filters, scope, { includeSearch: false }),
-    ]);
+      buildInventoryStockWhere(filters, scope, { includeSearch: false })]);
 
     const facilityId =
       scope.facility_id ||
@@ -1924,11 +1734,9 @@ const getInventoryStock = async (filters, page, limit, sortBy, order, user = {})
         facilityId,
         EXPIRING_SOON_DAYS
       ),
-      pharmacyWorkspaceRepository.findInventoryStockMetrics(summaryWhere),
-    ]);
+      pharmacyWorkspaceRepository.findInventoryStockMetrics(summaryWhere)]);
     const stockSummary = summarizeStockMetrics(stockMetrics, {
-      expiring_soon_rows: expiringSoonRows,
-    });
+      expiring_soon_rows: expiringSoonRows});
 
     if (needsPostStockStatusFilter(filters)) {
       const allRecords = await pharmacyWorkspaceRepository.findManyInventoryStocks(
@@ -1948,8 +1756,7 @@ const getInventoryStock = async (filters, page, limit, sortBy, order, user = {})
       return {
         summary: stockSummary,
         stocks: pagedStocks,
-        pagination: buildPagination(page, limit, total),
-      };
+        pagination: buildPagination(page, limit, total)};
     }
 
     const [records, total] = await Promise.all([
@@ -1960,16 +1767,14 @@ const getInventoryStock = async (filters, page, limit, sortBy, order, user = {})
         orderBy,
         INVENTORY_STOCK_WITH_RELATIONS_INCLUDE
       ),
-      pharmacyWorkspaceRepository.countInventoryStocks(where),
-    ]);
+      pharmacyWorkspaceRepository.countInventoryStocks(where)]);
 
     const stocks = await enrichInventoryStockRecords(records, expiringWithinDays);
 
     return {
       summary: stockSummary,
       stocks,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -1999,8 +1804,7 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
           inventory_item_id: inventoryItemId,
           facility_id: facilityId,
           quantity: 0,
-          reorder_level: reorderLevel !== undefined ? reorderLevel : 0,
-        });
+          reorder_level: reorderLevel !== undefined ? reorderLevel : 0});
       } else {
         ensureScopedInventoryStockRecord(stock, scope);
       }
@@ -2010,8 +1814,7 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
       assertTransition(nextQuantity >= 0, {
         reason: 'negative_stock_after_adjustment',
         current: Number(stock.quantity || 0),
-        delta: quantityDelta,
-      });
+        delta: quantityDelta});
 
       const stockUpdate = {};
       if (quantityDelta !== 0) {
@@ -2033,8 +1836,7 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
           movement_type: 'ADJUSTMENT',
           reason: payload.reason || 'OTHER',
           quantity: Math.abs(quantityDelta),
-          occurred_at: toDateOrNull(payload.occurred_at, new Date()),
-        });
+          occurred_at: toDateOrNull(payload.occurred_at, new Date())});
       }
 
       const reason = String(payload.reason || 'OTHER').trim().toUpperCase();
@@ -2052,8 +1854,7 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
             identifier: payload.drug_id,
             model: 'drug',
             where: { deleted_at: null, ...buildDrugScopeWhere(scope) },
-            errorKey: 'errors.drug.not_found',
-          });
+            errorKey: 'errors.drug.not_found'});
         } else {
           const inventoryMap = await pharmacyWorkspaceRepository.txFindInventoryMapByInventoryItem(
             tx,
@@ -2072,8 +1873,7 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
             expiryAlertLeadDays,
             quantityDelta,
             storageRoomId: storageAssignment.storageRoomId,
-            storageShelfId: storageAssignment.storageShelfId,
-          });
+            storageShelfId: storageAssignment.storageShelfId});
         }
       }
 
@@ -2088,8 +1888,7 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
         stock: refreshedStock
           ? ensureScopedInventoryStockRecord(refreshedStock, scope)
           : { ...stock, ...stockUpdate },
-        movement,
-      };
+        movement};
     });
 
     createAuditLog({
@@ -2104,11 +1903,8 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
           reorder_level: reorderLevel,
           reason: payload.reason || null,
           notes: payload.notes || null,
-          batch_number: payload.batch_number || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          batch_number: payload.batch_number || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const stockSummaryWhere = await buildInventoryStockWhere({}, scope, { includeSearch: false });
     const facilityIdForSummary =
@@ -2120,11 +1916,9 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
         scope.tenant_id,
         facilityIdForSummary,
         EXPIRING_SOON_DAYS
-      ),
-    ]);
+      )]);
     const stockSummary = summarizeStockMetrics(stockMetrics, {
-      expiring_soon_rows: expiringSoonRows,
-    });
+      expiring_soon_rows: expiringSoonRows});
 
     const [enrichedStock] = await enrichInventoryStockRecords(
       mutation.stock ? [mutation.stock] : [],
@@ -2142,10 +1936,8 @@ const adjustInventoryStock = async (payload = {}, userId, _userRole, ipAddress, 
             quantity: Number(mutation.movement?.quantity || 0),
             occurred_at: mutation.movement?.occurred_at
               ? new Date(mutation.movement.occurred_at).toISOString()
-              : null,
-          }
-        : null,
-    };
+              : null}
+        : null};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -2161,8 +1953,7 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
         value: payload.tenant_id,
         field: 'tenant_id',
         model: 'tenant',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
 
     const facilityId = await resolveScopedFacilityId(payload.facility_id || null, scope, true);
@@ -2185,8 +1976,7 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
         form: payload.form || null,
         strength: payload.strength || null,
         unit_price: payload.unit_price ?? null,
-        currency: payload.currency || null,
-      });
+        currency: payload.currency || null});
 
       const inventoryName = [payload.name, payload.strength, payload.form]
         .map((value) => String(value || '').trim())
@@ -2198,24 +1988,21 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
         name: inventoryName || payload.name,
         category: 'MEDICATION',
         sku: payload.code || null,
-        unit: payload.inventory_unit || 'unit',
-      });
+        unit: payload.inventory_unit || 'unit'});
 
       await pharmacyWorkspaceRepository.txCreateDrugInventoryMap(tx, {
         tenant_id: tenantId,
         drug_id: drug.id,
         inventory_item_id: inventoryItem.id,
         is_default: true,
-        deduction_factor: 1,
-      });
+        deduction_factor: 1});
 
       if (initialStock > 0 || reorderLevel > 0) {
         await pharmacyWorkspaceRepository.txCreateInventoryStock(tx, {
           inventory_item_id: inventoryItem.id,
           facility_id: facilityId,
           quantity: initialStock,
-          reorder_level: reorderLevel,
-        });
+          reorder_level: reorderLevel});
 
         if (initialStock > 0) {
           await pharmacyWorkspaceRepository.txCreateStockMovement(tx, {
@@ -2224,8 +2011,7 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
             movement_type: 'INBOUND',
             reason: 'PURCHASE',
             quantity: initialStock,
-            occurred_at: new Date(),
-          });
+            occurred_at: new Date()});
         }
       }
 
@@ -2238,8 +2024,7 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
           expiry_alert_lead_days: expiryAlertLeadDays,
           storage_room_id: storageAssignment.storageRoomId,
           storage_shelf_id: storageAssignment.storageShelfId,
-          quantity: initialStock,
-        });
+          quantity: initialStock});
       }
 
       return drug;
@@ -2256,12 +2041,10 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
       const existingOffering = await facilityPharmacyCatalogRepository.findDrugOffering({
         tenant_id: tenantId,
         facility_id: facilityId,
-        drug_id: mutation.id,
-      });
+        drug_id: mutation.id});
       if (existingOffering) {
         await facilityPharmacyCatalogRepository.updateDrugOffering(existingOffering.id, {
-          default_storage_shelf_id: defaultStorageShelfId,
-        });
+          default_storage_shelf_id: defaultStorageShelfId});
       } else {
         await facilityPharmacyCatalogRepository.createDrugOffering({
           tenant_id: tenantId,
@@ -2271,8 +2054,7 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
           sort_order: 0,
           unit_price: payload.unit_price ?? 0,
           currency: payload.currency || null,
-          default_storage_shelf_id: defaultStorageShelfId,
-        });
+          default_storage_shelf_id: defaultStorageShelfId});
       }
     }
 
@@ -2286,11 +2068,8 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
         metadata: {
           initial_stock: initialStock,
           reorder_level: reorderLevel,
-          batch_number: batchNumber || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          batch_number: batchNumber || null}},
+      ip_address: ipAddress}).catch(() => {});
 
     const drugRecord = await pharmacyWorkspaceRepository.findManyDrugs(
       { id: mutation.id },
@@ -2307,8 +2086,7 @@ const setupPharmacyDrug = async (payload = {}, userId, ipAddress, user = {}) => 
           tenant_id: tenantId,
           facility_id: facilityId,
           drug_id: mutation.id,
-          is_active: true,
-        },
+          is_active: true},
         0,
         1
       );
@@ -2347,8 +2125,7 @@ const recordOrderBilling = async (identifier, payload = {}, userId, _userRole, i
       const patientId = order.patient_id;
       const patientRecord = await tx.patient.findFirst({
         where: { id: patientId, deleted_at: null },
-        select: { id: true, tenant_id: true, facility_id: true },
-      });
+        select: { id: true, tenant_id: true, facility_id: true }});
       if (!patientRecord) {
         throw new HttpError('errors.patient.not_found', 404);
       }
@@ -2361,8 +2138,7 @@ const recordOrderBilling = async (identifier, payload = {}, userId, _userRole, i
         tenantId: patientRecord.tenant_id,
         facilityId: patientRecord.facility_id || scope.facility_id || null,
         patientId: patientRecord.id,
-        description: 'Pharmacy order',
-      });
+        description: 'Pharmacy order'});
 
       const refreshedOrder = await pharmacyWorkspaceRepository.txFindOrderById(
         tx,
@@ -2381,11 +2157,8 @@ const recordOrderBilling = async (identifier, payload = {}, userId, _userRole, i
       entity_id: mutation.order?.id,
       diff: {
         metadata: {
-          billing_recorded: true,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          billing_recorded: true}},
+      ip_address: ipAddress}).catch(() => {});
 
     const workflow = await mapScopedPharmacyOrderWorkflowRecord(mutation.order, scope);
 
@@ -2395,8 +2168,7 @@ const recordOrderBilling = async (identifier, payload = {}, userId, _userRole, i
       actorUserId: userId || null,
       action: 'RECORD_BILLING',
       resourceType: 'order',
-      resourceId: workflow?.order?.id || null,
-    }).catch(() => {});
+      resourceId: workflow?.order?.id || null}).catch(() => {});
 
     const summaryBaseWhere = await buildWorkbenchOrderWhere(
       { location: undefined, pending_payment: undefined },
@@ -2407,8 +2179,7 @@ const recordOrderBilling = async (identifier, payload = {}, userId, _userRole, i
 
     return {
       workflow,
-      order_summary: orderSummary,
-    };
+      order_summary: orderSummary};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -2434,14 +2205,11 @@ const resolveLegacyRouteIdentifier = async (resource, identifier, user = {}) => 
       model: config.model,
       where: {
         deleted_at: null,
-        ...buildLegacyScopeWhere(config.model, scope),
-      },
+        ...buildLegacyScopeWhere(config.model, scope)},
       select: {
         id: true,
-        human_friendly_id: true,
-      },
-      errorKey: 'errors.resource.not_found',
-    });
+        human_friendly_id: true},
+      errorKey: 'errors.resource.not_found'});
 
     const publicIdentifier = toPublicIdentifier(record?.human_friendly_id, normalizedIdentifier);
     const safeIdentifier =
@@ -2463,8 +2231,7 @@ const resolveLegacyRouteIdentifier = async (resource, identifier, user = {}) => 
       resource: config.resource,
       identifier: safeIdentifier,
       route,
-      matched_by: isUuidLike(normalizedIdentifier) ? 'uuid' : 'human_friendly_id',
-    };
+      matched_by: isUuidLike(normalizedIdentifier) ? 'uuid' : 'human_friendly_id'};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -2491,5 +2258,4 @@ module.exports = {
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
   deletePharmacyStorageRoom,
-  deletePharmacyStorageShelf,
-};
+  deletePharmacyStorageShelf};

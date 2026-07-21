@@ -197,13 +197,11 @@ describe('Maintenance Request Controller', () => {
       const mockBody = {
         status: 'IN_PROGRESS',
         triage_summary: 'Leak confirmed',
-        sla_hours: 24,
-      };
+        sla_hours: 24};
       const mockTriaged = {
         id: 'MR-001',
         human_friendly_id: 'MR-001',
-        status: 'IN_PROGRESS',
-      };
+        status: 'IN_PROGRESS'};
 
       maintenanceRequestService.triageMaintenanceRequest.mockResolvedValue(mockTriaged);
 

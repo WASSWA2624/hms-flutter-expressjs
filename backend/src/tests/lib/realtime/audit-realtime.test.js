@@ -100,18 +100,14 @@ describe('publishAuditRealtime', () => {
           after: {
             tenant_id: 'tenant-1',
             facility_id: 'facility-1',
-            scheduled_start: '2026-07-21T10:00:00.000Z',
-          },
-        },
-      },
+            scheduled_start: '2026-07-21T10:00:00.000Z'}}},
       'tenant-1',
       'UPDATE'
     );
 
     expect(publishCrudRealtimeEvent).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: 'appointment.rescheduled',
-      })
+        event: 'appointment.rescheduled'})
     );
   });
 

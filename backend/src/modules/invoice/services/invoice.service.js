@@ -15,8 +15,7 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const buildEmptyListResult = (page, limit) => ({
   invoices: [],
@@ -26,9 +25,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const mapInvoiceForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -41,8 +38,7 @@ const mapInvoiceForDisplay = (record) => {
           item?.invoice_display_id,
           record?.human_friendly_id,
           record?.id
-        ),
-      }))
+        )}))
     : record.items;
 
   const mappedPayments = Array.isArray(record.payments)
@@ -53,8 +49,7 @@ const mapInvoiceForDisplay = (record) => {
           payment?.invoice_display_id,
           record?.human_friendly_id,
           record?.id
-        ),
-      }))
+        )}))
     : record.payments;
 
   return {
@@ -77,8 +72,7 @@ const mapInvoiceForDisplay = (record) => {
     ),
     timeline_at: record?.timeline_at || record?.issued_at || record?.created_at || null,
     items: mappedItems,
-    payments: mappedPayments,
-  };
+    payments: mappedPayments};
 };
 
 const resolveListFilters = async (filters = {}, page, limit) => {
@@ -87,8 +81,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   if (filters.tenant_id !== undefined) {
     const tenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
-      model: 'tenant',
-    });
+      model: 'tenant'});
     if (tenantId === null) return buildEmptyListResult(page, limit);
     if (tenantId !== undefined) whereClause.tenant_id = tenantId;
   }
@@ -97,8 +90,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
     const facilityId = await resolveIdentifierForFilter({
       value: filters.facility_id,
       model: 'facility',
-      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-    });
+      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
     if (facilityId === null) return buildEmptyListResult(page, limit);
     if (facilityId !== undefined) whereClause.facility_id = facilityId;
   }
@@ -107,8 +99,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
     const patientId = await resolveIdentifierForFilter({
       value: filters.patient_id,
       model: 'patient',
-      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-    });
+      where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
     if (patientId === null) return buildEmptyListResult(page, limit);
     if (patientId !== undefined) whereClause.patient_id = patientId;
   }
@@ -120,8 +111,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   if (search) {
     whereClause.OR = [
       { human_friendly_id: { contains: search.toUpperCase() } },
-      { id: { contains: search } },
-    ];
+      { id: { contains: search } }];
   }
 
   return whereClause;
@@ -152,8 +142,7 @@ const listInvoices = async (filters, page, limit, sortBy, order, userId, ipAddre
       invoiceRepository.findMany(whereClause, skip, limit, orderBy, {
         tenant: { select: { id: true, human_friendly_id: true } },
         facility: { select: { id: true, human_friendly_id: true } },
-        patient: { select: { id: true, human_friendly_id: true } },
-      }),
+        patient: { select: { id: true, human_friendly_id: true } }}),
       invoiceRepository.count(whereClause)
     ]);
 
@@ -186,8 +175,7 @@ const getInvoiceById = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'invoice',
-      identifier: id,
-    });
+      identifier: id});
     const invoice = await invoiceRepository.findById(resolvedId, {
       items: true,
       payments: true,
@@ -221,36 +209,31 @@ const createInvoice = async (data, userId, ipAddress) => {
     const tenantId = await resolveIdentifierForPayload({
       value: data?.tenant_id,
       field: 'tenant_id',
-      model: 'tenant',
-    });
+      model: 'tenant'});
     const facilityId = await resolveIdentifierForPayload({
       value: data?.facility_id,
       field: 'facility_id',
       model: 'facility',
       where: tenantId ? { tenant_id: tenantId } : {},
-      nullable: true,
-    });
+      nullable: true});
     const patientId = await resolveIdentifierForPayload({
       value: data?.patient_id,
       field: 'patient_id',
       model: 'patient',
       where: tenantId ? { tenant_id: tenantId } : {},
-      nullable: true,
-    });
+      nullable: true});
 
     const payload = {
       ...data,
       tenant_id: tenantId,
       facility_id: facilityId,
-      patient_id: patientId,
-    };
+      patient_id: patientId};
 
     const invoice = await invoiceRepository.create(payload);
     const createdRecord = await invoiceRepository.findById(invoice.id, {
       tenant: { select: { id: true, human_friendly_id: true } },
       facility: { select: { id: true, human_friendly_id: true } },
-      patient: { select: { id: true, human_friendly_id: true } },
-    });
+      patient: { select: { id: true, human_friendly_id: true } }});
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -284,8 +267,7 @@ const updateInvoice = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'invoice',
-      identifier: id,
-    });
+      identifier: id});
     // Get current state for audit
     const before = await invoiceRepository.findById(resolvedId);
 
@@ -300,8 +282,7 @@ const updateInvoice = async (id, data, userId, ipAddress) => {
         field: 'facility_id',
         model: 'facility',
         where: before.tenant_id ? { tenant_id: before.tenant_id } : {},
-        nullable: true,
-      });
+        nullable: true});
     }
     if (Object.prototype.hasOwnProperty.call(payload, 'patient_id')) {
       payload.patient_id = await resolveIdentifierForPayload({
@@ -309,16 +290,14 @@ const updateInvoice = async (id, data, userId, ipAddress) => {
         field: 'patient_id',
         model: 'patient',
         where: before.tenant_id ? { tenant_id: before.tenant_id } : {},
-        nullable: true,
-      });
+        nullable: true});
     }
 
     const invoice = await invoiceRepository.update(before.id, payload);
     const updatedRecord = await invoiceRepository.findById(invoice.id, {
       tenant: { select: { id: true, human_friendly_id: true } },
       facility: { select: { id: true, human_friendly_id: true } },
-      patient: { select: { id: true, human_friendly_id: true } },
-    });
+      patient: { select: { id: true, human_friendly_id: true } }});
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -351,8 +330,7 @@ const deleteInvoice = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'invoice',
-      identifier: id,
-    });
+      identifier: id});
     // Get current state for audit
     const before = await invoiceRepository.findById(resolvedId);
 

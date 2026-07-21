@@ -99,8 +99,7 @@ describe('Notification Controller', () => {
       const mockHub = {
         summary: { total: 2, unread: 1 },
         timeline: [{ id: 'NTF-001' }],
-        pagination: { page: 1, limit: 20, total: 2 },
-      };
+        pagination: { page: 1, limit: 20, total: 2 }};
       notificationService.getNotificationHub.mockResolvedValue(mockHub);
 
       await notificationController.getNotificationHub(req, res);

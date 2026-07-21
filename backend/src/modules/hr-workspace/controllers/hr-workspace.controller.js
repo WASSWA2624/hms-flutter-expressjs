@@ -48,8 +48,7 @@ const generateRoster = asyncHandler(async (req, res) => {
     replaceExistingAssignments: req.body.replace_existing_assignments,
     dryRun: req.body.dry_run,
     userId: req.user?.id,
-    ipAddress: req.ip,
-  });
+    ipAddress: req.ip});
   return sendSuccess(res, 200, 'messages.hr_workspace.roster_generate.success', data);
 });
 
@@ -125,5 +124,4 @@ module.exports = {
   previewPayrollRun,
   processPayrollRun,
   offboardStaff,
-  resolveLegacyRoute,
-};
+  resolveLegacyRoute};

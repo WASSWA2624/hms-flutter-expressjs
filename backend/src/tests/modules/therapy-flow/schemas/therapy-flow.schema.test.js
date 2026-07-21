@@ -10,8 +10,7 @@ describe('therapy-flow.schema', () => {
         'ACTIVE_PLAN',
         'FOLLOW_UP_DUE',
         'COMPLETED',
-        'ALL',
-      ])
+        'ALL'])
     );
   });
 

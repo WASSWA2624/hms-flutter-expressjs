@@ -1,6 +1,5 @@
 jest.mock('@config/feature-flags', () => ({
-  isFeatureEnabled: jest.fn(),
-}));
+  isFeatureEnabled: jest.fn()}));
 
 const { HttpError } = require('@lib/errors');
 const { isFeatureEnabled } = require('@config/feature-flags');

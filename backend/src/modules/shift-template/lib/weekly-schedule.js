@@ -4,8 +4,7 @@
 const {
   normalizeSlotList,
   slotsOverlap,
-  normalizeTimeString,
-} = require('@modules/staff-availability/lib/availability-slots');
+  normalizeTimeString} = require('@modules/staff-availability/lib/availability-slots');
 
 const WEEKDAY_ORDER = Object.freeze([1, 2, 3, 4, 5, 6, 0]);
 const DEFAULT_WEEKDAYS = Object.freeze([1, 2, 3, 4, 5]);
@@ -37,8 +36,7 @@ const normalizeWeeklySchedule = (days = []) => {
     seenDays.add(dayOfWeek);
     normalized.push({
       day_of_week: dayOfWeek,
-      time_slots: timeSlots,
-    });
+      time_slots: timeSlots});
   }
 
   return normalized.sort(
@@ -55,8 +53,7 @@ const buildDefaultWeekdaySchedule = (startTime, endTime) => {
 
   return DEFAULT_WEEKDAYS.map((dayOfWeek) => ({
     day_of_week: dayOfWeek,
-    time_slots: [{ start_time: start, end_time: end }],
-  }));
+    time_slots: [{ start_time: start, end_time: end }]}));
 };
 
 const parseWeeklySchedule = (record = {}) => {
@@ -119,5 +116,4 @@ module.exports = {
   buildDefaultWeekdaySchedule,
   parseWeeklySchedule,
   firstSlotFromSchedule,
-  applyWeeklyScheduleToPayload,
-};
+  applyWeeklyScheduleToPayload};

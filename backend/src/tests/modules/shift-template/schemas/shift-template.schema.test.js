@@ -1,7 +1,6 @@
 const {
   createShiftTemplateSchema,
-  shiftTemplateIdParamsSchema,
-} = require('@validations/shift-template/shift-template.schema');
+  shiftTemplateIdParamsSchema} = require('@validations/shift-template/shift-template.schema');
 
 describe('Shift Template Schemas', () => {
   const validData = {
@@ -9,8 +8,7 @@ describe('Shift Template Schemas', () => {
     name: '6hr Morning',
     shift_type: 'DAY',
     default_start_time: '08:00',
-    default_end_time: '14:00',
-  };
+    default_end_time: '14:00'};
 
   it('validates correct data', () => {
     expect(createShiftTemplateSchema.safeParse(validData).success).toBe(true);
@@ -28,10 +26,7 @@ describe('Shift Template Schemas', () => {
         weekly_schedule_json: [
           {
             day_of_week: 1,
-            time_slots: [{ start_time: '08:00', end_time: '17:00' }],
-          },
-        ],
-      }).success
+            time_slots: [{ start_time: '08:00', end_time: '17:00' }]}]}).success
     ).toBe(true);
   });
 

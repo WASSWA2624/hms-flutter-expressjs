@@ -14,13 +14,11 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 const { resolveUnitPrices } = require('@lib/billing/price-resolver');
 const {
   applyCoverageSplitToLineItems,
-  summarizeCoverageShares,
-} = require('@lib/billing/coverage-split');
+  summarizeCoverageShares} = require('@lib/billing/coverage-split');
 
 const PRICE_BOOK_ENTRY_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
@@ -32,18 +30,13 @@ const PRICE_BOOK_ENTRY_INCLUDE = {
       name: true,
       provider_name: true,
       coverage_percentage: true,
-      insurance_company_id: true,
-    },
-  },
+      insurance_company_id: true}},
   insurance_company: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
-      code: true,
-    },
-  },
-};
+      code: true}}};
 
 const buildEmptyListResult = (page, limit) => ({
   priceBookEntries: [],
@@ -53,9 +46,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const mapPriceBookEntryForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
@@ -83,8 +74,7 @@ const mapPriceBookEntryForDisplay = (record) => {
       record?.insurance_company?.human_friendly_id,
       record?.insurance_company_id
     ),
-    timeline_at: record?.timeline_at || record?.effective_from || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.effective_from || record?.created_at || null};
 };
 
 const normalizeCreatePayload = async (data = {}) => {
@@ -93,27 +83,22 @@ const normalizeCreatePayload = async (data = {}) => {
     tenant_id: await resolveIdentifierForPayload({
       value: data.tenant_id,
       model: 'tenant',
-      field: 'tenant_id',
-    }),
+      field: 'tenant_id'}),
     facility_id: await resolveIdentifierForPayload({
       value: data.facility_id,
       model: 'facility',
       field: 'facility_id',
-      nullable: true,
-    }),
+      nullable: true}),
     coverage_plan_id: await resolveIdentifierForPayload({
       value: data.coverage_plan_id,
       model: 'coverage_plan',
       field: 'coverage_plan_id',
-      nullable: true,
-    }),
+      nullable: true}),
     insurance_company_id: await resolveIdentifierForPayload({
       value: data.insurance_company_id,
       model: 'insurance_company',
       field: 'insurance_company_id',
-      nullable: true,
-    }),
-  };
+      nullable: true})};
 
   if (payload.effective_from) payload.effective_from = new Date(payload.effective_from);
   if (payload.effective_to) payload.effective_to = new Date(payload.effective_to);
@@ -129,8 +114,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.facility_id,
       model: 'facility',
       field: 'facility_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'coverage_plan_id')) {
@@ -138,8 +122,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.coverage_plan_id,
       model: 'coverage_plan',
       field: 'coverage_plan_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'insurance_company_id')) {
@@ -147,8 +130,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.insurance_company_id,
       model: 'insurance_company',
       field: 'insurance_company_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'effective_from') && data.effective_from) {
@@ -175,8 +157,7 @@ const listPriceBookEntries = async (filters, page, limit, sortBy, order) => {
     if (filters.tenant_id !== undefined) {
       const tenantId = await resolveIdentifierForFilter({
         value: filters.tenant_id,
-        model: 'tenant',
-      });
+        model: 'tenant'});
       if (tenantId === null) return buildEmptyListResult(page, limit);
       if (tenantId !== undefined) whereClause.tenant_id = tenantId;
     }
@@ -185,8 +166,7 @@ const listPriceBookEntries = async (filters, page, limit, sortBy, order) => {
       const facilityId = await resolveIdentifierForFilter({
         value: filters.facility_id,
         model: 'facility',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (facilityId === null) return buildEmptyListResult(page, limit);
       if (facilityId !== undefined) whereClause.facility_id = facilityId;
     }
@@ -195,8 +175,7 @@ const listPriceBookEntries = async (filters, page, limit, sortBy, order) => {
       const coveragePlanId = await resolveIdentifierForFilter({
         value: filters.coverage_plan_id,
         model: 'coverage_plan',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (coveragePlanId === null) return buildEmptyListResult(page, limit);
       if (coveragePlanId !== undefined) whereClause.coverage_plan_id = coveragePlanId;
     }
@@ -205,8 +184,7 @@ const listPriceBookEntries = async (filters, page, limit, sortBy, order) => {
       const insuranceCompanyId = await resolveIdentifierForFilter({
         value: filters.insurance_company_id,
         model: 'insurance_company',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (insuranceCompanyId === null) return buildEmptyListResult(page, limit);
       if (insuranceCompanyId !== undefined) {
         whereClause.insurance_company_id = insuranceCompanyId;
@@ -226,14 +204,12 @@ const listPriceBookEntries = async (filters, page, limit, sortBy, order) => {
       whereClause.OR = [
         { notes: { contains: search } },
         { insurer_key: { contains: search } },
-        { human_friendly_id: { contains: search.toUpperCase() } },
-      ];
+        { human_friendly_id: { contains: search.toUpperCase() } }];
     }
 
     const [priceBookEntries, total] = await Promise.all([
       priceBookEntryRepository.findMany(whereClause, skip, limit, orderBy, PRICE_BOOK_ENTRY_INCLUDE),
-      priceBookEntryRepository.count(whereClause),
-    ]);
+      priceBookEntryRepository.count(whereClause)]);
 
     return {
       priceBookEntries: priceBookEntries.map(mapPriceBookEntryForDisplay),
@@ -243,9 +219,7 @@ const listPriceBookEntries = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -259,8 +233,7 @@ const getPriceBookEntryById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'price_book_entry',
-      identifier: id,
-    });
+      identifier: id});
 
     const priceBookEntry = await priceBookEntryRepository.findById(
       resolvedId,
@@ -297,8 +270,7 @@ const createPriceBookEntry = async (data, userId, ipAddress) => {
       entity: 'price_book_entry',
       entity_id: priceBookEntry.id,
       diff: { after: priceBookEntry },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapPriceBookEntryForDisplay(createdRecord || priceBookEntry);
   } catch (error) {
@@ -314,8 +286,7 @@ const updatePriceBookEntry = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'price_book_entry',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await priceBookEntryRepository.findById(resolvedId, PRICE_BOOK_ENTRY_INCLUDE);
 
@@ -337,8 +308,7 @@ const updatePriceBookEntry = async (id, data, userId, ipAddress) => {
       entity: 'price_book_entry',
       entity_id: priceBookEntry.id,
       diff: { before, after: priceBookEntry },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
 
     return mapPriceBookEntryForDisplay(updatedRecord || priceBookEntry);
   } catch (error) {
@@ -354,8 +324,7 @@ const deletePriceBookEntry = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'price_book_entry',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await priceBookEntryRepository.findById(resolvedId, PRICE_BOOK_ENTRY_INCLUDE);
 
@@ -372,8 +341,7 @@ const deletePriceBookEntry = async (id, userId, ipAddress) => {
       entity: 'price_book_entry',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -388,29 +356,25 @@ const resolvePriceBookEntries = async (data) => {
     const tenantId = await resolveIdentifierForPayload({
       value: data?.tenant_id,
       field: 'tenant_id',
-      model: 'tenant',
-    });
+      model: 'tenant'});
 
     const facilityId = await resolveIdentifierForPayload({
       value: data?.facility_id,
       field: 'facility_id',
       model: 'facility',
-      nullable: true,
-    });
+      nullable: true});
 
     const coveragePlanId = await resolveIdentifierForPayload({
       value: data?.coverage_plan_id,
       field: 'coverage_plan_id',
       model: 'coverage_plan',
-      nullable: true,
-    });
+      nullable: true});
 
     const insuranceCompanyId = await resolveIdentifierForPayload({
       value: data?.insurance_company_id,
       field: 'insurance_company_id',
       model: 'insurance_company',
-      nullable: true,
-    });
+      nullable: true});
 
     const paymentMode = data?.payment_mode || 'SELF_PAY';
     const billingEntity = data?.billing_entity || 'FACILITY';
@@ -425,8 +389,7 @@ const resolvePriceBookEntries = async (data) => {
       insurerKey: data?.insurer_key || null,
       billingEntity,
       currency: data?.currency || null,
-      items: inputItems,
-    });
+      items: inputItems});
 
     let lineItems = inputItems.map((item, index) => {
       const price = resolved[index] || {};
@@ -457,8 +420,7 @@ const resolvePriceBookEntries = async (data) => {
         copay_type: price.copayType || null,
         copay_value: price.copayValue ?? null,
         is_excluded: Boolean(price.isExcluded),
-        requires_pre_auth: Boolean(price.requiresPreAuth),
-      };
+        requires_pre_auth: Boolean(price.requiresPreAuth)};
     });
 
     let coveragePlan = null;
@@ -472,9 +434,7 @@ const resolvePriceBookEntries = async (data) => {
           provider_name: true,
           default_copay_type: true,
           default_copay_value: true,
-          insurance_company_id: true,
-        },
-      });
+          insurance_company_id: true}});
     }
 
     const shouldApplySplit =
@@ -489,16 +449,14 @@ const resolvePriceBookEntries = async (data) => {
           insuranceCompanyId || coveragePlan?.insurance_company_id || null,
         paymentMode,
         copayType: coveragePlan?.default_copay_type || 'NONE',
-        copayValue: coveragePlan?.default_copay_value ?? null,
-      });
+        copayValue: coveragePlan?.default_copay_value ?? null});
     }
 
     const summary = summarizeCoverageShares(lineItems);
 
     return {
       items: lineItems,
-      summary,
-    };
+      summary};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -511,5 +469,4 @@ module.exports = {
   createPriceBookEntry,
   updatePriceBookEntry,
   deletePriceBookEntry,
-  resolvePriceBookEntries,
-};
+  resolvePriceBookEntries};

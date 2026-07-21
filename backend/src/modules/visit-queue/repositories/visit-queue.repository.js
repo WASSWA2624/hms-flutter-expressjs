@@ -15,16 +15,12 @@ const VISIT_QUEUE_RELATION_INCLUDE = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   patient: {
     select: {
       id: true,
@@ -41,9 +37,7 @@ const VISIT_QUEUE_RELATION_INCLUDE = {
         select: {
           contact_type: true,
           value: true,
-          is_primary: true,
-        },
-      },
+          is_primary: true}},
       identifiers: {
         where: { deleted_at: null },
         orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }],
@@ -51,9 +45,7 @@ const VISIT_QUEUE_RELATION_INCLUDE = {
         select: {
           identifier_type: true,
           identifier_value: true,
-          is_primary: true,
-        },
-      },
+          is_primary: true}},
       invoices: {
         where: { deleted_at: null },
         orderBy: [{ issued_at: 'desc' }, { updated_at: 'desc' }],
@@ -76,13 +68,7 @@ const VISIT_QUEUE_RELATION_INCLUDE = {
               status: true,
               method: true,
               amount: true,
-              paid_at: true,
-            },
-          },
-        },
-      },
-    },
-  },
+              paid_at: true}}}}}},
   appointment: {
     select: {
       id: true,
@@ -91,9 +77,7 @@ const VISIT_QUEUE_RELATION_INCLUDE = {
       scheduled_start: true,
       scheduled_end: true,
       reason: true,
-      provider_user_id: true,
-    },
-  },
+      provider_user_id: true}},
   provider: {
     select: {
       id: true,
@@ -104,25 +88,18 @@ const VISIT_QUEUE_RELATION_INCLUDE = {
         select: {
           first_name: true,
           middle_name: true,
-          last_name: true,
-        },
-      },
-    },
-  },
-};
+          last_name: true}}}}};
 
 const withActivePatient = (filters = {}) => {
   const { AND, ...rest } = filters || {};
   const and = [
     ...(Array.isArray(AND) ? AND : AND ? [AND] : []),
-    { patient: { deleted_at: null } },
-  ];
+    { patient: { deleted_at: null } }];
 
   return {
     ...rest,
     deleted_at: null,
-    AND: and,
-  };
+    AND: and};
 };
 
 /**
@@ -135,8 +112,7 @@ const findById = async (id) => {
   try {
     return await prisma.visit_queue.findFirst({
       where: withActivePatient({ id }),
-      include: VISIT_QUEUE_RELATION_INCLUDE,
-    });
+      include: VISIT_QUEUE_RELATION_INCLUDE});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -165,8 +141,7 @@ const findMany = async (
       skip,
       take,
       orderBy,
-      include: VISIT_QUEUE_RELATION_INCLUDE,
-    });
+      include: VISIT_QUEUE_RELATION_INCLUDE});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -198,8 +173,7 @@ const create = async (data) => {
   try {
     return await prisma.visit_queue.create({
       data,
-      include: VISIT_QUEUE_RELATION_INCLUDE,
-    });
+      include: VISIT_QUEUE_RELATION_INCLUDE});
   } catch (error) {
     if (error.code === 'P2002') {
       // Unique constraint violation
@@ -227,8 +201,7 @@ const update = async (id, data) => {
     return await prisma.visit_queue.update({
       where: { id },
       data,
-      include: VISIT_QUEUE_RELATION_INCLUDE,
-    });
+      include: VISIT_QUEUE_RELATION_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.visit_queue.not_found', 404);
@@ -259,9 +232,7 @@ const softDelete = async (id) => {
     return await prisma.visit_queue.update({
       where: { id },
       data: {
-        deleted_at: new Date(),
-      },
-    });
+        deleted_at: new Date()}});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.visit_queue.not_found', 404);
@@ -289,12 +260,9 @@ const findRealtimeRecipientUserIds = async ({ tenantId, facilityId = null, roles
         tenant_id: tenantId,
         role: {
           name: { in: roles },
-          deleted_at: null,
-        },
-        ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {}),
-      },
-      select: { user_id: true },
-    });
+          deleted_at: null},
+        ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {})},
+      select: { user_id: true }});
 
     rows.forEach((item) => {
       if (item?.user_id) recipients.add(item.user_id);
@@ -313,5 +281,4 @@ module.exports = {
   create,
   update,
   softDelete,
-  findRealtimeRecipientUserIds,
-};
+  findRealtimeRecipientUserIds};

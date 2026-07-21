@@ -7,8 +7,7 @@ const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/ph
 const {
   resolveScopedUserContext,
   buildTenantScopeWhere,
-  resolveModelRecordOrThrow,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  resolveModelRecordOrThrow} = require('@services/pharmacy-workspace/pharmacy.shared');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
@@ -35,8 +34,7 @@ const mapStorageRoomRecord = (record) => {
     is_active: Boolean(record.is_active),
     shelves: Array.isArray(record.shelves)
       ? record.shelves.map(mapStorageShelfRecord).filter(Boolean)
-      : [],
-  };
+      : []};
 };
 
 const mapStorageShelfRecord = (record) => {
@@ -51,8 +49,7 @@ const mapStorageShelfRecord = (record) => {
     shelf_code: toText(record.shelf_code) || null,
     label: toText(record.label) || null,
     is_active: Boolean(record.is_active),
-    storage_room_label: toText(record.storage_room?.name) || null,
-  };
+    storage_room_label: toText(record.storage_room?.name) || null};
 };
 
 const mapStorageLocationFields = (room = null, shelf = null) => {
@@ -66,8 +63,7 @@ const mapStorageLocationFields = (room = null, shelf = null) => {
     storage_room_label: roomLabel,
     storage_shelf_id: shelf ? toPublicIdentifier(shelf.human_friendly_id, shelf.id) : null,
     storage_shelf_code: toText(shelf?.shelf_code) || null,
-    storage_location_label: locationLabel,
-  };
+    storage_location_label: locationLabel};
 };
 
 const resolveStorageRoomId = async (identifier, scope, facilityId) => {
@@ -79,9 +75,7 @@ const resolveStorageRoomId = async (identifier, scope, facilityId) => {
     where: {
       deleted_at: null,
       ...buildTenantScopeWhere(scope),
-      facility_id: facilityId,
-    },
-  });
+      facility_id: facilityId}});
 };
 
 const resolveStorageShelfId = async (identifier, scope, facilityId, storageRoomId = null) => {
@@ -94,9 +88,7 @@ const resolveStorageShelfId = async (identifier, scope, facilityId, storageRoomI
       deleted_at: null,
       ...buildTenantScopeWhere(scope),
       facility_id: facilityId,
-      ...(storageRoomId ? { storage_room_id: storageRoomId } : {}),
-    },
-  });
+      ...(storageRoomId ? { storage_room_id: storageRoomId } : {})}});
 };
 
 const resolveStorageAssignment = async (payload = {}, scope, facilityId) => {
@@ -163,8 +155,7 @@ const attachDrugStorageSummaries = async (drugs = []) => {
 
   return drugs.map((drug) => ({
     ...drug,
-    ...buildPrimaryBatchStorageSummary(batchesByDrugId.get(drug.id) || []),
-  }));
+    ...buildPrimaryBatchStorageSummary(batchesByDrugId.get(drug.id) || [])}));
 };
 
 const getPharmacyStorageLayout = async (filters = {}, user = {}) => {
@@ -177,8 +168,7 @@ const getPharmacyStorageLayout = async (filters = {}, user = {}) => {
       field: 'facility_id',
       model: 'facility',
       where: { deleted_at: null, ...buildTenantScopeWhere(scope) },
-      allowNull: true,
-    }));
+      allowNull: true}));
 
   if (!facilityId) {
     return { rooms: [], summary: { room_count: 0, shelf_count: 0 } };
@@ -189,8 +179,7 @@ const getPharmacyStorageLayout = async (filters = {}, user = {}) => {
     {
       ...buildTenantScopeWhere(scope),
       facility_id: facilityId,
-      ...(includeInactive ? {} : { is_active: true }),
-    },
+      ...(includeInactive ? {} : { is_active: true })},
     0,
     500,
     { name: 'asc' }
@@ -216,9 +205,7 @@ const getPharmacyStorageLayout = async (filters = {}, user = {}) => {
     rooms: mappedRooms,
     summary: {
       room_count: mappedRooms.length,
-      shelf_count: shelfCount,
-    },
-  };
+      shelf_count: shelfCount}};
 };
 
 const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user = {}) => {
@@ -227,8 +214,7 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
     value: payload.facility_id || scope.facility_id,
     field: 'facility_id',
     model: 'facility',
-    where: { deleted_at: null, ...buildTenantScopeWhere(scope) },
-  });
+    where: { deleted_at: null, ...buildTenantScopeWhere(scope) }});
 
   let tenantId = scope.tenant_id;
   if (scope.can_manage_all_tenants && payload.tenant_id) {
@@ -236,8 +222,7 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
       value: payload.tenant_id,
       field: 'tenant_id',
       model: 'tenant',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
   }
 
   if (!tenantId) {
@@ -246,8 +231,7 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
       model: 'facility',
       where: { deleted_at: null },
       select: { id: true, tenant_id: true },
-      errorKey: 'errors.facility.not_found',
-    });
+      errorKey: 'errors.facility.not_found'});
     tenantId = facility.tenant_id;
   }
 
@@ -261,8 +245,7 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
       facility_id: facilityId,
       name: String(payload.name || '').trim(),
       code: toText(payload.code) || null,
-      is_active: payload.is_active !== false,
-    })
+      is_active: payload.is_active !== false})
   );
 
   createAuditLog({
@@ -271,8 +254,7 @@ const createPharmacyStorageRoom = async (payload = {}, userId, ipAddress, user =
     action: 'CREATE',
     entity: 'pharmacy_storage_room',
     entity_id: room.id,
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return mapStorageRoomRecord({ ...room, shelves: [] });
 };
@@ -289,8 +271,7 @@ const updatePharmacyStorageRoom = async (identifier, payload = {}, userId, ipAdd
     pharmacyStorageRepository.txUpdateStorageRoom(tx, roomId, {
       ...(payload.name !== undefined ? { name: String(payload.name || '').trim() } : {}),
       ...(payload.code !== undefined ? { code: toText(payload.code) || null } : {}),
-      ...(payload.is_active !== undefined ? { is_active: Boolean(payload.is_active) } : {}),
-    })
+      ...(payload.is_active !== undefined ? { is_active: Boolean(payload.is_active) } : {})})
   );
 
   createAuditLog({
@@ -299,8 +280,7 @@ const updatePharmacyStorageRoom = async (identifier, payload = {}, userId, ipAdd
     action: 'UPDATE',
     entity: 'pharmacy_storage_room',
     entity_id: roomId,
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return mapStorageRoomRecord({ ...updated, shelves: existingLookup.shelves || [] });
 };
@@ -325,8 +305,7 @@ const createPharmacyStorageShelf = async (
       storage_room_id: room.id,
       shelf_code: String(payload.shelf_code || '').trim(),
       label: toText(payload.label) || null,
-      is_active: payload.is_active !== false,
-    })
+      is_active: payload.is_active !== false})
   );
 
   createAuditLog({
@@ -335,8 +314,7 @@ const createPharmacyStorageShelf = async (
     action: 'CREATE',
     entity: 'pharmacy_storage_shelf',
     entity_id: shelf.id,
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return mapStorageShelfRecord({ ...shelf, storage_room: room });
 };
@@ -354,8 +332,7 @@ const updatePharmacyStorageShelf = async (identifier, payload = {}, userId, ipAd
         ? { shelf_code: String(payload.shelf_code || '').trim() }
         : {}),
       ...(payload.label !== undefined ? { label: toText(payload.label) || null } : {}),
-      ...(payload.is_active !== undefined ? { is_active: Boolean(payload.is_active) } : {}),
-    })
+      ...(payload.is_active !== undefined ? { is_active: Boolean(payload.is_active) } : {})})
   );
 
   createAuditLog({
@@ -364,8 +341,7 @@ const updatePharmacyStorageShelf = async (identifier, payload = {}, userId, ipAd
     action: 'UPDATE',
     entity: 'pharmacy_storage_shelf',
     entity_id: existing.id,
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return mapStorageShelfRecord({ ...updated, storage_room: existing.storage_room });
 };
@@ -389,8 +365,7 @@ const deletePharmacyStorageRoom = async (identifier, userId, ipAddress, user = {
     action: 'DELETE',
     entity: 'pharmacy_storage_room',
     entity_id: roomId,
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return { id: toPublicIdentifier(existing.human_friendly_id, existing.id), deleted: true };
 };
@@ -412,8 +387,7 @@ const deletePharmacyStorageShelf = async (identifier, userId, ipAddress, user = 
     action: 'DELETE',
     entity: 'pharmacy_storage_shelf',
     entity_id: existing.id,
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return { id: toPublicIdentifier(existing.human_friendly_id, existing.id), deleted: true };
 };
@@ -438,5 +412,4 @@ module.exports = {
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
   deletePharmacyStorageRoom,
-  deletePharmacyStorageShelf,
-};
+  deletePharmacyStorageShelf};

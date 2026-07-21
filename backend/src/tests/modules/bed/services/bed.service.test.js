@@ -238,13 +238,7 @@ describe('Bed Service', () => {
                   human_friendly_id: 'PAT-1',
                   first_name: 'Jane',
                   middle_name: null,
-                  last_name: 'Doe',
-                },
-              },
-            },
-          ],
-        },
-      ];
+                  last_name: 'Doe'}}}]}];
       bedRepository.findMany.mockResolvedValue(mockBeds);
       bedRepository.count.mockResolvedValue(1);
 
@@ -265,9 +259,7 @@ describe('Bed Service', () => {
         current_admission: {
           admission_id: 'adm-1',
           admission_display_id: 'ADM-1',
-          patient_display_name: 'Jane Doe',
-        },
-      });
+          patient_display_name: 'Jane Doe'}});
       expect(result.beds[0].bed_assignments).toBeUndefined();
     });
 
@@ -283,11 +275,7 @@ describe('Bed Service', () => {
             {
               released_at: null,
               assigned_at: new Date('2026-06-20T08:00:00Z'),
-              admission: { id: 'adm-2', status: 'DISCHARGED', patient: { first_name: 'John', last_name: 'Roe' } },
-            },
-          ],
-        },
-      ];
+              admission: { id: 'adm-2', status: 'DISCHARGED', patient: { first_name: 'John', last_name: 'Roe' } }}]}];
       bedRepository.findMany.mockResolvedValue(mockBeds);
       bedRepository.count.mockResolvedValue(1);
 

@@ -41,8 +41,7 @@ describe('Triage Assessment Service', () => {
 
       expect(result.items).toEqual([
         expect.objectContaining(mockAssessments[0]),
-        expect.objectContaining(mockAssessments[1]),
-      ]);
+        expect.objectContaining(mockAssessments[1])]);
       expect(result.items[0]).toEqual(expect.objectContaining({ display_id: '1' }));
       expect(result.total).toBe(2);
       expect(result.totalPages).toBe(1);

@@ -35,7 +35,7 @@ describe('ICU Observation Repository', () => {
       expect(result).toEqual(mockObservation);
       expect(prisma.icu_observation.findFirst).toHaveBeenCalledWith({
         where: { id: '123', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 

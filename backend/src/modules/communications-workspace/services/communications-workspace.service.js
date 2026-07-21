@@ -13,8 +13,7 @@ const {
   serializeDelivery,
   serializeMessage,
   serializeNotification,
-  serializeTemplate,
-} = require('@services/communications-workspace/communications-workspace.serializers');
+  serializeTemplate} = require('@services/communications-workspace/communications-workspace.serializers');
 
 const DEFAULT_PANEL = 'inbox';
 const MAX_ATTACHMENTS = 5;
@@ -26,8 +25,7 @@ const IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp
 const DOCUMENT_TYPES = new Set([
   'application/pdf',
   'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-]);
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
 
 const text = (value) => String(value || '').trim();
 const currentTenantId = (user = {}) => text(user.tenant_id || user.tenantId);
@@ -68,8 +66,7 @@ const buildSummary = ({ conversationStats, notifications, deliveries, templates 
   { id: 'archived', label: 'Archived threads', value: Number(conversationStats.archived || 0) },
   { id: 'notifications', label: 'Notifications', value: Number(notifications || 0) },
   { id: 'failed_deliveries', label: 'Failed deliveries', value: Number(deliveries || 0) },
-  { id: 'templates', label: 'Templates', value: Number(templates || 0) },
-];
+  { id: 'templates', label: 'Templates', value: Number(templates || 0) }];
 
 const validateAttachments = (files = []) => {
   if (!Array.isArray(files)) return [];
@@ -94,8 +91,7 @@ const validateAttachments = (files = []) => {
       content_type: contentType || 'application/octet-stream',
       file_name: originalName || `attachment-${Date.now()}`,
       size_bytes: size,
-      buffer: file.buffer,
-    };
+      buffer: file.buffer};
   });
 };
 
@@ -114,8 +110,7 @@ const uploadAttachments = async ({ attachments, tenantId, conversationId, userId
       public_url: await storage.getUrl(upload.path),
       storage_key: upload.path,
       storage_provider: providerName,
-      uploaded_by_user_id: userId,
-    });
+      uploaded_by_user_id: userId});
   }
   return uploads;
 };
@@ -134,8 +129,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 30, _sortBy, _order,
       repository.findConversationUnreadStats({ tenantId, userId }),
       repository.countNotifications({ tenantId, userId }),
       repository.countDeliveries({ tenantId }),
-      repository.countTemplates({ tenantId }),
-    ]);
+      repository.countTemplates({ tenantId })]);
 
   let conversations = conversationRows.map((entry) => serializeConversation(entry, userId));
   if (filters.unreadOnly) conversations = conversations.filter((entry) => entry.unread);
@@ -167,20 +161,17 @@ const getWorkspace = async (filters = {}, page = 1, limit = 30, _sortBy, _order,
       { id: 'inbox', label_key: 'communications.workbench.panels.inbox', count: conversations.length },
       { id: 'notifications', label_key: 'communications.workbench.panels.notifications', count: notificationRows.length },
       { id: 'deliveries', label_key: 'communications.workbench.panels.deliveries', count: deliveryRows.length },
-      { id: 'templates', label_key: 'communications.workbench.panels.templates', count: templateRows.length },
-    ],
+      { id: 'templates', label_key: 'communications.workbench.panels.templates', count: templateRows.length }],
     summary: buildSummary({
       conversationStats,
       notifications: notificationCount,
       deliveries: failedDeliveries,
-      templates: templateCount,
-    }),
+      templates: templateCount}),
     queue_summaries: [
       { id: 'UNREAD', label: 'Unread', count: Number(conversationStats.unread || 0), panel: 'inbox', filter: 'UNREAD' },
       { id: 'SENSITIVE', label: 'Sensitive', count: Number(conversationStats.sensitive || 0), panel: 'inbox', filter: 'SENSITIVE' },
       { id: 'ARCHIVED', label: 'Archived', count: Number(conversationStats.archived || 0), panel: 'inbox', filter: 'ARCHIVED' },
-      { id: 'FAILED', label: 'Failed deliveries', count: failedDeliveries, panel: 'deliveries', filter: 'FAILED' },
-    ],
+      { id: 'FAILED', label: 'Failed deliveries', count: failedDeliveries, panel: 'deliveries', filter: 'FAILED' }],
     filters: {
       panel,
       conversationId: text(filters.conversationId) || null,
@@ -191,8 +182,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 30, _sortBy, _order,
       filter: text(filters.filter) || null,
       search: text(filters.search),
       sensitive: Boolean(filters.sensitive),
-      unreadOnly: Boolean(filters.unreadOnly),
-    },
+      unreadOnly: Boolean(filters.unreadOnly)},
     conversations,
     active_conversation: activeConversation,
     notifications: notificationRows.map(serializeNotification),
@@ -205,10 +195,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 30, _sortBy, _order,
         conversations: conversations.length,
         notifications: notificationCount,
         deliveries: deliveryCount,
-        templates: templateCount,
-      },
-    },
-  };
+        templates: templateCount}}};
 };
 
 const getReferenceData = async (query = {}, user = {}) => {
@@ -220,11 +207,9 @@ const getReferenceData = async (query = {}, user = {}) => {
       label: personName(entry),
       email: text(entry.email) || null,
       position_title: text(entry.position_title) || null,
-      roles: (entry.roles || []).map((row) => text(row?.role?.name)).filter(Boolean),
-    })),
+      roles: (entry.roles || []).map((row) => text(row?.role?.name)).filter(Boolean)})),
     channels: ['IN_APP', 'EMAIL', 'SMS', 'WHATSAPP'],
-    filters: ['UNREAD', 'SENSITIVE', 'ARCHIVED', 'FAVORITES', 'FLAGGED', 'FAILED'],
-  };
+    filters: ['UNREAD', 'SENSITIVE', 'ARCHIVED', 'FAVORITES', 'FLAGGED', 'FAILED']};
 };
 
 const resolveLegacyRoute = async (resource, identifier, user = {}) => {
@@ -238,8 +223,7 @@ const resolveLegacyRoute = async (resource, identifier, user = {}) => {
       panel: 'inbox',
       conversationId: resolvePublicIdentifier(message.conversation.human_friendly_id, message.conversation.id),
       messageId: resolvePublicIdentifier(message.human_friendly_id, message.id),
-      action: 'view',
-    };
+      action: 'view'};
   }
   if (resourceKey === 'notifications') return { panel: 'notifications', notificationId: text(identifier), action: 'view' };
   if (resourceKey === 'notification-deliveries') return { panel: 'deliveries', notificationId: text(identifier), action: 'view' };
@@ -249,16 +233,13 @@ const resolveLegacyRoute = async (resource, identifier, user = {}) => {
       where: {
         deleted_at: null,
         template: { tenant_id: tenantId, deleted_at: null },
-        OR: [{ id: sanitizeIdentifier(identifier) }, { human_friendly_id: sanitizeIdentifier(identifier).toUpperCase() }],
-      },
-      include: { template: { select: { id: true, human_friendly_id: true } } },
-    });
+        OR: [{ id: sanitizeIdentifier(identifier) }, { human_friendly_id: sanitizeIdentifier(identifier).toUpperCase() }]},
+      include: { template: { select: { id: true, human_friendly_id: true } } }});
     if (!variable?.template) throw new HttpError('errors.template_variable.not_found', 404);
     return {
       panel: 'templates',
       templateId: resolvePublicIdentifier(variable.template.human_friendly_id, variable.template.id),
-      action: 'edit',
-    };
+      action: 'edit'};
   }
   throw new HttpError('errors.not_found', 404);
 };
@@ -318,18 +299,14 @@ const createConversation = async (payload = {}, user = {}) => {
         subject,
         created_by_user_id: userId,
         conversation_type: conversationType,
-        is_sensitive: Boolean(payload.is_sensitive),
-      },
-    });
+        is_sensitive: Boolean(payload.is_sensitive)}});
     for (const participantId of participantIds) {
       await tx.conversation_participant.create({
         data: {
           human_friendly_id: repository.createPublicId('CP'),
           conversation_id: conversation.id,
           user_id: participantId,
-          role_snapshot: participantId === userId ? currentRoles(user)[0] || null : null,
-        },
-      });
+          role_snapshot: participantId === userId ? currentRoles(user)[0] || null : null}});
     }
     for (const roleCode of payload.visibility_roles || []) {
       await tx.conversation_visibility_role.create({
@@ -337,9 +314,7 @@ const createConversation = async (payload = {}, user = {}) => {
           human_friendly_id: repository.createPublicId('CVR'),
           tenant_id: tenantId,
           conversation_id: conversation.id,
-          role_code: text(roleCode).toUpperCase(),
-        },
-      });
+          role_code: text(roleCode).toUpperCase()}});
     }
     return conversation;
   });
@@ -358,8 +333,7 @@ const markConversationRead = async (identifier, user = {}) => {
   await repository.prisma.$transaction(async (tx) => {
     await tx.conversation_participant.update({
       where: { id: participant.id },
-      data: { last_read_message_id: latestMessage?.id || null, last_read_at: latestMessage ? new Date() : participant.last_read_at || null },
-    });
+      data: { last_read_message_id: latestMessage?.id || null, last_read_at: latestMessage ? new Date() : participant.last_read_at || null }});
     await tx.notification.updateMany({
       where: {
         tenant_id: tenantId,
@@ -367,10 +341,8 @@ const markConversationRead = async (identifier, user = {}) => {
         deleted_at: null,
         context_type: 'conversation',
         context_public_id: resolvePublicIdentifier(conversation.human_friendly_id, conversation.id),
-        read_at: null,
-      },
-      data: { read_at: new Date() },
-    });
+        read_at: null},
+      data: { read_at: new Date() }});
   });
   emitToUsers([userId], NOTIFICATION_EVENTS.CONVERSATION_READ_STATE_UPDATED, { conversation_id: resolvePublicIdentifier(conversation.human_friendly_id, conversation.id) });
   return getConversation(resolvePublicIdentifier(conversation.human_friendly_id, conversation.id), user);
@@ -402,9 +374,7 @@ const addConversationParticipant = async (identifier, payload = {}, user = {}) =
         human_friendly_id: repository.createPublicId('CP'),
         conversation_id: conversation.id,
         user_id: targetUserId,
-        role_snapshot: text(payload.role_snapshot) || null,
-      },
-    });
+        role_snapshot: text(payload.role_snapshot) || null}});
   }
   return getConversation(resolvePublicIdentifier(conversation.human_friendly_id, conversation.id), user);
 };
@@ -430,8 +400,7 @@ const toggleConversationFavorite = async (identifier, user = {}) => {
   const participant = requireConversationAccess(conversation, userId);
   await repository.prisma.conversation_participant.update({
     where: { id: participant.id },
-    data: { is_favorite: !participant.is_favorite },
-  });
+    data: { is_favorite: !participant.is_favorite }});
   return getConversation(resolvePublicIdentifier(conversation.human_friendly_id, conversation.id), user);
 };
 
@@ -443,8 +412,7 @@ const toggleConversationFlag = async (identifier, user = {}) => {
   const participant = requireConversationAccess(conversation, userId);
   await repository.prisma.conversation_participant.update({
     where: { id: participant.id },
-    data: { is_flagged: !participant.is_flagged },
-  });
+    data: { is_flagged: !participant.is_flagged }});
   return getConversation(resolvePublicIdentifier(conversation.human_friendly_id, conversation.id), user);
 };
 
@@ -488,9 +456,7 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
         sender_user_id: userId,
         reply_to_message_id: replyTo?.id || null,
         content: content || ' ',
-        message_type: 'TEXT',
-      },
-    });
+        message_type: 'TEXT'}});
 
     for (const attachment of uploaded) {
       await tx.message_attachment.create({
@@ -505,17 +471,14 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
           content_type: attachment.content_type,
           size_bytes: attachment.size_bytes,
           attachment_kind: attachment.attachment_kind,
-          public_url: attachment.public_url,
-        },
-      });
+          public_url: attachment.public_url}});
     }
 
     await tx.conversation.update({ where: { id: conversation.id }, data: { last_message_at: new Date(), status: 'OPEN', archived_at: null } });
     if (senderParticipant) {
       await tx.conversation_participant.update({
         where: { id: senderParticipant.id },
-        data: { last_read_message_id: createdMessage.id, last_read_at: new Date(), archived_at: null },
-      });
+        data: { last_read_message_id: createdMessage.id, last_read_at: new Date(), archived_at: null }});
     }
     for (const participant of recipientParticipants) {
       const notification = await tx.notification.create({
@@ -529,9 +492,7 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
           message: content || 'Sent an attachment',
           target_path: buildConversationPath(publicConversationId),
           context_type: 'conversation',
-          context_public_id: publicConversationId,
-        },
-      });
+          context_public_id: publicConversationId}});
       await tx.notification_delivery.create({
         data: {
           human_friendly_id: repository.createPublicId('NDL'),
@@ -543,9 +504,7 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
           attempt_count: 1,
           last_attempt_at: new Date(),
           sent_at: new Date(),
-          delivered_at: new Date(),
-        },
-      });
+          delivered_at: new Date()}});
     }
     return createdMessage;
   });
@@ -567,8 +526,7 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
   for (const mentionedUserId of uniqueMentionIds) {
     const mentionedUser = await repository.prisma.user.findFirst({
       where: { id: mentionedUserId, tenant_id: tenantId, deleted_at: null },
-      select: { id: true, email: true, human_friendly_id: true, profile: { select: { first_name: true, last_name: true } } },
-    });
+      select: { id: true, email: true, human_friendly_id: true, profile: { select: { first_name: true, last_name: true } } }});
     if (!mentionedUser) continue;
     const notification = await repository.prisma.notification.create({
       data: {
@@ -581,9 +539,7 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
         message: content || 'Sent an attachment',
         target_path: buildConversationPath(publicConversationId),
         context_type: 'conversation',
-        context_public_id: publicConversationId,
-      },
-    });
+        context_public_id: publicConversationId}});
     await repository.prisma.notification_delivery.create({
       data: {
         human_friendly_id: repository.createPublicId('NDL'),
@@ -595,9 +551,7 @@ const createConversationMessage = async (identifier, payload = {}, files = [], u
         attempt_count: 1,
         last_attempt_at: new Date(),
         sent_at: new Date(),
-        delivered_at: new Date(),
-      },
-    });
+        delivered_at: new Date()}});
     emitToUsers([mentionedUserId], NOTIFICATION_EVENTS.NOTIFICATION_CREATED, { notification_id: notification.id });
   }
 
@@ -621,5 +575,4 @@ module.exports = {
   toggleConversationFavorite,
   toggleConversationFlag,
   listConversationMessages,
-  createConversationMessage,
-};
+  createConversationMessage};

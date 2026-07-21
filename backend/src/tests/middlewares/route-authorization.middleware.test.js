@@ -11,8 +11,7 @@ const loadRoute = (routeModule, controllerModule, extraMocks = {}) => {
 
   jest.doMock('@middlewares/auth.middleware', () => ({
     authenticate,
-    authorize,
-  }));
+    authorize}));
   jest.doMock(controllerModule, () => controller);
   Object.entries(extraMocks).forEach(([moduleName, factory]) => {
     jest.doMock(moduleName, factory);
@@ -42,8 +41,7 @@ describe('high-risk route permission wiring', () => {
       [PERMISSIONS.CLINICAL_READ, 'permission'],
       [PERMISSIONS.CLINICAL_WRITE, 'permission'],
       [PERMISSIONS.CLINICAL_WRITE, 'permission'],
-      [PERMISSIONS.CLINICAL_WRITE, 'permission'],
-    ]);
+      [PERMISSIONS.CLINICAL_WRITE, 'permission']]);
   });
 
   it('keeps admission and clinical-note PHI routes permission-gated', () => {
@@ -54,25 +52,21 @@ describe('high-risk route permission wiring', () => {
     expect(admission.authorize).toHaveBeenCalledTimes(7);
     expect(admission.authorize.mock.calls.slice(0, 2)).toEqual([
       [[PERMISSIONS.CLINICAL_READ], 'permission'],
-      [[PERMISSIONS.CLINICAL_READ], 'permission'],
-    ]);
+      [[PERMISSIONS.CLINICAL_READ], 'permission']]);
 
     const clinicalNote = loadRoute(
       '@routes/clinical-note/clinical-note.routes',
       '@controllers/clinical-note/clinical-note.controller',
       {
         '@middlewares/clinical-guard.middleware': () => ({
-          requireClinicalDeletePrivilege: jest.fn(passthrough),
-        }),
-      }
+          requireClinicalDeletePrivilege: jest.fn(passthrough)})}
     );
     expect(clinicalNote.authorize.mock.calls).toEqual([
       [PERMISSIONS.CLINICAL_READ, 'permission'],
       [PERMISSIONS.CLINICAL_READ, 'permission'],
       [PERMISSIONS.CLINICAL_WRITE, 'permission'],
       [PERMISSIONS.CLINICAL_WRITE, 'permission'],
-      [PERMISSIONS.CLINICAL_WRITE, 'permission'],
-    ]);
+      [PERMISSIONS.CLINICAL_WRITE, 'permission']]);
   });
 
   it('uses HR permissions for user administration', () => {
@@ -84,14 +78,12 @@ describe('high-risk route permission wiring', () => {
       PERMISSIONS.HR_READ,
       PERMISSIONS.TENANT_ADMIN,
       PERMISSIONS.FACILITY_ADMIN,
-      PERMISSIONS.SYSTEM_ADMIN,
-    ];
+      PERMISSIONS.SYSTEM_ADMIN];
     const writeScopes = [
       PERMISSIONS.HR_WRITE,
       PERMISSIONS.TENANT_ADMIN,
       PERMISSIONS.FACILITY_ADMIN,
-      PERMISSIONS.SYSTEM_ADMIN,
-    ];
+      PERMISSIONS.SYSTEM_ADMIN];
 
     expect(authorize.mock.calls).toEqual([
       [readScopes, 'permission'],
@@ -99,20 +91,17 @@ describe('high-risk route permission wiring', () => {
       [readScopes, 'permission'],
       [writeScopes, 'permission'],
       [writeScopes, 'permission'],
-      [writeScopes, 'permission'],
-    ]);
+      [writeScopes, 'permission']]);
   });
 
   it.each([
     ['@routes/role/role.routes', '@controllers/role/role.controller'],
-    ['@routes/permission/permission.routes', '@controllers/permission/permission.controller'],
-  ])('restricts access-catalog route %s to admin permissions', (routeModule, controllerModule) => {
+    ['@routes/permission/permission.routes', '@controllers/permission/permission.controller']])('restricts access-catalog route %s to admin permissions', (routeModule, controllerModule) => {
     const { authorize } = loadRoute(routeModule, controllerModule);
     const adminScopes = [
       PERMISSIONS.TENANT_ADMIN,
       PERMISSIONS.FACILITY_ADMIN,
-      PERMISSIONS.SYSTEM_ADMIN,
-    ];
+      PERMISSIONS.SYSTEM_ADMIN];
 
     expect(authorize).toHaveBeenCalledTimes(5);
     authorize.mock.calls.forEach((call) => {
@@ -136,7 +125,6 @@ describe('high-risk route permission wiring', () => {
     );
     expect(interop.authorize.mock.calls).toEqual([
       [PERMISSIONS.EVIDENCE_EXPORT, 'permission'],
-      [PERMISSIONS.EVIDENCE_EXPORT, 'permission'],
-    ]);
+      [PERMISSIONS.EVIDENCE_EXPORT, 'permission']]);
   });
 });

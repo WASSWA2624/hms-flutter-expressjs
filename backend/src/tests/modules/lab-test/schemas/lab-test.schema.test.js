@@ -32,9 +32,7 @@ describe('Lab Test Schema Validation', () => {
             label: 'Default',
             unit: 'cells/mcL',
             ucum_code: '10*3/uL',
-            is_default: true,
-          },
-        ],
+            is_default: true}],
         reference_ranges: [
           {
             label: 'Adult',
@@ -43,9 +41,7 @@ describe('Lab Test Schema Validation', () => {
             age_min_value: '18',
             age_min_unit: 'YEAR',
             normal_min_value: '4.5',
-            normal_max_value: '11.0',
-          },
-        ],
+            normal_max_value: '11.0'}],
         result_options: [
           {
             value: 'POSITIVE',
@@ -53,10 +49,7 @@ describe('Lab Test Schema Validation', () => {
             aliases: ['Reactive'],
             status: 'ABNORMAL',
             result_flag: 'POSITIVE',
-            is_positive: true,
-          },
-        ],
-      };
+            is_positive: true}]};
 
       const result = createLabTestSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -176,10 +169,7 @@ describe('Lab Test Schema Validation', () => {
         name: 'Complete Blood Count',
         reference_ranges: [
           {
-            age_min_value: '18',
-          },
-        ],
-      };
+            age_min_value: '18'}]};
 
       const result = createLabTestSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -191,9 +181,7 @@ describe('Lab Test Schema Validation', () => {
         name: 'Complete Blood Count',
         unit_options: [
           { unit: 'g/dL' },
-          { unit: 'g/dL' },
-        ],
-      };
+          { unit: 'g/dL' }]};
 
       const result = createLabTestSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -206,9 +194,7 @@ describe('Lab Test Schema Validation', () => {
         result_kind: 'QUALITATIVE',
         result_options: [
           { value: 'POSITIVE' },
-          { value: 'POSITIVE' },
-        ],
-      };
+          { value: 'POSITIVE' }]};
 
       const result = createLabTestSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -228,10 +214,7 @@ describe('Lab Test Schema Validation', () => {
             age_max_value: '12',
             age_max_unit: 'YEAR',
             normal_min_value: '3.5',
-            normal_max_value: '10.5',
-          },
-        ],
-      };
+            normal_max_value: '10.5'}]};
 
       const result = updateLabTestSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -290,10 +273,7 @@ describe('Lab Test Schema Validation', () => {
         reference_ranges: [
           {
             normal_min_value: '20',
-            normal_max_value: '10',
-          },
-        ],
-      };
+            normal_max_value: '10'}]};
 
       const result = updateLabTestSchema.safeParse(invalidData);
       expect(result.success).toBe(false);

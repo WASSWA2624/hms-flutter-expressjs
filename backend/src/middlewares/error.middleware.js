@@ -30,8 +30,7 @@ const errorMiddleware = (err, req, res, next) => {
     .filter((item) => item && typeof item === 'object')
     .map((item) => ({
       ...item,
-      originalError: item.originalError ? String(item.originalError) : undefined,
-    }));
+      originalError: item.originalError ? String(item.originalError) : undefined}));
 
   // Log error for debugging (sanitized)
   logger.error('Error caught by error middleware', {

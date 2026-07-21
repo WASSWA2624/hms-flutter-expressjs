@@ -12,12 +12,10 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   normalizeIdentifier,
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -27,14 +25,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const buildEmptyListResult = (page, limit) => ({
   radiologyTests: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const resolveResourceId = async (model, identifier) => {
   const normalized = normalizeIdentifier(identifier);
@@ -43,8 +39,7 @@ const resolveResourceId = async (model, identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 
   return resolved || normalized;
 };
@@ -375,9 +370,7 @@ const buildStandardRadiologyTests = () => {
               region,
               laterality,
               codeFragment(region),
-              codeFragment(protocol),
-            ].filter(Boolean),
-          });
+              codeFragment(protocol)].filter(Boolean)});
           sequence += 1;
         }
       }
@@ -415,8 +408,7 @@ const standardRadiologyTestMatchesFilters = (key, definition, filters = {}) => {
     definition.body_region,
     definition.laterality,
     definition.procedure_type,
-    ...(definition.search_terms || []),
-  ].some((value) => includesIgnoreCase(value, search));
+    ...(definition.search_terms || [])].some((value) => includesIgnoreCase(value, search));
 };
 
 const standardRadiologyTestRecord = ([key, definition]) => ({
@@ -440,9 +432,7 @@ const standardRadiologyTestRecord = ([key, definition]) => ({
     definition.body_region,
     definition.laterality,
     definition.procedure_type,
-    ...(definition.search_terms || []),
-  ].filter(Boolean).join(' '),
-});
+    ...(definition.search_terms || [])].filter(Boolean).join(' ')});
 
 const mergeStandardRadiologyTests = ({
   mappedRecords,
@@ -451,8 +441,7 @@ const mergeStandardRadiologyTests = ({
   filters,
   limit,
   sortBy,
-  order,
-}) => {
+  order}) => {
   if (String(filters.include_standard_catalog || '').toLowerCase() !== 'true') {
     return { records: mappedRecords, total: null };
   }
@@ -480,24 +469,21 @@ const mergeStandardRadiologyTests = ({
 
   return {
     records,
-    total: Math.max(records.length, Number(dbTotal || 0) + standardRecords.length),
-  };
+    total: Math.max(records.length, Number(dbTotal || 0) + standardRecords.length)};
 };
 
 const resolveOrCreateStandardRadiologyTest = async ({
   code,
   tenantId,
   userId,
-  ipAddress,
-}) => {
+  ipAddress}) => {
   const definition = STANDARD_RADIOLOGY_TESTS[normalizeText(code).toUpperCase()];
   if (!definition) return null;
 
   const existing = await radiologyTestRepository.findMany(
     {
       tenant_id: tenantId,
-      code: definition.code,
-    },
+      code: definition.code},
     0,
     1,
     { created_at: 'desc' }
@@ -512,8 +498,7 @@ const resolveOrCreateStandardRadiologyTest = async ({
     body_region: definition.body_region || null,
     laterality: definition.laterality || null,
     equipment: definition.equipment || null,
-    procedure_type: definition.procedure_type || null,
-  });
+    procedure_type: definition.procedure_type || null});
 
   createAuditLog({
     tenant_id: tenantId,
@@ -525,11 +510,8 @@ const resolveOrCreateStandardRadiologyTest = async ({
       after: {
         ...definition,
         id: radiologyTest.id,
-        source: 'STANDARD_RADIOLOGY_CATALOG',
-      },
-    },
-    ip_address: ipAddress,
-  }).catch(() => {});
+        source: 'STANDARD_RADIOLOGY_CATALOG'}},
+    ip_address: ipAddress}).catch(() => {});
 
   return { id: radiologyTest.id };
 };
@@ -558,8 +540,7 @@ const listRadiologyTests = async (filters, page, limit, sortBy, order, userId, i
       const tenantId = await resolveIdentifierForFilter({
         value: filters.tenant_id,
         model: 'tenant',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (tenantId === null) return buildEmptyListResult(page, limit);
       if (tenantId !== undefined) whereClause.tenant_id = tenantId;
     }
@@ -586,13 +567,11 @@ const listRadiologyTests = async (filters, page, limit, sortBy, order, userId, i
       filters,
       limit,
       sortBy,
-      order,
-    });
+      order});
 
     return {
       radiologyTests: merged.records,
-      pagination: buildPagination(page, limit, merged.total ?? total),
-    };
+      pagination: buildPagination(page, limit, merged.total ?? total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -640,9 +619,7 @@ const createRadiologyTest = async (data, userId, ipAddress) => {
         value: data.tenant_id,
         field: 'tenant_id',
         model: 'tenant',
-        where: { deleted_at: null },
-      }),
-    };
+        where: { deleted_at: null }})};
     const radiologyTest = await radiologyTestRepository.create(normalizedData);
 
     // Create audit log (non-blocking)
@@ -689,8 +666,7 @@ const updateRadiologyTest = async (id, data, userId, ipAddress) => {
         value: payload.tenant_id,
         field: 'tenant_id',
         model: 'tenant',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
 
     const radiologyTest = await radiologyTestRepository.update(resolvedId, payload);

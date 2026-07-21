@@ -5,14 +5,12 @@ const {
   buildDashboardSummary,
   resolveEffectiveRole,
   resolvePackId,
-  resolveProfileId,
-} = require('@lib/dashboard/summary');
+  resolveProfileId} = require('@lib/dashboard/summary');
 const {
   buildDateWindowFilter,
   buildPagination,
   normalizeString,
-  safeUpper,
-} = require('@lib/reports/api');
+  safeUpper} = require('@lib/reports/api');
 const { ROLES, normalizeRoleName } = require('@config/roles');
 const { getUserPermissions } = require('@middlewares/auth.middleware');
 
@@ -23,8 +21,7 @@ const DATE_PRESET_LOOKUPS = Object.freeze([
   { id: 'today', label_key: 'dashboard.filters.datePresets.today' },
   { id: 'last_7_days', label_key: 'dashboard.filters.datePresets.last7Days' },
   { id: 'last_30_days', label_key: 'dashboard.filters.datePresets.last30Days' },
-  { id: 'last_90_days', label_key: 'dashboard.filters.datePresets.last90Days' },
-]);
+  { id: 'last_90_days', label_key: 'dashboard.filters.datePresets.last90Days' }]);
 
 const MODULE_LOOKUPS = Object.freeze([
   { id: 'patients', label_key: 'dashboard.modules.patients' },
@@ -38,8 +35,7 @@ const MODULE_LOOKUPS = Object.freeze([
   { id: 'biomedical', label_key: 'dashboard.modules.biomedical' },
   { id: 'hr', label_key: 'dashboard.modules.hr' },
   { id: 'emergency', label_key: 'dashboard.modules.emergency' },
-  { id: 'subscriptions', label_key: 'dashboard.modules.subscriptions' },
-]);
+  { id: 'subscriptions', label_key: 'dashboard.modules.subscriptions' }]);
 
 const EVENT_TYPE_LOOKUPS = Object.freeze([
   { id: 'appointment_updated', label_key: 'dashboard.activity.eventTypes.appointmentUpdated' },
@@ -52,8 +48,7 @@ const EVENT_TYPE_LOOKUPS = Object.freeze([
   { id: 'housekeeping_task_updated', label_key: 'dashboard.activity.eventTypes.housekeepingTaskUpdated' },
   { id: 'equipment_work_order_updated', label_key: 'dashboard.activity.eventTypes.workOrderUpdated' },
   { id: 'staff_leave_updated', label_key: 'dashboard.activity.eventTypes.staffLeaveUpdated' },
-  { id: 'emergency_case_updated', label_key: 'dashboard.activity.eventTypes.emergencyCaseUpdated' },
-]);
+  { id: 'emergency_case_updated', label_key: 'dashboard.activity.eventTypes.emergencyCaseUpdated' }]);
 
 const QUEUE_LOOKUPS = Object.freeze([
   { id: 'appointments', label_key: 'dashboard.queue.filters.queueTypes.appointments' },
@@ -66,8 +61,7 @@ const QUEUE_LOOKUPS = Object.freeze([
   { id: 'housekeeping_tasks', label_key: 'dashboard.queue.filters.queueTypes.housekeepingTasks' },
   { id: 'equipment_work_orders', label_key: 'dashboard.queue.filters.queueTypes.equipmentWorkOrders' },
   { id: 'staff_leaves', label_key: 'dashboard.queue.filters.queueTypes.staffLeaves' },
-  { id: 'emergency_cases', label_key: 'dashboard.queue.filters.queueTypes.emergencyCases' },
-]);
+  { id: 'emergency_cases', label_key: 'dashboard.queue.filters.queueTypes.emergencyCases' }]);
 
 const STATUS_LABEL_KEYS = Object.freeze({
   SCHEDULED: 'dashboard.statusValues.scheduled',
@@ -88,15 +82,13 @@ const STATUS_LABEL_KEYS = Object.freeze({
   PARTIALLY_DISPENSED: 'dashboard.statusValues.partiallyDispensed',
   OPEN: 'dashboard.statusValues.open',
   ACKNOWLEDGED: 'dashboard.statusValues.acknowledged',
-  REQUESTED: 'dashboard.statusValues.requested',
-});
+  REQUESTED: 'dashboard.statusValues.requested'});
 
 const buildStatusLookups = (statusIds = []) =>
   statusIds
     .map((id) => ({
       id,
-      label_key: STATUS_LABEL_KEYS[id] || null,
-    }))
+      label_key: STATUS_LABEL_KEYS[id] || null}))
     .filter((entry) => entry.label_key);
 
 const QUEUE_STATUS_LOOKUPS = Object.freeze(
@@ -119,8 +111,7 @@ const QUEUE_STATUS_LOOKUPS = Object.freeze(
     'PARTIALLY_DISPENSED',
     'OPEN',
     'ACKNOWLEDGED',
-    'REQUESTED',
-  ])
+    'REQUESTED'])
 );
 
 const ACTIVITY_STATUS_LOOKUPS = Object.freeze(QUEUE_STATUS_LOOKUPS);
@@ -129,8 +120,7 @@ const actionTarget = (moduleSlug, resource, action = 'open') => ({
   module_slug: moduleSlug,
   resource,
   public_id: null,
-  action,
-});
+  action});
 
 const actionDefinition = ({
   id,
@@ -140,8 +130,7 @@ const actionDefinition = ({
   requiredAnyPermissions = [],
   requiredModules = [],
   scope = 'assigned_scope',
-  target,
-}) => Object.freeze({
+  target}) => Object.freeze({
   id,
   label,
   allowed_roles: allowedRoles,
@@ -149,8 +138,7 @@ const actionDefinition = ({
   required_any_permissions: requiredAnyPermissions,
   required_modules: requiredModules,
   scope,
-  route_target: target,
-});
+  route_target: target});
 
 const QUICK_ACTION_LIBRARY = Object.freeze([
   actionDefinition({ id: 'select_context', label: 'Select tenant/facility context', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN], requiredAnyPermissions: ['system:admin', 'tenant:admin'], scope: 'platform_or_tenant', target: actionTarget('settings', 'tenant-facility-context') }),
@@ -224,8 +212,7 @@ const QUICK_ACTION_LIBRARY = Object.freeze([
   actionDefinition({ id: 'export_mortuary_evidence', label: 'Export mortuary evidence', allowedRoles: [ROLES.MORTUARY_MANAGER], requiredAnyPermissions: ['mortuary:export', 'evidence:export'], requiredModules: ['mortuary'], scope: 'mortuary_management', target: actionTarget('mortuary', 'exports') }),
   actionDefinition({ id: 'update_own_profile', label: 'Update my profile', allowedRoles: [ROLES.PATIENT, ROLES.OTHER, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.NURSE, ROLES.BILLING, ROLES.HR, ROLES.OPERATIONS], requiredAnyPermissions: ['profile:update', 'profile:read'], scope: 'self', target: actionTarget('profile', 'profile') }),
   actionDefinition({ id: 'view_my_care', label: 'View my care information', allowedRoles: [ROLES.PATIENT], requiredPermissions: ['profile:read'], scope: 'self', target: actionTarget('profile', 'care') }),
-  actionDefinition({ id: 'contact_facility', label: 'Contact facility', allowedRoles: [ROLES.PATIENT, ROLES.OTHER], requiredPermissions: ['profile:read'], scope: 'self', target: actionTarget('communications', 'messages') }),
-]);
+  actionDefinition({ id: 'contact_facility', label: 'Contact facility', allowedRoles: [ROLES.PATIENT, ROLES.OTHER], requiredPermissions: ['profile:read'], scope: 'self', target: actionTarget('communications', 'messages') })]);
 
 const getUserRoles = (user = {}) => {
   const candidates = [];
@@ -309,8 +296,7 @@ const sanitizeQuickAction = (action) => ({
   required_any_permissions: action.required_any_permissions,
   required_modules: action.required_modules,
   scope: action.scope,
-  route_target: action.route_target,
-});
+  route_target: action.route_target});
 
 const hiddenReasonForAction = (action, roles, permissions, user) => {
   // Authority order: Plan (modules) → Role → Rights.
@@ -342,8 +328,7 @@ const resolveHomeQuickActions = (user = {}, packId = null, limit = 8) => {
       'manage_facilities',
       'manage_roles_access',
       'manage_users_roles',
-      'manage_users',
-    ], limit);
+      'manage_users'], limit);
   }
   if (packId === ROLE_PACKS.NURSE) {
     return resolveQuickActionsByIds(user, [
@@ -352,8 +337,7 @@ const resolveHomeQuickActions = (user = {}, packId = null, limit = 8) => {
       'create_handover',
       'write_clinical_note',
       'route_patient',
-      'check_in_patient',
-    ], limit);
+      'check_in_patient'], limit);
   }
   return resolveQuickActions(user, limit);
 };
@@ -377,8 +361,7 @@ const resolveQuickActionsByIds = (user = {}, preferredIds = [], limit = 8) => {
 
   return {
     quickActions: quickActions.slice(0, limit),
-    hiddenReasonMap,
-  };
+    hiddenReasonMap};
 };
 
 const resolveQuickActions = (user = {}, limit = 8) => {
@@ -402,8 +385,7 @@ const resolveQuickActions = (user = {}, limit = 8) => {
 
   return {
     quickActions: quickActions.slice(0, limit),
-    hiddenReasonMap,
-  };
+    hiddenReasonMap};
 };
 
 const startOfDay = (value = new Date()) => {
@@ -450,39 +432,31 @@ const buildLabResultScopeWhere = (scope = {}) => ({
     deleted_at: null,
     lab_order: {
       deleted_at: null,
-      patient: patientRelationScope(scope),
-    },
-  },
-});
+      patient: patientRelationScope(scope)}}});
 
 const buildRadiologyResultScopeWhere = (scope = {}) => ({
   deleted_at: null,
   radiology_order: {
     deleted_at: null,
-    patient: patientRelationScope(scope),
-  },
-});
+    patient: patientRelationScope(scope)}});
 
 const buildPharmacyOrderScopeWhere = (scope = {}) => ({
   deleted_at: null,
-  patient: patientRelationScope(scope),
-});
+  patient: patientRelationScope(scope)});
 
 const buildHousekeepingWhere = (scope = {}) => ({
   deleted_at: null,
   ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
   ...(scope.tenant_id
     ? { facility: { is: { deleted_at: null, tenant_id: scope.tenant_id } } }
-    : {}),
-});
+    : {})});
 
 const buildMaintenanceWhere = (scope = {}) => ({
   deleted_at: null,
   ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
   ...(scope.tenant_id
     ? { facility: { is: { deleted_at: null, tenant_id: scope.tenant_id } } }
-    : {}),
-});
+    : {})});
 
 const activeQueueDefinitions = Object.freeze({
   appointments: {
@@ -497,11 +471,9 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, scheduled_start: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...directScope(scope),
-      status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
-    }),
+      status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] }}),
     buildSeverity: (row) => (String(row?.status || '').toUpperCase() === 'IN_PROGRESS' ? 'high' : 'medium'),
-    activity_event_type: 'appointment_updated',
-  },
+    activity_event_type: 'appointment_updated'},
   admissions: {
     id: 'admissions',
     queue_key: 'admissions',
@@ -514,11 +486,9 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...directScope(scope),
-      status: 'ADMITTED',
-    }),
+      status: 'ADMITTED'}),
     buildSeverity: () => 'high',
-    activity_event_type: 'admission_updated',
-  },
+    activity_event_type: 'admission_updated'},
   billing_follow_up: {
     id: 'billing_follow_up',
     queue_key: 'billing_follow_up',
@@ -536,19 +506,15 @@ const activeQueueDefinitions = Object.freeze({
       issued_at: true,
       updated_at: true,
       total_amount: true,
-      currency: true,
-    },
+      currency: true},
     buildWhere: (scope) => ({
       ...directScope(scope),
       OR: [
         { status: { in: ['SENT', 'OVERDUE'] } },
-        { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } },
-      ],
-    }),
+        { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }]}),
     buildSeverity: (row) =>
       String(row?.status || '').toUpperCase() === 'OVERDUE' ? 'critical' : 'medium',
-    activity_event_type: 'invoice_updated',
-  },
+    activity_event_type: 'invoice_updated'},
   lab_results: {
     id: 'lab_results',
     queue_key: 'lab_results',
@@ -561,16 +527,14 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...buildLabResultScopeWhere(scope),
-      status: { in: ['PENDING', 'CRITICAL', 'ABNORMAL'] },
-    }),
+      status: { in: ['PENDING', 'CRITICAL', 'ABNORMAL'] }}),
     buildSeverity: (row) => {
       const status = String(row?.status || '').toUpperCase();
       if (status === 'CRITICAL') return 'critical';
       if (status === 'ABNORMAL') return 'high';
       return 'medium';
     },
-    activity_event_type: 'lab_result_updated',
-  },
+    activity_event_type: 'lab_result_updated'},
   radiology_results: {
     id: 'radiology_results',
     queue_key: 'radiology_results',
@@ -583,15 +547,13 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...buildRadiologyResultScopeWhere(scope),
-      status: { in: ['DRAFT', 'AMENDED'] },
-    }),
+      status: { in: ['DRAFT', 'AMENDED'] }}),
     buildSeverity: (row) => {
       const status = String(row?.status || '').toUpperCase();
       if (status === 'AMENDED') return 'high';
       return 'medium';
     },
-    activity_event_type: 'radiology_result_updated',
-  },
+    activity_event_type: 'radiology_result_updated'},
   lab_results_ready: {
     id: 'lab_results_ready',
     queue_key: 'lab_results_ready',
@@ -604,16 +566,14 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...buildLabResultScopeWhere(scope),
-      status: { in: ['NORMAL', 'ABNORMAL', 'CRITICAL'] },
-    }),
+      status: { in: ['NORMAL', 'ABNORMAL', 'CRITICAL'] }}),
     buildSeverity: (row) => {
       const status = String(row?.status || '').toUpperCase();
       if (status === 'CRITICAL') return 'critical';
       if (status === 'ABNORMAL') return 'high';
       return 'medium';
     },
-    activity_event_type: 'lab_result_updated',
-  },
+    activity_event_type: 'lab_result_updated'},
   radiology_reports_ready: {
     id: 'radiology_reports_ready',
     queue_key: 'radiology_reports_ready',
@@ -626,15 +586,13 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...buildRadiologyResultScopeWhere(scope),
-      status: { in: ['FINAL', 'AMENDED'] },
-    }),
+      status: { in: ['FINAL', 'AMENDED'] }}),
     buildSeverity: (row) => {
       const status = String(row?.status || '').toUpperCase();
       if (status === 'AMENDED') return 'high';
       return 'medium';
     },
-    activity_event_type: 'radiology_result_updated',
-  },
+    activity_event_type: 'radiology_result_updated'},
   clinical_follow_ups: {
     id: 'clinical_follow_ups',
     queue_key: 'clinical_follow_ups',
@@ -650,8 +608,7 @@ const activeQueueDefinitions = Object.freeze({
       status: true,
       scheduled_at: true,
       updated_at: true,
-      created_at: true,
-    },
+      created_at: true},
     buildWhere: (scope) => ({
       deleted_at: null,
       status: 'SCHEDULED',
@@ -659,16 +616,13 @@ const activeQueueDefinitions = Object.freeze({
         deleted_at: null,
         ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
         ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
-        ...(scope.provider_user_id ? { provider_user_id: scope.provider_user_id } : {}),
-      },
-    }),
+        ...(scope.provider_user_id ? { provider_user_id: scope.provider_user_id } : {})}}),
     buildSeverity: (row) => {
       const scheduledAt = row?.scheduled_at ? new Date(row.scheduled_at) : null;
       if (scheduledAt && scheduledAt.getTime() <= Date.now()) return 'high';
       return 'medium';
     },
-    activity_event_type: 'follow_up_updated',
-  },
+    activity_event_type: 'follow_up_updated'},
   pharmacy_orders: {
     id: 'pharmacy_orders',
     queue_key: 'pharmacy_orders',
@@ -689,26 +643,19 @@ const activeQueueDefinitions = Object.freeze({
         select: {
           first_name: true,
           last_name: true,
-          human_friendly_id: true,
-        },
-      },
+          human_friendly_id: true}},
       _count: {
         select: {
-          items: true,
-        },
-      },
-    },
+          items: true}}},
     buildWhere: (scope) => ({
       ...buildPharmacyOrderScopeWhere(scope),
-      status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] },
-    }),
+      status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] }}),
     buildSeverity: (row) => {
       const status = normalizeString(row?.status).toUpperCase();
       if (status === 'PARTIALLY_DISPENSED') return 'high';
       return 'medium';
     },
-    activity_event_type: 'pharmacy_order_updated',
-  },
+    activity_event_type: 'pharmacy_order_updated'},
   maintenance_requests: {
     id: 'maintenance_requests',
     queue_key: 'maintenance_requests',
@@ -721,15 +668,13 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, reported_at: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...buildMaintenanceWhere(scope),
-      status: { in: ['OPEN', 'IN_PROGRESS'] },
-    }),
+      status: { in: ['OPEN', 'IN_PROGRESS'] }}),
     buildSeverity: (row) => {
       const status = normalizeString(row?.status).toUpperCase();
       if (status === 'OPEN') return 'high';
       return 'medium';
     },
-    activity_event_type: 'maintenance_request_updated',
-  },
+    activity_event_type: 'maintenance_request_updated'},
   housekeeping_tasks: {
     id: 'housekeeping_tasks',
     queue_key: 'housekeeping_tasks',
@@ -742,15 +687,13 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, scheduled_at: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...buildHousekeepingWhere(scope),
-      status: { in: ['PENDING', 'IN_PROGRESS'] },
-    }),
+      status: { in: ['PENDING', 'IN_PROGRESS'] }}),
     buildSeverity: (row) => {
       const scheduledAt = row?.scheduled_at ? new Date(row.scheduled_at) : null;
       if (scheduledAt && scheduledAt.getTime() < Date.now()) return 'high';
       return 'medium';
     },
-    activity_event_type: 'housekeeping_task_updated',
-  },
+    activity_event_type: 'housekeeping_task_updated'},
   equipment_work_orders: {
     id: 'equipment_work_orders',
     queue_key: 'equipment_work_orders',
@@ -764,15 +707,13 @@ const activeQueueDefinitions = Object.freeze({
     buildWhere: (scope) => ({
       deleted_at: null,
       ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-      status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
-    }),
+      status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] }}),
     buildSeverity: (row) => {
       const priority = String(row?.priority || '').toUpperCase();
       if (['CRITICAL', 'URGENT', 'HIGH'].includes(priority)) return 'critical';
       return 'high';
     },
-    activity_event_type: 'equipment_work_order_updated',
-  },
+    activity_event_type: 'equipment_work_order_updated'},
   staff_leaves: {
     id: 'staff_leaves',
     queue_key: 'staff_leaves',
@@ -787,13 +728,10 @@ const activeQueueDefinitions = Object.freeze({
       deleted_at: null,
       staff_profile: {
         deleted_at: null,
-        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-      },
-      status: 'REQUESTED',
-    }),
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})},
+      status: 'REQUESTED'}),
     buildSeverity: () => 'medium',
-    activity_event_type: 'staff_leave_updated',
-  },
+    activity_event_type: 'staff_leave_updated'},
   hr_roster_drafts: {
     id: 'hr_roster_drafts',
     queue_key: 'hr_roster_drafts',
@@ -806,11 +744,9 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...directScope(scope, { includeTenant: true, includeFacility: true }),
-      status: 'DRAFT',
-    }),
+      status: 'DRAFT'}),
     buildSeverity: () => 'medium',
-    activity_event_type: 'staff_leave_updated',
-  },
+    activity_event_type: 'staff_leave_updated'},
   hr_unassigned_shifts: {
     id: 'hr_unassigned_shifts',
     queue_key: 'hr_unassigned_shifts',
@@ -824,11 +760,9 @@ const activeQueueDefinitions = Object.freeze({
     buildWhere: (scope) => ({
       ...directScope(scope, { includeTenant: true, includeFacility: true }),
       status: 'SCHEDULED',
-      assignments: { none: { deleted_at: null } },
-    }),
+      assignments: { none: { deleted_at: null } }}),
     buildSeverity: () => 'high',
-    activity_event_type: 'staff_leave_updated',
-  },
+    activity_event_type: 'staff_leave_updated'},
   hr_shift_swaps: {
     id: 'hr_shift_swaps',
     queue_key: 'hr_shift_swaps',
@@ -845,12 +779,9 @@ const activeQueueDefinitions = Object.freeze({
       shift: {
         deleted_at: null,
         ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-        ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
-      },
-    }),
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {})}}),
     buildSeverity: () => 'medium',
-    activity_event_type: 'staff_leave_updated',
-  },
+    activity_event_type: 'staff_leave_updated'},
   hr_payroll_drafts: {
     id: 'hr_payroll_drafts',
     queue_key: 'hr_payroll_drafts',
@@ -864,11 +795,9 @@ const activeQueueDefinitions = Object.freeze({
     buildWhere: (scope) => ({
       deleted_at: null,
       ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-      status: 'DRAFT',
-    }),
+      status: 'DRAFT'}),
     buildSeverity: () => 'medium',
-    activity_event_type: 'staff_leave_updated',
-  },
+    activity_event_type: 'staff_leave_updated'},
   hr_overdue_shifts: {
     id: 'hr_overdue_shifts',
     queue_key: 'hr_overdue_shifts',
@@ -882,11 +811,9 @@ const activeQueueDefinitions = Object.freeze({
     buildWhere: (scope) => ({
       ...directScope(scope, { includeTenant: true, includeFacility: true }),
       status: 'SCHEDULED',
-      start_time: { lt: new Date() },
-    }),
+      start_time: { lt: new Date() }}),
     buildSeverity: () => 'high',
-    activity_event_type: 'staff_leave_updated',
-  },
+    activity_event_type: 'staff_leave_updated'},
   emergency_cases: {
     id: 'emergency_cases',
     queue_key: 'emergency_cases',
@@ -899,15 +826,13 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, severity: true, created_at: true, updated_at: true },
     buildWhere: (scope) => ({
       ...directScope(scope),
-      status: 'OPEN',
-    }),
+      status: 'OPEN'}),
     buildSeverity: (row) => {
       const severity = String(row?.severity || '').toUpperCase();
       if (['CRITICAL', 'HIGH'].includes(severity)) return 'critical';
       return 'high';
     },
-    activity_event_type: 'emergency_case_updated',
-  },
+    activity_event_type: 'emergency_case_updated'},
   mortuary_cases: {
     id: 'mortuary_cases',
     queue_key: 'mortuary_cases',
@@ -920,15 +845,13 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, received_at: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...directScope(scope),
-      status: { in: ['RECEIVED', 'IDENTIFICATION_PENDING', 'IN_STORAGE', 'POST_MORTEM_PENDING', 'READY_FOR_RELEASE'] },
-    }),
+      status: { in: ['RECEIVED', 'IDENTIFICATION_PENDING', 'IN_STORAGE', 'POST_MORTEM_PENDING', 'READY_FOR_RELEASE'] }}),
     buildSeverity: (row) => {
       const status = normalizeString(row?.status).toUpperCase();
       if (['IDENTIFICATION_PENDING', 'POST_MORTEM_PENDING'].includes(status)) return 'high';
       return 'medium';
     },
-    activity_event_type: 'mortuary_case_updated',
-  },
+    activity_event_type: 'mortuary_case_updated'},
   mortuary_releases: {
     id: 'mortuary_releases',
     queue_key: 'mortuary_releases',
@@ -941,11 +864,9 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, created_at: true, updated_at: true },
     buildWhere: (scope) => ({
       ...directScope(scope),
-      status: 'DRAFT',
-    }),
+      status: 'DRAFT'}),
     buildSeverity: () => 'high',
-    activity_event_type: 'mortuary_release_updated',
-  },
+    activity_event_type: 'mortuary_release_updated'},
   mortuary_viewings: {
     id: 'mortuary_viewings',
     queue_key: 'mortuary_viewings',
@@ -958,15 +879,13 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, scheduled_at: true, updated_at: true, created_at: true },
     buildWhere: (scope) => ({
       ...directScope(scope),
-      status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
-    }),
+      status: { in: ['SCHEDULED', 'IN_PROGRESS'] }}),
     buildSeverity: (row) => {
       const scheduledAt = row?.scheduled_at ? new Date(row.scheduled_at) : null;
       if (scheduledAt && scheduledAt.getTime() < Date.now()) return 'high';
       return 'medium';
     },
-    activity_event_type: 'mortuary_viewing_updated',
-  },
+    activity_event_type: 'mortuary_viewing_updated'},
   mortuary_post_mortems: {
     id: 'mortuary_post_mortems',
     queue_key: 'mortuary_post_mortems',
@@ -979,12 +898,9 @@ const activeQueueDefinitions = Object.freeze({
     select: { id: true, human_friendly_id: true, status: true, created_at: true, updated_at: true },
     buildWhere: (scope) => ({
       ...directScope(scope),
-      status: { in: ['REQUESTED', 'APPROVED', 'SCHEDULED', 'IN_PROGRESS'] },
-    }),
+      status: { in: ['REQUESTED', 'APPROVED', 'SCHEDULED', 'IN_PROGRESS'] }}),
     buildSeverity: () => 'medium',
-    activity_event_type: 'mortuary_post_mortem_updated',
-  },
-});
+    activity_event_type: 'mortuary_post_mortem_updated'}});
 
 const ROLE_QUEUE_IDS = Object.freeze({
   [ROLE_PACKS.ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
@@ -995,8 +911,7 @@ const ROLE_QUEUE_IDS = Object.freeze({
     'appointments',
     'lab_results_ready',
     'radiology_reports_ready',
-    'clinical_follow_ups',
-  ],
+    'clinical_follow_ups'],
   [ROLE_PACKS.NURSE]: ['admissions', 'lab_results', 'radiology_results', 'appointments'],
   [ROLE_PACKS.LAB_TECH]: ['lab_results'],
   [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology_results'],
@@ -1010,8 +925,7 @@ const ROLE_QUEUE_IDS = Object.freeze({
     'hr_roster_drafts',
     'hr_unassigned_shifts',
     'hr_payroll_drafts',
-    'hr_overdue_shifts',
-  ],
+    'hr_overdue_shifts'],
   [ROLE_PACKS.BIOMED]: ['equipment_work_orders'],
   [ROLE_PACKS.HOUSE_KEEPER]: ['housekeeping_tasks'],
   [ROLE_PACKS.AMBULANCE_OPERATOR]: ['emergency_cases'],
@@ -1024,22 +938,19 @@ const ROLE_QUEUE_IDS = Object.freeze({
   [ROLE_PACKS.MORTUARY_STAFF]: ['mortuary_cases', 'mortuary_viewings', 'mortuary_post_mortems'],
   [ROLE_PACKS.MORTUARY_MANAGER]: ['mortuary_releases', 'mortuary_cases', 'mortuary_post_mortems'],
   [ROLE_PACKS.PATIENT_SAFE]: [],
-  [ROLE_PACKS.LIMITED]: [],
-});
+  [ROLE_PACKS.LIMITED]: []});
 
 const routeTarget = (moduleSlug, resource, publicId, action = 'view') => ({
   module_slug: moduleSlug,
   resource,
   public_id: publicId || null,
-  action,
-});
+  action});
 
 const getDateRange = (filters = {}) => {
   if (filters.from || filters.to) {
     return {
       from: filters.from || null,
-      to: filters.to || null,
-    };
+      to: filters.to || null};
   }
 
   const preset = normalizeString(filters.date_preset || filters.datePreset).toLowerCase();
@@ -1067,10 +978,7 @@ const buildHumanFriendlySearchWhere = (search) => {
   return {
     OR: candidates.map((candidate) => ({
       human_friendly_id: {
-        contains: candidate,
-      },
-    })),
-  };
+        contains: candidate}}))};
 };
 
 const applyHumanFriendlySearch = (where, search) => {
@@ -1078,8 +986,7 @@ const applyHumanFriendlySearch = (where, search) => {
   if (!searchWhere) return where;
   if (!where || Object.keys(where).length === 0) return searchWhere;
   return {
-    AND: [where, searchWhere],
-  };
+    AND: [where, searchWhere]};
 };
 
 const resolveQueueDefinitions = (packId, filters = {}) => {
@@ -1156,8 +1063,6 @@ const hasDashboardFilters = (filters = {}) =>
     filters.tenantId,
     filters.facility_id,
     filters.facilityId,
-    filters.branch_id,
-    filters.branchId,
     filters.queue,
     filters.search,
     filters.status,
@@ -1167,13 +1072,11 @@ const hasDashboardFilters = (filters = {}) =>
     filters.date_preset,
     filters.datePreset,
     filters.from,
-    filters.to,
-  ].some((value) => Boolean(normalizeString(value)));
+    filters.to].some((value) => Boolean(normalizeString(value)));
 
 const buildCollectionEmptyState = ({ target, filters = {} }) => ({
   reason: hasDashboardFilters(filters) ? 'no_matches' : 'guided_setup',
-  target,
-});
+  target});
 
 const resolveQueueSortValue = (item = {}, sortBy = 'occurred_at') => {
   switch (normalizeString(sortBy).toLowerCase()) {
@@ -1265,9 +1168,7 @@ const buildQueueItem = (definition, row = {}) => {
       total_amount: row.total_amount != null ? Number(row.total_amount) : null,
       currency: row.currency || null,
       patient_name: patientName || null,
-      item_count: itemCount || null,
-    },
-  };
+      item_count: itemCount || null}};
 };
 
 const buildActivityItem = (definition, row = {}) => {
@@ -1282,8 +1183,7 @@ const buildActivityItem = (definition, row = {}) => {
     human_friendly_id: publicId,
     status: normalizeString(row.status || row.billing_status).toUpperCase() || null,
     occurred_at: row.updated_at || row[definition.time_field] || row.created_at || null,
-    target: routeTarget(definition.module_slug, definition.resource, publicId),
-  };
+    target: routeTarget(definition.module_slug, definition.resource, publicId)};
 };
 
 const paginate = (items = [], page = 1, limit = DEFAULT_LIMIT) => {
@@ -1292,8 +1192,7 @@ const paginate = (items = [], page = 1, limit = DEFAULT_LIMIT) => {
   const start = (safePage - 1) * safeLimit;
   return {
     items: items.slice(start, start + safeLimit),
-    pagination: buildPagination(safePage, safeLimit, items.length),
-  };
+    pagination: buildPagination(safePage, safeLimit, items.length)};
 };
 
 const resolveClinicalActorId = (user = {}) =>
@@ -1309,46 +1208,28 @@ const buildDoctorLabAuthorshipFilter = (providerUserId) => {
         lab_order_item: {
           is: {
             lab_order: {
-              is: { ordered_by_user_id: providerUserId, deleted_at: null },
-            },
-          },
-        },
-      },
+              is: { ordered_by_user_id: providerUserId, deleted_at: null }}}}},
       {
         lab_order_item: {
           is: {
             lab_order: {
               is: {
                 encounter: {
-                  is: { provider_user_id: providerUserId, deleted_at: null },
-                },
-              },
-            },
-          },
-        },
-      },
-    ],
-  };
+                  is: { provider_user_id: providerUserId, deleted_at: null }}}}}}}]};
 };
 
 const buildDoctorRadiologyAuthorshipFilter = (providerUserId) => {
   if (!providerUserId) {
     return {
       radiology_order: {
-        is: { encounter: { is: { provider_user_id: '__none__' } } },
-      },
-    };
+        is: { encounter: { is: { provider_user_id: '__none__' } } }}};
   }
   return {
     radiology_order: {
       is: {
         deleted_at: null,
         encounter: {
-          is: { provider_user_id: providerUserId, deleted_at: null },
-        },
-      },
-    },
-  };
+          is: { provider_user_id: providerUserId, deleted_at: null }}}}};
 };
 
 const applyDoctorQueueWhere = ({ definition, where, packId, user = {} }) => {
@@ -1385,10 +1266,7 @@ const applyDoctorQueueWhere = ({ definition, where, packId, user = {} }) => {
             : {}),
           ...(where.encounter?.is?.facility_id
             ? { facility_id: where.encounter.is.facility_id }
-            : {}),
-        },
-      },
-    };
+            : {})}}};
   }
 
   return where;
@@ -1404,8 +1282,7 @@ const splitDoctorWorkspaceQueues = (items = []) => {
   return {
     queue_preview: appointments.slice(0, 5),
     results_preview: results.slice(0, 3),
-    follow_up_preview: followUps.slice(0, 3),
-  };
+    follow_up_preview: followUps.slice(0, 3)};
 };
 
 const splitReceptionistWorkspaceQueues = (items = []) => {
@@ -1416,14 +1293,12 @@ const splitReceptionistWorkspaceQueues = (items = []) => {
   );
   const followUps = [
     ...inProgress,
-    ...emergencyCases,
-  ];
+    ...emergencyCases];
 
   return {
     queue_preview: appointments.slice(0, 5),
     results_preview: [],
-    follow_up_preview: followUps.slice(0, 3),
-  };
+    follow_up_preview: followUps.slice(0, 3)};
 };
 
 const refineDoctorInsights = ({ packId, signals = [] }) => {
@@ -1442,8 +1317,7 @@ const getQueueItems = async ({
   limit = DEFAULT_LIMIT,
   sortBy = 'occurred_at',
   order = 'desc',
-  user = {},
-}) => {
+  user = {}}) => {
   const definitions = resolveQueueDefinitions(packId, filters);
   const range = getDateRange(filters);
   const fetchCount = Math.max(20, Number(limit || DEFAULT_LIMIT) * Number(page || 1));
@@ -1457,8 +1331,7 @@ const getQueueItems = async ({
       if (filters.status) {
         where = {
           ...where,
-          status: safeUpper(filters.status),
-        };
+          status: safeUpper(filters.status)};
       }
 
       const rows = await dashboardWorkspaceRepository.findRows({
@@ -1466,8 +1339,7 @@ const getQueueItems = async ({
         where,
         select: definition.select,
         orderBy: { [definition.default_sort]: 'desc' },
-        take: fetchCount,
-      });
+        take: fetchCount});
 
       return rows.map((row) => buildQueueItem(definition, row)).filter(Boolean);
     })
@@ -1480,15 +1352,12 @@ const getQueueItems = async ({
       pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), 0),
       empty_state: buildCollectionEmptyState({
         filters,
-        target: routeTarget('dashboard', 'getting-started', null, 'open'),
-      }),
-    };
+        target: routeTarget('dashboard', 'getting-started', null, 'open')})};
   }
 
   return {
     ...paginate(sortItemsBy(combined, sortBy, order, resolveQueueSortValue), page, limit),
-    empty_state: null,
-  };
+    empty_state: null};
 };
 
 const getActivityItems = async ({
@@ -1498,8 +1367,7 @@ const getActivityItems = async ({
   page = 1,
   limit = DEFAULT_LIMIT,
   sortBy = 'occurred_at',
-  order = 'desc',
-}) => {
+  order = 'desc'}) => {
   const definitions = resolveQueueDefinitions(packId, filters);
   const range = getDateRange(filters);
   const fetchCount = Math.max(20, Number(limit || DEFAULT_LIMIT) * Number(page || 1));
@@ -1512,8 +1380,7 @@ const getActivityItems = async ({
       if (filters.status) {
         where = {
           ...where,
-          status: safeUpper(filters.status),
-        };
+          status: safeUpper(filters.status)};
       }
 
       const rows = await dashboardWorkspaceRepository.findRows({
@@ -1521,8 +1388,7 @@ const getActivityItems = async ({
         where,
         select: definition.select,
         orderBy: { updated_at: 'desc' },
-        take: fetchCount,
-      });
+        take: fetchCount});
 
       return rows.map((row) => buildActivityItem(definition, row)).filter(Boolean);
     })
@@ -1542,15 +1408,12 @@ const getActivityItems = async ({
       pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), 0),
       empty_state: buildCollectionEmptyState({
         filters,
-        target: routeTarget('dashboard', 'getting-started', null, 'open'),
-      }),
-    };
+        target: routeTarget('dashboard', 'getting-started', null, 'open')})};
   }
 
   return {
     ...paginate(sortItemsBy(combined, sortBy, order, resolveActivitySortValue), page, limit),
-    empty_state: null,
-  };
+    empty_state: null};
 };
 
 const buildMetric = ({ id, currentValue, previousValue = null, format = 'number', labelKey, state = 'live' }) => ({
@@ -1560,8 +1423,7 @@ const buildMetric = ({ id, currentValue, previousValue = null, format = 'number'
   state,
   current_value: currentValue,
   previous_value: previousValue,
-  delta: previousValue == null ? null : toNumber(currentValue) - toNumber(previousValue),
-});
+  delta: previousValue == null ? null : toNumber(currentValue) - toNumber(previousValue)});
 
 const buildSnapshot = async (scope = {}) => {
   const now = new Date();
@@ -1603,8 +1465,7 @@ const buildSnapshot = async (scope = {}) => {
     openMaintenance,
     pendingHousekeeping,
     openWorkOrders,
-    pendingLeaves,
-  ] = await Promise.all([
+    pendingLeaves] = await Promise.all([
     dashboardWorkspaceRepository.countRows({ model: 'patient', where: patientWhere }),
     dashboardWorkspaceRepository.countRows({ model: 'appointment', where: appointmentWhere }),
     dashboardWorkspaceRepository.countRows({
@@ -1612,138 +1473,101 @@ const buildSnapshot = async (scope = {}) => {
       where: {
         deleted_at: null,
         ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-        ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
-      },
-    }),
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {})}}),
     dashboardWorkspaceRepository.countRows({ model: 'invoice', where: invoiceWhere }),
     dashboardWorkspaceRepository.countRows({
       model: 'drug',
       where: {
         deleted_at: null,
-        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-      },
-    }),
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})}}),
     dashboardWorkspaceRepository.countRows({
       model: 'lab_test',
       where: {
         deleted_at: null,
-        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-      },
-    }),
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})}}),
     dashboardWorkspaceRepository.countRows({ model: 'admission', where: admissionWhere }),
     dashboardWorkspaceRepository.countRows({
       model: 'patient',
       where: {
         ...patientWhere,
-        created_at: { gte: currentWeekStart },
-      },
-    }),
+        created_at: { gte: currentWeekStart }}}),
     dashboardWorkspaceRepository.countRows({
       model: 'patient',
       where: {
         ...patientWhere,
-        created_at: { gte: previousWeekStart, lte: previousWeekEnd },
-      },
-    }),
+        created_at: { gte: previousWeekStart, lte: previousWeekEnd }}}),
     dashboardWorkspaceRepository.sumRows({
       model: 'payment',
       where: {
         ...paymentWhere,
         status: 'COMPLETED',
-        paid_at: { gte: currentWeekStart },
-      },
-      field: 'amount',
-    }),
+        paid_at: { gte: currentWeekStart }},
+      field: 'amount'}),
     dashboardWorkspaceRepository.sumRows({
       model: 'payment',
       where: {
         ...paymentWhere,
         status: 'COMPLETED',
-        paid_at: { gte: previousWeekStart, lte: previousWeekEnd },
-      },
-      field: 'amount',
-    }),
+        paid_at: { gte: previousWeekStart, lte: previousWeekEnd }},
+      field: 'amount'}),
+    dashboardWorkspaceRepository.countRows({
+      model: 'invoice',
+      where: {
+        ...invoiceWhere,
+        issued_at: { gte: trailingMonthStart }}}),
     dashboardWorkspaceRepository.countRows({
       model: 'invoice',
       where: {
         ...invoiceWhere,
         issued_at: { gte: trailingMonthStart },
-      },
-    }),
-    dashboardWorkspaceRepository.countRows({
-      model: 'invoice',
-      where: {
-        ...invoiceWhere,
-        issued_at: { gte: trailingMonthStart },
-        status: 'PAID',
-      },
-    }),
+        status: 'PAID'}}),
     dashboardWorkspaceRepository.countRows({
       model: 'bed',
       where: {
         ...directScope(scope, { includeTenant: true, includeFacility: true }),
-        status: 'OCCUPIED',
-      },
-    }),
+        status: 'OCCUPIED'}}),
     dashboardWorkspaceRepository.countRows({
       model: 'bed',
-      where: directScope(scope, { includeTenant: true, includeFacility: true }),
-    }),
+      where: directScope(scope, { includeTenant: true, includeFacility: true })}),
     dashboardWorkspaceRepository.countRows({
       model: 'lab_result',
       where: {
         ...labResultWhere,
-        status: 'CRITICAL',
-      },
-    }),
+        status: 'CRITICAL'}}),
     dashboardWorkspaceRepository.countRows({
       model: 'invoice',
       where: {
         ...invoiceWhere,
-        status: 'OVERDUE',
-      },
-    }),
+        status: 'OVERDUE'}}),
     dashboardWorkspaceRepository.countRows({
       model: 'pharmacy_order',
       where: {
         ...pharmacyOrderWhere,
-        status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] },
-      },
-    }),
+        status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] }}}),
     dashboardWorkspaceRepository.countRows({
       model: 'maintenance_request',
       where: {
         ...maintenanceWhere,
-        status: { in: ['OPEN', 'IN_PROGRESS'] },
-      },
-    }),
+        status: { in: ['OPEN', 'IN_PROGRESS'] }}}),
     dashboardWorkspaceRepository.countRows({
       model: 'housekeeping_task',
       where: {
         ...housekeepingWhere,
-        status: { in: ['PENDING', 'IN_PROGRESS'] },
-      },
-    }),
+        status: { in: ['PENDING', 'IN_PROGRESS'] }}}),
     dashboardWorkspaceRepository.countRows({
       model: 'equipment_work_order',
       where: {
         deleted_at: null,
         ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-        status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
-      },
-    }),
+        status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] }}}),
     dashboardWorkspaceRepository.countRows({
       model: 'staff_leave',
       where: {
         deleted_at: null,
         staff_profile: {
           deleted_at: null,
-          ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
-        },
-        status: 'REQUESTED',
-      },
-    }),
-  ]);
+          ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})},
+        status: 'REQUESTED'}})]);
 
   return {
     patients_total: patientsTotal,
@@ -1767,8 +1591,7 @@ const buildSnapshot = async (scope = {}) => {
     open_maintenance: openMaintenance,
     pending_housekeeping: pendingHousekeeping,
     open_work_orders: openWorkOrders,
-    pending_leaves: pendingLeaves,
-  };
+    pending_leaves: pendingLeaves};
 };
 
 const buildPlanUsage = (subscription = null, canManageSubscriptions = false) => {
@@ -1777,8 +1600,7 @@ const buildPlanUsage = (subscription = null, canManageSubscriptions = false) => 
       state: 'unavailable',
       manage_action_allowed: false,
       target: routeTarget('subscriptions', 'subscription-plans', null, 'open'),
-      metrics: [],
-    };
+      metrics: []};
   }
 
   const warningPercent = toNumber(subscription.plan?.plan_fit_warning_percent, 80);
@@ -1787,27 +1609,22 @@ const buildPlanUsage = (subscription = null, canManageSubscriptions = false) => 
       id: 'users',
       used: toNumber(subscription.users_used),
       limit: toNumber(subscription.plan?.max_users),
-      percent: percentOf(subscription.users_used, subscription.plan?.max_users),
-    },
+      percent: percentOf(subscription.users_used, subscription.plan?.max_users)},
     {
       id: 'facilities',
       used: toNumber(subscription.facilities_used),
       limit: toNumber(subscription.plan?.max_facilities),
-      percent: percentOf(subscription.facilities_used, subscription.plan?.max_facilities),
-    },
+      percent: percentOf(subscription.facilities_used, subscription.plan?.max_facilities)},
     {
       id: 'storage_mb',
       used: toNumber(subscription.storage_used_mb),
       limit: toNumber(subscription.plan?.max_storage_mb),
-      percent: percentOf(subscription.storage_used_mb, subscription.plan?.max_storage_mb),
-    },
+      percent: percentOf(subscription.storage_used_mb, subscription.plan?.max_storage_mb)},
     {
       id: 'modules',
       used: toNumber(subscription.modules_used || subscription.module_subscriptions?.length || 0),
       limit: toNumber(subscription.plan?.max_modules),
-      percent: percentOf(subscription.modules_used || subscription.module_subscriptions?.length || 0, subscription.plan?.max_modules),
-    },
-  ];
+      percent: percentOf(subscription.modules_used || subscription.module_subscriptions?.length || 0, subscription.plan?.max_modules)}];
 
   return {
     state: 'active',
@@ -1817,15 +1634,13 @@ const buildPlanUsage = (subscription = null, canManageSubscriptions = false) => 
       id: dashboardWorkspaceRepository.safePublicId(subscription.plan?.human_friendly_id, subscription.plan?.id),
       name: subscription.plan?.name || null,
       tier_code: subscription.plan?.tier_code || null,
-      billing_cycle: subscription.plan?.billing_cycle || null,
-    },
+      billing_cycle: subscription.plan?.billing_cycle || null},
     status: subscription.status || null,
     change_status: subscription.change_status || null,
     fit_status: subscription.plan_fit_status || null,
     warning_percent: warningPercent,
     target: routeTarget('subscriptions', 'subscriptions', dashboardWorkspaceRepository.safePublicId(subscription.human_friendly_id, subscription.id), 'view'),
-    metrics,
-  };
+    metrics};
 };
 
 const ALERT_MODULES_BY_PACK = Object.freeze({
@@ -1851,8 +1666,7 @@ const ALERT_MODULES_BY_PACK = Object.freeze({
   [ROLE_PACKS.HOUSEKEEPING_MANAGER]: ['housekeeping', 'operations'],
   [ROLE_PACKS.BIOMED_MANAGER]: ['biomedical'],
   [ROLE_PACKS.MORTUARY_STAFF]: ['mortuary'],
-  [ROLE_PACKS.MORTUARY_MANAGER]: ['mortuary'],
-});
+  [ROLE_PACKS.MORTUARY_MANAGER]: ['mortuary']});
 
 const packAllowsAlertModule = (packId, moduleSlug) => {
   const modules = ALERT_MODULES_BY_PACK[packId] || [];
@@ -1870,8 +1684,7 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
       module_slug: 'billing',
       severity: 'critical',
       count: snapshot.overdue_invoices,
-      target: routeTarget('billing', 'invoices', null, 'list'),
-    });
+      target: routeTarget('billing', 'invoices', null, 'list')});
   }
   if (snapshot.critical_labs > 0 && packAllowsAlertModule(packId, 'lab')) {
     signals.push({
@@ -1880,8 +1693,7 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
       module_slug: 'lab',
       severity: 'critical',
       count: snapshot.critical_labs,
-      target: routeTarget('lab', 'results', null, 'list'),
-    });
+      target: routeTarget('lab', 'results', null, 'list')});
   }
   if (occupancyPercent >= 85 && packAllowsAlertModule(packId, 'ipd')) {
     signals.push({
@@ -1890,8 +1702,7 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
       module_slug: 'ipd',
       severity: occupancyPercent >= 95 ? 'critical' : 'high',
       count: occupancyPercent,
-      target: routeTarget('ipd', 'admissions', null, 'list'),
-    });
+      target: routeTarget('ipd', 'admissions', null, 'list')});
   }
 
   const planUsage = buildPlanUsage(subscription, canManageSubscriptions);
@@ -1905,8 +1716,7 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
       module_slug: 'subscriptions',
       severity: 'high',
       count: approachingLimits.length,
-      target: planUsage.target,
-    });
+      target: planUsage.target});
   }
 
 
@@ -1930,29 +1740,24 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
           id: `module:${slug}`,
           module_slug: slug,
           state: 'actionable',
-          target: routeTarget('subscriptions', 'modules', null, 'discover'),
-        }))
+          target: routeTarget('subscriptions', 'modules', null, 'discover')}))
     : [];
 
   const helpCards = [
     {
       id: 'paperless_playbook',
       kind: 'paperless_playbook',
-      target: routeTarget('dashboard', 'getting-started', null, 'open'),
-    },
+      target: routeTarget('dashboard', 'getting-started', null, 'open')},
     {
       id: 'operations_queue',
       kind: 'operations_queue',
-      target: routeTarget('dashboard', 'queue', null, 'open'),
-    },
-  ];
+      target: routeTarget('dashboard', 'queue', null, 'open')}];
 
   return {
     signals,
     module_recommendations: recommendations,
     plan_usage: planUsage,
-    help_cards: helpCards,
-  };
+    help_cards: helpCards};
 };
 
 const buildChecklist = ({ snapshot, facilityContext, packId }) => {
@@ -1962,33 +1767,27 @@ const buildChecklist = ({ snapshot, facilityContext, packId }) => {
       id: 'patients',
       kind: 'patients',
       completed: snapshot.patients_total > 0,
-      target: routeTarget('patients', 'patients', null, 'create'),
-    },
+      target: routeTarget('patients', 'patients', null, 'create')},
     {
       id: 'appointments',
       kind: 'appointments',
       completed: snapshot.appointments_total > 0,
-      target: routeTarget('scheduling', 'appointments', null, 'create'),
-    },
+      target: routeTarget('scheduling', 'appointments', null, 'create')},
     {
       id: 'staff',
       kind: 'staff',
       completed: snapshot.users_total > 0,
-      target: routeTarget('hr', 'staff-profiles', null, 'create'),
-    },
+      target: routeTarget('hr', 'staff-profiles', null, 'create')},
     {
       id: 'billing',
       kind: 'billing',
       completed: snapshot.invoices_total > 0,
-      target: routeTarget('billing', 'invoices', null, 'create'),
-    },
+      target: routeTarget('billing', 'invoices', null, 'create')},
     {
       id: 'catalog',
       kind: 'catalog',
       completed: snapshot.drugs_total + snapshot.lab_tests_total > 0,
-      target: routeTarget('pharmacy', 'drugs', null, 'create'),
-    },
-  ];
+      target: routeTarget('pharmacy', 'drugs', null, 'create')}];
 
   if (
     isHospital ||
@@ -1998,22 +1797,19 @@ const buildChecklist = ({ snapshot, facilityContext, packId }) => {
       ROLE_PACKS.ADMIN,
       ROLE_PACKS.SUPER_ADMIN,
       ROLE_PACKS.TENANT_ADMIN,
-      ROLE_PACKS.FACILITY_ADMIN,
-    ].includes(packId)
+      ROLE_PACKS.FACILITY_ADMIN].includes(packId)
   ) {
     items.push({
       id: 'admissions',
       kind: 'admissions',
       completed: snapshot.admissions_total > 0,
-      target: routeTarget('ipd', 'admissions', null, 'start_admission'),
-    });
+      target: routeTarget('ipd', 'admissions', null, 'start_admission')});
   }
 
   return {
     completed_count: items.filter((item) => item.completed).length,
     total_count: items.length,
-    items,
-  };
+    items};
 };
 
 const buildValueProof = (snapshot = {}) => {
@@ -2027,31 +1823,26 @@ const buildValueProof = (snapshot = {}) => {
       currentValue: snapshot.revenue_current_week,
       previousValue: snapshot.revenue_previous_week,
       format: 'currency',
-      labelKey: 'dashboard.valueProof.metrics.weeklyRevenue',
-    }),
+      labelKey: 'dashboard.valueProof.metrics.weeklyRevenue'}),
     buildMetric({
       id: 'weekly_registrations',
       currentValue: snapshot.registrations_current_week,
       previousValue: snapshot.registrations_previous_week,
       format: 'number',
-      labelKey: 'dashboard.valueProof.metrics.weeklyRegistrations',
-    }),
+      labelKey: 'dashboard.valueProof.metrics.weeklyRegistrations'}),
     buildMetric({
       id: 'collection_rate',
       currentValue: collectionRate,
       previousValue: null,
       format: 'percent',
-      labelKey: 'dashboard.valueProof.metrics.collectionRate',
-    }),
+      labelKey: 'dashboard.valueProof.metrics.collectionRate'}),
     buildMetric({
       id: 'bed_occupancy',
       currentValue: percentOf(snapshot.occupied_beds, snapshot.total_beds),
       previousValue: null,
       format: 'percent',
       labelKey: 'dashboard.valueProof.metrics.bedOccupancy',
-      state: snapshot.total_beds > 0 ? 'live' : 'guide',
-    }),
-  ];
+      state: snapshot.total_beds > 0 ? 'live' : 'guide'})];
 };
 
 const buildPanelSummaries = ({ queueItems, activityItems, insights, checklist }) => [
@@ -2059,8 +1850,7 @@ const buildPanelSummaries = ({ queueItems, activityItems, insights, checklist })
   { id: 'queue', count: queueItems.pagination?.total || queueItems.items.length },
   { id: 'activity', count: activityItems.pagination?.total || activityItems.items.length },
   { id: 'insights', count: (insights.signals || []).length + (insights.module_recommendations || []).length },
-  { id: 'getting-started', count: checklist.total_count - checklist.completed_count },
-];
+  { id: 'getting-started', count: checklist.total_count - checklist.completed_count }];
 
 const buildStatusStrip = (dashboardSummary = {}) =>
   (dashboardSummary.summaryCards || []).map((item) => ({
@@ -2074,8 +1864,7 @@ const buildStatusStrip = (dashboardSummary = {}) =>
     required_modules: item.required_modules || [],
     allowed_roles: item.allowed_roles || [],
     scope: item.scope || null,
-    route_target: item.route_target || null,
-  }));
+    route_target: item.route_target || null}));
 
 const buildSuperAdminPlatformWorkspace = async ({
   filters = {},
@@ -2084,18 +1873,15 @@ const buildSuperAdminPlatformWorkspace = async ({
   user = {},
   effectiveRole,
   effectiveProfileId,
-  effectivePackId,
-}) => {
+  effectivePackId}) => {
   const baseSummary = await buildDashboardSummary({
     query: { days: 7, platform: true },
     user,
-    repository: dashboardWidgetRepository,
-  });
+    repository: dashboardWidgetRepository});
   const quickActionResolution = resolveHomeQuickActions(user, effectivePackId, 8);
   const [followUps, platformAlerts] = await Promise.all([
     dashboardWorkspaceRepository.findPlatformFollowUps({ limit: 5 }),
-    dashboardWorkspaceRepository.findPlatformAlerts({ limit: 3 }),
-  ]);
+    dashboardWorkspaceRepository.findPlatformAlerts({ limit: 3 })]);
   const statusStrip = buildStatusStrip(baseSummary);
 
   return {
@@ -2107,13 +1893,10 @@ const buildSuperAdminPlatformWorkspace = async ({
       tenant_id: null,
       facility_id: null,
       facility_name: null,
-      facility_type: null,
-      branch_id: null,
-    },
+      facility_type: null},
     panel_summaries: [
       { id: 'follow_up', count: followUps.length },
-      { id: 'alerts', count: platformAlerts.length },
-    ],
+      { id: 'alerts', count: platformAlerts.length }],
     status_strip: statusStrip,
     summary_cards: statusStrip,
     trend: baseSummary.trend,
@@ -2126,8 +1909,7 @@ const buildSuperAdminPlatformWorkspace = async ({
         role_profile_id: effectiveProfileId,
         role: effectiveRole,
         facility_name: null,
-        facility_type: null,
-      },
+        facility_type: null},
       checklist: { completed_count: 0, total_count: 0, items: [] },
       trend: baseSummary.trend,
       distribution: baseSummary.distribution,
@@ -2138,24 +1920,19 @@ const buildSuperAdminPlatformWorkspace = async ({
       module_recommendations: [],
       plan_usage: { state: 'unavailable', metrics: [] },
       activity_preview: [],
-      help_cards: [],
-    },
+      help_cards: []},
     queue: {
       items: followUps,
-      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), followUps.length),
-    },
+      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), followUps.length)},
     activity: {
       items: [],
-      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0),
-    },
+      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0)},
     insights: {
       signals: platformAlerts,
       module_recommendations: [],
       plan_usage: { state: 'unavailable', metrics: [] },
-      help_cards: [],
-    },
-    getting_started: { completed_count: 0, total_count: 0, items: [] },
-  };
+      help_cards: []},
+    getting_started: { completed_count: 0, total_count: 0, items: [] }};
 };
 
 const buildTenantAdminOrganizationWorkspace = async ({
@@ -2166,25 +1943,20 @@ const buildTenantAdminOrganizationWorkspace = async ({
   effectiveRole,
   effectiveProfileId,
   effectivePackId,
-  scope,
-}) => {
+  scope}) => {
   const baseSummary = await buildDashboardSummary({
     query: { ...scope, days: 7 },
     user,
-    repository: dashboardWidgetRepository,
-  });
+    repository: dashboardWidgetRepository});
   const quickActionResolution = resolveHomeQuickActions(user, effectivePackId, 8);
   const [followUps, tenantAlerts, facilityContext] = await Promise.all([
     dashboardWorkspaceRepository.findTenantFollowUps({
       tenantId: scope.tenant_id,
-      limit: 5,
-    }),
+      limit: 5}),
     dashboardWorkspaceRepository.findTenantAlerts({
       tenantId: scope.tenant_id,
-      limit: 3,
-    }),
-    dashboardWorkspaceRepository.findFacilityContext(scope),
-  ]);
+      limit: 3}),
+    dashboardWorkspaceRepository.findFacilityContext(scope)]);
   const statusStrip = buildStatusStrip(baseSummary);
 
   return {
@@ -2199,13 +1971,10 @@ const buildTenantAdminOrganizationWorkspace = async ({
         scope.facility_id
       ),
       facility_name: facilityContext?.name || null,
-      facility_type: facilityContext?.facility_type || null,
-      branch_id: dashboardWorkspaceRepository.safePublicId(scope.branch_id),
-    },
+      facility_type: facilityContext?.facility_type || null},
     panel_summaries: [
       { id: 'follow_up', count: followUps.length },
-      { id: 'alerts', count: tenantAlerts.length },
-    ],
+      { id: 'alerts', count: tenantAlerts.length }],
     status_strip: statusStrip,
     summary_cards: statusStrip,
     trend: baseSummary.trend,
@@ -2218,8 +1987,7 @@ const buildTenantAdminOrganizationWorkspace = async ({
         role_profile_id: effectiveProfileId,
         role: effectiveRole,
         facility_name: facilityContext?.name || null,
-        facility_type: facilityContext?.facility_type || null,
-      },
+        facility_type: facilityContext?.facility_type || null},
       checklist: { completed_count: 0, total_count: 0, items: [] },
       trend: baseSummary.trend,
       distribution: baseSummary.distribution,
@@ -2230,24 +1998,19 @@ const buildTenantAdminOrganizationWorkspace = async ({
       module_recommendations: [],
       plan_usage: { state: 'unavailable', metrics: [] },
       activity_preview: [],
-      help_cards: [],
-    },
+      help_cards: []},
     queue: {
       items: followUps,
-      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), followUps.length),
-    },
+      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), followUps.length)},
     activity: {
       items: [],
-      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0),
-    },
+      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0)},
     insights: {
       signals: tenantAlerts,
       module_recommendations: [],
       plan_usage: { state: 'unavailable', metrics: [] },
-      help_cards: [],
-    },
-    getting_started: { completed_count: 0, total_count: 0, items: [] },
-  };
+      help_cards: []},
+    getting_started: { completed_count: 0, total_count: 0, items: [] }};
 };
 
 const getWorkspace = async (
@@ -2262,8 +2025,7 @@ const getWorkspace = async (
   const scopeResult = await dashboardWorkspaceRepository.resolveWorkspaceScope({
     filters,
     user,
-    effectiveRole,
-  });
+    effectiveRole});
   const effectiveProfileId = resolveProfileId(effectiveRole);
   const effectivePackId = resolvePackId(effectiveProfileId);
   const tenantContextQuickActions = resolveHomeQuickActions(user, effectivePackId, 8);
@@ -2276,8 +2038,7 @@ const getWorkspace = async (
       user,
       effectiveRole,
       effectiveProfileId,
-      effectivePackId,
-    });
+      effectivePackId});
   }
 
   if (scopeResult.state === 'tenant_context_required') {
@@ -2288,15 +2049,12 @@ const getWorkspace = async (
       role_profile: {
         id: effectiveProfileId,
         role: effectiveRole,
-        pack: effectivePackId,
-      },
+        pack: effectivePackId},
       context: {
         role: {
           id: effectiveProfileId,
           role: effectiveRole,
-          pack: effectivePackId,
-        },
-      },
+          pack: effectivePackId}},
       panel_summaries: [],
       status_strip: [],
       summary_cards: [],
@@ -2316,17 +2074,14 @@ const getWorkspace = async (
         module_recommendations: [],
         plan_usage: { state: 'unavailable', metrics: [] },
         activity_preview: [],
-        help_cards: [],
-      },
+        help_cards: []},
       queue: { items: [], pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), 0) },
       activity: { items: [], pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), 0) },
       insights: { signals: [], module_recommendations: [], plan_usage: { state: 'unavailable', metrics: [] }, help_cards: [] },
       getting_started: { completed_count: 0, total_count: 0, items: [] },
       tenant_options: (lookups.tenants || []).map((entry) => ({
         id: dashboardWorkspaceRepository.safePublicId(entry.human_friendly_id, entry.id),
-        label: entry.name,
-      })),
-    };
+        label: entry.name}))};
   }
 
   if (effectiveRole === ROLES.TENANT_ADMIN) {
@@ -2338,16 +2093,14 @@ const getWorkspace = async (
       effectiveRole,
       effectiveProfileId,
       effectivePackId,
-      scope: scopeResult.scope,
-    });
+      scope: scopeResult.scope});
   }
 
   const scope = scopeResult.scope;
   const baseSummary = await buildDashboardSummary({
     query: { ...scope, days: 7 },
     user,
-    repository: dashboardWidgetRepository,
-  });
+    repository: dashboardWidgetRepository});
   const packId = baseSummary.roleProfile?.pack || ROLE_PACKS.ADMIN;
   const canManageSubscriptions = ADMIN_ROLES.has(effectiveRole);
   const quickActionResolution = resolveHomeQuickActions(user, packId, 8);
@@ -2366,8 +2119,7 @@ const getWorkspace = async (
         module_slug: 'patient_portal',
         severity: card.id === 'my_open_bills' ? 'warning' : 'info',
         count: Number(card.value || 0),
-        target: routeTarget('profile', 'my-care', null, 'open'),
-      }));
+        target: routeTarget('profile', 'my-care', null, 'open')}));
     const patientActivity = (baseSummary.activity || []).slice(0, 6).map((entry) => ({
       id: entry.id,
       event_type: entry.title || 'care update',
@@ -2376,8 +2128,7 @@ const getWorkspace = async (
       human_friendly_id: null,
       status: null,
       occurred_at: baseSummary.generatedAt,
-      target: routeTarget('profile', 'my-care', null, 'open'),
-    }));
+      target: routeTarget('profile', 'my-care', null, 'open')}));
 
     return {
       state: 'ready',
@@ -2388,9 +2139,7 @@ const getWorkspace = async (
         tenant_id: dashboardWorkspaceRepository.safePublicId(scope.tenant_id),
         facility_id: dashboardWorkspaceRepository.safePublicId(facilityContext?.human_friendly_id, scope.facility_id),
         facility_name: facilityContext?.name || null,
-        facility_type: facilityContext?.facility_type || null,
-        branch_id: dashboardWorkspaceRepository.safePublicId(scope.branch_id),
-      },
+        facility_type: facilityContext?.facility_type || null},
       panel_summaries: [],
       status_strip: statusStrip,
       summary_cards: statusStrip,
@@ -2404,8 +2153,7 @@ const getWorkspace = async (
           role_profile_id: baseSummary.roleProfile?.id || 'patient',
           role: baseSummary.roleProfile?.role || effectiveRole,
           facility_name: facilityContext?.name || null,
-          facility_type: facilityContext?.facility_type || null,
-        },
+          facility_type: facilityContext?.facility_type || null},
         checklist: { completed_count: 0, total_count: 0, items: [] },
         trend: baseSummary.trend,
         distribution: baseSummary.distribution,
@@ -2416,13 +2164,11 @@ const getWorkspace = async (
         module_recommendations: [],
         plan_usage: safePlanUsage,
         activity_preview: patientActivity,
-        help_cards: [],
-      },
+        help_cards: []},
       queue: { items: [], pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), 0) },
       activity: { items: patientActivity, pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), patientActivity.length) },
       insights: { signals: patientAlerts, module_recommendations: [], plan_usage: safePlanUsage, help_cards: [] },
-      getting_started: { completed_count: 0, total_count: 0, items: [] },
-    };
+      getting_started: { completed_count: 0, total_count: 0, items: [] }};
   }
 
   const [facilityContext, subscription, queueItems, activityItems, snapshot] = await Promise.all([
@@ -2430,8 +2176,7 @@ const getWorkspace = async (
     dashboardWorkspaceRepository.findCurrentSubscription(scope),
     getQueueItems({ scope, packId, filters, page, limit, sortBy, order, user }),
     getActivityItems({ scope, packId, filters, page, limit, sortBy, order }),
-    buildSnapshot(scope),
-  ]);
+    buildSnapshot(scope)]);
 
   const checklist = buildChecklist({ snapshot, facilityContext, packId });
   const insights = buildInsights({
@@ -2439,8 +2184,7 @@ const getWorkspace = async (
     subscription,
     facilityContext,
     canManageSubscriptions,
-    packId,
-  });
+    packId});
   const valueProof = buildValueProof(snapshot);
   const panelSummaries = buildPanelSummaries({ queueItems, activityItems, insights, checklist });
 
@@ -2470,8 +2214,7 @@ const getWorkspace = async (
         module_slug: 'radiology',
         severity: 'high',
         count: resultsCount,
-        target: routeTarget('radiology', 'results', null, 'list'),
-      });
+        target: routeTarget('radiology', 'results', null, 'list')});
     }
   }
 
@@ -2480,8 +2223,7 @@ const getWorkspace = async (
     kind: entry.kind,
     severity: entry.severity,
     count: entry.count,
-    target: entry.target,
-  }));
+    target: entry.target}));
 
   return {
     state: 'ready',
@@ -2493,10 +2235,8 @@ const getWorkspace = async (
       facility_id: dashboardWorkspaceRepository.safePublicId(facilityContext?.human_friendly_id, scope.facility_id),
       facility_name: facilityContext?.name || null,
       facility_type: facilityContext?.facility_type || null,
-      branch_id: dashboardWorkspaceRepository.safePublicId(scope.branch_id),
       nurse_context: baseSummary.scope?.nurse_context || null,
-      department_name: baseSummary.scope?.department_name || null,
-    },
+      department_name: baseSummary.scope?.department_name || null},
     panel_summaries: panelSummaries,
     status_strip: buildStatusStrip(baseSummary),
     summary_cards: buildStatusStrip(baseSummary),
@@ -2510,8 +2250,7 @@ const getWorkspace = async (
         role_profile_id: baseSummary.roleProfile?.id || 'operations',
         role: baseSummary.roleProfile?.role || effectiveRole,
         facility_name: facilityContext?.name || null,
-        facility_type: facilityContext?.facility_type || null,
-      },
+        facility_type: facilityContext?.facility_type || null},
       checklist,
       trend: baseSummary.trend,
       distribution: baseSummary.distribution,
@@ -2530,13 +2269,11 @@ const getWorkspace = async (
       module_recommendations: (insights.module_recommendations || []).slice(0, 3),
       plan_usage: insights.plan_usage,
       activity_preview: (activityItems.items || []).slice(0, 6),
-      help_cards: insights.help_cards,
-    },
+      help_cards: insights.help_cards},
     queue: queueItems,
     activity: activityItems,
     insights,
-    getting_started: checklist,
-  };
+    getting_started: checklist};
 };
 
 const getLookups = async (filters = {}, user = {}) => {
@@ -2544,45 +2281,36 @@ const getLookups = async (filters = {}, user = {}) => {
   const scopeResult = await dashboardWorkspaceRepository.resolveWorkspaceScope({
     filters,
     user,
-    effectiveRole,
-  });
+    effectiveRole});
   const scope = scopeResult.scope;
 
   const lookups = await dashboardWorkspaceRepository.findLookups({
     scope,
-    includeTenants: effectiveRole === ROLES.SUPER_ADMIN,
-  });
+    includeTenants: effectiveRole === ROLES.SUPER_ADMIN});
 
   return {
     state: scopeResult.state,
     tenants: (lookups.tenants || []).map((entry) => ({
       id: dashboardWorkspaceRepository.safePublicId(entry.human_friendly_id, entry.id),
-      label: entry.name,
-    })),
+      label: entry.name})),
     facilities: (lookups.facilities || []).map((entry) => ({
       id: dashboardWorkspaceRepository.safePublicId(entry.human_friendly_id, entry.id),
       label: entry.name,
       meta: {
-        facility_type: entry.facility_type || null,
-      },
-    })),
+        facility_type: entry.facility_type || null}})),
     branches: (lookups.branches || []).map((entry) => ({
       id: dashboardWorkspaceRepository.safePublicId(entry.human_friendly_id, entry.id),
       label: entry.name,
       meta: {
-        facility_id: dashboardWorkspaceRepository.safePublicId(entry.facility_id),
-      },
-    })),
+        facility_id: dashboardWorkspaceRepository.safePublicId(entry.facility_id)}})),
     queue_types: QUEUE_LOOKUPS,
     queue_statuses: QUEUE_STATUS_LOOKUPS,
     activity_event_types: EVENT_TYPE_LOOKUPS,
     activity_statuses: ACTIVITY_STATUS_LOOKUPS,
     module_filters: MODULE_LOOKUPS,
-    date_presets: DATE_PRESET_LOOKUPS,
-  };
+    date_presets: DATE_PRESET_LOOKUPS};
 };
 
 module.exports = {
   getLookups,
-  getWorkspace,
-};
+  getWorkspace};

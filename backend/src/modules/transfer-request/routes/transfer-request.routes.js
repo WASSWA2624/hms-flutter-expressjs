@@ -25,8 +25,7 @@ const IPD_WRITE_SCOPES = [PERMISSIONS.CLINICAL_WRITE];
 const IPD_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 
 /**
  * @description List transfer requests with pagination and filters
@@ -49,7 +48,8 @@ const IPD_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listTransferRequestsQuerySchema }),
+  '/',
+  validateRequest({ query: listTransferRequestsQuerySchema }),
 
   authenticate(),
   authorize(IPD_READ_SCOPES, 'permission'),
@@ -70,7 +70,8 @@ router.get(
  * @throws 404 Transfer request not found
  */
 router.get(
-  '/:id',  validateRequest({ params: transferRequestIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: transferRequestIdParamsSchema }),
 
   authenticate(),
   authorize(IPD_READ_SCOPES, 'permission'),
@@ -97,7 +98,8 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createTransferRequestSchema }),
+  '/',
+  validateRequest({ body: createTransferRequestSchema }),
 
   authenticate(),
   authorize(IPD_WRITE_SCOPES, 'permission'),
@@ -125,7 +127,8 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: transferRequestIdParamsSchema, body: updateTransferRequestSchema }),
+  '/:id',
+  validateRequest({ params: transferRequestIdParamsSchema, body: updateTransferRequestSchema }),
 
   authenticate(),
   authorize(IPD_WRITE_SCOPES, 'permission'),
@@ -146,7 +149,8 @@ router.put(
  * @throws 404 Transfer request not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: transferRequestIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: transferRequestIdParamsSchema }),
 
   authenticate(),
   authorize(IPD_ADMIN_SCOPES, 'permission'),

@@ -8,16 +8,13 @@ jest.mock('@lib/audit');
 jest.mock('@lib/websocket', () => ({
   emitToUser: jest.fn(),
   NOTIFICATION_EVENTS: {
-    NOTIFICATION_DELIVERY_UPDATED: 'notification.delivery_updated',
-  },
-}));
+    NOTIFICATION_DELIVERY_UPDATED: 'notification.delivery_updated'}}));
 
 describe('notification-delivery.service', () => {
   const actor = {
     id: '123e4567-e89b-12d3-a456-426614174099',
     tenant_id: '123e4567-e89b-12d3-a456-426614174010',
-    roles: ['DOCTOR'],
-  };
+    roles: ['DOCTOR']};
 
   const deliveryRecord = {
     id: '123e4567-e89b-12d3-a456-426614174321',
@@ -47,16 +44,12 @@ describe('notification-delivery.service', () => {
         id: actor.tenant_id,
         human_friendly_id: 'TEN-1001',
         slug: 'tenant-1001',
-        name: 'Tenant 1001',
-      },
+        name: 'Tenant 1001'},
       user: {
         id: actor.id,
         human_friendly_id: 'USR-1001',
         email: 'doctor@example.com',
-        phone: '+256700000000',
-      },
-    },
-  };
+        phone: '+256700000000'}}};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -81,8 +74,7 @@ describe('notification-delivery.service', () => {
       expect.objectContaining({
         id: 'NDL-1001',
         notification_id: 'NTF-1001',
-        tenant_id: 'TEN-1001',
-      })
+        tenant_id: 'TEN-1001'})
     );
   });
 
@@ -100,26 +92,22 @@ describe('notification-delivery.service', () => {
       id: deliveryRecord.notification_id,
       tenant_id: actor.tenant_id,
       user_id: actor.id,
-      human_friendly_id: 'NTF-1001',
-    });
+      human_friendly_id: 'NTF-1001'});
     notificationDeliveryRepository.createPublicId.mockReturnValue('NDL-2000');
     notificationDeliveryRepository.create.mockResolvedValue({
       ...deliveryRecord,
       id: '123e4567-e89b-12d3-a456-426614174400',
-      human_friendly_id: 'NDL-2000',
-    });
+      human_friendly_id: 'NDL-2000'});
     notificationDeliveryRepository.findById.mockResolvedValue({
       ...deliveryRecord,
       id: '123e4567-e89b-12d3-a456-426614174400',
-      human_friendly_id: 'NDL-2000',
-    });
+      human_friendly_id: 'NDL-2000'});
 
     const result = await notificationDeliveryService.createNotificationDelivery(
       {
         notification_id: 'NTF-1001',
         channel: 'IN_APP',
-        status: 'DELIVERED',
-      },
+        status: 'DELIVERED'},
       actor,
       '127.0.0.1'
     );
@@ -127,14 +115,12 @@ describe('notification-delivery.service', () => {
     expect(notificationDeliveryRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         notification_id: deliveryRecord.notification_id,
-        human_friendly_id: 'NDL-2000',
-      })
+        human_friendly_id: 'NDL-2000'})
     );
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: actor.tenant_id,
-        action: 'CREATE',
-      })
+        action: 'CREATE'})
     );
     expect(emitToUser).toHaveBeenCalled();
     expect(result.id).toBe('NDL-2000');
@@ -146,8 +132,7 @@ describe('notification-delivery.service', () => {
     notificationDeliveryRepository.findById.mockResolvedValue({
       ...deliveryRecord,
       status: 'FAILED',
-      retryable: true,
-    });
+      retryable: true});
 
     const result = await notificationDeliveryService.updateNotificationDelivery(
       'NDL-1001',
@@ -160,14 +145,12 @@ describe('notification-delivery.service', () => {
       deliveryRecord.id,
       expect.objectContaining({
         status: 'FAILED',
-        retryable: true,
-      })
+        retryable: true})
     );
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: actor.tenant_id,
-        action: 'UPDATE',
-      })
+        action: 'UPDATE'})
     );
     expect(result.status).toBe('FAILED');
   });
@@ -176,8 +159,7 @@ describe('notification-delivery.service', () => {
     notificationDeliveryRepository.findByIdentifier.mockResolvedValue(deliveryRecord);
     notificationDeliveryRepository.softDelete.mockResolvedValue({
       ...deliveryRecord,
-      deleted_at: new Date(),
-    });
+      deleted_at: new Date()});
 
     await notificationDeliveryService.deleteNotificationDelivery('NDL-1001', actor, '127.0.0.1');
 
@@ -185,8 +167,7 @@ describe('notification-delivery.service', () => {
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: actor.tenant_id,
-        action: 'DELETE',
-      })
+        action: 'DELETE'})
     );
   });
 });

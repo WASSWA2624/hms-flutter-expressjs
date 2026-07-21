@@ -1,44 +1,31 @@
 jest.mock('@repositories/opd-flow/opd-flow.repository', () => ({
   findMany: jest.fn(),
-  count: jest.fn(),
-}));
+  count: jest.fn()}));
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/websocket', () => ({
   emitToUser: jest.fn(),
   emitToUsers: jest.fn(),
   OPD_EVENTS: {
-    OPD_FLOW_UPDATED: 'opd.flow.updated',
-  },
+    OPD_FLOW_UPDATED: 'opd.flow.updated'},
   NOTIFICATION_EVENTS: {
-    NOTIFICATION_CREATED: 'notification.created',
-  },
-}));
+    NOTIFICATION_CREATED: 'notification.created'}}));
 jest.mock('@prisma/client', () => ({
   $transaction: jest.fn(),
   user_role: {
-    findMany: jest.fn(),
-  },
+    findMany: jest.fn()},
   notification: {
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   notification_delivery: {
-    createMany: jest.fn(),
-  },
+    createMany: jest.fn()},
   tenant: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   facility: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   patient: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   user: {
-    findFirst: jest.fn(),
-  },
-}));
+    findFirst: jest.fn()}}));
 
 const opdFlowRepository = require('@repositories/opd-flow/opd-flow.repository');
 const opdFlowService = require('@services/opd-flow/opd-flow.service');
@@ -53,8 +40,7 @@ describe('opd-flow.service search filters', () => {
   it('builds tokenized patient-linked search clauses for OPD list', async () => {
     await opdFlowService.listOpdFlows(
       {
-        search: 'pat-001 guardian',
-      },
+        search: 'pat-001 guardian'},
       1,
       20,
       'started_at',
@@ -106,8 +92,7 @@ describe('opd-flow.service search filters', () => {
       {
         encounter_type: 'OPD',
         stage: 'WAITING_VITALS',
-        search: 'jane doe',
-      },
+        search: 'jane doe'},
       1,
       20,
       'started_at',
@@ -118,8 +103,7 @@ describe('opd-flow.service search filters', () => {
     expect(where.encounter_type).toBe('OPD');
     expect(where.extension_json).toEqual({
       path: '$.opd_flow.stage',
-      equals: 'WAITING_VITALS',
-    });
+      equals: 'WAITING_VITALS'});
     expect(Array.isArray(where.AND)).toBe(true);
     expect(where.AND).toHaveLength(3);
     expect(JSON.stringify(where.AND)).toContain('JANE');

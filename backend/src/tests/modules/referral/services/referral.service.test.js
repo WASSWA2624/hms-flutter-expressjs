@@ -31,8 +31,7 @@ const withDisplayFields = (referral) => ({
   to_department_name:
     referral.to_department?.name || referral.to_department?.short_name || '',
   to_department_display_id:
-    referral.to_department?.human_friendly_id || referral.to_department_id || '',
-});
+    referral.to_department?.human_friendly_id || referral.to_department_id || ''});
 
 describe('Referral Service', () => {
   beforeEach(() => {
@@ -44,8 +43,7 @@ describe('Referral Service', () => {
     it('should list referrals with pagination', async () => {
       const mockReferrals = [
         { id: 'ref-1', encounter_id: 'enc-1' },
-        { id: 'ref-2', encounter: { human_friendly_id: 'ENC-2' } },
-      ];
+        { id: 'ref-2', encounter: { human_friendly_id: 'ENC-2' } }];
       referralRepository.findMany.mockResolvedValue(mockReferrals);
       referralRepository.count.mockResolvedValue(2);
 
@@ -61,8 +59,7 @@ describe('Referral Service', () => {
       const mockReferral = {
         id: 'ref-1',
         encounter: { human_friendly_id: 'ENC-1' },
-        to_department: { name: 'Cardiology', human_friendly_id: 'DEP-1' },
-      };
+        to_department: { name: 'Cardiology', human_friendly_id: 'DEP-1' }};
       referralRepository.findById.mockResolvedValue(mockReferral);
 
       const result = await getReferralById('ref-1', 'user-1', '127.0.0.1');

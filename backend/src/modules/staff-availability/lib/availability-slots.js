@@ -45,8 +45,7 @@ const normalizeSlotList = (slots = []) => {
   return slots
     .map((slot) => ({
       start_time: normalizeTimeString(slot?.start_time),
-      end_time: normalizeTimeString(slot?.end_time),
-    }))
+      end_time: normalizeTimeString(slot?.end_time)}))
     .filter((slot) => slot.start_time && slot.end_time);
 };
 
@@ -54,8 +53,7 @@ const slotsOverlap = (slots = []) => {
   const ranges = normalizeSlotList(slots)
     .map((slot) => ({
       start: toMinutes(slot.start_time),
-      end: toMinutes(slot.end_time),
-    }))
+      end: toMinutes(slot.end_time)}))
     .filter((range) => range.start != null && range.end != null && range.end > range.start)
     .sort((left, right) => left.start - right.start);
 
@@ -96,5 +94,4 @@ module.exports = {
   toMinutes,
   normalizeSlotList,
   slotsOverlap,
-  parseRecordSlots,
-};
+  parseRecordSlots};

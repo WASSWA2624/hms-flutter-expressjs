@@ -4,27 +4,21 @@ const mockFindApplicablePolicies = jest.fn().mockResolvedValue([]);
 
 jest.mock('@prisma/client', () => ({
   phi_access_log: {
-    create: jest.fn().mockResolvedValue({}),
-  },
-}));
+    create: jest.fn().mockResolvedValue({})}}));
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn().mockResolvedValue({}),
-}));
+  createAuditLog: jest.fn().mockResolvedValue({})}));
 jest.mock('@lib/telemetry/metrics', () => ({
   recordSecurityEvent: jest.fn(),
-  recordWorkflowEvent: jest.fn(),
-}));
+  recordWorkflowEvent: jest.fn()}));
 jest.mock('@lib/authorization/policy-evaluator', () => ({
-  evaluatePolicies: jest.fn(() => ({ allowed: true, winner: null })),
-}));
+  evaluatePolicies: jest.fn(() => ({ allowed: true, winner: null }))}));
 jest.mock('@lib/authorization/access.repository', () => ({
   findActiveBreakGlassAccess: jest.fn(),
   findApplicablePolicies: (...args) => mockFindApplicablePolicies(...args),
   findUserScopeContext: jest.fn().mockResolvedValue({
     department_id: null,
     has_active_shift: true,
-    active_shift_id: 'shift-1',
-  }),
+    active_shift_id: 'shift-1'}),
   resolveAdmissionBackedContext: jest.fn(),
   resolveClinicalNoteContext: jest.fn(),
   resolveEncounterContext: (...args) => mockResolveEncounterContext(...args),
@@ -32,8 +26,7 @@ jest.mock('@lib/authorization/access.repository', () => ({
   resolveOfficeScopedContext: jest.fn(),
   resolvePatientContext: (...args) => mockResolvePatientContext(...args),
   resolvePaymentContext: jest.fn(),
-  resolveRefundContext: jest.fn(),
-}));
+  resolveRefundContext: jest.fn()}));
 
 const { enforceAbacAccess } = require('@middlewares/abac.middleware');
 
@@ -49,10 +42,8 @@ const createRequest = (overrides = {}) => ({
     tenant_id: 'tenant-1',
     facility_id: 'facility-1',
     roles: ['DOCTOR'],
-    permissions: ['clinical:read', 'clinical:write'],
-  },
-  ...overrides,
-});
+    permissions: ['clinical:read', 'clinical:write']},
+  ...overrides});
 
 const runMiddleware = async (req) => {
   const next = jest.fn();
@@ -71,8 +62,7 @@ describe('ABAC unresolved-object non-enumeration', () => {
     const req = createRequest({
       path: '/encounters/unresolved-id',
       originalUrl: '/encounters/unresolved-id',
-      params: { id: 'unresolved-id' },
-    });
+      params: { id: 'unresolved-id' }});
 
     const next = await runMiddleware(req);
     const error = next.mock.calls[0][0];
@@ -80,8 +70,7 @@ describe('ABAC unresolved-object non-enumeration', () => {
     expect(mockResolveEncounterContext).toHaveBeenCalledWith('unresolved-id');
     expect(error).toMatchObject({
       message: 'errors.not_found',
-      statusCode: 404,
-    });
+      statusCode: 404});
     expect(mockFindApplicablePolicies).not.toHaveBeenCalled();
   });
 
@@ -92,8 +81,7 @@ describe('ABAC unresolved-object non-enumeration', () => {
       path: '/encounters/unresolved-id',
       originalUrl: '/encounters/unresolved-id',
       params: { id: 'unresolved-id' },
-      body: { patient_id: 'other-patient' },
-    });
+      body: { patient_id: 'other-patient' }});
 
     const next = await runMiddleware(req);
 
@@ -106,14 +94,12 @@ describe('ABAC unresolved-object non-enumeration', () => {
       id: 'patient-1',
       patient_id: 'patient-1',
       tenant_id: 'tenant-1',
-      facility_id: 'facility-1',
-    });
+      facility_id: 'facility-1'});
 
     const listNext = await runMiddleware(createRequest());
     const createNext = await runMiddleware(createRequest({
       method: 'POST',
-      body: { patient_id: 'patient-1' },
-    }));
+      body: { patient_id: 'patient-1' }}));
 
     expect(listNext).toHaveBeenCalledWith();
     expect(createNext).toHaveBeenCalledWith();

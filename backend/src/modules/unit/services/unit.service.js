@@ -13,20 +13,17 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
 const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
   ROLES.TENANT_ADMIN,
-  ROLES.NURSE,
-]);
+  ROLES.NURSE]);
 
 const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorUserId, payload = {}) => {
   await publishCrudRealtimeEvent({
@@ -37,13 +34,10 @@ const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorU
     recipient_roles: FACILITY_LAYOUT_RECIPIENT_ROLES,
     affected: {
       unit_id: resource?.id || null,
-      department_id: resource?.department_id || null,
-    },
+      department_id: resource?.department_id || null},
     payload: {
       layout_entity: resourceType,
-      ...payload,
-    },
-  });
+      ...payload}});
 };
 
 const emptyListResult = (page, limit) => ({
@@ -54,9 +48,7 @@ const emptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const resolveUnitId = async (identifier, { includeDeleted = false } = {}) => {
   const normalized = String(identifier ?? '').trim();
@@ -66,16 +58,14 @@ const resolveUnitId = async (identifier, { includeDeleted = false } = {}) => {
     const resolved = await resolveModelIdByIdentifier({
       model: 'unit',
       identifier: normalized,
-      includeDeleted: true,
-    });
+      includeDeleted: true});
     return resolved || normalized;
   }
 
   return resolveEntityId({
     model: 'unit',
     identifier: normalized,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 };
 
 const resolveUnitFilterId = async (filters, field, model) => {
@@ -83,8 +73,7 @@ const resolveUnitFilterId = async (filters, field, model) => {
   const resolved = await resolveIdentifierForFilter({
     value: filters[field],
     model,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
   if (resolved === null) return null;
   return resolved;
 };
@@ -95,23 +84,19 @@ const normalizeCreatePayload = async (data = {}) => ({
     value: data.tenant_id,
     model: 'tenant',
     field: 'tenant_id',
-    where: { deleted_at: null },
-  }),
+    where: { deleted_at: null }}),
   facility_id: await resolveIdentifierForPayload({
     value: data.facility_id,
     model: 'facility',
     field: 'facility_id',
     where: { deleted_at: null },
-    nullable: true,
-  }),
+    nullable: true}),
   department_id: await resolveIdentifierForPayload({
     value: data.department_id,
     model: 'department',
     field: 'department_id',
     where: { deleted_at: null },
-    nullable: true,
-  }),
-});
+    nullable: true})});
 
 const normalizeUpdatePayload = async (data = {}) => {
   const payload = { ...data };
@@ -122,8 +107,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       model: 'facility',
       field: 'facility_id',
       where: { deleted_at: null },
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'department_id')) {
@@ -132,8 +116,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       model: 'department',
       field: 'department_id',
       where: { deleted_at: null },
-      nullable: true,
-    });
+      nullable: true});
   }
 
   return payload;
@@ -175,8 +158,7 @@ const listUnits = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
 
   const [units, total] = await Promise.all([
     unitRepository.findMany(repoFilters, skip, limit, orderBy, listOptions),
-    unitRepository.count(repoFilters, listOptions),
-  ]);
+    unitRepository.count(repoFilters, listOptions)]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -188,9 +170,7 @@ const listUnits = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
       total,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-    },
-  };
+      hasPreviousPage: page > 1}};
 };
 
 /**
@@ -228,14 +208,11 @@ const createUnit = async (data, context = {}) => {
       facility_id: unit.facility_id,
       department_id: unit.department_id,
       name: unit.name,
-      is_active: unit.is_active,
-    },
-  });
+      is_active: unit.is_active}});
 
   await publishFacilityLayoutRealtimeEvent(unit, 'unit', context.user_id, {
     operation: 'created',
-    name: unit.name,
-  });
+    name: unit.name});
 
   return unit;
 };
@@ -268,21 +245,16 @@ const updateUnit = async (id, data, context = {}) => {
         facility_id: beforeUnit.facility_id,
         department_id: beforeUnit.department_id,
         name: beforeUnit.name,
-        is_active: beforeUnit.is_active,
-      },
+        is_active: beforeUnit.is_active},
       after: {
         facility_id: unit.facility_id,
         department_id: unit.department_id,
         name: unit.name,
-        is_active: unit.is_active,
-      },
-    },
-  });
+        is_active: unit.is_active}}});
 
   await publishFacilityLayoutRealtimeEvent(unit, 'unit', context.user_id, {
     operation: 'updated',
-    name: unit.name,
-  });
+    name: unit.name});
 
   return unit;
 };
@@ -302,8 +274,7 @@ const deleteUnit = async (id, context = {}) => {
         model: 'unit',
         identifier: candidate,
         includeDeleted: true,
-        select: { id: true, deleted_at: true },
-      });
+        select: { id: true, deleted_at: true }});
       if (deletedUnit?.deleted_at) {
         return;
       }
@@ -326,14 +297,11 @@ const deleteUnit = async (id, context = {}) => {
       tenant_id: unit.tenant_id,
       facility_id: unit.facility_id,
       department_id: unit.department_id,
-      name: unit.name,
-    },
-  });
+      name: unit.name}});
 
   await publishFacilityLayoutRealtimeEvent(unit, 'unit', context.user_id, {
     operation: 'deleted',
-    name: unit.name,
-  });
+    name: unit.name});
 };
 
 /**
@@ -356,14 +324,11 @@ const restoreUnit = async (id, context = {}) => {
       tenant_id: unit.tenant_id,
       facility_id: unit.facility_id,
       department_id: unit.department_id,
-      name: unit.name,
-    },
-  });
+      name: unit.name}});
 
   await publishFacilityLayoutRealtimeEvent(unit, 'unit', context.user_id, {
     operation: 'restored',
-    name: unit.name,
-  });
+    name: unit.name});
 
   return unit;
 };
@@ -374,5 +339,4 @@ module.exports = {
   createUnit,
   updateUnit,
   deleteUnit,
-  restoreUnit,
-};
+  restoreUnit};

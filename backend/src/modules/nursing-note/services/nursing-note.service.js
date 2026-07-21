@@ -12,8 +12,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const buildPagination = (page, limit, total) => ({
   page,
@@ -34,8 +33,7 @@ const resolveNursingNoteId = (id) =>
     value: id,
     field: 'id',
     model: 'nursing_note',
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 
 const resolveNursingNotePayload = async (input = {}) => {
   const payload = { ...input };
@@ -44,16 +42,14 @@ const resolveNursingNotePayload = async (input = {}) => {
       value: payload.admission_id,
       field: 'admission_id',
       model: 'admission',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
   }
   if (Object.prototype.hasOwnProperty.call(payload, 'nurse_user_id')) {
     payload.nurse_user_id = await resolveIdentifierForPayload({
       value: payload.nurse_user_id,
       field: 'nurse_user_id',
       model: 'user',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
   }
   return payload;
 };
@@ -82,8 +78,7 @@ const listNursingNotes = async (filters, page, limit, sortBy, order, userId, ipA
       const admissionId = await resolveIdentifierForFilter({
         value: filters.admission_id,
         model: 'admission',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (admissionId === null) return buildEmptyListResult(page, limit);
       if (admissionId !== undefined) whereClause.admission_id = admissionId;
     }
@@ -91,8 +86,7 @@ const listNursingNotes = async (filters, page, limit, sortBy, order, userId, ipA
       const nurseUserId = await resolveIdentifierForFilter({
         value: filters.nurse_user_id,
         model: 'user',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (nurseUserId === null) return buildEmptyListResult(page, limit);
       if (nurseUserId !== undefined) whereClause.nurse_user_id = nurseUserId;
     }

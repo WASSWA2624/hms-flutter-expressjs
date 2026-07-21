@@ -59,7 +59,7 @@ describe('Consent Repository', () => {
           id: 'consent-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -123,7 +123,7 @@ describe('Consent Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -153,7 +153,7 @@ describe('Consent Repository', () => {
         skip: 0,
         take: 10,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -169,7 +169,7 @@ describe('Consent Repository', () => {
         skip: 20,
         take: 50,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -185,7 +185,7 @@ describe('Consent Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { granted_at: 'asc' },
-        include: {}
+        include: undefined
       });
     });
 

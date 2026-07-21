@@ -36,7 +36,7 @@ describe('Payment Repository', () => {
       expect(result).toEqual({ id: 'payment-1' });
       expect(prisma.payment.findFirst).toHaveBeenCalledWith({
         where: { id: 'payment-1', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -56,7 +56,7 @@ describe('Payment Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
   });

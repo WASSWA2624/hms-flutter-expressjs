@@ -21,15 +21,12 @@ describe('Facility Radiology Catalog Controller', () => {
       user: {
         id: '123e4567-e89b-12d3-a456-426614174000',
         tenant_id: '223e4567-e89b-12d3-a456-426614174001',
-        facility_id: '323e4567-e89b-12d3-a456-426614174002',
-      },
-      ip: '127.0.0.1',
-    };
+        facility_id: '323e4567-e89b-12d3-a456-426614174002'},
+      ip: '127.0.0.1'};
     mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis(),
-    };
+      send: jest.fn().mockReturnThis()};
     jest.clearAllMocks();
   });
 
@@ -46,8 +43,7 @@ describe('Facility Radiology Catalog Controller', () => {
       expect.objectContaining({
         tenant_id: mockReq.user.tenant_id,
         facility_id: mockReq.user.facility_id,
-        user_id: mockReq.user.id,
-      })
+        user_id: mockReq.user.id})
     );
     expect(sendSuccess).toHaveBeenCalledWith(
       mockRes,
@@ -75,8 +71,7 @@ describe('Facility Radiology Catalog Controller', () => {
   it('lists facility radiology tests with pagination', async () => {
     const result = {
       items: [{ id: 'RAD0000001', name: 'Chest X-Ray' }],
-      pagination: { page: 1, limit: 20, total: 1 },
-    };
+      pagination: { page: 1, limit: 20, total: 1 }};
     facilityRadiologyCatalogService.listFacilityRadiologyTests.mockResolvedValue(result);
 
     await facilityRadiologyCatalogController.listFacilityRadiologyTests(mockReq, mockRes);

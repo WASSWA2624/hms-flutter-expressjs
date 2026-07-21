@@ -17,13 +17,10 @@ describe('Audit Log Controller', () => {
       body: {},
       user: {
         id: 'USR0000001',
-        tenant_id: 'TEN0000001',
-      },
-    };
+        tenant_id: 'TEN0000001'}};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+      json: jest.fn()};
   });
 
   it('passes the request user through when loading a single audit log', async () => {
@@ -53,15 +50,13 @@ describe('Audit Log Controller', () => {
       page: '2',
       limit: '10',
       sort_by: 'action',
-      order: 'asc',
-    };
+      order: 'asc'};
     auditLogService.getAuditLogs.mockResolvedValue({
       data: [{ id: 'AUD0000001' }],
       total: 11,
       page: 2,
       limit: 10,
-      totalPages: 2,
-    });
+      totalPages: 2});
 
     await auditLogController.getAuditLogs(req, res);
 
@@ -69,8 +64,7 @@ describe('Audit Log Controller', () => {
       expect.objectContaining({
         tenant_id: 'TEN0000001',
         action: 'CREATE',
-        entity: 'patient',
-      }),
+        entity: 'patient'}),
       2,
       10,
       'action',
@@ -85,8 +79,7 @@ describe('Audit Log Controller', () => {
         page: 2,
         limit: 10,
         total: 11,
-        totalPages: 2,
-      })
+        totalPages: 2})
     );
   });
 
@@ -96,8 +89,7 @@ describe('Audit Log Controller', () => {
       total: 0,
       page: 1,
       limit: 20,
-      totalPages: 0,
-    });
+      totalPages: 0});
     req.params.userId = 'USR0000009';
 
     await auditLogController.getAuditLogsByUserId(req, res);
@@ -118,12 +110,10 @@ describe('Audit Log Controller', () => {
       total: 0,
       page: 1,
       limit: 20,
-      totalPages: 0,
-    });
+      totalPages: 0});
     req.params = {
       entity: 'patient',
-      entityId: 'PAT0000001',
-    };
+      entityId: 'PAT0000001'};
 
     await auditLogController.getAuditLogsByEntity(req, res);
 

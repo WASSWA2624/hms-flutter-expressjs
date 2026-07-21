@@ -17,12 +17,10 @@ describe('Radiology Workspace Controller', () => {
       params: {},
       body: {},
       user: { id: 'actor-1', tenant_id: 'tenant-1', facility_id: 'facility-1' },
-      ip: '127.0.0.1',
-    };
+      ip: '127.0.0.1'};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+      json: jest.fn().mockReturnThis()};
   });
 
   it('forwards the workbench view query parameter to service filters', async () => {
@@ -39,8 +37,7 @@ describe('Radiology Workspace Controller', () => {
       page: '2',
       limit: '25',
       sort_by: 'ordered_at',
-      order: 'desc',
-    };
+      order: 'desc'};
 
     await radiologyWorkspaceController.getRadiologyWorkbench(req, res);
 
@@ -52,8 +49,7 @@ describe('Radiology Workspace Controller', () => {
         modality: 'CT',
         patient_id: 'PAT0000001',
         encounter_id: 'ENC0000001',
-        search: 'abdomen',
-      }),
+        search: 'abdomen'}),
       2,
       25,
       'ordered_at',

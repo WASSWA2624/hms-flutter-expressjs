@@ -1,8 +1,7 @@
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
   mapClinicalOrderBillingFields,
-  mapCatalogUnitPriceFields,
-} = require('@lib/billing/clinical-request-billing');
+  mapCatalogUnitPriceFields} = require('@lib/billing/clinical-request-billing');
 const { resolveOrderLocation } = require('@services/pharmacy-workspace/pharmacy.shared');
 const { mapStorageLocationFields } = require('@services/pharmacy-workspace/pharmacy-storage.service');
 
@@ -51,8 +50,7 @@ const resolveAggregateStockStatus = (statuses = []) => {
     OUT_OF_STOCK: 4,
     LOW_STOCK: 3,
     ALMOST_OUT_OF_STOCK: 2,
-    IN_STOCK: 1,
-  };
+    IN_STOCK: 1};
 
   return statuses.reduce((current, status) => {
     const normalized = toText(status).toUpperCase() || 'IN_STOCK';
@@ -79,8 +77,7 @@ const mapInventoryItemRecord = (record) => {
     sku: toText(record.sku) || null,
     unit: toText(record.unit) || null,
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const resolveExpiryAlertStatus = (expiryDate, expiringWithinDays = 30) => {
@@ -144,8 +141,7 @@ const buildBatchMetaByInventoryItemId = (maps = [], batches = [], expiringWithin
       batch_count: activeBatches.length,
       next_expiry: nextExpiry,
       expiry_alert_status: expiryAlertStatus,
-      ...mapStorageLocationFields(storageBatch?.storage_room, storageBatch?.storage_shelf),
-    });
+      ...mapStorageLocationFields(storageBatch?.storage_room, storageBatch?.storage_shelf)});
   });
 
   return metaByInventoryItemId;
@@ -178,8 +174,7 @@ const mapInventoryStockRecord = (record, batchMeta = null) => {
     storage_shelf_code: batchMeta?.storage_shelf_code || null,
     storage_location_label: batchMeta?.storage_location_label || null,
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapDrugRecord = (record) => {
@@ -197,8 +192,7 @@ const mapDrugRecord = (record) => {
             .map((stock) =>
               mapInventoryStockRecord({
                 ...stock,
-                inventory_item: mapping.inventory_item,
-              })
+                inventory_item: mapping.inventory_item})
             )
             .filter(Boolean)
         : [];
@@ -219,8 +213,7 @@ const mapDrugRecord = (record) => {
         is_default: Boolean(mapping.is_default),
         deduction_factor: toFiniteNumber(mapping.deduction_factor, 1),
         inventory_item: inventoryItem,
-        stocks,
-      };
+        stocks};
     })
     .filter(Boolean);
 
@@ -242,19 +235,16 @@ const mapDrugRecord = (record) => {
     strength: toText(record.strength) || null,
     ...mapCatalogUnitPriceFields({
       unit_price: record.pharmacy_unit_price ?? record.unit_price,
-      currency: record.pharmacy_currency ?? record.currency,
-    }),
+      currency: record.pharmacy_currency ?? record.currency}),
     pharmacy_unit_price:
       mapCatalogUnitPriceFields({
         unit_price: record.pharmacy_unit_price ?? record.unit_price,
-        currency: record.pharmacy_currency ?? record.currency,
-      }).unit_price || null,
+        currency: record.pharmacy_currency ?? record.currency}).unit_price || null,
     pharmacy_currency: toText(record.pharmacy_currency ?? record.currency).toUpperCase() || null,
     facility_unit_price:
       mapCatalogUnitPriceFields({
         unit_price: record.facility_unit_price,
-        currency: record.facility_currency,
-      }).unit_price || null,
+        currency: record.facility_currency}).unit_price || null,
     facility_currency: toText(record.facility_currency).toUpperCase() || null,
     quantity_on_hand: quantityOnHand,
     available_quantity: quantityOnHand,
@@ -267,8 +257,7 @@ const mapDrugRecord = (record) => {
     stock_mappings: stockMappings,
     stock_rows: stockRows,
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapDispenseLogRecord = (record) => {
@@ -287,8 +276,7 @@ const mapDispenseLogRecord = (record) => {
     quantity_dispensed: Number(record.quantity_dispensed || 0),
     dispensed_at: toIsoDateTime(record.dispensed_at),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapPharmacyAttestationRecord = (record) => {
@@ -310,8 +298,7 @@ const mapPharmacyAttestationRecord = (record) => {
     reason: toText(record.reason) || null,
     attested_at: toIsoDateTime(record.attested_at),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const computeItemDispenseMetrics = (item) => {
@@ -337,8 +324,7 @@ const computeItemDispenseMetrics = (item) => {
     returnedQuantity,
     pendingQuantity,
     netDispensedQuantity,
-    remainingQuantity,
-  };
+    remainingQuantity};
 };
 
 const mapDrugInventoryMapRecord = (record) => {
@@ -355,8 +341,7 @@ const mapDrugInventoryMapRecord = (record) => {
     ),
     is_default: Boolean(record.is_default),
     deduction_factor: toFiniteNumber(record.deduction_factor, 1),
-    inventory_item: mapInventoryItemRecord(record.inventory_item),
-  };
+    inventory_item: mapInventoryItemRecord(record.inventory_item)};
 };
 
 const mapPharmacyOrderItemRecord = (record, options = {}) => {
@@ -370,20 +355,17 @@ const mapPharmacyOrderItemRecord = (record, options = {}) => {
   const drugDisplayName = [
     toText(record.drug?.name),
     toText(record.drug?.strength),
-    toText(record.drug?.form),
-  ]
+    toText(record.drug?.form)]
     .filter(Boolean)
     .join(' ') || toText(record.drug?.code) || null;
 
   const offering = record.drug_id ? options.offeringsByDrugId?.[record.drug_id] : null;
   const pharmacyPriceFields = mapCatalogUnitPriceFields({
     unit_price: record.drug?.unit_price,
-    currency: record.drug?.currency,
-  });
+    currency: record.drug?.currency});
   const facilityPriceFields = mapCatalogUnitPriceFields({
     unit_price: offering?.unit_price,
-    currency: offering?.currency || record.drug?.currency,
-  });
+    currency: offering?.currency || record.drug?.currency});
 
   return {
     id: publicId,
@@ -425,8 +407,7 @@ const mapPharmacyOrderItemRecord = (record, options = {}) => {
     facility_currency: facilityPriceFields.currency || null,
     is_offered_at_facility: Boolean(offering?.is_active),
     created_at: toIsoDateTime(record.created_at),
-    updated_at: toIsoDateTime(record.updated_at),
-  };
+    updated_at: toIsoDateTime(record.updated_at)};
 };
 
 const mapPharmacyOrderRecord = (record, options = {}) => {
@@ -470,12 +451,11 @@ const mapPharmacyOrderRecord = (record, options = {}) => {
   });
 
   const pendingAttestationBatches = Array.from(attestationByBatch.entries())
-    .filter(([, phases]) => phases.PREPARE && !phases.ATTEST)
+    .filter(([ phases]) => phases.PREPARE && !phases.ATTEST)
     .map(([batchRef, phases]) => ({
       dispense_batch_ref: batchRef,
       prepared_at: phases.PREPARE?.attested_at || null,
-      prepared_by_role: phases.PREPARE?.attested_role || null,
-    }));
+      prepared_by_role: phases.PREPARE?.attested_role || null}));
 
   return {
     id: publicId,
@@ -501,8 +481,7 @@ const mapPharmacyOrderRecord = (record, options = {}) => {
     pending_attestation_batches: pendingAttestationBatches,
     items,
     dispense_attestations: attestations,
-    ...mapClinicalOrderBillingFields(record),
-  };
+    ...mapClinicalOrderBillingFields(record)};
 };
 
 const mapPharmacyOrderWorkflowRecord = (record, options = {}) => {
@@ -515,9 +494,7 @@ const mapPharmacyOrderWorkflowRecord = (record, options = {}) => {
       type: 'ORDER_PLACED',
       at: order.ordered_at || order.created_at,
       label_key: 'pharmacy.workbench.timeline.orderPlaced',
-      label_params: {},
-    },
-  ];
+      label_params: {}}];
 
   order.items.forEach((item, itemIndex) => {
     item.dispense_logs.forEach((log, logIndex) => {
@@ -528,9 +505,7 @@ const mapPharmacyOrderWorkflowRecord = (record, options = {}) => {
         label_key: 'pharmacy.workbench.timeline.medicationDispenseEvent',
         label_params: {
           medication: item.drug_display_name || item.display_id || String(itemIndex + 1),
-          status: toText(log.status).toUpperCase() || 'UPDATED',
-        },
-      });
+          status: toText(log.status).toUpperCase() || 'UPDATED'}});
     });
   });
 
@@ -542,9 +517,7 @@ const mapPharmacyOrderWorkflowRecord = (record, options = {}) => {
       label_key: 'pharmacy.workbench.timeline.dispenseAttestationEvent',
       label_params: {
         phase: toText(attestation.phase).toUpperCase() || 'ATTESTED',
-        batch: attestation.dispense_batch_ref || null,
-      },
-    });
+        batch: attestation.dispense_batch_ref || null}});
   });
 
   timeline.sort((a, b) => {
@@ -568,9 +541,7 @@ const mapPharmacyOrderWorkflowRecord = (record, options = {}) => {
       can_attest_dispense: ['ORDERED', 'PARTIALLY_DISPENSED'].includes(order.status) && hasPendingAttestation,
       can_cancel: ['ORDERED', 'PARTIALLY_DISPENSED'].includes(order.status),
       can_return: ['DISPENSED', 'PARTIALLY_DISPENSED'].includes(order.status),
-      can_adjust_inventory: true,
-    },
-  };
+      can_adjust_inventory: true}};
 };
 
 module.exports = {
@@ -586,5 +557,4 @@ module.exports = {
   mapPharmacyAttestationRecord,
   mapPharmacyOrderItemRecord,
   mapPharmacyOrderRecord,
-  mapPharmacyOrderWorkflowRecord,
-};
+  mapPharmacyOrderWorkflowRecord};

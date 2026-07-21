@@ -4,19 +4,16 @@ const { HttpError } = require('@lib/errors');
 const DEFAULT_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
   facility: { select: { id: true, human_friendly_id: true } },
-  branch: { select: { id: true, human_friendly_id: true } },
   office_context: { select: { id: true, human_friendly_id: true } },
   shift: { select: { id: true, human_friendly_id: true } },
   closed_by: { select: { id: true, human_friendly_id: true } },
-  approved_by: { select: { id: true, human_friendly_id: true } },
-};
+  approved_by: { select: { id: true, human_friendly_id: true } }};
 
 const findById = async (id, include = DEFAULT_INCLUDE) => {
   try {
     return await prisma.shift_close.findFirst({
       where: { id, deleted_at: null },
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -29,8 +26,7 @@ const findMany = async (where = {}, skip = 0, take = 20, orderBy = { created_at:
       skip,
       take,
       orderBy,
-      include,
-    });
+      include});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -73,5 +69,4 @@ module.exports = {
   findById,
   findMany,
   softDelete,
-  update,
-};
+  update};

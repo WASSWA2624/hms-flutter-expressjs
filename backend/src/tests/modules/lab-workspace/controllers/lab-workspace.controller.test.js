@@ -16,12 +16,10 @@ describe('lab-workspace.controller', () => {
       params: {},
       body: {},
       user: { id: 'user-1' },
-      ip: '127.0.0.1',
-    };
+      ip: '127.0.0.1'};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+      json: jest.fn().mockReturnThis()};
   });
 
   it('loads the lab workbench payload', async () => {
@@ -31,8 +29,7 @@ describe('lab-workspace.controller', () => {
       page: '2',
       limit: '15',
       order: 'asc',
-      sort_by: 'ordered_at',
-    };
+      sort_by: 'ordered_at'};
 
     await subject.getLabWorkbench(req, res);
 
@@ -69,8 +66,7 @@ describe('lab-workspace.controller', () => {
 
   it('loads lab order context patient options', async () => {
     service.searchLabOrderContextPatients.mockResolvedValue({
-      patients: [{ id: 'PAT000001' }],
-    });
+      patients: [{ id: 'PAT000001' }]});
     req.query = { search: 'amina', limit: '8' };
 
     await subject.searchLabOrderContextPatients(req, res);
@@ -90,8 +86,7 @@ describe('lab-workspace.controller', () => {
   it('loads lab order patient context detail', async () => {
     service.getLabOrderPatientContext.mockResolvedValue({
       patient: { id: 'PAT000001' },
-      encounters: [],
-    });
+      encounters: []});
     req.params = { id: 'PAT000001' };
 
     await subject.getLabOrderPatientContext(req, res);
@@ -139,8 +134,7 @@ describe('lab-workspace.controller', () => {
     service.rejectLabSample.mockResolvedValue({ workflow: { order: { id: 'LAB000001' } } });
     service.releaseLabOrderItem.mockResolvedValue({
       workflow: { order: { id: 'LAB000001' } },
-      released_result: { id: 'LRS000001' },
-    });
+      released_result: { id: 'LRS000001' }});
 
     req.params = { id: 'LSP000001' };
     req.body = { reason: 'Hemolysed specimen' };
@@ -167,8 +161,7 @@ describe('lab-workspace.controller', () => {
 
   it('submits reverse workflow actions against the selected order', async () => {
     service.reverseLabOrderWorkflow.mockResolvedValue({
-      workflow: { order: { id: 'LAB000001' } },
-    });
+      workflow: { order: { id: 'LAB000001' } }});
 
     req.params = { id: 'LAB000001' };
     req.body = { reason: 'Released by mistake' };
@@ -191,8 +184,7 @@ describe('lab-workspace.controller', () => {
   it('resolves legacy lab routes', async () => {
     service.resolveLegacyRouteIdentifier.mockResolvedValue({
       identifier: 'LAB000001',
-      route: '/lab/orders/LAB000001',
-    });
+      route: '/lab/orders/LAB000001'});
     req.params = { resource: 'lab-orders', id: 'LAB000001' };
 
     await subject.resolveLegacyRoute(req, res);

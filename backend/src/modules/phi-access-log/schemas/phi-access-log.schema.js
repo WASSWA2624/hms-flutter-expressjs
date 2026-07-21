@@ -10,8 +10,7 @@
 const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
 
@@ -24,8 +23,7 @@ const createPhiAccessLogSchema = z.object({
   user_id: uuidOrFriendlyIdentifierSchema.optional(),
   patient_id: uuidOrFriendlyIdentifierSchema,
   access_scope: z.enum(['TENANT', 'FACILITY', 'DEPARTMENT', 'PATIENT']),
-  reason: z.string().trim().max(255).optional().nullable(),
-});
+  reason: z.string().trim().max(255).optional().nullable()});
 
 /**
  * Update PHI access log body validation
@@ -44,16 +42,14 @@ const updatePhiAccessLogSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const phiAccessLogIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 /**
  * User ID URL parameter validation
  * Used for GET /user/:userId endpoint
  */
 const userIdParamsSchema = z.object({
-  userId: uuidOrFriendlyIdentifierSchema,
-});
+  userId: uuidOrFriendlyIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -69,8 +65,7 @@ const listPhiAccessLogsQuerySchema = listQuerySchema.extend({
   access_scope: z.enum(['TENANT', 'FACILITY', 'DEPARTMENT', 'PATIENT']).optional(),
   search: z.string().trim().max(120).optional(),
   date_from: z.string().datetime().optional(),
-  date_to: z.string().datetime().optional(),
-});
+  date_to: z.string().datetime().optional()});
 
 module.exports = {
   createPhiAccessLogSchema,

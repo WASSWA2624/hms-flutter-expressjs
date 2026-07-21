@@ -44,7 +44,7 @@ describe('Pricing Rule Repository', () => {
       expect(result).toEqual(mockPricingRule);
       expect(prisma.pricing_rule.findFirst).toHaveBeenCalledWith({
         where: { id: pricingRuleId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -116,7 +116,7 @@ describe('Pricing Rule Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

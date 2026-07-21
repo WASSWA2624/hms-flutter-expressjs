@@ -127,8 +127,7 @@ describe('Maintenance Request Schemas', () => {
         status: 'IN_PROGRESS',
         triage_summary: 'Leak confirmed on ward 3',
         assigned_engineer: 'USR000001',
-        sla_hours: 24,
-      };
+        sla_hours: 24};
 
       expect(() => triageMaintenanceRequestSchema.parse(validData)).not.toThrow();
     });
@@ -158,8 +157,7 @@ describe('Maintenance Request Schemas', () => {
     it('should reject triage_summary longer than 10000 characters', () => {
       expect(() =>
         triageMaintenanceRequestSchema.parse({
-          triage_summary: 'x'.repeat(10001),
-        })
+          triage_summary: 'x'.repeat(10001)})
       ).toThrow();
     });
   });

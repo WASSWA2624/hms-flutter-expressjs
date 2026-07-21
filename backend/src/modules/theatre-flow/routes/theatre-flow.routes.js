@@ -22,16 +22,14 @@ const {
   assignResourceSchema,
   releaseResourceSchema,
   finalizeRecordSchema,
-  reopenRecordSchema,
-} = require('@validations/theatre-flow/theatre-flow.schema');
+  reopenRecordSchema} = require('@validations/theatre-flow/theatre-flow.schema');
 
 const THEATRE_ALLOWED_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
-  ROLES.NURSE,
-];
+  ROLES.NURSE];
 
 router.get(
   '/',
@@ -53,8 +51,7 @@ router.get(
   '/:id',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    query: getTheatreFlowQuerySchema,
-  }),
+    query: getTheatreFlowQuerySchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.getTheatreFlowById
@@ -72,8 +69,7 @@ router.post(
   '/:id/update-stage',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: updateStageSchema,
-  }),
+    body: updateStageSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.updateStage
@@ -83,8 +79,7 @@ router.post(
   '/:id/upsert-anesthesia-record',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: upsertAnesthesiaRecordSchema,
-  }),
+    body: upsertAnesthesiaRecordSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.upsertAnesthesiaRecord
@@ -94,8 +89,7 @@ router.post(
   '/:id/add-anesthesia-observation',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: addAnesthesiaObservationSchema,
-  }),
+    body: addAnesthesiaObservationSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.addAnesthesiaObservation
@@ -105,8 +99,7 @@ router.post(
   '/:id/upsert-post-op-note',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: upsertPostOpNoteSchema,
-  }),
+    body: upsertPostOpNoteSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.upsertPostOpNote
@@ -116,8 +109,7 @@ router.post(
   '/:id/toggle-checklist-item',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: toggleChecklistItemSchema,
-  }),
+    body: toggleChecklistItemSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.toggleChecklistItem
@@ -127,8 +119,7 @@ router.post(
   '/:id/assign-resource',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: assignResourceSchema,
-  }),
+    body: assignResourceSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.assignResource
@@ -138,8 +129,7 @@ router.post(
   '/:id/release-resource',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: releaseResourceSchema,
-  }),
+    body: releaseResourceSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.releaseResource
@@ -149,8 +139,7 @@ router.post(
   '/:id/finalize-record',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: finalizeRecordSchema,
-  }),
+    body: finalizeRecordSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.finalizeRecord
@@ -160,8 +149,7 @@ router.post(
   '/:id/reopen-record',
   validateRequest({
     params: theatreCaseIdParamsSchema,
-    body: reopenRecordSchema,
-  }),
+    body: reopenRecordSchema}),
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
   theatreFlowController.reopenRecord

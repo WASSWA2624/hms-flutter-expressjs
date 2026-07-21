@@ -3,8 +3,7 @@ const {
   HR_ASSIGNABLE_ROLE_NAMES,
   roleLabel,
   enrichRoleOption,
-  sortRoleRecords,
-} = require('@lib/hr/role-catalog');
+  sortRoleRecords} = require('@lib/hr/role-catalog');
 
 describe('hr role-catalog', () => {
   it('includes a comprehensive hospital role catalog', () => {
@@ -17,8 +16,7 @@ describe('hr role-catalog', () => {
         'NURSE_PRACTITIONER',
         'PARAMEDIC',
         'MEDICAL_CODER',
-        'BIOMED',
-      ])
+        'BIOMED'])
     );
     for (const entry of HR_ROLE_CATALOG) {
       expect(entry.labelKey).toMatch(/^labels\.hr\.reference\.role\./);
@@ -37,16 +35,14 @@ describe('hr role-catalog', () => {
       id: 'role-1',
       human_friendly_id: 'ROLE-ABC123',
       name: 'PHYSICIAN_ASSISTANT',
-      permissions: [{ permission_id: 'p1' }, { permission_id: 'p2' }],
-    });
+      permissions: [{ permission_id: 'p1' }, { permission_id: 'p2' }]});
     expect(option).toEqual(
       expect.objectContaining({
         value: 'ROLE-ABC123',
         label: 'Physician Assistant (PA)',
         label_key: 'labels.hr.reference.role.physician_assistant',
         name: 'PHYSICIAN_ASSISTANT',
-        permission_count: 2,
-      })
+        permission_count: 2})
     );
   });
 
@@ -54,8 +50,7 @@ describe('hr role-catalog', () => {
     const sorted = sortRoleRecords([
       { name: 'BILLING' },
       { name: 'DOCTOR' },
-      { name: 'NURSE' },
-    ]).map((entry) => entry.name);
+      { name: 'NURSE' }]).map((entry) => entry.name);
     expect(sorted.indexOf('DOCTOR')).toBeLessThan(sorted.indexOf('NURSE'));
     expect(sorted.indexOf('NURSE')).toBeLessThan(sorted.indexOf('BILLING'));
   });

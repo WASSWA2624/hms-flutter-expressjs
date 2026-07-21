@@ -4,8 +4,7 @@ const {
   REPORT_FORMATS,
   REPORT_PANELS,
   REPORT_RESOURCES,
-  REPORT_TRIGGER_TYPES,
-} = require('@lib/reports/constants');
+  REPORT_TRIGGER_TYPES} = require('@lib/reports/constants');
 
 const panelIds = REPORT_PANELS.map((entry) => entry.id);
 
@@ -20,24 +19,19 @@ const workspaceQuerySchema = listQuerySchema.extend({
   dataset: z.string().trim().optional(),
   facilityId: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  branchId: uuidOrFriendlyIdentifierSchema.optional(),
-  branch_id: uuidOrFriendlyIdentifierSchema.optional(),
   ownerId: uuidOrFriendlyIdentifierSchema.optional(),
   owner_id: uuidOrFriendlyIdentifierSchema.optional(),
   trigger: z.enum(REPORT_TRIGGER_TYPES).optional(),
   datePreset: z.enum(['today', 'last_7_days', 'last_30_days', 'due', 'custom']).optional(),
   date_preset: z.enum(['today', 'last_7_days', 'last_30_days', 'due', 'custom']).optional(),
   from: z.string().datetime().optional(),
-  to: z.string().datetime().optional(),
-});
+  to: z.string().datetime().optional()});
 
 const lookupsQuerySchema = z.object({
   facilityId: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 module.exports = {
   lookupsQuerySchema,
-  workspaceQuerySchema,
-};
+  workspaceQuerySchema};

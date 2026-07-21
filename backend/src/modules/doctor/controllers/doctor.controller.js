@@ -19,8 +19,7 @@ const listDoctors = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by = 'created_at',
-    order = 'desc',
-  } = req.query;
+    order = 'desc'} = req.query;
 
   const result = await doctorService.listDoctors(
     {
@@ -28,8 +27,7 @@ const listDoctors = asyncHandler(async (req, res) => {
       facility_id,
       practitioner_type,
       position_title,
-      search,
-    },
+      search},
     Number(page),
     Number(limit),
     sort_by,
@@ -48,8 +46,7 @@ const createDoctor = asyncHandler(async (req, res) => {
   const payload = {
     ...req.body,
     tenant_id: req.body.tenant_id || req.user?.tenant_id,
-    facility_id: req.body.facility_id !== undefined ? req.body.facility_id : null,
-  };
+    facility_id: req.body.facility_id !== undefined ? req.body.facility_id : null};
 
   const doctor = await doctorService.createDoctor(payload, req.user?.id, req.ip);
   return sendSuccess(res, 201, 'messages.doctor.create.success', doctor);
@@ -64,5 +61,4 @@ module.exports = {
   listDoctors,
   getDoctorById,
   createDoctor,
-  updateDoctor,
-};
+  updateDoctor};

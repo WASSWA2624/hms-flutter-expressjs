@@ -36,8 +36,7 @@ const createModuleSchema = z.object({
   add_on_price: z.number().min(0).finite().optional().nullable(),
   add_on_billing_cycle: billingCycleSchema.optional().nullable(),
   entitlement_policy_json: jsonObjectSchema.optional().nullable(),
-  extension_json: jsonObjectSchema.optional().nullable(),
-});
+  extension_json: jsonObjectSchema.optional().nullable()});
 
 /**
  * Update module body validation
@@ -54,8 +53,7 @@ const updateModuleSchema = z.object({
   add_on_price: z.number().min(0).finite().optional().nullable(),
   add_on_billing_cycle: billingCycleSchema.optional().nullable(),
   entitlement_policy_json: jsonObjectSchema.optional().nullable(),
-  extension_json: jsonObjectSchema.optional().nullable(),
-});
+  extension_json: jsonObjectSchema.optional().nullable()});
 
 // ==================== URL Params ====================
 

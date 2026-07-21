@@ -13,8 +13,7 @@ const serializeStaffAvailability = (record) => {
   return {
     ...record,
     display_id: record.human_friendly_id || record.id,
-    time_slots: timeSlots,
-  };
+    time_slots: timeSlots};
 };
 
 const serializeStaffAvailabilityList = (records = []) =>
@@ -22,5 +21,4 @@ const serializeStaffAvailabilityList = (records = []) =>
 
 module.exports = {
   serializeStaffAvailability,
-  serializeStaffAvailabilityList,
-};
+  serializeStaffAvailabilityList};

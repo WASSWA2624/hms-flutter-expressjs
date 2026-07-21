@@ -9,8 +9,7 @@ const { validateRequest } = require('@middlewares/validate.middleware');
 const {
   authenticate,
   authorize,
-  denyRoles,
-} = require('@middlewares/auth.middleware');
+  denyRoles} = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
 const { STAFF_PATIENT_FLOW_DENIED_ROLES } = require('@config/roles');
 const {
@@ -37,19 +36,16 @@ const {
   endIcuStaySchema,
   addIcuObservationSchema,
   addCriticalAlertSchema,
-  resolveCriticalAlertSchema,
-} = require('@validations/ipd-flow/ipd-flow.schema');
+  resolveCriticalAlertSchema} = require('@validations/ipd-flow/ipd-flow.schema');
 
 const IPD_READ_SCOPES = [
   PERMISSIONS.CLINICAL_READ,
   PERMISSIONS.OPERATIONS_READ,
-  PERMISSIONS.BILLING_READ,
-];
+  PERMISSIONS.BILLING_READ];
 const IPD_CLINICAL_WRITE_SCOPES = [PERMISSIONS.CLINICAL_WRITE];
 const IPD_OPERATIONAL_WRITE_SCOPES = [
   PERMISSIONS.CLINICAL_WRITE,
-  PERMISSIONS.OPERATIONS_WRITE,
-];
+  PERMISSIONS.OPERATIONS_WRITE];
 
 router.use(authenticate(), denyRoles(STAFF_PATIENT_FLOW_DENIED_ROLES));
 
@@ -73,8 +69,7 @@ router.get(
   '/:id',
   validateRequest({
     params: admissionIdParamsSchema,
-    query: getIpdFlowQuerySchema,
-  }),
+    query: getIpdFlowQuerySchema}),
   authenticate(),
   authorize(IPD_READ_SCOPES, 'permission'),
   ipdFlowController.getIpdFlowById
@@ -100,8 +95,7 @@ router.post(
   '/:id/approve-admission',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: approveAdmissionSchema,
-  }),
+    body: approveAdmissionSchema}),
   authenticate(),
   authorize(IPD_OPERATIONAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.approveAdmission
@@ -127,8 +121,7 @@ router.post(
   '/:id/reject-admission',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: rejectAdmissionSchema,
-  }),
+    body: rejectAdmissionSchema}),
   authenticate(),
   authorize(IPD_OPERATIONAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.rejectAdmissionRequest
@@ -138,8 +131,7 @@ router.post(
   '/:id/request-transfer',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: requestTransferSchema,
-  }),
+    body: requestTransferSchema}),
   authenticate(),
   authorize(IPD_OPERATIONAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.requestTransfer
@@ -149,8 +141,7 @@ router.post(
   '/:id/update-transfer',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: updateTransferSchema,
-  }),
+    body: updateTransferSchema}),
   authenticate(),
   authorize(IPD_OPERATIONAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.updateTransfer
@@ -160,8 +151,7 @@ router.post(
   '/:id/request-therapy',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: requestTherapySchema,
-  }),
+    body: requestTherapySchema}),
   authenticate(),
   authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.requestTherapy
@@ -187,8 +177,7 @@ router.post(
   '/:id/add-medication-administration',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: addMedicationAdministrationSchema,
-  }),
+    body: addMedicationAdministrationSchema}),
   authenticate(),
   authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.addMedicationAdministration
@@ -206,8 +195,7 @@ router.post(
   '/:id/update-discharge-clearance',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: updateDischargeClearanceSchema,
-  }),
+    body: updateDischargeClearanceSchema}),
   authenticate(),
   authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.updateDischargeClearance
@@ -217,8 +205,7 @@ router.post(
   '/:id/finalize-discharge',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: finalizeDischargeSchema,
-  }),
+    body: finalizeDischargeSchema}),
   authenticate(),
   authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.finalizeDischarge
@@ -244,8 +231,7 @@ router.post(
   '/:id/add-icu-observation',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: addIcuObservationSchema,
-  }),
+    body: addIcuObservationSchema}),
   authenticate(),
   authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.addIcuObservation
@@ -255,8 +241,7 @@ router.post(
   '/:id/add-critical-alert',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: addCriticalAlertSchema,
-  }),
+    body: addCriticalAlertSchema}),
   authenticate(),
   authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.addCriticalAlert
@@ -266,8 +251,7 @@ router.post(
   '/:id/resolve-critical-alert',
   validateRequest({
     params: admissionIdParamsSchema,
-    body: resolveCriticalAlertSchema,
-  }),
+    body: resolveCriticalAlertSchema}),
   authenticate(),
   authorize(IPD_CLINICAL_WRITE_SCOPES, 'permission'),
   ipdFlowController.resolveCriticalAlert

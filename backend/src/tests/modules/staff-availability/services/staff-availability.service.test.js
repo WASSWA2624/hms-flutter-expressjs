@@ -11,8 +11,7 @@ jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-  resolveEntityId: jest.fn(async ({ identifier }) => identifier),
-}));
+  resolveEntityId: jest.fn(async ({ identifier }) => identifier)}));
 
 describe('Staff Availability Service', () => {
   const mockUserId = 'user-123';
@@ -33,9 +32,7 @@ describe('Staff Availability Service', () => {
       end_time: '10:00',
       time_slots_json: [
         { start_time: '08:00', end_time: '10:00' },
-        { start_time: '14:00', end_time: '16:00' },
-      ],
-    };
+        { start_time: '14:00', end_time: '16:00' }]};
     staffAvailabilityRepository.create.mockResolvedValue(created);
 
     const result = await staffAvailabilityService.create({
@@ -43,10 +40,8 @@ describe('Staff Availability Service', () => {
       day_of_week: 1,
       time_slots: [
         { start_time: '08:00', end_time: '10:00' },
-        { start_time: '14:00', end_time: '16:00' },
-      ],
-      effective_from: '2026-06-30T00:00:00.000Z',
-    }, mockUserId, mockIpAddress);
+        { start_time: '14:00', end_time: '16:00' }],
+      effective_from: '2026-06-30T00:00:00.000Z'}, mockUserId, mockIpAddress);
 
     expect(staffAvailabilityRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       staff_profile_id: staffProfileId,
@@ -54,13 +49,10 @@ describe('Staff Availability Service', () => {
       end_time: '10:00',
       time_slots_json: [
         { start_time: '08:00', end_time: '10:00' },
-        { start_time: '14:00', end_time: '16:00' },
-      ],
-    }));
+        { start_time: '14:00', end_time: '16:00' }]}));
     expect(result.time_slots).toEqual([
       { start_time: '08:00', end_time: '10:00' },
-      { start_time: '14:00', end_time: '16:00' },
-    ]);
+      { start_time: '14:00', end_time: '16:00' }]);
   });
 
   it('creates a weekly schedule in batch', async () => {
@@ -70,15 +62,13 @@ describe('Staff Availability Service', () => {
         day_of_week: 1,
         start_time: '08:00',
         end_time: '10:00',
-        time_slots_json: [{ start_time: '08:00', end_time: '10:00' }],
-      })
+        time_slots_json: [{ start_time: '08:00', end_time: '10:00' }]})
       .mockResolvedValueOnce({
         id: 'avail-2',
         day_of_week: 2,
         start_time: '14:00',
         end_time: '16:00',
-        time_slots_json: [{ start_time: '14:00', end_time: '16:00' }],
-      });
+        time_slots_json: [{ start_time: '14:00', end_time: '16:00' }]});
 
     const result = await staffAvailabilityService.createBatch({
       staff_profile_id: staffProfileId,
@@ -87,14 +77,10 @@ describe('Staff Availability Service', () => {
       days: [
         {
           day_of_week: 1,
-          time_slots: [{ start_time: '08:00', end_time: '10:00' }],
-        },
+          time_slots: [{ start_time: '08:00', end_time: '10:00' }]},
         {
           day_of_week: 2,
-          time_slots: [{ start_time: '14:00', end_time: '16:00' }],
-        },
-      ],
-    }, mockUserId, mockIpAddress);
+          time_slots: [{ start_time: '14:00', end_time: '16:00' }]}]}, mockUserId, mockIpAddress);
 
     expect(staffAvailabilityRepository.create).toHaveBeenCalledTimes(2);
     expect(result).toHaveLength(2);
@@ -107,9 +93,7 @@ describe('Staff Availability Service', () => {
       day_of_week: 1,
       time_slots: [
         { start_time: '08:00', end_time: '12:00' },
-        { start_time: '11:00', end_time: '13:00' },
-      ],
-      effective_from: '2026-06-30T00:00:00.000Z',
-    }, mockUserId, mockIpAddress)).rejects.toThrow(HttpError);
+        { start_time: '11:00', end_time: '13:00' }],
+      effective_from: '2026-06-30T00:00:00.000Z'}, mockUserId, mockIpAddress)).rejects.toThrow(HttpError);
   });
 });

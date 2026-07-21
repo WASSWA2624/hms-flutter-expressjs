@@ -13,12 +13,10 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
@@ -54,9 +52,7 @@ const emptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const resolveWardId = async (identifier, { includeDeleted = false } = {}) => {
   const normalized = String(identifier ?? '').trim();
@@ -66,16 +62,14 @@ const resolveWardId = async (identifier, { includeDeleted = false } = {}) => {
     const resolved = await resolveModelIdByIdentifier({
       model: 'ward',
       identifier: normalized,
-      includeDeleted: true,
-    });
+      includeDeleted: true});
     return resolved || normalized;
   }
 
   return resolveEntityId({
     model: 'ward',
     identifier: normalized,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 };
 
 const resolveWardFilterId = async (filters, field, model) => {
@@ -83,8 +77,7 @@ const resolveWardFilterId = async (filters, field, model) => {
   const resolved = await resolveIdentifierForFilter({
     value: filters[field],
     model,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
   if (resolved === null) return null;
   return resolved;
 };
@@ -95,22 +88,18 @@ const normalizeCreatePayload = async (data = {}) => ({
     value: data.tenant_id,
     model: 'tenant',
     field: 'tenant_id',
-    where: { deleted_at: null },
-  }),
+    where: { deleted_at: null }}),
   facility_id: await resolveIdentifierForPayload({
     value: data.facility_id,
     model: 'facility',
     field: 'facility_id',
-    where: { deleted_at: null },
-  }),
+    where: { deleted_at: null }}),
   department_id: await resolveIdentifierForPayload({
     value: data.department_id,
     model: 'department',
     field: 'department_id',
     where: { deleted_at: null },
-    nullable: true,
-  }),
-});
+    nullable: true})});
 
 const normalizeUpdatePayload = async (data = {}) => {
   const payload = { ...data };
@@ -120,8 +109,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.facility_id,
       model: 'facility',
       field: 'facility_id',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'department_id')) {
@@ -130,8 +118,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       model: 'department',
       field: 'department_id',
       where: { deleted_at: null },
-      nullable: true,
-    });
+      nullable: true});
   }
 
   return payload;
@@ -391,8 +378,7 @@ const deleteWard = async (id, context = {}) => {
         model: 'ward',
         identifier: candidate,
         includeDeleted: true,
-        select: { id: true, deleted_at: true },
-      });
+        select: { id: true, deleted_at: true }});
       if (deletedWard?.deleted_at) {
         return;
       }
@@ -448,15 +434,12 @@ const restoreWard = async (id, context = {}) => {
       facility_id: ward.facility_id,
       department_id: ward.department_id,
       name: ward.name,
-      ward_type: ward.ward_type,
-    },
-  });
+      ward_type: ward.ward_type}});
 
   await publishFacilityLayoutRealtimeEvent(ward, 'ward', context.user_id, {
     operation: 'restored',
     name: ward.name,
-    ward_type: ward.ward_type,
-  });
+    ward_type: ward.ward_type});
 
   return ward;
 };
@@ -468,5 +451,4 @@ module.exports = {
   createWard,
   updateWard,
   deleteWard,
-  restoreWard,
-};
+  restoreWard};

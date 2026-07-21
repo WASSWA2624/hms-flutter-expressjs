@@ -29,8 +29,7 @@ const dataProcessingLogController = require('@modules/data-processing-log/contro
 const COMPLIANCE_READ_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.FACILITY_ADMIN,
-  PERMISSIONS.SYSTEM_ADMIN,
-];
+  PERMISSIONS.SYSTEM_ADMIN];
 const COMPLIANCE_WRITE_SCOPES = COMPLIANCE_READ_SCOPES;
 
 /**

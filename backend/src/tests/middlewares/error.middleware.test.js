@@ -3,18 +3,14 @@
  */
 
 jest.mock('@lib/errors', () => ({
-  handleApiError: jest.fn(),
-}));
+  handleApiError: jest.fn()}));
 
 jest.mock('@lib/logging', () => ({
   logger: {
-    error: jest.fn(),
-  },
-}));
+    error: jest.fn()}}));
 
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(() => Promise.resolve()),
-}));
+  createAuditLog: jest.fn(() => Promise.resolve())}));
 
 const { handleApiError } = require('@lib/errors');
 const { createAuditLog } = require('@lib/audit');
@@ -43,8 +39,7 @@ describe('error middleware', () => {
       method: 'POST',
       ip: '127.0.0.1',
       get: jest.fn(() => 'jest-agent'),
-      user: undefined,
-    };
+      user: undefined};
     const res = {};
     const next = jest.fn();
 
@@ -57,8 +52,7 @@ describe('error middleware', () => {
         entity_id: '/api/v1/auth/login',
         user_id: null,
         tenant_id: null,
-        facility_id: null,
-      })
+        facility_id: null})
     );
   });
 });

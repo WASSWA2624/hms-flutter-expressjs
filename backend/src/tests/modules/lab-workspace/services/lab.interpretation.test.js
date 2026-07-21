@@ -1,14 +1,12 @@
 const {
   evaluateLabResult,
   isRangeEffectiveAt,
-  selectReferenceRange,
-} = require('@services/lab-workspace/lab.interpretation');
+  selectReferenceRange} = require('@services/lab-workspace/lab.interpretation');
 
 describe('lab.interpretation', () => {
   const adultFemale = {
     gender: 'FEMALE',
-    date_of_birth: new Date('1994-06-01T00:00:00.000Z'),
-  };
+    date_of_birth: new Date('1994-06-01T00:00:00.000Z')};
 
   const potassiumTest = {
     unit: 'mg/dL',
@@ -26,8 +24,7 @@ describe('lab.interpretation', () => {
         version: 1,
         sort_order: 0,
         effective_from: '2020-01-01T00:00:00.000Z',
-        effective_to: '2025-12-31T23:59:59.000Z',
-      },
+        effective_to: '2025-12-31T23:59:59.000Z'},
       {
         id: 'range-adult-v2',
         label: 'Adult v2',
@@ -41,12 +38,9 @@ describe('lab.interpretation', () => {
         critical_max_value: '6.4',
         version: 2,
         sort_order: 1,
-        effective_from: '2026-01-01T00:00:00.000Z',
-      },
-    ],
+        effective_from: '2026-01-01T00:00:00.000Z'}],
     unit_options: [{ unit: 'mg/dL', is_default: true }],
-    result_options: [],
-  };
+    result_options: []};
 
   it('selects effective-dated method-aware ranges and snapshots exact applied bounds', () => {
     const interpretation = evaluateLabResult({
@@ -55,8 +49,7 @@ describe('lab.interpretation', () => {
       resultValue: '6.8',
       resultUnit: 'mg/dL',
       method: 'ISE',
-      at: new Date('2026-07-15T00:00:00.000Z'),
-    });
+      at: new Date('2026-07-15T00:00:00.000Z')});
 
     expect(interpretation.status).toBe('CRITICAL');
     expect(interpretation.result_flag).toBe('CRITICAL_HIGH');
@@ -73,8 +66,7 @@ describe('lab.interpretation', () => {
         critical_min_value: '2.6000',
         critical_max_value: '6.4000',
         version: 2,
-        source: 'APPLIED_RULE',
-      })
+        source: 'APPLIED_RULE'})
     );
   });
 

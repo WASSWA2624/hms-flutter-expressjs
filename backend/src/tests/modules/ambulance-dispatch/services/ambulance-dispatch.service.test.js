@@ -27,19 +27,15 @@ const rawDispatch = (overrides = {}) => ({
   emergency_case_id: '123e4567-e89b-12d3-a456-426614174002',
   ambulance: {
     human_friendly_id: 'AMB000001',
-    identifier: 'Ambulance 1',
-  },
+    identifier: 'Ambulance 1'},
   emergency_case: {
     human_friendly_id: 'EME000001',
     patient: {
       human_friendly_id: 'PAT000001',
       first_name: 'Jane',
-      last_name: 'Doe',
-    },
-  },
+      last_name: 'Doe'}},
   status: 'DISPATCHED',
-  ...overrides,
-});
+  ...overrides});
 
 describe('Ambulance Dispatch Service', () => {
   beforeEach(() => {
@@ -59,8 +55,7 @@ describe('Ambulance Dispatch Service', () => {
         display_id: 'ADS000001',
         ambulance_id: 'AMB000001',
         emergency_case_id: 'EME000001',
-        patient_display_id: 'PAT000001',
-      }));
+        patient_display_id: 'PAT000001'}));
       expect(result.dispatches[0]).not.toHaveProperty('id');
       expect(result.dispatches[0]).not.toHaveProperty('ambulance');
       expect(result.dispatches[0]).not.toHaveProperty('emergency_case');
@@ -77,8 +72,7 @@ describe('Ambulance Dispatch Service', () => {
 
       expect(result).toEqual(expect.objectContaining({
         human_friendly_id: 'ADS000001',
-        display_id: 'ADS000001',
-      }));
+        display_id: 'ADS000001'}));
       expect(result).not.toHaveProperty('id');
     });
 
@@ -106,8 +100,7 @@ describe('Ambulance Dispatch Service', () => {
       expect(result).toEqual(expect.objectContaining({
         human_friendly_id: 'ADS000001',
         ambulance_id: 'AMB000001',
-        emergency_case_id: 'EME000001',
-      }));
+        emergency_case_id: 'EME000001'}));
       expect(result).not.toHaveProperty('id');
       expect(createAuditLog).toHaveBeenCalled();
     });
@@ -127,8 +120,7 @@ describe('Ambulance Dispatch Service', () => {
       expect(result).toEqual(expect.objectContaining({
         human_friendly_id: 'ADS000001',
         display_id: 'ADS000001',
-        status: 'EN_ROUTE',
-      }));
+        status: 'EN_ROUTE'}));
       expect(result).not.toHaveProperty('id');
       expect(createAuditLog).toHaveBeenCalled();
     });

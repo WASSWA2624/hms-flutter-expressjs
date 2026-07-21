@@ -11,8 +11,7 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/user-mfa/user-mfa.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/auth/mfa', () => ({
-  verifyUserMfaCode: jest.fn(),
-}));
+  verifyUserMfaCode: jest.fn()}));
 
 const userMfaRepository = require('@repositories/user-mfa/user-mfa.repository');
 const { createAuditLog } = require('@lib/audit');

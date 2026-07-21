@@ -8,8 +8,7 @@ const {
   createPayrollItemSchema,
   updatePayrollItemSchema,
   payrollItemIdParamsSchema,
-  listPayrollItemsQuerySchema,
-} = require('@validations/payroll-item/payroll-item.schema');
+  listPayrollItemsQuerySchema} = require('@validations/payroll-item/payroll-item.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

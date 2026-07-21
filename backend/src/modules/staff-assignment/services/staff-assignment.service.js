@@ -6,8 +6,7 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
   resolveEntityId,
-  resolvePublicIdentifier,
-} = require('@lib/billing/identifiers');
+  resolvePublicIdentifier} = require('@lib/billing/identifiers');
 
 const STAFF_ASSIGNMENT_INCLUDE = {
   department: {
@@ -15,32 +14,23 @@ const STAFF_ASSIGNMENT_INCLUDE = {
       id: true,
       human_friendly_id: true,
       name: true,
-      short_name: true,
-    },
-  },
+      short_name: true}},
   unit: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   room: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   staff_profile: {
     select: {
       id: true,
       human_friendly_id: true,
       staff_number: true,
-      tenant_id: true,
-    },
-  },
-};
+      tenant_id: true}}};
 
 const mapStaffAssignmentForDisplay = (record) => {
   if (!record || typeof record !== 'object') {
@@ -65,8 +55,7 @@ const mapStaffAssignmentForDisplay = (record) => {
       record?.staff_profile?.staff_number,
       record?.staff_profile_id
     ),
-    tenant_id: record?.staff_profile?.tenant_id || record?.tenant_id || null,
-  };
+    tenant_id: record?.staff_profile?.tenant_id || record?.tenant_id || null};
 };
 
 const mapStaffAssignmentsForDisplay = (records = []) =>
@@ -80,14 +69,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const emptyResult = (page, limit) => ({
   staffAssignments: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const resolveCreatePayload = async (data = {}) => ({
   ...data,
@@ -95,30 +82,25 @@ const resolveCreatePayload = async (data = {}) => ({
     value: data.staff_profile_id,
     model: 'staff_profile',
     field: 'staff_profile_id',
-    where: { deleted_at: null },
-  }),
+    where: { deleted_at: null }}),
   department_id: await resolveIdentifierForPayload({
     value: data.department_id,
     model: 'department',
     field: 'department_id',
     where: { deleted_at: null },
-    nullable: true,
-  }),
+    nullable: true}),
   unit_id: await resolveIdentifierForPayload({
     value: data.unit_id,
     model: 'unit',
     field: 'unit_id',
     where: { deleted_at: null },
-    nullable: true,
-  }),
+    nullable: true}),
   room_id: await resolveIdentifierForPayload({
     value: data.room_id,
     model: 'room',
     field: 'room_id',
     where: { deleted_at: null },
-    nullable: true,
-  }),
-});
+    nullable: true})});
 
 const persistStaffAssignment = async (payload, userId, ipAddress) => {
   const staffAssignment = await staffAssignmentRepository.create(payload);
@@ -133,8 +115,7 @@ const persistStaffAssignment = async (payload, userId, ipAddress) => {
     entity: 'staff_assignment',
     entity_id: staffAssignment.id,
     diff: { after: staffAssignment },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
   return mapStaffAssignmentForDisplay(withRelations || staffAssignment);
 };
 
@@ -147,32 +128,28 @@ const listStaffAssignments = async (filters, page, limit, sortBy, order) => {
     const staffProfileId = await resolveIdentifierForFilter({
       value: filters.staff_profile_id,
       model: 'staff_profile',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.staff_profile_id && staffProfileId === null) return emptyResult(page, limit);
     if (staffProfileId) whereClause.staff_profile_id = staffProfileId;
 
     const departmentId = await resolveIdentifierForFilter({
       value: filters.department_id,
       model: 'department',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.department_id && departmentId === null) return emptyResult(page, limit);
     if (departmentId) whereClause.department_id = departmentId;
 
     const unitId = await resolveIdentifierForFilter({
       value: filters.unit_id,
       model: 'unit',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.unit_id && unitId === null) return emptyResult(page, limit);
     if (unitId) whereClause.unit_id = unitId;
 
     const roomId = await resolveIdentifierForFilter({
       value: filters.room_id,
       model: 'room',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (filters.room_id && roomId === null) return emptyResult(page, limit);
     if (roomId) whereClause.room_id = roomId;
 
@@ -184,13 +161,11 @@ const listStaffAssignments = async (filters, page, limit, sortBy, order) => {
         orderBy,
         STAFF_ASSIGNMENT_INCLUDE
       ),
-      staffAssignmentRepository.count(whereClause),
-    ]);
+      staffAssignmentRepository.count(whereClause)]);
 
     return {
       staffAssignments: mapStaffAssignmentsForDisplay(staffAssignments),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -202,8 +177,7 @@ const getStaffAssignmentById = async (id) => {
     const resolvedId = await resolveEntityId({
       model: 'staff_assignment',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const staffAssignment = await staffAssignmentRepository.findById(
       resolvedId,
       STAFF_ASSIGNMENT_INCLUDE
@@ -234,13 +208,11 @@ const createStaffAssignment = async (data, userId, ipAddress) => {
           model: 'room',
           field: 'room_id',
           where: { deleted_at: null },
-          nullable: true,
-        });
+          nullable: true});
         const assignment = await persistStaffAssignment(
           {
             ...resolvedBase,
-            room_id: roomId,
-          },
+            room_id: roomId},
           userId,
           ipAddress
         );
@@ -251,8 +223,7 @@ const createStaffAssignment = async (data, userId, ipAddress) => {
         ? assignments[0]
         : {
             assignments,
-            count: assignments.length,
-          };
+            count: assignments.length};
     }
 
     return persistStaffAssignment(resolvedBase, userId, ipAddress);
@@ -267,8 +238,7 @@ const updateStaffAssignment = async (id, data, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'staff_assignment',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await staffAssignmentRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.staff_assignment.not_found', 404);
 
@@ -279,8 +249,7 @@ const updateStaffAssignment = async (id, data, userId, ipAddress) => {
         model: 'department',
         field: 'department_id',
         where: { deleted_at: null },
-        nullable: true,
-      });
+        nullable: true});
     }
     if (Object.prototype.hasOwnProperty.call(data, 'unit_id')) {
       payload.unit_id = await resolveIdentifierForPayload({
@@ -288,8 +257,7 @@ const updateStaffAssignment = async (id, data, userId, ipAddress) => {
         model: 'unit',
         field: 'unit_id',
         where: { deleted_at: null },
-        nullable: true,
-      });
+        nullable: true});
     }
     if (Object.prototype.hasOwnProperty.call(data, 'room_id')) {
       payload.room_id = await resolveIdentifierForPayload({
@@ -297,8 +265,7 @@ const updateStaffAssignment = async (id, data, userId, ipAddress) => {
         model: 'room',
         field: 'room_id',
         where: { deleted_at: null },
-        nullable: true,
-      });
+        nullable: true});
     }
 
     const staffAssignment = await staffAssignmentRepository.update(before.id, payload);
@@ -313,8 +280,7 @@ const updateStaffAssignment = async (id, data, userId, ipAddress) => {
       entity: 'staff_assignment',
       entity_id: staffAssignment.id,
       diff: { before, after: staffAssignment },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
     return mapStaffAssignmentForDisplay(withRelations || staffAssignment);
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -327,8 +293,7 @@ const deleteStaffAssignment = async (id, userId, ipAddress) => {
     const resolvedId = await resolveEntityId({
       model: 'staff_assignment',
       identifier: id,
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     const before = await staffAssignmentRepository.findById(resolvedId);
     if (!before) throw new HttpError('errors.staff_assignment.not_found', 404);
 
@@ -340,8 +305,7 @@ const deleteStaffAssignment = async (id, userId, ipAddress) => {
       entity: 'staff_assignment',
       entity_id: before.id,
       diff: { before },
-      ip_address: ipAddress,
-    }).catch(() => {});
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -353,5 +317,4 @@ module.exports = {
   getStaffAssignmentById,
   createStaffAssignment,
   updateStaffAssignment,
-  deleteStaffAssignment,
-};
+  deleteStaffAssignment};

@@ -9,8 +9,7 @@ jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 
 const buildRecord = (overrides = {}) => ({
   id: 'module-subscription-uuid',
@@ -22,21 +21,18 @@ const buildRecord = (overrides = {}) => ({
     tenant_id: 'tenant-uuid',
     tenant: { id: 'tenant-uuid', human_friendly_id: 'TEN0001', name: 'Acme' },
     plan: { id: 'plan-uuid', human_friendly_id: 'PLAN0001', name: 'Pro', tier_code: 'PRO' },
-    plan_fit_status: 'GOOD',
-  },
+    plan_fit_status: 'GOOD'},
   module_id: 'module-uuid',
   module: {
     id: 'module-uuid',
     human_friendly_id: 'MOD0001',
     name: 'LIS',
     slug: 'lis',
-    minimum_plan_tier_code: 'PRO',
-  },
+    minimum_plan_tier_code: 'PRO'},
   is_active: true,
   entitlement_denied: false,
   entitlement_denial_reason: null,
-  ...overrides,
-});
+  ...overrides});
 
 describe('Module Subscription Service', () => {
   beforeEach(() => {
@@ -53,8 +49,7 @@ describe('Module Subscription Service', () => {
         subscription_id: 'SUB0001',
         module_id: 'MOD0001',
         module_label: 'LIS',
-        tenant_label: 'Acme',
-      })
+        tenant_label: 'Acme'})
     );
   });
 
@@ -63,9 +58,7 @@ describe('Module Subscription Service', () => {
       buildRecord(),
       buildRecord({
         id: 'module-subscription-uuid-2',
-        human_friendly_id: 'MSUB0002',
-      }),
-    ]);
+        human_friendly_id: 'MSUB0002'})]);
     moduleSubscriptionRepository.count.mockResolvedValue(2);
 
     const result = await subject.listModuleSubscriptions(
@@ -82,15 +75,13 @@ describe('Module Subscription Service', () => {
     );
     expect(result.module_subscriptions).toEqual([
       expect.objectContaining({ id: 'MSUB0001' }),
-      expect.objectContaining({ id: 'MSUB0002' }),
-    ]);
+      expect.objectContaining({ id: 'MSUB0002' })]);
   });
 
   it('creates a module subscription, reloads it, and audits the change', async () => {
     const created = buildRecord({
       id: 'module-subscription-uuid-2',
-      human_friendly_id: 'MSUB0002',
-    });
+      human_friendly_id: 'MSUB0002'});
     moduleSubscriptionRepository.create.mockResolvedValue({ id: created.id });
     moduleSubscriptionRepository.findById.mockResolvedValue(created);
 
@@ -98,21 +89,18 @@ describe('Module Subscription Service', () => {
       {
         module_id: 'MOD0001',
         subscription_id: 'SUB0001',
-        human_friendly_id: 'MSUB0002',
-      },
+        human_friendly_id: 'MSUB0002'},
       {
         user: { id: 'user-1', role: 'SUPER_ADMIN' },
         ip: '127.0.0.1',
-        tenant_id: 'tenant-uuid',
-      }
+        tenant_id: 'tenant-uuid'}
     );
 
     expect(result).toEqual(expect.objectContaining({ id: 'MSUB0002' }));
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'CREATE',
-        entity: 'module_subscription',
-      })
+        entity: 'module_subscription'})
     );
   });
 
@@ -124,20 +112,15 @@ describe('Module Subscription Service', () => {
           id: 'plan-uuid',
           human_friendly_id: 'PLAN0001',
           name: 'Basic',
-          tier_code: 'BASIC',
-        },
-      },
+          tier_code: 'BASIC'}},
       module: {
         ...buildRecord().module,
-        minimum_plan_tier_code: 'PRO',
-      },
-    });
+        minimum_plan_tier_code: 'PRO'}});
     const after = {
       ...before,
       entitlement_denied: true,
       entitlement_denial_reason: 'requires_PRO',
-      eligibility_checked_at: '2026-03-01T00:00:00.000Z',
-    };
+      eligibility_checked_at: '2026-03-01T00:00:00.000Z'};
     moduleSubscriptionRepository.findById
       .mockResolvedValueOnce(before)
       .mockResolvedValueOnce(after);
@@ -149,8 +132,7 @@ describe('Module Subscription Service', () => {
       expect.objectContaining({
         module_subscription_id: 'MSUB0001',
         eligible: false,
-        reason: 'requires_PRO',
-      })
+        reason: 'requires_PRO'})
     );
   });
 
@@ -160,21 +142,15 @@ describe('Module Subscription Service', () => {
         ...buildRecord().subscription,
         extension_json: {
           module_overrides: {
-            blocked: ['lis'],
-          },
-        },
-      },
+            blocked: ['lis']}}},
       module: {
         ...buildRecord().module,
-        slug: 'lis',
-      },
-    });
+        slug: 'lis'}});
     const after = {
       ...before,
       entitlement_denied: true,
       entitlement_denial_reason: 'blocked_by_subscription_customization',
-      eligibility_checked_at: '2026-03-01T00:00:00.000Z',
-    };
+      eligibility_checked_at: '2026-03-01T00:00:00.000Z'};
     moduleSubscriptionRepository.findById
       .mockResolvedValueOnce(before)
       .mockResolvedValueOnce(after);
@@ -186,8 +162,7 @@ describe('Module Subscription Service', () => {
       expect.objectContaining({
         module_subscription_id: 'MSUB0001',
         eligible: false,
-        reason: 'blocked_by_subscription_customization',
-      })
+        reason: 'blocked_by_subscription_customization'})
     );
   });
 

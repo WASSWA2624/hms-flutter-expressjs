@@ -14,8 +14,7 @@ const {
   createModuleSchema,
   updateModuleSchema,
   moduleIdParamsSchema,
-  listModulesQuerySchema,
-} = require('@validations/module/module.schema');
+  listModulesQuerySchema} = require('@validations/module/module.schema');
 
 const router = express.Router();
 

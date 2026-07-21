@@ -67,8 +67,7 @@ describe('Vital Sign Service', () => {
         recorded_at: expect.any(Date),
         systolic_value: null,
         diastolic_value: null,
-        map_value: null,
-      }));
+        map_value: null}));
     });
 
     it('normalizes blood pressure payload and computes MAP when missing', async () => {
@@ -78,8 +77,7 @@ describe('Vital Sign Service', () => {
         ...newVitalSign,
         systolic_value: 120,
         diastolic_value: 80,
-        map_value: 93.33,
-      };
+        map_value: 93.33};
       vitalSignRepository.create.mockResolvedValue(createdVitalSign);
       createAuditLog.mockResolvedValue({});
 
@@ -91,8 +89,7 @@ describe('Vital Sign Service', () => {
         recorded_at: expect.any(Date),
         systolic_value: 120,
         diastolic_value: 80,
-        map_value: 93.33,
-      }));
+        map_value: 93.33}));
     });
   });
 

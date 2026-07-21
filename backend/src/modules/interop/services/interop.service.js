@@ -81,8 +81,7 @@ const linkDicomStudy = async (id, data = {}, context = {}) => {
     pacs_url: data.pacs_url || null,
     status,
     error: errorMessage,
-    dicom_response: dicomResult?.data || null,
-  };
+    dicom_response: dicomResult?.data || null};
 
   await createAuditLog({
     user_id: context.user_id,

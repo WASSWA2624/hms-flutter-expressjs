@@ -15,8 +15,7 @@ const {
   updateLabPanelSchema,
   deleteLabPanelSchema,
   labPanelIdParamsSchema,
-  listLabPanelsQuerySchema,
-} = require('@validations/lab-panel/lab-panel.schema');
+  listLabPanelsQuerySchema} = require('@validations/lab-panel/lab-panel.schema');
 
 const router = express.Router();
 
@@ -26,15 +25,13 @@ const LAB_READ_ROLES = [
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
   ROLES.NURSE,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 const LAB_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
-  ROLES.LAB_TECH,
-];
+  ROLES.LAB_TECH];
 
 router.get(
   '/',

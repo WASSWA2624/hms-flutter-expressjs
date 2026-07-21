@@ -17,8 +17,7 @@ const PATIENT_SELECT = {
   date_of_birth: true,
   gender: true,
   tenant_id: true,
-  facility_id: true,
-};
+  facility_id: true};
 
 const ENCOUNTER_SELECT = {
   id: true,
@@ -27,8 +26,7 @@ const ENCOUNTER_SELECT = {
   status: true,
   started_at: true,
   ended_at: true,
-  provider_user_id: true,
-};
+  provider_user_id: true};
 
 const BED_SELECT = {
   id: true,
@@ -42,38 +40,28 @@ const BED_SELECT = {
       id: true,
       human_friendly_id: true,
       name: true,
-      ward_type: true,
-    },
-  },
+      ward_type: true}},
   room: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
-      floor: true,
-    },
-  },
-};
+      floor: true}}};
 
 const BASE_INCLUDE = {
   tenant: {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   facility: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
-      facility_type: true,
-    },
-  },
+      facility_type: true}},
   patient: {
-    select: PATIENT_SELECT,
-  },
+    select: PATIENT_SELECT},
   encounter: {
     select: {
       ...ENCOUNTER_SELECT,
@@ -98,76 +86,49 @@ const BASE_INCLUDE = {
             take: 1,
             select: {
               note: true,
-              record_status: true,
-            },
-          },
-        },
-      },
-    },
-  },
+              record_status: true}}}}}},
   bed_assignments: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      assigned_at: 'desc',
-    },
+      assigned_at: 'desc'},
     include: {
       bed: {
-        select: BED_SELECT,
-      },
-    },
-  },
+        select: BED_SELECT}}},
   transfer_requests: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      requested_at: 'desc',
-    },
+      requested_at: 'desc'},
     include: {
       from_ward: {
         select: {
           id: true,
           human_friendly_id: true,
           name: true,
-          ward_type: true,
-        },
-      },
+          ward_type: true}},
       to_ward: {
         select: {
           id: true,
           human_friendly_id: true,
           name: true,
-          ward_type: true,
-        },
-      },
-    },
-  },
+          ward_type: true}}}},
   discharge_summaries: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      updated_at: 'desc',
-    },
-  },
+      updated_at: 'desc'}},
   ward_rounds: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      round_at: 'desc',
-    },
-    take: 15,
-  },
+      round_at: 'desc'},
+    take: 15},
   nursing_notes: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      created_at: 'desc',
-    },
+      created_at: 'desc'},
     take: 20,
     include: {
       nurse: {
@@ -179,52 +140,32 @@ const BASE_INCLUDE = {
             select: {
               first_name: true,
               middle_name: true,
-              last_name: true,
-            },
-          },
-        },
-      },
-    },
-  },
+              last_name: true}}}}}},
   medication_administrations: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      administered_at: 'desc',
-    },
-    take: 20,
-  },
+      administered_at: 'desc'},
+    take: 20},
   icu_stays: {
     where: {
-      deleted_at: null,
-    },
+      deleted_at: null},
     orderBy: {
-      started_at: 'desc',
-    },
+      started_at: 'desc'},
     take: 15,
     include: {
       observations: {
         where: {
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: {
-          observed_at: 'desc',
-        },
-        take: 40,
-      },
+          observed_at: 'desc'},
+        take: 40},
       alerts: {
         where: {
-          deleted_at: null,
-        },
+          deleted_at: null},
         orderBy: {
-          created_at: 'desc',
-        },
-        take: 40,
-      },
-    },
-  },
-};
+          created_at: 'desc'},
+        take: 40}}}};
 
 const findById = async (id, include = {}) => {
   try {
@@ -232,9 +173,7 @@ const findById = async (id, include = {}) => {
       where: withActivePatient({ id }),
       include: {
         ...BASE_INCLUDE,
-        ...include,
-      },
-    });
+        ...include}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -255,9 +194,7 @@ const findMany = async (
       orderBy,
       include: {
         ...BASE_INCLUDE,
-        ...include,
-      },
-    });
+        ...include}});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -266,8 +203,7 @@ const findMany = async (
 const count = async (filters = {}) => {
   try {
     return await prisma.admission.count({
-      where: withActivePatient(filters),
-    });
+      where: withActivePatient(filters)});
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -277,5 +213,4 @@ module.exports = {
   BASE_INCLUDE,
   findById,
   findMany,
-  count,
-};
+  count};

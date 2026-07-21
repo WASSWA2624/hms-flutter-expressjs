@@ -1,7 +1,6 @@
 const {
   resolveEffectiveAccess,
-  resolveRequestPermissionNames,
-} = require('@lib/authorization/effective-access');
+  resolveRequestPermissionNames} = require('@lib/authorization/effective-access');
 const { ROLES } = require('@config/roles');
 
 describe('effective-access', () => {
@@ -10,9 +9,7 @@ describe('effective-access', () => {
     const user = {
       roles: [
         { role: { name: ROLES.SUPER_ADMIN } },
-        { role: { name: 'ADMINISTRATOR' } },
-      ],
-    };
+        { role: { name: 'ADMINISTRATOR' } }]};
 
     expect(getRoleNames(user)).toEqual(
       expect.arrayContaining([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN])
@@ -25,13 +22,10 @@ describe('effective-access', () => {
       {
         roles: [ROLES.DOCTOR],
         role_permissions: ['clinical:read', 'clinical:write', 'billing:write'],
-        tenant_id: 'tenant-1',
-      },
+        tenant_id: 'tenant-1'},
       {
         moduleEntitlements: [
-          { module_slug: 'encounters-vitals', is_active: true },
-        ],
-      }
+          { module_slug: 'encounters-vitals', is_active: true }]}
     );
 
     expect(access.grant_union).toEqual(
@@ -49,14 +43,11 @@ describe('effective-access', () => {
         roles: [ROLES.DOCTOR],
         role_permissions: ['clinical:read', 'lab:read'],
         module_assignments: ['encounters-vitals'],
-        tenant_id: 'tenant-1',
-      },
+        tenant_id: 'tenant-1'},
       {
         moduleEntitlements: [
           { module_slug: 'encounters-vitals', is_active: true },
-          { module_slug: 'lab-workflows', is_active: true },
-        ],
-      }
+          { module_slug: 'lab-workflows', is_active: true }]}
     );
 
     expect(access.permissions).toContain('clinical:read');
@@ -68,10 +59,8 @@ describe('effective-access', () => {
       roles: [ROLES.DOCTOR],
       permissions: ['clinical:read', 'billing:write', 'lab:read'],
       module_entitlements: [
-        { module_slug: 'encounters-vitals', is_active: true },
-      ],
-      tenant_id: 'tenant-1',
-    });
+        { module_slug: 'encounters-vitals', is_active: true }],
+      tenant_id: 'tenant-1'});
 
     expect(permissions).toContain('clinical:read');
     expect(permissions).not.toContain('billing:write');
@@ -86,11 +75,8 @@ describe('effective-access', () => {
         {
           module_slug: 'patient-registry',
           is_active: true,
-          plan_tier_code: 'FREE',
-        },
-      ],
-      tenant_id: 'tenant-1',
-    });
+          plan_tier_code: 'FREE'}],
+      tenant_id: 'tenant-1'});
 
     expect(permissions).toContain('patient:read');
     expect(permissions).toContain('patient:write');
@@ -104,17 +90,13 @@ describe('effective-access', () => {
       const access = resolveEffectiveAccess(
         {
           tenant_id: 'tenant-1',
-          role_permissions: ['patient:read', 'patient:delete'],
-        },
+          role_permissions: ['patient:read', 'patient:delete']},
         {
           moduleEntitlements: [
             {
               module_slug: 'patient-registry',
               is_active: true,
-              plan_tier_code: 'DEVELOPER',
-            },
-          ],
-        }
+              plan_tier_code: 'DEVELOPER'}]}
       );
 
       expect(access.permissions).toContain('patient:read');
@@ -129,10 +111,8 @@ describe('effective-access', () => {
       roles: [ROLES.SUPER_ADMIN],
       permissions: ['clinical:read', 'billing:write'],
       module_entitlements: [
-        { module_slug: 'encounters-vitals', is_active: true },
-      ],
-      tenant_id: 'tenant-1',
-    });
+        { module_slug: 'encounters-vitals', is_active: true }],
+      tenant_id: 'tenant-1'});
 
     expect(permissions).toContain('clinical:read');
     expect(permissions).not.toContain('billing:write');
@@ -141,8 +121,7 @@ describe('effective-access', () => {
   test('platform super admin without tenant context keeps platform grants', () => {
     const permissions = resolveRequestPermissionNames({
       roles: [ROLES.SUPER_ADMIN],
-      permissions: ['system:admin'],
-    });
+      permissions: ['system:admin']});
 
     expect(permissions).toEqual(['system:admin']);
   });

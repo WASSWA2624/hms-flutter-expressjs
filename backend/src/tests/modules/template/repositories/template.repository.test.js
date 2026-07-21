@@ -46,7 +46,7 @@ describe('Template Repository', () => {
       expect(result).toEqual(mockTemplate);
       expect(prisma.template.findFirst).toHaveBeenCalledWith({
         where: { id: mockTemplate.id, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -89,7 +89,7 @@ describe('Template Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
   });

@@ -13,12 +13,10 @@ describe('subscriptions-workspace controller', () => {
     req = {
       query: {},
       params: {},
-      user: { id: 'user-1' },
-    };
+      user: { id: 'user-1' }};
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+      json: jest.fn()};
   });
 
   afterEach(() => {
@@ -69,8 +67,7 @@ describe('subscriptions-workspace controller', () => {
       panel: 'operations',
       resource: 'subscriptions',
       id: 'SUB0100',
-      action: 'view',
-    };
+      action: 'view'};
     req.params = { resource: 'subscriptions', id: 'SUB0100' };
     service.resolveLegacyRoute.mockResolvedValue(data);
 

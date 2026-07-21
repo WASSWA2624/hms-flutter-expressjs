@@ -1,11 +1,9 @@
 jest.mock('@config/env', () => ({
-  JWT_SECRET: '12345678901234567890123456789012',
-}));
+  JWT_SECRET: '12345678901234567890123456789012'}));
 
 jest.mock('@config/jwt', () => ({
   refreshTokenExpiration: '7d',
-  algorithm: 'HS256',
-}));
+  algorithm: 'HS256'}));
 
 const jwt = require('jsonwebtoken');
 const { generateRefreshToken } = require('@lib/jwt/generateRefreshToken');

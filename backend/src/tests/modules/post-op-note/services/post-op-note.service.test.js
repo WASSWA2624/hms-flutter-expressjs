@@ -11,15 +11,13 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 jest.mock('@repositories/post-op-note/post-op-note.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 describe('Post-op note Service', () => {
   const userId = 'user-123';
@@ -46,11 +44,7 @@ describe('Post-op note Service', () => {
           id: patientId,
           human_friendly_id: 'PAT0001',
           first_name: 'John',
-          last_name: 'Doe',
-        },
-      },
-    },
-  };
+          last_name: 'Doe'}}}};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -75,17 +69,14 @@ describe('Post-op note Service', () => {
           encounter_display_id: 'ENC0001',
           patient_display_id: 'PAT0001',
           patient_display_name: 'John Doe',
-          record_status: 'DRAFT',
-        }),
-      ]);
+          record_status: 'DRAFT'})]);
       expect(result.pagination).toEqual({
         page: 1,
         limit: 20,
         total: 1,
         totalPages: 1,
         hasNextPage: false,
-        hasPreviousPage: false,
-      });
+        hasPreviousPage: false});
     });
 
     it('should apply encounter_id filter through theatre_case scope', async () => {
@@ -97,9 +88,7 @@ describe('Post-op note Service', () => {
       expect(postOpNoteRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           theatre_case: expect.objectContaining({
-            encounter_id: encounterId,
-          }),
-        }),
+            encounter_id: encounterId})}),
         expect.any(Number),
         expect.any(Number),
         expect.any(Object)
@@ -114,8 +103,7 @@ describe('Post-op note Service', () => {
 
       expect(postOpNoteRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          record_status: 'FINALIZED',
-        }),
+          record_status: 'FINALIZED'}),
         expect.any(Number),
         expect.any(Number),
         expect.any(Object)
@@ -132,10 +120,7 @@ describe('Post-op note Service', () => {
         expect.objectContaining({
           OR: expect.arrayContaining([
             expect.objectContaining({
-              note: { contains: 'stable' },
-            }),
-          ]),
-        }),
+              note: { contains: 'stable' }})])}),
         expect.any(Number),
         expect.any(Number),
         expect.any(Object)
@@ -154,8 +139,7 @@ describe('Post-op note Service', () => {
         total: 45,
         totalPages: 3,
         hasNextPage: true,
-        hasPreviousPage: true,
-      });
+        hasPreviousPage: true});
     });
 
     it('should throw HttpError on repository error', async () => {
@@ -177,8 +161,7 @@ describe('Post-op note Service', () => {
         expect.objectContaining({
           id: noteId,
           display_id: 'PON0001',
-          patient_display_name: 'John Doe',
-        })
+          patient_display_name: 'John Doe'})
       );
       expect(postOpNoteRepository.findById).toHaveBeenCalledWith(noteId);
     });
@@ -194,8 +177,7 @@ describe('Post-op note Service', () => {
     it('should create Post-op note and default record_status to DRAFT', async () => {
       const createData = {
         theatre_case_id: theatreCaseId,
-        note: 'Stable after surgery',
-      };
+        note: 'Stable after surgery'};
       postOpNoteRepository.create.mockResolvedValue(mockPostOpNote);
       postOpNoteRepository.findById.mockResolvedValue(mockPostOpNote);
 
@@ -205,13 +187,11 @@ describe('Post-op note Service', () => {
         expect.objectContaining({
           id: noteId,
           display_id: 'PON0001',
-          record_status: 'DRAFT',
-        })
+          record_status: 'DRAFT'})
       );
       expect(postOpNoteRepository.create).toHaveBeenCalledWith({
         ...createData,
-        record_status: 'DRAFT',
-      });
+        record_status: 'DRAFT'});
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: 'tenant-1',
         user_id: userId,
@@ -219,8 +199,7 @@ describe('Post-op note Service', () => {
         entity: 'post_op_note',
         entity_id: noteId,
         diff: { after: mockPostOpNote },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should propagate HttpError from repository', async () => {
@@ -237,8 +216,7 @@ describe('Post-op note Service', () => {
     it('should update Post-op note', async () => {
       const updatedPostOpNote = {
         ...mockPostOpNote,
-        record_status: 'FINALIZED',
-      };
+        record_status: 'FINALIZED'};
 
       postOpNoteRepository.findById
         .mockResolvedValueOnce(mockPostOpNote)
@@ -255,12 +233,10 @@ describe('Post-op note Service', () => {
       expect(result).toEqual(
         expect.objectContaining({
           id: noteId,
-          record_status: 'FINALIZED',
-        })
+          record_status: 'FINALIZED'})
       );
       expect(postOpNoteRepository.update).toHaveBeenCalledWith(noteId, {
-        record_status: 'FINALIZED',
-      });
+        record_status: 'FINALIZED'});
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: 'tenant-1',
         user_id: userId,
@@ -269,10 +245,8 @@ describe('Post-op note Service', () => {
         entity_id: noteId,
         diff: {
           before: mockPostOpNote,
-          after: updatedPostOpNote,
-        },
-        ip_address: ipAddress,
-      });
+          after: updatedPostOpNote},
+        ip_address: ipAddress});
     });
 
     it('should throw HttpError when Post-op note not found', async () => {
@@ -300,8 +274,7 @@ describe('Post-op note Service', () => {
         entity: 'post_op_note',
         entity_id: noteId,
         diff: { before: mockPostOpNote },
-        ip_address: ipAddress,
-      });
+        ip_address: ipAddress});
     });
 
     it('should throw HttpError when Post-op note not found', async () => {

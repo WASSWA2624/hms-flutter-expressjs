@@ -4,16 +4,13 @@ const mockNormalizeIdentifier = jest.fn((value) => (typeof value === 'string' ? 
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   normalizeIdentifier: (...args) => mockNormalizeIdentifier(...args),
   resolveModelIdByIdentifier: jest.fn(),
-  resolveModelRecordByIdentifier: (...args) => mockResolveModelRecordByIdentifier(...args),
-}));
+  resolveModelRecordByIdentifier: (...args) => mockResolveModelRecordByIdentifier(...args)}));
 
 const mockEncounterFindFirst = jest.fn();
 
 jest.mock('@prisma/client', () => ({
   encounter: {
-    findFirst: (...args) => mockEncounterFindFirst(...args),
-  },
-}));
+    findFirst: (...args) => mockEncounterFindFirst(...args)}}));
 
 const loadResolver = () => {
   jest.resetModules();
@@ -39,8 +36,7 @@ describe('lab.shared resolveLabOrderEncounterId', () => {
     expect(mockResolveModelRecordByIdentifier).toHaveBeenCalledWith(
       expect.objectContaining({
         identifier: 'ENC0000001',
-        model: 'encounter',
-      })
+        model: 'encounter'})
     );
     expect(mockEncounterFindFirst).not.toHaveBeenCalled();
   });
@@ -53,16 +49,14 @@ describe('lab.shared resolveLabOrderEncounterId', () => {
         id: 'visit-queue-1',
         patient_id: 'patient-1',
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      });
+        facility_id: 'facility-1'});
     mockEncounterFindFirst.mockResolvedValueOnce({ id: 'encounter-from-queue' });
 
     const result = await resolveLabOrderEncounterId({
       identifier: 'VIS0000001',
       patientId: 'patient-1',
       tenantId: 'tenant-1',
-      facilityId: 'facility-1',
-    });
+      facilityId: 'facility-1'});
 
     expect(result).toBe('encounter-from-queue');
     expect(mockEncounterFindFirst).toHaveBeenCalledWith(
@@ -70,10 +64,7 @@ describe('lab.shared resolveLabOrderEncounterId', () => {
         where: expect.objectContaining({
           extension_json: {
             path: '$.opd_flow.visit_queue_id',
-            equals: 'visit-queue-1',
-          },
-        }),
-      })
+            equals: 'visit-queue-1'}})})
     );
   });
 
@@ -85,8 +76,7 @@ describe('lab.shared resolveLabOrderEncounterId', () => {
         id: 'visit-queue-1',
         patient_id: 'patient-1',
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      });
+        facility_id: 'facility-1'});
     mockEncounterFindFirst
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: 'open-encounter-1' });
@@ -105,8 +95,7 @@ describe('lab.shared resolveLabOrderEncounterId', () => {
         id: 'visit-queue-1',
         patient_id: 'patient-1',
         tenant_id: 'tenant-1',
-        facility_id: null,
-      });
+        facility_id: null});
     mockEncounterFindFirst.mockResolvedValue(null);
 
     const result = await resolveLabOrderEncounterId({ identifier: 'VIS0000001' });
@@ -132,7 +121,6 @@ describe('lab.shared resolveLabOrderEncounterId', () => {
 
     await expect(resolveLabOrderEncounterId({ identifier: 'UNKNOWN0001' })).rejects.toMatchObject({
       message: 'errors.encounter.not_found',
-      statusCode: 404,
-    });
+      statusCode: 404});
   });
 });

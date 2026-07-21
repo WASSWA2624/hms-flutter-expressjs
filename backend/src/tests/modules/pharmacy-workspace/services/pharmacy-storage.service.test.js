@@ -1,8 +1,7 @@
 jest.mock('@repositories/pharmacy-workspace/pharmacy-storage.repository');
 jest.mock('@repositories/pharmacy-workspace/pharmacy-workspace.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn().mockResolvedValue(undefined),
-}));
+  createAuditLog: jest.fn().mockResolvedValue(undefined)}));
 
 const { HttpError } = require('@lib/errors');
 const pharmacyStorageRepository = require('@repositories/pharmacy-workspace/pharmacy-storage.repository');
@@ -14,8 +13,7 @@ const user = {
   id: 'actor-1',
   tenant_id: 'tenant-1',
   facility_id: 'facility-1',
-  roles: ['PHARMACIST'],
-};
+  roles: ['PHARMACIST']};
 
 describe('pharmacy-storage.service delete operations', () => {
   beforeEach(() => {
@@ -30,8 +28,7 @@ describe('pharmacy-storage.service delete operations', () => {
         human_friendly_id: 'ROOM-1',
         tenant_id: 'tenant-1',
         facility_id: 'facility-1',
-        shelves: [],
-      });
+        shelves: []});
 
       const result = await pharmacyStorageService.deletePharmacyStorageRoom(
         'ROOM-1',
@@ -68,8 +65,7 @@ describe('pharmacy-storage.service delete operations', () => {
         id: 'room-internal-2',
         tenant_id: 'tenant-other',
         facility_id: 'facility-1',
-        shelves: [],
-      });
+        shelves: []});
 
       await expect(
         pharmacyStorageService.deletePharmacyStorageRoom('ROOM-2', user.id, '127.0.0.1', user)
@@ -85,8 +81,7 @@ describe('pharmacy-storage.service delete operations', () => {
         human_friendly_id: 'SHELF-1',
         tenant_id: 'tenant-1',
         facility_id: 'facility-1',
-        storage_room: { id: 'room-internal-1' },
-      });
+        storage_room: { id: 'room-internal-1' }});
 
       const result = await pharmacyStorageService.deletePharmacyStorageShelf(
         'SHELF-1',

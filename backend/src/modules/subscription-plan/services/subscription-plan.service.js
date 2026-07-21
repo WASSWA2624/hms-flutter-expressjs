@@ -10,46 +10,36 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   createSubscriptionPublicId,
-  PUBLIC_ID_PREFIXES,
-} = require('@lib/subscriptions/constants');
+  PUBLIC_ID_PREFIXES} = require('@lib/subscriptions/constants');
 const {
   serializePlanAddOnEligibility,
   serializePlanEntitlements,
-  serializeSubscriptionPlan,
-} = require('@lib/subscriptions/serializers');
+  serializeSubscriptionPlan} = require('@lib/subscriptions/serializers');
 const {
   getPlanModuleConfiguration,
   includesAnyToken,
   normalizeTierCode,
-  tierMeetsMinimum,
-} = require('@lib/subscriptions/policies');
+  tierMeetsMinimum} = require('@lib/subscriptions/policies');
 const {
   resolveEntityId,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 const {
   canAccessTenant,
   canAccessTenantOrGlobal,
-  resolveUserTenantScope,
-} = require('@lib/subscriptions/access');
+  resolveUserTenantScope} = require('@lib/subscriptions/access');
 const {
-  clearModuleEntitlementCaches,
-} = require('@middlewares/module-entitlement.middleware');
+  clearModuleEntitlementCaches} = require('@middlewares/module-entitlement.middleware');
 const {
   publishCrudRealtimeEvent,
-  SUBSCRIPTION_EVENTS,
-} = require('@lib/websocket');
+  SUBSCRIPTION_EVENTS} = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
 const PLAN_INCLUDE = Object.freeze({
   tenant: true,
   _count: {
     select: {
-      subscriptions: true,
-    },
-  },
-});
+      subscriptions: true}}});
 
 const mergeExtensionJson = (existing, incoming) => {
   if (incoming == null) {
@@ -64,8 +54,7 @@ const mergeExtensionJson = (existing, incoming) => {
 
   const merged = {
     ...existing,
-    ...incoming,
-  };
+    ...incoming};
 
   if (
     incoming.allowed_modules &&
@@ -80,8 +69,7 @@ const mergeExtensionJson = (existing, incoming) => {
         : {};
     merged.allowed_modules = {
       ...previousAllowed,
-      ...incoming.allowed_modules,
-    };
+      ...incoming.allowed_modules};
   }
 
   if (
@@ -97,8 +85,7 @@ const mergeExtensionJson = (existing, incoming) => {
         : {};
     merged.pricing = {
       ...previousPricing,
-      ...incoming.pricing,
-    };
+      ...incoming.pricing};
   }
 
   return merged;
@@ -119,9 +106,7 @@ const notifyPlanModuleEntitlementChange = async (planRecord, user) => {
       recipient_roles: [ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.SUPER_ADMIN],
       payload: {
         reason: 'subscription_plan_updated',
-        plan_id: planRecord?.human_friendly_id || planRecord?.id || null,
-      },
-    });
+        plan_id: planRecord?.human_friendly_id || planRecord?.id || null}});
   } catch (_error) {
     // Realtime is best-effort; entitlement cache already cleared.
   }
@@ -132,8 +117,7 @@ const TIER_BASE_ENTITLEMENTS = {
   BASIC: ['group_1', 'group_2', 'group_3', 'group_4', 'group_13_core', 'group_16', 'group_17_basic', 'group_15_foundation'],
   PRO: ['group_1_to_20_core', 'group_15A_add_on_eligible'],
   ADVANCED: ['group_1_to_20_core', 'on_prem_standard_package', 'all_standard_add_ons'],
-  CUSTOM: ['group_1_to_20_core', 'all_standard_add_ons', 'bespoke_contract_scope'],
-};
+  CUSTOM: ['group_1_to_20_core', 'all_standard_add_ons', 'bespoke_contract_scope']};
 
 const ADD_ONS = [
   { code: 'inventory_procurement_lite', name: 'Inventory and Procurement Lite', minimum_tier: 'BASIC', price_range: '$19-$59/mo' },
@@ -142,8 +126,7 @@ const ADD_ONS = [
   { code: 'advanced_analytics', name: 'Advanced Analytics', minimum_tier: 'PRO', price_range: '$29-$99/mo' },
   { code: 'integrations_webhooks_pack', name: 'Integrations/Webhooks Pack', minimum_tier: 'PRO', price_range: '$49-$149/mo' },
   { code: 'extra_storage', name: 'Extra Storage', minimum_tier: 'BASIC', price_range: '$5 / 10GB' },
-  { code: 'sms_credits', name: 'SMS Credits', minimum_tier: 'BASIC', price_range: 'usage-based' },
-];
+  { code: 'sms_credits', name: 'SMS Credits', minimum_tier: 'BASIC', price_range: 'usage-based' }];
 
 const requireTenantScope = (user = {}) => {
   const scope = resolveUserTenantScope(user);
@@ -161,9 +144,7 @@ const emptyList = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const loadSubscriptionPlanRecord = async (
   identifier,
@@ -173,8 +154,7 @@ const loadSubscriptionPlanRecord = async (
   const scope = requireTenantScope(user);
   const resolvedId = await resolveEntityId({
     model: 'subscription_plan',
-    identifier,
-  });
+    identifier});
   const subscriptionPlan = await subscriptionPlanRepository.findById(resolvedId, PLAN_INCLUDE);
 
   if (!subscriptionPlan) {
@@ -195,8 +175,7 @@ const loadSubscriptionPlanRecord = async (
 const resolveSubscriptionPlanPayload = async (data = {}, user = {}) => {
   const scope = requireTenantScope(user);
   const payload = {
-    ...data,
-  };
+    ...data};
 
   if (!scope.is_elevated) {
     payload.tenant_id = scope.tenant_id;
@@ -208,8 +187,7 @@ const resolveSubscriptionPlanPayload = async (data = {}, user = {}) => {
       value: data.tenant_id,
       model: 'tenant',
       field: 'tenant_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   return payload;
@@ -240,8 +218,7 @@ const listSubscriptionPlans = async (
   if (filters.tenant_id) {
     const requestedTenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
-      model: 'tenant',
-    });
+      model: 'tenant'});
 
     if (requestedTenantId === null) {
       return emptyList(page, limit);
@@ -270,8 +247,7 @@ const listSubscriptionPlans = async (
       { human_friendly_id: { contains: filters.search, mode: 'insensitive' } },
       { name: { contains: filters.search, mode: 'insensitive' } },
       { code: { contains: filters.search, mode: 'insensitive' } },
-      { tier_code: { contains: filters.search, mode: 'insensitive' } },
-    ];
+      { tier_code: { contains: filters.search, mode: 'insensitive' } }];
 
     if (where.OR) {
       where.AND = [...(where.AND || []), { OR: where.OR }, { OR: searchClauses }];
@@ -287,8 +263,7 @@ const listSubscriptionPlans = async (
 
   const [subscriptionPlans, total] = await Promise.all([
     subscriptionPlanRepository.findMany(where, skip, limit, orderBy, PLAN_INCLUDE),
-    subscriptionPlanRepository.count(where),
-  ]);
+    subscriptionPlanRepository.count(where)]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -300,9 +275,7 @@ const listSubscriptionPlans = async (
       total,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-    },
-  };
+      hasPreviousPage: page > 1}};
 };
 
 const createSubscriptionPlan = async (data, user, ip) => {
@@ -312,8 +285,7 @@ const createSubscriptionPlan = async (data, user, ip) => {
     tenant_id: scope.is_elevated ? data.tenant_id : scope.tenant_id,
     human_friendly_id:
       data.human_friendly_id
-      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.subscription_plan),
-  }, user);
+      || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.subscription_plan)}, user);
 
   const created = await subscriptionPlanRepository.create(payload);
   const subscriptionPlan = await loadSubscriptionPlanRecord(
@@ -331,8 +303,7 @@ const createSubscriptionPlan = async (data, user, ip) => {
     entity: 'subscription_plan',
     entity_id: subscriptionPlan.id,
     diff: { after: subscriptionPlan },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscriptionPlan(subscriptionPlan);
 };
@@ -358,8 +329,7 @@ const updateSubscriptionPlan = async (id, data, user, ip) => {
     entity: 'subscription_plan',
     entity_id: subscriptionPlan.id,
     diff: { before, after: subscriptionPlan },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscriptionPlan(subscriptionPlan);
 };
@@ -375,8 +345,7 @@ const deleteSubscriptionPlan = async (id, user, ip) => {
     entity: 'subscription_plan',
     entity_id: subscriptionPlan.id,
     diff: { before, after: subscriptionPlan },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   return subscriptionPlan;
 };
@@ -398,8 +367,7 @@ const getPlanEntitlements = async (id, user = {}) => {
       max_facilities: plan.max_facilities,
       max_storage_mb: plan.max_storage_mb,
       max_modules: plan.max_modules,
-      warning_percent: plan.plan_fit_warning_percent,
-    },
+      warning_percent: plan.plan_fit_warning_percent},
     base_entitlements: tierCode ? (TIER_BASE_ENTITLEMENTS[tierCode] || []) : [],
     add_on_eligibility: plan.add_on_eligibility_json || null,
     limit_policy: plan.limit_policy_json || null,
@@ -407,9 +375,7 @@ const getPlanEntitlements = async (id, user = {}) => {
       included: planModuleConfig.included_modules,
       blocked: planModuleConfig.blocked_modules,
       add_on_eligible: planModuleConfig.add_on_modules,
-      customization_notes: planModuleConfig.customization_notes,
-    },
-  });
+      customization_notes: planModuleConfig.customization_notes}});
 };
 
 const getPlanAddOnEligibility = async (id, user = {}) => {
@@ -429,8 +395,7 @@ const getPlanAddOnEligibility = async (id, user = {}) => {
       configured:
         planModuleConfig.add_on_modules.length === 0
           ? eligible
-          : includesAnyToken([addOn.code], planModuleConfig.add_on_modules),
-    };
+          : includesAnyToken([addOn.code], planModuleConfig.add_on_modules)};
   });
 
   return serializePlanAddOnEligibility({
@@ -438,8 +403,7 @@ const getPlanAddOnEligibility = async (id, user = {}) => {
     tier_code: tierCode,
     add_ons: addOns,
     configured_add_on_module_ids: planModuleConfig.add_on_modules,
-    customization_notes: planModuleConfig.customization_notes,
-  });
+    customization_notes: planModuleConfig.customization_notes});
 };
 
 module.exports = {
@@ -449,5 +413,4 @@ module.exports = {
   updateSubscriptionPlan,
   deleteSubscriptionPlan,
   getPlanEntitlements,
-  getPlanAddOnEligibility,
-};
+  getPlanAddOnEligibility};

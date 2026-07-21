@@ -8,30 +8,23 @@ jest.mock('@lib/audit', () => ({
 }));
 jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
-  resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null)}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
-  resolveModelRecordByIdentifier: jest.fn().mockResolvedValue(null),
-}));
+  resolveModelRecordByIdentifier: jest.fn().mockResolvedValue(null)}));
 jest.mock('@lib/websocket/crud-realtime', () => ({
-  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(undefined),
-}));
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(undefined)}));
 jest.mock('@lib/realtime/platform-realtime', () => ({
   publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(1),
-  buildFacilityDashboardDeltas: jest.fn().mockReturnValue({}),
-}));
+  buildFacilityDashboardDeltas: jest.fn().mockReturnValue({})}));
 jest.mock('@lib/storage', () => ({
-  createStorageService: jest.fn(),
-}));
+  createStorageService: jest.fn()}));
 jest.mock('@lib/storage/facility-logo-storage', () => ({
-  deleteFacilityLogoFromStorage: jest.fn().mockResolvedValue(true),
-}));
+  deleteFacilityLogoFromStorage: jest.fn().mockResolvedValue(true)}));
 
 const { createStorageService } = require('@lib/storage');
 const {
-  deleteFacilityLogoFromStorage,
-} = require('@lib/storage/facility-logo-storage');
+  deleteFacilityLogoFromStorage} = require('@lib/storage/facility-logo-storage');
 
 describe('facility.service duplicate name validation', () => {
   beforeEach(() => {
@@ -111,12 +104,10 @@ describe('facility.service restore and permanent delete', () => {
       name: 'Main',
       facility_type: 'HOSPITAL',
       is_active: true,
-      deleted_at: null,
-    });
+      deleted_at: null});
 
     const facility = await facilityService.restoreFacility('FAC0001', {
-      user_id: 'user-1',
-    });
+      user_id: 'user-1'});
 
     expect(facility.id).toBe('FAC0001');
     expect(facilityRepository.restore).toHaveBeenCalledWith('FAC0001');
@@ -132,14 +123,11 @@ describe('facility.service restore and permanent delete', () => {
       facility_type: 'HOSPITAL',
       deleted_at: new Date(),
       extension_json: {
-        logo_url: 'facilities_TEN0001_FAC0001_branding_main-logo.png?v=1',
-      },
-    });
+        logo_url: 'facilities_TEN0001_FAC0001_branding_main-logo.png?v=1'}});
     facilityRepository.permanentDelete.mockResolvedValue(undefined);
 
     await facilityService.permanentDeleteFacility('FAC0001', {
-      user_id: 'user-1',
-    });
+      user_id: 'user-1'});
 
     expect(deleteFacilityLogoFromStorage).toHaveBeenCalledWith(
       storage,
@@ -152,8 +140,7 @@ describe('facility.service restore and permanent delete', () => {
     facilityRepository.findById.mockResolvedValue({
       id: 'FAC0001',
       name: 'Main',
-      deleted_at: null,
-    });
+      deleted_at: null});
 
     await expect(
       facilityService.permanentDeleteFacility('FAC0001')

@@ -13,8 +13,7 @@ const prisma = require('@prisma/client');
 const {
   listAvailability,
   listApprovedLeaves,
-  listExistingAssignments,
-} = require('./hr-roster-engine-queries');
+  listExistingAssignments} = require('./hr-roster-engine-queries');
 
 const buildStaffActivityMap = (staffProfiles = []) => {
   const map = new Map();
@@ -28,8 +27,7 @@ const buildStaffActivityMap = (staffProfiles = []) => {
       totalHours: 0,
       assignmentCount: 0,
       consultationCount: 0,
-      procedureCount: 0,
-    });
+      procedureCount: 0});
   }
   return map;
 };
@@ -58,10 +56,7 @@ const countConsultationsForUser = async ({ tenantId, userId, periodStart, period
       started_at: { lte: periodEnd },
       OR: [
         { ended_at: { gte: periodStart } },
-        { ended_at: null, started_at: { gte: periodStart } },
-      ],
-    },
-  });
+        { ended_at: null, started_at: { gte: periodStart } }]}});
 };
 
 const countProceduresForUser = async ({ tenantId, userId, periodStart, periodEnd, facilityId }) => {
@@ -74,10 +69,7 @@ const countProceduresForUser = async ({ tenantId, userId, periodStart, periodEnd
         deleted_at: null,
         tenant_id: tenantId,
         provider_user_id: userId,
-        ...(facilityId ? { facility_id: facilityId } : {}),
-      },
-    },
-  });
+        ...(facilityId ? { facility_id: facilityId } : {})}}});
 };
 
 const loadStaffPayrollActivity = async ({
@@ -85,8 +77,7 @@ const loadStaffPayrollActivity = async ({
   periodStart,
   periodEnd,
   tenantId,
-  facilityId = null,
-}) => {
+  facilityId = null}) => {
   const profileIds = staffProfiles.map((profile) => profile.id).filter(Boolean);
   const activityMap = buildStaffActivityMap(staffProfiles);
 
@@ -97,8 +88,7 @@ const loadStaffPayrollActivity = async ({
   const [availability, leaves, assignments] = await Promise.all([
     listAvailability(profileIds, periodStart, periodEnd),
     listApprovedLeaves(profileIds, periodStart, periodEnd),
-    listExistingAssignments(profileIds, periodStart, periodEnd),
-  ]);
+    listExistingAssignments(profileIds, periodStart, periodEnd)]);
 
   for (const record of availability) {
     const entry = activityMap.get(record.staff_profile_id);
@@ -121,8 +111,7 @@ const loadStaffPayrollActivity = async ({
       const userId = entry.profile?.user_id || entry.profile?.user?.id;
       const [consultationCount, procedureCount] = await Promise.all([
         countConsultationsForUser({ tenantId, userId, periodStart, periodEnd, facilityId }),
-        countProceduresForUser({ tenantId, userId, periodStart, periodEnd, facilityId }),
-      ]);
+        countProceduresForUser({ tenantId, userId, periodStart, periodEnd, facilityId })]);
       entry.consultationCount = consultationCount;
       entry.procedureCount = procedureCount;
     })
@@ -134,5 +123,4 @@ const loadStaffPayrollActivity = async ({
 module.exports = {
   loadStaffPayrollActivity,
   countConsultationsForUser,
-  countProceduresForUser,
-};
+  countProceduresForUser};

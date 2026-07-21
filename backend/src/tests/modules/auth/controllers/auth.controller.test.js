@@ -24,8 +24,7 @@ describe('Auth Controller', () => {
     res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
-      setHeader: jest.fn(),
-    };
+      setHeader: jest.fn()};
   });
 
   describe('login', () => {
@@ -121,8 +120,7 @@ describe('Auth Controller', () => {
         facility_type: 'CLINIC',
         location: 'Kampala, Uganda',
         interests: 'Telemedicine',
-        request_context: expect.any(Object),
-      }));
+        request_context: expect.any(Object)}));
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         status: 201
@@ -284,8 +282,7 @@ describe('Auth Controller', () => {
       expect(authService.forgotPassword).toHaveBeenCalledWith({
         email: 'test@example.com',
         tenant_id: 'tenant-123',
-        request_context: expect.any(Object),
-      });
+        request_context: expect.any(Object)});
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });

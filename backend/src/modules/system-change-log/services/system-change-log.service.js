@@ -10,8 +10,7 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolvePublicIdentifier,
-} = require('@lib/billing/identifiers');
+  resolvePublicIdentifier} = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { ELEVATED_ROLES, normalizeRoleName } = require('@config/roles');
 
@@ -48,8 +47,7 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const includeRelations = {
@@ -57,19 +55,14 @@ const includeRelations = {
     select: {
       id: true,
       human_friendly_id: true,
-      name: true,
-    },
-  },
+      name: true}},
   user: {
     select: {
       id: true,
       human_friendly_id: true,
       email: true,
       first_name: true,
-      last_name: true,
-    },
-  },
-};
+      last_name: true}}};
 
 const mapUserLabel = (user = {}) => {
   const fullName = [normalizeString(user.first_name), normalizeString(user.last_name)]
@@ -91,8 +84,7 @@ const mapSystemChangeLog = (record = {}) => {
     change_type: record.change_type || null,
     details: record.details || null,
     created_at: record.created_at || null,
-    updated_at: record.updated_at || null,
-  };
+    updated_at: record.updated_at || null};
 };
 
 const resolveSystemChangeLogId = async (identifier, user = {}) => {
@@ -101,8 +93,7 @@ const resolveSystemChangeLogId = async (identifier, user = {}) => {
   const resolved = await resolveModelIdByIdentifier({
     model: 'system_change_log',
     identifier,
-    where,
-  });
+    where});
   return resolved || identifier;
 };
 
@@ -119,8 +110,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
     const resolvedTenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
       model: 'tenant',
-      where: { deleted_at: null },
-    });
+      where: { deleted_at: null }});
     if (resolvedTenantId === null) {
       return { where: null, pagination: buildPagination(page, limit, 0) };
     }
@@ -136,8 +126,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
     const resolvedUserId = await resolveIdentifierForFilter({
       value: filters.user_id,
       model: 'user',
-      where: scopedWhere.tenant_id ? { tenant_id: scopedWhere.tenant_id, deleted_at: null } : { deleted_at: null },
-    });
+      where: scopedWhere.tenant_id ? { tenant_id: scopedWhere.tenant_id, deleted_at: null } : { deleted_at: null }});
     if (resolvedUserId === null) {
       return { where: null, pagination: buildPagination(page, limit, 0) };
     }
@@ -168,8 +157,7 @@ const resolveScopedFilters = async (filters = {}, user = {}, page = 1, limit = 2
       { details: { contains: search } },
       { user: { email: { contains: search } } },
       { user: { first_name: { contains: search } } },
-      { user: { last_name: { contains: search } } },
-    ];
+      { user: { last_name: { contains: search } } }];
   }
 
   return { where: scopedWhere, pagination: null };
@@ -199,8 +187,7 @@ const listSystemChangeLogs = async (filters = {}, page = 1, limit = 20, sortBy, 
   if (scoped.where === null) {
     return {
       systemChangeLogs: [],
-      pagination: buildPagination(numericPage, numericLimit, 0),
-    };
+      pagination: buildPagination(numericPage, numericLimit, 0)};
   }
 
   const skip = (numericPage - 1) * numericLimit;
@@ -208,13 +195,11 @@ const listSystemChangeLogs = async (filters = {}, page = 1, limit = 20, sortBy, 
 
   const [systemChangeLogs, total] = await Promise.all([
     systemChangeLogRepository.findMany(scoped.where, skip, numericLimit, orderBy, includeRelations),
-    systemChangeLogRepository.count(scoped.where),
-  ]);
+    systemChangeLogRepository.count(scoped.where)]);
 
   return {
     systemChangeLogs: systemChangeLogs.map(mapSystemChangeLog),
-    pagination: buildPagination(numericPage, numericLimit, total),
-  };
+    pagination: buildPagination(numericPage, numericLimit, total)};
 };
 
 const getSystemChangeLogById = async (id, user = {}) => {
@@ -239,8 +224,7 @@ const resolveCreatePayload = async (data = {}, user = {}) => {
         value: data.tenant_id || actorTenantId,
         model: 'tenant',
         field: 'tenant_id',
-        where: { deleted_at: null },
-      })
+        where: { deleted_at: null }})
     : actorTenantId;
 
   const userId =
@@ -250,16 +234,14 @@ const resolveCreatePayload = async (data = {}, user = {}) => {
           model: 'user',
           field: 'user_id',
           where: { tenant_id: tenantId, deleted_at: null },
-          nullable: true,
-        })
+          nullable: true})
       : actorUserId || null;
 
   return {
     tenant_id: tenantId,
     user_id: userId,
     change_type: data.change_type,
-    details: data.details || null,
-  };
+    details: data.details || null};
 };
 
 const createSystemChangeLog = async (data, user = {}, ipAddress) => {
@@ -273,13 +255,11 @@ const createSystemChangeLog = async (data, user = {}, ipAddress) => {
     entity: 'system_change_log',
     entity_id: systemChangeLog.id,
     diff: { after: systemChangeLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   const createdRecord = await findScopedRecordByIdentifier(systemChangeLog.id, {
     ...user,
-    tenant_id: payload.tenant_id,
-  });
+    tenant_id: payload.tenant_id});
   return mapSystemChangeLog(createdRecord || systemChangeLog);
 };
 
@@ -306,13 +286,11 @@ const updateSystemChangeLog = async (id, data, user = {}, ipAddress) => {
     entity: 'system_change_log',
     entity_id: before.id,
     diff: { before, after: systemChangeLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   const updatedRecord = await findScopedRecordByIdentifier(systemChangeLog.id, {
     ...user,
-    tenant_id: before.tenant_id,
-  });
+    tenant_id: before.tenant_id});
   return mapSystemChangeLog(updatedRecord || systemChangeLog);
 };
 
@@ -331,12 +309,10 @@ const approveSystemChangeLog = async (id, approvalNotes, user = {}, ipAddress) =
   const approvalMetadata = {
     approved_by: safePublicId(user?.human_friendly_id, getActorUserId(user)),
     approved_at: new Date().toISOString(),
-    approval_notes: approvalNotes || 'Approved',
-  };
+    approval_notes: approvalNotes || 'Approved'};
 
   const systemChangeLog = await systemChangeLogRepository.update(before.id, {
-    details: appendMetadataLine(before.details, 'APPROVED', approvalMetadata),
-  });
+    details: appendMetadataLine(before.details, 'APPROVED', approvalMetadata)});
 
   createAuditLog({
     tenant_id: before.tenant_id,
@@ -345,13 +321,11 @@ const approveSystemChangeLog = async (id, approvalNotes, user = {}, ipAddress) =
     entity: 'system_change_log',
     entity_id: before.id,
     diff: { before, after: systemChangeLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   const updatedRecord = await findScopedRecordByIdentifier(systemChangeLog.id, {
     ...user,
-    tenant_id: before.tenant_id,
-  });
+    tenant_id: before.tenant_id});
   return mapSystemChangeLog(updatedRecord || systemChangeLog);
 };
 
@@ -364,12 +338,10 @@ const implementSystemChangeLog = async (id, implementationNotes, user = {}, ipAd
   const implementationMetadata = {
     implemented_by: safePublicId(user?.human_friendly_id, getActorUserId(user)),
     implemented_at: new Date().toISOString(),
-    implementation_notes: implementationNotes || 'Implemented',
-  };
+    implementation_notes: implementationNotes || 'Implemented'};
 
   const systemChangeLog = await systemChangeLogRepository.update(before.id, {
-    details: appendMetadataLine(before.details, 'IMPLEMENTED', implementationMetadata),
-  });
+    details: appendMetadataLine(before.details, 'IMPLEMENTED', implementationMetadata)});
 
   createAuditLog({
     tenant_id: before.tenant_id,
@@ -378,13 +350,11 @@ const implementSystemChangeLog = async (id, implementationNotes, user = {}, ipAd
     entity: 'system_change_log',
     entity_id: before.id,
     diff: { before, after: systemChangeLog },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   const updatedRecord = await findScopedRecordByIdentifier(systemChangeLog.id, {
     ...user,
-    tenant_id: before.tenant_id,
-  });
+    tenant_id: before.tenant_id});
   return mapSystemChangeLog(updatedRecord || systemChangeLog);
 };
 
@@ -402,8 +372,7 @@ const deleteSystemChangeLog = async (id, user = {}, ipAddress) => {
     entity: 'system_change_log',
     entity_id: before.id,
     diff: { before, after: deleted },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 };
 
 module.exports = {
@@ -413,5 +382,4 @@ module.exports = {
   updateSystemChangeLog,
   approveSystemChangeLog,
   implementSystemChangeLog,
-  deleteSystemChangeLog,
-};
+  deleteSystemChangeLog};

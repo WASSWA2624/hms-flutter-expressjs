@@ -109,7 +109,6 @@ describe('Department Controller', () => {
         limit: 20,
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         department_type: 'CLINICAL',
         is_active: 'true',
         search: 'emergency'
@@ -121,7 +120,6 @@ describe('Department Controller', () => {
         {
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
-          branch_id: 'branch-123',
           department_type: 'CLINICAL',
           is_active: 'true',
           search: 'emergency'
@@ -175,7 +173,6 @@ describe('Department Controller', () => {
         id: 'dept-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'Emergency Department',
         department_type: 'CLINICAL',
         is_active: true
@@ -204,7 +201,6 @@ describe('Department Controller', () => {
       const departmentData = {
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'New Department',
         department_type: 'CLINICAL',
         is_active: true
@@ -254,7 +250,6 @@ describe('Department Controller', () => {
         id: 'dept-new',
         ...departmentData,
         facility_id: null,
-        branch_id: null,
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -295,7 +290,6 @@ describe('Department Controller', () => {
         id: 'dept-123',
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
-        branch_id: 'branch-123',
         name: 'Updated Department',
         department_type: 'ADMINISTRATIVE',
         is_active: false,

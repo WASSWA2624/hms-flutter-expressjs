@@ -21,8 +21,7 @@ const mergeRadiologyTestWithOffering = (masterTest = {}, offering = null) => {
     unit_price: offering.unit_price,
     currency: toOptionalText(offering.currency) || masterTest.currency || null,
     facility_offering_id: offering.id,
-    is_offered_at_facility: true,
-  };
+    is_offered_at_facility: true};
 };
 
 const mapMergedRadiologyTestRecord = (masterTest, offering = null) => {
@@ -36,8 +35,7 @@ const mapMergedRadiologyTestRecord = (masterTest, offering = null) => {
     facility_offering_id: offering?.id || null,
     offering_is_active: offering?.is_active ?? false,
     offering_sort_order: offering?.sort_order ?? 0,
-    uses_platform_defaults: !offering,
-  };
+    uses_platform_defaults: !offering};
 };
 
 const mapClinicalCatalogRadiologyTestRow = (masterTest, offering = null) => {
@@ -56,13 +54,10 @@ const mapClinicalCatalogRadiologyTestRow = (masterTest, offering = null) => {
     origin: 'FACILITY_RADIOLOGY_CATALOG',
     ...mapCatalogUnitPriceFields(merged),
     metadata: buildRadiologyCatalogMetadata(merged, {
-      facility_offering_id: offering.id,
-    }),
-  };
+      facility_offering_id: offering.id})};
 };
 
 module.exports = {
   mergeRadiologyTestWithOffering,
   mapMergedRadiologyTestRecord,
-  mapClinicalCatalogRadiologyTestRow,
-};
+  mapClinicalCatalogRadiologyTestRow};

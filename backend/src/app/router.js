@@ -94,7 +94,6 @@ apiV1Router.use(enforceAbacAccess());
 apiV1Router.use('/user-sessions', require('../modules/user-session/routes/user-session.routes'));
 apiV1Router.use('/tenants', require('../modules/tenant/routes/tenant.routes'));
 apiV1Router.use('/facilities', require('../modules/facility/routes/facility.routes'));
-apiV1Router.use('/branches', require('../modules/branch/routes/branch.routes'));
 apiV1Router.use('/departments', require('../modules/department/routes/department.routes'));
 apiV1Router.use('/units', require('../modules/unit/routes/unit.routes'));
 apiV1Router.use('/rooms', require('../modules/room/routes/room.routes'));

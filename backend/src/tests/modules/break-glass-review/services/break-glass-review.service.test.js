@@ -2,22 +2,17 @@ jest.mock('@repositories/break-glass-review/break-glass-review.repository');
 jest.mock('@repositories/break-glass-access/break-glass-access.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(() => Promise.resolve({})),
-  createRequiredAuditLog: jest.fn(() => Promise.resolve({})),
-}));
+  createRequiredAuditLog: jest.fn(() => Promise.resolve({}))}));
 jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
-  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 jest.mock('@lib/last-office/events', () => ({
   ACCESS_CONTROL_EVENTS: {
-    BREAK_GLASS_REVIEWED: 'access_control.break_glass.reviewed',
-  },
-  emitAccessControlEvent: jest.fn(async () => ({})),
-}));
+    BREAK_GLASS_REVIEWED: 'access_control.break_glass.reviewed'},
+  emitAccessControlEvent: jest.fn(async () => ({}))}));
 jest.mock('@lib/telemetry/metrics', () => ({
-  recordWorkflowEvent: jest.fn(),
-}));
+  recordWorkflowEvent: jest.fn()}));
 
 const breakGlassReviewRepository = require('@repositories/break-glass-review/break-glass-review.repository');
 const breakGlassAccessRepository = require('@repositories/break-glass-access/break-glass-access.repository');
@@ -48,8 +43,7 @@ const buildAccess = (overrides = {}) => ({
   created_at: '2026-04-09T07:00:00.000Z',
   updated_at: '2026-04-09T07:00:00.000Z',
   deleted_at: null,
-  ...overrides,
-});
+  ...overrides});
 
 const buildReview = (overrides = {}) => ({
   id: 'break-glass-review-1',
@@ -64,8 +58,7 @@ const buildReview = (overrides = {}) => ({
   updated_at: '2026-04-09T07:05:00.000Z',
   deleted_at: null,
   version: 1,
-  ...overrides,
-});
+  ...overrides});
 
 describe('break-glass-review.service', () => {
   beforeEach(() => {
@@ -80,13 +73,11 @@ describe('break-glass-review.service', () => {
         {
           break_glass_access_id: 'BGA-001',
           status: 'APPROVED',
-          notes: 'Approve now',
-        },
+          notes: 'Approve now'},
         {
           tenant_id: 'tenant-1',
           user_id: 'user-ops',
-          facility_id: 'facility-1',
-        }
+          facility_id: 'facility-1'}
       )
     ).rejects.toMatchObject({ statusCode: 400 });
 
@@ -107,8 +98,7 @@ describe('break-glass-review.service', () => {
       starts_at: startsAt,
       expires_at: expiresAt,
       reviewed_at: new Date().toISOString(),
-      version: 2,
-    });
+      version: 2});
 
     breakGlassAccessRepository.findById.mockResolvedValue(access);
     breakGlassReviewRepository.create.mockResolvedValue(review);
@@ -119,22 +109,19 @@ describe('break-glass-review.service', () => {
         break_glass_access_id: 'BGA-001',
         status: 'APPROVED',
         notes: 'Approved for emergency review',
-        expires_at: expiresAt,
-      },
+        expires_at: expiresAt},
       {
         tenant_id: 'tenant-1',
         user_id: 'user-ops',
         facility_id: 'facility-1',
-        ip_address: '127.0.0.1',
-      }
+        ip_address: '127.0.0.1'}
     );
 
     expect(breakGlassReviewRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         break_glass_access_id: 'break-glass-access-1',
         reviewer_user_id: 'user-ops',
-        status: 'APPROVED',
-      })
+        status: 'APPROVED'})
     );
     expect(breakGlassAccessRepository.update).toHaveBeenCalledWith(
       'break-glass-access-1',
@@ -142,21 +129,18 @@ describe('break-glass-review.service', () => {
         status: 'ACTIVE',
         review_status: 'APPROVED',
         approved_by_user_id: 'user-ops',
-        version: 2,
-      })
+        version: 2})
     );
     expect(createRequiredAuditLog).toHaveBeenCalled();
     expect(emitAccessControlEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-1',
-        facility_id: 'facility-1',
-      })
+        facility_id: 'facility-1'})
     );
     expect(result).toEqual(
       expect.objectContaining({
         review: expect.objectContaining({ id: 'BGR-001', status: 'APPROVED' }),
-        access: expect.objectContaining({ id: 'BGA-001', status: 'ACTIVE', review_status: 'APPROVED' }),
-      })
+        access: expect.objectContaining({ id: 'BGA-001', status: 'ACTIVE', review_status: 'APPROVED' })})
     );
   });
 
@@ -167,12 +151,10 @@ describe('break-glass-review.service', () => {
       breakGlassReviewService.createBreakGlassReview(
         {
           break_glass_access_id: 'BGA-404',
-          status: 'REJECTED',
-        },
+          status: 'REJECTED'},
         {
           tenant_id: 'tenant-1',
-          user_id: 'user-ops',
-        }
+          user_id: 'user-ops'}
       )
     ).rejects.toThrow(HttpError);
   });
@@ -186,12 +168,10 @@ describe('break-glass-review.service', () => {
       breakGlassReviewService.createBreakGlassReview(
         {
           break_glass_access_id: 'BGA-001',
-          status: 'REJECTED',
-        },
+          status: 'REJECTED'},
         {
           tenant_id: 'tenant-1',
-          user_id: 'user-ops',
-        }
+          user_id: 'user-ops'}
       )
     ).rejects.toMatchObject({ statusCode: 404 });
 

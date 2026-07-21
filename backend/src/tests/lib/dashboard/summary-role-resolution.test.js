@@ -8,16 +8,14 @@ describe('dashboard summary role resolution', () => {
     ).toBe(ROLES.DOCTOR);
     expect(
       resolveDashboardRole({
-        roles: [ROLES.NURSE, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER],
-      })
+        roles: [ROLES.NURSE, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER]})
     ).toBe(ROLES.NURSE);
     expect(
       resolveDashboardRole({ roles: [ROLES.BIOMED, ROLES.BIOMED_MANAGER] })
     ).toBe(ROLES.BIOMED);
     expect(
       resolveDashboardRole({
-        roles: [ROLES.HOUSE_KEEPER, ROLES.HOUSEKEEPING_MANAGER],
-      })
+        roles: [ROLES.HOUSE_KEEPER, ROLES.HOUSEKEEPING_MANAGER]})
     ).toBe(ROLES.HOUSE_KEEPER);
   });
 
@@ -47,8 +45,7 @@ describe('super admin dashboard summary cards', () => {
       facilitiesActive: 1,
       subscriptionsTotal: 1,
       subscriptionsActive: 1,
-      moduleEntitlementIssues: 0,
-    });
+      moduleEntitlementIssues: 0});
 
     expect(cards).toEqual(
       expect.arrayContaining([
@@ -57,15 +54,12 @@ describe('super admin dashboard summary cards', () => {
           value: 1,
           secondary_value: 3,
           format: 'ratio',
-          hint: '2 tenants without subscription',
-        }),
+          hint: '2 tenants without subscription'}),
         expect.objectContaining({
           id: 'facilities_active',
           value: 1,
           secondary_value: 1,
-          format: 'ratio',
-        }),
-      ])
+          format: 'ratio'})])
     );
   });
 });
@@ -77,8 +71,7 @@ describe('tenant admin dashboard summary cards', () => {
       facilitiesActive: 2,
       activeUsers: 18,
       moduleAdoption: 75,
-      subscriptionHealth: 100,
-    });
+      subscriptionHealth: 100});
 
     expect(cards).toEqual(
       expect.arrayContaining([
@@ -86,23 +79,18 @@ describe('tenant admin dashboard summary cards', () => {
           id: 'facilities_active',
           value: 2,
           secondary_value: 3,
-          format: 'ratio',
-        }),
+          format: 'ratio'}),
         expect.objectContaining({
           id: 'active_users',
-          value: 18,
-        }),
+          value: 18}),
         expect.objectContaining({
           id: 'module_adoption',
           value: 75,
-          format: 'percent',
-        }),
+          format: 'percent'}),
         expect.objectContaining({
           id: 'subscription_health',
           value: 100,
-          format: 'percent',
-        }),
-      ])
+          format: 'percent'})])
     );
     expect(cards).toHaveLength(4);
   });

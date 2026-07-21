@@ -9,21 +9,17 @@
 
 const radiologyResultRepository = require('@repositories/radiology-result/radiology-result.repository');
 const {
-  RADIOLOGY_RESULT_WITH_RELATIONS_INCLUDE,
-} = require('@services/radiology-workspace/radiology.shared');
+  RADIOLOGY_RESULT_WITH_RELATIONS_INCLUDE} = require('@services/radiology-workspace/radiology.shared');
 const {
-  mapRadiologyResultRecord,
-} = require('@services/radiology-workspace/radiology.serializer');
+  mapRadiologyResultRecord} = require('@services/radiology-workspace/radiology.serializer');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   normalizeIdentifier,
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -33,14 +29,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const buildEmptyListResult = (page, limit) => ({
   radiology_results: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const serializeRadiologyResult = (record) =>
   mapRadiologyResultRecord(record) || record;
@@ -60,8 +54,7 @@ const resolveResourceId = async (model, identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 
   return resolved || normalized;
 };
@@ -90,8 +83,7 @@ const listRadiologyResults = async (filters, page, limit, sortBy, order, userId,
       const orderId = await resolveIdentifierForFilter({
         value: filters.radiology_order_id,
         model: 'radiology_order',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (orderId === null) return buildEmptyListResult(page, limit);
       if (orderId !== undefined) whereClause.radiology_order_id = orderId;
     }
@@ -115,8 +107,7 @@ const listRadiologyResults = async (filters, page, limit, sortBy, order, userId,
 
     return {
       radiology_results: radiologyResults.map(serializeRadiologyResult).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -167,9 +158,7 @@ const createRadiologyResult = async (data, userId, ipAddress) => {
         value: data.radiology_order_id,
         field: 'radiology_order_id',
         model: 'radiology_order',
-        where: { deleted_at: null },
-      }),
-    };
+        where: { deleted_at: null }})};
 
     const radiologyResult = await radiologyResultRepository.create(normalizedData);
     const serializedRadiologyResult = await fetchSerializedRadiologyResultById(
@@ -220,15 +209,13 @@ const updateRadiologyResult = async (id, data, userId, ipAddress) => {
     }
 
     const normalizedData = {
-      ...data,
-    };
+      ...data};
     if (Object.prototype.hasOwnProperty.call(data, 'radiology_order_id')) {
       normalizedData.radiology_order_id = await resolveIdentifierForPayload({
         value: data.radiology_order_id,
         field: 'radiology_order_id',
         model: 'radiology_order',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
 
     const radiologyResult = await radiologyResultRepository.update(resolvedId, normalizedData);

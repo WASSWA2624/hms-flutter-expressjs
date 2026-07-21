@@ -17,8 +17,7 @@ const resolveUserRoleId = async (identifier) =>
   resolveIdentifierForPayload({
     value: identifier,
     model: 'user_role',
-    field: 'id',
-  });
+    field: 'id'});
 
 const normalizeUserRolePayload = async (data = {}) => {
   const payload = { ...data };
@@ -27,29 +26,25 @@ const normalizeUserRolePayload = async (data = {}) => {
     payload.user_id = await resolveIdentifierForPayload({
       value: data.user_id,
       model: 'user',
-      field: 'user_id',
-    });
+      field: 'user_id'});
   }
   if (data.role_id !== undefined) {
     payload.role_id = await resolveIdentifierForPayload({
       value: data.role_id,
       model: 'role',
-      field: 'role_id',
-    });
+      field: 'role_id'});
   }
   if (data.tenant_id !== undefined) {
     payload.tenant_id = await resolveIdentifierForPayload({
       value: data.tenant_id,
       model: 'tenant',
-      field: 'tenant_id',
-    });
+      field: 'tenant_id'});
   }
   if (data.facility_id !== undefined && data.facility_id !== null) {
     payload.facility_id = await resolveIdentifierForPayload({
       value: data.facility_id,
       model: 'facility',
-      field: 'facility_id',
-    });
+      field: 'facility_id'});
   }
 
   return payload;
@@ -79,29 +74,25 @@ const listUserRoles = async (filters, page, limit, sortBy, order, userId, ipAddr
       whereClause.user_id = await resolveIdentifierForPayload({
         value: filters.user_id,
         model: 'user',
-        field: 'user_id',
-      });
+        field: 'user_id'});
     }
     if (filters.role_id) {
       whereClause.role_id = await resolveIdentifierForPayload({
         value: filters.role_id,
         model: 'role',
-        field: 'role_id',
-      });
+        field: 'role_id'});
     }
     if (filters.tenant_id) {
       whereClause.tenant_id = await resolveIdentifierForPayload({
         value: filters.tenant_id,
         model: 'tenant',
-        field: 'tenant_id',
-      });
+        field: 'tenant_id'});
     }
     if (filters.facility_id) {
       whereClause.facility_id = await resolveIdentifierForPayload({
         value: filters.facility_id,
         model: 'facility',
-        field: 'facility_id',
-      });
+        field: 'facility_id'});
     }
 
     const [userRoles, total] = await Promise.all([

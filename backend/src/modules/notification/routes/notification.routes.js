@@ -18,8 +18,7 @@ const {
   notificationMetricsQuerySchema,
   updateNotificationSchema,
   notificationIdParamsSchema,
-  listNotificationsQuerySchema,
-} = require('@validations/notification/notification.schema');
+  listNotificationsQuerySchema} = require('@validations/notification/notification.schema');
 
 router.get(
   '/',

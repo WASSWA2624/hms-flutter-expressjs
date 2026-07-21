@@ -19,12 +19,10 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
  * @returns {Promise<void>}
  */
 const listDepartments = asyncHandler(async (req, res) => {
-  const { page, limit, sort_by, order, tenant_id, facility_id, branch_id, department_type, is_active, search, include_deleted } = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
   if (facility_id) filters.facility_id = facility_id;
-  if (branch_id) filters.branch_id = branch_id;
   if (department_type) filters.department_type = department_type;
   if (is_active) filters.is_active = is_active;
   if (search) filters.search = search;
@@ -144,8 +142,7 @@ const restoreDepartment = asyncHandler(async (req, res) => {
     tenant_id: req.user?.tenant_id,
     facility_id: req.user?.facility_id,
     ip_address: req.ip,
-    user_agent: req.get('user-agent'),
-  };
+    user_agent: req.get('user-agent')};
 
   const department = await departmentService.restoreDepartment(id, context);
 
@@ -180,5 +177,4 @@ module.exports = {
   updateDepartment,
   deleteDepartment,
   restoreDepartment,
-  getDepartmentUnits,
-};
+  getDepartmentUnits};

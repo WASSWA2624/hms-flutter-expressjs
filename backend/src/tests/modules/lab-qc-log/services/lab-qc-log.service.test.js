@@ -2,23 +2,20 @@ const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/lab-qc-log/lab-qc-log.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {
     ...actual,
     resolveModelIdOrThrow: jest.fn(),
-    resolveModelRecordOrThrow: jest.fn(),
-  };
+    resolveModelRecordOrThrow: jest.fn()};
 });
 
 const labQcLogRepository = require('@repositories/lab-qc-log/lab-qc-log.repository');
 const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
-  resolveModelRecordOrThrow,
-} = require('@services/lab-workspace/lab.shared');
+  resolveModelRecordOrThrow} = require('@services/lab-workspace/lab.shared');
 const labQcLogService = require('@services/lab-qc-log/lab-qc-log.service');
 
 const mockUserId = 'user-123';
@@ -38,10 +35,8 @@ const buildQcLogRecord = (overrides = {}) => ({
     id: 'lab-test-internal-1',
     human_friendly_id: 'LBT0000001',
     name: 'CBC',
-    code: 'CBC',
-  },
-  ...overrides,
-});
+    code: 'CBC'},
+  ...overrides});
 
 describe('lab-qc-log.service', () => {
   beforeEach(() => {
@@ -57,8 +52,7 @@ describe('lab-qc-log.service', () => {
     const result = await labQcLogService.listLabQcLogs(
       {
         lab_test_id: 'LBT0000001',
-        search: 'cbc',
-      },
+        search: 'cbc'},
       1,
       20,
       'created_at',
@@ -71,16 +65,13 @@ describe('lab-qc-log.service', () => {
       identifier: 'LBT0000001',
       model: 'lab_test',
       where: { deleted_at: null },
-      errorKey: 'errors.lab_test.not_found',
-    });
+      errorKey: 'errors.lab_test.not_found'});
     expect(labQcLogRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         lab_test_id: 'lab-test-internal-1',
         OR: expect.arrayContaining([
           { status: { contains: 'cbc' } },
-          { lab_test: { code: { contains: 'cbc' } } },
-        ]),
-      }),
+          { lab_test: { code: { contains: 'cbc' } } }])}),
       0,
       20,
       { created_at: 'desc' },
@@ -92,9 +83,7 @@ describe('lab-qc-log.service', () => {
         display_id: 'LQC0000001',
         lab_test_id: 'LBT0000001',
         test_display_name: 'CBC',
-        test_code: 'CBC',
-      }),
-    ]);
+        test_code: 'CBC'})]);
   });
 
   it('gets and creates QC logs using shared identifier resolution', async () => {
@@ -113,8 +102,7 @@ describe('lab-qc-log.service', () => {
         lab_test_id: 'LBT0000001',
         status: 'FAILED',
         notes: 'Out of range',
-        logged_at: now.toISOString(),
-      },
+        logged_at: now.toISOString()},
       mockUserId,
       mockIpAddress
     );
@@ -124,15 +112,13 @@ describe('lab-qc-log.service', () => {
       expect.objectContaining({
         lab_test_id: 'lab-test-internal-1',
         status: 'FAILED',
-        logged_at: expect.any(Date),
-      })
+        logged_at: expect.any(Date)})
     );
     expect(created).toEqual(expect.objectContaining({ id: 'LQC0000001' }));
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'CREATE',
-        entity: 'lab_qc_log',
-      })
+        entity: 'lab_qc_log'})
     );
   });
 
@@ -140,8 +126,7 @@ describe('lab-qc-log.service', () => {
     const before = buildQcLogRecord();
     const after = buildQcLogRecord({
       status: 'FAILED',
-      notes: 'Out of range',
-    });
+      notes: 'Out of range'});
     resolveModelRecordOrThrow.mockResolvedValue(before);
     resolveModelIdOrThrow.mockResolvedValue('lab-test-internal-1');
     labQcLogRepository.update.mockResolvedValue({ id: 'qc-internal-1' });
@@ -153,8 +138,7 @@ describe('lab-qc-log.service', () => {
       {
         lab_test_id: 'LBT0000001',
         status: 'FAILED',
-        notes: 'Out of range',
-      },
+        notes: 'Out of range'},
       mockUserId,
       mockIpAddress
     );
@@ -170,14 +154,12 @@ describe('lab-qc-log.service', () => {
     expect(labQcLogRepository.update).toHaveBeenCalledWith('qc-internal-1', {
       lab_test_id: 'lab-test-internal-1',
       status: 'FAILED',
-      notes: 'Out of range',
-    });
+      notes: 'Out of range'});
     expect(labQcLogRepository.softDelete).toHaveBeenCalledWith('qc-internal-1');
     expect(updated).toEqual(
       expect.objectContaining({
         id: 'LQC0000001',
-        status: 'FAILED',
-      })
+        status: 'FAILED'})
     );
   });
 

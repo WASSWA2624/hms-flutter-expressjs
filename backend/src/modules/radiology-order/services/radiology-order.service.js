@@ -10,29 +10,23 @@
 const radiologyOrderRepository = require('@repositories/radiology-order/radiology-order.repository');
 const prisma = require('@prisma/client');
 const {
-  RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE,
-} = require('@services/radiology-workspace/radiology.shared');
+  RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE} = require('@services/radiology-workspace/radiology.shared');
 const {
-  mapRadiologyOrderRecord,
-} = require('@services/radiology-workspace/radiology.serializer');
+  mapRadiologyOrderRecord} = require('@services/radiology-workspace/radiology.serializer');
 const {
   persistRadiologyOrderBilling,
   reverseClinicalRequestBilling,
-  extractStoredClinicalBilling,
-} = require('@lib/billing/clinical-request-billing');
+  extractStoredClinicalBilling} = require('@lib/billing/clinical-request-billing');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   normalizeIdentifier,
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 const {
-  resolveOrCreateStandardRadiologyTest,
-} = require('@services/radiology-test/radiology-test.service');
+  resolveOrCreateStandardRadiologyTest} = require('@services/radiology-test/radiology-test.service');
 const { resolveLabOrderEncounterId } = require('@services/lab-workspace/lab.shared');
 
 const buildPagination = (page, limit, total) => {
@@ -43,14 +37,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const buildEmptyListResult = (page, limit) => ({
   radiology_orders: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const serializeRadiologyOrder = (record) =>
   mapRadiologyOrderRecord(record, { includeChildren: true }) || record;
@@ -69,8 +61,7 @@ const resolveRadiologyOrderEncounterId = async ({
   identifier,
   patientId,
   tenantId,
-  facilityId,
-}) => {
+  facilityId}) => {
   const normalized = sanitizeString(identifier);
   if (!normalized) {
     return null;
@@ -80,8 +71,7 @@ const resolveRadiologyOrderEncounterId = async ({
     identifier: normalized,
     patientId,
     tenantId,
-    facilityId,
-  });
+    facilityId});
 };
 
 const resolveResourceId = async (model, identifier) => {
@@ -91,8 +81,7 @@ const resolveResourceId = async (model, identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 
   return resolved || normalized;
 };
@@ -103,8 +92,7 @@ const resolveRadiologyTestLabel = async (radiologyTestId) => {
 
   const radiologyTest = await prisma.radiology_test.findFirst({
     where: { id: normalizedId, deleted_at: null },
-    select: { human_friendly_id: true, name: true, code: true },
-  });
+    select: { human_friendly_id: true, name: true, code: true }});
 
   return sanitizeString(
     radiologyTest?.name || radiologyTest?.code || radiologyTest?.human_friendly_id
@@ -115,8 +103,7 @@ const resolveOrCreateRadiologyTest = async ({
   request,
   tenantId,
   userId,
-  ipAddress,
-}) => {
+  ipAddress}) => {
   if (request?.radiology_test_id) {
     const requestedRadiologyTestId = sanitizeString(request.radiology_test_id);
     if (requestedRadiologyTestId.startsWith('STD_RAD_TEST_')) {
@@ -125,8 +112,7 @@ const resolveOrCreateRadiologyTest = async ({
         code: standardCode,
         tenantId,
         userId,
-        ipAddress,
-      });
+        ipAddress});
       if (standardRadiologyTest?.id) return standardRadiologyTest.id;
     }
 
@@ -135,16 +121,14 @@ const resolveOrCreateRadiologyTest = async ({
       field: 'radiology_test_id',
       model: 'radiology_test',
       where: { deleted_at: null, tenant_id: tenantId },
-      nullable: true,
-    });
+      nullable: true});
   }
 
   const newTest = request?.new_test || {};
   const name = sanitizeString(newTest.name);
   if (!name) {
     throw new HttpError('errors.validation.required', 400, [
-      { field: 'requested_tests.new_test.name' },
-    ]);
+      { field: 'requested_tests.new_test.name' }]);
   }
 
   const code = sanitizeString(newTest.code);
@@ -152,10 +136,8 @@ const resolveOrCreateRadiologyTest = async ({
     where: {
       tenant_id: tenantId,
       deleted_at: null,
-      ...(code ? { code } : { name }),
-    },
-    select: { id: true },
-  });
+      ...(code ? { code } : { name })},
+    select: { id: true }});
   if (existing) return existing.id;
 
   const radiologyTest = await prisma.radiology_test.create({
@@ -163,10 +145,8 @@ const resolveOrCreateRadiologyTest = async ({
       tenant_id: tenantId,
       name,
       code: code || null,
-      modality: sanitizeString(newTest.modality) || 'OTHER',
-    },
-    select: { id: true },
-  });
+      modality: sanitizeString(newTest.modality) || 'OTHER'},
+    select: { id: true }});
 
   createAuditLog({
     tenant_id: tenantId,
@@ -175,8 +155,7 @@ const resolveOrCreateRadiologyTest = async ({
     entity: 'radiology_test',
     entity_id: radiologyTest.id,
     diff: { after: { ...newTest, id: radiologyTest.id } },
-    ip_address: ipAddress,
-  }).catch(() => {});
+    ip_address: ipAddress}).catch(() => {});
 
   return radiologyTest.id;
 };
@@ -185,8 +164,7 @@ const createImagingRequestClinicalNote = async ({
   encounterId,
   userId,
   testLabel,
-  clinicalNote,
-}) => {
+  clinicalNote}) => {
   const note = sanitizeString(clinicalNote);
   if (!encounterId || !userId || !note) return;
 
@@ -195,9 +173,7 @@ const createImagingRequestClinicalNote = async ({
       data: {
         encounter_id: encounterId,
         author_user_id: userId,
-        note: `Imaging request${testLabel ? ` (${testLabel})` : ''}: ${note}`,
-      },
-    });
+        note: `Imaging request${testLabel ? ` (${testLabel})` : ''}: ${note}`}});
   } catch (_error) {
     // Request creation should not fail because note capture failed.
   }
@@ -222,8 +198,7 @@ const normalizeRequestDetails = (request = {}) => {
     body_region: sanitizeString(details.body_region) || null,
     laterality: sanitizeString(details.laterality) || null,
     priority: sanitizeString(details.priority) || null,
-    ...details,
-  };
+    ...details};
 };
 
 const buildRequestDuplicateKey = (request = {}) => {
@@ -238,8 +213,7 @@ const buildRequestDuplicateKey = (request = {}) => {
     sanitizeString(newTest.name).toLowerCase(),
     sanitizeString(newTest.modality).toLowerCase(),
     sanitizeString(details.body_region).toLowerCase(),
-    sanitizeString(details.laterality).toLowerCase(),
-  ].join(':');
+    sanitizeString(details.laterality).toLowerCase()].join(':');
 };
 
 const assertNoDuplicateRequests = (requests = []) => {
@@ -249,8 +223,7 @@ const assertNoDuplicateRequests = (requests = []) => {
     if (!key || key === 'new:::::') continue;
     if (seen.has(key)) {
       throw new HttpError('errors.radiology_order.duplicate_request', 400, [
-        { field: 'requested_tests' },
-      ]);
+        { field: 'requested_tests' }]);
     }
     seen.add(key);
   }
@@ -280,8 +253,7 @@ const listRadiologyOrders = async (filters, page, limit, sortBy, order, userId, 
       const encounterId = await resolveIdentifierForFilter({
         value: filters.encounter_id,
         model: 'encounter',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (encounterId === null) return buildEmptyListResult(page, limit);
       if (encounterId !== undefined) whereClause.encounter_id = encounterId;
     }
@@ -289,8 +261,7 @@ const listRadiologyOrders = async (filters, page, limit, sortBy, order, userId, 
       const patientId = await resolveIdentifierForFilter({
         value: filters.patient_id,
         model: 'patient',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (patientId === null) return buildEmptyListResult(page, limit);
       if (patientId !== undefined) whereClause.patient_id = patientId;
     }
@@ -298,8 +269,7 @@ const listRadiologyOrders = async (filters, page, limit, sortBy, order, userId, 
       const radiologyTestId = await resolveIdentifierForFilter({
         value: filters.radiology_test_id,
         model: 'radiology_test',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (radiologyTestId === null) return buildEmptyListResult(page, limit);
       if (radiologyTestId !== undefined) whereClause.radiology_test_id = radiologyTestId;
     }
@@ -318,8 +288,7 @@ const listRadiologyOrders = async (filters, page, limit, sortBy, order, userId, 
 
     return {
       radiology_orders: radiologyOrders.map(serializeRadiologyOrder).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -372,12 +341,10 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         value: data.patient_id,
         field: 'patient_id',
         model: 'patient',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, deleted_at: null },
-      select: { tenant_id: true, facility_id: true },
-    });
+      select: { tenant_id: true, facility_id: true }});
     if (!patient) {
       throw new HttpError('errors.patient.not_found', 404);
     }
@@ -387,16 +354,14 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         identifier: data.encounter_id,
         patientId,
         tenantId: patient.tenant_id,
-        facilityId: patient.facility_id || null,
-      });
+        facilityId: patient.facility_id || null});
     }
 
     const baseOrderData = {
       encounter_id: encounterId,
       patient_id: patientId,
       status: 'ORDERED',
-      ordered_at: orderedAt,
-    };
+      ordered_at: orderedAt};
 
     const orderRequests =
       requestedTests.length > 0
@@ -404,13 +369,11 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         : [
             data.radiology_test_id
               ? { radiology_test_id: data.radiology_test_id }
-              : null,
-          ].filter(Boolean);
+              : null].filter(Boolean);
 
     if (!orderRequests.length) {
       throw new HttpError('errors.validation.required', 400, [
-        { field: 'requested_tests' },
-      ]);
+        { field: 'requested_tests' }]);
     }
 
     assertNoDuplicateRequests(orderRequests);
@@ -421,8 +384,7 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         request,
         tenantId: patient.tenant_id,
         userId,
-        ipAddress,
-      });
+        ipAddress});
       const requestDetails = normalizeRequestDetails(request);
       const testLabel =
         sanitizeString(request?.new_test?.name) ||
@@ -431,8 +393,7 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         ...baseOrderData,
         radiology_test_id: radiologyTestId || null,
         clinical_note: sanitizeString(request?.clinical_note) || null,
-        request_details: requestDetails,
-      });
+        request_details: requestDetails});
 
       const billing = requestDetails?.billing;
       if (billing) {
@@ -448,8 +409,7 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
               sanitizeString(request?.radiology_test_id) ||
               sanitizeString(requestDetails?.radiology_test_id) ||
               radiologyTestId,
-            description: `Radiology: ${testLabel}`,
-          });
+            description: `Radiology: ${testLabel}`});
         });
       }
 
@@ -462,8 +422,7 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         encounterId,
         userId,
         testLabel,
-        clinicalNote: request?.clinical_note,
-      });
+        clinicalNote: request?.clinical_note});
 
       createAuditLog({
         user_id: userId,
@@ -471,15 +430,13 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         entity: 'radiology_order',
         entity_id: radiologyOrder.id,
         diff: { after: radiologyOrder },
-        ip_address: ipAddress,
-      }).catch(() => {});
+        ip_address: ipAddress}).catch(() => {});
     }
 
     if (createdOrders.length === 1) return createdOrders[0];
     return {
       ...createdOrders[0],
-      created_orders: createdOrders,
-    };
+      created_orders: createdOrders};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -508,8 +465,7 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
     }
 
     const normalizedData = {
-      ...data,
-    };
+      ...data};
     if (Object.prototype.hasOwnProperty.call(data, 'encounter_id')) {
       if (data.encounter_id === null) {
         normalizedData.encounter_id = null;
@@ -517,8 +473,7 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
         const patientId = normalizedData.patient_id ?? before.patient_id;
         const patient = await prisma.patient.findFirst({
           where: { id: patientId, deleted_at: null },
-          select: { tenant_id: true, facility_id: true },
-        });
+          select: { tenant_id: true, facility_id: true }});
         if (!patient) {
           throw new HttpError('errors.patient.not_found', 404);
         }
@@ -526,8 +481,7 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
           identifier: data.encounter_id,
           patientId,
           tenantId: patient.tenant_id,
-          facilityId: patient.facility_id || null,
-        });
+          facilityId: patient.facility_id || null});
       }
     }
     if (Object.prototype.hasOwnProperty.call(data, 'patient_id')) {
@@ -535,8 +489,7 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
         value: data.patient_id,
         field: 'patient_id',
         model: 'patient',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
     if (Object.prototype.hasOwnProperty.call(data, 'radiology_test_id')) {
       normalizedData.radiology_test_id = await resolveIdentifierForPayload({
@@ -544,8 +497,7 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
         field: 'radiology_test_id',
         model: 'radiology_test',
         where: { deleted_at: null },
-        nullable: true,
-      });
+        nullable: true});
     }
 
     const radiologyOrder = await radiologyOrderRepository.update(resolvedId, normalizedData);
@@ -564,8 +516,7 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
           delete currentDetails.billing;
           await tx.radiology_order.update({
             where: { id: radiologyOrder.id },
-            data: { request_details: currentDetails },
-          });
+            data: { request_details: currentDetails }});
         });
       }
     }

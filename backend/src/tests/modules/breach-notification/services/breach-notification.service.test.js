@@ -1,7 +1,6 @@
 jest.mock('@repositories/breach-notification/breach-notification.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: jest.fn((...values) => {
     for (const value of values) {
@@ -17,19 +16,16 @@ jest.mock('@lib/billing/identifiers', () => ({
   ),
   resolveIdentifierForPayload: jest.fn(async ({ value, nullable = false }) =>
     value === undefined ? (nullable ? null : value) : value
-  ),
-}));
+  )}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
-}));
+  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier)}));
 
 const breachNotificationService = require('@services/breach-notification/breach-notification.service');
 const breachNotificationRepository = require('@repositories/breach-notification/breach-notification.repository');
 const { createAuditLog } = require('@lib/audit');
 const identifiers = require('@lib/billing/identifiers');
 const {
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const { HttpError } = require('@lib/errors');
 
 const buildRawBreachNotification = (overrides = {}) => ({
@@ -46,16 +42,13 @@ const buildRawBreachNotification = (overrides = {}) => ({
   tenant: {
     id: '550e8400-e29b-41d4-a716-446655440001',
     human_friendly_id: 'TEN0000001',
-    name: 'Acme Health',
-  },
-  ...overrides,
-});
+    name: 'Acme Health'},
+  ...overrides});
 
 describe('Breach Notification Service', () => {
   const actor = {
     id: '550e8400-e29b-41d4-a716-446655440002',
-    tenant_id: '550e8400-e29b-41d4-a716-446655440001',
-  };
+    tenant_id: '550e8400-e29b-41d4-a716-446655440001'};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -81,8 +74,7 @@ describe('Breach Notification Service', () => {
         status: 'OPEN',
         search: 'security',
         from_date: '2026-03-01T00:00:00.000Z',
-        to_date: '2026-03-31T23:59:59.999Z',
-      },
+        to_date: '2026-03-31T23:59:59.999Z'},
       1,
       20,
       'reported_at',
@@ -97,10 +89,8 @@ describe('Breach Notification Service', () => {
         status: 'OPEN',
         reported_at: {
           gte: expect.any(Date),
-          lte: expect.any(Date),
-        },
-        OR: expect.any(Array),
-      }),
+          lte: expect.any(Date)},
+        OR: expect.any(Array)}),
       0,
       20,
       { reported_at: 'desc' },
@@ -109,16 +99,14 @@ describe('Breach Notification Service', () => {
     expect(result.breachNotifications[0]).toEqual(
       expect.objectContaining({
         id: 'BRN0000001',
-        tenant_id: 'TEN0000001',
-      })
+        tenant_id: 'TEN0000001'})
     );
     expect(result.pagination).toEqual(
       expect.objectContaining({
         page: 1,
         limit: 20,
         total: 1,
-        totalPages: 1,
-      })
+        totalPages: 1})
     );
   });
 
@@ -136,8 +124,7 @@ describe('Breach Notification Service', () => {
       expect.objectContaining({
         id: 'BRN0000001',
         status: 'OPEN',
-        tenant_id: 'TEN0000001',
-      })
+        tenant_id: 'TEN0000001'})
     );
   });
 
@@ -148,15 +135,13 @@ describe('Breach Notification Service', () => {
       tenant_id: actor.tenant_id,
       severity: 'HIGH',
       status: 'OPEN',
-      description: 'Security breach detected',
-    });
+      description: 'Security breach detected'});
     breachNotificationRepository.findMany.mockResolvedValue([rawRecord]);
 
     const result = await breachNotificationService.createBreachNotification(
       {
         severity: 'HIGH',
-        description: 'Security breach detected',
-      },
+        description: 'Security breach detected'},
       actor,
       '127.0.0.1'
     );
@@ -166,15 +151,13 @@ describe('Breach Notification Service', () => {
       severity: 'HIGH',
       status: 'OPEN',
       description: 'Security breach detected',
-      reported_at: undefined,
-    });
+      reported_at: undefined});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: actor.tenant_id,
         user_id: actor.id,
         action: 'CREATE',
-        entity: 'breach_notification',
-      })
+        entity: 'breach_notification'})
     );
     expect(result).toEqual(expect.objectContaining({ id: 'BRN0000001' }));
   });
@@ -183,16 +166,14 @@ describe('Breach Notification Service', () => {
     const before = buildRawBreachNotification();
     const after = buildRawBreachNotification({
       status: 'RESOLVED',
-      resolved_at: new Date('2026-03-08T12:00:00.000Z'),
-    });
+      resolved_at: new Date('2026-03-08T12:00:00.000Z')});
     breachNotificationRepository.findMany
       .mockResolvedValueOnce([before])
       .mockResolvedValueOnce([after]);
     breachNotificationRepository.update.mockResolvedValue({
       id: before.id,
       status: 'RESOLVED',
-      resolved_at: after.resolved_at,
-    });
+      resolved_at: after.resolved_at});
 
     const result = await breachNotificationService.resolveBreachNotification(
       'BRN0000001',
@@ -203,14 +184,12 @@ describe('Breach Notification Service', () => {
 
     expect(breachNotificationRepository.update).toHaveBeenCalledWith(before.id, {
       status: 'RESOLVED',
-      resolved_at: after.resolved_at,
-    });
+      resolved_at: after.resolved_at});
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'UPDATE',
         entity: 'breach_notification',
-        entity_id: before.id,
-      })
+        entity_id: before.id})
     );
     expect(result).toEqual(expect.objectContaining({ status: 'RESOLVED' }));
   });
@@ -227,8 +206,7 @@ describe('Breach Notification Service', () => {
     ).rejects.toThrow(HttpError);
 
     breachNotificationRepository.findMany.mockResolvedValueOnce([
-      buildRawBreachNotification({ status: 'RESOLVED' }),
-    ]);
+      buildRawBreachNotification({ status: 'RESOLVED' })]);
     await expect(
       breachNotificationService.resolveBreachNotification(
         'BRN0000001',

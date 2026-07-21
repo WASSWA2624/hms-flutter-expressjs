@@ -59,33 +59,27 @@ const buildQueryPath = (pathname, params = {}) => {
 const buildScope = async (filters = {}) => {
   const tenantId = await resolveIdentifierForFilter({
     value: filters.tenant_id,
-    model: 'tenant',
-  });
+    model: 'tenant'});
   const facilityId = await resolveIdentifierForFilter({
     value: filters.facility_id,
     model: 'facility',
-    where: tenantId ? { tenant_id: tenantId } : {},
-  });
+    where: tenantId ? { tenant_id: tenantId } : {}});
   const patientId = await resolveIdentifierForFilter({
     value: filters.patient_id,
     model: 'patient',
-    where: tenantId ? { tenant_id: tenantId } : {},
-  });
+    where: tenantId ? { tenant_id: tenantId } : {}});
   const providerUserId = await resolveIdentifierForFilter({
     value: filters.provider_user_id,
     model: 'user',
     where: {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
-  });
+      ...(facilityId ? { facility_id: facilityId } : {})}});
 
   return {
     tenantId: tenantId || null,
     facilityId: facilityId || null,
     patientId: patientId || null,
-    providerUserId: providerUserId || null,
-  };
+    providerUserId: providerUserId || null};
 };
 
 const readFlowStage = (record) => {
@@ -125,10 +119,8 @@ const mapAppointmentItem = (record) => {
       ? buildQueryPath(`/scheduling/appointments/${appointmentId}`, {
           patientId,
           providerUserId: providerId,
-          appointmentId,
-        })
-      : '/scheduling/appointments',
-  };
+          appointmentId})
+      : '/scheduling/appointments'};
 };
 
 const mapQueueItem = (record) => {
@@ -143,8 +135,7 @@ const mapQueueItem = (record) => {
     title: formatPersonName(record?.patient) || 'Queued patient',
     subtitle: [
       formatPersonName(record?.provider),
-      appointmentId ? `Appt ${appointmentId}` : null,
-    ].filter(Boolean).join(' | '),
+      appointmentId ? `Appt ${appointmentId}` : null].filter(Boolean).join(' | '),
     patient_id: patientId,
     provider_user_id: providerId,
     appointment_id: appointmentId,
@@ -155,10 +146,8 @@ const mapQueueItem = (record) => {
       ? buildQueryPath(`/scheduling/visit-queues/${queueId}`, {
           patientId,
           providerUserId: providerId,
-          appointmentId,
-        })
-      : '/scheduling/visit-queues',
-  };
+          appointmentId})
+      : '/scheduling/visit-queues'};
 };
 
 const mapReminderItem = (record) => {
@@ -186,10 +175,8 @@ const mapReminderItem = (record) => {
     target_path: reminderId
       ? buildQueryPath(`/scheduling/appointment-reminders/${reminderId}`, {
           appointmentId,
-          patientId,
-        })
-      : '/scheduling/appointment-reminders',
-  };
+          patientId})
+      : '/scheduling/appointment-reminders'};
 };
 
 const mapFollowUpItem = (record) => {
@@ -213,10 +200,8 @@ const mapFollowUpItem = (record) => {
     target_path: followUpId
       ? buildQueryPath(`/clinical/follow-ups/${followUpId}`, {
           patientId,
-          encounterId,
-        })
-      : '/clinical/follow-ups',
-  };
+          encounterId})
+      : '/clinical/follow-ups'};
 };
 
 const mapCapacityItem = (record, appointmentCounts = new Map()) => {
@@ -244,10 +229,8 @@ const mapCapacityItem = (record, appointmentCounts = new Map()) => {
     target_path: scheduleId
       ? buildQueryPath(`/scheduling/provider-schedules/${scheduleId}`, {
           providerUserId: providerId,
-          scheduleId,
-        })
-      : '/scheduling/provider-schedules',
-  };
+          scheduleId})
+      : '/scheduling/provider-schedules'};
 };
 
 const mapOpdItem = (record) => {
@@ -268,8 +251,7 @@ const mapOpdItem = (record) => {
     next_step: nextStep,
     tone: mapStatusTone(stage || record?.status),
     updated_at: toIso(record?.updated_at),
-    target_path: encounterId ? `/scheduling/opd-flows/${encounterId}` : '/scheduling/opd-flows',
-  };
+    target_path: encounterId ? `/scheduling/opd-flows/${encounterId}` : '/scheduling/opd-flows'};
 };
 
 const buildSummaryCards = ({
@@ -278,15 +260,13 @@ const buildSummaryCards = ({
   activeOpdCount,
   reminderCount,
   followUpCount,
-  providerCount,
-} = {}) => [
+  providerCount} = {}) => [
   { id: 'today_appointments', label_key: 'scheduling.workspace.summary.todayAppointments', value: Number(appointmentCount || 0), tone: 'primary' },
   { id: 'waiting_queue', label_key: 'scheduling.workspace.summary.waitingQueue', value: Number(queueCount || 0), tone: 'warning' },
   { id: 'active_opd', label_key: 'scheduling.workspace.summary.activeOpd', value: Number(activeOpdCount || 0), tone: 'warning' },
   { id: 'due_reminders', label_key: 'scheduling.workspace.summary.dueReminders', value: Number(reminderCount || 0), tone: 'danger' },
   { id: 'follow_ups_due', label_key: 'scheduling.workspace.summary.followUpsDue', value: Number(followUpCount || 0), tone: 'primary' },
-  { id: 'providers_on_duty', label_key: 'scheduling.workspace.summary.providersOnDuty', value: Number(providerCount || 0), tone: 'success' },
-];
+  { id: 'providers_on_duty', label_key: 'scheduling.workspace.summary.providersOnDuty', value: Number(providerCount || 0), tone: 'success' }];
 
 const buildPanelSummaries = ({
   appointmentCount,
@@ -294,37 +274,32 @@ const buildPanelSummaries = ({
   activeOpdCount,
   reminderCount,
   followUpCount,
-  providerCount,
-} = {}) => [
+  providerCount} = {}) => [
   { id: 'overview', label_key: 'scheduling.workspace.panels.overview', count: Number(appointmentCount || 0) + Number(queueCount || 0), target_path: '/scheduling' },
   { id: 'arrivals', label_key: 'scheduling.workspace.panels.arrivals', count: Number(appointmentCount || 0), target_path: '/scheduling/appointments' },
   { id: 'queue', label_key: 'scheduling.workspace.panels.queue', count: Number(queueCount || 0), target_path: '/scheduling/visit-queues' },
   { id: 'opd', label_key: 'scheduling.workspace.panels.opd', count: Number(activeOpdCount || 0), target_path: '/scheduling/opd-flows' },
   { id: 'reminders', label_key: 'scheduling.workspace.panels.reminders', count: Number(reminderCount || 0), target_path: '/scheduling/appointment-reminders?reminderBoard=DUE' },
   { id: 'capacity', label_key: 'scheduling.workspace.panels.capacity', count: Number(providerCount || 0), target_path: '/scheduling/provider-schedules' },
-  { id: 'followups', label_key: 'scheduling.workspace.panels.followups', count: Number(followUpCount || 0), target_path: '/clinical/follow-ups' },
-];
+  { id: 'followups', label_key: 'scheduling.workspace.panels.followups', count: Number(followUpCount || 0), target_path: '/clinical/follow-ups' }];
 
 const buildQueueSummaries = ({
   appointmentCount,
   queueCount,
   activeOpdCount,
   reminderCount,
-  followUpCount,
-} = {}) => [
+  followUpCount} = {}) => [
   { queue: 'ARRIVING_TODAY', label_key: 'scheduling.workspace.queues.ARRIVING_TODAY', count: Number(appointmentCount || 0), target_path: '/scheduling/appointments' },
   { queue: 'WAITING_QUEUE', label_key: 'scheduling.workspace.queues.WAITING_QUEUE', count: Number(queueCount || 0), target_path: '/scheduling/visit-queues?status=IN_PROGRESS' },
   { queue: 'ACTIVE_OPD', label_key: 'scheduling.workspace.queues.ACTIVE_OPD', count: Number(activeOpdCount || 0), target_path: '/scheduling/opd-flows' },
   { queue: 'OVERDUE_REMINDERS', label_key: 'scheduling.workspace.queues.OVERDUE_REMINDERS', count: Number(reminderCount || 0), target_path: '/scheduling/appointment-reminders?reminderBoard=DUE' },
-  { queue: 'FOLLOW_UPS_DUE', label_key: 'scheduling.workspace.queues.FOLLOW_UPS_DUE', count: Number(followUpCount || 0), target_path: '/clinical/follow-ups' },
-];
+  { queue: 'FOLLOW_UPS_DUE', label_key: 'scheduling.workspace.queues.FOLLOW_UPS_DUE', count: Number(followUpCount || 0), target_path: '/clinical/follow-ups' }];
 
 const buildQuickActions = () => ([
   { id: 'new_appointment', label_key: 'scheduling.workspace.quickActions.newAppointment', target_path: '/scheduling/appointments/create', icon: 'calendar' },
   { id: 'start_walk_in', label_key: 'scheduling.workspace.quickActions.startWalkIn', target_path: '/scheduling/opd-flows', icon: 'plus' },
   { id: 'manage_schedule', label_key: 'scheduling.workspace.quickActions.manageSchedule', target_path: '/scheduling/provider-schedules', icon: 'clock' },
-  { id: 'due_reminders', label_key: 'scheduling.workspace.quickActions.dueReminders', target_path: '/scheduling/appointment-reminders?reminderBoard=DUE', icon: 'bell' },
-]);
+  { id: 'due_reminders', label_key: 'scheduling.workspace.quickActions.dueReminders', target_path: '/scheduling/appointment-reminders?reminderBoard=DUE', icon: 'bell' }]);
 
 const buildSpotlight = ({ appointments = [], queue = [], opd = [], reminders = [], followUps = [] } = {}) =>
   [
@@ -332,8 +307,7 @@ const buildSpotlight = ({ appointments = [], queue = [], opd = [], reminders = [
     ...opd.slice(0, 2).map((item) => ({ id: `${item.id}-opd`, label_key: 'scheduling.workspace.spotlight.activeConsultation', tone: item.tone, title: item.title, subtitle: item.stage, target_path: item.target_path })),
     ...reminders.slice(0, 2).map((item) => ({ id: `${item.id}-reminder`, label_key: 'scheduling.workspace.spotlight.overdueReminder', tone: item.tone, title: item.title, subtitle: item.channel, target_path: item.target_path })),
     ...followUps.slice(0, 1).map((item) => ({ id: `${item.id}-followup`, label_key: 'scheduling.workspace.spotlight.followUpDue', tone: item.tone, title: item.title, subtitle: item.subtitle, target_path: item.target_path })),
-    ...appointments.slice(0, 1).map((item) => ({ id: `${item.id}-arrival`, label_key: 'scheduling.workspace.spotlight.arrivingPatient', tone: item.tone, title: item.title, subtitle: item.subtitle, target_path: item.target_path })),
-  ];
+    ...appointments.slice(0, 1).map((item) => ({ id: `${item.id}-arrival`, label_key: 'scheduling.workspace.spotlight.arrivingPatient', tone: item.tone, title: item.title, subtitle: item.subtitle, target_path: item.target_path }))];
 
 const getWorkspace = async (filters = {}, page = 1, limit = 12) => {
   const scope = await buildScope(filters);
@@ -346,33 +320,27 @@ const getWorkspace = async (filters = {}, page = 1, limit = 12) => {
     ...scope,
     search,
     dayStart,
-    dayEnd,
-  });
+    dayEnd});
   const queueWhere = schedulingWorkspaceRepository.buildQueueWhere({
     ...scope,
-    search,
-  });
+    search});
   const reminderWhere = schedulingWorkspaceRepository.buildReminderWhere({
     ...scope,
     search,
-    dueAt: dayEnd,
-  });
+    dueAt: dayEnd});
   const followUpWhere = schedulingWorkspaceRepository.buildFollowUpWhere({
     ...scope,
     search,
     dueStart: dayStart,
-    dueEnd: dayEnd,
-  });
+    dueEnd: dayEnd});
   const scheduleWhere = schedulingWorkspaceRepository.buildScheduleWhere({
     ...scope,
     search,
     dayOfWeek: dayStart.getDay(),
-    dayEnd,
-  });
+    dayEnd});
   const openEncounterWhere = schedulingWorkspaceRepository.buildOpenEncounterWhere({
     ...scope,
-    search,
-  });
+    search});
 
   const [
     appointmentsRaw,
@@ -386,8 +354,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 12) => {
     schedulesRaw,
     providerCount,
     openEncountersRaw,
-    openEncounterCount,
-  ] = await Promise.all([
+    openEncounterCount] = await Promise.all([
     schedulingWorkspaceRepository.findAppointments({ where: appointmentWhere, take: limit }),
     schedulingWorkspaceRepository.countAppointments(appointmentWhere),
     schedulingWorkspaceRepository.findQueueEntries({ where: queueWhere, take: limit }),
@@ -399,8 +366,7 @@ const getWorkspace = async (filters = {}, page = 1, limit = 12) => {
     schedulingWorkspaceRepository.findSchedules({ where: scheduleWhere, take: limit, dayStart, dayEnd }),
     schedulingWorkspaceRepository.countSchedules(scheduleWhere),
     schedulingWorkspaceRepository.findOpenEncounters({ where: openEncounterWhere, take: limit * 2 }),
-    schedulingWorkspaceRepository.countOpenEncounters(openEncounterWhere),
-  ]);
+    schedulingWorkspaceRepository.countOpenEncounters(openEncounterWhere)]);
 
   const appointmentCountsByProvider = appointmentsRaw.reduce((accumulator, appointment) => {
     const providerId = normalizeText(
@@ -429,81 +395,66 @@ const getWorkspace = async (filters = {}, page = 1, limit = 12) => {
       facility_id: scope.facilityId || null,
       patient_id: scope.patientId || null,
       provider_user_id: scope.providerUserId || null,
-      target_date: targetDate.toISOString().slice(0, 10),
-    },
+      target_date: targetDate.toISOString().slice(0, 10)},
     filters: {
       panel: normalizeText(filters.panel || 'overview').toLowerCase(),
       queue: normalizeText(filters.queue).toUpperCase() || null,
       search,
-      status: normalizeText(filters.status).toUpperCase() || null,
-    },
+      status: normalizeText(filters.status).toUpperCase() || null},
     summary_cards: buildSummaryCards({
       appointmentCount,
       queueCount,
       activeOpdCount,
       reminderCount,
       followUpCount,
-      providerCount,
-    }),
+      providerCount}),
     panel_summaries: buildPanelSummaries({
       appointmentCount,
       queueCount,
       activeOpdCount,
       reminderCount,
       followUpCount,
-      providerCount,
-    }),
+      providerCount}),
     queue_summaries: buildQueueSummaries({
       appointmentCount,
       queueCount,
       activeOpdCount,
       reminderCount,
-      followUpCount,
-    }),
+      followUpCount}),
     quick_actions: buildQuickActions(),
     spotlight: buildSpotlight({ appointments, queue, opd, reminders, followUps }),
     boards: {
       arrivals: {
         items: appointments,
         total_count: appointmentCount,
-        target_path: '/scheduling/appointments',
-      },
+        target_path: '/scheduling/appointments'},
       queue: {
         items: queue,
         total_count: queueCount,
-        target_path: '/scheduling/visit-queues?status=IN_PROGRESS',
-      },
+        target_path: '/scheduling/visit-queues?status=IN_PROGRESS'},
       opd: {
         items: opd,
         total_count: activeOpdCount,
-        target_path: '/scheduling/opd-flows',
-      },
+        target_path: '/scheduling/opd-flows'},
       reminders: {
         items: reminders,
         total_count: reminderCount,
-        target_path: '/scheduling/appointment-reminders?reminderBoard=DUE',
-      },
+        target_path: '/scheduling/appointment-reminders?reminderBoard=DUE'},
       capacity: {
         items: capacity,
         total_count: providerCount,
-        target_path: '/scheduling/provider-schedules',
-      },
+        target_path: '/scheduling/provider-schedules'},
       followups: {
         items: followUps,
         total_count: followUpCount,
-        target_path: '/clinical/follow-ups',
-      },
-    },
+        target_path: '/clinical/follow-ups'}},
     schedule_day: {
       date: targetDate.toISOString().slice(0, 10),
       appointments,
-      capacity,
-    },
+      capacity},
     pagination: {
       page,
-      limit,
-    },
-  };
+      limit}};
 };
 
 const getReferenceData = async (filters = {}) => {
@@ -511,26 +462,20 @@ const getReferenceData = async (filters = {}) => {
   const [facilities, providers] = await Promise.all([
     schedulingWorkspaceRepository.findFacilities({
       tenantId: scope.tenantId,
-      search: filters.search,
-    }),
+      search: filters.search}),
     schedulingWorkspaceRepository.findProviders({
       tenantId: scope.tenantId,
       facilityId: scope.facilityId,
-      search: filters.search,
-    }),
-  ]);
+      search: filters.search})]);
 
   return {
     facilities: facilities.map((facility) => ({
       value: resolvePublicIdentifier(facility?.human_friendly_id, facility?.id),
-      label: facility?.name || resolvePublicIdentifier(facility?.human_friendly_id, facility?.id),
-    })).filter((entry) => entry.value),
+      label: facility?.name || resolvePublicIdentifier(facility?.human_friendly_id, facility?.id)})).filter((entry) => entry.value),
     providers: providers.map((provider) => ({
       value: resolvePublicIdentifier(provider?.human_friendly_id, provider?.id),
       label: formatPersonName(provider),
-      subtitle: normalizeText(provider?.email) || null,
-    })).filter((entry) => entry.value),
-  };
+      subtitle: normalizeText(provider?.email) || null})).filter((entry) => entry.value)};
 };
 
 const resolveLegacyRouteIdentifier = async (resource, id) => {
@@ -544,18 +489,15 @@ const resolveLegacyRouteIdentifier = async (resource, id) => {
     'availability-slots': publicId ? `/scheduling/availability-slots/${publicId}` : '/scheduling/availability-slots',
     'visit-queues': publicId ? `/scheduling/visit-queues/${publicId}` : '/scheduling/visit-queues',
     'opd-flows': publicId ? `/scheduling/opd-flows/${publicId}` : '/scheduling/opd-flows',
-    'follow-ups': publicId ? `/clinical/follow-ups/${publicId}` : '/clinical/follow-ups',
-  };
+    'follow-ups': publicId ? `/clinical/follow-ups/${publicId}` : '/clinical/follow-ups'};
 
   return {
     resource,
     id: publicId,
-    target_path: routeMap[resource] || '/scheduling',
-  };
+    target_path: routeMap[resource] || '/scheduling'};
 };
 
 module.exports = {
   getWorkspace,
   getReferenceData,
-  resolveLegacyRouteIdentifier,
-};
+  resolveLegacyRouteIdentifier};

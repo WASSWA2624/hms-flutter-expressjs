@@ -23,12 +23,7 @@ const BASE_INCLUDE = {
           id: true,
           human_friendly_id: true,
           first_name: true,
-          last_name: true,
-        },
-      },
-    },
-  },
-};
+          last_name: true}}}}};
 
 /**
  * Find theatre case by ID
@@ -46,8 +41,7 @@ const findById = async (id, include = {}) => {
       },
       include: {
         ...BASE_INCLUDE,
-        ...include,
-      }
+        ...include}
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -79,8 +73,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       orderBy,
       include: {
         ...BASE_INCLUDE,
-        ...include,
-      }
+        ...include}
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);

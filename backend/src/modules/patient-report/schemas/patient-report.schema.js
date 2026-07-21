@@ -3,8 +3,7 @@ const { uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
 const {
   PATIENT_REPORT_SECTIONS,
   REPORT_ACTIONS,
-  REPORT_TYPES,
-} = require('@lib/patient-reports/sections');
+  REPORT_TYPES} = require('@lib/patient-reports/sections');
 
 const sectionIdSchema = z.enum(
   PATIENT_REPORT_SECTIONS.map((section) => section.id)
@@ -15,8 +14,7 @@ const periodSchema = z
     mode: z.enum(['all_dates', 'single_date', 'date_range']).optional(),
     single_date: z.string().datetime().optional().nullable(),
     start_date: z.string().datetime().optional().nullable(),
-    end_date: z.string().datetime().optional().nullable(),
-  })
+    end_date: z.string().datetime().optional().nullable()})
   .strict()
   .optional()
   .nullable();
@@ -28,8 +26,7 @@ const listSectionsQuerySchema = z
     period_mode: z.enum(['all_dates', 'single_date', 'date_range']).optional(),
     single_date: z.string().datetime().optional(),
     start_date: z.string().datetime().optional(),
-    end_date: z.string().datetime().optional(),
-  })
+    end_date: z.string().datetime().optional()})
   .strict();
 
 const createPatientReportJobSchema = z
@@ -44,20 +41,17 @@ const createPatientReportJobSchema = z
         REPORT_ACTIONS.GENERATE,
         REPORT_ACTIONS.EXPORT,
         REPORT_ACTIONS.PRINT,
-        REPORT_ACTIONS.PREVIEW,
-      ])
+        REPORT_ACTIONS.PREVIEW])
       .optional(),
     format: z.enum(['PDF', 'CSV', 'JSON', 'XLSX']).optional(),
     sections: z.array(sectionIdSchema).min(1).max(40),
     period: periodSchema,
-    async: z.boolean().optional(),
-  })
+    async: z.boolean().optional()})
   .strict();
 
 const patientReportJobIdParamsSchema = z
   .object({
-    id: uuidOrFriendlyIdentifierSchema,
-  })
+    id: uuidOrFriendlyIdentifierSchema})
   .strict();
 
 const recordPrintEventSchema = z
@@ -70,16 +64,13 @@ const recordPrintEventSchema = z
         REPORT_ACTIONS.PRINT,
         REPORT_ACTIONS.EXPORT,
         REPORT_ACTIONS.PREVIEW,
-        REPORT_ACTIONS.ACCESS,
-      ])
+        REPORT_ACTIONS.ACCESS])
       .optional(),
-    sections: z.array(z.string().min(1).max(80)).max(40).optional().default([]),
-  })
+    sections: z.array(z.string().min(1).max(80)).max(40).optional().default([])})
   .strict();
 
 module.exports = {
   createPatientReportJobSchema,
   listSectionsQuerySchema,
   patientReportJobIdParamsSchema,
-  recordPrintEventSchema,
-};
+  recordPrintEventSchema};

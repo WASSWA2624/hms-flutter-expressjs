@@ -12,22 +12,18 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForPayload,
-  resolvePublicIdentifier,
-} = require('@lib/billing/identifiers');
+  resolvePublicIdentifier} = require('@lib/billing/identifiers');
 const { assertPermissionIdAssignable, assertRoleIdAssignable } = require('@lib/authorization/assignable-access');
 
 const normalizeCreateRolePermissionPayload = async (data = {}) => ({
   role_id: await resolveIdentifierForPayload({
     value: data.role_id,
     model: 'role',
-    field: 'role_id',
-  }),
+    field: 'role_id'}),
   permission_id: await resolveIdentifierForPayload({
     value: data.permission_id,
     model: 'permission',
-    field: 'permission_id',
-  }),
-});
+    field: 'permission_id'})});
 
 const normalizeUpdateRolePermissionPayload = async (data = {}) => {
   const payload = { ...data };
@@ -36,16 +32,14 @@ const normalizeUpdateRolePermissionPayload = async (data = {}) => {
     payload.role_id = await resolveIdentifierForPayload({
       value: data.role_id,
       model: 'role',
-      field: 'role_id',
-    });
+      field: 'role_id'});
   }
 
   if (data.permission_id !== undefined) {
     payload.permission_id = await resolveIdentifierForPayload({
       value: data.permission_id,
       model: 'permission',
-      field: 'permission_id',
-    });
+      field: 'permission_id'});
   }
 
   return payload;
@@ -70,14 +64,12 @@ const serializeRolePermission = (record) => {
       ? {
           id: publicPermissionId,
           human_friendly_id: permission.human_friendly_id || null,
-          name: permission.name || null,
-        }
+          name: permission.name || null}
       : undefined,
     created_at: record.created_at,
     updated_at: record.updated_at,
     deleted_at: record.deleted_at,
-    version: record.version,
-  };
+    version: record.version};
 };
 
 /**
@@ -104,15 +96,13 @@ const listRolePermissions = async (filters, page, limit, sortBy, order, userId, 
       whereClause.role_id = await resolveIdentifierForPayload({
         value: filters.role_id,
         model: 'role',
-        field: 'role_id',
-      });
+        field: 'role_id'});
     }
     if (filters.permission_id) {
       whereClause.permission_id = await resolveIdentifierForPayload({
         value: filters.permission_id,
         model: 'permission',
-        field: 'permission_id',
-      });
+        field: 'permission_id'});
     }
 
     const [rolePermissions, total] = await Promise.all([

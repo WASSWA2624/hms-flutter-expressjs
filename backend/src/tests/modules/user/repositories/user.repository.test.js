@@ -25,9 +25,7 @@ jest.mock('@prisma/client', () => {
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-  };
+      updateMany: jest.fn()}};
 
   return prismaMock;
 });
@@ -54,7 +52,7 @@ describe('User Repository', () => {
       expect(result).toEqual(mockUser);
       expect(prisma.user.findFirst).toHaveBeenCalledWith({
         where: { id: userId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -126,7 +124,7 @@ describe('User Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -259,18 +257,13 @@ describe('User Repository', () => {
       expect(prisma.user.findFirst).toHaveBeenCalledWith({
         where: {
           id: createdUser.id,
-          deleted_at: null,
-        },
+          deleted_at: null},
         include: expect.objectContaining({
           facility: expect.objectContaining({
             select: expect.objectContaining({
               id: true,
               human_friendly_id: true,
-              name: true,
-            }),
-          }),
-        }),
-      });
+              name: true})})})});
       expect(prisma.user.findFirst.mock.calls[0][0].include.facility.select.code).toBeUndefined();
       expect(prisma.user.findFirst.mock.calls[0][0].include.facility.select.slug).toBeUndefined();
     });
@@ -283,22 +276,17 @@ describe('User Repository', () => {
 
       await userRepository.create({
         ...userData,
-        permission_ids: ['perm-1', 'perm-2'],
-      });
+        permission_ids: ['perm-1', 'perm-2']});
 
       expect(prisma.user_permission.create).toHaveBeenCalledTimes(2);
       expect(prisma.user_permission.create).toHaveBeenNthCalledWith(1, {
         data: {
           user_id: createdUser.id,
-          permission_id: 'perm-1',
-        },
-      });
+          permission_id: 'perm-1'}});
       expect(prisma.user_permission.create).toHaveBeenNthCalledWith(2, {
         data: {
           user_id: createdUser.id,
-          permission_id: 'perm-2',
-        },
-      });
+          permission_id: 'perm-2'}});
     });
 
     it('should throw HttpError on unique constraint violation', async () => {
@@ -309,8 +297,7 @@ describe('User Repository', () => {
       await expect(userRepository.create(userData)).rejects.toMatchObject({
         messageKey: 'errors.user.email_exists_in_tenant',
         statusCode: 409,
-        errors: [expect.objectContaining({ field: 'email' })],
-      });
+        errors: [expect.objectContaining({ field: 'email' })]});
     });
 
     it('should throw HttpError on foreign key violation', async () => {
@@ -342,8 +329,7 @@ describe('User Repository', () => {
       await expect(userRepository.create(userData)).rejects.toMatchObject({
         messageKey: 'errors.user.email_exists_in_tenant',
         statusCode: 409,
-        errors: [expect.objectContaining({ field: 'email' })],
-      });
+        errors: [expect.objectContaining({ field: 'email' })]});
     });
 
     it('should handle P2003 error without meta.field_name', async () => {
@@ -383,18 +369,13 @@ describe('User Repository', () => {
       expect(prisma.user.findFirst).toHaveBeenCalledWith({
         where: {
           id: userId,
-          deleted_at: null,
-        },
+          deleted_at: null},
         include: expect.objectContaining({
           facility: expect.objectContaining({
             select: expect.objectContaining({
               id: true,
               human_friendly_id: true,
-              name: true,
-            }),
-          }),
-        }),
-      });
+              name: true})})})});
       expect(prisma.user.findFirst.mock.calls[0][0].include.facility.select.code).toBeUndefined();
       expect(prisma.user.findFirst.mock.calls[0][0].include.facility.select.slug).toBeUndefined();
     });
@@ -403,8 +384,7 @@ describe('User Repository', () => {
       prisma.user.findFirst.mockResolvedValue(updatedUser);
       prisma.user_permission.findMany.mockResolvedValue([
         { id: 'up-1', user_id: userId, permission_id: 'perm-1', deleted_at: null },
-        { id: 'up-2', user_id: userId, permission_id: 'perm-2', deleted_at: new Date('2025-01-01T00:00:00Z') },
-      ]);
+        { id: 'up-2', user_id: userId, permission_id: 'perm-2', deleted_at: new Date('2025-01-01T00:00:00Z') }]);
       prisma.user_permission.update.mockResolvedValue({});
       prisma.user_permission.create.mockResolvedValue({});
 
@@ -414,9 +394,7 @@ describe('User Repository', () => {
       expect(prisma.user_permission.create).toHaveBeenCalledWith({
         data: {
           user_id: userId,
-          permission_id: 'perm-3',
-        },
-      });
+          permission_id: 'perm-3'}});
     });
 
     it('should throw HttpError if user not found', async () => {
@@ -438,8 +416,7 @@ describe('User Repository', () => {
       await expect(userRepository.update(userId, updateData)).rejects.toMatchObject({
         messageKey: 'errors.user.email_exists_in_tenant',
         statusCode: 409,
-        errors: [expect.objectContaining({ field: 'email' })],
-      });
+        errors: [expect.objectContaining({ field: 'email' })]});
     });
 
     it('should throw HttpError on foreign key violation', async () => {
@@ -483,12 +460,9 @@ describe('User Repository', () => {
       expect(prisma.user_permission.updateMany).toHaveBeenCalledWith({
         where: {
           user_id: userId,
-          deleted_at: null,
-        },
+          deleted_at: null},
         data: {
-          deleted_at: expect.any(Date),
-        },
-      });
+          deleted_at: expect.any(Date)}});
     });
 
     it('should throw HttpError if user not found', async () => {

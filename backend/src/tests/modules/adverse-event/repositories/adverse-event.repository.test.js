@@ -58,7 +58,7 @@ describe('Adverse Event Repository', () => {
           id: 'event-123',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -103,7 +103,7 @@ describe('Adverse Event Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
@@ -120,7 +120,7 @@ describe('Adverse Event Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

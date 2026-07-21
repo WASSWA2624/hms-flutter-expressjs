@@ -27,8 +27,7 @@ const createPostOpNoteSchema = z.object({
   finalized_by_user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   reopened_at: z.string().datetime().optional().nullable(),
   reopened_by_user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  reopen_reason: z.string().trim().optional().nullable(),
-});
+  reopen_reason: z.string().trim().optional().nullable()});
 
 /**
  * Update post-op note body validation
@@ -43,8 +42,7 @@ const updatePostOpNoteSchema = z.object({
   finalized_by_user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   reopened_at: z.string().datetime().optional().nullable(),
   reopened_by_user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  reopen_reason: z.string().trim().optional().nullable(),
-});
+  reopen_reason: z.string().trim().optional().nullable()});
 
 // ==================== URL Params ====================
 
@@ -68,8 +66,7 @@ const listPostOpNotesQuerySchema = listQuerySchema.extend({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   record_status: z.enum(['DRAFT', 'FINAL']).optional(),
-  search: z.string().trim().optional(),
-});
+  search: z.string().trim().optional()});
 
 module.exports = {
   createPostOpNoteSchema,

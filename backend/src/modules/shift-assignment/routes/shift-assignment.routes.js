@@ -8,8 +8,7 @@ const {
   createShiftAssignmentSchema,
   updateShiftAssignmentSchema,
   shiftAssignmentIdParamsSchema,
-  listShiftAssignmentsQuerySchema,
-} = require('@validations/shift-assignment/shift-assignment.schema');
+  listShiftAssignmentsQuerySchema} = require('@validations/shift-assignment/shift-assignment.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

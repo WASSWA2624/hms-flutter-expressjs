@@ -26,10 +26,7 @@ describe('Lab Panel Schema Validation', () => {
             lab_test_id: 'LBT0000001',
             is_required: true,
             instructions: 'Collect fasting sample',
-            sort_order: 0,
-          },
-        ],
-      };
+            sort_order: 0}]};
 
       const result = createLabPanelSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -128,10 +125,7 @@ describe('Lab Panel Schema Validation', () => {
         panel_items: [
           {
             lab_test_id: 'LBT0000002',
-            is_required: false,
-          },
-        ],
-      };
+            is_required: false}]};
 
       const result = updateLabPanelSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -189,9 +183,7 @@ describe('Lab Panel Schema Validation', () => {
       const invalidData = {
         panel_items: [
           { lab_test_id: 'LBT0000001' },
-          { lab_test_id: 'LBT0000001' },
-        ],
-      };
+          { lab_test_id: 'LBT0000001' }]};
 
       const result = updateLabPanelSchema.safeParse(invalidData);
       expect(result.success).toBe(false);

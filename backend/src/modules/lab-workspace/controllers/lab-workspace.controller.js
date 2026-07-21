@@ -17,8 +17,7 @@ const getLabWorkbench = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
-    order = 'desc',
-  } = req.query;
+    order = 'desc'} = req.query;
 
   const data = await labWorkspaceService.getLabWorkbench(
     {
@@ -30,8 +29,7 @@ const getLabWorkbench = asyncHandler(async (req, res) => {
       to,
       patient_id,
       encounter_id,
-      search,
-    },
+      search},
     Number(page),
     Number(limit),
     sort_by,
@@ -186,5 +184,4 @@ module.exports = {
   reverseLabOrderWorkflow,
   restoreLabOrderItem,
   deleteLabOrderItems,
-  resolveLegacyRoute,
-};
+  resolveLegacyRoute};

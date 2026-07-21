@@ -25,8 +25,7 @@ const THEATRE_ALLOWED_ROLES = [
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
-  ROLES.NURSE,
-];
+  ROLES.NURSE];
 
 /**
  * @description List Post-op notes with pagination and filters
@@ -46,7 +45,8 @@ const THEATRE_ALLOWED_ROLES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listPostOpNotesQuerySchema }),
+  '/',
+  validateRequest({ query: listPostOpNotesQuerySchema }),
 
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
@@ -67,7 +67,8 @@ router.get(
  * @throws 404 Post-op note not found
  */
 router.get(
-  '/:id',  validateRequest({ params: postOpNoteIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: postOpNoteIdParamsSchema }),
 
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
@@ -92,7 +93,8 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createPostOpNoteSchema }),
+  '/',
+  validateRequest({ body: createPostOpNoteSchema }),
 
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
@@ -118,7 +120,8 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: postOpNoteIdParamsSchema, body: updatePostOpNoteSchema }),
+  '/:id',
+  validateRequest({ params: postOpNoteIdParamsSchema, body: updatePostOpNoteSchema }),
 
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),
@@ -139,7 +142,8 @@ router.put(
  * @throws 404 Post-op note not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: postOpNoteIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: postOpNoteIdParamsSchema }),
 
   authenticate(),
   authorize(THEATRE_ALLOWED_ROLES, 'role'),

@@ -37,8 +37,7 @@ describe('Staff Assignment Service', () => {
 
       expect(result.staffAssignments).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: '1', staff_profile_id: 'prof-1' }),
-        ])
+          expect.objectContaining({ id: '1', staff_profile_id: 'prof-1' })])
       );
       expect(result.pagination.total).toBe(1);
     });
@@ -114,10 +113,8 @@ describe('Staff Assignment Service', () => {
         unit_id: '550e8400-e29b-41d4-a716-446655440002',
         room_ids: [
           '550e8400-e29b-41d4-a716-446655440003',
-          '550e8400-e29b-41d4-a716-446655440004',
-        ],
-        start_date: new Date(),
-      };
+          '550e8400-e29b-41d4-a716-446655440004'],
+        start_date: new Date()};
       staffAssignmentRepository.create
         .mockResolvedValueOnce({ id: 'room-1', ...mockData, room_id: mockData.room_ids[0] })
         .mockResolvedValueOnce({ id: 'room-2', ...mockData, room_id: mockData.room_ids[1] });
@@ -131,10 +128,8 @@ describe('Staff Assignment Service', () => {
       expect(result).toEqual({
         assignments: [
           expect.objectContaining({ id: 'room-1', room_id: mockData.room_ids[0] }),
-          expect.objectContaining({ id: 'room-2', room_id: mockData.room_ids[1] }),
-        ],
-        count: 2,
-      });
+          expect.objectContaining({ id: 'room-2', room_id: mockData.room_ids[1] })],
+        count: 2});
       expect(createAuditLog).toHaveBeenCalledTimes(2);
     });
   });
@@ -144,14 +139,12 @@ describe('Staff Assignment Service', () => {
       const mockBefore = {
         id: '123',
         staff_profile_id: 'prof-1',
-        department_id: '550e8400-e29b-41d4-a716-446655440001',
-      };
+        department_id: '550e8400-e29b-41d4-a716-446655440001'};
       const mockData = { department_id: '550e8400-e29b-41d4-a716-446655440002' };
       const mockAfter = {
         id: '123',
         staff_profile_id: 'prof-1',
-        department_id: '550e8400-e29b-41d4-a716-446655440002',
-      };
+        department_id: '550e8400-e29b-41d4-a716-446655440002'};
       staffAssignmentRepository.findById
         .mockResolvedValueOnce(mockBefore)
         .mockResolvedValueOnce(mockAfter);

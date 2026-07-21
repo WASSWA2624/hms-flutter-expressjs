@@ -8,16 +8,14 @@ const { isFeatureEnabled } = require('@config/feature-flags');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   workspaceQuerySchema,
-  lookupsQuerySchema,
-} = require('@validations/mortuary-workspace/mortuary-workspace.schema');
+  lookupsQuerySchema} = require('@validations/mortuary-workspace/mortuary-workspace.schema');
 
 const MORTUARY_READ_SCOPES = [
   PERMISSIONS.MORTUARY_READ,
   PERMISSIONS.MORTUARY_WRITE,
   PERMISSIONS.MORTUARY_APPROVE,
   PERMISSIONS.MORTUARY_RELEASE,
-  PERMISSIONS.MORTUARY_AUDIT,
-];
+  PERMISSIONS.MORTUARY_AUDIT];
 
 /**
  * Guard Mortuary routes behind the module feature flag.

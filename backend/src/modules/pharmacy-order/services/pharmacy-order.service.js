@@ -20,16 +20,13 @@ const {
   buildEncounterScopeWhere,
   buildDrugScopeWhere,
   buildOrderScopeWhere,
-  matchesOrderScope,
-} = require('@services/pharmacy-workspace/pharmacy.shared');
+  matchesOrderScope} = require('@services/pharmacy-workspace/pharmacy.shared');
 const {
-  mapPharmacyOrderRecord,
-} = require('@services/pharmacy-workspace/pharmacy.serializer');
+  mapPharmacyOrderRecord} = require('@services/pharmacy-workspace/pharmacy.serializer');
 const {
   persistPharmacyOrderBilling,
   reverseClinicalRequestBilling,
-  extractStoredClinicalBilling,
-} = require('@lib/billing/clinical-request-billing');
+  extractStoredClinicalBilling} = require('@lib/billing/clinical-request-billing');
 
 const ORDER_SCOPE_INCLUDE = PHARMACY_ORDER_WITH_RELATIONS_INCLUDE;
 
@@ -42,11 +39,9 @@ const resolveScopedPatientId = async (identifier, scope, allowNull = false) =>
     model: 'patient',
     where: {
       deleted_at: null,
-      ...buildPatientScopeWhere(scope),
-    },
+      ...buildPatientScopeWhere(scope)},
     errorKey: 'errors.patient.not_found',
-    allowNull,
-  });
+    allowNull});
 
 const resolveScopedEncounterId = async (identifier, scope, allowNull = false) =>
   resolveModelIdOrThrow({
@@ -54,11 +49,9 @@ const resolveScopedEncounterId = async (identifier, scope, allowNull = false) =>
     model: 'encounter',
     where: {
       deleted_at: null,
-      ...buildEncounterScopeWhere(scope),
-    },
+      ...buildEncounterScopeWhere(scope)},
     errorKey: 'errors.encounter.not_found',
-    allowNull,
-  });
+    allowNull});
 
 const resolveScopedDrugId = async (identifier, scope) =>
   resolveModelIdOrThrow({
@@ -66,10 +59,8 @@ const resolveScopedDrugId = async (identifier, scope) =>
     model: 'drug',
     where: {
       deleted_at: null,
-      ...buildDrugScopeWhere(scope),
-    },
-    errorKey: 'errors.drug.not_found',
-  });
+      ...buildDrugScopeWhere(scope)},
+    errorKey: 'errors.drug.not_found'});
 
 const sanitizeString = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -109,8 +100,7 @@ const FREQUENCY_DOSES_PER_DAY = Object.freeze({
   Q12H: 2,
   QHS: 1,
   WEEKLY: 1 / 7,
-  STAT: 1,
-});
+  STAT: 1});
 
 const durationToDays = (durationValue, durationUnit) => {
   const value = normalizePositiveNumber(durationValue);
@@ -163,8 +153,7 @@ const normalizeOrderItemPayloads = async (items = [], scope = {}) => {
       duration_unit: normalizeNullableString(item.duration_unit),
       instructions: normalizeNullableString(item.instructions),
       custom_prescription: normalizeNullableString(item.custom_prescription),
-      status: 'ACTIVE',
-    });
+      status: 'ACTIVE'});
   }
 
   return normalizedItems;
@@ -178,8 +167,7 @@ const createPrescriptionDetailNote = async ({ encounterId, items, userId }) => {
       const dosageText = buildDosageText(item);
       const durationText = [
         sanitizeString(item.duration_value || item.duration),
-        sanitizeString(item.duration_unit),
-      ].filter(Boolean).join(' ');
+        sanitizeString(item.duration_unit)].filter(Boolean).join(' ');
       const details = [
         dosageText,
         sanitizeString(item.frequency),
@@ -191,8 +179,7 @@ const createPrescriptionDetailNote = async ({ encounterId, items, userId }) => {
             ? `${sanitizeString(item.quantity)} requested`
             : '',
         sanitizeString(item.instructions),
-        sanitizeString(item.custom_prescription),
-      ].filter(Boolean);
+        sanitizeString(item.custom_prescription)].filter(Boolean);
       if (!details.length) return '';
       const medicationName = sanitizeString(
         item?.drug?.name ||
@@ -213,9 +200,7 @@ const createPrescriptionDetailNote = async ({ encounterId, items, userId }) => {
       data: {
         encounter_id: encounterId,
         author_user_id: userId,
-        note: `Prescription details:\n${lines.join('\n')}`,
-      },
-    });
+        note: `Prescription details:\n${lines.join('\n')}`}});
   } catch (_error) {
     // Prescription creation should not fail because supplementary note capture failed.
   }
@@ -224,8 +209,7 @@ const createPrescriptionDetailNote = async ({ encounterId, items, userId }) => {
 const buildScopedOrderWhereClause = async (filters = {}, user = {}) => {
   const scope = resolveScopedUserContext(user);
   const whereClause = {
-    ...buildOrderScopeWhere(scope),
-  };
+    ...buildOrderScopeWhere(scope)};
 
   if (filters.patient_id) {
     whereClause.patient_id = await resolveScopedPatientId(filters.patient_id, scope);
@@ -253,11 +237,9 @@ const findScopedOrderOrThrow = async (id, user = {}) => {
     model: 'pharmacy_order',
     where: {
       deleted_at: null,
-      ...buildOrderScopeWhere(scope),
-    },
+      ...buildOrderScopeWhere(scope)},
     include: ORDER_SCOPE_INCLUDE,
-    errorKey: 'errors.pharmacy_order.not_found',
-  });
+    errorKey: 'errors.pharmacy_order.not_found'});
 
   if (!pharmacyOrder || !matchesOrderScope(pharmacyOrder, scope)) {
     throw new HttpError('errors.pharmacy_order.not_found', 404);
@@ -350,8 +332,7 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
     const payload = {
       ...data,
       patient_id: await resolveScopedPatientId(data.patient_id, scope),
-      status: 'ORDERED',
-    };
+      status: 'ORDERED'};
     const orderedAt = normalizeOptionalDate(data.ordered_at);
     delete payload.items;
     delete payload.billing;
@@ -366,8 +347,7 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
     }
     if (items.length > 0) {
       payload.items = {
-        create: await normalizeOrderItemPayloads(items, scope),
-      };
+        create: await normalizeOrderItemPayloads(items, scope)};
     }
 
     const pharmacyOrder = await pharmacyOrderRepository.create(payload, ORDER_SCOPE_INCLUDE);
@@ -375,8 +355,7 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
     if (billing) {
       const patientRecord = await prisma.patient.findFirst({
         where: { id: payload.patient_id, deleted_at: null },
-        select: { id: true, tenant_id: true, facility_id: true },
-      });
+        select: { id: true, tenant_id: true, facility_id: true }});
       if (patientRecord) {
         await prisma.$transaction(async (tx) => {
           await persistPharmacyOrderBilling(tx, {
@@ -385,8 +364,7 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
             tenantId: patientRecord.tenant_id,
             facilityId: patientRecord.facility_id || scope.facility_id || null,
             patientId: patientRecord.id,
-            description: 'Pharmacy prescription',
-          });
+            description: 'Pharmacy prescription'});
         });
       }
     }
@@ -398,8 +376,7 @@ const createPharmacyOrder = async (data, userId, ipAddress, user = {}) => {
     await createPrescriptionDetailNote({
       encounterId: payload.encounter_id,
       items: persistedOrder.items || items,
-      userId,
-    });
+      userId});
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -462,8 +439,7 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
       const patientId = pharmacyOrder.patient_id || before.patient_id;
       const patientRecord = await prisma.patient.findFirst({
         where: { id: patientId, deleted_at: null },
-        select: { id: true, tenant_id: true, facility_id: true },
-      });
+        select: { id: true, tenant_id: true, facility_id: true }});
       if (patientRecord) {
         await prisma.$transaction(async (tx) => {
           await persistPharmacyOrderBilling(tx, {
@@ -473,8 +449,7 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
             tenantId: patientRecord.tenant_id,
             facilityId: patientRecord.facility_id || null,
             patientId: patientRecord.id,
-            description: 'Pharmacy order',
-          });
+            description: 'Pharmacy order'});
         });
       }
     } else if (payload.status === 'CANCELLED' && existingSnapshot?.invoice_id) {
@@ -482,8 +457,7 @@ const updatePharmacyOrder = async (id, data, userId, ipAddress, user = {}) => {
         await reverseClinicalRequestBilling(tx, { existingSnapshot });
         await tx.pharmacy_order.update({
           where: { id: pharmacyOrder.id },
-          data: { billing_snapshot: null },
-        });
+          data: { billing_snapshot: null }});
       });
     }
 
@@ -531,8 +505,7 @@ const deletePharmacyOrder = async (id, userId, ipAddress, user = {}) => {
         await reverseClinicalRequestBilling(tx, { existingSnapshot });
         await tx.pharmacy_order.update({
           where: { id: before.id },
-          data: { billing_snapshot: null },
-        });
+          data: { billing_snapshot: null }});
       });
     }
 

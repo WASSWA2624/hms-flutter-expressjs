@@ -14,8 +14,7 @@ jest.mock('@services/pharmacy-workspace/pharmacy.shared', () => {
   const actual = jest.requireActual('@services/pharmacy-workspace/pharmacy.shared');
   return {
     ...actual,
-    resolveModelIdOrThrow: jest.fn(),
-  };
+    resolveModelIdOrThrow: jest.fn()};
 });
 
 describe('Inventory Stock Service', () => {
@@ -24,8 +23,7 @@ describe('Inventory Stock Service', () => {
   const mockUser = {
     id: 'user-123',
     tenant_id: 'tenant-123',
-    roles: ['PHARMACIST'],
-  };
+    roles: ['PHARMACIST']};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -42,8 +40,7 @@ describe('Inventory Stock Service', () => {
     id: '550e8400-e29b-41d4-a716-446655440000',
     inventory_item_id: '550e8400-e29b-41d4-a716-446655440001',
     inventory_item: {
-      tenant_id: 'tenant-123',
-    },
+      tenant_id: 'tenant-123'},
     quantity: 100,
     reorder_level: 10
   };

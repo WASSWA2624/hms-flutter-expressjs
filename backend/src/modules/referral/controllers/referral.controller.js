@@ -190,5 +190,4 @@ module.exports = {
   redeemReferral,
   approveReferral,
   startReferral,
-  cancelReferral,
-};
+  cancelReferral};

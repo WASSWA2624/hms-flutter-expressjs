@@ -20,17 +20,11 @@ const DEFAULT_INCLUDE = {
           id: true,
           human_friendly_id: true,
           first_name: true,
-          last_name: true,
-        },
-      },
-    },
-  },
-};
+          last_name: true}}}}};
 
 const buildWhere = (filters = {}) => {
   const where = {
-    deleted_at: null,
-  };
+    deleted_at: null};
 
   const {
     search,
@@ -49,13 +43,11 @@ const buildWhere = (filters = {}) => {
     { emergency_case: { patient: { human_friendly_id: { contains: searchUpper } } } },
     { emergency_case: { patient: { first_name: { contains: normalizedSearch } } } },
     { emergency_case: { patient: { last_name: { contains: normalizedSearch } } } },
-    { notes: { contains: normalizedSearch } },
-  ];
+    { notes: { contains: normalizedSearch } }];
 
   where.AND = [
     ...(Array.isArray(where.AND) ? where.AND : []),
-    { OR: searchClauses },
-  ];
+    { OR: searchClauses }];
 
   return where;
 };
@@ -139,8 +131,7 @@ const create = async (data, dbClient = prisma) => {
   try {
     return await dbClient.emergency_response.create({
       data,
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2002') {
       // Unique constraint violation
@@ -168,8 +159,7 @@ const update = async (id, data) => {
     return await prisma.emergency_response.update({
       where: { id },
       data,
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.emergency_response.not_found', 404);
@@ -202,8 +192,7 @@ const softDelete = async (id) => {
       data: {
         deleted_at: new Date()
       },
-      include: DEFAULT_INCLUDE,
-    });
+      include: DEFAULT_INCLUDE});
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.emergency_response.not_found', 404);

@@ -7,8 +7,7 @@ const {
   createKpiSnapshotSchema,
   kpiSnapshotIdParamsSchema,
   listKpiSnapshotsQuerySchema,
-  updateKpiSnapshotSchema,
-} = require('@validations/kpi-snapshot/kpi-snapshot.schema');
+  updateKpiSnapshotSchema} = require('@validations/kpi-snapshot/kpi-snapshot.schema');
 
 const router = express.Router();
 

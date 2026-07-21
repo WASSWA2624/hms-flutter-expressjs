@@ -9,8 +9,7 @@ jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 
 const buildRecord = (overrides = {}) => ({
   id: 'license-uuid',
@@ -19,15 +18,13 @@ const buildRecord = (overrides = {}) => ({
   tenant: {
     id: 'tenant-uuid',
     human_friendly_id: 'TEN0001',
-    name: 'Acme',
-  },
+    name: 'Acme'},
   license_type: 'PER_USER',
   status: 'ACTIVE',
   plan_tier_code: 'PRO',
   issued_at: '2026-03-01T00:00:00.000Z',
   expires_at: '2026-04-01T00:00:00.000Z',
-  ...overrides,
-});
+  ...overrides});
 
 describe('License Service', () => {
   beforeEach(() => {
@@ -43,8 +40,7 @@ describe('License Service', () => {
         id: 'LIC0001',
         tenant_id: 'TEN0001',
         tenant_label: 'Acme',
-        license_type: 'PER_USER',
-      })
+        license_type: 'PER_USER'})
     );
   });
 
@@ -53,9 +49,7 @@ describe('License Service', () => {
       buildRecord(),
       buildRecord({
         id: 'license-uuid-2',
-        human_friendly_id: 'LIC0002',
-      }),
-    ]);
+        human_friendly_id: 'LIC0002'})]);
     licenseRepository.count.mockResolvedValue(2);
 
     const result = await subject.listLicenses(
@@ -72,15 +66,13 @@ describe('License Service', () => {
     );
     expect(result.licenses).toEqual([
       expect.objectContaining({ id: 'LIC0001' }),
-      expect.objectContaining({ id: 'LIC0002' }),
-    ]);
+      expect.objectContaining({ id: 'LIC0002' })]);
   });
 
   it('creates a license, reloads it, and writes an audit log', async () => {
     const created = buildRecord({
       id: 'license-uuid-2',
-      human_friendly_id: 'LIC0002',
-    });
+      human_friendly_id: 'LIC0002'});
     licenseRepository.create.mockResolvedValue({ id: created.id });
     licenseRepository.findById.mockResolvedValue(created);
 
@@ -89,21 +81,18 @@ describe('License Service', () => {
         tenant_id: 'TEN0001',
         human_friendly_id: 'LIC0002',
         license_type: 'PER_USER',
-        status: 'ACTIVE',
-      },
+        status: 'ACTIVE'},
       {
         user: { id: 'user-1', role: 'SUPER_ADMIN' },
         ip: '127.0.0.1',
-        tenant_id: 'tenant-uuid',
-      }
+        tenant_id: 'tenant-uuid'}
     );
 
     expect(result).toEqual(expect.objectContaining({ id: 'LIC0002' }));
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'CREATE',
-        entity: 'license',
-      })
+        entity: 'license'})
     );
   });
 
@@ -121,15 +110,13 @@ describe('License Service', () => {
       {
         user: { id: 'user-1', role: 'SUPER_ADMIN' },
         ip: '127.0.0.1',
-        tenant_id: 'tenant-uuid',
-      }
+        tenant_id: 'tenant-uuid'}
     );
 
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LIC0001',
-        status: 'CANCELLED',
-      })
+        status: 'CANCELLED'})
     );
   });
 

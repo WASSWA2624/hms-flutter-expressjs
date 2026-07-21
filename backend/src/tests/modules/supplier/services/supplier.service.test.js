@@ -20,8 +20,7 @@ describe('Supplier Service', () => {
   const mockUser = {
     id: 'user-123',
     tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-    roles: ['PHARMACIST'],
-  };
+    roles: ['PHARMACIST']};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,8 +29,7 @@ describe('Supplier Service', () => {
   const mockAuditContext = {
     user_id: 'user-123',
     ip_address: '127.0.0.1',
-    user: mockUser,
-  };
+    user: mockUser};
 
   describe('getSupplierById', () => {
     it('should return supplier when found', async () => {
@@ -63,8 +61,7 @@ describe('Supplier Service', () => {
       supplierRepository.findById.mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440000',
         tenant_id: 'tenant-other',
-        name: 'Medical Supplies Inc',
-      });
+        name: 'Medical Supplies Inc'});
 
       await expect(
         supplierService.getSupplierById('550e8400-e29b-41d4-a716-446655440000', mockUser)
@@ -131,8 +128,7 @@ describe('Supplier Service', () => {
       expect(supplierRepository.findMany).toHaveBeenCalledWith(
         {
           tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-          name: { contains: 'Medical' },
-        },
+          name: { contains: 'Medical' }},
         0,
         20,
         { created_at: 'desc' }
@@ -185,8 +181,7 @@ describe('Supplier Service', () => {
       expect(result).toEqual(mockCreatedSupplier);
       expect(supplierRepository.create).toHaveBeenCalledWith({
         ...supplierData,
-        tenant_id: mockUser.tenant_id,
-      });
+        tenant_id: mockUser.tenant_id});
       expect(createAuditLog).toHaveBeenCalledWith({
         tenant_id: mockUser.tenant_id,
         user_id: mockAuditContext.user_id,

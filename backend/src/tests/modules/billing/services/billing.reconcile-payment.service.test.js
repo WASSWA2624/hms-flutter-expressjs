@@ -2,28 +2,22 @@ jest.mock('@repositories/billing/billing.repository', () => ({
   withTransaction: jest.fn(),
   findPaymentById: jest.fn(),
   findInvoiceById: jest.fn(),
-  findRealtimeRecipientUserIds: jest.fn(async () => ['billing-1', 'reception-1']),
-}));
+  findRealtimeRecipientUserIds: jest.fn(async () => ['billing-1', 'reception-1'])}));
 
 jest.mock('@config/feature-flags', () => ({
-  isFeatureEnabled: jest.fn(() => true),
-}));
+  isFeatureEnabled: jest.fn(() => true)}));
 
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
-  resolveModelRecordByIdentifier: jest.fn(),
-}));
+  resolveModelRecordByIdentifier: jest.fn()}));
 
 jest.mock('@lib/notifications/sendEmail', () => ({
-  sendEmail: jest.fn(async () => ({ sent: true, provider: 'smtp' })),
-}));
+  sendEmail: jest.fn(async () => ({ sent: true, provider: 'smtp' }))}));
 
 jest.mock('@lib/billing/pdf', () => ({
-  generateInvoicePdfBuffer: jest.fn(async () => Buffer.from('pdf')),
-}));
+  generateInvoicePdfBuffer: jest.fn(async () => Buffer.from('pdf'))}));
 
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(async () => {}),
-}));
+  createAuditLog: jest.fn(async () => {})}));
 
 jest.mock('@lib/billing/financials', () => ({
   toDecimalNumber: (value) => Number(value || 0),
@@ -36,34 +30,26 @@ jest.mock('@lib/billing/financials', () => ({
       billing_status: 'PAID',
       status: 'SENT',
       total_amount: '100.00',
-      currency: 'UGX',
-    },
+      currency: 'UGX'},
     financials: {
       balance_due: 0,
       net_paid_total: 100,
       effective_total: 100,
-      gross_paid_total: 100,
-    },
-  })),
+      gross_paid_total: 100}})),
   computeInvoiceFinancials: jest.fn(() => ({
     balance_due: 0,
     net_paid_total: 100,
-    effective_total: 100,
-  })),
-}));
+    effective_total: 100}))}));
 
 jest.mock('@lib/billing/clinical-request-billing', () => ({
   resolveClinicalInvoiceContexts: jest.fn(async () => ({})),
   resolveInvoiceIdsForEncounterToken: jest.fn(async () => []),
   resolveInvoiceIdsForSourceModule: jest.fn(async () => []),
   syncClinicalOrderBillingSnapshotsFromInvoiceTx: jest.fn(async () => ({
-    labOrderIds: [],
-  })),
-}));
+    labOrderIds: []}))}));
 
 jest.mock('@services/lab-order/lab-order.service', () => ({
-  notifyLabOrdersBillingUpdated: jest.fn(async () => {}),
-}));
+  notifyLabOrdersBillingUpdated: jest.fn(async () => {})}));
 
 jest.mock('@lib/websocket', () => ({
   publishDomainEvent: jest.fn(),
@@ -71,22 +57,17 @@ jest.mock('@lib/websocket', () => ({
     BILLING_INVOICE_ISSUED: 'billing.invoice_issued',
     BILLING_PAYMENT_RECEIVED: 'billing.payment_received',
     INVOICE_UPDATED: 'invoice.updated',
-    BILLING_BALANCE_UPDATED: 'billing.balance_updated',
-  },
+    BILLING_BALANCE_UPDATED: 'billing.balance_updated'},
   PAYMENT_EVENTS: {
-    PAYMENT_RECONCILED: 'payment.reconciled',
-  },
-}));
+    PAYMENT_RECONCILED: 'payment.reconciled'}}));
 
 jest.mock('@lib/realtime/recipients', () => ({
-  findRealtimeRecipientUserIds: jest.fn(async () => ['billing-1', 'reception-1']),
-}));
+  findRealtimeRecipientUserIds: jest.fn(async () => ['billing-1', 'reception-1'])}));
 
 const mockSyncConsultationBillingFromInvoicePayment = jest.fn(async () => null);
 jest.mock('@services/opd-flow/opd-flow.service', () => ({
   syncConsultationBillingFromInvoicePayment: (...args) =>
-    mockSyncConsultationBillingFromInvoicePayment(...args),
-}));
+    mockSyncConsultationBillingFromInvoicePayment(...args)}));
 
 const billingRepository = require('@repositories/billing/billing.repository');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
@@ -116,9 +97,7 @@ describe('billing.service reconcilePayment', () => {
             tenant_id: 'tenant-1',
             facility_id: 'facility-1',
             patient_id: 'patient-1',
-            encounter_id: 'encounter-1',
-          },
-        };
+            encounter_id: 'encounter-1'}};
       }
       return null;
     });
@@ -131,10 +110,7 @@ describe('billing.service reconcilePayment', () => {
             invoice_id: 'inv-1',
             status: 'COMPLETED',
             amount: '100.00',
-            paid_at: new Date('2026-07-21T06:00:00.000Z'),
-          })),
-        },
-      };
+            paid_at: new Date('2026-07-21T06:00:00.000Z')}))}};
       return callback(tx);
     });
 
@@ -157,9 +133,7 @@ describe('billing.service reconcilePayment', () => {
         total_amount: '100.00',
         currency: 'UGX',
         patient_id: 'patient-1',
-        encounter_id: 'encounter-1',
-      },
-    });
+        encounter_id: 'encounter-1'}});
     billingRepository.findInvoiceById.mockResolvedValue({
       id: 'inv-1',
       human_friendly_id: 'INV0001',
@@ -172,8 +146,7 @@ describe('billing.service reconcilePayment', () => {
       patient_id: 'patient-1',
       encounter_id: 'encounter-1',
       payments: [],
-      adjustments: [],
-    });
+      adjustments: []});
 
     const result = await billingService.reconcilePayment(
       'PAY0001',
@@ -190,14 +163,11 @@ describe('billing.service reconcilePayment', () => {
         invoiceId: 'inv-1',
         context: expect.objectContaining({
           user_id: 'user-billing',
-          tenant_id: 'tenant-1',
-        }),
-      })
+          tenant_id: 'tenant-1'})})
     );
     expect(findRealtimeRecipientUserIds).toHaveBeenCalledWith(
       expect.objectContaining({
-        roles: expect.arrayContaining(['BILLING', 'RECEPTIONIST']),
-      })
+        roles: expect.arrayContaining(['BILLING', 'RECEPTIONIST'])})
     );
   });
 });

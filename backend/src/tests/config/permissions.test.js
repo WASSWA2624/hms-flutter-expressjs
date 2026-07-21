@@ -51,8 +51,7 @@ describe('permissions config', () => {
         PERMISSIONS.PHARMACY_READ,
         PERMISSIONS.PHARMACY_WRITE,
         PERMISSIONS.PATIENT_READ,
-        PERMISSIONS.REPORTS_READ,
-      ])
+        PERMISSIONS.REPORTS_READ])
     );
     expect(ROLE_PERMISSIONS[ROLES.PHARMACIST]).not.toContain(
       PERMISSIONS.PATIENT_WRITE

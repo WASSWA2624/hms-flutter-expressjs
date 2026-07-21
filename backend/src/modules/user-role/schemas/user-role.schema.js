@@ -10,8 +10,7 @@
 const { z } = require('zod');
 const {
   uuidOrFriendlyIdentifierSchema,
-  listQuerySchema,
-} = require('@lib/validation/zod');
+  listQuerySchema} = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
 
@@ -23,8 +22,7 @@ const createUserRoleSchema = z.object({
   user_id: uuidOrFriendlyIdentifierSchema,
   role_id: uuidOrFriendlyIdentifierSchema,
   tenant_id: uuidOrFriendlyIdentifierSchema,
-  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-});
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
 
 /**
  * Update user-role body validation
@@ -35,8 +33,7 @@ const updateUserRoleSchema = z.object({
   user_id: uuidOrFriendlyIdentifierSchema.optional(),
   role_id: uuidOrFriendlyIdentifierSchema.optional(),
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
-  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-});
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
 
 // ==================== URL Params ====================
 
@@ -45,8 +42,7 @@ const updateUserRoleSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const userRoleIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema,
-});
+  id: uuidOrFriendlyIdentifierSchema});
 
 // ==================== Query Params ====================
 
@@ -59,12 +55,10 @@ const listUserRolesQuerySchema = listQuerySchema.extend({
   user_id: uuidOrFriendlyIdentifierSchema.optional(),
   role_id: uuidOrFriendlyIdentifierSchema.optional(),
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
-  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
-});
+  facility_id: uuidOrFriendlyIdentifierSchema.optional()});
 
 module.exports = {
   createUserRoleSchema,
   updateUserRoleSchema,
   userRoleIdParamsSchema,
-  listUserRolesQuerySchema,
-};
+  listUserRolesQuerySchema};

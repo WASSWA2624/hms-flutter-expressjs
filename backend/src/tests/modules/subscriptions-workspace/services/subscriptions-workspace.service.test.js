@@ -1,8 +1,7 @@
 jest.mock('@repositories/subscriptions-workspace/subscriptions-workspace.repository');
 jest.mock('@lib/billing/identifiers', () => ({
   resolveIdentifierForFilter: jest.fn(),
-  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 
 const repository = require('@repositories/subscriptions-workspace/subscriptions-workspace.repository');
 const identifiers = require('@lib/billing/identifiers');
@@ -17,8 +16,7 @@ describe('subscriptions-workspace.service', () => {
       past_due_invoices: 2,
       denied_modules: 1,
       expiring_licenses: 1,
-      approaching_limits: 2,
-    });
+      approaching_limits: 2});
     repository.findLookups.mockResolvedValue({
       tenants: [{ id: 'tenant-uuid', human_friendly_id: 'TEN0001', name: 'Acme' }],
       plans: [{ id: 'plan-uuid', human_friendly_id: 'PLAN0001', name: 'Pro', tier_code: 'PRO' }],
@@ -32,10 +30,7 @@ describe('subscriptions-workspace.service', () => {
           billing_status: 'PENDING',
           issued_at: '2026-03-01T00:00:00.000Z',
           total_amount: 120,
-          currency: 'USD',
-        },
-      ],
-    });
+          currency: 'USD'}]});
     repository.findOverview.mockResolvedValue({
       current_subscription: {
         id: 'subscription-uuid',
@@ -49,15 +44,13 @@ describe('subscriptions-workspace.service', () => {
           name: 'Pro',
           tier_code: 'PRO',
           billing_cycle: 'MONTHLY',
-          price: 49,
-        },
+          price: 49},
         status: 'ACTIVE',
         change_status: 'PENDING',
         users_used: 12,
         facilities_used: 2,
         storage_used_mb: 600,
-        modules_used: 4,
-      },
+        modules_used: 4},
       next_invoice: {
         id: 'subscription-invoice-uuid',
         human_friendly_id: 'SUBINV0001',
@@ -68,8 +61,7 @@ describe('subscriptions-workspace.service', () => {
           tenant_id: 'tenant-uuid',
           tenant: { id: 'tenant-uuid', human_friendly_id: 'TEN0001', name: 'Acme' },
           plan_id: 'plan-uuid',
-          plan: { id: 'plan-uuid', human_friendly_id: 'PLAN0001', name: 'Pro' },
-        },
+          plan: { id: 'plan-uuid', human_friendly_id: 'PLAN0001', name: 'Pro' }},
         invoice_id: 'invoice-uuid',
         invoice: {
           id: 'invoice-uuid',
@@ -78,9 +70,7 @@ describe('subscriptions-workspace.service', () => {
           billing_status: 'PENDING',
           total_amount: 120,
           currency: 'USD',
-          issued_at: '2026-03-01T00:00:00.000Z',
-        },
-      },
+          issued_at: '2026-03-01T00:00:00.000Z'}},
       licenses: [
         {
           id: 'license-uuid',
@@ -90,9 +80,7 @@ describe('subscriptions-workspace.service', () => {
           license_type: 'PER_USER',
           status: 'ACTIVE',
           plan_tier_code: 'PRO',
-          expires_at: '2026-04-01T00:00:00.000Z',
-        },
-      ],
+          expires_at: '2026-04-01T00:00:00.000Z'}],
       denied_modules_count: 1,
       tenant_cohorts: {
         active: {
@@ -108,14 +96,9 @@ describe('subscriptions-workspace.service', () => {
               plan_label: 'Pro',
               plan_code: 'PRO',
               start_date: '2026-01-01T00:00:00.000Z',
-              end_date: '2026-12-31T00:00:00.000Z',
-            },
-          ],
-        },
+              end_date: '2026-12-31T00:00:00.000Z'}]},
         not_subscribed: { count: 0, accounts: [] },
-        closed: { count: 0, accounts: [] },
-      },
-    });
+        closed: { count: 0, accounts: [] }}});
     repository.findItems.mockResolvedValue({
       items: [
         {
@@ -125,11 +108,8 @@ describe('subscriptions-workspace.service', () => {
           tenant: { id: 'tenant-uuid', human_friendly_id: 'TEN0001', name: 'Acme' },
           plan_id: 'plan-uuid',
           plan: { id: 'plan-uuid', human_friendly_id: 'PLAN0001', name: 'Pro' },
-          status: 'ACTIVE',
-        },
-      ],
-      total: 1,
-    });
+          status: 'ACTIVE'}],
+      total: 1});
     repository.findTimeline.mockResolvedValue({
       subscriptions: [
         {
@@ -140,17 +120,13 @@ describe('subscriptions-workspace.service', () => {
           plan_id: 'plan-uuid',
           plan: { id: 'plan-uuid', human_friendly_id: 'PLAN0001', name: 'Pro' },
           status: 'ACTIVE',
-          updated_at: '2026-03-02T00:00:00.000Z',
-        },
-      ],
+          updated_at: '2026-03-02T00:00:00.000Z'}],
       moduleSubscriptions: [],
       invoices: [],
-      licenses: [],
-    });
+      licenses: []});
     repository.resolveLegacyRecord.mockResolvedValue({
       id: 'subscription-uuid',
-      human_friendly_id: 'SUB0001',
-    });
+      human_friendly_id: 'SUB0001'});
     identifiers.resolveIdentifierForFilter.mockResolvedValue(undefined);
   });
 
@@ -174,47 +150,39 @@ describe('subscriptions-workspace.service', () => {
 
     expect(result.summary).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'active_subscriptions', value: 4 }),
-      ])
+        expect.objectContaining({ id: 'active_subscriptions', value: 4 })])
     );
     expect(result.items).toEqual([
       expect.objectContaining({
         id: 'SUB0001',
         display_id: 'SUB0001',
-        tenant_label: 'Acme',
-      }),
-    ]);
+        tenant_label: 'Acme'})]);
     expect(result.pagination).toEqual(
       expect.objectContaining({
         page: 1,
         limit: 20,
         total: 1,
-        totalPages: 1,
-      })
+        totalPages: 1})
     );
     expect(result.overview.current_subscription).toEqual(
       expect.objectContaining({
         id: 'SUB0001',
         plan_label: 'Pro',
-        tenant_label: 'Acme',
-      })
+        tenant_label: 'Acme'})
     );
     expect(result.overview.tenant_cohorts.active).toEqual(
       expect.objectContaining({
-        count: 1,
-      })
+        count: 1})
     );
     expect(result.summary).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'active_plan_tenants', value: 1 }),
         expect.objectContaining({ id: 'not_subscribed_tenants', value: 0 }),
-        expect.objectContaining({ id: 'closed_subscription_tenants', value: 0 }),
-      ])
+        expect.objectContaining({ id: 'closed_subscription_tenants', value: 0 })])
     );
     expect(result.queue_summaries).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ queue: 'PAST_DUE' }),
-      ])
+        expect.objectContaining({ queue: 'PAST_DUE' })])
     );
   });
 
@@ -235,8 +203,7 @@ describe('subscriptions-workspace.service', () => {
         panel: 'operations',
         resource: 'subscriptions',
         id: 'SUB0001',
-        action: 'view',
-      })
+        action: 'view'})
     );
   });
 
@@ -246,8 +213,7 @@ describe('subscriptions-workspace.service', () => {
         panel: 'billing',
         resource: 'subscription-invoices',
         datePreset: 'next_30_days',
-        queue: 'PAST_DUE',
-      },
+        queue: 'PAST_DUE'},
       1,
       20,
       'issued_at',
@@ -264,10 +230,7 @@ describe('subscriptions-workspace.service', () => {
           date_window: expect.objectContaining({
             field: 'invoice.issued_at',
             from: expect.any(Date),
-            to: expect.any(Date),
-          }),
-        }),
-      })
+            to: expect.any(Date)})})})
     );
   });
 
@@ -276,8 +239,7 @@ describe('subscriptions-workspace.service', () => {
       {
         panel: 'operations',
         resource: 'subscriptions',
-        queue: 'PENDING_CHANGES',
-      },
+        queue: 'PENDING_CHANGES'},
       1,
       20,
       'change_status',
@@ -289,9 +251,7 @@ describe('subscriptions-workspace.service', () => {
       expect.objectContaining({
         resource: 'subscriptions',
         filters: expect.objectContaining({
-          queue: 'PENDING_CHANGES',
-        }),
-      })
+          queue: 'PENDING_CHANGES'})})
     );
   });
 });

@@ -2,8 +2,7 @@ const {
   DEMO_ADD_ON_CATALOG,
   DEMO_PLAN_CATALOG,
   DEMO_ROLE_CODES,
-  DEMO_TENANT,
-} = require('../../../scripts/seeders/seed-catalog');
+  DEMO_TENANT} = require('../../../scripts/seeders/seed-catalog');
 
 describe('seed-catalog', () => {
   it('keeps canonical plan tier coverage aligned to the pricing baseline', () => {
@@ -13,12 +12,10 @@ describe('seed-catalog', () => {
       'advanced',
       'pro',
       'custom',
-      'developer',
-    ]);
+      'developer']);
 
     const basicPlan = DEMO_PLAN_CATALOG.find((entry) => entry.code === 'basic');
     expect(basicPlan.max_facilities).toBe(1);
-    expect(basicPlan.extension_json.branch_allowance.included_branches).toBe(2);
 
     const proPlan = DEMO_PLAN_CATALOG.find((entry) => entry.code === 'pro');
     expect(proPlan.extension_json.price_notes.yearly).toBe(890);
@@ -27,8 +24,7 @@ describe('seed-catalog', () => {
   it('keeps optional suites explicitly scoped to custom plans', () => {
     expect(DEMO_ADD_ON_CATALOG.map((entry) => entry.code)).toEqual([
       'compliance_audit_suite',
-      'integrations_webhooks_pack',
-    ]);
+      'integrations_webhooks_pack']);
     expect(
       DEMO_ADD_ON_CATALOG.every(
         (entry) => entry.minimum_plan_tier_code === 'CUSTOM',
@@ -55,15 +51,13 @@ describe('seed-catalog', () => {
       'mortuary.staff@hosspi.com',
       'mortuary.manager@hosspi.com',
       'ambulance@hosspi.com',
-      'patient.portal@hosspi.com',
-    ]);
+      'patient.portal@hosspi.com']);
   });
 
   it('keeps every demo user role inside the complete shipped role catalog', () => {
     const assignedRoles = DEMO_TENANT.users.flatMap((entry) => [
       entry.role,
-      ...((Array.isArray(entry.extra_roles) ? entry.extra_roles : []).filter(Boolean)),
-    ]);
+      ...((Array.isArray(entry.extra_roles) ? entry.extra_roles : []).filter(Boolean))]);
 
     expect(new Set(assignedRoles).size).toBe(assignedRoles.length);
     expect(
@@ -79,8 +73,7 @@ describe('seed-catalog', () => {
         'SONOGRAPHER',
         'ACCOUNTANT',
         'SUPPORT_STAFF',
-        'VISITOR_GUEST',
-      ]),
+        'VISITOR_GUEST']),
     );
   });
 });

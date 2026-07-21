@@ -158,5 +158,4 @@ module.exports = {
   createUnit,
   updateUnit,
   deleteUnit,
-  restoreUnit,
-};
+  restoreUnit};

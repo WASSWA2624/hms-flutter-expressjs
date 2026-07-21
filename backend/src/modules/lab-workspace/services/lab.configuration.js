@@ -69,8 +69,7 @@ const buildLabReferenceRangeRowSummary = (entry = {}) => {
     toText(entry.method) ? `Method ${toText(entry.method)}` : '',
     toText(entry.gender),
     ageSummary,
-    textSummary || normalSummary,
-  ].filter(Boolean);
+    textSummary || normalSummary].filter(Boolean);
   return fragments.join(' | ');
 };
 
@@ -125,8 +124,7 @@ const buildAppliedReferenceRangeSnapshot = (range = {}) => {
     effective_to: toIsoDateOrNull(range.effective_to),
     version: Number.isFinite(Number(range.version)) ? Number(range.version) : 1,
     summary,
-    source: 'APPLIED_RULE',
-  };
+    source: 'APPLIED_RULE'};
 };
 
 const normalizeLabReferenceRanges = (value = []) => {
@@ -153,8 +151,7 @@ const normalizeLabReferenceRanges = (value = []) => {
         effective_from: toIsoDateOrNull(entry.effective_from),
         effective_to: toIsoDateOrNull(entry.effective_to),
         version: Number.isFinite(Number(entry.version)) ? Number(entry.version) : 1,
-        sort_order: index,
-      };
+        sort_order: index};
     })
     .filter((entry) => entry);
 };
@@ -173,8 +170,7 @@ const normalizeLabUnitOptions = (value = []) => {
         ucum_code: toOptionalText(entry.ucum_code),
         is_default:
           typeof entry.is_default === 'boolean' ? entry.is_default : index === 0,
-        sort_order: index,
-      };
+        sort_order: index};
     })
     .filter((entry) => entry);
 
@@ -223,8 +219,7 @@ const normalizeLabResultOptions = (value = []) => {
         result_flag: toOptionalText(entry.result_flag),
         is_positive:
           typeof entry.is_positive === 'boolean' ? entry.is_positive : false,
-        sort_order: index,
-      };
+        sort_order: index};
     })
     .filter((entry) => entry);
 };
@@ -239,8 +234,7 @@ const normalizeLabPanelItems = (value = []) => {
         is_required:
           typeof entry.is_required === 'boolean' ? entry.is_required : true,
         instructions: toOptionalText(entry.instructions),
-        sort_order: index,
-      };
+        sort_order: index};
     })
     .filter((entry) => entry && entry.lab_test_id);
 };
@@ -259,5 +253,4 @@ module.exports = {
   toDecimalOrNull,
   toIntegerOrNull,
   toIsoDateOrNull,
-  toOptionalText,
-};
+  toOptionalText};

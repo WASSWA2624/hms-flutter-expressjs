@@ -14,5 +14,4 @@ const getReferenceData = asyncHandler(async (req, res) => {
 
 module.exports = {
   getReferenceData,
-  getWorkspace,
-};
+  getWorkspace};

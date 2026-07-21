@@ -10,8 +10,7 @@ const {
   publishNurseRosterSchema,
   generateNurseRosterSchema,
   nurseRosterIdParamsSchema,
-  listNurseRostersQuerySchema,
-} = require('@validations/nurse-roster/nurse-roster.schema');
+  listNurseRostersQuerySchema} = require('@validations/nurse-roster/nurse-roster.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

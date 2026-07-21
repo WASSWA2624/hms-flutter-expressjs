@@ -16,47 +16,37 @@ const {
 } = require('@lib/realtime/entity-envelope');
 const {
   createSubscriptionPublicId,
-  PUBLIC_ID_PREFIXES,
-} = require('@lib/subscriptions/constants');
+  PUBLIC_ID_PREFIXES} = require('@lib/subscriptions/constants');
 const {
   serializeSubscription,
   serializeSubscriptionFitCheck,
   serializeSubscriptionProrationPreview,
   serializeSubscriptionUpgradeRecommendation,
-  serializeSubscriptionUsageSummary,
-} = require('@lib/subscriptions/serializers');
+  serializeSubscriptionUsageSummary} = require('@lib/subscriptions/serializers');
 const subscriptionPlanRepository = require('@repositories/subscription-plan/subscription-plan.repository');
 const {
-  syncSubscriptionModuleEntitlements,
-} = require('@lib/subscriptions/sync-subscription-module-entitlements');
+  syncSubscriptionModuleEntitlements} = require('@lib/subscriptions/sync-subscription-module-entitlements');
 const {
-  clearModuleEntitlementCaches,
-} = require('@middlewares/module-entitlement.middleware');
+  clearModuleEntitlementCaches} = require('@middlewares/module-entitlement.middleware');
 const {
   PLAN_TIER_ORDER,
   evaluatePlanSupport,
-  normalizeTierCode,
-} = require('@lib/subscriptions/policies');
+  normalizeTierCode} = require('@lib/subscriptions/policies');
 const {
   resolveEntityId,
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/billing/identifiers');
+  resolveIdentifierForPayload} = require('@lib/billing/identifiers');
 const {
   canAccessTenant,
   resolveUserTenantScope,
-  text,
-} = require('@lib/subscriptions/access');
+  text} = require('@lib/subscriptions/access');
 const SUBSCRIPTION_INCLUDE = Object.freeze({
   plan: true,
   pending_plan: true,
   module_subscriptions: {
     where: {
-      deleted_at: null,
-    },
-  },
-  tenant: true,
-});
+      deleted_at: null}},
+  tenant: true});
 
 const SUBSCRIPTION_REALTIME_RECIPIENT_ROLES = Object.freeze([
   ROLES.TENANT_ADMIN,
@@ -108,9 +98,7 @@ const emptyList = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const toNumber = (value) => {
   if (value === null || value === undefined) return null;
@@ -158,9 +146,7 @@ const resolveSubscriptionId = async (identifier, scope = {}) =>
     where: scope.is_elevated
       ? {}
       : {
-          tenant_id: scope.tenant_id,
-        },
-  });
+          tenant_id: scope.tenant_id}});
 
 const resolveSubscriptionPlanId = async (
   identifier,
@@ -176,9 +162,7 @@ const resolveSubscriptionPlanId = async (
         ? { OR: [{ tenant_id: null }, { tenant_id: tenantId }] }
         : {}
       : {
-          OR: [{ tenant_id: null }, { tenant_id: scope.tenant_id }],
-        },
-  });
+          OR: [{ tenant_id: null }, { tenant_id: scope.tenant_id }]}});
 
 const loadSubscriptionRecord = async (identifier, user = {}) => {
   const scope = requireTenantScope(user);
@@ -217,8 +201,7 @@ const listSubscriptions = async (
   if (filters.tenant_id) {
     const requestedTenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
-      model: 'tenant',
-    });
+      model: 'tenant'});
 
     if (requestedTenantId === null) {
       return emptyList(page, limit);
@@ -243,8 +226,7 @@ const listSubscriptions = async (
       model: 'subscription_plan',
       where: scope.is_elevated
         ? {}
-        : { OR: [{ tenant_id: null }, { tenant_id: scope.tenant_id }] },
-    });
+        : { OR: [{ tenant_id: null }, { tenant_id: scope.tenant_id }] }});
 
     if (planId === null) {
       return emptyList(page, limit);
@@ -265,14 +247,12 @@ const listSubscriptions = async (
       { tenant: { name: { contains: filters.search, mode: 'insensitive' } } },
       { tenant: { code: { contains: filters.search, mode: 'insensitive' } } },
       { plan: { name: { contains: filters.search, mode: 'insensitive' } } },
-      { plan: { code: { contains: filters.search, mode: 'insensitive' } } },
-    ];
+      { plan: { code: { contains: filters.search, mode: 'insensitive' } } }];
   }
 
   const [subscriptions, total] = await Promise.all([
     subscriptionRepository.findMany(where, skip, limit, orderBy, SUBSCRIPTION_INCLUDE),
-    subscriptionRepository.count(where),
-  ]);
+    subscriptionRepository.count(where)]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -284,9 +264,7 @@ const listSubscriptions = async (
       total,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-    },
-  };
+      hasPreviousPage: page > 1}};
 };
 
 const resolveSubscriptionPayload = async (
@@ -303,16 +281,14 @@ const resolveSubscriptionPayload = async (
       : await resolveIdentifierForPayload({
           value: data.tenant_id,
           model: 'tenant',
-          field: 'tenant_id',
-        });
+          field: 'tenant_id'});
 
   if (!scope.is_elevated && tenantId && tenantId !== scope.tenant_id) {
     throw new HttpError('errors.auth.insufficient_permissions', 403);
   }
 
   const payload = {
-    ...data,
-  };
+    ...data};
 
   if (tenantId !== undefined) {
     payload.tenant_id = tenantId;
@@ -336,8 +312,7 @@ const resolveSubscriptionPayload = async (
           ? { OR: [{ tenant_id: null }, { tenant_id: tenantId }] }
           : {}
         : { OR: [{ tenant_id: null }, { tenant_id: scope.tenant_id }] },
-      nullable: true,
-    });
+      nullable: true});
   }
 
   return payload;
@@ -352,8 +327,7 @@ const createSubscription = async (data, user, ip) => {
       data.human_friendly_id
       || createSubscriptionPublicId(PUBLIC_ID_PREFIXES.subscription),
     status: data.status || 'ACTIVE',
-    start_date: data.start_date || new Date().toISOString(),
-  }, user);
+    start_date: data.start_date || new Date().toISOString()}, user);
 
   const created = await subscriptionRepository.create(subscriptionData);
   const subscription = await loadSubscriptionRecord(created.id, user);
@@ -368,8 +342,7 @@ const createSubscription = async (data, user, ip) => {
     entity: 'subscription',
     entity_id: subscription.id,
     diff: { after: subscription },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   await publishSubscriptionRealtimeEvent(
     SUBSCRIPTION_EVENTS.SUBSCRIPTION_CREATED,
@@ -404,8 +377,7 @@ const updateSubscription = async (id, data, user, ip) => {
     entity: 'subscription',
     entity_id: subscription.id,
     diff: { before, after: subscription },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   await publishSubscriptionRealtimeEvent(
     SUBSCRIPTION_EVENTS.SUBSCRIPTION_UPDATED,
@@ -428,8 +400,7 @@ const cancelSubscription = async (id, user, ip) => {
 
   await subscriptionRepository.update(before.id, {
     status: 'CANCELLED',
-    end_date: new Date().toISOString(),
-  });
+    end_date: new Date().toISOString()});
   const subscription = await loadSubscriptionRecord(before.id, user);
 
   await createAuditLog({
@@ -442,11 +413,8 @@ const cancelSubscription = async (id, user, ip) => {
       before,
       after: subscription,
       metadata: {
-        event: 'cancel',
-      },
-    },
-    ip_address: ip,
-  }).catch(() => {});
+        event: 'cancel'}},
+    ip_address: ip}).catch(() => {});
 
   await publishSubscriptionRealtimeEvent(
     SUBSCRIPTION_EVENTS.SUBSCRIPTION_DEACTIVATED,
@@ -467,8 +435,7 @@ const reactivateSubscription = async (id, user, ip) => {
 
   await subscriptionRepository.update(before.id, {
     status: 'ACTIVE',
-    end_date: null,
-  });
+    end_date: null});
   const subscription = await loadSubscriptionRecord(before.id, user);
 
   await createAuditLog({
@@ -481,11 +448,8 @@ const reactivateSubscription = async (id, user, ip) => {
       before,
       after: subscription,
       metadata: {
-        event: 'reactivate',
-      },
-    },
-    ip_address: ip,
-  }).catch(() => {});
+        event: 'reactivate'}},
+    ip_address: ip}).catch(() => {});
 
   await publishSubscriptionRealtimeEvent(
     SUBSCRIPTION_EVENTS.SUBSCRIPTION_ACTIVATED,
@@ -508,8 +472,7 @@ const deleteSubscription = async (id, user, ip) => {
     entity: 'subscription',
     entity_id: subscription.id,
     diff: { before, after: subscription },
-    ip_address: ip,
-  }).catch(() => {});
+    ip_address: ip}).catch(() => {});
 
   await publishSubscriptionRealtimeEvent(
     SUBSCRIPTION_EVENTS.SUBSCRIPTION_DELETED,
@@ -528,12 +491,10 @@ const upgradeSubscription = async (id, data, user, ip) => {
     value: data.target_plan_id,
     model: 'subscription_plan',
     field: 'target_plan_id',
-    where: getAccessiblePlanWhere(before.tenant_id, scope),
-  });
+    where: getAccessiblePlanWhere(before.tenant_id, scope)});
   const targetPlanRecord = await resolveEntityId({
     model: 'subscription_plan',
-    identifier: targetPlanId,
-  });
+    identifier: targetPlanId});
   const targetPlan = targetPlanRecord
     ? await subscriptionPlanRepository.findById(targetPlanRecord)
     : null;
@@ -559,8 +520,7 @@ const upgradeSubscription = async (id, data, user, ip) => {
     change_requested_at: new Date(),
     change_effective_at: data.effective_at ? new Date(data.effective_at) : null,
     proration_amount: targetPrice - currentPrice,
-    proration_currency_code: 'USD',
-  });
+    proration_currency_code: 'USD'});
   const subscription = await loadSubscriptionRecord(before.id, user);
 
   await createAuditLog({
@@ -576,11 +536,8 @@ const upgradeSubscription = async (id, data, user, ip) => {
         event: 'upgrade_request',
         target_plan_id: targetPlan.id,
         target_plan_human_friendly_id: targetPlan.human_friendly_id || null,
-        reason: data.reason || null,
-      },
-    },
-    ip_address: ip,
-  }).catch(() => {});
+        reason: data.reason || null}},
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscription(subscription);
 };
@@ -592,12 +549,10 @@ const downgradeSubscription = async (id, data, user, ip) => {
     value: data.target_plan_id,
     model: 'subscription_plan',
     field: 'target_plan_id',
-    where: getAccessiblePlanWhere(before.tenant_id, scope),
-  });
+    where: getAccessiblePlanWhere(before.tenant_id, scope)});
   const targetPlanRecord = await resolveEntityId({
     model: 'subscription_plan',
-    identifier: targetPlanId,
-  });
+    identifier: targetPlanId});
   const targetPlan = targetPlanRecord
     ? await subscriptionPlanRepository.findById(targetPlanRecord)
     : null;
@@ -623,8 +578,7 @@ const downgradeSubscription = async (id, data, user, ip) => {
     change_requested_at: new Date(),
     change_effective_at: data.effective_at ? new Date(data.effective_at) : null,
     proration_amount: targetPrice - currentPrice,
-    proration_currency_code: 'USD',
-  });
+    proration_currency_code: 'USD'});
   const subscription = await loadSubscriptionRecord(before.id, user);
 
   await createAuditLog({
@@ -640,11 +594,8 @@ const downgradeSubscription = async (id, data, user, ip) => {
         event: 'downgrade_request',
         target_plan_id: targetPlan.id,
         target_plan_human_friendly_id: targetPlan.human_friendly_id || null,
-        reason: data.reason || null,
-      },
-    },
-    ip_address: ip,
-  }).catch(() => {});
+        reason: data.reason || null}},
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscription(subscription);
 };
@@ -661,8 +612,7 @@ const renewSubscription = async (id, data = {}, user, ip) => {
     end_date: renewedEndDate,
     change_status: 'NONE',
     change_requested_at: null,
-    change_effective_at: null,
-  });
+    change_effective_at: null});
   const subscription = await loadSubscriptionRecord(before.id, user);
 
   await createAuditLog({
@@ -676,11 +626,8 @@ const renewSubscription = async (id, data = {}, user, ip) => {
       after: subscription,
       metadata: {
         event: 'renew',
-        reason: data.reason || null,
-      },
-    },
-    ip_address: ip,
-  }).catch(() => {});
+        reason: data.reason || null}},
+    ip_address: ip}).catch(() => {});
 
   return serializeSubscription(subscription);
 };
@@ -696,8 +643,7 @@ const getSubscriptionProrationPreview = async (id, targetPlanId, user = {}) => {
       value: targetPlanIdentifier,
       model: 'subscription_plan',
       field: 'target_plan_id',
-      where: getAccessiblePlanWhere(subscription.tenant_id, scope),
-    });
+      where: getAccessiblePlanWhere(subscription.tenant_id, scope)});
     targetPlan = await subscriptionPlanRepository.findById(resolvedTargetPlanId);
   }
 
@@ -709,8 +655,7 @@ const getSubscriptionProrationPreview = async (id, targetPlanId, user = {}) => {
       proration_amount: null,
       currency_code: subscription.proration_currency_code || 'USD',
       cycle_days: getCycleDays(subscription.plan?.billing_cycle || 'MONTHLY'),
-      remaining_days: null,
-    });
+      remaining_days: null});
   }
 
   const cycleDays = getCycleDays(subscription.plan?.billing_cycle || 'MONTHLY');
@@ -737,8 +682,7 @@ const getSubscriptionProrationPreview = async (id, targetPlanId, user = {}) => {
     cycle_days: cycleDays,
     remaining_days: remainingDays,
     proration_amount: Math.round(prorationAmount * 100) / 100,
-    currency_code: subscription.proration_currency_code || 'USD',
-  });
+    currency_code: subscription.proration_currency_code || 'USD'});
 };
 
 const getSubscriptionUsageSummary = async (id, user = {}) => {
@@ -753,15 +697,13 @@ const getSubscriptionUsageSummary = async (id, user = {}) => {
     modules_used:
       subscription.modules_used
       || subscription.module_subscriptions?.length
-      || 0,
-  };
+      || 0};
 
   const limits = {
     max_users: plan.max_users,
     max_facilities: plan.max_facilities,
     max_storage_mb: plan.max_storage_mb,
-    max_modules: plan.max_modules,
-  };
+    max_modules: plan.max_modules};
 
   return serializeSubscriptionUsageSummary({
     subscription_id: serializedSubscription.id,
@@ -773,9 +715,7 @@ const getSubscriptionUsageSummary = async (id, user = {}) => {
       users: computePercent(usage.users_used, limits.max_users),
       facilities: computePercent(usage.facilities_used, limits.max_facilities),
       storage_mb: computePercent(usage.storage_used_mb, limits.max_storage_mb),
-      modules: computePercent(usage.modules_used, limits.max_modules),
-    },
-  });
+      modules: computePercent(usage.modules_used, limits.max_modules)}});
 };
 
 const getSubscriptionFitCheck = async (id, user = {}) => {
@@ -804,8 +744,7 @@ const getSubscriptionFitCheck = async (id, user = {}) => {
     warning_percent: warningPercent,
     utilization_percent: usageSummary.utilization_percent,
     exceeded: computedStatus === 'EXCEEDED',
-    approaching_limit: computedStatus === 'APPROACHING_LIMIT',
-  });
+    approaching_limit: computedStatus === 'APPROACHING_LIMIT'});
 };
 
 const getSubscriptionUpgradeRecommendation = async (id, user = {}) => {
@@ -816,8 +755,7 @@ const getSubscriptionUpgradeRecommendation = async (id, user = {}) => {
   const serializedSubscription = serializeSubscription(subscription);
   const currentPlanSupport = evaluatePlanSupport({
     planRecord: subscription.plan || {},
-    subscriptionRecord: subscription,
-  });
+    subscriptionRecord: subscription});
   const hasModuleFailure = currentPlanSupport.failures.some(
     (entry) => entry.type === 'module'
   );
@@ -833,8 +771,7 @@ const getSubscriptionUpgradeRecommendation = async (id, user = {}) => {
       current_tier: currentTier,
       recommended_tier: null,
       recommendation: 'keep_current_plan',
-      reason: 'Current usage is within healthy thresholds.',
-    });
+      reason: 'Current usage is within healthy thresholds.'});
   }
 
   const plans = await subscriptionPlanRepository.findMany(
@@ -872,8 +809,7 @@ const getSubscriptionUpgradeRecommendation = async (id, user = {}) => {
     if (!qualifiesAsUpgrade) return false;
     return evaluatePlanSupport({
       planRecord: plan,
-      subscriptionRecord: subscription,
-    }).eligible;
+      subscriptionRecord: subscription}).eligible;
   });
 
   if (compatiblePlan) {
@@ -898,8 +834,7 @@ const getSubscriptionUpgradeRecommendation = async (id, user = {}) => {
         || currentFailure?.type === 'module'
           ? 'upgrade_required'
           : 'upgrade_recommended',
-      reason,
-    });
+      reason});
   }
 
   const customPlan = candidatePlans.find(
@@ -914,8 +849,7 @@ const getSubscriptionUpgradeRecommendation = async (id, user = {}) => {
       recommended_tier: 'CUSTOM',
       recommendation: 'upgrade_required',
       reason:
-        'A custom subscription configuration is required to cover the active module set and current usage.',
-    });
+        'A custom subscription configuration is required to cover the active module set and current usage.'});
   }
 
   return serializeSubscriptionUpgradeRecommendation({
@@ -934,8 +868,7 @@ const getSubscriptionUpgradeRecommendation = async (id, user = {}) => {
         ? 'Active modules require a broader entitlement configuration than the current plan provides.'
         : fitCheck.computed_status === 'EXCEEDED'
           ? 'Usage exceeded current plan limits.'
-          : 'Usage is approaching configured warning thresholds.',
-  });
+          : 'Usage is approaching configured warning thresholds.'});
 };
 
 module.exports = {
@@ -952,5 +885,4 @@ module.exports = {
   getSubscriptionProrationPreview,
   getSubscriptionUsageSummary,
   getSubscriptionFitCheck,
-  getSubscriptionUpgradeRecommendation,
-};
+  getSubscriptionUpgradeRecommendation};

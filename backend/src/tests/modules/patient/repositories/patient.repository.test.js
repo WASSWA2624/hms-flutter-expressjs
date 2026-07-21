@@ -42,7 +42,7 @@ describe('Patient Repository', () => {
           id: '550e8400-e29b-41d4-a716-446655440001',
           deleted_at: null
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -73,7 +73,7 @@ describe('Patient Repository', () => {
           tenant_id: '550e8400-e29b-41d4-a716-446655440010',
           facility_id: '550e8400-e29b-41d4-a716-446655440011'
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -98,7 +98,7 @@ describe('Patient Repository', () => {
           tenant_id: '550e8400-e29b-41d4-a716-446655440010',
           facility_id: '550e8400-e29b-41d4-a716-446655440011'
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -127,7 +127,7 @@ describe('Patient Repository', () => {
             human_friendly_id: 'FAC0000001'
           }
         },
-        include: {}
+        include: undefined
       });
     });
 

@@ -1,8 +1,7 @@
 const {
   evaluatePolicies,
   matchConditions,
-  matchValue,
-} = require('@lib/authorization/policy-evaluator');
+  matchValue} = require('@lib/authorization/policy-evaluator');
 
 describe('policy-evaluator', () => {
   it('supports includes, not, and any_of matching', () => {
@@ -14,13 +13,11 @@ describe('policy-evaluator', () => {
         {
           role: { any_of: ['DOCTOR', 'NURSE'] },
           ward_ids: { includes: ['WARD-2'] },
-          handover_pending: { not: true },
-        },
+          handover_pending: { not: true }},
         {
           role: 'DOCTOR',
           ward_ids: ['WARD-1', 'WARD-2'],
-          handover_pending: false,
-        }
+          handover_pending: false}
       )
     ).toBe(true);
   });
@@ -32,17 +29,13 @@ describe('policy-evaluator', () => {
           id: 'allow-1',
           effect: 'ALLOW',
           priority: 50,
-          subject_conditions_json: { role: 'DOCTOR' },
-        },
+          subject_conditions_json: { role: 'DOCTOR' }},
         {
           id: 'deny-1',
           effect: 'DENY',
           priority: 50,
-          subject_conditions_json: { role: 'DOCTOR' },
-        },
-      ],
-      subject: { role: 'DOCTOR' },
-    });
+          subject_conditions_json: { role: 'DOCTOR' }}],
+      subject: { role: 'DOCTOR' }});
 
     expect(result.allowed).toBe(false);
     expect(result.winner).toEqual(expect.objectContaining({ id: 'deny-1', effect: 'DENY' }));
@@ -57,12 +50,9 @@ describe('policy-evaluator', () => {
           effect: 'ALLOW',
           priority: 10,
           subject_conditions_json: { role: 'NURSE' },
-          environment_conditions_json: { shift_type: 'NIGHT' },
-        },
-      ],
+          environment_conditions_json: { shift_type: 'NIGHT' }}],
       subject: { role: 'DOCTOR' },
-      environment: { shift_type: 'DAY' },
-    });
+      environment: { shift_type: 'DAY' }});
 
     expect(result.allowed).toBeNull();
     expect(result.winner).toBeNull();

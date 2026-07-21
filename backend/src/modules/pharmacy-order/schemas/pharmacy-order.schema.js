@@ -20,8 +20,7 @@ const PHARMACY_ORDER_STATUS_VALUES = [
   'ORDERED',
   'DISPENSED',
   'PARTIALLY_DISPENSED',
-  'CANCELLED',
-];
+  'CANCELLED'];
 
 const MEDICATION_ROUTE_VALUES = [
   'ORAL',
@@ -37,8 +36,7 @@ const MEDICATION_ROUTE_VALUES = [
   'OTIC',
   'NASAL',
   'INTRADERMAL',
-  'OTHER',
-];
+  'OTHER'];
 
 const MEDICATION_FREQUENCY_VALUES = [
   'ONCE',
@@ -54,8 +52,7 @@ const MEDICATION_FREQUENCY_VALUES = [
   'WEEKLY',
   'PRN',
   'STAT',
-  'CUSTOM',
-];
+  'CUSTOM'];
 
 const quantityUnitSchema = z
   .string()
@@ -94,8 +91,7 @@ const pharmacyOrderItemSchema = z
     instructions: z.string().trim().max(5000).optional().nullable(),
     custom_prescription: z.string().trim().max(5000).optional().nullable(),
     frequency: z.enum(MEDICATION_FREQUENCY_VALUES).optional().nullable(),
-    route: z.enum(MEDICATION_ROUTE_VALUES).optional().nullable(),
-  })
+    route: z.enum(MEDICATION_ROUTE_VALUES).optional().nullable()})
   .superRefine((value, ctx) => {
     const hasStructuredDose =
       value.dose_amount !== undefined && value.dose_amount !== null;
@@ -108,8 +104,7 @@ const pharmacyOrderItemSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['dose_amount'],
-        message: 'errors.validation.required',
-      });
+        message: 'errors.validation.required'});
     }
 
     if (
@@ -120,8 +115,7 @@ const pharmacyOrderItemSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['duration_unit'],
-        message: 'errors.validation.required',
-      });
+        message: 'errors.validation.required'});
     }
 
   });
@@ -138,8 +132,7 @@ const createPharmacyOrderSchema = z.object({
   patient_id: uuidOrFriendlyIdentifierSchema,
   ordered_at: z.string().datetime().optional(),
   items: z.array(pharmacyOrderItemSchema).min(1),
-  billing: clinicalRequestBillingSchema.optional().nullable(),
-});
+  billing: clinicalRequestBillingSchema.optional().nullable()});
 
 /**
  * Update pharmacy order body validation
@@ -154,8 +147,7 @@ const updatePharmacyOrderSchema = z.object({
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: z.enum(PHARMACY_ORDER_STATUS_VALUES).optional(),
   ordered_at: z.string().datetime().optional(),
-  billing: clinicalRequestBillingSchema.optional().nullable(),
-});
+  billing: clinicalRequestBillingSchema.optional().nullable()});
 
 /**
  * Dispense pharmacy order body validation

@@ -7,8 +7,7 @@ const { createStorageService, sanitizeFilename } = require('@lib/storage');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolvePublicIdentifier,
-} = require('@lib/billing/identifiers');
+  resolvePublicIdentifier} = require('@lib/billing/identifiers');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 
 const GLOBAL_SCOPE_ROLES = new Set(['SUPER_ADMIN', 'APP_ADMIN', 'SYSTEM_ADMIN', 'PLATFORM_ADMIN']);
@@ -16,8 +15,7 @@ const GLOBAL_SCOPE_ROLES = new Set(['SUPER_ADMIN', 'APP_ADMIN', 'SYSTEM_ADMIN', 
 const hasGlobalScopeAccess = (user = {}) => {
   const roles = [
     ...(Array.isArray(user.roles) ? user.roles : []),
-    user.role,
-  ]
+    user.role]
     .map((role) => String(role || '').trim().toUpperCase())
     .filter(Boolean);
 
@@ -37,8 +35,7 @@ const ACCEPTED_DOCUMENT_MIME_TYPES = new Set([
   'application/pdf',
   'image/jpeg',
   'image/jpg',
-  'image/png',
-]);
+  'image/png']);
 const DOCUMENT_TYPE_OPTIONS = Object.freeze([
   'IDENTITY',
   'INSURANCE',
@@ -48,15 +45,13 @@ const DOCUMENT_TYPE_OPTIONS = Object.freeze([
   'PRESCRIPTION',
   'CONSENT',
   'DISCHARGE',
-  'OTHER',
-]);
+  'OTHER']);
 const CONSENT_TYPE_OPTIONS = Object.freeze([
   'TREATMENT',
   'DATA_SHARING',
   'RESEARCH',
   'BILLING',
-  'OTHER',
-]);
+  'OTHER']);
 const CONSENT_STATUS_OPTIONS = Object.freeze(['GRANTED', 'REVOKED', 'PENDING']);
 const APPOINTMENT_STATUS_OPTIONS = Object.freeze([
   'SCHEDULED',
@@ -64,8 +59,7 @@ const APPOINTMENT_STATUS_OPTIONS = Object.freeze([
   'IN_PROGRESS',
   'COMPLETED',
   'CANCELLED',
-  'NO_SHOW',
-]);
+  'NO_SHOW']);
 
 const normalizeText = (value) => String(value || '').trim();
 const normalizeLower = (value) => normalizeText(value).toLowerCase();
@@ -142,8 +136,7 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 const buildName = (entity = {}) =>
   `${normalizeText(entity?.first_name || entity?.profile?.first_name)} ${normalizeText(entity?.last_name || entity?.profile?.last_name)}`.trim();
@@ -161,8 +154,7 @@ const resolveScopeWhere = async (scope = {}) => {
 
   const tenantId = await resolveIdentifierForFilter({
     value: scope.tenant_id,
-    model: 'tenant',
-  });
+    model: 'tenant'});
   if (scope.tenant_id !== undefined && tenantId === null) {
     return { where: { id: '__none__' }, tenantId: null, facilityId: null };
   }
@@ -171,8 +163,7 @@ const resolveScopeWhere = async (scope = {}) => {
   const facilityId = await resolveIdentifierForFilter({
     value: scope.facility_id,
     model: 'facility',
-    where: tenantId ? { tenant_id: tenantId } : {},
-  });
+    where: tenantId ? { tenant_id: tenantId } : {}});
   if (scope.facility_id !== undefined && facilityId === null) {
     return { where: { id: '__none__' }, tenantId, facilityId: null };
   }
@@ -194,9 +185,7 @@ const basePatientInclude = {
       contact_type: true,
       value: true,
       is_primary: true,
-      updated_at: true,
-    },
-  },
+      updated_at: true}},
   identifiers: {
     where: { deleted_at: null },
     orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }],
@@ -207,9 +196,7 @@ const basePatientInclude = {
       identifier_type: true,
       identifier_value: true,
       is_primary: true,
-      updated_at: true,
-    },
-  },
+      updated_at: true}},
   guardians: {
     where: { deleted_at: null },
     orderBy: { updated_at: 'desc' },
@@ -220,20 +207,14 @@ const basePatientInclude = {
       name: true,
       relationship: true,
       phone: true,
-      updated_at: true,
-    },
-  },
-};
+      updated_at: true}}};
 
 const userDisplaySelect = {
   email: true,
   profile: {
     select: {
       first_name: true,
-      last_name: true,
-    },
-  },
-};
+      last_name: true}}};
 
 const resolvePatientRecord = async (patientIdentifier, scope = {}, include = {}) => {
   const { where } = await resolveScopeWhere(scope);
@@ -242,13 +223,10 @@ const resolvePatientRecord = async (patientIdentifier, scope = {}, include = {})
     identifier: patientIdentifier,
     where: {
       ...where,
-      deleted_at: null,
-    },
+      deleted_at: null},
     include: {
       ...basePatientInclude,
-      ...(include || {}),
-    },
-  });
+      ...(include || {})}});
 
   if (!patient) {
     throw new HttpError('errors.patient.not_found', 404);
@@ -263,8 +241,7 @@ const resolveDocumentRecord = async (documentIdentifier, patientId) => {
     identifier: documentIdentifier,
     where: {
       patient_id: patientId,
-      deleted_at: null,
-    },
+      deleted_at: null},
     select: {
       id: true,
       human_friendly_id: true,
@@ -275,9 +252,7 @@ const resolveDocumentRecord = async (documentIdentifier, patientId) => {
       file_name: true,
       content_type: true,
       created_at: true,
-      updated_at: true,
-    },
-  });
+      updated_at: true}});
 
   if (!record) {
     throw new HttpError('errors.patient_document.not_found', 404);
@@ -327,8 +302,7 @@ const serializePatientSummary = (patient) => {
             patient.tenant?.human_friendly_id,
             patient.tenant?.id
           ),
-          label: normalizeText(patient.tenant?.name) || null,
-        }
+          label: normalizeText(patient.tenant?.name) || null}
       : null,
     facility: patient?.facility
       ? {
@@ -336,8 +310,7 @@ const serializePatientSummary = (patient) => {
             patient.facility?.human_friendly_id,
             patient.facility?.id
           ),
-          label: normalizeText(patient.facility?.name) || null,
-        }
+          label: normalizeText(patient.facility?.name) || null}
       : null,
     primary_contact: primaryContact
       ? {
@@ -346,15 +319,12 @@ const serializePatientSummary = (patient) => {
             primaryContact?.id
           ),
           contact_type: primaryContact?.contact_type || null,
-          value: normalizeText(primaryContact?.value) || null,
-        }
+          value: normalizeText(primaryContact?.value) || null}
       : null,
     flags: {
-      merged: Boolean(extension?.merge?.merged_into_patient_id),
-    },
+      merged: Boolean(extension?.merge?.merged_into_patient_id)},
     created_at: patient?.created_at || null,
-    updated_at: patient?.updated_at || null,
-  };
+    updated_at: patient?.updated_at || null};
 };
 
 const serializeDocument = (record) => ({
@@ -363,8 +333,7 @@ const serializeDocument = (record) => ({
   file_name: normalizeText(record?.file_name) || null,
   content_type: normalizeText(record?.content_type) || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeConsent = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -373,8 +342,7 @@ const serializeConsent = (record) => ({
   granted_at: record?.granted_at || null,
   revoked_at: record?.revoked_at || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeAppointment = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -384,8 +352,7 @@ const serializeAppointment = (record) => ({
   reason: normalizeText(record?.reason) || null,
   provider_name: buildName(record?.provider) || normalizeText(record?.provider?.email) || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeVisitQueue = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -397,8 +364,7 @@ const serializeVisitQueue = (record) => ({
   ),
   provider_name: buildName(record?.provider) || normalizeText(record?.provider?.email) || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeEncounter = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -406,8 +372,7 @@ const serializeEncounter = (record) => ({
   status: record?.status || null,
   provider_name: buildName(record?.provider) || normalizeText(record?.provider?.email) || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeAdmission = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -415,8 +380,7 @@ const serializeAdmission = (record) => ({
   admitted_at: record?.admitted_at || null,
   discharged_at: record?.discharged_at || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const resolvePharmacyOrderPriority = (record) => {
   const items = Array.isArray(record?.items) ? record.items : [];
@@ -454,8 +418,7 @@ const serializePharmacyOrder = (record) => ({
   ordered_at: record?.ordered_at || null,
   dispensed_at: resolvePharmacyOrderDispensedAt(record),
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeFollowUp = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -465,8 +428,7 @@ const serializeFollowUp = (record) => ({
   completed_at: record?.completed_at || null,
   notes: normalizeText(record?.notes) || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeReferral = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -476,8 +438,7 @@ const serializeReferral = (record) => ({
   from_department: normalizeText(record?.from_department?.name) || null,
   to_department: normalizeText(record?.to_department?.name) || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializeInvoice = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -487,8 +448,7 @@ const serializeInvoice = (record) => ({
   currency: normalizeText(record?.currency) || null,
   issued_at: record?.issued_at || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializePayment = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -499,8 +459,7 @@ const serializePayment = (record) => ({
   paid_at: record?.paid_at || null,
   transaction_ref: normalizeText(record?.transaction_ref) || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const serializePhiAccessLog = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
@@ -509,16 +468,14 @@ const serializePhiAccessLog = (record) => ({
   reason: normalizeText(record?.reason) || null,
   user_name: buildName(record?.user) || normalizeText(record?.user?.email) || null,
   created_at: record?.created_at || null,
-  updated_at: record?.updated_at || null,
-});
+  updated_at: record?.updated_at || null});
 
 const buildTimelineItem = (resource, record, dateField, serializer) => ({
   id: `${resource}:${resolvePublicIdentifier(record?.human_friendly_id, record?.id) || crypto.randomUUID()}`,
   resource,
   occurred_at: record?.[dateField] || record?.updated_at || record?.created_at || null,
   created_at: record?.created_at || null,
-  summary: serializer(record),
-});
+  summary: serializer(record)});
 
 const listModelPage = async ({
   delegate,
@@ -527,8 +484,7 @@ const listModelPage = async ({
   limit = WORKSPACE_PAGE_LIMIT,
   orderBy = { updated_at: 'desc' },
   include,
-  serializer,
-}) => {
+  serializer}) => {
   const safePage = toInteger(page, 1);
   const safeLimit = toInteger(limit, WORKSPACE_PAGE_LIMIT);
   const skip = (safePage - 1) * safeLimit;
@@ -536,25 +492,19 @@ const listModelPage = async ({
     delegate.findMany({
       where: {
         deleted_at: null,
-        ...(where || {}),
-      },
+        ...(where || {})},
       skip,
       take: safeLimit,
       orderBy,
-      ...(include ? { include } : {}),
-    }),
+      ...(include ? { include } : {})}),
     delegate.count({
       where: {
         deleted_at: null,
-        ...(where || {}),
-      },
-    }),
-  ]);
+        ...(where || {})}})]);
 
   return {
     items: rows.map((row) => serializer(row)),
-    pagination: buildPagination(safePage, safeLimit, total),
-  };
+    pagination: buildPagination(safePage, safeLimit, total)};
 };
 
 const cloneOverviewFallback = (fallbackValue) => {
@@ -574,8 +524,7 @@ const runSafeOverviewSection = async (section, scope = {}, fallbackValue, operat
       section,
       tenant_id: normalizeText(scope?.tenant_id) || null,
       facility_id: normalizeText(scope?.facility_id) || null,
-      error: error?.message || 'Unknown error',
-    });
+      error: error?.message || 'Unknown error'});
     return cloneOverviewFallback(fallbackValue);
   }
 };
@@ -626,8 +575,7 @@ const computeDuplicateScore = (target, candidate) => {
     targetValues,
     candidateValues,
     weight,
-    reason,
-  }) => {
+    reason}) => {
     if (!targetValues.length || !candidateValues.length) return;
     const matchedValue = targetValues.find((value) => candidateValues.includes(value));
     const matched = Boolean(matchedValue);
@@ -640,8 +588,7 @@ const computeDuplicateScore = (target, candidate) => {
       input_value: matchedValue || targetValues[0],
       candidate_value: matchedValue || candidateValues[0],
       status: matched ? 'MATCH' : 'CONFLICT',
-      contribution: matched ? weight : 0,
-    });
+      contribution: matched ? weight : 0});
   };
 
   compareExactSet({
@@ -649,22 +596,19 @@ const computeDuplicateScore = (target, candidate) => {
     targetValues: duplicateIdentifierValues(target),
     candidateValues: duplicateIdentifierValues(candidate),
     weight: 100,
-    reason: 'IDENTIFIER_MATCH',
-  });
+    reason: 'IDENTIFIER_MATCH'});
   compareExactSet({
     field: 'PHONE',
     targetValues: duplicateContactValues(target, 'PHONE', normalizePhone),
     candidateValues: duplicateContactValues(candidate, 'PHONE', normalizePhone),
     weight: 45,
-    reason: 'PHONE_MATCH',
-  });
+    reason: 'PHONE_MATCH'});
   compareExactSet({
     field: 'EMAIL',
     targetValues: duplicateContactValues(target, 'EMAIL', normalizeEmail),
     candidateValues: duplicateContactValues(candidate, 'EMAIL', normalizeEmail),
     weight: 45,
-    reason: 'EMAIL_MATCH',
-  });
+    reason: 'EMAIL_MATCH'});
 
   const targetName = `${normalizeText(target?.first_name)} ${normalizeText(target?.last_name)}`.trim();
   const candidateName = `${normalizeText(candidate?.first_name)} ${normalizeText(candidate?.last_name)}`.trim();
@@ -684,8 +628,7 @@ const computeDuplicateScore = (target, candidate) => {
       candidate_value: candidateName,
       status: similarity === 1 ? 'MATCH' : similarity >= 0.7 ? 'SIMILAR' : 'CONFLICT',
       similarity_percent: Math.round(similarity * 100),
-      contribution,
-    });
+      contribution});
   }
 
   const targetDob = normalizeDateOnly(target?.date_of_birth);
@@ -703,8 +646,7 @@ const computeDuplicateScore = (target, candidate) => {
       input_value: targetDob,
       candidate_value: candidateDob,
       status: exactDob ? 'MATCH' : sameAge ? 'SIMILAR' : 'CONFLICT',
-      contribution,
-    });
+      contribution});
   }
 
   const targetGender = normalizeUpper(target?.gender);
@@ -720,8 +662,7 @@ const computeDuplicateScore = (target, candidate) => {
       input_value: targetGender,
       candidate_value: candidateGender,
       status: matched ? 'MATCH' : 'CONFLICT',
-      contribution: matched ? 5 : 0,
-    });
+      contribution: matched ? 5 : 0});
   }
 
   const score = Math.min(100, rawScore);
@@ -737,8 +678,7 @@ const computeDuplicateScore = (target, candidate) => {
           ? 'POSSIBLE'
           : score >= DUPLICATE_MIN_SCORE
             ? 'REVIEW'
-            : 'LOW',
-  };
+            : 'LOW'};
 };
 
 const buildDuplicateCandidateEntry = (target, candidate, duplicateState) => {
@@ -751,8 +691,7 @@ const buildDuplicateCandidateEntry = (target, candidate, duplicateState) => {
     field_comparisons: duplicateState.fieldComparisons,
     score_version: duplicateState.scoreVersion,
     primary_patient: serializePatientSummary(target),
-    secondary_patient: serializePatientSummary(candidate),
-  };
+    secondary_patient: serializePatientSummary(candidate)};
 };
 
 const findDuplicateCandidatesForTarget = async (target, scope = {}, explicitCandidateLimit = 20) => {
@@ -763,18 +702,15 @@ const findDuplicateCandidatesForTarget = async (target, scope = {}, explicitCand
       ...where,
       deleted_at: null,
       id: { not: target.id },
-      is_active: true,
-    },
+      is_active: true},
     include: basePatientInclude,
     take: Math.max(explicitCandidateLimit * 3, 60),
-    orderBy: { updated_at: 'desc' },
-  });
+    orderBy: { updated_at: 'desc' }});
 
   return candidates
     .map((candidate) => ({
       candidate,
-      duplicateState: computeDuplicateScore(target, candidate),
-    }))
+      duplicateState: computeDuplicateScore(target, candidate)}))
     .filter(({ candidate, duplicateState }) => {
       if (duplicateState.score < DUPLICATE_MIN_SCORE) return false;
       const pairKey = getPairKey(target.id, candidate.id);
@@ -798,12 +734,10 @@ const listGlobalDuplicateCandidates = async (scope = {}, page = 1, limit = WORKS
     where: {
       ...where,
       deleted_at: null,
-      is_active: true,
-    },
+      is_active: true},
     include: basePatientInclude,
     take: DUPLICATE_PATIENT_SCAN_LIMIT,
-    orderBy: { updated_at: 'desc' },
-  });
+    orderBy: { updated_at: 'desc' }});
 
   const pairs = [];
   for (let index = 0; index < rows.length; index += 1) {
@@ -827,16 +761,14 @@ const listGlobalDuplicateCandidates = async (scope = {}, page = 1, limit = WORKS
 
   return {
     items,
-    pagination: buildPagination(safePage, safeLimit, pairs.length),
-  };
+    pagination: buildPagination(safePage, safeLimit, pairs.length)};
 };
 
 const recordPatientPhiAccess = async ({
   userId,
   patient,
   routeFamily,
-  ipAddress,
-}) => {
+  ipAddress}) => {
   const normalizedUserId = normalizeText(userId);
   if (!normalizedUserId || !patient?.id || !patient?.tenant_id) return;
 
@@ -845,9 +777,7 @@ const recordPatientPhiAccess = async ({
       value: normalizedUserId,
       model: 'user',
       where: {
-        tenant_id: patient.tenant_id,
-      },
-    });
+        tenant_id: patient.tenant_id}});
     if (!resolvedUserId) return;
 
     const dedupeBoundary = new Date(Date.now() - PHI_ACCESS_WINDOW_MS);
@@ -859,11 +789,9 @@ const recordPatientPhiAccess = async ({
         access_scope: 'PATIENT',
         deleted_at: null,
         accessed_at: { gte: dedupeBoundary },
-        reason: routeFamily,
-      },
+        reason: routeFamily},
       select: { id: true },
-      orderBy: { accessed_at: 'desc' },
-    });
+      orderBy: { accessed_at: 'desc' }});
 
     if (existing?.id) return;
 
@@ -873,9 +801,7 @@ const recordPatientPhiAccess = async ({
         user_id: resolvedUserId,
         patient_id: patient.id,
         access_scope: 'PATIENT',
-        reason: routeFamily,
-      },
-    });
+        reason: routeFamily}});
 
     await createAuditLog({
       tenant_id: patient.tenant_id,
@@ -886,19 +812,15 @@ const recordPatientPhiAccess = async ({
       diff: {
         after: {
           patient_id: patient.id,
-          route_family: routeFamily,
-        },
-      },
-      ip_address: ipAddress,
-    });
+          route_family: routeFamily}},
+      ip_address: ipAddress});
   } catch (error) {
     logger.warn('Patient PHI access log skipped', {
       patient_id: patient.id,
       tenant_id: patient.tenant_id,
       user_id: normalizedUserId,
       route_family: normalizeText(routeFamily) || null,
-      error: error?.message || 'Unknown error',
-    });
+      error: error?.message || 'Unknown error'});
   }
 };
 
@@ -908,8 +830,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
   const emptyOverviewList = () => [];
   const emptyOverviewQueue = () => ({
     items: [],
-    pagination: buildPagination(1, 6, 0),
-  });
+    pagination: buildPagination(1, 6, 0)});
 
   const [
     totalPatients,
@@ -921,8 +842,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
     recentPatients,
     recentQueue,
     recentAdmissions,
-    recentInvoices,
-  ] = await Promise.all([
+    recentInvoices] = await Promise.all([
     runSafeOverviewSection(
       'metrics.total_patients',
       scope,
@@ -941,11 +861,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             encounters: {
               some: {
                 deleted_at: null,
-                status: 'OPEN',
-              },
-            },
-          },
-        })
+                status: 'OPEN'}}}})
     ),
     runSafeOverviewSection(
       'metrics.waiting_queue',
@@ -957,9 +873,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             ...where,
             deleted_at: null,
             patient: { deleted_at: null },
-            status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
-          },
-        })
+            status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] }}})
     ),
     runSafeOverviewSection(
       'metrics.active_admissions',
@@ -971,9 +885,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             ...where,
             deleted_at: null,
             patient: { deleted_at: null },
-            status: 'ADMITTED',
-          },
-        })
+            status: 'ADMITTED'}})
     ),
     runSafeOverviewSection(
       'metrics.unpaid_invoices',
@@ -985,9 +897,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             ...where,
             deleted_at: null,
             patient: { deleted_at: null },
-            status: { notIn: ['PAID', 'CANCELLED'] },
-          },
-        })
+            status: { notIn: ['PAID', 'CANCELLED'] }}})
     ),
     runSafeOverviewSection(
       'metrics.due_follow_ups',
@@ -1002,11 +912,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             encounter: {
               patient: {
                 ...where,
-                deleted_at: null,
-              },
-            },
-          },
-        })
+                deleted_at: null}}}})
     ),
     runSafeOverviewSection(
       'recent_patients',
@@ -1017,8 +923,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
           where: { ...where, deleted_at: null },
           include: basePatientInclude,
           orderBy: { updated_at: 'desc' },
-          take: 6,
-        })
+          take: 6})
     ),
     runSafeOverviewSection(
       'waiting_queue',
@@ -1030,16 +935,13 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             ...where,
             deleted_at: null,
             patient: { deleted_at: null },
-            status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
-          },
+            status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] }},
           include: {
             patient: { include: basePatientInclude },
             provider: { select: userDisplaySelect },
-            appointment: { select: { human_friendly_id: true } },
-          },
+            appointment: { select: { human_friendly_id: true } }},
           orderBy: { queued_at: 'asc' },
-          take: 6,
-        })
+          take: 6})
     ),
     runSafeOverviewSection(
       'active_admissions',
@@ -1051,14 +953,11 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             ...where,
             deleted_at: null,
             patient: { deleted_at: null },
-            status: 'ADMITTED',
-          },
+            status: 'ADMITTED'},
           include: {
-            patient: { include: basePatientInclude },
-          },
+            patient: { include: basePatientInclude }},
           orderBy: { admitted_at: 'desc' },
-          take: 6,
-        })
+          take: 6})
     ),
     runSafeOverviewSection(
       'unpaid_invoices',
@@ -1070,23 +969,18 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             ...where,
             deleted_at: null,
             patient: { deleted_at: null },
-            status: { notIn: ['PAID', 'CANCELLED'] },
-          },
+            status: { notIn: ['PAID', 'CANCELLED'] }},
           include: {
-            patient: { include: basePatientInclude },
-          },
+            patient: { include: basePatientInclude }},
           orderBy: { issued_at: 'desc' },
-          take: 6,
-        })
-    ),
-  ]);
+          take: 6})
+    )]);
 
   const [
     duplicateQueue,
     patientsMissingDocuments,
     consentExceptions,
-    dueFollowUps,
-  ] = await Promise.all([
+    dueFollowUps] = await Promise.all([
     runSafeOverviewSection(
       'duplicate_queue',
       scope,
@@ -1103,13 +997,10 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             ...where,
             deleted_at: null,
             documents: {
-              none: { deleted_at: null },
-            },
-          },
+              none: { deleted_at: null }}},
           include: basePatientInclude,
           orderBy: { updated_at: 'desc' },
-          take: 6,
-        })
+          take: 6})
     ),
     runSafeOverviewSection(
       'consent_exceptions',
@@ -1122,15 +1013,11 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             status: { in: ['PENDING', 'REVOKED'] },
             patient: {
               ...where,
-              deleted_at: null,
-            },
-          },
+              deleted_at: null}},
           include: {
-            patient: { include: basePatientInclude },
-          },
+            patient: { include: basePatientInclude }},
           orderBy: { updated_at: 'desc' },
-          take: 6,
-        })
+          take: 6})
     ),
     runSafeOverviewSection(
       'due_follow_ups',
@@ -1145,60 +1032,44 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
             encounter: {
               patient: {
                 ...where,
-                deleted_at: null,
-              },
-            },
-          },
+                deleted_at: null}}},
           include: {
             encounter: {
               include: {
-                patient: { include: basePatientInclude },
-              },
-            },
-          },
+                patient: { include: basePatientInclude }}}},
           orderBy: { scheduled_at: 'asc' },
-          take: 6,
-        })
-    ),
-  ]);
+          take: 6})
+    )]);
 
   return {
     scope: {
       tenant_id: resolvePublicIdentifier(undefined, tenantId),
-      facility_id: resolvePublicIdentifier(undefined, facilityId),
-    },
+      facility_id: resolvePublicIdentifier(undefined, facilityId)},
     metrics: {
       total_patients: totalPatients,
       active_patients: activePatients,
       waiting_queue: waitingQueueCount,
       active_admissions: activeAdmissionsCount,
       unpaid_invoices: unpaidInvoiceCount,
-      due_follow_ups: dueFollowUpCount,
-    },
+      due_follow_ups: dueFollowUpCount},
     recent_patients: recentPatients.map(serializePatientSummary),
     waiting_queue: recentQueue.map((entry) => ({
       queue: serializeVisitQueue(entry),
-      patient: serializePatientSummary(entry.patient),
-    })),
+      patient: serializePatientSummary(entry.patient)})),
     active_admissions: recentAdmissions.map((entry) => ({
       admission: serializeAdmission(entry),
-      patient: serializePatientSummary(entry.patient),
-    })),
+      patient: serializePatientSummary(entry.patient)})),
     unpaid_invoices: recentInvoices.map((entry) => ({
       invoice: serializeInvoice(entry),
-      patient: serializePatientSummary(entry.patient),
-    })),
+      patient: serializePatientSummary(entry.patient)})),
     duplicate_queue: duplicateQueue.items,
     consent_exceptions: consentExceptions.map((entry) => ({
       consent: serializeConsent(entry),
-      patient: serializePatientSummary(entry.patient),
-    })),
+      patient: serializePatientSummary(entry.patient)})),
     missing_documents: patientsMissingDocuments.map(serializePatientSummary),
     due_follow_ups: dueFollowUps.map((entry) => ({
       follow_up: serializeFollowUp(entry),
-      patient: serializePatientSummary(entry.encounter?.patient),
-    })),
-  };
+      patient: serializePatientSummary(entry.encounter?.patient)}))};
 };
 
 const getPatientWorkspaceReferenceData = async (scope = {}, userContext = {}) => {
@@ -1213,65 +1084,52 @@ const getPatientWorkspaceReferenceData = async (scope = {}, userContext = {}) =>
           select: {
             id: true,
             human_friendly_id: true,
-            name: true,
-          },
+            name: true},
           orderBy: { name: 'asc' },
-          take: 200,
-        })
+          take: 200})
       : Promise.resolve([]),
     prisma.facility.findMany({
       where: {
         ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
-        deleted_at: null,
-      },
+        deleted_at: null},
       select: {
         id: true,
         human_friendly_id: true,
         name: true,
-        tenant_id: true,
-      },
+        tenant_id: true},
       orderBy: { name: 'asc' },
-      take: 500,
-    }),
-  ]);
+      take: 500})]);
   const wards = await prisma.ward.findMany({
     where: {
       ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
       ...('facility_id' in where ? { facility_id: where.facility_id } : {}),
       deleted_at: null,
-      is_active: true,
-    },
+      is_active: true},
     select: {
       id: true,
       human_friendly_id: true,
       facility_id: true,
       name: true,
-      ward_type: true,
-    },
-    orderBy: { name: 'asc' },
-  });
+      ward_type: true},
+    orderBy: { name: 'asc' }});
   const rooms = await prisma.room.findMany({
     where: {
       ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
       ...('facility_id' in where ? { facility_id: where.facility_id } : {}),
-      deleted_at: null,
-    },
+      deleted_at: null},
     select: {
       id: true,
       human_friendly_id: true,
       facility_id: true,
       ward_id: true,
       name: true,
-      floor: true,
-    },
-    orderBy: { name: 'asc' },
-  });
+      floor: true},
+    orderBy: { name: 'asc' }});
   const beds = await prisma.bed.findMany({
     where: {
       ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
       ...('facility_id' in where ? { facility_id: where.facility_id } : {}),
-      deleted_at: null,
-    },
+      deleted_at: null},
     select: {
       id: true,
       human_friendly_id: true,
@@ -1279,34 +1137,28 @@ const getPatientWorkspaceReferenceData = async (scope = {}, userContext = {}) =>
       ward_id: true,
       room_id: true,
       label: true,
-      status: true,
-    },
-    orderBy: [{ status: 'asc' }, { label: 'asc' }],
-  });
+      status: true},
+    orderBy: [{ status: 'asc' }, { label: 'asc' }]});
 
   const tenantPublicIdByUuid = new Map(
     tenants.map((entry) => [
       entry.id,
-      resolvePublicIdentifier(entry.human_friendly_id, entry.id),
-    ]),
+      resolvePublicIdentifier(entry.human_friendly_id, entry.id)]),
   );
   const facilityPublicIdByUuid = new Map(
     facilities.map((entry) => [
       entry.id,
-      resolvePublicIdentifier(entry.human_friendly_id, entry.id),
-    ]),
+      resolvePublicIdentifier(entry.human_friendly_id, entry.id)]),
   );
   const wardPublicIdByUuid = new Map(
     wards.map((entry) => [
       entry.id,
-      resolvePublicIdentifier(entry.human_friendly_id, entry.id),
-    ]),
+      resolvePublicIdentifier(entry.human_friendly_id, entry.id)]),
   );
   const roomPublicIdByUuid = new Map(
     rooms.map((entry) => [
       entry.id,
-      resolvePublicIdentifier(entry.human_friendly_id, entry.id),
-    ]),
+      resolvePublicIdentifier(entry.human_friendly_id, entry.id)]),
   );
   const resolveLinkedPublicId = (lookup, uuid) => {
     if (!uuid) return null;
@@ -1318,39 +1170,33 @@ const getPatientWorkspaceReferenceData = async (scope = {}, userContext = {}) =>
   return {
     tenants: tenants.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
-      label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
-    })),
+      label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id)})),
     facilities: facilities.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
-      tenant_id: resolveLinkedPublicId(tenantPublicIdByUuid, entry?.tenant_id),
-    })),
+      tenant_id: resolveLinkedPublicId(tenantPublicIdByUuid, entry?.tenant_id)})),
     wards: wards.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       facility_id: resolveLinkedPublicId(facilityPublicIdByUuid, entry?.facility_id),
-      ward_type: entry?.ward_type || null,
-    })),
+      ward_type: entry?.ward_type || null})),
     rooms: rooms.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       facility_id: resolveLinkedPublicId(facilityPublicIdByUuid, entry?.facility_id),
       ward_id: resolveLinkedPublicId(wardPublicIdByUuid, entry?.ward_id),
-      floor: normalizeText(entry?.floor) || null,
-    })),
+      floor: normalizeText(entry?.floor) || null})),
     beds: beds.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.label) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       facility_id: resolveLinkedPublicId(facilityPublicIdByUuid, entry?.facility_id),
       ward_id: resolveLinkedPublicId(wardPublicIdByUuid, entry?.ward_id),
       room_id: resolveLinkedPublicId(roomPublicIdByUuid, entry?.room_id),
-      status: entry?.status || null,
-    })),
+      status: entry?.status || null})),
     document_types: DOCUMENT_TYPE_OPTIONS.map((value) => ({ value })),
     consent_types: CONSENT_TYPE_OPTIONS.map((value) => ({ value })),
     consent_statuses: CONSENT_STATUS_OPTIONS.map((value) => ({ value })),
-    appointment_statuses: APPOINTMENT_STATUS_OPTIONS.map((value) => ({ value })),
-  };
+    appointment_statuses: APPOINTMENT_STATUS_OPTIONS.map((value) => ({ value }))};
 };
 
 const listPatientTimeline = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}, userContext = {}) => {
@@ -1359,8 +1205,7 @@ const listPatientTimeline = async (patientIdentifier, page = 1, limit = WORKSPAC
     userId: userContext?.user_id,
     patient,
     routeFamily: 'timeline',
-    ipAddress: userContext?.ip_address,
-  });
+    ipAddress: userContext?.ip_address});
 
   const [
     appointments,
@@ -1372,72 +1217,58 @@ const listPatientTimeline = async (patientIdentifier, page = 1, limit = WORKSPAC
     followUps,
     referrals,
     invoices,
-    payments,
-  ] = await Promise.all([
+    payments] = await Promise.all([
     prisma.appointment.findMany({
       where: { patient_id: patient.id, deleted_at: null },
       include: { provider: { select: userDisplaySelect } },
       orderBy: { scheduled_start: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.visit_queue.findMany({
       where: { patient_id: patient.id, deleted_at: null },
       include: {
         provider: { select: userDisplaySelect },
-        appointment: { select: { human_friendly_id: true } },
-      },
+        appointment: { select: { human_friendly_id: true } }},
       orderBy: { queued_at: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.encounter.findMany({
       where: { patient_id: patient.id, deleted_at: null },
       include: { provider: { select: userDisplaySelect } },
       orderBy: { updated_at: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.admission.findMany({
       where: { patient_id: patient.id, deleted_at: null },
       orderBy: { admitted_at: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.patient_document.findMany({
       where: { patient_id: patient.id, deleted_at: null },
       orderBy: { updated_at: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.consent.findMany({
       where: { patient_id: patient.id, deleted_at: null },
       orderBy: { updated_at: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.follow_up.findMany({
       where: { deleted_at: null, encounter: { patient_id: patient.id } },
       include: { encounter: { select: { human_friendly_id: true } } },
       orderBy: { scheduled_at: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.referral.findMany({
       where: { deleted_at: null, encounter: { patient_id: patient.id } },
       include: {
         encounter: { select: { human_friendly_id: true } },
         from_department: { select: { name: true } },
-        to_department: { select: { name: true } },
-      },
+        to_department: { select: { name: true } }},
       orderBy: { updated_at: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.invoice.findMany({
       where: { patient_id: patient.id, deleted_at: null },
       orderBy: { issued_at: 'desc' },
-      take: 20,
-    }),
+      take: 20}),
     prisma.payment.findMany({
       where: { patient_id: patient.id, deleted_at: null },
       include: { invoice: { select: { human_friendly_id: true } } },
       orderBy: { paid_at: 'desc' },
-      take: 20,
-    }),
-  ]);
+      take: 20})]);
 
   const timelineItems = [
     buildTimelineItem('patient_registered', patient, 'created_at', serializePatientSummary),
@@ -1450,8 +1281,7 @@ const listPatientTimeline = async (patientIdentifier, page = 1, limit = WORKSPAC
     ...followUps.map((entry) => buildTimelineItem('follow_up', entry, 'scheduled_at', serializeFollowUp)),
     ...referrals.map((entry) => buildTimelineItem('referral', entry, 'updated_at', serializeReferral)),
     ...invoices.map((entry) => buildTimelineItem('invoice', entry, 'issued_at', serializeInvoice)),
-    ...payments.map((entry) => buildTimelineItem('payment', entry, 'paid_at', serializePayment)),
-  ].sort((left, right) => new Date(right.occurred_at || 0).getTime() - new Date(left.occurred_at || 0).getTime());
+    ...payments.map((entry) => buildTimelineItem('payment', entry, 'paid_at', serializePayment))].sort((left, right) => new Date(right.occurred_at || 0).getTime() - new Date(left.occurred_at || 0).getTime());
 
   const safePage = toInteger(page, 1);
   const safeLimit = toInteger(limit, WORKSPACE_PAGE_LIMIT);
@@ -1460,8 +1290,7 @@ const listPatientTimeline = async (patientIdentifier, page = 1, limit = WORKSPAC
 
   return {
     items,
-    pagination: buildPagination(safePage, safeLimit, timelineItems.length),
-  };
+    pagination: buildPagination(safePage, safeLimit, timelineItems.length)};
 };
 
 const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {}) => {
@@ -1469,8 +1298,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
     userId: userContext?.user_id,
     patient,
     routeFamily: 'workspace',
-    ipAddress: userContext?.ip_address,
-  });
+    ipAddress: userContext?.ip_address});
 
   const [
     latestAppointments,
@@ -1486,8 +1314,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
     latestPharmacyOrders,
     latestPhiLogs,
     duplicateCandidates,
-    timeline,
-  ] = await Promise.all([
+    timeline] = await Promise.all([
     runSafePatientWorkspaceSection(
       'workspace.appointments',
       scope,
@@ -1497,8 +1324,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
           where: { patient_id: patient.id, deleted_at: null },
           include: { provider: { select: userDisplaySelect } },
           orderBy: { scheduled_start: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.queue_entries',
@@ -1509,11 +1335,9 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
           where: { patient_id: patient.id, deleted_at: null },
           include: {
             provider: { select: userDisplaySelect },
-            appointment: { select: { human_friendly_id: true } },
-          },
+            appointment: { select: { human_friendly_id: true } }},
           orderBy: { queued_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.encounters',
@@ -1524,8 +1348,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
           where: { patient_id: patient.id, deleted_at: null },
           include: { provider: { select: userDisplaySelect } },
           orderBy: { updated_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.admissions',
@@ -1535,8 +1358,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
         prisma.admission.findMany({
           where: { patient_id: patient.id, deleted_at: null },
           orderBy: { admitted_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.documents',
@@ -1546,8 +1368,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
         prisma.patient_document.findMany({
           where: { patient_id: patient.id, deleted_at: null },
           orderBy: { updated_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.consents',
@@ -1557,8 +1378,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
         prisma.consent.findMany({
           where: { patient_id: patient.id, deleted_at: null },
           orderBy: { updated_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.follow_ups',
@@ -1569,8 +1389,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
           where: { deleted_at: null, encounter: { patient_id: patient.id } },
           include: { encounter: { select: { human_friendly_id: true } } },
           orderBy: { scheduled_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.referrals',
@@ -1582,11 +1401,9 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
           include: {
             encounter: { select: { human_friendly_id: true } },
             from_department: { select: { name: true } },
-            to_department: { select: { name: true } },
-          },
+            to_department: { select: { name: true } }},
           orderBy: { updated_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.invoices',
@@ -1596,8 +1413,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
         prisma.invoice.findMany({
           where: { patient_id: patient.id, deleted_at: null },
           orderBy: { issued_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.payments',
@@ -1608,8 +1424,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
           where: { patient_id: patient.id, deleted_at: null },
           include: { invoice: { select: { human_friendly_id: true } } },
           orderBy: { paid_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.pharmacy_orders',
@@ -1634,12 +1449,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
                 dispense_logs: {
                   where: { deleted_at: null },
                   select: { dispensed_at: true },
-                  orderBy: { dispensed_at: 'desc' },
-                },
-              },
-            },
-          },
-        })
+                  orderBy: { dispensed_at: 'desc' }}}}}})
     ),
     runSafePatientWorkspaceSection(
       'workspace.phi_access_logs',
@@ -1650,8 +1460,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
           where: { patient_id: patient.id, deleted_at: null },
           include: { user: { select: userDisplaySelect } },
           orderBy: { accessed_at: 'desc' },
-          take: 5,
-        })
+          take: 5})
     ),
     runSafePatientWorkspaceSection(
       'workspace.duplicate_candidates',
@@ -1664,8 +1473,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
       scope,
       { items: [], pagination: buildPagination(1, 12, 0) },
       () => listPatientTimeline(patient.human_friendly_id || patient.id, 1, 12, scope, userContext)
-    ),
-  ]);
+    )]);
 
   return {
     patient: serializePatientSummary(patient),
@@ -1694,11 +1502,8 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
         referrals: latestReferrals.length,
         invoices: latestInvoices.length,
         payments: latestPayments.length,
-        pharmacy_orders: latestPharmacyOrders.length,
-      },
-    },
-    timeline: timeline.items,
-  };
+        pharmacy_orders: latestPharmacyOrders.length}},
+    timeline: timeline.items};
 };
 
 const getPatientWorkspace = async (patientIdentifier, scope = {}, userContext = {}) => {
@@ -1714,8 +1519,7 @@ const listPatientConsents = async (patientIdentifier, page = 1, limit = WORKSPAC
     page,
     limit,
     orderBy: { updated_at: 'desc' },
-    serializer: serializeConsent,
-  });
+    serializer: serializeConsent});
 };
 
 const listPatientAppointments = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1727,8 +1531,7 @@ const listPatientAppointments = async (patientIdentifier, page = 1, limit = WORK
     limit,
     orderBy: { scheduled_start: 'desc' },
     include: { provider: { select: userDisplaySelect } },
-    serializer: serializeAppointment,
-  });
+    serializer: serializeAppointment});
 };
 
 const listPatientVisitQueueEntries = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1741,10 +1544,8 @@ const listPatientVisitQueueEntries = async (patientIdentifier, page = 1, limit =
     orderBy: { queued_at: 'desc' },
     include: {
       provider: { select: userDisplaySelect },
-      appointment: { select: { human_friendly_id: true } },
-    },
-    serializer: serializeVisitQueue,
-  });
+      appointment: { select: { human_friendly_id: true } }},
+    serializer: serializeVisitQueue});
 };
 
 const listPatientEncounters = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1756,8 +1557,7 @@ const listPatientEncounters = async (patientIdentifier, page = 1, limit = WORKSP
     limit,
     orderBy: { updated_at: 'desc' },
     include: { provider: { select: userDisplaySelect } },
-    serializer: serializeEncounter,
-  });
+    serializer: serializeEncounter});
 };
 
 const listPatientAdmissions = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1768,8 +1568,7 @@ const listPatientAdmissions = async (patientIdentifier, page = 1, limit = WORKSP
     page,
     limit,
     orderBy: { admitted_at: 'desc' },
-    serializer: serializeAdmission,
-  });
+    serializer: serializeAdmission});
 };
 
 const listPatientFollowUps = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1781,8 +1580,7 @@ const listPatientFollowUps = async (patientIdentifier, page = 1, limit = WORKSPA
     limit,
     orderBy: { scheduled_at: 'desc' },
     include: { encounter: { select: { human_friendly_id: true } } },
-    serializer: serializeFollowUp,
-  });
+    serializer: serializeFollowUp});
 };
 
 const listPatientReferrals = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1796,10 +1594,8 @@ const listPatientReferrals = async (patientIdentifier, page = 1, limit = WORKSPA
     include: {
       encounter: { select: { human_friendly_id: true } },
       from_department: { select: { name: true } },
-      to_department: { select: { name: true } },
-    },
-    serializer: serializeReferral,
-  });
+      to_department: { select: { name: true } }},
+    serializer: serializeReferral});
 };
 
 const listPatientInvoices = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1810,8 +1606,7 @@ const listPatientInvoices = async (patientIdentifier, page = 1, limit = WORKSPAC
     page,
     limit,
     orderBy: { issued_at: 'desc' },
-    serializer: serializeInvoice,
-  });
+    serializer: serializeInvoice});
 };
 
 const listPatientPayments = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1823,8 +1618,7 @@ const listPatientPayments = async (patientIdentifier, page = 1, limit = WORKSPAC
     limit,
     orderBy: { paid_at: 'desc' },
     include: { invoice: { select: { human_friendly_id: true } } },
-    serializer: serializePayment,
-  });
+    serializer: serializePayment});
 };
 
 const listPatientPhiAccessLogs = async (patientIdentifier, page = 1, limit = WORKSPACE_PAGE_LIMIT, scope = {}) => {
@@ -1836,8 +1630,7 @@ const listPatientPhiAccessLogs = async (patientIdentifier, page = 1, limit = WOR
     limit,
     orderBy: { accessed_at: 'desc' },
     include: { user: { select: userDisplaySelect } },
-    serializer: serializePhiAccessLog,
-  });
+    serializer: serializePhiAccessLog});
 };
 
 const listDuplicateCandidates = async (filters = {}, scope = {}, page = 1, limit = WORKSPACE_PAGE_LIMIT) => {
@@ -1847,8 +1640,7 @@ const listDuplicateCandidates = async (filters = {}, scope = {}, page = 1, limit
     const items = await findDuplicateCandidatesForTarget(patient, scope, toInteger(limit, WORKSPACE_PAGE_LIMIT));
     return {
       items,
-      pagination: buildPagination(1, items.length || toInteger(limit, WORKSPACE_PAGE_LIMIT), items.length),
-    };
+      pagination: buildPagination(1, items.length || toInteger(limit, WORKSPACE_PAGE_LIMIT), items.length)};
   }
 
   const firstName = normalizeText(filters?.first_name);
@@ -1868,33 +1660,27 @@ const listDuplicateCandidates = async (filters = {}, scope = {}, page = 1, limit
       gender: gender || null,
       contacts: [
         ...(phone ? [{ contact_type: 'PHONE', value: phone, is_primary: true }] : []),
-        ...(email ? [{ contact_type: 'EMAIL', value: email, is_primary: !phone }] : []),
-      ],
+        ...(email ? [{ contact_type: 'EMAIL', value: email, is_primary: !phone }] : [])],
       identifiers: identifierValue
         ? [{
             identifier_type: identifierType || null,
             identifier_value: identifierValue,
-            is_primary: true,
-          }]
+            is_primary: true}]
         : [],
-      extension_json: {},
-    };
+      extension_json: {}};
     const { where } = await resolveScopeWhere(scope);
     const rows = await prisma.patient.findMany({
       where: {
         ...where,
         deleted_at: null,
-        is_active: true,
-      },
+        is_active: true},
       include: basePatientInclude,
       take: 50,
-      orderBy: { updated_at: 'desc' },
-    });
+      orderBy: { updated_at: 'desc' }});
     const items = rows
       .map((candidate) => ({
         candidate,
-        duplicateState: computeDuplicateScore(syntheticPatient, candidate),
-      }))
+        duplicateState: computeDuplicateScore(syntheticPatient, candidate)}))
       .filter(({ duplicateState }) => duplicateState.score >= DUPLICATE_MIN_SCORE)
       .sort((left, right) => right.duplicateState.score - left.duplicateState.score)
       .slice(0, toInteger(limit, WORKSPACE_PAGE_LIMIT))
@@ -1905,13 +1691,11 @@ const listDuplicateCandidates = async (filters = {}, scope = {}, page = 1, limit
         match_reasons: duplicateState.reasons,
         field_comparisons: duplicateState.fieldComparisons,
         score_version: duplicateState.scoreVersion,
-        candidate_patient: serializePatientSummary(candidate),
-      }));
+        candidate_patient: serializePatientSummary(candidate)}));
 
     return {
       items,
-      pagination: buildPagination(1, items.length || toInteger(limit, WORKSPACE_PAGE_LIMIT), items.length),
-    };
+      pagination: buildPagination(1, items.length || toInteger(limit, WORKSPACE_PAGE_LIMIT), items.length)};
   }
 
   return listGlobalDuplicateCandidates(scope, page, limit);
@@ -1939,8 +1723,7 @@ const buildMergePreview = async (primaryPatientIdentifier, secondaryPatientIdent
     prisma.encounter.count({ where: { patient_id: secondary.id, deleted_at: null } }),
     prisma.admission.count({ where: { patient_id: secondary.id, deleted_at: null } }),
     prisma.invoice.count({ where: { patient_id: secondary.id, deleted_at: null } }),
-    prisma.payment.count({ where: { patient_id: secondary.id, deleted_at: null } }),
-  ]);
+    prisma.payment.count({ where: { patient_id: secondary.id, deleted_at: null } })]);
 
   return {
     primary_patient: serializePatientSummary(primary),
@@ -1962,9 +1745,7 @@ const buildMergePreview = async (primaryPatientIdentifier, secondaryPatientIdent
       encounters: counts[10],
       admissions: counts[11],
       invoices: counts[12],
-      payments: counts[13],
-    },
-  };
+      payments: counts[13]}};
 };
 
 const previewPatientMerge = async (payload = {}, scope = {}) =>
@@ -1973,8 +1754,7 @@ const previewPatientMerge = async (payload = {}, scope = {}) =>
 const addDismissedPair = async (patientId, pairKey, tx = prisma) => {
   const record = await tx.patient.findUnique({
     where: { id: patientId },
-    select: { id: true, extension_json: true },
-  });
+    select: { id: true, extension_json: true }});
   if (!record?.id) return;
   const extension = readExtensionJson(record);
   const current = Array.isArray(extension?.duplicate_review?.dismissed_pair_keys)
@@ -1990,11 +1770,7 @@ const addDismissedPair = async (patientId, pairKey, tx = prisma) => {
         ...extension,
         duplicate_review: {
           ...(extension.duplicate_review || {}),
-          dismissed_pair_keys: current,
-        },
-      },
-    },
-  });
+          dismissed_pair_keys: current}}}});
 };
 
 const dedupeAndMoveBySignature = async ({
@@ -2002,32 +1778,27 @@ const dedupeAndMoveBySignature = async ({
   modelName,
   primaryPatientId,
   secondaryPatientId,
-  signature,
-}) => {
+  signature}) => {
   const delegate = tx[modelName];
   if (!delegate || typeof delegate.findMany !== 'function') return;
   const primaryRows = await delegate.findMany({
-    where: { patient_id: primaryPatientId, deleted_at: null },
-  });
+    where: { patient_id: primaryPatientId, deleted_at: null }});
   const existingKeys = new Set(primaryRows.map((entry) => signature(entry)).filter(Boolean));
   const secondaryRows = await delegate.findMany({
-    where: { patient_id: secondaryPatientId, deleted_at: null },
-  });
+    where: { patient_id: secondaryPatientId, deleted_at: null }});
 
   for (const row of secondaryRows) {
     const key = signature(row);
     if (key && existingKeys.has(key)) {
       await delegate.update({
         where: { id: row.id },
-        data: { deleted_at: new Date() },
-      });
+        data: { deleted_at: new Date() }});
       continue;
     }
     if (key) existingKeys.add(key);
     await delegate.update({
       where: { id: row.id },
-      data: { patient_id: primaryPatientId },
-    });
+      data: { patient_id: primaryPatientId }});
   }
 };
 
@@ -2044,15 +1815,13 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
       modelName: 'patient_identifier',
       primaryPatientId: primary.id,
       secondaryPatientId: secondary.id,
-      signature: (row) => `${normalizeUpper(row?.identifier_type)}:${normalizeLower(row?.identifier_value)}`,
-    });
+      signature: (row) => `${normalizeUpper(row?.identifier_type)}:${normalizeLower(row?.identifier_value)}`});
     await dedupeAndMoveBySignature({
       tx,
       modelName: 'patient_contact',
       primaryPatientId: primary.id,
       secondaryPatientId: secondary.id,
-      signature: (row) => `${normalizeUpper(row?.contact_type)}:${normalizePhone(row?.value) || normalizeLower(row?.value)}`,
-    });
+      signature: (row) => `${normalizeUpper(row?.contact_type)}:${normalizePhone(row?.value) || normalizeLower(row?.value)}`});
     await dedupeAndMoveBySignature({
       tx,
       modelName: 'patient_guardian',
@@ -2061,9 +1830,7 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
       signature: (row) => [
         normalizeLower(row?.name),
         normalizeLower(row?.relationship),
-        normalizePhone(row?.phone),
-      ].join(':'),
-    });
+        normalizePhone(row?.phone)].join(':')});
     await dedupeAndMoveBySignature({
       tx,
       modelName: 'patient_allergy',
@@ -2072,9 +1839,7 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
       signature: (row) => [
         normalizeLower(row?.allergen),
         normalizeLower(row?.reaction),
-        normalizeUpper(row?.severity),
-      ].join(':'),
-    });
+        normalizeUpper(row?.severity)].join(':')});
     await dedupeAndMoveBySignature({
       tx,
       modelName: 'patient_medical_history',
@@ -2082,9 +1847,7 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
       secondaryPatientId: secondary.id,
       signature: (row) => [
         normalizeLower(row?.condition),
-        normalizeDateOnly(row?.diagnosis_date),
-      ].join(':'),
-    });
+        normalizeDateOnly(row?.diagnosis_date)].join(':')});
     await dedupeAndMoveBySignature({
       tx,
       modelName: 'address',
@@ -2097,16 +1860,13 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
         normalizeLower(row?.city),
         normalizeLower(row?.state),
         normalizeLower(row?.postal_code),
-        normalizeLower(row?.country),
-      ].join(':'),
-    });
+        normalizeLower(row?.country)].join(':')});
     await dedupeAndMoveBySignature({
       tx,
       modelName: 'patient_document',
       primaryPatientId: primary.id,
       secondaryPatientId: secondary.id,
-      signature: (row) => `${normalizeLower(row?.storage_key)}:${normalizeLower(row?.file_name)}`,
-    });
+      signature: (row) => `${normalizeLower(row?.storage_key)}:${normalizeLower(row?.file_name)}`});
 
     await tx.consent.updateMany({ where: { patient_id: secondary.id, deleted_at: null }, data: { patient_id: primary.id } });
     await tx.appointment.updateMany({ where: { patient_id: secondary.id, deleted_at: null }, data: { patient_id: primary.id } });
@@ -2138,8 +1898,7 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
           model: 'facility',
           field: 'facility_id',
           where: { tenant_id: primary.tenant_id },
-          nullable: true,
-        });
+          nullable: true});
       }
     }
 
@@ -2156,12 +1915,7 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
               merged_patient_id: secondary.id,
               merged_patient_human_friendly_id: secondary.human_friendly_id || null,
               merged_at: new Date().toISOString(),
-              merged_by_user_id: userContext?.user_id || null,
-            },
-          ],
-        },
-      },
-    });
+              merged_by_user_id: userContext?.user_id || null}]}}});
 
     const secondaryExtension = readExtensionJson(secondary);
     await tx.patient.update({
@@ -2174,11 +1928,7 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
             merged_into_patient_id: primary.id,
             merged_into_patient_human_friendly_id: primary.human_friendly_id || null,
             merged_at: new Date().toISOString(),
-            merged_by_user_id: userContext?.user_id || null,
-          },
-        },
-      },
-    });
+            merged_by_user_id: userContext?.user_id || null}}}});
 
     const pairKey = getPairKey(primary.id, secondary.id);
     await addDismissedPair(primary.id, pairKey, tx);
@@ -2194,16 +1944,12 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
     diff: {
       before: {
         primary_patient_id: primary.id,
-        secondary_patient_id: secondary.id,
-      },
+        secondary_patient_id: secondary.id},
       after: {
         primary_patient_id: primary.id,
         secondary_patient_id: secondary.id,
-        merged: true,
-      },
-    },
-    ip_address: userContext?.ip_address,
-  });
+        merged: true}},
+    ip_address: userContext?.ip_address});
 
   return getPatientWorkspace(primary.human_friendly_id || primary.id, scope, userContext);
 };
@@ -2227,16 +1973,12 @@ const dismissDuplicateCandidate = async (reviewId, payload = {}, scope = {}, use
         pair_key: pairKey,
         primary_patient_id: primary.id,
         secondary_patient_id: secondary.id,
-        dismissed_reason: normalizeText(payload?.dismissed_reason) || null,
-      },
-    },
-    ip_address: userContext?.ip_address,
-  });
+        dismissed_reason: normalizeText(payload?.dismissed_reason) || null}},
+    ip_address: userContext?.ip_address});
 
   return {
     review_id: pairKey,
-    dismissed: true,
-  };
+    dismissed: true};
 };
 
 const buildUploadPath = (patient, originalFileName) => {
@@ -2251,8 +1993,7 @@ const buildUploadPath = (patient, originalFileName) => {
     'documents',
     String(year),
     month,
-    `${Date.now()}-${safeName}`,
-  ]
+    `${Date.now()}-${safeName}`]
     .map((value) => sanitizeFilename(value))
     .join('/');
 };
@@ -2261,8 +2002,7 @@ const normalizeUploadedFile = (file = {}) => ({
   originalname: normalizeText(file?.originalname || file?.name || file?.fileName),
   mimetype: normalizeLower(file?.mimetype || file?.type || file?.mimeType),
   size: Number(file?.size || file?.fileSize || 0),
-  buffer: file?.buffer,
-});
+  buffer: file?.buffer});
 
 const uploadPatientDocuments = async (patientIdentifier, files = [], body = {}, scope = {}, userContext = {}) => {
   const patient = await resolvePatientRecord(patientIdentifier, scope);
@@ -2292,8 +2032,7 @@ const uploadPatientDocuments = async (patientIdentifier, files = [], body = {}, 
     const storageKey = buildUploadPath(patient, file.originalname);
     const uploaded = await storage.upload(file.buffer, storageKey, {
       mimeType: file.mimetype,
-      encrypt: true,
-    });
+      encrypt: true});
     const created = await prisma.patient_document.create({
       data: {
         tenant_id: patient.tenant_id,
@@ -2301,9 +2040,7 @@ const uploadPatientDocuments = async (patientIdentifier, files = [], body = {}, 
         document_type: documentType,
         storage_key: uploaded?.path || storageKey,
         file_name: file.originalname,
-        content_type: file.mimetype || null,
-      },
-    });
+        content_type: file.mimetype || null}});
 
     uploadedRecords.push(created);
     await createAuditLog({
@@ -2316,16 +2053,12 @@ const uploadPatientDocuments = async (patientIdentifier, files = [], body = {}, 
         after: {
           patient_id: patient.id,
           document_type: documentType,
-          storage_key: uploaded?.path || storageKey,
-        },
-      },
-      ip_address: userContext?.ip_address,
-    });
+          storage_key: uploaded?.path || storageKey}},
+      ip_address: userContext?.ip_address});
   }
 
   return {
-    items: uploadedRecords.map(serializeDocument),
-  };
+    items: uploadedRecords.map(serializeDocument)};
 };
 
 const getPatientDocumentAsset = async (patientIdentifier, documentIdentifier, scope = {}, userContext = {}, disposition = 'inline') => {
@@ -2338,14 +2071,12 @@ const getPatientDocumentAsset = async (patientIdentifier, documentIdentifier, sc
     userId: userContext?.user_id,
     patient,
     routeFamily: disposition === 'attachment' ? 'document_download' : 'document_preview',
-    ipAddress: userContext?.ip_address,
-  });
+    ipAddress: userContext?.ip_address});
 
   return {
     buffer,
     contentType: normalizeText(document.content_type) || 'application/octet-stream',
-    fileName: normalizeText(document.file_name) || `${document.document_type || 'document'}`,
-  };
+    fileName: normalizeText(document.file_name) || `${document.document_type || 'document'}`};
 };
 
 module.exports = {
@@ -2368,5 +2099,4 @@ module.exports = {
   mergePatients,
   dismissDuplicateCandidate,
   uploadPatientDocuments,
-  getPatientDocumentAsset,
-};
+  getPatientDocumentAsset};

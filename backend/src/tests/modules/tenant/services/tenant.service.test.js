@@ -12,19 +12,15 @@ jest.mock('@repositories/tenant/tenant.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
-  resolveModelRecordByIdentifier: jest.fn().mockResolvedValue(null),
-}));
+  resolveModelRecordByIdentifier: jest.fn().mockResolvedValue(null)}));
 jest.mock('@lib/realtime/platform-realtime', () => ({
   publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(1),
   buildTenantDashboardDeltas: jest.fn().mockReturnValue({}),
-  buildFacilityDashboardDeltas: jest.fn().mockReturnValue({}),
-}));
+  buildFacilityDashboardDeltas: jest.fn().mockReturnValue({})}));
 
 jest.mock('@prisma/client', () => ({
   subscription: {
-    count: jest.fn().mockResolvedValue(0),
-  },
-}));
+    count: jest.fn().mockResolvedValue(0)}}));
 
 const tenantRepository = require('@repositories/tenant/tenant.repository');
 const { createAuditLog } = require('@lib/audit');
@@ -37,8 +33,7 @@ const {
   updateTenant,
   deleteTenant,
   restoreTenant,
-  permanentDeleteTenant,
-} = require('@services/tenant/tenant.service');
+  permanentDeleteTenant} = require('@services/tenant/tenant.service');
 
 describe('Tenant Service', () => {
   beforeEach(() => {
@@ -164,8 +159,7 @@ describe('Tenant Service', () => {
     it('should include deleted tenants when requested', async () => {
       const mockTenants = [
         { id: 'tenant-1', name: 'Active', deleted_at: null },
-        { id: 'tenant-2', name: 'Deleted', deleted_at: new Date() },
-      ];
+        { id: 'tenant-2', name: 'Deleted', deleted_at: new Date() }];
       tenantRepository.findMany.mockResolvedValue(mockTenants);
       tenantRepository.count.mockResolvedValue(2);
 
@@ -213,8 +207,7 @@ describe('Tenant Service', () => {
               role: {
                 id: 'role-1',
                 human_friendly_id: 'ROL0000001',
-                name: 'TENANT_ADMIN',
-              },
+                name: 'TENANT_ADMIN'},
               user: {
                 id: 'user-1',
                 human_friendly_id: 'USR0000001',
@@ -225,18 +218,11 @@ describe('Tenant Service', () => {
                 profile: {
                   first_name: 'Taylor',
                   middle_name: null,
-                  last_name: 'Demo',
-                },
+                  last_name: 'Demo'},
                 facility: {
                   id: 'facility-1',
                   human_friendly_id: 'FAC0000001',
-                  name: 'DemoCare General Hospital',
-                },
-              },
-            },
-          ],
-        },
-      ]);
+                  name: 'DemoCare General Hospital'}}}]}]);
       tenantRepository.count.mockResolvedValue(1);
 
       const result = await listTenants({}, 1, 20);
@@ -262,10 +248,7 @@ describe('Tenant Service', () => {
             role_human_friendly_id: 'ROL0000001',
             role_name: 'TENANT_ADMIN',
             user_role_id: 'user-role-1',
-            user_role_human_friendly_id: 'URO0000001',
-          },
-        }),
-      ]);
+            user_role_human_friendly_id: 'URO0000001'}})]);
     });
   });
 
@@ -284,8 +267,7 @@ describe('Tenant Service', () => {
       expect(result).toEqual({
         ...mockTenant,
         resource_uuid: 'tenant-123',
-        display_id: 'tenant-123',
-      });
+        display_id: 'tenant-123'});
       expect(tenantRepository.findById).toHaveBeenCalledWith('tenant-123');
     });
 
@@ -312,8 +294,7 @@ describe('Tenant Service', () => {
             role: {
               id: 'role-1',
               human_friendly_id: 'ROL0000001',
-              name: 'TENANT_ADMIN',
-            },
+              name: 'TENANT_ADMIN'},
             user: {
               id: 'user-1',
               human_friendly_id: 'USR0000001',
@@ -324,17 +305,11 @@ describe('Tenant Service', () => {
               profile: {
                 first_name: 'Taylor',
                 middle_name: null,
-                last_name: 'Demo',
-              },
+                last_name: 'Demo'},
               facility: {
                 id: 'facility-1',
                 human_friendly_id: 'FAC0000001',
-                name: 'DemoCare General Hospital',
-              },
-            },
-          },
-        ],
-      });
+                name: 'DemoCare General Hospital'}}}]});
 
       const result = await getTenantById('tenant-123');
 
@@ -361,9 +336,7 @@ describe('Tenant Service', () => {
           role_human_friendly_id: 'ROL0000001',
           role_name: 'TENANT_ADMIN',
           user_role_id: 'user-role-1',
-          user_role_human_friendly_id: 'URO0000001',
-        },
-      });
+          user_role_human_friendly_id: 'URO0000001'}});
     });
   });
 
@@ -610,9 +583,7 @@ describe('Tenant Service', () => {
           tenant_id: 'tenant-123',
           name: 'Main Facility',
           facility_type: 'HOSPITAL',
-          is_active: true,
-        },
-      ];
+          is_active: true}];
       const context = {
         user_id: 'user-123',
         tenant_id: 'tenant-123',
@@ -622,8 +593,7 @@ describe('Tenant Service', () => {
       tenantRepository.findById.mockResolvedValue(mockTenant);
       tenantRepository.softDelete.mockResolvedValue({
         tenant: { ...mockTenant, deleted_at: new Date() },
-        facilities: mockFacilities,
-      });
+        facilities: mockFacilities});
       createAuditLog.mockResolvedValue(undefined);
 
       await deleteTenant('tenant-123', context);
@@ -642,21 +612,18 @@ describe('Tenant Service', () => {
         details: {
           name: mockTenant.name,
           slug: mockTenant.slug,
-          cascaded_facility_ids: ['facility-1'],
-        }
+          cascaded_facility_ids: ['facility-1']}
       });
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'FACILITY_DELETED',
           entity: 'facility',
-          entity_id: 'facility-1',
-        }),
+          entity_id: 'facility-1'}),
       );
       expect(publishPlatformRealtimeEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           event: 'facility.deleted',
-          resource_id: 'facility-1',
-        }),
+          resource_id: 'facility-1'}),
       );
     });
 
@@ -675,8 +642,7 @@ describe('Tenant Service', () => {
       tenantRepository.findById.mockResolvedValue(null);
       resolveModelRecordByIdentifier.mockResolvedValue({
         id: 'tenant-123',
-        deleted_at: new Date('2026-01-01'),
-      });
+        deleted_at: new Date('2026-01-01')});
 
       await expect(deleteTenant('tenant-123')).resolves.toBeUndefined();
 
@@ -704,21 +670,17 @@ describe('Tenant Service', () => {
         name: 'Test Hospital',
         slug: 'test-hospital',
         is_active: true,
-        deleted_at: null,
-      };
+        deleted_at: null};
       const mockFacilities = [
         {
           id: 'facility-1',
           tenant_id: 'tenant-123',
           name: 'Main Facility',
           facility_type: 'HOSPITAL',
-          is_active: true,
-        },
-      ];
+          is_active: true}];
       tenantRepository.restore.mockResolvedValue({
         tenant: mockTenant,
-        facilities: mockFacilities,
-      });
+        facilities: mockFacilities});
 
       const result = await restoreTenant('tenant-123', { user_id: 'user-1' });
 
@@ -726,8 +688,7 @@ describe('Tenant Service', () => {
         expect.objectContaining({
           id: 'tenant-123',
           resource_uuid: 'tenant-123',
-          display_id: 'tenant-123',
-        }),
+          display_id: 'tenant-123'}),
       );
       expect(tenantRepository.restore).toHaveBeenCalledWith('tenant-123');
       expect(createAuditLog).toHaveBeenCalledWith(
@@ -735,15 +696,12 @@ describe('Tenant Service', () => {
           action: 'TENANT_RESTORED',
           entity_id: 'tenant-123',
           details: expect.objectContaining({
-            cascaded_facility_ids: ['facility-1'],
-          }),
-        }),
+            cascaded_facility_ids: ['facility-1']})}),
       );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'FACILITY_RESTORED',
-          entity_id: 'facility-1',
-        }),
+          entity_id: 'facility-1'}),
       );
     });
   });
@@ -754,12 +712,10 @@ describe('Tenant Service', () => {
         id: 'tenant-123',
         name: 'Test Hospital',
         slug: 'test-hospital__deleted__tenant123',
-        deleted_at: new Date(),
-      };
+        deleted_at: new Date()};
       tenantRepository.findById.mockResolvedValue(mockTenant);
       tenantRepository.permanentDelete.mockResolvedValue({
-        facilityIds: ['facility-1'],
-      });
+        facilityIds: ['facility-1']});
 
       await permanentDeleteTenant('tenant-123', { user_id: 'user-1' });
 
@@ -767,17 +723,14 @@ describe('Tenant Service', () => {
         expect.objectContaining({
           action: 'TENANT_PERMANENTLY_DELETED',
           entity_id: 'tenant-123',
-          details: expect.objectContaining({ irreversible: true }),
-        }),
+          details: expect.objectContaining({ irreversible: true })}),
       );
       expect(tenantRepository.permanentDelete).toHaveBeenCalledWith('tenant-123');
       expect(publishPlatformRealtimeEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           event: 'tenant.permanently_deleted',
           payload: expect.objectContaining({
-            cascaded_facility_ids: ['facility-1'],
-          }),
-        }),
+            cascaded_facility_ids: ['facility-1']})}),
       );
     });
 
@@ -785,8 +738,7 @@ describe('Tenant Service', () => {
       tenantRepository.findById.mockResolvedValue({
         id: 'tenant-123',
         name: 'Test Hospital',
-        deleted_at: null,
-      });
+        deleted_at: null});
 
       await expect(permanentDeleteTenant('tenant-123'))
         .rejects

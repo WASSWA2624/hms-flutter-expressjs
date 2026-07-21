@@ -48,5 +48,4 @@ module.exports = {
   getCurrentOfficeContext,
   getOfficeContextById,
   listOfficeContexts,
-  updateOfficeContext,
-};
+  updateOfficeContext};

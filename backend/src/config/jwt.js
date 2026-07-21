@@ -8,8 +8,7 @@
 const {
   JWT_SECRET,
   JWT_ACCESS_TOKEN_EXPIRATION,
-  JWT_REFRESH_TOKEN_EXPIRATION,
-} = require('@config/env');
+  JWT_REFRESH_TOKEN_EXPIRATION} = require('@config/env');
 
 // Validate JWT_SECRET length (should already be validated in env.js, but double-check)
 if (!JWT_SECRET || JWT_SECRET.length < 32) {

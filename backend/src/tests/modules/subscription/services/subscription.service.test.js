@@ -11,8 +11,7 @@ jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
-}));
+  resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 
 const buildSubscriptionRecord = (overrides = {}) => ({
   id: 'subscription-uuid',
@@ -21,8 +20,7 @@ const buildSubscriptionRecord = (overrides = {}) => ({
   tenant: {
     id: 'tenant-uuid',
     human_friendly_id: 'TEN0001',
-    name: 'Acme Hospital',
-  },
+    name: 'Acme Hospital'},
   plan_id: 'plan-uuid',
   plan: {
     id: 'plan-uuid',
@@ -32,8 +30,7 @@ const buildSubscriptionRecord = (overrides = {}) => ({
     tier_code: 'PRO',
     billing_cycle: 'MONTHLY',
     price: 49,
-    plan_fit_warning_percent: 80,
-  },
+    plan_fit_warning_percent: 80},
   pending_plan_id: null,
   pending_plan: null,
   status: 'ACTIVE',
@@ -45,8 +42,7 @@ const buildSubscriptionRecord = (overrides = {}) => ({
   storage_used_mb: 512,
   modules_used: 3,
   module_subscriptions: [],
-  ...overrides,
-});
+  ...overrides});
 
 describe('Subscription Service', () => {
   beforeEach(() => {
@@ -64,8 +60,7 @@ describe('Subscription Service', () => {
         tenant_id: 'TEN0001',
         tenant_label: 'Acme Hospital',
         plan_id: 'PLAN0001',
-        plan_label: 'Pro',
-      })
+        plan_label: 'Pro'})
     );
   });
 
@@ -74,9 +69,7 @@ describe('Subscription Service', () => {
       buildSubscriptionRecord(),
       buildSubscriptionRecord({
         id: 'subscription-uuid-2',
-        human_friendly_id: 'SUB0002',
-      }),
-    ]);
+        human_friendly_id: 'SUB0002'})]);
     subscriptionRepository.count.mockResolvedValue(2);
 
     const result = await subscriptionService.listSubscriptions(
@@ -88,8 +81,7 @@ describe('Subscription Service', () => {
     expect(subscriptionRepository.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'ACTIVE',
-        OR: expect.any(Array),
-      }),
+        OR: expect.any(Array)}),
       0,
       20,
       { created_at: 'desc' },
@@ -97,8 +89,7 @@ describe('Subscription Service', () => {
     );
     expect(result.subscriptions).toEqual([
       expect.objectContaining({ id: 'SUB0001' }),
-      expect.objectContaining({ id: 'SUB0002' }),
-    ]);
+      expect.objectContaining({ id: 'SUB0002' })]);
     expect(result.pagination).toEqual(
       expect.objectContaining({ total: 2, totalPages: 1 })
     );
@@ -108,8 +99,7 @@ describe('Subscription Service', () => {
     const created = buildSubscriptionRecord({
       id: 'subscription-uuid-2',
       human_friendly_id: 'SUB0002',
-      change_status: 'NONE',
-    });
+      change_status: 'NONE'});
     subscriptionRepository.create.mockResolvedValue({ id: created.id });
     subscriptionRepository.findById.mockResolvedValue(created);
 
@@ -117,8 +107,7 @@ describe('Subscription Service', () => {
       {
         tenant_id: 'TEN0001',
         plan_id: 'PLAN0001',
-        human_friendly_id: 'SUB0002',
-      },
+        human_friendly_id: 'SUB0002'},
       { id: 'user-1', role: 'SUPER_ADMIN' },
       '127.0.0.1'
     );
@@ -129,16 +118,14 @@ describe('Subscription Service', () => {
         plan_id: 'PLAN0001',
         human_friendly_id: 'SUB0002',
         status: 'ACTIVE',
-        start_date: expect.any(String),
-      })
+        start_date: expect.any(String)})
     );
     expect(result).toEqual(expect.objectContaining({ id: 'SUB0002' }));
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'CREATE',
         entity: 'subscription',
-        user_id: 'user-1',
-      })
+        user_id: 'user-1'})
     );
   });
 
@@ -146,8 +133,7 @@ describe('Subscription Service', () => {
     const before = buildSubscriptionRecord();
     const after = buildSubscriptionRecord({
       status: 'PAST_DUE',
-      users_used: 12,
-    });
+      users_used: 12});
     subscriptionRepository.findById
       .mockResolvedValueOnce(before)
       .mockResolvedValueOnce(after);
@@ -163,14 +149,12 @@ describe('Subscription Service', () => {
     expect(result).toEqual(
       expect.objectContaining({
         id: 'SUB0001',
-        status: 'PAST_DUE',
-      })
+        status: 'PAST_DUE'})
     );
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'UPDATE',
-        diff: { before, after },
-      })
+        diff: { before, after }})
     );
   });
 
@@ -183,9 +167,7 @@ describe('Subscription Service', () => {
           id: 'plan-upgrade-uuid',
           human_friendly_id: 'PLAN0002',
           name: 'Advanced',
-          price: 99,
-        },
-      })
+          price: 99}})
     );
 
     const result = await subscriptionService.getSubscriptionProrationPreview(
@@ -196,8 +178,7 @@ describe('Subscription Service', () => {
       expect.objectContaining({
         subscription_id: 'SUB0001',
         current_plan_id: 'PLAN0001',
-        target_plan_id: 'PLAN0002',
-      })
+        target_plan_id: 'PLAN0002'})
     );
     expect(typeof result.proration_amount).toBe('number');
   });
@@ -215,10 +196,7 @@ describe('Subscription Service', () => {
           price: 29,
           extension_json: {
             allowed_modules: {
-              included: ['appointments'],
-            },
-          },
-        },
+              included: ['appointments']}}},
         module_subscriptions: [
           {
             id: 'module-subscription-1',
@@ -230,11 +208,7 @@ describe('Subscription Service', () => {
               name: 'Analytics',
               slug: 'analytics',
               minimum_plan_tier_code: 'BASIC',
-              is_add_on: true,
-            },
-          },
-        ],
-      })
+              is_add_on: true}}]})
     );
     subscriptionPlanRepository.findMany.mockResolvedValue([
       {
@@ -246,19 +220,14 @@ describe('Subscription Service', () => {
         price: 49,
         extension_json: {
           allowed_modules: {
-            included: ['appointments', 'analytics'],
-          },
-        },
-      },
+            included: ['appointments', 'analytics']}}},
       {
         id: 'plan-custom-uuid',
         human_friendly_id: 'PLAN0003',
         name: 'Custom',
         code: 'CUSTOM',
         tier_code: 'CUSTOM',
-        price: 99,
-      },
-    ]);
+        price: 99}]);
 
     const result = await subscriptionService.getSubscriptionUpgradeRecommendation(
       'SUB0001',
@@ -269,8 +238,7 @@ describe('Subscription Service', () => {
       expect.objectContaining({
         subscription_id: 'SUB0001',
         recommended_plan_id: 'PLAN0002',
-        recommendation: 'upgrade_required',
-      })
+        recommendation: 'upgrade_required'})
     );
   });
 
@@ -284,8 +252,7 @@ describe('Subscription Service', () => {
           code: 'PRO',
           tier_code: 'PRO',
           billing_cycle: 'MONTHLY',
-          price: 49,
-        },
+          price: 49},
         module_subscriptions: [
           {
             id: 'module-subscription-1',
@@ -299,12 +266,7 @@ describe('Subscription Service', () => {
               minimum_plan_tier_code: 'PRO',
               is_add_on: true,
               entitlement_policy_json: {
-                requires_customization: true,
-              },
-            },
-          },
-        ],
-      })
+                requires_customization: true}}}]})
     );
     subscriptionPlanRepository.findMany.mockResolvedValue([
       {
@@ -313,8 +275,7 @@ describe('Subscription Service', () => {
         name: 'Advanced',
         code: 'ADVANCED',
         tier_code: 'ADVANCED',
-        price: 79,
-      },
+        price: 79},
       {
         id: 'plan-custom-uuid',
         human_friendly_id: 'PLAN0003',
@@ -324,11 +285,7 @@ describe('Subscription Service', () => {
         price: 109,
         extension_json: {
           allowed_modules: {
-            included: ['biomedical-suite'],
-          },
-        },
-      },
-    ]);
+            included: ['biomedical-suite']}}}]);
 
     const result = await subscriptionService.getSubscriptionUpgradeRecommendation(
       'SUB0001',
@@ -340,8 +297,7 @@ describe('Subscription Service', () => {
         subscription_id: 'SUB0001',
         recommended_plan_id: 'PLAN0003',
         recommended_tier: 'CUSTOM',
-        recommendation: 'upgrade_required',
-      })
+        recommendation: 'upgrade_required'})
     );
   });
 

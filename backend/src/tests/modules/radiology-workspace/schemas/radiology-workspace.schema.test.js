@@ -1,14 +1,12 @@
 const {
   createRadiologyOrderSchema,
-  updateRadiologyOrderRequestDetailsSchema,
-} = require('@validations/radiology-workspace/radiology-workspace.schema');
+  updateRadiologyOrderRequestDetailsSchema} = require('@validations/radiology-workspace/radiology-workspace.schema');
 
 describe('radiology-workspace.schema createRadiologyOrderSchema', () => {
   const basePayload = {
     patient_id: 'PAT0000001',
     encounter_id: 'ENC0000001',
-    ordered_at: '2026-02-27T10:20:00.000Z',
-  };
+    ordered_at: '2026-02-27T10:20:00.000Z'};
 
   it('accepts a multi-test imaging request with per-test notes and details', () => {
     const result = createRadiologyOrderSchema.safeParse({
@@ -22,19 +20,13 @@ describe('radiology-workspace.schema createRadiologyOrderSchema', () => {
             modality: 'XRAY',
             body_region: 'Chest',
             laterality: 'LEFT',
-            priority: 'URGENT',
-          },
-        },
+            priority: 'URGENT'}},
         {
           radiology_test_id: 'STD_RAD_TEST_RAD-00002',
           request_details: {
             modality: 'CT',
             body_region: 'Head',
-            priority: 'STAT',
-          },
-        },
-      ],
-    });
+            priority: 'STAT'}}]});
 
     expect(result.success).toBe(true);
   });
@@ -46,9 +38,7 @@ describe('radiology-workspace.schema createRadiologyOrderSchema', () => {
       clinical_note: 'Legacy note',
       request_details: {
         modality: 'XRAY',
-        priority: 'ROUTINE',
-      },
-    });
+        priority: 'ROUTINE'}});
 
     expect(result.success).toBe(true);
   });
@@ -68,9 +58,7 @@ describe('radiology-workspace.schema updateRadiologyOrderRequestDetailsSchema', 
       request_details: {
         body_region: 'Chest',
         laterality: 'LEFT',
-        priority: 'URGENT',
-      },
-    });
+        priority: 'URGENT'}});
 
     expect(result.success).toBe(true);
   });
@@ -78,14 +66,11 @@ describe('radiology-workspace.schema updateRadiologyOrderRequestDetailsSchema', 
   it('rejects unsupported modality values', () => {
     const result = updateRadiologyOrderRequestDetailsSchema.safeParse({
       request_details: {
-        modality: 'XRAY_AND_CT',
-      },
-    });
+        modality: 'XRAY_AND_CT'}});
 
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.path).toEqual([
       'request_details',
-      'modality',
-    ]);
+      'modality']);
   });
 });

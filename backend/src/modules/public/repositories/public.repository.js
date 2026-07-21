@@ -40,9 +40,7 @@ const listPublicServices = async (search, skip, take, orderBy) => {
           name: true,
           short_name: true,
           department_type: true,
-          facility_id: true,
-          branch_id: true
-        }
+          facility_id: true}
       }),
       prisma.department.count({ where })
     ]);
@@ -108,8 +106,7 @@ const listPublicProviders = async (search, skip, take, orderBy) => {
                 select: {
                   first_name: true,
                   middle_name: true,
-                  last_name: true,
-                }
+                  last_name: true}
               }
             }
           }
@@ -124,7 +121,6 @@ const listPublicProviders = async (search, skip, take, orderBy) => {
   }
 };
 
-const listPublicBranches = async (search, skip, take, orderBy) => {
   try {
     const where = {
       deleted_at: null,
@@ -136,7 +132,6 @@ const listPublicBranches = async (search, skip, take, orderBy) => {
     }
 
     const [items, total] = await Promise.all([
-      prisma.branch.findMany({
         where,
         skip,
         take,
@@ -154,9 +149,7 @@ const listPublicBranches = async (search, skip, take, orderBy) => {
             }
           }
         }
-      }),
-      prisma.branch.count({ where })
-    ]);
+      })]);
 
     return { items, total };
   } catch (error) {
@@ -166,6 +159,4 @@ const listPublicBranches = async (search, skip, take, orderBy) => {
 
 module.exports = {
   listPublicServices,
-  listPublicProviders,
-  listPublicBranches
-};
+  listPublicProviders};

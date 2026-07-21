@@ -16,15 +16,11 @@ jest.mock('@repositories/insurance-claim/insurance-claim.repository');
 jest.mock('@lib/audit');
 jest.mock('@prisma/client', () => ({
   invoice: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   coverage_plan: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   insurer_integration: {
-    findFirst: jest.fn(),
-  },
-}));
+    findFirst: jest.fn()}}));
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: (...values) => {
     for (const value of values) {
@@ -44,8 +40,7 @@ jest.mock('@lib/billing/identifiers', () => ({
     if (value === null && nullable) return null;
     return value;
   },
-  resolveEntityId: async ({ identifier }) => identifier,
-}));
+  resolveEntityId: async ({ identifier }) => identifier}));
 
 const prisma = require('@prisma/client');
 
@@ -124,12 +119,10 @@ describe('Insurance Claim Service', () => {
       const mockClaim = { id: '789', ...mockData, claim_amount: '80000.00' };
       prisma.invoice.findFirst.mockResolvedValue({
         id: '456',
-        items: [{ insurer_share: '80000.00', coverage_plan_id: '123' }],
-      });
+        items: [{ insurer_share: '80000.00', coverage_plan_id: '123' }]});
       prisma.coverage_plan.findFirst.mockResolvedValue({
         id: '123',
-        insurance_company_id: 'co-1',
-      });
+        insurance_company_id: 'co-1'});
       insuranceClaimRepository.create.mockResolvedValue(mockClaim);
       insuranceClaimRepository.findById.mockResolvedValue(mockClaim);
 
@@ -142,8 +135,7 @@ describe('Insurance Claim Service', () => {
           invoice_id: '456',
           insurance_company_id: 'co-1',
           claim_amount: '80000.00',
-          status: 'SUBMITTED',
-        })
+          status: 'SUBMITTED'})
       );
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         user_id: mockUserId,
@@ -156,8 +148,7 @@ describe('Insurance Claim Service', () => {
     it('should handle repository errors', async () => {
       prisma.invoice.findFirst.mockResolvedValue({
         id: '456',
-        items: [],
-      });
+        items: []});
       prisma.coverage_plan.findFirst.mockResolvedValue({ id: '123' });
       insuranceClaimRepository.create.mockRejectedValue(new HttpError('errors.database.unique_field', 409));
 

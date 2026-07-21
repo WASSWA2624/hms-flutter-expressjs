@@ -17,8 +17,7 @@ const { ROLES } = require('@config/roles');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
 
 const VISIT_QUEUE_REALTIME_RECIPIENT_ROLES = Object.freeze([
@@ -102,13 +101,11 @@ const ALLOWED_VISIT_QUEUE_SORT_FIELDS = new Set([
   'created_at',
   'updated_at',
   'queued_at',
-  'status',
-]);
+  'status']);
 const ACTIVE_VISIT_QUEUE_STATUSES = Object.freeze([
   'SCHEDULED',
   'CONFIRMED',
-  'IN_PROGRESS',
-]);
+  'IN_PROGRESS']);
 
 const resolveSortBy = (value, fallback = 'queued_at') => {
   const normalized = String(value || '').trim();
@@ -164,8 +161,7 @@ const PAYMENT_PAID_STATUSES = new Set([
   'PAID',
   'SUCCESS',
   'SUCCESSFUL',
-  'APPROVED',
-]);
+  'APPROVED']);
 
 const resolvePrimaryRecord = (records = []) => {
   if (!Array.isArray(records)) return null;
@@ -195,8 +191,7 @@ const resolveInvoicePaymentSummary = (invoice = null) => {
     totalAmount,
     paidAmount,
     amountToPay,
-    hasOutstandingBalance: amountToPay > 0.009,
-  };
+    hasOutstandingBalance: amountToPay > 0.009};
 };
 
 const resolveReceptionFlow = (patient = null) => {
@@ -213,8 +208,7 @@ const resolveReceptionFlow = (patient = null) => {
     category: normalizeUpper(receptionFlow?.category) || null,
     label: receptionFlow?.label || receptionFlow?.category || null,
     notes: receptionFlow?.notes || null,
-    registered_at: receptionFlow?.registered_at || null,
-  };
+    registered_at: receptionFlow?.registered_at || null};
 };
 
 const withVisitQueueProjection = (entry) => {
@@ -293,16 +287,13 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 const resolveFilterIdentifier = async ({
   value,
   model,
   where = {},
-  additionalFriendlyMatchers = [],
-}) => {
+  additionalFriendlyMatchers = []}) => {
   if (value === undefined) return undefined;
   if (value === null) return null;
 
@@ -317,8 +308,7 @@ const resolveFilterIdentifier = async ({
     model,
     identifier: normalized,
     where,
-    additionalFriendlyMatchers: matchers,
-  });
+    additionalFriendlyMatchers: matchers});
 
   if (resolvedId) return resolvedId;
   if (isUuidLike(normalized)) return normalized;
@@ -331,8 +321,7 @@ const resolvePayloadIdentifier = async ({
   model,
   where = {},
   nullable = false,
-  additionalFriendlyMatchers = [],
-}) => {
+  additionalFriendlyMatchers = []}) => {
   if (value === undefined) return undefined;
   if (value === null) {
     if (nullable) return null;
@@ -352,8 +341,7 @@ const resolvePayloadIdentifier = async ({
     model,
     identifier: normalized,
     where,
-    additionalFriendlyMatchers: matchers,
-  });
+    additionalFriendlyMatchers: matchers});
 
   if (resolvedId) return resolvedId;
   if (isUuidLike(normalized)) return normalized;
@@ -369,8 +357,7 @@ const resolveVisitQueuePayloadIdentifiers = async (data = {}, existing = null) =
       ? await resolvePayloadIdentifier({
           value: payload.tenant_id,
           field: 'tenant_id',
-          model: 'tenant',
-        })
+          model: 'tenant'})
       : existing?.tenant_id;
 
   if (payload.tenant_id !== undefined) {
@@ -383,8 +370,7 @@ const resolveVisitQueuePayloadIdentifiers = async (data = {}, existing = null) =
       field: 'facility_id',
       model: 'facility',
       where: tenantId ? { tenant_id: tenantId } : {},
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (payload.patient_id !== undefined) {
@@ -392,8 +378,7 @@ const resolveVisitQueuePayloadIdentifiers = async (data = {}, existing = null) =
       value: payload.patient_id,
       field: 'patient_id',
       model: 'patient',
-      where: tenantId ? { tenant_id: tenantId } : {},
-    });
+      where: tenantId ? { tenant_id: tenantId } : {}});
   }
 
   if (payload.appointment_id !== undefined) {
@@ -402,8 +387,7 @@ const resolveVisitQueuePayloadIdentifiers = async (data = {}, existing = null) =
       field: 'appointment_id',
       model: 'appointment',
       where: tenantId ? { tenant_id: tenantId } : {},
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (payload.provider_user_id !== undefined) {
@@ -413,8 +397,7 @@ const resolveVisitQueuePayloadIdentifiers = async (data = {}, existing = null) =
       model: 'user',
       where: tenantId ? { tenant_id: tenantId } : {},
       nullable: true,
-      additionalFriendlyMatchers: USER_IDENTIFIER_MATCHERS,
-    });
+      additionalFriendlyMatchers: USER_IDENTIFIER_MATCHERS});
   }
 
   if (payload.queued_at !== undefined) {
@@ -428,8 +411,7 @@ const resolveVisitQueueRecordByIdentifier = async (identifier) => {
   const resolved = await resolveModelRecordByIdentifier({
     model: 'visit_queue',
     identifier,
-    select: { id: true },
-  });
+    select: { id: true }});
   if (!resolved?.id) return null;
   const entry = await visitQueueRepository.findById(resolved.id);
   return withVisitQueueProjection(entry);
@@ -457,8 +439,7 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
 
     const resolvedTenantId = await resolveFilterIdentifier({
       value: filters.tenant_id,
-      model: 'tenant',
-    });
+      model: 'tenant'});
     if (filters.tenant_id !== undefined && resolvedTenantId === null) {
       return buildEmptyListResult(resolvedPage, resolvedLimit);
     }
@@ -469,8 +450,7 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
     const resolvedFacilityId = await resolveFilterIdentifier({
       value: filters.facility_id,
       model: 'facility',
-      where: resolvedTenantId ? { tenant_id: resolvedTenantId } : {},
-    });
+      where: resolvedTenantId ? { tenant_id: resolvedTenantId } : {}});
     if (filters.facility_id !== undefined && resolvedFacilityId === null) {
       return buildEmptyListResult(resolvedPage, resolvedLimit);
     }
@@ -481,8 +461,7 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
     const resolvedPatientId = await resolveFilterIdentifier({
       value: filters.patient_id,
       model: 'patient',
-      where: resolvedTenantId ? { tenant_id: resolvedTenantId } : {},
-    });
+      where: resolvedTenantId ? { tenant_id: resolvedTenantId } : {}});
     if (filters.patient_id !== undefined && resolvedPatientId === null) {
       return buildEmptyListResult(resolvedPage, resolvedLimit);
     }
@@ -493,8 +472,7 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
     const resolvedAppointmentId = await resolveFilterIdentifier({
       value: filters.appointment_id,
       model: 'appointment',
-      where: resolvedTenantId ? { tenant_id: resolvedTenantId } : {},
-    });
+      where: resolvedTenantId ? { tenant_id: resolvedTenantId } : {}});
     if (filters.appointment_id !== undefined && resolvedAppointmentId === null) {
       return buildEmptyListResult(resolvedPage, resolvedLimit);
     }
@@ -506,8 +484,7 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
       value: filters.provider_user_id,
       model: 'user',
       where: resolvedTenantId ? { tenant_id: resolvedTenantId } : {},
-      additionalFriendlyMatchers: USER_IDENTIFIER_MATCHERS,
-    });
+      additionalFriendlyMatchers: USER_IDENTIFIER_MATCHERS});
     if (filters.provider_user_id !== undefined && resolvedProviderUserId === null) {
       return buildEmptyListResult(resolvedPage, resolvedLimit);
     }
@@ -535,21 +512,12 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
                 contacts: {
                   some: {
                     deleted_at: null,
-                    value: { contains: searchTerm },
-                  },
-                },
-              },
+                    value: { contains: searchTerm }}}},
               {
                 identifiers: {
                   some: {
                     deleted_at: null,
-                    identifier_value: { contains: searchTerm },
-                  },
-                },
-              },
-            ],
-          },
-        },
+                    identifier_value: { contains: searchTerm }}}}]}},
         {
           provider: {
             OR: [
@@ -562,25 +530,13 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
                     OR: [
                       { first_name: { contains: searchTerm } },
                       { middle_name: { contains: searchTerm } },
-                      { last_name: { contains: searchTerm } },
-                    ],
-                  },
-                },
-              },
-            ],
-          },
-        },
+                      { last_name: { contains: searchTerm } }]}}}]}},
         {
           appointment: {
             is: {
               OR: [
                 { human_friendly_id: { contains: upperSearchTerm } },
-                { reason: { contains: searchTerm } },
-              ],
-            },
-          },
-        },
-      ];
+                { reason: { contains: searchTerm } }]}}}];
     }
 
     // Calculate pagination. High-priority entries always sort ahead of routine
@@ -588,8 +544,7 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
     const skip = (resolvedPage - 1) * resolvedLimit;
     const orderBy = [
       { is_prioritized: 'desc' },
-      { [resolvedSortBy]: resolvedOrder },
-    ];
+      { [resolvedSortBy]: resolvedOrder }];
 
     // Fetch entries and count
     const [entries, total] = await Promise.all([
@@ -652,8 +607,7 @@ const createVisitQueue = async (data, context = {}) => {
     const existingEntries = await visitQueueRepository.findMany(
       {
         appointment_id: payload.appointment_id,
-        status: { in: ACTIVE_VISIT_QUEUE_STATUSES },
-      },
+        status: { in: ACTIVE_VISIT_QUEUE_STATUSES }},
       0,
       1,
       { queued_at: 'desc' }

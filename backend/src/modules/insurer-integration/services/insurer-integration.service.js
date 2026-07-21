@@ -13,8 +13,7 @@ const {
   resolvePublicIdentifier,
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId,
-} = require('@lib/billing/identifiers');
+  resolveEntityId} = require('@lib/billing/identifiers');
 
 const INSURER_INTEGRATION_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
@@ -24,18 +23,13 @@ const INSURER_INTEGRATION_INCLUDE = {
       id: true,
       human_friendly_id: true,
       name: true,
-      provider_name: true,
-    },
-  },
+      provider_name: true}},
   insurance_company: {
     select: {
       id: true,
       human_friendly_id: true,
       name: true,
-      code: true,
-    },
-  },
-};
+      code: true}}};
 
 const buildEmptyListResult = (page, limit) => ({
   insurerIntegrations: [],
@@ -45,9 +39,7 @@ const buildEmptyListResult = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
-});
+    hasPreviousPage: page > 1}});
 
 /**
  * Map record for API display — never return raw credentials.
@@ -81,8 +73,7 @@ const mapInsurerIntegrationForDisplay = (record) => {
       record?.insurance_company?.human_friendly_id,
       record?.insurance_company_id
     ),
-    timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null,
-  };
+    timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null};
 };
 
 const normalizeCreatePayload = async (data = {}) => ({
@@ -90,27 +81,22 @@ const normalizeCreatePayload = async (data = {}) => ({
   tenant_id: await resolveIdentifierForPayload({
     value: data.tenant_id,
     model: 'tenant',
-    field: 'tenant_id',
-  }),
+    field: 'tenant_id'}),
   facility_id: await resolveIdentifierForPayload({
     value: data.facility_id,
     model: 'facility',
     field: 'facility_id',
-    nullable: true,
-  }),
+    nullable: true}),
   coverage_plan_id: await resolveIdentifierForPayload({
     value: data.coverage_plan_id,
     model: 'coverage_plan',
     field: 'coverage_plan_id',
-    nullable: true,
-  }),
+    nullable: true}),
   insurance_company_id: await resolveIdentifierForPayload({
     value: data.insurance_company_id,
     model: 'insurance_company',
     field: 'insurance_company_id',
-    nullable: true,
-  }),
-});
+    nullable: true})});
 
 const normalizeUpdatePayload = async (data = {}) => {
   const payload = { ...data };
@@ -120,8 +106,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.facility_id,
       model: 'facility',
       field: 'facility_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'coverage_plan_id')) {
@@ -129,8 +114,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.coverage_plan_id,
       model: 'coverage_plan',
       field: 'coverage_plan_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'insurance_company_id')) {
@@ -138,8 +122,7 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.insurance_company_id,
       model: 'insurance_company',
       field: 'insurance_company_id',
-      nullable: true,
-    });
+      nullable: true});
   }
 
   return payload;
@@ -158,8 +141,7 @@ const listInsurerIntegrations = async (filters, page, limit, sortBy, order) => {
     if (filters.tenant_id !== undefined) {
       const tenantId = await resolveIdentifierForFilter({
         value: filters.tenant_id,
-        model: 'tenant',
-      });
+        model: 'tenant'});
       if (tenantId === null) return buildEmptyListResult(page, limit);
       if (tenantId !== undefined) whereClause.tenant_id = tenantId;
     }
@@ -168,8 +150,7 @@ const listInsurerIntegrations = async (filters, page, limit, sortBy, order) => {
       const facilityId = await resolveIdentifierForFilter({
         value: filters.facility_id,
         model: 'facility',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (facilityId === null) return buildEmptyListResult(page, limit);
       if (facilityId !== undefined) whereClause.facility_id = facilityId;
     }
@@ -178,8 +159,7 @@ const listInsurerIntegrations = async (filters, page, limit, sortBy, order) => {
       const coveragePlanId = await resolveIdentifierForFilter({
         value: filters.coverage_plan_id,
         model: 'coverage_plan',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (coveragePlanId === null) return buildEmptyListResult(page, limit);
       if (coveragePlanId !== undefined) whereClause.coverage_plan_id = coveragePlanId;
     }
@@ -188,8 +168,7 @@ const listInsurerIntegrations = async (filters, page, limit, sortBy, order) => {
       const insuranceCompanyId = await resolveIdentifierForFilter({
         value: filters.insurance_company_id,
         model: 'insurance_company',
-        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
-      });
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {}});
       if (insuranceCompanyId === null) return buildEmptyListResult(page, limit);
       if (insuranceCompanyId !== undefined) {
         whereClause.insurance_company_id = insuranceCompanyId;
@@ -206,8 +185,7 @@ const listInsurerIntegrations = async (filters, page, limit, sortBy, order) => {
       whereClause.OR = [
         { name: { contains: search } },
         { base_url: { contains: search } },
-        { human_friendly_id: { contains: search.toUpperCase() } },
-      ];
+        { human_friendly_id: { contains: search.toUpperCase() } }];
     }
 
     const [insurerIntegrations, total] = await Promise.all([
@@ -218,8 +196,7 @@ const listInsurerIntegrations = async (filters, page, limit, sortBy, order) => {
         orderBy,
         INSURER_INTEGRATION_INCLUDE
       ),
-      insurerIntegrationRepository.count(whereClause),
-    ]);
+      insurerIntegrationRepository.count(whereClause)]);
 
     return {
       insurerIntegrations: insurerIntegrations.map(mapInsurerIntegrationForDisplay),
@@ -229,9 +206,7 @@ const listInsurerIntegrations = async (filters, page, limit, sortBy, order) => {
         total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1,
-      },
-    };
+        hasPreviousPage: page > 1}};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -245,8 +220,7 @@ const getInsurerIntegrationById = async (id) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurer_integration',
-      identifier: id,
-    });
+      identifier: id});
 
     const insurerIntegration = await insurerIntegrationRepository.findById(
       resolvedId,
@@ -285,11 +259,8 @@ const createInsurerIntegration = async (data, userId, ipAddress) => {
       diff: {
         after: {
           ...insurerIntegration,
-          credentials_encrypted: insurerIntegration.credentials_encrypted ? '***' : null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          credentials_encrypted: insurerIntegration.credentials_encrypted ? '***' : null}},
+      ip_address: ipAddress}).catch(() => {});
 
     return mapInsurerIntegrationForDisplay(createdRecord || insurerIntegration);
   } catch (error) {
@@ -305,8 +276,7 @@ const updateInsurerIntegration = async (id, data, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurer_integration',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await insurerIntegrationRepository.findById(
       resolvedId,
@@ -333,15 +303,11 @@ const updateInsurerIntegration = async (id, data, userId, ipAddress) => {
       diff: {
         before: {
           ...before,
-          credentials_encrypted: before.credentials_encrypted ? '***' : null,
-        },
+          credentials_encrypted: before.credentials_encrypted ? '***' : null},
         after: {
           ...insurerIntegration,
-          credentials_encrypted: insurerIntegration.credentials_encrypted ? '***' : null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          credentials_encrypted: insurerIntegration.credentials_encrypted ? '***' : null}},
+      ip_address: ipAddress}).catch(() => {});
 
     return mapInsurerIntegrationForDisplay(updatedRecord || insurerIntegration);
   } catch (error) {
@@ -357,8 +323,7 @@ const deleteInsurerIntegration = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'insurer_integration',
-      identifier: id,
-    });
+      identifier: id});
 
     const before = await insurerIntegrationRepository.findById(
       resolvedId,
@@ -380,11 +345,8 @@ const deleteInsurerIntegration = async (id, userId, ipAddress) => {
       diff: {
         before: {
           ...before,
-          credentials_encrypted: before.credentials_encrypted ? '***' : null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
+          credentials_encrypted: before.credentials_encrypted ? '***' : null}},
+      ip_address: ipAddress}).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -396,5 +358,4 @@ module.exports = {
   getInsurerIntegrationById,
   createInsurerIntegration,
   updateInsurerIntegration,
-  deleteInsurerIntegration,
-};
+  deleteInsurerIntegration};

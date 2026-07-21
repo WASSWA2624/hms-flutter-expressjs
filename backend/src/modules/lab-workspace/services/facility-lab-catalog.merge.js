@@ -34,8 +34,7 @@ const mergeLabTestWithOffering = (masterTest = {}, offering = null) => {
     unit_price: offering.unit_price,
     currency: toOptionalText(offering.currency) || masterTest.currency || null,
     facility_offering_id: offering.id,
-    is_offered_at_facility: true,
-  };
+    is_offered_at_facility: true};
 
   return merged;
 };
@@ -58,8 +57,7 @@ const mapMergedLabTestRecord = (masterTest, offering = null) => {
         && !toOptionalText(offering.specimen_type)
         && !offering.result_kind
         && !toOptionalText(offering.unit)
-        && !toOptionalText(offering.description)),
-  };
+        && !toOptionalText(offering.description))};
 };
 
 const mapMergedLabPanelRecord = (masterPanel, offering = null) => {
@@ -73,8 +71,7 @@ const mapMergedLabPanelRecord = (masterPanel, offering = null) => {
       ...mapCatalogUnitPriceFields(masterPanel),
       is_offered_at_facility: false,
       facility_offering_id: null,
-      offering_is_active: false,
-    };
+      offering_is_active: false};
   }
 
   return {
@@ -85,8 +82,7 @@ const mapMergedLabPanelRecord = (masterPanel, offering = null) => {
     is_offered_at_facility: true,
     facility_offering_id: offering.id,
     offering_is_active: offering.is_active,
-    offering_sort_order: offering.sort_order,
-  };
+    offering_sort_order: offering.sort_order};
 };
 
 const mapClinicalCatalogLabTestRow = (masterTest, offering = null) => {
@@ -107,9 +103,7 @@ const mapClinicalCatalogLabTestRow = (masterTest, offering = null) => {
     metadata: {
       specimen_type: merged.specimen_type || null,
       result_kind: merged.result_kind || null,
-      facility_offering_id: offering.id,
-    },
-  };
+      facility_offering_id: offering.id}};
 };
 
 const mapClinicalCatalogLabPanelRow = (masterPanel, offering = null) => {
@@ -129,9 +123,7 @@ const mapClinicalCatalogLabPanelRow = (masterPanel, offering = null) => {
     ...mapCatalogUnitPriceFields(merged),
     metadata: {
       facility_offering_id: offering.id,
-      test_count: merged.test_count || 0,
-    },
-  };
+      test_count: merged.test_count || 0}};
 };
 
 module.exports = {
@@ -139,5 +131,4 @@ module.exports = {
   mapMergedLabTestRecord,
   mapMergedLabPanelRecord,
   mapClinicalCatalogLabTestRow,
-  mapClinicalCatalogLabPanelRow,
-};
+  mapClinicalCatalogLabPanelRow};

@@ -8,8 +8,7 @@ const {
   createStaffAssignmentSchema,
   updateStaffAssignmentSchema,
   staffAssignmentIdParamsSchema,
-  listStaffAssignmentsQuerySchema,
-} = require('@validations/staff-assignment/staff-assignment.schema');
+  listStaffAssignmentsQuerySchema} = require('@validations/staff-assignment/staff-assignment.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

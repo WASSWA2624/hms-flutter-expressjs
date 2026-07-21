@@ -6,8 +6,7 @@ const { validateRequest } = require('@middlewares/validate.middleware');
 const {
   closeoutPackIdParamsSchema,
   createCloseoutPackSchema,
-  listCloseoutPacksQuerySchema,
-} = require('@validations/closeout-pack/closeout-pack.schema');
+  listCloseoutPacksQuerySchema} = require('@validations/closeout-pack/closeout-pack.schema');
 
 const router = express.Router();
 

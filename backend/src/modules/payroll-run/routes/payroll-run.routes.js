@@ -8,8 +8,7 @@ const {
   createPayrollRunSchema,
   updatePayrollRunSchema,
   payrollRunIdParamsSchema,
-  listPayrollRunsQuerySchema,
-} = require('@validations/payroll-run/payroll-run.schema');
+  listPayrollRunsQuerySchema} = require('@validations/payroll-run/payroll-run.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];

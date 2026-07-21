@@ -30,8 +30,7 @@ const SCHEDULING_READ_ROLES = [
   ROLES.RECEPTIONIST,
   ROLES.OPERATIONS,
   ROLES.HR,
-  ROLES.BILLING,
-];
+  ROLES.BILLING];
 const SCHEDULING_WRITE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
@@ -40,15 +39,13 @@ const SCHEDULING_WRITE_ROLES = [
   ROLES.NURSE,
   ROLES.RECEPTIONIST,
   ROLES.OPERATIONS,
-  ROLES.HR,
-];
+  ROLES.HR];
 const SCHEDULING_DELETE_ROLES = [
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.OPERATIONS,
-  ROLES.HR,
-];
+  ROLES.HR];
 
 /**
  * @description List visit queue entries with pagination and filters
@@ -73,7 +70,8 @@ const SCHEDULING_DELETE_ROLES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listVisitQueuesQuerySchema }),
+  '/',
+  validateRequest({ query: listVisitQueuesQuerySchema }),
 
   authenticate(),
   authorize(SCHEDULING_READ_ROLES, 'role'),
@@ -94,7 +92,8 @@ router.get(
  * @throws 404 Visit queue entry not found
  */
 router.get(
-  '/:id',  validateRequest({ params: visitQueueIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: visitQueueIdParamsSchema }),
 
   authenticate(),
   authorize(SCHEDULING_READ_ROLES, 'role'),
@@ -122,7 +121,8 @@ router.get(
  * @throws 400 Foreign key constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createVisitQueueSchema }),
+  '/',
+  validateRequest({ body: createVisitQueueSchema }),
 
   authenticate(),
   authorize(SCHEDULING_WRITE_ROLES, 'role'),
@@ -149,7 +149,8 @@ router.post(
  * @throws 400 Foreign key constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: visitQueueIdParamsSchema, body: updateVisitQueueSchema }),
+  '/:id',
+  validateRequest({ params: visitQueueIdParamsSchema, body: updateVisitQueueSchema }),
 
   authenticate(),
   authorize(SCHEDULING_WRITE_ROLES, 'role'),
@@ -170,7 +171,8 @@ router.put(
  * @throws 404 Visit queue entry not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: visitQueueIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: visitQueueIdParamsSchema }),
 
   authenticate(),
   authorize(SCHEDULING_DELETE_ROLES, 'role'),

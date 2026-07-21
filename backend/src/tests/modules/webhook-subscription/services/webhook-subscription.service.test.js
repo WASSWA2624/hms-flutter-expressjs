@@ -7,15 +7,12 @@
 
 jest.mock('@repositories/webhook-subscription/webhook-subscription.repository');
 jest.mock('@repositories/integration-log/integration-log.repository', () => ({
-  create: jest.fn(),
-}));
+  create: jest.fn()}));
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
-}));
+  createAuditLog: jest.fn()}));
 jest.mock('@lib/resilience/retry', () => ({
   withRetry: jest.fn(async (task) => task()),
-  isTransientError: jest.fn(() => false),
-}));
+  isTransientError: jest.fn(() => false)}));
 jest.mock('@lib/billing/identifiers', () => ({
   sanitizeIdentifier: jest.fn((value) => (typeof value === 'string' ? value.trim() : '')),
   resolvePublicIdentifier: jest.fn((...values) => {
@@ -29,8 +26,7 @@ jest.mock('@lib/billing/identifiers', () => ({
   }),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
-  resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-}));
+  resolveIdentifierForPayload: jest.fn(async ({ value }) => value)}));
 
 const webhookSubscriptionService = require('@services/webhook-subscription/webhook-subscription.service');
 const webhookSubscriptionRepository = require('@repositories/webhook-subscription/webhook-subscription.repository');
@@ -55,17 +51,14 @@ const buildRawWebhookSubscription = (overrides = {}) => ({
   tenant: {
     id: '223e4567-e89b-12d3-a456-426614174000',
     human_friendly_id: 'TEN0000001',
-    name: 'Acme Health',
-  },
+    name: 'Acme Health'},
   integration: {
     id: '323e4567-e89b-12d3-a456-426614174000',
     human_friendly_id: 'INT0000001',
     name: 'ADT Feed',
     integration_type: 'HL7',
-    status: 'ACTIVE',
-  },
-  ...overrides,
-});
+    status: 'ACTIVE'},
+  ...overrides});
 
 describe('Webhook Subscription Service', () => {
   beforeEach(() => {
@@ -88,8 +81,7 @@ describe('Webhook Subscription Service', () => {
 
       expect(identifiers.resolveEntityId).toHaveBeenCalledWith({
         model: 'webhook_subscription',
-        identifier: 'WHS0000001',
-      });
+        identifier: 'WHS0000001'});
       expect(result).toEqual(
         expect.objectContaining({
           id: 'WHS0000001',
@@ -97,8 +89,7 @@ describe('Webhook Subscription Service', () => {
           integration_id: 'INT0000001',
           integration_label: 'ADT Feed',
           target_host: 'hooks.example.test',
-          is_active: true,
-        })
+          is_active: true})
       );
     });
 
@@ -123,21 +114,18 @@ describe('Webhook Subscription Service', () => {
           integration_id: 'INT0000001',
           event: 'patient',
           is_active: true,
-          search: 'hook',
-        },
+          search: 'hook'},
         1,
         20
       );
 
       expect(identifiers.resolveIdentifierForFilter).toHaveBeenNthCalledWith(1, {
         value: 'TEN0000001',
-        model: 'tenant',
-      });
+        model: 'tenant'});
       expect(identifiers.resolveIdentifierForFilter).toHaveBeenNthCalledWith(2, {
         value: 'INT0000001',
         model: 'integration',
-        where: { tenant_id: 'TEN0000001' },
-      });
+        where: { tenant_id: 'TEN0000001' }});
       expect(webhookSubscriptionRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           tenant_id: 'TEN0000001',
@@ -148,9 +136,7 @@ describe('Webhook Subscription Service', () => {
             { event: { contains: 'hook' } },
             { target_url: { contains: 'hook' } },
             { human_friendly_id: { contains: 'HOOK' } },
-            { integration: { name: { contains: 'hook' } } },
-          ],
-        }),
+            { integration: { name: { contains: 'hook' } } }]}),
         0,
         20,
         { created_at: 'desc' },
@@ -180,8 +166,7 @@ describe('Webhook Subscription Service', () => {
       webhookSubscriptionRepository.create.mockResolvedValue({
         id: rawWebhookSubscription.id,
         tenant_id: rawWebhookSubscription.tenant_id,
-        integration_id: rawWebhookSubscription.integration_id,
-      });
+        integration_id: rawWebhookSubscription.integration_id});
       webhookSubscriptionRepository.findById.mockResolvedValue(rawWebhookSubscription);
 
       const result = await webhookSubscriptionService.createWebhookSubscription(
@@ -190,23 +175,20 @@ describe('Webhook Subscription Service', () => {
           integration_id: 'INT0000001',
           event: 'patient.created',
           target_url: 'https://hooks.example.test/patient-created',
-          is_active: true,
-        },
+          is_active: true},
         { user_id: 'USR0000001' }
       );
 
       expect(identifiers.resolveIdentifierForPayload).toHaveBeenNthCalledWith(1, {
         value: 'TEN0000001',
         field: 'tenant_id',
-        model: 'tenant',
-      });
+        model: 'tenant'});
       expect(identifiers.resolveIdentifierForPayload).toHaveBeenNthCalledWith(2, {
         value: 'INT0000001',
         field: 'integration_id',
         model: 'integration',
         where: { tenant_id: 'TEN0000001' },
-        nullable: true,
-      });
+        nullable: true});
       expect(result).toEqual(expect.objectContaining({ id: 'WHS0000001', integration_id: 'INT0000001' }));
     });
   });
@@ -215,14 +197,12 @@ describe('Webhook Subscription Service', () => {
     it('updates using the resolved UUID and serializes the response', async () => {
       const existingWebhookSubscription = buildRawWebhookSubscription({
         id: 'webhook-uuid',
-        human_friendly_id: 'WHS0000002',
-      });
+        human_friendly_id: 'WHS0000002'});
       const updatedWebhookSubscription = buildRawWebhookSubscription({
         id: 'webhook-uuid',
         human_friendly_id: 'WHS0000002',
         event: 'patient.updated',
-        is_active: false,
-      });
+        is_active: false});
 
       identifiers.resolveEntityId.mockResolvedValueOnce('webhook-uuid');
       webhookSubscriptionRepository.findById
@@ -231,8 +211,7 @@ describe('Webhook Subscription Service', () => {
       webhookSubscriptionRepository.update.mockResolvedValue({
         id: 'webhook-uuid',
         event: 'patient.updated',
-        is_active: false,
-      });
+        is_active: false});
 
       const result = await webhookSubscriptionService.updateWebhookSubscription(
         'WHS0000002',
@@ -242,13 +221,11 @@ describe('Webhook Subscription Service', () => {
 
       expect(webhookSubscriptionRepository.update).toHaveBeenCalledWith('webhook-uuid', {
         event: 'patient.updated',
-        is_active: false,
-      });
+        is_active: false});
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'UPDATE',
-          entity_id: 'webhook-uuid',
-        })
+          entity_id: 'webhook-uuid'})
       );
       expect(result).toEqual(expect.objectContaining({ id: 'WHS0000002', is_active: false }));
     });
@@ -266,27 +243,23 @@ describe('Webhook Subscription Service', () => {
     it('soft deletes using the resolved UUID', async () => {
       const existingWebhookSubscription = buildRawWebhookSubscription({
         id: 'webhook-uuid',
-        human_friendly_id: 'WHS0000003',
-      });
+        human_friendly_id: 'WHS0000003'});
       const deletedWebhookSubscription = {
         ...existingWebhookSubscription,
-        deleted_at: '2026-03-08T15:00:00.000Z',
-      };
+        deleted_at: '2026-03-08T15:00:00.000Z'};
 
       identifiers.resolveEntityId.mockResolvedValueOnce('webhook-uuid');
       webhookSubscriptionRepository.findById.mockResolvedValue(existingWebhookSubscription);
       webhookSubscriptionRepository.softDelete.mockResolvedValue(deletedWebhookSubscription);
 
       const result = await webhookSubscriptionService.deleteWebhookSubscription('WHS0000003', {
-        user_id: 'USR0000001',
-      });
+        user_id: 'USR0000001'});
 
       expect(webhookSubscriptionRepository.softDelete).toHaveBeenCalledWith('webhook-uuid');
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'DELETE',
-          entity_id: 'webhook-uuid',
-        })
+          entity_id: 'webhook-uuid'})
       );
       expect(result).toEqual(deletedWebhookSubscription);
     });
@@ -299,8 +272,7 @@ describe('Webhook Subscription Service', () => {
       global.fetch.mockResolvedValue({
         ok: true,
         status: 202,
-        text: jest.fn(async () => 'accepted'),
-      });
+        text: jest.fn(async () => 'accepted')});
 
       const result = await webhookSubscriptionService.replayWebhookSubscription(
         'WHS0000001',
@@ -319,8 +291,7 @@ describe('Webhook Subscription Service', () => {
           signed: false,
           http_status: 202,
           payload_json: { attempt: 2 },
-          notes: 'manual retry',
-        })
+          notes: 'manual retry'})
       );
       expect(withRetry).toHaveBeenCalled();
       expect(global.fetch).toHaveBeenCalledWith(
@@ -329,15 +300,12 @@ describe('Webhook Subscription Service', () => {
           method: 'POST',
           headers: expect.objectContaining({
             'content-type': 'application/json',
-            'x-hms-webhook-event': 'patient.created',
-          }),
-        })
+            'x-hms-webhook-event': 'patient.created'})})
       );
       expect(integrationLogRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           integration_id: '323e4567-e89b-12d3-a456-426614174000',
-          status: 'ACTIVE',
-        })
+          status: 'ACTIVE'})
       );
     });
 
@@ -347,8 +315,7 @@ describe('Webhook Subscription Service', () => {
       global.fetch.mockResolvedValue({
         ok: false,
         status: 503,
-        text: jest.fn(async () => 'downstream unavailable'),
-      });
+        text: jest.fn(async () => 'downstream unavailable')});
 
       await expect(
         webhookSubscriptionService.replayWebhookSubscription(
@@ -358,14 +325,12 @@ describe('Webhook Subscription Service', () => {
         )
       ).rejects.toMatchObject({
         statusCode: 503,
-        messageKey: 'errors.service.unavailable',
-      });
+        messageKey: 'errors.service.unavailable'});
 
       expect(integrationLogRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           integration_id: '323e4567-e89b-12d3-a456-426614174000',
-          status: 'ERROR',
-        })
+          status: 'ERROR'})
       );
     });
   });

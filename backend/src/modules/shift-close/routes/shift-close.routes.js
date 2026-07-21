@@ -8,8 +8,7 @@ const {
   createShiftCloseSchema,
   listShiftClosesQuerySchema,
   shiftCloseIdParamsSchema,
-  updateShiftCloseSchema,
-} = require('@validations/shift-close/shift-close.schema');
+  updateShiftCloseSchema} = require('@validations/shift-close/shift-close.schema');
 
 const router = express.Router();
 

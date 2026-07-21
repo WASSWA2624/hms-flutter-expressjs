@@ -1,23 +1,18 @@
 const createModelMeta = (fields) => ({
-  fieldByName: new Map(fields.map((field) => [field.name, field])),
-});
+  fieldByName: new Map(fields.map((field) => [field.name, field]))});
 
 const {
   DEMO_ROLE_CODES,
-  DEMO_TENANT,
-} = require('../../../scripts/seeders/seed-catalog');
+  DEMO_TENANT} = require('../../../scripts/seeders/seed-catalog');
 
 const buildUserRoleRows = (users = DEMO_TENANT.users) =>
   users.flatMap((entry) => [
     {
       role: { name: entry.role },
-      user: { email: entry.email },
-    },
+      user: { email: entry.email }},
     ...((entry.extra_roles || []).map((role) => ({
       role: { name: role },
-      user: { email: entry.email },
-    }))),
-  ]);
+      user: { email: entry.email }})))]);
 
 const mockPrisma = {
   tenant: { findMany: jest.fn() },
@@ -73,8 +68,7 @@ const mockPrisma = {
   webhook_subscription: { count: jest.fn() },
   address: { count: jest.fn() },
   contact: { count: jest.fn() },
-  $disconnect: jest.fn(),
-};
+  $disconnect: jest.fn()};
 
 jest.mock('../../../scripts/seeders/seed-runtime', () => ({
   prisma: mockPrisma,
@@ -86,16 +80,11 @@ jest.mock('../../../scripts/seeders/seed-runtime', () => ({
       ['address', createModelMeta([
         { name: 'tenant_id', isOptional: false },
         { name: 'facility_id', isOptional: true },
-        { name: 'deleted_at' },
-      ])],
+        { name: 'deleted_at' }])],
       ['contact', createModelMeta([
         { name: 'tenant_id', isOptional: false },
         { name: 'facility_id', isOptional: true },
-        { name: 'deleted_at' },
-      ])],
-    ]),
-  })),
-}));
+        { name: 'deleted_at' }])]])}))}));
 
 describe('verify-demo-data', () => {
   beforeEach(() => {
@@ -103,11 +92,9 @@ describe('verify-demo-data', () => {
     jest.clearAllMocks();
 
     mockPrisma.tenant.findMany.mockResolvedValue([
-      { id: 'tenant-demo', slug: 'democare-general-hospital', name: 'DemoCare General Hospital' },
-    ]);
+      { id: 'tenant-demo', slug: 'democare-general-hospital', name: 'DemoCare General Hospital' }]);
     mockPrisma.facility.findMany.mockResolvedValue([
-      { id: 'facility-demo', tenant_id: 'tenant-demo', name: 'DemoCare General Hospital' },
-    ]);
+      { id: 'facility-demo', tenant_id: 'tenant-demo', name: 'DemoCare General Hospital' }]);
     mockPrisma.user.count.mockResolvedValue(DEMO_TENANT.users.length);
     mockPrisma.role.findMany.mockResolvedValue(DEMO_ROLE_CODES.map((name) => ({ name })));
     mockPrisma.user_role.findMany.mockResolvedValue(buildUserRoleRows());
@@ -116,42 +103,31 @@ describe('verify-demo-data', () => {
       {
         code: 'advanced',
         max_facilities: 50,
-        extension_json: { commercial_terms: { setup_range_usd: [2500, 7500] } },
-      },
+        extension_json: { commercial_terms: { setup_range_usd: [2500, 7500] } }},
       {
         code: 'basic',
-        max_facilities: 1,
-        extension_json: { branch_allowance: { included_branches: 2 } },
-      },
+        max_facilities: 1},
       {
         code: 'custom',
         max_facilities: null,
-        extension_json: { commercial_terms: { annual_support_percent_range: [15, 25] } },
-      },
+        extension_json: { commercial_terms: { annual_support_percent_range: [15, 25] } }},
       {
         code: 'free',
         max_facilities: 1,
-        extension_json: { usage_limits: { new_patients_per_day: 5 } },
-      },
+        extension_json: { usage_limits: { new_patients_per_day: 5 } }},
       {
         code: 'pro',
         max_facilities: 3,
-        extension_json: { price_notes: { yearly: 890 } },
-      },
-    ]);
+        extension_json: { price_notes: { yearly: 890 } }}]);
     mockPrisma.subscription.findMany.mockResolvedValue([
-      { id: 'sub-1', tenant_id: 'tenant-demo', change_status: 'NONE', plan_fit_status: 'HEALTHY', status: 'ACTIVE' },
-    ]);
+      { id: 'sub-1', tenant_id: 'tenant-demo', change_status: 'NONE', plan_fit_status: 'HEALTHY', status: 'ACTIVE' }]);
     mockPrisma.module_subscription.findMany.mockResolvedValue([
       { is_active: true, module: { is_add_on: true }, subscription: { tenant_id: 'tenant-demo' } },
-      { is_active: true, module: { is_add_on: false }, subscription: { tenant_id: 'tenant-demo' } },
-    ]);
+      { is_active: true, module: { is_add_on: false }, subscription: { tenant_id: 'tenant-demo' } }]);
     mockPrisma.subscription_invoice.findMany.mockResolvedValue([
-      { invoice: { status: 'PAID' }, subscription: { tenant_id: 'tenant-demo' } },
-    ]);
+      { invoice: { status: 'PAID' }, subscription: { tenant_id: 'tenant-demo' } }]);
     mockPrisma.license.findMany.mockResolvedValue([
-      { status: 'ACTIVE', tenant_id: 'tenant-demo', expires_at: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) },
-    ]);
+      { status: 'ACTIVE', tenant_id: 'tenant-demo', expires_at: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) }]);
     mockPrisma.patient.count.mockResolvedValue(5);
     mockPrisma.appointment.count.mockResolvedValue(1);
     mockPrisma.encounter.count.mockResolvedValue(5);
@@ -170,43 +146,35 @@ describe('verify-demo-data', () => {
         is_sensitive: false,
         participants: [{ last_read_at: new Date('2026-03-01T09:00:00Z') }],
         messages: [{ attachments: [{ attachment_kind: 'IMAGE' }, { attachment_kind: 'DOCUMENT' }] }],
-        visibility_roles: [],
-      },
+        visibility_roles: []},
       {
         conversation_type: 'GROUP',
         status: 'ARCHIVED',
         is_sensitive: false,
         participants: [{ archived_at: new Date('2026-03-01T12:00:00Z') }],
         messages: [],
-        visibility_roles: [],
-      },
+        visibility_roles: []},
       {
         conversation_type: 'GROUP',
         status: 'OPEN',
         is_sensitive: true,
         participants: [{ last_read_at: new Date('2026-03-01T12:00:00Z') }],
         messages: [],
-        visibility_roles: [{ role_code: 'BIOMED' }],
-      },
-    ]);
+        visibility_roles: [{ role_code: 'BIOMED' }]}]);
     mockPrisma.notification.findMany.mockResolvedValue([
       { read_at: null, context_type: 'conversation', context_public_id: 'CONV-1', deliveries: [] },
-      { read_at: new Date('2026-03-01T11:00:00Z'), context_type: 'invoice', context_public_id: 'INV-1', deliveries: [] },
-    ]);
+      { read_at: new Date('2026-03-01T11:00:00Z'), context_type: 'invoice', context_public_id: 'INV-1', deliveries: [] }]);
     mockPrisma.notification_delivery.findMany.mockResolvedValue([
       { channel: 'IN_APP', status: 'DELIVERED', retryable: false },
       { channel: 'SMS', status: 'FAILED', retryable: true },
-      { channel: 'SMS', status: 'SENT', retryable: false },
-    ]);
+      { channel: 'SMS', status: 'SENT', retryable: false }]);
     mockPrisma.template.findMany.mockResolvedValue([
       { variables: [{ key: 'patient_name' }] },
-      { variables: [{ key: 'device_name' }] },
-    ]);
+      { variables: [{ key: 'device_name' }] }]);
     mockPrisma.abac_policy.count.mockResolvedValue(2);
     mockPrisma.break_glass_access.findMany.mockResolvedValue([
       { status: 'REQUESTED', review_status: 'PENDING' },
-      { status: 'ACTIVE', review_status: 'APPROVED' },
-    ]);
+      { status: 'ACTIVE', review_status: 'APPROVED' }]);
     mockPrisma.break_glass_review.count.mockResolvedValue(1);
     mockPrisma.office_context.findMany.mockResolvedValue([{ status: 'OPEN' }]);
     mockPrisma.shift_close.findMany.mockResolvedValue([{ status: 'APPROVED' }]);
@@ -234,8 +202,7 @@ describe('verify-demo-data', () => {
       'integration',
       'webhook_subscription',
       'address',
-      'contact',
-    ]) {
+      'contact']) {
       mockPrisma[key].count.mockResolvedValue(1);
     }
 
@@ -267,8 +234,7 @@ describe('verify-demo-data', () => {
     mockPrisma.user_role.findMany.mockResolvedValue(
       buildUserRoleRows(DEMO_TENANT.users.map((entry) => ({
         ...entry,
-        email: entry.role === 'SUPER_ADMIN' ? 'superadmin@legacy.test' : entry.email,
-      })))
+        email: entry.role === 'SUPER_ADMIN' ? 'superadmin@legacy.test' : entry.email})))
     );
 
     const { verifyDemoData } = require('../../../scripts/verify-demo-data');

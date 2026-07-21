@@ -13,8 +13,7 @@ describe('dashboard-workspace repository', () => {
         'countRows',
         'sumRows',
         'findRows',
-        'safePublicId',
-      ])
+        'safePublicId'])
     );
   });
 });

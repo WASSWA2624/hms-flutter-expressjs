@@ -186,10 +186,7 @@ describe('User Service', () => {
             select: expect.objectContaining({
               id: true,
               human_friendly_id: true,
-              name: true,
-            }),
-          }),
-        })
+              name: true})})})
       );
       expect(userRepository.findById.mock.calls[0][1].facility.select.code).toBeUndefined();
       expect(userRepository.findById.mock.calls[0][1].facility.select.slug).toBeUndefined();
@@ -283,9 +280,7 @@ describe('User Service', () => {
           permission_ids: [
             '550e8400-e29b-41d4-a716-446655440010',
             ' 550e8400-e29b-41d4-a716-446655440010 ',
-            '550e8400-e29b-41d4-a716-446655440011',
-          ],
-        },
+            '550e8400-e29b-41d4-a716-446655440011']},
         'creator-id',
         '127.0.0.1'
       );
@@ -294,17 +289,14 @@ describe('User Service', () => {
         expect.objectContaining({
           permission_ids: [
             '550e8400-e29b-41d4-a716-446655440010',
-            '550e8400-e29b-41d4-a716-446655440011',
-          ],
-        })
+            '550e8400-e29b-41d4-a716-446655440011']})
       );
     });
 
     it('should hash non-bcrypt password_hash values before persistence', async () => {
       const plainPasswordPayload = {
         ...userData,
-        password_hash: 'PlainPassword123!',
-      };
+        password_hash: 'PlainPassword123!'};
       userRepository.create.mockResolvedValue(createdUser);
       createAuditLog.mockResolvedValue(true);
 
@@ -313,8 +305,7 @@ describe('User Service', () => {
       expect(hashPassword).toHaveBeenCalledWith('PlainPassword123!');
       expect(userRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          password_hash: '$2b$10$hashedpasswordplaceholder',
-        })
+          password_hash: '$2b$10$hashedpasswordplaceholder'})
       );
     });
 
@@ -386,8 +377,7 @@ describe('User Service', () => {
       ).rejects.toMatchObject({
         messageKey: 'errors.user.email_exists_in_tenant',
         statusCode: 409,
-        errors: [expect.objectContaining({ field: 'email' })],
-      });
+        errors: [expect.objectContaining({ field: 'email' })]});
       expect(userRepository.create).not.toHaveBeenCalled();
     });
 
@@ -404,8 +394,7 @@ describe('User Service', () => {
       ).rejects.toMatchObject({
         messageKey: 'errors.user.phone_exists_in_tenant',
         statusCode: 409,
-        errors: [expect.objectContaining({ field: 'phone' })],
-      });
+        errors: [expect.objectContaining({ field: 'phone' })]});
       expect(userRepository.create).not.toHaveBeenCalled();
     });
   });
@@ -468,9 +457,7 @@ describe('User Service', () => {
           permission_ids: [
             '550e8400-e29b-41d4-a716-446655440010',
             ' 550e8400-e29b-41d4-a716-446655440010 ',
-            '550e8400-e29b-41d4-a716-446655440011',
-          ],
-        },
+            '550e8400-e29b-41d4-a716-446655440011']},
         'updater-id',
         '127.0.0.1'
       );
@@ -478,9 +465,7 @@ describe('User Service', () => {
       expect(userRepository.update).toHaveBeenCalledWith(userId, {
         permission_ids: [
           '550e8400-e29b-41d4-a716-446655440010',
-          '550e8400-e29b-41d4-a716-446655440011',
-        ],
-      });
+          '550e8400-e29b-41d4-a716-446655440011']});
     });
 
     it('should throw HttpError if user not found', async () => {

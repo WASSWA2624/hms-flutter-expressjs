@@ -19,13 +19,11 @@ jest.mock('@repositories/scheduling-workspace/scheduling-workspace.repository', 
   countOpenEncounters: jest.fn(),
   findFacilities: jest.fn(),
   findProviders: jest.fn(),
-  resolveLegacyRecord: jest.fn(),
-}));
+  resolveLegacyRecord: jest.fn()}));
 
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: (...values) => values.find((value) => value && !String(value).includes('-uuid')) || null,
-  resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null),
-}));
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null)}));
 
 const repository = require('@repositories/scheduling-workspace/scheduling-workspace.repository');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
@@ -42,9 +40,7 @@ describe('scheduling-workspace.service', () => {
         status: 'CONFIRMED',
         patient: { human_friendly_id: 'PAT0001', first_name: 'Jane', last_name: 'Doe' },
         provider: { human_friendly_id: 'USR0002', profile: { first_name: 'Dr', last_name: 'Kato' } },
-        facility: { human_friendly_id: 'FAC0001', name: 'Main Clinic' },
-      },
-    ]);
+        facility: { human_friendly_id: 'FAC0001', name: 'Main Clinic' }}]);
     repository.countAppointments.mockResolvedValue(4);
     repository.findQueueEntries.mockResolvedValue([]);
     repository.countQueueEntries.mockResolvedValue(2);
@@ -60,16 +56,12 @@ describe('scheduling-workspace.service', () => {
         encounter_type: 'OPD',
         updated_at: new Date('2026-03-03T08:00:00.000Z'),
         extension_json: { opd_flow: { stage: 'WAITING_DOCTOR_REVIEW', next_step: 'DOCTOR_REVIEW' } },
-        patient: { human_friendly_id: 'PAT0001', first_name: 'Jane', last_name: 'Doe' },
-      },
-    ]);
+        patient: { human_friendly_id: 'PAT0001', first_name: 'Jane', last_name: 'Doe' }}]);
     repository.countOpenEncounters.mockResolvedValue(1);
     repository.findFacilities.mockResolvedValue([
-      { human_friendly_id: 'FAC0001', name: 'Main Clinic' },
-    ]);
+      { human_friendly_id: 'FAC0001', name: 'Main Clinic' }]);
     repository.findProviders.mockResolvedValue([
-      { human_friendly_id: 'USR0002', profile: { first_name: 'Dr', last_name: 'Kato' }, email: 'kato@example.com' },
-    ]);
+      { human_friendly_id: 'USR0002', profile: { first_name: 'Dr', last_name: 'Kato' }, email: 'kato@example.com' }]);
     repository.resolveLegacyRecord.mockResolvedValue({ human_friendly_id: 'APT0001' });
   });
 
@@ -77,23 +69,20 @@ describe('scheduling-workspace.service', () => {
     const result = await subject.getWorkspace({
       tenant_id: 'TEN0001',
       facility_id: 'FAC0001',
-      date: '2026-03-03',
-    });
+      date: '2026-03-03'});
 
     expect(resolveIdentifierForFilter).toHaveBeenCalled();
     expect(result.summary_cards).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'today_appointments', value: 4 }),
-        expect.objectContaining({ id: 'active_opd', value: 1 }),
-      ])
+        expect.objectContaining({ id: 'active_opd', value: 1 })])
     );
     expect(result.boards.arrivals.items[0]).toEqual(
       expect.objectContaining({
         id: 'APT0001',
         patient_id: 'PAT0001',
         provider_user_id: 'USR0002',
-        target_path: expect.stringContaining('/scheduling/appointments/APT0001'),
-      })
+        target_path: expect.stringContaining('/scheduling/appointments/APT0001')})
     );
   });
 
@@ -104,9 +93,7 @@ describe('scheduling-workspace.service', () => {
     expect(result.providers).toEqual([
       expect.objectContaining({
         value: 'USR0002',
-        label: 'Dr Kato',
-      }),
-    ]);
+        label: 'Dr Kato'})]);
   });
 
   it('maps legacy routes to frontend target paths', async () => {
@@ -114,7 +101,6 @@ describe('scheduling-workspace.service', () => {
     expect(result).toEqual({
       resource: 'appointments',
       id: 'APT0001',
-      target_path: '/scheduling/appointments/APT0001',
-    });
+      target_path: '/scheduling/appointments/APT0001'});
   });
 });

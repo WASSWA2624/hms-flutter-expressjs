@@ -36,7 +36,7 @@ describe('Refund Repository', () => {
       expect(result).toEqual({ id: 'refund-1' });
       expect(prisma.refund.findFirst).toHaveBeenCalledWith({
         where: { id: 'refund-1', deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -56,7 +56,7 @@ describe('Refund Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { refunded_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
   });

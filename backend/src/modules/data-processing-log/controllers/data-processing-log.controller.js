@@ -72,8 +72,7 @@ const getDataProcessingLogs = asyncHandler(async (req, res) => {
     total: result.total,
     totalPages: result.totalPages,
     hasNextPage: result.page < result.totalPages,
-    hasPreviousPage: result.page > 1,
-  });
+    hasPreviousPage: result.page > 1});
 });
 
 /**

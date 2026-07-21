@@ -12,12 +12,10 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   normalizeIdentifier,
-  resolveModelIdByIdentifier,
-} = require('@lib/identifiers/resolve-entity-id');
+  resolveModelIdByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require('@lib/identifiers/service-identifier-resolution');
+  resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -27,14 +25,12 @@ const buildPagination = (page, limit, total) => {
     total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
+    hasPreviousPage: page > 1};
 };
 
 const buildEmptyListResult = (page, limit) => ({
   imagingStudies: [],
-  pagination: buildPagination(page, limit, 0),
-});
+  pagination: buildPagination(page, limit, 0)});
 
 const resolveResourceId = async (model, identifier) => {
   const normalized = normalizeIdentifier(identifier);
@@ -43,8 +39,7 @@ const resolveResourceId = async (model, identifier) => {
   const resolved = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where: { deleted_at: null },
-  });
+    where: { deleted_at: null }});
 
   return resolved || normalized;
 };
@@ -73,8 +68,7 @@ const listImagingStudies = async (filters, page, limit, sortBy, order, userId, i
       const orderId = await resolveIdentifierForFilter({
         value: filters.radiology_order_id,
         model: 'radiology_order',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       if (orderId === null) return buildEmptyListResult(page, limit);
       if (orderId !== undefined) whereClause.radiology_order_id = orderId;
     }
@@ -88,8 +82,7 @@ const listImagingStudies = async (filters, page, limit, sortBy, order, userId, i
 
     return {
       imagingStudies,
-      pagination: buildPagination(page, limit, total),
-    };
+      pagination: buildPagination(page, limit, total)};
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -137,9 +130,7 @@ const createImagingStudy = async (data, userId, ipAddress) => {
         value: data.radiology_order_id,
         field: 'radiology_order_id',
         model: 'radiology_order',
-        where: { deleted_at: null },
-      }),
-    };
+        where: { deleted_at: null }})};
     const imagingStudy = await imagingStudyRepository.create(normalizedData);
 
     // Create audit log (non-blocking)
@@ -186,8 +177,7 @@ const updateImagingStudy = async (id, data, userId, ipAddress) => {
         value: payload.radiology_order_id,
         field: 'radiology_order_id',
         model: 'radiology_order',
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
     }
 
     const imagingStudy = await imagingStudyRepository.update(resolvedId, payload);

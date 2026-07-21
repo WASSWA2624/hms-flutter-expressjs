@@ -16,8 +16,7 @@ const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
 const publishAssignmentWorkspaceUpdate = ({
   action,
   actorUserId,
-  staffAssignment,
-}) => {
+  staffAssignment}) => {
   publishHrWorkspaceUpdate({
     action,
     actorUserId: actorUserId || null,
@@ -35,9 +34,7 @@ const publishAssignmentWorkspaceUpdate = ({
         staffAssignment?.staff_profile?.human_friendly_id ||
         staffAssignment?.staff_profile?.staff_number ||
         staffAssignment?.staff_profile_id ||
-        null,
-    },
-  }).catch(() => {});
+        null}}).catch(() => {});
 };
 
 /**
@@ -113,8 +110,7 @@ const createStaffAssignment = asyncHandler(async (req, res) => {
   publishAssignmentWorkspaceUpdate({
     action: 'CREATE',
     actorUserId: userId,
-    staffAssignment,
-  });
+    staffAssignment});
 
   sendSuccess(res, 201, 'messages.staff_assignment.create.success', staffAssignment);
 });
@@ -136,8 +132,7 @@ const updateStaffAssignment = asyncHandler(async (req, res) => {
   publishAssignmentWorkspaceUpdate({
     action: 'UPDATE',
     actorUserId: userId,
-    staffAssignment,
-  });
+    staffAssignment});
 
   sendSuccess(res, 200, 'messages.staff_assignment.update.success', staffAssignment);
 });

@@ -49,8 +49,7 @@ const listNotifications = asyncHandler(async (req, res) => {
     delivery_status,
     from_date,
     to_date,
-    include_deliveries,
-  };
+    include_deliveries};
 
   const result = await notificationService.listNotifications(
     filters,
@@ -236,5 +235,4 @@ module.exports = {
   markNotificationUnread,
   bulkMarkNotificationsRead,
   bulkMarkNotificationsUnread,
-  bulkArchiveNotifications,
-};
+  bulkArchiveNotifications};

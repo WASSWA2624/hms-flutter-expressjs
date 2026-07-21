@@ -12,34 +12,25 @@ jest.mock("@repositories/follow-up/follow-up.repository");
 jest.mock("@lib/audit");
 jest.mock("@lib/identifiers/service-identifier-resolution", () => ({
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
-  resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
-}));
+  resolveIdentifierForPayload: jest.fn(async ({ value }) => value)}));
 jest.mock("@prisma/client", () => ({
   follow_up: {
     count: jest.fn(),
     findMany: jest.fn(),
     findFirst: jest.fn(),
-    update: jest.fn(),
-  },
+    update: jest.fn()},
   encounter: {
-    findFirst: jest.fn(),
-  },
+    findFirst: jest.fn()},
   user_role: {
-    findMany: jest.fn(),
-  },
+    findMany: jest.fn()},
   notification: {
-    create: jest.fn(),
-  },
+    create: jest.fn()},
   notification_delivery: {
-    createMany: jest.fn(),
-  },
-}));
+    createMany: jest.fn()}}));
 jest.mock("@lib/websocket", () => ({
   emitToUser: jest.fn(),
   NOTIFICATION_EVENTS: {
-    NOTIFICATION_CREATED: "notification.created",
-  },
-}));
+    NOTIFICATION_CREATED: "notification.created"}}));
 
 const followUpRepository = require("@repositories/follow-up/follow-up.repository");
 const prisma = require("@prisma/client");
@@ -47,16 +38,14 @@ const { createAuditLog } = require("@lib/audit");
 const { emitToUser } = require("@lib/websocket");
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
-} = require("@lib/identifiers/service-identifier-resolution");
+  resolveIdentifierForPayload} = require("@lib/identifiers/service-identifier-resolution");
 const {
   listFollowUps,
   getFollowUpById,
   createFollowUp,
   updateFollowUp,
   deleteFollowUp,
-  dispatchFollowUpReminders,
-} = require("@services/follow-up/follow-up.service");
+  dispatchFollowUpReminders} = require("@services/follow-up/follow-up.service");
 
 describe("Follow-up Service", () => {
   beforeEach(() => {
@@ -70,8 +59,7 @@ describe("Follow-up Service", () => {
     prisma.follow_up.update.mockResolvedValue({});
     prisma.encounter.findFirst.mockResolvedValue({
       id: "encounter-uuid-1",
-      patient_id: "patient-1",
-    });
+      patient_id: "patient-1"});
     prisma.user_role.findMany.mockResolvedValue([]);
     prisma.notification.create.mockImplementation(async ({ data }) => ({
       id: `notif-${data.user_id}`,
@@ -87,8 +75,7 @@ describe("Follow-up Service", () => {
       context_public_id: data.context_public_id || null,
       read_at: null,
       created_at: new Date("2026-03-04T12:00:00.000Z"),
-      updated_at: new Date("2026-03-04T12:00:00.000Z"),
-    }));
+      updated_at: new Date("2026-03-04T12:00:00.000Z")}));
     prisma.notification_delivery.createMany.mockResolvedValue({ count: 0 });
   });
 
@@ -115,18 +102,11 @@ describe("Follow-up Service", () => {
                 {
                   contact_type: "PHONE",
                   value: "+256700000001",
-                  is_primary: true,
-                },
+                  is_primary: true},
                 {
                   contact_type: "EMAIL",
                   value: "ada@example.com",
-                  is_primary: true,
-                },
-              ],
-            },
-          },
-        },
-      ];
+                  is_primary: true}]}}}];
       followUpRepository.findMany.mockResolvedValue(mockFollowUps);
       followUpRepository.count.mockResolvedValue(1);
 
@@ -146,8 +126,7 @@ describe("Follow-up Service", () => {
         20,
         { created_at: "desc" },
         expect.objectContaining({
-          encounter: expect.any(Object),
-        })
+          encounter: expect.any(Object)})
       );
       expect(result.followUps).toEqual([
         expect.objectContaining({
@@ -159,9 +138,7 @@ describe("Follow-up Service", () => {
           patient_primary_email: "ada@example.com",
           encounter_type: "OPD",
           status: "SCHEDULED",
-          notes: "Call back",
-        }),
-      ]);
+          notes: "Call back"})]);
       expect(result.pagination.total).toBe(1);
     });
 
@@ -184,15 +161,12 @@ describe("Follow-up Service", () => {
           status: "SCHEDULED",
           encounter: {
             encounter_type: "IPD",
-            deleted_at: null,
-          },
-        },
+            deleted_at: null}},
         0,
         20,
         { scheduled_at: "asc" },
         expect.objectContaining({
-          encounter: expect.any(Object),
-        })
+          encounter: expect.any(Object)})
       );
     });
   });
@@ -212,10 +186,7 @@ describe("Follow-up Service", () => {
             human_friendly_id: "PAT-1",
             first_name: "Ada",
             last_name: "Lovelace",
-            contacts: [],
-          },
-        },
-      };
+            contacts: []}}};
       followUpRepository.findById.mockResolvedValue(mockFollowUp);
 
       const result = await getFollowUpById("fu-1", "user-1", "127.0.0.1");
@@ -225,8 +196,7 @@ describe("Follow-up Service", () => {
           id: "FU-1",
           patient_id: "PAT-1",
           patient_display_name: "Ada Lovelace",
-          patient_primary_phone: null,
-        })
+          patient_primary_phone: null})
       );
     });
 
@@ -256,13 +226,11 @@ describe("Follow-up Service", () => {
         value: "ENC000001",
         field: "encounter_id",
         model: "encounter",
-        where: { deleted_at: null },
-      });
+        where: { deleted_at: null }});
       expect(followUpRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           encounter_id: "encounter-uuid-1",
-          status: "SCHEDULED",
-        }),
+          status: "SCHEDULED"}),
       );
       expect(createAuditLog).toHaveBeenCalled();
     });
@@ -271,8 +239,7 @@ describe("Follow-up Service", () => {
       resolveIdentifierForPayload.mockResolvedValue("encounter-uuid-2");
       prisma.encounter.findFirst.mockResolvedValue({
         id: "encounter-uuid-2",
-        patient_id: "patient-1",
-      });
+        patient_id: "patient-1"});
       prisma.follow_up.findFirst.mockResolvedValue({ id: "fu-existing" });
 
       await expect(
@@ -283,8 +250,7 @@ describe("Follow-up Service", () => {
         ),
       ).rejects.toMatchObject({
         messageKey: "errors.follow_up.already_scheduled",
-        statusCode: 409,
-      });
+        statusCode: 409});
       expect(followUpRepository.create).not.toHaveBeenCalled();
     });
   });
@@ -356,42 +322,32 @@ describe("Follow-up Service", () => {
             provider_user_id: "doctor-1",
             patient: {
               first_name: "Jane",
-              last_name: "Doe",
-            },
-          },
-        },
-      ]);
+              last_name: "Doe"}}}]);
       prisma.user_role.findMany.mockResolvedValue([
         { user_id: "doctor-1" },
-        { user_id: "nurse-1" },
-      ]);
+        { user_id: "nurse-1" }]);
 
       const result = await dispatchFollowUpReminders({
         tenant_id: "tenant-1",
-        user_id: "dispatcher-1",
-      });
+        user_id: "dispatcher-1"});
 
       expect(prisma.notification.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             target_path: "/ipd?id=ADM-001&panel=medication",
             context_type: "ipd_medication_reminder",
-            context_public_id: "ADM-001",
-          }),
-        }),
+            context_public_id: "ADM-001"})}),
       );
       expect(emitToUser).toHaveBeenCalledWith(
         "doctor-1",
         "notification.created",
         expect.objectContaining({
-          target_path: "/ipd?id=ADM-001&panel=medication",
-        }),
+          target_path: "/ipd?id=ADM-001&panel=medication"}),
       );
       expect(prisma.follow_up.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: "fu-ipd-1" },
-          data: { reminder_due_sent_at: expect.any(Date) },
-        }),
+          data: { reminder_due_sent_at: expect.any(Date) }}),
       );
       expect(result.sent_due).toBe(1);
       expect(result.sent_24h).toBe(0);

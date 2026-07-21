@@ -98,9 +98,7 @@ const create = async (data, permissionIds = []) => {
       await tx.role_permission.createMany({
         data: ids.map((permission_id) => ({
           role_id: role.id,
-          permission_id,
-        })),
-      });
+          permission_id}))});
       return role;
     });
   } catch (error) {
@@ -130,12 +128,10 @@ const syncPermissions = async (roleId, permissionIds = []) => {
     const desired = [
       ...new Set(
         (Array.isArray(permissionIds) ? permissionIds : []).filter(Boolean)
-      ),
-    ];
+      )];
     const existing = await prisma.role_permission.findMany({
       where: { role_id: roleId },
-      select: { id: true, permission_id: true, deleted_at: true },
-    });
+      select: { id: true, permission_id: true, deleted_at: true }});
 
     const desiredSet = new Set(desired);
     const existingByPermission = new Map(
@@ -150,16 +146,14 @@ const syncPermissions = async (roleId, permissionIds = []) => {
           ops.push(
             prisma.role_permission.update({
               where: { id: row.id },
-              data: { deleted_at: null },
-            })
+              data: { deleted_at: null }})
           );
         }
       } else if (!row.deleted_at) {
         ops.push(
           prisma.role_permission.update({
             where: { id: row.id },
-            data: { deleted_at: now },
-          })
+            data: { deleted_at: now }})
         );
       }
     }
@@ -170,9 +164,7 @@ const syncPermissions = async (roleId, permissionIds = []) => {
         prisma.role_permission.createMany({
           data: toCreate.map((permission_id) => ({
             role_id: roleId,
-            permission_id,
-          })),
-        })
+            permission_id}))})
       );
     }
 
@@ -182,8 +174,7 @@ const syncPermissions = async (roleId, permissionIds = []) => {
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.database.unexpected', 500, [
-      { originalError: error.message },
-    ]);
+      { originalError: error.message }]);
   }
 };
 
@@ -231,20 +222,16 @@ const softDelete = async (id) => {
     return await prisma.$transaction(async (tx) => {
       const detachedAssignments = await tx.user_role.updateMany({
         where: { role_id: id, deleted_at: null },
-        data: { deleted_at: now },
-      });
+        data: { deleted_at: now }});
       await tx.role_permission.updateMany({
         where: { role_id: id, deleted_at: null },
-        data: { deleted_at: now },
-      });
+        data: { deleted_at: now }});
       const role = await tx.role.update({
         where: { id },
-        data: { deleted_at: now },
-      });
+        data: { deleted_at: now }});
       return {
         role,
-        detached_user_assignments: detachedAssignments.count || 0,
-      };
+        detached_user_assignments: detachedAssignments.count || 0};
     });
   } catch (error) {
     if (error.code === 'P2025') {

@@ -40,8 +40,7 @@ const listUsers = asyncHandler(async (req, res) => {
     position_title,
     email,
     status,
-    search,
-  };
+    search};
   if (include_deleted) filters.include_deleted = include_deleted;
 
   const userId = req.user?.id;
@@ -147,5 +146,4 @@ module.exports = {
   createUser,
   updateUser,
   deleteUser,
-  restoreUser,
-};
+  restoreUser};

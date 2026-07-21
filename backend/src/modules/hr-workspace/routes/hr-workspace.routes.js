@@ -27,8 +27,7 @@ const {
   leaveRejectSchema,
   payrollPreviewQuerySchema,
   payrollProcessSchema,
-  generateStaffNumberSchema,
-} = require('@validations/hr-workspace/hr-workspace.schema');
+  generateStaffNumberSchema} = require('@validations/hr-workspace/hr-workspace.schema');
 
 const HR_READ_SCOPES = [PERMISSIONS.HR_READ];
 const HR_WRITE_SCOPES = [PERMISSIONS.HR_WRITE];
@@ -82,8 +81,7 @@ router.post(
   '/staff/:staffProfileIdentifier/offboard',
   validateRequest({
     params: staffProfileIdentifierParamsSchema,
-    body: staffOffboardSchema,
-  }),
+    body: staffOffboardSchema}),
   authorize(HR_WRITE_SCOPES, 'permission'),
   hrWorkspaceController.offboardStaff
 );
