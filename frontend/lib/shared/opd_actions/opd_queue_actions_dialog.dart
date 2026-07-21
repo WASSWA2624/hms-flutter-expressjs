@@ -259,7 +259,7 @@ class _ChangeQueueStatusDialogState
       scrollable: true,
       pinActionsToBottom: true,
       closeEnabled: !isBusy,
-      maxWidth: 680,
+      maxWidth: 720,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -274,6 +274,9 @@ class _ChangeQueueStatusDialogState
               value: _status,
               labelText: l10n.opdFieldRequiredLabel(l10n.opdQueueStatusLabel),
               enabled: !isBusy,
+              layout: AppRadioGroupLayout.wrap,
+              wrapColumns: 2,
+              itemMinWidth: 260,
               validator: (String? value) =>
                   value == null ? l10n.validationRequired : null,
               onChanged: (String? value) => setState(() => _status = value),

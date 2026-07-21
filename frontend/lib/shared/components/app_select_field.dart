@@ -218,7 +218,11 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           isLoading: widget.isLoading,
           onClear: _clearSelection,
         );
-        final bool useNativeFilter = widget.filterCallback != null;
+        // Searchable fields must use DropdownMenu's native filter path so
+        // typing updates the open overlay immediately (not only after a
+        // parent rebuild of dropdownMenuEntries).
+        final bool useNativeFilter =
+            widget.searchable || widget.filterCallback != null;
         final bool useNativeSearch = widget.searchCallback != null;
         final bool menuIsOpen = _focusNode.hasFocus;
         final _SelectMenuChrome menuChrome = _selectMenuChrome(
@@ -344,6 +348,20 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     if (widget.searchable) {
       if (hasFocus && !_hadFocus) {
         _browseAllOptions = true;
+        // Select-all so the next keystroke replaces the current label and
+        // filters the menu, instead of appending onto the selected option.
+        final String text = _controller.text;
+        if (text.isNotEmpty) {
+          _isSyncingControllerText = true;
+          try {
+            _controller.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: text.length,
+            );
+          } finally {
+            _isSyncingControllerText = false;
+          }
+        }
       } else if (!hasFocus && _hadFocus) {
         _browseAllOptions = false;
         _syncControllerForSelection(widget.value);

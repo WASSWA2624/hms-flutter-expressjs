@@ -117,6 +117,11 @@ void main() {
 
     expect(find.text('CHANGE QUEUE STATUS'), findsOneWidget);
     expect(find.byType(AppRadioGroup<String>), findsOneWidget);
+    final AppRadioGroup<String> group = tester.widget(
+      find.byType(AppRadioGroup<String>),
+    );
+    expect(group.layout, AppRadioGroupLayout.wrap);
+    expect(group.wrapColumns, 2);
     expect(
       find.text(
         'Patient is confirmed and waiting in the desk queue.',
@@ -148,6 +153,13 @@ void main() {
     expect(find.text('CHANGE DOCTOR'), findsOneWidget);
     expect(find.text('Cancel'), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppSelectField<String> && widget.searchable,
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows Assign doctor when no provider is assigned', (

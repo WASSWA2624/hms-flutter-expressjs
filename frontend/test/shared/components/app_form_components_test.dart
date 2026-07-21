@@ -357,6 +357,40 @@ void main() {
   );
 
   testWidgets(
+    'AppSelectField.searchable selects existing label on focus for replace-typing',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        AppSelectField<String>.searchable(
+          labelText: 'Status',
+          value: 'live',
+          options: const <AppSelectOption<String>>[
+            AppSelectOption<String>(value: 'draft', label: 'Draft'),
+            AppSelectOption<String>(value: 'live', label: 'Live'),
+          ],
+          onChanged: (_) {},
+        ),
+      );
+
+      await tester.tap(find.byType(EditableText));
+      await tester.pumpAndSettle();
+
+      final EditableText editable = tester.widget(find.byType(EditableText));
+      expect(editable.controller.selection.baseOffset, 0);
+      expect(
+        editable.controller.selection.extentOffset,
+        editable.controller.text.length,
+      );
+
+      await tester.enterText(find.byType(EditableText), 'dra');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Draft').hitTestable(), findsOneWidget);
+      expect(find.text('Live').hitTestable(), findsNothing);
+    },
+  );
+
+  testWidgets(
     'AppSelectField.searchable shows all options when menu reopens with a selection',
     (WidgetTester tester) async {
       String? selected;
@@ -523,6 +557,98 @@ void main() {
     await tester.pump();
 
     expect(selected, 'pro');
+  });
+
+  testWidgets('AppRadioGroup omits blank descriptions', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppRadioGroup<String>(
+        labelText: 'Plan',
+        value: 'basic',
+        options: const <AppRadioOption<String>>[
+          AppRadioOption<String>(
+            value: 'basic',
+            label: 'Basic',
+            description: '  ',
+          ),
+          AppRadioOption<String>(
+            value: 'pro',
+            label: 'Pro',
+            description: 'Includes priority support.',
+          ),
+        ],
+        onChanged: (_) {},
+      ),
+    );
+
+    expect(find.text('Includes priority support.'), findsOneWidget);
+    expect(find.text('  '), findsNothing);
+  });
+
+  testWidgets('AppRadioGroup wrap uses two columns when width allows', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        width: 640,
+        child: AppRadioGroup<String>(
+          labelText: 'Status',
+          value: 'a',
+          layout: AppRadioGroupLayout.wrap,
+          wrapColumns: 2,
+          itemMinWidth: 240,
+          options: const <AppRadioOption<String>>[
+            AppRadioOption<String>(value: 'a', label: 'Alpha'),
+            AppRadioOption<String>(value: 'b', label: 'Beta'),
+            AppRadioOption<String>(value: 'c', label: 'Gamma'),
+            AppRadioOption<String>(value: 'd', label: 'Delta'),
+          ],
+          onChanged: (_) {},
+        ),
+      ),
+    );
+
+    final AppRadioGroup<String> group = tester.widget(
+      find.byType(AppRadioGroup<String>),
+    );
+    expect(group.layout, AppRadioGroupLayout.wrap);
+    expect(find.byType(Wrap), findsOneWidget);
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Delta'), findsOneWidget);
+  });
+
+  testWidgets('AppRadioGroup wrap collapses to one column on narrow width', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpComponent(
+      tester,
+      AppRadioGroup<String>(
+        labelText: 'Status',
+        value: 'a',
+        layout: AppRadioGroupLayout.wrap,
+        wrapColumns: 2,
+        itemMinWidth: 240,
+        options: const <AppRadioOption<String>>[
+          AppRadioOption<String>(value: 'a', label: 'Alpha'),
+          AppRadioOption<String>(value: 'b', label: 'Beta'),
+        ],
+        onChanged: (_) {},
+      ),
+    );
+
+    final Wrap wrap = tester.widget(find.byType(Wrap));
+    final SizedBox first = wrap.children.first as SizedBox;
+    final SizedBox second = wrap.children.elementAt(1) as SizedBox;
+    expect(first.width, second.width);
+    expect(first.width, greaterThan(300));
   });
 
   testWidgets('AppRadioGroup saves a selection without an onChanged callback', (
