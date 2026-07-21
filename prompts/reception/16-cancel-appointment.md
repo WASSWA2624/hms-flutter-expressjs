@@ -1,1 +1,37 @@
-That is something that we need to rectify or put right under appointments. I've noticed that I have a patient who has, who is appearing under appointments, but this patient has already seen, actually, he has already, is already, already has an encounter created, so I, I would think that appointment patients don't already have encounters, and so which means that it is, it shouldn't be possible to create an appointment for a patient who already has an appointment or who already has an active encounter. So which means that this is not right? Because I can see Wilson Masua already is already at a point of taking vital signs, but I can see I can see his being is already visible under appointments, so that is not right. Then also I see, okay, I see him under active visits, waiting for vitals to have the vitals recorded. Then under desk queue is still there showing he's waiting for vitals to be taken and still under appointments, the same thing. So it means that Actually, we are showing the, the we are, we are not showing these, these appointments correctly. So someone might mistake this as a patient who is an appointment patient that hasn't been created an encounter for. Then also another thing I want us to do is that cancel appointments shouldn't be possible for patients who already passed the appointment, those patients that have already an encounter already started and not yet closed, so because they don't have actually an appointment, they are actually having a running appointment or an active encounter, and then also We have to make sure that the cancel appointment is only possible for patients that actually have appointments, that have appointments. So which means when you are creating an appointment for a patient, and maybe you're creating an appointment for an existing patient, you must confirm that this patient doesn't have an active encounter. So when you try to check and you are trying to schedule an appointment for these people that already have active encounters, you must first confirm that these people already have an active encounter, and on this, on the schedule appointment for such a patient if they already have an active encounter, so it means that they schedule appointments That one should now show continue or continue with the existing account I mean, continue with the existing appointment or edit appointment or something like update appointment so that we don't, we don't create new, new appointments, but at least if needed, then we can update the appointments if that is needed.
+# Gate Cancel and Appointments Against Active Encounters
+
+Keep Reception Appointments for pre-encounter bookings, and allow **Cancel appointment** only with no linked active encounter. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Appointments still lists open-encounter patients also on Desk queue / Active visits. Cancel stays available after the encounter starts. Schedule warns on active encounters but offers no continue/update path.
+
+**Active encounter:** non-terminal OPD/Emergency flow via `findActiveOpdFlowForAppointment`.
+
+## Requirements
+
+1. On Appointments, list only non-terminal appointments with no linked active encounter. Keep those visits on Desk queue and Active visits; refresh search, filters, and counts.
+2. Hide **Cancel appointment** when a linked active encounter exists or the appointment is terminal; keep it for eligible bookings when authorized.
+3. When scheduling finds an active encounter, block create and offer authorized **Continue encounter** plus edit/update via encounter and reschedule paths. Keep the warning.
+4. After cancel or edit success, synchronize Appointments, Desk queue, Active visits, search, filters, and counts.
+5. Preserve loading, empty, error, success, validation, busy, and permission states; omit unauthorized UI.
+
+## Constraints
+
+- Reuse eligibility, cancel/reschedule/encounter dialogs, authorization, localization, and design-system components.
+- Do not invent cancel-encounter rules or alter Desk queue / Active visits beyond Appointments filtering.
+
+## Acceptance Criteria
+
+- R1: Appointments excludes active-encounter rows; other tabs and counts stay correct.
+- R2: Cancel hidden once an encounter is linked; still works for eligible bookings.
+- R3: Schedule blocks create and surfaces continue/edit for active encounters.
+- R4–R5: Success refreshes lists; states clear; unauthorized UI absent.
+- Update eligibility, cancel, schedule, and reception tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/`
+- `frontend/lib/features/reception/presentation/`
+- `frontend/test/shared/opd_actions/`
+- `frontend/test/features/reception/`
