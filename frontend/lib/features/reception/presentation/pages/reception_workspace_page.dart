@@ -2504,11 +2504,16 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
       meta: <AppListTableMobileMeta>[
         if (row.queueEntry?.isPrioritized == true)
           AppListTableMobileMeta(label: l10n.receptionHighPriorityBadgeLabel),
-        if (when != null)
+        if (when != null) ...<AppListTableMobileMeta>[
           AppListTableMobileMeta(
-            label: AppFormatters.dateTime(when, locale),
+            label: AppFormatters.shortDate(when.toLocal(), locale),
+            icon: AppActionIcons.calendar,
+          ),
+          AppListTableMobileMeta(
+            label: AppFormatters.time(when.toLocal(), locale),
             icon: AppActionIcons.time,
           ),
+        ],
         if (stepLabel != null && stepLabel.trim().isNotEmpty)
           AppListTableMobileMeta(label: stepLabel.trim()),
         if (nextLabel != null && nextLabel.trim().isNotEmpty)

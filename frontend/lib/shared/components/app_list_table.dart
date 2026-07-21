@@ -36,6 +36,7 @@ enum AppListTablePaginationMode { infinite, buttons }
 const int _maxVisibleTableColumns = 5;
 const int _minTableRowCount = 50;
 const double _rowNumberColumnWidth = 48;
+const double _mobileRowNumberColumnWidth = 28;
 const double _minResizableColumnWidth = 72;
 const double _defaultColumnWidth = 160;
 const double _defaultCompactColumnWidth = 136;
@@ -554,8 +555,10 @@ final class AppListTableMobileMeta {
 
 /// Compact two-line flush mobile row for [AppListTable] list layout.
 ///
-/// Line 1: bold [title] with optional muted inline [caption].
-/// Line 2: middot-joined [meta] entries (optional icons).
+/// Line 1: bold [title] with optional muted inline [caption] (caption truncates
+/// after the title as one line).
+/// Line 2: middot-joined [meta] entries (optional icons); the whole meta line
+/// truncates from the end.
 /// Optional leading initials avatar; trailing chevron is added by the table
 /// when the row is selectable.
 class AppListTableMobileItem extends StatelessWidget {
@@ -596,13 +599,23 @@ class AppListTableMobileItem extends StatelessWidget {
                     : resolvedTitle,
               )
             : null);
+    final TextStyle titleStyle =
+        theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600) ??
+        const TextStyle(fontWeight: FontWeight.w600);
+    final TextStyle captionStyle =
+        theme.textTheme.bodySmall?.copyWith(
+          color: colors.onSurfaceVariant,
+        ) ??
+        TextStyle(color: colors.onSurfaceVariant);
 
     return Padding(
       padding:
           padding ??
-          EdgeInsets.symmetric(
-            horizontal: theme.spacing.md,
-            vertical: theme.spacing.sm,
+          EdgeInsets.fromLTRB(
+            theme.spacing.xs,
+            theme.spacing.sm,
+            theme.spacing.xs,
+            theme.spacing.sm,
           ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -616,37 +629,21 @@ class AppListTableMobileItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Flexible(
-                      flex: 3,
-                      child: Text(
-                        resolvedTitle,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                Text.rich(
+                  TextSpan(
+                    children: <InlineSpan>[
+                      TextSpan(text: resolvedTitle, style: titleStyle),
+                      if (resolvedCaption != null &&
+                          resolvedCaption.isNotEmpty)
+                        TextSpan(
+                          text: '  $resolvedCaption',
+                          style: captionStyle,
                         ),
-                      ),
-                    ),
-                    if (resolvedCaption != null &&
-                        resolvedCaption.isNotEmpty) ...<Widget>[
-                      SizedBox(width: theme.spacing.sm),
-                      Flexible(
-                        flex: 2,
-                        child: Text(
-                          resolvedCaption,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
                     ],
-                  ],
+                  ),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (resolvedMeta.isNotEmpty) ...<Widget>[
                   SizedBox(height: theme.spacing.xs / 2),
@@ -666,7 +663,7 @@ class _AppListTableMobileAvatar extends StatelessWidget {
 
   final String label;
 
-  static const double _size = 36;
+  static const double _size = 32;
 
   @override
   Widget build(BuildContext context) {
@@ -683,9 +680,9 @@ class _AppListTableMobileAvatar extends StatelessWidget {
         decoration: BoxDecoration(color: background, shape: BoxShape.circle),
         child: Text(
           initials,
-          style: theme.textTheme.labelMedium?.copyWith(
+          style: theme.textTheme.labelSmall?.copyWith(
             color: colors.onSurface,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -731,39 +728,36 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Color muted = theme.colorScheme.onSurfaceVariant;
-    final TextStyle? style = theme.textTheme.bodySmall?.copyWith(color: muted);
-    final double iconSize = theme.appTokens.listIconSize * 0.72;
+    final TextStyle style =
+        theme.textTheme.bodySmall?.copyWith(color: muted) ??
+        TextStyle(color: muted, fontSize: 12);
+    final double iconSize = theme.appTokens.listIconSize * 0.7;
 
-    return Row(
-      children: <Widget>[
-        for (int index = 0; index < items.length; index++) ...<Widget>[
-          if (index > 0)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
-              child: Text('·', style: style),
-            ),
-          Flexible(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (items[index].icon != null) ...<Widget>[
-                  Icon(items[index].icon, size: iconSize, color: muted),
-                  SizedBox(width: theme.spacing.xs / 2),
-                ],
-                Flexible(
-                  child: Text(
-                    items[index].label.trim(),
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    style: style,
+    return Text.rich(
+      TextSpan(
+        style: style,
+        children: <InlineSpan>[
+          for (int index = 0; index < items.length; index++) ...<InlineSpan>[
+            if (index > 0) const TextSpan(text: '  ·  '),
+            if (items[index].icon != null)
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(end: theme.spacing.xs / 2),
+                  child: Icon(
+                    items[index].icon,
+                    size: iconSize,
+                    color: muted,
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            TextSpan(text: items[index].label.trim()),
+          ],
         ],
-      ],
+      ),
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
@@ -2186,7 +2180,12 @@ class _MobileListTable<T> extends StatelessWidget {
         return ColoredBox(color: rowColor, child: row);
       },
       separatorBuilder: (BuildContext context, int index) {
-        return const Divider(height: 1);
+        final ThemeData theme = Theme.of(context);
+        return Divider(
+          height: 1,
+          thickness: 1,
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        );
       },
     );
   }
@@ -2204,18 +2203,16 @@ class _NumberedMobileListItem extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         SizedBox(
-          width: _rowNumberColumnWidth,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
-            child: Text(
-              number.toString(),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+          width: _mobileRowNumberColumnWidth,
+          child: Text(
+            number.toString(),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -2275,7 +2272,7 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
                     Expanded(child: child),
                     Padding(
                       padding: EdgeInsetsDirectional.only(
-                        end: theme.spacing.sm,
+                        end: theme.spacing.xs,
                       ),
                       child: Icon(
                         Icons.chevron_right,
