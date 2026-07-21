@@ -11,16 +11,16 @@ Per-vital actions exist, but risk flags stay inline and weight/height are separa
 
 ## Requirements
 
-1. Replace inline risk flags with a **Risk flags** action opening a modal; persist on confirm; summarize on the parent.
+1. Replace inline risk flags with a **Risk flags** action opening a modal; persist on confirm; summarize on parent.
 2. Combine weight, height, and BMI into one body-metrics action/dialog; keep other vitals separate.
 3. When any two of weight/height/BMI are valid, auto-derive the third in selected units.
-4. Filled summaries: **bold** name; non-bold value using existing normal/abnormal status colors.
-5. Order `AppCheckboxField` as checkbox, optional icon, then label.
-6. Preserve validation, loading, busy, error, success, permission, sync, and edit vs record; omit unauthorized UI.
+4. Filled summaries: **bold** name; non-bold value using normal/abnormal status colors.
+5. Order `AppCheckboxField` as checkbox, icon, label.
+6. Preserve loading, busy, error, success, permission, sync, and edit vs record; omit unauthorized UI.
 
 ## Constraints
 
-- Reuse vitals dialog/form, BMI helpers, triage risk options, localization, and design-system; no new vitals contracts.
+- Reuse vitals dialog/form, BMI helpers, triage risk options, localization, and design-system; no new contracts.
 - Do not change triage fields, route decision, or submit payload beyond risk-flag UX.
 - Support themes and viewports.
 
@@ -29,7 +29,7 @@ Per-vital actions exist, but risk flags stay inline and weight/height are separa
 - R1: Risk flags via action modal; summary on parent; no inline grid.
 - R2-R3: One body-metrics action; any two derive the third in selected units.
 - R4: Bold name and status-colored value on filled summaries.
-- R5: Checkbox, icon, label when an icon is present.
+- R5: Checkbox, icon, then label.
 - R6: States/sync intact; unauthorized UI absent.
 - Update record-vitals and checkbox tests; run Flutter analysis.
 
