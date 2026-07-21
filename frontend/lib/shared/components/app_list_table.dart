@@ -584,7 +584,7 @@ class AppListTableMobileItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
+    final AppListTokens listTokens = theme.listTokens;
     final String resolvedTitle = title.trim();
     final String? resolvedCaption = caption?.trim();
     final List<AppListTableMobileMeta> resolvedMeta = meta
@@ -599,20 +599,6 @@ class AppListTableMobileItem extends StatelessWidget {
                     : resolvedTitle,
               )
             : null);
-    final TextStyle titleStyle =
-        (theme.textTheme.bodySmall ?? const TextStyle(fontSize: 12)).copyWith(
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
-          height: 1.2,
-          color: colors.onSurface,
-        );
-    final TextStyle captionStyle =
-        (theme.textTheme.labelSmall ?? const TextStyle(fontSize: 11)).copyWith(
-          color: colors.onSurfaceVariant,
-          fontSize: 11,
-          height: 1.2,
-          fontWeight: FontWeight.w400,
-        );
 
     return Padding(
       padding:
@@ -635,12 +621,15 @@ class AppListTableMobileItem extends StatelessWidget {
                 Text.rich(
                   TextSpan(
                     children: <InlineSpan>[
-                      TextSpan(text: resolvedTitle, style: titleStyle),
+                      TextSpan(
+                        text: resolvedTitle,
+                        style: listTokens.mobileTitle,
+                      ),
                       if (resolvedCaption != null &&
                           resolvedCaption.isNotEmpty)
                         TextSpan(
                           text: '  $resolvedCaption',
-                          style: captionStyle,
+                          style: listTokens.mobileCaption,
                         ),
                     ],
                   ),
@@ -648,7 +637,7 @@ class AppListTableMobileItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (resolvedMeta.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 2),
+                  SizedBox(height: listTokens.mobileMetaLineGap),
                   _AppListTableMobileMetaRow(items: resolvedMeta),
                 ],
               ],
@@ -665,30 +654,22 @@ class _AppListTableMobileAvatar extends StatelessWidget {
 
   final String label;
 
-  static const double _size = 28;
-
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppListTokens listTokens = theme.listTokens;
     final ColorScheme colors = theme.colorScheme;
     final String initials = _initialsFor(label);
     final Color background = _avatarTone(colors, label);
+    final double size = listTokens.mobileAvatarSize;
 
     return ExcludeSemantics(
       child: Container(
-        width: _size,
-        height: _size,
+        width: size,
+        height: size,
         alignment: Alignment.center,
         decoration: BoxDecoration(color: background, shape: BoxShape.circle),
-        child: Text(
-          initials,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: colors.onSurface,
-            fontWeight: FontWeight.w700,
-            fontSize: 10,
-            height: 1,
-          ),
-        ),
+        child: Text(initials, style: listTokens.mobileAvatarInitials),
       ),
     );
   }
@@ -731,15 +712,11 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color muted = theme.colorScheme.onSurfaceVariant;
-    final TextStyle style =
-        (theme.textTheme.labelSmall ?? const TextStyle(fontSize: 11)).copyWith(
-          color: muted,
-          fontSize: 11,
-          height: 1.2,
-          fontWeight: FontWeight.w400,
-        );
-    const double iconSize = 12;
+    final AppListTokens listTokens = theme.listTokens;
+    final TextStyle style = listTokens.mobileMeta;
+    final Color muted =
+        style.color ?? theme.colorScheme.onSurfaceVariant;
+    final double iconSize = listTokens.mobileMetaIconSize;
 
     return Text.rich(
       TextSpan(
@@ -751,7 +728,9 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
               WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
                 child: Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 2),
+                  padding: EdgeInsetsDirectional.only(
+                    end: theme.spacing.xs / 2,
+                  ),
                   child: Icon(
                     items[index].icon,
                     size: iconSize,
@@ -2206,7 +2185,6 @@ class _NumberedMobileListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
     return Row(
       children: <Widget>[
@@ -2215,12 +2193,7 @@ class _NumberedMobileListItem extends StatelessWidget {
           child: Text(
             number.toString(),
             textAlign: TextAlign.center,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-              fontSize: 10,
-              height: 1.2,
-            ),
+            style: theme.listTokens.mobileRowNumber,
           ),
         ),
         Expanded(child: child),
@@ -2283,7 +2256,7 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
                       child: Icon(
                         Icons.chevron_right,
                         color: theme.colorScheme.onSurfaceVariant,
-                        size: 18,
+                        size: theme.listTokens.mobileChevronSize,
                       ),
                     ),
                   ],

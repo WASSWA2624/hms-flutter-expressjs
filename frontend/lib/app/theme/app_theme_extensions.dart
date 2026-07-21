@@ -480,6 +480,143 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
   }
 }
 
+/// Compact list typography and metrics for [AppListTable] mobile rows.
+@immutable
+final class AppListTokens extends ThemeExtension<AppListTokens> {
+  const AppListTokens({
+    required this.mobileTitle,
+    required this.mobileCaption,
+    required this.mobileMeta,
+    required this.mobileAvatarInitials,
+    required this.mobileRowNumber,
+    required this.mobileAvatarSize,
+    required this.mobileMetaIconSize,
+    required this.mobileChevronSize,
+    required this.mobileMetaLineGap,
+  });
+
+  /// Dense mobile list styles derived from the active [TextTheme]/[ColorScheme].
+  factory AppListTokens.compact({
+    required TextTheme textTheme,
+    required ColorScheme colorScheme,
+  }) {
+    final TextStyle labelMedium =
+        textTheme.labelMedium ?? const TextStyle(fontSize: 12, height: 1.2);
+    final TextStyle labelSmall =
+        textTheme.labelSmall ?? const TextStyle(fontSize: 11, height: 1.2);
+
+    return AppListTokens(
+      mobileTitle: labelMedium.copyWith(
+        color: colorScheme.onSurface,
+        fontWeight: FontWeight.w500,
+        height: 1.2,
+      ),
+      mobileCaption: labelSmall.copyWith(
+        color: colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w400,
+        height: 1.2,
+      ),
+      mobileMeta: labelSmall.copyWith(
+        color: colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w400,
+        height: 1.2,
+      ),
+      mobileAvatarInitials: labelSmall.copyWith(
+        color: colorScheme.onSurface,
+        fontWeight: FontWeight.w600,
+        height: 1,
+      ),
+      mobileRowNumber: labelSmall.copyWith(
+        color: colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w500,
+        height: 1.2,
+      ),
+      mobileAvatarSize: 28,
+      mobileMetaIconSize: 12,
+      mobileChevronSize: 18,
+      mobileMetaLineGap: 2,
+    );
+  }
+
+  final TextStyle mobileTitle;
+  final TextStyle mobileCaption;
+  final TextStyle mobileMeta;
+  final TextStyle mobileAvatarInitials;
+  final TextStyle mobileRowNumber;
+  final double mobileAvatarSize;
+  final double mobileMetaIconSize;
+  final double mobileChevronSize;
+  final double mobileMetaLineGap;
+
+  @override
+  AppListTokens copyWith({
+    TextStyle? mobileTitle,
+    TextStyle? mobileCaption,
+    TextStyle? mobileMeta,
+    TextStyle? mobileAvatarInitials,
+    TextStyle? mobileRowNumber,
+    double? mobileAvatarSize,
+    double? mobileMetaIconSize,
+    double? mobileChevronSize,
+    double? mobileMetaLineGap,
+  }) {
+    return AppListTokens(
+      mobileTitle: mobileTitle ?? this.mobileTitle,
+      mobileCaption: mobileCaption ?? this.mobileCaption,
+      mobileMeta: mobileMeta ?? this.mobileMeta,
+      mobileAvatarInitials: mobileAvatarInitials ?? this.mobileAvatarInitials,
+      mobileRowNumber: mobileRowNumber ?? this.mobileRowNumber,
+      mobileAvatarSize: mobileAvatarSize ?? this.mobileAvatarSize,
+      mobileMetaIconSize: mobileMetaIconSize ?? this.mobileMetaIconSize,
+      mobileChevronSize: mobileChevronSize ?? this.mobileChevronSize,
+      mobileMetaLineGap: mobileMetaLineGap ?? this.mobileMetaLineGap,
+    );
+  }
+
+  @override
+  AppListTokens lerp(AppListTokens? other, double t) {
+    if (other == null) {
+      return this;
+    }
+
+    return AppListTokens(
+      mobileTitle: TextStyle.lerp(mobileTitle, other.mobileTitle, t)!,
+      mobileCaption: TextStyle.lerp(mobileCaption, other.mobileCaption, t)!,
+      mobileMeta: TextStyle.lerp(mobileMeta, other.mobileMeta, t)!,
+      mobileAvatarInitials: TextStyle.lerp(
+        mobileAvatarInitials,
+        other.mobileAvatarInitials,
+        t,
+      )!,
+      mobileRowNumber: TextStyle.lerp(
+        mobileRowNumber,
+        other.mobileRowNumber,
+        t,
+      )!,
+      mobileAvatarSize: _lerpDouble(
+        mobileAvatarSize,
+        other.mobileAvatarSize,
+        t,
+      ),
+      mobileMetaIconSize: _lerpDouble(
+        mobileMetaIconSize,
+        other.mobileMetaIconSize,
+        t,
+      ),
+      mobileChevronSize: _lerpDouble(
+        mobileChevronSize,
+        other.mobileChevronSize,
+        t,
+      ),
+      mobileMetaLineGap: _lerpDouble(
+        mobileMetaLineGap,
+        other.mobileMetaLineGap,
+        t,
+      ),
+    );
+  }
+}
+
 @immutable
 final class AppSidebarTokens extends ThemeExtension<AppSidebarTokens> {
   const AppSidebarTokens({
@@ -648,6 +785,14 @@ extension AppThemeDataTokens on ThemeData {
 
   AppDesignTokens get appTokens {
     return extension<AppDesignTokens>() ?? AppDesignTokens.standard;
+  }
+
+  AppListTokens get listTokens {
+    return extension<AppListTokens>() ??
+        AppListTokens.compact(
+          textTheme: textTheme,
+          colorScheme: colorScheme,
+        );
   }
 
   AppSidebarTokens get sidebarTokens {

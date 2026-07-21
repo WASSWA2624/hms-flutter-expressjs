@@ -104,6 +104,10 @@ abstract final class AppTheme {
         AppRadiusTokens.standard,
         statusColors,
         appTokens,
+        AppListTokens.compact(
+          textTheme: textTheme,
+          colorScheme: colorScheme,
+        ),
         sidebarTokens,
       ],
       appBarTheme: AppBarTheme(
