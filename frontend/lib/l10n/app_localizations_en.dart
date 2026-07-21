@@ -6068,10 +6068,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityChecklistDepartments => 'Departments are configured';
 
   @override
-  String get tenantFacilityChecklistBranches =>
-      'Branches are configured (optional)';
-
-  @override
   String get tenantFacilityChecklistUnits => 'Units are configured (optional)';
 
   @override
@@ -6099,9 +6095,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityWizardStepFacility => 'Facility identity';
-
-  @override
-  String get tenantFacilityWizardStepBranches => 'Branches';
 
   @override
   String get tenantFacilityWizardStepDepartments => 'Departments';
@@ -6141,12 +6134,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tenantFacilityCreateBranchAction => 'Create branch';
-
-  @override
-  String get tenantFacilityManageBranchesAction => 'Manage branches';
-
-  @override
   String get tenantFacilityCreateDepartmentAction => 'Create department';
 
   @override
@@ -6175,10 +6162,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityManageBedsAction => 'Manage beds';
-
-  @override
-  String get tenantFacilityBranchesOptionalHint =>
-      'Optional for single-site facilities. Skip when there is only one site.';
 
   @override
   String get tenantFacilityGateNeedFacility =>
@@ -6236,10 +6219,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tenantFacilityWizardMissingDepartments =>
       'Create at least one department';
-
-  @override
-  String get tenantFacilityWizardMissingBranches =>
-      'Create at least one branch';
 
   @override
   String get tenantFacilityWizardMissingUnits => 'Create at least one unit';
@@ -6309,10 +6288,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tenantFacilityRoomOutpatientLabel =>
       'Outpatient / department area';
-
-  @override
-  String get tenantFacilityInvalidBranchSelection =>
-      'Select a branch that belongs to this facility.';
 
   @override
   String get tenantFacilityInvalidDepartmentSelection =>
@@ -6583,13 +6558,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityStatusInactive => 'Inactive';
 
   @override
-  String get tenantFacilityBranchesSectionTitle => 'Branches';
-
-  @override
-  String get tenantFacilityBranchesSectionBody =>
-      'Add branch entry points for facilities that operate across sites.';
-
-  @override
   String get tenantFacilityManageTenantsTitle => 'Manage tenants';
 
   @override
@@ -6798,28 +6766,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonTableEmptyLabel => 'No records';
 
   @override
-  String get tenantFacilityNoBranches => 'No branches have been added.';
-
-  @override
-  String get tenantFacilityBranchNameLabel => 'Branch name';
-
-  @override
-  String get tenantFacilityBranchesListTitle => 'Branch records';
-
-  @override
-  String get tenantFacilityBranchSearchHint =>
-      'Search branches by name or status';
-
-  @override
-  String get tenantFacilityAddBranchAction => 'Add branch';
-
-  @override
-  String get tenantFacilityAddBranchTitle => 'Add branch';
-
-  @override
-  String get tenantFacilityEditBranchTitle => 'Edit branch';
-
-  @override
   String get tenantFacilityDepartmentsSectionTitle => 'Departments and units';
 
   @override
@@ -6862,9 +6808,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityDepartmentTypeLabel => 'Department type';
-
-  @override
-  String get tenantFacilityDepartmentBranchLabel => 'Branch';
 
   @override
   String get tenantFacilityDepartmentTypeClinical => 'Clinical';
@@ -18642,9 +18585,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsWorkspaceModuleFacility => 'Facility';
-
-  @override
-  String get settingsWorkspaceModuleBranch => 'Branch';
 
   @override
   String get settingsWorkspaceModuleDepartment => 'Department';

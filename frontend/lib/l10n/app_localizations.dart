@@ -11344,12 +11344,6 @@ abstract class AppLocalizations {
   /// **'Departments are configured'**
   String get tenantFacilityChecklistDepartments;
 
-  /// Checklist item for optional branches.
-  ///
-  /// In en, this message translates to:
-  /// **'Branches are configured (optional)'**
-  String get tenantFacilityChecklistBranches;
-
   /// Checklist item for optional units.
   ///
   /// In en, this message translates to:
@@ -11403,12 +11397,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Facility identity'**
   String get tenantFacilityWizardStepFacility;
-
-  /// Wizard step label for optional branches.
-  ///
-  /// In en, this message translates to:
-  /// **'Branches'**
-  String get tenantFacilityWizardStepBranches;
 
   /// Wizard step label for departments.
   ///
@@ -11476,18 +11464,6 @@ abstract class AppLocalizations {
   /// **'Next: {step}'**
   String tenantFacilityNextStepAction(String step);
 
-  /// Primary action to create the first branch in setup.
-  ///
-  /// In en, this message translates to:
-  /// **'Create branch'**
-  String get tenantFacilityCreateBranchAction;
-
-  /// Primary action to manage existing branches in setup.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage branches'**
-  String get tenantFacilityManageBranchesAction;
-
   /// Primary action to create the first department in setup.
   ///
   /// In en, this message translates to:
@@ -11547,12 +11523,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage beds'**
   String get tenantFacilityManageBedsAction;
-
-  /// Guidance for the optional branches setup step.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional for single-site facilities. Skip when there is only one site.'**
-  String get tenantFacilityBranchesOptionalHint;
 
   /// Prerequisite message when departments require a facility.
   ///
@@ -11643,12 +11613,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create at least one department'**
   String get tenantFacilityWizardMissingDepartments;
-
-  /// Missing requirement for the optional branches setup wizard step.
-  ///
-  /// In en, this message translates to:
-  /// **'Create at least one branch'**
-  String get tenantFacilityWizardMissingBranches;
 
   /// Missing requirement for the optional units setup wizard step.
   ///
@@ -11757,12 +11721,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Outpatient / department area'**
   String get tenantFacilityRoomOutpatientLabel;
-
-  /// Validation message for invalid branch selection.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a branch that belongs to this facility.'**
-  String get tenantFacilityInvalidBranchSelection;
 
   /// Validation message for invalid department selection.
   ///
@@ -12226,18 +12184,6 @@ abstract class AppLocalizations {
   /// **'Inactive'**
   String get tenantFacilityStatusInactive;
 
-  /// Branches setup section title.
-  ///
-  /// In en, this message translates to:
-  /// **'Branches'**
-  String get tenantFacilityBranchesSectionTitle;
-
-  /// Branches setup section body.
-  ///
-  /// In en, this message translates to:
-  /// **'Add branch entry points for facilities that operate across sites.'**
-  String get tenantFacilityBranchesSectionBody;
-
   /// Platform admin dialog title for tenant management.
   ///
   /// In en, this message translates to:
@@ -12592,48 +12538,6 @@ abstract class AppLocalizations {
   /// **'No records'**
   String get commonTableEmptyLabel;
 
-  /// Empty branch list label.
-  ///
-  /// In en, this message translates to:
-  /// **'No branches have been added.'**
-  String get tenantFacilityNoBranches;
-
-  /// Branch name field label.
-  ///
-  /// In en, this message translates to:
-  /// **'Branch name'**
-  String get tenantFacilityBranchNameLabel;
-
-  /// Branches list subheading.
-  ///
-  /// In en, this message translates to:
-  /// **'Branch records'**
-  String get tenantFacilityBranchesListTitle;
-
-  /// Branches modal search field hint.
-  ///
-  /// In en, this message translates to:
-  /// **'Search branches by name or status'**
-  String get tenantFacilityBranchSearchHint;
-
-  /// Add branch button label.
-  ///
-  /// In en, this message translates to:
-  /// **'Add branch'**
-  String get tenantFacilityAddBranchAction;
-
-  /// Add branch modal title.
-  ///
-  /// In en, this message translates to:
-  /// **'Add branch'**
-  String get tenantFacilityAddBranchTitle;
-
-  /// Edit branch modal title.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit branch'**
-  String get tenantFacilityEditBranchTitle;
-
   /// Departments and units setup section title.
   ///
   /// In en, this message translates to:
@@ -12711,12 +12615,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Department type'**
   String get tenantFacilityDepartmentTypeLabel;
-
-  /// Department branch selection field label.
-  ///
-  /// In en, this message translates to:
-  /// **'Branch'**
-  String get tenantFacilityDepartmentBranchLabel;
 
   /// Clinical department type label.
   ///
@@ -34800,12 +34698,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Facility'**
   String get settingsWorkspaceModuleFacility;
-
-  /// Settings workspace ModuleBranch.
-  ///
-  /// In en, this message translates to:
-  /// **'Branch'**
-  String get settingsWorkspaceModuleBranch;
 
   /// Settings workspace ModuleDepartment.
   ///

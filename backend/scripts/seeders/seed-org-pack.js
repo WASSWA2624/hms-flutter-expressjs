@@ -86,34 +86,10 @@ const seedOrgPack = async (ctx) => {
         }
       );
     }
-      );
-      result.branches[`${scenario.key}:${branchDefinition.key}`] = branch;
 
-      await ctx.upsert(
-        'address',
-        `${scenario.key}:branch-address:${branchDefinition.key}`,
-        {
-          tenant_id: tenant.id,
-          branch_id: branch.id,
-          address_type: 'WORK',
-          line1: `${branchDefinition.name} Road`,
-          city: 'Kampala',
-          country: 'Uganda',
-        },
-        {
-          tenantCode: scenario.tenant_code,
-          scenarioKey: scenario.scenario_key,
-          publicIdPrefix: 'ADDR',
-          seedMeta: false,
-        }
-      );
-    }
 
     const anchorFacility = result.facilities[`${scenario.key}:${scenario.facilities[0].key}`];
     for (const [departmentIndex, departmentName] of scenario.departments.entries()) {
-      const branch = scenario.branches?.[departmentIndex % Math.max(1, scenario.branches.length)]
-        ? result.branches[`${scenario.key}:${scenario.branches[departmentIndex % scenario.branches.length].key}`]
-        : null;
       const department = await ctx.upsert(
         'department',
         `${scenario.key}:department:${departmentName}`,
