@@ -58,20 +58,28 @@ void main() {
       expect(theme.appTokens.dialogMinWidth, 360);
       expect(theme.appTokens.dialogMinHeight, 280);
       expect(theme.appTokens.listIconSize, 20);
-      expect(theme.listTokens.mobileTitle.fontWeight, FontWeight.w500);
+      expect(theme.listTokens.mobileTitle.fontWeight, AppListTokens.mobileTitleWeight);
       expect(
         theme.listTokens.mobileTitle.fontSize,
-        theme.textTheme.labelMedium?.fontSize,
+        (theme.textTheme.labelSmall?.fontSize ?? 11) *
+            AppListTokens.mobileTitleSizeFactor,
       );
-      expect(theme.listTokens.mobileCaption.fontWeight, FontWeight.w400);
+      expect(
+        theme.listTokens.mobileCaption.fontWeight,
+        AppListTokens.mobileSecondaryWeight,
+      );
       expect(
         theme.listTokens.mobileCaption.fontSize,
-        theme.textTheme.labelSmall?.fontSize,
+        (theme.textTheme.labelSmall?.fontSize ?? 11) *
+            AppListTokens.mobileSecondarySizeFactor,
       );
-      expect(theme.listTokens.mobileMeta.fontWeight, FontWeight.w400);
+      expect(
+        theme.listTokens.mobileMeta.fontWeight,
+        AppListTokens.mobileSecondaryWeight,
+      );
       expect(
         theme.listTokens.mobileAvatarSize,
-        greaterThan(0),
+        AppListTokens.mobileAvatarExtent,
       );
       expect(
         theme.statusColors.success,

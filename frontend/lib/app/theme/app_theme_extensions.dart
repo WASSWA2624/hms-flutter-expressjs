@@ -495,46 +495,67 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
     required this.mobileMetaLineGap,
   });
 
+  /// Size factors applied to [TextTheme.labelSmall] for dense mobile lists.
+  static const double mobileTitleSizeFactor = 0.95;
+  static const double mobileSecondarySizeFactor = 0.85;
+
+  /// Weights for dense mobile lists (lighter than default label styles).
+  static const FontWeight mobileTitleWeight = FontWeight.w500;
+  static const FontWeight mobileSecondaryWeight = FontWeight.w400;
+  static const FontWeight mobileAvatarInitialsWeight = FontWeight.w600;
+
+  /// Metrics for dense mobile list chrome.
+  static const double mobileAvatarExtent = 26;
+  static const double mobileMetaIconExtent = 11;
+  static const double mobileChevronExtent = 16;
+  static const double mobileMetaGap = 2;
+
   /// Dense mobile list styles derived from the active [TextTheme]/[ColorScheme].
   factory AppListTokens.compact({
     required TextTheme textTheme,
     required ColorScheme colorScheme,
   }) {
-    final TextStyle labelMedium =
-        textTheme.labelMedium ?? const TextStyle(fontSize: 12, height: 1.2);
     final TextStyle labelSmall =
         textTheme.labelSmall ?? const TextStyle(fontSize: 11, height: 1.2);
+    final double baseSize = labelSmall.fontSize ?? 11;
+    final double titleSize = baseSize * mobileTitleSizeFactor;
+    final double secondarySize = baseSize * mobileSecondarySizeFactor;
 
     return AppListTokens(
-      mobileTitle: labelMedium.copyWith(
+      mobileTitle: labelSmall.copyWith(
         color: colorScheme.onSurface,
-        fontWeight: FontWeight.w500,
-        height: 1.2,
+        fontSize: titleSize,
+        fontWeight: mobileTitleWeight,
+        height: 1.15,
       ),
       mobileCaption: labelSmall.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w400,
-        height: 1.2,
+        fontSize: secondarySize,
+        fontWeight: mobileSecondaryWeight,
+        height: 1.15,
       ),
       mobileMeta: labelSmall.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w400,
-        height: 1.2,
+        fontSize: secondarySize,
+        fontWeight: mobileSecondaryWeight,
+        height: 1.15,
       ),
       mobileAvatarInitials: labelSmall.copyWith(
         color: colorScheme.onSurface,
-        fontWeight: FontWeight.w600,
+        fontSize: secondarySize,
+        fontWeight: mobileAvatarInitialsWeight,
         height: 1,
       ),
       mobileRowNumber: labelSmall.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w500,
-        height: 1.2,
+        fontSize: secondarySize,
+        fontWeight: mobileSecondaryWeight,
+        height: 1.15,
       ),
-      mobileAvatarSize: 28,
-      mobileMetaIconSize: 12,
-      mobileChevronSize: 18,
-      mobileMetaLineGap: 2,
+      mobileAvatarSize: mobileAvatarExtent,
+      mobileMetaIconSize: mobileMetaIconExtent,
+      mobileChevronSize: mobileChevronExtent,
+      mobileMetaLineGap: mobileMetaGap,
     );
   }
 
