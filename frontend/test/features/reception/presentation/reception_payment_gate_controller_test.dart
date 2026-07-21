@@ -102,6 +102,42 @@ void main() {
     expect(state.isRefreshing, isFalse);
     expect(state.lastFailure, isNotNull);
   });
+
+  test('applyInvoiceUpdate removes settled invoices from the gate', () async {
+    final _MockBillingRepository repository = _MockBillingRepository();
+    when(() => repository.listWorkItems(any())).thenAnswer((invocation) async {
+      final BillingWorkspaceQuery query =
+          invocation.positionalArguments.single as BillingWorkspaceQuery;
+      return Result<AppPage<BillingWorkItem>>.success(
+        AppPage<BillingWorkItem>(
+          items: <BillingWorkItem>[_invoice],
+          request: query.pageRequest,
+        ),
+      );
+    });
+    final ProviderContainer container = _container(repository);
+    addTearDown(container.dispose);
+    await container.read(receptionPaymentGateControllerProvider.future);
+    expect(_state(container).entries, hasLength(1));
+
+    container
+        .read(receptionPaymentGateControllerProvider.notifier)
+        .applyInvoiceUpdate(
+          _invoice.copyWith(
+            billingStatus: 'PAID',
+            financials: const BillingFinancials(
+              invoiceTotal: 100,
+              effectiveTotal: 100,
+              grossPaidTotal: 100,
+              netPaidTotal: 100,
+              balanceDue: 0,
+            ),
+          ),
+        );
+
+    expect(_state(container).entries, isEmpty);
+    verify(() => repository.listWorkItems(any())).called(1);
+  });
 }
 
 ProviderContainer _container(_MockBillingRepository repository) {

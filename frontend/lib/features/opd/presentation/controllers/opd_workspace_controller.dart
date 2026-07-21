@@ -17,6 +17,7 @@ import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_realtime_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -1492,6 +1493,133 @@ final class OpdWorkspaceController
         detail.summary,
       ),
     );
+  }
+
+  /// Clears Payment-due consultation fields when Billing settles the invoice.
+  void applyConsultationInvoicePaidIfLoaded(BillingWorkItem invoice) {
+    final OpdWorkspaceState? latest = _currentState;
+    if (latest == null || invoice.balanceDue > 0) {
+      return;
+    }
+
+    OpdFlowSummary? match;
+    for (final OpdFlowSummary flow in latest.flows.items) {
+      if (_flowMatchesConsultationInvoice(flow, invoice)) {
+        match = flow;
+        break;
+      }
+    }
+    if (match == null) {
+      for (final OpdFlowSummary flow in latest.triageQueue.items) {
+        if (_flowMatchesConsultationInvoice(flow, invoice)) {
+          match = flow;
+          break;
+        }
+      }
+    }
+    if (match == null &&
+        latest.selectedFlow != null &&
+        _flowMatchesConsultationInvoice(latest.selectedFlow!.summary, invoice)) {
+      match = latest.selectedFlow!.summary;
+    }
+    if (match == null) {
+      return;
+    }
+
+    final bool advanceFromPaymentDue =
+        (match.stage ?? '').toUpperCase() == 'WAITING_CONSULTATION_PAYMENT' ||
+        (match.displayCode ?? '').toUpperCase() == 'PAYMENT_DUE';
+    final OpdFlowSummary patched = match.copyWith(
+      consultationPaid: true,
+      consultationPaymentStatus: 'PAID',
+      consultationPaidAmount:
+          invoice.paidAmount > 0 ? invoice.paidAmount : match.consultationFee,
+      consultationInvoiceId:
+          match.consultationInvoiceId ?? invoice.displayId ?? invoice.id,
+      stage: advanceFromPaymentDue ? 'WAITING_VITALS' : match.stage,
+      nextStep: advanceFromPaymentDue ? 'RECORD_VITALS' : match.nextStep,
+      displayCode: advanceFromPaymentDue ? 'VITALS_NEEDED' : match.displayCode,
+      displayStatus: advanceFromPaymentDue
+          ? 'Vitals needed'
+          : match.displayStatus,
+      displayNextStep: advanceFromPaymentDue
+          ? 'Record vitals'
+          : match.displayNextStep,
+    );
+
+    OpdFlowDetail? selected = latest.selectedFlow;
+    if (selected != null &&
+        _matchesPublicIdentifier(patched.id, <String?>[
+          selected.summary.id,
+          selected.summary.publicId,
+          selected.summary.apiId,
+        ])) {
+      selected = OpdFlowDetail(
+        summary: patched,
+        consultationInvoiceId: patched.consultationInvoiceId,
+        consultationPaymentId: patched.consultationPaymentId,
+        consultationPaymentStatus: patched.consultationPaymentStatus,
+        consultationPaid: true,
+        consultationPaymentRequired: selected.consultationPaymentRequired,
+        consultationPaidAmount: patched.consultationPaidAmount,
+        timeline: selected.timeline,
+        referrals: selected.referrals,
+        followUps: selected.followUps,
+        clinicalAlerts: selected.clinicalAlerts,
+        clinicalAlertDetails: selected.clinicalAlertDetails,
+        vitalSigns: selected.vitalSigns,
+        vitalMeasurements: selected.vitalMeasurements,
+        clinicalNotes: selected.clinicalNotes,
+        diagnoses: selected.diagnoses,
+        procedures: selected.procedures,
+        labOrders: selected.labOrders,
+        radiologyOrders: selected.radiologyOrders,
+        pharmacyOrders: selected.pharmacyOrders,
+        admissions: selected.admissions,
+      );
+    }
+
+    _emit(
+      _patchLinkedEncounterSources(
+        latest.copyWith(
+          selectedFlow: selected,
+          flows: _upsertOrRemoveFlow(latest.flows, patched),
+          triageQueue: _upsertOrRemoveTriageFlow(latest.triageQueue, patched),
+        ),
+        patched,
+      ),
+    );
+  }
+
+  bool _flowMatchesConsultationInvoice(
+    OpdFlowSummary flow,
+    BillingWorkItem invoice,
+  ) {
+    final Set<String> invoiceKeys = <String>{
+      invoice.id,
+      if (invoice.displayId != null) invoice.displayId!,
+      if (invoice.invoiceDisplayId != null) invoice.invoiceDisplayId!,
+    }
+        .map((String value) => value.trim().toLowerCase())
+        .where((String value) => value.isNotEmpty)
+        .toSet();
+    final String? linked = flow.consultationInvoiceId?.trim().toLowerCase();
+    if (linked != null && linked.isNotEmpty && invoiceKeys.contains(linked)) {
+      return true;
+    }
+    final Set<String> encounterKeys = <String>{
+      if (invoice.encounterId != null) invoice.encounterId!,
+      if (invoice.encounterDisplayId != null) invoice.encounterDisplayId!,
+    }
+        .map((String value) => value.trim().toLowerCase())
+        .where((String value) => value.isNotEmpty)
+        .toSet();
+    if (encounterKeys.isEmpty) {
+      return false;
+    }
+    return encounterKeys.contains(flow.id.trim().toLowerCase()) ||
+        encounterKeys.contains((flow.publicId ?? '').trim().toLowerCase()) ||
+        encounterKeys.contains(flow.apiId.trim().toLowerCase());
   }
 
   OpdWorkspaceState _patchLinkedEncounterSources(

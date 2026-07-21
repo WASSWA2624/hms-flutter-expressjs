@@ -105,6 +105,35 @@ final class ReceptionPaymentGateController
     await refresh();
   }
 
+  /// Instantly upserts or drops a billed invoice on the Payment gate.
+  void applyInvoiceUpdate(BillingWorkItem invoice) {
+    final ReceptionPaymentGateState? current = _currentState;
+    if (current == null || current.isRefreshing) {
+      return;
+    }
+
+    final List<BillingWorkItem> invoices = <BillingWorkItem>[];
+    for (final ReceptionPaymentGateEntry entry in current.entries) {
+      for (final BillingWorkItem existing in entry.invoices) {
+        if (existing.id == invoice.id) {
+          continue;
+        }
+        invoices.add(existing);
+      }
+    }
+    if (isReceptionOutstandingOpdInvoice(invoice)) {
+      invoices.add(invoice);
+    }
+
+    _emit(
+      current.copyWith(
+        entries: aggregateReceptionPaymentGateEntries(invoices),
+        isRefreshing: false,
+        clearLastFailure: true,
+      ),
+    );
+  }
+
   Future<Result<ReceptionPaymentGateState>> _load() async {
     _isSyncing = true;
     try {

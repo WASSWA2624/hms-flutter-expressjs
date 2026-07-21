@@ -5356,6 +5356,135 @@ const syncDiagnosticsStage = async (encounterId, context = {}) => {
   }
 };
 
+/**
+ * When Billing reconciles a payment against a consultation invoice, keep the
+ * linked OPD flow consultation snapshot and Payment-due stage in sync.
+ * Never throws into the billing reconcile path.
+ */
+const syncConsultationBillingFromInvoicePayment = async ({
+  invoiceId = null,
+  payment = null,
+  context = {},
+} = {}) => {
+  try {
+    const normalizedInvoiceId = normalizeIdentifier(invoiceId);
+    if (!normalizedInvoiceId) {
+      return null;
+    }
+
+    const transition = await prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findFirst({
+        where: { id: normalizedInvoiceId, deleted_at: null },
+      });
+      if (!invoice) {
+        return null;
+      }
+
+      let encounter = null;
+      if (invoice.encounter_id) {
+        encounter = await resolveEncounterByIdentifier(tx, invoice.encounter_id);
+      }
+      if (!encounter?.extension_json?.opd_flow) {
+        const matches = await tx.encounter.findMany({
+          where: {
+            deleted_at: null,
+            tenant_id: invoice.tenant_id,
+            ...(invoice.facility_id ? { facility_id: invoice.facility_id } : {}),
+            extension_json: {
+              path: '$.opd_flow.consultation.invoice_id',
+              equals: normalizedInvoiceId,
+            },
+          },
+          take: 5,
+        });
+        encounter =
+          matches.find((candidate) => candidate?.extension_json?.opd_flow) || null;
+      }
+      if (!encounter?.extension_json?.opd_flow) {
+        return null;
+      }
+
+      const flow = getOpdFlowState(encounter);
+      if (TERMINAL_STAGES.has(flow.stage)) {
+        return null;
+      }
+
+      const consultation = { ...(flow.consultation || {}) };
+      const linkedInvoiceId = normalizeIdentifier(consultation.invoice_id);
+      const invoiceKeys = new Set(
+        [invoice.id, invoice.human_friendly_id]
+          .map((value) => normalizeIdentifier(value).toUpperCase())
+          .filter(Boolean)
+      );
+      if (
+        linkedInvoiceId &&
+        !invoiceKeys.has(linkedInvoiceId.toUpperCase()) &&
+        flow.stage !== STAGES.WAITING_CONSULTATION_PAYMENT
+      ) {
+        return null;
+      }
+
+      const stageBefore = flow.stage;
+      await applyConsultationBillingSnapshot(tx, {
+        invoiceId: invoice.id,
+        payment,
+        consultation,
+        currency: consultation.currency || invoice.currency || null,
+        paymentStatus: payment?.status || null,
+      });
+      flow.consultation = consultation;
+
+      if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT && consultation.is_paid) {
+        setFlowStage(flow, STAGES.WAITING_VITALS);
+      }
+
+      appendTimelineEvent(flow, 'CONSULTATION_PAYMENT_RECORDED', context, {
+        payment_id: payment?.id || null,
+        invoice_id: invoice.id,
+        amount: payment?.amount || null,
+        status: payment?.status || null,
+        source: 'BILLING_RECONCILE',
+      });
+
+      const updatedEncounter = await tx.encounter.update({
+        where: { id: encounter.id },
+        data: {
+          extension_json: {
+            ...(encounter.extension_json || {}),
+            opd_flow: flow,
+          },
+        },
+      });
+
+      return {
+        encounterId: updatedEncounter.id,
+        stage_from: stageBefore,
+        stage_to: flow.stage,
+      };
+    });
+
+    if (!transition) {
+      return null;
+    }
+
+    const snapshot = await getOpdFlowById(transition.encounterId);
+    await publishOpdRealtimeUpdates({
+      snapshot,
+      transition: {
+        action: 'PAY_CONSULTATION',
+        stage_from: transition.stage_from,
+        stage_to: transition.stage_to,
+        occurred_at: new Date().toISOString(),
+      },
+      context,
+    });
+    return snapshot;
+  } catch (_err) {
+    // Billing reconcile must succeed even when OPD sync cannot run.
+    return null;
+  }
+};
+
 module.exports = {
   listOpdFlows,
   getOpdFlowSummaryCounts,
@@ -5373,5 +5502,6 @@ module.exports = {
   closeEncounter,
   getBillingDefaults,
   correctStage,
-  syncDiagnosticsStage
+  syncDiagnosticsStage,
+  syncConsultationBillingFromInvoicePayment,
 };

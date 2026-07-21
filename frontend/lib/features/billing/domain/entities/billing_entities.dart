@@ -228,6 +228,26 @@ final class BillingSummary {
       BillingQueueType.overdue => overdue,
     };
   }
+
+  BillingSummary copyWith({
+    int? needsIssue,
+    int? pendingPayment,
+    int? claimsPending,
+    int? approvalRequired,
+    int? overdue,
+    num? paymentsTodayTotal,
+    num? refundsTodayTotal,
+  }) {
+    return BillingSummary(
+      needsIssue: needsIssue ?? this.needsIssue,
+      pendingPayment: pendingPayment ?? this.pendingPayment,
+      claimsPending: claimsPending ?? this.claimsPending,
+      approvalRequired: approvalRequired ?? this.approvalRequired,
+      overdue: overdue ?? this.overdue,
+      paymentsTodayTotal: paymentsTodayTotal ?? this.paymentsTodayTotal,
+      refundsTodayTotal: refundsTodayTotal ?? this.refundsTodayTotal,
+    );
+  }
 }
 
 @immutable
@@ -728,6 +748,20 @@ final class BillingWorkspaceOverview {
   final List<BillingQueueSummary> queues;
   final List<BillingTimelineItem> timeline;
   final DateTime? generatedAt;
+
+  BillingWorkspaceOverview copyWith({
+    BillingSummary? summary,
+    List<BillingQueueSummary>? queues,
+    List<BillingTimelineItem>? timeline,
+    DateTime? generatedAt,
+  }) {
+    return BillingWorkspaceOverview(
+      summary: summary ?? this.summary,
+      queues: queues ?? this.queues,
+      timeline: timeline ?? this.timeline,
+      generatedAt: generatedAt ?? this.generatedAt,
+    );
+  }
 }
 
 @immutable

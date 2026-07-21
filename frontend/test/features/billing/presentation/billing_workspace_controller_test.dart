@@ -72,7 +72,7 @@ void main() {
     });
 
     test(
-      'submits payment for selected invoice and refreshes affected queues',
+      'submits payment for selected invoice and patches queues immediately',
       () async {
         final _MockBillingRepository repository = _MockBillingRepository();
         const BillingWorkItem invoice = BillingWorkItem(
@@ -82,7 +82,12 @@ void main() {
           tenantId: 'tenant-1',
           patientDisplayName: 'Jane Doe',
           billingStatus: 'ISSUED',
+          status: 'SENT',
           amount: 1000,
+          financials: BillingFinancials(
+            effectiveTotal: 1000,
+            balanceDue: 1000,
+          ),
         );
         BillingWorkItem? submittedInvoice;
         BillingPaymentDraft? submittedDraft;
@@ -99,9 +104,16 @@ void main() {
               invoice: invoice.copyWith(
                 billingStatus: 'PAID',
                 financials: const BillingFinancials(
+                  effectiveTotal: 1000,
                   grossPaidTotal: 1000,
                   netPaidTotal: 1000,
+                  balanceDue: 0,
                 ),
+              ),
+              payment: const BillingPayment(
+                id: 'pay-1',
+                status: 'COMPLETED',
+                amount: 1000,
               ),
             ),
           );
@@ -123,10 +135,72 @@ void main() {
         expect(submittedInvoice?.id, 'invoice-1');
         expect(submittedDraft?.amount, '1000.00');
         verify(() => repository.receivePayment(any(), any())).called(1);
-        verify(() => repository.getWorkspace(any())).called(2);
-        verify(() => repository.listWorkItems(any())).called(2);
+        // Instant patch must not wait on a post-payment workspace GET.
+        verify(() => repository.getWorkspace(any())).called(1);
+        verify(() => repository.listWorkItems(any())).called(1);
+
+        final Result<BillingWorkspaceState>? state = container
+            .read(billingWorkspaceControllerProvider)
+            .asData
+            ?.value;
+        final BillingWorkspaceState workspace =
+            (state as ResultSuccess<BillingWorkspaceState>).value;
+        expect(workspace.isSaving, isFalse);
+        expect(workspace.isRefreshing, isFalse);
+        expect(workspace.overview.summary.pendingPayment, 0);
+        expect(workspace.selectedItem?.billingStatus, 'PAID');
+        expect(workspace.selectedItem?.canReceivePayment, isFalse);
       },
     );
+
+    test('failed receive payment leaves unpaid invoice unchanged', () async {
+      final _MockBillingRepository repository = _MockBillingRepository();
+      const BillingWorkItem invoice = BillingWorkItem(
+        id: 'invoice-1',
+        displayId: 'INV-001',
+        kind: BillingWorkItemKind.invoice,
+        tenantId: 'tenant-1',
+        patientDisplayName: 'Jane Doe',
+        billingStatus: 'ISSUED',
+        status: 'SENT',
+        amount: 1000,
+        financials: BillingFinancials(
+          effectiveTotal: 1000,
+          balanceDue: 1000,
+        ),
+      );
+      _stubInitialLoad(repository, items: <BillingWorkItem>[invoice]);
+      when(() => repository.receivePayment(any(), any())).thenAnswer(
+        (_) async => const Result<BillingMutationResult>.failure(
+          AppFailure.network(),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: _billingTestOverrides(repository).cast(),
+      );
+      addTearDown(container.dispose);
+      await container.read(billingWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(billingWorkspaceControllerProvider.notifier)
+          .receivePayment(
+            const BillingPaymentDraft(amount: '1000.00', method: 'CASH'),
+          );
+
+      expect(failure, isA<AppFailure>());
+      verify(() => repository.getWorkspace(any())).called(1);
+      final Result<BillingWorkspaceState>? state = container
+          .read(billingWorkspaceControllerProvider)
+          .asData
+          ?.value;
+      final BillingWorkspaceState workspace =
+          (state as ResultSuccess<BillingWorkspaceState>).value;
+      expect(workspace.isSaving, isFalse);
+      expect(workspace.overview.summary.pendingPayment, 1);
+      expect(workspace.selectedItem?.billingStatus, 'ISSUED');
+      expect(workspace.selectedItem?.canReceivePayment, isTrue);
+    });
 
     test('approves selected approval and refreshes workspace', () async {
       final _MockBillingRepository repository = _MockBillingRepository();

@@ -39,6 +39,8 @@ const BILLING_REALTIME_RECIPIENT_ROLES = Object.freeze([
   ROLES.BILLING,
   ROLES.FACILITY_ADMIN,
   ROLES.TENANT_ADMIN,
+  ROLES.RECEPTIONIST,
+  ROLES.ACCOUNTANT,
 ]);
 
 const INVOICE_INCLUDE = {
@@ -1021,6 +1023,21 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
     actorUserId: user?.id || null,
   });
   await notifyLabOrdersBillingUpdated(mutation.clinicalSync?.labOrderIds || [], user?.id || null);
+  try {
+    const opdFlowService = require('@services/opd-flow/opd-flow.service');
+    await opdFlowService.syncConsultationBillingFromInvoicePayment({
+      invoiceId: payment.invoice_id,
+      payment: updatedPayment || mutation.payment,
+      context: {
+        user_id: user?.id || null,
+        tenant_id: scope.tenant_id || payment.tenant_id || null,
+        facility_id: scope.facility_id || payment.facility_id || null,
+        ip_address: ip,
+      },
+    });
+  } catch (_err) {
+    // OPD consultation sync must never fail payment reconcile.
+  }
   return {
     payment: mapPayment(updatedPayment || mutation.payment),
     invoice: updatedInvoice ? mapInvoice(updatedInvoice, true) : null,

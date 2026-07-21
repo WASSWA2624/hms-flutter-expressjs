@@ -12,6 +12,10 @@ import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
+import 'package:hosspi_hms/features/billing/presentation/controllers/billing_realtime_delta_applier.dart';
+import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_mutation_applier.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final billingWorkspaceControllerProvider =
@@ -77,6 +81,7 @@ final class BillingWorkspaceController
       isDeferred: _isSyncing || (_currentState?.isSaving ?? false),
       pendingRefresh: _pendingRefresh,
       emit: _emit,
+      applyDelta: BillingRealtimeDeltaApplier.apply,
       syncHttp: ({required WorkspaceRefreshPlan plan}) => refresh(),
     );
   }
@@ -228,7 +233,7 @@ final class BillingWorkspaceController
     if (selected == null) {
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
-    return _submitOnlineOnlyAction(
+    return _submitReceivePayment(
       () => _repository.receivePayment(selected, draft),
     );
   }
@@ -391,6 +396,67 @@ final class BillingWorkspaceController
     return _submitAction(submit);
   }
 
+  /// Receive payment patches Billing (and linked workspaces) immediately;
+  /// success must not wait on a blanket workspace GET.
+  Future<AppFailure?> _submitReceivePayment(
+    Future<Result<BillingMutationResult>> Function() submit,
+  ) async {
+    final AppFailure? offline = _rejectIfOffline();
+    if (offline != null) {
+      return offline;
+    }
+
+    final BillingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return _missingSelectionFailure();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<BillingMutationResult> result = await submit();
+    return result.when<Future<AppFailure?>>(
+      success: (BillingMutationResult mutation) async {
+        final BillingWorkspaceState? latest = _currentState;
+        if (latest == null) {
+          return null;
+        }
+        final BillingWorkspaceState patched =
+            BillingWorkspaceMutationApplier.apply(latest, mutation);
+        _emit(patched);
+        _syncLinkedWorkspacesAfterPayment(mutation.invoice);
+        await _flushPendingRefresh(
+          preferredSelectedId: mutation.invoice?.id ?? patched.selectedItem?.id,
+        );
+        return null;
+      },
+      failure: (AppFailure failure) async {
+        final BillingWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        await _flushPendingRefresh(
+          preferredSelectedId: current.selectedItem?.id,
+        );
+        return failure;
+      },
+    );
+  }
+
+  void _syncLinkedWorkspacesAfterPayment(BillingWorkItem? invoice) {
+    if (invoice == null) {
+      return;
+    }
+    if (ref.exists(receptionPaymentGateControllerProvider)) {
+      ref
+          .read(receptionPaymentGateControllerProvider.notifier)
+          .applyInvoiceUpdate(invoice);
+    }
+    if (ref.exists(opdWorkspaceControllerProvider)) {
+      ref
+          .read(opdWorkspaceControllerProvider.notifier)
+          .applyConsultationInvoicePaidIfLoaded(invoice);
+    }
+  }
+
   Future<AppFailure?> _submitMaintenanceAction(
     Future<Result<void>> Function() submit,
   ) async {
@@ -528,58 +594,11 @@ final class BillingWorkspaceController
   }
 
   void _applyMutationResult(BillingMutationResult mutation) {
-    if (!mutation.hasImmediatePatch) {
-      return;
-    }
-
     final BillingWorkspaceState? current = _currentState;
     if (current == null) {
       return;
     }
-
-    final BillingWorkItem? patchItem =
-        mutation.invoice ?? mutation.approval ?? mutation.claim;
-    if (patchItem == null) {
-      return;
-    }
-
-    final AppPage<BillingWorkItem> workItems = _upsertWorkItem(
-      current.workItems,
-      patchItem,
-    );
-    final BillingWorkItem selected = current.selectedItem?.id == patchItem.id
-        ? patchItem
-        : current.selectedItem ?? patchItem;
-    _emit(
-      current.copyWith(
-        workItems: workItems,
-        selectedItem: selected,
-        clearLastFailure: true,
-      ),
-    );
-  }
-
-  AppPage<BillingWorkItem> _upsertWorkItem(
-    AppPage<BillingWorkItem> page,
-    BillingWorkItem item,
-  ) {
-    final List<BillingWorkItem> items = page.items
-        .where((BillingWorkItem existing) => existing.id != item.id)
-        .toList(growable: true);
-    final bool inserted = items.length == page.items.length;
-    items.insert(0, item);
-    final int maxItems = page.request.pageSize;
-    final List<BillingWorkItem> visible = items.length > maxItems
-        ? items.take(maxItems).toList(growable: false)
-        : items.toList(growable: false);
-
-    return AppPage<BillingWorkItem>(
-      items: visible,
-      request: page.request,
-      totalItemCount: page.totalItemCount == null
-          ? null
-          : page.totalItemCount! + (inserted ? 1 : 0),
-    );
+    _emit(BillingWorkspaceMutationApplier.apply(current, mutation));
   }
 
   BillingWorkItem? _selectAfterRefresh(
