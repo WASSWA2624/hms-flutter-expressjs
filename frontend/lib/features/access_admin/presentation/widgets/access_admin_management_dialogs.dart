@@ -269,7 +269,7 @@ abstract class _ScopedAccessAdminListDialogState<
       onClear: () => unawaited(reload(resetPage: true)),
       enableDateFilter: false,
       showAdvancedFilterButton: showAdvancedFilterButton,
-      advancedFilterButtonLabel: l10n.accessAdminFiltersAction,
+      advancedFilterButtonLabel: l10n.commonFilterActionLabel,
       advancedFilterTitle: advancedFilterTitle ?? l10n.accessAdminFiltersTitle,
       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
       advancedFilterResetLabel: l10n.opdClearFiltersAction,

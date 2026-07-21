@@ -256,7 +256,7 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     String? resetLabel,
     String? closeLabel,
   }) {
-    final String resolvedLabel = label ?? 'Table column settings';
+    final String resolvedLabel = label ?? 'Settings';
     return AppSearchBarAction(
       icon: Icons.settings_outlined,
       label: resolvedLabel,
@@ -1850,7 +1850,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   String get _columnVisibilityLabel {
-    return widget.columnVisibilityLabel ?? 'Table column settings';
+    return widget.columnVisibilityLabel ?? 'Settings';
   }
 
   Set<String> _withAlwaysVisibleColumnKeys(Set<String> keys) {

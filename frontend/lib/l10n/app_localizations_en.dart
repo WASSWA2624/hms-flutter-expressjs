@@ -196,6 +196,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonFiltersActionLabel => 'Filters';
 
   @override
+  String get commonFilterActionLabel => 'Filter';
+
+  @override
   String get emergencyCaseDialogTitle => 'Emergency case';
 
   @override

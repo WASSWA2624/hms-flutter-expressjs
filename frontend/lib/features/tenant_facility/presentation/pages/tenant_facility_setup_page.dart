@@ -3019,6 +3019,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         ).contains(_normalizeSearch(query)),
         showAdvancedFilterButton: true,
         advancedFilterTitle: l10n.tenantFacilityTenantStatusLabel,
+        advancedFilterButtonLabel: l10n.commonFilterActionLabel,
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: _statusFilterKey,

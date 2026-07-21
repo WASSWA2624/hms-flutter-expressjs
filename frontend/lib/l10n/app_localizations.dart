@@ -436,6 +436,12 @@ abstract class AppLocalizations {
   /// **'Filters'**
   String get commonFiltersActionLabel;
 
+  /// Short label for the table search-bar Filter button.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get commonFilterActionLabel;
+
   /// Title for the emergency case detail dialog.
   ///
   /// In en, this message translates to:

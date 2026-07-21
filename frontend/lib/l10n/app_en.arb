@@ -253,6 +253,10 @@
   "@commonFiltersActionLabel": {
     "description": "Label for opening a worklist table advanced filters dialog."
   },
+  "commonFilterActionLabel": "Filter",
+  "@commonFilterActionLabel": {
+    "description": "Short label for the table search-bar Filter button."
+  },
   "emergencyCaseDialogTitle": "Emergency case",
   "@emergencyCaseDialogTitle": {
     "description": "Title for the emergency case detail dialog."

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_date_field.dart';
@@ -386,11 +385,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
             theme.inputDecorationTheme.constraints?.minHeight ?? 48;
 
         return LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final AppBreakpoint breakpoint = AppBreakpoints.fromConstraints(
-              constraints,
-            );
-            final bool showActionLabels = breakpoint.showsToolbarActionLabels;
+          builder: (BuildContext context, BoxConstraints _) {
             final List<AppSearchBarAction> inlineTrailingActions;
             final List<AppSearchBarAction> overflowTrailingActions;
             final int? maxTrailingActions = widget.maxTrailingActions;
@@ -408,8 +403,8 @@ class _AppSearchBarState extends State<AppSearchBar> {
             }
 
             return AppActionLabelScope(
-              showLabels: showActionLabels,
-              forceIconOnly: !showActionLabels,
+              showLabels: true,
+              forceIconOnly: false,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: _fillColor(theme, canEdit),
@@ -468,8 +463,8 @@ class _AppSearchBarState extends State<AppSearchBar> {
                           activeCount: widget.filterValue.activeCount,
                           label:
                               widget.advancedFilterButtonLabel ??
-                              'Advanced filters',
-                          showLabel: showActionLabels,
+                              'Filter',
+                          showLabel: true,
                           onPressed: _openAdvancedFilters,
                         ),
                       for (final AppSearchBarAction action
@@ -477,7 +472,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                         _AttachedSearchBarActionButton(
                           borderColor: borderSide.color,
                           action: action,
-                          showLabel: showActionLabels,
+                          showLabel: true,
                           enabled:
                               widget.enabled &&
                               !widget.isLoading &&
@@ -489,7 +484,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                           borderColor: borderSide.color,
                           actions: overflowTrailingActions,
                           label: widget.trailingActionsOverflowLabel,
-                          showLabel: showActionLabels,
+                          showLabel: true,
                           enabled: widget.enabled && !widget.isLoading,
                         ),
                     ],
