@@ -318,7 +318,7 @@ void main() {
   });
 
   testWidgets(
-    'reception context shows clinical services as status-only progress',
+    'reception context omits the clinical services panel entirely',
     (WidgetTester tester) async {
       const OpdFlowSummary withDoctor = OpdFlowSummary(
         id: 'encounter-1',
@@ -364,12 +364,11 @@ void main() {
         allowClinicalActions: false,
       );
 
-      expect(find.byType(OpdEncounterClinicalServicesPanel), findsOneWidget);
-      expect(find.text('Blood Pressure'), findsOneWidget);
-      expect(find.text('CBC'), findsOneWidget);
+      expect(find.byType(OpdEncounterClinicalServicesPanel), findsNothing);
+      expect(find.text('Clinical services'), findsNothing);
+      expect(find.text('Blood Pressure'), findsNothing);
+      expect(find.text('CBC'), findsNothing);
       expect(find.textContaining('80/50'), findsNothing);
-      expect(find.text('Result'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Request lab'), findsNothing);
       expect(find.byType(AppWorkflowStepper), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     },

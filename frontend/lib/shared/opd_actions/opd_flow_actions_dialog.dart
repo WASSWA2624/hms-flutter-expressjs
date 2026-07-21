@@ -134,9 +134,9 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
   /// When false, Record/Edit vitals quick actions are omitted (Reception).
   final bool allowVitalsActions;
 
-  /// When false (Reception), clinician write actions are omitted while
-  /// status-only clinical-service progress, Follow up, Correct stage, and
-  /// Print summary remain. The workflow stepper stays read-only guidance.
+  /// When false (Reception), clinician write actions and the clinical-services
+  /// panel are omitted while Follow up, Correct stage, and Print summary remain.
+  /// The workflow stepper stays read-only guidance.
   final bool allowClinicalActions;
 
   @override
@@ -202,11 +202,12 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               body: l10n.opdLoadingBody,
               semanticLabel: l10n.opdLoadingTitle,
             ),
-          if (detail != null && opdDetailHasClinicalRecords(detail))
+          if (widget.allowClinicalActions &&
+              detail != null &&
+              opdDetailHasClinicalRecords(detail))
             OpdEncounterClinicalServicesPanel(
               detail: detail,
               flow: flow,
-              showResults: widget.allowClinicalActions,
             ),
           if (!isInitialLoad)
             _actionGrid(context, flow, detail, actionsEnabled: !isBusy),
