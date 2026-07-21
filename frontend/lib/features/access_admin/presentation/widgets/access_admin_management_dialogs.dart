@@ -812,7 +812,6 @@ class _ManageUsersPanelState
                         end: theme.spacing.sm,
                       ),
                       child: AppButton.tertiary(
-                        iconOnly: true,
                         leadingIcon: Icons.restore_outlined,
                         label: l10n.accessAdminRestoreUserAction,
                         semanticLabel: l10n.accessAdminRestoreUserAction,
@@ -830,7 +829,6 @@ class _ManageUsersPanelState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         AppButton.tertiary(
-                          iconOnly: true,
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.tenantFacilityEditAction,
                           semanticLabel: l10n.tenantFacilityEditAction,
@@ -841,7 +839,6 @@ class _ManageUsersPanelState
                               : null,
                         ),
                         AppButton.tertiary(
-                          iconOnly: true,
                           leadingIcon: Icons.delete_outline,
                           label: l10n.tenantFacilityDeleteAction,
                           semanticLabel: l10n.tenantFacilityDeleteAction,
