@@ -1,1 +1,35 @@
-Now, let's also do more refinements. There is There is a I record, I record the vitals, Barton, and the reception the receptionist should never record the vitals. so if which means within the reception, within the reception module, someone can only, someone can only see that the next step is to record the vitals and they follow up but they cannot record the vitals. So which means under the quick actions, for the quick actions under, under reception They should never see the record dividers, but, but I mean, more, but, yeah, that step should show, that step should show that, yeah that the next step is actually to record dividers, maybe if we can follow up. currently the record dividers, the record dividers dialog is implemented, I think, I think it exists and it exists under the shared components. So let's just make sure That it is being reused throughout, and that's It is consistent throughout and nicely designed or well designed. Right now it looks quite, it looks a bit more congested. for example, it has, it has, this is what I see inside it, it has the priority. That triage priority should be a select component where someone can select the priorities from the dropdown. Yeah, the symptoms naturally triage priority is optional. No, it's not optional, but I think the default value should be normal. It's optional, but a default value should be normal. Then symptoms that is optional, so someone could type. Then, pain severity. Now, pain severity is supposed, is al-is displayed under a select component. We ne we have to make sure that it is a selectable select, which can search for the values. But I can see the pain severity is actually displayed as numbers. So someone needs to know what, what these numbers mean because not every user knows that it is an optional value, but there should be a value, there should be There should be a way to know what that means. Then allergies allergies are op it is optional so allergies is optional, so but someone can maybe type the allergies and such. Then emergency indicators this is this is toggle button, it is optional, but yeah, if you have emergency indicators, then they should also be shown. Then risk flags risk flags, I think they also, they are also optional but someone can choose from whether Follow risks infection risk, bleeding, pregnancy, and so on. Then Triage levels. I don't know why it is, why do we need both why do we have both triage level and then we also have, we also have the triage priority. I think then now the triage priority needs to be either removed and remain with the triage level, which, which has everything in it. Yeah. Because this is the, this can, I think even there should be a score depending on the tri on the vitals, on the match of the vitals. Yeah. So the patient can be flagged as a priority patient depending on the score, so it means all these should be implemented within the recorded vitals, the form. The logo form. then down here we have the vital signs. Instead, instead of displaying them as a form, we could just add the buttons, we could just add the buttons to avoid a congestion. We should just, we should add a button and ac-actually, we should put these vital signs into action buttons, into an action button, and we have the recorded pressure which invokes a modal dialog For the pressure, where someone can enter the systolic, the diastolic, and then the, the units, but by default they should be millimeters of mercury. Then we can also record the temperature, we can record the temperature. Then you can also record the heart rate respiratory rate SpO2, that is oxygen saturation. Then weight, you can So weight, height, and weight and height can also be selected, but let's also add BMI, such that when two of those three values are selected, then one can easily one can easily the third one can easily be calculated. So all these vitals should have all these vitals should have Parameter ranges and these parameter ranges should be based on the patient's age and gender, because usually these, all these patients, patients of different age categories have different normal ranges. So which means this should be, they should be done with the patient's gender and, and the patient's gender and age in mind. then also yeah, we should also improve the overall look and feel of that record vitals model dialogue.
+# Reception Vitals Read-Only; Decongest Shared Record Vitals
+
+Make Reception show **Record/Edit vitals** as guidance only; refine the shared vitals dialog for clinical modules. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Reception still opens **Record vitals** from Flow Actions. Receptionists must see vitals as next, not enter them. Shared `RecordVitalsDialog` is congested (duplicate triage, unlabeled pain scores, dense form).
+
+**Record/Edit vitals action:** any control that opens the mutating vitals dialog.
+
+## Requirements
+
+1. On Reception, keep vitals Current/Next labels read-only; omit Record/Edit vitals quick actions and openers.
+2. Keep authorized Record/Edit vitals on clinical owners (OPD, nursing); reuse one shared dialog.
+3. Drop triage priority; keep one searchable **Triage level** (default Normal). Keep optional chief complaint, symptoms, allergies, notes, emergency toggle, risk flags; searchable labeled **Pain severity**.
+4. Replace inline vitals with buttons opening sub-dialogs for BP, temperature, HR, RR, SpO2, weight, height (defaults mmHg, °C, kg, cm). Derive BMI; show age/gender ranges; require ≥1 vital to save.
+5. Preserve loading, empty, error, validation, busy, success, permission, sync; omit unauthorized UI.
+
+## Constraints
+
+- Reuse `AppRecordVitalsDialog`, `RecordVitalsDialog`, flow dialogs, authorization, localization, design-system; no Reception vitals fork.
+- Do not invent stages or change mutators beyond hiding Reception entry points; support themes and viewports.
+
+## Acceptance Criteria
+
+- R1: Reception never opens Record/Edit vitals; next-step text still shows.
+- R2–R4: Shared dialog matches fields, sub-dialogs, BMI, ranges; ≥1 vital on save.
+- R5: States and sync clear; unauthorized UI absent.
+- Update reception, flow-actions, record-vitals tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/{opd_actions,components}/`
+- `frontend/lib/features/reception/`
+- `frontend/test/{shared/opd_actions,features/reception}/`
