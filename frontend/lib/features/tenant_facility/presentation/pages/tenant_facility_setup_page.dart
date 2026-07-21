@@ -2267,6 +2267,22 @@ class _DepartmentSetupSection extends ConsumerWidget {
       canManageRecords: canManageRecords,
       canAdd: canAdd,
       onAdd: () => _openDepartmentDialog(context, snapshot),
+      scopeLabel: l10n.tenantFacilityFacilitySelectLabel,
+      scopeOptions: <_SearchableEntityGroupScopeOption>[
+        for (final FacilityProfile facility
+            in snapshot.facilities.isNotEmpty
+            ? snapshot.facilities
+            : <FacilityProfile>[
+                if (snapshot.facility != null) snapshot.facility!,
+              ])
+          if (!facility.isDeleted)
+            _SearchableEntityGroupScopeOption(
+              id: facility.id,
+              label: facility.name,
+            ),
+      ],
+      itemScopeId: (DepartmentProfile department) =>
+          department.facilityId ?? snapshot.facility?.id,
       titleBuilder: (DepartmentProfile department) => department.name,
       subtitleBuilder: (DepartmentProfile department) => department.isDeleted
           ? l10n.tenantFacilityStructureDeletedStatus
@@ -2341,6 +2357,16 @@ class _UnitSetupSection extends ConsumerWidget {
       canManageRecords: canManageRecords,
       canAdd: canAdd,
       onAdd: () => _openUnitDialog(context, snapshot),
+      scopeLabel: l10n.tenantFacilityUnitDepartmentLabel,
+      scopeOptions: <_SearchableEntityGroupScopeOption>[
+        for (final DepartmentProfile department in snapshot.departments)
+          if (!department.isDeleted)
+            _SearchableEntityGroupScopeOption(
+              id: department.id,
+              label: department.name,
+            ),
+      ],
+      itemScopeId: (UnitProfile unit) => unit.departmentId,
       titleBuilder: (UnitProfile unit) => unit.name,
       subtitleBuilder: (UnitProfile unit) => unit.isDeleted
           ? l10n.tenantFacilityStructureDeletedStatus
@@ -2410,6 +2436,16 @@ class _WardSetupSection extends ConsumerWidget {
       canManageRecords: canManageRecords,
       canAdd: canAdd,
       onAdd: () => _openWardDialog(context, snapshot),
+      scopeLabel: l10n.tenantFacilityWardDepartmentLabel,
+      scopeOptions: <_SearchableEntityGroupScopeOption>[
+        for (final DepartmentProfile department in snapshot.departments)
+          if (!department.isDeleted)
+            _SearchableEntityGroupScopeOption(
+              id: department.id,
+              label: department.name,
+            ),
+      ],
+      itemScopeId: (WardProfile ward) => ward.departmentId,
       titleBuilder: (WardProfile ward) => ward.name,
       subtitleBuilder: (WardProfile ward) => ward.isDeleted
           ? l10n.tenantFacilityStructureDeletedStatus
@@ -2472,6 +2508,13 @@ class _RoomSetupSection extends ConsumerWidget {
       canManageRecords: canManageRecords,
       canAdd: canAdd,
       onAdd: () => _openRoomDialog(context, snapshot),
+      scopeLabel: l10n.tenantFacilityRoomWardLabel,
+      scopeOptions: <_SearchableEntityGroupScopeOption>[
+        for (final WardProfile ward in snapshot.wards)
+          if (!ward.isDeleted)
+            _SearchableEntityGroupScopeOption(id: ward.id, label: ward.name),
+      ],
+      itemScopeId: (RoomProfile room) => room.wardId,
       titleBuilder: (RoomProfile room) => room.name,
       subtitleBuilder: (RoomProfile room) => room.isDeleted
           ? l10n.tenantFacilityStructureDeletedStatus
@@ -2533,6 +2576,13 @@ class _BedSetupSection extends ConsumerWidget {
       canManageRecords: canManageRecords,
       canAdd: canAdd,
       onAdd: () => _openBedDialog(context, snapshot),
+      scopeLabel: l10n.tenantFacilityBedWardLabel,
+      scopeOptions: <_SearchableEntityGroupScopeOption>[
+        for (final WardProfile ward in snapshot.wards)
+          if (!ward.isDeleted)
+            _SearchableEntityGroupScopeOption(id: ward.id, label: ward.name),
+      ],
+      itemScopeId: (BedProfile bed) => bed.wardId,
       titleBuilder: (BedProfile bed) => bed.label,
       subtitleBuilder: (BedProfile bed) => bed.isDeleted
           ? l10n.tenantFacilityStructureDeletedStatus
@@ -2606,6 +2656,16 @@ class _ModalSectionBody extends StatelessWidget {
   }
 }
 
+class _SearchableEntityGroupScopeOption {
+  const _SearchableEntityGroupScopeOption({
+    required this.id,
+    required this.label,
+  });
+
+  final String id;
+  final String label;
+}
+
 class _SearchableEntityGroup<T> extends StatefulWidget {
   const _SearchableEntityGroup({
     required this.title,
@@ -2624,6 +2684,10 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onRestore,
+    this.scopeLabel,
+    this.scopeOptions = const <_SearchableEntityGroupScopeOption>[],
+    this.itemScopeId,
+    this.addIcon = Icons.add_circle_outline,
   });
 
   final String title;
@@ -2633,6 +2697,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final String searchLabel;
   final String searchHint;
   final String addLabel;
+  final IconData addIcon;
   final bool canManageRecords;
   final bool canAdd;
   final VoidCallback onAdd;
@@ -2642,6 +2707,9 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final ValueChanged<T> onEdit;
   final ValueChanged<T> onDelete;
   final ValueChanged<T> onRestore;
+  final String? scopeLabel;
+  final List<_SearchableEntityGroupScopeOption> scopeOptions;
+  final String? Function(T item)? itemScopeId;
 
   @override
   State<_SearchableEntityGroup<T>> createState() =>
@@ -2650,16 +2718,38 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
 
 class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
   static const String _statusFilterKey = 'status';
+  static const String _scopeFilterKey = 'scope';
   static const String _statusActive = 'active';
   static const String _statusDeleted = 'deleted';
+  static const String _allScopes = '__all_scopes__';
 
   final TextEditingController _searchController = TextEditingController();
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  String _scopeId = _allScopes;
+
+  bool get _hasScopeSelector =>
+      widget.scopeLabel != null &&
+      widget.scopeOptions.isNotEmpty &&
+      widget.itemScopeId != null;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SearchableEntityGroup<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_scopeId == _allScopes) {
+      return;
+    }
+    final bool scopeStillValid = widget.scopeOptions.any(
+      (_SearchableEntityGroupScopeOption option) => option.id == _scopeId,
+    );
+    if (!scopeStillValid) {
+      setState(() => _scopeId = _allScopes);
+    }
   }
 
   List<T> get _visibleItems {
@@ -2670,6 +2760,10 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
     } else if (status == _statusDeleted) {
       items = items.where(widget.isDeletedBuilder);
     }
+    final String? Function(T item)? itemScopeId = widget.itemScopeId;
+    if (_hasScopeSelector && _scopeId != _allScopes && itemScopeId != null) {
+      items = items.where((T item) => itemScopeId(item) == _scopeId);
+    }
     return items.toList(growable: false);
   }
 
@@ -2679,7 +2773,9 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
     final AppLocalizations l10n = context.l10n;
     final ColorScheme colorScheme = theme.colorScheme;
     final List<T> items = _visibleItems;
-    final bool hasActiveFilters = _filterValue.options.isNotEmpty;
+    final bool hasActiveFilters =
+        _filterValue.options.isNotEmpty ||
+        (_hasScopeSelector && _scopeId != _allScopes);
 
     final AppListTableColumn<T> nameColumn = AppListTableColumn<T>(
       id: 'name',
@@ -2722,6 +2818,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                     )
                   else ...<Widget>[
                     AppButton(
+                      iconOnly: true,
                       leadingIcon: Icons.edit_outlined,
                       label: l10n.tenantFacilityEditAction,
                       semanticLabel: l10n.tenantFacilityEditAction,
@@ -2729,6 +2826,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                       onPressed: () => widget.onEdit(item),
                     ),
                     AppButton(
+                      iconOnly: true,
                       leadingIcon: Icons.delete_outline,
                       label: l10n.tenantFacilityDeleteAction,
                       semanticLabel: l10n.tenantFacilityDeleteAction,
@@ -2745,8 +2843,6 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
 
     final Widget table = AppListTable<T>(
       items: items,
-      shrinkWrap: widget.canAdd,
-      physics: widget.canAdd ? const NeverScrollableScrollPhysics() : null,
       columnVisibilityStorageKey: 'setup_structure_${widget.title}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columns: <AppListTableColumn<T>>[
@@ -2770,9 +2866,24 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           widget.subtitleBuilder(item),
         ).contains(_normalizeSearch(query)),
         showAdvancedFilterButton: true,
-        advancedFilterTitle: l10n.tenantFacilityTenantStatusLabel,
+        advancedFilterTitle: l10n.commonFilterActionLabel,
         advancedFilterButtonLabel: l10n.commonFilterActionLabel,
         filterGroups: <AppSearchBarFilterGroup>[
+          if (_hasScopeSelector)
+            AppSearchBarFilterGroup(
+              key: _scopeFilterKey,
+              label: widget.scopeLabel!,
+              allLabel: l10n.commonAllLabel,
+              choices: <AppSearchBarFilterChoice>[
+                for (final _SearchableEntityGroupScopeOption option
+                    in widget.scopeOptions)
+                  AppSearchBarFilterChoice(
+                    value: option.id,
+                    label: option.label,
+                    icon: Icons.filter_alt_outlined,
+                  ),
+              ],
+            ),
           AppSearchBarFilterGroup(
             key: _statusFilterKey,
             label: l10n.tenantFacilityTenantStatusLabel,
@@ -2790,18 +2901,30 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
             ],
           ),
         ],
-        filterValue: _filterValue,
+        filterValue: AppSearchBarFilterValue(
+          options: <String, String>{
+            ..._filterValue.options,
+            if (_hasScopeSelector && _scopeId != _allScopes)
+              _scopeFilterKey: _scopeId,
+          },
+        ),
         hasActiveFilters: hasActiveFilters,
         onFilterChanged: (AppSearchBarFilterValue value) {
-          setState(() => _filterValue = value);
+          setState(() {
+            _filterValue = value;
+            final String? nextScope = value.options[_scopeFilterKey];
+            _scopeId = (nextScope == null || nextScope.isEmpty)
+                ? _allScopes
+                : nextScope;
+          });
         },
-        trailingActions: widget.canAdd
+        trailingActions: widget.canManageRecords
             ? <AppSearchBarAction>[
                 AppSearchBarAction(
-                  icon: Icons.add,
+                  icon: widget.addIcon,
                   label: widget.addLabel,
                   tooltip: widget.addLabel,
-                  onPressed: widget.onAdd,
+                  onPressed: widget.canAdd ? widget.onAdd : null,
                 ),
               ]
             : const <AppSearchBarAction>[],
@@ -2820,7 +2943,50 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
       },
     );
 
-    return table;
+    if (!_hasScopeSelector) {
+      return table;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppSelectField<String>.searchable(
+          value: _scopeId,
+          labelText: widget.scopeLabel,
+          options: <AppSelectOption<String>>[
+            AppSelectOption<String>(
+              value: _allScopes,
+              label: l10n.commonAllLabel,
+            ),
+            for (final _SearchableEntityGroupScopeOption option
+                in widget.scopeOptions)
+              AppSelectOption<String>(value: option.id, label: option.label),
+          ],
+          onChanged: (String? value) {
+            setState(() {
+              _scopeId = value ?? _allScopes;
+              final Map<String, String> nextOptions =
+                  Map<String, String>.of(_filterValue.options);
+              if (_scopeId == _allScopes) {
+                nextOptions.remove(_scopeFilterKey);
+              } else {
+                nextOptions[_scopeFilterKey] = _scopeId;
+              }
+              _filterValue = AppSearchBarFilterValue(
+                options: nextOptions,
+                field: _filterValue.field,
+                dateFrom: _filterValue.dateFrom,
+                dateTo: _filterValue.dateTo,
+                texts: _filterValue.texts,
+                selections: _filterValue.selections,
+              );
+            });
+          },
+        ),
+        SizedBox(height: theme.spacing.sm),
+        Expanded(child: table),
+      ],
+    );
   }
 }
 

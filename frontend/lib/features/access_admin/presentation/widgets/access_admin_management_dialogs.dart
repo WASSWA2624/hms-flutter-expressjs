@@ -728,7 +728,7 @@ class _ManageUsersPanelState
     final Widget table = SizedBox.expand(
       child: buildTable(
           l10n: l10n,
-          columnVisibilityStorageKey: 'access_admin_manage_users_v3',
+          columnVisibilityStorageKey: 'access_admin_manage_users_v4',
           onRowSelected: (AccessAdminItem item) =>
               unawaited(_openUserDetail(item)),
           search: buildTableSearch(
@@ -758,24 +758,9 @@ class _ManageUsersPanelState
           ),
           columns: <AppListTableColumn<AccessAdminItem>>[
             AppListTableColumn<AccessAdminItem>(
-              id: 'id',
-              label: l10n.accessAdminColumnId,
-              cellBuilder: (_, AccessAdminItem item) =>
-                  Text(item.effectiveDisplayId),
-            ),
-            AppListTableColumn<AccessAdminItem>(
               id: 'name',
               label: l10n.accessAdminColumnName,
               cellBuilder: (_, AccessAdminItem item) => Text(item.title),
-            ),
-            AppListTableColumn<AccessAdminItem>(
-              id: 'facility',
-              label: l10n.accessAdminColumnFacility,
-              cellBuilder: (_, AccessAdminItem item) => Text(
-                item.facilityName?.trim().isNotEmpty == true
-                    ? item.facilityName!
-                    : (item.facilityId ?? '—'),
-              ),
             ),
             AppListTableColumn<AccessAdminItem>(
               id: 'roles',
@@ -815,6 +800,7 @@ class _ManageUsersPanelState
                         end: theme.spacing.sm,
                       ),
                       child: AppButton.tertiary(
+                        iconOnly: true,
                         leadingIcon: Icons.restore_outlined,
                         label: l10n.accessAdminRestoreUserAction,
                         semanticLabel: l10n.accessAdminRestoreUserAction,
@@ -832,6 +818,7 @@ class _ManageUsersPanelState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         AppButton.tertiary(
+                          iconOnly: true,
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.tenantFacilityEditAction,
                           semanticLabel: l10n.tenantFacilityEditAction,
@@ -842,6 +829,7 @@ class _ManageUsersPanelState
                               : null,
                         ),
                         AppButton.tertiary(
+                          iconOnly: true,
                           leadingIcon: Icons.delete_outline,
                           label: l10n.tenantFacilityDeleteAction,
                           semanticLabel: l10n.tenantFacilityDeleteAction,
@@ -867,6 +855,21 @@ class _ManageUsersPanelState
               ),
           ],
           columnChoices: <AppListTableColumn<AccessAdminItem>>[
+            AppListTableColumn<AccessAdminItem>(
+              id: 'id',
+              label: l10n.accessAdminColumnId,
+              cellBuilder: (_, AccessAdminItem item) =>
+                  Text(item.effectiveDisplayId),
+            ),
+            AppListTableColumn<AccessAdminItem>(
+              id: 'facility',
+              label: l10n.accessAdminColumnFacility,
+              cellBuilder: (_, AccessAdminItem item) => Text(
+                item.facilityName?.trim().isNotEmpty == true
+                    ? item.facilityName!
+                    : (item.facilityId ?? '—'),
+              ),
+            ),
             AppListTableColumn<AccessAdminItem>(
               id: 'details',
               label: l10n.accessAdminColumnDetails,
