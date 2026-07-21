@@ -86,6 +86,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
         ? widget.flow.triageLevel
         : 'LEVEL_5';
     _providerId = widget.flow.providerUserId;
+    _pruneInapplicableRiskFlags();
     unawaited(_loadProviderOptions());
   }
 
@@ -236,7 +237,11 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
         ),
         AppTriageRiskFlagSelector(
           title: l10n.opdRiskFlagsLabel,
-          options: _triageRiskFlagFieldOptions(l10n),
+          options: _triageRiskFlagFieldOptions(
+            l10n,
+            gender: widget.flow.patientGender,
+            dateOfBirth: widget.flow.patientDateOfBirth,
+          ),
           selected: _riskFlags,
           enabled: enabled,
           onChanged: _setRiskFlag,
@@ -440,7 +445,18 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       } else {
         _riskFlags.remove(flag);
       }
+      _pruneInapplicableRiskFlags();
     });
+  }
+
+  void _pruneInapplicableRiskFlags() {
+    _riskFlags.removeWhere(
+      (String flag) => !isOpdRiskFlagApplicable(
+        flag,
+        gender: widget.flow.patientGender,
+        dateOfBirth: widget.flow.patientDateOfBirth,
+      ),
+    );
   }
 
   Future<void> _loadProviderOptions() async {
@@ -577,16 +593,66 @@ List<AppTriageOption> _triageRouteFieldOptions() {
 }
 
 List<AppTriageRiskFlagOption> _triageRiskFlagFieldOptions(
-  AppLocalizations l10n,
-) {
+  AppLocalizations l10n, {
+  String? gender,
+  DateTime? dateOfBirth,
+}) {
   return <AppTriageRiskFlagOption>[
     for (final String value in _triageRiskFlagOptions)
-      AppTriageRiskFlagOption(
-        value: value,
-        label: _riskFlagLabel(l10n, value),
-        icon: _riskFlagIcon(value),
-      ),
+      if (isOpdRiskFlagApplicable(
+        value,
+        gender: gender,
+        dateOfBirth: dateOfBirth,
+      ))
+        AppTriageRiskFlagOption(
+          value: value,
+          label: _riskFlagLabel(l10n, value),
+          icon: _riskFlagIcon(value),
+        ),
   ];
+}
+
+/// Whether a triage risk flag applies for the patient's sex and age.
+///
+/// Pregnancy is limited to female patients of reproductive age (10–59).
+@visibleForTesting
+bool isOpdRiskFlagApplicable(
+  String flag, {
+  String? gender,
+  DateTime? dateOfBirth,
+}) {
+  if (flag != _riskFlagPregnancy) {
+    return true;
+  }
+
+  final String sex = (gender ?? '').trim().toUpperCase();
+  if (sex == 'MALE') {
+    return false;
+  }
+  if (sex.isNotEmpty && sex != 'FEMALE') {
+    return false;
+  }
+
+  final int? ageYears = _ageInYears(dateOfBirth);
+  if (ageYears != null && (ageYears < 10 || ageYears >= 60)) {
+    return false;
+  }
+
+  // Female, or unknown sex with a plausible reproductive age / no DOB.
+  return true;
+}
+
+int? _ageInYears(DateTime? dateOfBirth) {
+  if (dateOfBirth == null) {
+    return null;
+  }
+  final DateTime now = DateTime.now();
+  int years = now.year - dateOfBirth.year;
+  final int monthDelta = now.month - dateOfBirth.month;
+  if (monthDelta < 0 || (monthDelta == 0 && now.day < dateOfBirth.day)) {
+    years -= 1;
+  }
+  return years < 0 ? 0 : years;
 }
 
 List<AppTriageOption> _routeDecisionOptions(BuildContext context) {

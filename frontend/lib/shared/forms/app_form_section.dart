@@ -31,7 +31,9 @@ class AppFormSection extends StatelessWidget {
     final bool showFrame = framed ?? title != null;
 
     final Widget body = Column(
-      crossAxisAlignment: crossAxisAlignment,
+      crossAxisAlignment: showFrame
+          ? CrossAxisAlignment.stretch
+          : crossAxisAlignment,
       children: <Widget>[
         if (title != null) ...<Widget>[
           Text(title!, style: textTheme.titleMedium),
@@ -52,18 +54,21 @@ class AppFormSection extends StatelessWidget {
       return body;
     }
 
-    return Material(
-      color: theme.colorScheme.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(
-          context.responsiveRadius(theme.radius.lg),
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: theme.colorScheme.surfaceContainerLowest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            context.responsiveRadius(theme.radius.lg),
+          ),
+          side: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.72),
+          ),
         ),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.72),
-        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(padding: _framePadding(theme), child: body),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(padding: _framePadding(theme), child: body),
     );
   }
 

@@ -74,6 +74,95 @@ void main() {
     expect(payloads.single['diastolic_value'], isNotNull);
   });
 
+  test('isOpdRiskFlagApplicable hides pregnancy for males and non-reproductive ages',
+      () {
+    expect(
+      isOpdRiskFlagApplicable(
+        'PREGNANCY',
+        gender: 'MALE',
+        dateOfBirth: DateTime(1990, 1, 1),
+      ),
+      isFalse,
+    );
+    expect(
+      isOpdRiskFlagApplicable(
+        'PREGNANCY',
+        gender: 'FEMALE',
+        dateOfBirth: DateTime(1990, 1, 1),
+      ),
+      isTrue,
+    );
+    expect(
+      isOpdRiskFlagApplicable(
+        'PREGNANCY',
+        gender: 'FEMALE',
+        dateOfBirth: DateTime(2024, 1, 1),
+      ),
+      isFalse,
+    );
+    expect(
+      isOpdRiskFlagApplicable(
+        'PREGNANCY',
+        gender: 'FEMALE',
+        dateOfBirth: DateTime(1950, 1, 1),
+      ),
+      isFalse,
+    );
+    expect(
+      isOpdRiskFlagApplicable(
+        'FALL_RISK',
+        gender: 'MALE',
+        dateOfBirth: DateTime(1990, 1, 1),
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('hides pregnancy risk flag for male patients', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+
+    await _pumpDialog(
+      tester,
+      flow: const OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Patient Example',
+        stage: 'WAITING_VITALS',
+        patientGender: 'MALE',
+        patientDateOfBirth: null,
+      ),
+      repository: repository,
+    );
+
+    expect(find.text('Pregnancy'), findsNothing);
+    expect(find.text('Fall risk'), findsOneWidget);
+  });
+
+  testWidgets('shows pregnancy risk flag for female patients of reproductive age', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+
+    await _pumpDialog(
+      tester,
+      flow: OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Patient Example',
+        stage: 'WAITING_VITALS',
+        patientGender: 'FEMALE',
+        patientDateOfBirth: DateTime(1995, 6, 15),
+      ),
+      repository: repository,
+    );
+
+    expect(find.text('Pregnancy'), findsOneWidget);
+  });
+
   test('calculateAppBodyMassIndex derives BMI from kg and cm', () {
     expect(
       calculateAppBodyMassIndex(
