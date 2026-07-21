@@ -67,6 +67,14 @@ void main() {
     );
 
     expect(find.text('Start time'), findsOneWidget);
+    final InputDecorator decorator = tester.widget(
+      find.ancestor(
+        of: find.text('Start time'),
+        matching: find.byType(InputDecorator),
+      ),
+    );
+    expect(decorator.decoration.floatingLabelBehavior, FloatingLabelBehavior.always);
+    expect(decorator.decoration.label, isNotNull);
     expect(find.text('24H'), findsOneWidget);
     expect(find.text('12H'), findsNothing);
     expect(find.byTooltip('Select time'), findsOneWidget);
