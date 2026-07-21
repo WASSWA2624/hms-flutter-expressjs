@@ -1,1 +1,41 @@
-On the On, in, in, in the reception screen we shouldn't have anything like start consultation. I think this start consultation is a step that isn't needed. It looks like a duplicate because if a patient is already, is already maybe triaged maybe he has already been assigned by the doctor, so the doctor can start the consultation themselves. it's, it's an automatic process. So let's ensure that it isn't, that button isn't existing anywhere and it's already, it's an automatic process. So if we have it, then it means that the system is extremely manual. The system should already know when the consultation starts and When the consultation has ended. So let's get rid of it from all the, from all the, from all the, from, from the entire app. I expect that it might be existing somewhere within the reception maybe within the patient registry, within outpatient, within emergency. So let's, get rid of it so that even within clinic, let's get rid of it completely so that it doesn't exist anywhere. Consultation is a process, and the system knows that this has to be done after a pre-p, previous step without explicitly assigning for each event.
+# Remove Manual Start Consultation Action
+
+Remove **Start consultation** as a user-triggered control so consultation start and end come from workflow progression, not a manual button. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Queue Actions still shows **Start consultation** as next-action guidance and a quick action with confirm dialog. After triage and doctor assignment, that step is redundant and makes care overly manual. Consultation is a process stage inferred from prior completed steps.
+
+**Start consultation action:** any control, confirm dialog, home shortcut, or launcher labeled or coded to start a consultation (`START_CONSULTATION` / `opdStartConsultation*`).
+
+## Requirements
+
+1. Remove **Start consultation** quick actions, confirm dialogs, and launchers from Reception Queue Actions, Desk queue actionable next-action controls, OPD/clinic, Emergency if present, Patient registry, and Home dashboard shortcuts.
+2. Stop advertising **Start consultation** as an actionable next step in queue/encounter context; keep authorized receptionist queue ops (prioritize, change status, change doctor) and other non-clinical actions.
+3. Do not add a replacement manual begin-consultation control; rely on existing workflow/stage progression for in-progress and completed consultation.
+4. After unrelated queue/visit mutations, continue synchronizing Desk queue, Active visits, OPD lists, search, filters, and counts.
+5. Preserve loading, empty, error, success, busy, and permission states for remaining actions; omit unauthorized UI.
+
+## Constraints
+
+- Reuse queue/flow dialogs, stage mapping, authorization, localization, and design-system; no new start-consultation contracts.
+- Do not invent clinical transitions or change triage/doctor-assignment semantics beyond removing this action.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1–R2: No Start consultation button, confirm flow, or actionable launcher remains in Reception, OPD/clinic, Emergency, registry, or Home.
+- R3: Consultation progress still reflects from existing stage data without a manual start control.
+- R4–R5: Remaining actions sync and show clear states; unauthorized UI absent.
+- Update queue-actions, reception, OPD, and home tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/opd_queue_actions_dialog.dart`
+- `frontend/lib/features/reception/presentation/`
+- `frontend/lib/features/opd/presentation/`
+- `frontend/lib/features/home/`
+- `frontend/test/shared/opd_actions/`
+- `frontend/test/features/reception/`
+- `frontend/test/features/opd/`
+- `frontend/test/features/home/`
