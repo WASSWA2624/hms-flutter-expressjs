@@ -32,8 +32,10 @@ void main() {
   const OpdFlowSummary flow = OpdFlowSummary(
     id: 'encounter-1',
     publicId: 'ENC000001',
+    patientId: 'patient-1',
     patientDisplayName: 'Patient Example',
     providerDisplayName: 'Provider Example',
+    patientPhone: '+256700000001',
     stage: 'WITH_DOCTOR',
     status: 'OPEN',
   );

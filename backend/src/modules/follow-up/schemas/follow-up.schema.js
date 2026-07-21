@@ -9,7 +9,6 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema,
   uuidOrFriendlyIdentifierSchema,
   listQuerySchema,
   isoDateSchema
@@ -52,7 +51,7 @@ const transitionFollowUpSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const followUpIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================

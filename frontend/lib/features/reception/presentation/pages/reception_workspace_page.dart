@@ -18,9 +18,11 @@ import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_c
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_follow_up_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_appointment_actions_dialog.dart';
+import 'package:hosspi_hms/features/reception/presentation/widgets/reception_follow_up_detail_dialog.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_payment_gate_detail_dialog.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_queue_actions_dialog.dart';
@@ -51,6 +53,13 @@ class ReceptionWorkspacePage extends ConsumerWidget {
         canReadPaymentGate
         ? ref.watch(receptionPaymentGateControllerProvider)
         : null;
+    final bool canReadFollowUps = receptionFollowUpsRequirement.isAllowed(
+      ref.watch(appAccessPolicyProvider),
+    );
+    final AsyncValue<Result<ReceptionFollowUpState>>? followUpState =
+        canReadFollowUps
+        ? ref.watch(receptionFollowUpControllerProvider)
+        : null;
 
     return AsyncStateScaffold<OpdWorkspaceState>(
       value: opdState,
@@ -67,12 +76,15 @@ class ReceptionWorkspacePage extends ConsumerWidget {
               .refreshReceptionData(),
           if (canReadPaymentGate)
             ref.read(receptionPaymentGateControllerProvider.notifier).refresh(),
+          if (canReadFollowUps)
+            ref.read(receptionFollowUpControllerProvider.notifier).refresh(),
         ]);
       },
       dataBuilder: (BuildContext context, OpdWorkspaceState data) {
         return _ReceptionWorkspaceContent(
           state: data,
           paymentGateState: paymentGateState,
+          followUpState: followUpState,
           initialQuery: initialQuery,
         );
       },
@@ -84,11 +96,13 @@ class _ReceptionWorkspaceContent extends ConsumerStatefulWidget {
   const _ReceptionWorkspaceContent({
     required this.state,
     required this.paymentGateState,
+    required this.followUpState,
     this.initialQuery,
   });
 
   final OpdWorkspaceState state;
   final AsyncValue<Result<ReceptionPaymentGateState>>? paymentGateState;
+  final AsyncValue<Result<ReceptionFollowUpState>>? followUpState;
   final ReceptionWorkspaceQuery? initialQuery;
 
   @override
@@ -212,6 +226,7 @@ class _ReceptionWorkspaceContentState
     final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
     final ReceptionPaymentGateState? paymentGate = _paymentGateState;
+    final ReceptionFollowUpState? followUp = _followUpState;
     final List<ReceptionDeskSection> visibleSections = _visibleSections();
     if (visibleSections.isEmpty) {
       return const ResponsivePage(
@@ -238,6 +253,7 @@ class _ReceptionWorkspaceContentState
     final List<_ReceptionDeskRow> sectionRows = _buildSectionRows(
       state,
       paymentGate?.entries ?? const <ReceptionPaymentGateEntry>[],
+      followUp?.entries ?? const <ReceptionFollowUpEntry>[],
     );
     final AppSearchBarFilterValue filterValue =
         _filterValues[_section] ?? AppSearchBarFilterValue.empty;
@@ -269,6 +285,7 @@ class _ReceptionWorkspaceContentState
                       section,
                       paymentGate?.entries ??
                           const <ReceptionPaymentGateEntry>[],
+                      followUp?.entries ?? const <ReceptionFollowUpEntry>[],
                     ),
                     countTone: _sectionCountTone(section),
                   ),
@@ -301,6 +318,20 @@ class _ReceptionWorkspaceContentState
                   label: l10n.commonRetryActionLabel,
                   onPressed: () => ref
                       .read(receptionPaymentGateControllerProvider.notifier)
+                      .refresh(),
+                ),
+              )
+            else if (_section == ReceptionDeskSection.followUps &&
+                _followUpFailure != null &&
+                followUp == null)
+              AppStateView(
+                title: l10n.errorUnexpectedTitle,
+                body: l10n.errorUnexpectedMessage,
+                variant: AppStateViewVariant.error,
+                action: AppButton.secondary(
+                  label: l10n.commonRetryActionLabel,
+                  onPressed: () => ref
+                      .read(receptionFollowUpControllerProvider.notifier)
                       .refresh(),
                 ),
               )
@@ -339,7 +370,8 @@ class _ReceptionWorkspaceContentState
                         context,
                         field: filterValue.field,
                       ),
-                  showAdvancedFilterButton: true,
+                  showAdvancedFilterButton:
+                      _section != ReceptionDeskSection.followUps,
                   advancedFilterButtonLabel: l10n.receptionFiltersLabel,
                   advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
                   advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
@@ -349,7 +381,8 @@ class _ReceptionWorkspaceContentState
                   searchFields: _searchFields(l10n),
                   searchFieldLabel: l10n.opdSearchFieldFilterLabel,
                   enableDateFilter:
-                      _section != ReceptionDeskSection.paymentGate,
+                      _section != ReceptionDeskSection.paymentGate &&
+                      _section != ReceptionDeskSection.followUps,
                   dateFilterLabel: _dateFilterLabel(l10n),
                   dateFromLabel: l10n.opdDateFromLabel,
                   dateToLabel: l10n.opdDateToLabel,
@@ -367,6 +400,8 @@ class _ReceptionWorkspaceContentState
                   title: switch (_section) {
                     ReceptionDeskSection.paymentGate =>
                       l10n.receptionPaymentGateEmptyTitle,
+                    ReceptionDeskSection.followUps =>
+                      l10n.receptionFollowUpsEmptyTitle,
                     ReceptionDeskSection.highPriority =>
                       l10n.receptionHighPriorityEmptyTitle,
                     ReceptionDeskSection.appointments ||
@@ -377,6 +412,8 @@ class _ReceptionWorkspaceContentState
                   body: switch (_section) {
                     ReceptionDeskSection.paymentGate =>
                       l10n.receptionPaymentGateEmptyBody,
+                    ReceptionDeskSection.followUps =>
+                      l10n.receptionFollowUpsEmptyBody,
                     ReceptionDeskSection.highPriority =>
                       l10n.receptionHighPriorityEmptyBody,
                     ReceptionDeskSection.appointments ||
@@ -408,6 +445,20 @@ class _ReceptionWorkspaceContentState
     );
   }
 
+  ReceptionFollowUpState? get _followUpState {
+    return widget.followUpState?.asData?.value.when(
+      success: (ReceptionFollowUpState value) => value,
+      failure: (_) => null,
+    );
+  }
+
+  AppFailure? get _followUpFailure {
+    return widget.followUpState?.asData?.value.when(
+      success: (ReceptionFollowUpState value) => value.lastFailure,
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
   String get _filterGroupKey {
     return switch (_section) {
       ReceptionDeskSection.appointments ||
@@ -415,6 +466,7 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.highPriority => _statusFilterKey,
       ReceptionDeskSection.activeVisits => _stageFilterKey,
       ReceptionDeskSection.paymentGate => _statusFilterKey,
+      ReceptionDeskSection.followUps => _statusFilterKey,
     };
   }
 
@@ -425,6 +477,7 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.highPriority => l10n.receptionCurrentStepLabel,
       ReceptionDeskSection.activeVisits => l10n.receptionCurrentStepLabel,
       ReceptionDeskSection.paymentGate => l10n.billingStatusFilterLabel,
+      ReceptionDeskSection.followUps => l10n.receptionStatusLabel,
     };
   }
 
@@ -432,6 +485,9 @@ class _ReceptionWorkspaceContentState
     List<_ReceptionDeskRow> rows,
     AppLocalizations l10n,
   ) {
+    if (_section == ReceptionDeskSection.followUps) {
+      return const <AppSearchBarFilterGroup>[];
+    }
     final List<AppSearchBarFilterGroup> groups = <AppSearchBarFilterGroup>[
       AppSearchBarFilterGroup(
         key: _filterGroupKey,
@@ -500,6 +556,25 @@ class _ReceptionWorkspaceContentState
   }
 
   List<AppSearchBarFieldChoice> _searchFields(AppLocalizations l10n) {
+    if (_section == ReceptionDeskSection.followUps) {
+      return <AppSearchBarFieldChoice>[
+        AppSearchBarFieldChoice(
+          field: 'patient',
+          label: l10n.opdPatientNameLabel,
+          icon: Icons.person_search_outlined,
+        ),
+        AppSearchBarFieldChoice(
+          field: 'record',
+          label: l10n.receptionRecordIdSearchLabel,
+          icon: Icons.badge_outlined,
+        ),
+        AppSearchBarFieldChoice(
+          field: 'reason',
+          label: l10n.opdReasonLabel,
+          icon: Icons.notes_outlined,
+        ),
+      ];
+    }
     return <AppSearchBarFieldChoice>[
       AppSearchBarFieldChoice(
         field: 'patient',
@@ -549,6 +624,7 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.highPriority => l10n.receptionQueuedAtLabel,
       ReceptionDeskSection.activeVisits => l10n.receptionStartedAtLabel,
       ReceptionDeskSection.paymentGate => l10n.opdArrivalDateFilterLabel,
+      ReceptionDeskSection.followUps => l10n.opdFollowUpDateLabel,
     };
   }
 
@@ -737,6 +813,13 @@ class _ReceptionWorkspaceContentState
           _receptionPaymentNextActionColumn(l10n),
           _receptionPaymentOutstandingColumn(l10n),
         ];
+      case ReceptionDeskSection.followUps:
+        return <AppListTableColumn<_ReceptionDeskRow>>[
+          _receptionPatientColumn(l10n),
+          _receptionPatientPhoneColumn(l10n),
+          _receptionFollowUpDateColumn(l10n, locale),
+          _receptionFollowUpTimeColumn(l10n, locale),
+        ];
     }
   }
 
@@ -780,6 +863,10 @@ class _ReceptionWorkspaceContentState
           _receptionPatientDobColumn(l10n),
           _receptionPaymentServicesColumn(l10n),
           _receptionPaymentInvoicesColumn(l10n),
+        ];
+      case ReceptionDeskSection.followUps:
+        return <AppListTableColumn<_ReceptionDeskRow>>[
+          _receptionPatientIdColumn(l10n),
         ];
     }
   }
@@ -838,6 +925,46 @@ class _ReceptionWorkspaceContentState
           Text(row.patientPhone ?? ''),
       sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
           appListTableCompareText(a.patientPhone ?? '', b.patientPhone ?? ''),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionFollowUpDateColumn(
+    AppLocalizations l10n,
+    Locale locale,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'follow_up_date',
+      label: l10n.opdFollowUpDateLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final DateTime? dt = row.followUpEntry?.scheduledAt;
+        return Text(
+          dt != null ? AppFormatters.shortDate(dt.toLocal(), locale) : '',
+        );
+      },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          appListTableCompareDateTime(
+            a.followUpEntry?.scheduledAt,
+            b.followUpEntry?.scheduledAt,
+          ),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionFollowUpTimeColumn(
+    AppLocalizations l10n,
+    Locale locale,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'follow_up_time',
+      label: l10n.opdFollowUpTimeLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final DateTime? dt = row.followUpEntry?.scheduledAt;
+        return Text(dt != null ? AppFormatters.time(dt.toLocal(), locale) : '');
+      },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          appListTableCompareDateTime(
+            a.followUpEntry?.scheduledAt,
+            b.followUpEntry?.scheduledAt,
+          ),
     );
   }
 
@@ -1380,6 +1507,7 @@ class _ReceptionWorkspaceContentState
   List<_ReceptionDeskRow> _buildSectionRows(
     OpdWorkspaceState state,
     List<ReceptionPaymentGateEntry> paymentGateEntries,
+    List<ReceptionFollowUpEntry> followUpEntries,
   ) {
     switch (_section) {
       case ReceptionDeskSection.appointments:
@@ -1418,6 +1546,11 @@ class _ReceptionWorkspaceContentState
         return <_ReceptionDeskRow>[
           for (final ReceptionPaymentGateEntry entry in paymentGateEntries)
             _ReceptionDeskRow.paymentGate(entry),
+        ];
+      case ReceptionDeskSection.followUps:
+        return <_ReceptionDeskRow>[
+          for (final ReceptionFollowUpEntry entry in followUpEntries)
+            _ReceptionDeskRow.followUp(entry),
         ];
     }
   }
@@ -1514,6 +1647,7 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.activeVisits => row.flowCurrentStepCode,
       ReceptionDeskSection.paymentGate =>
         row.paymentGateEntry?.clearanceState.name ?? '',
+      ReceptionDeskSection.followUps => row.followUpEntry?.status ?? '',
       ReceptionDeskSection.appointments ||
       ReceptionDeskSection.queue ||
       ReceptionDeskSection.highPriority => row.status ?? '',
@@ -1544,6 +1678,10 @@ class _ReceptionWorkspaceContentState
               context,
               row.paymentGateEntry!.clearanceState,
             ),
+            ReceptionDeskSection.followUps => opdStageDisplayLabel(
+              l10n,
+              row.followUpEntry?.status ?? '',
+            ),
             ReceptionDeskSection.appointments ||
             ReceptionDeskSection.queue ||
             ReceptionDeskSection.highPriority =>
@@ -1563,6 +1701,7 @@ class _ReceptionWorkspaceContentState
     OpdWorkspaceState state,
     ReceptionDeskSection section,
     List<ReceptionPaymentGateEntry> paymentGateEntries,
+    List<ReceptionFollowUpEntry> followUpEntries,
   ) {
     switch (section) {
       case ReceptionDeskSection.appointments:
@@ -1589,6 +1728,8 @@ class _ReceptionWorkspaceContentState
         return state.flows.items.where(isReceptionActiveVisit).length;
       case ReceptionDeskSection.paymentGate:
         return paymentGateEntries.length;
+      case ReceptionDeskSection.followUps:
+        return followUpEntries.length;
     }
   }
 
@@ -1598,6 +1739,7 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.queue ||
       ReceptionDeskSection.highPriority ||
       ReceptionDeskSection.activeVisits ||
+      ReceptionDeskSection.followUps ||
       ReceptionDeskSection.paymentGate => AppTabCountTone.warning,
     };
   }
@@ -1650,6 +1792,7 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.queue => l10n.receptionSectionQueue,
       ReceptionDeskSection.highPriority => l10n.receptionSectionHighPriority,
       ReceptionDeskSection.activeVisits => l10n.receptionSectionActiveVisits,
+      ReceptionDeskSection.followUps => l10n.receptionSectionFollowUps,
       ReceptionDeskSection.paymentGate => l10n.receptionSectionPaymentGate,
     };
   }
@@ -1660,6 +1803,7 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.queue => Icons.queue_outlined,
       ReceptionDeskSection.highPriority => Icons.priority_high_outlined,
       ReceptionDeskSection.activeVisits => Icons.pending_actions_outlined,
+      ReceptionDeskSection.followUps => Icons.phone_callback_outlined,
       ReceptionDeskSection.paymentGate => Icons.payments_outlined,
     };
   }
@@ -1676,6 +1820,8 @@ class _ReceptionWorkspaceContentState
             .refreshReceptionData(),
         if (widget.paymentGateState != null)
           ref.read(receptionPaymentGateControllerProvider.notifier).refresh(),
+        if (widget.followUpState != null)
+          ref.read(receptionFollowUpControllerProvider.notifier).refresh(),
       ];
       final List<AppFailure?> failures = await Future.wait(refreshes);
       if (!mounted) {
@@ -1705,6 +1851,16 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _openRowDetail(_ReceptionDeskRow row) async {
+    if (row.followUpEntry != null) {
+      final bool? changed = await showReceptionFollowUpDetailDialog(
+        context: context,
+        entry: row.followUpEntry!,
+      );
+      if (changed == true && mounted) {
+        await _refreshWorkspace();
+      }
+      return;
+    }
     if (row.paymentGateEntry != null) {
       await showReceptionPaymentGateDetailDialog(
         context: context,
@@ -1841,6 +1997,7 @@ final class _ReceptionDeskRow {
     this.queueEntry,
     this.flow,
     this.paymentGateEntry,
+    this.followUpEntry,
   });
 
   factory _ReceptionDeskRow.appointment(
@@ -1862,16 +2019,22 @@ final class _ReceptionDeskRow {
     return _ReceptionDeskRow._(paymentGateEntry: entry);
   }
 
+  factory _ReceptionDeskRow.followUp(ReceptionFollowUpEntry entry) {
+    return _ReceptionDeskRow._(followUpEntry: entry);
+  }
+
   final OpdAppointment? appointment;
   final OpdQueueEntry? queueEntry;
   final OpdFlowSummary? flow;
   final ReceptionPaymentGateEntry? paymentGateEntry;
+  final ReceptionFollowUpEntry? followUpEntry;
 
   String get id =>
       appointment?.id ??
       queueEntry?.id ??
       flow?.id ??
       paymentGateEntry?.id ??
+      followUpEntry?.id ??
       '';
 
   String patientName(BuildContext context) {
@@ -1879,6 +2042,7 @@ final class _ReceptionDeskRow {
         queueEntry?.patientDisplayName ??
         flow?.patientDisplayName ??
         paymentGateEntry?.patientName ??
+        followUpEntry?.patientDisplayName ??
         context.l10n.profileUnknownValue;
   }
 
@@ -1886,18 +2050,21 @@ final class _ReceptionDeskRow {
       appointment?.patientId ??
       queueEntry?.patientId ??
       flow?.patientId ??
-      paymentGateEntry?.patientId;
+      paymentGateEntry?.patientId ??
+      followUpEntry?.patientId;
 
   String? get patientIdentifier =>
       appointment?.patientIdentifier ??
       queueEntry?.patientIdentifier ??
       flow?.patientIdentifier ??
-      paymentGateEntry?.patientIdentifier;
+      paymentGateEntry?.patientIdentifier ??
+      followUpEntry?.patientIdentifier;
 
   String? get patientPhone =>
       appointment?.patientPhone ??
       queueEntry?.patientPhone ??
-      flow?.patientPhone;
+      flow?.patientPhone ??
+      followUpEntry?.patientPhone;
 
   String? get patientGender {
     for (final BillingWorkItem invoice
@@ -1936,11 +2103,15 @@ final class _ReceptionDeskRow {
       queueEntry?.publicId ??
       flow?.publicId ??
       paymentGateEntry?.encounterIdentifier ??
+      followUpEntry?.id ??
       appointment?.id ??
       queueEntry?.id ??
       flow?.id;
 
   String? get status {
+    if (followUpEntry != null) {
+      return followUpEntry?.status;
+    }
     if (appointment != null) {
       return appointment?.status;
     }
@@ -1996,7 +2167,10 @@ final class _ReceptionDeskRow {
   }
 
   DateTime? get time =>
-      appointment?.scheduledStart ?? queueEntry?.queuedAt ?? flow?.startedAt;
+      appointment?.scheduledStart ??
+      queueEntry?.queuedAt ??
+      flow?.startedAt ??
+      followUpEntry?.scheduledAt;
 
   String? nextActionLabel(ReceptionDeskSection section, AppLocalizations l10n) {
     return switch (section) {
@@ -2005,6 +2179,7 @@ final class _ReceptionDeskRow {
       ReceptionDeskSection.highPriority => queueNextActionLabel(l10n),
       ReceptionDeskSection.activeVisits => flowNextActionLabel(l10n),
       ReceptionDeskSection.paymentGate => paymentNextActionLabel(l10n),
+      ReceptionDeskSection.followUps => null,
     };
   }
 
@@ -2097,6 +2272,7 @@ final class _ReceptionDeskRow {
         queueEntry?.appointmentReason,
         flow?.chiefComplaint,
         flow?.triageNotes,
+        followUpEntry?.notes,
       ],
       'status' => <String?>[
         status,
@@ -2248,6 +2424,21 @@ final class _ReceptionDeskRow {
             ],
           ]);
         }
+      case ReceptionDeskSection.followUps:
+        final ReceptionFollowUpEntry? entry = followUpEntry;
+        if (entry != null) {
+          final DateTime scheduledAt = entry.scheduledAt.toLocal();
+          values.addAll(<String?>[
+            entry.id,
+            entry.encounterId,
+            entry.status,
+            entry.notes,
+            AppFormatters.dateTime(scheduledAt, locale),
+            AppFormatters.shortDate(scheduledAt, locale),
+            AppFormatters.time(scheduledAt, locale),
+            opdStageDisplayLabel(l10n, entry.status),
+          ]);
+        }
     }
 
     return values
@@ -2298,27 +2489,42 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
               ),
             ),
           ],
+          if (section == ReceptionDeskSection.followUps &&
+              (row.patientPhone?.trim().isNotEmpty ?? false)) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            Text(row.patientPhone!, style: theme.textTheme.bodySmall),
+          ],
           if (row.time != null) ...<Widget>[
             SizedBox(height: theme.spacing.xs),
             Text(
-              AppFormatters.dateTime(row.time!, locale),
+              section == ReceptionDeskSection.followUps
+                  ? '${AppFormatters.shortDate(row.time!.toLocal(), locale)} · ${AppFormatters.time(row.time!.toLocal(), locale)}'
+                  : AppFormatters.dateTime(row.time!, locale),
               style: theme.textTheme.bodySmall,
             ),
           ],
-          SizedBox(height: theme.spacing.xs),
-          _ReceptionDeskMobileWorkflowField(
-            label: l10n.receptionCurrentStepLabel,
-            child: _ReceptionDeskMobileStatus(section: section, row: row),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          _ReceptionDeskMobileWorkflowField(
-            label: l10n.opdNextActionFilterLabel,
-            child: _ReceptionDeskMobileNextAction(
-              section: section,
-              row: row,
-              onOpenDetail: onOpenDetail,
+          if (section != ReceptionDeskSection.followUps) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            _ReceptionDeskMobileWorkflowField(
+              label: l10n.receptionCurrentStepLabel,
+              child: _ReceptionDeskMobileStatus(section: section, row: row),
             ),
-          ),
+            SizedBox(height: theme.spacing.sm),
+            _ReceptionDeskMobileWorkflowField(
+              label: l10n.opdNextActionFilterLabel,
+              child: _ReceptionDeskMobileNextAction(
+                section: section,
+                row: row,
+                onOpenDetail: onOpenDetail,
+              ),
+            ),
+          ] else if (row.followUpEntry?.notes?.trim().isNotEmpty ?? false) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            _ReceptionDeskMobileWorkflowField(
+              label: l10n.opdReasonLabel,
+              child: Text(row.followUpEntry!.notes!),
+            ),
+          ],
         ],
       ),
     );
@@ -2414,6 +2620,17 @@ class _ReceptionDeskMobileStatus extends StatelessWidget {
             tone: billingClearanceTone(entry.clearanceState),
           ),
         );
+      case ReceptionDeskSection.followUps:
+        final ReceptionFollowUpEntry? entry = row.followUpEntry;
+        if (entry == null) {
+          return const SizedBox.shrink();
+        }
+        return AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label: opdStageDisplayLabel(l10n, entry.status),
+            tone: AppWorkspaceStatusTone.info,
+          ),
+        );
     }
   }
 }
@@ -2480,6 +2697,8 @@ class _ReceptionDeskMobileNextAction extends StatelessWidget {
             ],
           ],
         );
+      case ReceptionDeskSection.followUps:
+        return Text(l10n.receptionMarkFollowUpCompletedAction);
     }
   }
 }

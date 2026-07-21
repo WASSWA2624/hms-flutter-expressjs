@@ -77,6 +77,12 @@ void main() {
         ).section,
         'appointments',
       );
+      expect(
+        ReceptionWorkspaceQuery.fromUri(
+          Uri.parse('/reception?section=follow-ups'),
+        ).section,
+        'follow-ups',
+      );
     });
   });
 
@@ -97,6 +103,10 @@ void main() {
       expect(
         receptionDeskSectionToQueryValue(ReceptionDeskSection.activeVisits),
         'active',
+      );
+      expect(
+        receptionDeskSectionToQueryValue(ReceptionDeskSection.followUps),
+        'follow-ups',
       );
       expect(
         receptionDeskSectionToQueryValue(ReceptionDeskSection.paymentGate),
@@ -148,6 +158,18 @@ void main() {
       expect(
         receptionDeskSectionFromQuery('payment-gate'),
         ReceptionDeskSection.paymentGate,
+      );
+      expect(
+        receptionDeskSectionFromQuery('follow-ups'),
+        ReceptionDeskSection.followUps,
+      );
+      expect(
+        receptionDeskSectionFromQuery('follow_ups'),
+        ReceptionDeskSection.followUps,
+      );
+      expect(
+        receptionDeskSectionFromQuery('followups'),
+        ReceptionDeskSection.followUps,
       );
       expect(
         receptionDeskSectionFromQuery('follow-up'),
@@ -224,6 +246,49 @@ void main() {
 
       expect(receptionPaymentGateRequirement.isAllowed(patientReader), isFalse);
       expect(receptionPaymentGateRequirement.isAllowed(billingReader), isTrue);
+    });
+
+    test('follow-ups require patient or clinical read', () {
+      final AppAccessPolicy lastOfficeOnly = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+          permissions: <AppPermission>{AppPermissions.lastOfficeRead},
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
+      final AppAccessPolicy patientReader = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
+      final AppAccessPolicy clinicalReader = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+          moduleEntitlements: <AppModuleEntitlement>[
+            ..._activeShellModules,
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+
+      expect(receptionFollowUpsRequirement.isAllowed(lastOfficeOnly), isFalse);
+      expect(receptionFollowUpsRequirement.isAllowed(patientReader), isTrue);
+      expect(receptionFollowUpsRequirement.isAllowed(clinicalReader), isTrue);
+      expect(
+        receptionDeskSectionRequirement(
+          ReceptionDeskSection.followUps,
+        ).isAllowed(patientReader),
+        isTrue,
+      );
     });
 
     test('receptionist can capture insurance without billing:write', () {

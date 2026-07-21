@@ -21,7 +21,10 @@ router.get(
   '/',
   validateRequest({ query: listFollowUpsQuerySchema }),
   authenticate(),
-  authorize(PERMISSIONS.CLINICAL_READ, 'permission'),
+  authorize(
+    [PERMISSIONS.CLINICAL_READ, PERMISSIONS.PATIENT_READ],
+    'permission'
+  ),
   followUpController.listFollowUps
 );
 
@@ -29,7 +32,10 @@ router.get(
   '/:id',
   validateRequest({ params: followUpIdParamsSchema }),
   authenticate(),
-  authorize(PERMISSIONS.CLINICAL_READ, 'permission'),
+  authorize(
+    [PERMISSIONS.CLINICAL_READ, PERMISSIONS.PATIENT_READ],
+    'permission'
+  ),
   followUpController.getFollowUpById
 );
 
@@ -37,7 +43,10 @@ router.post(
   '/',
   validateRequest({ body: createFollowUpSchema }),
   authenticate(),
-  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
+  authorize(
+    [PERMISSIONS.CLINICAL_WRITE, PERMISSIONS.PATIENT_WRITE],
+    'permission'
+  ),
   followUpController.createFollowUp
 );
 
@@ -62,7 +71,10 @@ router.post(
   '/:id/complete',
   validateRequest({ params: followUpIdParamsSchema, body: transitionFollowUpSchema }),
   authenticate(),
-  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
+  authorize(
+    [PERMISSIONS.CLINICAL_WRITE, PERMISSIONS.PATIENT_WRITE],
+    'permission'
+  ),
   followUpController.completeFollowUp
 );
 
@@ -70,7 +82,10 @@ router.post(
   '/:id/cancel',
   validateRequest({ params: followUpIdParamsSchema, body: transitionFollowUpSchema }),
   authenticate(),
-  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
+  authorize(
+    [PERMISSIONS.CLINICAL_WRITE, PERMISSIONS.PATIENT_WRITE],
+    'permission'
+  ),
   followUpController.cancelFollowUp
 );
 

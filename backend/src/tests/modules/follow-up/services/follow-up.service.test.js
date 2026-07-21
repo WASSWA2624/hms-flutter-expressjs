@@ -85,9 +85,35 @@ describe("Follow-up Service", () => {
 
   describe("listFollowUps", () => {
     it("should list follow-ups with pagination", async () => {
-      const mockFollowUps = [{ id: "fu-1" }, { id: "fu-2" }];
+      const mockFollowUps = [
+        {
+          id: "fu-1",
+          human_friendly_id: "FU-1",
+          encounter_id: "enc-1",
+          scheduled_at: "2026-07-22T09:00:00.000Z",
+          status: "SCHEDULED",
+          notes: "Call back",
+          encounter: {
+            id: "enc-1",
+            human_friendly_id: "ENC-1",
+            patient: {
+              id: "pat-1",
+              human_friendly_id: "PAT-1",
+              first_name: "Ada",
+              last_name: "Lovelace",
+              contacts: [
+                {
+                  contact_type: "PHONE",
+                  value: "+256700000001",
+                  is_primary: true,
+                },
+              ],
+            },
+          },
+        },
+      ];
       followUpRepository.findMany.mockResolvedValue(mockFollowUps);
-      followUpRepository.count.mockResolvedValue(2);
+      followUpRepository.count.mockResolvedValue(1);
 
       const result = await listFollowUps(
         {},
@@ -99,19 +125,61 @@ describe("Follow-up Service", () => {
         "127.0.0.1",
       );
 
-      expect(result.followUps).toEqual(mockFollowUps);
-      expect(result.pagination.total).toBe(2);
+      expect(followUpRepository.findMany).toHaveBeenCalledWith(
+        {},
+        0,
+        20,
+        { created_at: "desc" },
+        expect.objectContaining({
+          encounter: expect.any(Object),
+        })
+      );
+      expect(result.followUps).toEqual([
+        expect.objectContaining({
+          id: "FU-1",
+          encounter_id: "ENC-1",
+          patient_id: "PAT-1",
+          patient_display_name: "Ada Lovelace",
+          patient_primary_phone: "+256700000001",
+          status: "SCHEDULED",
+          notes: "Call back",
+        }),
+      ]);
+      expect(result.pagination.total).toBe(1);
     });
   });
 
   describe("getFollowUpById", () => {
     it("should get follow-up by ID", async () => {
-      const mockFollowUp = { id: "fu-1" };
+      const mockFollowUp = {
+        id: "fu-1",
+        human_friendly_id: "FU-1",
+        encounter_id: "enc-1",
+        status: "SCHEDULED",
+        encounter: {
+          id: "enc-1",
+          human_friendly_id: "ENC-1",
+          patient: {
+            id: "pat-1",
+            human_friendly_id: "PAT-1",
+            first_name: "Ada",
+            last_name: "Lovelace",
+            contacts: [],
+          },
+        },
+      };
       followUpRepository.findById.mockResolvedValue(mockFollowUp);
 
       const result = await getFollowUpById("fu-1", "user-1", "127.0.0.1");
 
-      expect(result).toEqual(mockFollowUp);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: "FU-1",
+          patient_id: "PAT-1",
+          patient_display_name: "Ada Lovelace",
+          patient_primary_phone: null,
+        })
+      );
     });
 
     it("should throw HttpError if not found", async () => {

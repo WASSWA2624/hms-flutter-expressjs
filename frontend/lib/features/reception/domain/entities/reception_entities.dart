@@ -42,6 +42,70 @@ const Set<String> receptionOpdBillingSources = <String>{
   'NURSING',
 };
 
+/// Scheduled patient callback row for the Reception Follow-ups worklist.
+@immutable
+final class ReceptionFollowUpEntry {
+  const ReceptionFollowUpEntry({
+    required this.id,
+    required this.encounterId,
+    required this.patientId,
+    required this.patientIdentifier,
+    required this.scheduledAt,
+    this.patientDisplayName,
+    this.patientPhone,
+    this.notes,
+    this.status = 'SCHEDULED',
+  });
+
+  factory ReceptionFollowUpEntry.fromJson(Map<String, Object?> json) {
+    final String id =
+        _nonEmpty(json['human_friendly_id']) ?? _nonEmpty(json['id']) ?? '';
+    final String patientId = _nonEmpty(json['patient_id']) ?? '';
+    return ReceptionFollowUpEntry(
+      id: id,
+      encounterId: _nonEmpty(json['encounter_id']) ?? '',
+      patientId: patientId,
+      patientIdentifier:
+          _nonEmpty(json['patient_id']) ??
+          _nonEmpty(json['patient_identifier']) ??
+          patientId,
+      patientDisplayName: _nonEmpty(json['patient_display_name']),
+      patientPhone: _nonEmpty(json['patient_primary_phone']),
+      scheduledAt: _dateTime(json['scheduled_at']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      notes: _nonEmpty(json['notes']),
+      status: _nonEmpty(json['status']) ?? 'SCHEDULED',
+    );
+  }
+
+  final String id;
+  final String encounterId;
+  final String patientId;
+  final String patientIdentifier;
+  final String? patientDisplayName;
+  final String? patientPhone;
+  final DateTime scheduledAt;
+  final String? notes;
+  final String status;
+
+  bool get isScheduled => status.trim().toUpperCase() == 'SCHEDULED';
+}
+
+String? _nonEmpty(Object? value) {
+  final String text = value?.toString().trim() ?? '';
+  return text.isEmpty ? null : text;
+}
+
+DateTime? _dateTime(Object? value) {
+  if (value is DateTime) {
+    return value;
+  }
+  final String? text = _nonEmpty(value);
+  if (text == null) {
+    return null;
+  }
+  return DateTime.tryParse(text);
+}
+
 @immutable
 final class ReceptionPaymentGateEntry {
   const ReceptionPaymentGateEntry({
@@ -237,6 +301,8 @@ int receptionUniquePatientCount(
   Set<ReceptionDeskSection>? sections,
   Iterable<ReceptionPaymentGateEntry> paymentGateEntries =
       const <ReceptionPaymentGateEntry>[],
+  Iterable<ReceptionFollowUpEntry> followUpEntries =
+      const <ReceptionFollowUpEntry>[],
 }) {
   final Set<ReceptionDeskSection> included =
       sections ?? ReceptionDeskSection.values.toSet();
@@ -311,6 +377,16 @@ int receptionUniquePatientCount(
           patientIdentifier: entry.patientIdentifier,
         ),
       ], fallback: 'payment-gate:${entry.id}');
+    }
+  }
+  if (included.contains(ReceptionDeskSection.followUps)) {
+    for (final ReceptionFollowUpEntry entry in followUpEntries) {
+      identities.add(<String>[
+        ..._patientAliases(
+          patientId: entry.patientId,
+          patientIdentifier: entry.patientIdentifier,
+        ),
+      ], fallback: 'follow-up:${entry.id}');
     }
   }
 
@@ -443,6 +519,7 @@ enum ReceptionDeskSection {
   queue,
   highPriority,
   activeVisits,
+  followUps,
   paymentGate,
 }
 
@@ -453,6 +530,7 @@ String receptionDeskSectionToQueryValue(ReceptionDeskSection section) {
     ReceptionDeskSection.queue => 'desk-queue',
     ReceptionDeskSection.highPriority => 'high-priority',
     ReceptionDeskSection.activeVisits => 'active',
+    ReceptionDeskSection.followUps => 'follow-ups',
     ReceptionDeskSection.paymentGate => 'payment-gate',
   };
 }
@@ -476,6 +554,10 @@ ReceptionDeskSection? receptionDeskSectionFromQuery(String raw) {
     case 'visits':
     case 'turnaround_pressure':
       return ReceptionDeskSection.activeVisits;
+    case 'follow-ups':
+    case 'follow_ups':
+    case 'followups':
+      return ReceptionDeskSection.followUps;
     case 'payment':
     case 'payment-gate':
     case 'follow-up':

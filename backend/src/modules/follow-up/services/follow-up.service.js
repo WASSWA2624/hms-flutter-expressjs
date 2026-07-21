@@ -19,12 +19,91 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
 } = require("@lib/identifiers/service-identifier-resolution");
+const { resolvePublicIdentifier } = require("@lib/billing/identifiers");
 
 const FOLLOW_UP_TRANSITIONS = Object.freeze({
   SCHEDULED: new Set(["COMPLETED", "CANCELLED"]),
   COMPLETED: new Set([]),
   CANCELLED: new Set([]),
 });
+
+const FOLLOW_UP_PATIENT_INCLUDE = Object.freeze({
+  encounter: {
+    include: {
+      patient: {
+        include: {
+          contacts: {
+            where: { deleted_at: null },
+          },
+        },
+      },
+    },
+  },
+});
+
+const normalizeText = (value) => {
+  if (value == null) return null;
+  const text = String(value).trim();
+  return text || null;
+};
+
+const formatPatientName = (patient = null) => {
+  const name = [patient?.first_name, patient?.last_name]
+    .map(normalizeText)
+    .filter(Boolean)
+    .join(" ");
+  return name || null;
+};
+
+const resolvePrimaryPhone = (contacts = []) => {
+  if (!Array.isArray(contacts)) return null;
+  const phones = contacts.filter(
+    (contact) =>
+      String(contact?.contact_type || "")
+        .trim()
+        .toUpperCase() === "PHONE"
+  );
+  const primary =
+    phones.find((contact) => contact?.is_primary) || phones[0] || null;
+  return normalizeText(primary?.value);
+};
+
+/**
+ * Projects follow-up rows with patient identity and contact for call worklists.
+ */
+const serializeFollowUp = (record) => {
+  if (!record || typeof record !== "object") return record;
+
+  const patient = record?.encounter?.patient || null;
+  const publicId = resolvePublicIdentifier(
+    record?.human_friendly_id,
+    record?.id
+  );
+  const encounterId = resolvePublicIdentifier(
+    record?.encounter?.human_friendly_id,
+    record?.encounter_id || record?.encounter?.id
+  );
+  const patientId = resolvePublicIdentifier(
+    patient?.human_friendly_id,
+    patient?.id || record?.encounter?.patient_id
+  );
+
+  return {
+    id: publicId || record.id,
+    human_friendly_id: publicId || record.human_friendly_id || null,
+    encounter_id: encounterId || record.encounter_id || null,
+    patient_id: patientId,
+    patient_display_name: formatPatientName(patient),
+    patient_primary_phone: resolvePrimaryPhone(patient?.contacts),
+    scheduled_at: record.scheduled_at || null,
+    status: record.status || null,
+    completed_at: record.completed_at || null,
+    completed_by_user_id: record.completed_by_user_id || null,
+    notes: normalizeText(record.notes),
+    created_at: record.created_at || null,
+    updated_at: record.updated_at || null,
+  };
+};
 
 const IPD_REMINDER_RECIPIENT_ROLES = [
   ROLES.SUPER_ADMIN,
@@ -237,12 +316,18 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
     }
 
     const [followUps, total] = await Promise.all([
-      followUpRepository.findMany(whereClause, skip, limit, orderBy),
+      followUpRepository.findMany(
+        whereClause,
+        skip,
+        limit,
+        orderBy,
+        FOLLOW_UP_PATIENT_INCLUDE
+      ),
       followUpRepository.count(whereClause),
     ]);
 
     return {
-      followUps,
+      followUps: followUps.map(serializeFollowUp),
       pagination: {
         page,
         limit,
@@ -260,16 +345,32 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
   }
 };
 
+const resolveFollowUpId = async (value) => {
+  const resolved = await resolveIdentifierForFilter({
+    value,
+    model: "follow_up",
+    where: { deleted_at: null },
+  });
+  if (resolved === null || resolved === undefined) {
+    throw new HttpError("errors.follow_up.not_found", 404);
+  }
+  return resolved;
+};
+
 /**
  * Get follow-up by ID
  */
 const getFollowUpById = async (id) => {
   try {
-    const followUp = await followUpRepository.findById(id);
+    const followUpId = await resolveFollowUpId(id);
+    const followUp = await followUpRepository.findById(
+      followUpId,
+      FOLLOW_UP_PATIENT_INCLUDE
+    );
     if (!followUp) {
       throw new HttpError("errors.follow_up.not_found", 404);
     }
-    return followUp;
+    return serializeFollowUp(followUp);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError("errors.server.unexpected", 500, [
@@ -318,7 +419,8 @@ const createFollowUp = async (data, userId, ipAddress) => {
  */
 const updateFollowUp = async (id, data, userId, ipAddress) => {
   try {
-    const before = await followUpRepository.findById(id);
+    const followUpId = await resolveFollowUpId(id);
+    const before = await followUpRepository.findById(followUpId);
     if (!before) {
       throw new HttpError("errors.follow_up.not_found", 404);
     }
@@ -332,7 +434,7 @@ const updateFollowUp = async (id, data, userId, ipAddress) => {
       payload.status = nextStatus;
     }
 
-    const followUp = await followUpRepository.update(id, payload);
+    const followUp = await followUpRepository.update(followUpId, payload);
 
     createAuditLog({
       user_id: userId,
@@ -357,18 +459,19 @@ const updateFollowUp = async (id, data, userId, ipAddress) => {
  */
 const deleteFollowUp = async (id, userId, ipAddress) => {
   try {
-    const before = await followUpRepository.findById(id);
+    const followUpId = await resolveFollowUpId(id);
+    const before = await followUpRepository.findById(followUpId);
     if (!before) {
       throw new HttpError("errors.follow_up.not_found", 404);
     }
 
-    await followUpRepository.softDelete(id);
+    await followUpRepository.softDelete(followUpId);
 
     createAuditLog({
       user_id: userId,
       action: "DELETE",
       entity: "follow_up",
-      entity_id: id,
+      entity_id: followUpId,
       diff: { before },
       ip_address: ipAddress,
     }).catch(() => {});
@@ -388,7 +491,8 @@ const transitionFollowUp = async (
   ipAddress,
   action = "UPDATE",
 ) => {
-  const before = await followUpRepository.findById(id);
+  const followUpId = await resolveFollowUpId(id);
+  const before = await followUpRepository.findById(followUpId);
   if (!before) {
     throw new HttpError("errors.follow_up.not_found", 404);
   }
@@ -408,7 +512,7 @@ const transitionFollowUp = async (
     updatePayload.completed_by_user_id = userId || null;
   }
 
-  const followUp = await followUpRepository.update(id, updatePayload);
+  const followUp = await followUpRepository.update(followUpId, updatePayload);
 
   createAuditLog({
     user_id: userId,

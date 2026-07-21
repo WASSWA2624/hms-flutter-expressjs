@@ -45,6 +45,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_w
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
+import 'package:hosspi_hms/features/reception/presentation/controllers/reception_follow_up_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/controllers/reception_payment_gate_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
@@ -178,6 +179,8 @@ int? receptionPatientBadgeCount(
   Set<ReceptionDeskSection>? sections,
   Iterable<ReceptionPaymentGateEntry> paymentGateEntries =
       const <ReceptionPaymentGateEntry>[],
+  Iterable<ReceptionFollowUpEntry> followUpEntries =
+      const <ReceptionFollowUpEntry>[],
 }) {
   return _positiveOrNull(
     receptionUniquePatientCount(
@@ -185,6 +188,7 @@ int? receptionPatientBadgeCount(
       now: now,
       sections: sections,
       paymentGateEntries: paymentGateEntries,
+      followUpEntries: followUpEntries,
     ),
   );
 }
@@ -264,6 +268,18 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
           }),
         )
       : const <ReceptionPaymentGateEntry>[];
+  final List<ReceptionFollowUpEntry> receptionFollowUpEntries =
+      receptionSections.contains(ReceptionDeskSection.followUps)
+      ? ref.watch(
+          receptionFollowUpControllerProvider.select((value) {
+            return value.asData?.value.when(
+                  success: (ReceptionFollowUpState state) => state.entries,
+                  failure: (_) => const <ReceptionFollowUpEntry>[],
+                ) ??
+                const <ReceptionFollowUpEntry>[];
+          }),
+        )
+      : const <ReceptionFollowUpEntry>[];
 
   return ShellBadgeCounts(
     receptionPatientCount: canReception
@@ -274,6 +290,7 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
                   s,
                   sections: receptionSections,
                   paymentGateEntries: receptionPaymentEntries,
+                  followUpEntries: receptionFollowUpEntries,
                 );
               }),
             ),

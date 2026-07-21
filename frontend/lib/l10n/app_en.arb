@@ -3482,6 +3482,38 @@
   "@receptionSectionPaymentGate": {
     "description": "Reception desk section for patients with outstanding OPD charges."
   },
+  "receptionSectionFollowUps": "Follow-ups",
+  "@receptionSectionFollowUps": {
+    "description": "Reception desk section for scheduled patient callback follow-ups."
+  },
+  "receptionFollowUpsEmptyTitle": "No scheduled follow-ups",
+  "@receptionFollowUpsEmptyTitle": {
+    "description": "Empty-state title for the Reception Follow-ups tab."
+  },
+  "receptionFollowUpsEmptyBody": "Patients with scheduled callbacks will appear here.",
+  "@receptionFollowUpsEmptyBody": {
+    "description": "Empty-state body for the Reception Follow-ups tab."
+  },
+  "receptionFollowUpDetailBody": "Call the patient using the contact on file, then mark the follow-up completed or schedule another callback.",
+  "@receptionFollowUpDetailBody": {
+    "description": "Guidance body shown in the Reception follow-up detail dialog."
+  },
+  "receptionMarkFollowUpCompletedAction": "Mark completed",
+  "@receptionMarkFollowUpCompletedAction": {
+    "description": "Action to mark a Reception follow-up call as completed."
+  },
+  "receptionScheduleAnotherFollowUpAction": "Schedule another",
+  "@receptionScheduleAnotherFollowUpAction": {
+    "description": "Action to schedule another follow-up callback for the same patient."
+  },
+  "receptionFollowUpContactRequiredLabel": "Contact phone",
+  "@receptionFollowUpContactRequiredLabel": {
+    "description": "Required phone field when scheduling a follow-up without a known patient contact."
+  },
+  "receptionFollowUpSkipAction": "Skip",
+  "@receptionFollowUpSkipAction": {
+    "description": "Dismisses the optional post-disposition follow-up dialog without scheduling."
+  },
   "receptionPaymentGateSearchHint": "Search patient, encounter, service, or invoice",
   "@receptionPaymentGateSearchHint": {
     "description": "Search hint for the read-only Reception Payment gate."

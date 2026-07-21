@@ -5176,6 +5176,54 @@ abstract class AppLocalizations {
   /// **'Payment gate'**
   String get receptionSectionPaymentGate;
 
+  /// Reception desk section for scheduled patient callback follow-ups.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-ups'**
+  String get receptionSectionFollowUps;
+
+  /// Empty-state title for the Reception Follow-ups tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled follow-ups'**
+  String get receptionFollowUpsEmptyTitle;
+
+  /// Empty-state body for the Reception Follow-ups tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients with scheduled callbacks will appear here.'**
+  String get receptionFollowUpsEmptyBody;
+
+  /// Guidance body shown in the Reception follow-up detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Call the patient using the contact on file, then mark the follow-up completed or schedule another callback.'**
+  String get receptionFollowUpDetailBody;
+
+  /// Action to mark a Reception follow-up call as completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark completed'**
+  String get receptionMarkFollowUpCompletedAction;
+
+  /// Action to schedule another follow-up callback for the same patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule another'**
+  String get receptionScheduleAnotherFollowUpAction;
+
+  /// Required phone field when scheduling a follow-up without a known patient contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact phone'**
+  String get receptionFollowUpContactRequiredLabel;
+
+  /// Dismisses the optional post-disposition follow-up dialog without scheduling.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get receptionFollowUpSkipAction;
+
   /// Search hint for the read-only Reception Payment gate.
   ///
   /// In en, this message translates to:

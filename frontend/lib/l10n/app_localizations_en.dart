@@ -2673,6 +2673,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionSectionPaymentGate => 'Payment gate';
 
   @override
+  String get receptionSectionFollowUps => 'Follow-ups';
+
+  @override
+  String get receptionFollowUpsEmptyTitle => 'No scheduled follow-ups';
+
+  @override
+  String get receptionFollowUpsEmptyBody =>
+      'Patients with scheduled callbacks will appear here.';
+
+  @override
+  String get receptionFollowUpDetailBody =>
+      'Call the patient using the contact on file, then mark the follow-up completed or schedule another callback.';
+
+  @override
+  String get receptionMarkFollowUpCompletedAction => 'Mark completed';
+
+  @override
+  String get receptionScheduleAnotherFollowUpAction => 'Schedule another';
+
+  @override
+  String get receptionFollowUpContactRequiredLabel => 'Contact phone';
+
+  @override
+  String get receptionFollowUpSkipAction => 'Skip';
+
+  @override
   String get receptionPaymentGateSearchHint =>
       'Search patient, encounter, service, or invoice';
 

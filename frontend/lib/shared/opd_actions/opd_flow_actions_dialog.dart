@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_encounter_dialog_controller.dart';
@@ -790,8 +791,28 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     }
 
     if (updatedFlow.isTerminal) {
-      Navigator.of(context).pop(true);
+      await _promptFollowUpAfterDisposition(context, updatedFlow);
+      if (context.mounted) {
+        Navigator.of(context).pop(true);
+      }
     }
+  }
+
+  Future<void> _promptFollowUpAfterDisposition(
+    BuildContext context,
+    OpdFlowSummary flow,
+  ) async {
+    final bool canSchedule = opdFrontDeskActionRequirement.isAllowed(
+      ref.read(appAccessPolicyProvider),
+    );
+    if (!canSchedule || !context.mounted) {
+      return;
+    }
+    await showFollowUpDialog(
+      context: context,
+      flow: flow,
+      offerSkip: true,
+    );
   }
 
   Future<void> _promptIpdHandoff(

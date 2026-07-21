@@ -75,9 +75,19 @@ AccessRequirement receptionDeskSectionRequirement(
     ReceptionDeskSection.queue ||
     ReceptionDeskSection.highPriority => receptionSchedulingReadRequirement,
     ReceptionDeskSection.activeVisits => receptionActiveVisitsRequirement,
+    ReceptionDeskSection.followUps => receptionFollowUpsRequirement,
     ReceptionDeskSection.paymentGate => receptionPaymentGateRequirement,
   };
 }
+
+/// Follow-ups worklist: patient or clinical read (matches follow-up list auth).
+const AccessRequirement receptionFollowUpsRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.patientRead,
+    AppPermissions.clinicalRead,
+  ],
+  activeModules: <String>['patient-registry', 'scheduling-queue'],
+);
 
 /// Front-desk insurance enrollment capture (not claims finalize).
 const AccessRequirement receptionInsuranceCaptureRequirement =

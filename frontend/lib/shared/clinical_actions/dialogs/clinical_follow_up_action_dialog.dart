@@ -26,6 +26,7 @@ class ClinicalFollowUpActionDialog extends StatefulWidget {
     this.pinActionsToBottom = true,
     this.density = AppFormSectionDensity.compact,
     this.maxWidth = 720,
+    this.cancelLabel,
     super.key,
   });
 
@@ -49,6 +50,7 @@ class ClinicalFollowUpActionDialog extends StatefulWidget {
   final bool pinActionsToBottom;
   final AppFormSectionDensity density;
   final double maxWidth;
+  final String? cancelLabel;
 
   @override
   State<ClinicalFollowUpActionDialog> createState() =>
@@ -193,6 +195,7 @@ class _ClinicalFollowUpActionDialogState
         _isSaving,
         _isSaving ? null : _submit,
         submitLeadingIcon: widget.submitLeadingIcon,
+        cancelLabel: widget.cancelLabel,
       ),
     );
   }
