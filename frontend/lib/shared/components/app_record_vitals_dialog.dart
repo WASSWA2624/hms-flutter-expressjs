@@ -8,7 +8,6 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_date_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
-import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_time_field.dart';
 import 'package:hosspi_hms/shared/components/app_time_value.dart';
 import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
@@ -557,7 +556,7 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
           text: 'BMI $bmiText',
           status: resolveAppVitalSignStatus(
             bmiText,
-            kAppBodyMassIndexReference,
+            widget.reference.bodyMassIndex,
           ),
         ),
       );
@@ -1196,14 +1195,20 @@ class _BodyMetricsEditorDialogState extends State<_BodyMetricsEditorDialog> {
     );
     widget.weightController.addListener(_syncFromWeightOrHeight);
     widget.heightController.addListener(_syncFromWeightOrHeight);
+    _bmiController.addListener(_onBmiControllerChanged);
   }
 
   @override
   void dispose() {
     widget.weightController.removeListener(_syncFromWeightOrHeight);
     widget.heightController.removeListener(_syncFromWeightOrHeight);
+    _bmiController.removeListener(_onBmiControllerChanged);
     _bmiController.dispose();
     super.dispose();
+  }
+
+  void _onBmiControllerChanged() {
+    _syncFromBmi(_bmiController.text);
   }
 
   void _applyDerivedValue(
@@ -1285,7 +1290,6 @@ class _BodyMetricsEditorDialogState extends State<_BodyMetricsEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     return AppDialog(
       title: Text(widget.bodyMetricsLabel),
       icon: const Icon(Icons.monitor_weight_outlined),
@@ -1305,6 +1309,7 @@ class _BodyMetricsEditorDialogState extends State<_BodyMetricsEditorDialog> {
               oxygenSaturationController: widget.oxygenSaturationController,
               weightController: widget.weightController,
               heightController: widget.heightController,
+              bmiController: _bmiController,
               temperatureLabel: widget.temperatureLabel,
               systolicLabel: widget.systolicLabel,
               diastolicLabel: widget.diastolicLabel,
@@ -1313,6 +1318,7 @@ class _BodyMetricsEditorDialogState extends State<_BodyMetricsEditorDialog> {
               oxygenSaturationLabel: widget.oxygenSaturationLabel,
               weightLabel: widget.weightLabel,
               heightLabel: widget.heightLabel,
+              bmiLabel: widget.bmiLabel,
               bloodPressureLabel: widget.bloodPressureLabel,
               unitLabel: widget.unitLabel,
               reference: widget.reference,
@@ -1340,13 +1346,6 @@ class _BodyMetricsEditorDialogState extends State<_BodyMetricsEditorDialog> {
                 widget.onHeightUnitChanged(value);
                 _syncFromWeightOrHeight();
               },
-            ),
-            SizedBox(height: theme.spacing.md),
-            AppTextField(
-              controller: _bmiController,
-              labelText: widget.bmiLabel,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              onChanged: _syncFromBmi,
             ),
           ],
         ),

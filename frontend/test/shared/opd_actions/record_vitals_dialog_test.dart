@@ -172,6 +172,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('22.9'), findsOneWidget);
+    expect(find.textContaining('Expected for'), findsWidgets);
+    expect(find.textContaining('18.5-24.9'), findsOneWidget);
     await tester.tap(find.widgetWithText(AppButton, 'Done'));
     await tester.pumpAndSettle();
 

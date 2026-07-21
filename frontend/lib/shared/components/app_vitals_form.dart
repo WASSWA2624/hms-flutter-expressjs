@@ -120,7 +120,7 @@ const AppVitalReferenceRange kAppBodyMassIndexReference = AppVitalReferenceRange
   normalMax: 24.9,
   validMin: 10,
   validMax: 80,
-  unit: '',
+  unit: AppVitalsUnits.bodyMassIndex,
   decimals: 1,
 );
 
@@ -167,8 +167,10 @@ class AppVitalsForm extends StatelessWidget {
     required this.oxygenSaturationLabel,
     this.weightController,
     this.heightController,
+    this.bmiController,
     this.weightLabel,
     this.heightLabel,
+    this.bmiLabel,
     this.bloodPressureLabel,
     this.unitLabel,
     this.reference = const AppVitalsReference.adult(),
@@ -193,6 +195,7 @@ class AppVitalsForm extends StatelessWidget {
   final TextEditingController oxygenSaturationController;
   final TextEditingController? weightController;
   final TextEditingController? heightController;
+  final TextEditingController? bmiController;
   final String temperatureLabel;
   final String systolicLabel;
   final String diastolicLabel;
@@ -201,6 +204,7 @@ class AppVitalsForm extends StatelessWidget {
   final String oxygenSaturationLabel;
   final String? weightLabel;
   final String? heightLabel;
+  final String? bmiLabel;
   final String? bloodPressureLabel;
   final String? unitLabel;
   final AppVitalsReference reference;
@@ -345,6 +349,18 @@ class AppVitalsForm extends StatelessWidget {
     if (bodyMeasureFields.isNotEmpty) {
       addSection(_vitalSignsGrid(context, bodyMeasureFields));
     }
+    if (bmiController != null && bmiLabel != null) {
+      addSection(
+        _vitalSignInput(
+          context,
+          controller: bmiController!,
+          labelText: bmiLabel!,
+          range: reference.bodyMassIndex,
+          unit: AppVitalsUnits.bodyMassIndex,
+          unitLabelText: resolvedUnitLabel,
+        ),
+      );
+    }
 
     return Column(mainAxisSize: MainAxisSize.min, children: sections);
   }
@@ -432,6 +448,7 @@ final class AppVitalsReference {
     required this.oxygenSaturation,
     required this.weight,
     required this.height,
+    required this.bodyMassIndex,
   });
 
   const AppVitalsReference.adult()
@@ -492,7 +509,8 @@ final class AppVitalsReference {
         validMin: 20,
         validMax: 250,
         unit: AppVitalsUnits.heightCentimeters,
-      );
+      ),
+      bodyMassIndex = kAppBodyMassIndexReference;
 
   factory AppVitalsReference.fromPatientData({
     DateTime? dateOfBirth,
@@ -523,6 +541,7 @@ final class AppVitalsReference {
       ),
       weight: _weightRange(ageBand, sex),
       height: _heightRange(ageBand, sex),
+      bodyMassIndex: _bodyMassIndexRange(ageBand, sex),
     );
   }
 
@@ -535,6 +554,7 @@ final class AppVitalsReference {
   final AppVitalReferenceRange oxygenSaturation;
   final AppVitalReferenceRange weight;
   final AppVitalReferenceRange height;
+  final AppVitalReferenceRange bodyMassIndex;
 }
 
 @immutable
@@ -650,6 +670,7 @@ abstract final class AppVitalsUnits {
   static const String weightPounds = 'lb';
   static const String heightCentimeters = 'cm';
   static const String heightMeters = 'm';
+  static const String bodyMassIndex = 'kg/m\u00B2';
   static const double bloodPressureKpaFactor = 0.133322;
 
   static const List<AppSelectOption<String>>
@@ -1386,6 +1407,71 @@ AppVitalReferenceRange _heightRange(String ageBand, String sex) {
       AppVitalsUnits.heightCentimeters,
     ),
     _ => _range(145, 205, 20, 250, AppVitalsUnits.heightCentimeters),
+  };
+}
+
+/// WHO adult healthy BMI (18.5-24.9) plus age-band approximations for younger
+/// patients when percentile charts are unavailable.
+AppVitalReferenceRange _bodyMassIndexRange(String ageBand, String sex) {
+  return switch (ageBand) {
+    'NEONATE' => _range(
+      11,
+      15,
+      8,
+      40,
+      AppVitalsUnits.bodyMassIndex,
+      decimals: 1,
+    ),
+    'INFANT' => _range(
+      13,
+      18,
+      8,
+      45,
+      AppVitalsUnits.bodyMassIndex,
+      decimals: 1,
+    ),
+    'CHILD' when sex == 'MALE' => _range(
+      14,
+      18.5,
+      10,
+      50,
+      AppVitalsUnits.bodyMassIndex,
+      decimals: 1,
+    ),
+    'CHILD' when sex == 'FEMALE' => _range(
+      14,
+      18.5,
+      10,
+      50,
+      AppVitalsUnits.bodyMassIndex,
+      decimals: 1,
+    ),
+    'CHILD' => _range(
+      14,
+      18.5,
+      10,
+      50,
+      AppVitalsUnits.bodyMassIndex,
+      decimals: 1,
+    ),
+    'ADOLESCENT' when sex == 'FEMALE' => _range(
+      16.5,
+      24,
+      10,
+      60,
+      AppVitalsUnits.bodyMassIndex,
+      decimals: 1,
+    ),
+    'ADOLESCENT' => _range(
+      16.5,
+      24.5,
+      10,
+      60,
+      AppVitalsUnits.bodyMassIndex,
+      decimals: 1,
+    ),
+    // Adult WHO cutoffs are the same for male and female.
+    _ => kAppBodyMassIndexReference,
   };
 }
 
