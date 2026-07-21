@@ -2282,6 +2282,7 @@ model visit_queue {
   provider_user_id  String?           @db.VarChar(36)
   status            AppointmentStatus
   queued_at         DateTime          @default(now())
+  is_prioritized    Boolean           @default(false)
   created_at        DateTime          @default(now())
   updated_at        DateTime          @updatedAt
   deleted_at        DateTime?
@@ -2300,6 +2301,7 @@ model visit_queue {
   @@index([appointment_id])
   @@index([provider_user_id])
   @@index([status])
+  @@index([is_prioritized])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

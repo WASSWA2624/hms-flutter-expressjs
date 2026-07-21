@@ -2654,6 +2654,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionSectionQueue => 'Desk queue';
 
   @override
+  String get receptionSectionHighPriority => 'High priority';
+
+  @override
+  String get receptionHighPriorityBadgeLabel => 'High priority';
+
+  @override
+  String get receptionHighPriorityEmptyTitle => 'No high-priority patients';
+
+  @override
+  String get receptionHighPriorityEmptyBody =>
+      'Prioritized desk-queue patients will appear here.';
+
+  @override
   String get receptionSectionActiveVisits => 'Active visits';
 
   @override

@@ -81,6 +81,7 @@ const publishVisitQueueRealtimeEvent = async (event, entry = {}, actorUserId = n
           facility_id: facilityId,
           status: entry?.status || null,
           queued_at: entry?.queued_at || null,
+          is_prioritized: Boolean(entry?.is_prioritized),
           actor_user_id: actorUserId || null,
           target_path: '/opd',
           occurred_at: occurredAt
@@ -582,9 +583,13 @@ const listVisitQueues = async (filters = {}, page = 1, limit = 20, sortBy = 'que
       ];
     }
 
-    // Calculate pagination
+    // Calculate pagination. High-priority entries always sort ahead of routine
+    // within the requested field/order (default queued_at).
     const skip = (resolvedPage - 1) * resolvedLimit;
-    const orderBy = { [resolvedSortBy]: resolvedOrder };
+    const orderBy = [
+      { is_prioritized: 'desc' },
+      { [resolvedSortBy]: resolvedOrder },
+    ];
 
     // Fetch entries and count
     const [entries, total] = await Promise.all([
@@ -823,8 +828,8 @@ const prioritizeVisitQueue = async (id, data = {}, context = {}) => {
   }
 
   const updateData = {
-    // Keep queue recency at the front when prioritized.
-    queued_at: new Date(),
+    // Durable high-priority mark; do not rewrite queued_at (wait display).
+    is_prioritized: true,
     // Prioritization changes ordering, not workflow state.
     status: data.status || beforeEntry.status
   };
@@ -845,11 +850,13 @@ const prioritizeVisitQueue = async (id, data = {}, context = {}) => {
       reason: data.reason || null,
       before: {
         status: beforeEntry.status,
-        queued_at: beforeEntry.queued_at
+        queued_at: beforeEntry.queued_at,
+        is_prioritized: Boolean(beforeEntry.is_prioritized)
       },
       after: {
         status: projectedUpdatedEntry.status,
-        queued_at: projectedUpdatedEntry.queued_at
+        queued_at: projectedUpdatedEntry.queued_at,
+        is_prioritized: Boolean(projectedUpdatedEntry.is_prioritized)
       }
     }
   });

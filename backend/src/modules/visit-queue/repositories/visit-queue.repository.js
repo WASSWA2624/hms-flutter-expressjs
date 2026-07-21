@@ -151,7 +151,12 @@ const findById = async (id) => {
  * @param {Object} orderBy - Sort order
  * @returns {Promise<Array>} Array of visit queue entries
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { queued_at: 'desc' }) => {
+const findMany = async (
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
+) => {
   try {
     const where = withActivePatient(filters);
 

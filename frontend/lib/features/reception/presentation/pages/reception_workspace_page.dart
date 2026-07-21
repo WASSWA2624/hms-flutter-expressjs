@@ -364,12 +364,26 @@ class _ReceptionWorkspaceContentState
                   },
                 ),
                 emptyBuilder: (_) => AppStateView(
-                  title: _section == ReceptionDeskSection.paymentGate
-                      ? l10n.receptionPaymentGateEmptyTitle
-                      : l10n.receptionEmptyTitle,
-                  body: _section == ReceptionDeskSection.paymentGate
-                      ? l10n.receptionPaymentGateEmptyBody
-                      : l10n.receptionEmptyBody,
+                  title: switch (_section) {
+                    ReceptionDeskSection.paymentGate =>
+                      l10n.receptionPaymentGateEmptyTitle,
+                    ReceptionDeskSection.highPriority =>
+                      l10n.receptionHighPriorityEmptyTitle,
+                    ReceptionDeskSection.appointments ||
+                    ReceptionDeskSection.queue ||
+                    ReceptionDeskSection.activeVisits =>
+                      l10n.receptionEmptyTitle,
+                  },
+                  body: switch (_section) {
+                    ReceptionDeskSection.paymentGate =>
+                      l10n.receptionPaymentGateEmptyBody,
+                    ReceptionDeskSection.highPriority =>
+                      l10n.receptionHighPriorityEmptyBody,
+                    ReceptionDeskSection.appointments ||
+                    ReceptionDeskSection.queue ||
+                    ReceptionDeskSection.activeVisits =>
+                      l10n.receptionEmptyBody,
+                  },
                   variant: AppStateViewVariant.empty,
                 ),
                 mobileItemBuilder: _mobileItemBuilder,
@@ -397,7 +411,8 @@ class _ReceptionWorkspaceContentState
   String get _filterGroupKey {
     return switch (_section) {
       ReceptionDeskSection.appointments ||
-      ReceptionDeskSection.queue => _statusFilterKey,
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.highPriority => _statusFilterKey,
       ReceptionDeskSection.activeVisits => _stageFilterKey,
       ReceptionDeskSection.paymentGate => _statusFilterKey,
     };
@@ -406,7 +421,8 @@ class _ReceptionWorkspaceContentState
   String _filterGroupLabel(AppLocalizations l10n) {
     return switch (_section) {
       ReceptionDeskSection.appointments => l10n.receptionStatusLabel,
-      ReceptionDeskSection.queue => l10n.receptionCurrentStepLabel,
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.highPriority => l10n.receptionCurrentStepLabel,
       ReceptionDeskSection.activeVisits => l10n.receptionCurrentStepLabel,
       ReceptionDeskSection.paymentGate => l10n.billingStatusFilterLabel,
     };
@@ -443,6 +459,7 @@ class _ReceptionWorkspaceContentState
       ),
     ];
     if (_section == ReceptionDeskSection.queue ||
+        _section == ReceptionDeskSection.highPriority ||
         _section == ReceptionDeskSection.activeVisits) {
       groups.add(
         AppSearchBarFilterGroup(
@@ -528,7 +545,8 @@ class _ReceptionWorkspaceContentState
   String _dateFilterLabel(AppLocalizations l10n) {
     return switch (_section) {
       ReceptionDeskSection.appointments => l10n.receptionScheduledTimeLabel,
-      ReceptionDeskSection.queue => l10n.receptionQueuedAtLabel,
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.highPriority => l10n.receptionQueuedAtLabel,
       ReceptionDeskSection.activeVisits => l10n.receptionStartedAtLabel,
       ReceptionDeskSection.paymentGate => l10n.opdArrivalDateFilterLabel,
     };
@@ -697,6 +715,7 @@ class _ReceptionWorkspaceContentState
           _receptionAppointmentNextActionColumn(l10n),
         ];
       case ReceptionDeskSection.queue:
+      case ReceptionDeskSection.highPriority:
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientColumn(l10n),
           _receptionQueuedAtColumn(l10n, locale),
@@ -735,6 +754,7 @@ class _ReceptionWorkspaceContentState
           _receptionFacilityColumn(l10n),
         ];
       case ReceptionDeskSection.queue:
+      case ReceptionDeskSection.highPriority:
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientIdColumn(l10n),
           _receptionPatientPhoneColumn(l10n),
@@ -771,16 +791,40 @@ class _ReceptionWorkspaceContentState
       id: 'patient',
       label: l10n.opdPatientNameLabel,
       alwaysVisible: true,
-      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-          AppListItemText(
-            title: row.patientName(context),
-            subtitle: row.patientIdentifier,
-          ),
-      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
-          appListTableCompareText(
-            a.patientName(context),
-            b.patientName(context),
-          ),
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final ThemeData theme = Theme.of(context);
+        final bool prioritized = row.queueEntry?.isPrioritized == true;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            AppListItemText(
+              title: row.patientName(context),
+              subtitle: row.patientIdentifier,
+            ),
+            if (prioritized) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: l10n.receptionHighPriorityBadgeLabel,
+                  tone: AppWorkspaceStatusTone.warning,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) {
+        final bool aPriority = a.queueEntry?.isPrioritized == true;
+        final bool bPriority = b.queueEntry?.isPrioritized == true;
+        if (aPriority != bPriority) {
+          return aPriority ? -1 : 1;
+        }
+        return appListTableCompareText(
+          a.patientName(context),
+          b.patientName(context),
+        );
+      },
     );
   }
 
@@ -1348,14 +1392,23 @@ class _ReceptionWorkspaceContentState
               _ReceptionDeskRow.appointment(appointment),
         ];
       case ReceptionDeskSection.queue:
-        return <_ReceptionDeskRow>[
+        return _sortedQueueRows(<_ReceptionDeskRow>[
           for (final OpdQueueEntry entry in state.queueEntries.items)
             if (!isOpdTerminalStatus(entry.status))
               _ReceptionDeskRow.queue(
                 entry,
                 flow: _findFlowForQueueEntry(entry, state.flows.items),
               ),
-        ];
+        ]);
+      case ReceptionDeskSection.highPriority:
+        return _sortedQueueRows(<_ReceptionDeskRow>[
+          for (final OpdQueueEntry entry in state.queueEntries.items)
+            if (!isOpdTerminalStatus(entry.status) && entry.isPrioritized)
+              _ReceptionDeskRow.queue(
+                entry,
+                flow: _findFlowForQueueEntry(entry, state.flows.items),
+              ),
+        ]);
       case ReceptionDeskSection.activeVisits:
         return <_ReceptionDeskRow>[
           for (final OpdFlowSummary flow in state.flows.items)
@@ -1367,6 +1420,22 @@ class _ReceptionWorkspaceContentState
             _ReceptionDeskRow.paymentGate(entry),
         ];
     }
+  }
+
+  List<_ReceptionDeskRow> _sortedQueueRows(List<_ReceptionDeskRow> rows) {
+    final List<_ReceptionDeskRow> sorted = List<_ReceptionDeskRow>.of(rows);
+    sorted.sort((_ReceptionDeskRow a, _ReceptionDeskRow b) {
+      final bool aPriority = a.queueEntry?.isPrioritized == true;
+      final bool bPriority = b.queueEntry?.isPrioritized == true;
+      if (aPriority != bPriority) {
+        return aPriority ? -1 : 1;
+      }
+      return appListTableCompareDateTime(
+        a.queueEntry?.queuedAt,
+        b.queueEntry?.queuedAt,
+      );
+    });
+    return sorted;
   }
 
   List<_ReceptionDeskRow> _applyFilters(
@@ -1446,7 +1515,8 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.paymentGate =>
         row.paymentGateEntry?.clearanceState.name ?? '',
       ReceptionDeskSection.appointments ||
-      ReceptionDeskSection.queue => row.status ?? '',
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.highPriority => row.status ?? '',
     };
   }
 
@@ -1475,7 +1545,9 @@ class _ReceptionWorkspaceContentState
               row.paymentGateEntry!.clearanceState,
             ),
             ReceptionDeskSection.appointments ||
-            ReceptionDeskSection.queue => opdStageDisplayLabel(l10n, status),
+            ReceptionDeskSection.queue ||
+            ReceptionDeskSection.highPriority =>
+              opdStageDisplayLabel(l10n, status),
           },
         ),
       );
@@ -1506,6 +1578,13 @@ class _ReceptionWorkspaceContentState
         return state.queueEntries.items
             .where((OpdQueueEntry e) => !isOpdTerminalStatus(e.status))
             .length;
+      case ReceptionDeskSection.highPriority:
+        return state.queueEntries.items
+            .where(
+              (OpdQueueEntry e) =>
+                  !isOpdTerminalStatus(e.status) && e.isPrioritized,
+            )
+            .length;
       case ReceptionDeskSection.activeVisits:
         return state.flows.items.where(isReceptionActiveVisit).length;
       case ReceptionDeskSection.paymentGate:
@@ -1517,6 +1596,7 @@ class _ReceptionWorkspaceContentState
     return switch (section) {
       ReceptionDeskSection.appointments ||
       ReceptionDeskSection.queue ||
+      ReceptionDeskSection.highPriority ||
       ReceptionDeskSection.activeVisits ||
       ReceptionDeskSection.paymentGate => AppTabCountTone.warning,
     };
@@ -1568,6 +1648,7 @@ class _ReceptionWorkspaceContentState
     return switch (section) {
       ReceptionDeskSection.appointments => l10n.receptionSectionAppointments,
       ReceptionDeskSection.queue => l10n.receptionSectionQueue,
+      ReceptionDeskSection.highPriority => l10n.receptionSectionHighPriority,
       ReceptionDeskSection.activeVisits => l10n.receptionSectionActiveVisits,
       ReceptionDeskSection.paymentGate => l10n.receptionSectionPaymentGate,
     };
@@ -1577,6 +1658,7 @@ class _ReceptionWorkspaceContentState
     return switch (section) {
       ReceptionDeskSection.appointments => Icons.event_available_outlined,
       ReceptionDeskSection.queue => Icons.queue_outlined,
+      ReceptionDeskSection.highPriority => Icons.priority_high_outlined,
       ReceptionDeskSection.activeVisits => Icons.pending_actions_outlined,
       ReceptionDeskSection.paymentGate => Icons.payments_outlined,
     };
@@ -1920,7 +2002,8 @@ final class _ReceptionDeskRow {
   String? nextActionLabel(ReceptionDeskSection section, AppLocalizations l10n) {
     return switch (section) {
       ReceptionDeskSection.appointments => appointmentNextActionLabel(l10n),
-      ReceptionDeskSection.queue => queueNextActionLabel(l10n),
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.highPriority => queueNextActionLabel(l10n),
       ReceptionDeskSection.activeVisits => flowNextActionLabel(l10n),
       ReceptionDeskSection.paymentGate => paymentNextActionLabel(l10n),
     };
@@ -2080,6 +2163,7 @@ final class _ReceptionDeskRow {
           ]);
         }
       case ReceptionDeskSection.queue:
+      case ReceptionDeskSection.highPriority:
         final OpdQueueEntry? entry = queueEntry;
         if (entry != null) {
           final OpdBillingDisplay billing = opdQueueBillingDisplay(
@@ -2093,6 +2177,7 @@ final class _ReceptionDeskRow {
             entry.providerDisplayName,
             entry.appointmentReason,
             entry.paymentStatus,
+            if (entry.isPrioritized) l10n.receptionHighPriorityBadgeLabel,
             entry.queuedAt == null
                 ? null
                 : AppFormatters.dateTime(entry.queuedAt!, locale),
@@ -2205,6 +2290,15 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
             title: row.patientName(context),
             subtitle: row.patientIdentifier,
           ),
+          if (row.queueEntry?.isPrioritized == true) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            AppWorkspaceStatusBadge(
+              status: AppWorkspaceStatus(
+                label: l10n.receptionHighPriorityBadgeLabel,
+                tone: AppWorkspaceStatusTone.warning,
+              ),
+            ),
+          ],
           if (row.time != null) ...<Widget>[
             SizedBox(height: theme.spacing.xs),
             Text(
@@ -2288,6 +2382,7 @@ class _ReceptionDeskMobileStatus extends StatelessWidget {
           ),
         );
       case ReceptionDeskSection.queue:
+      case ReceptionDeskSection.highPriority:
         final String label = row.queueCurrentStepLabel(l10n);
         if (label.isEmpty) {
           return const SizedBox.shrink();
@@ -2347,6 +2442,7 @@ class _ReceptionDeskMobileNextAction extends StatelessWidget {
         }
         return AppButton.secondary(label: label, onPressed: onOpenDetail);
       case ReceptionDeskSection.queue:
+      case ReceptionDeskSection.highPriority:
         final String label = row.queueNextActionLabel(l10n);
         if (label.isEmpty) {
           return const SizedBox.shrink();

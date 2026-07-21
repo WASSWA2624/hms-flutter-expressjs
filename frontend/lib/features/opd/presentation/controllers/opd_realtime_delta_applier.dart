@@ -293,20 +293,34 @@ abstract final class OpdRealtimeDeltaApplier {
     AppPage<OpdQueueEntry> page,
     OpdQueueEntry entry,
   ) {
-    final List<OpdQueueEntry> items = List<OpdQueueEntry>.from(page.items);
-    final int index = items.indexWhere(
-      (OpdQueueEntry item) => item.id == entry.id,
-    );
-    if (index >= 0) {
-      items[index] = entry;
-    } else {
-      items.insert(0, entry);
-    }
+    final List<OpdQueueEntry> items = page.items
+        .where((OpdQueueEntry item) => item.id != entry.id)
+        .toList(growable: true);
+    items.add(entry);
+    items.sort(_compareQueueEntries);
     return AppPage<OpdQueueEntry>(
       items: items.take(page.request.pageSize).toList(growable: false),
       request: page.request,
       totalItemCount: page.totalItemCount,
     );
+  }
+
+  static int _compareQueueEntries(OpdQueueEntry a, OpdQueueEntry b) {
+    if (a.isPrioritized != b.isPrioritized) {
+      return a.isPrioritized ? -1 : 1;
+    }
+    final DateTime? aQueued = a.queuedAt;
+    final DateTime? bQueued = b.queuedAt;
+    if (aQueued == null && bQueued == null) {
+      return 0;
+    }
+    if (aQueued == null) {
+      return 1;
+    }
+    if (bQueued == null) {
+      return -1;
+    }
+    return aQueued.compareTo(bQueued);
   }
 
   static AppPage<OpdQueueEntry> _removeQueueEntry(

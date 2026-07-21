@@ -1,1 +1,38 @@
-On the Appointment tab, there is Under, under desk queue. So under desk queue those are patients that are actually That actually in line with all that needs To see a doctor that haven't yet gone to see that doctor, but they are already in the line maybe again by appointment earlier. So those, there is when you open such patients, there is what you prioritize? So I think when you can't prioritize these patients needs to be categorized in a special way that they can easily be recognized. And I think for every step within the queue Within the, within the active, within the desk team, there should be a way to prioritize any patient, because sometimes a patient might come when they need ag-attention or maybe they're VIP patients or for any reason, so there should be that button, and when such patients are prioritized, I think we should create a separate tab for high priority patients, and so such patients should be now monitored and having a special tab so that they are moved to a special tab and They are handled in a special way for they are given priority.
+# Surface High-Priority Desk Queue Patients
+
+Make Reception **Prioritize** mark desk-queue patients with clear recognition and a High priority tab. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+**Prioritize** only bumps `queued_at`, leaving no durable visible high-priority state. Receptionists need VIP/urgent patients recognizable at any non-terminal desk-queue step.
+
+**High priority:** non-terminal visit-queue entry marked via authorized Prioritize.
+
+## Requirements
+
+1. Persist high-priority on prioritize (optional reason); keep workflow status unchanged; preserve original queued-at for wait display.
+2. Keep authorized **Prioritize** on Queue Actions for every non-terminal Desk queue entry; hide when terminal or unauthorized.
+3. Mark prioritized Desk queue rows in table and mobile cards; sort them ahead of routine within existing list rules.
+4. Add a Reception **High priority** tab of only those entries, reusing Desk queue labels and queue actions.
+5. After success, synchronize Desk queue, High priority, search, filters, counts, and badges; show success feedback.
+6. Preserve loading, empty, error, validation, busy, and permission states; omit unauthorized UI.
+
+## Constraints
+
+- Reuse prioritize endpoint, queue actions, authorization, localization, and design-system; extend visit-queue contracts only for durable priority.
+- Do not invent clinical stages or replace triage/emergency priority.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1–R3: Prioritize persists and surfaces without changing workflow status or true queued-at.
+- R4: High priority tab lists only marked non-terminal entries with working queue actions.
+- R5–R6: Lists refresh; states clear; unauthorized UI absent.
+- Update visit-queue, queue-actions, and reception tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/opd_queue_actions_dialog.dart`
+- `frontend/lib/features/reception/`
+- `backend/src/modules/visit-queue/`
+- `frontend/test/features/reception/`

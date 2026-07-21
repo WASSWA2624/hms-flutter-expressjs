@@ -91,6 +91,10 @@ void main() {
         'desk-queue',
       );
       expect(
+        receptionDeskSectionToQueryValue(ReceptionDeskSection.highPriority),
+        'high-priority',
+      );
+      expect(
         receptionDeskSectionToQueryValue(ReceptionDeskSection.activeVisits),
         'active',
       );
@@ -120,6 +124,18 @@ void main() {
       expect(
         receptionDeskSectionFromQuery('queue'),
         ReceptionDeskSection.queue,
+      );
+      expect(
+        receptionDeskSectionFromQuery('high-priority'),
+        ReceptionDeskSection.highPriority,
+      );
+      expect(
+        receptionDeskSectionFromQuery('high_priority'),
+        ReceptionDeskSection.highPriority,
+      );
+      expect(
+        receptionDeskSectionFromQuery('priority'),
+        ReceptionDeskSection.highPriority,
       );
       expect(
         receptionDeskSectionFromQuery('active'),

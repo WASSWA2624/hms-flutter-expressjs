@@ -5140,6 +5140,30 @@ abstract class AppLocalizations {
   /// **'Desk queue'**
   String get receptionSectionQueue;
 
+  /// Reception desk section for prioritized visit-queue patients.
+  ///
+  /// In en, this message translates to:
+  /// **'High priority'**
+  String get receptionSectionHighPriority;
+
+  /// Badge label marking a prioritized desk-queue patient.
+  ///
+  /// In en, this message translates to:
+  /// **'High priority'**
+  String get receptionHighPriorityBadgeLabel;
+
+  /// Empty-state title for the Reception High priority tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No high-priority patients'**
+  String get receptionHighPriorityEmptyTitle;
+
+  /// Empty-state body for the Reception High priority tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritized desk-queue patients will appear here.'**
+  String get receptionHighPriorityEmptyBody;
+
   /// Reception desk section for active OPD visits.
   ///
   /// In en, this message translates to:

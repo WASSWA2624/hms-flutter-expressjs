@@ -72,7 +72,8 @@ AccessRequirement receptionDeskSectionRequirement(
 ) {
   return switch (section) {
     ReceptionDeskSection.appointments ||
-    ReceptionDeskSection.queue => receptionSchedulingReadRequirement,
+    ReceptionDeskSection.queue ||
+    ReceptionDeskSection.highPriority => receptionSchedulingReadRequirement,
     ReceptionDeskSection.activeVisits => receptionActiveVisitsRequirement,
     ReceptionDeskSection.paymentGate => receptionPaymentGateRequirement,
   };

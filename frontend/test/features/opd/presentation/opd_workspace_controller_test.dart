@@ -1593,11 +1593,13 @@ void main() {
 
     test('prioritizeQueueEntry preserves the queue workflow status', () async {
       final _MockOpdRepository repository = _MockOpdRepository();
-      const OpdQueueEntry queued = OpdQueueEntry(
+      final OpdQueueEntry queued = OpdQueueEntry(
         id: 'queue-internal',
         publicId: 'QUE000001',
         status: 'IN_PROGRESS',
+        queuedAt: DateTime.utc(2026, 7, 19, 14, 30),
       );
+      final OpdQueueEntry prioritized = queued.copyWith(isPrioritized: true);
       _stubInitialLoad(repository, queueEntries: <OpdQueueEntry>[queued]);
       when(
         () => repository.prioritizeVisitQueue(
@@ -1605,7 +1607,9 @@ void main() {
           any(),
           idempotencyKey: any(named: 'idempotencyKey'),
         ),
-      ).thenAnswer((_) async => const Result<OpdQueueEntry>.success(queued));
+      ).thenAnswer(
+        (_) async => Result<OpdQueueEntry>.success(prioritized),
+      );
 
       final ProviderContainer container = _testContainer(repository);
       addTearDown(container.dispose);
@@ -1616,10 +1620,11 @@ void main() {
           .prioritizeQueueEntry(queued, 'Urgent');
 
       expect(failure, isNull);
-      expect(
-        _workspaceState(container).queueEntries.items.single.status,
-        'IN_PROGRESS',
-      );
+      final OpdQueueEntry updated =
+          _workspaceState(container).queueEntries.items.single;
+      expect(updated.status, 'IN_PROGRESS');
+      expect(updated.isPrioritized, isTrue);
+      expect(updated.queuedAt, DateTime.utc(2026, 7, 19, 14, 30));
       verify(
         () => repository.prioritizeVisitQueue('QUE000001', <String, Object?>{
           'reason': 'Urgent',

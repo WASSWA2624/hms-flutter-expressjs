@@ -222,14 +222,15 @@ String? _firstNonEmpty(Iterable<String?> values) {
   return null;
 }
 
-/// Counts distinct patients represented by Reception's four worklists.
+/// Counts distinct patients represented by Reception worklists.
 ///
 /// Identity aliases are joined across appointment, queue, and flow records so
 /// the same patient is counted once even when some records expose only a
 /// linked appointment or queue identifier.
 ///
-/// Pass [sections] to count only authorized worklists. When omitted, all four
-/// sections are included.
+/// Pass [sections] to count only authorized worklists. When omitted, all
+/// sections are included. High priority is a subset of desk queue and is not
+/// recounted when desk queue is already included.
 int receptionUniquePatientCount(
   OpdWorkspaceState state, {
   DateTime? now,
@@ -260,9 +261,16 @@ int receptionUniquePatientCount(
     }
   }
 
-  if (included.contains(ReceptionDeskSection.queue)) {
+  final bool includeQueue = included.contains(ReceptionDeskSection.queue);
+  final bool includeHighPriority = included.contains(
+    ReceptionDeskSection.highPriority,
+  );
+  if (includeQueue || includeHighPriority) {
     for (final OpdQueueEntry entry in state.queueEntries.items) {
       if (isOpdTerminalStatus(entry.status)) {
+        continue;
+      }
+      if (!includeQueue && includeHighPriority && !entry.isPrioritized) {
         continue;
       }
       identities.add(<String>[
@@ -430,13 +438,20 @@ final class ReceptionWorkspaceQuery {
 }
 
 /// Desk worklist sections for high-volume reception workflows.
-enum ReceptionDeskSection { appointments, queue, activeVisits, paymentGate }
+enum ReceptionDeskSection {
+  appointments,
+  queue,
+  highPriority,
+  activeVisits,
+  paymentGate,
+}
 
 /// Canonical `section` query value written by the Reception workspace URL.
 String receptionDeskSectionToQueryValue(ReceptionDeskSection section) {
   return switch (section) {
     ReceptionDeskSection.appointments => 'appointments',
     ReceptionDeskSection.queue => 'desk-queue',
+    ReceptionDeskSection.highPriority => 'high-priority',
     ReceptionDeskSection.activeVisits => 'active',
     ReceptionDeskSection.paymentGate => 'payment-gate',
   };
@@ -452,6 +467,10 @@ ReceptionDeskSection? receptionDeskSectionFromQuery(String raw) {
     case 'desk_queue':
     case 'desk-queue':
       return ReceptionDeskSection.queue;
+    case 'high-priority':
+    case 'high_priority':
+    case 'priority':
+      return ReceptionDeskSection.highPriority;
     case 'in-progress':
     case 'active':
     case 'visits':

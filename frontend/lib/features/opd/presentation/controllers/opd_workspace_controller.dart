@@ -2152,7 +2152,8 @@ final class OpdWorkspaceController
     final List<OpdQueueEntry> items = page.items
         .where((OpdQueueEntry item) => item.id != entry.id)
         .toList(growable: true);
-    items.insert(0, entry);
+    items.add(entry);
+    items.sort(_compareQueueEntries);
     return AppPage<OpdQueueEntry>(
       items: items.take(page.request.pageSize).toList(growable: false),
       request: page.request,
@@ -2163,6 +2164,24 @@ final class OpdWorkspaceController
                     ? 0
                     : 1),
     );
+  }
+
+  static int _compareQueueEntries(OpdQueueEntry a, OpdQueueEntry b) {
+    if (a.isPrioritized != b.isPrioritized) {
+      return a.isPrioritized ? -1 : 1;
+    }
+    final DateTime? aQueued = a.queuedAt;
+    final DateTime? bQueued = b.queuedAt;
+    if (aQueued == null && bQueued == null) {
+      return 0;
+    }
+    if (aQueued == null) {
+      return 1;
+    }
+    if (bQueued == null) {
+      return -1;
+    }
+    return aQueued.compareTo(bQueued);
   }
 
   AppPage<OpdFlowSummary> _upsertFlow(

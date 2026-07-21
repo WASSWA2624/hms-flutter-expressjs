@@ -116,6 +116,7 @@ final class OpdQueueEntryDto {
       providerUserId: _string(json['provider_user_id']),
       status: _string(json['status']),
       queuedAt: _date(json['queued_at']),
+      isPrioritized: _bool(json['is_prioritized']),
       patientDisplayName:
           _string(json['patient_display_name']) ??
           _patientDisplayName(_nullableMap(json['patient'])),

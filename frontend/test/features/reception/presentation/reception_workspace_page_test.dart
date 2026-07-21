@@ -73,21 +73,33 @@ const OpdAppointment _completedAppointment = OpdAppointment(
   status: 'COMPLETED',
 );
 
-const OpdQueueEntry _queueEntry = OpdQueueEntry(
+final OpdQueueEntry _queueEntry = OpdQueueEntry(
   id: 'queue-1',
   publicId: 'QUE000001',
   patientDisplayName: 'Quinn Queue',
   patientIdentifier: 'PAT-QUE',
   status: 'WAITING',
+  queuedAt: DateTime.utc(2026, 7, 19, 15, 0),
 );
 
-const OpdQueueEntry _progressedQueueEntry = OpdQueueEntry(
+final OpdQueueEntry _priorityQueueEntry = OpdQueueEntry(
+  id: 'queue-priority',
+  publicId: 'QUE000099',
+  patientDisplayName: 'Victor VIP',
+  patientIdentifier: 'PAT-VIP',
+  status: 'WAITING',
+  isPrioritized: true,
+  queuedAt: DateTime.utc(2026, 7, 19, 16, 0),
+);
+
+final OpdQueueEntry _progressedQueueEntry = OpdQueueEntry(
   id: 'queue-2',
   publicId: 'QUE000002',
   patientId: 'patient-progressed',
   patientDisplayName: 'Priya Progressed',
   patientIdentifier: 'PAT-PRIYA',
   status: 'IN_PROGRESS',
+  queuedAt: DateTime.utc(2026, 7, 19, 14, 0),
 );
 
 final DateTime _testNow = DateTime.now();
@@ -296,10 +308,14 @@ void _stubWorkspace(_MockOpdRepository repository) {
   when(() => repository.listVisitQueues(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdQueueEntry>>.success(
       AppPage<OpdQueueEntry>(
-        items: const <OpdQueueEntry>[_queueEntry, _progressedQueueEntry],
+        items: <OpdQueueEntry>[
+          _queueEntry,
+          _progressedQueueEntry,
+          _priorityQueueEntry,
+        ],
         request: (invocation.positionalArguments.single as OpdQueueQuery)
             .pageRequest,
-        totalItemCount: 2,
+        totalItemCount: 3,
       ),
     ),
   );
@@ -712,6 +728,7 @@ void main() {
 
       for (final (String tab, String section) in <(String, String)>[
         ('Desk queue', 'desk-queue'),
+        ('High priority', 'high-priority'),
         ('Active visits', 'active'),
         ('Payment gate', 'payment-gate'),
         ('Appointments', 'appointments'),
@@ -1009,9 +1026,11 @@ void main() {
       expect(find.text('Next action'), findsOneWidget);
       expect(find.text('Lab pending'), findsOneWidget);
       expect(find.text('Collect sample'), findsOneWidget);
+      expect(find.text('Victor VIP'), findsOneWidget);
+      expect(find.text('High priority'), findsWidgets);
       expect(find.text('In Progress'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Collect sample'), findsNothing);
-      expect(find.text('Start consultation'), findsOneWidget);
+      expect(find.text('Start consultation'), findsNWidgets(2));
       expect(
         find.widgetWithText(AppButton, 'Start consultation'),
         findsNothing,
@@ -1055,6 +1074,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Priya Progressed'), findsOneWidget);
       expect(find.text('Quinn Queue'), findsNothing);
+      expect(find.text('Victor VIP'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'high priority tab lists only prioritized queue entries with badges',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/reception?section=high-priority',
+      );
+
+      expect(find.text('Victor VIP'), findsOneWidget);
+      expect(find.text('High priority'), findsWidgets);
+      expect(find.text('Quinn Queue'), findsNothing);
+      expect(find.text('Priya Progressed'), findsNothing);
+
+      await tester.tap(find.text('Victor VIP'));
+      await tester.pumpAndSettle();
+      expect(find.text('QUEUE ACTIONS'), findsOneWidget);
+      expect(find.text('Prioritize'), findsOneWidget);
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
     },
   );
 
@@ -1458,7 +1501,11 @@ void main() {
       find.byType(AppTabStrip),
     );
     for (final AppTabItem tab in tabs.tabs) {
-      expect(tab.count, 1, reason: tab.id);
+      if (tab.id == ReceptionDeskSection.highPriority.name) {
+        expect(tab.count, 0, reason: tab.id);
+      } else {
+        expect(tab.count, 1, reason: tab.id);
+      }
     }
     expect(find.text('Fresh Appointment'), findsOneWidget);
     await tester.tap(find.textContaining('Desk queue').first);

@@ -83,7 +83,7 @@ describe('Visit Queue Service', () => {
         { tenant_id: 'tenant-123' },
         0,
         20,
-        { queued_at: 'desc' }
+        [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
       );
     });
 
@@ -98,7 +98,7 @@ describe('Visit Queue Service', () => {
         { facility_id: 'facility-123' },
         0,
         20,
-        { queued_at: 'desc' }
+        [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
       );
     });
 
@@ -113,7 +113,7 @@ describe('Visit Queue Service', () => {
         { patient_id: 'patient-123' },
         0,
         20,
-        { queued_at: 'desc' }
+        [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
       );
     });
 
@@ -128,7 +128,7 @@ describe('Visit Queue Service', () => {
         { appointment_id: 'appointment-123' },
         0,
         20,
-        { queued_at: 'desc' }
+        [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
       );
     });
 
@@ -143,7 +143,7 @@ describe('Visit Queue Service', () => {
         { provider_user_id: 'user-123' },
         0,
         20,
-        { queued_at: 'desc' }
+        [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
       );
     });
 
@@ -158,7 +158,7 @@ describe('Visit Queue Service', () => {
         { status: 'SCHEDULED' },
         0,
         20,
-        { queued_at: 'desc' }
+        [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
       );
     });
 
@@ -179,7 +179,7 @@ describe('Visit Queue Service', () => {
         }),
         0,
         20,
-        { queued_at: 'desc' }
+        [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
       );
     });
 
@@ -202,7 +202,7 @@ describe('Visit Queue Service', () => {
         },
         0,
         20,
-        { queued_at: 'desc' }
+        [{ is_prioritized: 'desc' }, { queued_at: 'desc' }]
       );
     });
 
@@ -232,7 +232,7 @@ describe('Visit Queue Service', () => {
         {},
         0,
         20,
-        { created_at: 'asc' }
+        [{ is_prioritized: 'desc' }, { created_at: 'asc' }]
       );
     });
   });
@@ -600,7 +600,8 @@ describe('Visit Queue Service', () => {
       };
       const updatedEntry = {
         ...beforeEntry,
-        queued_at: new Date('2026-01-19T11:00:00.000Z')
+        is_prioritized: true,
+        queued_at: beforeEntry.queued_at
       };
       visitQueueRepository.findById.mockResolvedValue(beforeEntry);
       visitQueueRepository.update.mockResolvedValue(updatedEntry);
@@ -616,8 +617,11 @@ describe('Visit Queue Service', () => {
         'queue-internal',
         expect.objectContaining({
           status: 'SCHEDULED',
-          queued_at: expect.any(Date)
+          is_prioritized: true
         })
+      );
+      expect(visitQueueRepository.update.mock.calls[0][1]).not.toHaveProperty(
+        'queued_at'
       );
       expect(publishDomainEvent).toHaveBeenCalledWith(
         expect.objectContaining({

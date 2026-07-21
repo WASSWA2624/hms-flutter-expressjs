@@ -308,6 +308,7 @@ final class OpdQueueEntry {
     this.providerUserId,
     this.status,
     this.queuedAt,
+    this.isPrioritized = false,
     this.patientDisplayName,
     this.patientIdentifier,
     this.patientPhone,
@@ -328,6 +329,7 @@ final class OpdQueueEntry {
   final String? providerUserId;
   final String? status;
   final DateTime? queuedAt;
+  final bool isPrioritized;
   final String? patientDisplayName;
   final String? patientIdentifier;
   final String? patientPhone;
@@ -359,6 +361,7 @@ final class OpdQueueEntry {
     String? providerUserId,
     String? status,
     DateTime? queuedAt,
+    bool? isPrioritized,
     String? patientDisplayName,
     String? patientIdentifier,
     String? patientPhone,
@@ -379,6 +382,7 @@ final class OpdQueueEntry {
       providerUserId: providerUserId ?? this.providerUserId,
       status: status ?? this.status,
       queuedAt: queuedAt ?? this.queuedAt,
+      isPrioritized: isPrioritized ?? this.isPrioritized,
       patientDisplayName: patientDisplayName ?? this.patientDisplayName,
       patientIdentifier: patientIdentifier ?? this.patientIdentifier,
       patientPhone: patientPhone ?? this.patientPhone,

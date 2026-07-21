@@ -3458,6 +3458,22 @@
   "@receptionSectionQueue": {
     "description": "Reception desk section for the visit queue."
   },
+  "receptionSectionHighPriority": "High priority",
+  "@receptionSectionHighPriority": {
+    "description": "Reception desk section for prioritized visit-queue patients."
+  },
+  "receptionHighPriorityBadgeLabel": "High priority",
+  "@receptionHighPriorityBadgeLabel": {
+    "description": "Badge label marking a prioritized desk-queue patient."
+  },
+  "receptionHighPriorityEmptyTitle": "No high-priority patients",
+  "@receptionHighPriorityEmptyTitle": {
+    "description": "Empty-state title for the Reception High priority tab."
+  },
+  "receptionHighPriorityEmptyBody": "Prioritized desk-queue patients will appear here.",
+  "@receptionHighPriorityEmptyBody": {
+    "description": "Empty-state body for the Reception High priority tab."
+  },
   "receptionSectionActiveVisits": "Active visits",
   "@receptionSectionActiveVisits": {
     "description": "Reception desk section for active OPD visits."
