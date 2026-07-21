@@ -371,7 +371,9 @@ class _AssignQueueDoctorDialogState
     final bool isLoadingProviders =
         workspace.isLoading ||
         (workspaceState?.isRefreshingQueueProviders ?? false);
-    final bool isBusy = _isSaving || isLoadingProviders;
+    // Keep the doctor select enabled while options load so users can type to
+    // search immediately; only block input while the mutation is in flight.
+    final bool isSaving = _isSaving;
     final List<OpdProviderOption> providers =
         workspaceState?.queueProviderOptions ?? const <OpdProviderOption>[];
     final List<OpdProviderSchedule> schedules =
@@ -393,7 +395,7 @@ class _AssignQueueDoctorDialogState
       icon: const Icon(AppActionIcons.assignDoctor),
       scrollable: true,
       pinActionsToBottom: true,
-      closeEnabled: !isBusy,
+      closeEnabled: !isSaving,
       maxWidth: 680,
       content: Form(
         key: _formKey,
@@ -404,12 +406,6 @@ class _AssignQueueDoctorDialogState
               AppFormInformationBanner.failure(
                 context: context,
                 failure: displayFailure,
-              ),
-            if (isLoadingProviders)
-              AppLoadingIndicator(
-                size: AppLoadingIndicatorSize.compact,
-                title: l10n.opdLoadingTitle,
-                body: l10n.opdLoadingBody,
               ),
             AppSelectField<String>.searchable(
               value: _providerId,
@@ -426,7 +422,8 @@ class _AssignQueueDoctorDialogState
               semanticLabel: l10n.opdFieldRequiredLabel(
                 l10n.opdSearchProviderLabel,
               ),
-              enabled: !isBusy,
+              enabled: !isSaving,
+              isLoading: isLoadingProviders,
               validator: (String? value) {
                 final String? trimmed = value?.trim();
                 if (trimmed == null || trimmed.isEmpty) {
@@ -446,8 +443,8 @@ class _AssignQueueDoctorDialogState
       actions: clinicalActionDialogActions(
         context,
         actionLabel,
-        isBusy,
-        isBusy ? null : _submit,
+        isSaving,
+        isSaving || isLoadingProviders ? null : _submit,
         submitLeadingIcon: AppActionIcons.assignDoctor,
       ),
     );

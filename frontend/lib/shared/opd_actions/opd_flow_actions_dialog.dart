@@ -1471,7 +1471,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
               ),
               helperText: l10n.opdSearchProviderHelper,
               emptyHelperText: l10n.opdNoProvidersHelper,
-              enabled: !isBusy,
+              enabled: !_isSaving,
               isLoading: _isLoadingProviders,
               onChanged: (String? value) {
                 setState(() {
@@ -1486,7 +1486,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
         context,
         actionLabel,
         _isSaving,
-        isBusy ? null : _submit,
+        _isBusy ? null : _submit,
         submitLeadingIcon: AppActionIcons.assignDoctor,
         enabled: !_isLoadingProviders,
       ),

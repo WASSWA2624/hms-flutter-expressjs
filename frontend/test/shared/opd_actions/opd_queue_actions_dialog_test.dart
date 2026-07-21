@@ -160,6 +160,18 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    final EditableText editable = tester.widget(find.byType(EditableText));
+    expect(editable.readOnly, isFalse);
+
+    await tester.tap(find.byType(EditableText));
+    await tester.enterText(find.byType(EditableText), 'dr');
+    await tester.pump();
+    expect(find.byType(EditableText), findsOneWidget);
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+      'dr',
+    );
   });
 
   testWidgets('shows Assign doctor when no provider is assigned', (

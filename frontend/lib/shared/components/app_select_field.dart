@@ -179,6 +179,11 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   void _attachFocusNode() {
     _ownsFocusNode = widget.focusNode == null;
     _focusNode = widget.focusNode ?? FocusNode();
+    // Searchable selects must remain focusable so the inner TextField accepts
+    // typing. DropdownMenu ignores [requestFocusOnTap] when a focusNode is set.
+    if (widget.searchable) {
+      _focusNode.canRequestFocus = true;
+    }
     _focusNode.addListener(_handleFocusChanged);
   }
 
@@ -266,6 +271,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           ),
           enableFilter: useNativeFilter,
           enableSearch: useNativeSearch,
+          keyboardType: widget.searchable ? TextInputType.text : null,
           expandedInsets: EdgeInsets.zero,
           filterCallback: useNativeFilter
               ? (List<DropdownMenuEntry<T>> entries, String filter) =>
