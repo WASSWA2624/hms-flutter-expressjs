@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -66,36 +68,12 @@ class AppTabStrip extends StatelessWidget {
       colorScheme.surface,
     );
 
-    // Horizontal scroll when tabs overflow the available width (mobile and
-    // dense desktop layouts). Intrinsic row width keeps chips from compressing.
-    final Widget tabRow = ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(
-        scrollbars: true,
-        dragDevices: <PointerDeviceKind>{
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.trackpad,
-          PointerDeviceKind.stylus,
-        },
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            for (int index = 0; index < tabs.length; index += 1)
-              _AppTabChip(
-                label: tabs[index].label,
-                count: tabs[index].count,
-                countTone: tabs[index].countTone,
-                isSelected: selectedId == tabs[index].id,
-                isFirst: index == 0,
-                activeFill: activeFill,
-                onTap: () => onTabTapped(tabs[index].id),
-              ),
-          ],
-        ),
-      ),
+    final Widget tabRow = _AppTabScrollRow(
+      tabs: tabs,
+      selectedId: selectedId,
+      onTabTapped: onTabTapped,
+      activeFill: activeFill,
+      surfaceColor: colorScheme.surface,
     );
 
     if (!_hasToolbar) {
@@ -142,6 +120,232 @@ class AppTabStrip extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Horizontally scrollable tab chips with edge fades and chevrons when more
+/// tabs are off-screen to the left, right, or both.
+class _AppTabScrollRow extends StatefulWidget {
+  const _AppTabScrollRow({
+    required this.tabs,
+    required this.selectedId,
+    required this.onTabTapped,
+    required this.activeFill,
+    required this.surfaceColor,
+  });
+
+  final List<AppTabItem> tabs;
+  final String? selectedId;
+  final ValueChanged<String> onTabTapped;
+  final Color activeFill;
+  final Color surfaceColor;
+
+  @override
+  State<_AppTabScrollRow> createState() => _AppTabScrollRowState();
+}
+
+class _AppTabScrollRowState extends State<_AppTabScrollRow> {
+  static const double _edgeFadeWidth = 28;
+  static const double _nudgeDistance = 120;
+
+  final ScrollController _controller = ScrollController();
+  bool _canScrollLeft = false;
+  bool _canScrollRight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_updateOverflow);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateOverflow());
+  }
+
+  @override
+  void didUpdateWidget(covariant _AppTabScrollRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tabs.length != widget.tabs.length ||
+        oldWidget.selectedId != widget.selectedId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _updateOverflow());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_updateOverflow)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _updateOverflow() {
+    if (!mounted || !_controller.hasClients) {
+      return;
+    }
+    final ScrollPosition position = _controller.position;
+    final bool canScrollLeft = position.pixels > 0.5;
+    final bool canScrollRight =
+        position.pixels < position.maxScrollExtent - 0.5;
+    if (canScrollLeft != _canScrollLeft || canScrollRight != _canScrollRight) {
+      setState(() {
+        _canScrollLeft = canScrollLeft;
+        _canScrollRight = canScrollRight;
+      });
+    }
+  }
+
+  Future<void> _nudge(double delta) async {
+    if (!_controller.hasClients) {
+      return;
+    }
+    final double target = (_controller.offset + delta).clamp(
+      0.0,
+      _controller.position.maxScrollExtent,
+    );
+    await _controller.animateTo(
+      target,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (ScrollMetricsNotification notification) {
+        _updateOverflow();
+        return false;
+      },
+      child: Stack(
+        children: <Widget>[
+          ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              scrollbars: false,
+              dragDevices: <PointerDeviceKind>{
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.trackpad,
+                PointerDeviceKind.stylus,
+              },
+            ),
+            child: SingleChildScrollView(
+              controller: _controller,
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  for (int index = 0; index < widget.tabs.length; index += 1)
+                    _AppTabChip(
+                      label: widget.tabs[index].label,
+                      count: widget.tabs[index].count,
+                      countTone: widget.tabs[index].countTone,
+                      isSelected: widget.selectedId == widget.tabs[index].id,
+                      isFirst: index == 0,
+                      activeFill: widget.activeFill,
+                      onTap: () => widget.onTabTapped(widget.tabs[index].id),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (_canScrollLeft)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: _TabOverflowCue(
+                alignment: Alignment.centerLeft,
+                surfaceColor: widget.surfaceColor,
+                icon: Icons.chevron_left,
+                semanticLabel: 'Scroll tabs left',
+                onPressed: () => unawaited(_nudge(-_nudgeDistance)),
+                fadeWidth: _edgeFadeWidth,
+                iconColor: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          if (_canScrollRight)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: _TabOverflowCue(
+                alignment: Alignment.centerRight,
+                surfaceColor: widget.surfaceColor,
+                icon: Icons.chevron_right,
+                semanticLabel: 'Scroll tabs right',
+                onPressed: () => unawaited(_nudge(_nudgeDistance)),
+                fadeWidth: _edgeFadeWidth,
+                iconColor: colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabOverflowCue extends StatelessWidget {
+  const _TabOverflowCue({
+    required this.alignment,
+    required this.surfaceColor,
+    required this.icon,
+    required this.semanticLabel,
+    required this.onPressed,
+    required this.fadeWidth,
+    required this.iconColor,
+  });
+
+  final Alignment alignment;
+  final Color surfaceColor;
+  final IconData icon;
+  final String semanticLabel;
+  final VoidCallback onPressed;
+  final double fadeWidth;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool fromLeft = alignment == Alignment.centerLeft;
+    return IgnorePointer(
+      ignoring: false,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: fromLeft ? Alignment.centerLeft : Alignment.centerRight,
+            end: fromLeft ? Alignment.centerRight : Alignment.centerLeft,
+            colors: <Color>[
+              surfaceColor,
+              surfaceColor.withValues(alpha: 0.92),
+              surfaceColor.withValues(alpha: 0),
+            ],
+            stops: const <double>[0, 0.45, 1],
+          ),
+        ),
+        child: SizedBox(
+          width: fadeWidth + 8,
+          child: Align(
+            alignment: alignment,
+            child: IconButton(
+              key: ValueKey<String>(
+                fromLeft ? 'tabOverflowCueLeft' : 'tabOverflowCueRight',
+              ),
+              onPressed: onPressed,
+              tooltip: semanticLabel,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+              icon: Icon(icon, size: 22, color: iconColor),
+              style: IconButton.styleFrom(
+                foregroundColor: iconColor,
+                backgroundColor: surfaceColor.withValues(alpha: 0.72),
+                shape: const CircleBorder(),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
