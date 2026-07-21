@@ -814,6 +814,182 @@ visit_queue: {
     expect(tx.admission.findFirst).toHaveBeenCalled();
   });
 
+  it('rejects Payment due start when consultation fee cannot produce an invoice', async () => {
+    const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      patient: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'pat-1' })
+      },
+      invoice: {
+        create: jest.fn(),
+        findFirst: jest.fn(),
+        update: jest.fn()
+      },
+      payment: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      emergency_case: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      triage_assessment: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      visit_queue: {
+        create: jest.fn().mockResolvedValue({ id: 'vq-1' }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      encounter: {
+        create: jest.fn().mockResolvedValue({
+          id: 'enc-1',
+          tenant_id: 'TENANT-1',
+          facility_id: null,
+          patient_id: 'pat-1',
+          human_friendly_id: 'ENC000001'
+        }),
+        findFirst: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn()
+      }
+    };
+    opdFlowRepository.findOpenActiveEncounterForPatient.mockResolvedValue(null);
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.startOpdFlow(
+        {
+          tenant_id: 'tenant-1',
+          patient_id: 'PAT0000003',
+          consultation_fee: '0',
+          require_consultation_payment: false,
+          create_consultation_invoice: false,
+          initial_stage: 'WAITING_CONSULTATION_PAYMENT'
+        },
+        { tenant_id: 'tenant-1', user_id: 'usr-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.consultation_invoice_required'
+    });
+  });
+
+  it('cancels reversible unpaid consultation invoice when the encounter is cancelled', async () => {
+    const initialEncounter = {
+      id: 'enc-1',
+      human_friendly_id: 'ENC000001',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      patient_id: 'patient-1',
+      status: 'OPEN',
+      encounter_type: 'OPD',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_CONSULTATION_PAYMENT',
+          visit_queue_id: 'queue-1',
+          consultation: {
+            invoice_id: 'inv-1',
+            require_payment: true,
+            payment_status: 'PENDING'
+          },
+          timeline: []
+        }
+      }
+    };
+    const finalizedEncounter = {
+      ...initialEncounter,
+      status: 'CANCELLED',
+      tenant: null,
+      facility: null,
+      patient: null,
+      provider: null,
+      vital_signs: [],
+      clinical_notes: [],
+      diagnoses: [],
+      procedures: [],
+      care_plans: [],
+      alerts: [],
+      admissions: []
+    };
+    const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      encounter: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce(initialEncounter)
+          .mockResolvedValueOnce(finalizedEncounter),
+        update: jest.fn().mockResolvedValue(finalizedEncounter)
+      },
+      visit_queue: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'queue-1',
+          human_friendly_id: 'QUE000001',
+          status: 'CANCELLED'
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'queue-1' })
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      invoice: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          status: 'SENT',
+          billing_status: 'ISSUED',
+          payments: []
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          status: 'CANCELLED',
+          billing_status: 'CANCELLED'
+        })
+      },
+      invoice_item: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 })
+      },
+      payment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 })
+      },
+      billable_charge_event: {
+        findMany: jest.fn().mockResolvedValue([]),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 })
+      },
+      emergency_case: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      triage_assessment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      }
+    };
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await opdFlowService.cancelEncounter(
+      'ENC000001',
+      { reason_code: 'ENTERED_IN_ERROR' },
+      { tenant_id: 'tenant-1', user_id: 'usr-1' }
+    );
+
+    expect(tx.invoice.update).toHaveBeenCalledWith({
+      where: { id: 'inv-1' },
+      data: { status: 'CANCELLED', billing_status: 'CANCELLED' }
+    });
+  });
+
   it('rejects a stale supersede request when the active encounter changed', async () => {
     const tx = {
       tenant: {

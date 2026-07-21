@@ -112,7 +112,15 @@ bool isReceptionOutstandingOpdInvoice(BillingWorkItem item) {
       null) {
     return false;
   }
-  return _billingSources(item).any(receptionOpdBillingSources.contains);
+  if (_billingSources(item).any(receptionOpdBillingSources.contains)) {
+    return true;
+  }
+  // Mismatch recovery: consultation invoices may briefly lack source_module
+  // after OPD start while still belonging on the Payment gate.
+  return item.items.any((BillingInvoiceItem line) {
+    final String description = (line.description ?? '').trim().toUpperCase();
+    return description.contains('CONSULT');
+  });
 }
 
 List<ReceptionPaymentGateEntry> aggregateReceptionPaymentGateEntries(
@@ -151,7 +159,16 @@ List<ReceptionPaymentGateEntry> aggregateReceptionPaymentGateEntries(
     final Set<String> services = <String>{};
     final Map<String, num> totals = <String, num>{};
     for (final BillingWorkItem invoice in invoices) {
-      services.addAll(_billingSources(invoice));
+      final Set<String> invoiceSources = _billingSources(invoice);
+      if (invoiceSources.isEmpty &&
+          invoice.items.any(
+            (BillingInvoiceItem line) =>
+                (line.description ?? '').toUpperCase().contains('CONSULT'),
+          )) {
+        services.add('CONSULTATION');
+      } else {
+        services.addAll(invoiceSources);
+      }
       final String currency = (invoice.currency ?? '').trim().toUpperCase();
       totals.update(
         currency,

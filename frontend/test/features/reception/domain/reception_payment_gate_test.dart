@@ -113,6 +113,44 @@ void main() {
       expect(entries, isEmpty);
     });
 
+    test('recovers encounter-linked consultation invoices without source_module', () {
+      final BillingWorkItem orphanConsultation = BillingWorkItem(
+        id: 'consult-orphan',
+        displayId: 'INV-ORPHAN',
+        kind: BillingWorkItemKind.invoice,
+        patientId: 'patient-1',
+        patientDisplayId: 'PAT-001',
+        patientDisplayName: 'Penny Patient',
+        encounterId: 'encounter-1',
+        encounterDisplayId: 'ENC-001',
+        status: 'SENT',
+        billingStatus: 'ISSUED',
+        currency: 'UGX',
+        items: const <BillingInvoiceItem>[
+          BillingInvoiceItem(
+            id: 'line-consult',
+            description: 'Consultation fee',
+            totalPrice: 25000,
+          ),
+        ],
+        financials: const BillingFinancials(
+          invoiceTotal: 25000,
+          effectiveTotal: 25000,
+          netPaidTotal: 0,
+          balanceDue: 25000,
+        ),
+      );
+
+      expect(isReceptionOutstandingOpdInvoice(orphanConsultation), isTrue);
+      final List<ReceptionPaymentGateEntry> entries =
+          aggregateReceptionPaymentGateEntries(<BillingWorkItem>[
+            orphanConsultation,
+          ]);
+      expect(entries, hasLength(1));
+      expect(entries.single.services, <String>{'CONSULTATION'});
+      expect(entries.single.outstandingByCurrency, <String, num>{'UGX': 25000});
+    });
+
     test('recognizes all supported OPD service sources', () {
       for (final String source in receptionOpdBillingSources) {
         expect(

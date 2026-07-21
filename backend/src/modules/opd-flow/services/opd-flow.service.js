@@ -28,6 +28,7 @@ const { recalculateInvoiceStateTx, computeInvoiceFinancials } = require('@lib/bi
 const {
   buildConsultationBillingPayload,
   persistConsultationBilling,
+  cancelInvoiceIfReversible,
 } = require('@lib/billing/clinical-request-billing');
 
 const STAGES = {
@@ -950,6 +951,93 @@ const resolveConsultationPaymentStatus = ({ consultation = {}, invoice = null, p
     invoice?.status ||
     (consultation.is_paid ? 'COMPLETED' : consultation.require_payment ? 'PENDING' : 'NOT_REQUIRED')
   );
+};
+
+/**
+ * Payment-due visits must always own an unpaid consultation invoice so Billing
+ * Awaiting payment / All work items and Reception Payment gate stay aligned.
+ * Creates or retains the invoice; throws when fee/billing cannot produce one.
+ */
+const ensureUnpaidConsultationInvoiceForPaymentDue = async (
+  tx,
+  {
+    encounter,
+    flow,
+    catalogItemId = null,
+    context = {},
+    issuedAt = new Date(),
+    paymentMode = null,
+    coveragePlanId = null,
+    insuranceCompanyId = null,
+    payNow = null
+  } = {}
+) => {
+  const consultation = { ...(flow.consultation || {}) };
+  const isPaid =
+    consultation.is_paid === true ||
+    PAID_PAYMENT_STATUSES.has(normalizeUpper(consultation.payment_status));
+  if (isPaid) {
+    flow.consultation = consultation;
+    return consultation;
+  }
+  if (consultation.invoice_id) {
+    flow.consultation = consultation;
+    return consultation;
+  }
+
+  const currency = normalizeCurrencyCode(consultation.currency, 'USD');
+  const fee =
+    resolveConsultationFeeAmount(consultation) ||
+    normalizeDecimalString(consultation.consultation_fee, '0.00');
+  const billingPayload = buildConsultationBillingPayload({
+    consultationFee: fee,
+    currency,
+    paymentStatus: 'PENDING',
+    catalogItemId,
+    payNow,
+    ...(paymentMode === 'INSURANCE' ? { paymentMode } : {})
+  });
+  if (!billingPayload) {
+    throw new HttpError('errors.opd_flow.consultation_invoice_required', 400, [
+      { field: 'consultation_fee' }
+    ]);
+  }
+
+  const snapshot = await persistConsultationBilling(tx, {
+    encounterId: encounter.id,
+    billing: billingPayload,
+    tenantId: encounter.tenant_id,
+    facilityId: encounter.facility_id ?? null,
+    patientId: encounter.patient_id,
+    encounterDisplayId: encounter.human_friendly_id || null,
+    catalogItemId,
+    actorUserId: context.user_id || null,
+    currency,
+    issuedAt,
+    description: 'Consultation fee',
+    ...(paymentMode === 'INSURANCE'
+      ? {
+          paymentMode,
+          coveragePlanId: coveragePlanId || null,
+          insuranceCompanyId: insuranceCompanyId || null
+        }
+      : {})
+  });
+  if (!snapshot?.invoice_id) {
+    throw new HttpError('errors.opd_flow.consultation_invoice_required', 500, [
+      { field: 'invoice_id' }
+    ]);
+  }
+
+  consultation.invoice_id = snapshot.invoice_id;
+  consultation.billing = snapshot;
+  consultation.payment_status = snapshot.payment_status || 'PENDING';
+  consultation.require_payment = true;
+  consultation.consultation_fee =
+    consultation.consultation_fee || fee || snapshot.total_amount || null;
+  consultation.currency = currency;
+  flow.consultation = consultation;
+  return consultation;
 };
 
 /**
@@ -3116,7 +3204,7 @@ const startOpdFlow = async (data, context = {}) => {
 
       const needsBillingForPaymentStage =
         shouldCreateConsultationInvoice ||
-        (flowState.stage === STAGES.WAITING_CONSULTATION_PAYMENT && requireConsultationPayment);
+        flowState.stage === STAGES.WAITING_CONSULTATION_PAYMENT;
 
       if (needsBillingForPaymentStage) {
         const consultationPaymentMode =
@@ -3254,6 +3342,50 @@ const startOpdFlow = async (data, context = {}) => {
           if (!encounter) {
             throw new HttpError('errors.opd_flow.not_found', 404);
           }
+        }
+      }
+
+      if (
+        flowState.stage === STAGES.WAITING_CONSULTATION_PAYMENT &&
+        !flowState.consultation?.is_paid
+      ) {
+        const consultationPaymentMode =
+          data.coverage_plan_id ||
+          data.insurance_company_id ||
+          normalizeUpper(data.pay_now?.method) === 'INSURANCE'
+            ? 'INSURANCE'
+            : 'SELF_PAY';
+        await ensureUnpaidConsultationInvoiceForPaymentDue(tx, {
+          encounter,
+          flow: flowState,
+          catalogItemId: consultationCatalogItemId,
+          context,
+          issuedAt: startedAt,
+          paymentMode: consultationPaymentMode,
+          coveragePlanId: data.coverage_plan_id || null,
+          insuranceCompanyId: data.insurance_company_id || null,
+          payNow: data.pay_now || null
+        });
+        await tx.encounter.updateMany({
+          where: { id: encounter.id },
+          data: {
+            extension_json: {
+              ...(encounter.extension_json || {}),
+              opd_flow: flowState
+            }
+          }
+        });
+        encounter = await tx.encounter.findFirst({
+          where: { id: encounter.id },
+          include: {
+            tenant: true,
+            facility: true,
+            patient: true,
+            provider: PROVIDER_INCLUDE
+          }
+        });
+        if (!encounter) {
+          throw new HttpError('errors.opd_flow.not_found', 404);
         }
       }
 
@@ -3566,34 +3698,13 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
         !consultation.invoice_id &&
         !consultation.is_paid
       ) {
-        const emergencyBillingPayload = buildConsultationBillingPayload({
-          consultationFee: consultation.consultation_fee || '0.00',
-          currency,
-          paymentStatus: 'PENDING',
+        await ensureUnpaidConsultationInvoiceForPaymentDue(tx, {
+          encounter,
+          flow,
           catalogItemId: consultationCatalogItemId,
-          payNow: null
+          context,
+          issuedAt: now
         });
-        if (emergencyBillingPayload) {
-          const snapshot = await persistConsultationBilling(tx, {
-            encounterId: encounter.id,
-            billing: emergencyBillingPayload,
-            tenantId: encounter.tenant_id,
-            facilityId,
-            patientId: encounter.patient_id,
-            encounterDisplayId: encounter.human_friendly_id || null,
-            catalogItemId: consultationCatalogItemId,
-            actorUserId: context.user_id || null,
-            currency,
-            issuedAt: now,
-            description: 'Consultation fee'
-          });
-          if (snapshot?.invoice_id) {
-            consultation.invoice_id = snapshot.invoice_id;
-            consultation.billing = snapshot;
-            consultation.payment_status = snapshot.payment_status || 'PENDING';
-            flow.consultation = consultation;
-          }
-        }
       }
 
       if (flow.visit_queue_id) {
@@ -4800,6 +4911,11 @@ const finalizeEncounterClosure = async (tx, encounter, flow, closedAt, encounter
     });
   }
 
+  const consultationInvoiceId = flow.consultation?.invoice_id || null;
+  if (consultationInvoiceId) {
+    await cancelInvoiceIfReversible(tx, consultationInvoiceId);
+  }
+
   return tx.encounter.update({
     where: { id: encounter.id },
     data: {
@@ -5008,6 +5124,19 @@ const correctStage = async (id, data, context = {}) => {
         },
         correctedAt
       );
+
+      if (stageTo === STAGES.WAITING_CONSULTATION_PAYMENT) {
+        const consultation = flow.consultation || {};
+        consultation.require_payment = true;
+        flow.consultation = consultation;
+        await ensureUnpaidConsultationInvoiceForPaymentDue(tx, {
+          encounter,
+          flow,
+          catalogItemId: encounter.provider?.staff_profile?.id || encounter.facility_id || null,
+          context,
+          issuedAt: correctedAt
+        });
+      }
 
       const updatedEncounter = await tx.encounter.update({
         where: { id: encounter.id },
