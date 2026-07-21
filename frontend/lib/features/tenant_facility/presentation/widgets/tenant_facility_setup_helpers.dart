@@ -131,6 +131,49 @@ IconData tenantFacilitySetupDeskSectionIcon(
   };
 }
 
+/// Add/Create label for the setup desk tab primary action, or null when none.
+String? tenantFacilitySetupDeskCreateLabel(
+  AppLocalizations l10n,
+  TenantFacilitySetupDeskSection section,
+) {
+  return switch (section) {
+    TenantFacilitySetupDeskSection.tenants =>
+      l10n.tenantFacilityAddTenantAction,
+    TenantFacilitySetupDeskSection.branches =>
+      l10n.tenantFacilityAddBranchAction,
+    TenantFacilitySetupDeskSection.facility =>
+      l10n.tenantFacilityAddFacilityAction,
+    TenantFacilitySetupDeskSection.departments =>
+      l10n.tenantFacilityAddDepartmentAction,
+    TenantFacilitySetupDeskSection.units => l10n.tenantFacilityAddUnitAction,
+    TenantFacilitySetupDeskSection.wards => l10n.tenantFacilityAddWardAction,
+    TenantFacilitySetupDeskSection.rooms => l10n.tenantFacilityAddRoomAction,
+    TenantFacilitySetupDeskSection.beds => l10n.tenantFacilityAddBedAction,
+    TenantFacilitySetupDeskSection.roles => l10n.accessAdminCreateRoleAction,
+    TenantFacilitySetupDeskSection.permissions => null,
+    TenantFacilitySetupDeskSection.users => l10n.accessAdminCreateUserAction,
+  };
+}
+
+/// Leading icon for the setup desk tab Add/Create primary action.
+IconData? tenantFacilitySetupDeskCreateIcon(
+  TenantFacilitySetupDeskSection section,
+) {
+  return switch (section) {
+    TenantFacilitySetupDeskSection.tenants => Icons.add_business_outlined,
+    TenantFacilitySetupDeskSection.branches => Icons.add,
+    TenantFacilitySetupDeskSection.facility => Icons.add_business_outlined,
+    TenantFacilitySetupDeskSection.departments ||
+    TenantFacilitySetupDeskSection.units ||
+    TenantFacilitySetupDeskSection.wards ||
+    TenantFacilitySetupDeskSection.rooms ||
+    TenantFacilitySetupDeskSection.beds => Icons.add,
+    TenantFacilitySetupDeskSection.roles => Icons.badge_outlined,
+    TenantFacilitySetupDeskSection.permissions => null,
+    TenantFacilitySetupDeskSection.users => Icons.person_add_alt_1_outlined,
+  };
+}
+
 /// Builds a short, OS-safe facility logo basename (≤ 32 chars incl. extension).
 ///
 /// Example: `logo-4869585d.png`

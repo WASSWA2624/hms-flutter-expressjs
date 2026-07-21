@@ -464,4 +464,49 @@ void main() {
       );
     });
   });
+
+  group('tenantFacilitySetupDeskCreateLabel', () {
+    test('returns add labels for creatable tabs and null for permissions', () {
+      final AppLocalizations l10n = AppLocalizationsEn();
+
+      expect(
+        tenantFacilitySetupDeskCreateLabel(
+          l10n,
+          TenantFacilitySetupDeskSection.tenants,
+        ),
+        l10n.tenantFacilityAddTenantAction,
+      );
+      expect(
+        tenantFacilitySetupDeskCreateLabel(
+          l10n,
+          TenantFacilitySetupDeskSection.roles,
+        ),
+        l10n.accessAdminCreateRoleAction,
+      );
+      expect(
+        tenantFacilitySetupDeskCreateLabel(
+          l10n,
+          TenantFacilitySetupDeskSection.permissions,
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('tenantFacilitySetupDeskCreateIcon', () {
+    test('returns icons for creatable tabs and null for permissions', () {
+      expect(
+        tenantFacilitySetupDeskCreateIcon(
+          TenantFacilitySetupDeskSection.users,
+        ),
+        Icons.person_add_alt_1_outlined,
+      );
+      expect(
+        tenantFacilitySetupDeskCreateIcon(
+          TenantFacilitySetupDeskSection.permissions,
+        ),
+        isNull,
+      );
+    });
+  });
 }

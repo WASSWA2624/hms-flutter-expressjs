@@ -285,11 +285,15 @@ abstract class _ScopedAccessAdminListDialogState<
 class ManageUsersPanel extends ConsumerStatefulWidget {
   const ManageUsersPanel({
     this.dialogMode = false,
+    this.showCreateAction = true,
+    this.reloadListenable,
     this.onMutated,
     super.key,
   });
 
   final bool dialogMode;
+  final bool showCreateAction;
+  final Listenable? reloadListenable;
   final ValueChanged<bool>? onMutated;
 
   @override
@@ -313,6 +317,22 @@ class _ManageUsersPanelState
   static const String _facilityFilterKey = 'facility';
   static const String _roleFilterKey = 'role';
   static const String _statusFilterKey = 'status';
+
+  @override
+  void initState() {
+    super.initState();
+    widget.reloadListenable?.addListener(_onExternalReload);
+  }
+
+  @override
+  void dispose() {
+    widget.reloadListenable?.removeListener(_onExternalReload);
+    super.dispose();
+  }
+
+  void _onExternalReload() {
+    unawaited(reload(resetPage: false, silent: true));
+  }
 
   bool get _canPickTenant {
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
@@ -798,6 +818,7 @@ class _ManageUsersPanelState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         AppButton.tertiary(
+                          iconOnly: true,
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.tenantFacilityEditAction,
                           semanticLabel: l10n.tenantFacilityEditAction,
@@ -808,6 +829,7 @@ class _ManageUsersPanelState
                               : null,
                         ),
                         AppButton.tertiary(
+                          iconOnly: true,
                           leadingIcon: Icons.delete_outline,
                           label: l10n.tenantFacilityDeleteAction,
                           semanticLabel: l10n.tenantFacilityDeleteAction,
@@ -855,12 +877,12 @@ class _ManageUsersPanelState
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (canWrite)
+          if (widget.showCreateAction && canWrite)
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: createAction,
             ),
-          if (canWrite) const SizedBox(height: 12),
+          if (widget.showCreateAction && canWrite) const SizedBox(height: 12),
           Expanded(child: table),
         ],
       );
@@ -888,12 +910,16 @@ class _ManageUsersPanelState
 class ManageRolesPermissionsPanel extends ConsumerStatefulWidget {
   const ManageRolesPermissionsPanel({
     this.dialogMode = false,
+    this.showCreateAction = true,
+    this.reloadListenable,
     this.panel = AccessAdminPanel.roles,
     this.onMutated,
     super.key,
   });
 
   final bool dialogMode;
+  final bool showCreateAction;
+  final Listenable? reloadListenable;
   final AccessAdminPanel panel;
   final ValueChanged<bool>? onMutated;
 
@@ -914,6 +940,22 @@ class _ManageRolesPermissionsPanelState
 
   static const String _tenantFilterKey = 'tenant';
   static const String _facilityFilterKey = 'facility';
+
+  @override
+  void initState() {
+    super.initState();
+    widget.reloadListenable?.addListener(_onExternalReload);
+  }
+
+  @override
+  void dispose() {
+    widget.reloadListenable?.removeListener(_onExternalReload);
+    super.dispose();
+  }
+
+  void _onExternalReload() {
+    unawaited(reload(resetPage: false, silent: true));
+  }
 
   bool get _canPickTenant {
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
@@ -1242,6 +1284,7 @@ class _ManageRolesPermissionsPanelState
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         AppButton.tertiary(
+                          iconOnly: true,
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.tenantFacilityEditAction,
                           semanticLabel: l10n.tenantFacilityEditAction,
@@ -1253,6 +1296,7 @@ class _ManageRolesPermissionsPanelState
                         ),
                         if (!role.isSystemCritical)
                           AppButton.tertiary(
+                            iconOnly: true,
                             leadingIcon: Icons.delete_outline,
                             label: l10n.tenantFacilityDeleteAction,
                             semanticLabel: l10n.tenantFacilityDeleteAction,
@@ -1294,12 +1338,13 @@ class _ManageRolesPermissionsPanelState
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (createAction != null)
+          if (widget.showCreateAction && createAction != null)
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: createAction,
             ),
-          if (createAction != null) const SizedBox(height: 12),
+          if (widget.showCreateAction && createAction != null)
+            const SizedBox(height: 12),
           Expanded(child: table),
         ],
       );
