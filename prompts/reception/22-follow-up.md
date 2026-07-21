@@ -1,1 +1,42 @@
-Did review and And the updates the Follow up button in the reception. So what I this is the behavior I want for the follow up action So when an encounter, when an encounter is completed, for example, when a patient has been completed and maybe he has received all the necessary all the necessary things that he needs, all the medications, all the tests, and everything, and his encounter is completed. For example, it could be an IPD, an OPD, or a theater encounter. So The follow-up, the follow-up dialogue should open automatically if the patient needs a follow-up actually, so, so that the respective service providers can, can remark that this patient actually needs a follow-up. And now this follow-up Is recorded in the database so during the follow-up can be set by either setting the date, the date of the follow-up, the time of the follow-up, and of course, then the contact is known because this patient is already recorded, but if it's not known, then that needs to be that needs to be recorded. So which means on every tab, on every tab every, on the reception and the, on the reception and all the other departments outpatient, emergency, inpatient, okay, wherever the patient came from. If the patient was in IPD, maybe IPD needs to follow up, or maybe a reception needs to follow up, but reception should follow up on every patient that came to the facility. So Now there should be a tab, a tab for patient follow-up. So when you open, when you see that, that tab you'll know, you'll see the patient, their ID, the patient ID as for all the other tables then there should be the contact, the contact number, the date when the patient needs to be followed up, and then the follow-up should also include the time when this patient will be called back. So I think maybe that table doesn't exist in the database, but we should implement it so that we have good follow-up for this patient. also someone can set up the follow-up For any, for any at any stage that is applicable for a follow-up to be set up because maybe there is a reason why this patient needs to be followed up, or maybe they came and they didn't, they didn't receive medicine, or maybe they need to be called and reminded about certain medication. So this, this, this should be possible, should be possible. Which means a receptionist should be asked a follow-up tab with the patients that need a follow-up, and then also prioritize them according to their follow-up dates, over-dates of the call. Maybe you need to call them and find out about the service, are they doing well? So not every patient needs to be followed up. So this will be set at either discharge or at the disposition of an encounter so that and try to make it comprehensive but also easy, so that everyone can click on that table. Follow-up patients when he selects any of those patients then he will see that, yeah, the details that he needs maybe to make a call and he can mark maybe that the follow-up was successful or he can schedule another follow-up if, for example, the follow-up is continuous, yeah, he can schedule another follow-up so that the patient remains in the system and they can see that, yeah, this patient actually needs a follow-up. So that's what we want to implement and I wanted to give this in reception, outpatient emergency, inpatient ICU. Financing, I think financing might don't see that, but department-wise doctors can also see follow-up patients, can also see at least lab may not need follow-up, but maybe lab may need follow-up with some results or no, lab may not need follow-up so that follow-up may be set up by someone else and so on and so forth. So let's just incorporate that follow-up functionality and ability within our app.
+# Add Reception Follow-up Worklist and Callback Outcomes
+
+Add a Reception call worklist; support schedule, complete, and reschedule. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Flow Actions **Follow up** and `POST /follow-ups` exist, but Reception lacks a call worklist. Follow-ups are optional at disposition or any applicable stage.
+
+**Follow-up:** encounter-linked `SCHEDULED` callback (`scheduled_at`, optional notes).
+**Complete:** mark successful (`COMPLETED`).
+**Reschedule:** create another `SCHEDULED` follow-up when the callback continues.
+
+## Requirements
+
+1. Add Reception **Follow-ups** tab of authorized `SCHEDULED` rows: patient id, contact, date, time; sort by `scheduled_at` ascending.
+2. Keep authorized **Follow up** on Flow Actions for non-terminal visits; after disposition/discharge success, open dialog when authorized (skippable).
+3. On save, reuse patient contact; if missing, require capture before persist.
+4. Row open shows call details with **Mark completed** and **Schedule another**; sync after mutations.
+5. Preserve loading, empty, error, busy, success, validation, permission states; omit unauthorized UI.
+6. Reuse list/dialog on OPD, Emergency, Inpatient, ICU when already exposed; omit Billing and Lab.
+
+## Constraints
+
+- Reuse follow-up API, `ClinicalFollowUpActionDialog`, auth, localization, design-system; extend contracts only for list contact.
+- Do not invent clinical stages or force follow-up on every encounter.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1: Sorted scheduled rows show id, contact, date, time.
+- R2: Manual schedule remains; post-disposition opens skippable dialog when authorized.
+- R3: Missing contact required on save.
+- R4: Complete and reschedule refresh the worklist.
+- R5–R6: States clear; unauthorized UI absent; clinical reuse excludes Billing/Lab.
+- Update follow-up, reception, disposition tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/`
+- `frontend/lib/features/reception/`
+- `backend/src/modules/follow-up/`
+- `frontend/test/features/reception/`
