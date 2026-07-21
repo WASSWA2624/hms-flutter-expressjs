@@ -1022,14 +1022,73 @@ const resolveConsultationFeeAmount = (consultation = {}, invoice = null) => {
   );
 };
 
+/**
+ * Prefer live invoice/payment state over a stale consultation snapshot so Desk
+ * queue Payment-due does not outlive Billing PAID invoices.
+ */
 const resolveConsultationPaymentStatus = ({ consultation = {}, invoice = null, payment = null } = {}) => {
+  if (payment && PAID_PAYMENT_STATUSES.has(normalizeUpper(payment.status))) {
+    return 'PAID';
+  }
+
+  const invoiceBillingStatus = normalizeUpper(invoice?.billing_status);
+  const invoiceStatus = normalizeUpper(invoice?.status);
+  if (PAID_BILLING_STATUSES.has(invoiceBillingStatus) || PAID_BILLING_STATUSES.has(invoiceStatus)) {
+    return 'PAID';
+  }
+  if (invoiceBillingStatus === 'PARTIAL') {
+    return 'PARTIAL';
+  }
+
+  if (consultation.is_paid === true || consultation.paid === true) {
+    return 'PAID';
+  }
+  if (PAID_PAYMENT_STATUSES.has(normalizeUpper(consultation.payment_status))) {
+    return 'PAID';
+  }
+  if (
+    consultation.require_payment === false ||
+    normalizeUpper(consultation.payment_status) === 'NOT_REQUIRED'
+  ) {
+    return 'NOT_REQUIRED';
+  }
+
   return (
-    payment?.status ||
+    invoiceBillingStatus ||
+    invoiceStatus ||
     consultation.payment_status ||
-    invoice?.billing_status ||
-    invoice?.status ||
-    (consultation.is_paid ? 'COMPLETED' : consultation.require_payment ? 'PENDING' : 'NOT_REQUIRED')
+    (consultation.require_payment ? 'PENDING' : 'NOT_REQUIRED')
   );
+};
+
+const resolveConsultationIsPaid = ({ consultation = {}, invoice = null, payment = null } = {}) => {
+  const paymentStatus = resolveConsultationPaymentStatus({ consultation, invoice, payment });
+  return (
+    consultation.is_paid === true ||
+    consultation.paid === true ||
+    PAID_PAYMENT_STATUSES.has(normalizeUpper(paymentStatus)) ||
+    PAID_BILLING_STATUSES.has(normalizeUpper(invoice?.billing_status)) ||
+    PAID_BILLING_STATUSES.has(normalizeUpper(invoice?.status))
+  );
+};
+
+const buildResolvedConsultationBilling = ({ consultation = {}, invoice = null, payment = null } = {}) => {
+  const paymentStatus = resolveConsultationPaymentStatus({ consultation, invoice, payment });
+  const isPaid = resolveConsultationIsPaid({ consultation, invoice, payment });
+  return {
+    ...consultation,
+    consultation_fee: resolveConsultationFeeAmount(consultation, invoice),
+    paid_amount: resolveConsultationPaymentAmount({
+      consultation,
+      invoice,
+      payment
+    }),
+    currency: consultation.currency || invoice?.currency || null,
+    invoice_id: invoice?.human_friendly_id || consultation.invoice_id || null,
+    payment_id: payment?.human_friendly_id || consultation.payment_id || null,
+    payment_status: paymentStatus,
+    is_paid: isPaid
+  };
 };
 
 /**
@@ -1248,23 +1307,11 @@ const enrichConsultationBillingForListItems = async (items = []) => {
       ...item,
       flow: {
         ...flow,
-        consultation: {
-          ...consultation,
-          consultation_fee: resolveConsultationFeeAmount(consultation, invoice),
-          paid_amount: resolveConsultationPaymentAmount({
-            consultation,
-            invoice,
-            payment
-          }),
-          currency: consultation.currency || invoice?.currency || null,
-          invoice_id: invoice?.human_friendly_id || consultation.invoice_id || null,
-          payment_id: payment?.human_friendly_id || consultation.payment_id || null,
-          payment_status: resolveConsultationPaymentStatus({
-            consultation,
-            invoice,
-            payment
-          })
-        }
+        consultation: buildResolvedConsultationBilling({
+          consultation,
+          invoice,
+          payment
+        })
       }
     };
   });
@@ -2333,23 +2380,11 @@ const getOpdFlowById = async (id) => {
           ? encounter.pharmacy_orders.find((item) => item.id === flow.pharmacy_order_id) || encounter.pharmacy_orders[0]
           : null) || null;
       const consultation = flow.consultation || {};
-      const resolvedConsultation = {
-        ...consultation,
-        consultation_fee: resolveConsultationFeeAmount(consultation, consultationInvoice),
-        paid_amount: resolveConsultationPaymentAmount({
-          consultation,
-          invoice: consultationInvoice,
-          payment: consultationPayment
-        }),
-        currency: consultation.currency || consultationInvoice?.currency || null,
-        invoice_id: consultationInvoice?.human_friendly_id || consultation.invoice_id || null,
-        payment_id: consultationPayment?.human_friendly_id || consultation.payment_id || null,
-        payment_status: resolveConsultationPaymentStatus({
-          consultation,
-          invoice: consultationInvoice,
-          payment: consultationPayment
-        })
-      };
+      const resolvedConsultation = buildResolvedConsultationBilling({
+        consultation,
+        invoice: consultationInvoice,
+        payment: consultationPayment
+      });
       const resolvedDisplayFlow = attachResolvedDisplayToFlow(encounter, { ...flow, consultation: resolvedConsultation });
       const flowWithFriendlyIds = {
         ...resolvedDisplayFlow,
@@ -5539,6 +5574,91 @@ const syncDiagnosticsStage = async (encounterId, context = {}) => {
 };
 
 /**
+ * Resolve the OPD encounter that owns a consultation invoice.
+ * Prefer billable_charge_event (authoritative), then JSON invoice_id match,
+ * then open-patient scan. Invoice rows do not store encounter_id.
+ */
+const resolveEncounterForConsultationInvoice = async (tx, invoice) => {
+  if (!invoice?.id || !tx?.encounter?.findFirst) {
+    return null;
+  }
+
+  if (tx.billable_charge_event?.findFirst) {
+    const chargeEvent = await tx.billable_charge_event.findFirst({
+      where: {
+        invoice_id: invoice.id,
+        deleted_at: null,
+        encounter_id: { not: null }
+      },
+      orderBy: { created_at: 'desc' },
+      select: { encounter_id: true }
+    });
+    if (chargeEvent?.encounter_id) {
+      const fromCharge = await resolveEncounterByIdentifier(tx, chargeEvent.encounter_id);
+      if (fromCharge?.extension_json?.opd_flow) {
+        return fromCharge;
+      }
+    }
+  }
+
+  // Legacy/test payloads may still carry encounter_id on the invoice object.
+  if (invoice.encounter_id) {
+    const fromInvoice = await resolveEncounterByIdentifier(tx, invoice.encounter_id);
+    if (fromInvoice?.extension_json?.opd_flow) {
+      return fromInvoice;
+    }
+  }
+
+  const invoiceKeys = uniqueNormalizedIdentifiers([invoice.id, invoice.human_friendly_id]);
+  if (invoiceKeys.length && tx.encounter?.findMany) {
+    for (const key of invoiceKeys) {
+      const matches = await tx.encounter.findMany({
+        where: {
+          deleted_at: null,
+          tenant_id: invoice.tenant_id,
+          ...(invoice.facility_id ? { facility_id: invoice.facility_id } : {}),
+          extension_json: {
+            path: '$.opd_flow.consultation.invoice_id',
+            equals: key
+          }
+        },
+        take: 5
+      });
+      const matched = matches.find((candidate) => candidate?.extension_json?.opd_flow) || null;
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+
+  if (invoice.patient_id && tx.encounter?.findMany) {
+    const openEncounters = await tx.encounter.findMany({
+      where: {
+        deleted_at: null,
+        tenant_id: invoice.tenant_id,
+        patient_id: invoice.patient_id,
+        status: 'OPEN',
+        encounter_type: { in: ['OPD', 'EMERGENCY'] },
+        ...(invoice.facility_id ? { facility_id: invoice.facility_id } : {})
+      },
+      take: 25,
+      orderBy: { started_at: 'desc' }
+    });
+    const keySet = new Set(invoiceKeys.map((key) => String(key).toUpperCase()));
+    return (
+      openEncounters.find((candidate) => {
+        const linked = normalizeIdentifier(
+          candidate?.extension_json?.opd_flow?.consultation?.invoice_id
+        );
+        return linked && keySet.has(linked.toUpperCase());
+      }) || null
+    );
+  }
+
+  return null;
+};
+
+/**
  * When Billing reconciles a payment against a consultation invoice, keep the
  * linked OPD flow consultation snapshot and Payment-due stage in sync.
  * Never throws into the billing reconcile path.
@@ -5562,26 +5682,7 @@ const syncConsultationBillingFromInvoicePayment = async ({
         return null;
       }
 
-      let encounter = null;
-      if (invoice.encounter_id) {
-        encounter = await resolveEncounterByIdentifier(tx, invoice.encounter_id);
-      }
-      if (!encounter?.extension_json?.opd_flow) {
-        const matches = await tx.encounter.findMany({
-          where: {
-            deleted_at: null,
-            tenant_id: invoice.tenant_id,
-            ...(invoice.facility_id ? { facility_id: invoice.facility_id } : {}),
-            extension_json: {
-              path: '$.opd_flow.consultation.invoice_id',
-              equals: normalizedInvoiceId,
-            },
-          },
-          take: 5,
-        });
-        encounter =
-          matches.find((candidate) => candidate?.extension_json?.opd_flow) || null;
-      }
+      const encounter = await resolveEncounterForConsultationInvoice(tx, invoice);
       if (!encounter?.extension_json?.opd_flow) {
         return null;
       }
