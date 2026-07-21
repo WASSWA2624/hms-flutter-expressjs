@@ -809,6 +809,16 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.tenantFacilityManageTenantsTitle,
         body: l10n.tenantFacilityNoTenants,
+        action: widget.showCreateAction && _canCreate
+            ? AppButton.primary(
+                label: l10n.tenantFacilityAddTenantAction,
+                leadingIcon: Icons.add_business_outlined,
+                enabled: !_loading,
+                onPressed: _loading
+                    ? null
+                    : () => unawaited(_openTenantForm(forceCreate: true)),
+              )
+            : null,
       ),
       mobileItemBuilder: (BuildContext context, TenantProfile tenant) {
         return AppListTableMobileItem(
@@ -4067,6 +4077,16 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.tenantFacilityManageFacilitiesTitle,
         body: l10n.tenantFacilityNoFacilities,
+        action: widget.showCreateAction && _canManage
+            ? AppButton.primary(
+                label: l10n.tenantFacilityAddFacilityAction,
+                leadingIcon: Icons.add_business_outlined,
+                enabled: !_loading,
+                onPressed: _loading
+                    ? null
+                    : () => unawaited(_openFacilityForm(forceCreate: true)),
+              )
+            : null,
       ),
       mobileItemBuilder: (BuildContext context, FacilityProfile facility) {
         return AppListTableMobileItem(

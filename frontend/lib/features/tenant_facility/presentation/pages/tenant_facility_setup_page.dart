@@ -2266,6 +2266,7 @@ class _DepartmentSetupSection extends ConsumerWidget {
       addLabel: l10n.tenantFacilityAddDepartmentAction,
       canManageRecords: canManageRecords,
       canAdd: canAdd,
+      blockedMessage: blockedMessage,
       onAdd: () => _openDepartmentDialog(context, snapshot),
       scopeLabel: l10n.tenantFacilityFacilitySelectLabel,
       scopeOptions: <_SearchableEntityGroupScopeOption>[
@@ -2356,6 +2357,7 @@ class _UnitSetupSection extends ConsumerWidget {
       addLabel: l10n.tenantFacilityAddUnitAction,
       canManageRecords: canManageRecords,
       canAdd: canAdd,
+      blockedMessage: blockedMessage,
       onAdd: () => _openUnitDialog(context, snapshot),
       scopeLabel: l10n.tenantFacilityUnitDepartmentLabel,
       scopeOptions: <_SearchableEntityGroupScopeOption>[
@@ -2424,6 +2426,9 @@ class _WardSetupSection extends ConsumerWidget {
     final bool canManageRecords = canSubmit && !submission.isSubmitting;
     final bool prerequisitesMet = snapshot.departments.isNotEmpty;
     final bool canAdd = canManageRecords && prerequisitesMet;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedDepartmentForWards
+        : null;
 
     final Widget content = _SearchableEntityGroup<WardProfile>(
       title: l10n.tenantFacilityWardsLabel,
@@ -2435,6 +2440,7 @@ class _WardSetupSection extends ConsumerWidget {
       addLabel: l10n.tenantFacilityAddWardAction,
       canManageRecords: canManageRecords,
       canAdd: canAdd,
+      blockedMessage: blockedMessage,
       onAdd: () => _openWardDialog(context, snapshot),
       scopeLabel: l10n.tenantFacilityWardDepartmentLabel,
       scopeOptions: <_SearchableEntityGroupScopeOption>[
@@ -2496,6 +2502,9 @@ class _RoomSetupSection extends ConsumerWidget {
     final bool prerequisitesMet =
         snapshot.departments.isNotEmpty || snapshot.wards.isNotEmpty;
     final bool canAdd = canManageRecords && prerequisitesMet;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
+        : null;
 
     final Widget content = _SearchableEntityGroup<RoomProfile>(
       title: l10n.tenantFacilityRoomsLabel,
@@ -2507,6 +2516,7 @@ class _RoomSetupSection extends ConsumerWidget {
       addLabel: l10n.tenantFacilityAddRoomAction,
       canManageRecords: canManageRecords,
       canAdd: canAdd,
+      blockedMessage: blockedMessage,
       onAdd: () => _openRoomDialog(context, snapshot),
       scopeLabel: l10n.tenantFacilityRoomWardLabel,
       scopeOptions: <_SearchableEntityGroupScopeOption>[
@@ -2564,6 +2574,9 @@ class _BedSetupSection extends ConsumerWidget {
     final bool canManageRecords = canSubmit && !submission.isSubmitting;
     final bool prerequisitesMet = snapshot.wards.isNotEmpty;
     final bool canAdd = canManageRecords && prerequisitesMet;
+    final String? blockedMessage = canManageRecords && !prerequisitesMet
+        ? l10n.tenantFacilityGateNeedWardsForBeds
+        : null;
 
     final Widget content = _SearchableEntityGroup<BedProfile>(
       title: l10n.tenantFacilityBedsLabel,
@@ -2575,6 +2588,7 @@ class _BedSetupSection extends ConsumerWidget {
       addLabel: l10n.tenantFacilityAddBedAction,
       canManageRecords: canManageRecords,
       canAdd: canAdd,
+      blockedMessage: blockedMessage,
       onAdd: () => _openBedDialog(context, snapshot),
       scopeLabel: l10n.tenantFacilityBedWardLabel,
       scopeOptions: <_SearchableEntityGroupScopeOption>[
@@ -2688,6 +2702,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     this.scopeOptions = const <_SearchableEntityGroupScopeOption>[],
     this.itemScopeId,
     this.addIcon = Icons.add_circle_outline,
+    this.blockedMessage,
   });
 
   final String title;
@@ -2710,6 +2725,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final String? scopeLabel;
   final List<_SearchableEntityGroupScopeOption> scopeOptions;
   final String? Function(T item)? itemScopeId;
+  final String? blockedMessage;
 
   @override
   State<_SearchableEntityGroup<T>> createState() =>
@@ -2923,18 +2939,35 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                 AppSearchBarAction(
                   icon: widget.addIcon,
                   label: widget.addLabel,
-                  tooltip: widget.addLabel,
+                  tooltip: widget.canAdd
+                      ? widget.addLabel
+                      : (widget.blockedMessage ?? widget.addLabel),
+                  enabled: widget.canAdd,
                   onPressed: widget.canAdd ? widget.onAdd : null,
                 ),
               ]
             : const <AppSearchBarAction>[],
       ),
-      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-        title: widget.title,
-        body: _searchController.text.trim().isNotEmpty || hasActiveFilters
-            ? widget.noResultsLabel
-            : widget.emptyLabel,
-      ),
+      emptyBuilder: (_) {
+        final bool searching =
+            _searchController.text.trim().isNotEmpty || hasActiveFilters;
+        return AppWorkspaceStatePanel.empty(
+          title: widget.title,
+          body: searching ? widget.noResultsLabel : widget.emptyLabel,
+          detail: !searching && !widget.canAdd ? widget.blockedMessage : null,
+          action: widget.canManageRecords && !searching
+              ? AppButton.primary(
+                  label: widget.addLabel,
+                  leadingIcon: widget.addIcon,
+                  enabled: widget.canAdd,
+                  tooltip: widget.canAdd
+                      ? widget.addLabel
+                      : (widget.blockedMessage ?? widget.addLabel),
+                  onPressed: widget.canAdd ? widget.onAdd : null,
+                )
+              : null,
+        );
+      },
       mobileItemBuilder: (BuildContext context, T item) {
         return AppListTableMobileItem(
           title: widget.titleBuilder(item),

@@ -191,6 +191,7 @@ abstract class _ScopedAccessAdminListDialogState<
     AppListTableSearch<AccessAdminItem>? search,
     String? columnVisibilityStorageKey,
     List<AppListTableColumn<AccessAdminItem>>? columnChoices,
+    Widget? emptyAction,
   }) {
     if (failure != null) {
       return AppFailureStateView(
@@ -224,6 +225,7 @@ abstract class _ScopedAccessAdminListDialogState<
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.accessAdminEmptyTitle,
         body: l10n.accessAdminEmptyBody,
+        action: emptyAction,
       ),
       mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
         final bool isRole = item.resource == AccessAdminResource.roles;
@@ -731,6 +733,16 @@ class _ManageUsersPanelState
           columnVisibilityStorageKey: 'access_admin_manage_users_v4',
           onRowSelected: (AccessAdminItem item) =>
               unawaited(_openUserDetail(item)),
+          emptyAction: widget.showCreateAction && canWrite
+              ? AppButton.primary(
+                  label: l10n.accessAdminCreateUserAction,
+                  leadingIcon: Icons.person_add_alt_1_outlined,
+                  enabled: !loading && !mutating,
+                  onPressed: loading || mutating
+                      ? null
+                      : () => unawaited(_openCreateUserDialog()),
+                )
+              : null,
           search: buildTableSearch(
             l10n: l10n,
             showAdvancedFilterButton: true,
@@ -1241,6 +1253,16 @@ class _ManageRolesPermissionsPanelState
           onRowSelected: isPermissions
               ? null
               : (AccessAdminItem role) => unawaited(_openRoleDetail(role)),
+          emptyAction: !isPermissions && canWrite && widget.showCreateAction
+              ? AppButton.primary(
+                  label: l10n.accessAdminCreateRoleAction,
+                  leadingIcon: Icons.badge_outlined,
+                  enabled: !loading && !mutating,
+                  onPressed: loading || mutating
+                      ? null
+                      : () => unawaited(_openCreateRoleDialog()),
+                )
+              : null,
           search: buildTableSearch(
             l10n: l10n,
             showAdvancedFilterButton: filterGroups.isNotEmpty,
