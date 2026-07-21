@@ -1,1 +1,41 @@
-Review the entire reception screen. And make sure that The entire but action buttons are removed, are completely removed because the receptionists should never perform these actions, but maybe they should only see their progresses so Remove collect sample. I, I mean, I think collect sample isn't an action, but it's it's a preview, so that's okay. So you shouldn't allow receptionists to, to collect samples, but they shouldn't, they should see as the status that at least here someone is taking, is, has gone for sam to collect samples, then perform imaging per So they shouldn't see anything related to perform, to requesting any imaging, performing any imaging request, but at least they should see that, yeah, this, yeah, this patient maybe has, this test has been, it should be shown as a status. Even if they should never dispense medicine, but they should see that this patient maybe has received the medicine or a corresponding status. Then disposition disposition is like ending the OPD flow or sending off patients away from the facility. I think that is not okay. They shouldn't send patients away. Patients should only be sent away maybe by They should only be removed from the system after completing their respective flows. They shouldn't add diagnosis They shouldn't request for lab, they shouldn't request for radiology tests, they shouldn't prescribe, they shouldn't record procedures like they shouldn't ever attach procedures to patients Then they should also not refer patients, so the patients should be referred through, maybe from the clinical from the respective clinical, but they can Do follow up They can do follow up they can correct the patient stage, the stage at which the patient currently is, and they can also print a brief summary for the patient showing the journey where the patient started from and where the patient is. Yeah, then they shouldn't never open any patient admissions, so hide all those action buttons that are I've mentioned hide them away from the receptionists and only make sure that the receptionist only has those that they are entitled to have access to.
+# Limit Reception Flow Actions to Front-Desk Duties
+
+On `/reception` Flow Actions, hide clinician writes; show journey as status; allow only Follow up, Correct stage, and Print summary among care-adjacent controls. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+`allowClinicalActions: false` still leaks Disposition / Open admission, blocks Follow up, and may hide service progress. Reception tracks status without doctor or department work.
+
+**Clinician write actions:** clinical notes, diagnosis, lab/radiology request, prescribe, procedure, refer, disposition, open admission, collect sample, perform imaging, dispense.
+
+**Allowed care-adjacent actions:** Follow up, Correct stage, Print summary (start → current step).
+
+**Progress status:** read-only lab/sample, imaging, pharmacy labels—not department actions.
+
+## Requirements
+
+1. With `allowClinicalActions: false`, omit all clinician write actions; never offer Disposition or Open admission.
+2. Keep authorized Follow up, Correct stage, and Print summary on non-terminal visits; omit when unauthorized.
+3. Show clinical-service rows as status-only when present; hide results and request/collect/perform/dispense controls.
+4. Keep stepper and Current step / Next action read-only; invent no clinical transitions.
+5. Preserve loading, empty, error, success, busy, permission states; sync after allowed mutations; omit unauthorized UI.
+
+## Constraints
+
+- Reuse Flow Actions, clinical-services panel, follow-up / stage / print dialogs, auth, localization, design-system; no new contracts.
+- Do not change OPD/clinic `allowClinicalActions: true` surfaces.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1: No clinician writes, Disposition, or Open admission on Reception.
+- R2: Follow up, Correct stage, Print summary remain when authorized.
+- R3: Status-only service progress; no results or department writes.
+- R4–R5: Labels read-only; states/sync intact; unauthorized UI absent.
+- Update flow-actions and reception tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/{opd_flow_actions_dialog,opd_encounter_clinical_services}.dart`
+- `frontend/lib/features/reception/presentation/`
+- `frontend/test/shared/opd_actions/`
