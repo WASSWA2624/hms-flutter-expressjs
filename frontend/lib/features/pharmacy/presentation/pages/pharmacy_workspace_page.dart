@@ -686,60 +686,6 @@ class _PharmacyQueuePanel extends ConsumerWidget {
   }
 }
 
-class _PharmacyOrderListTile extends ConsumerWidget {
-  const _PharmacyOrderListTile({
-    required this.order,
-    required this.state,
-    required this.writeRequirement,
-  });
-
-  final PharmacyOrder order;
-  final PharmacyWorkspaceState state;
-  final AccessRequirement writeRequirement;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          AppListItemText(title: order.displayTitle, subtitle: order.displayId),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            _locationLabel(context, order),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              AppWorkspaceStatusBadge(status: _orderStatus(context, order)),
-              Text(
-                _dispenseProgressLabel(context, order),
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.sm),
-          _PharmacyOrderNextActionButton(
-            order: order,
-            state: state,
-            writeRequirement: writeRequirement,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _PharmacyDetailPanel extends ConsumerWidget {
   const _PharmacyDetailPanel({

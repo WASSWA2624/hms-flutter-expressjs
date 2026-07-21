@@ -8,7 +8,6 @@ import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_s
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 
 typedef RoomsBedsNextActionCallback = Future<void> Function(BedBoardItem item);
 
@@ -218,58 +217,4 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
   }
 }
 
-class RoomsBedsBedMobileItem extends StatelessWidget {
-  const RoomsBedsBedMobileItem({
-    required this.item,
-    required this.state,
-    required this.canAdminBeds,
-    required this.canIpdWrite,
-    required this.callbacks,
-    super.key,
-  });
 
-  final BedBoardItem item;
-  final RoomsBedsWorkspaceState state;
-  final bool canAdminBeds;
-  final bool canIpdWrite;
-  final RoomsBedsNextActionCallbacks callbacks;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppListItemRow(
-      title: item.label,
-      subtitle: _joinDisplay(<String?>[
-        roomsBedsLocationLabel(l10n, item),
-        roomsBedsAssignmentLabel(l10n, item),
-      ]),
-      leadingIcon: item.isOccupied
-          ? Icons.person_pin_circle_outlined
-          : Icons.bed_outlined,
-      trailing: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: <Widget>[
-          AppWorkspaceStatusBadge(
-            status: roomsBedsStatusBadge(l10n, item.status),
-          ),
-          RoomsBedsNextActionButton(
-            item: item,
-            state: state,
-            canAdminBeds: canAdminBeds,
-            canIpdWrite: canIpdWrite,
-            callbacks: callbacks,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _joinDisplay(Iterable<String?> values) {
-    return values
-        .map((String? value) => value?.trim() ?? '')
-        .where((String value) => value.isNotEmpty)
-        .join(' | ');
-  }
-}

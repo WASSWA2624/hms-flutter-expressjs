@@ -835,7 +835,7 @@ Widget emergencyMobileListItem(
     EmergencyBoardTab.critical ||
     EmergencyBoardTab.closed ||
     EmergencyBoardTab.ambulance => dateTimeLabel(context, item.createdAt),
-    _ => item.currentLocation ?? '',
+    _ => item.currentLocation,
   };
   final AppWorkspaceStatus workflowStatus =
       tab == EmergencyBoardTab.ambulance

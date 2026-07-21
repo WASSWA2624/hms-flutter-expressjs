@@ -1285,46 +1285,6 @@ class _ServiceLogTile extends StatelessWidget {
   }
 }
 
-class _OperationsRequestListTile extends ConsumerWidget {
-  const _OperationsRequestListTile({
-    required this.item,
-    required this.state,
-    required this.canMutate,
-    required this.onOpenDetail,
-  });
-
-  final OperationsWorkItem item;
-  final OperationsWorkspaceState state;
-  final bool canMutate;
-  final Future<void> Function(BuildContext context, OperationsWorkItem item)
-  onOpenDetail;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    return AppListItemRow(
-      leadingIcon: _statusIcon(item.status),
-      title: _issueLabel(l10n, item),
-      subtitle: _joinDisplay(<String>[
-        _locationLabel(l10n, item),
-        _priorityLabel(l10n, item.metadata.priority),
-      ]),
-      trailing: _OperationStatusBadge(status: item.status),
-      details: <Widget>[
-        AppCopyableIdentifier(
-          value: item.effectiveDisplayId,
-          textStyle: Theme.of(context).textTheme.bodySmall,
-        ),
-        _OperationsNextActionButton(
-          item: item,
-          state: state,
-          canMutate: canMutate,
-          onOpenDetail: onOpenDetail,
-        ),
-      ],
-    );
-  }
-}
 
 class _OperationsNextActionButton extends ConsumerWidget {
   const _OperationsNextActionButton({

@@ -1282,9 +1282,6 @@ String? _visitTitleLine(PatientVisitContext visit) {
   ]);
 }
 
-bool _sectionShowsVisitByDefault(PatientRegistrySection section) {
-  return section != PatientRegistrySection.all;
-}
 
 Patient? _cachedPatientFromState(
   PatientRegistryState? state,
@@ -1443,38 +1440,6 @@ class _NextActionCell extends StatelessWidget {
   }
 }
 
-class _PatientMobileRow extends StatelessWidget {
-  const _PatientMobileRow({
-    required this.patient,
-    required this.section,
-    required this.onNextAction,
-  });
-
-  final Patient patient;
-  final PatientRegistrySection section;
-  final VoidCallback onNextAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<Widget> details = <Widget>[
-      _PatientRegistryStatusBadge(patient: patient, section: section),
-      if (patient.hasAllergyAlert || patient.requiresCompletion)
-        _PatientAlertCell(patient: patient),
-    ];
-    if (_sectionShowsVisitByDefault(section) && patient.currentVisit != null) {
-      details.add(_VisitContextCell(patient: patient));
-    }
-
-    return AppListItemRow(
-      leadingIcon: Icons.account_circle_outlined,
-      title: patient.effectiveDisplayName,
-      subtitle: patient.effectiveIdentifier ?? l10n.profileUnknownValue,
-      details: details,
-      trailing: _NextActionCell(patient: patient, onPressed: onNextAction),
-    );
-  }
-}
 
 bool _matchesPatientTableSearch(
   BuildContext context,

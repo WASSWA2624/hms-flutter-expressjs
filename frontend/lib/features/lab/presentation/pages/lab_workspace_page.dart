@@ -1204,54 +1204,6 @@ LabWorkspaceState? _readLabState(WidgetRef ref) {
       .when(success: (LabWorkspaceState state) => state, failure: (_) => null);
 }
 
-class _CompactRecordRow extends StatelessWidget {
-  const _CompactRecordRow({required this.title, this.subtitle, this.trailing});
-
-  final String title;
-  final String? subtitle;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (subtitle != null && subtitle!.isNotEmpty)
-                  Text(
-                    subtitle!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (trailing != null) ...<Widget>[
-            SizedBox(width: theme.spacing.sm),
-            Flexible(child: trailing!),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 class _LabConfigurationsDialog extends ConsumerStatefulWidget {
   const _LabConfigurationsDialog({required this.state});

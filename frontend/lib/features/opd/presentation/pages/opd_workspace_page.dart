@@ -2817,9 +2817,6 @@ String _formatDateTime(BuildContext context, DateTime? value) {
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
 }
 
-String _joinDisplay(Iterable<String?> values) {
-  return AppDisplay.joinNonEmpty(values, separator: ' | ');
-}
 
 AppWorkspaceStatusTone _stageTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {

@@ -1437,59 +1437,6 @@ class _RelatedSection extends StatelessWidget {
   }
 }
 
-class _BiomedicalAssetListTile extends ConsumerWidget {
-  const _BiomedicalAssetListTile({
-    required this.asset,
-    required this.panel,
-    required this.canWrite,
-    required this.canPrint,
-    required this.state,
-    required this.onOpenDetail,
-  });
-
-  final BiomedicalAsset asset;
-  final String panel;
-  final bool canWrite;
-  final bool canPrint;
-  final BiomedicalWorkspaceState state;
-  final VoidCallback onOpenDetail;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final List<Widget> details = <Widget>[
-      _statusBadge(
-        _labelForCode(asset.status, fallback: l10n.biomedicalNotAvailableLabel),
-        _toneForStatus(asset.status),
-      ),
-    ];
-
-    final String? panelField = _mobilePanelFieldLabel(context, panel, asset);
-    if (panelField != null) {
-      details.insert(
-        0,
-        AppInlineMetaText(
-          icon: _mobilePanelFieldIcon(panel),
-          label: panelField,
-        ),
-      );
-    }
-
-    return AppListItemRow(
-      leadingIcon: Icons.medical_services_outlined,
-      title: asset.displayTitle,
-      subtitle: _dash(asset.displaySubtitle, l10n),
-      details: details,
-      trailing: _BiomedicalNextActionCell(
-        asset: asset,
-        canWrite: canWrite,
-        state: state,
-        onOpenDetail: onOpenDetail,
-        compact: true,
-      ),
-    );
-  }
-}
 
 String? _mobilePanelFieldLabel(
   BuildContext context,

@@ -734,13 +734,6 @@ DateTime? _mortuaryPanelDate(MortuaryWorkspaceItem item, String panel) {
   };
 }
 
-bool _mortuaryPanelShowsNextAction(String panel) {
-  return panel == mortuaryPanelOverview ||
-      panel == mortuaryPanelIntake ||
-      panel == mortuaryPanelStorage ||
-      panel == mortuaryPanelRelease ||
-      panel == mortuaryPanelReporting;
-}
 
 bool _mortuaryNextActionEnabled(
   AppLocalizations l10n,
@@ -1088,55 +1081,6 @@ class _MortuaryNextActionButton extends StatelessWidget {
       child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
-}
-
-Widget _mortuaryMobileItemBuilder(
-  BuildContext context, {
-  required String panel,
-  required MortuaryWorkspaceItem item,
-  required ValueChanged<MortuaryWorkspaceItem> onItemSelected,
-}) {
-  final AppLocalizations l10n = context.l10n;
-  final String? status = _mortuaryPanelStatus(item, panel);
-  final String subtitle = switch (panel) {
-    mortuaryPanelStorage =>
-      _joinValues(<String?>[item.storageLabel, _displayCode(status)]) ??
-          l10n.mortuaryUnknownValueLabel,
-    mortuaryPanelCustody =>
-      _joinValues(<String?>[_displayCode(item.eventType), item.actorName]) ??
-          l10n.mortuaryUnknownValueLabel,
-    mortuaryPanelRelease =>
-      _joinValues(<String?>[item.recipientName, item.recipientRelationship]) ??
-          l10n.mortuaryUnknownValueLabel,
-    mortuaryPanelReporting =>
-      _joinValues(<String?>[item.requestReason, item.diagnosticsReferenceId]) ??
-          l10n.mortuaryUnknownValueLabel,
-    _ =>
-      _joinValues(<String?>[
-            _mortuaryPublicIdentifier(item),
-            item.sourceLabel,
-          ]) ??
-          l10n.mortuaryUnknownValueLabel,
-  };
-
-  return AppListItemRow(
-    title: item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
-    subtitle: subtitle,
-    trailing: AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: _displayCode(status) ?? l10n.mortuaryUnknownValueLabel,
-        tone: _statusTone(status),
-      ),
-    ),
-    details: <Widget>[
-      if (_mortuaryPanelShowsNextAction(panel))
-        _MortuaryNextActionButton(
-          label: _nextActionLabel(l10n, item),
-          enabled: _mortuaryNextActionEnabled(l10n, item),
-          onPressed: () => onItemSelected(item),
-        ),
-    ],
-  );
 }
 
 class _MortuaryDetailPanel extends StatelessWidget {
