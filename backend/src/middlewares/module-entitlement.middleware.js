@@ -36,7 +36,6 @@ const CORE_MODULE_METADATA_FALLBACKS = Object.freeze({
 });
 
 const IRREGULAR_PATH_SEGMENTS = {
-  branches: 'branch',
   diagnoses: 'diagnosis',
 };
 

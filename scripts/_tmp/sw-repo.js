@@ -216,6 +216,13 @@ const findModuleMetrics = async (scope = {}) => {
         },
       }).then((value) => ['facility', value]),
       countAndLatest({
+        model: 'branch',
+        where: {
+          ...tenantScopedWhere(scope),
+          ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+        },
+      }).then((value) => ['branch', value]),
+      countAndLatest({
         model: 'department',
         where: tenantScopedWhere(scope, { includeFacility: Boolean(scope.facility_id) }),
       }).then((value) => ['department', value]),

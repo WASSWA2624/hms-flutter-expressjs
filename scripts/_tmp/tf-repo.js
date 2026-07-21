@@ -208,6 +208,7 @@ const findFacilityRecords = async (scope = {}, { includeDeleted = false } = {}) 
   try {
     if (!scope.tenant_id || !scope.facility_id) {
       return {
+        branches: [],
         departments: [],
         units: [],
         wards: [],
@@ -223,8 +224,13 @@ const findFacilityRecords = async (scope = {}, { includeDeleted = false } = {}) 
       includeDeleted,
     });
 
-    const [departments, units, wards, rooms, beds, contacts, addresses] =
+    const [branches, departments, units, wards, rooms, beds, contacts, addresses] =
       await Promise.all([
+        prisma.branch.findMany({
+          where: baseWhere,
+          orderBy: { name: 'asc' },
+          take: SETUP_LIST_LIMIT,
+        }),
         prisma.department.findMany({
           where: baseWhere,
           orderBy: { name: 'asc' },
@@ -271,6 +277,7 @@ const findFacilityRecords = async (scope = {}, { includeDeleted = false } = {}) 
       ]);
 
     return {
+      branches,
       departments,
       units,
       wards,

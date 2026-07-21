@@ -1499,7 +1499,8 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                         ),
                         if (canManage)
                           AppListTableColumn<FacilityProfile>(
-                            label: '',
+                            id: 'actions',
+                            label: l10n.accessAdminColumnActions,
                             alwaysVisible: true,
                             cellBuilder:
                                 (
@@ -3367,7 +3368,8 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                         ),
                         if (canManage)
                           AppListTableColumn<AccessAdminItem>(
-                            label: '',
+                            id: 'actions',
+                            label: l10n.accessAdminColumnActions,
                             alwaysVisible: true,
                             cellBuilder:
                                 (BuildContext context, AccessAdminItem user) {

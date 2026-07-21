@@ -48,6 +48,7 @@ const buildSerializeContext = (tenant, facility, facilityRecords = {}) => {
   const idMap = buildIdentifierMap([
     tenant ? [tenant] : [],
     facility ? [facility] : [],
+    facilityRecords.branches || [],
     facilityRecords.departments || [],
     facilityRecords.units || [],
     facilityRecords.wards || [],
@@ -168,6 +169,18 @@ const serializeFacility = (record, context = null) => {
   };
 };
 
+const serializeBranch = (record, context = null) => ({
+  id: safePublicId(record.human_friendly_id, record.id),
+  tenant_id: context
+    ? resolveFk(record.tenant_id, context, 'tenant_id')
+    : safePublicId(record.tenant_id),
+  facility_id: context
+    ? resolveFk(record.facility_id, context, 'facility_id')
+    : safePublicId(record.facility_id),
+  name: record.name,
+  is_active: Boolean(record.is_active),
+  deleted_at: record.deleted_at || null,
+});
 
 const serializeDepartment = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
@@ -177,6 +190,9 @@ const serializeDepartment = (record, context = null) => ({
   facility_id: context
     ? resolveFk(record.facility_id, context, 'facility_id')
     : safePublicId(record.facility_id),
+  branch_id: context
+    ? resolveFk(record.branch_id, context)
+    : safePublicId(record.branch_id),
   name: record.name,
   short_name: record.short_name || null,
   department_type: record.department_type,
@@ -268,6 +284,7 @@ const buildChecklist = ({
   tenant,
   facility,
   contactAddress,
+  branches = [],
   departments = [],
   units = [],
   wards = [],
@@ -277,6 +294,7 @@ const buildChecklist = ({
   const hasTenant = Boolean(tenant);
   const hasFacilityIdentity =
     Boolean(facility?.name?.trim()) && Boolean(contactAddress?.phone?.trim());
+  const hasBranchesConfigured = branches.length > 0 || hasFacilityIdentity;
   const hasDepartments = departments.length > 0;
   const hasUnitsConfigured = units.length > 0 || departments.length > 0;
   const hasWardsConfigured = wards.length > 0 || rooms.length > 0 || beds.length > 0;
@@ -289,6 +307,12 @@ const buildChecklist = ({
       label_key: 'tenant_facility.checklist.tenant',
       completed: hasTenant,
       priority: 1,
+    },
+    {
+      id: 'branches',
+      label_key: 'tenant_facility.checklist.branches',
+      completed: hasBranchesConfigured,
+      priority: 2,
     },
     {
       id: 'facility_identity',
@@ -383,6 +407,7 @@ const getSetup = async (filters = {}, user = {}) => {
       facility: null,
       facilities: [],
       contact_address: buildContactAddress(),
+      branches: [],
       departments: [],
       units: [],
       wards: [],
@@ -450,6 +475,9 @@ const getSetup = async (filters = {}, user = {}) => {
     facility: serializeFacility(selectedFacility, serializeContext),
     facilities: facilities.map((entry) => serializeFacility(entry, serializeContext)),
     contact_address: contactAddress,
+    branches: facilityRecords.branches.map((entry) =>
+      serializeBranch(entry, serializeContext)
+    ),
     departments: facilityRecords.departments.map((entry) =>
       serializeDepartment(entry, serializeContext)
     ),
@@ -461,6 +489,7 @@ const getSetup = async (filters = {}, user = {}) => {
       tenant,
       facility: selectedFacility,
       contactAddress,
+      branches: facilityRecords.branches,
       departments: facilityRecords.departments,
       units: facilityRecords.units,
       wards: facilityRecords.wards,

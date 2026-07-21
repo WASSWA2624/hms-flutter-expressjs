@@ -40,6 +40,16 @@ const MODULE_CATALOG = Object.freeze([
     mandatory: true,
   },
   {
+    id: 'branch',
+    group_id: 'organization',
+    label_key: 'settings.tabs.branch',
+    icon: 'git-branch-outline',
+    route: '/settings/branches',
+    create_route: '/settings/branches/create',
+    dependencies: ['facility'],
+    mandatory: false,
+  },
+  {
     id: 'department',
     group_id: 'organization',
     label_key: 'settings.tabs.department',

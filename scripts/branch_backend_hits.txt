@@ -19,7 +19,7 @@ scripts\generate-openapi.js:1170: branch_id: { type: 'string', nullable: true },
 scripts\generate-openapi.js:1214: branch_id: { type: 'string', nullable: true },
 scripts\verify-demo-data.js:229: if (!basicPlan?.extension_json?.branch_allowance?.included_branches) {
 src\config\constants.js:58: 'branch',
-src\middlewares\module-entitlement.middleware.js:37: branches: 'branch',
+src\middlewares\module-entitlement.middleware.js:39: branches: 'branch',
 src\tests\middlewares\module-entitlement.middleware.test.js:17: api_path_segments: ['branch', 'branches', 'facility']}},
 src\tests\modules\settings-workspace\services\settings-workspace.service.test.js:20: name: 'Main Branch',
 src\tests\modules\dashboard-workspace\services\dashboard-workspace.service.test.js:306: label: 'Main Branch',

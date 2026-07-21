@@ -55,7 +55,6 @@ const HMS_SEED_MODEL_ORDER = Object.freeze([
   // Group 1: Tenancy and org
   'tenant',
   'facility',
-  'branch',
   'department',
   'unit',
   'room',

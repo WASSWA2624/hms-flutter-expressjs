@@ -221,23 +221,36 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null, reposit
   const userScope = {
     tenant_id: user.tenant_id || user.tenantId || null,
     facility_id: user.facility_id || user.facilityId || null,
+    branch_id: user.branch_id || user.branchId || null,
   };
 
   if (effectiveRole === ROLES.SUPER_ADMIN) {
     const tenantId = query.tenant_id || userScope.tenant_id || null;
     const facilityId = query.facility_id || userScope.facility_id || null;
+    const branchId = query.branch_id || userScope.branch_id || null;
 
     if (!tenantId) {
       return {
         tenant_id: null,
         facility_id: null,
+        branch_id: null,
         platform: true,
       };
     }
 
+    let resolvedFacilityId = facilityId;
+    if (branchId && repository?.resolveBranchFacilityScope) {
+      const branchFacilityId = await repository.resolveBranchFacilityScope(tenantId, branchId);
+      if (resolvedFacilityId && branchFacilityId && resolvedFacilityId !== branchFacilityId) {
+        throw new HttpError('errors.validation.invalid', 422, [{ field: 'branch_id' }]);
+      }
+      if (!resolvedFacilityId) resolvedFacilityId = branchFacilityId;
+    }
+
     return {
       tenant_id: tenantId,
-      facility_id: facilityId || null,
+      facility_id: resolvedFacilityId || null,
+      branch_id: branchId || null,
     };
   }
 
@@ -247,7 +260,6 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null, reposit
 
   return userScope;
 };
-
 
 const buildTrendPoints = (dateValues = [], days = 7) => {
   const end = new Date();
@@ -1099,6 +1111,7 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
       scope: {
         tenant_id: effectiveScope.tenant_id || null,
         facility_id: effectiveScope.facility_id || null,
+        branch_id: effectiveScope.branch_id || null,
         nurse_context: effectiveScope.nurse_context || null,
         department_name: effectiveScope.department_name || null,
         days,
