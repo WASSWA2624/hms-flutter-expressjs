@@ -218,8 +218,63 @@ void main() {
 
     expect(find.text('Current step'), findsOneWidget);
     expect(find.text('Next action'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('workflowStepCurrentChip')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('workflowStepCurrentTag')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('workflowStepNextTag')),
+      findsOneWidget,
+    );
     expect(find.text('Continue with the highlighted action.'), findsOneWidget);
     expect(find.byIcon(Icons.help_outline), findsNothing);
+  });
+
+  testWidgets('emphasizes current and next step hierarchy visually', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'vitals',
+            label: 'Vitals needed',
+            description: 'Current step',
+            state: AppWorkflowStepState.current,
+          ),
+          AppWorkflowStepItem(
+            id: 'record',
+            label: 'Record vitals',
+            description: 'Next action',
+            state: AppWorkflowStepState.upcoming,
+          ),
+        ],
+      ),
+    );
+
+    final Finder currentChip = find.byKey(
+      const ValueKey<String>('workflowStepCurrentChip'),
+    );
+    final Finder nextTag = find.byKey(
+      const ValueKey<String>('workflowStepNextTag'),
+    );
+    expect(currentChip, findsOneWidget);
+    expect(nextTag, findsOneWidget);
+
+    final Container chip = tester.widget<Container>(currentChip);
+    final BoxDecoration? chipDecoration = chip.decoration as BoxDecoration?;
+    expect(chipDecoration?.border, isNotNull);
+    expect(chipDecoration?.color, isNotNull);
+
+    final Container tag = tester.widget<Container>(nextTag);
+    final BoxDecoration? tagDecoration = tag.decoration as BoxDecoration?;
+    expect(tagDecoration?.color, isNotNull);
+    expect(tagDecoration?.border, isNull);
   });
 
   testWidgets('opens touch-accessible help dialog from help control', (

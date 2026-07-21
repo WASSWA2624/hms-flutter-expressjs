@@ -276,6 +276,52 @@ void main() {
     expect(find.text('Result'), findsNothing);
   });
 
+  testWidgets(
+    'reception context omits the clinical services panel entirely',
+    (WidgetTester tester) async {
+      const OpdFlowSummary withDoctor = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Patient Example',
+        stage: 'WAITING_DOCTOR_REVIEW',
+        displayCode: 'WITH_DOCTOR',
+        displayNextStep: 'DOCTOR_REVIEW',
+        providerUserId: 'USR-DOC001',
+        providerDisplayName: 'Jordan Demo',
+        consultationPaymentRequired: false,
+        consultationPaid: true,
+      );
+      final OpdFlowDetail detail = OpdFlowDetail(
+        summary: withDoctor,
+        vitalMeasurements: <OpdVitalSign>[
+          OpdVitalSign(
+            id: 'vital-bp',
+            vitalType: 'BLOOD_PRESSURE',
+            value: '80/50',
+            unit: 'mmHg',
+            recordedAt: DateTime.utc(2026, 7, 21, 10, 14),
+          ),
+        ],
+      );
+
+      await _pumpDialog(
+        tester,
+        withDoctor,
+        detail: detail,
+        policy: _doctorPolicy(),
+        allowBillingActions: false,
+        allowVitalsActions: false,
+        allowClinicalActions: false,
+      );
+
+      expect(find.byType(OpdEncounterClinicalServicesPanel), findsNothing);
+      expect(find.text('Blood Pressure'), findsNothing);
+      expect(find.textContaining('80/50'), findsNothing);
+      expect(find.byType(AppWorkflowStepper), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    },
+  );
+
   testWidgets('receptionist at vitals-needed sees only front-desk actions', (
     WidgetTester tester,
   ) async {
@@ -358,6 +404,10 @@ void main() {
     await tester.pump();
 
     expect(find.byType(AppLoadingIndicator), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('appLoadingIndicatorExpanded')),
+      findsOneWidget,
+    );
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
 

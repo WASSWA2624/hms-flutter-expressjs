@@ -115,10 +115,10 @@ final class AppWorkflowStepAction {
 /// Steps render on a single compact line (wrapping when narrow), separated by
 /// chevrons:
 /// - completed steps show a green check and green label;
-/// - the current step shows a filled dot, bold underlined label, and its
-///   description as a caption underneath;
-/// - upcoming steps show a muted label with the description as an outlined
-///   pill tag (e.g. "Next action").
+/// - the current step sits in a tinted chip with a ringed marker, bold label,
+///   and a filled “current” caption pill;
+/// - upcoming steps show a muted label with the description as a filled
+///   primary “next” pill tag (e.g. "Next action").
 ///
 /// The stepper draws its own shared panel (a pale tinted band) so it looks
 /// identical everywhere in the app. Set [showPanel] to false when a caller
@@ -361,8 +361,8 @@ Future<void> showAppWorkflowStepHelp({
   );
 }
 
-/// One breadcrumb entry: state indicator, label (underlined when current),
-/// caption or pill tag for the description, and optional help affordance.
+/// One breadcrumb entry: state indicator, label, caption or pill tag for the
+/// description, and optional help affordance.
 class _WorkflowStepEntry extends StatelessWidget {
   const _WorkflowStepEntry({
     required this.step,
@@ -403,9 +403,7 @@ class _WorkflowStepEntry extends StatelessWidget {
         .copyWith(
           fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
           color: labelColor,
-          decoration: isCurrent ? TextDecoration.underline : TextDecoration.none,
-          decorationColor: isCurrent ? colorScheme.primary : null,
-          decorationThickness: isCurrent ? 2.5 : null,
+          letterSpacing: isCurrent ? 0.15 : null,
         );
 
     Widget labelBlock = Text(
@@ -423,16 +421,10 @@ class _WorkflowStepEntry extends StatelessWidget {
         children: <Widget>[
           labelBlock,
           Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              description,
-              softWrap: true,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
+            padding: const EdgeInsets.only(top: 4),
+            child: _WorkflowStepTag(
+              text: description,
+              state: AppWorkflowStepState.current,
             ),
           ),
         ],
@@ -441,7 +433,7 @@ class _WorkflowStepEntry extends StatelessWidget {
 
     final Widget? indicator = _indicator(theme);
 
-    final Widget entryBody = Row(
+    Widget entryBody = Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
@@ -473,6 +465,28 @@ class _WorkflowStepEntry extends StatelessWidget {
         ],
       ],
     );
+
+    if (isCurrent) {
+      entryBody = Container(
+        key: const ValueKey<String>('workflowStepCurrentChip'),
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(
+            colorScheme.primary.withValues(alpha: 0.10),
+            colorScheme.surface,
+          ),
+          borderRadius: BorderRadius.circular(theme.radius.md),
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: 0.42),
+            width: 1.5,
+          ),
+        ),
+        child: entryBody,
+      );
+    }
 
     final Widget node = Semantics(
       button: interactive,
@@ -566,12 +580,24 @@ class _WorkflowStepEntry extends StatelessWidget {
         size: 16,
         color: theme.statusColors.success,
       ),
-      AppWorkflowStepState.current => Container(
-        width: 9,
-        height: 9,
-        decoration: BoxDecoration(
-          color: scheme.primary,
-          shape: BoxShape.circle,
+      AppWorkflowStepState.current => SizedBox.square(
+        dimension: 14,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: scheme.primary, width: 2),
+            color: scheme.primary.withValues(alpha: 0.14),
+          ),
+          child: Center(
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: scheme.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
         ),
       ),
       AppWorkflowStepState.upcoming => null,
@@ -619,8 +645,7 @@ class _WorkflowStepEntry extends StatelessWidget {
   }
 }
 
-/// Small outlined pill used for non-current step descriptions
-/// (e.g. the "Next action" tag on upcoming steps).
+/// Small pill used for step descriptions (current caption / next-action CTA).
 class _WorkflowStepTag extends StatelessWidget {
   const _WorkflowStepTag({required this.text, required this.state});
 
@@ -631,27 +656,49 @@ class _WorkflowStepTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final bool isCurrent = state == AppWorkflowStepState.current;
+    final bool isNext = state == AppWorkflowStepState.upcoming;
     final Color color = switch (state) {
       AppWorkflowStepState.upcoming => scheme.primary,
+      AppWorkflowStepState.current => scheme.primary,
       AppWorkflowStepState.reverted => theme.statusColors.warning,
       AppWorkflowStepState.completed => theme.statusColors.success,
       _ => scheme.onSurfaceVariant,
     };
 
+    final Color background = isNext
+        ? scheme.primary
+        : isCurrent
+        ? scheme.primary.withValues(alpha: 0.14)
+        : Colors.transparent;
+    final Color foreground = isNext ? scheme.onPrimary : color;
+    final BorderSide? border = isNext
+        ? null
+        : BorderSide(color: color.withValues(alpha: isCurrent ? 0.35 : 0.65));
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm, vertical: 2),
+      key: ValueKey<String>(
+        isNext
+            ? 'workflowStepNextTag'
+            : isCurrent
+            ? 'workflowStepCurrentTag'
+            : 'workflowStepTag',
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: isNext || isCurrent ? 3 : 2,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.65)),
-        color: state == AppWorkflowStepState.upcoming
-            ? scheme.primary.withValues(alpha: 0.06)
-            : null,
+        border: border == null ? null : Border.fromBorderSide(border),
+        color: background,
       ),
       child: Text(
         text,
         style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
+          color: foreground,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.2,
         ),
       ),
     );

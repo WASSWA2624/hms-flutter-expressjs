@@ -913,6 +913,7 @@ class _SelectTrailingIcon extends StatelessWidget {
                 child: const FittedBox(
                   child: AppLoadingIndicator(
                     size: AppLoadingIndicatorSize.compact,
+                    expand: false,
                   ),
                 ),
               ),

@@ -95,6 +95,7 @@ class AppStateView extends StatelessWidget {
                 size: loadingSize,
                 title: title,
                 body: body,
+                expand: false,
                 semanticLabel: semanticLabel ?? title,
               ),
               if (detail != null && detail!.isNotEmpty) ...<Widget>[

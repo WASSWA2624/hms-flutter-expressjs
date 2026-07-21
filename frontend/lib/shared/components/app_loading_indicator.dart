@@ -24,14 +24,15 @@ enum AppLoadingIndicatorSize {
 /// Elegant logo-based loading indicator.
 ///
 /// Prefer this over [CircularProgressIndicator] for page and component loads.
-/// Use [expand] to center within the available parent bounds (full screen or
-/// a component region).
+/// By default, [expand] centers the mark within the loading parent’s available
+/// bounds and scales the logo down when that region is tight. Pass
+/// `expand: false` only for intrinsic inline slots (e.g. field trailing icons).
 class AppLoadingIndicator extends StatefulWidget {
   const AppLoadingIndicator({
     this.size = AppLoadingIndicatorSize.regular,
     this.title,
     this.body,
-    this.expand = false,
+    this.expand = true,
     this.semanticLabel,
     this.showBrandName = false,
     super.key,
@@ -99,15 +100,47 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.expand) {
+      return _buildContent(context, scale: 1);
+    }
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool hasBoundedHeight =
+            constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
+        final bool hasBoundedWidth =
+            constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
+        final double scale = _fitScale(constraints);
+
+        Widget centered = Center(
+          child: _buildContent(context, scale: scale),
+        );
+        if (hasBoundedHeight || hasBoundedWidth) {
+          centered = SizedBox(
+            width: hasBoundedWidth ? constraints.maxWidth : null,
+            height: hasBoundedHeight ? constraints.maxHeight : null,
+            child: centered,
+          );
+        }
+        return KeyedSubtree(
+          key: const ValueKey<String>('appLoadingIndicatorExpanded'),
+          child: centered,
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, {required double scale}) {
     final ThemeData theme = Theme.of(context);
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final _LoadingMetrics metrics = _LoadingMetrics.resolve(
       size: widget.size,
       breakpoint: breakpoint,
       spacing: theme.spacing,
+      scale: scale,
     );
 
-    final Widget content = Semantics(
+    return Semantics(
       label: widget.semanticLabel ?? widget.title ?? 'Loading',
       liveRegion: true,
       child: AnimatedBuilder(
@@ -115,6 +148,7 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
         builder: (BuildContext context, Widget? child) {
           return Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               _AnimatedLogoMark(
                 progress: _controller.value,
@@ -168,29 +202,29 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
         },
       ),
     );
+  }
 
-    if (!widget.expand) {
-      return content;
-    }
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool hasBoundedHeight =
-            constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
-        final bool hasBoundedWidth =
-            constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
-
-        Widget centered = Center(child: content);
-        if (hasBoundedHeight || hasBoundedWidth) {
-          centered = SizedBox(
-            width: hasBoundedWidth ? constraints.maxWidth : null,
-            height: hasBoundedHeight ? constraints.maxHeight : null,
-            child: centered,
-          );
-        }
-        return centered;
-      },
+  double _fitScale(BoxConstraints constraints) {
+    final ThemeData theme = Theme.of(context);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final _LoadingMetrics preferred = _LoadingMetrics.resolve(
+      size: widget.size,
+      breakpoint: breakpoint,
+      spacing: theme.spacing,
     );
+    final double preferredMark =
+        preferred.logoSize + (preferred.ringPadding * 2) + 16;
+    double scale = 1;
+    if (constraints.hasBoundedWidth && constraints.maxWidth.isFinite) {
+      // Leave room for title/body copy; mark should stay within the parent.
+      scale = math.min(scale, (constraints.maxWidth * 0.55) / preferredMark);
+    }
+    if (constraints.hasBoundedHeight && constraints.maxHeight.isFinite) {
+      // Reserve space for copy + dots beneath the mark.
+      final double usableHeight = math.max(constraints.maxHeight * 0.55, 28);
+      scale = math.min(scale, usableHeight / preferredMark);
+    }
+    return scale.clamp(0.45, 1.0);
   }
 
   String _brandName(BuildContext context, AppBreakpoint breakpoint) {
@@ -225,11 +259,13 @@ class _LoadingMetrics {
     required AppLoadingIndicatorSize size,
     required AppBreakpoint breakpoint,
     required AppSpacingTokens spacing,
+    double scale = 1,
   }) {
     final bool compactViewport =
         breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
+    final double clampedScale = scale.clamp(0.45, 1.0);
 
-    return switch (size) {
+    final _LoadingMetrics base = switch (size) {
       AppLoadingIndicatorSize.compact => _LoadingMetrics(
         logoSize: 36,
         ringPadding: 10,
@@ -286,10 +322,10 @@ class _LoadingMetrics {
           _ => 480,
         },
         brandStyle: (ThemeData theme) {
-          final TextStyle? base = compactViewport
+          final TextStyle? brandBase = compactViewport
               ? theme.textTheme.headlineSmall
               : theme.textTheme.headlineMedium;
-          return base?.copyWith(
+          return brandBase?.copyWith(
             fontWeight: FontWeight.w800,
             letterSpacing: 0.2,
             height: 1.15,
@@ -301,6 +337,19 @@ class _LoadingMetrics {
         ),
       ),
     };
+
+    if (clampedScale >= 0.999) {
+      return base;
+    }
+
+    return _LoadingMetrics(
+      logoSize: base.logoSize * clampedScale,
+      ringPadding: base.ringPadding * clampedScale,
+      gapAfterLogo: base.gapAfterLogo * clampedScale,
+      copyMaxWidth: base.copyMaxWidth * clampedScale,
+      brandStyle: base.brandStyle,
+      titleStyle: base.titleStyle,
+    );
   }
 }
 
