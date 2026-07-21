@@ -1,1 +1,35 @@
-On the reception, the reception screen. There is a start encounter action button for those patients that have been maybe scheduled on new, new registered, whichever, but they are at a point of starting up an encounter, start, starting up an OPD encounter So if such a patient has needs to start a new encounter First of all if there is any existing encounter, I want to make sure that you cannot start a new encounter if there is any open encounter actually. for example, okay, you could start another encounter, but not the same encounter. For example, for OPD, you cannot start any OPD encounter if there is another OPD encounter that is existing. Still, you cannot start an OPD encounter when there is an IPD encounter. So it means that at least there should be the encounters should be defined in such a way that they are not contradicting, they are not contradicting with the flow, and then also So the, they should be, make sure that this start OPD encounter flow is nicely synchronized. for example I think maybe during the encounter you can edit it and assign a new patient you can, I mean, you can assign a new staff, maybe that is a doctor. I think when you say assign, assign, assign staff on the encounter, it doesn't make sense. let's say The assignment be clear, for example maybe you are signing a doctor, so let, let this person let this person Let, let us see that there is, this person is going to see a doctor. And then I can see right now there is an encounter which is running, it says, okay, there is a message which says, active OPD encounter found, this visit will still, is still open, continue it, and they can see I can see they are saying that this patient is with, with a doctor. Why then do we have this patient, why do we have the start encounter? Why do we start, why do we have the start encounter button, yet this patient is already with a doctor? We need to, this needs to be corrected so that these actions which are shown under the action status Under action status. So Are they correct? for example, if we are rescheduling, is that the correct status that we are actually having? So let's make sure that this statuses for the reception, in the reception, and maybe even in other, in other modules, maybe, let's make sure that let's see, let's make sure that this patient, I mean, this encounter, this button, this action button is actually reflecting what is exactly happening What is exactly happening? And the, the flow is seamless. So we don't want confusion and we don't want duplicates at every stage. So I want you to carefully revise and make sure that these steps and actions are corresponding with what they are intended to do and at the exact step.
+# Align Start OPD Encounter with Visit Reality
+
+Make Reception **Start OPD encounter** match the patient’s real open-visit state so actions never contradict Current step. Follow `prompts/.cursor/prompt.mdc` and `.cursor/flows/opd-flow.mdc`.
+
+## Context
+
+Appointments can still offer **Start OPD encounter** while an open OPD visit already exists (for example With doctor). Starting a second OPD, or an OPD beside an open IPD admission, must stay blocked except via the explicit supersede path.
+
+## Requirements
+
+1. Derive Appointments Current step and Next action from appointment status plus the patient’s open encounter or admission. Offer **Start OPD encounter** only when start is eligible; when an open OPD exists, prefer Continue or Edit guidance.
+2. Enforce one active OPD/Emergency encounter per patient. Block OPD start when an open IPD admission conflicts. Allow a replacement OPD only through the existing cancel-old-and-start-new confirmation.
+3. Keep `OpdEncounterDialog` Active-encounter notice, Continue, Edit, and guarded Start new. Label optional provider selection as doctor assignment, not generic staff.
+4. After start, continue, edit, cancel, close, or supersede, synchronize Appointments, Desk queue, Active visits, counts, and badges immediately.
+5. Cover permission, loading, empty-eligible, validation, error, success, and blocked-start feedback; omit unauthorized controls.
+
+## Constraints
+
+- Reuse encounter dialogs, active-OPD lock, authorization, localization, theme tokens, and design-system components.
+- Do not invent stages or bypass backend conflict rules.
+
+## Acceptance Criteria
+
+- R1: Appointments with an open OPD no longer present Start as the true next action.
+- R2: Concurrent active OPD or conflicting open IPD cannot create another OPD without supersede confirmation.
+- R3–R4: Dialog actions and doctor labels match visit state; lists update after mutation.
+- R5: Authorization absence and required UI states are tested; run Flutter analysis and backend conflict tests.
+
+## Relevant Files
+
+- `frontend/lib/shared/components/opd_encounter_dialog.dart`
+- `frontend/lib/shared/opd_actions/opd_appointment_actions_dialog.dart`
+- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+- `backend/src/lib/opd-active-encounter.js`
+- `backend/src/modules/opd-flow/`
