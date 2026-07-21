@@ -1494,7 +1494,6 @@ class _ReceptionWorkspaceContentState
     return _ReceptionDeskMobileRow(
       section: _section,
       row: row,
-      onOpenDetail: () => unawaited(_openRowDetail(row)),
     );
   }
 
@@ -2448,252 +2447,73 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
   const _ReceptionDeskMobileRow({
     required this.section,
     required this.row,
-    required this.onOpenDetail,
   });
 
   final ReceptionDeskSection section;
   final _ReceptionDeskRow row;
-  final VoidCallback onOpenDetail;
 
   @override
   Widget build(BuildContext context) {
     final Locale locale = Localizations.localeOf(context);
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
 
     // Activation comes from AppListTable's selectable mobile wrapper so this
-    // card does not nest a second InkWell and open duplicate dialogs.
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          AppListItemText(
-            title: row.patientName(context),
-            subtitle: row.patientIdentifier,
-          ),
-          if (row.queueEntry?.isPrioritized == true) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(
-                label: l10n.receptionHighPriorityBadgeLabel,
-                tone: AppWorkspaceStatusTone.warning,
-              ),
+    // row does not nest a second InkWell and open duplicate dialogs.
+    if (section == ReceptionDeskSection.followUps) {
+      final ReceptionFollowUpEntry? entry = row.followUpEntry;
+      final String? phone = row.patientPhone?.trim();
+      final DateTime? scheduled = entry?.scheduledAt.toLocal() ?? row.time;
+      return AppListTableMobileItem(
+        title: row.patientName(context),
+        caption: row.patientIdentifier,
+        meta: <AppListTableMobileMeta>[
+          if (phone != null && phone.isNotEmpty)
+            AppListTableMobileMeta(label: phone, icon: Icons.phone_outlined),
+          if (scheduled != null) ...<AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: AppFormatters.shortDate(scheduled, locale),
+              icon: AppActionIcons.calendar,
+            ),
+            AppListTableMobileMeta(
+              label: AppFormatters.time(scheduled, locale),
+              icon: AppActionIcons.time,
             ),
           ],
-          if (section == ReceptionDeskSection.followUps &&
-              (row.patientPhone?.trim().isNotEmpty ?? false)) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            Text(row.patientPhone!, style: theme.textTheme.bodySmall),
-          ],
-          if (row.time != null) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            Text(
-              section == ReceptionDeskSection.followUps
-                  ? '${AppFormatters.shortDate(row.time!.toLocal(), locale)} · ${AppFormatters.time(row.time!.toLocal(), locale)}'
-                  : AppFormatters.dateTime(row.time!, locale),
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-          if (section != ReceptionDeskSection.followUps) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            _ReceptionDeskMobileWorkflowField(
-              label: l10n.receptionCurrentStepLabel,
-              child: _ReceptionDeskMobileStatus(section: section, row: row),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            _ReceptionDeskMobileWorkflowField(
-              label: l10n.opdNextActionFilterLabel,
-              child: _ReceptionDeskMobileNextAction(
-                section: section,
-                row: row,
-                onOpenDetail: onOpenDetail,
-              ),
-            ),
-          ] else if (row.followUpEntry?.notes?.trim().isNotEmpty ?? false) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            _ReceptionDeskMobileWorkflowField(
-              label: l10n.opdReasonLabel,
-              child: Text(row.followUpEntry!.notes!),
-            ),
-          ],
+          if (entry?.notes?.trim().isNotEmpty == true)
+            AppListTableMobileMeta(label: entry!.notes!.trim()),
         ],
-      ),
-    );
-  }
-}
+      );
+    }
 
-class _ReceptionDeskMobileWorkflowField extends StatelessWidget {
-  const _ReceptionDeskMobileWorkflowField({
-    required this.label,
-    required this.child,
-  });
+    final String? stepLabel = switch (section) {
+      ReceptionDeskSection.appointments => row.appointmentCurrentStepLabel(l10n),
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.highPriority => row.queueCurrentStepLabel(l10n),
+      ReceptionDeskSection.activeVisits => row.flowCurrentStepLabel(l10n),
+      ReceptionDeskSection.paymentGate => row.paymentGateEntry == null
+          ? null
+          : billingClearanceLabel(context, row.paymentGateEntry!.clearanceState),
+      ReceptionDeskSection.followUps => null,
+    };
+    final String? nextLabel = row.nextActionLabel(section, l10n);
+    final DateTime? when = row.time;
 
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
+    return AppListTableMobileItem(
+      title: row.patientName(context),
+      caption: row.patientIdentifier,
+      meta: <AppListTableMobileMeta>[
+        if (row.queueEntry?.isPrioritized == true)
+          AppListTableMobileMeta(label: l10n.receptionHighPriorityBadgeLabel),
+        if (when != null)
+          AppListTableMobileMeta(
+            label: AppFormatters.dateTime(when, locale),
+            icon: AppActionIcons.time,
           ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        child,
+        if (stepLabel != null && stepLabel.trim().isNotEmpty)
+          AppListTableMobileMeta(label: stepLabel.trim()),
+        if (nextLabel != null && nextLabel.trim().isNotEmpty)
+          AppListTableMobileMeta(label: nextLabel.trim()),
       ],
     );
-  }
-}
-
-class _ReceptionDeskMobileStatus extends StatelessWidget {
-  const _ReceptionDeskMobileStatus({required this.section, required this.row});
-
-  final ReceptionDeskSection section;
-  final _ReceptionDeskRow row;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    switch (section) {
-      case ReceptionDeskSection.appointments:
-        final OpdAppointment? appointment = row.appointment;
-        if (appointment == null) {
-          return const SizedBox.shrink();
-        }
-        final String label = row.appointmentCurrentStepLabel(l10n);
-        if (label.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return AppWorkspaceStatusBadge(
-          status: AppWorkspaceStatus(
-            label: label,
-            tone: AppWorkspaceStatusTone.info,
-          ),
-        );
-      case ReceptionDeskSection.queue:
-      case ReceptionDeskSection.highPriority:
-        final String label = row.queueCurrentStepLabel(l10n);
-        if (label.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return AppWorkspaceStatusBadge(
-          status: AppWorkspaceStatus(
-            label: label,
-            tone: opdStageStatusTone(row.queueCurrentStepCode),
-          ),
-        );
-      case ReceptionDeskSection.activeVisits:
-        final String label = row.flowCurrentStepLabel(l10n);
-        if (label.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return AppWorkspaceStatusBadge(
-          status: AppWorkspaceStatus(
-            label: label,
-            tone: opdStageStatusTone(row.flowCurrentStepCode),
-          ),
-        );
-      case ReceptionDeskSection.paymentGate:
-        final ReceptionPaymentGateEntry? entry = row.paymentGateEntry;
-        if (entry == null) {
-          return const SizedBox.shrink();
-        }
-        return AppWorkspaceStatusBadge(
-          status: AppWorkspaceStatus(
-            label: billingClearanceLabel(context, entry.clearanceState),
-            tone: billingClearanceTone(entry.clearanceState),
-          ),
-        );
-      case ReceptionDeskSection.followUps:
-        final ReceptionFollowUpEntry? entry = row.followUpEntry;
-        if (entry == null) {
-          return const SizedBox.shrink();
-        }
-        return AppWorkspaceStatusBadge(
-          status: AppWorkspaceStatus(
-            label: opdStageDisplayLabel(l10n, entry.status),
-            tone: AppWorkspaceStatusTone.info,
-          ),
-        );
-    }
-  }
-}
-
-class _ReceptionDeskMobileNextAction extends StatelessWidget {
-  const _ReceptionDeskMobileNextAction({
-    required this.section,
-    required this.row,
-    required this.onOpenDetail,
-  });
-
-  final ReceptionDeskSection section;
-  final _ReceptionDeskRow row;
-  final VoidCallback onOpenDetail;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    switch (section) {
-      case ReceptionDeskSection.appointments:
-        final String? label = row.appointmentNextActionLabel(l10n);
-        if (label == null) {
-          return const SizedBox.shrink();
-        }
-        return AppButton.secondary(label: label, onPressed: onOpenDetail);
-      case ReceptionDeskSection.queue:
-      case ReceptionDeskSection.highPriority:
-        final String label = row.queueNextActionLabel(l10n);
-        if (label.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return Text(label);
-      case ReceptionDeskSection.activeVisits:
-        final String label = row.flowNextActionLabel(l10n);
-        if (label.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return Text(label);
-      case ReceptionDeskSection.paymentGate:
-        final ReceptionPaymentGateEntry? entry = row.paymentGateEntry;
-        if (entry == null) {
-          return const SizedBox.shrink();
-        }
-        final ThemeData theme = Theme.of(context);
-        final String summary = <String>[
-          entry.services
-              .map((String source) => billingApiLabel(context, source))
-              .join(', '),
-          entry.outstandingByCurrency.entries
-              .map(
-                (MapEntry<String, num> total) =>
-                    billingMoney(context, total.value, total.key),
-              )
-              .join(' · '),
-        ].where((String value) => value.isNotEmpty).join(' · ');
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(row.paymentNextActionLabel(l10n)),
-            if (summary.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(summary, style: theme.textTheme.bodySmall),
-            ],
-          ],
-        );
-      case ReceptionDeskSection.followUps:
-        return Text(l10n.receptionMarkFollowUpCompletedAction);
-    }
   }
 }

@@ -544,6 +544,230 @@ class AppListTableColumn<T> {
   bool get isSortable => sortComparator != null;
 }
 
+/// One meta fragment on the secondary line of [AppListTableMobileItem].
+final class AppListTableMobileMeta {
+  const AppListTableMobileMeta({required this.label, this.icon});
+
+  final String label;
+  final IconData? icon;
+}
+
+/// Compact two-line flush mobile row for [AppListTable] list layout.
+///
+/// Line 1: bold [title] with optional muted inline [caption].
+/// Line 2: middot-joined [meta] entries (optional icons).
+/// Optional leading initials avatar; trailing chevron is added by the table
+/// when the row is selectable.
+class AppListTableMobileItem extends StatelessWidget {
+  const AppListTableMobileItem({
+    required this.title,
+    this.caption,
+    this.meta = const <AppListTableMobileMeta>[],
+    this.leading,
+    this.showAvatar = true,
+    this.avatarLabel,
+    this.padding,
+    super.key,
+  });
+
+  final String title;
+  final String? caption;
+  final List<AppListTableMobileMeta> meta;
+  final Widget? leading;
+  final bool showAvatar;
+  final String? avatarLabel;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final String resolvedTitle = title.trim();
+    final String? resolvedCaption = caption?.trim();
+    final List<AppListTableMobileMeta> resolvedMeta = meta
+        .where((AppListTableMobileMeta item) => item.label.trim().isNotEmpty)
+        .toList(growable: false);
+    final Widget? leadingWidget =
+        leading ??
+        (showAvatar
+            ? _AppListTableMobileAvatar(
+                label: avatarLabel?.trim().isNotEmpty == true
+                    ? avatarLabel!.trim()
+                    : resolvedTitle,
+              )
+            : null);
+
+    return Padding(
+      padding:
+          padding ??
+          EdgeInsets.symmetric(
+            horizontal: theme.spacing.md,
+            vertical: theme.spacing.sm,
+          ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          if (leadingWidget != null) ...<Widget>[
+            leadingWidget,
+            SizedBox(width: theme.spacing.sm),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Flexible(
+                      flex: 3,
+                      child: Text(
+                        resolvedTitle,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (resolvedCaption != null &&
+                        resolvedCaption.isNotEmpty) ...<Widget>[
+                      SizedBox(width: theme.spacing.sm),
+                      Flexible(
+                        flex: 2,
+                        child: Text(
+                          resolvedCaption,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (resolvedMeta.isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs / 2),
+                  _AppListTableMobileMetaRow(items: resolvedMeta),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppListTableMobileAvatar extends StatelessWidget {
+  const _AppListTableMobileAvatar({required this.label});
+
+  final String label;
+
+  static const double _size = 36;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final String initials = _initialsFor(label);
+    final Color background = _avatarTone(colors, label);
+
+    return ExcludeSemantics(
+      child: Container(
+        width: _size,
+        height: _size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+        child: Text(
+          initials,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: colors.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _initialsFor(String value) {
+    final List<String> parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String part) => part.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) {
+      return '?';
+    }
+    if (parts.length == 1) {
+      final String token = parts.first;
+      return token.length >= 2
+          ? token.substring(0, 2).toUpperCase()
+          : token.toUpperCase();
+    }
+    return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+  }
+
+  static Color _avatarTone(ColorScheme colors, String seed) {
+    final List<Color> tones = <Color>[
+      colors.primaryContainer,
+      colors.secondaryContainer,
+      colors.tertiaryContainer,
+      colors.surfaceContainerHighest,
+      colors.errorContainer,
+    ];
+    return tones[seed.hashCode.abs() % tones.length];
+  }
+}
+
+class _AppListTableMobileMetaRow extends StatelessWidget {
+  const _AppListTableMobileMetaRow({required this.items});
+
+  final List<AppListTableMobileMeta> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color muted = theme.colorScheme.onSurfaceVariant;
+    final TextStyle? style = theme.textTheme.bodySmall?.copyWith(color: muted);
+    final double iconSize = theme.appTokens.listIconSize * 0.72;
+
+    return Row(
+      children: <Widget>[
+        for (int index = 0; index < items.length; index++) ...<Widget>[
+          if (index > 0)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+              child: Text('·', style: style),
+            ),
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (items[index].icon != null) ...<Widget>[
+                  Icon(items[index].icon, size: iconSize, color: muted),
+                  SizedBox(width: theme.spacing.xs / 2),
+                ],
+                Flexible(
+                  child: Text(
+                    items[index].label.trim(),
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: style,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class AppListTable<T> extends StatefulWidget {
   const AppListTable({
     required this.columns,
@@ -2042,7 +2266,27 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
             onTap: () {
               onSelected(item);
             },
-            child: child,
+            child: Builder(
+              builder: (BuildContext context) {
+                final ThemeData theme = Theme.of(context);
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Expanded(child: child),
+                    Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        end: theme.spacing.sm,
+                      ),
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        size: theme.appTokens.listIconSize,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

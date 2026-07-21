@@ -276,35 +276,27 @@ class _FollowUpMobileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final DateTime local = entry.scheduledAt.toLocal();
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          AppListItemText(
-            title: entry.patientDisplayName?.trim().isNotEmpty == true
-                ? entry.patientDisplayName!.trim()
-                : l10n.profileUnknownValue,
-            subtitle: entry.patientIdentifier,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            entry.patientPhone?.trim().isNotEmpty == true
-                ? entry.patientPhone!.trim()
-                : l10n.profileUnknownValue,
-            style: theme.textTheme.bodySmall,
-          ),
-          Text(
-            '${AppFormatters.shortDate(local, locale)} · ${AppFormatters.time(local, locale)}',
-            style: theme.textTheme.bodySmall,
-          ),
-        ],
-      ),
+    final String? phone = entry.patientPhone?.trim();
+    return AppListTableMobileItem(
+      title: entry.patientDisplayName?.trim().isNotEmpty == true
+          ? entry.patientDisplayName!.trim()
+          : l10n.profileUnknownValue,
+      caption: entry.patientIdentifier.trim().isNotEmpty
+          ? entry.patientIdentifier.trim()
+          : null,
+      meta: <AppListTableMobileMeta>[
+        if (phone != null && phone.isNotEmpty)
+          AppListTableMobileMeta(label: phone, icon: Icons.phone_outlined),
+        AppListTableMobileMeta(
+          label: AppFormatters.shortDate(local, locale),
+          icon: AppActionIcons.calendar,
+        ),
+        AppListTableMobileMeta(
+          label: AppFormatters.time(local, locale),
+          icon: AppActionIcons.time,
+        ),
+      ],
     );
   }
 }

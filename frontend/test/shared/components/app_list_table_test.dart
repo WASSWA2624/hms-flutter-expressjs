@@ -43,6 +43,66 @@ void main() {
     expect(find.text('Title'), findsNothing);
   });
 
+  testWidgets('AppListTableMobileItem renders two-line flush content', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppListTableMobileItem(
+        title: 'Anderson, Maria',
+        caption: 'MRN 1029384',
+        meta: <AppListTableMobileMeta>[
+          AppListTableMobileMeta(
+            label: '+256 700 111 222',
+            icon: Icons.phone_outlined,
+          ),
+          AppListTableMobileMeta(
+            label: '22 Jul',
+            icon: Icons.calendar_today_outlined,
+          ),
+          AppListTableMobileMeta(label: '09:30', icon: Icons.schedule_outlined),
+        ],
+      ),
+      size: const Size(390, 200),
+    );
+
+    expect(find.text('Anderson, Maria'), findsOneWidget);
+    expect(find.text('MRN 1029384'), findsOneWidget);
+    expect(find.text('+256 700 111 222'), findsOneWidget);
+    expect(find.text('22 Jul'), findsOneWidget);
+    expect(find.text('09:30'), findsOneWidget);
+    expect(find.byIcon(Icons.phone_outlined), findsOneWidget);
+  });
+
+  testWidgets('AppListTable selectable mobile rows show a trailing chevron', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          onRowSelected: (_RowItem item) {},
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return AppListTableMobileItem(
+              title: item.title,
+              caption: item.status,
+              meta: const <AppListTableMobileMeta>[
+                AppListTableMobileMeta(label: 'meta'),
+              ],
+            );
+          },
+        ),
+      ),
+      size: const Size(500, 600),
+    );
+
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+  });
+
   testWidgets('AppListTable mobile rows activate from the keyboard', (
     WidgetTester tester,
   ) async {
