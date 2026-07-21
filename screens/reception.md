@@ -1,35 +1,30 @@
 ## Appointment, queue, and workflow actions
 
-
-| Action button / control             | Locations                                                                              | Modal opened or function                                                                                                                                                                                                                              |
-| ----------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prioritize                          | Queue-actions grid; prioritize dialog footer                                           | Opens `AppTextActionDialog`; in that dialog, submits the optional priority reason.                                                                                                                                                                    |
-| Move                                | Queue-actions grid; move dialog footer                                                 | Opens `_MoveQueueDialog`; in that dialog, changes queue status/provider.                                                                                                                                                                              |
+| Action button / control             | Locations                                                                              | Modal opened or function                                                                                                                                                                                                                                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prioritize                          | Queue-actions grid; prioritize dialog footer                                           | Opens `AppTextActionDialog`; in that dialog, submits the optional priority reason.                                                                                                                                                                                                      |
+| Move                                | Queue-actions grid; move dialog footer                                                 | Opens `_MoveQueueDialog`; in that dialog, changes queue status/provider.                                                                                                                                                                          |
 | Start consultation                  | Queue next-action column/mobile action; queue-actions grid; confirmation footer        | For a queue row with an ID, the workflow control is disabled because `START_CONSULTATION` has no registry definition. The blank-ID fallback opens the row hub. From the grid it opens `AppConfirmActionDialog`, whose footer starts the consultation. |
-| Record vitals / Edit vitals         | Active visits next-action label; `FlowActionsDialog`; vitals dialog footer             | Reception next-action labels are read-only text. From Active visits the flow hub opens `RecordVitalsDialog`; its footer saves vitals and any inline routing selection.                                                                                |
-| Assign doctor / Change doctor       | Active visits next-action label; `FlowActionsDialog`; assignment dialog footer         | Opens `AssignDoctorDialog`; its footer saves the selected provider.                                                                                                                                                                                   |
-| Doctor review                       | Active visits next-action label; `FlowActionsDialog`; clinical free-text dialog footer | The flow hub opens `ClinicalFreeTextActionDialog`; its footer submits the required clinical note.                                                                                                                                                     |
-| Collect sample / diagnostic handoff | Active visits next-action label; `FlowActionsDialog` dynamic handoff                   | Routes to Laboratory or the module appropriate for the current diagnostic stage.                                                                                                                                                                      |
-| Perform imaging                     | Active visits next-action label; `FlowActionsDialog` dynamic handoff                   | Routes to Radiology.                                                                                                                                                                                                                                  |
-| Dispense medicine                   | Active visits next-action label; `FlowActionsDialog` dynamic handoff                   | Routes to Pharmacy.                                                                                                                                                                                                                                   |
-| Disposition / Complete disposition  | Active visits next-action label; `FlowActionsDialog`                                   | The flow hub opens `OpdDispositionDialog`.                                                                                                                                                                                                            |
-| Unsupported action code             | Active visits next-action label                                                        | Displays a generated title-cased label but remains disabled.                                                                                                                                                                                          |
-| Add diagnosis                       | `FlowActionsDialog`; diagnosis dialog footer                                           | Opens `ClinicalDiagnosisActionDialog`; its footer submits selected diagnoses.                                                                                                                                                                         |
-| Request lab                         | `FlowActionsDialog`; lab-order dialog footer                                           | Opens `ClinicalLabOrderActionDialog`; its footer submits the staged lab requests.                                                                                                                                                                     |
-| Request radiology                   | `FlowActionsDialog`; radiology-order dialog footer                                     | Opens `ClinicalRadiologyOrderActionDialog`; its footer submits the staged studies.                                                                                                                                                                    |
-| Prescribe                           | `FlowActionsDialog`; prescription dialog footer                                        | Opens `ClinicalPrescriptionActionDialog`; its footer submits the prescription.                                                                                                                                                                        |
-| Record procedure                    | `FlowActionsDialog`; procedure dialog footer                                           | Opens `ClinicalProcedureActionDialog`; its footer records the selected procedure.                                                                                                                                                                     |
-| Refer                               | `FlowActionsDialog`                                                                    | Opens `ReferralDialog`.                                                                                                                                                                                                                               |
-| Follow up                           | `FlowActionsDialog`                                                                    | Opens `FollowUpDialog`.                                                                                                                                                                                                                               |
-| Correct stage                       | `FlowActionsDialog`; stage-correction dialog footer                                    | Opens `CorrectStageDialog`; its footer saves the corrected stage and required reason.                                                                                                                                                                 |
-| Print summary                       | `FlowActionsDialog`                                                                    | Opens `PrintOpdSummaryDialog`.                                                                                                                                                                                                                        |
-| Open inpatient admission            | `FlowActionsDialog`; post-Admit handoff footer                                         | Navigates to IPD for the pending admission.                                                                                                                                                                                                           |
-
-
-
+| Record vitals / Edit vitals         | Active visits next-action label; `FlowActionsDialog`; vitals dialog footer             | Reception next-action labels are read-only text. From Active visits the flow hub opens `RecordVitalsDialog`; its footer saves vitals and any inline routing selection.                                                                            |
+| Assign doctor / Change doctor       | Active visits next-action label; `FlowActionsDialog`; assignment dialog footer         | Opens `AssignDoctorDialog`; its footer saves the selected provider.                                                                                                                                        |
+| Doctor review                       | Active visits next-action label; `FlowActionsDialog`; clinical free-text dialog footer | The flow hub opens `ClinicalFreeTextActionDialog`; its footer submits the required clinical note.                                                                                                           |
+| Collect sample / diagnostic handoff | Active visits next-action label; `FlowActionsDialog` dynamic handoff                   | Routes to Laboratory or the module appropriate for the current diagnostic stage.                                                                                                                           |
+| Perform imaging                     | Active visits next-action label; `FlowActionsDialog` dynamic handoff                   | Routes to Radiology.                                                                                                                                                                                       |
+| Dispense medicine                   | Active visits next-action label; `FlowActionsDialog` dynamic handoff                   | Routes to Pharmacy.                                                                                                                                                                                        |
+| Disposition / Complete disposition  | Active visits next-action label; `FlowActionsDialog`                                   | The flow hub opens `OpdDispositionDialog`.                                                                                                                                                                 |
+| Unsupported action code             | Active visits next-action label                                                        | Displays a generated title-cased label but remains disabled.                                                                                                                                               |
+| Add diagnosis                       | `FlowActionsDialog`; diagnosis dialog footer                                           | Opens `ClinicalDiagnosisActionDialog`; its footer submits selected diagnoses.                                                                                                                              |
+| Request lab                         | `FlowActionsDialog`; lab-order dialog footer                                           | Opens `ClinicalLabOrderActionDialog`; its footer submits the staged lab requests.                                                                                                                          |
+| Request radiology                   | `FlowActionsDialog`; radiology-order dialog footer                                     | Opens `ClinicalRadiologyOrderActionDialog`; its footer submits the staged studies.                                                                                                                         |
+| Prescribe                           | `FlowActionsDialog`; prescription dialog footer                                        | Opens `ClinicalPrescriptionActionDialog`; its footer submits the prescription.                                                                                                                             |
+| Record procedure                    | `FlowActionsDialog`; procedure dialog footer                                           | Opens `ClinicalProcedureActionDialog`; its footer records the selected procedure.                                                                                                                          |
+| Refer                               | `FlowActionsDialog`                                                                    | Opens `ReferralDialog`.                                                                                                                                                                                    |
+| Follow up                           | `FlowActionsDialog`                                                                    | Opens `FollowUpDialog`.                                                                                                                                                                                    |
+| Correct stage                       | `FlowActionsDialog`; stage-correction dialog footer                                    | Opens `CorrectStageDialog`; its footer saves the corrected stage and required reason.                                                                                                                      |
+| Print summary                       | `FlowActionsDialog`                                                                    | Opens `PrintOpdSummaryDialog`.                                                                                                                                                                             |
+| Open inpatient admission            | `FlowActionsDialog`; post-Admit handoff footer                                         | Navigates to IPD for the pending admission.                                                                                                                                                                |
 
 ## Patient, appointment, and encounter dialog actions
-
 
 | Action button / control          | Locations                                                       | Modal opened or function                                                             |
 | -------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -44,11 +39,7 @@
 | Continue encounter               | Encounter dialog footer                                         | Returns the continue-workflow result for the active encounter.                       |
 | Cancel old and start new         | Start-new confirmation destructive footer                       | Cancels the old encounter and forces creation of a new one.                          |
 
-
-
-
 ## Flow and clinical dialog actions
-
 
 | Action button / control             | Locations                                                                      | Modal opened or function                                                                                                                              |
 | ----------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -75,20 +66,13 @@
 | Bill on dispense / Pay at prescribe | Prescription billing-mode toggles                                              | Selects when prescription charges are collected.                                                                                                      |
 | Done                                | Request-billing, prescription-line, and procedure-catalog footers              | Returns billing selections, adds/updates a prescription line, or closes the procedure picker, according to location.                                  |
 
-
-
-
 ## Shared dialog actions
-
 
 | Action button / control | Locations                                                       | Modal opened or function                                                                                                                   |
 | ----------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Cancel                  | Footer of dialogs that permit cancellation                      | Dismisses the current dialog without applying its pending action. Advanced-filter and column-settings dialogs do not have a footer Cancel. |
 | Close                   | Title bar of all reachable dialogs                              | Dismisses the current dialog; commonly disabled while loading or saving.                                                                   |
 | Maximize / Restore      | Title bar of `AppDialog` instances with default window controls | Expands the dialog or restores its previous size. Advanced-filter and column-settings dialogs disable this control.                        |
-
-
-
 
 ## Reachable modal chain
 
@@ -112,13 +96,9 @@ This section lists modal relationships without repeating their action labels:
 
 These reception-feature helpers have no call site from the page or its reachable dialogs, so they are excluded from the inventory:
 
-
 | Helper                          | Would open or do         |
 | ------------------------------- | ------------------------ |
 | `openReceptionInsuranceCapture` | Claims enrollment dialog |
-
-
-
 
 ## Main implementation sources
 
@@ -132,4 +112,3 @@ These reception-feature helpers have no call site from the page or its reachable
 - `frontend/lib/shared/components/app_dialog.dart`
 - `frontend/lib/shared/components/app_list_table.dart`
 - `frontend/lib/shared/components/app_search_bar.dart`
-
