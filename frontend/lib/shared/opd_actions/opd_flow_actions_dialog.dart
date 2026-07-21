@@ -81,11 +81,6 @@ const AccessRequirement opdBillingActionRequirement = AccessRequirement(
   activeModules: <String>['billing-payments'],
 );
 
-const AccessRequirement opdStageCorrectionRequirement = AccessRequirement(
-  anyRoles: _opdAdminActionRoles,
-  activeModules: <String>['scheduling-queue'],
-);
-
 /// Gate for the OPD→IPD admission handoff action.
 ///
 /// Mirrors the IPD workspace access rules (inpatient bed management module plus
@@ -139,9 +134,9 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
   /// When false, Record/Edit vitals quick actions are omitted (Reception).
   final bool allowVitalsActions;
 
-  /// When false, Clinical notes, clinician-only quick actions, and the
-  /// clinical-services panel are omitted (Reception). The workflow stepper
-  /// remains the source of visit progress.
+  /// When false (Reception), clinician write actions are omitted while
+  /// status-only clinical-service progress, Follow up, Correct stage, and
+  /// Print summary remain. The workflow stepper stays read-only guidance.
   final bool allowClinicalActions;
 
   @override
@@ -556,7 +551,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 : null,
           ),
           'follow_up': () => AppPermissionActionItem(
-            requirement: opdDoctorActionRequirement,
+            // Front-desk and clinical roles may schedule follow-ups; Reception
+            // keeps this when clinician write actions are otherwise hidden.
+            requirement: opdFrontDeskActionRequirement,
             label: l10n.opdFollowUpAction,
             icon: AppActionIcons.followUp,
             fullWidth: true,
@@ -624,18 +621,25 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                   }.contains(stage) ||
                   displayCode == 'WITH_DOCTOR' ||
                   clinicalStage),
-        'handoff' => !terminal && servicePendingStage,
+        // Department handoff navigates into lab/imaging/pharmacy work — omit
+        // for Reception; progress remains visible via status labels.
+        'handoff' =>
+          widget.allowClinicalActions && !terminal && servicePendingStage,
         'diagnosis' ||
         'lab' ||
         'radiology' ||
         'prescription' ||
         'procedure' ||
-        'referral' ||
-        'follow_up' =>
+        'referral' =>
           widget.allowClinicalActions && !terminal && clinicalStage,
+        // Follow up stays available on Reception (and clinical) surfaces.
+        'follow_up' => !terminal && clinicalStage,
         'disposition' =>
-          !terminal && (canDispose || nextActionKey == 'disposition'),
-        'admission_handoff' => hasPendingAdmission,
+          widget.allowClinicalActions &&
+              !terminal &&
+              (canDispose || nextActionKey == 'disposition'),
+        'admission_handoff' =>
+          widget.allowClinicalActions && hasPendingAdmission,
         'correct_stage' => true,
         'print' => true,
         _ => false,
@@ -685,7 +689,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     required bool actionsEnabled,
   }) {
     return AppPermissionActionItem(
-      requirement: opdStageCorrectionRequirement,
+      // Reception and nursing may correct stage; clinician writes stay separate.
+      requirement: opdReceptionActionRequirement,
       label: context.l10n.opdCorrectStageAction,
       icon: AppActionIcons.move,
       fullWidth: true,

@@ -196,6 +196,47 @@ void main() {
       );
       expect(find.widgetWithText(AppButton, 'Add diagnosis'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Request lab'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Refer'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'reception context omits disposition and open admission',
+    (WidgetTester tester) async {
+      const OpdFlowSummary awaitingDisposition = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Patient Example',
+        stage: 'WAITING_DISPOSITION',
+        displayCode: 'DECISION_NEEDED',
+        displayNextStep: 'DISPOSITION',
+        providerUserId: 'USR-DOC001',
+        providerDisplayName: 'Jordan Demo',
+        consultationPaymentRequired: false,
+        consultationPaid: true,
+      );
+
+      await _pumpDialog(
+        tester,
+        awaitingDisposition,
+        detail: const OpdFlowDetail(summary: awaitingDisposition),
+        policy: _receptionistPolicy(),
+        allowBillingActions: false,
+        allowVitalsActions: false,
+        allowClinicalActions: false,
+      );
+
+      expect(find.widgetWithText(AppButton, 'Clinical notes'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Disposition'), findsNothing);
+      expect(
+        find.widgetWithText(AppButton, 'Open inpatient admission'),
+        findsNothing,
+      );
+      expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Correct stage'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     },
@@ -277,7 +318,7 @@ void main() {
   });
 
   testWidgets(
-    'reception context omits the clinical services panel entirely',
+    'reception context shows clinical services as status-only progress',
     (WidgetTester tester) async {
       const OpdFlowSummary withDoctor = OpdFlowSummary(
         id: 'encounter-1',
@@ -302,21 +343,33 @@ void main() {
             recordedAt: DateTime.utc(2026, 7, 21, 10, 14),
           ),
         ],
+        labOrders: <OpdRelatedRecord>[
+          OpdRelatedRecord(
+            id: 'lab-1',
+            kind: 'lab_order',
+            title: 'CBC',
+            status: 'SAMPLE_PENDING',
+            occurredAt: DateTime.utc(2026, 7, 21, 10, 20),
+          ),
+        ],
       );
 
       await _pumpDialog(
         tester,
         withDoctor,
         detail: detail,
-        policy: _doctorPolicy(),
+        policy: _receptionistPolicy(),
         allowBillingActions: false,
         allowVitalsActions: false,
         allowClinicalActions: false,
       );
 
-      expect(find.byType(OpdEncounterClinicalServicesPanel), findsNothing);
-      expect(find.text('Blood Pressure'), findsNothing);
+      expect(find.byType(OpdEncounterClinicalServicesPanel), findsOneWidget);
+      expect(find.text('Blood Pressure'), findsOneWidget);
+      expect(find.text('CBC'), findsOneWidget);
       expect(find.textContaining('80/50'), findsNothing);
+      expect(find.text('Result'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Request lab'), findsNothing);
       expect(find.byType(AppWorkflowStepper), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     },
@@ -348,6 +401,7 @@ void main() {
 
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Correct stage'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });

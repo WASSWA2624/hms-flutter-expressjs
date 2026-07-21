@@ -30,7 +30,8 @@ class OpdEncounterClinicalServicesPanel extends StatelessWidget {
   final OpdFlowDetail detail;
   final OpdFlowSummary flow;
 
-  /// When false, measurement/result values are omitted (Reception).
+  /// When false, measurement/result values are omitted while service status
+  /// labels remain (Reception progress view).
   final bool showResults;
 
   @override

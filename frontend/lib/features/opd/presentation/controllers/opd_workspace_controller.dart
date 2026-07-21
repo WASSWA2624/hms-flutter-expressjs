@@ -434,9 +434,13 @@ final class OpdWorkspaceController
   }
 
   Future<AppFailure?> selectFlow(OpdFlowSummary flow) async {
-    final OpdWorkspaceState? current = _currentState;
+    OpdWorkspaceState? current = _currentState;
     if (current == null) {
-      return refresh();
+      final AppFailure? bootstrapFailure = await refresh();
+      current = _currentState;
+      if (bootstrapFailure != null || current == null) {
+        return bootstrapFailure;
+      }
     }
 
     _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
