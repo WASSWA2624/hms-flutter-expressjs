@@ -90,4 +90,42 @@ void main() {
     );
     expect(linked?.id, 'flow-2');
   });
+
+  test('allows cancel only for pre-encounter appointments', () {
+    expect(canCancelOpdAppointment(appointment: scheduled), isTrue);
+    expect(
+      canCancelOpdAppointment(appointment: scheduled, linkedFlow: openFlow),
+      isFalse,
+    );
+    expect(
+      canCancelOpdAppointment(
+        appointment: scheduled.copyWith(status: 'CANCELLED'),
+      ),
+      isFalse,
+    );
+  });
+
+  test('reception appointments exclude rows with a linked active encounter', () {
+    expect(
+      isReceptionPreEncounterAppointment(
+        appointment: scheduled,
+        flows: const <OpdFlowSummary>[],
+      ),
+      isTrue,
+    );
+    expect(
+      isReceptionPreEncounterAppointment(
+        appointment: scheduled,
+        flows: <OpdFlowSummary>[openFlow],
+      ),
+      isFalse,
+    );
+    expect(
+      isReceptionPreEncounterAppointment(
+        appointment: scheduled.copyWith(status: 'COMPLETED'),
+        flows: const <OpdFlowSummary>[],
+      ),
+      isFalse,
+    );
+  });
 }

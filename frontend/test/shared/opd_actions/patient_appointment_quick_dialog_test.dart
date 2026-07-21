@@ -4,8 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -173,8 +178,17 @@ void main() {
         OpdFlowSummary(
           id: 'flow-1',
           patientId: 'PAT000001',
+          appointmentId: 'APT000001',
           status: 'IN_PROGRESS',
           stage: 'WITH_DOCTOR',
+        ),
+      ],
+      appointments: const <OpdAppointment>[
+        OpdAppointment(
+          id: 'appointment-1',
+          publicId: 'APT000001',
+          patientId: 'PAT000001',
+          status: 'SCHEDULED',
         ),
       ],
     );
@@ -186,6 +200,12 @@ void main() {
       find.textContaining('already in an active OPD encounter'),
       findsOneWidget,
     );
+    expect(
+      find.widgetWithText(AppButton, 'Continue encounter'),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(AppButton, 'Edit encounter'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Reschedule'), findsOneWidget);
     final AppButton submit = tester.widget<AppButton>(
       find.widgetWithText(AppButton, 'Schedule appointment'),
     );
@@ -233,6 +253,7 @@ Future<void> _pumpDialog(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        appAccessPolicyProvider.overrideWithValue(_frontDeskPolicy()),
         if (repository != null) ...[
           initialSessionStateProvider.overrideWithValue(
             const SessionState.ready(),
@@ -288,14 +309,15 @@ Future<void> _pumpDialog(
 void _stubWorkspaceLoad(
   _MockOpdRepository repository, {
   List<OpdFlowSummary> flows = const <OpdFlowSummary>[],
+  List<OpdAppointment> appointments = const <OpdAppointment>[],
 }) {
   when(() => repository.listAppointments(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdAppointment>>.success(
       AppPage<OpdAppointment>(
-        items: const <OpdAppointment>[],
+        items: appointments,
         request: (invocation.positionalArguments.single as OpdAppointmentQuery)
             .pageRequest,
-        totalItemCount: 0,
+        totalItemCount: appointments.length,
       ),
     ),
   );
@@ -353,5 +375,23 @@ void _stubWorkspaceLoad(
   when(() => repository.listProviders(search: any(named: 'search'))).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+}
+
+AppAccessPolicy _frontDeskPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+      permissions: <AppPermission>{
+        AppPermissions.patientRead,
+        AppPermissions.patientWrite,
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      ],
+    ),
   );
 }

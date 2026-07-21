@@ -1341,14 +1341,11 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.appointments:
         return <_ReceptionDeskRow>[
           for (final OpdAppointment appointment in state.appointments.items)
-            if (!isOpdTerminalStatus(appointment.status))
-              _ReceptionDeskRow.appointment(
-                appointment,
-                flow: findActiveOpdFlowForAppointment(
-                  appointment: appointment,
-                  flows: state.flows.items,
-                ),
-              ),
+            if (isReceptionPreEncounterAppointment(
+              appointment: appointment,
+              flows: state.flows.items,
+            ))
+              _ReceptionDeskRow.appointment(appointment),
         ];
       case ReceptionDeskSection.queue:
         return <_ReceptionDeskRow>[
@@ -1498,7 +1495,12 @@ class _ReceptionWorkspaceContentState
     switch (section) {
       case ReceptionDeskSection.appointments:
         return state.appointments.items
-            .where((OpdAppointment a) => !isOpdTerminalStatus(a.status))
+            .where(
+              (OpdAppointment a) => isReceptionPreEncounterAppointment(
+                appointment: a,
+                flows: state.flows.items,
+              ),
+            )
             .length;
       case ReceptionDeskSection.queue:
         return state.queueEntries.items

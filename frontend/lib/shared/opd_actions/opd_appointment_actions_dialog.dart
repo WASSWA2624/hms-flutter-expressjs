@@ -100,7 +100,10 @@ class _OpdAppointmentActionsDialogState
         primaryAction == OpdAppointmentPrimaryAction.continueEncounter &&
         linkedFlow != null;
     final bool canReschedule = !terminal;
-    final bool canCancelAppointment = !terminal && status != 'CANCELLED';
+    final bool canCancelAppointment = canCancelOpdAppointment(
+      appointment: widget.appointment,
+      linkedFlow: linkedFlow,
+    );
     final String nextAction =
         opdAppointmentPrimaryActionLabel(l10n, primaryAction) ?? '';
 

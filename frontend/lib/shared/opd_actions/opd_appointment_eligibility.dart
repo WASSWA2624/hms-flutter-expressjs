@@ -92,6 +92,34 @@ OpdAppointmentPrimaryAction resolveOpdAppointmentPrimaryAction({
   return OpdAppointmentPrimaryAction.reschedule;
 }
 
+/// Whether Reception may cancel [appointment] (pre-encounter only).
+bool canCancelOpdAppointment({
+  required OpdAppointment appointment,
+  OpdFlowSummary? linkedFlow,
+}) {
+  if (isOpdAppointmentStatusTerminal(appointment.status)) {
+    return false;
+  }
+  return linkedFlow == null;
+}
+
+/// Whether [appointment] belongs on Reception's Appointments worklist.
+///
+/// Pre-encounter bookings only: non-terminal and no linked active encounter.
+bool isReceptionPreEncounterAppointment({
+  required OpdAppointment appointment,
+  required Iterable<OpdFlowSummary> flows,
+}) {
+  if (isOpdAppointmentStatusTerminal(appointment.status)) {
+    return false;
+  }
+  return findActiveOpdFlowForAppointment(
+        appointment: appointment,
+        flows: flows,
+      ) ==
+      null;
+}
+
 /// Localized next-action label for [resolveOpdAppointmentPrimaryAction].
 String? opdAppointmentPrimaryActionLabel(
   AppLocalizations l10n,

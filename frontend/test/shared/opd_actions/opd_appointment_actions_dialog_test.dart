@@ -109,6 +109,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.widgetWithText(AppButton, 'Edit encounter'), findsOneWidget);
+      expect(find.text('Cancel appointment'), findsNothing);
+      expect(find.text('Reschedule'), findsOneWidget);
       expect(find.text('With doctor'), findsWidgets);
     },
   );

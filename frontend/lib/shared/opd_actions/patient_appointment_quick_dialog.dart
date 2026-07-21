@@ -12,11 +12,16 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
+    show opdFrontDeskActionRequirement, showFlowActionsDialog;
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_reschedule_appointment_dialog.dart';
 
 /// Opens the patient appointment quick-schedule dialog (mutating).
 Future<bool?> showPatientAppointmentQuickDialog({
@@ -73,6 +78,7 @@ class _PatientAppointmentQuickDialogState
   bool _isLoadingProviders = false;
   bool _isCheckingEncounter = false;
   bool _isSaving = false;
+  bool _isOpeningLinkedAction = false;
   bool _encounterCheckFailed = false;
   OpdFlowSummary? _openEncounter;
   AppFailure? _failure;
@@ -98,7 +104,11 @@ class _PatientAppointmentQuickDialogState
     super.dispose();
   }
 
-  bool get _isBusy => _isSaving || _isLoadingProviders || _isCheckingEncounter;
+  bool get _isBusy =>
+      _isSaving ||
+      _isLoadingProviders ||
+      _isCheckingEncounter ||
+      _isOpeningLinkedAction;
 
   bool get _schedulingBlocked =>
       _openEncounter != null || _encounterCheckFailed;
@@ -129,13 +139,46 @@ class _PatientAppointmentQuickDialogState
         messageBuilder: (AppFailure failure) => failure.displayMessage(l10n),
       ),
       children: <Widget>[
-        if (_openEncounter != null)
+        if (_openEncounter != null) ...<Widget>[
           AppFormInformationBanner(
             title: l10n.patientsAppointmentActiveEncounterTitle,
             message: l10n.patientsAppointmentActiveEncounterBody,
             variant: AppFormInformationVariant.warning,
             icon: AppActionIcons.warning,
           ),
+          AppQuickActions(
+            title: l10n.patientsQuickActionsTitle,
+            permissionActions: <AppPermissionActionItem>[
+              AppPermissionActionItem(
+                requirement: opdFrontDeskActionRequirement,
+                label: l10n.opdContinueEncounterAction,
+                icon: AppActionIcons.start,
+                variant: AppButtonVariant.primary,
+                fullWidth: true,
+                enabled: !_isBusy,
+                isLoading: _isOpeningLinkedAction,
+                onPressed: _openContinueEncounter,
+              ),
+              AppPermissionActionItem(
+                requirement: opdFrontDeskActionRequirement,
+                label: l10n.opdOpenActiveEncounterAction,
+                icon: AppActionIcons.edit,
+                fullWidth: true,
+                enabled: !_isBusy,
+                onPressed: _openEditEncounter,
+              ),
+              if (_resolveLinkedAppointment() != null)
+                AppPermissionActionItem(
+                  requirement: opdFrontDeskActionRequirement,
+                  label: l10n.opdRescheduleAction,
+                  icon: AppActionIcons.reschedule,
+                  fullWidth: true,
+                  enabled: !_isBusy,
+                  onPressed: _openReschedule,
+                ),
+            ],
+          ),
+        ],
         if (widget.referenceData.facilities.length > 1)
           PatientFacilitySelectField(
             facilities: widget.referenceData.facilities,
@@ -264,6 +307,152 @@ class _PatientAppointmentQuickDialogState
       return;
     }
     Navigator.of(context).pop(false);
+  }
+
+  void _completeLinkedActionSuccess() {
+    if (widget.embedded) {
+      widget.onSaved?.call();
+      return;
+    }
+    Navigator.of(context).pop(true);
+  }
+
+  OpdAppointment? _resolveLinkedAppointment() {
+    final OpdFlowSummary? encounter = _openEncounter;
+    if (encounter == null) {
+      return null;
+    }
+    final OpdWorkspaceState? workspace = ref
+        .read(opdWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (OpdWorkspaceState value) => value,
+          failure: (_) => null,
+        );
+    if (workspace == null) {
+      return null;
+    }
+    final Set<String> appointmentIds = <String>{
+      for (final String? value in <String?>[encounter.appointmentId])
+        if (value != null && value.trim().isNotEmpty) value.trim().toUpperCase(),
+    };
+    if (appointmentIds.isEmpty) {
+      return null;
+    }
+    for (final OpdAppointment appointment in workspace.appointments.items) {
+      final Set<String> keys = <String>{
+        for (final String? value in <String?>[
+          appointment.id,
+          appointment.apiId,
+          appointment.publicId,
+        ])
+          if (value != null && value.trim().isNotEmpty)
+            value.trim().toUpperCase(),
+      };
+      if (keys.any(appointmentIds.contains)) {
+        return appointment;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _openContinueEncounter() async {
+    final OpdFlowSummary? encounter = _openEncounter;
+    if (encounter == null || _isBusy) {
+      return;
+    }
+    setState(() => _isOpeningLinkedAction = true);
+    widget.onBusyChanged?.call(true);
+    final bool? changed = await showFlowActionsDialog(
+      context: context,
+      flow: encounter,
+      allowBillingActions: false,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (changed == true) {
+      _completeLinkedActionSuccess();
+      return;
+    }
+    setState(() => _isOpeningLinkedAction = false);
+    widget.onBusyChanged?.call(false);
+  }
+
+  Future<void> _openEditEncounter() async {
+    if (_isBusy) {
+      return;
+    }
+    setState(() => _isOpeningLinkedAction = true);
+    widget.onBusyChanged?.call(true);
+    final OpdAppointment? linkedAppointment = _resolveLinkedAppointment();
+    final OpdWorkspaceState? workspace = ref
+        .read(opdWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (OpdWorkspaceState value) => value,
+          failure: (_) => null,
+        );
+    final OpdEncounterDialogResult? dialogResult;
+    if (workspace != null && linkedAppointment != null) {
+      dialogResult = await showOpdEncounterDialog(
+        context: context,
+        dialog: buildOpdWorkspaceEncounterDialog(
+          ref: ref,
+          state: workspace,
+          initialAppointment: linkedAppointment,
+          initialAppointmentId: linkedAppointment.apiId,
+          defaultArrivalMode: 'ONLINE_APPOINTMENT',
+          defaultProviderId: linkedAppointment.providerUserId,
+          includeEncounterLifecycleCallbacks: false,
+        ),
+      );
+    } else {
+      dialogResult = await showOpdEncounterDialog(
+        context: context,
+        dialog: buildPatientPinnedOpdEncounterDialog(
+          ref: ref,
+          patient: widget.patient,
+        ),
+      );
+    }
+    if (!mounted) {
+      return;
+    }
+    if (dialogResult != null &&
+        (dialogResult.action == OpdEncounterDialogAction.submit ||
+            dialogResult.action == OpdEncounterDialogAction.cancelled ||
+            dialogResult.action == OpdEncounterDialogAction.closed ||
+            dialogResult.action == OpdEncounterDialogAction.continueWorkflow)) {
+      _completeLinkedActionSuccess();
+      return;
+    }
+    setState(() => _isOpeningLinkedAction = false);
+    widget.onBusyChanged?.call(false);
+  }
+
+  Future<void> _openReschedule() async {
+    final OpdAppointment? appointment = _resolveLinkedAppointment();
+    if (appointment == null || _isBusy) {
+      return;
+    }
+    setState(() => _isOpeningLinkedAction = true);
+    widget.onBusyChanged?.call(true);
+    final bool? changed = await showOpdRescheduleAppointmentDialog(
+      context: context,
+      appointment: appointment,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (changed == true) {
+      _completeLinkedActionSuccess();
+      return;
+    }
+    setState(() => _isOpeningLinkedAction = false);
+    widget.onBusyChanged?.call(false);
   }
 
   Future<void> _loadFormOptions() async {
