@@ -304,7 +304,7 @@ class AppButton extends StatelessWidget {
       side: WidgetStateProperty.resolveWith<BorderSide?>((
         Set<WidgetState> states,
       ) {
-        const double thinWidth = 1;
+        const double thinWidth = 0.5;
         if (states.contains(WidgetState.focused) &&
             variant != AppButtonVariant.primary) {
           return BorderSide(
