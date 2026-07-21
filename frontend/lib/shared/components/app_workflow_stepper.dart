@@ -388,7 +388,7 @@ class _WorkflowStepEntry extends StatelessWidget {
         : step.description!.trim();
     final String help = <String>[
       step.label,
-      if (description != null) description,
+      ?description,
       if (step.helpText != null && step.helpText!.isNotEmpty) step.helpText!,
       if (step.blockedReason != null && step.blockedReason!.isNotEmpty)
         step.blockedReason!,
@@ -435,7 +435,6 @@ class _WorkflowStepEntry extends StatelessWidget {
 
     Widget entryBody = Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         if (indicator != null) ...<Widget>[
           indicator,

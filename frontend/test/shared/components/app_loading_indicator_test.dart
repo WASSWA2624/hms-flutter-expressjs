@@ -9,9 +9,11 @@ void main() {
   testWidgets('centers expanded loader within parent bounds', (
     WidgetTester tester,
   ) async {
+    const Key parentKey = ValueKey<String>('loading-parent');
     await pumpComponent(
       tester,
       const SizedBox(
+        key: parentKey,
         width: 420,
         height: 240,
         child: AppLoadingIndicator.compact(
@@ -29,7 +31,7 @@ void main() {
     );
     expect(find.byType(AppLogo), findsOneWidget);
 
-    final Rect parent = tester.getRect(find.byType(SizedBox).first);
+    final Rect parent = tester.getRect(find.byKey(parentKey));
     final Rect logo = tester.getRect(find.byType(AppLogo));
     expect((logo.center.dx - parent.center.dx).abs(), lessThan(2));
     expect(logo.left, greaterThan(parent.left));
@@ -46,7 +48,6 @@ void main() {
         height: 72,
         child: AppLoadingIndicator(
           size: AppLoadingIndicatorSize.regular,
-          expand: true,
         ),
       ),
       size: const Size(120, 120),

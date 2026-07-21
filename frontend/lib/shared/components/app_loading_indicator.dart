@@ -148,7 +148,6 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
         builder: (BuildContext context, Widget? child) {
           return Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               _AnimatedLogoMark(
                 progress: _controller.value,
