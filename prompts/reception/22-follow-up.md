@@ -1,14 +1,10 @@
 # Generate Ten Compact Mobile List Sample Photos
 
-Produce 10 unique sample photos of compact Follow-ups list layouts for phones. Do not modify any code.
+Produce 10 unique sample photos of compact list layouts for phones. Do not modify any code.
 
 ## Context
 
-Reception `AppListTable` keeps a table on large screens and a list on phones. Follow-ups mobile rows are stacked and tall. Desktop table is out of scope.
-
-**Sample photo:** phone-frame mockup of several Follow-ups rows for later layout selection.
-
-**Fields to show:** patient name, patient ID, phone, follow-up date, follow-up time.
+Reception `AppListTable` keeps a table on large screens and a list on phones.
 
 ## Requirements
 
@@ -18,11 +14,15 @@ Reception `AppListTable` keeps a table on large screens and a list on phones. Fo
 4. Label samples 1–10 in-frame or by filename for comparison.
 5. Do not change Flutter, backend, tests, or any repository code.
 
+
+
 ## Constraints
 
 - Design-only; no implementation or UI wiring.
 - Realistic clinical reception worklist; light theme; readable type.
 - Do not invent clinical actions or fields beyond the listed columns.
+
+
 
 ## Acceptance Criteria
 
@@ -30,7 +30,10 @@ Reception `AppListTable` keeps a table on large screens and a list on phones. Fo
 - R5: No code or app files modified.
 - Manual check: each photo shows name, ID, phone, date, and time on dense rows.
 
+
+
 ## Relevant Files
 
 - `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart` (Follow-ups columns and `_ReceptionDeskMobileRow`; reference only)
 - `frontend/lib/shared/components/app_list_table.dart` (table vs mobile; reference only)
+
