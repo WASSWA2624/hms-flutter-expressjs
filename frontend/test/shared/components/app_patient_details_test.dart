@@ -59,6 +59,61 @@ void main() {
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
   });
 
+  testWidgets('keeps patient id, age, and gender on one row when width allows', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const SizedBox(
+        width: 720,
+        child: AppPatientDetails(
+          patientName: 'Ada Lovelace',
+          patientNumber: 'MRN-100',
+          patientNumberLabel: 'MRN',
+          ageLabel: '37y',
+          genderLabel: 'Female',
+          persistExpandPreference: false,
+        ),
+      ),
+    );
+
+    final double idY = tester.getTopLeft(find.text('MRN-100')).dy;
+    final double ageY = tester.getTopLeft(find.text('37y')).dy;
+    final double genderY = tester.getTopLeft(find.text('Female')).dy;
+
+    expect(ageY, closeTo(idY, 1));
+    expect(genderY, closeTo(idY, 1));
+  });
+
+  testWidgets('wraps age and gender when meta-line width is insufficient', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const SizedBox(
+        width: 180,
+        child: AppPatientDetails(
+          patientName: 'Ada Lovelace',
+          patientNumber: 'PAT0000000004',
+          patientNumberLabel: 'Patient ID',
+          ageLabel: '36 years, 2 months',
+          genderLabel: 'Female',
+          persistExpandPreference: false,
+        ),
+      ),
+    );
+
+    final double idY = tester.getTopLeft(find.text('PAT0000000004')).dy;
+    final double ageY = tester.getTopLeft(find.text('36 years, 2 months')).dy;
+
+    expect(find.text('Female'), findsOneWidget);
+    expect(
+      ageY,
+      greaterThan(idY + 1),
+      reason: 'Age should wrap below the id when width is tight',
+    );
+  });
+
   testWidgets('Show less collapses expanded workflow fields', (
     WidgetTester tester,
   ) async {

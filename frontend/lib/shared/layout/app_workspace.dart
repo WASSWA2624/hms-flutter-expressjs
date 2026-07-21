@@ -579,7 +579,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
     this.showPatientNumberCopyIcon = true,
     this.showPatientName = true,
     this.showAvatar = true,
-    this.demographicsWidget,
+    this.demographicsChildren = const <Widget>[],
     this.semanticLabel,
     this.showActionLabels = false,
     this.mergeFieldsIntoMetaLine = false,
@@ -603,7 +603,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
   final bool showPatientNumberCopyIcon;
   final bool showPatientName;
   final bool showAvatar;
-  final Widget? demographicsWidget;
+  final List<Widget> demographicsChildren;
   final String? semanticLabel;
   final bool showActionLabels;
   final bool mergeFieldsIntoMetaLine;
@@ -632,7 +632,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
         showAvatar ||
         patientNumber.trim().isNotEmpty ||
         (demographics?.trim().isNotEmpty ?? false) ||
-        demographicsWidget != null ||
+        demographicsChildren.isNotEmpty ||
         status != null ||
         alerts.isNotEmpty;
     Widget header = DecoratedBox(
@@ -652,7 +652,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
               patientNumber: patientNumber,
               patientNumberLabel: patientNumberLabel,
               demographics: demographics,
-              demographicsWidget: demographicsWidget,
+              demographicsChildren: demographicsChildren,
               status: status,
               alerts: alerts,
               onCopyPatientNumber: onCopyPatientNumber,
@@ -1119,7 +1119,7 @@ class _PatientContextIdentity extends StatelessWidget {
     required this.patientNumber,
     required this.patientNumberLabel,
     required this.demographics,
-    required this.demographicsWidget,
+    required this.demographicsChildren,
     required this.status,
     required this.alerts,
     required this.onCopyPatientNumber,
@@ -1136,7 +1136,7 @@ class _PatientContextIdentity extends StatelessWidget {
   final String patientNumber;
   final String? patientNumberLabel;
   final String? demographics;
-  final Widget? demographicsWidget;
+  final List<Widget> demographicsChildren;
   final AppWorkspaceStatus? status;
   final List<AppWorkspaceStatus> alerts;
   final VoidCallback? onCopyPatientNumber;
@@ -1191,7 +1191,7 @@ class _PatientContextIdentity extends StatelessWidget {
                 patientNumber: patientNumber,
                 patientNumberLabel: patientNumberLabel,
                 demographics: demographics,
-                demographicsWidget: demographicsWidget,
+                demographicsChildren: demographicsChildren,
                 status: status,
                 onCopyPatientNumber: onCopyPatientNumber,
                 copyPatientNumberTooltip: copyPatientNumberTooltip,
@@ -1217,7 +1217,7 @@ class _PatientContextMetaLine extends StatelessWidget {
     required this.patientNumber,
     required this.patientNumberLabel,
     required this.demographics,
-    required this.demographicsWidget,
+    required this.demographicsChildren,
     required this.status,
     required this.onCopyPatientNumber,
     required this.copyPatientNumberTooltip,
@@ -1230,7 +1230,7 @@ class _PatientContextMetaLine extends StatelessWidget {
   final String patientNumber;
   final String? patientNumberLabel;
   final String? demographics;
-  final Widget? demographicsWidget;
+  final List<Widget> demographicsChildren;
   final AppWorkspaceStatus? status;
   final VoidCallback? onCopyPatientNumber;
   final String? copyPatientNumberTooltip;
@@ -1254,8 +1254,8 @@ class _PatientContextMetaLine extends StatelessWidget {
           semanticLabel: copyPatientNumberSemanticLabel,
           showCopyIcon: showPatientNumberCopyIcon,
         ),
-      if (demographicsWidget != null)
-        demographicsWidget!
+      if (demographicsChildren.isNotEmpty)
+        ...demographicsChildren
       else if (demographics != null && demographics!.trim().isNotEmpty)
         Text(
           demographics!,

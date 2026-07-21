@@ -181,7 +181,7 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
           patientName: widget.patientName,
           patientNumber: widget.patientNumber,
           patientNumberLabel: widget.patientNumberLabel,
-          demographicsWidget: _buildDemographics(theme),
+          demographicsChildren: _buildDemographicsChildren(theme),
           status: widget.status,
           alerts: widget.alerts,
           fields: expanded
@@ -217,63 +217,46 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
     setState(() => _localExpanded = expanded);
   }
 
-  Widget? _buildDemographics(ThemeData theme) {
+  List<Widget> _buildDemographicsChildren(ThemeData theme) {
     final String? age = widget.ageLabel?.trim();
     final String? gender = widget.genderLabel?.trim();
     final String? supporting = widget.compactSupportingText?.trim();
-    final bool hasAgeGender =
-        (age != null && age.isNotEmpty) ||
-        (gender != null && gender.isNotEmpty);
-    if (!hasAgeGender && (supporting == null || supporting.isEmpty)) {
-      return null;
+    final TextStyle? style = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final bool hasAge = age != null && age.isNotEmpty;
+    final bool hasGender = gender != null && gender.isNotEmpty;
+
+    if (!hasAge && !hasGender) {
+      if (supporting == null || supporting.isEmpty) {
+        return const <Widget>[];
+      }
+      return <Widget>[
+        Text(
+          supporting,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        ),
+      ];
     }
 
-    if (!hasAgeGender) {
-      return Text(
-        supporting!,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodyMedium?.copyWith(
+    return <Widget>[
+      if (age != null && age.isNotEmpty)
+        Text(age, maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
+      if (hasGender && widget.genderIcon != null)
+        Icon(
+          widget.genderIcon,
+          size: theme.appTokens.listIconSize,
           color: theme.colorScheme.onSurfaceVariant,
         ),
-      );
-    }
-
-    return Row(
-      children: <Widget>[
-        if (age != null && age.isNotEmpty)
-          Flexible(
-            child: Text(
-              age,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        if (gender != null && gender.isNotEmpty) ...<Widget>[
-          if (age != null && age.isNotEmpty) SizedBox(width: theme.spacing.xs),
-          if (widget.genderIcon != null) ...<Widget>[
-            Icon(
-              widget.genderIcon,
-              size: theme.appTokens.listIconSize,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            SizedBox(width: theme.spacing.xs),
-          ],
-          Flexible(
-            child: Text(
-              gender,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
+      if (gender != null && gender.isNotEmpty)
+        Text(
+          gender,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        ),
+    ];
   }
 }
