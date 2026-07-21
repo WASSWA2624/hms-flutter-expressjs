@@ -17,6 +17,19 @@ String opdStageDisplayLabel(AppLocalizations l10n, String? value) {
   return _opdLabel(l10n, code) ?? AppDisplay.apiLabel(code);
 }
 
+/// Short receptionist-facing description for visit-queue lifecycle statuses.
+String opdQueueStatusDescription(AppLocalizations l10n, String? value) {
+  return switch ((value ?? '').trim().toUpperCase()) {
+    'SCHEDULED' => l10n.opdQueueStatusScheduledDescription,
+    'CONFIRMED' => l10n.opdQueueStatusConfirmedDescription,
+    'IN_PROGRESS' => l10n.opdQueueStatusInProgressDescription,
+    'COMPLETED' => l10n.opdQueueStatusCompletedDescription,
+    'CANCELLED' => l10n.opdQueueStatusCancelledDescription,
+    'NO_SHOW' => l10n.opdQueueStatusNoShowDescription,
+    _ => '',
+  };
+}
+
 String opdNextStepDisplayLabel(AppLocalizations l10n, String? value) {
   final String code = (value ?? '').trim().toUpperCase();
   return _nextStepLabel(l10n, code) ??

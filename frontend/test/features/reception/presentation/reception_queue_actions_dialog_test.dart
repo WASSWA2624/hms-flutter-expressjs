@@ -46,7 +46,8 @@ void main() {
     expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
     expect(find.text('Prioritize'), findsOneWidget);
-    expect(find.text('Move'), findsOneWidget);
+    expect(find.text('Change status'), findsOneWidget);
+    expect(find.text('Assign doctor'), findsOneWidget);
     expect(find.text('Start consultation'), findsWidgets);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
@@ -62,7 +63,9 @@ void main() {
 
     expect(find.byType(AppQuickActions), findsNothing);
     expect(find.text('Prioritize'), findsNothing);
-    expect(find.text('Move'), findsNothing);
+    expect(find.text('Change status'), findsNothing);
+    expect(find.text('Assign doctor'), findsNothing);
+    expect(find.text('Change doctor'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
     expect(find.text('Start consultation'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
@@ -84,7 +87,9 @@ void main() {
     );
 
     expect(find.text('Prioritize'), findsNothing);
-    expect(find.text('Move'), findsNothing);
+    expect(find.text('Change status'), findsNothing);
+    expect(find.text('Assign doctor'), findsNothing);
+    expect(find.text('Change doctor'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
     expect(find.text('Start consultation'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);

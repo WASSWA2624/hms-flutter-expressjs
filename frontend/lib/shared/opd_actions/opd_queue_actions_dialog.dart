@@ -21,7 +21,7 @@ import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
-/// Shared queue move / prioritize / start actions for OPD and Reception.
+/// Shared queue status / doctor / prioritize / start actions for OPD and Reception.
 Future<bool?> showQueueActionsDialog({
   required BuildContext context,
   required OpdQueueEntry entry,
@@ -47,6 +47,11 @@ bool isOpdQueueTerminalStatus(String? status) {
   };
 }
 
+bool _queueEntryHasProvider(OpdQueueEntry entry) {
+  final String? providerId = entry.providerUserId?.trim();
+  return providerId != null && providerId.isNotEmpty;
+}
+
 class QueueActionsDialog extends ConsumerWidget {
   const QueueActionsDialog({
     required this.entry,
@@ -64,6 +69,10 @@ class QueueActionsDialog extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
     final bool terminal = isOpdQueueTerminalStatus(entry.status);
+    final bool hasProvider = _queueEntryHasProvider(entry);
+    final String doctorActionLabel = hasProvider
+        ? l10n.opdChangeDoctorAction
+        : l10n.opdAssignDoctorAction;
 
     return AppDialog(
       title: Text(l10n.opdQueueActionsTitle),
@@ -116,7 +125,14 @@ class QueueActionsDialog extends ConsumerWidget {
                   label: l10n.opdMoveQueueAction,
                   icon: AppActionIcons.move,
                   fullWidth: true,
-                  onPressed: () => _openMove(context),
+                  onPressed: () => _openChangeStatus(context),
+                ),
+                AppPermissionActionItem(
+                  requirement: actionRequirement,
+                  label: doctorActionLabel,
+                  icon: AppActionIcons.assignDoctor,
+                  fullWidth: true,
+                  onPressed: () => _openAssignDoctor(context),
                 ),
                 AppPermissionActionItem(
                   requirement: actionRequirement,
@@ -184,11 +200,22 @@ class QueueActionsDialog extends ConsumerWidget {
     }
   }
 
-  Future<void> _openMove(BuildContext context) async {
+  Future<void> _openChangeStatus(BuildContext context) async {
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _MoveQueueDialog(entry: entry),
+      builder: (_) => _ChangeQueueStatusDialog(entry: entry),
+    );
+    if (changed == true && context.mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _openAssignDoctor(BuildContext context) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _AssignQueueDoctorDialog(entry: entry),
     );
     if (changed == true && context.mounted) {
       Navigator.of(context).pop(true);
@@ -196,19 +223,20 @@ class QueueActionsDialog extends ConsumerWidget {
   }
 }
 
-class _MoveQueueDialog extends ConsumerStatefulWidget {
-  const _MoveQueueDialog({required this.entry});
+class _ChangeQueueStatusDialog extends ConsumerStatefulWidget {
+  const _ChangeQueueStatusDialog({required this.entry});
 
   final OpdQueueEntry entry;
 
   @override
-  ConsumerState<_MoveQueueDialog> createState() => _MoveQueueDialogState();
+  ConsumerState<_ChangeQueueStatusDialog> createState() =>
+      _ChangeQueueStatusDialogState();
 }
 
-class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
+class _ChangeQueueStatusDialogState
+    extends ConsumerState<_ChangeQueueStatusDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? _status;
-  String? _providerId;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -218,6 +246,104 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
     _status = _queueStatuses.contains(widget.entry.status)
         ? widget.entry.status
         : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final bool isBusy = _isSaving;
+
+    return AppDialog(
+      title: Text(l10n.opdMoveQueueTitle),
+      icon: const Icon(AppActionIcons.move),
+      scrollable: true,
+      pinActionsToBottom: true,
+      closeEnabled: !isBusy,
+      maxWidth: 680,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            AppRadioGroup<String>(
+              value: _status,
+              labelText: l10n.opdFieldRequiredLabel(l10n.opdQueueStatusLabel),
+              enabled: !isBusy,
+              validator: (String? value) =>
+                  value == null ? l10n.validationRequired : null,
+              onChanged: (String? value) => setState(() => _status = value),
+              options: <AppRadioOption<String>>[
+                for (final String value in _queueStatuses)
+                  AppRadioOption<String>(
+                    value: value,
+                    label: opdStageDisplayLabel(l10n, value),
+                    description: opdQueueStatusDescription(l10n, value),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.opdMoveQueueAction,
+        isBusy,
+        isBusy ? null : _submit,
+        submitLeadingIcon: AppActionIcons.move,
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_isSaving || !(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .moveQueueEntry(widget.entry, <String, Object?>{'status': _status});
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+}
+
+class _AssignQueueDoctorDialog extends ConsumerStatefulWidget {
+  const _AssignQueueDoctorDialog({required this.entry});
+
+  final OpdQueueEntry entry;
+
+  @override
+  ConsumerState<_AssignQueueDoctorDialog> createState() =>
+      _AssignQueueDoctorDialogState();
+}
+
+class _AssignQueueDoctorDialogState
+    extends ConsumerState<_AssignQueueDoctorDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String? _providerId;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
     _providerId = widget.entry.providerUserId;
     unawaited(
       Future<void>.microtask(
@@ -255,10 +381,13 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
                 !isLoadingProviders
             ? providerFailure
             : null);
+    final String actionLabel = _queueEntryHasProvider(widget.entry)
+        ? l10n.opdChangeDoctorAction
+        : l10n.opdAssignDoctorAction;
 
     return AppDialog(
-      title: Text(l10n.opdMoveQueueTitle),
-      icon: const Icon(AppActionIcons.move),
+      title: Text(actionLabel),
+      icon: const Icon(AppActionIcons.assignDoctor),
       scrollable: true,
       pinActionsToBottom: true,
       closeEnabled: !isBusy,
@@ -279,22 +408,6 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
                 title: l10n.opdLoadingTitle,
                 body: l10n.opdLoadingBody,
               ),
-            AppSelectField<String>(
-              value: _status,
-              labelText: l10n.opdFieldRequiredLabel(l10n.opdQueueStatusLabel),
-              isRequired: true,
-              enabled: !isBusy,
-              validator: (String? value) =>
-                  value == null ? l10n.validationRequired : null,
-              onChanged: (String? value) => setState(() => _status = value),
-              options: <AppSelectOption<String>>[
-                for (final String value in _queueStatuses)
-                  AppSelectOption<String>(
-                    value: value,
-                    label: opdStageDisplayLabel(l10n, value),
-                  ),
-              ],
-            ),
             AppSelectField<String>.searchable(
               value: _providerId,
               options: opdProviderSelectOptions(
@@ -302,19 +415,22 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
                 schedules: schedules,
                 unknownProviderLabel: l10n.profileUnknownValue,
               ),
-              labelText: l10n.opdFieldOptionalLabel(
-                l10n.opdSearchProviderLabel,
-              ),
+              labelText: l10n.opdFieldRequiredLabel(l10n.opdSearchProviderLabel),
               helperText:
                   providers.isEmpty && schedules.isEmpty && !isLoadingProviders
                   ? l10n.opdNoProvidersHelper
                   : l10n.opdSearchProviderHelper,
-              semanticLabel: l10n.opdFieldOptionalLabel(
+              semanticLabel: l10n.opdFieldRequiredLabel(
                 l10n.opdSearchProviderLabel,
               ),
               enabled: !isBusy,
-              // Provider loading is shown via [AppLoadingIndicator] above —
-              // do not use AppSelectField.isLoading (raw Material spinner).
+              validator: (String? value) {
+                final String? trimmed = value?.trim();
+                if (trimmed == null || trimmed.isEmpty) {
+                  return l10n.validationRequired;
+                }
+                return null;
+              },
               onChanged: (String? value) {
                 setState(() {
                   _providerId = value;
@@ -326,16 +442,21 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
       ),
       actions: clinicalActionDialogActions(
         context,
-        l10n.opdMoveQueueAction,
+        actionLabel,
         isBusy,
         isBusy ? null : _submit,
-        submitLeadingIcon: AppActionIcons.move,
+        submitLeadingIcon: AppActionIcons.assignDoctor,
       ),
     );
   }
 
   Future<void> _submit() async {
     if (_isSaving || !(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    final String? providerId = _providerId?.trim();
+    if (providerId == null || providerId.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
       return;
     }
     setState(() {
@@ -345,8 +466,7 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .moveQueueEntry(widget.entry, <String, Object?>{
-          'status': _status,
-          'provider_user_id': _providerId,
+          'provider_user_id': providerId,
         });
     if (!mounted) {
       return;

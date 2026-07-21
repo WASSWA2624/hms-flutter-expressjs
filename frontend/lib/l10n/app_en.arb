@@ -4149,7 +4149,7 @@
   "opdQueueStatusLabel": "Queue status",
   "opdReasonLabel": "Reason",
   "opdPrioritizeAction": "Prioritize",
-  "opdMoveQueueAction": "Move",
+  "opdMoveQueueAction": "Change status",
   "opdQueueActionsTitle": "Queue actions",
   "opdAppointmentActionsTitle": "Appointment actions",
   "@opdAppointmentActionsTitle": {
@@ -4157,7 +4157,13 @@
   },
   "opdPrioritizeQueueTitle": "Prioritize queue entry",
   "opdPrioritizeQueueDescription": "Optionally record why this queue entry should be prioritized.",
-  "opdMoveQueueTitle": "Move queue entry",
+  "opdMoveQueueTitle": "Change queue status",
+  "opdQueueStatusScheduledDescription": "Booked for a future visit; patient has not yet been confirmed as arrived.",
+  "opdQueueStatusConfirmedDescription": "Patient is confirmed and waiting in the desk queue.",
+  "opdQueueStatusInProgressDescription": "Care for this visit is underway at the desk or clinical station.",
+  "opdQueueStatusCompletedDescription": "This queue visit is finished; the patient leaves the active desk queue.",
+  "opdQueueStatusCancelledDescription": "This queue visit was cancelled and should not proceed.",
+  "opdQueueStatusNoShowDescription": "The patient did not arrive for the scheduled queue visit.",
   "opdFlowActionsTitle": "Flow actions",
   "opdStartConsultationAction": "Start consultation",
   "opdStartConsultationConfirmationMessage": "Start an OPD consultation for this queue entry?",
@@ -4845,7 +4851,7 @@
     "description": "Action label to prioritize a queue entry."
   },
   "@opdMoveQueueAction": {
-    "description": "Action label to move a queue entry."
+    "description": "Action label to change a desk-queue entry status."
   },
   "@opdQueueActionsTitle": {
     "description": "Dialog title for OPD queue actions (move / prioritize / start)."
@@ -4857,7 +4863,25 @@
     "description": "Guidance shown when optionally recording an OPD queue prioritization reason."
   },
   "@opdMoveQueueTitle": {
-    "description": "Dialog title for moving an OPD queue entry."
+    "description": "Dialog title for changing an OPD queue entry status."
+  },
+  "@opdQueueStatusScheduledDescription": {
+    "description": "Explains SCHEDULED visit-queue status in the change-status dialog."
+  },
+  "@opdQueueStatusConfirmedDescription": {
+    "description": "Explains CONFIRMED visit-queue status in the change-status dialog."
+  },
+  "@opdQueueStatusInProgressDescription": {
+    "description": "Explains IN_PROGRESS visit-queue status in the change-status dialog."
+  },
+  "@opdQueueStatusCompletedDescription": {
+    "description": "Explains COMPLETED visit-queue status in the change-status dialog."
+  },
+  "@opdQueueStatusCancelledDescription": {
+    "description": "Explains CANCELLED visit-queue status in the change-status dialog."
+  },
+  "@opdQueueStatusNoShowDescription": {
+    "description": "Explains NO_SHOW visit-queue status in the change-status dialog."
   },
   "@opdFlowActionsTitle": {
     "description": "Dialog title for the OPD queue/flow stage actions hub."

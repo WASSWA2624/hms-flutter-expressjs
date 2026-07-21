@@ -6862,10 +6862,10 @@ abstract class AppLocalizations {
   /// **'Prioritize'**
   String get opdPrioritizeAction;
 
-  /// Action label to move a queue entry.
+  /// Action label to change a desk-queue entry status.
   ///
   /// In en, this message translates to:
-  /// **'Move'**
+  /// **'Change status'**
   String get opdMoveQueueAction;
 
   /// Dialog title for OPD queue actions (move / prioritize / start).
@@ -6892,11 +6892,47 @@ abstract class AppLocalizations {
   /// **'Optionally record why this queue entry should be prioritized.'**
   String get opdPrioritizeQueueDescription;
 
-  /// Dialog title for moving an OPD queue entry.
+  /// Dialog title for changing an OPD queue entry status.
   ///
   /// In en, this message translates to:
-  /// **'Move queue entry'**
+  /// **'Change queue status'**
   String get opdMoveQueueTitle;
+
+  /// Explains SCHEDULED visit-queue status in the change-status dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Booked for a future visit; patient has not yet been confirmed as arrived.'**
+  String get opdQueueStatusScheduledDescription;
+
+  /// Explains CONFIRMED visit-queue status in the change-status dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient is confirmed and waiting in the desk queue.'**
+  String get opdQueueStatusConfirmedDescription;
+
+  /// Explains IN_PROGRESS visit-queue status in the change-status dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Care for this visit is underway at the desk or clinical station.'**
+  String get opdQueueStatusInProgressDescription;
+
+  /// Explains COMPLETED visit-queue status in the change-status dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'This queue visit is finished; the patient leaves the active desk queue.'**
+  String get opdQueueStatusCompletedDescription;
+
+  /// Explains CANCELLED visit-queue status in the change-status dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'This queue visit was cancelled and should not proceed.'**
+  String get opdQueueStatusCancelledDescription;
+
+  /// Explains NO_SHOW visit-queue status in the change-status dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'The patient did not arrive for the scheduled queue visit.'**
+  String get opdQueueStatusNoShowDescription;
 
   /// Dialog title for the OPD queue/flow stage actions hub.
   ///

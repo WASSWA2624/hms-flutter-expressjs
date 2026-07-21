@@ -52,7 +52,8 @@ void main() {
     expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
     expect(find.text('Prioritize'), findsOneWidget);
-    expect(find.text('Move'), findsOneWidget);
+    expect(find.text('Change status'), findsOneWidget);
+    expect(find.text('Change doctor'), findsOneWidget);
     expect(
       find.widgetWithText(AppButton, 'Start consultation'),
       findsOneWidget,
@@ -74,7 +75,9 @@ void main() {
 
     expect(find.byType(AppQuickActions), findsNothing);
     expect(find.text('Prioritize'), findsNothing);
-    expect(find.text('Move'), findsNothing);
+    expect(find.text('Change status'), findsNothing);
+    expect(find.text('Change doctor'), findsNothing);
+    expect(find.text('Assign doctor'), findsNothing);
     expect(find.text('Start consultation'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
   });
@@ -95,12 +98,38 @@ void main() {
     );
 
     expect(find.text('Prioritize'), findsNothing);
-    expect(find.text('Move'), findsNothing);
+    expect(find.text('Change status'), findsNothing);
+    expect(find.text('Change doctor'), findsNothing);
+    expect(find.text('Assign doctor'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
   });
 
-  testWidgets('Move opens the shared move dialog without raw progress', (
+  testWidgets('Change status opens radio status dialog without provider search', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+
+    await _pumpDialog(tester, entry, repository: repository);
+    await tester.tap(find.text('Change status'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CHANGE QUEUE STATUS'), findsOneWidget);
+    expect(find.byType(AppRadioGroup<String>), findsOneWidget);
+    expect(
+      find.text(
+        'Patient is confirmed and waiting in the desk queue.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Search doctor'), findsNothing);
+    expect(find.text('Cancel'), findsWidgets);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+
+  testWidgets('shows Change doctor when a provider is already assigned', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -113,13 +142,40 @@ void main() {
     );
 
     await _pumpDialog(tester, entry, repository: repository);
-    await tester.tap(find.text('Move'));
+    await tester.tap(find.text('Change doctor'));
     await tester.pumpAndSettle();
 
-    expect(find.text('MOVE QUEUE ENTRY'), findsOneWidget);
+    expect(find.text('CHANGE DOCTOR'), findsOneWidget);
     expect(find.text('Cancel'), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+
+  testWidgets('shows Assign doctor when no provider is assigned', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+    when(() => repository.listProviders()).thenAnswer(
+      (_) async =>
+          const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[
+            OpdProviderOption(id: 'USR000001', displayName: 'Dr Queue'),
+          ]),
+    );
+
+    const OpdQueueEntry unassigned = OpdQueueEntry(
+      id: 'queue-internal',
+      publicId: 'QUE000001',
+      patientDisplayName: 'Patient Example',
+      status: 'CONFIRMED',
+    );
+    await _pumpDialog(tester, unassigned, repository: repository);
+
+    expect(find.text('Assign doctor'), findsOneWidget);
+    expect(find.text('Change doctor'), findsNothing);
+    await tester.tap(find.text('Assign doctor'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ASSIGN DOCTOR'), findsOneWidget);
   });
 
   testWidgets('Prioritize opens the text action child dialog', (

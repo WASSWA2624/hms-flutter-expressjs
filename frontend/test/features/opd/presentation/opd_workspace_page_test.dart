@@ -369,7 +369,7 @@ void main() {
     expect(find.text('TABLE SETTINGS'), findsOneWidget);
   });
 
-  testWidgets('queue row opens the shared queue action hub and move child', (
+  testWidgets('queue row opens the shared queue action hub and status child', (
     WidgetTester tester,
   ) async {
     await _pumpOpdWorkspace(tester, repository: repository);
@@ -379,18 +379,17 @@ void main() {
 
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
     expect(find.text('Prioritize'), findsOneWidget);
-    expect(find.text('Move'), findsOneWidget);
-    expect(find.text('Start consultation'), findsOneWidget);
+    expect(find.text('Change status'), findsOneWidget);
+    expect(find.text('Start consultation'), findsWidgets);
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
-    await tester.tap(find.text('Move'));
+    await tester.tap(find.text('Change status'));
     await tester.pumpAndSettle();
 
-    expect(find.text('MOVE QUEUE ENTRY'), findsOneWidget);
+    expect(find.text('CHANGE QUEUE STATUS'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    verify(() => repository.listProviders()).called(1);
   });
 
   testWidgets('cancelling queue actions performs no mutation', (

@@ -3560,7 +3560,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdPrioritizeAction => 'Prioritize';
 
   @override
-  String get opdMoveQueueAction => 'Move';
+  String get opdMoveQueueAction => 'Change status';
 
   @override
   String get opdQueueActionsTitle => 'Queue actions';
@@ -3576,7 +3576,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'Optionally record why this queue entry should be prioritized.';
 
   @override
-  String get opdMoveQueueTitle => 'Move queue entry';
+  String get opdMoveQueueTitle => 'Change queue status';
+
+  @override
+  String get opdQueueStatusScheduledDescription =>
+      'Booked for a future visit; patient has not yet been confirmed as arrived.';
+
+  @override
+  String get opdQueueStatusConfirmedDescription =>
+      'Patient is confirmed and waiting in the desk queue.';
+
+  @override
+  String get opdQueueStatusInProgressDescription =>
+      'Care for this visit is underway at the desk or clinical station.';
+
+  @override
+  String get opdQueueStatusCompletedDescription =>
+      'This queue visit is finished; the patient leaves the active desk queue.';
+
+  @override
+  String get opdQueueStatusCancelledDescription =>
+      'This queue visit was cancelled and should not proceed.';
+
+  @override
+  String get opdQueueStatusNoShowDescription =>
+      'The patient did not arrive for the scheduled queue visit.';
 
   @override
   String get opdFlowActionsTitle => 'Flow actions';
