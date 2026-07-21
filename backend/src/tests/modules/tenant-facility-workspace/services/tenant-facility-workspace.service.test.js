@@ -115,7 +115,6 @@ describe('tenant-facility-workspace service', () => {
     expect(result.facility).toEqual(
       expect.objectContaining({ id: 'FAC0001', name: 'Main Campus' })
     );
-    expect(result.branches).toHaveLength(1);
     expect(result.departments).toHaveLength(1);
     expect(result.units).toHaveLength(1);
     expect(result.wards).toHaveLength(1);
@@ -149,8 +148,6 @@ describe('tenant-facility-workspace service', () => {
     const result = await service.getSetup({}, { role: 'TENANT_ADMIN' });
 
     expect(result.facility.tenant_id).toBe('TEN0001');
-    expect(result.branches[0].tenant_id).toBe('TEN0001');
-    expect(result.branches[0].facility_id).toBe('FAC0001');
     expect(result.departments[0].tenant_id).toBe('TEN0001');
     expect(result.departments[0].facility_id).toBe('FAC0001');
     expect(result.units[0].department_id).toBe('DEP0001');

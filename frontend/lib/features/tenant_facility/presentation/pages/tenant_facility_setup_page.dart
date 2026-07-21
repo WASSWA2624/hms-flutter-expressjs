@@ -2450,12 +2450,10 @@ class _WardSetupSection extends ConsumerWidget {
   const _WardSetupSection({
     required this.snapshot,
     required this.canSubmit,
-    this.showAddButton = true,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
-  final bool showAddButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2463,7 +2461,7 @@ class _WardSetupSection extends ConsumerWidget {
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canManageRecords = canSubmit && !submission.isSubmitting;
     final bool prerequisitesMet = snapshot.departments.isNotEmpty;
-    final bool canAdd = showAddButton && canManageRecords && prerequisitesMet;
+    final bool canAdd = canManageRecords && prerequisitesMet;
 
     final Widget content = _SearchableEntityGroup<WardProfile>(
       title: l10n.tenantFacilityWardsLabel,
@@ -2513,12 +2511,10 @@ class _RoomSetupSection extends ConsumerWidget {
   const _RoomSetupSection({
     required this.snapshot,
     required this.canSubmit,
-    this.showAddButton = true,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
-  final bool showAddButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2527,7 +2523,7 @@ class _RoomSetupSection extends ConsumerWidget {
     final bool canManageRecords = canSubmit && !submission.isSubmitting;
     final bool prerequisitesMet =
         snapshot.departments.isNotEmpty || snapshot.wards.isNotEmpty;
-    final bool canAdd = showAddButton && canManageRecords && prerequisitesMet;
+    final bool canAdd = canManageRecords && prerequisitesMet;
 
     final Widget content = _SearchableEntityGroup<RoomProfile>(
       title: l10n.tenantFacilityRoomsLabel,
@@ -2577,12 +2573,10 @@ class _BedSetupSection extends ConsumerWidget {
   const _BedSetupSection({
     required this.snapshot,
     required this.canSubmit,
-    this.showAddButton = true,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
-  final bool showAddButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2590,7 +2584,7 @@ class _BedSetupSection extends ConsumerWidget {
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canManageRecords = canSubmit && !submission.isSubmitting;
     final bool prerequisitesMet = snapshot.wards.isNotEmpty;
-    final bool canAdd = showAddButton && canManageRecords && prerequisitesMet;
+    final bool canAdd = canManageRecords && prerequisitesMet;
 
     final Widget content = _SearchableEntityGroup<BedProfile>(
       title: l10n.tenantFacilityBedsLabel,
