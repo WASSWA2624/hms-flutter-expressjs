@@ -33,6 +33,9 @@ void main() {
     publicId: 'APT000001',
     patientDisplayName: 'Patient Example',
     patientIdentifier: 'PAT0000003',
+    patientPhone: '+256700000003',
+    patientDateOfBirth: DateTime.utc(1990, 5, 12),
+    patientGender: 'FEMALE',
     providerUserId: 'provider-1',
     providerDisplayName: 'Provider Example',
     status: 'SCHEDULED',
@@ -76,6 +79,7 @@ void main() {
     expect(find.byType(AppTriageSummaryPanel), findsNothing);
     expect(find.text('Patient Example'), findsWidgets);
     expect(find.text('PAT0000003'), findsOneWidget);
+    expect(find.textContaining('Female'), findsOneWidget);
     expect(find.byType(AppDateField), findsOneWidget);
     expect(find.byType(AppTimeField), findsNWidgets(2));
     expect(find.byType(AppTextField), findsOneWidget);
@@ -83,6 +87,37 @@ void main() {
     expect(find.byIcon(AppActionIcons.reschedule), findsWidgets);
     expect(find.byIcon(AppActionIcons.edit), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
+
+    await tester.tap(find.text('Show more'));
+    await tester.pumpAndSettle();
+    expect(find.text('+256700000003'), findsOneWidget);
+    expect(find.text('Provider Example'), findsWidgets);
+  });
+
+  testWidgets('preselects the assigned provider after options load', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    const OpdProviderOption assigned = OpdProviderOption(
+      id: 'provider-1',
+      displayName: 'Provider Example',
+    );
+    _stubWorkspaceLoad(
+      repository,
+      appointments: <OpdAppointment>[appointment],
+      providers: <OpdProviderOption>[assigned],
+    );
+
+    await _pumpDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+    );
+
+    final AppSelectField<String> providerField = tester
+        .widget<AppSelectField<String>>(find.byType(AppSelectField<String>));
+    expect(providerField.value, 'provider-1');
+    expect(find.textContaining('Provider Example'), findsWidgets);
   });
 
   testWidgets('Cancel pops false without mutating the schedule', (
@@ -315,8 +350,8 @@ void main() {
       textScaler: const TextScaler.linear(1.8),
     );
 
-    // Overflow may paint under extreme text scale; dialog chrome must remain usable.
-    tester.takeException();
+    // Extreme text scale can still paint overflow; drain and keep chrome usable.
+    while (tester.takeException() != null) {}
     expect(find.text('RESCHEDULE'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);

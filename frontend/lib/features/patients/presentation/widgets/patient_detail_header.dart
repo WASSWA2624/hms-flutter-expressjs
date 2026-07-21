@@ -9,6 +9,9 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+export 'package:hosspi_hms/shared/patient_actions/patient_age_formatter.dart'
+    show formatPatientAge, patientGenderIcon, patientGenderLabel;
+
 String patientIdentifierTypeLabel(AppLocalizations l10n, Patient patient) {
   final String? type = patient.primaryIdentifierType?.trim();
   if (type == null || type.isEmpty) {
@@ -18,16 +21,6 @@ String patientIdentifierTypeLabel(AppLocalizations l10n, Patient patient) {
     'MRN' => 'MRN',
     'NATIONAL_ID' => l10n.patientsIdentifierLabel,
     _ => type.replaceAll('_', ' '),
-  };
-}
-
-String patientGenderLabel(AppLocalizations l10n, String value) {
-  return switch (value.toUpperCase()) {
-    'MALE' => l10n.patientsGenderMale,
-    'FEMALE' => l10n.patientsGenderFemale,
-    'OTHER' => l10n.patientsGenderOther,
-    'UNKNOWN' => l10n.patientsGenderUnknown,
-    _ => value.replaceAll('_', ' '),
   };
 }
 

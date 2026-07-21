@@ -52,7 +52,7 @@ void main() {
     expect(selected, const AppTimeValue(hour: 10, minute: 5));
   });
 
-  testWidgets('AppTimeField shows 12H/24H format toggle', (
+  testWidgets('AppTimeField shows active format toggle beside the picker', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -67,8 +67,9 @@ void main() {
     );
 
     expect(find.text('Start time'), findsOneWidget);
-    expect(find.text('12H'), findsOneWidget);
     expect(find.text('24H'), findsOneWidget);
+    expect(find.text('12H'), findsNothing);
+    expect(find.byTooltip('Select time'), findsOneWidget);
   });
 
   testWidgets('AppTimeField shows AM/PM toggle in 12-hour mode', (
@@ -127,6 +128,28 @@ void main() {
     expect(find.text('30'), findsOneWidget);
   });
 
+  testWidgets('AppTimeField rejects out-of-range hours in 12-hour mode', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppTimeField(
+        value: AppTimeValue(hour: 9, minute: 15),
+        use24HourFormat: false,
+        allowFormatToggle: false,
+        pickerButtonLabel: 'Select time',
+        invalidTimeMessage: 'Invalid time',
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField).at(0), '13');
+    await tester.enterText(find.byType(TextField).at(1), '60');
+    await tester.pump();
+
+    expect(find.text('09'), findsOneWidget);
+    expect(find.text('15'), findsOneWidget);
+  });
+
   testWidgets('format toggle preserves the represented time', (
     WidgetTester tester,
   ) async {
@@ -142,14 +165,18 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('12H'));
+    await tester.tap(find.text('24H'));
     await tester.pump();
+    expect(find.text('12H'), findsOneWidget);
+    expect(find.text('24H'), findsNothing);
     expect(find.text('03'), findsOneWidget);
     expect(find.text('PM'), findsOneWidget);
     expect(selected, const AppTimeValue(hour: 15, minute: 45));
 
-    await tester.tap(find.text('24H'));
+    await tester.tap(find.text('12H'));
     await tester.pump();
+    expect(find.text('24H'), findsOneWidget);
+    expect(find.text('12H'), findsNothing);
     expect(find.text('15'), findsOneWidget);
     expect(selected, const AppTimeValue(hour: 15, minute: 45));
   });

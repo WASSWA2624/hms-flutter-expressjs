@@ -55,6 +55,12 @@ final class OpdAppointmentDto {
           _string(json['patient_primary_identifier']) ??
           _string(_nullableMap(json['patient'])?['human_friendly_id']),
       patientPhone: _string(json['patient_primary_phone']),
+      patientDateOfBirth:
+          _date(json['patient_date_of_birth']) ??
+          _date(_nullableMap(json['patient'])?['date_of_birth']),
+      patientGender:
+          _string(json['patient_gender']) ??
+          _string(_nullableMap(json['patient'])?['gender']),
       providerDisplayName:
           _string(json['provider_display_name']) ??
           _providerDisplayName(_nullableMap(json['provider'])),

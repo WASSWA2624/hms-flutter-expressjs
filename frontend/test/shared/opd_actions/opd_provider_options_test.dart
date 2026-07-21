@@ -39,7 +39,10 @@ void main() {
 
     expect(options, hasLength(1));
     expect(options.single.value, 'USR-001');
-    expect(options.single.label, 'Jordani Demo Demo | Consultant | Doctor');
+    expect(
+      options.single.label,
+      'Jordani Demo Demo | Consultant | Doctor · Available today',
+    );
   });
 
   test('does not expose provider internal identifiers as visible text', () {
@@ -60,11 +63,61 @@ void main() {
     expect(options, hasLength(1));
     expect(
       options.single.label,
-      'Unknown provider | Medical officer | Clinician',
+      'Assigned staff unknown | Medical officer | Clinician',
     );
     expect(options.single.label, isNot(contains('550e8400')));
     expect(options.single.label, isNot(contains('staff_profile')));
     expect(options.single.label, isNot(contains('provider@example.com')));
-    expect(provider.displayTitle, 'Unknown provider');
+    expect(provider.displayTitle, 'Assigned staff unknown');
+  });
+
+  test('injects and resolves an assigned provider missing from options', () {
+    const OpdProviderOption catalog = OpdProviderOption(
+      id: 'USR-100',
+      displayName: 'Catalog Doctor',
+    );
+    final List<OpdProviderOption> providers = opdProvidersWithAssigned(
+      providers: const <OpdProviderOption>[catalog],
+      assignedProviderId: 'USR-ASSIGNED',
+      assignedProviderDisplayName: 'Assigned Doctor',
+    );
+    expect(providers, hasLength(2));
+    expect(providers.first.id, 'USR-ASSIGNED');
+
+    final options = opdProviderSelectOptions(
+      providers: providers,
+      schedules: const <OpdProviderSchedule>[],
+    );
+    expect(
+      resolveOpdProviderSelection(
+        options: options,
+        providers: providers,
+        assignedProviderId: 'USR-ASSIGNED',
+        assignedProviderDisplayName: 'Assigned Doctor',
+      ),
+      'USR-ASSIGNED',
+    );
+  });
+
+  test('resolves assigned provider by display name when ids differ', () {
+    const OpdProviderOption provider = OpdProviderOption(
+      id: 'uuid-provider',
+      displayName: 'Dr Match',
+      staffProfileId: 'STAFF-9',
+    );
+    final options = opdProviderSelectOptions(
+      providers: const <OpdProviderOption>[provider],
+      schedules: const <OpdProviderSchedule>[],
+    );
+
+    expect(
+      resolveOpdProviderSelection(
+        options: options,
+        providers: const <OpdProviderOption>[provider],
+        assignedProviderId: 'STAFF-9',
+        assignedProviderDisplayName: 'Dr Match',
+      ),
+      'uuid-provider',
+    );
   });
 }

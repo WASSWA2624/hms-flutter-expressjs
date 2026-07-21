@@ -216,6 +216,8 @@ final class OpdAppointment {
     this.patientDisplayName,
     this.patientIdentifier,
     this.patientPhone,
+    this.patientDateOfBirth,
+    this.patientGender,
     this.providerDisplayName,
     this.facilityName,
     this.updatedAt,
@@ -234,6 +236,8 @@ final class OpdAppointment {
   final String? patientDisplayName;
   final String? patientIdentifier;
   final String? patientPhone;
+  final DateTime? patientDateOfBirth;
+  final String? patientGender;
   final String? providerDisplayName;
   final String? facilityName;
   final DateTime? updatedAt;
@@ -263,6 +267,8 @@ final class OpdAppointment {
     String? patientDisplayName,
     String? patientIdentifier,
     String? patientPhone,
+    DateTime? patientDateOfBirth,
+    String? patientGender,
     String? providerDisplayName,
     String? facilityName,
     DateTime? updatedAt,
@@ -281,6 +287,8 @@ final class OpdAppointment {
       patientDisplayName: patientDisplayName ?? this.patientDisplayName,
       patientIdentifier: patientIdentifier ?? this.patientIdentifier,
       patientPhone: patientPhone ?? this.patientPhone,
+      patientDateOfBirth: patientDateOfBirth ?? this.patientDateOfBirth,
+      patientGender: patientGender ?? this.patientGender,
       providerDisplayName: providerDisplayName ?? this.providerDisplayName,
       facilityName: facilityName ?? this.facilityName,
       updatedAt: updatedAt ?? this.updatedAt,

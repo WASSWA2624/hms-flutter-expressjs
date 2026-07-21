@@ -31,6 +31,93 @@ List<OpdProviderOption> dedupeOpdProviderOptions(
   return unique;
 }
 
+/// Ensures the appointment's assigned provider appears in the selectable list.
+List<OpdProviderOption> opdProvidersWithAssigned({
+  required List<OpdProviderOption> providers,
+  String? assignedProviderId,
+  String? assignedProviderDisplayName,
+  String? facilityId,
+}) {
+  final String id = (assignedProviderId ?? '').trim();
+  if (id.isEmpty) {
+    return providers;
+  }
+  if (_providersContainId(providers, id)) {
+    return providers;
+  }
+  return <OpdProviderOption>[
+    OpdProviderOption(
+      id: id,
+      displayName: assignedProviderDisplayName,
+      facilityId: facilityId,
+    ),
+    ...providers,
+  ];
+}
+
+/// Resolves [assignedProviderId] to a selectable option value when possible.
+String? resolveOpdProviderSelection({
+  required List<AppSelectOption<String>> options,
+  required List<OpdProviderOption> providers,
+  String? assignedProviderId,
+  String? assignedProviderDisplayName,
+}) {
+  final String id = (assignedProviderId ?? '').trim();
+  final String name = (assignedProviderDisplayName ?? '').trim();
+  if (id.isEmpty && name.isEmpty) {
+    return null;
+  }
+
+  if (id.isNotEmpty) {
+    for (final AppSelectOption<String> option in options) {
+      if (option.value.trim() == id) {
+        return option.value;
+      }
+    }
+  }
+
+  for (final OpdProviderOption provider in providers) {
+    final bool idMatch =
+        id.isNotEmpty &&
+        _providerKeys(provider).any(
+          (String key) => key.trim().toUpperCase() == id.toUpperCase(),
+        );
+    final bool nameMatch =
+        name.isNotEmpty &&
+        (provider.displayName ?? '').trim().toUpperCase() == name.toUpperCase();
+    if (!idMatch && !nameMatch) {
+      continue;
+    }
+    for (final AppSelectOption<String> option in options) {
+      if (option.value.trim() == provider.id.trim()) {
+        return option.value;
+      }
+    }
+  }
+
+  if (name.isNotEmpty) {
+    for (final AppSelectOption<String> option in options) {
+      if (option.label.toUpperCase().contains(name.toUpperCase())) {
+        return option.value;
+      }
+    }
+  }
+
+  return id.isEmpty ? null : id;
+}
+
+bool _providersContainId(List<OpdProviderOption> providers, String id) {
+  final String needle = id.toUpperCase();
+  for (final OpdProviderOption provider in providers) {
+    if (_providerKeys(provider).any(
+      (String key) => key.trim().toUpperCase() == needle,
+    )) {
+      return true;
+    }
+  }
+  return false;
+}
+
 List<AppSelectOption<String>> opdProviderSelectOptions({
   required List<OpdProviderOption> providers,
   required List<OpdProviderSchedule> schedules,

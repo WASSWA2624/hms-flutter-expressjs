@@ -67,7 +67,7 @@ class _OpdRescheduleAppointmentDialogState
     final int initialDuration =
         opdRescheduleDurationMinutes(_startTime, _endTime) ?? 30;
     _durationController = TextEditingController(text: '$initialDuration');
-    _providerId = widget.appointment.providerUserId;
+    _providerId = widget.appointment.providerUserId?.trim();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -96,8 +96,12 @@ class _OpdRescheduleAppointmentDialogState
           success: (OpdWorkspaceState state) => state,
           failure: (_) => null,
         );
-    final List<OpdProviderOption> providers =
-        workspace?.queueProviderOptions ?? const <OpdProviderOption>[];
+    final List<OpdProviderOption> providers = opdProvidersWithAssigned(
+      providers: workspace?.queueProviderOptions ?? const <OpdProviderOption>[],
+      assignedProviderId: widget.appointment.providerUserId,
+      assignedProviderDisplayName: widget.appointment.providerDisplayName,
+      facilityId: widget.appointment.facilityId,
+    );
     final List<OpdProviderSchedule> schedules =
         workspace?.providerSchedules ?? const <OpdProviderSchedule>[];
     final List<AppSelectOption<String>> providerOptions =
@@ -111,8 +115,15 @@ class _OpdRescheduleAppointmentDialogState
                 widget.appointment.patientId ??
                 '')
             .trim();
+    final String genderLabel = patientGenderLabel(
+      l10n,
+      widget.appointment.patientGender,
+    );
+    final String? phone = widget.appointment.patientPhone?.trim();
     final String providerLabel =
-        widget.appointment.providerDisplayName ?? l10n.profileUnknownValue;
+        (widget.appointment.providerDisplayName ?? '').trim().isEmpty
+        ? l10n.profileUnknownValue
+        : widget.appointment.providerDisplayName!.trim();
     final String arrivalLabel = widget.appointment.scheduledStart == null
         ? l10n.profileUnknownValue
         : AppFormatters.dateTime(widget.appointment.scheduledStart!, locale);
@@ -140,6 +151,11 @@ class _OpdRescheduleAppointmentDialogState
                 ? l10n.profileUnknownValue
                 : patientNumber,
             patientNumberLabel: l10n.opdPatientIdLabel,
+            ageLabel: widget.appointment.patientDateOfBirth == null
+                ? null
+                : formatPatientAge(l10n, widget.appointment.patientDateOfBirth),
+            genderLabel: genderLabel.isEmpty ? null : genderLabel,
+            genderIcon: patientGenderIcon(widget.appointment.patientGender),
             status: statusLabel.isEmpty
                 ? null
                 : AppWorkspaceStatus(
@@ -150,7 +166,15 @@ class _OpdRescheduleAppointmentDialogState
             persistExpandPreference: false,
             initiallyExpanded: false,
             semanticLabel: widget.appointment.displayTitle,
+            fieldStyle: AppWorkspacePatientContextFieldStyle.tiles,
             expandedFields: <AppWorkspacePatientContextField>[
+              AppWorkspacePatientContextField(
+                label: l10n.patientsPhoneLabel,
+                value: (phone == null || phone.isEmpty)
+                    ? l10n.profileUnknownValue
+                    : phone,
+                icon: Icons.phone_outlined,
+              ),
               AppWorkspacePatientContextField(
                 label: l10n.opdProviderColumnLabel,
                 value: providerLabel,
@@ -180,38 +204,31 @@ class _OpdRescheduleAppointmentDialogState
                 validator: AppValidators.requiredValue(l10n.validationRequired),
                 onChanged: (DateTime? value) => setState(() => _date = value),
               ),
-              AppResponsiveFieldRow(
-                gap: AppResponsiveFieldRowGap.form,
-                children: <Widget>[
-                  AppTimeField(
-                    value: _startTime,
-                    labelText: l10n.opdFieldRequiredLabel(
-                      l10n.opdAppointmentStartLabel,
-                    ),
-                    pickerButtonLabel: l10n.appTimePickerAction,
-                    invalidTimeMessage: l10n.patientsTimeInvalidMessage,
-                    hintText: l10n.patientsTimeHint,
-                    hourLabelText: l10n.appTimeHourLabel,
-                    minuteLabelText: l10n.appTimeMinuteLabel,
-                    enabled: !_isBusy,
-                    isRequired: true,
-                    validator: AppValidators.requiredValue(
-                      l10n.validationRequired,
-                    ),
-                    onChanged: _onStartChanged,
-                  ),
-                  AppTextField(
-                    controller: _durationController,
-                    labelText: l10n.opdFieldRequiredLabel(
-                      l10n.patientsAppointmentDurationLabel,
-                    ),
-                    enabled: !_isBusy,
-                    isRequired: true,
-                    keyboardType: TextInputType.number,
-                    validator: _durationValidator(l10n),
-                    onChanged: _onDurationChanged,
-                  ),
-                ],
+              AppTimeField(
+                value: _startTime,
+                labelText: l10n.opdFieldRequiredLabel(
+                  l10n.opdAppointmentStartLabel,
+                ),
+                pickerButtonLabel: l10n.appTimePickerAction,
+                invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+                hintText: l10n.patientsTimeHint,
+                hourLabelText: l10n.appTimeHourLabel,
+                minuteLabelText: l10n.appTimeMinuteLabel,
+                enabled: !_isBusy,
+                isRequired: true,
+                validator: AppValidators.requiredValue(l10n.validationRequired),
+                onChanged: _onStartChanged,
+              ),
+              AppTextField(
+                controller: _durationController,
+                labelText: l10n.opdFieldRequiredLabel(
+                  l10n.patientsAppointmentDurationLabel,
+                ),
+                enabled: !_isBusy,
+                isRequired: true,
+                keyboardType: TextInputType.number,
+                validator: _durationValidator(l10n),
+                onChanged: _onDurationChanged,
               ),
               AppTimeField(
                 value: _endTime,
@@ -237,6 +254,11 @@ class _OpdRescheduleAppointmentDialogState
                 },
                 onChanged: _onEndChanged,
               ),
+            ],
+          ),
+          AppFormSection(
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
               AppSelectField<String>.searchable(
                 value: _providerId,
                 labelText: l10n.patientsProviderLabel,
@@ -274,9 +296,34 @@ class _OpdRescheduleAppointmentDialogState
     if (!mounted) {
       return;
     }
+    final OpdWorkspaceState? workspace = ref
+        .read(opdWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (OpdWorkspaceState state) => state,
+          failure: (_) => null,
+        );
+    final List<OpdProviderOption> providers = opdProvidersWithAssigned(
+      providers: workspace?.queueProviderOptions ?? const <OpdProviderOption>[],
+      assignedProviderId: widget.appointment.providerUserId,
+      assignedProviderDisplayName: widget.appointment.providerDisplayName,
+      facilityId: widget.appointment.facilityId,
+    );
+    final List<AppSelectOption<String>> providerOptions =
+        opdProviderSelectOptions(
+          providers: providers,
+          schedules: workspace?.providerSchedules ?? const <OpdProviderSchedule>[],
+        );
     setState(() {
       _failure = optionsFailure;
       _isLoadingProviders = false;
+      _providerId = resolveOpdProviderSelection(
+        options: providerOptions,
+        providers: providers,
+        assignedProviderId: widget.appointment.providerUserId,
+        assignedProviderDisplayName: widget.appointment.providerDisplayName,
+      );
     });
   }
 

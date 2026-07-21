@@ -1,7 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/opd/data/dtos/opd_dtos.dart';
+import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 
 void main() {
+  test('OpdAppointmentDto maps patient demographics from API fields', () {
+    final OpdAppointment appointment = OpdAppointmentDto(
+      <String, Object?>{
+        'id': 'appointment-1',
+        'human_friendly_id': 'APT000001',
+        'patient_display_name': 'Wilson Wasswa',
+        'patient_primary_identifier': 'PAT0000004',
+        'patient_primary_phone': '+256700000004',
+        'patient_date_of_birth': '1992-03-18',
+        'patient_gender': 'MALE',
+        'provider_human_friendly_id': 'USR0001',
+        'provider_display_name': 'Dr Example',
+        'status': 'SCHEDULED',
+        'scheduled_start': '2026-07-22T06:00:00.000Z',
+        'scheduled_end': '2026-07-22T07:00:00.000Z',
+      },
+    ).toEntity();
+
+    expect(appointment.patientPhone, '+256700000004');
+    expect(appointment.patientDateOfBirth, DateTime.parse('1992-03-18'));
+    expect(appointment.patientGender, 'MALE');
+    expect(appointment.providerUserId, 'USR0001');
+    expect(appointment.providerDisplayName, 'Dr Example');
+  });
+
   test('OpdFlowDetailDto decodes backend consultation gate flags', () {
     final OpdFlowDetailDto dto = OpdFlowDetailDto.fromResponse(
       <String, Object?>{

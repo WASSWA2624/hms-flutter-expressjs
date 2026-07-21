@@ -240,15 +240,16 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
     }
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         if (age != null && age.isNotEmpty)
-          Text(
-            age,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Flexible(
+            child: Text(
+              age,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         if (gender != null && gender.isNotEmpty) ...<Widget>[
@@ -261,12 +262,14 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
             ),
             SizedBox(width: theme.spacing.xs),
           ],
-          Text(
-            gender,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Flexible(
+            child: Text(
+              gender,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],

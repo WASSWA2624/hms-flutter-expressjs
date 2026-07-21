@@ -200,31 +200,10 @@ class _AppTimeFieldState extends State<AppTimeField> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (fieldLabel != null || widget.allowFormatToggle)
+            if (fieldLabel != null)
               Padding(
                 padding: EdgeInsets.only(bottom: theme.spacing.xs),
-                child: Row(
-                  children: <Widget>[
-                    if (fieldLabel != null) Expanded(child: fieldLabel),
-                    if (widget.allowFormatToggle)
-                      _TimeFormatToggle(
-                        uses24Hour: _uses24Hour,
-                        label12: widget.hour12LabelText,
-                        label24: widget.hour24LabelText,
-                        enabled: canChange,
-                        onChanged: (bool use24Hour) {
-                          final AppTimeValue? current =
-                              _parseParts() ?? widget.value;
-                          setState(() => _userFormat24Hour = use24Hour);
-                          if (current != null) {
-                            _syncControllersFromValue(current);
-                            field.didChange(current);
-                            widget.onChanged?.call(current);
-                          }
-                        },
-                      ),
-                  ],
-                ),
+                child: fieldLabel,
               ),
             InputDecorator(
               isFocused: _hasFocus,
@@ -240,16 +219,27 @@ class _AppTimeFieldState extends State<AppTimeField> {
                   theme.spacing.xs,
                   theme.spacing.sm,
                 ),
-                suffixIcon: _TimePickerButton(
-                  label: widget.pickerButtonLabel,
-                  onPressed: canChange
+                suffixIcon: _TimeFieldSuffix(
+                  allowFormatToggle: widget.allowFormatToggle,
+                  uses24Hour: _uses24Hour,
+                  label12: widget.hour12LabelText,
+                  label24: widget.hour24LabelText,
+                  pickerLabel: widget.pickerButtonLabel,
+                  enabled: canChange,
+                  onFormatChanged: (bool use24Hour) {
+                    final AppTimeValue? current = _parseParts() ?? widget.value;
+                    setState(() => _userFormat24Hour = use24Hour);
+                    if (current != null) {
+                      _syncControllersFromValue(current);
+                      field.didChange(current);
+                      widget.onChanged?.call(current);
+                    }
+                  },
+                  onPickTime: canChange
                       ? () => _selectTime(context, field)
                       : null,
                 ),
                 suffixIconConstraints: BoxConstraints(
-                  minWidth:
-                      theme.appTokens.minInteractiveDimension +
-                      theme.spacing.md,
                   minHeight:
                       theme.inputDecorationTheme.constraints?.minHeight ?? 48,
                 ),
@@ -326,16 +316,25 @@ class _AppTimeFieldState extends State<AppTimeField> {
                       ),
                     ],
                     if (!_uses24Hour) ...<Widget>[
-                      SizedBox(width: theme.spacing.sm),
-                      _TimePeriodToggle(
-                        amLabel: widget.amLabelText,
-                        pmLabel: widget.pmLabelText,
-                        period: _period,
-                        enabled: canChange,
-                        onChanged: (_AppTimePeriod value) {
-                          setState(() => _period = value);
-                          _handlePartsChanged(field);
-                        },
+                      SizedBox(width: theme.spacing.xs),
+                      Flexible(
+                        flex: 3,
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: _TimePeriodToggle(
+                              amLabel: widget.amLabelText,
+                              pmLabel: widget.pmLabelText,
+                              period: _period,
+                              enabled: canChange,
+                              onChanged: (_AppTimePeriod value) {
+                                setState(() => _period = value);
+                                _handlePartsChanged(field);
+                              },
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ],
@@ -597,6 +596,46 @@ class _TimePickerButton extends StatelessWidget {
   }
 }
 
+class _TimeFieldSuffix extends StatelessWidget {
+  const _TimeFieldSuffix({
+    required this.allowFormatToggle,
+    required this.uses24Hour,
+    required this.label12,
+    required this.label24,
+    required this.pickerLabel,
+    required this.enabled,
+    required this.onFormatChanged,
+    required this.onPickTime,
+  });
+
+  final bool allowFormatToggle;
+  final bool uses24Hour;
+  final String label12;
+  final String label24;
+  final String pickerLabel;
+  final bool enabled;
+  final ValueChanged<bool> onFormatChanged;
+  final VoidCallback? onPickTime;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (allowFormatToggle)
+          _TimeFormatToggle(
+            uses24Hour: uses24Hour,
+            label12: label12,
+            label24: label24,
+            enabled: enabled,
+            onChanged: onFormatChanged,
+          ),
+        _TimePickerButton(label: pickerLabel, onPressed: onPickTime),
+      ],
+    );
+  }
+}
+
 class _TimePartTextField extends StatelessWidget {
   const _TimePartTextField({
     required this.controller,
@@ -759,30 +798,36 @@ class _TimeFormatToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final String activeLabel = uses24Hour ? label24 : label12;
+    final String nextLabel = uses24Hour ? label12 : label24;
+    final Color foreground = enabled
+        ? colors.onSurfaceVariant
+        : colors.onSurface.withValues(alpha: 0.38);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
+    return Tooltip(
+      message: nextLabel,
+      child: Material(
         color: enabled
             ? colors.surfaceContainerHighest
             : colors.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(theme.radius.sm),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          _TimePeriodChip(
-            label: label12,
-            selected: !uses24Hour,
-            enabled: enabled,
-            onTap: () => onChanged(false),
+        child: InkWell(
+          onTap: enabled ? () => onChanged(!uses24Hour) : null,
+          borderRadius: BorderRadius.circular(theme.radius.sm),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.sm,
+              vertical: theme.spacing.xs,
+            ),
+            child: Text(
+              activeLabel,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: foreground,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-          _TimePeriodChip(
-            label: label24,
-            selected: uses24Hour,
-            enabled: enabled,
-            onTap: () => onChanged(true),
-          ),
-        ],
+        ),
       ),
     );
   }

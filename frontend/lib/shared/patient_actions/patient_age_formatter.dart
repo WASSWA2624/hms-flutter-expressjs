@@ -43,3 +43,23 @@ IconData? patientGenderIcon(String? gender) {
     _ => null,
   };
 }
+
+/// Localized gender label; empty when [gender] is null/blank.
+String patientGenderLabel(AppLocalizations l10n, String? gender) {
+  return switch ((gender ?? '').trim().toUpperCase()) {
+    'MALE' => l10n.patientsGenderMale,
+    'FEMALE' => l10n.patientsGenderFemale,
+    'OTHER' => l10n.patientsGenderOther,
+    'UNKNOWN' => l10n.patientsGenderUnknown,
+    final String normalized when normalized.isNotEmpty => normalized
+        .toLowerCase()
+        .split('_')
+        .where((String part) => part.isNotEmpty)
+        .map(
+          (String part) =>
+              '${part[0].toUpperCase()}${part.length > 1 ? part.substring(1) : ''}',
+        )
+        .join(' '),
+    _ => '',
+  };
+}
