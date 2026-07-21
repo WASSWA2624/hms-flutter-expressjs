@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -57,7 +56,7 @@ void main() {
     expect(dialog.actions, hasLength(1));
     expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
-    expect(find.text('Queue'), findsOneWidget);
+    expect(find.text('Queue'), findsNothing);
     expect(find.text('Reschedule'), findsOneWidget);
     expect(find.text('Cancel appointment'), findsOneWidget);
     expect(
@@ -71,7 +70,7 @@ void main() {
     expect(find.text('Next action'), findsOneWidget);
     expect(find.byIcon(Icons.help_outline), findsNothing);
     expect(find.byIcon(AppActionIcons.appointment), findsOneWidget);
-    expect(find.byIcon(AppActionIcons.queue), findsWidgets);
+    expect(find.byIcon(AppActionIcons.queue), findsNothing);
     expect(find.byIcon(AppActionIcons.reschedule), findsWidgets);
     expect(find.byIcon(AppActionIcons.start), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -176,6 +175,7 @@ void main() {
     );
 
     expect(find.text('Quick actions'), findsOneWidget);
+    expect(find.text('Queue'), findsNothing);
     expect(
       find.widgetWithText(AppButton, 'Start OPD encounter'),
       findsOneWidget,
@@ -184,26 +184,10 @@ void main() {
     expect(find.text('Cancel appointment'), findsOneWidget);
   });
 
-  testWidgets('hides Queue when the appointment already has an active entry', (
+  testWidgets('never offers Queue beside Start OPD encounter', (
     WidgetTester tester,
   ) async {
-    await _pumpMountedDialog(
-      tester,
-      appointment,
-      workspaceState: OpdWorkspaceState.empty().copyWith(
-        queueEntries: const AppPage<OpdQueueEntry>(
-          items: <OpdQueueEntry>[
-            OpdQueueEntry(
-              id: 'queue-internal',
-              publicId: 'QUE000001',
-              appointmentId: 'APT000001',
-              status: 'CONFIRMED',
-            ),
-          ],
-          request: AppPageRequest(pageSize: 12),
-        ),
-      ),
-    );
+    await _pumpMountedDialog(tester, appointment);
 
     expect(find.text('Queue'), findsNothing);
     expect(
@@ -242,78 +226,6 @@ void main() {
         idempotencyKey: any(named: 'idempotencyKey'),
       ),
     );
-  });
-
-  testWidgets('Queue failure keeps the hub open and patches nothing', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
-    when(
-      () => repository.createVisitQueue(
-        any(),
-        idempotencyKey: any(named: 'idempotencyKey'),
-      ),
-    ).thenAnswer(
-      (_) async => const Result<OpdQueueEntry>.failure(AppFailure.network()),
-    );
-    bool? result;
-
-    await _pumpOpenedDialog(
-      tester,
-      appointment: appointment,
-      repository: repository,
-      onResult: (bool? value) => result = value,
-    );
-
-    await tester.tap(find.text('Queue'));
-    await tester.pumpAndSettle();
-
-    expect(result, isNull);
-    expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
-    expect(find.byType(AppFormInformationBanner), findsOneWidget);
-    verify(
-      () => repository.createVisitQueue(
-        any(),
-        idempotencyKey: any(named: 'idempotencyKey'),
-      ),
-    ).called(1);
-  });
-
-  testWidgets('Queue success closes the hub after persisted patch', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository repository = _MockOpdRepository();
-    const OpdQueueEntry queued = OpdQueueEntry(
-      id: 'queue-internal',
-      publicId: 'QUE000001',
-      tenantId: 'TEN000001',
-      facilityId: 'FAC000001',
-      patientId: 'PAT000001',
-      appointmentId: 'APT000001',
-      providerUserId: 'USR000001',
-      status: 'CONFIRMED',
-    );
-    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
-    when(
-      () => repository.createVisitQueue(
-        any(),
-        idempotencyKey: any(named: 'idempotencyKey'),
-      ),
-    ).thenAnswer((_) async => const Result<OpdQueueEntry>.success(queued));
-    bool? result;
-
-    await _pumpOpenedDialog(
-      tester,
-      appointment: appointment,
-      repository: repository,
-      onResult: (bool? value) => result = value,
-    );
-
-    await tester.tap(find.text('Queue'));
-    await tester.pumpAndSettle();
-
-    expect(result, isTrue);
   });
 
   testWidgets('Reschedule opens the canonical child dialog', (

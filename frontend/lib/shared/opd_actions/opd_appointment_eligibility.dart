@@ -10,9 +10,6 @@ enum OpdAppointmentPrimaryAction {
   /// An open OPD/Emergency encounter already exists; continue that visit.
   continueEncounter,
 
-  /// Add the appointment to the desk queue.
-  queue,
-
   /// Reschedule the appointment.
   reschedule,
 
@@ -78,7 +75,6 @@ OpdFlowSummary? findActiveOpdFlowForAppointment({
 OpdAppointmentPrimaryAction resolveOpdAppointmentPrimaryAction({
   required OpdAppointment appointment,
   OpdFlowSummary? linkedFlow,
-  bool alreadyQueued = false,
 }) {
   final String status = (appointment.status ?? '').toUpperCase();
   if (isOpdAppointmentStatusTerminal(status)) {
@@ -93,12 +89,6 @@ OpdAppointmentPrimaryAction resolveOpdAppointmentPrimaryAction({
     return OpdAppointmentPrimaryAction.startEncounter;
   }
 
-  if (!alreadyQueued &&
-      status != 'IN_PROGRESS' &&
-      appointment.patientId != null) {
-    return OpdAppointmentPrimaryAction.queue;
-  }
-
   return OpdAppointmentPrimaryAction.reschedule;
 }
 
@@ -111,7 +101,6 @@ String? opdAppointmentPrimaryActionLabel(
     OpdAppointmentPrimaryAction.startEncounter => l10n.opdCheckInAction,
     OpdAppointmentPrimaryAction.continueEncounter =>
       l10n.opdContinueEncounterAction,
-    OpdAppointmentPrimaryAction.queue => l10n.opdQueueAction,
     OpdAppointmentPrimaryAction.reschedule => l10n.opdRescheduleAction,
     OpdAppointmentPrimaryAction.none => null,
   };

@@ -93,7 +93,16 @@ void main() {
         DateTime.tryParse(submittedPayload?['queued_at'] as String),
         isNotNull,
       );
+      // Start OPD creates/links the desk-queue entry server-side; the client
+      // only needs to send queued_at with the appointment-backed start payload.
+      expect(submittedPayload?.containsKey('visit_queue_id'), isFalse);
       verifyNever(() => repository.updateAppointment(any(), any()));
+      verifyNever(
+        () => repository.createVisitQueue(
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
     });
 
     test(

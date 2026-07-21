@@ -61,6 +61,22 @@ void main() {
     expect(opdAppointmentPrimaryActionLabel(l10n, action), 'Start OPD encounter');
   });
 
+  test('offers reschedule for in-progress appointments without an open flow', () {
+    const OpdAppointment inProgress = OpdAppointment(
+      id: 'appointment-1',
+      publicId: 'APT000001',
+      patientId: 'PAT000001',
+      status: 'IN_PROGRESS',
+    );
+    final OpdAppointmentPrimaryAction action =
+        resolveOpdAppointmentPrimaryAction(
+          appointment: inProgress,
+          linkedFlow: null,
+        );
+    expect(action, OpdAppointmentPrimaryAction.reschedule);
+    expect(opdAppointmentPrimaryActionLabel(l10n, action), 'Reschedule');
+  });
+
   test('matches open flow by unique patient when appointment id is absent', () {
     const OpdFlowSummary patientOnlyFlow = OpdFlowSummary(
       id: 'flow-2',

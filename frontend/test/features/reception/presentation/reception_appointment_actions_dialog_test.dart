@@ -73,6 +73,9 @@ void main() {
     expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.text('Scheduled'), findsWidgets);
     expect(find.text('Start OPD encounter'), findsWidgets);
+    expect(find.text('Queue'), findsNothing);
+    expect(find.text('Reschedule'), findsOneWidget);
+    expect(find.text('Cancel appointment'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });
 }

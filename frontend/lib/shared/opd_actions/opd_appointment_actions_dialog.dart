@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
@@ -16,8 +15,6 @@ import 'package:hosspi_hms/shared/opd_actions/opd_appointment_eligibility.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
     show opdFrontDeskActionRequirement, showFlowActionsDialog;
-import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart'
-    show isOpdQueueTerminalStatus;
 import 'package:hosspi_hms/shared/opd_actions/opd_reschedule_appointment_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
@@ -45,7 +42,7 @@ bool isOpdAppointmentTerminalStatus(String? status) {
   return isOpdAppointmentStatusTerminal(status);
 }
 
-enum _AppointmentFooterAction { queue, checkIn, continueEncounter, editEncounter }
+enum _AppointmentFooterAction { checkIn, continueEncounter, editEncounter }
 
 class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
   const OpdAppointmentActionsDialog({
@@ -71,7 +68,6 @@ class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
 class _OpdAppointmentActionsDialogState
     extends ConsumerState<OpdAppointmentActionsDialog> {
   _AppointmentFooterAction? _activeAction;
-  AppFailure? _failure;
 
   bool get _isSaving => _activeAction != null;
 
@@ -92,21 +88,12 @@ class _OpdAppointmentActionsDialogState
     final Locale locale = Localizations.localeOf(context);
     final String status = (widget.appointment.status ?? '').toUpperCase();
     final bool terminal = isOpdAppointmentTerminalStatus(status);
-    final bool alreadyQueued = _hasActiveLinkedQueueEntry();
     final OpdFlowSummary? linkedFlow = _linkedFlow;
     final OpdAppointmentPrimaryAction primaryAction =
         resolveOpdAppointmentPrimaryAction(
           appointment: widget.appointment,
           linkedFlow: linkedFlow,
-          alreadyQueued: alreadyQueued,
         );
-    final bool canQueue =
-        !terminal &&
-        status != 'IN_PROGRESS' &&
-        !alreadyQueued &&
-        linkedFlow == null &&
-        widget.appointment.patientId != null &&
-        widget.appointment.tenantId != null;
     final bool canStartEncounter =
         primaryAction == OpdAppointmentPrimaryAction.startEncounter;
     final bool canContinueEncounter =
@@ -127,11 +114,6 @@ class _OpdAppointmentActionsDialogState
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
           OpdWorkflowContextPanel(
             patientName: widget.appointment.displayTitle,
             patientNumber: widget.appointment.patientIdentifier ?? '',
@@ -175,21 +157,6 @@ class _OpdAppointmentActionsDialogState
             AppQuickActions(
               title: l10n.patientsQuickActionsTitle,
               permissionActions: <AppPermissionActionItem>[
-                if (canQueue)
-                  AppPermissionActionItem(
-                    requirement: widget.actionRequirement,
-                    label: l10n.opdQueueAction,
-                    icon: AppActionIcons.queue,
-                    fullWidth: true,
-                    isLoading: _activeAction == _AppointmentFooterAction.queue,
-                    enabled: !_isSaving,
-                    onPressed: () => _run(
-                      _AppointmentFooterAction.queue,
-                      () => ref
-                          .read(opdWorkspaceControllerProvider.notifier)
-                          .assignAppointmentToQueue(widget.appointment),
-                    ),
-                  ),
                 if (canReschedule)
                   AppPermissionActionItem(
                     requirement: widget.actionRequirement,
@@ -251,7 +218,7 @@ class _OpdAppointmentActionsDialogState
         ],
       ),
       // Cancel-only hub footer; domain mutations open child dialogs or run
-      // in-body actions (queue / start encounter) with AppButton.isLoading.
+      // in-body start/continue actions with AppButton.isLoading.
       actions: <Widget>[
         AppButton.secondary(
           label: l10n.commonCancelActionLabel,
@@ -269,7 +236,6 @@ class _OpdAppointmentActionsDialogState
     }
     setState(() {
       _activeAction = _AppointmentFooterAction.continueEncounter;
-      _failure = null;
     });
     final bool? changed = await showFlowActionsDialog(
       context: context,
@@ -295,7 +261,6 @@ class _OpdAppointmentActionsDialogState
       _activeAction = _linkedFlow == null
           ? _AppointmentFooterAction.checkIn
           : _AppointmentFooterAction.editEncounter;
-      _failure = null;
     });
     final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
       context: context,
@@ -337,24 +302,6 @@ class _OpdAppointmentActionsDialogState
     );
   }
 
-  bool _hasActiveLinkedQueueEntry() {
-    final OpdWorkspaceState? workspaceState = widget.workspaceState;
-    if (workspaceState == null) {
-      return false;
-    }
-    final Set<String> appointmentIds = <String>{
-      widget.appointment.id,
-      widget.appointment.apiId,
-      if (widget.appointment.publicId case final String publicId) publicId,
-    }.map((String id) => id.trim().toUpperCase()).toSet();
-    return workspaceState.queueEntries.items.any((OpdQueueEntry entry) {
-      final String? appointmentId = entry.appointmentId;
-      return appointmentId != null &&
-          appointmentIds.contains(appointmentId.trim().toUpperCase()) &&
-          !isOpdQueueTerminalStatus(entry.status);
-    });
-  }
-
   Future<void> _openReschedule() async {
     if (_isSaving) {
       return;
@@ -379,31 +326,6 @@ class _OpdAppointmentActionsDialogState
     if (changed == true && mounted) {
       Navigator.of(context).pop(true);
     }
-  }
-
-  Future<void> _run(
-    _AppointmentFooterAction action,
-    Future<AppFailure?> Function() run,
-  ) async {
-    if (_isSaving) {
-      return;
-    }
-    setState(() {
-      _activeAction = action;
-      _failure = null;
-    });
-    final AppFailure? failure = await run();
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _activeAction = null;
-    });
   }
 }
 
