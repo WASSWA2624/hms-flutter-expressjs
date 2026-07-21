@@ -241,5 +241,44 @@ void main() {
       expect(canAccess(AppRoutes.pharmacy, policy), isFalse);
       expect(canAccess(AppRoutes.hr, policy), isFalse);
     });
+
+    test(
+      'extra grants unlock routes outside a focused shell without opening '
+      'routes that only overlap the base pack',
+      () {
+        final receptionistPolicy = policyForRole('RECEPTIONIST')
+            .copyWithPermissions(<AppPermission>{
+              ...policyForRole('RECEPTIONIST').permissions,
+              AppPermissions.billingRead,
+              AppPermissions.pharmacyRead,
+            });
+
+        expect(receptionistPolicy.isReceptionistFocusedShellUser, isTrue);
+        expect(canAccess(AppRoutes.billing, receptionistPolicy), isTrue);
+        expect(canAccess(AppRoutes.pharmacy, receptionistPolicy), isTrue);
+        // Routes that accept billing:read / pharmacy:read also unlock.
+        expect(canAccess(AppRoutes.theater, receptionistPolicy), isTrue);
+        expect(canAccess(AppRoutes.discharge, receptionistPolicy), isTrue);
+        // Still clamped: satisfied only by receptionist pack overlaps.
+        expect(canAccess(AppRoutes.nursing, receptionistPolicy), isFalse);
+        expect(canAccess(AppRoutes.icu, receptionistPolicy), isFalse);
+        expect(canAccess(AppRoutes.roomsBeds, receptionistPolicy), isFalse);
+
+        final labPolicy = policyForRole('LAB_TECH').copyWithPermissions(
+          <AppPermission>{
+            ...policyForRole('LAB_TECH').permissions,
+            AppPermissions.clinicalRead,
+          },
+        );
+        expect(labPolicy.isLabFocusedShellUser, isTrue);
+        expect(canAccess(AppRoutes.clinical, labPolicy), isTrue);
+        // Routes that accept clinical:read also unlock.
+        expect(canAccess(AppRoutes.opd, labPolicy), isTrue);
+        expect(canAccess(AppRoutes.physiotherapy, labPolicy), isTrue);
+        // Still clamped: no expanded grant matches these requirements.
+        expect(canAccess(AppRoutes.pharmacy, labPolicy), isFalse);
+        expect(canAccess(AppRoutes.billing, labPolicy), isFalse);
+      },
+    );
   });
 }

@@ -541,6 +541,67 @@ void main() {
     });
 
     test(
+      'detects expanded grants outside the focused shell base pack',
+      () {
+        final AppAccessPolicy basePolicy = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+              roles: <String>['RECEPTIONIST'],
+            ),
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'patient-registry',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'scheduling-queue',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'notifications-communications',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+        final AppAccessPolicy receptionistPolicy = basePolicy
+            .copyWithPermissions(<AppPermission>{
+              ...basePolicy.permissions,
+              AppPermissions.billingRead,
+            });
+
+        expect(receptionistPolicy.isReceptionistFocusedShellUser, isTrue);
+        expect(
+          receptionistPolicy.isShellRouteUnlockedByExpandedGrant(
+            allPermissions: const <AppPermission>[],
+            anyPermissions: const <AppPermission>[
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+            ],
+          ),
+          isTrue,
+        );
+        expect(
+          receptionistPolicy.isShellRouteUnlockedByExpandedGrant(
+            allPermissions: const <AppPermission>[],
+            anyPermissions: const <AppPermission>[
+              AppPermissions.patientRead,
+              AppPermissions.lastOfficeRead,
+            ],
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test(
       'Advanced plan hides Pro shell modules even when entitlement rows are stale',
       () {
         final session = AuthSession(

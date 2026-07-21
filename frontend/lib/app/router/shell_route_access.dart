@@ -5,20 +5,31 @@ bool canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
   if (!route.accessRequirement.isAllowed(accessPolicy)) {
     return false;
   }
+
+  final bool unlockedByExpandedGrant = accessPolicy
+      .isShellRouteUnlockedByExpandedGrant(
+        allPermissions: route.requiredPermissions,
+        anyPermissions: route.requiredAnyPermissions,
+      );
+
   if (accessPolicy.isLabFocusedShellUser &&
-      !AppRoutes.isLabFocusedShellRoute(route)) {
+      !AppRoutes.isLabFocusedShellRoute(route) &&
+      !unlockedByExpandedGrant) {
     return false;
   }
   if (accessPolicy.isPharmacistFocusedShellUser &&
-      !AppRoutes.isPharmacistFocusedShellRoute(route)) {
+      !AppRoutes.isPharmacistFocusedShellRoute(route) &&
+      !unlockedByExpandedGrant) {
     return false;
   }
   if (accessPolicy.isReceptionistFocusedShellUser &&
-      !AppRoutes.isReceptionistFocusedShellRoute(route)) {
+      !AppRoutes.isReceptionistFocusedShellRoute(route) &&
+      !unlockedByExpandedGrant) {
     return false;
   }
   if (accessPolicy.isBillingFocusedShellUser &&
-      !AppRoutes.isBillingFocusedShellRoute(route)) {
+      !AppRoutes.isBillingFocusedShellRoute(route) &&
+      !unlockedByExpandedGrant) {
     return false;
   }
   return true;

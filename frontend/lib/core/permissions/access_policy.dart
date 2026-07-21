@@ -541,6 +541,58 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Default permission pack for the active focused shell, if any.
+  ///
+  /// Used to decide whether a route outside the focused allow-list was unlocked
+  /// by an intentional extra grant (custom role / direct permission) rather than
+  /// by overlapping base-pack rights such as `patient:read`.
+  Set<AppPermission>? get focusedShellBasePermissions {
+    if (isLabFocusedShellUser) {
+      return Set<AppPermission>.unmodifiable(
+        _permissionsForRole(AppRole.labTech),
+      );
+    }
+    if (isPharmacistFocusedShellUser) {
+      return Set<AppPermission>.unmodifiable(
+        _permissionsForRole(AppRole.pharmacist),
+      );
+    }
+    if (isReceptionistFocusedShellUser) {
+      return Set<AppPermission>.unmodifiable(
+        _permissionsForRole(AppRole.receptionist),
+      );
+    }
+    if (isBillingFocusedShellUser) {
+      return Set<AppPermission>.unmodifiable(
+        _permissionsForRole(AppRole.billing),
+      );
+    }
+    return null;
+  }
+
+  /// True when [route] permissions are satisfied by at least one grant that is
+  /// outside the focused shell's default pack (custom role / direct permission).
+  bool isShellRouteUnlockedByExpandedGrant({
+    required Iterable<AppPermission> allPermissions,
+    required Iterable<AppPermission> anyPermissions,
+  }) {
+    final Set<AppPermission>? base = focusedShellBasePermissions;
+    if (base == null) {
+      return false;
+    }
+
+    final Set<AppPermission> satisfying = <AppPermission>{
+      for (final AppPermission permission in allPermissions)
+        if (grants(permission)) permission,
+      for (final AppPermission permission in anyPermissions)
+        if (grants(permission)) permission,
+    };
+
+    return satisfying.any(
+      (AppPermission permission) => !base.contains(permission),
+    );
+  }
+
   bool canEditFacilitySetupStructure() {
     return canManageFacility() || canManageHrFacilitySetup();
   }
