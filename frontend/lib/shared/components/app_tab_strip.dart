@@ -1,5 +1,7 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 
 /// Semantic tone for tab count superscripts.
 enum AppTabCountTone { info, warning, danger }
@@ -64,21 +66,35 @@ class AppTabStrip extends StatelessWidget {
       colorScheme.surface,
     );
 
-    final Widget tabRow = SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: <Widget>[
-          for (int index = 0; index < tabs.length; index += 1)
-            _AppTabChip(
-              label: tabs[index].label,
-              count: tabs[index].count,
-              countTone: tabs[index].countTone,
-              isSelected: selectedId == tabs[index].id,
-              isFirst: index == 0,
-              activeFill: activeFill,
-              onTap: () => onTabTapped(tabs[index].id),
-            ),
-        ],
+    // Horizontal scroll when tabs overflow the available width (mobile and
+    // dense desktop layouts). Intrinsic row width keeps chips from compressing.
+    final Widget tabRow = ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        scrollbars: true,
+        dragDevices: <PointerDeviceKind>{
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (int index = 0; index < tabs.length; index += 1)
+              _AppTabChip(
+                label: tabs[index].label,
+                count: tabs[index].count,
+                countTone: tabs[index].countTone,
+                isSelected: selectedId == tabs[index].id,
+                isFirst: index == 0,
+                activeFill: activeFill,
+                onTap: () => onTabTapped(tabs[index].id),
+              ),
+          ],
+        ),
       ),
     );
 
@@ -157,6 +173,7 @@ class AppTabToolbarAction extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final String fullLabel = label.trim();
     final bool canPress = enabled && !isLoading && onPressed != null;
+    final bool showLabel = _showToolbarLabel(context, hasIcon: icon != null);
 
     final Widget button = TextButton(
       onPressed: canPress ? onPressed : null,
@@ -190,16 +207,17 @@ class AppTabToolbarAction extends StatelessWidget {
               )
             else
               Icon(icon, size: 16),
-            SizedBox(width: theme.spacing.xs),
+            if (showLabel) SizedBox(width: theme.spacing.xs),
           ],
-          Text(
-            fullLabel,
-            // Regular weight keeps toolbar actions visually lighter than the
-            // tab labels above.
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w400,
+          if (showLabel)
+            Text(
+              fullLabel,
+              // Regular weight keeps toolbar actions visually lighter than the
+              // tab labels above.
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w400,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -242,6 +260,7 @@ class AppTabToolbarPrimary extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final String fullLabel = label.trim();
     final bool canPress = enabled && !isLoading && onPressed != null;
+    final bool showLabel = _showToolbarLabel(context, hasIcon: icon != null);
 
     final Widget button = TextButton(
       onPressed: canPress ? onPressed : null,
@@ -263,7 +282,7 @@ class AppTabToolbarPrimary extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (isLoading)
+          if (isLoading) ...<Widget>[
             SizedBox(
               width: 14,
               height: 14,
@@ -271,20 +290,22 @@ class AppTabToolbarPrimary extends StatelessWidget {
                 strokeWidth: 2,
                 color: colorScheme.primary,
               ),
-            )
-          else if (icon != null) ...<Widget>[
-            Icon(icon, size: 16),
-            SizedBox(width: theme.spacing.xs),
-          ],
-          Text(
-            fullLabel,
-            // Medium weight: below the tab labels (w500/w700) in emphasis
-            // while still standing out from the flat toolbar actions (w400).
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w500,
             ),
-          ),
+            if (showLabel) SizedBox(width: theme.spacing.xs),
+          ] else if (icon != null) ...<Widget>[
+            Icon(icon, size: 16),
+            if (showLabel) SizedBox(width: theme.spacing.xs),
+          ],
+          if (showLabel)
+            Text(
+              fullLabel,
+              // Medium weight: below the tab labels (w500/w700) in emphasis
+              // while still standing out from the flat toolbar actions (w400).
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
         ],
       ),
     );
@@ -298,6 +319,15 @@ class AppTabToolbarPrimary extends StatelessWidget {
 
     return Tooltip(message: tooltip ?? fullLabel, child: semantic);
   }
+}
+
+/// Icon-only toolbar chrome on compact widths; keep the label when there is no
+/// icon so the control remains usable.
+bool _showToolbarLabel(BuildContext context, {required bool hasIcon}) {
+  if (!hasIcon) {
+    return true;
+  }
+  return AppBreakpoints.of(context).showsToolbarActionLabels;
 }
 
 Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
