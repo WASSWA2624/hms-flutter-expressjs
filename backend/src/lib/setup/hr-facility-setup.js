@@ -46,17 +46,15 @@ const hasAnyPermission = (user = {}, required = []) => {
   return required.some((entry) => granted.has(String(entry).toLowerCase()));
 };
 
-const hasHrRole = (user = {}) => roleList(user).includes(ROLES.HR);
-
 const isAdminSetupUser = (user = {}) =>
   roleList(user).some((entry) => ADMIN_SETUP_ROLES.includes(entry)) ||
   hasAnyPermission(user, ADMIN_SETUP_PERMISSIONS);
 
 const canAccessHrFacilitySetup = (user = {}) =>
-  hasHrRole(user) && hasAnyPermission(user, HR_SETUP_READ_PERMISSIONS);
+  hasAnyPermission(user, HR_SETUP_READ_PERMISSIONS);
 
 const canWriteHrFacilitySetup = (user = {}) =>
-  hasHrRole(user) && hasAnyPermission(user, HR_SETUP_WRITE_PERMISSIONS);
+  hasAnyPermission(user, HR_SETUP_WRITE_PERMISSIONS);
 
 const isHrSetupOnlyUser = (user = {}) =>
   canAccessHrFacilitySetup(user) && !isAdminSetupUser(user);

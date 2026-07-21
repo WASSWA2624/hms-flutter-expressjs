@@ -59,4 +59,27 @@ describe('custom role RBAC effective access', () => {
     expect(access.permissions).toEqual([]);
     expect(access.role_permissions).toEqual([]);
   });
+
+  test('facility admin custom role carries facility:admin for setup APIs', () => {
+    const access = resolveEffectiveAccess(
+      {
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        roles: [
+          {
+            role: {
+              name: 'FACILITY_OPS',
+              permissions: [{ permission: { name: PERMISSIONS.FACILITY_ADMIN } }],
+            },
+          },
+        ],
+      },
+      {
+        applyPlanGate: false,
+        applyAssignedModuleGate: false,
+      }
+    );
+
+    expect(access.permissions).toContain(PERMISSIONS.FACILITY_ADMIN);
+  });
 });

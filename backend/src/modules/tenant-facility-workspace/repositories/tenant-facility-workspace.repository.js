@@ -2,6 +2,7 @@ const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
+const { PERMISSIONS } = require('@config/permissions');
 
 const SETUP_LIST_LIMIT = 100;
 
@@ -41,9 +42,28 @@ const roleNames = (user = {}) => {
     .filter(Boolean);
 };
 
+const permissionNames = (user = {}) => {
+  const permissions = Array.isArray(user.permissions) ? user.permissions : [];
+  return permissions
+    .map((entry) => String(entry || '').trim().toLowerCase())
+    .filter(Boolean);
+};
+
+const hasAnyPermission = (user = {}, required = []) => {
+  const granted = new Set(permissionNames(user));
+  return required.some((entry) => granted.has(String(entry).toLowerCase()));
+};
+
 const canViewAllFacilitiesInTenant = (user = {}) => {
   const roles = new Set(roleNames(user));
-  return roles.has(ROLES.SUPER_ADMIN) || roles.has(ROLES.TENANT_ADMIN);
+  return (
+    roles.has(ROLES.SUPER_ADMIN) ||
+    roles.has(ROLES.TENANT_ADMIN) ||
+    hasAnyPermission(user, [
+      PERMISSIONS.SYSTEM_ADMIN,
+      PERMISSIONS.TENANT_ADMIN,
+    ])
+  );
 };
 
 const isAllFacilitiesRequested = (filters = {}) => {
