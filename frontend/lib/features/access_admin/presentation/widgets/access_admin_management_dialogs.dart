@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -433,6 +434,9 @@ class _ManageUsersPanelState
         statusFilter = null;
       });
       await reload(resetPage: true, silent: true);
+      await ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .rehydrateSession();
     }
   }
 
@@ -474,16 +478,19 @@ class _ManageUsersPanelState
     }
 
     if (!mounted) return;
-    await openAccessAdminEditUserDialog(
+    final bool? saved = await openAccessAdminEditUserDialog(
       context,
       ref,
       state,
       user: resolvedDetail.item,
       detail: resolvedDetail,
     );
-    if (mounted) {
+    if (saved == true && mounted) {
       mutated = true;
-      unawaited(reload(resetPage: false, silent: true));
+      await reload(resetPage: false, silent: true);
+      await ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .rehydrateSession();
     }
   }
 
@@ -629,7 +636,10 @@ class _ManageUsersPanelState
       ),
     );
     if (mounted && detailDidMutate) {
-      unawaited(reload(resetPage: false, silent: true));
+      await reload(resetPage: false, silent: true);
+      await ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .rehydrateSession();
     }
   }
 
@@ -1052,7 +1062,10 @@ class _ManageRolesPermissionsPanelState
     );
     if (saved == true && mounted) {
       mutated = true;
-      unawaited(reload(resetPage: true, silent: true));
+      await reload(resetPage: true, silent: true);
+      await ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .rehydrateSession();
     }
   }
 
@@ -1112,7 +1125,10 @@ class _ManageRolesPermissionsPanelState
     );
     if (saved == true && mounted) {
       mutated = true;
-      unawaited(reload(resetPage: true, silent: true));
+      await reload(resetPage: true, silent: true);
+      await ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .rehydrateSession();
     }
   }
 
@@ -1154,7 +1170,10 @@ class _ManageRolesPermissionsPanelState
             .toList(growable: false);
         totalItemCount = math.max(0, totalItemCount - 1);
       });
-      unawaited(reload(resetPage: items.isEmpty, silent: true));
+      await reload(resetPage: items.isEmpty, silent: true);
+      await ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .rehydrateSession();
     }
   }
 

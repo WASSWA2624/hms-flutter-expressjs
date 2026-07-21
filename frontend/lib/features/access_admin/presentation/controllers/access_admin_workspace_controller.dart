@@ -7,8 +7,9 @@ import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
-import 'package:hosspi_hms/core/security/session_isolation.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/realtime_delta.dart';
 import 'package:hosspi_hms/core/workspace/realtime_sync_action.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
@@ -48,7 +49,10 @@ final class AccessAdminWorkspaceController
   }
 
   Future<void> _syncFromRealtime(RealtimeMessage message) async {
-    if (message.event == RealtimeEvents.moduleEntitlementUpdated) {
+    if (message.event == RealtimeEvents.moduleEntitlementUpdated ||
+        message.event == RealtimeEvents.roleUpdated ||
+        message.event == RealtimeEvents.roleDeleted ||
+        message.event == RealtimeEvents.userUpdated) {
       await _refreshSession();
     }
 
@@ -228,8 +232,66 @@ final class AccessAdminWorkspaceController
     );
   }
 
+  Future<AppFailure?> createUserWithRoles(
+    AccessAdminUserDraft draft,
+    List<String> roleIds,
+  ) {
+    return _submitAction(() async {
+      final Result<String> createResult = await _repository.createUser(draft);
+      if (createResult case ResultFailure<String>(:final failure)) {
+        return Result<void>.failure(failure);
+      }
+      final String userId = createResult.when(
+        success: (String value) => value,
+        failure: (_) => '',
+      );
+      _upsertCreatedUser(userId, draft);
+      if (roleIds.isEmpty) {
+        return const Result<void>.success(null);
+      }
+      return _repository.syncUserRoles(
+        userId: userId,
+        tenantId: draft.tenantId,
+        facilityId: draft.facilityId,
+        roleIds: roleIds,
+      );
+    }, refreshSession: true);
+  }
+
+  Future<AppFailure?> updateUserWithRoles(
+    String userId,
+    AccessAdminUserDraft draft,
+    List<String> roleIds,
+  ) {
+    return _submitAction(() async {
+      final Result<void> updateResult = await _repository.updateUser(
+        userId,
+        draft,
+      );
+      if (updateResult case ResultFailure<void>(:final failure)) {
+        return Result<void>.failure(failure);
+      }
+      return _repository.syncUserRoles(
+        userId: userId,
+        tenantId: draft.tenantId,
+        facilityId: draft.facilityId,
+        roleIds: roleIds,
+      );
+    }, refreshSession: true);
+  }
+
   Future<AppFailure?> createRole(AccessAdminRoleDraft draft) {
-    return _submitAction(() => _repository.createRole(draft));
+    return _submitAction(
+      () => _repository.createRole(draft),
+      refreshSession: true,
+    );
+  }
+
+  Future<AppFailure?> updateRole(String roleId, AccessAdminRoleDraft draft) {
+    return _submitAction(
+      () => _repository.updateRole(roleId, draft),
+      refreshSession: true,
+    );
   }
 
   Future<AppFailure?> assignUserRole(AccessAdminUserRoleDraft draft) {
@@ -279,7 +341,10 @@ final class AccessAdminWorkspaceController
   Future<AppFailure?> assignRolePermission(
     AccessAdminRolePermissionDraft draft,
   ) {
-    return _submitAction(() => _repository.assignRolePermission(draft));
+    return _submitAction(
+      () => _repository.assignRolePermission(draft),
+      refreshSession: true,
+    );
   }
 
   Future<AppFailure?> deleteRole(AccessAdminItem item) {
@@ -289,8 +354,12 @@ final class AccessAdminWorkspaceController
     return _submitAction(
       () => _repository.deleteRole(item.mutationId),
       removeItemId: item.id,
+      refreshSession: true,
     );
   }
+
+  /// Rehydrates the signed-in user's live grants from `/auth/me`.
+  Future<void> rehydrateSession() => _refreshSession();
 
   Future<AppFailure?> resetDemoPassword(AccessAdminItem item) {
     return _submitAction(
@@ -430,7 +499,12 @@ final class AccessAdminWorkspaceController
     return result.when(
       success: (_) async {
         if (removeItemId != null) {
-          _removeLocalItem(removeItemId);
+          final bool removed = _removeLocalItem(removeItemId);
+          if (!removed) {
+            await _refreshWorkspace(
+              preferredSelectedId: current?.selectedItem?.id,
+            );
+          }
         } else {
           await _refreshWorkspace(
             preferredSelectedId: current?.selectedItem?.id,
@@ -516,10 +590,10 @@ final class AccessAdminWorkspaceController
     }
   }
 
-  void _removeLocalItem(String id) {
+  bool _removeLocalItem(String id) {
     final AccessAdminWorkspaceState? current = _currentState;
     if (current == null) {
-      return;
+      return false;
     }
     final AccessAdminWorkspaceState? patched =
         AccessAdminRealtimeDeltaApplier.apply(
@@ -534,7 +608,9 @@ final class AccessAdminWorkspaceController
         );
     if (patched != null) {
       _emit(patched);
+      return true;
     }
+    return false;
   }
 
   Future<void> _flushPendingRefresh() async {
@@ -574,15 +650,34 @@ final class AccessAdminWorkspaceController
 
   Future<void> _refreshSession() async {
     final session = ref.read(sessionStateProvider).session;
-    if (session == null || !session.tokens.hasRefreshToken) {
+    if (session == null) {
       return;
     }
-    final result = await ref
+
+    // Prefer /auth/me so role/permission CRUD is reflected immediately in the
+    // shell without waiting for a new JWT snapshot.
+    final meResult = await ref
+        .read(authRepositoryProvider)
+        .fetchCurrentUser(session);
+    final bool persisted = await meResult.when<Future<bool>>(
+      success: (AuthSession refreshed) async {
+        await ref
+            .read(sessionStateProvider.notifier)
+            .persistSession(refreshed);
+        return true;
+      },
+      failure: (_) async => false,
+    );
+    if (persisted || !session.tokens.hasRefreshToken) {
+      return;
+    }
+
+    final refreshResult = await ref
         .read(authRepositoryProvider)
         .refreshSession(session.tokens);
-    await result.when<Future<void>>(
-      success: (session) {
-        return ref.read(sessionStateProvider.notifier).persistSession(session);
+    await refreshResult.when<Future<void>>(
+      success: (AuthSession refreshed) {
+        return ref.read(sessionStateProvider.notifier).persistSession(refreshed);
       },
       failure: (_) async {},
     );

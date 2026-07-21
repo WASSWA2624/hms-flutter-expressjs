@@ -183,7 +183,7 @@ Future<bool?> openAccessAdminCreateUserDialog(
   );
 }
 
-Future<void> openAccessAdminEditUserDialog(
+Future<bool?> openAccessAdminEditUserDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state, {
@@ -191,10 +191,10 @@ Future<void> openAccessAdminEditUserDialog(
   AccessAdminUserDetail? detail,
 }) async {
   if (!context.mounted) {
-    return;
+    return null;
   }
 
-  await showUserMutationDialog(
+  return showUserMutationDialog(
     context: context,
     ref: ref,
     mode: UserMutationMode.edit,
@@ -451,36 +451,9 @@ Future<AppFailure?> _submitAccessAdminUserCreate(
   AccessAdminUserDraft draft,
   List<String> roleIds,
 ) async {
-  final AccessAdminRepository repository = ref.read(
-    accessAdminRepositoryProvider,
-  );
-  final Result<String> createResult = await repository.createUser(draft);
-  final String? userId = createResult.when(
-    success: (String value) => value,
-    failure: (AppFailure failure) {
-      return null;
-    },
-  );
-  if (userId == null) {
-    return createResult.when(
-      success: (_) => null,
-      failure: (AppFailure failure) => failure,
-    );
-  }
-
-  return repository
-      .syncUserRoles(
-        userId: userId,
-        tenantId: draft.tenantId,
-        facilityId: draft.facilityId,
-        roleIds: roleIds,
-      )
-      .then(
-        (Result<void> result) => result.when(
-          success: (_) => null,
-          failure: (AppFailure failure) => failure,
-        ),
-      );
+  return ref
+      .read(accessAdminWorkspaceControllerProvider.notifier)
+      .createUserWithRoles(draft, roleIds);
 }
 
 Future<AppFailure?> _submitAccessAdminUserUpdate(
@@ -489,31 +462,9 @@ Future<AppFailure?> _submitAccessAdminUserUpdate(
   AccessAdminUserDraft draft,
   List<String> roleIds,
 ) async {
-  final AccessAdminRepository repository = ref.read(
-    accessAdminRepositoryProvider,
-  );
-  final Result<void> updateResult = await repository.updateUser(userId, draft);
-  final AppFailure? updateFailure = updateResult.when(
-    success: (_) => null,
-    failure: (AppFailure failure) => failure,
-  );
-  if (updateFailure != null) {
-    return updateFailure;
-  }
-
-  return repository
-      .syncUserRoles(
-        userId: userId,
-        tenantId: draft.tenantId,
-        facilityId: draft.facilityId,
-        roleIds: roleIds,
-      )
-      .then(
-        (Result<void> result) => result.when(
-          success: (_) => null,
-          failure: (AppFailure failure) => failure,
-        ),
-      );
+  return ref
+      .read(accessAdminWorkspaceControllerProvider.notifier)
+      .updateUserWithRoles(userId, draft, roleIds);
 }
 
 Future<AppFailure?> _submitAccessAdminRoleCreate(
@@ -531,16 +482,9 @@ Future<AppFailure?> _submitAccessAdminRoleUpdate(
   String roleId,
   AccessAdminRoleDraft draft,
 ) async {
-  final Result<void> result = await ref
-      .read(accessAdminRepositoryProvider)
+  return ref
+      .read(accessAdminWorkspaceControllerProvider.notifier)
       .updateRole(roleId, draft);
-  if (result case ResultFailure<void>(:final failure)) {
-    return failure;
-  }
-  unawaited(
-    ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh(),
-  );
-  return null;
 }
 
 Future<AccessAdminLookups?> _prefetchRoleDialogLookups(

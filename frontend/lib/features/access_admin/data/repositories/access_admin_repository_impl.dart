@@ -131,6 +131,22 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
+  void invalidateReferenceDataCache() {
+    _referenceDataCache.clear();
+  }
+
+  Future<Result<T>> _afterAccessMutation<T>(
+    Future<Result<T>> Function() action,
+  ) async {
+    final Result<T> result = await action();
+    result.when(
+      success: (_) => invalidateReferenceDataCache(),
+      failure: (_) {},
+    );
+    return result;
+  }
+
+  @override
   Future<Result<AccessAdminLegacyRouteResolution>> resolveLegacyRoute(
     AccessAdminResource resource,
     String identifier,
@@ -172,51 +188,55 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<String>> createUser(AccessAdminUserDraft draft) async {
-    final Result<String?> createResult = await _apiClient.post<String?>(
-      ApiEndpoints.collection(HmsApiResource.users),
-      data: _withoutEmpty(<String, Object?>{
-        'tenant_id': draft.tenantId,
-        'facility_id': draft.facilityId,
-        'email': draft.email,
-        'phone': draft.phone,
-        'position_title': draft.positionTitle,
-        'password': draft.password,
-        'status': draft.status,
-        'permission_ids': draft.permissionIds,
-      }),
-      decoder: (Object? responseData) => _extractRecordId(
-        responseData is Map<String, dynamic>
-            ? responseData['data'] ?? responseData
-            : responseData,
-      ),
-    );
+  Future<Result<String>> createUser(AccessAdminUserDraft draft) {
+    return _afterAccessMutation(() async {
+      final Result<String?> createResult = await _apiClient.post<String?>(
+        ApiEndpoints.collection(HmsApiResource.users),
+        data: _withoutEmpty(<String, Object?>{
+          'tenant_id': draft.tenantId,
+          'facility_id': draft.facilityId,
+          'email': draft.email,
+          'phone': draft.phone,
+          'position_title': draft.positionTitle,
+          'password': draft.password,
+          'status': draft.status,
+          'permission_ids': draft.permissionIds,
+        }),
+        decoder: (Object? responseData) => _extractRecordId(
+          responseData is Map<String, dynamic>
+              ? responseData['data'] ?? responseData
+              : responseData,
+        ),
+      );
 
-    return createResult.when(
-      success: (String? userId) {
-        if (userId == null || userId.isEmpty) {
-          return const Result<String>.failure(AppFailure.unexpected());
-        }
-        return Result<String>.success(userId);
-      },
-      failure: (AppFailure failure) => Result<String>.failure(failure),
-    );
+      return createResult.when(
+        success: (String? userId) {
+          if (userId == null || userId.isEmpty) {
+            return const Result<String>.failure(AppFailure.unexpected());
+          }
+          return Result<String>.success(userId);
+        },
+        failure: (AppFailure failure) => Result<String>.failure(failure),
+      );
+    });
   }
 
   @override
   Future<Result<void>> updateUser(String userId, AccessAdminUserDraft draft) {
-    return _apiClient.put<void>(
-      ApiEndpoints.byId(HmsApiResource.users, userId),
-      data: _withoutEmpty(<String, Object?>{
-        'facility_id': draft.facilityId,
-        'email': draft.email,
-        'phone': draft.phone,
-        'position_title': draft.positionTitle,
-        'password': draft.password,
-        'status': draft.status,
-        'permission_ids': draft.permissionIds,
-      }),
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.put<void>(
+        ApiEndpoints.byId(HmsApiResource.users, userId),
+        data: _withoutEmpty(<String, Object?>{
+          'facility_id': draft.facilityId,
+          'email': draft.email,
+          'phone': draft.phone,
+          'position_title': draft.positionTitle,
+          'password': draft.password,
+          'status': draft.status,
+          'permission_ids': draft.permissionIds,
+        }),
+        decoder: (_) {},
+      ),
     );
   }
 
@@ -225,53 +245,63 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
     required String userId,
     required List<String> permissionIds,
   }) {
-    return _apiClient.put<void>(
-      ApiEndpoints.byId(HmsApiResource.users, userId),
-      data: <String, Object?>{'permission_ids': permissionIds},
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.put<void>(
+        ApiEndpoints.byId(HmsApiResource.users, userId),
+        data: <String, Object?>{'permission_ids': permissionIds},
+        decoder: (_) {},
+      ),
     );
   }
 
   @override
   Future<Result<void>> deleteUser(String userId) {
-    return _apiClient.delete<void>(
-      ApiEndpoints.byId(HmsApiResource.users, userId),
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.delete<void>(
+        ApiEndpoints.byId(HmsApiResource.users, userId),
+        decoder: (_) {},
+      ),
     );
   }
 
   @override
   Future<Result<void>> restoreUser(String userId) {
-    return _apiClient.post<void>(
-      ApiEndpoints.nested(HmsApiResource.users, userId, const <String>[
-        'restore',
-      ]),
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.post<void>(
+        ApiEndpoints.nested(HmsApiResource.users, userId, const <String>[
+          'restore',
+        ]),
+        decoder: (_) {},
+      ),
     );
   }
 
   @override
   Future<Result<void>> setUserStatus(String userId, String status) {
-    return _apiClient.put<void>(
-      ApiEndpoints.byId(HmsApiResource.users, userId),
-      data: <String, Object?>{'status': status},
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.put<void>(
+        ApiEndpoints.byId(HmsApiResource.users, userId),
+        data: <String, Object?>{'status': status},
+        decoder: (_) {},
+      ),
     );
   }
 
   @override
   Future<Result<void>> createRole(AccessAdminRoleDraft draft) {
-    return _apiClient.post<void>(
-      ApiEndpoints.collection(HmsApiResource.roles),
-      data: _withoutEmpty(<String, Object?>{
-        'tenant_id': draft.tenantId,
-        'facility_id': draft.facilityId,
-        'name': draft.name,
-        'display_name': draft.displayName,
-        'description': draft.description,
-        'permission_ids': draft.permissionIds,
-      }),
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.post<void>(
+        ApiEndpoints.collection(HmsApiResource.roles),
+        data: _withoutEmpty(<String, Object?>{
+          'tenant_id': draft.tenantId,
+          'facility_id': draft.facilityId,
+          'name': draft.name,
+          'display_name': draft.displayName,
+          'description': draft.description,
+          'permission_ids': draft.permissionIds,
+        }),
+        decoder: (_) {},
+      ),
     );
   }
 
@@ -286,18 +316,22 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
       'facility_id': draft.facilityId,
       'permission_ids': draft.permissionIds,
     };
-    return _apiClient.put<void>(
-      ApiEndpoints.byId(HmsApiResource.roles, roleId),
-      data: payload,
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.put<void>(
+        ApiEndpoints.byId(HmsApiResource.roles, roleId),
+        data: payload,
+        decoder: (_) {},
+      ),
     );
   }
 
   @override
   Future<Result<void>> deleteRole(String roleId) {
-    return _apiClient.delete<void>(
-      ApiEndpoints.byId(HmsApiResource.roles, roleId),
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.delete<void>(
+        ApiEndpoints.byId(HmsApiResource.roles, roleId),
+        decoder: (_) {},
+      ),
     );
   }
 
@@ -444,28 +478,33 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
     if (lastFailure != null) {
       return Result<void>.failure(lastFailure);
     }
+    invalidateReferenceDataCache();
     return const Result<void>.success(null);
   }
 
   @override
   Future<Result<void>> assignUserRole(AccessAdminUserRoleDraft draft) {
-    return _apiClient.post<void>(
-      ApiEndpoints.collection(HmsApiResource.userRoles),
-      data: _withoutEmpty(<String, Object?>{
-        'user_id': draft.userId,
-        'role_id': draft.roleId,
-        'tenant_id': draft.tenantId,
-        'facility_id': draft.facilityId,
-      }),
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.post<void>(
+        ApiEndpoints.collection(HmsApiResource.userRoles),
+        data: _withoutEmpty(<String, Object?>{
+          'user_id': draft.userId,
+          'role_id': draft.roleId,
+          'tenant_id': draft.tenantId,
+          'facility_id': draft.facilityId,
+        }),
+        decoder: (_) {},
+      ),
     );
   }
 
   @override
   Future<Result<void>> revokeUserRole(String userRoleId) {
-    return _apiClient.delete<void>(
-      ApiEndpoints.byId(HmsApiResource.userRoles, userRoleId),
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.delete<void>(
+        ApiEndpoints.byId(HmsApiResource.userRoles, userRoleId),
+        decoder: (_) {},
+      ),
     );
   }
 
@@ -613,6 +652,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
     if (lastFailure != null) {
       return Result<void>.failure(lastFailure);
     }
+    invalidateReferenceDataCache();
     return const Result<void>.success(null);
   }
 
@@ -643,21 +683,25 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   Future<Result<void>> assignRolePermission(
     AccessAdminRolePermissionDraft draft,
   ) {
-    return _apiClient.post<void>(
-      ApiEndpoints.collection(HmsApiResource.rolePermissions),
-      data: <String, Object?>{
-        'role_id': draft.roleId,
-        'permission_id': draft.permissionId,
-      },
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.post<void>(
+        ApiEndpoints.collection(HmsApiResource.rolePermissions),
+        data: <String, Object?>{
+          'role_id': draft.roleId,
+          'permission_id': draft.permissionId,
+        },
+        decoder: (_) {},
+      ),
     );
   }
 
   @override
   Future<Result<void>> revokeRolePermission(String rolePermissionId) {
-    return _apiClient.delete<void>(
-      ApiEndpoints.byId(HmsApiResource.rolePermissions, rolePermissionId),
-      decoder: (_) {},
+    return _afterAccessMutation(
+      () => _apiClient.delete<void>(
+        ApiEndpoints.byId(HmsApiResource.rolePermissions, rolePermissionId),
+        decoder: (_) {},
+      ),
     );
   }
 

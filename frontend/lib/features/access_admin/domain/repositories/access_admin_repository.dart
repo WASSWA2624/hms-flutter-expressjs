@@ -13,6 +13,9 @@ abstract interface class AccessAdminRepository {
     bool forceRefresh = false,
   });
 
+  /// Drops cached role/permission lookups so pickers see fresh CRUD results.
+  void invalidateReferenceDataCache();
+
   Future<Result<AccessAdminLegacyRouteResolution>> resolveLegacyRoute(
     AccessAdminResource resource,
     String identifier,
