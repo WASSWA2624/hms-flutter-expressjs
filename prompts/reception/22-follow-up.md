@@ -1,43 +1,36 @@
-# Compact Reception Mobile List Rows
+# Generate Ten Compact Mobile List Sample Photos
 
-Deliver 10 sample mobile-list photos, then replace bulky Reception mobile cards—including Follow-ups—with the chosen dense layout; keep the wide-viewport table. Follow `prompts/.cursor/prompt.mdc`.
+Produce 10 unique sample photos of compact Follow-ups list layouts for phones. Do not modify any code.
 
 ## Context
 
-`AppListTable` shows a table on wide screens and `mobileItemBuilder` on phones. `_ReceptionDeskMobileRow` stacks fields with large padding, so few rows fit. Desktop columns are fine.
+Reception `AppListTable` keeps a table on large screens and a list on phones. Follow-ups mobile rows are stacked and tall. Desktop table is out of scope.
 
-**Compact mobile row:** one dense selectable row; patient identity plus section-critical fields; minimal vertical chrome.
+**Sample photo:** phone-frame mockup of several Follow-ups rows for later layout selection.
 
-**Sample photos:** ten distinct phone-frame mockups of Follow-ups list items so a layout can be chosen before coding.
+**Fields to show:** patient name, patient ID, phone, follow-up date, follow-up time.
 
 ## Requirements
 
-1. Create **10 unique sample photos** of compact Follow-ups mobile rows showing patient name/ID, phone, date, and time; vary density, alignment, meta layout, and chrome—not ten near-duplicates.
-2. Keep the adaptive table on wide screens; change only the narrow list after a sample is chosen.
-3. Redesign Reception mobile rows (all desk sections, including Follow-ups) into compact items: identity first; key fields on one secondary line—not tall labeled stacks.
-4. Follow-ups: name/ID, phone when present, scheduled date·time, and notes snippet when present.
-5. Preserve single tap/keyboard activation to the existing detail dialog; no nested duplicate targets.
-6. Reuse `AppListItemText` / design-system list primitives and theme tokens; avoid height-only card chrome.
-7. Preserve loading, empty, error, success, search/filter parity, permissions; omit unauthorized UI.
+1. Generate exactly **10** distinct sample photos of compact mobile Follow-ups list items.
+2. Each photo must show multiple rows with the listed fields; prefer low height over card-heavy chrome.
+3. Make each sample visually unique: vary density, alignment, meta placement, dividers, trailing time, initials, accent bars, or contact-first emphasis—not near-duplicates.
+4. Label samples 1–10 in-frame or by filename for comparison.
+5. Do not change Flutter, backend, tests, or any repository code.
 
 ## Constraints
 
-- Reuse `AppListTable`, row mapping, localization, auth; no new contracts.
-- Do not change desktop columns, sorting, or follow-up rules.
-- Support themes and phone/tablet/desktop widths.
+- Design-only; no implementation or UI wiring.
+- Realistic clinical reception worklist; light theme; readable type.
+- Do not invent clinical actions or fields beyond the listed columns.
 
 ## Acceptance Criteria
 
-- R1: Ten distinct sample photos of compact Follow-ups mobile rows are delivered for selection.
-- R2–R3: Wide = table; narrow = denser list than today after implementation.
-- R4: Follow-ups mobile rows show listed fields when available.
-- R5: Activation opens the correct dialog once.
-- R6–R7: Tokens/states intact; unauthorized UI absent.
-- Update reception mobile-list tests; run Flutter analysis.
+- R1–R4: Ten distinct, labeled compact Follow-ups mobile-list photos delivered.
+- R5: No code or app files modified.
+- Manual check: each photo shows name, ID, phone, date, and time on dense rows.
 
 ## Relevant Files
 
-- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
-- `frontend/lib/shared/components/{app_list_table,app_list_item_text}.dart`
-- `frontend/test/features/reception/`
-- `frontend/test/shared/components/app_list_table_test.dart`
+- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart` (Follow-ups columns and `_ReceptionDeskMobileRow`; reference only)
+- `frontend/lib/shared/components/app_list_table.dart` (table vs mobile; reference only)
