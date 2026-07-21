@@ -9,7 +9,6 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema,
   uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
@@ -27,8 +26,8 @@ const permissionIdsSchema = z
  * Used for POST /users endpoint
  */
 const createUserSchema = z.object({
-  tenant_id: uuidSchema,
-  facility_id: uuidSchema.optional().nullable(),
+  tenant_id: uuidOrFriendlyIdentifierSchema,
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   position_title: z.string().trim().min(1).max(120),
   email: z.string().trim().email().max(255),
   phone: z.string().trim().min(1).max(40).optional().nullable(),
@@ -44,7 +43,7 @@ const createUserSchema = z.object({
  * All fields optional for partial updates
  */
 const updateUserSchema = z.object({
-  facility_id: uuidSchema.optional().nullable(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   position_title: z.string().trim().min(1).max(120).optional(),
   email: z.string().trim().email().max(255).optional(),
   phone: z.string().trim().min(1).max(40).optional().nullable(),
@@ -61,7 +60,7 @@ const updateUserSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const userIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================
@@ -72,8 +71,8 @@ const userIdParamsSchema = z.object({
  * Extends base listQuerySchema with user-specific filters
  */
 const listUsersQuerySchema = listQuerySchema.extend({
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   position_title: z.string().trim().optional(),
   email: z.string().trim().optional(),
   status: userStatusSchema.optional(),

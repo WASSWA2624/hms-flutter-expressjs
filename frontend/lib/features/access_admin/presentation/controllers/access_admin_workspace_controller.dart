@@ -216,7 +216,7 @@ final class AccessAdminWorkspaceController
 
   Future<AppFailure?> setUserStatus(AccessAdminItem item, String status) {
     return _submitAction(
-      () => _repository.setUserStatus(item.effectiveDisplayId, status),
+      () => _repository.setUserStatus(item.mutationId, status),
       refreshSession: true,
     );
   }

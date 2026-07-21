@@ -202,7 +202,7 @@ Future<void> openAccessAdminEditUserDialog(
     initialUser: user,
     initialDetail: detail,
     onSubmit: (AccessAdminUserDraft draft, List<String> roleIds) =>
-        _submitAccessAdminUserUpdate(ref, user.id, draft, roleIds),
+        _submitAccessAdminUserUpdate(ref, user.mutationId, draft, roleIds),
   );
 }
 
@@ -635,8 +635,10 @@ Future<List<AccessAdminLookupOption>> loadAccessAdminFacilityOptions(
   return result.when(
     success: (AppPage<FacilityProfile> page) => page.items
         .map(
-          (FacilityProfile facility) =>
-              AccessAdminLookupOption(id: facility.id, label: facility.name),
+          (FacilityProfile facility) => AccessAdminLookupOption(
+            id: facility.mutationId,
+            label: facility.name,
+          ),
         )
         .toList(growable: false),
     failure: (_) => const <AccessAdminLookupOption>[],
@@ -660,8 +662,10 @@ Future<List<AccessAdminLookupOption>> loadAccessAdminTenantOptions(
         tenantPageResult.when(
           success: (AppPage<TenantProfile> page) => page.items
               .map(
-                (TenantProfile tenant) =>
-                    AccessAdminLookupOption(id: tenant.id, label: tenant.name),
+                (TenantProfile tenant) => AccessAdminLookupOption(
+                  id: tenant.mutationId,
+                  label: tenant.name,
+                ),
               )
               .toList(growable: false),
           failure: (_) => null,

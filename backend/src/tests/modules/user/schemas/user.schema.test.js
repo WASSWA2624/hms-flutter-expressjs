@@ -109,16 +109,28 @@ describe('User Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid UUID format for tenant_id', () => {
+    it('should reject invalid identifier format for tenant_id', () => {
       const data = { ...validData, tenant_id: 'invalid-uuid' };
       const result = createUserSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid UUID format for facility_id', () => {
+    it('should reject invalid identifier format for facility_id', () => {
       const data = { ...validData, facility_id: 'invalid-uuid' };
       const result = createUserSchema.safeParse(data);
       expect(result.success).toBe(false);
+    });
+
+    it('should accept friendly identifier for tenant_id', () => {
+      const data = { ...validData, tenant_id: 'TNT-0001' };
+      const result = createUserSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept friendly identifier for facility_id', () => {
+      const data = { ...validData, facility_id: 'FAC-0001' };
+      const result = createUserSchema.safeParse(data);
+      expect(result.success).toBe(true);
     });
 
     it('should trim whitespace from email', () => {
@@ -306,7 +318,12 @@ describe('User Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid UUID', () => {
+    it('should accept friendly identifier', () => {
+      const result = userIdParamsSchema.safeParse({ id: 'USR-0001' });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid identifier', () => {
       const result = userIdParamsSchema.safeParse({ id: 'invalid-uuid' });
       expect(result.success).toBe(false);
     });

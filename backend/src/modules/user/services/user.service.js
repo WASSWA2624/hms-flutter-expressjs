@@ -248,6 +248,23 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
     );
   }
 
+  if (next.tenant_id !== undefined) {
+    next.tenant_id = await resolveIdentifierForPayload({
+      value: next.tenant_id,
+      model: 'tenant',
+      field: 'tenant_id',
+    });
+  }
+
+  if (next.facility_id !== undefined) {
+    next.facility_id = await resolveIdentifierForPayload({
+      value: next.facility_id,
+      model: 'facility',
+      field: 'facility_id',
+      nullable: true,
+    });
+  }
+
   if (typeof next.email === 'string') {
     next.email = normalizeEmail(next.email);
   }
@@ -285,8 +302,20 @@ const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress)
     // Build filter object
     const whereClause = {};
     
-    if (filters.tenant_id) whereClause.tenant_id = filters.tenant_id;
-    if (filters.facility_id) whereClause.facility_id = filters.facility_id;
+    if (filters.tenant_id) {
+      whereClause.tenant_id = await resolveIdentifierForPayload({
+        value: filters.tenant_id,
+        model: 'tenant',
+        field: 'tenant_id',
+      });
+    }
+    if (filters.facility_id) {
+      whereClause.facility_id = await resolveIdentifierForPayload({
+        value: filters.facility_id,
+        model: 'facility',
+        field: 'facility_id',
+      });
+    }
     if (filters.position_title) whereClause.position_title = { contains: filters.position_title };
     if (filters.status) whereClause.status = filters.status;
     if (filters.email) whereClause.email = { contains: filters.email };

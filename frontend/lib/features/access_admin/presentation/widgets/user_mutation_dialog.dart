@@ -162,7 +162,7 @@ Future<bool?> showUserMutationDialog({
         success: (AppPage<FacilityProfile> page) => page.items
             .map(
               (FacilityProfile facility) => AccessAdminLookupOption(
-                id: facility.id,
+                id: facility.mutationId,
                 label: facility.name,
               ),
             )
@@ -823,8 +823,10 @@ Future<List<AccessAdminLookupOption>> _loadTenantOptions(
         tenantPageResult.when(
           success: (AppPage<TenantProfile> page) => page.items
               .map(
-                (TenantProfile tenant) =>
-                    AccessAdminLookupOption(id: tenant.id, label: tenant.name),
+                (TenantProfile tenant) => AccessAdminLookupOption(
+                  id: tenant.mutationId,
+                  label: tenant.name,
+                ),
               )
               .toList(growable: false),
           failure: (_) => null,
