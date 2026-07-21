@@ -285,18 +285,22 @@ class _RadiologyEnableFacilityOfferingDialogState
                 columns: _enableOfferingColumns(context),
                 mobileItemBuilder:
                     (BuildContext context, RadiologyCatalogTest item) {
-                      return ListTile(
-                        title: Text(item.name),
-                        subtitle: Text(item.code ?? l10n.profileUnknownValue),
-                        trailing: item.isOfferedAtFacility
-                            ? AppMutedText(
-                                l10n.radiologyEnableOfferingAlreadyOfferedLabel,
-                              )
-                            : const Icon(Icons.chevron_right),
-                        enabled: !item.isOfferedAtFacility,
-                        onTap: item.isOfferedAtFacility
-                            ? null
-                            : () => unawaited(_openPriceDialog(item)),
+                      return AppListTableMobileItem(
+                        title: item.name,
+                        caption: item.code,
+                        meta: <AppListTableMobileMeta>[
+                          if (item.modality != null)
+                            AppListTableMobileMeta(
+                              label: item.modality!,
+                              icon: Icons.biotech_outlined,
+                            ),
+                          if (item.isOfferedAtFacility)
+                            AppListTableMobileMeta(
+                              label:
+                                  l10n.radiologyEnableOfferingAlreadyOfferedLabel,
+                              icon: AppActionIcons.success,
+                            ),
+                        ],
                       );
                     },
               ),

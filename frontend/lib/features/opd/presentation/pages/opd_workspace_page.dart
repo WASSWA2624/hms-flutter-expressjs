@@ -2344,8 +2344,23 @@ class _OpdMainTable extends ConsumerWidget {
           },
           hasActiveFilters: filter.hasAdvancedFilters,
         ),
-        mobileItemBuilder: (_, _OpdTableItem item) =>
-            _OpdTableMobileRow(item: item, state: state),
+        mobileItemBuilder: (BuildContext context, _OpdTableItem item) =>
+            AppListTableMobileItem(
+              title: item.patientName ?? item.title,
+              caption: item.patientNumber,
+              meta: <AppListTableMobileMeta>[
+                AppListTableMobileMeta(
+                  label: _arrivalModeLabel(context, item),
+                ),
+                AppListTableMobileMeta(
+                  label: _waitingTimeLabel(context, item, now: DateTime.now()),
+                  icon: AppActionIcons.time,
+                ),
+                AppListTableMobileMeta(
+                  label: _queueStatusLabel(context, item),
+                ),
+              ],
+            ),
         itemKeyBuilder: (_OpdTableItem item) =>
             ValueKey<String>('opd-${item.stableKey}'),
         rowColorBuilder: _opdTableRowColor,
@@ -2382,29 +2397,6 @@ String _opdPageLabel(BuildContext context, AppPage<_OpdTableItem> page) {
   return context.l10n.opdPageLabel(from, to, total);
 }
 
-class _OpdTableMobileRow extends ConsumerWidget {
-  const _OpdTableMobileRow({required this.item, required this.state});
-
-  final _OpdTableItem item;
-  final OpdWorkspaceState state;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return AppListItemRow(
-      title: item.patientName ?? item.title,
-      subtitle: _joinDisplay(<String?>[
-        item.patientNumber,
-        _arrivalModeLabel(context, item),
-        _waitingTimeLabel(context, item, now: DateTime.now()),
-      ]),
-      details: <Widget>[
-        _opdStatusBadge(context, item),
-        _OpdNextActionCell(item: item, state: state),
-      ],
-      trailing: const Icon(Icons.chevron_right),
-    );
-  }
-}
 
 class _OpdNextActionCell extends ConsumerWidget {
   const _OpdNextActionCell({required this.item, required this.state});

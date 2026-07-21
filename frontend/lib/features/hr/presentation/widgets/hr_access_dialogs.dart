@@ -677,12 +677,15 @@ class _HrAccessWorkspacePanelState
           ),
       ],
       mobileItemBuilder: (BuildContext context, HrAccessUser item) {
-        return ListTile(
-          title: Text(item.displayLabel),
-          subtitle: Text(item.email ?? ''),
-          trailing: (item.status ?? '').isNotEmpty
-              ? _HrAccessStatusBadge(status: item.status)
-              : null,
+        return AppListTableMobileItem(
+          title: item.displayLabel,
+          caption: item.email,
+          meta: <AppListTableMobileMeta>[
+            if ((item.status ?? '').isNotEmpty)
+              AppListTableMobileMeta(
+                label: _hrAccessStatusLabel(context, item.status),
+              ),
+          ],
         );
       },
     );
@@ -791,11 +794,15 @@ class _HrAccessWorkspacePanelState
         ),
       ],
       mobileItemBuilder: (BuildContext context, HrAccessRole item) {
-        return ListTile(
-          title: Text(item.effectiveDisplayName),
-          subtitle: Text(
-            l10n.hrAccessRoleSummary(item.permissionCount, item.userCount),
-          ),
+        return AppListTableMobileItem(
+          title: item.effectiveDisplayName,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: l10n.hrAccessRoleSummary(item.permissionCount, item.userCount),
+              icon: Icons.key_outlined,
+            ),
+          ],
+          showAvatar: false,
         );
       },
     );
@@ -868,12 +875,15 @@ class _HrAccessWorkspacePanelState
         ),
       ],
       mobileItemBuilder: (BuildContext context, HrAccessPermission item) {
-        return ListTile(
-          title: Text(item.name ?? item.effectiveId),
-          subtitle: Text(
-            item.description ??
-                l10n.hrAccessPermissionRoleCount(item.roleCount),
-          ),
+        return AppListTableMobileItem(
+          title: item.name ?? item.effectiveId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: item.description ??
+                  l10n.hrAccessPermissionRoleCount(item.roleCount),
+            ),
+          ],
+          showAvatar: false,
         );
       },
     );

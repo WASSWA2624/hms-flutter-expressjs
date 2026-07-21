@@ -654,54 +654,20 @@ class _LabWorklistPanel extends ConsumerWidget {
               : _orderViewWorklistColumns(context),
           columnChoices: _optionalWorklistColumns(context),
           mobileItemBuilder: (BuildContext context, LabOrderSummary item) {
-            final ThemeData theme = Theme.of(context);
             final String? patientId = item.patientId?.trim();
-            final String orderTestsLine = item.isPatientGroup
-                ? (item.testsLabel ?? l10n.profileUnknownValue)
-                : '${item.displayId ?? item.apiId} · ${item.testsLabel ?? l10n.profileUnknownValue}';
-
-            return Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.sm,
-                vertical: theme.spacing.sm,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        AppListItemText(
-                          title: item.patientDisplayName ?? item.displayTitle,
-                          subtitle: patientId?.isNotEmpty == true
-                              ? patientId
-                              : null,
-                        ),
-                        SizedBox(height: theme.spacing.xs),
-                        if (item.isPatientGroup) ...<Widget>[
-                          _LabOrderIdentifier(order: item),
-                          SizedBox(height: theme.spacing.xs),
-                        ],
-                        Text(
-                          orderTestsLine,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        SizedBox(height: theme.spacing.sm),
-                        AppWorkspaceStatusBadge(
-                          status: _orderStatus(context, item.status),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                  _labNextActionCell(context, item),
-                ],
-              ),
+            final AppWorkspaceStatus status = _orderStatus(context, item.status);
+            return AppListTableMobileItem(
+              title: item.patientDisplayName ?? item.displayTitle,
+              caption: patientId?.isNotEmpty == true ? patientId : null,
+              meta: <AppListTableMobileMeta>[
+                AppListTableMobileMeta(label: status.label, icon: status.icon),
+                AppListTableMobileMeta(
+                  label: item.isPatientGroup
+                      ? (item.testsLabel ?? l10n.profileUnknownValue)
+                      : '${item.displayId ?? item.apiId} · ${item.testsLabel ?? l10n.profileUnknownValue}',
+                  icon: Icons.science_outlined,
+                ),
+              ],
             );
           },
         ),
@@ -1645,61 +1611,90 @@ class _LabConfigurationsDialogState
                     ),
                     mobileItemBuilder:
                         (BuildContext context, LabCatalogItem item) {
-                          return _CompactRecordRow(
-                            title: item.displayTitle,
-                            subtitle: _joinNonEmpty(<String?>[
-                              item.category,
-                              if (showingTests) item.specimenType,
-                              if (showingTests)
-                                _resultKindLabel(l10n, item.resultKind),
-                              showingTests
-                                  ? _unitRangeSummary(context, item)
-                                  : l10n.clinicalLabOrderItemCount(
-                                      item.testCount,
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              AppListTableMobileItem(
+                                title: item.displayTitle,
+                                caption: item.category,
+                                meta: <AppListTableMobileMeta>[
+                                  if (showingTests) ...<AppListTableMobileMeta>[
+                                    if ((item.specimenType ?? '').isNotEmpty)
+                                      AppListTableMobileMeta(
+                                        label: item.specimenType!,
+                                      ),
+                                    AppListTableMobileMeta(
+                                      label: _resultKindLabel(
+                                        l10n,
+                                        item.resultKind,
+                                      ),
                                     ),
-                            ]),
-                            trailing: Wrap(
-                              spacing: theme.spacing.xs,
-                              runSpacing: theme.spacing.xs,
-                              children: <Widget>[
-                                AppButton.tertiary(
-                                  label: showingTests
-                                      ? l10n.labConfigureTestAction
-                                      : l10n.labUpdatePanelAction,
-                                  leadingIcon: Icons.edit_outlined,
-                                  onPressed: () => showingTests
-                                      ? _openLabTestConfigurationDialog(
-                                          context,
-                                          state,
-                                          item,
-                                        )
-                                      : _openLabPanelDialog(
-                                          context,
-                                          state,
-                                          item,
-                                        ),
+                                    AppListTableMobileMeta(
+                                      label: _unitRangeSummary(context, item),
+                                      icon: Icons.science_outlined,
+                                    ),
+                                  ] else
+                                    AppListTableMobileMeta(
+                                      label: l10n.clinicalLabOrderItemCount(
+                                        item.testCount,
+                                      ),
+                                    ),
+                                ],
+                                showAvatar: false,
+                              ),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  left: theme.spacing.sm,
+                                  right: theme.spacing.sm,
+                                  bottom: theme.spacing.sm,
                                 ),
-                                AppButton(
-                                  iconOnly: true,
-                                  leadingIcon: Icons.delete_outline,
-                                  label: showingTests
-                                      ? l10n.labDeleteTestAction
-                                      : l10n.labDeletePanelAction,
-                                  semanticLabel: showingTests
-                                      ? l10n.labDeleteTestAction
-                                      : l10n.labDeletePanelAction,
-                                  tooltip: showingTests
-                                      ? l10n.labDeleteTestAction
-                                      : l10n.labDeletePanelAction,
-                                  onPressed: () => showingTests
-                                      ? _openDeleteLabTestDialog(context, item)
-                                      : _openDeleteLabPanelDialog(
-                                          context,
-                                          item,
-                                        ),
+                                child: Wrap(
+                                  spacing: theme.spacing.xs,
+                                  runSpacing: theme.spacing.xs,
+                                  children: <Widget>[
+                                    AppButton.tertiary(
+                                      label: showingTests
+                                          ? l10n.labConfigureTestAction
+                                          : l10n.labUpdatePanelAction,
+                                      leadingIcon: AppActionIcons.edit,
+                                      onPressed: () => showingTests
+                                          ? _openLabTestConfigurationDialog(
+                                              context,
+                                              state,
+                                              item,
+                                            )
+                                          : _openLabPanelDialog(
+                                              context,
+                                              state,
+                                              item,
+                                            ),
+                                    ),
+                                    AppButton(
+                                      iconOnly: true,
+                                      leadingIcon: AppActionIcons.delete,
+                                      label: showingTests
+                                          ? l10n.labDeleteTestAction
+                                          : l10n.labDeletePanelAction,
+                                      semanticLabel: showingTests
+                                          ? l10n.labDeleteTestAction
+                                          : l10n.labDeletePanelAction,
+                                      tooltip: showingTests
+                                          ? l10n.labDeleteTestAction
+                                          : l10n.labDeletePanelAction,
+                                      onPressed: () => showingTests
+                                          ? _openDeleteLabTestDialog(
+                                              context,
+                                              item,
+                                            )
+                                          : _openDeleteLabPanelDialog(
+                                              context,
+                                              item,
+                                            ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           );
                         },
                   ),

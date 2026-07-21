@@ -580,11 +580,19 @@ class _BillingQueuePanel extends ConsumerWidget {
         onNextAction: _runBillingNextAction,
       ),
       mobileItemBuilder: (BuildContext context, BillingWorkItem item) {
-        return BillingMobileTile(
-          item: item,
-          canWrite: canWrite,
-          isSaving: state.isSaving,
-          onNextAction: () => _runBillingNextAction(context, ref, item),
+        return AppListTableMobileItem(
+          title: billingPatientName(context, item),
+          caption: item.effectiveDisplayId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: billingClearanceLabel(context, item.clearanceState),
+              icon: billingClearanceIcon(item.clearanceState),
+            ),
+            AppListTableMobileMeta(
+              label: billingMoney(context, item.balanceDue, item.currency),
+              icon: Icons.account_balance_wallet_outlined,
+            ),
+          ],
         );
       },
     );

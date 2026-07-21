@@ -324,15 +324,25 @@ class _BiomedicalWorkspaceContentState
                 icon: Icons.medical_services_outlined,
               ),
               mobileItemBuilder: (BuildContext context, BiomedicalAsset item) {
-                return _BiomedicalAssetListTile(
-                  asset: item,
-                  panel: _currentPanel,
-                  canWrite: canWrite,
-                  canPrint: canPrint,
-                  state: state,
-                  onOpenDetail: () => unawaited(
-                    _openAssetDetailDialog(context, item, canWrite, canPrint),
-                  ),
+                final String? panelField =
+                    _mobilePanelFieldLabel(context, _currentPanel, item);
+                return AppListTableMobileItem(
+                  title: item.displayTitle,
+                  caption: item.displaySubtitle,
+                  meta: <AppListTableMobileMeta>[
+                    AppListTableMobileMeta(
+                      label: _labelForCode(
+                        item.status,
+                        fallback: context.l10n.biomedicalNotAvailableLabel,
+                      ),
+                    ),
+                    if (panelField != null)
+                      AppListTableMobileMeta(
+                        label: panelField,
+                        icon: _mobilePanelFieldIcon(_currentPanel),
+                      ),
+                  ],
+                  showAvatar: false,
                 );
               },
               columns: _defaultColumnsForPanel(

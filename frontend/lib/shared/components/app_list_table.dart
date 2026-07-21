@@ -618,7 +618,6 @@ class AppListTableMobileItem extends StatelessWidget {
             theme.spacing.sm,
           ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           if (leadingWidget != null) ...<Widget>[
             leadingWidget,
@@ -642,7 +641,6 @@ class AppListTableMobileItem extends StatelessWidget {
                     ],
                   ),
                   maxLines: 1,
-                  softWrap: false,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (resolvedMeta.isNotEmpty) ...<Widget>[
@@ -756,7 +754,6 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
         ],
       ),
       maxLines: 1,
-      softWrap: false,
       overflow: TextOverflow.ellipsis,
     );
   }
@@ -2183,7 +2180,6 @@ class _MobileListTable<T> extends StatelessWidget {
         final ThemeData theme = Theme.of(context);
         return Divider(
           height: 1,
-          thickness: 1,
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         );
       },
@@ -2203,7 +2199,6 @@ class _NumberedMobileListItem extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         SizedBox(
           width: _mobileRowNumberColumnWidth,
@@ -2267,7 +2262,6 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
               builder: (BuildContext context) {
                 final ThemeData theme = Theme.of(context);
                 return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
                     Expanded(child: child),
                     Padding(

@@ -762,9 +762,22 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         minHeight: 220,
       ),
       mobileItemBuilder: (BuildContext context, TherapyWorkItem item) {
-        return _TherapyWorklistMobileItem(
-          item: item,
-          onNextAction: () => _runTherapyNextAction(context, ref, item),
+        final l10n = context.l10n;
+        return AppListTableMobileItem(
+          title: item.displayTitle,
+          caption: item.displaySubtitle,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _sourceLabel(l10n, item.source),
+            ),
+            AppListTableMobileMeta(
+              label: _formatDateTime(context, item.sessionAt, l10n),
+              icon: AppActionIcons.calendar,
+            ),
+            AppListTableMobileMeta(
+              label: _workspaceStatusForStatus(l10n, item.status).label,
+            ),
+          ],
         );
       },
       search: AppListTableSearch<TherapyWorkItem>(
@@ -1075,61 +1088,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
   }
 }
 
-class _TherapyWorklistMobileItem extends StatelessWidget {
-  const _TherapyWorklistMobileItem({
-    required this.item,
-    required this.onNextAction,
-  });
-
-  final TherapyWorkItem item;
-  final Future<void> Function() onNextAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        AppListItemText(
-          title: item.displayTitle,
-          subtitle: item.displaySubtitle,
-          subtitleMaxLines: 2,
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Text(
-          _sourceLabel(l10n, item.source),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Text(
-          _formatDateTime(context, item.sessionAt, l10n),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            AppWorkspaceStatusBadge(
-              status: _workspaceStatusForStatus(l10n, item.status),
-            ),
-            TherapyNextActionButton(item: item, onPressed: onNextAction),
-          ],
-        ),
-      ],
-    );
-  }
-}
 
 class _ActionsPanel extends ConsumerWidget {
   const _ActionsPanel({

@@ -615,9 +615,24 @@ class _HrStaffDirectory extends ConsumerWidget {
       ),
       columnChoices: _staffColumnChoices(context, l10n),
       mobileItemBuilder: (BuildContext context, HrStaffProfile item) {
-        return _HrStaffListTile(
-          staff: item,
-          onAction: () => onStaffSelected(item),
+        return AppListTableMobileItem(
+          title: item.displayName,
+          caption: item.staffNumber ?? item.displayId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _apiLabel(context, item.status),
+            ),
+            if ((item.position ?? '').trim().isNotEmpty)
+              AppListTableMobileMeta(
+                label: item.position!,
+                icon: Icons.work_outline,
+              ),
+            if ((item.departmentName ?? item.departmentDisplayId ?? '').isNotEmpty)
+              AppListTableMobileMeta(
+                label: item.departmentName ?? item.departmentDisplayId!,
+                icon: Icons.apartment_outlined,
+              ),
+          ],
         );
       },
     );
@@ -1189,7 +1204,19 @@ class _HrWorkQueueTable extends ConsumerWidget {
       columns: _workQueueColumns(context, queue, onRowAction: onRowAction),
       columnChoices: _workQueueColumnChoices(context, queue),
       mobileItemBuilder: (BuildContext context, HrWorkItem item) {
-        return _HrWorkItemTile(item: item, onAction: () => onRowAction(item));
+        return AppListTableMobileItem(
+          title: _workItemTitle(context, item),
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _apiLabel(context, item.status),
+            ),
+            AppListTableMobileMeta(
+              label: _workItemPeriod(context, item),
+              icon: Icons.date_range_outlined,
+            ),
+          ],
+          showAvatar: false,
+        );
       },
     );
   }

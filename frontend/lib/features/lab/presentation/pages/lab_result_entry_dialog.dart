@@ -3069,10 +3069,7 @@ class _LabReportPreview extends StatelessWidget {
             return null;
           },
           mobileItemBuilder: (BuildContext context, LabOrderItem item) {
-            return AppListItemRow(
-              title: item.displayTitle,
-              subtitle: item.displayResultValue ?? l10n.labStatusPendingResults,
-              details: <Widget>[_ReportPreviewFlagCell(item: item)],
+            return AppListTableMobileItem(
               leading: Checkbox(
                 value: selectedItemIds.contains(_itemSelectionKey(item)),
                 onChanged: (bool? value) {
@@ -3080,6 +3077,16 @@ class _LabReportPreview extends StatelessWidget {
                 },
                 visualDensity: VisualDensity.compact,
               ),
+              title: item.displayTitle,
+              meta: <AppListTableMobileMeta>[
+                AppListTableMobileMeta(
+                  label: item.displayResultValue ?? l10n.labStatusPendingResults,
+                  icon: _isAbnormalReportItem(item)
+                      ? AppActionIcons.warning
+                      : null,
+                ),
+              ],
+              showAvatar: false,
             );
           },
         ),

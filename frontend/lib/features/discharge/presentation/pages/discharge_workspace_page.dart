@@ -597,7 +597,47 @@ class _DischargeWorkspaceContentState
               ),
               mobileItemBuilder:
                   (BuildContext context, IpdAdmissionSummary item) {
-                    return _MobileQueueItem(item: item, section: _section);
+                    final AppLocalizations l10n = context.l10n;
+                    return AppListTableMobileItem(
+                      title: item.displayTitle,
+                      caption: item.displayId ?? l10n.profileUnknownValue,
+                      meta: <AppListTableMobileMeta>[
+                        AppListTableMobileMeta(
+                          label: _locationLabel(context, item),
+                        ),
+                        AppListTableMobileMeta(
+                          label: _statusFor(context, item).label,
+                        ),
+                        ...switch (_section) {
+                          DischargeDeskSection.all ||
+                          DischargeDeskSection.completed =>
+                            <AppListTableMobileMeta>[
+                              AppListTableMobileMeta(
+                                label: _dateLabel(
+                                  context,
+                                  item.dischargedAt,
+                                ),
+                                icon: AppActionIcons.calendar,
+                              ),
+                            ],
+                          DischargeDeskSection.planned =>
+                            item.clearancePhase != null
+                                ? <AppListTableMobileMeta>[
+                                    AppListTableMobileMeta(
+                                      label: _apiLabel(item.clearancePhase!),
+                                    ),
+                                  ]
+                                : <AppListTableMobileMeta>[],
+                          DischargeDeskSection.pendingClearance =>
+                            <AppListTableMobileMeta>[
+                              AppListTableMobileMeta(
+                                label: _blockingItemLabel(context, item),
+                              ),
+                            ],
+                          _ => <AppListTableMobileMeta>[],
+                        },
+                      ],
+                    );
                   },
             ),
           ],
@@ -1115,56 +1155,6 @@ class _QueuePatientCell extends StatelessWidget {
   }
 }
 
-class _MobileQueueItem extends StatelessWidget {
-  const _MobileQueueItem({required this.item, required this.section});
-
-  final IpdAdmissionSummary item;
-  final DischargeDeskSection section;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(child: _QueuePatientCell(item: item)),
-              AppWorkspaceStatusBadge(status: _statusFor(context, item)),
-            ],
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Text(_locationLabel(context, item)),
-          SizedBox(height: theme.spacing.xs),
-          _mobileTabField(context),
-          SizedBox(height: theme.spacing.xs),
-          _dischargeNextActionWidget(context, item),
-        ],
-      ),
-    );
-  }
-
-  Widget _mobileTabField(BuildContext context) {
-    return switch (section) {
-      DischargeDeskSection.all => Text(_dateLabel(context, item.dischargedAt)),
-      DischargeDeskSection.planned => _dischargeClearancePhaseCell(
-        context,
-        item,
-      ),
-      DischargeDeskSection.pendingClearance => _dischargeBlockingItemCell(
-        context,
-        item,
-      ),
-      DischargeDeskSection.completed => Text(
-        _dateLabel(context, item.dischargedAt),
-      ),
-      DischargeDeskSection.followUps => const SizedBox.shrink(),
-    };
-  }
-}
 
 class _BillingDialog extends StatefulWidget {
   const _BillingDialog({required this.onSubmit});

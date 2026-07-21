@@ -814,7 +814,23 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       columns: _defaultColumnsForSection(context, ref, l10n, section, state),
       columnChoices: _columnChoicesForSection(context, l10n, section),
       mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
-        return _MobileQueueItem(item: item, section: section, state: state);
+        return AppListTableMobileItem(
+          title: item.displayId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _statusLabel(context, item),
+            ),
+            AppListTableMobileMeta(
+              label: _fallback(context, item.patientDisplayId),
+              icon: Icons.person_outline,
+            ),
+            AppListTableMobileMeta(
+              label: _fallback(context, item.coveragePlanDisplayId),
+              icon: Icons.health_and_safety_outlined,
+            ),
+          ],
+          showAvatar: false,
+        );
       },
     );
   }

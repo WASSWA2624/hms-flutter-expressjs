@@ -379,26 +379,30 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
         body: l10n.housekeepingEmptyQueueBody,
       ),
       mobileItemBuilder: (BuildContext context, HousekeepingWorkItem item) {
-        return switch (section) {
-          HousekeepingSection.tasks => _taskMobileItem(
-            context,
-            l10n,
-            item,
-            capabilities,
-          ),
-          HousekeepingSection.schedules => _scheduleMobileItem(
-            context,
-            l10n,
-            item,
-            capabilities,
-          ),
-          HousekeepingSection.maintenance => _maintenanceMobileItem(
-            context,
-            l10n,
-            item,
-            capabilities,
-          ),
-        };
+        return AppListTableMobileItem(
+          title: item.title,
+          caption: item.effectiveDisplayId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _statusLabel(l10n, item),
+            ),
+            switch (section) {
+              HousekeepingSection.tasks => AppListTableMobileMeta(
+                label: item.assigneeLabel ?? l10n.housekeepingUnassigned,
+                icon: Icons.person_outline,
+              ),
+              HousekeepingSection.schedules => AppListTableMobileMeta(
+                label: _locationLabel(l10n, item),
+                icon: Icons.meeting_room_outlined,
+              ),
+              HousekeepingSection.maintenance => AppListTableMobileMeta(
+                label: item.assetLabel ?? '',
+                icon: Icons.inventory_2_outlined,
+              ),
+            },
+          ],
+          showAvatar: false,
+        );
       },
     );
   }

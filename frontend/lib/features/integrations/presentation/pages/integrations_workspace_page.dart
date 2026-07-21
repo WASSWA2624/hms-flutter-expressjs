@@ -605,11 +605,33 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
         icon: Icons.hub_outlined,
       ),
       mobileItemBuilder: (BuildContext context, IntegrationWorkItem item) {
-        return _MobileIntegrationItem(
-          item: item,
-          section: section,
-          state: state,
-          canManage: canManage,
+        final String subtitle = switch (section) {
+          IntegrationDeskSection.integrations => _scopeLabel(
+            context,
+            item.integration?.integrationType ?? item.scope,
+          ),
+          IntegrationDeskSection.apiKeys =>
+            item.apiKey?.maskedValue ??
+                _fallback(context, item.apiKey?.userId),
+          IntegrationDeskSection.webhooks =>
+            _fallback(context, item.webhook?.targetHost),
+          IntegrationDeskSection.logs =>
+            _fallback(context, item.log?.message),
+          IntegrationDeskSection.interop => _scopeLabel(context, item.scope),
+        };
+        return AppListTableMobileItem(
+          title: item.title,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _statusLabel(context, item),
+              icon: _statusIcon(item),
+            ),
+            AppListTableMobileMeta(
+              label: subtitle,
+              icon: Icons.info_outline,
+            ),
+          ],
+          showAvatar: false,
         );
       },
     );

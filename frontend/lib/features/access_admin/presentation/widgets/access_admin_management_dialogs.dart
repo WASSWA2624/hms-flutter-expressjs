@@ -223,13 +223,24 @@ abstract class _ScopedAccessAdminListDialogState<
       ),
       mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
         final bool isRole = item.resource == AccessAdminResource.roles;
-        return ListTile(
-          title: Text(item.title),
-          subtitle: Text(item.subtitle ?? item.effectiveDisplayId),
-          trailing: isRole
-              ? _RoleScopeBadge(item: item)
-              : Text(item.status ?? '—'),
-          onTap: onRowSelected == null ? null : () => onRowSelected(item),
+        return AppListTableMobileItem(
+          title: item.title,
+          caption: item.subtitle ?? item.effectiveDisplayId,
+          meta: <AppListTableMobileMeta>[
+            if (isRole)
+              AppListTableMobileMeta(
+                label: item.isFacilityScopedRole
+                    ? (item.facilityName?.trim().isNotEmpty == true
+                          ? '${context.l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
+                          : context.l10n.accessAdminRoleScopeFacilityBadge)
+                    : context.l10n.accessAdminRoleScopeTenantBadge,
+                icon: item.isFacilityScopedRole
+                    ? Icons.local_hospital_outlined
+                    : Icons.domain_outlined,
+              )
+            else if ((item.status ?? '').isNotEmpty)
+              AppListTableMobileMeta(label: item.status!),
+          ],
         );
       },
     );

@@ -1162,90 +1162,43 @@ List<String> clinicalWorklistSearchHaystack(
 Widget Function(BuildContext context, ClinicalWorklistEntry item)
 _clinicalWorklistMobileItemBuilderFor(ClinicalWorkspaceSection section) {
   return (BuildContext context, ClinicalWorklistEntry item) {
-    return _ClinicalWorklistMobileItem(section: section, item: item);
-  };
-}
-
-class _ClinicalWorklistMobileItem extends ConsumerWidget {
-  const _ClinicalWorklistMobileItem({
-    required this.section,
-    required this.item,
-  });
-
-  final ClinicalWorkspaceSection section;
-  final ClinicalWorklistEntry item;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppListItemText(
-                  title: item.displayTitle,
-                  subtitle: item.worklistPatientSecondaryLine,
-                ),
+    return AppListTableMobileItem(
+      title: item.displayTitle,
+      caption: item.worklistPatientSecondaryLine,
+      meta: <AppListTableMobileMeta>[
+        AppListTableMobileMeta(label: _entryStatus(item).label),
+        ...switch (section) {
+          ClinicalWorkspaceSection.resultsReady => <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _apiLabel(item.encounterType ?? ''),
+            ),
+            AppListTableMobileMeta(label: _apiLabel(item.sourceQueue)),
+          ],
+          ClinicalWorkspaceSection.inConsultation =>
+            <AppListTableMobileMeta>[
+              AppListTableMobileMeta(
+                label: item.currentLocation ?? l10n.profileUnknownValue,
               ),
-              SizedBox(width: theme.spacing.sm),
-              Flexible(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: AppWorkspaceStatusBadge(status: _entryStatus(item)),
-                ),
+              AppListTableMobileMeta(
+                label: _clinicalProviderLabel(l10n, item),
               ),
             ],
-          ),
-          SizedBox(height: theme.spacing.xs),
-          ..._clinicalMobileDetailWidgets(context, l10n, section, item),
-          SizedBox(height: theme.spacing.xs),
-          _ClinicalWorklistNextActionCell(item: item),
-        ],
-      ),
+          ClinicalWorkspaceSection.completed => <AppListTableMobileMeta>[
+            AppListTableMobileMeta(label: _apiLabel(item.sourceQueue)),
+            AppListTableMobileMeta(
+              label: _apiLabel(item.encounterType ?? ''),
+            ),
+          ],
+          _ => <AppListTableMobileMeta>[
+            AppListTableMobileMeta(label: _apiLabel(item.sourceQueue)),
+            AppListTableMobileMeta(
+              label: _clinicalProviderLabel(l10n, item),
+            ),
+          ],
+        },
+      ],
     );
-  }
-}
-
-List<Widget> _clinicalMobileDetailWidgets(
-  BuildContext context,
-  AppLocalizations l10n,
-  ClinicalWorkspaceSection section,
-  ClinicalWorklistEntry item,
-) {
-  final ThemeData theme = Theme.of(context);
-  final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
-    color: theme.colorScheme.onSurfaceVariant,
-  );
-
-  return switch (section) {
-    ClinicalWorkspaceSection.resultsReady => <Widget>[
-      Text(_apiLabel(item.encounterType ?? ''), style: detailStyle),
-      _ClinicalQueueCell(item: item),
-    ],
-    ClinicalWorkspaceSection.inConsultation => <Widget>[
-      Text(
-        item.currentLocation ?? l10n.profileUnknownValue,
-        style: detailStyle,
-      ),
-      Text(_clinicalProviderLabel(l10n, item), style: detailStyle),
-    ],
-    ClinicalWorkspaceSection.completed => <Widget>[
-      _ClinicalQueueCell(item: item),
-      Text(_apiLabel(item.encounterType ?? ''), style: detailStyle),
-    ],
-    _ => <Widget>[
-      _ClinicalQueueCell(item: item),
-      Text(_clinicalProviderLabel(l10n, item), style: detailStyle),
-    ],
   };
 }
 

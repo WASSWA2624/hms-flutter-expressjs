@@ -306,19 +306,21 @@ class _ClinicalLabRequestCatalogDialogState
                   AppMutedText(l10n.clinicalLabRequestNoCatalogOptions),
               mobileItemBuilder:
                   (BuildContext context, ClinicalActionCatalogOption item) {
-                    return AppListItemRow(
-                      title: item.name ?? item.displayTitle,
-                      subtitle: clinicalActionJoinDisplay(<String?>[
-                        item.code,
-                        item.category,
-                      ]),
-                      trailing: Checkbox(
+                    return AppListTableMobileItem(
+                      leading: Checkbox(
                         value: _isStagedSelected(item, _selectionKind),
                         onChanged: (bool? value) {
                           _toggleSelection(item, selected: value ?? false);
                         },
                         visualDensity: VisualDensity.compact,
                       ),
+                      title: item.name ?? item.displayTitle,
+                      caption: item.code,
+                      meta: <AppListTableMobileMeta>[
+                        if ((item.category ?? '').isNotEmpty)
+                          AppListTableMobileMeta(label: item.category!),
+                      ],
+                      showAvatar: false,
                     );
                   },
             ),

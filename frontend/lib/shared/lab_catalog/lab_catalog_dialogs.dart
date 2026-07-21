@@ -1565,20 +1565,19 @@ class _LabEnableFacilityOfferingDialogState
               ),
               columns: _enableOfferingColumns(context),
               mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
-                return ListTile(
-                  title: Text(item.displayTitle),
-                  subtitle: Text(
-                    _joinEnableOfferingSubtitle(l10n, item),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: item.isOfferedAtFacility
-                      ? AppMutedText(l10n.labEnableOfferingAlreadyOfferedLabel)
-                      : const Icon(Icons.chevron_right),
-                  enabled: !item.isOfferedAtFacility,
-                  onTap: item.isOfferedAtFacility
-                      ? null
-                      : () => unawaited(_openPriceDialog(item)),
+                return AppListTableMobileItem(
+                  title: item.name ?? item.displayTitle,
+                  caption: item.code,
+                  meta: <AppListTableMobileMeta>[
+                    AppListTableMobileMeta(
+                      label: _joinEnableOfferingSubtitle(l10n, item),
+                    ),
+                    if (item.isOfferedAtFacility)
+                      AppListTableMobileMeta(
+                        label: l10n.labEnableOfferingAlreadyOfferedLabel,
+                        icon: AppActionIcons.success,
+                      ),
+                  ],
                 );
               },
             ),

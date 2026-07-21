@@ -601,21 +601,21 @@ class _InvoiceLineItemsSection extends StatelessWidget {
           ),
         ],
         mobileItemBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
-          return AppListItemRow(
+          return AppListTableMobileItem(
             title: lineItem.description,
-            subtitle: billingJoinDisplay(<String?>[
-              l10n.billingQuantityLabel(lineItem.quantity),
-              lineItem.sourceModule,
-              lineItem.encounterDisplayId,
-              lineItem.coveragePlanName,
-              if (lineItem.patientShare != null)
-                '${l10n.billingInvoicePatientShareColumn}: ${billingMoney(context, lineItem.patientShare!, item.currency)}',
-              if (lineItem.insurerShare != null)
-                '${l10n.billingInvoiceInsurerShareColumn}: ${billingMoney(context, lineItem.insurerShare!, item.currency)}',
-            ]),
-            trailing: Text(
-              billingMoney(context, lineItem.totalPrice, item.currency),
-            ),
+            meta: <AppListTableMobileMeta>[
+              AppListTableMobileMeta(
+                label: l10n.billingQuantityLabel(lineItem.quantity),
+                icon: Icons.tag_outlined,
+              ),
+              if (lineItem.sourceModule != null)
+                AppListTableMobileMeta(label: lineItem.sourceModule!),
+              AppListTableMobileMeta(
+                label: billingMoney(context, lineItem.totalPrice, item.currency),
+                icon: Icons.payments_outlined,
+              ),
+            ],
+            showAvatar: false,
           );
         },
       ),

@@ -553,7 +553,18 @@ class _IpdBoardPanel extends ConsumerWidget {
         icon: Icons.bed_outlined,
       ),
       mobileItemBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return _IpdMobileAdmissionRow(admission: item);
+        return AppListTableMobileItem(
+          title: item.displayTitle,
+          caption: item.displayId ?? context.l10n.profileUnknownValue,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: item.location ?? context.l10n.profileUnknownValue,
+            ),
+            AppListTableMobileMeta(
+              label: _stageStatus(context, item.stage).label,
+            ),
+          ],
+        );
       },
     );
   }
@@ -724,48 +735,7 @@ class _IpdPatientCell extends StatelessWidget {
   }
 }
 
-class _IpdMobileAdmissionRow extends StatelessWidget {
-  const _IpdMobileAdmissionRow({required this.admission});
 
-  final IpdAdmissionSummary admission;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(child: _IpdPatientCell(admission: admission)),
-              SizedBox(width: theme.spacing.sm),
-              AppWorkspaceStatusBadge(
-                status: _stageStatus(context, admission.stage),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            admission.location ?? context.l10n.profileUnknownValue,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: _IpdAdmissionNextActionCell(admission: admission),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _IpdDetailPanel extends ConsumerWidget {
   const _IpdDetailPanel({required this.state});

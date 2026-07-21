@@ -615,7 +615,26 @@ class _TheaterCaseBoard extends ConsumerWidget {
       columns: defaultTheaterColumnsForSection(context, section, canWrite),
       columnChoices: theaterColumnChoicesForSection(context, section, canWrite),
       mobileItemBuilder: (BuildContext context, TheaterCase item) {
-        return _TheaterCaseListTile(theaterCase: item, canWrite: canWrite);
+        final AppLocalizations l10n = context.l10n;
+        return AppListTableMobileItem(
+          title: item.patientDisplayName ?? l10n.profileUnknownValue,
+          caption: _joinDisplay(<String?>[
+            item.patientDisplayId,
+            item.encounterDisplayId,
+          ]),
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: item.procedureName ?? l10n.profileUnknownValue,
+            ),
+            AppListTableMobileMeta(
+              label: _formatDateTime(context, item.scheduledAt),
+              icon: AppActionIcons.calendar,
+            ),
+            AppListTableMobileMeta(
+              label: _caseStatusLabel(l10n, item.status),
+            ),
+          ],
+        );
       },
     );
   }

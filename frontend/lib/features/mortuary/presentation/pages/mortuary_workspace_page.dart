@@ -860,11 +860,47 @@ class _MortuaryWorklist extends StatelessWidget {
         );
       },
       mobileItemBuilder: (BuildContext context, MortuaryWorkspaceItem item) {
-        return _mortuaryMobileItemBuilder(
-          context,
-          panel: panel,
-          item: item,
-          onItemSelected: onItemSelected,
+        final String? status = _mortuaryPanelStatus(item, panel);
+        final String panelSubtitle = switch (panel) {
+          mortuaryPanelStorage =>
+            _joinValues(<String?>[item.storageLabel, _displayCode(status)]) ??
+                l10n.mortuaryUnknownValueLabel,
+          mortuaryPanelCustody =>
+            _joinValues(<String?>[
+              _displayCode(item.eventType),
+              item.actorName,
+            ]) ??
+                l10n.mortuaryUnknownValueLabel,
+          mortuaryPanelRelease =>
+            _joinValues(<String?>[
+              item.recipientName,
+              item.recipientRelationship,
+            ]) ??
+                l10n.mortuaryUnknownValueLabel,
+          mortuaryPanelReporting =>
+            _joinValues(<String?>[
+              item.requestReason,
+              item.diagnosticsReferenceId,
+            ]) ??
+                l10n.mortuaryUnknownValueLabel,
+          _ =>
+            _joinValues(<String?>[
+              _mortuaryPublicIdentifier(item),
+              item.sourceLabel,
+            ]) ??
+                l10n.mortuaryUnknownValueLabel,
+        };
+        return AppListTableMobileItem(
+          title:
+              item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
+          caption: _mortuaryPublicIdentifier(item),
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _displayCode(status) ?? l10n.mortuaryUnknownValueLabel,
+            ),
+            AppListTableMobileMeta(label: panelSubtitle),
+          ],
+          showAvatar: false,
         );
       },
     );

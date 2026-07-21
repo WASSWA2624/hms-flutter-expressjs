@@ -653,11 +653,23 @@ class _OperationsQueuePanel extends ConsumerWidget {
       ),
       columnChoices: _operationColumnChoices(l10n),
       mobileItemBuilder: (BuildContext context, OperationsWorkItem item) {
-        return _OperationsRequestListTile(
-          item: item,
-          state: state,
-          canMutate: canMutate,
-          onOpenDetail: onOpenDetail,
+        return AppListTableMobileItem(
+          title: _issueLabel(l10n, item),
+          caption: item.effectiveDisplayId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _statusLabel(l10n, item.status),
+            ),
+            AppListTableMobileMeta(
+              label: _locationLabel(l10n, item),
+              icon: Icons.location_on_outlined,
+            ),
+            AppListTableMobileMeta(
+              label: _priorityLabel(l10n, item.metadata.priority),
+              icon: Icons.flag_outlined,
+            ),
+          ],
+          showAvatar: false,
         );
       },
     );
@@ -789,24 +801,27 @@ class _OperationsAssetsPanelState extends State<_OperationsAssetsPanel> {
         ),
       ],
       mobileItemBuilder: (BuildContext context, OperationsAsset asset) {
-        return AppListItemRow(
-          leadingIcon: Icons.precision_manufacturing_outlined,
+        return AppListTableMobileItem(
           title: asset.effectiveLabel,
-          subtitle: _display(asset.assetTag, ''),
-          trailing: _OperationStatusBadge(status: asset.status),
-          details: <Widget>[
-            AppCopyableIdentifier(
-              value: asset.effectiveDisplayId,
-              textStyle: Theme.of(context).textTheme.bodySmall,
+          caption: asset.effectiveDisplayId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _statusLabel(l10n, asset.status),
             ),
-            AppInlineMetaText(
-              icon: Icons.location_on_outlined,
+            AppListTableMobileMeta(
               label: _display(
                 asset.facilityLabel,
                 asset.facilityId ?? l10n.operationsUnknownValue,
               ),
+              icon: Icons.location_on_outlined,
             ),
+            if ((asset.assetTag ?? '').isNotEmpty)
+              AppListTableMobileMeta(
+                label: asset.assetTag!,
+                icon: Icons.tag_outlined,
+              ),
           ],
+          showAvatar: false,
         );
       },
     );

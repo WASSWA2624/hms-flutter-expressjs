@@ -297,7 +297,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         ),
       ],
       mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
-        return ListTile(
+        return AppListTableMobileItem(
           leading: Checkbox(
             value: _selectedDrugIds.contains(item.id),
             onChanged: isBusy
@@ -313,8 +313,9 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
                   },
             visualDensity: VisualDensity.compact,
           ),
-          title: Text(item.displayTitle),
-          subtitle: Text(item.code ?? ''),
+          title: item.displayTitle,
+          caption: item.code,
+          showAvatar: false,
         );
       },
     );
@@ -598,7 +599,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         ),
       ],
       mobileItemBuilder: (BuildContext context, PharmacyFormularyItem item) {
-        return ListTile(
+        return AppListTableMobileItem(
           leading: Checkbox(
             value: _selectedFormularyIds.contains(item.id),
             onChanged: isBusy
@@ -614,8 +615,9 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
                   },
             visualDensity: VisualDensity.compact,
           ),
-          title: Text(item.drugNameLabel ?? item.displayId ?? item.id),
-          subtitle: item.drugCode == null ? null : Text(item.drugCode!),
+          title: item.drugNameLabel ?? item.displayId ?? item.id,
+          caption: item.drugCode,
+          showAvatar: false,
         );
       },
     );
@@ -855,20 +857,23 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
               ],
               mobileItemBuilder: (BuildContext context, PharmacyDrug drug) {
                 final bool selected = _drugId == drug.id;
-                return ListTile(
-                  leading: Icon(
-                    selected
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off,
-                    color: selected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  title: Text(drug.displayTitle),
-                  subtitle: drug.code == null ? null : Text(drug.code!),
+                return GestureDetector(
                   onTap: _isSaving
                       ? null
                       : () => setState(() => _drugId = drug.id),
+                  child: AppListTableMobileItem(
+                    leading: Icon(
+                      selected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
+                      color: selected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    title: drug.displayTitle,
+                    caption: drug.code,
+                    showAvatar: false,
+                  ),
                 );
               },
               emptyBuilder: (_) => AppWorkspaceStatePanel.state(
@@ -1149,7 +1154,22 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       ],
       mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
         final String selectionKey = _inventorySelectionKey(item);
-        return ListTile(
+        final String? expiryLabel = item.nextExpiry == null
+            ? null
+            : () {
+                final String formatted = AppFormatters.dateTime(
+                  item.nextExpiry!,
+                  Localizations.localeOf(context),
+                );
+                if (item.expiryAlertStatus == 'EXPIRED') {
+                  return '$formatted · ${l10n.pharmacyStockExpiredLabel}';
+                }
+                if (item.expiryAlertStatus == 'EXPIRING_SOON') {
+                  return '$formatted · ${l10n.pharmacyStockExpiringSoonLabel}';
+                }
+                return formatted;
+              }();
+        return AppListTableMobileItem(
           leading: Checkbox(
             value: _selectedInventoryIds.contains(selectionKey),
             onChanged: isBusy
@@ -1165,11 +1185,18 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
                   },
             visualDensity: VisualDensity.compact,
           ),
-          title: Text(item.inventoryItem?.displayTitle ?? ''),
-          subtitle: Text(
-            '${item.quantity} · ${l10n.pharmacyReorderLevelColumnLabel}: ${item.reorderLevel}',
-          ),
-          trailing: _expiryCell(context, item),
+          title: item.inventoryItem?.displayTitle ?? '',
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: '${item.quantity} · ${l10n.pharmacyReorderLevelColumnLabel}: ${item.reorderLevel}',
+            ),
+            if (expiryLabel != null)
+              AppListTableMobileMeta(
+                label: expiryLabel,
+                icon: AppActionIcons.calendar,
+              ),
+          ],
+          showAvatar: false,
         );
       },
     );

@@ -734,12 +734,30 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             ),
       columnChoices: _optionalRadiologyWorklistColumns(context),
       mobileItemBuilder: (BuildContext context, RadiologyOrder item) {
-        return _RadiologyOrderListTile(
-          order: item,
-          view: state.query.view,
-          state: state,
-          canWork: canWork,
-          canRequest: canRequest,
+        final AppLocalizations l10n = context.l10n;
+        final AppWorkspaceStatus status = _orderStatus(context, item);
+        return AppListTableMobileItem(
+          title: item.patientDisplayName ?? l10n.profileUnknownValue,
+          caption: item.patientId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(label: status.label, icon: status.icon),
+            AppListTableMobileMeta(
+              label: _joinDisplay(<String?>[
+                _radiologyStudyLabel(item, l10n),
+                if (state.query.view == RadiologyWorkbenchView.patients)
+                  _radiologyPriorityDisplayLabel(l10n, item.priority),
+              ]),
+              icon: Icons.biotech_outlined,
+            ),
+            if (state.query.view == RadiologyWorkbenchView.orders &&
+                !item.isPatientGroup)
+              AppListTableMobileMeta(
+                label: item.effectiveDisplayId.ifEmpty(
+                  l10n.profileUnknownValue,
+                ),
+                icon: Icons.tag,
+              ),
+          ],
         );
       },
     );

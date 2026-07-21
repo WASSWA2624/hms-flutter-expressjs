@@ -737,41 +737,14 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                       ),
                       mobileItemBuilder:
                           (BuildContext context, TenantProfile tenant) {
-                            return ListTile(
-                              title: Text(tenant.name),
-                              subtitle: Text(
-                                '${tenant.slug ?? tenant.id} · ${_tenantStatusLabel(l10n, tenant)}',
-                              ),
-                              trailing: _canEdit
-                                  ? _TenantManagementRowActions(
-                                      enabled: !_loading,
-                                      tenant: tenant,
-                                      canDelete: _canDelete,
-                                      editLabel:
-                                          l10n.tenantFacilitySaveTenantAction,
-                                      deleteLabel:
-                                          l10n.tenantFacilityDeleteAction,
-                                      restoreLabel: l10n
-                                          .tenantFacilityRestoreTenantAction,
-                                      permanentDeleteLabel: l10n
-                                          .tenantFacilityPermanentDeleteAction,
-                                      onEdit: () => unawaited(
-                                        _openTenantForm(tenant: tenant),
-                                      ),
-                                      onDelete: () => unawaited(
-                                        _confirmDeleteTenant(tenant),
-                                      ),
-                                      onRestore: () => unawaited(
-                                        _confirmRestoreTenant(tenant),
-                                      ),
-                                      onPermanentDelete: () => unawaited(
-                                        _confirmPermanentDeleteTenant(tenant),
-                                      ),
-                                    )
-                                  : Text(_tenantStatusLabel(l10n, tenant)),
-                              onTap: tenant.isDeleted
-                                  ? null
-                                  : () => unawaited(_openTenantDetails(tenant)),
+                            return AppListTableMobileItem(
+                              title: tenant.name,
+                              caption: tenant.slug ?? tenant.id,
+                              meta: <AppListTableMobileMeta>[
+                                AppListTableMobileMeta(
+                                  label: _tenantStatusLabel(l10n, tenant),
+                                ),
+                              ],
                             );
                           },
                     ),
@@ -1470,22 +1443,17 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                       ),
                       mobileItemBuilder:
                           (BuildContext context, FacilityProfile facility) {
-                            return ListTile(
-                              title: Text(facility.name),
-                              subtitle: Text(
-                                '${facility.type.name} · ${statusLabelBuilder(facility)}',
-                              ),
-                              trailing: canManage && !facility.isDeleted
-                                  ? _ManagementRowActions(
-                                      enabled: !loading,
-                                      editLabel:
-                                          l10n.tenantFacilityEditFacilityAction,
-                                      deleteLabel:
-                                          l10n.tenantFacilityDeleteAction,
-                                      onEdit: () => onEdit(facility),
-                                      onDelete: () => onDelete(facility),
-                                    )
-                                  : Text(statusLabelBuilder(facility)),
+                            return AppListTableMobileItem(
+                              title: facility.name,
+                              meta: <AppListTableMobileMeta>[
+                                AppListTableMobileMeta(
+                                  label: statusLabelBuilder(facility),
+                                ),
+                                AppListTableMobileMeta(
+                                  label: facility.type.name,
+                                  icon: Icons.business_outlined,
+                                ),
+                              ],
                             );
                           },
                     ),
@@ -3369,53 +3337,14 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                       ),
                       mobileItemBuilder:
                           (BuildContext context, AccessAdminItem user) {
-                            final TextStyle? mutedStyle = user.isDeleted
-                                ? theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  )
-                                : null;
-                            return ListTile(
-                              title: Text(user.title, style: mutedStyle),
-                              subtitle: Text(
-                                '${user.email ?? user.subtitle ?? '—'} · ${_userStatusLabel(l10n, user)}',
-                                style: mutedStyle,
-                              ),
-                              trailing: canManage
-                                  ? (user.isDeleted
-                                        ? IconButton(
-                                            icon: const Icon(
-                                              Icons.restore_outlined,
-                                            ),
-                                            tooltip: l10n
-                                                .accessAdminRestoreUserAction,
-                                            onPressed: () => onRestore(user),
-                                          )
-                                        : Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: <Widget>[
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.edit_outlined,
-                                                ),
-                                                onPressed: () => onEdit(user),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.delete_outline,
-                                                  color: colorScheme.error,
-                                                ),
-                                                onPressed:
-                                                    user.isDemo ||
-                                                        user.isSystemCritical
-                                                    ? null
-                                                    : () => onDelete(user),
-                                              ),
-                                            ],
-                                          ))
-                                  : Text(
-                                      _userStatusLabel(l10n, user),
-                                      style: mutedStyle,
-                                    ),
+                            return AppListTableMobileItem(
+                              title: user.title,
+                              caption: user.email ?? user.subtitle,
+                              meta: <AppListTableMobileMeta>[
+                                AppListTableMobileMeta(
+                                  label: _userStatusLabel(l10n, user),
+                                ),
+                              ],
                             );
                           },
                     ),
@@ -4039,55 +3968,14 @@ class _ManageFacilitiesDialogState
                       ),
                       mobileItemBuilder:
                           (BuildContext context, FacilityProfile facility) {
-                            return ListTile(
-                              title: Text(
-                                facility.name,
-                                style: facility.isDeleted
-                                    ? Theme.of(
-                                        context,
-                                      ).textTheme.titleMedium?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      )
-                                    : null,
-                              ),
-                              subtitle: Text(
-                                '${_tenantLabel(facility.tenantId)} · ${_facilityStatusLabel(l10n, facility)}',
-                              ),
-                              trailing: _canManage
-                                  ? _FacilityManagementRowActions(
-                                      enabled: !_loading,
-                                      facility: facility,
-                                      editLabel:
-                                          l10n.tenantFacilityEditFacilityAction,
-                                      deleteLabel:
-                                          l10n.tenantFacilityDeleteAction,
-                                      restoreLabel: l10n
-                                          .tenantFacilityRestoreTenantAction,
-                                      permanentDeleteLabel: l10n
-                                          .tenantFacilityPermanentDeleteAction,
-                                      onEdit: () => unawaited(
-                                        _openFacilityForm(facility: facility),
-                                      ),
-                                      onDelete: () => unawaited(
-                                        _confirmDeleteFacility(facility),
-                                      ),
-                                      onRestore: () => unawaited(
-                                        _confirmRestoreFacility(facility),
-                                      ),
-                                      onPermanentDelete: () => unawaited(
-                                        _confirmPermanentDeleteFacility(
-                                          facility,
-                                        ),
-                                      ),
-                                    )
-                                  : Text(_facilityStatusLabel(l10n, facility)),
-                              onTap: !facility.isDeleted
-                                  ? () => unawaited(
-                                      _openFacilityDetails(facility),
-                                    )
-                                  : null,
+                            return AppListTableMobileItem(
+                              title: facility.name,
+                              caption: _tenantLabel(facility.tenantId),
+                              meta: <AppListTableMobileMeta>[
+                                AppListTableMobileMeta(
+                                  label: _facilityStatusLabel(l10n, facility),
+                                ),
+                              ],
                             );
                           },
                     ),

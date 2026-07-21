@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_cell.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_columns.dart';
@@ -95,63 +93,35 @@ class NursingWorklistPanel extends ConsumerWidget {
       columnChoices: nursingColumnChoicesForScope(l10n, scope),
       columns: nursingColumnsForScope(l10n, scope),
       mobileItemBuilder: (BuildContext context, NursingWorkItem item) {
-        return _NursingMobileListItem(item: item, scope: scope);
+        final String subtitle = nursingJoinDisplay(<String?>[
+          item.locationLabel,
+          nursingTaskTypeLabel(context, item),
+          nursingDueTimeLabel(context, item),
+        ]);
+        return AppListTableMobileItem(
+          title: item.displayTitle,
+          caption: nursingJoinDisplay(<String?>[
+            item.patientDisplayId,
+            item.encounterDisplayId,
+            item.displayId,
+          ]),
+          meta: <AppListTableMobileMeta>[
+            if (scope == NursingQueueScope.urgent ||
+                scope == NursingQueueScope.all ||
+                scope == NursingQueueScope.assignedWard)
+              AppListTableMobileMeta(
+                label: nursingPriorityStatus(context, item).label,
+              ),
+            AppListTableMobileMeta(label: nursingSummaryStatus(item).label),
+            if (subtitle.isNotEmpty)
+              AppListTableMobileMeta(label: subtitle),
+          ],
+        );
       },
     );
   }
 }
 
-class _NursingMobileListItem extends ConsumerWidget {
-  const _NursingMobileListItem({required this.item, required this.scope});
-
-  final NursingWorkItem item;
-  final NursingQueueScope scope;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
-    final String subtitle = nursingJoinDisplay(<String?>[
-      item.locationLabel,
-      nursingTaskTypeLabel(context, item),
-      nursingDueTimeLabel(context, item),
-    ]);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          NursingPatientCell(item: item),
-          SizedBox(height: theme.spacing.xs),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              if (scope == NursingQueueScope.urgent ||
-                  scope == NursingQueueScope.all ||
-                  scope == NursingQueueScope.assignedWard)
-                AppWorkspaceStatusBadge(
-                  status: nursingPriorityStatus(context, item),
-                ),
-              AppWorkspaceStatusBadge(status: nursingSummaryStatus(item)),
-              if (subtitle.isNotEmpty)
-                Text(subtitle, style: theme.textTheme.bodySmall),
-            ],
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: NursingNextActionCell(item: item, scope: scope),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 Future<void> openNursingPatientDetailDialog(
   BuildContext context,

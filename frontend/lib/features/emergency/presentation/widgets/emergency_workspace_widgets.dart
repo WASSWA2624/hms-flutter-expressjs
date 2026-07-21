@@ -831,60 +831,33 @@ Widget emergencyMobileListItem(
   required EmergencyBoardTab tab,
   required AccessRequirement writeRequirement,
 }) {
-  final ThemeData theme = Theme.of(context);
   final String contextLine = switch (tab) {
     EmergencyBoardTab.critical ||
     EmergencyBoardTab.closed ||
     EmergencyBoardTab.ambulance => dateTimeLabel(context, item.createdAt),
-    _ => item.currentLocation,
+    _ => item.currentLocation ?? '',
   };
+  final AppWorkspaceStatus workflowStatus =
+      tab == EmergencyBoardTab.ambulance
+          ? _ambulanceWorkflowStatus(context, item)
+          : caseStatus(item);
 
-  return Padding(
-    padding: EdgeInsets.symmetric(
-      horizontal: theme.spacing.sm,
-      vertical: theme.spacing.sm,
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        EmergencyCaseCell(item: item),
-        SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            AppWorkspaceStatusBadge(status: severityStatus(item)),
-            AppWorkspaceStatusBadge(
-              status: tab == EmergencyBoardTab.ambulance
-                  ? _ambulanceWorkflowStatus(context, item)
-                  : caseStatus(item),
-            ),
-          ],
+  return AppListTableMobileItem(
+    title: item.displayTitle,
+    caption: joinDisplay(<String?>[item.patientDisplayId, item.caseLabel]),
+    meta: <AppListTableMobileMeta>[
+      AppListTableMobileMeta(label: severityStatus(item).label),
+      AppListTableMobileMeta(label: workflowStatus.label),
+      if (contextLine.isNotEmpty)
+        AppListTableMobileMeta(
+          label: contextLine,
+          icon: tab == EmergencyBoardTab.critical ||
+                  tab == EmergencyBoardTab.closed ||
+                  tab == EmergencyBoardTab.ambulance
+              ? AppActionIcons.calendar
+              : null,
         ),
-        SizedBox(height: theme.spacing.xs),
-        Text(contextLine, style: theme.textTheme.bodySmall),
-        SizedBox(height: theme.spacing.sm),
-        switch (tab) {
-          EmergencyBoardTab.ambulance => EmergencyAmbulanceActionCell(
-            item: item,
-            writeRequirement: writeRequirement,
-          ),
-          EmergencyBoardTab.handoff => EmergencyHandoffActionCell(
-            item: item,
-            writeRequirement: writeRequirement,
-          ),
-          EmergencyBoardTab.closed => const SizedBox.shrink(),
-          _ => WorkflowActionButton(
-            encounterId: item.id,
-            patientId: item.patientId,
-            stage: item.status,
-            nextStep: emergencyNextStepCode(item),
-            sourceModule: 'emergency',
-            compact: true,
-          ),
-        },
-      ],
-    ),
+    ],
   );
 }
 

@@ -66,11 +66,11 @@ void main() {
       size: const Size(390, 200),
     );
 
-    expect(find.text('Anderson, Maria'), findsOneWidget);
-    expect(find.text('MRN 1029384'), findsOneWidget);
-    expect(find.text('+256 700 111 222'), findsOneWidget);
-    expect(find.text('22 Jul'), findsOneWidget);
-    expect(find.text('09:30'), findsOneWidget);
+    expect(find.textContaining('Anderson, Maria'), findsOneWidget);
+    expect(find.textContaining('MRN 1029384'), findsOneWidget);
+    expect(find.textContaining('+256 700 111 222'), findsOneWidget);
+    expect(find.textContaining('22 Jul'), findsOneWidget);
+    expect(find.textContaining('09:30'), findsOneWidget);
     expect(find.byIcon(Icons.phone_outlined), findsOneWidget);
   });
 
@@ -99,7 +99,7 @@ void main() {
       size: const Size(500, 600),
     );
 
-    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.textContaining('Alpha'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
   });
 

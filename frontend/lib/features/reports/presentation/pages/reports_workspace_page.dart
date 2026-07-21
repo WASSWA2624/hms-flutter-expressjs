@@ -329,21 +329,19 @@ class _ReportItemsPanel extends ConsumerWidget {
         ),
         columnChoices: reportItemColumnChoices(context, l10n),
         mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-          return ReportMobileTile(
-            item: item,
-            state: state,
-            policy: policy,
-            onNextAction:
-                (BuildContext actionContext, WidgetRef actionRef, item) {
-                  return _handleReportNextAction(
-                    actionContext,
-                    actionRef,
-                    state,
-                    item,
-                    policy,
-                  );
-                },
-            openDetailDialog: openReportDetailDialog,
+          return AppListTableMobileItem(
+            title: item.title,
+            caption: item.reference,
+            meta: <AppListTableMobileMeta>[
+              AppListTableMobileMeta(
+                label: reportsTableStatus(context, item.status).label,
+              ),
+              AppListTableMobileMeta(
+                label: reportsDateTime(context, item.occurredAt),
+                icon: Icons.schedule_outlined,
+              ),
+            ],
+            showAvatar: false,
           );
         },
       ),
@@ -542,21 +540,22 @@ class _ComplianceLogPanel extends ConsumerWidget {
         ),
         columnChoices: complianceLogColumnChoices(context, l10n),
         mobileItemBuilder: (BuildContext context, ComplianceLogItem item) {
-          return ComplianceMobileTile(
-            item: item,
-            state: state,
-            policy: policy,
-            onNextAction:
-                (BuildContext actionContext, WidgetRef actionRef, item) {
-                  return _handleComplianceNextAction(
-                    actionContext,
-                    actionRef,
-                    state,
-                    item,
-                    policy,
-                  );
-                },
-            openDetailDialog: openComplianceDetailDialog,
+          return AppListTableMobileItem(
+            title: item.title,
+            caption: item.recordReference,
+            meta: <AppListTableMobileMeta>[
+              AppListTableMobileMeta(
+                label: reportsTableStatus(
+                  context,
+                  item.action ?? item.scope ?? item.purpose,
+                ).label,
+              ),
+              AppListTableMobileMeta(
+                label: reportsDateTime(context, item.occurredAt),
+                icon: Icons.schedule_outlined,
+              ),
+            ],
+            showAvatar: false,
           );
         },
       ),
@@ -647,21 +646,19 @@ class _ReportSchedulesPanel extends ConsumerWidget {
               },
         ),
         mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-          return ReportMobileTile(
-            item: item,
-            state: state,
-            policy: policy,
-            onNextAction:
-                (BuildContext actionContext, WidgetRef actionRef, item) {
-                  return _handleReportNextAction(
-                    actionContext,
-                    actionRef,
-                    state,
-                    item,
-                    policy,
-                  );
-                },
-            openDetailDialog: openReportDetailDialog,
+          return AppListTableMobileItem(
+            title: item.title,
+            caption: item.reference,
+            meta: <AppListTableMobileMeta>[
+              AppListTableMobileMeta(
+                label: reportsTableStatus(context, item.status).label,
+              ),
+              AppListTableMobileMeta(
+                label: reportsDateTime(context, item.occurredAt),
+                icon: Icons.schedule_outlined,
+              ),
+            ],
+            showAvatar: false,
           );
         },
       ),

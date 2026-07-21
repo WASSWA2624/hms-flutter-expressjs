@@ -491,33 +491,47 @@ class ClinicalRequestSelectedCatalogTable<T> extends StatelessWidget {
               ),
         mobileItemBuilder: (BuildContext context, T item) {
           final String key = itemKey(item);
-          return AppListItemRow(
-            title: nameLabel(item),
-            subtitle: typeLabel(item),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  clinicalRequestCatalogPriceLabel(context, optionFor(item)),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              AppListTableMobileItem(
+                title: nameLabel(item),
+                caption: typeLabel(item),
+                meta: <AppListTableMobileMeta>[
+                  AppListTableMobileMeta(
+                    label: clinicalRequestCatalogPriceLabel(
+                      context,
+                      optionFor(item),
+                    ),
+                    icon: Icons.payments_outlined,
                   ),
+                ],
+                showAvatar: false,
+              ),
+              Padding(
+                padding: EdgeInsets.only(
+                  left: theme.spacing.sm,
+                  right: theme.spacing.sm,
+                  bottom: theme.spacing.sm,
                 ),
-                Checkbox(
-                  value: selectedKeys.contains(key),
-                  onChanged: enabled
-                      ? (bool? value) => _toggleKey(key, value ?? false)
-                      : null,
-                  visualDensity: VisualDensity.compact,
+                child: Row(
+                  children: <Widget>[
+                    Checkbox(
+                      value: selectedKeys.contains(key),
+                      onChanged: enabled
+                          ? (bool? value) => _toggleKey(key, value ?? false)
+                          : null,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    _ClinicalRequestRemoveItemButton(
+                      label: l10n.clinicalRequestRemoveItemAction,
+                      enabled: enabled,
+                      onPressed: enabled ? () => onDeleteItem(item) : null,
+                    ),
+                  ],
                 ),
-                _ClinicalRequestRemoveItemButton(
-                  label: l10n.clinicalRequestRemoveItemAction,
-                  enabled: enabled,
-                  onPressed: enabled ? () => onDeleteItem(item) : null,
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),

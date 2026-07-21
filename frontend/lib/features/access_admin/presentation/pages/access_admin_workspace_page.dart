@@ -746,15 +746,24 @@ class _WorklistPanel extends StatelessWidget {
         },
       ),
       mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
-        return accessAdminMobileListItem(
-          context,
-          resource: resource,
-          item: item,
-          canWrite: canWrite,
-          onTap: () => onItemSelected(item),
-          onUserStatusToggle: _toggleUserStatus,
-          onRoleEdit: onRoleEdit,
-          onRegistrationActivate: controller.activateRegistration,
+        return AppListTableMobileItem(
+          title: item.title,
+          caption: item.effectiveDisplayId,
+          meta: <AppListTableMobileMeta>[
+            if (resource == AccessAdminResource.roles)
+              AppListTableMobileMeta(
+                label: accessAdminRoleScopeLabel(context, item),
+              )
+            else if (item.status != null)
+              AppListTableMobileMeta(
+                label: accessAdminItemStatus(context, item.status).label,
+              ),
+            if (item.facilityName != null)
+              AppListTableMobileMeta(
+                label: item.facilityName!,
+                icon: Icons.business_outlined,
+              ),
+          ],
         );
       },
     );

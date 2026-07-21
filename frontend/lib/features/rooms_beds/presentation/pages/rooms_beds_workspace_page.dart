@@ -407,12 +407,22 @@ class _RoomsBedsWorkspaceContentState
                     },
               ),
               mobileItemBuilder: (BuildContext context, BedBoardItem item) {
-                return RoomsBedsBedMobileItem(
-                  item: item,
-                  state: state,
-                  canAdminBeds: canAdminBeds,
-                  canIpdWrite: canIpdWrite,
-                  callbacks: nextActionCallbacks,
+                return AppListTableMobileItem(
+                  title: item.label,
+                  meta: <AppListTableMobileMeta>[
+                    AppListTableMobileMeta(
+                      label: roomsBedsStatusBadge(l10n, item.status).label,
+                    ),
+                    AppListTableMobileMeta(
+                      label: roomsBedsLocationLabel(l10n, item),
+                      icon: Icons.location_on_outlined,
+                    ),
+                    if (item.isOccupied)
+                      AppListTableMobileMeta(
+                        label: roomsBedsAssignmentLabel(l10n, item),
+                        icon: Icons.person_outline,
+                      ),
+                  ],
                 );
               },
             ),

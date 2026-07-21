@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
@@ -10,7 +9,6 @@ import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_columns.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_filters.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
-import 'package:hosspi_hms/features/icu/presentation/widgets/icu_patient_cell.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -104,34 +102,41 @@ class IcuBoardPanel extends ConsumerWidget {
         writeRequirement: writeRequirement,
       ),
       mobileItemBuilder: (BuildContext context, IcuPatientSummary item) {
-        final ThemeData theme = Theme.of(context);
-        return Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.sm,
-            vertical: theme.spacing.sm,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              IcuPatientCell(item: item),
-              SizedBox(height: theme.spacing.sm),
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  ...icuMobilePriorityFields(context, item, section),
-                  AppWorkspaceStatusBadge(status: icuStatus(item)),
-                ],
-              ),
-              SizedBox(height: theme.spacing.xs),
-              icuNextActionColumn(
-                l10n,
-                section,
-                writeRequirement: writeRequirement,
-              ).cellBuilder(context, item),
-            ],
-          ),
+        return AppListTableMobileItem(
+          title: item.displayTitle,
+          caption: item.displayId,
+          meta: <AppListTableMobileMeta>[
+            ...switch (section) {
+              IcuWorkspaceSection.critical => <AppListTableMobileMeta>[
+                AppListTableMobileMeta(
+                  label: alertStatus(l10n, item).label,
+                ),
+              ],
+              IcuWorkspaceSection.transfers => <AppListTableMobileMeta>[
+                AppListTableMobileMeta(
+                  label: apiLabel(
+                    item.transferStatus ?? l10n.profileUnknownValue,
+                  ),
+                ),
+              ],
+              IcuWorkspaceSection.discharge => <AppListTableMobileMeta>[
+                AppListTableMobileMeta(
+                  label: dateTimeLabel(context, item.admittedAt),
+                  icon: AppActionIcons.calendar,
+                ),
+              ],
+              IcuWorkspaceSection.ended => <AppListTableMobileMeta>[
+                AppListTableMobileMeta(
+                  label: dateTimeLabel(context, item.boardIcuStartAt),
+                  icon: AppActionIcons.calendar,
+                ),
+              ],
+              _ => <AppListTableMobileMeta>[
+                AppListTableMobileMeta(label: apiLabel(item.sourceLabel)),
+              ],
+            },
+            AppListTableMobileMeta(label: icuStatus(item).label),
+          ],
         );
       },
     );

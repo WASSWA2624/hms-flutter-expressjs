@@ -894,9 +894,59 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
       columns: _subscriptionWorklistColumns(context, resource),
       columnChoices: _subscriptionWorklistColumnChoices(context, resource),
       mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
-        return Padding(
-          padding: EdgeInsets.symmetric(vertical: Theme.of(context).spacing.sm),
-          child: _SubscriptionMobileTile(item: item, resource: resource),
+        final String title = switch (resource) {
+          SubscriptionResource.subscriptionPlans =>
+            item.name ?? item.title,
+          SubscriptionResource.subscriptions =>
+            item.tenantLabel ?? _SubscriptionsText.notRecorded,
+          SubscriptionResource.modules =>
+            item.name ?? item.title,
+          SubscriptionResource.moduleSubscriptions =>
+            item.moduleLabel ?? item.title,
+          SubscriptionResource.subscriptionInvoices =>
+            item.invoiceDisplayId ?? _SubscriptionsText.notRecorded,
+          SubscriptionResource.licenses =>
+            item.licenseType ?? _SubscriptionsText.notRecorded,
+        };
+        final String? caption = switch (resource) {
+          SubscriptionResource.subscriptionPlans => item.code,
+          SubscriptionResource.subscriptions =>
+            item.planLabel ?? item.planCode,
+          SubscriptionResource.modules => item.code,
+          SubscriptionResource.moduleSubscriptions =>
+            item.tenantLabel,
+          SubscriptionResource.subscriptionInvoices =>
+            item.tenantLabel,
+          SubscriptionResource.licenses => item.tenantLabel,
+        };
+        final String amountMeta = switch (resource) {
+          SubscriptionResource.subscriptionPlans =>
+            '${_money(context, item.resolvedMonthlyPrice, item.currency)} / mo',
+          SubscriptionResource.subscriptions =>
+            _money(context, item.totalAmount ?? item.price, item.currency),
+          SubscriptionResource.modules =>
+            _amountOrLimit(context, item),
+          SubscriptionResource.moduleSubscriptions =>
+            _date(context, _timelineDate(item)),
+          SubscriptionResource.subscriptionInvoices =>
+            _money(context, item.totalAmount ?? item.price, item.currency),
+          SubscriptionResource.licenses =>
+            _date(context, _licenseExpiresAt(item)),
+        };
+        return AppListTableMobileItem(
+          title: title,
+          caption: caption,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _statusLabel(item.primaryStatus),
+            ),
+            if (amountMeta.isNotEmpty)
+              AppListTableMobileMeta(
+                label: amountMeta,
+                icon: Icons.monetization_on_outlined,
+              ),
+          ],
+          showAvatar: false,
         );
       },
     );

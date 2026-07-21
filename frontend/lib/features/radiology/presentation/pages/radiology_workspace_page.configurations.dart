@@ -443,51 +443,44 @@ class _RadiologyConfigurationsDialogState
             ),
           ],
           mobileItemBuilder: (BuildContext context, RadiologyCatalogTest item) {
-            return Padding(
-              padding: EdgeInsets.all(theme.spacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Checkbox(
-                        value: _selectedOfferingIds.contains(
-                          _offeringSelectionKey(item),
-                        ),
-                        onChanged: tableBusy
-                            ? null
-                            : (bool? value) => _toggleOfferingSelection(
-                                item,
-                                selected: value ?? false,
-                              ),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      Expanded(
-                        child: AppListItemRow(
-                          title: item.name,
-                          subtitle: _joinDisplay(<String?>[
-                            item.code,
-                            _modalityLabelOrNull(l10n, item.modality),
-                            _formatRadiologyCatalogUnitPrice(
-                              context,
-                              item,
-                              l10n,
-                            ),
-                          ]),
-                          leadingIcon: _radiologyModalityIcon(item.modality),
-                          padding: EdgeInsets.zero,
-                          titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                AppListTableMobileItem(
+                  leading: Checkbox(
+                    value: _selectedOfferingIds.contains(
+                      _offeringSelectionKey(item),
+                    ),
+                    onChanged: tableBusy
+                        ? null
+                        : (bool? value) => _toggleOfferingSelection(
+                            item,
+                            selected: value ?? false,
                           ),
-                        ),
-                      ),
-                    ],
+                    visualDensity: VisualDensity.compact,
                   ),
-                  SizedBox(height: theme.spacing.xs),
-                  _testActionButtons(context, item, tableBusy),
-                ],
-              ),
+                  title: item.name,
+                  caption: item.code,
+                  meta: <AppListTableMobileMeta>[
+                    AppListTableMobileMeta(
+                      label: _joinDisplay(<String?>[
+                        _modalityLabelOrNull(l10n, item.modality),
+                        _formatRadiologyCatalogUnitPrice(context, item, l10n),
+                      ]),
+                      icon: Icons.biotech_outlined,
+                    ),
+                  ],
+                  showAvatar: false,
+                ),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: theme.spacing.sm,
+                    right: theme.spacing.sm,
+                    bottom: theme.spacing.sm,
+                  ),
+                  child: _testActionButtons(context, item, tableBusy),
+                ),
+              ],
             );
           },
         ),

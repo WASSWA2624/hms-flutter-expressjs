@@ -972,12 +972,14 @@ class _PatientList extends ConsumerWidget {
       columns: _defaultPatientColumns(context, ref, section, l10n),
       columnChoices: _optionalPatientColumns(context, ref, section, l10n),
       mobileItemBuilder: (BuildContext context, Patient patient) {
-        return _PatientMobileRow(
-          patient: patient,
-          section: section,
-          onNextAction: () {
-            unawaited(showPatientDetailDialog(context, ref, patient.id));
-          },
+        return AppListTableMobileItem(
+          title: patient.effectiveDisplayName,
+          caption: patient.effectiveIdentifier,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: _patientRegistryStatusLabel(context, patient, section),
+            ),
+          ],
         );
       },
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),

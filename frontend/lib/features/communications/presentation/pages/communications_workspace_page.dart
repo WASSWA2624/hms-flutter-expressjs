@@ -635,35 +635,19 @@ class _NotificationsTable extends ConsumerWidget {
         ),
       ],
       mobileItemBuilder: (BuildContext context, NotificationItem item) {
-        return AppListItemRow(
+        return AppListTableMobileItem(
           title: item.title,
-          subtitle: item.message,
-          leadingIcon: item.isRead
-              ? Icons.notifications_none_outlined
-              : Icons.notifications_active_outlined,
-          details: <Widget>[
-            Wrap(
-              spacing: Theme.of(context).spacing.xs,
-              runSpacing: Theme.of(context).spacing.xs,
-              children: <Widget>[
-                AppInlineMetaText(
-                  icon: Icons.category_outlined,
-                  label: communicationsApiLabel(context, item.notificationType),
-                ),
-                AppInlineMetaText(
-                  icon: Icons.schedule_outlined,
-                  label: communicationsDateTimeLabel(context, item.createdAt),
-                ),
-                AppWorkspaceStatusBadge(
-                  status: communicationsReadStatus(context, item),
-                ),
-              ],
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: communicationsReadStatus(context, item).label,
             ),
-            SizedBox(height: Theme.of(context).spacing.xs),
-            _NotificationNextActionCell(
-              item: item,
-              state: state,
-              canWrite: _canWrite(ref),
+            AppListTableMobileMeta(
+              label: communicationsApiLabel(context, item.notificationType),
+              icon: Icons.category_outlined,
+            ),
+            AppListTableMobileMeta(
+              label: communicationsDateTimeLabel(context, item.createdAt),
+              icon: Icons.schedule_outlined,
             ),
           ],
         );
@@ -859,27 +843,19 @@ class _DeliveriesTable extends ConsumerWidget {
         ),
       ],
       mobileItemBuilder: (BuildContext context, NotificationDelivery item) {
-        return AppListItemRow(
+        return AppListTableMobileItem(
           title: item.notificationTitle ?? context.l10n.profileUnknownValue,
-          subtitle: communicationsDeliveryRecipient(item),
-          leadingIcon: Icons.mark_email_read_outlined,
-          details: <Widget>[
-            Wrap(
-              spacing: Theme.of(context).spacing.xs,
-              runSpacing: Theme.of(context).spacing.xs,
-              children: <Widget>[
-                AppWorkspaceStatusBadge(
-                  status: communicationsDeliveryStatus(context, item.status),
-                ),
-                AppInlineMetaText(
-                  icon: Icons.send_outlined,
-                  label: communicationsApiLabel(context, item.channel),
-                ),
-              ],
+          caption: communicationsDeliveryRecipient(item),
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: communicationsDeliveryStatus(context, item.status).label,
             ),
-            SizedBox(height: Theme.of(context).spacing.xs),
-            _DeliveryNextActionCell(item: item, state: state),
+            AppListTableMobileMeta(
+              label: communicationsApiLabel(context, item.channel),
+              icon: Icons.send_outlined,
+            ),
           ],
+          showAvatar: false,
         );
       },
     );
@@ -1010,25 +986,23 @@ class _TemplatesTable extends ConsumerWidget {
         ),
       ],
       mobileItemBuilder: (BuildContext context, CommunicationTemplate item) {
-        return AppListItemRow(
+        return AppListTableMobileItem(
           title: item.name,
-          subtitle: item.description,
-          leadingIcon: Icons.description_outlined,
-          details: <Widget>[
-            Wrap(
-              spacing: Theme.of(context).spacing.xs,
-              runSpacing: Theme.of(context).spacing.xs,
-              children: <Widget>[
-                AppWorkspaceStatusBadge(
-                  status: communicationsTemplateStatus(context, item),
-                ),
-                AppInlineMetaText(
-                  icon: Icons.dynamic_form_outlined,
-                  label: item.variableCount.toString(),
-                ),
-              ],
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: communicationsTemplateStatus(context, item).label,
             ),
+            AppListTableMobileMeta(
+              label: communicationsApiLabel(context, item.channel),
+              icon: Icons.send_outlined,
+            ),
+            if (item.variableCount > 0)
+              AppListTableMobileMeta(
+                label: item.variableCount.toString(),
+                icon: Icons.dynamic_form_outlined,
+              ),
           ],
+          showAvatar: false,
         );
       },
     );

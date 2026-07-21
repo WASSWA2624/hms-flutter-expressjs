@@ -656,10 +656,21 @@ class _PharmacyQueuePanel extends ConsumerWidget {
       ),
       columnChoices: _optionalPharmacyWorklistColumns(context),
       mobileItemBuilder: (BuildContext context, PharmacyOrder item) {
-        return _PharmacyOrderListTile(
-          order: item,
-          state: state,
-          writeRequirement: writeRequirement,
+        final AppWorkspaceStatus status = _orderStatus(context, item);
+        return AppListTableMobileItem(
+          title: item.displayTitle,
+          caption: item.displayId,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(label: status.label, icon: status.icon),
+            AppListTableMobileMeta(
+              label: _locationLabel(context, item),
+              icon: Icons.location_on_outlined,
+            ),
+            AppListTableMobileMeta(
+              label: _dispenseProgressLabel(context, item),
+              icon: Icons.medication_outlined,
+            ),
+          ],
         );
       },
     );
@@ -1140,26 +1151,40 @@ class _MedicationItemsPanelState extends ConsumerState<_MedicationItemsPanel> {
         ],
         mobileItemBuilder: (BuildContext context, PharmacyOrderItem item) {
           final ThemeData theme = Theme.of(context);
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _MedicationCell(item: item),
-                SizedBox(height: theme.spacing.sm),
-                Text(item.doseLine, style: theme.textTheme.bodySmall),
-                SizedBox(height: theme.spacing.xs),
-                Text(item.quantityLine, style: theme.textTheme.bodySmall),
-                SizedBox(height: theme.spacing.xs),
-                _MedicationPriceCell(order: order, item: item),
-                SizedBox(height: theme.spacing.sm),
-                _MedicationLineActions(
-                  workflow: workflow,
-                  item: item,
-                  writeRequirement: widget.writeRequirement,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              AppListTableMobileItem(
+                title: item.medicationLabel,
+                caption: (item.instructions ?? '').trim().isNotEmpty
+                    ? item.instructions!.trim()
+                    : null,
+                meta: <AppListTableMobileMeta>[
+                  AppListTableMobileMeta(label: item.doseLine),
+                  AppListTableMobileMeta(label: item.quantityLine),
+                ],
+                showAvatar: false,
+              ),
+              Padding(
+                padding: EdgeInsets.only(
+                  left: theme.spacing.sm,
+                  right: theme.spacing.sm,
+                  bottom: theme.spacing.sm,
                 ),
-              ],
-            ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _MedicationPriceCell(order: order, item: item),
+                    SizedBox(height: theme.spacing.xs),
+                    _MedicationLineActions(
+                      workflow: workflow,
+                      item: item,
+                      writeRequirement: widget.writeRequirement,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -1744,31 +1769,19 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
         ],
         columnChoices: _optionalPharmacyDrugColumns(context),
         mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
-          final ThemeData theme = Theme.of(context);
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _DrugCell(drug: item),
-                SizedBox(height: theme.spacing.sm),
-                Wrap(
-                  spacing: theme.spacing.xs,
-                  runSpacing: theme.spacing.xs,
-                  children: <Widget>[
-                    AppWorkspaceStatusBadge(
-                      status: _stockStatus(context, item.stockStatus),
-                    ),
-                    Text(
-                      l10n.pharmacyAvailableQuantityLabel(
-                        _numberLabel(item.availableQuantity),
-                      ),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
+          final AppWorkspaceStatus status = _stockStatus(context, item.stockStatus);
+          return AppListTableMobileItem(
+            title: item.displayTitle,
+            caption: _joinDisplay(<String?>[item.code, item.displayId]),
+            meta: <AppListTableMobileMeta>[
+              AppListTableMobileMeta(label: status.label, icon: status.icon),
+              AppListTableMobileMeta(
+                label: l10n.pharmacyAvailableQuantityLabel(
+                  _numberLabel(item.availableQuantity),
                 ),
-              ],
-            ),
+                icon: Icons.inventory_2_outlined,
+              ),
+            ],
           );
         },
       ),
@@ -2271,44 +2284,42 @@ class _ReturnMedicationsTable extends StatelessWidget {
           );
         },
         mobileItemBuilder: (BuildContext context, _LineEditState line) {
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Checkbox(
-                      value: selectedLineIds.contains(line.item.id),
-                      onChanged: isSaving
-                          ? null
-                          : (bool? value) =>
-                                _toggleLine(line.item.id, value ?? false),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    Expanded(child: _ReturnLineMedicationCell(item: line.item)),
-                  ],
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              AppListTableMobileItem(
+                leading: Checkbox(
+                  value: selectedLineIds.contains(line.item.id),
+                  onChanged: isSaving
+                      ? null
+                      : (bool? value) =>
+                            _toggleLine(line.item.id, value ?? false),
+                  visualDensity: VisualDensity.compact,
                 ),
-                SizedBox(height: theme.spacing.xs),
-                Text(line.item.quantityLine, style: theme.textTheme.bodySmall),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  '${l10n.pharmacyReturnQuantityColumnLabel}: '
-                  '${_returnQuantityLabel(line)}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+                title: line.item.medicationLabel,
+                meta: <AppListTableMobileMeta>[
+                  AppListTableMobileMeta(label: line.item.quantityLine),
+                  AppListTableMobileMeta(
+                    label:
+                        '${l10n.pharmacyReturnQuantityColumnLabel}: ${_returnQuantityLabel(line)}',
                   ),
+                ],
+                showAvatar: false,
+              ),
+              Padding(
+                padding: EdgeInsets.only(
+                  left: theme.spacing.sm,
+                  right: theme.spacing.sm,
+                  bottom: theme.spacing.sm,
                 ),
-                SizedBox(height: theme.spacing.sm),
-                AppButton.tertiary(
+                child: AppButton.tertiary(
                   label: l10n.pharmacyReturnEditLineAction,
-                  leadingIcon: Icons.edit_outlined,
+                  leadingIcon: AppActionIcons.edit,
                   enabled: !isSaving,
                   onPressed: () => onEditLine(line),
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),

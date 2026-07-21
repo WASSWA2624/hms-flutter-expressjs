@@ -249,19 +249,27 @@ class _ClinicalRadiologyRequestCatalogDialogState
             ),
             mobileItemBuilder:
                 (BuildContext context, ClinicalActionCatalogOption item) {
-                  return AppListItemRow(
-                    title: item.name ?? item.displayTitle,
-                    subtitle: clinicalActionJoinDisplay(<String?>[
-                      clinicalRadiologyOptionModality(item),
-                      clinicalRadiologyOptionBodyRegion(item),
-                    ]),
-                    trailing: Checkbox(
+                  return AppListTableMobileItem(
+                    leading: Checkbox(
                       value: _isStagedSelected(item),
                       onChanged: (bool? value) {
                         _toggleSelection(item, selected: value ?? false);
                       },
                       visualDensity: VisualDensity.compact,
                     ),
+                    title: item.name ?? item.displayTitle,
+                    meta: <AppListTableMobileMeta>[
+                      if ((clinicalRadiologyOptionModality(item) ?? '').isNotEmpty)
+                        AppListTableMobileMeta(
+                          label: clinicalRadiologyOptionModality(item)!,
+                          icon: Icons.biotech_outlined,
+                        ),
+                      if ((clinicalRadiologyOptionBodyRegion(item) ?? '').isNotEmpty)
+                        AppListTableMobileMeta(
+                          label: clinicalRadiologyOptionBodyRegion(item)!,
+                        ),
+                    ],
+                    showAvatar: false,
                   );
                 },
           ),

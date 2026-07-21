@@ -172,12 +172,22 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
         icon: Icons.bed_outlined,
       ),
       mobileItemBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-        return _BedBoardMobileRow(
-          bed: bed,
-          canManageBeds: widget.canManageBeds,
-          enabled: !state.isSaving,
-          onAction: (_BedAction action) =>
-              _runAction(context, controller, bed, action),
+        final String locationDetail = <String?>[
+          bed.wardDisplayName,
+          bed.roomDisplayName,
+        ]
+            .where((String? v) => v != null && v.trim().isNotEmpty)
+            .join(' • ');
+        return AppListTableMobileItem(
+          title: bed.bedLabel,
+          caption: bed.occupantPatientName,
+          meta: <AppListTableMobileMeta>[
+            if (locationDetail.isNotEmpty)
+              AppListTableMobileMeta(label: locationDetail),
+            AppListTableMobileMeta(
+              label: bedStatusLabel(context, bed.status),
+            ),
+          ],
         );
       },
     );
@@ -306,81 +316,6 @@ class _BedActionMenu extends StatelessWidget {
   }
 }
 
-class _BedBoardMobileRow extends StatelessWidget {
-  const _BedBoardMobileRow({
-    required this.bed,
-    required this.canManageBeds,
-    required this.enabled,
-    required this.onAction,
-  });
-
-  final IpdBedBoardEntry bed;
-  final bool canManageBeds;
-  final bool enabled;
-  final ValueChanged<_BedAction> onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  bed.bedLabel,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: bedStatusLabel(context, bed.status),
-                  tone: _bedStatusTone(bed.status),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            <String?>[
-                  bed.wardDisplayName,
-                  bed.roomDisplayName,
-                  bed.occupantPatientName,
-                ]
-                .where(
-                  (String? value) => value != null && value.trim().isNotEmpty,
-                )
-                .join(' • '),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: _BedActionMenu(
-              bed: bed,
-              canManageBeds: canManageBeds,
-              enabled: enabled,
-              onAction: onAction,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 const String _wardFilterKey = 'ward';
 const String _statusFilterKey = 'status';
