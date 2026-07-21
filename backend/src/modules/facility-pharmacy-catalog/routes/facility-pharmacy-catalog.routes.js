@@ -6,7 +6,6 @@ const express = require('express');
 const facilityPharmacyCatalogController = require('@controllers/facility-pharmacy-catalog/facility-pharmacy-catalog.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
-const { ROLES } = require('@config/roles');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   upsertFacilityPharmacyOfferingSchema,
@@ -17,29 +16,24 @@ const {
 
 const router = express.Router();
 
-const PHARMACY_READ_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.PHARMACIST,
-  ROLES.DOCTOR,
-  ROLES.NURSE,
-  ROLES.OPERATIONS,
+const PHARMACY_READ_SCOPES = [
+  PERMISSIONS.PHARMACY_READ,
+  PERMISSIONS.CLINICAL_READ,
 ];
 
-const PHARMACY_CONFIG_WRITE_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.PHARMACIST,
-  ROLES.OPERATIONS,
+const PHARMACY_CONFIG_WRITE_SCOPES = [
+  PERMISSIONS.PHARMACY_WRITE,
+  PERMISSIONS.OPERATIONS_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
 ];
 
 router.get(
   '/drugs',
   validateRequest({ query: listFacilityPharmacyCatalogQuerySchema }),
   authenticate(),
-  authorize([PERMISSIONS.PHARMACY_READ, PERMISSIONS.CLINICAL_READ], 'permission'),
+  authorize(PHARMACY_READ_SCOPES, 'permission'),
   facilityPharmacyCatalogController.listFacilityPharmacyDrugs
 );
 
@@ -47,7 +41,7 @@ router.get(
   '/drugs/:drug_id',
   validateRequest({ params: facilityPharmacyDrugParamsSchema }),
   authenticate(),
-  authorize(PHARMACY_READ_ROLES, 'role'),
+  authorize(PHARMACY_READ_SCOPES, 'permission'),
   facilityPharmacyCatalogController.getFacilityPharmacyDrug
 );
 
@@ -58,7 +52,7 @@ router.put(
     body: upsertFacilityPharmacyOfferingSchema,
   }),
   authenticate(),
-  authorize(PHARMACY_CONFIG_WRITE_ROLES, 'role'),
+  authorize(PHARMACY_CONFIG_WRITE_SCOPES, 'permission'),
   facilityPharmacyCatalogController.upsertFacilityPharmacyOffering
 );
 
@@ -69,7 +63,7 @@ router.delete(
     body: disableFacilityPharmacyOfferingSchema,
   }),
   authenticate(),
-  authorize(PHARMACY_CONFIG_WRITE_ROLES, 'role'),
+  authorize(PHARMACY_CONFIG_WRITE_SCOPES, 'permission'),
   facilityPharmacyCatalogController.disableFacilityPharmacyOffering
 );
 
