@@ -567,16 +567,25 @@ final class OpdWorkspaceController
   Future<AppFailure?> rescheduleAppointment(
     OpdAppointment appointment,
     DateTime scheduledStart,
-    DateTime scheduledEnd,
-  ) {
+    DateTime scheduledEnd, {
+    String? providerUserId,
+    bool updateProvider = false,
+  }) {
+    final Map<String, Object?> payload = <String, Object?>{
+      'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+      'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
+      'status': appointment.status == 'CANCELLED'
+          ? 'SCHEDULED'
+          : appointment.status,
+    };
+    if (updateProvider) {
+      final String? normalized = providerUserId?.trim();
+      payload['provider_user_id'] = (normalized == null || normalized.isEmpty)
+          ? null
+          : normalized;
+    }
     return _mutateAppointment(
-      () => _repository.updateAppointment(appointment.apiId, <String, Object?>{
-        'scheduled_start': scheduledStart.toUtc().toIso8601String(),
-        'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
-        'status': appointment.status == 'CANCELLED'
-            ? 'SCHEDULED'
-            : appointment.status,
-      }),
+      () => _repository.updateAppointment(appointment.apiId, payload),
     );
   }
 

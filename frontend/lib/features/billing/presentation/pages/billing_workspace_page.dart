@@ -546,7 +546,6 @@ class _BillingQueuePanel extends ConsumerWidget {
           ref,
           item,
           canWrite: canWrite,
-          isSaving: state.isSaving,
         );
       },
       previousPageLabel: l10n.billingPreviousPageLabel,
@@ -647,19 +646,71 @@ Future<void> _showBillingDetailDialog(
   WidgetRef ref,
   BillingWorkItem item, {
   required bool canWrite,
-  required bool isSaving,
 }) {
-  final AppLocalizations l10n = context.l10n;
   return showAppDialog<void>(
     context: context,
-    builder: (_) => AppDialog(
+    builder: (_) => _BillingLiveDetailDialog(
+      initialItem: item,
+      canWrite: canWrite,
+    ),
+  );
+}
+
+class _BillingLiveDetailDialog extends ConsumerStatefulWidget {
+  const _BillingLiveDetailDialog({
+    required this.initialItem,
+    required this.canWrite,
+  });
+
+  final BillingWorkItem initialItem;
+  final bool canWrite;
+
+  @override
+  ConsumerState<_BillingLiveDetailDialog> createState() =>
+      _BillingLiveDetailDialogState();
+}
+
+class _BillingLiveDetailDialogState
+    extends ConsumerState<_BillingLiveDetailDialog> {
+  late BillingWorkItem _item = widget.initialItem;
+
+  BillingWorkItem _resolveLiveItem(BillingWorkspaceState? state) {
+    if (state == null) {
+      return _item;
+    }
+    if (state.selectedItem?.id == widget.initialItem.id) {
+      return state.selectedItem!;
+    }
+    for (final BillingWorkItem candidate in state.workItems.items) {
+      if (candidate.id == widget.initialItem.id) {
+        return candidate;
+      }
+    }
+    return _item;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<Result<BillingWorkspaceState>> asyncState = ref.watch(
+      billingWorkspaceControllerProvider,
+    );
+    final BillingWorkspaceState? workspace = asyncState.asData?.value.when(
+      success: (BillingWorkspaceState value) => value,
+      failure: (_) => null,
+    );
+    final BillingWorkItem item = _resolveLiveItem(workspace);
+    _item = item;
+    final bool isSaving = workspace?.isSaving ?? false;
+
+    return AppDialog(
       title: Text(billingDetailTitle(context, item)),
       icon: const Icon(Icons.receipt_long_outlined),
       scrollable: true,
       maxWidth: 940,
       content: BillingDetailBody(
         item: item,
-        canWrite: canWrite,
+        canWrite: widget.canWrite,
         isSaving: isSaving,
         onReceivePayment: item.canReceivePayment
             ? () => _showPaymentDialog(context, ref, item)
@@ -719,8 +770,8 @@ Future<void> _showBillingDetailDialog(
               : null,
         ),
       ],
-    ),
-  );
+    );
+  }
 }
 
 Future<void> _showPaymentDialog(
@@ -728,6 +779,7 @@ Future<void> _showPaymentDialog(
   WidgetRef ref,
   BillingWorkItem item,
 ) async {
+  ref.read(billingWorkspaceControllerProvider.notifier).selectItem(item);
   final BillingPaymentDraft? draft = await showBillingReceivePaymentDialog(
     context,
     item: item,

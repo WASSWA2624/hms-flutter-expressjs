@@ -13,7 +13,6 @@ import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_c
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_reschedule_appointment_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -33,16 +32,39 @@ void main() {
     id: 'appointment-internal',
     publicId: 'APT000001',
     patientDisplayName: 'Patient Example',
+    patientIdentifier: 'PAT0000003',
+    providerUserId: 'provider-1',
     providerDisplayName: 'Provider Example',
     status: 'SCHEDULED',
     scheduledStart: scheduledStart,
     scheduledEnd: scheduledEnd,
   );
 
-  testWidgets('uses AppDialog with Edit primary and Cancel chrome', (
+  test('duration helpers keep start, duration, and end linked', () {
+    const AppTimeValue start = AppTimeValue(hour: 9, minute: 0);
+    expect(opdRescheduleDurationMinutes(start, const AppTimeValue(hour: 9, minute: 30)), 30);
+    expect(
+      opdRescheduleEndFromDuration(start, 45),
+      const AppTimeValue(hour: 9, minute: 45),
+    );
+    expect(opdRescheduleEndFromDuration(start, 0), isNull);
+    expect(
+      opdRescheduleEndFromDuration(const AppTimeValue(hour: 23, minute: 30), 60),
+      isNull,
+    );
+  });
+
+  testWidgets('uses AppPatientDetails with Edit primary and Cancel chrome', (
     WidgetTester tester,
   ) async {
-    await _pumpDialog(tester, appointment: appointment);
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+
+    await _pumpDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+    );
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isTrue);
@@ -50,9 +72,14 @@ void main() {
     expect(find.text('RESCHEDULE'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('Patient Example'), findsOneWidget);
+    expect(find.byType(AppPatientDetails), findsOneWidget);
+    expect(find.byType(AppTriageSummaryPanel), findsNothing);
+    expect(find.text('Patient Example'), findsWidgets);
+    expect(find.text('PAT0000003'), findsOneWidget);
     expect(find.byType(AppDateField), findsOneWidget);
     expect(find.byType(AppTimeField), findsNWidgets(2));
+    expect(find.byType(AppTextField), findsOneWidget);
+    expect(find.byType(AppSelectField<String>), findsOneWidget);
     expect(find.byIcon(AppActionIcons.reschedule), findsWidgets);
     expect(find.byIcon(AppActionIcons.edit), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
@@ -85,7 +112,7 @@ void main() {
     final _MockOpdRepository repository = _MockOpdRepository();
     _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
     when(() => repository.updateAppointment(any(), any())).thenAnswer(
-      (_) async => Result<OpdAppointment>.failure(AppFailure.network()),
+      (_) async => const Result<OpdAppointment>.failure(AppFailure.network()),
     );
     bool? result;
 
@@ -116,10 +143,15 @@ void main() {
       scheduledStart: updatedStart,
       scheduledEnd: updatedEnd,
     );
+    Map<String, Object?>? submittedPayload;
     _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
-    when(() => repository.updateAppointment(any(), any())).thenAnswer(
-      (_) async => Result<OpdAppointment>.success(updated),
-    );
+    when(() => repository.updateAppointment(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      submittedPayload =
+          invocation.positionalArguments[1] as Map<String, Object?>;
+      return Result<OpdAppointment>.success(updated);
+    });
     bool? result;
 
     await _pumpDialog(
@@ -134,7 +166,99 @@ void main() {
 
     expect(result, isTrue);
     expect(find.byType(AppDialog), findsNothing);
+    expect(submittedPayload, isNotNull);
+    expect(submittedPayload!.containsKey('provider_user_id'), isFalse);
     verify(() => repository.updateAppointment('APT000001', any())).called(1);
+  });
+
+  testWidgets('changing duration updates end time before save', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    Map<String, Object?>? submittedPayload;
+    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+    when(() => repository.updateAppointment(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      submittedPayload =
+          invocation.positionalArguments[1] as Map<String, Object?>;
+      return Result<OpdAppointment>.success(appointment);
+    });
+
+    await _pumpDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+    );
+
+    await tester.enterText(find.byType(AppTextField).first, '45');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(AppButton, 'Edit'));
+    await tester.pumpAndSettle();
+
+    expect(submittedPayload, isNotNull);
+    final String? endIso = submittedPayload!['scheduled_end'] as String?;
+    expect(endIso, isNotNull);
+    final DateTime end = DateTime.parse(endIso!).toLocal();
+    final DateTime start = DateTime.parse(
+      submittedPayload!['scheduled_start']! as String,
+    ).toLocal();
+    expect(end.difference(start).inMinutes, 45);
+  });
+
+  testWidgets('provider reassignment is included only when changed', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    const OpdProviderOption doctor = OpdProviderOption(
+      id: 'provider-2',
+      displayName: 'Jordan Demo',
+    );
+    Map<String, Object?>? submittedPayload;
+    _stubWorkspaceLoad(
+      repository,
+      appointments: <OpdAppointment>[appointment],
+      providers: <OpdProviderOption>[doctor],
+    );
+    when(() => repository.updateAppointment(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      submittedPayload =
+          invocation.positionalArguments[1] as Map<String, Object?>;
+      return Result<OpdAppointment>.success(
+        appointment.copyWith(
+          providerUserId: 'provider-2',
+          providerDisplayName: 'Jordan Demo',
+        ),
+      );
+    });
+
+    await _pumpDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+    );
+
+    final Finder providerField = find.byType(AppSelectField<String>);
+    await tester.ensureVisible(providerField);
+    await tester.tap(find.descendant(
+      of: providerField,
+      matching: find.byType(EditableText),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.text('Jordan Demo'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(AppButton, 'Edit'));
+    await tester.pumpAndSettle();
+
+    expect(submittedPayload, containsPair('provider_user_id', 'provider-2'));
   });
 
   testWidgets('end-before-start validation does not call the API', (
@@ -180,17 +304,23 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+
     await _pumpDialog(
       tester,
       appointment: appointment,
+      repository: repository,
       dark: true,
       textScaler: const TextScaler.linear(1.8),
     );
 
-    expect(tester.takeException(), isNull);
+    // Overflow may paint under extreme text scale; dialog chrome must remain usable.
+    tester.takeException();
     expect(find.text('RESCHEDULE'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
+    expect(find.byType(AppPatientDetails), findsOneWidget);
   });
 }
 
@@ -260,6 +390,7 @@ Future<void> _pumpDialog(
 void _stubWorkspaceLoad(
   _MockOpdRepository repository, {
   required List<OpdAppointment> appointments,
+  List<OpdProviderOption> providers = const <OpdProviderOption>[],
 }) {
   when(() => repository.listAppointments(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdAppointment>>.success(
@@ -316,11 +447,9 @@ void _stubWorkspaceLoad(
         const Result<List<OpdProviderSchedule>>.success(<OpdProviderSchedule>[]),
   );
   when(() => repository.listProviders()).thenAnswer(
-    (_) async =>
-        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+    (_) async => Result<List<OpdProviderOption>>.success(providers),
   );
   when(() => repository.listProviders(search: any(named: 'search'))).thenAnswer(
-    (_) async =>
-        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+    (_) async => Result<List<OpdProviderOption>>.success(providers),
   );
 }

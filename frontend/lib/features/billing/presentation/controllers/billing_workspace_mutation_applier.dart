@@ -39,9 +39,9 @@ abstract final class BillingWorkspaceMutationApplier {
 
     BillingWorkItem? selected = state.selectedItem;
     if (selected?.id == patchItem.id) {
-      selected = _shouldRemoveFromVisibleQueue(state.query.queue, patchItem)
-          ? (workItems.items.isEmpty ? null : workItems.items.first)
-          : patchItem;
+      // Keep the mutated invoice selected so open detail dialogs can resolve
+      // live paid/balance state even when the row leaves the active queue.
+      selected = patchItem;
     } else if (selected == null && workItems.items.isNotEmpty) {
       selected = workItems.items.first;
     }
@@ -128,7 +128,73 @@ abstract final class BillingWorkspaceMutationApplier {
         .where((BillingPayment existing) => existing.id != payment.id)
         .toList(growable: true);
     payments.insert(0, payment);
-    return invoice.copyWith(payments: payments);
+
+    final BillingFinancials recomputed = _recomputeFinancials(
+      invoiceTotal: invoice.financials.invoiceTotal != 0
+          ? invoice.financials.invoiceTotal
+          : invoice.amount,
+      adjustmentTotal: invoice.financials.adjustmentTotal,
+      payments: payments,
+    );
+    final BillingFinancials financials =
+        _preferAuthoritativeFinancials(invoice.financials, recomputed);
+    final bool fullyPaid = financials.balanceDue <= 0.009;
+    final bool partiallyPaid = financials.netPaidTotal > 0 && !fullyPaid;
+    final String billingStatus = (invoice.billingStatus ?? '')
+        .trim()
+        .toUpperCase();
+
+    return invoice.copyWith(
+      payments: payments,
+      financials: financials,
+      billingStatus: fullyPaid && billingStatus != 'CANCELLED'
+          ? 'PAID'
+          : partiallyPaid && billingStatus != 'CANCELLED'
+          ? 'PARTIAL'
+          : invoice.billingStatus,
+      status: fullyPaid && billingStatus != 'CANCELLED'
+          ? 'PAID'
+          : invoice.status,
+    );
+  }
+
+  /// Prefer API financials when they already reflect at least as much paid.
+  static BillingFinancials _preferAuthoritativeFinancials(
+    BillingFinancials fromMutation,
+    BillingFinancials recomputed,
+  ) {
+    if (fromMutation.netPaidTotal >= recomputed.netPaidTotal &&
+        fromMutation.balanceDue <= recomputed.balanceDue) {
+      return fromMutation;
+    }
+    return recomputed;
+  }
+
+  static BillingFinancials _recomputeFinancials({
+    required num invoiceTotal,
+    required num adjustmentTotal,
+    required List<BillingPayment> payments,
+  }) {
+    final num grossPaid = payments.fold<num>(0, (
+      num total,
+      BillingPayment payment,
+    ) {
+      final String status = (payment.status ?? '').trim().toUpperCase();
+      if (status != 'COMPLETED' && status != 'REFUNDED') {
+        return total;
+      }
+      return total + payment.amount;
+    });
+    final num effectiveTotal = invoiceTotal + adjustmentTotal;
+    final num balanceDue = effectiveTotal - grossPaid;
+    return BillingFinancials(
+      invoiceTotal: invoiceTotal,
+      adjustmentTotal: adjustmentTotal,
+      effectiveTotal: effectiveTotal,
+      grossPaidTotal: grossPaid,
+      netPaidTotal: grossPaid,
+      balanceDue: balanceDue < 0 ? 0 : balanceDue,
+    );
   }
 
   static AppPage<BillingWorkItem> _upsertWorkItem(

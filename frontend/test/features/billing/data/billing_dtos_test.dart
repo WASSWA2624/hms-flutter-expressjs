@@ -119,6 +119,45 @@ void main() {
       expect(item.clearanceState, BillingClearanceState.awaitingPayment);
     });
 
+    test('applies top-level reconcile financials onto the invoice', () {
+      final BillingMutationResult mutation =
+          BillingMutationResultDto.fromResponse(<String, Object?>{
+            'data': <String, Object?>{
+              'payment': <String, Object?>{
+                'id': 'pay-1',
+                'status': 'COMPLETED',
+                'amount': '25000.00',
+              },
+              'invoice': <String, Object?>{
+                'id': 'invoice-1',
+                'display_id': 'INV0000016',
+                'tenant_id': 'tenant-1',
+                'billing_status': 'PAID',
+                'status': 'PAID',
+                'total_amount': '25000.00',
+                'currency': 'UGX',
+                // Nested financials still look unpaid (sparse reload).
+                'financials': <String, Object?>{
+                  'effective_total': '25000.00',
+                  'net_paid_total': '0.00',
+                  'balance_due': '25000.00',
+                },
+              },
+              'financials': <String, Object?>{
+                'invoice_total': '25000.00',
+                'effective_total': '25000.00',
+                'gross_paid_total': '25000.00',
+                'net_paid_total': '25000.00',
+                'balance_due': '0.00',
+              },
+            },
+          }).toEntity();
+
+      expect(mutation.invoice?.paidAmount, 25000);
+      expect(mutation.invoice?.balanceDue, 0);
+      expect(mutation.payment?.amount, 25000);
+    });
+
     test('parses approval work items', () {
       final page = BillingWorkItemPageDto.fromResponse(<String, Object?>{
         'data': <String, Object?>{

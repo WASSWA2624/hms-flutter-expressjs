@@ -282,7 +282,56 @@ void main() {
         submittedPayload,
         containsPair('scheduled_end', updatedEnd.toIso8601String()),
       );
+      expect(submittedPayload!.containsKey('provider_user_id'), isFalse);
       verify(() => repository.updateAppointment('APT000001', any())).called(1);
+    });
+
+    test('rescheduleAppointment includes provider only when requested', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      final DateTime updatedStart = DateTime.utc(2026, 7, 21, 10);
+      final DateTime updatedEnd = DateTime.utc(2026, 7, 21, 10, 30);
+      final OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+        providerUserId: 'provider-1',
+        status: 'SCHEDULED',
+        scheduledStart: DateTime.utc(2026, 7, 20, 8),
+      );
+      final OpdAppointment updated = appointment.copyWith(
+        providerUserId: 'provider-2',
+        scheduledStart: updatedStart,
+        scheduledEnd: updatedEnd,
+      );
+      Map<String, Object?>? submittedPayload;
+      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
+      when(() => repository.updateAppointment(any(), any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        submittedPayload =
+            invocation.positionalArguments[1] as Map<String, Object?>;
+        return Result<OpdAppointment>.success(updated);
+      });
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .rescheduleAppointment(
+            appointment,
+            updatedStart,
+            updatedEnd,
+            providerUserId: 'provider-2',
+            updateProvider: true,
+          );
+
+      expect(failure, isNull);
+      expect(submittedPayload, containsPair('provider_user_id', 'provider-2'));
+      expect(
+        _workspaceState(container).appointments.items.single.providerUserId,
+        'provider-2',
+      );
     });
 
     test(

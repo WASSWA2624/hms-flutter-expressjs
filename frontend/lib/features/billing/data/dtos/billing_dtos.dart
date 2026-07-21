@@ -426,8 +426,26 @@ final class BillingMutationResultDto {
             fallbackQueue: BillingQueueType.claimsPending,
           ).toEntity();
 
+    // Reconcile responses include authoritative top-level financials from
+    // recalculateInvoiceStateTx. Prefer them when nested invoice.financials
+    // are missing or stale (e.g. sparse invoice reloads).
+    BillingWorkItem? patchedInvoice = invoice?.id.isEmpty == true
+        ? null
+        : invoice;
+    final BillingJsonMap topLevelFinancials = _map(json['financials']);
+    if (patchedInvoice != null && topLevelFinancials.isNotEmpty) {
+      patchedInvoice = patchedInvoice.copyWith(
+        financials: BillingFinancialsDto(
+          topLevelFinancials,
+          fallbackTotal: patchedInvoice.amount,
+          payments: const <BillingJsonMap>[],
+          adjustments: const <BillingJsonMap>[],
+        ).toEntity(),
+      );
+    }
+
     return BillingMutationResult(
-      invoice: invoice?.id.isEmpty == true ? null : invoice,
+      invoice: patchedInvoice,
       payment: payment?.id.isEmpty == true ? null : payment,
       approval: approval?.id.isEmpty == true ? null : approval,
       claim: claim?.id.isEmpty == true ? null : claim,
