@@ -6214,6 +6214,12 @@ abstract class AppLocalizations {
   /// **'Next action'**
   String get opdNextActionColumnLabel;
 
+  /// Emphasized Flow Actions button label for the current next workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Next · {action}'**
+  String opdFlowNextActionButtonLabel(String action);
+
   /// Tooltip for opening OPD row actions.
   ///
   /// In en, this message translates to:

@@ -85,6 +85,7 @@ final class OpdClinicalServiceRow {
     required this.locationTone,
     this.requestedAt,
     this.statusCode,
+    this.resultStatus,
   });
 
   final IconData icon;
@@ -97,6 +98,9 @@ final class OpdClinicalServiceRow {
   final AppWorkspaceStatusTone locationTone;
   final DateTime? requestedAt;
   final String? statusCode;
+
+  /// Normal/abnormal status for vital measurement results.
+  final AppVitalSignStatus? resultStatus;
 }
 
 List<OpdClinicalServiceRow> buildOpdClinicalServiceRows({
@@ -106,6 +110,10 @@ List<OpdClinicalServiceRow> buildOpdClinicalServiceRows({
   required OpdFlowSummary flow,
 }) {
   final List<OpdClinicalServiceRow> rows = <OpdClinicalServiceRow>[];
+  final AppVitalsReference vitalsReference = AppVitalsReference.fromPatientData(
+    dateOfBirth: flow.patientDateOfBirth ?? detail.summary.patientDateOfBirth,
+    gender: flow.patientGender ?? detail.summary.patientGender,
+  );
 
   for (final OpdVitalSign vital in detail.vitalMeasurements) {
     rows.add(
@@ -122,6 +130,7 @@ List<OpdClinicalServiceRow> buildOpdClinicalServiceRows({
         locationTone: AppWorkspaceStatusTone.neutral,
         requestedAt: vital.recordedAt,
         statusCode: 'COMPLETED',
+        resultStatus: resolveOpdVitalMeasurementStatus(vital, vitalsReference),
       ),
     );
   }
@@ -439,6 +448,9 @@ class _ResultCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool unavailable = row.resultLabel == l10n.profileUnknownValue;
+    final Color? statusColor = unavailable
+        ? null
+        : appVitalSignStatusColor(context, row.resultStatus);
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -455,7 +467,7 @@ class _ResultCell extends StatelessWidget {
             fontWeight: unavailable ? FontWeight.w500 : FontWeight.w700,
             color: unavailable
                 ? theme.colorScheme.onSurfaceVariant
-                : theme.colorScheme.onSurface,
+                : statusColor ?? theme.colorScheme.onSurface,
           ),
         ),
       ),
@@ -644,7 +656,8 @@ class _OpdClinicalServiceCard extends StatelessWidget {
                   fontWeight: unavailable ? FontWeight.w500 : FontWeight.w700,
                   color: unavailable
                       ? theme.colorScheme.onSurfaceVariant
-                      : theme.colorScheme.onSurface,
+                      : appVitalSignStatusColor(context, row.resultStatus) ??
+                            theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -694,4 +707,124 @@ String _formatDateTime(AppLocalizations l10n, Locale locale, DateTime? value) {
     return l10n.profileUnknownValue;
   }
   return AppFormatters.dateTime(value, locale);
+}
+
+/// Resolves normal/abnormal status for a recorded vital using patient-aware
+/// reference ranges.
+@visibleForTesting
+AppVitalSignStatus? resolveOpdVitalMeasurementStatus(
+  OpdVitalSign vital,
+  AppVitalsReference reference,
+) {
+  final String type = vital.vitalType.trim().toUpperCase();
+  final String unit = (vital.unit ?? '').trim();
+
+  return switch (type) {
+    'BLOOD_PRESSURE' => _bloodPressureStatus(vital, reference, unit),
+    'TEMPERATURE' => resolveAppVitalSignStatus(
+      vital.value,
+      reference.temperature.forTemperatureUnit(
+        _isFahrenheitUnit(unit)
+            ? AppVitalsUnits.temperatureFahrenheit
+            : AppVitalsUnits.temperatureCelsius,
+      ),
+    ),
+    'HEART_RATE' => resolveAppVitalSignStatus(vital.value, reference.heartRate),
+    'RESPIRATORY_RATE' =>
+      resolveAppVitalSignStatus(vital.value, reference.respiratoryRate),
+    'OXYGEN_SATURATION' =>
+      resolveAppVitalSignStatus(vital.value, reference.oxygenSaturation),
+    'WEIGHT' => resolveAppVitalSignStatus(
+      vital.value,
+      reference.weight.forWeightUnit(
+        _isPoundsUnit(unit)
+            ? AppVitalsUnits.weightPounds
+            : AppVitalsUnits.weightKilograms,
+      ),
+    ),
+    'HEIGHT' => resolveAppVitalSignStatus(
+      vital.value,
+      reference.height.forHeightUnit(
+        _isMetersUnit(unit)
+            ? AppVitalsUnits.heightMeters
+            : AppVitalsUnits.heightCentimeters,
+      ),
+    ),
+    _ => null,
+  };
+}
+
+AppVitalSignStatus? _bloodPressureStatus(
+  OpdVitalSign vital,
+  AppVitalsReference reference,
+  String unit,
+) {
+  final double? systolic =
+      vital.systolicValue?.toDouble() ?? _parseBloodPressurePart(vital.value, 0);
+  final double? diastolic =
+      vital.diastolicValue?.toDouble() ??
+      _parseBloodPressurePart(vital.value, 1);
+  if (systolic == null && diastolic == null) {
+    return null;
+  }
+
+  final String bpUnit = _isKpaUnit(unit)
+      ? AppVitalsUnits.bloodPressureKpa
+      : AppVitalsUnits.bloodPressureMmHg;
+  final AppVitalSignStatus? systolicStatus = systolic == null
+      ? null
+      : resolveAppVitalSignStatus(
+          formatAppVitalNumber(systolic),
+          reference.systolic.forBloodPressureUnit(bpUnit),
+        );
+  final AppVitalSignStatus? diastolicStatus = diastolic == null
+      ? null
+      : resolveAppVitalSignStatus(
+          formatAppVitalNumber(diastolic),
+          reference.diastolic.forBloodPressureUnit(bpUnit),
+        );
+
+  if (systolicStatus == AppVitalSignStatus.abnormal ||
+      diastolicStatus == AppVitalSignStatus.abnormal) {
+    return AppVitalSignStatus.abnormal;
+  }
+  if (systolicStatus == AppVitalSignStatus.normal &&
+      diastolicStatus == AppVitalSignStatus.normal) {
+    return AppVitalSignStatus.normal;
+  }
+  return systolicStatus ?? diastolicStatus;
+}
+
+double? _parseBloodPressurePart(String? value, int index) {
+  final List<String> parts = (value ?? '').split('/');
+  if (parts.length <= index) {
+    return null;
+  }
+  return double.tryParse(parts[index].trim().replaceAll(',', ''));
+}
+
+bool _isFahrenheitUnit(String unit) {
+  final String normalized = unit.toUpperCase();
+  return normalized.contains('F') ||
+      unit == AppVitalsUnits.temperatureFahrenheit;
+}
+
+bool _isPoundsUnit(String unit) {
+  final String normalized = unit.toLowerCase();
+  return normalized == 'lb' ||
+      normalized == 'lbs' ||
+      unit == AppVitalsUnits.weightPounds;
+}
+
+bool _isMetersUnit(String unit) {
+  final String normalized = unit.toLowerCase();
+  return normalized == 'm' ||
+      normalized == 'meter' ||
+      normalized == 'meters' ||
+      unit == AppVitalsUnits.heightMeters;
+}
+
+bool _isKpaUnit(String unit) {
+  final String normalized = unit.toLowerCase();
+  return normalized.contains('kpa') || unit == AppVitalsUnits.bloodPressureKpa;
 }

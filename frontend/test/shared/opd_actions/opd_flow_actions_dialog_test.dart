@@ -59,7 +59,7 @@ void main() {
     expect(dialog.actions, hasLength(1));
     expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('FLOW ACTIONS'), findsOneWidget);
-    expect(find.text('Pay consultation'), findsOneWidget);
+    expect(find.text('Next · Pay consultation'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppWorkflowStepper), findsOneWidget);
@@ -215,7 +215,7 @@ void main() {
       policy: _nursePolicy(),
     );
 
-    expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Next · Record vitals'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
   });

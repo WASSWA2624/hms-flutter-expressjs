@@ -250,7 +250,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     AppPermissionActionItem primaryAction(AppPermissionActionItem action) {
       return AppPermissionActionItem(
         requirement: action.requirement,
-        label: action.label,
+        label: l10n.opdFlowNextActionButtonLabel(action.label),
         icon: action.icon,
         onPressed: actionsEnabled ? action.onPressed : null,
         variant: AppButtonVariant.primary,
@@ -258,8 +258,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         isLoading: action.isLoading,
         fullWidth: action.fullWidth,
         hideWhenDenied: action.hideWhenDenied,
-        tooltip: action.tooltip,
-        semanticLabel: action.semanticLabel,
+        tooltip: action.tooltip ?? action.label,
+        semanticLabel: action.semanticLabel ?? action.label,
       );
     }
 

@@ -3929,6 +3929,15 @@
   "opdStageColumnLabel": "Stage",
   "opdNextStepColumnLabel": "Next step",
   "opdNextActionColumnLabel": "Next action",
+  "opdFlowNextActionButtonLabel": "Next · {action}",
+  "@opdFlowNextActionButtonLabel": {
+    "description": "Emphasized Flow Actions button label for the current next workflow step.",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "opdOpenActions": "Open actions",
   "opdQueueEmptyColumnLabel": "No patients",
   "opdNoRelatedRecordsLabel": "No related records",

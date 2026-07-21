@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
@@ -226,6 +227,49 @@ void main() {
         ),
         l10n.opdServiceLocationInLabLabel,
       );
+    });
+
+    test('buildOpdClinicalServiceRows color-codes abnormal vital results', () {
+      const OpdFlowSummary flow = OpdFlowSummary(
+        id: 'flow-1',
+        stage: 'WAITING_DOCTOR_ASSIGNMENT',
+        patientGender: 'FEMALE',
+        patientDateOfBirth: null,
+      );
+      final OpdFlowDetail detail = OpdFlowDetail(
+        summary: flow,
+        vitalMeasurements: <OpdVitalSign>[
+          const OpdVitalSign(
+            id: 'v1',
+            vitalType: 'OXYGEN_SATURATION',
+            value: '56',
+            unit: '%',
+          ),
+          const OpdVitalSign(
+            id: 'v2',
+            vitalType: 'HEART_RATE',
+            value: '72',
+            unit: 'beats per minute',
+          ),
+        ],
+      );
+
+      final List<OpdClinicalServiceRow> rows = buildOpdClinicalServiceRows(
+        l10n: l10n,
+        locale: const Locale('en'),
+        detail: detail,
+        flow: flow,
+      );
+
+      expect(rows, hasLength(2));
+      final OpdClinicalServiceRow spo2 = rows.firstWhere(
+        (OpdClinicalServiceRow row) => row.serviceLabel == 'Oxygen Saturation',
+      );
+      final OpdClinicalServiceRow heartRate = rows.firstWhere(
+        (OpdClinicalServiceRow row) => row.serviceLabel == 'Heart Rate',
+      );
+      expect(spo2.resultStatus, AppVitalSignStatus.abnormal);
+      expect(heartRate.resultStatus, AppVitalSignStatus.normal);
     });
   });
 }

@@ -3211,6 +3211,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdNextActionColumnLabel => 'Next action';
 
   @override
+  String opdFlowNextActionButtonLabel(String action) {
+    return 'Next · $action';
+  }
+
+  @override
   String get opdOpenActions => 'Open actions';
 
   @override
