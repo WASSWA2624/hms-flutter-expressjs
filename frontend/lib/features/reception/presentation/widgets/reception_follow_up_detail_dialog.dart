@@ -68,7 +68,6 @@ class _ReceptionFollowUpDetailDialogState
       // Content-sized shell: avoids a maximized empty canvas for this short
       // call workflow.
       initialMaximized: false,
-      scrollable: false,
       closeEnabled: !_isBusy,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -131,14 +130,16 @@ class _ReceptionFollowUpDetailDialogState
                     value: scheduledTime,
                     icon: Icons.schedule_outlined,
                   ),
-                  if (notes != null)
-                    AppInfoTileData(
-                      label: l10n.opdNotesLabel,
-                      value: notes,
-                      icon: AppActionIcons.edit,
-                    ),
                 ],
               ),
+              if (notes != null)
+                AppInfoTile(
+                  label: l10n.opdNotesLabel,
+                  value: notes,
+                  icon: AppActionIcons.edit,
+                  emptyValue: unknown,
+                  maxLines: 4,
+                ),
             ],
           ),
           AppFormInformationBanner.message(

@@ -5203,8 +5203,14 @@ abstract class AppLocalizations {
   /// Guidance body shown in the Reception follow-up detail dialog.
   ///
   /// In en, this message translates to:
-  /// **'Call the patient using the contact on file, then mark the follow-up completed or schedule another callback.'**
+  /// **'Call the patient, then mark this follow-up completed. Reschedule only if they need a later callback.'**
   String get receptionFollowUpDetailBody;
+
+  /// Title for the next-step guidance banner in the follow-up detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'What to do next'**
+  String get receptionFollowUpNextStepTitle;
 
   /// Action to mark a Reception follow-up call as completed.
   ///
@@ -5212,10 +5218,10 @@ abstract class AppLocalizations {
   /// **'Mark completed'**
   String get receptionMarkFollowUpCompletedAction;
 
-  /// Action to schedule another follow-up callback for the same patient.
+  /// Action to change the scheduled date/time of the open follow-up callback.
   ///
   /// In en, this message translates to:
-  /// **'Schedule another'**
+  /// **'Reschedule'**
   String get receptionScheduleAnotherFollowUpAction;
 
   /// Required phone field when scheduling a follow-up without a known patient contact.
