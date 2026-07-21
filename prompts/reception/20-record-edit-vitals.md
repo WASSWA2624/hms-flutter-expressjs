@@ -1,1 +1,40 @@
-The implementation of the edit and record, edit stroke or record vital signs is so far good, but let's refine it further. To further reduce the congestion Let's see, let's also Let's also implement risk flags as, risk flags as an action button. Yeah. So risk flags, so it should be, let's implement it as an action button which triggers a respective modal dialog. Then also under the action buttons for the vital signs let's combine weight, height, and BMI into one action button, so that when someone clicks that button, it actually opens a dialog where they can enter their weight height or BMI. So if they have entered two of those three parameters, then the third one is automatically calculated. so the weight The calculations should be aware of the units so that when you're calculating the values is displayed according to the various possible weights I mean, possible units. So irrespective of which units they have used, then the calculations at the end should do automatically reflect the appropriate value in the appropriate units. Necessary com not necessary conversions should be done. So that should be very, extremely, very dynamic. Also, for values that have been for values for parameters, for values and parameters have been already filled let the value be clear and let its value also be color coded. I would prefer that the parameter name be bold and then the value, not bold, but be color coded. For example, if the blood pressure is normal, then the value should be, its value should be color coded as normal. that would make, that would make it much simpler and better. Then I think, I think for now the rest should be okay. we should I'm seeing, so I'm seeing we should, we should improve the checkbox, we should improve the checkbox component, because right now I can see the way its icons are displayed isn't good. I think the checkbox should be designed in such a way that after the checkbox itself on the left, then we have the icon, then we have the label. I think that should be implemented at component level so that everywhere there is a consistency. Right now it makes the form look much more disorganized. Improve the overall look and feel of these UI.
+# Decongest Record/Edit Vitals Actions
+
+Move risk flags and body metrics behind action buttons; clarify filled summaries. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+Per-vital actions exist, but risk flags stay inline and weight/height are separate. Filled summaries lack status color. Checkbox icons via `secondary` look disorganized.
+
+**Body metrics action:** one control for weight, height, and BMI.
+**Risk flags action:** one control opening a risk-flag dialog.
+
+## Requirements
+
+1. Replace inline risk flags with a **Risk flags** action opening a modal; persist on confirm; summarize on the parent.
+2. Combine weight, height, and BMI into one body-metrics action/dialog; keep other vitals separate.
+3. When any two of weight/height/BMI are valid, auto-derive the third in selected units.
+4. Filled summaries: **bold** name; non-bold value using existing normal/abnormal status colors.
+5. Order `AppCheckboxField` as checkbox, optional icon, then label.
+6. Preserve validation, loading, busy, error, success, permission, sync, and edit vs record; omit unauthorized UI.
+
+## Constraints
+
+- Reuse vitals dialog/form, BMI helpers, triage risk options, localization, and design-system; no new vitals contracts.
+- Do not change triage fields, route decision, or submit payload beyond risk-flag UX.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1: Risk flags via action modal; summary on parent; no inline grid.
+- R2-R3: One body-metrics action; any two derive the third in selected units.
+- R4: Bold name and status-colored value on filled summaries.
+- R5: Checkbox, icon, label when an icon is present.
+- R6: States/sync intact; unauthorized UI absent.
+- Update record-vitals and checkbox tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/components/{app_record_vitals_dialog,app_vitals_form,app_checkbox_field}.dart`
+- `frontend/lib/shared/opd_actions/`
+- `frontend/test/shared/opd_actions/`
