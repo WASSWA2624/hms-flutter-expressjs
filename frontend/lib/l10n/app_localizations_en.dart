@@ -3489,6 +3489,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No doctors found. Check doctor setup or permissions.';
 
   @override
+  String get appSelectNoResults => 'No matching results';
+
+  @override
   String get opdRegisterNewPatientLabel => 'Register a new patient';
 
   @override

@@ -35,6 +35,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.helperText,
     this.errorText,
     this.semanticLabel,
+    this.emptyResultsText,
     this.validator,
     this.onSaved,
     this.autovalidateMode = AutovalidateMode.disabled,
@@ -61,6 +62,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.helperText,
     this.errorText,
     this.semanticLabel,
+    this.emptyResultsText,
     this.validator,
     this.onSaved,
     this.autovalidateMode = AutovalidateMode.disabled,
@@ -85,6 +87,8 @@ class AppSelectField<T> extends StatefulWidget {
   final String? helperText;
   final String? errorText;
   final String? semanticLabel;
+  /// Disabled menu row when a searchable filter matches no options.
+  final String? emptyResultsText;
   final FormFieldValidator<T>? validator;
   final FormFieldSetter<T>? onSaved;
   final AutovalidateMode autovalidateMode;
@@ -108,6 +112,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   static const int _maxFilteredOptions = 80;
   static const double _defaultMenuMinHeight = 220.0;
   static const double _defaultMenuMaxHeight = 360.0;
+  static const double _emptyResultsMenuHeight = 56.0;
   static const double _menuViewportPadding = 8.0;
   static const double _menuFieldGap = 4.0;
   static const double _menuItemDividerThickness = 0.5;
@@ -416,6 +421,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   }
 
   double _effectiveMenuHeight(BuildContext context) {
+    if (_showingEmptyResults) {
+      return _emptyResultsMenuHeight;
+    }
     final Size screenSize = MediaQuery.sizeOf(context);
     final EdgeInsets padding = MediaQuery.paddingOf(context);
     final EdgeInsets viewInsets = MediaQuery.viewInsetsOf(context);
@@ -449,6 +457,20 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       return preferredHeight;
     }
     return preferredHeight.clamp(0.0, availableHeight).toDouble();
+  }
+
+  bool get _showingEmptyResults {
+    if (!widget.searchable ||
+        widget.emptyResultsText == null ||
+        !_focusNode.hasFocus ||
+        _browseAllOptions) {
+      return false;
+    }
+    final List<String> tokens = _queryTokens(_controller.text);
+    if (tokens.isEmpty) {
+      return false;
+    }
+    return _menuOptions().isEmpty;
   }
 
   Color _fieldFillColor(ThemeData theme) {
@@ -593,7 +615,11 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         _focusNode.hasFocus &&
         !_browseAllOptions &&
         _queryTokens(_controller.text).isNotEmpty;
-    return Object.hash(widget.options, filterByQuery ? _controller.text : null);
+    return Object.hash(
+      widget.options,
+      filterByQuery ? _controller.text : null,
+      widget.emptyResultsText,
+    );
   }
 
   List<DropdownMenuEntry<T>> _cachedDropdownMenuEntries(
@@ -623,6 +649,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   ) {
     final Iterable<AppSelectOption<T>> options = _menuOptions();
     final List<AppSelectOption<T>> optionList = options.toList(growable: false);
+    if (optionList.isEmpty) {
+      return _emptyResultsEntries(theme, colorScheme);
+    }
     return <DropdownMenuEntry<T>>[
       for (int index = 0; index < optionList.length; index++)
         DropdownMenuEntry<T>(
@@ -641,15 +670,62 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     ];
   }
 
+  List<DropdownMenuEntry<T>> _emptyResultsEntries(
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final String? message = widget.emptyResultsText?.trim();
+    final T? sentinel = _emptyResultsSentinelValue();
+    if (message == null || message.isEmpty || sentinel == null) {
+      return <DropdownMenuEntry<T>>[];
+    }
+    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+    );
+    return <DropdownMenuEntry<T>>[
+      DropdownMenuEntry<T>(
+        value: sentinel,
+        label: message,
+        enabled: false,
+        labelWidget: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.lg,
+            vertical: theme.spacing.sm,
+          ),
+          child: Text(message, style: labelStyle),
+        ),
+        style: _menuItemStyle(
+          theme,
+          _selectMenuChrome(theme, colorScheme, menuIsOpen: false),
+        ),
+      ),
+    ];
+  }
+
+  T? _emptyResultsSentinelValue() {
+    if (widget.value != null) {
+      return widget.value;
+    }
+    if (widget.options.isNotEmpty) {
+      return widget.options.first.value;
+    }
+    return null;
+  }
+
   List<DropdownMenuEntry<T>> _filterCurrentEntries(
     List<DropdownMenuEntry<T>> entries,
     String filter,
   ) {
     final FilterCallback<T>? filterCallback = widget.filterCallback;
-    if (filterCallback != null) {
-      return filterCallback(entries, filter);
+    final List<DropdownMenuEntry<T>> filtered = filterCallback != null
+        ? filterCallback(entries, filter)
+        : _filterEntries(entries, filter);
+    if (filtered.isNotEmpty) {
+      return filtered;
     }
-    return _filterEntries(entries, filter);
+    final ThemeData theme = Theme.of(context);
+    return _emptyResultsEntries(theme, theme.colorScheme);
   }
 
   Iterable<AppSelectOption<T>> _menuOptions() {

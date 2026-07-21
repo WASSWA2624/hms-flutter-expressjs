@@ -4123,6 +4123,7 @@
   "opdSearchProviderLabel": "Search doctor",
   "opdSearchProviderHelper": "This doctor will handle the patient.",
   "opdNoProvidersHelper": "No doctors found. Check doctor setup or permissions.",
+  "appSelectNoResults": "No matching results",
   "opdRegisterNewPatientLabel": "Register a new patient",
   "opdPatientIdLabel": "Patient ID",
   "opdFirstNameLabel": "First name",
@@ -4783,6 +4784,9 @@
   },
   "@opdNoProvidersHelper": {
     "description": "Helper text shown when no OPD providers can be loaded."
+  },
+  "@appSelectNoResults": {
+    "description": "Empty-state message when a searchable select filter matches no options."
   },
   "@opdRegisterNewPatientLabel": {
     "description": "Toggle label for new patient registration in OPD."

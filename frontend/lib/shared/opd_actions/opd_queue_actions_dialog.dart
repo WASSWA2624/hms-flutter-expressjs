@@ -419,6 +419,7 @@ class _AssignQueueDoctorDialogState
                   providers.isEmpty && schedules.isEmpty && !isLoadingProviders
                   ? l10n.opdNoProvidersHelper
                   : l10n.opdSearchProviderHelper,
+              emptyResultsText: l10n.appSelectNoResults,
               semanticLabel: l10n.opdFieldRequiredLabel(
                 l10n.opdSearchProviderLabel,
               ),

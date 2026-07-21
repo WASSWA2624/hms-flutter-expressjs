@@ -1,1 +1,39 @@
-Let's make some changes here. On the change doctor mode of dialogue we want us to confirm that the patient details area is actually reusing the patient details component that is already defined within the shared components. And then also, we don't need to display the amount here at this point. I don't think even we see flow stepper, the progress stepper, I don't think it is needed. Then also, let's make sure that the searchable component which is used to search for the doctor whom we are going to assign to that it is displaying nicely, because right now okay, right, it searches, but the challenge is that it leaves that empty space, leaves some space It leaves some space which even also still displays those companies. Then also, when someone tries to search in the search bar and the result isn't found, I think instead of the list disappearing, let's make sure that a message, an appropriate message is shown to show that there is no results found for that, the, that kind of search that you've done, that kind of search that you've done. So making this will make sure that things are working, are working seamlessly and nicely.
+# Tighten Assign/Change Doctor Dialog Context and Search
+
+Simplify Assign/Change doctor patient context and fix doctor search empty states. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+**Assign/Change doctor** shows heavy encounter context: payment amount, journey stepper, and expanded pairs. Doctor search filters, but unmatched queries leave empty menu chrome instead of clear feedback.
+
+**Patient context:** identity via shared `AppPatientDetails`; no payment amount or journey stepper here.
+
+## Requirements
+
+1. Confirm patient identity reuses shared `AppPatientDetails` (via OPD action context); do not invent a parallel header.
+2. Hide payment/amount display in this dialog’s context.
+3. Omit the visit journey / progress stepper in this dialog.
+4. Keep the searchable doctor select typeable and filterable; remove leftover empty menu space when filtered results are empty.
+5. When a query matches no doctors, show a localized empty-results message in the menu instead of an empty list.
+6. Preserve validation, loading, busy, success, error, and permission behavior; synchronize after save; omit unauthorized UI.
+
+## Constraints
+
+- Reuse `AppPatientDetails`, OPD action context, provider options, localization, and design-system tokens; no new assign contracts.
+- Do not change Queue Actions status radios or clinical stages.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1–R3: Shared patient details only; no payment amount or journey stepper.
+- R4–R5: Search filters cleanly; no-results message when unmatched; no empty menu gap.
+- R6: States and sync unchanged; unauthorized UI absent.
+- Update assign-doctor, select-field, related tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart`
+- `frontend/lib/shared/opd_actions/opd_action_context.dart`
+- `frontend/lib/shared/components/app_patient_details.dart`
+- `frontend/lib/shared/components/app_select_field.dart`
+- `frontend/test/shared/opd_actions/`

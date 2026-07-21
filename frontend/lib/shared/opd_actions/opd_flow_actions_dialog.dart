@@ -1460,6 +1460,8 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
               flow: flow,
               detail: _currentDetail,
               showTitle: false,
+              showJourneyStepper: false,
+              showPayment: false,
             ),
             _ProviderSelectField(
               value: _providerId,
@@ -1471,6 +1473,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
               ),
               helperText: l10n.opdSearchProviderHelper,
               emptyHelperText: l10n.opdNoProvidersHelper,
+              emptyResultsText: l10n.appSelectNoResults,
               enabled: !_isSaving,
               isLoading: _isLoadingProviders,
               onChanged: (String? value) {
@@ -1714,6 +1717,7 @@ class _ProviderSelectField extends StatelessWidget {
     required this.enabled,
     required this.isLoading,
     required this.onChanged,
+    this.emptyResultsText,
   });
 
   final String? value;
@@ -1722,6 +1726,7 @@ class _ProviderSelectField extends StatelessWidget {
   final String labelText;
   final String helperText;
   final String emptyHelperText;
+  final String? emptyResultsText;
   final bool enabled;
   final bool isLoading;
   final ValueChanged<String?> onChanged;
@@ -1738,6 +1743,7 @@ class _ProviderSelectField extends StatelessWidget {
       options: options,
       labelText: labelText,
       helperText: options.isEmpty && !isLoading ? emptyHelperText : helperText,
+      emptyResultsText: emptyResultsText,
       semanticLabel: labelText,
       enabled: enabled,
       isLoading: isLoading,

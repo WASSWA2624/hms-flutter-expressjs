@@ -27,6 +27,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
     this.expandedFields = const <AppWorkspacePatientContextField>[],
     this.expandedChild,
     this.showTitle = true,
+    this.showJourneyStepper = true,
     super.key,
   });
 
@@ -40,6 +41,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
   final List<AppWorkspacePatientContextField> expandedFields;
   final Widget? expandedChild;
   final bool showTitle;
+  final bool showJourneyStepper;
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +98,7 @@ class OpdWorkflowContextPanel extends StatelessWidget {
           semanticLabel: patientName,
           persistExpandPreference: false,
         ),
-        if (steps.isNotEmpty) ...<Widget>[
+        if (showJourneyStepper && steps.isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.md),
           AppWorkflowStepper(
             steps: steps,
@@ -113,12 +115,16 @@ class OpdActionContextPanel extends StatelessWidget {
     required this.flow,
     this.detail,
     this.showTitle = true,
+    this.showJourneyStepper = true,
+    this.showPayment = true,
     super.key,
   });
 
   final OpdFlowSummary flow;
   final OpdFlowDetail? detail;
   final bool showTitle;
+  final bool showJourneyStepper;
+  final bool showPayment;
 
   @override
   Widget build(BuildContext context) {
@@ -129,17 +135,14 @@ class OpdActionContextPanel extends StatelessWidget {
       detail: detail,
       billing: opdFlowBillingDisplay(context, flow),
     );
-    final List<String> journeySteps = buildOpdVisitJourneySteps(
-      l10n: l10n,
-      flow: flow,
-      detail: detail,
-    );
+    final List<String> journeySteps = showJourneyStepper
+        ? buildOpdVisitJourneySteps(l10n: l10n, flow: flow, detail: detail)
+        : const <String>[];
 
     final String currentStep = opdStatusDisplayLabel(l10n, flow);
-    final String nextStep = opdNextStepDisplayLabel(
-      l10n,
-      flow.displayNextStep ?? flow.nextStep,
-    );
+    final String nextStep = showJourneyStepper
+        ? opdNextStepDisplayLabel(l10n, flow.displayNextStep ?? flow.nextStep)
+        : '';
     final List<OpdEncounterSummaryPair> expandedPairs = pairs
         .where(
           (OpdEncounterSummaryPair pair) =>
@@ -147,6 +150,7 @@ class OpdActionContextPanel extends StatelessWidget {
               pair.label != l10n.opdPatientIdLabel &&
               pair.label != l10n.opdCurrentStageLabel &&
               pair.label != l10n.opdNextStepColumnLabel &&
+              (showPayment || pair.label != l10n.opdPaymentStatusLabel) &&
               (pair.label != l10n.opdEncounterIdLabel ||
                   (flow.publicId?.trim().isNotEmpty ?? false)),
         )
@@ -168,6 +172,7 @@ class OpdActionContextPanel extends StatelessWidget {
           ? null
           : OpdEncounterSummaryRow(pairs: expandedPairs),
       showTitle: showTitle,
+      showJourneyStepper: showJourneyStepper,
     );
   }
 }

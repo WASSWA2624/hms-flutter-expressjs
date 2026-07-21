@@ -6724,6 +6724,12 @@ abstract class AppLocalizations {
   /// **'No doctors found. Check doctor setup or permissions.'**
   String get opdNoProvidersHelper;
 
+  /// Empty-state message when a searchable select filter matches no options.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching results'**
+  String get appSelectNoResults;
+
   /// Toggle label for new patient registration in OPD.
   ///
   /// In en, this message translates to:

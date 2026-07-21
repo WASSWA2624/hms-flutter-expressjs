@@ -67,6 +67,31 @@ void main() {
     expect(find.text('Live').hitTestable(), findsOneWidget);
   });
 
+  testWidgets('AppSelectField.searchable shows no-results when filter matches nothing', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppSelectField<String>.searchable(
+        labelText: 'Status',
+        emptyResultsText: 'No matching results',
+        options: const <AppSelectOption<String>>[
+          AppSelectOption<String>(value: 'draft', label: 'Draft'),
+          AppSelectOption<String>(value: 'live', label: 'Live'),
+        ],
+        onChanged: (_) {},
+      ),
+    );
+
+    await tester.tap(find.byType(EditableText));
+    await tester.enterText(find.byType(EditableText), 'zzzz');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Draft').hitTestable(), findsNothing);
+    expect(find.text('Live').hitTestable(), findsNothing);
+    expect(find.text('No matching results').hitTestable(), findsOneWidget);
+  });
+
   testWidgets('AppSelectField.searchable filters options in the menu overlay', (
     WidgetTester tester,
   ) async {
