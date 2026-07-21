@@ -4,7 +4,7 @@ Rename **Doctor review** to **Clinical notes**; hide clinician actions and vital
 
 ## Context
 
-At **With doctor**, Flow Actions shows **Doctor review** and a required clinical-note dialog. Reception sees vital results and clinician quick actions—this is a clinician note action, not a front-desk step.
+At **With doctor**, Flow Actions shows **Doctor review** and a required clinical-note dialog. Reception sees vital results and clinician quick actions—a clinician note action, not a front-desk step.
 
 **Clinical notes action:** `DOCTOR_REVIEW` / `ClinicalFreeTextActionDialog` (today Doctor review).
 **Clinician-only quick actions:** diagnosis, lab, radiology, prescribe, procedure, refer, follow-up.
