@@ -131,13 +131,11 @@ final class AuthSessionDto {
   }
 
   static List<AppPermission> _permissionsFromUser(Map<String, Object?> user) {
+    // Prefer the backend effective ceiling (`permissions` / `permission_names`).
+    // Do not union ungated `role_permissions` / `direct_permissions` — those can
+    // bypass plan/module gates already applied in resolveEffectiveAccess.
     final permissions = <AppPermission>[];
-    for (final key in <String>[
-      'permissions',
-      'permission_names',
-      'direct_permissions',
-      'role_permissions',
-    ]) {
+    for (final key in <String>['permissions', 'permission_names']) {
       final values = user[key];
       if (values is Iterable<Object?>) {
         permissions.addAll(_permissionsFromValues(values));

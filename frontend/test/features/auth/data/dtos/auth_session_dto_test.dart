@@ -13,7 +13,16 @@ void main() {
         'phone': '+256700000000',
         'status': 'active',
         'position_title': 'tenant_admin',
-        'permission_names': <String>['settings.read'],
+        'permissions': <String>[
+          'settings.read',
+          'profile.read',
+          'billing.read',
+        ],
+        'permission_names': <String>[
+          'settings.read',
+          'profile.read',
+          'billing.read',
+        ],
         'direct_permissions': <String>['profile.read'],
         'role_permissions': <String>['billing.read'],
         'module_subscriptions': <Object?>[

@@ -3,10 +3,10 @@ const { createAuditLog } = require('@lib/audit');
 const { sendEmail } = require('@lib/notifications/sendEmail');
 const { HttpError } = require('@lib/errors');
 const { isFeatureEnabled } = require('@config/feature-flags');
-const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
-const { normalizeRoleName } = require('@config/roles');
+const { PERMISSIONS } = require('@config/permissions');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
+const { getUserPermissions } = require('@middlewares/auth.middleware');
 const {
   toDecimalNumber,
   toMoneyString,
@@ -141,14 +141,7 @@ const pageMeta = (page, limit, total) => {
   };
 };
 
-const getPermissionSet = (user = {}) => {
-  const direct = Array.isArray(user.permissions) ? user.permissions : [];
-  const roleBased = (Array.isArray(user.roles) ? user.roles : [user.role])
-    .map((role) => normalizeRoleName(role) || clean(role).toUpperCase())
-    .filter(Boolean)
-    .flatMap((role) => ROLE_PERMISSIONS[role] || []);
-  return new Set([...direct, ...roleBased]);
-};
+const getPermissionSet = (user = {}) => new Set(getUserPermissions(user));
 
 const hasPermission = (user, permission) => getPermissionSet(user).has(permission);
 

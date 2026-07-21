@@ -10,7 +10,7 @@ const { z } = require('zod');
 const labWorkspaceController = require('@controllers/lab-workspace/lab-workspace.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
-const { ROLES } = require('@config/roles');
+const { PERMISSIONS } = require('@config/permissions');
 const { uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
 const {
   collectLabOrderSchema,
@@ -32,19 +32,9 @@ const {
 
 const router = express.Router();
 
-const LAB_READ_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.DOCTOR,
-  ROLES.NURSE,
-  ROLES.LAB_TECH];
+const LAB_READ_SCOPES = [PERMISSIONS.LAB_READ];
 
-const LAB_MUTATION_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.LAB_TECH];
+const LAB_WRITE_SCOPES = [PERMISSIONS.LAB_WRITE];
 
 const resolveLegacyRouteParamsSchema = z.object({
   resource: z.enum([
@@ -61,7 +51,7 @@ router.get(
   '/workbench',
   validateRequest({ query: getLabWorkbenchQuerySchema }),
   authenticate(),
-  authorize(LAB_READ_ROLES, 'role'),
+  authorize(LAB_READ_SCOPES, 'permission'),
   labWorkspaceController.getLabWorkbench
 );
 
@@ -69,7 +59,7 @@ router.get(
   '/order-context/patients',
   validateRequest({ query: searchLabOrderContextPatientsQuerySchema }),
   authenticate(),
-  authorize(LAB_READ_ROLES, 'role'),
+  authorize(LAB_READ_SCOPES, 'permission'),
   labWorkspaceController.searchLabOrderContextPatients
 );
 
@@ -77,7 +67,7 @@ router.get(
   '/order-context/patients/:id',
   validateRequest({ params: labOrderContextPatientParamsSchema }),
   authenticate(),
-  authorize(LAB_READ_ROLES, 'role'),
+  authorize(LAB_READ_SCOPES, 'permission'),
   labWorkspaceController.getLabOrderPatientContext
 );
 
@@ -85,7 +75,7 @@ router.get(
   '/resolve-legacy/:resource/:id',
   validateRequest({ params: resolveLegacyRouteParamsSchema }),
   authenticate(),
-  authorize(LAB_READ_ROLES, 'role'),
+  authorize(LAB_READ_SCOPES, 'permission'),
   labWorkspaceController.resolveLegacyRoute
 );
 
@@ -93,7 +83,7 @@ router.get(
   '/orders/:id/workflow',
   validateRequest({ params: orderWorkflowParamsSchema }),
   authenticate(),
-  authorize(LAB_READ_ROLES, 'role'),
+  authorize(LAB_READ_SCOPES, 'permission'),
   labWorkspaceController.getLabOrderWorkflow
 );
 
@@ -101,7 +91,7 @@ router.post(
   '/orders/:id/collect',
   validateRequest({ params: orderWorkflowParamsSchema, body: collectLabOrderSchema }),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.collectLabOrder
 );
 
@@ -109,7 +99,7 @@ router.post(
   '/samples/:id/receive',
   validateRequest({ params: sampleWorkflowParamsSchema, body: receiveLabSampleSchema }),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.receiveLabSample
 );
 
@@ -117,7 +107,7 @@ router.post(
   '/samples/:id/reject',
   validateRequest({ params: sampleWorkflowParamsSchema, body: rejectLabSampleSchema }),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.rejectLabSample
 );
 
@@ -127,7 +117,7 @@ router.post(
     params: orderItemWorkflowParamsSchema,
     body: releaseLabOrderItemSchema}),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.releaseLabOrderItem
 );
 
@@ -137,7 +127,7 @@ router.post(
     params: orderWorkflowParamsSchema,
     body: verifyLabOrderResultsSchema}),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.verifyLabOrderResults
 );
 
@@ -147,7 +137,7 @@ router.post(
     params: orderItemWorkflowParamsSchema,
     body: rejectLabOrderItemSchema}),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.rejectLabOrderItem
 );
 
@@ -157,7 +147,7 @@ router.post(
     params: orderWorkflowParamsSchema,
     body: reverseLabOrderWorkflowSchema}),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.reverseLabOrderWorkflow
 );
 
@@ -167,7 +157,7 @@ router.post(
     params: orderItemWorkflowParamsSchema,
     body: reopenLabOrderItemResultSchema}),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.reopenLabOrderItemResult
 );
 
@@ -177,7 +167,7 @@ router.post(
     params: orderItemWorkflowParamsSchema,
     body: restoreLabOrderItemSchema}),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.restoreLabOrderItem
 );
 
@@ -187,7 +177,7 @@ router.post(
     params: orderWorkflowParamsSchema,
     body: deleteLabOrderItemsSchema}),
   authenticate(),
-  authorize(LAB_MUTATION_ROLES, 'role'),
+  authorize(LAB_WRITE_SCOPES, 'permission'),
   labWorkspaceController.deleteLabOrderItems
 );
 

@@ -12,7 +12,7 @@ const router = express.Router();
 const radiologyResultController = require('@controllers/radiology-result/radiology-result.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
-const { ROLES } = require('@config/roles');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createRadiologyResultSchema,
   updateRadiologyResultSchema,
@@ -21,23 +21,9 @@ const {
   listRadiologyResultsQuerySchema
 } = require('@validations/radiology-result/radiology-result.schema');
 
-const RADIOLOGY_RESULT_READ_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.DOCTOR,
-  ROLES.NURSE,
-  ROLES.LAB_TECH,
-  ROLES.RADIOLOGY_TECH,
-  ROLES.RADIOLOGIST,
-  ROLES.MEDICAL_RECORDS_CLERK];
+const RADIOLOGY_READ_SCOPES = [PERMISSIONS.RADIOLOGY_READ];
 
-const RADIOLOGY_RESULT_MUTATION_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.RADIOLOGY_TECH,
-  ROLES.RADIOLOGIST];
+const RADIOLOGY_WRITE_SCOPES = [PERMISSIONS.RADIOLOGY_WRITE];
 
 /**
  * @description List radiology results with pagination and filters
@@ -62,7 +48,7 @@ router.get(
   validateRequest({ query: listRadiologyResultsQuerySchema }),
 
   authenticate(),
-  authorize(RADIOLOGY_RESULT_READ_ROLES, 'role'),
+  authorize(RADIOLOGY_READ_SCOPES, 'permission'),
   radiologyResultController.listRadiologyResults
 );
 
@@ -84,7 +70,7 @@ router.get(
   validateRequest({ params: radiologyResultIdParamsSchema }),
 
   authenticate(),
-  authorize(RADIOLOGY_RESULT_READ_ROLES, 'role'),
+  authorize(RADIOLOGY_READ_SCOPES, 'permission'),
   radiologyResultController.getRadiologyResultById
 );
 
@@ -111,7 +97,7 @@ router.post(
   validateRequest({ body: createRadiologyResultSchema }),
 
   authenticate(),
-  authorize(RADIOLOGY_RESULT_MUTATION_ROLES, 'role'),
+  authorize(RADIOLOGY_WRITE_SCOPES, 'permission'),
   radiologyResultController.createRadiologyResult
 );
 
@@ -139,7 +125,7 @@ router.put(
   validateRequest({ params: radiologyResultIdParamsSchema, body: updateRadiologyResultSchema }),
 
   authenticate(),
-  authorize(RADIOLOGY_RESULT_MUTATION_ROLES, 'role'),
+  authorize(RADIOLOGY_WRITE_SCOPES, 'permission'),
   radiologyResultController.updateRadiologyResult
 );
 
@@ -161,7 +147,7 @@ router.delete(
   validateRequest({ params: radiologyResultIdParamsSchema }),
 
   authenticate(),
-  authorize(RADIOLOGY_RESULT_MUTATION_ROLES, 'role'),
+  authorize(RADIOLOGY_WRITE_SCOPES, 'permission'),
   radiologyResultController.deleteRadiologyResult
 );
 
@@ -183,7 +169,7 @@ router.post(
   validateRequest({ params: radiologyResultIdParamsSchema, body: signOffRadiologyResultSchema }),
 
   authenticate(),
-  authorize(RADIOLOGY_RESULT_MUTATION_ROLES, 'role'),
+  authorize(RADIOLOGY_WRITE_SCOPES, 'permission'),
   radiologyResultController.signOffRadiologyResult
 );
 

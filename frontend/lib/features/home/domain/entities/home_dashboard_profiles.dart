@@ -1048,6 +1048,23 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
   if (has(AppPermissions.facilityAdmin)) {
     return homeDashboardProfiles[AppRole.facilityAdmin]!;
   }
+
+  // Multi-domain custom packs should not inherit a single canonical role UX
+  // (e.g. clinical:read alone must not force the full doctor dashboard).
+  final int domainHits = <bool>[
+    has(AppPermissions.clinicalRead) || has(AppPermissions.clinicalWrite),
+    has(AppPermissions.labRead) || has(AppPermissions.labWrite),
+    has(AppPermissions.radiologyRead) || has(AppPermissions.radiologyWrite),
+    has(AppPermissions.pharmacyRead) || has(AppPermissions.pharmacyWrite),
+    has(AppPermissions.billingRead) || has(AppPermissions.billingWrite),
+    has(AppPermissions.hrRead) || has(AppPermissions.hrWrite),
+    has(AppPermissions.operationsRead) || has(AppPermissions.operationsWrite),
+    has(AppPermissions.patientRead) || has(AppPermissions.patientWrite),
+  ].where((bool hit) => hit).length;
+  if (domainHits >= 2) {
+    return homeDashboardProfiles[AppRole.other]!;
+  }
+
   if (has(AppPermissions.clinicalWrite) || has(AppPermissions.clinicalRead)) {
     return homeDashboardProfiles[AppRole.doctor]!;
   }
