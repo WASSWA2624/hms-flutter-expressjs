@@ -541,6 +541,21 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Users without a canonical staff role (custom roles / direct grants only).
+  ///
+  /// Their shell must not leak across workspaces via broad route
+  /// `requiredAnyPermissions` lists (e.g. `clinical:read` unlocking OPD/IPD).
+  bool get isPermissionScopedShellUser {
+    if (isElevated) {
+      return false;
+    }
+    final Set<AppRole> staffRoles = roles.difference(const <AppRole>{
+      AppRole.other,
+      AppRole.patient,
+    });
+    return staffRoles.isEmpty;
+  }
+
   /// Default permission pack for the active focused shell, if any.
   ///
   /// Used to decide whether a route outside the focused allow-list was unlocked
@@ -591,6 +606,48 @@ final class AppAccessPolicy {
     return satisfying.any(
       (AppPermission permission) => !base.contains(permission),
     );
+  }
+
+  /// For custom-role users, require a satisfying permission whose domain belongs
+  /// to the route's permission-scoped allow-list.
+  bool isShellRouteAllowedByPermissionDomain({
+    required Iterable<AppPermission> allPermissions,
+    required Iterable<AppPermission> anyPermissions,
+    required Set<String>? allowedDomains,
+  }) {
+    if (allowedDomains == null) {
+      return true;
+    }
+    if (allowedDomains.isEmpty) {
+      return false;
+    }
+
+    final Set<AppPermission> satisfying = <AppPermission>{
+      for (final AppPermission permission in allPermissions)
+        if (grants(permission)) permission,
+      for (final AppPermission permission in anyPermissions)
+        if (grants(permission)) permission,
+    };
+    if (satisfying.isEmpty) {
+      return false;
+    }
+
+    return satisfying.any((AppPermission permission) {
+      final String? domain = _permissionDomain(permission);
+      return domain != null && allowedDomains.contains(domain);
+    });
+  }
+
+  static String? _permissionDomain(AppPermission permission) {
+    final String normalized = permission.value.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return null;
+    }
+    final int separator = normalized.indexOf(':');
+    if (separator <= 0) {
+      return normalized;
+    }
+    return normalized.substring(0, separator);
   }
 
   bool canEditFacilitySetupStructure() {

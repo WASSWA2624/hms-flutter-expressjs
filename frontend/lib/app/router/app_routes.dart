@@ -792,4 +792,70 @@ abstract final class AppRoutes {
       (AppRouteData candidate) => candidate.name == route.name,
     );
   }
+
+  /// Permission domains that may unlock [route] for custom-role-only users.
+  ///
+  /// - `null`: core destinations (home/settings) always allowed when authenticated
+  /// - empty: custom roles cannot unlock (canonical staff roles only)
+  /// - non-empty: at least one satisfying permission must use one of these domains
+  static Set<String>? permissionScopedDomainsFor(AppRouteData route) {
+    switch (route.name) {
+      case 'home':
+      case 'settings':
+      case 'profile':
+        return null;
+      case 'billing':
+      case 'claims':
+        return const <String>{'billing', 'financial'};
+      case 'clinical':
+        return const <String>{'clinical'};
+      case 'lab':
+        return const <String>{'lab'};
+      case 'radiology':
+        return const <String>{'radiology'};
+      case 'pharmacy':
+        return const <String>{'pharmacy'};
+      case 'patients':
+        return const <String>{'patient'};
+      case 'reception':
+        return const <String>{'patient', 'last_office'};
+      case 'opd':
+        return const <String>{'patient', 'emergency'};
+      case 'emergency':
+        return const <String>{'emergency'};
+      case 'ipd':
+      case 'roomsBeds':
+      case 'nursing':
+      case 'icu':
+      case 'discharge':
+      case 'theater':
+      case 'physiotherapy':
+        // These workspaces share broad any-permission lists with clinical /
+        // billing / patient rights. Custom roles must not inherit them that way.
+        return const <String>{};
+      case 'operations':
+      case 'housekeeping':
+        return const <String>{'operations'};
+      case 'hr':
+        return const <String>{'hr', 'unit', 'roster'};
+      case 'tenantFacilitySetup':
+        return const <String>{'hr', 'unit', 'roster', 'tenant', 'facility', 'system'};
+      case 'biomedical':
+        return const <String>{'biomed'};
+      case 'mortuary':
+        return const <String>{'mortuary'};
+      case 'communications':
+        return const <String>{'communications'};
+      case 'integrations':
+        return const <String>{'integration'};
+      case 'reports':
+        return const <String>{'reports', 'compliance', 'evidence'};
+      case 'accessAdmin':
+        return const <String>{'tenant', 'facility', 'system'};
+      case 'subscriptions':
+        return const <String>{'subscriptions'};
+      default:
+        return const <String>{};
+    }
+  }
 }

@@ -223,7 +223,6 @@ void main() {
             roles: <String>['TESTING'],
           ),
           permissions: <AppPermission>[
-            AppPermissions.patientRead,
             AppPermissions.billingRead,
             AppPermissions.clinicalRead,
             AppPermissions.labRead,
@@ -232,15 +231,54 @@ void main() {
         ),
       );
 
+      expect(policy.isPermissionScopedShellUser, isTrue);
       expect(canAccess(AppRoutes.home, policy), isTrue);
       expect(canAccess(AppRoutes.settings, policy), isTrue);
-      expect(canAccess(AppRoutes.patients, policy), isTrue);
       expect(canAccess(AppRoutes.billing, policy), isTrue);
+      expect(canAccess(AppRoutes.claims, policy), isTrue);
       expect(canAccess(AppRoutes.clinical, policy), isTrue);
       expect(canAccess(AppRoutes.lab, policy), isTrue);
+      // Broad any-permission routes must not leak from clinical/billing/lab.
+      expect(canAccess(AppRoutes.patients, policy), isFalse);
+      expect(canAccess(AppRoutes.opd, policy), isFalse);
+      expect(canAccess(AppRoutes.nursing, policy), isFalse);
+      expect(canAccess(AppRoutes.ipd, policy), isFalse);
+      expect(canAccess(AppRoutes.icu, policy), isFalse);
+      expect(canAccess(AppRoutes.theater, policy), isFalse);
+      expect(canAccess(AppRoutes.physiotherapy, policy), isFalse);
+      expect(canAccess(AppRoutes.discharge, policy), isFalse);
       expect(canAccess(AppRoutes.pharmacy, policy), isFalse);
       expect(canAccess(AppRoutes.hr, policy), isFalse);
+      expect(canAccess(AppRoutes.communications, policy), isFalse);
     });
+
+    test(
+      'custom patient grants unlock patient-flow workspaces only',
+      () {
+        final policy = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'token'),
+            user: const AuthUserProfile(
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+              roles: <String>['FRONT_DESK_CUSTOM'],
+            ),
+            permissions: <AppPermission>[
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+            ],
+            moduleEntitlements: _activeShellModules,
+          ),
+        );
+
+        expect(canAccess(AppRoutes.patients, policy), isTrue);
+        expect(canAccess(AppRoutes.reception, policy), isTrue);
+        expect(canAccess(AppRoutes.opd, policy), isTrue);
+        expect(canAccess(AppRoutes.clinical, policy), isFalse);
+        expect(canAccess(AppRoutes.billing, policy), isFalse);
+        expect(canAccess(AppRoutes.lab, policy), isFalse);
+      },
+    );
 
     test(
       'extra grants unlock routes outside a focused shell without opening '

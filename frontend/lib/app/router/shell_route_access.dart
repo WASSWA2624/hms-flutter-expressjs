@@ -6,6 +6,16 @@ bool canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
     return false;
   }
 
+  // Custom roles / direct grants only: map permissions to their home workspaces
+  // instead of letting broad route any-permission lists leak across modules.
+  if (accessPolicy.isPermissionScopedShellUser) {
+    return accessPolicy.isShellRouteAllowedByPermissionDomain(
+      allPermissions: route.requiredPermissions,
+      anyPermissions: route.requiredAnyPermissions,
+      allowedDomains: AppRoutes.permissionScopedDomainsFor(route),
+    );
+  }
+
   final bool unlockedByExpandedGrant = accessPolicy
       .isShellRouteUnlockedByExpandedGrant(
         allPermissions: route.requiredPermissions,
