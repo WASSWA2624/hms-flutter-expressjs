@@ -35,6 +35,18 @@ String normalizeCurrencyAmount(String value) {
   return value.replaceAll(',', '').trim();
 }
 
+/// Formats [amount] for currency text fields with thousand separators.
+String formatCurrencyAmountInput(num amount) {
+  final bool wholeNumber = amount is int || amount == amount.roundToDouble();
+  final String raw = wholeNumber ? amount.toStringAsFixed(0) : amount.toString();
+  return const CurrencyAmountInputFormatter()
+      .formatEditUpdate(
+        TextEditingValue.empty,
+        TextEditingValue(text: raw),
+      )
+      .text;
+}
+
 bool isValidCurrencyAmountSyntax(String normalizedAmount) {
   return _validCurrencyAmountPattern.hasMatch(normalizedAmount);
 }

@@ -4,6 +4,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_currency.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 enum OpdBillingState { paid, required, notRequired, unknown }
@@ -231,10 +232,7 @@ String opdCurrencyAmountInput(num? amount) {
   if (amount == null) {
     return '';
   }
-  if (amount is int || amount == amount.roundToDouble()) {
-    return amount.toStringAsFixed(0);
-  }
-  return amount.toString();
+  return formatCurrencyAmountInput(amount);
 }
 
 bool _isTerminalStatus(String? status) {

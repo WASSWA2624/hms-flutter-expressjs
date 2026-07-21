@@ -210,7 +210,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   String _arrivalMode = 'WALK_IN';
   String _emergencySeverity = 'HIGH';
   String? _triageLevel;
-  bool _requireConsultationPayment = false;
+  bool _requireConsultationPayment = true;
   bool _forceNewEncounter = false;
   bool _isSaving = false;
   bool _hasLookupFailure = false;
@@ -1399,6 +1399,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     _activeEncounter = flow;
     if (flow == null) {
       _lockArrivalMode = false;
+      _requireConsultationPayment = true;
       return;
     }
 

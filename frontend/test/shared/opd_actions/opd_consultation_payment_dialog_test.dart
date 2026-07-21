@@ -137,13 +137,17 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.enterText(find.byType(TextFormField).first, '30000');
+    final Finder amountInput = find.descendant(
+      of: find.byType(AppCurrencyAmountField),
+      matching: find.byType(EditableText),
+    );
+    await tester.enterText(amountInput, '30000');
     await tester.tap(find.widgetWithText(AppButton, 'Pay consultation'));
     await tester.pumpAndSettle();
 
     expect(result, isNull);
     expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.text('30000'), findsOneWidget);
+    expect(tester.widget<EditableText>(amountInput).controller?.text, '30,000');
     expect(find.text('Pay consultation'), findsOneWidget);
     verify(() => repository.payConsultation('ENC000001', any())).called(1);
   });

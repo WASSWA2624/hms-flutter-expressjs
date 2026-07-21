@@ -193,7 +193,7 @@ void main() {
   });
 
   testWidgets(
-    'OpdEncounterDialog defaults payment to optional and never captures payment',
+    'OpdEncounterDialog defaults payment required and never captures payment',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
       final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -241,7 +241,7 @@ void main() {
               find.widgetWithText(AppSwitchField, 'Payment required'),
             )
             .value,
-        isFalse,
+        isTrue,
       );
       expect(find.text('Payment received'), findsNothing);
       expect(find.text('Payment method *'), findsNothing);
@@ -252,7 +252,7 @@ void main() {
       await tester.tap(find.text('Start encounter').last);
       await tester.pumpAndSettle();
 
-      expect(submittedPayload?['require_consultation_payment'], isFalse);
+      expect(submittedPayload?['require_consultation_payment'], isTrue);
       expect(submittedPayload?['create_consultation_invoice'], isTrue);
       expect(submittedPayload?['consultation_fee'], '25000');
       expect(submittedPayload, isNot(contains('pay_now')));
@@ -316,7 +316,7 @@ void main() {
       of: find.byType(AppCurrencyAmountField),
       matching: find.byType(EditableText),
     );
-    expect(tester.widget<EditableText>(amountInput).controller.text, '30000');
+    expect(tester.widget<EditableText>(amountInput).controller.text, '30,000');
     expect(find.text('KES'), findsWidgets);
 
     await tester.enterText(amountInput, '27500');
