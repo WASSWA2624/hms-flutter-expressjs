@@ -3779,7 +3779,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdEditVitalsAction => 'Edit vitals';
 
   @override
-  String get opdDoctorReviewAction => 'Doctor review';
+  String get opdDoctorReviewAction => 'Clinical notes';
 
   @override
   String get opdRouteLabAction => 'Send to lab';

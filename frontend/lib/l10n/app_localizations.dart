@@ -7276,10 +7276,10 @@ abstract class AppLocalizations {
   /// **'Edit vitals'**
   String get opdEditVitalsAction;
 
-  /// Action label to record a doctor review.
+  /// Action label to record clinical notes during doctor review.
   ///
   /// In en, this message translates to:
-  /// **'Doctor review'**
+  /// **'Clinical notes'**
   String get opdDoctorReviewAction;
 
   /// Action label to route an OPD patient to lab.

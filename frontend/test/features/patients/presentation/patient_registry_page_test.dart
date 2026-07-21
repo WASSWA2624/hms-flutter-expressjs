@@ -818,7 +818,7 @@ void main() {
     expect(find.text('Triage'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);
-    expect(find.text('Doctor review'), findsNothing);
+    expect(find.text('Clinical notes'), findsNothing);
     expect(find.text('Manage consultation billing'), findsNothing);
     expect(find.text('Prescribe'), findsNothing);
   });
@@ -866,7 +866,7 @@ void main() {
     expect(find.text('Triage'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);
-    expect(find.text('Doctor review'), findsNothing);
+    expect(find.text('Clinical notes'), findsNothing);
     expect(find.text('Manage consultation billing'), findsNothing);
   });
 

@@ -48,6 +48,8 @@ class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
     this.onSaved,
     this.onCancel,
     this.onBusyChanged,
+    this.allowClinicalActions = true,
+    this.allowVitalsActions = true,
     super.key,
   });
 
@@ -57,6 +59,12 @@ class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
   final VoidCallback? onSaved;
   final VoidCallback? onCancel;
   final ValueChanged<bool>? onBusyChanged;
+
+  /// When false, Clinical notes and clinician-only quick actions are omitted.
+  final bool allowClinicalActions;
+
+  /// When false, Record/Edit vitals quick actions are omitted.
+  final bool allowVitalsActions;
 
   @override
   ConsumerState<PatientAppointmentQuickDialog> createState() =>
@@ -368,6 +376,8 @@ class _PatientAppointmentQuickDialogState
       context: context,
       flow: encounter,
       allowBillingActions: false,
+      allowVitalsActions: widget.allowVitalsActions,
+      allowClinicalActions: widget.allowClinicalActions,
     );
     if (!mounted) {
       return;

@@ -42,6 +42,8 @@ class ReceptionAppointmentActionsDialog extends StatelessWidget {
       // Explicit reception gate (alias of OPD front-desk write) for RBAC clarity.
       // ignore: avoid_redundant_argument_values
       actionRequirement: receptionFrontDeskWriteRequirement,
+      allowClinicalActions: false,
+      allowVitalsActions: false,
     );
   }
 }

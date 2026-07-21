@@ -175,6 +175,8 @@ class _ReceptionScheduleAppointmentDialogState
               patient: _patient!,
               referenceData: widget.referenceData,
               embedded: true,
+              allowClinicalActions: false,
+              allowVitalsActions: false,
               onCancel: () => setState(() {
                 _patient = null;
                 _isAppointmentBusy = false;

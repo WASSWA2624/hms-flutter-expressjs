@@ -20,6 +20,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_encounter_clinical_services.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -161,6 +162,120 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
+  testWidgets(
+    'reception context omits clinical notes and clinician actions for doctors',
+    (WidgetTester tester) async {
+      const OpdFlowSummary withDoctor = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Patient Example',
+        stage: 'WAITING_DOCTOR_REVIEW',
+        displayCode: 'WITH_DOCTOR',
+        displayNextStep: 'DOCTOR_REVIEW',
+        providerUserId: 'USR-DOC001',
+        providerDisplayName: 'Jordan Demo',
+        assignedStaffLabel: 'Doctor: Jordan Demo',
+        consultationPaymentRequired: false,
+        consultationPaid: true,
+      );
+
+      await _pumpDialog(
+        tester,
+        withDoctor,
+        detail: const OpdFlowDetail(summary: withDoctor),
+        policy: _doctorPolicy(),
+        allowBillingActions: false,
+        allowVitalsActions: false,
+        allowClinicalActions: false,
+      );
+
+      expect(find.widgetWithText(AppButton, 'Clinical notes'), findsNothing);
+      expect(
+        find.widgetWithText(AppButton, 'Next · Clinical notes'),
+        findsNothing,
+      );
+      expect(find.widgetWithText(AppButton, 'Add diagnosis'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Request lab'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    },
+  );
+
+  testWidgets('doctor at with-doctor sees clinical notes action', (
+    WidgetTester tester,
+  ) async {
+    const OpdFlowSummary withDoctor = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientDisplayName: 'Patient Example',
+      stage: 'WAITING_DOCTOR_REVIEW',
+      displayCode: 'WITH_DOCTOR',
+      displayNextStep: 'DOCTOR_REVIEW',
+      providerUserId: 'USR-DOC001',
+      providerDisplayName: 'Jordan Demo',
+      assignedStaffLabel: 'Doctor: Jordan Demo',
+      consultationPaymentRequired: false,
+      consultationPaid: true,
+    );
+
+    await _pumpDialog(
+      tester,
+      withDoctor,
+      detail: const OpdFlowDetail(summary: withDoctor),
+      policy: _doctorPolicy(),
+    );
+
+    expect(
+      find.widgetWithText(AppButton, 'Next · Clinical notes'),
+      findsOneWidget,
+    );
+    expect(find.text('Cancel'), findsOneWidget);
+  });
+
+  testWidgets('clinical services panel can hide measurement results', (
+    WidgetTester tester,
+  ) async {
+    const OpdFlowSummary flow = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientDisplayName: 'Patient Example',
+      stage: 'WAITING_DOCTOR_REVIEW',
+    );
+    final OpdFlowDetail detail = OpdFlowDetail(
+      summary: flow,
+      vitalMeasurements: <OpdVitalSign>[
+        OpdVitalSign(
+          id: 'vital-bp',
+          vitalType: 'BLOOD_PRESSURE',
+          value: '80/50',
+          unit: 'mmHg',
+          recordedAt: DateTime.utc(2026, 7, 21, 10, 14),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: OpdEncounterClinicalServicesPanel(
+            detail: detail,
+            flow: flow,
+            showResults: false,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Blood Pressure'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
+    expect(find.textContaining('80/50'), findsNothing);
+    expect(find.text('Result'), findsNothing);
+  });
+
   testWidgets('receptionist at vitals-needed sees only front-desk actions', (
     WidgetTester tester,
   ) async {
@@ -283,6 +398,7 @@ Future<void> _pumpDialog(
   bool settle = true,
   bool allowBillingActions = true,
   bool allowVitalsActions = true,
+  bool allowClinicalActions = true,
 }) async {
   final OpdRepository effectiveRepository;
   if (repository != null) {
@@ -332,6 +448,7 @@ Future<void> _pumpDialog(
             flow: flow,
             allowBillingActions: allowBillingActions,
             allowVitalsActions: allowVitalsActions,
+            allowClinicalActions: allowClinicalActions,
           ),
         ),
       ),
@@ -439,6 +556,27 @@ AppAccessPolicy _nursePolicy() {
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
       user: const AuthUserProfile(roles: <String>['NURSE']),
+      permissions: <AppPermission>{
+        AppPermissions.patientRead,
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
+AppAccessPolicy _doctorPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['DOCTOR']),
       permissions: <AppPermission>{
         AppPermissions.patientRead,
         AppPermissions.clinicalRead,

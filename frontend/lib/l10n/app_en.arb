@@ -4247,7 +4247,7 @@
   "opdSendToDoctorAction": "Send to doctor",
   "opdRecordVitalsAction": "Record vitals",
   "opdEditVitalsAction": "Edit vitals",
-  "opdDoctorReviewAction": "Doctor review",
+  "opdDoctorReviewAction": "Clinical notes",
   "opdRouteLabAction": "Send to lab",
   "opdRouteRadiologyAction": "Send to radiology",
   "opdRoutePharmacyAction": "Send to pharmacy",
@@ -5080,7 +5080,7 @@
     "description": "Action label to edit OPD vitals."
   },
   "@opdDoctorReviewAction": {
-    "description": "Action label to record a doctor review."
+    "description": "Action label to record clinical notes during doctor review."
   },
   "@opdRouteLabAction": {
     "description": "Action label to route an OPD patient to lab."

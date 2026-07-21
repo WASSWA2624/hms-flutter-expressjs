@@ -110,6 +110,7 @@ Future<bool?> showFlowActionsDialog({
   required OpdFlowSummary flow,
   bool allowBillingActions = true,
   bool allowVitalsActions = true,
+  bool allowClinicalActions = true,
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -118,6 +119,7 @@ Future<bool?> showFlowActionsDialog({
       flow: flow,
       allowBillingActions: allowBillingActions,
       allowVitalsActions: allowVitalsActions,
+      allowClinicalActions: allowClinicalActions,
     ),
   );
 }
@@ -127,6 +129,7 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
     required this.flow,
     this.allowBillingActions = true,
     this.allowVitalsActions = true,
+    this.allowClinicalActions = true,
     super.key,
   });
 
@@ -135,6 +138,10 @@ class FlowActionsDialog extends ConsumerStatefulWidget {
 
   /// When false, Record/Edit vitals quick actions are omitted (Reception).
   final bool allowVitalsActions;
+
+  /// When false, Clinical notes and clinician-only quick actions are omitted
+  /// and clinical-service result values are hidden (Reception).
+  final bool allowClinicalActions;
 
   @override
   ConsumerState<FlowActionsDialog> createState() => _FlowActionsDialogState();
@@ -200,7 +207,11 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               body: l10n.opdLoadingBody,
             ),
           if (detail != null && opdDetailHasClinicalRecords(detail))
-            OpdEncounterClinicalServicesPanel(detail: detail, flow: flow),
+            OpdEncounterClinicalServicesPanel(
+              detail: detail,
+              flow: flow,
+              showResults: widget.allowClinicalActions,
+            ),
           if (!isInitialLoad)
             _actionGrid(context, flow, detail, actionsEnabled: !isBusy),
         ],
@@ -602,7 +613,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         // front-desk users still have actions after a provider is assigned.
         'assign_doctor' => !terminal,
         'doctor_review' =>
-          !terminal &&
+          widget.allowClinicalActions &&
+              !terminal &&
               (nextActionKey == 'doctor_review' ||
                   <String>{
                     'WAITING_DOCTOR_REVIEW',
@@ -618,7 +630,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         'prescription' ||
         'procedure' ||
         'referral' ||
-        'follow_up' => !terminal && clinicalStage,
+        'follow_up' =>
+          widget.allowClinicalActions && !terminal && clinicalStage,
         'disposition' =>
           !terminal && (canDispose || nextActionKey == 'disposition'),
         'admission_handoff' => hasPendingAdmission,

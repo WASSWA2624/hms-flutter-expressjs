@@ -49,6 +49,8 @@ class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
     required this.appointment,
     this.workspaceState,
     this.actionRequirement = opdFrontDeskActionRequirement,
+    this.allowClinicalActions = true,
+    this.allowVitalsActions = true,
     super.key,
   });
 
@@ -59,6 +61,12 @@ class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
 
   /// Front-desk write gate. Reception passes `receptionFrontDeskWriteRequirement`.
   final AccessRequirement actionRequirement;
+
+  /// When false, Clinical notes and clinician-only quick actions are omitted.
+  final bool allowClinicalActions;
+
+  /// When false, Record/Edit vitals quick actions are omitted.
+  final bool allowVitalsActions;
 
   @override
   ConsumerState<OpdAppointmentActionsDialog> createState() =>
@@ -244,6 +252,8 @@ class _OpdAppointmentActionsDialogState
       context: context,
       flow: flow,
       allowBillingActions: false,
+      allowVitalsActions: widget.allowVitalsActions,
+      allowClinicalActions: widget.allowClinicalActions,
     );
     if (!mounted) {
       return;

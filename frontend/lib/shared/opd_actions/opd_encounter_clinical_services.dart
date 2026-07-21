@@ -23,11 +23,15 @@ class OpdEncounterClinicalServicesPanel extends StatelessWidget {
   const OpdEncounterClinicalServicesPanel({
     required this.detail,
     required this.flow,
+    this.showResults = true,
     super.key,
   });
 
   final OpdFlowDetail detail;
   final OpdFlowSummary flow;
+
+  /// When false, measurement/result values are omitted (Reception).
+  final bool showResults;
 
   @override
   Widget build(BuildContext context) {
@@ -60,11 +64,19 @@ class OpdEncounterClinicalServicesPanel extends StatelessWidget {
                 return Column(
                   children: <Widget>[
                     for (final OpdClinicalServiceRow row in rows)
-                      _OpdClinicalServiceCard(row: row, l10n: l10n),
+                      _OpdClinicalServiceCard(
+                        row: row,
+                        l10n: l10n,
+                        showResults: showResults,
+                      ),
                   ],
                 );
               }
-              return _OpdClinicalServicesTable(rows: rows, l10n: l10n);
+              return _OpdClinicalServicesTable(
+                rows: rows,
+                l10n: l10n,
+                showResults: showResults,
+              );
             },
           ),
       ],
@@ -267,10 +279,15 @@ String opdClinicalServiceLocationLabel({
 }
 
 class _OpdClinicalServicesTable extends StatelessWidget {
-  const _OpdClinicalServicesTable({required this.rows, required this.l10n});
+  const _OpdClinicalServicesTable({
+    required this.rows,
+    required this.l10n,
+    this.showResults = true,
+  });
 
   final List<OpdClinicalServiceRow> rows;
   final AppLocalizations l10n;
+  final bool showResults;
 
   @override
   Widget build(BuildContext context) {
@@ -290,12 +307,12 @@ class _OpdClinicalServicesTable extends StatelessWidget {
         ),
       ),
       child: Table(
-        columnWidths: const <int, TableColumnWidth>{
-          0: FlexColumnWidth(2.6),
-          1: FlexColumnWidth(2.2),
-          2: FlexColumnWidth(1.6),
-          3: FlexColumnWidth(1.6),
-          4: FlexColumnWidth(2.4),
+        columnWidths: <int, TableColumnWidth>{
+          0: const FlexColumnWidth(2.6),
+          1: const FlexColumnWidth(2.2),
+          2: const FlexColumnWidth(1.6),
+          3: const FlexColumnWidth(1.6),
+          if (showResults) 4: const FlexColumnWidth(2.4),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         children: <TableRow>[
@@ -317,10 +334,11 @@ class _OpdClinicalServicesTable extends StatelessWidget {
                 l10n.opdClinicalServiceLocationColumnLabel,
                 headerStyle,
               ),
-              _HeaderCell(
-                l10n.opdClinicalServiceResultColumnLabel,
-                headerStyle,
-              ),
+              if (showResults)
+                _HeaderCell(
+                  l10n.opdClinicalServiceResultColumnLabel,
+                  headerStyle,
+                ),
             ],
           ),
           for (final OpdClinicalServiceRow row in rows)
@@ -341,7 +359,7 @@ class _OpdClinicalServicesTable extends StatelessWidget {
                     compact: true,
                   ),
                 ),
-                _ResultCell(row: row, l10n: l10n),
+                if (showResults) _ResultCell(row: row, l10n: l10n),
               ],
             ),
         ],
@@ -573,10 +591,15 @@ _ClinicalChipColors _clinicalChipColors(
 }
 
 class _OpdClinicalServiceCard extends StatelessWidget {
-  const _OpdClinicalServiceCard({required this.row, required this.l10n});
+  const _OpdClinicalServiceCard({
+    required this.row,
+    required this.l10n,
+    this.showResults = true,
+  });
 
   final OpdClinicalServiceRow row;
   final AppLocalizations l10n;
+  final bool showResults;
 
   @override
   Widget build(BuildContext context) {
@@ -650,16 +673,17 @@ class _OpdClinicalServiceCard extends StatelessWidget {
                   ),
                 ],
               ),
-              Text(
-                '${l10n.opdClinicalServiceResultColumnLabel}: ${row.resultLabel}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: unavailable ? FontWeight.w500 : FontWeight.w700,
-                  color: unavailable
-                      ? theme.colorScheme.onSurfaceVariant
-                      : appVitalSignStatusColor(context, row.resultStatus) ??
-                            theme.colorScheme.onSurface,
+              if (showResults)
+                Text(
+                  '${l10n.opdClinicalServiceResultColumnLabel}: ${row.resultLabel}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: unavailable ? FontWeight.w500 : FontWeight.w700,
+                    color: unavailable
+                        ? theme.colorScheme.onSurfaceVariant
+                        : appVitalSignStatusColor(context, row.resultStatus) ??
+                              theme.colorScheme.onSurface,
+                  ),
                 ),
-              ),
             ],
           ),
         ),

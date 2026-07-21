@@ -1133,7 +1133,7 @@ void main() {
       expect(find.text('Owen Old'), findsNothing);
       expect(find.text('Cora Closed'), findsNothing);
       expect(find.text('Record vitals'), findsOneWidget);
-      expect(find.text('Doctor review'), findsOneWidget);
+      expect(find.text('Clinical notes'), findsOneWidget);
       expect(find.byType(WorkflowActionButton), findsNothing);
       expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
 
@@ -1151,7 +1151,7 @@ void main() {
         of: find.byType(AppSearchBar),
         matching: find.byType(EditableText),
       );
-      await tester.enterText(searchField, 'Doctor review');
+      await tester.enterText(searchField, 'Clinical notes');
       await tester.pump();
       expect(find.text('Casey Consultation'), findsOneWidget);
       expect(find.text('Alex Active'), findsNothing);
@@ -1184,9 +1184,9 @@ void main() {
     );
 
     expect(find.text('Casey Consultation'), findsOneWidget);
-    expect(find.text('Doctor review'), findsOneWidget);
+    expect(find.text('Clinical notes'), findsOneWidget);
     expect(find.byType(WorkflowActionButton), findsNothing);
-    expect(find.widgetWithText(AppButton, 'Doctor review'), findsNothing);
+    expect(find.widgetWithText(AppButton, 'Clinical notes'), findsNothing);
   });
 
   testWidgets(

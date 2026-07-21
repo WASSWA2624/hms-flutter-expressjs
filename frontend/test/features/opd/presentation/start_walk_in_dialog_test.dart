@@ -939,7 +939,7 @@ void main() {
   });
 
   testWidgets(
-    'FlowActionsDialog doctor review shows the triage summary notes',
+    'FlowActionsDialog clinical notes shows the triage summary notes',
     (WidgetTester tester) async {
       final _MockOpdRepository opdRepository = _MockOpdRepository();
       const OpdFlowSummary flow = OpdFlowSummary(
@@ -1025,25 +1025,40 @@ void main() {
         (_) async =>
             const Result<OpdFlowDetail>.success(OpdFlowDetail(summary: flow)),
       );
+      when(() => opdRepository.getOpdSummaryCounts()).thenAnswer(
+        (_) async => const Result<OpdFlowAggregateCounts>.success(
+          OpdFlowAggregateCounts(),
+        ),
+      );
+      when(() => opdRepository.listProviders()).thenAnswer(
+        (_) async =>
+            const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+      );
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            initialSessionStateProvider.overrideWithValue(
-              SessionState.authenticated(
-                session: AuthSession(
+            appAccessPolicyProvider.overrideWithValue(
+              AppAccessPolicy.fromSession(
+                AuthSession(
                   tokens: SessionTokens(accessToken: 'test-access-token'),
-                  subject: 'doctor@example.com',
-                  user: const AuthUserProfile(
-                    id: 'doctor-1',
-                    email: 'doctor@example.com',
-                    roles: <String>['DOCTOR'],
-                  ),
+                  user: const AuthUserProfile(roles: <String>['DOCTOR']),
+                  permissions: <AppPermission>{
+                    AppPermissions.patientRead,
+                    AppPermissions.clinicalRead,
+                    AppPermissions.clinicalWrite,
+                  },
                   moduleEntitlements: const <AppModuleEntitlement>[
-                    AppModuleEntitlement(code: 'scheduling-queue'),
+                    AppModuleEntitlement(
+                      code: 'scheduling-queue',
+                      licenseStatus: 'ACTIVE',
+                    ),
                   ],
                 ),
               ),
+            ),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
             ),
             opdRepositoryProvider.overrideWithValue(opdRepository),
           ],
@@ -1058,10 +1073,11 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       final Finder doctorReviewAction = find.widgetWithText(
         AppButton,
-        'Doctor review',
+        'Next · Clinical notes',
       );
       await tester.ensureVisible(doctorReviewAction);
       await tester.pumpAndSettle();
@@ -1074,10 +1090,10 @@ void main() {
       expect(find.textContaining('Fall risk'), findsOneWidget);
 
       await tester.ensureVisible(
-        find.widgetWithText(AppButton, 'Doctor review').last,
+        find.widgetWithText(AppButton, 'Clinical notes').last,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(AppButton, 'Doctor review').last);
+      await tester.tap(find.widgetWithText(AppButton, 'Clinical notes').last);
       await tester.pump();
 
       expect(
