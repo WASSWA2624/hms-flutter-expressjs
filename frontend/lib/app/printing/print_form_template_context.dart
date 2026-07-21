@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
@@ -77,9 +79,15 @@ Future<void> printFormTemplateDocument({
   DateTime? printedAt,
   String? footerNote,
 }) async {
-  final PrintFormTemplateContext templateContext = await ref.read(
-    printFormTemplateContextReadyProvider.future,
-  );
+  // Prefer branded facility context, but never hang Print/Copy busy forever.
+  PrintFormTemplateContext templateContext;
+  try {
+    templateContext = await ref
+        .read(printFormTemplateContextReadyProvider.future)
+        .timeout(const Duration(seconds: 5));
+  } catch (_) {
+    templateContext = ref.read(printFormTemplateContextProvider);
+  }
   if (!context.mounted) {
     return;
   }

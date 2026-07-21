@@ -1,1 +1,41 @@
-There is a print on the, on the There is a print summary button on the Reception screen. unfortunately the print button after clicking the print button, it, it remains stuck as if it's, it's loading, so and the entire interface freezes. So what I want is that the user interface shouldn't freeze, it should remain this should work as it When you, when you click, when you open the, open summary, I want, I want I want there to be a way to select different details claims. For example you want to print vitals then you can print the vitals. You want to print payments claim amounts, so I want that the receptionist should have access to read clinical details in full view, so, so that Dialogue allows you to tick to select which to print. I want everything to be nicely formatted for printing, for easy reading. I don't want you to print things like try again, then that. The next step I've got a device now, I want us to print the details the patient has gone through, they have many ailments, then they should print for them how much money they have paid, whatever, whatever details this patient has gone through, I want this print preview to show all this if they have seen a doctor, then maybe they may print some information from there. For example, they can print the diagnosis that they have, so they should have full access to print everything the patient has through, throughout the end. Encounter even if something is pending and you want to print and show that this is actually pending, but the, the most important thing is the report needs to be printed nicely using the existing print, print existing print point that is already designed in the shared folder, so, so that everything looks nice, everything looks nice, every section should be nicely shown
+# Selectable Formatted OPD Print Summary
+
+Upgrade Print summary with section ticks, shared-template formatting, and non-freezing print. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+`PrintOpdSummaryDialog` dumps plain-text counts into one note block; Print can stick busy and freeze the UI. Reception needs selectable sections and formatted output—not UI chrome or retry labels.
+
+**Print sections:** visit/stage, payment, vitals, notes, diagnoses, procedures, lab/radiology/pharmacy, referrals/follow-ups, timeline. Empty or unauthorized sections stay disabled.
+
+**Pending:** incomplete recorded work labeled pending when selected.
+
+## Requirements
+
+1. Add section picker via `AppReportSectionPicker` and `report_section_selection`; default-select enabled sections with data.
+2. Preview/print only selected sections using `PrintFormTemplate` section/kv/list/table helpers—not one escaped note.
+3. Print full clinical and payment detail from flow/detail (not counts alone); mark pending items as pending.
+4. Exclude UI chrome, retry labels, and error banners from preview and print.
+5. Clear Print/Copy busy after success or failure; keep UI interactive; never leave stuck loading.
+6. Preserve loading, empty, error, busy, permission states; omit unauthorized UI; keep authorized Reception read-only print access.
+
+## Constraints
+
+- Reuse `PrintOpdSummaryDialog`, `printFormTemplateDocument`, report section picker, Flow Actions, auth, localization, design-system; no parallel path.
+- Do not invent clinical writes or change billing/clinical contracts.
+- Support themes and viewports.
+
+## Acceptance Criteria
+
+- R1–R2: Section ticks drive preview/print; template sections used.
+- R3–R4: Full selected detail including pending; no Try again/UI chrome.
+- R5–R6: Print never freezes UI; states intact; unauthorized UI absent.
+- Update print-summary tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/opd_print_summary_dialog.dart`
+- `frontend/lib/shared/reporting/report_section_selection.dart`
+- `frontend/lib/shared/components/app_report_section*.dart`
+- `frontend/lib/shared/printing/`
+- `frontend/test/shared/opd_actions/opd_print_summary_dialog_test.dart`

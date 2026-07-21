@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,6 +56,22 @@ void main() {
         title: 'Observation',
       ),
     ],
+    diagnoses: <OpdRelatedRecord>[
+      OpdRelatedRecord(
+        id: 'dx-1',
+        kind: 'DIAGNOSIS',
+        title: 'Migraine',
+        status: 'CONFIRMED',
+      ),
+    ],
+    labOrders: <OpdRelatedRecord>[
+      OpdRelatedRecord(
+        id: 'lab-1',
+        kind: 'LAB',
+        title: 'CBC',
+        status: 'PENDING',
+      ),
+    ],
     timeline: <OpdTimelineItem>[
       OpdTimelineItem(
         action: 'STAGE_CHANGED',
@@ -64,7 +82,7 @@ void main() {
   );
 
   testWidgets(
-    'uses AppDialog with Copy → Cancel → Print and general title',
+    'uses AppDialog with section picker, Copy → Cancel → Print',
     (WidgetTester tester) async {
       await _pumpDialog(tester, flow: flow, detail: detail);
 
@@ -75,8 +93,12 @@ void main() {
       expect(find.text('PRINT SUMMARY'), findsOneWidget);
       expect(find.text('Patient Example'), findsWidgets);
       expect(find.byType(OpdActionContextPanel), findsOneWidget);
+      expect(find.byType(AppReportSectionPicker), findsOneWidget);
       expect(find.byType(AppReportPreviewPanel), findsOneWidget);
       expect(find.byType(AppFormSection), findsOneWidget);
+      expect(find.text('Visit'), findsWidgets);
+      expect(find.text('Payment'), findsWidgets);
+      expect(find.text('Vitals'), findsWidgets);
       expect(find.text('Copy summary'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Print'), findsOneWidget);
@@ -111,7 +133,7 @@ void main() {
     expect(find.byType(AppDialog), findsNothing);
   });
 
-  testWidgets('Copy keeps the dialog open and writes the summary text', (
+  testWidgets('Copy keeps the dialog open and writes selected summary text', (
     WidgetTester tester,
   ) async {
     String? clipboardText;
@@ -152,6 +174,9 @@ void main() {
     expect(clipboardText, contains('Patient Example'));
     expect(clipboardText, contains('Headache'));
     expect(clipboardText, contains('Temperature'));
+    expect(clipboardText, contains('Migraine'));
+    expect(clipboardText, contains('CBC'));
+    expect(clipboardText, isNot(contains('Try again')));
   });
 
   testWidgets(
@@ -174,7 +199,7 @@ void main() {
     },
   );
 
-  testWidgets('summary text includes stage, vitals, and timeline details', (
+  testWidgets('summary text includes selected clinical and payment detail', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -203,7 +228,98 @@ void main() {
     expect(summary, contains('PAT0000001'));
     expect(summary, contains('Headache'));
     expect(summary, contains('Temperature'));
+    expect(summary, contains('Migraine'));
+    expect(summary, contains('CBC'));
+    expect(summary, contains('Pending'));
     expect(summary, contains('Ready for review'));
+    expect(summary, isNot(contains('Try again')));
+  });
+
+  testWidgets('deselecting vitals removes them from preview', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDialog(tester, flow: flow, detail: detail);
+
+    expect(find.textContaining('Temperature'), findsWidgets);
+
+    await tester.tap(find.text('Vitals').first);
+    await tester.pumpAndSettle();
+
+    final AppReportPreviewPanel preview = tester.widget(
+      find.byType(AppReportPreviewPanel),
+    );
+    final Text previewText = tester.widget<Text>(
+      find.descendant(
+        of: find.byWidget(preview),
+        matching: find.byType(Text),
+      ).last,
+    );
+    expect(previewText.data, isNot(contains('Temperature')));
+    expect(previewText.data, contains('Patient Example'));
+  });
+
+  testWidgets('HTML builder uses PrintFormTemplate sections', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              final String html = buildOpdPrintSummaryHtml(
+                context: context,
+                flow: flow,
+                detail: detail,
+                selectedSections: <OpdPrintSection>{
+                  OpdPrintSection.visit,
+                  OpdPrintSection.payment,
+                  OpdPrintSection.vitals,
+                  OpdPrintSection.diagnoses,
+                  OpdPrintSection.services,
+                },
+              );
+              return Text(html);
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final String html = tester.widget<Text>(find.byType(Text)).data!;
+    expect(html, contains('print-template-section'));
+    expect(html, contains('print-template-kv'));
+    expect(html, contains('print-template-list'));
+    expect(html, contains('Migraine'));
+    expect(html, contains('CBC'));
+    expect(html, isNot(contains('Try again')));
+  });
+
+  testWidgets('empty clinical sections stay disabled in the picker', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDialog(tester, flow: flow);
+
+    final List<ReportSectionAvailability> availabilities =
+        buildOpdPrintSectionAvailabilities(flow: flow);
+    expect(
+      availabilities
+          .firstWhere((ReportSectionAvailability s) => s.id == OpdPrintSection.vitals)
+          .enabled,
+      isFalse,
+    );
+    expect(
+      availabilities
+          .firstWhere(
+            (ReportSectionAvailability s) => s.id == OpdPrintSection.visit,
+          )
+          .enabled,
+      isTrue,
+    );
+    expect(find.text('No data available'), findsWidgets);
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (
@@ -240,6 +356,9 @@ void main() {
           printFormTemplateContextReadyProvider.overrideWith(
             (ref) async => throw StateError('print unavailable'),
           ),
+          printFormTemplateContextProvider.overrideWith(
+            (ref) => throw StateError('print unavailable'),
+          ),
         ],
         child: MaterialApp(
           theme: AppTheme.light,
@@ -274,6 +393,63 @@ void main() {
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.byType(AppFormInformationBanner), findsOneWidget);
   });
+
+  testWidgets(
+    'Print recovers when ready context hangs by using sync branding',
+    (WidgetTester tester) async {
+      bool? result;
+      final Completer<PrintFormTemplateContext> hanging =
+          Completer<PrintFormTemplateContext>();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            printFormTemplateContextReadyProvider.overrideWith(
+              (ref) => hanging.future,
+            ),
+            printFormTemplateContextProvider.overrideWith(
+              (ref) => const PrintFormTemplateContext(
+                appBranding: PrintFormBranding(
+                  name: 'Fallback HMS',
+                  kind: PrintFormBrandingKind.app,
+                ),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (BuildContext context) {
+                  return AppButton.primary(
+                    label: 'Open',
+                    onPressed: () async {
+                      result = await showPrintOpdSummaryDialog(
+                        context: context,
+                        flow: flow,
+                        detail: detail,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Print'));
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+
+      expect(result, isFalse);
+      expect(find.byType(AppDialog), findsNothing);
+    },
+  );
 }
 
 String? _actionLabel(Widget action) {
@@ -299,6 +475,14 @@ Future<void> _pumpDialog(
       overrides: [
         printFormTemplateContextReadyProvider.overrideWith(
           (ref) async => const PrintFormTemplateContext(
+            appBranding: PrintFormBranding(
+              name: 'Test HMS',
+              kind: PrintFormBrandingKind.app,
+            ),
+          ),
+        ),
+        printFormTemplateContextProvider.overrideWith(
+          (ref) => const PrintFormTemplateContext(
             appBranding: PrintFormBranding(
               name: 'Test HMS',
               kind: PrintFormBrandingKind.app,
