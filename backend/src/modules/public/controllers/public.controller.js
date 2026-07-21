@@ -47,10 +47,8 @@ const listPublicProviders = asyncHandler(async (req, res) => {
   sendPaginated(res, 'messages.public.providers.list.success', result.items, result.pagination);
 });
 
-);
 
 module.exports = {
   listPublicServices,
-  listPublicProviders,
-  listPublicBranches
+  listPublicProviders
 };

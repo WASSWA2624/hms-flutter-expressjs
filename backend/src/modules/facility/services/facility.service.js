@@ -13,7 +13,7 @@ const { HttpError } = require('@lib/errors');
 const { resolveEntityId, resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const {
   resolveModelIdByIdentifier,
-  resolveModelRecordByIdentifier,
+  resolveModelRecordByIdentifier
 } = require('@lib/identifiers/resolve-entity-id');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
@@ -25,7 +25,7 @@ const {
 } = require('@lib/realtime/platform-realtime');
 const { createStorageService } = require('@lib/storage');
 const {
-  deleteFacilityLogoFromStorage,
+  deleteFacilityLogoFromStorage
 } = require('@lib/storage/facility-logo-storage');
 
 const FACILITY_REALTIME_RECIPIENT_ROLES = Object.freeze([
@@ -80,7 +80,7 @@ const resolveFacilityId = async (identifier, { includeDeleted = false } = {}) =>
     const resolved = await resolveModelIdByIdentifier({
       model: 'facility',
       identifier: normalized,
-      includeDeleted: true,
+      includeDeleted: true
     });
     return resolved || normalized;
   }
@@ -98,7 +98,7 @@ const normalizeFacilityRecord = (facility) => {
     resource_uuid: facility.id,
     display_id:
       resolvePublicIdentifier(facility.human_friendly_id, facility.id) ||
-      facility.id,
+      facility.id
   };
 };
 
@@ -250,7 +250,7 @@ const assertUniqueFacilityName = async (tenantId, name, excludeFacilityId = null
 const createFacility = async (data, context = {}) => {
   const payload = {
     ...data,
-    tenant_id: await resolveTenantId(data.tenant_id),
+    tenant_id: await resolveTenantId(data.tenant_id)
   };
 
   await assertUniqueFacilityName(payload.tenant_id, payload.name);
@@ -327,7 +327,7 @@ const updateFacility = async (id, data, context = {}) => {
         : {};
     const mergedExtension = {
       ...previousExtension,
-      ...data.extension_json,
+      ...data.extension_json
     };
     for (const [key, value] of Object.entries(mergedExtension)) {
       if (value === null || value === undefined) {
@@ -336,7 +336,7 @@ const updateFacility = async (id, data, context = {}) => {
     }
     data = {
       ...data,
-      extension_json: mergedExtension,
+      extension_json: mergedExtension
     };
   }
 
@@ -400,7 +400,7 @@ const deleteFacility = async (id, context = {}) => {
         model: 'facility',
         identifier: candidate,
         includeDeleted: true,
-        select: { id: true, deleted_at: true },
+        select: { id: true, deleted_at: true }
       });
       if (deletedFacility?.deleted_at) {
         return;
@@ -455,8 +455,8 @@ const restoreFacility = async (id, context = {}) => {
     details: {
       name: facility.name,
       facility_type: facility.facility_type,
-      tenant_id: facility.tenant_id,
-    },
+      tenant_id: facility.tenant_id
+    }
   });
 
   await publishFacilityRealtimeEvent(
@@ -505,8 +505,8 @@ const permanentDeleteFacility = async (id, context = {}) => {
       facility_type: facility.facility_type,
       tenant_id: facility.tenant_id,
       irreversible: true,
-      logo_deleted: Boolean(logoUrl),
-    },
+      logo_deleted: Boolean(logoUrl)
+    }
   });
 
   // Remove logo file from storage before the DB row is purged.
@@ -526,11 +526,10 @@ const permanentDeleteFacility = async (id, context = {}) => {
     facility_id: facilityId,
     payload: {
       name: facility.name,
-      permanent: true,
-    },
+      permanent: true
+    }
   });
 };
-
 
 module.exports = {
   listFacilities,
@@ -539,5 +538,5 @@ module.exports = {
   updateFacility,
   deleteFacility,
   restoreFacility,
-  permanentDeleteFacility,
+  permanentDeleteFacility
 };

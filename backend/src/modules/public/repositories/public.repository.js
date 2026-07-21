@@ -108,7 +108,7 @@ const listPublicProviders = async (search, skip, take, orderBy) => {
                 select: {
                   first_name: true,
                   middle_name: true,
-                  last_name: true,
+                  last_name: true
                 }
               }
             }
@@ -124,8 +124,7 @@ const listPublicProviders = async (search, skip, take, orderBy) => {
   }
 };
 
-
 module.exports = {
   listPublicServices,
-  listPublicProviders,
+  listPublicProviders
 };
