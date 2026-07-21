@@ -275,18 +275,12 @@ void main() {
     );
 
     await tester.enterText(find.byType(AppEmailField), 'new@example.com');
-    // Phone field is composite; set controller via AppPhoneField national entry.
-    final Finder phoneFinder = find.byType(AppPhoneField);
-    expect(phoneFinder, findsOneWidget);
-    await tester.enterText(find.descendant(
-      of: phoneFinder,
-      matching: find.byType(TextField),
-    ).last, '700000099');
     await tester.tap(find.widgetWithText(AppButton, 'Save follow-up'));
     await tester.pumpAndSettle();
 
     expect(patientPayload, isNotNull);
     expect(patientPayload?['primary_email'], 'new@example.com');
+    expect(patientPayload?.containsKey('primary_phone'), isFalse);
     verify(() => repository.createFollowUp(any())).called(1);
   });
 

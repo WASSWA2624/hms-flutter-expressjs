@@ -2699,6 +2699,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionFollowUpContactSectionTitle => 'Contact';
 
   @override
+  String get receptionFollowUpContactEitherHint =>
+      'Provide a phone number or email so the patient can be reached.';
+
+  @override
   String get receptionFollowUpSkipAction => 'Skip';
 
   @override

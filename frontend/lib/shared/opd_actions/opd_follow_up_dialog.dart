@@ -35,7 +35,8 @@ Future<bool?> showFollowUpDialog({
 ///
 /// Creates a follow-up via `POST /api/v1/follow-ups` with public
 /// `encounter_id`, UTC `scheduled_at`, `status`, and optional `notes`.
-/// Always captures phone and email; persists patient contact when new or changed.
+/// Requires phone or email (at least one); persists patient contact when new
+/// or changed.
 class FollowUpDialog extends ConsumerStatefulWidget {
   const FollowUpDialog({
     required this.flow,
@@ -131,20 +132,19 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
         ),
         AppFormSection(
           title: l10n.receptionFollowUpContactSectionTitle,
+          description: l10n.receptionFollowUpContactEitherHint,
           density: AppFormSectionDensity.compact,
           children: <Widget>[
             PatientPhoneField(
               phoneFieldKey: _phoneFieldKey,
               controller: _phoneController,
-              labelText: l10n.receptionFollowUpContactRequiredLabel,
-              isRequired: true,
+              labelText: l10n.patientsPhoneLabel,
               isLoading: _contactHydrating,
               textInputAction: TextInputAction.next,
             ),
             PatientEmailField(
               controller: _emailController,
               labelText: l10n.patientsEmailLabel,
-              isRequired: true,
               isLoading: _contactHydrating,
               textInputAction: TextInputAction.next,
             ),
@@ -169,12 +169,9 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
     AppPhoneField.commitPhone(_phoneFieldKey);
     final String phone = _phoneController.text.trim();
     final String email = _emailController.text.trim();
-    if (phone.isEmpty || email.isEmpty) {
+    if (phone.isEmpty && email.isEmpty) {
       return AppFailure.validation(
-        validationFields: <String>{
-          if (phone.isEmpty) 'primary_phone',
-          if (email.isEmpty) 'primary_email',
-        },
+        validationFields: const <String>{'primary_phone', 'primary_email'},
       );
     }
 
@@ -188,21 +185,28 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
     final bool phoneChanged = phone != (_initialPhone ?? '').trim();
     final bool emailChanged = email != (_initialEmail ?? '').trim();
     if (phoneChanged || emailChanged) {
-      final Result<Patient> updateResult = await ref
-          .read(patientRepositoryProvider)
-          .updatePatient(patientId, <String, Object?>{
-            if (phoneChanged) 'primary_phone': phone,
-            if (emailChanged) 'primary_email': email,
-          });
-      final AppFailure? updateFailure = updateResult.when(
-        success: (_) => null,
-        failure: (AppFailure failure) => failure,
-      );
-      if (updateFailure != null) {
-        return updateFailure;
+      final Map<String, Object?> contactPayload = <String, Object?>{
+        if (phoneChanged && phone.isNotEmpty) 'primary_phone': phone,
+        if (emailChanged && email.isNotEmpty) 'primary_email': email,
+      };
+      if (contactPayload.isNotEmpty) {
+        final Result<Patient> updateResult = await ref
+            .read(patientRepositoryProvider)
+            .updatePatient(patientId, contactPayload);
+        final AppFailure? updateFailure = updateResult.when(
+          success: (_) => null,
+          failure: (AppFailure failure) => failure,
+        );
+        if (updateFailure != null) {
+          return updateFailure;
+        }
+        if (phoneChanged && phone.isNotEmpty) {
+          _initialPhone = phone;
+        }
+        if (emailChanged && email.isNotEmpty) {
+          _initialEmail = email;
+        }
       }
-      _initialPhone = phone;
-      _initialEmail = email;
     }
 
     return ref

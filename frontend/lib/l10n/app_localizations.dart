@@ -5224,6 +5224,12 @@ abstract class AppLocalizations {
   /// **'Contact'**
   String get receptionFollowUpContactSectionTitle;
 
+  /// Hint that follow-up contact needs phone or email, not both.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide a phone number or email so the patient can be reached.'**
+  String get receptionFollowUpContactEitherHint;
+
   /// Dismisses the optional post-disposition follow-up dialog without scheduling.
   ///
   /// In en, this message translates to:

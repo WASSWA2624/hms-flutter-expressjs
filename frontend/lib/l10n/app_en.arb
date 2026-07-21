@@ -3514,6 +3514,10 @@
   "@receptionFollowUpContactSectionTitle": {
     "description": "Section title for phone and email capture on the follow-up dialog."
   },
+  "receptionFollowUpContactEitherHint": "Provide a phone number or email so the patient can be reached.",
+  "@receptionFollowUpContactEitherHint": {
+    "description": "Hint that follow-up contact needs phone or email, not both."
+  },
   "receptionFollowUpSkipAction": "Skip",
   "@receptionFollowUpSkipAction": {
     "description": "Dismisses the optional post-disposition follow-up dialog without scheduling."

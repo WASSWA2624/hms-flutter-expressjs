@@ -7,7 +7,7 @@ Standardize Follow-up contact fields and add scoped Follow-ups tabs on clinical 
 
 Follow-up opens from Flow Actions with a plain phone field, no email, and journey stepper. Reception has Follow-ups; OPD and peer workspaces lack a scoped worklist.
 
-**Contact capture:** required phone and email; prefilled when present; confirmed or supplied before save; persisted.
+**Contact capture:** phone or email (at least one); prefilled when present; confirmed or supplied before save; persisted.
 
 **Scoped Follow-ups tab:** patients in that workspace domain—not hospital-wide.
 
@@ -15,7 +15,7 @@ Follow-up opens from Flow Actions with a plain phone field, no email, and journe
 
 1. Keep patient identity; omit the visit journey stepper.
 2. Show phone and email via `AppPhoneField` and `AppEmailField`; prefill when available.
-3. Require both before save; persist to the patient when new or changed.
+3. Require phone or email before save; persist to the patient when new or changed.
 4. Keep schedule date/time and optional notes; Save creates and syncs.
 5. Add Follow-ups tabs on OPD, inpatient, ICU, clinical, physiotherapy, theater, discharge, lab, radiology—scoped per workspace.
 6. Omit Follow-ups tabs on pharmacy and billing.
@@ -30,7 +30,7 @@ Follow-up opens from Flow Actions with a plain phone field, no email, and journe
 ## Acceptance Criteria
 
 - R1: Patient details remain; no journey stepper.
-- R2–R3: Shared phone/email; prefilled; both required; contact persisted.
+- R2–R3: Shared phone/email; prefilled; phone or email required; contact persisted.
 - R4: Schedule/notes unchanged; sync after save.
 - R5–R6: Scoped tabs on listed workspaces; absent on pharmacy and billing.
 - R7: States intact; unauthorized UI absent.
