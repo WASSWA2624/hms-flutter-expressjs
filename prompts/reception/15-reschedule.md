@@ -1,1 +1,39 @@
-On the reception screen. There is a appointments tab And when you click on one of the patients who has an appointment, there is a section, there is modal dialog that opens up with The quick action section that has the reschedule button. So this button is actually used to reschedule these patients for maybe another day or another period of time. Yeah, so what I want is that when you're rescheduling this this patient, there should be also a way to assign these patients to another doctor. Maybe this patient is going to save the same service, but then there is a, this current doctor for whom is assigned won't be available that day, and then you're sorry to reschedule to this doctor, we need to know we need to confirm their schedule and confirm that this, this doctor is actually available. Yes, so also this schedule this schedule Patient dialogue, there is a section where it displays the patient information. I want this section to be replaced by the patient detail component and so we have to make sure that when we are scheduling, actually, all the updated information is the, the change, the information that has been changed is actually updated in the database the appointment date, the start time and end time. we can also make it in such a way that when you're scheduling this patient, you may set the start time you may set the, set the start time and then you can either set a duration for the schedule. For the time, the end time. So for example, if I said maybe the meeting to be, there's, the appointment to be for thirty minutes, then the end time will be set automatically. If I set the end time, then the duration will be set automatically. Then also we need to Improve the The appointment, the, the reschedule form so that it looks better, and we just have to make sure that everything is synchronized with the back end and front end so everything actually looks nice.
+# Improve Reception Appointment Reschedule
+
+Upgrade `OpdRescheduleAppointmentDialog` so Reception can change date, time, duration, and doctor with availability checks and durable persistence. Follow `prompts/.cursor/prompt.mdc`.
+
+## Context
+
+From `/reception` Appointments, Reschedule edits only date and start/end. Patient context is a triage summary; doctor reassignment and duration linkage are missing though schedule-appointment already supports providers and duration.
+
+## Requirements
+
+1. Replace the reschedule triage summary with `AppPatientDetails` for patient identity and status.
+2. Allow optional doctor reassignment; reuse provider options and schedule data so availability is visible before save.
+3. Keep start time editable; add duration that auto-derives end time, and end time that auto-derives duration; validate end after start.
+4. Persist changed `scheduled_start`, `scheduled_end`, and `provider_user_id` via existing update contracts; leave unchanged fields untouched.
+5. After success, close and synchronize Appointments, search, filters, and counts.
+6. Improve form layout with design-system fields; preserve loading, validation, error, success, and permission states; omit unauthorized UI.
+
+## Constraints
+
+- Reuse provider-select, schedule helpers, localization, theme tokens, and responsive patterns from schedule-appointment.
+- Do not invent clinical transitions or alter cancel/start-encounter flows.
+- Backend authorization remains authoritative.
+
+## Acceptance Criteria
+
+- R1: Reschedule shows `AppPatientDetails`, not the triage tile row.
+- R2–R3: Doctor and duration/end-time stay linked and availability-aware.
+- R4–R5: Saved changes persist and Reception lists refresh.
+- R6: States remain clear; unauthorized UI is absent.
+- Extend reschedule dialog tests; run Flutter analysis.
+
+## Relevant Files
+
+- `frontend/lib/shared/opd_actions/opd_reschedule_appointment_dialog.dart`
+- `frontend/lib/shared/opd_actions/opd_provider_options.dart`
+- `frontend/lib/shared/opd_actions/patient_appointment_quick_dialog.dart`
+- `frontend/lib/shared/components/app_patient_details.dart`
+- `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
+- `frontend/test/shared/opd_actions/opd_reschedule_appointment_dialog_test.dart`
