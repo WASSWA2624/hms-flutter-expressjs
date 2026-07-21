@@ -44,7 +44,7 @@ class ShellNavigationScope extends InheritedWidget {
 
   static bool deferLoadingToShellOf(BuildContext context) {
     return context
-            .dependOnInheritedWidgetOfExactType<ShellNavigationScope>()
+            .getInheritedWidgetOfExactType<ShellNavigationScope>()
             ?.deferLoadingToShell ??
         false;
   }

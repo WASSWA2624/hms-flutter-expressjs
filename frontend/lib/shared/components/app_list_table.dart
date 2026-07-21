@@ -2544,20 +2544,10 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         ),
         for (final AppListTableColumn<T> column in widget.columns)
           DataCell(
-            SizedBox(
+            _AppListTableCell(
               width: widget.columnWidthFor(column),
-              child: Align(
-                alignment: column.numeric
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: column.numeric
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: column.cellBuilder(context, item),
-                ),
-              ),
+              numeric: column.numeric,
+              child: column.cellBuilder(context, item),
             ),
           ),
       ],
@@ -2652,12 +2642,40 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   }
 }
 
+/// Constrains cell content to the column width at a fixed readable text size.
+///
+/// Long labels keep their natural font size and clip/ellipsis inside the
+/// column instead of being shrunk by [FittedBox].
+class _AppListTableCell extends StatelessWidget {
+  const _AppListTableCell({
+    required this.width,
+    required this.numeric,
+    required this.child,
+  });
+
+  final double width;
+  final bool numeric;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Align(
+        alignment: numeric ? Alignment.centerRight : Alignment.centerLeft,
+        child: child,
+      ),
+    );
+  }
+}
+
 class _DesktopRowKeyboardActivator extends StatefulWidget {
   const _DesktopRowKeyboardActivator({
     required this.enabled,
     required this.onActivate,
     required this.child,
   });
+
 
   final bool enabled;
   final VoidCallback onActivate;

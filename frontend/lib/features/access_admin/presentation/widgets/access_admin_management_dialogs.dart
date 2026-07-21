@@ -434,9 +434,7 @@ class _ManageUsersPanelState
         statusFilter = null;
       });
       await reload(resetPage: true, silent: true);
-      await ref
-          .read(accessAdminWorkspaceControllerProvider.notifier)
-          .rehydrateSession();
+      // createUserWithRoles already schedules a deferred session rehydrate.
     }
   }
 
@@ -488,9 +486,7 @@ class _ManageUsersPanelState
     if (saved == true && mounted) {
       mutated = true;
       await reload(resetPage: false, silent: true);
-      await ref
-          .read(accessAdminWorkspaceControllerProvider.notifier)
-          .rehydrateSession();
+      // updateUserWithRoles already schedules a deferred session rehydrate.
     }
   }
 
@@ -637,9 +633,7 @@ class _ManageUsersPanelState
     );
     if (mounted && detailDidMutate) {
       await reload(resetPage: false, silent: true);
-      await ref
-          .read(accessAdminWorkspaceControllerProvider.notifier)
-          .rehydrateSession();
+      // Role/permission mutations on the detail dialog already schedule rehydrate.
     }
   }
 
@@ -1063,9 +1057,7 @@ class _ManageRolesPermissionsPanelState
     if (saved == true && mounted) {
       mutated = true;
       await reload(resetPage: true, silent: true);
-      await ref
-          .read(accessAdminWorkspaceControllerProvider.notifier)
-          .rehydrateSession();
+      // createRole already schedules a deferred session rehydrate.
     }
   }
 
@@ -1126,9 +1118,7 @@ class _ManageRolesPermissionsPanelState
     if (saved == true && mounted) {
       mutated = true;
       await reload(resetPage: true, silent: true);
-      await ref
-          .read(accessAdminWorkspaceControllerProvider.notifier)
-          .rehydrateSession();
+      // updateRole already schedules a deferred session rehydrate.
     }
   }
 
@@ -1171,9 +1161,18 @@ class _ManageRolesPermissionsPanelState
         totalItemCount = math.max(0, totalItemCount - 1);
       });
       await reload(resetPage: items.isEmpty, silent: true);
-      await ref
-          .read(accessAdminWorkspaceControllerProvider.notifier)
-          .rehydrateSession();
+      // Delete goes through the repository (not controller refreshSession), so
+      // rehydrate after the confirm dialog has fully closed.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(
+          ref
+              .read(accessAdminWorkspaceControllerProvider.notifier)
+              .rehydrateSession(),
+        );
+      });
     }
   }
 

@@ -32,9 +32,12 @@ final class SessionController extends Notifier<SessionState> {
     final AuthSession? previousSession = previousState.session;
     final bool contextChanged =
         previousSession != null &&
-        (previousSession.user?.id != session.user?.id ||
-            previousSession.user?.tenantId != session.user?.tenantId ||
-            previousSession.user?.facilityId != session.user?.facilityId);
+        (_normalizedContextId(previousSession.user?.id) !=
+                _normalizedContextId(session.user?.id) ||
+            _normalizedContextId(previousSession.user?.tenantId) !=
+                _normalizedContextId(session.user?.tenantId) ||
+            _normalizedContextId(previousSession.user?.facilityId) !=
+                _normalizedContextId(session.user?.facilityId));
 
     if (contextChanged) {
       state = const SessionState.notReady();
@@ -82,4 +85,12 @@ final class SessionController extends Notifier<SessionState> {
   void markForbidden() {
     state = SessionState.forbidden(session: state.session);
   }
+}
+
+String? _normalizedContextId(String? value) {
+  final String? trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) {
+    return null;
+  }
+  return trimmed;
 }

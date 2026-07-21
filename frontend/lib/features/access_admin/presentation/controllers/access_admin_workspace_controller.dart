@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -361,6 +362,15 @@ final class AccessAdminWorkspaceController
   /// Rehydrates the signed-in user's live grants from `/auth/me`.
   Future<void> rehydrateSession() => _refreshSession();
 
+  void _scheduleSessionRehydrate() {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!ref.mounted) {
+        return;
+      }
+      unawaited(_refreshSession());
+    });
+  }
+
   Future<AppFailure?> resetDemoPassword(AccessAdminItem item) {
     return _submitAction(
       () => _repository.resetDemoUserPassword(item.effectiveDisplayId),
@@ -510,14 +520,16 @@ final class AccessAdminWorkspaceController
             preferredSelectedId: current?.selectedItem?.id,
           );
         }
-        if (refreshSession) {
-          await _refreshSession();
-        }
         final AccessAdminWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(latest.copyWith(isSaving: false, isRefreshing: false));
         }
         await _flushPendingRefresh();
+        if (refreshSession) {
+          // Defer past dialog/overlay pop so GoRouter/shell refresh does not
+          // dispose InheritedWidgets while dependents are still mounted.
+          _scheduleSessionRehydrate();
+        }
         return null;
       },
       failure: (AppFailure failure) {

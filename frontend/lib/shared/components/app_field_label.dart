@@ -11,7 +11,7 @@ class AppFieldRequirementScope extends InheritedWidget {
 
   static bool shouldShowOptionalIndicator(BuildContext context) {
     final AppFieldRequirementScope? scope = context
-        .dependOnInheritedWidgetOfExactType<AppFieldRequirementScope>();
+        .getInheritedWidgetOfExactType<AppFieldRequirementScope>();
     if (scope?.showOptionalIndicators != true) {
       return false;
     }

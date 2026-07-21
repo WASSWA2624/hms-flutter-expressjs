@@ -12,7 +12,9 @@ class AppActionLabelScope extends InheritedWidget {
   final bool forceIconOnly;
 
   static AppActionLabelScope? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<AppActionLabelScope>();
+    // Use get (not dependOn) so descendants do not keep InheritedElement
+    // dependents alive across shell/router rebuilds after session rehydrate.
+    return context.getInheritedWidgetOfExactType<AppActionLabelScope>();
   }
 
   @override
