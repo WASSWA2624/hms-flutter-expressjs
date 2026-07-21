@@ -4,7 +4,7 @@ Replace Guided setup on `/admin/setup` with role-scoped `AppTabStrip` tables; re
 
 ## Context
 
-`TenantFacilitySetupPage` uses a locked Guided setup wizard plus manage dialogs. Nav always says Tenant setup.
+`TenantFacilitySetupPage` uses locked Guided setup plus manage dialogs. Nav always says Tenant setup.
 
 **Platform admin:** elevated access across tenants, facilities, admins.
 **Tenant admin:** one tenant and its facilities/structure/access.
