@@ -3510,7 +3510,7 @@
   "@receptionMarkFollowUpCompletedAction": {
     "description": "Action to mark a Reception follow-up call as completed."
   },
-  "receptionScheduleAnotherFollowUpAction": "Reschedule",
+  "receptionScheduleAnotherFollowUpAction": "Reschedule follow-up",
   "@receptionScheduleAnotherFollowUpAction": {
     "description": "Action to change the scheduled date/time of the open follow-up callback."
   },

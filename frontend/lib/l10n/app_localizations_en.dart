@@ -2697,7 +2697,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionMarkFollowUpCompletedAction => 'Mark completed';
 
   @override
-  String get receptionScheduleAnotherFollowUpAction => 'Reschedule';
+  String get receptionScheduleAnotherFollowUpAction => 'Reschedule follow-up';
 
   @override
   String get receptionFollowUpContactRequiredLabel => 'Contact phone';

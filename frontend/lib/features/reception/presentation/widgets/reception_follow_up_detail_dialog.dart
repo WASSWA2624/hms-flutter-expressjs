@@ -12,7 +12,8 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_follow_up_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
 Future<bool?> showReceptionFollowUpDetailDialog({
   required BuildContext context,
@@ -53,8 +54,13 @@ class _ReceptionFollowUpDetailDialogState
         entry.patientDisplayName?.trim().isNotEmpty == true
         ? entry.patientDisplayName!.trim()
         : l10n.profileUnknownValue;
-    final String? phone = _nonEmpty(entry.patientPhone);
-    final String? email = _nonEmpty(entry.patientEmail);
+    final String patientNumber = entry.patientIdentifier.trim().isNotEmpty
+        ? entry.patientIdentifier.trim()
+        : l10n.profileUnknownValue;
+    final String phone =
+        _nonEmpty(entry.patientPhone) ?? l10n.profileUnknownValue;
+    final String email =
+        _nonEmpty(entry.patientEmail) ?? l10n.profileUnknownValue;
     final String? notes = _nonEmpty(entry.notes);
     final DateTime localScheduled = entry.scheduledAt.toLocal();
     final String scheduledDate = AppFormatters.shortDate(localScheduled, locale);
@@ -64,10 +70,9 @@ class _ReceptionFollowUpDetailDialogState
     return AppDialog(
       title: Text(l10n.opdFollowUpsTitle),
       icon: const Icon(AppActionIcons.followUp),
-      maxWidth: 560,
-      // Content-sized shell: avoids a maximized empty canvas for this short
-      // call workflow.
-      initialMaximized: false,
+      maxWidth: 720,
+      scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isBusy,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -77,37 +82,29 @@ class _ReceptionFollowUpDetailDialogState
               context: context,
               failure: _failure!,
             ),
-          OpdWorkflowContextPanel(
+          AppPatientDetails(
             patientName: patientName,
-            patientNumber: entry.patientIdentifier,
-            currentStep: l10n.opdFollowUpAction,
-            currentStepCode: entry.status,
-            showJourneyStepper: false,
-          ),
-          AppFormSection(
-            title: l10n.receptionFollowUpContactSectionTitle,
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              AppInfoTileGrid(
-                maxColumns: 2,
-                minItemWidth: 200,
-                emptyValue: unknown,
-                items: <AppInfoTileData>[
-                  AppInfoTileData(
-                    label: l10n.patientsPhoneLabel,
-                    value: phone,
-                    icon: Icons.phone_outlined,
-                    copyable: phone != null,
-                    copiedMessage: l10n.identifierCopiedMessage,
-                  ),
-                  AppInfoTileData(
-                    label: l10n.patientsEmailLabel,
-                    value: email,
-                    icon: Icons.email_outlined,
-                    copyable: email != null,
-                    copiedMessage: l10n.identifierCopiedMessage,
-                  ),
-                ],
+            patientNumber: patientNumber,
+            patientNumberLabel: l10n.opdPatientIdLabel,
+            status: AppWorkspaceStatus(
+              label: l10n.opdFollowUpAction,
+              tone: opdStageStatusTone(entry.status),
+            ),
+            showAvatar: false,
+            persistExpandPreference: false,
+            initiallyExpanded: true,
+            semanticLabel: patientName,
+            fieldStyle: AppWorkspacePatientContextFieldStyle.tiles,
+            expandedFields: <AppWorkspacePatientContextField>[
+              AppWorkspacePatientContextField(
+                label: l10n.patientsPhoneLabel,
+                value: phone,
+                icon: Icons.phone_outlined,
+              ),
+              AppWorkspacePatientContextField(
+                label: l10n.patientsEmailLabel,
+                value: email,
+                icon: Icons.email_outlined,
               ),
             ],
           ),

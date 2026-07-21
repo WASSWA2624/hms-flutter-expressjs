@@ -5221,7 +5221,7 @@ abstract class AppLocalizations {
   /// Action to change the scheduled date/time of the open follow-up callback.
   ///
   /// In en, this message translates to:
-  /// **'Reschedule'**
+  /// **'Reschedule follow-up'**
   String get receptionScheduleAnotherFollowUpAction;
 
   /// Required phone field when scheduling a follow-up without a known patient contact.
