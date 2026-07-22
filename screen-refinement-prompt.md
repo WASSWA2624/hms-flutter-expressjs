@@ -1,6 +1,6 @@
 # Action Button Inventory — Target Screen: `/reception`
 
-Produce a complete inventory of every action button on the target screen, including buttons inside modal dialogs and any nested dialogs those modals open. Save the inventory under `screens/`. To reuse this prompt, change only the target screen in the title above.
+Produce a complete inventory of every action button on the target screen, including buttons inside modal dialogs and any nested dialogs those modals open. Save the inventory under `screens/`.
 
 ## Context
 
@@ -22,7 +22,7 @@ Produce a complete inventory of every action button on the target screen, includ
 - Do not modify application source files; creating or replacing the required inventory file is allowed.
 - Scope is the target screen and dialogs opened from it only.
 - Prefer source of truth in Dart presentation widgets over runtime speculation.
-- Follow existing prompt standards in `prompts/.cursor/prompt.mdc` for clarity; this prompt is inventory-only.
+- This prompt is inventory-only.
 
 ## Acceptance Criteria
 

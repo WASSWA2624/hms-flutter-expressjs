@@ -17,8 +17,8 @@ Prompts must define observable behavior without requiring scope or implementatio
 
 ## Implementation Requirements
 
-- Implementations must reuse existing logic, contracts, validation, authorization, routes, state, and design-system components.
-- Backend RBAC and ABAC must remain authoritative. Unauthorized UI, data, routes, and actions must not render.
+- Implementations must reuse existing logic, contracts, validation, authorization, routes, state, and design-system components. 
+- Backend RBAC and ABAC must remain authoritative via permissions. Unauthorized UI, data, routes, and actions must not render.
 - Disabled unauthorized controls or routine “no access” feedback must not render. Forbidden feedback may appear for direct restricted access, stale permissions, or backend denial.
 - Frontend data must synchronize after mutations.
 - UI changes must remain responsive on mobile, tablet, and desktop without clipping, overflow, duplication, or inaccessible actions.
