@@ -15,7 +15,7 @@
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
-| Desk section tabs | `AppTabStrip` in `_SetupBody` | Switches Clinical Services / Tenants / Facility / Departments / Units / Wards / Rooms / Beds / Roles / Permissions / Users (subset by permissions). Synced to `?section=` (kebab-case); `?tab=` accepted as alias. |
+| Desk section tabs | `AppTabStrip` in `_SetupBody` | Switches Tenants / Facility / Departments / Units / Wards / Rooms / Beds / Roles / Permissions / Users / Clinical Services (subset by permissions). Synced to `?section=` (kebab-case); `?tab=` accepted as alias. |
 | Try again | Async load failure (`AsyncStateScaffold` / detail dialog failure views) | Retries setup snapshot load. |
 
 ---

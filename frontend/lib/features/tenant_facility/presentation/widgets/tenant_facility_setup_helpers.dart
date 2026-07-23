@@ -10,7 +10,6 @@ const String tenantFacilityNoneSelection = '__none__';
 
 /// Setup workspace tabs replacing Guided setup as primary navigation.
 enum TenantFacilitySetupDeskSection {
-  clinicalCatalog,
   tenants,
   facility,
   departments,
@@ -20,7 +19,8 @@ enum TenantFacilitySetupDeskSection {
   beds,
   roles,
   permissions,
-  users;
+  users,
+  clinicalCatalog;
 
   /// Canonical `?section=` query value for this tab.
   String get routeQueryValue {
