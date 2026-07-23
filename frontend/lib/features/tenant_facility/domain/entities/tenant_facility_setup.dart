@@ -45,6 +45,9 @@ final class TenantProfile {
     this.isActive = true,
     this.currency,
     this.standardConsultationFee,
+    this.contactName,
+    this.contactEmail,
+    this.contactPhone,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -56,6 +59,9 @@ final class TenantProfile {
   final bool isActive;
   final String? currency;
   final String? standardConsultationFee;
+  final String? contactName;
+  final String? contactEmail;
+  final String? contactPhone;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -72,12 +78,18 @@ final class TenantProfile {
     bool? isActive,
     String? currency,
     String? standardConsultationFee,
+    String? contactName,
+    String? contactEmail,
+    String? contactPhone,
     String? resourceUuid,
     String? displayId,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
     bool clearCurrency = false,
     bool clearStandardConsultationFee = false,
+    bool clearContactName = false,
+    bool clearContactEmail = false,
+    bool clearContactPhone = false,
   }) {
     return TenantProfile(
       id: id ?? this.id,
@@ -88,6 +100,13 @@ final class TenantProfile {
       standardConsultationFee: clearStandardConsultationFee
           ? null
           : (standardConsultationFee ?? this.standardConsultationFee),
+      contactName: clearContactName ? null : (contactName ?? this.contactName),
+      contactEmail: clearContactEmail
+          ? null
+          : (contactEmail ?? this.contactEmail),
+      contactPhone: clearContactPhone
+          ? null
+          : (contactPhone ?? this.contactPhone),
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),

@@ -1018,6 +1018,73 @@ void main() {
     expect(find.text('Item 2'), findsOneWidget);
     expect(find.text('Item 3'), findsNothing);
   });
+
+  testWidgets(
+    'AppListTable shows go-to-top after header scrolls away and returns to top',
+    (WidgetTester tester) async {
+      final List<_RowItem> manyItems = List<_RowItem>.generate(
+        40,
+        (int index) => _RowItem(
+          id: '$index',
+          title: 'Item $index',
+          status: 'Active',
+        ),
+      );
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 320,
+          width: 960,
+          child: AppListTable<_RowItem>(
+            items: manyItems,
+            columns: _columns,
+            displayMode: AppListTableDisplayMode.table,
+            goToTopLabel: 'Go to top',
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+          ),
+        ),
+        size: const Size(960, 600),
+      );
+
+      expect(find.byIcon(Icons.vertical_align_top), findsOneWidget);
+      final IgnorePointer ignoreBefore = tester.widget<IgnorePointer>(
+        find.ancestor(
+          of: find.byIcon(Icons.vertical_align_top),
+          matching: find.byType(IgnorePointer),
+        ),
+      );
+      expect(ignoreBefore.ignoring, isTrue);
+
+      await tester.drag(
+        find.byType(SingleChildScrollView).last,
+        const Offset(0, -240),
+      );
+      await tester.pumpAndSettle();
+
+      final IgnorePointer ignoreAfter = tester.widget<IgnorePointer>(
+        find.ancestor(
+          of: find.byIcon(Icons.vertical_align_top),
+          matching: find.byType(IgnorePointer),
+        ),
+      );
+      expect(ignoreAfter.ignoring, isFalse);
+
+      await tester.tap(find.byIcon(Icons.vertical_align_top));
+      await tester.pumpAndSettle();
+
+      final IgnorePointer ignoreRestored = tester.widget<IgnorePointer>(
+        find.ancestor(
+          of: find.byIcon(Icons.vertical_align_top),
+          matching: find.byType(IgnorePointer),
+        ),
+      );
+      expect(ignoreRestored.ignoring, isTrue);
+      expect(find.text('Item 0'), findsOneWidget);
+    },
+  );
 }
 
 const List<AppListTableColumn<_RowItem>> _columns =

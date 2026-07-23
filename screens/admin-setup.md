@@ -128,6 +128,10 @@ Read-only catalog list: search/filter/settings/pagination only. **No** Create / 
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
+| Hide details / Show details | Left summary header / facilities heading when collapsed | Collapses or expands the tenant summary so the facilities table can widen. |
+| Filter | Facilities search bar | Status filter (Active/Deleted); default All (active, inactive, deleted). |
+| Settings | Facilities search bar | Column-visibility dialog. |
+| Row select (non-deleted) | Facilities mini-table row | Opens existing `Facility details` dialog; refreshes list on mutation. |
 | Edit / Delete | Embedded facilities mini-table row actions | Facility form or facility soft-delete confirm. |
 | Edit tenant | Footer (when mutable) | Tenant form. |
 | Delete tenant | Footer (when deletable) | Soft-delete tenant confirm; pops details on success. |

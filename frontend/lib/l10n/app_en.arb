@@ -249,6 +249,10 @@
   "@commonTableSettingsTitle": {
     "description": "Title for the worklist table column settings dialog."
   },
+  "commonGoToTopActionLabel": "Go to top",
+  "@commonGoToTopActionLabel": {
+    "description": "Tooltip and semantic label for scrolling a table back to the header."
+  },
   "commonAdvancedFiltersTitle": "Advanced filters",
   "@commonAdvancedFiltersTitle": {
     "description": "Title for the advanced filters modal in worklist table search chrome."
@@ -8339,6 +8343,18 @@
   "tenantFacilityTenantDetailsIdLabel": "ID",
   "@tenantFacilityTenantDetailsIdLabel": {
     "description": "Display ID label in tenant details summary."
+  },
+  "tenantFacilityTenantDetailsContactNameLabel": "Contact name",
+  "@tenantFacilityTenantDetailsContactNameLabel": {
+    "description": "Primary tenant admin contact name label in tenant details."
+  },
+  "tenantFacilityTenantDetailsHideSummaryAction": "Hide details",
+  "@tenantFacilityTenantDetailsHideSummaryAction": {
+    "description": "Action to collapse the tenant summary panel."
+  },
+  "tenantFacilityTenantDetailsShowSummaryAction": "Show details",
+  "@tenantFacilityTenantDetailsShowSummaryAction": {
+    "description": "Action to expand the tenant summary panel."
   },
   "tenantFacilityTenantStatusLabel": "Status",
   "@tenantFacilityTenantStatusLabel": {

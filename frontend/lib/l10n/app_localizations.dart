@@ -430,6 +430,12 @@ abstract class AppLocalizations {
   /// **'Table Settings'**
   String get commonTableSettingsTitle;
 
+  /// Tooltip and semantic label for scrolling a table back to the header.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to top'**
+  String get commonGoToTopActionLabel;
+
   /// Title for the advanced filters modal in worklist table search chrome.
   ///
   /// In en, this message translates to:
@@ -12243,6 +12249,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ID'**
   String get tenantFacilityTenantDetailsIdLabel;
+
+  /// Primary tenant admin contact name label in tenant details.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact name'**
+  String get tenantFacilityTenantDetailsContactNameLabel;
+
+  /// Action to collapse the tenant summary panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide details'**
+  String get tenantFacilityTenantDetailsHideSummaryAction;
+
+  /// Action to expand the tenant summary panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get tenantFacilityTenantDetailsShowSummaryAction;
 
   /// Tenant status column label in manage tenants dialog.
   ///

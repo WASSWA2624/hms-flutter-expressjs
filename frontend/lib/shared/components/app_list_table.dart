@@ -38,6 +38,8 @@ const int _minTableRowCount = 50;
 const double _rowNumberColumnWidth = 48;
 const double _mobileRowNumberColumnWidth = 28;
 const double _minResizableColumnWidth = 72;
+const String _defaultGoToTopLabel = 'Go to top';
+const Duration _goToTopAnimationDuration = Duration(milliseconds: 280);
 const double _defaultColumnWidth = 160;
 const double _defaultCompactColumnWidth = 136;
 const double _columnResizeHandleWidth = 8;
@@ -798,6 +800,7 @@ class AppListTable<T> extends StatefulWidget {
     this.tableHorizontalMargin,
     this.maxTrailingActions,
     this.trailingActionsOverflowLabel = 'More actions',
+    this.goToTopLabel = _defaultGoToTopLabel,
     super.key,
   }) : assert(
          items != null || page != null,
@@ -850,6 +853,7 @@ class AppListTable<T> extends StatefulWidget {
   final double? tableHorizontalMargin;
   final int? maxTrailingActions;
   final String trailingActionsOverflowLabel;
+  final String goToTopLabel;
 
   @override
   State<AppListTable<T>> createState() => _AppListTableState<T>();
@@ -1442,6 +1446,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
             physics: effectivePhysics,
             rowColorBuilder: widget.rowColorBuilder,
             rowNumberOffset: rowNumberOffset,
+            goToTopLabel: widget.goToTopLabel,
           );
         }
 
@@ -1460,6 +1465,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           rowNumberOffset: rowNumberOffset,
           enableColumnResize: widget.enableColumnResize,
           scrollVertically: hasBoundedHeight,
+          goToTopLabel: widget.goToTopLabel,
           columnWidthFor: (AppListTableColumn<T> column) {
             return _columnWidthFor(column, compact: compact);
           },
@@ -2111,7 +2117,7 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
   }
 }
 
-class _MobileListTable<T> extends StatelessWidget {
+class _MobileListTable<T> extends StatefulWidget {
   const _MobileListTable({
     required this.items,
     required this.itemBuilder,
@@ -2121,6 +2127,7 @@ class _MobileListTable<T> extends StatelessWidget {
     required this.physics,
     required this.rowColorBuilder,
     this.rowNumberOffset = 0,
+    this.goToTopLabel = _defaultGoToTopLabel,
   });
 
   final List<T> items;
@@ -2131,36 +2138,84 @@ class _MobileListTable<T> extends StatelessWidget {
   final ScrollPhysics? physics;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final int rowNumberOffset;
+  final String goToTopLabel;
+
+  @override
+  State<_MobileListTable<T>> createState() => _MobileListTableState<T>();
+}
+
+class _MobileListTableState<T> extends State<_MobileListTable<T>> {
+  late final ScrollController _scrollController;
+  bool _showGoToTop = false;
+
+  bool get _ownsScroll => !widget.shrinkWrap;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    final bool next = _scrollController.offset > 64;
+    if (next == _showGoToTop) {
+      return;
+    }
+    setState(() => _showGoToTop = next);
+  }
+
+  Future<void> _goToTop() async {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    await _scrollController.animateTo(
+      0,
+      duration: _goToTopAnimationDuration,
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      itemCount: items.length,
-      shrinkWrap: shrinkWrap,
-      physics: physics,
+    final Widget list = ListView.separated(
+      controller: _ownsScroll ? _scrollController : null,
+      itemCount: widget.items.length,
+      shrinkWrap: widget.shrinkWrap,
+      physics: widget.physics,
       itemBuilder: (BuildContext context, int index) {
-        final T item = items[index];
+        final T item = widget.items[index];
         Widget row = KeyedSubtree(
           key: appListTableUniqueRowKey<T>(
             index: index,
-            itemKeyBuilder: itemKeyBuilder,
+            itemKeyBuilder: widget.itemKeyBuilder,
             item: item,
           ),
           child: _NumberedMobileListItem(
-            number: rowNumberOffset + index + 1,
-            child: itemBuilder(context, item),
+            number: widget.rowNumberOffset + index + 1,
+            child: widget.itemBuilder(context, item),
           ),
         );
 
-        if (onRowSelected != null) {
+        if (widget.onRowSelected != null) {
           row = _SelectableMobileDataRow<T>(
             item: item,
-            onSelected: onRowSelected!,
+            onSelected: widget.onRowSelected!,
             child: row,
           );
         }
 
-        final Color? rowColor = rowColorBuilder?.call(context, item);
+        final Color? rowColor = widget.rowColorBuilder?.call(context, item);
         if (rowColor == null) {
           return row;
         }
@@ -2174,6 +2229,21 @@ class _MobileListTable<T> extends StatelessWidget {
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         );
       },
+    );
+
+    if (!_ownsScroll) {
+      return list;
+    }
+
+    return Stack(
+      children: <Widget>[
+        list,
+        _GoToTopButton(
+          visible: _showGoToTop,
+          label: widget.goToTopLabel,
+          onPressed: _goToTop,
+        ),
+      ],
     );
   }
 }
@@ -2288,6 +2358,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     this.rowNumberOffset = 0,
     this.enableColumnResize = true,
     this.scrollVertically = false,
+    this.goToTopLabel = _defaultGoToTopLabel,
     required this.columnWidthFor,
     this.onColumnWidthChanged,
   });
@@ -2308,6 +2379,7 @@ class _DesktopListTable<T> extends StatefulWidget {
   /// When true, vertical scroll is nested inside horizontal scroll so the
   /// bottom horizontal scrollbar stays fixed above the table footer.
   final bool scrollVertically;
+  final String goToTopLabel;
   final double Function(AppListTableColumn<T> column) columnWidthFor;
   final void Function(String columnKey, double width)? onColumnWidthChanged;
 
@@ -2318,19 +2390,46 @@ class _DesktopListTable<T> extends StatefulWidget {
 class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   late final ScrollController _horizontalController;
   late final ScrollController _verticalController;
+  bool _showGoToTop = false;
+
+  double get _headingRowHeight => widget.compact ? 44 : 48;
 
   @override
   void initState() {
     super.initState();
     _horizontalController = ScrollController();
     _verticalController = ScrollController();
+    _verticalController.addListener(_handleVerticalScroll);
   }
 
   @override
   void dispose() {
+    _verticalController.removeListener(_handleVerticalScroll);
     _horizontalController.dispose();
     _verticalController.dispose();
     super.dispose();
+  }
+
+  void _handleVerticalScroll() {
+    if (!_verticalController.hasClients) {
+      return;
+    }
+    final bool next = _verticalController.offset > _headingRowHeight;
+    if (next == _showGoToTop) {
+      return;
+    }
+    setState(() => _showGoToTop = next);
+  }
+
+  Future<void> _goToTop() async {
+    if (!_verticalController.hasClients) {
+      return;
+    }
+    await _verticalController.animateTo(
+      0,
+      duration: _goToTopAnimationDuration,
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -2352,7 +2451,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       showCheckboxColumn: false,
       horizontalMargin: horizontalMargin,
       columnSpacing: columnSpacing,
-      headingRowHeight: widget.compact ? 44 : 48,
+      headingRowHeight: _headingRowHeight,
       dataRowMinHeight: rowMinHeight,
       dataRowMaxHeight: rowMaxHeight,
       headingRowColor: _cachedHeadingRowColor,
@@ -2408,6 +2507,65 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       ],
     );
 
+    final Widget scrollableTable = widget.scrollVertically
+        ? LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double tableWidth = math.max(
+                widget.minWidth,
+                constraints.maxWidth,
+              );
+              return Stack(
+                children: <Widget>[
+                  Scrollbar(
+                    controller: _horizontalController,
+                    thumbVisibility: true,
+                    scrollbarOrientation: ScrollbarOrientation.bottom,
+                    notificationPredicate: (ScrollNotification notification) {
+                      return notification.metrics.axis == Axis.horizontal;
+                    },
+                    child: SingleChildScrollView(
+                      controller: _horizontalController,
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: tableWidth,
+                        height: constraints.maxHeight,
+                        child: Scrollbar(
+                          controller: _verticalController,
+                          thumbVisibility: true,
+                          child: SingleChildScrollView(
+                            controller: _verticalController,
+                            child: table,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  _GoToTopButton(
+                    visible: _showGoToTop,
+                    label: widget.goToTopLabel,
+                    onPressed: _goToTop,
+                    bottom: theme.spacing.xl,
+                  ),
+                ],
+              );
+            },
+          )
+        : Scrollbar(
+            controller: _horizontalController,
+            thumbVisibility: true,
+            notificationPredicate: (ScrollNotification notification) {
+              return notification.metrics.axis == Axis.horizontal;
+            },
+            child: SingleChildScrollView(
+              controller: _horizontalController,
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: widget.minWidth),
+                child: table,
+              ),
+            ),
+          );
+
     return Material(
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
@@ -2415,54 +2573,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
           color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
-      child: widget.scrollVertically
-          ? LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final double tableWidth = math.max(
-                  widget.minWidth,
-                  constraints.maxWidth,
-                );
-                return Scrollbar(
-                  controller: _horizontalController,
-                  thumbVisibility: true,
-                  scrollbarOrientation: ScrollbarOrientation.bottom,
-                  notificationPredicate: (ScrollNotification notification) {
-                    return notification.metrics.axis == Axis.horizontal;
-                  },
-                  child: SingleChildScrollView(
-                    controller: _horizontalController,
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: tableWidth,
-                      height: constraints.maxHeight,
-                      child: Scrollbar(
-                        controller: _verticalController,
-                        thumbVisibility: true,
-                        child: SingleChildScrollView(
-                          controller: _verticalController,
-                          child: table,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            )
-          : Scrollbar(
-              controller: _horizontalController,
-              thumbVisibility: true,
-              notificationPredicate: (ScrollNotification notification) {
-                return notification.metrics.axis == Axis.horizontal;
-              },
-              child: SingleChildScrollView(
-                controller: _horizontalController,
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: widget.minWidth),
-                  child: table,
-                ),
-              ),
-            ),
+      child: scrollableTable,
     );
   }
 
@@ -2901,6 +3012,62 @@ class _ColumnResizeHandleState extends State<_ColumnResizeHandle> {
                 decoration: BoxDecoration(
                   color: colorScheme.outlineVariant.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GoToTopButton extends StatelessWidget {
+  const _GoToTopButton({
+    required this.visible,
+    required this.label,
+    required this.onPressed,
+    this.bottom,
+  });
+
+  final bool visible;
+  final String label;
+  final VoidCallback onPressed;
+  final double? bottom;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double resolvedBottom = bottom ?? theme.spacing.md;
+
+    return Positioned(
+      right: theme.spacing.md,
+      bottom: resolvedBottom,
+      child: IgnorePointer(
+        ignoring: !visible,
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: const Duration(milliseconds: 180),
+          child: AnimatedScale(
+            scale: visible ? 1 : 0.85,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            child: Material(
+              elevation: 3,
+              color: colorScheme.surfaceContainerHighest,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: IconButton(
+                tooltip: label,
+                onPressed: onPressed,
+                icon: Icon(
+                  Icons.vertical_align_top,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  foregroundColor: colorScheme.onSurfaceVariant,
                 ),
               ),
             ),

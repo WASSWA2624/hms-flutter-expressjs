@@ -1104,6 +1104,10 @@ class _TenantDetailsDialog extends ConsumerStatefulWidget {
 }
 
 class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
+  static const String _statusFilterKey = 'status';
+  static const String _statusActive = 'active';
+  static const String _statusDeleted = 'deleted';
+
   late TenantProfile _tenant;
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
@@ -1112,6 +1116,8 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   List<FacilityProfile> _facilities = const <FacilityProfile>[];
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  bool _summaryVisible = true;
   bool _mutated = false;
   int _reloadGeneration = 0;
 
@@ -1144,6 +1150,21 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       unawaited(_loadFacilities(resetPage: true));
     });
+  }
+
+  List<FacilityProfile> get _visibleFacilities {
+    final String? status = _filterValue.option(_statusFilterKey);
+    if (status == _statusActive) {
+      return _facilities
+          .where((FacilityProfile facility) => !facility.isDeleted)
+          .toList(growable: false);
+    }
+    if (status == _statusDeleted) {
+      return _facilities
+          .where((FacilityProfile facility) => facility.isDeleted)
+          .toList(growable: false);
+    }
+    return _facilities;
   }
 
   Future<void> _loadFacilities({
@@ -1205,7 +1226,7 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
     }
     return _tenant.isActive
         ? l10n.tenantFacilityTenantStatusActive
-        : l10n.commonNoLabel;
+        : l10n.tenantFacilityStatusInactive;
   }
 
   AppWorkspaceStatusTone _tenantStatusTone() {
@@ -1223,7 +1244,7 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
     }
     return facility.isActive
         ? l10n.tenantFacilityTenantStatusActive
-        : l10n.commonNoLabel;
+        : l10n.tenantFacilityStatusInactive;
   }
 
   Future<void> _editTenant() async {
@@ -1242,6 +1263,9 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
       _tenant = savedTenant.copyWith(
         resourceUuid: savedTenant.resourceUuid ?? _tenant.resourceUuid,
         displayId: savedTenant.displayId ?? _tenant.displayId,
+        contactName: savedTenant.contactName ?? _tenant.contactName,
+        contactEmail: savedTenant.contactEmail ?? _tenant.contactEmail,
+        contactPhone: savedTenant.contactPhone ?? _tenant.contactPhone,
       );
     });
     if (savedTenant.isActive != wasActive) {
@@ -1294,6 +1318,20 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
       ),
     );
     Navigator.of(context).pop(true);
+  }
+
+  Future<void> _openFacilityDetails(FacilityProfile facility) async {
+    final bool? mutated = await showFacilityDetailsDialog(
+      context,
+      facility: facility,
+      tenantName: _tenant.name,
+    );
+    if (!mounted || mutated != true) {
+      return;
+    }
+
+    _mutated = true;
+    await _loadFacilities(silent: true);
   }
 
   Future<void> _editFacility(FacilityProfile facility) async {
@@ -1372,6 +1410,8 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
     final bool canMutateTenant = _canManageTenant && !_tenant.isDeleted;
     final bool canDeleteTenant = _canDeleteTenant && !_tenant.isDeleted;
     final bool canMutateFacility = _canManageFacility && !_tenant.isDeleted;
+    final List<FacilityProfile> visibleFacilities = _visibleFacilities;
+    final bool hasActiveFilters = _filterValue.option(_statusFilterKey) != null;
 
     return AppDialog(
       title: Text(l10n.tenantFacilityTenantDetailsTitle),
@@ -1383,34 +1423,55 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool wide = constraints.maxWidth >= 720;
-            final Widget tenantSummary = _TenantDetailsSummary(
-              tenant: _tenant,
-              statusLabel: _tenantStatusLabel(l10n),
-              statusTone: _tenantStatusTone(),
-            );
             final Widget facilitiesPanel = _TenantDetailsFacilitiesPanel(
               searchController: _searchController,
               loading: _loadingFacilities,
               failure: _facilitiesFailure,
-              facilities: _facilities,
+              facilities: visibleFacilities,
               pageRequest: _pageRequest,
-              totalItemCount: _totalItemCount,
+              totalItemCount: hasActiveFilters
+                  ? visibleFacilities.length
+                  : _totalItemCount,
               canManage: canMutateFacility,
+              summaryVisible: _summaryVisible,
+              filterValue: _filterValue,
+              hasActiveFilters: hasActiveFilters,
               statusLabelBuilder: (FacilityProfile facility) =>
                   _facilityStatusLabel(l10n, facility),
               onRetry: () => unawaited(_loadFacilities()),
               onPageChanged: _onPageChanged,
+              onFilterChanged: (AppSearchBarFilterValue value) {
+                setState(() => _filterValue = value);
+              },
+              onShowSummary: () => setState(() => _summaryVisible = true),
+              onRowSelected: (FacilityProfile facility) {
+                if (facility.isDeleted) {
+                  return;
+                }
+                unawaited(_openFacilityDetails(facility));
+              },
               onEdit: (FacilityProfile facility) =>
                   unawaited(_editFacility(facility)),
               onDelete: (FacilityProfile facility) =>
                   unawaited(_deleteFacility(facility)),
             );
 
+            if (!_summaryVisible) {
+              return facilitiesPanel;
+            }
+
+            final Widget tenantSummary = _TenantDetailsSummary(
+              tenant: _tenant,
+              statusLabel: _tenantStatusLabel(l10n),
+              statusTone: _tenantStatusTone(),
+              onHide: () => setState(() => _summaryVisible = false),
+            );
+
             if (wide) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  SizedBox(width: 300, child: tenantSummary),
+                  SizedBox(width: 320, child: tenantSummary),
                   SizedBox(width: theme.spacing.md),
                   Expanded(child: facilitiesPanel),
                 ],
@@ -1420,7 +1481,12 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                tenantSummary,
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: math.max(220, constraints.maxHeight * 0.42),
+                  ),
+                  child: tenantSummary,
+                ),
                 SizedBox(height: theme.spacing.md),
                 Expanded(child: facilitiesPanel),
               ],
@@ -1457,23 +1523,131 @@ class _TenantDetailsSummary extends StatelessWidget {
     required this.tenant,
     required this.statusLabel,
     required this.statusTone,
+    this.onHide,
   });
 
   final TenantProfile tenant;
   final String statusLabel;
   final AppWorkspaceStatusTone statusTone;
+  final VoidCallback? onHide;
+
+  static String _displayValue(String? value) {
+    final String? trimmed = value?.trim();
+    return (trimmed != null && trimmed.isNotEmpty) ? trimmed : '—';
+  }
+
+  String _initials(String name) {
+    final List<String> parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String part) => part.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) {
+      return '?';
+    }
+    if (parts.length == 1) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
+        .toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final String slug = tenant.slug?.trim().isNotEmpty == true
-        ? tenant.slug!
-        : '—';
-    final String? displayId = tenant.displayId?.trim().isNotEmpty == true
-        ? tenant.displayId
-        : null;
+    final String hideLabel = l10n.tenantFacilityTenantDetailsHideSummaryAction;
+    final VoidCallback? hideAction = onHide;
+
+    final Widget header = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: colorScheme.primaryContainer,
+          foregroundColor: colorScheme.onPrimaryContainer,
+          child: Text(
+            _initials(tenant.name),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                tenant.name,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                ),
+              ),
+              SizedBox(height: theme.spacing.xs),
+              _TenantStatusBadge(label: statusLabel, tone: statusTone),
+            ],
+          ),
+        ),
+        if (hideAction != null)
+          IconButton(
+            tooltip: hideLabel,
+            visualDensity: VisualDensity.compact,
+            onPressed: hideAction,
+            icon: const Icon(Icons.visibility_off_outlined),
+          ),
+      ],
+    );
+
+    final Widget meta = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _TenantMetaRow(
+          label: l10n.tenantFacilityTenantSlugLabel,
+          value: _displayValue(tenant.slug),
+        ),
+        _TenantMetaRow(
+          label: l10n.tenantFacilityTenantDetailsIdLabel,
+          value: _displayValue(tenant.displayId),
+        ),
+        _TenantMetaRow(
+          label: l10n.tenantFacilityTenantStatusLabel,
+          value: statusLabel,
+        ),
+        SizedBox(height: theme.spacing.sm),
+        Text(
+          l10n.tenantFacilityFacilityDetailsContactHeading,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        _TenantMetaRow(
+          label: l10n.tenantFacilityTenantDetailsContactNameLabel,
+          value: _displayValue(tenant.contactName),
+        ),
+        _TenantMetaRow(
+          label: l10n.profilePhoneLabel,
+          value: _displayValue(tenant.contactPhone),
+        ),
+        _TenantMetaRow(
+          label: l10n.profileEmailLabel,
+          value: _displayValue(tenant.contactEmail),
+        ),
+        SizedBox(height: theme.spacing.sm),
+        _TenantMetaRow(
+          label: l10n.tenantFacilityDefaultCurrencyLabel,
+          value: _displayValue(tenant.currency),
+        ),
+        _TenantMetaRow(
+          label: l10n.settingsConfigurationConsultationFeeLabel,
+          value: _displayValue(tenant.standardConsultationFee),
+        ),
+      ],
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1483,42 +1657,24 @@ class _TenantDetailsSummary extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool boundedHeight = constraints.hasBoundedHeight;
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: boundedHeight ? MainAxisSize.max : MainAxisSize.min,
               children: <Widget>[
-                Expanded(
-                  child: Text(
-                    tenant.name,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
-                    ),
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                _TenantStatusBadge(label: statusLabel, tone: statusTone),
+                header,
+                SizedBox(height: theme.spacing.md),
+                const Divider(height: 1),
+                SizedBox(height: theme.spacing.sm),
+                if (boundedHeight)
+                  Expanded(child: SingleChildScrollView(child: meta))
+                else
+                  meta,
               ],
-            ),
-            SizedBox(height: theme.spacing.md),
-            const Divider(height: 1),
-            SizedBox(height: theme.spacing.md),
-            _TenantMetaRow(
-              label: l10n.tenantFacilityTenantSlugLabel,
-              value: slug,
-            ),
-            if (displayId != null)
-              _TenantMetaRow(
-                label: l10n.tenantFacilityTenantDetailsIdLabel,
-                value: displayId,
-              ),
-            _TenantMetaRow(
-              label: l10n.tenantFacilityTenantStatusLabel,
-              value: statusLabel,
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -1580,7 +1736,7 @@ class _TenantMetaRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(
-            width: 88,
+            width: 118,
             child: Text(
               label,
               style: theme.textTheme.labelMedium?.copyWith(
@@ -1611,9 +1767,15 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
     required this.pageRequest,
     required this.totalItemCount,
     required this.canManage,
+    required this.summaryVisible,
+    required this.filterValue,
+    required this.hasActiveFilters,
     required this.statusLabelBuilder,
     required this.onRetry,
     required this.onPageChanged,
+    required this.onFilterChanged,
+    required this.onShowSummary,
+    required this.onRowSelected,
     required this.onEdit,
     required this.onDelete,
   });
@@ -1625,9 +1787,15 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
   final AppPageRequest pageRequest;
   final int totalItemCount;
   final bool canManage;
+  final bool summaryVisible;
+  final AppSearchBarFilterValue filterValue;
+  final bool hasActiveFilters;
   final String Function(FacilityProfile facility) statusLabelBuilder;
   final VoidCallback onRetry;
   final Future<void> Function(AppPageRequest request) onPageChanged;
+  final ValueChanged<AppSearchBarFilterValue> onFilterChanged;
+  final VoidCallback onShowSummary;
+  final ValueChanged<FacilityProfile> onRowSelected;
   final ValueChanged<FacilityProfile> onEdit;
   final ValueChanged<FacilityProfile> onDelete;
 
@@ -1636,6 +1804,7 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final String showLabel = l10n.tenantFacilityTenantDetailsShowSummaryAction;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1647,17 +1816,26 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(
-              l10n.tenantFacilityTenantDetailsFacilitiesHeading,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
-            AppSearchBar(
-              controller: searchController,
-              hintText: l10n.tenantFacilitySearchLabel,
-              semanticLabel: l10n.tenantFacilitySearchLabel,
+            Row(
+              children: <Widget>[
+                if (!summaryVisible) ...<Widget>[
+                  IconButton(
+                    tooltip: showLabel,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onShowSummary,
+                    icon: const Icon(Icons.visibility_outlined),
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                ],
+                Expanded(
+                  child: Text(
+                    l10n.tenantFacilityTenantDetailsFacilitiesHeading,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: theme.spacing.sm),
             Expanded(
@@ -1672,6 +1850,8 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                       isLoading: loading,
                       itemKeyBuilder: (FacilityProfile item) =>
                           ValueKey<String>(item.id),
+                      onRowSelected: onRowSelected,
+                      initialSortColumnKey: 'name',
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
                       pageLabelBuilder: (AppPage<FacilityProfile> page) {
@@ -1688,9 +1868,59 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                         return '$start-$end / $total';
                       },
                       onPageChanged: onPageChanged,
+                      columnVisibilityStorageKey:
+                          'setup_tenant_details_facilities_v1',
+                      columnVisibilityLabel:
+                          l10n.commonTableSettingsActionLabel,
+                      search: AppListTableSearch<FacilityProfile>(
+                        controller: searchController,
+                        hintText: l10n.tenantFacilitySearchLabel,
+                        semanticLabel: l10n.tenantFacilitySearchLabel,
+                        matcher: (_, _) => true,
+                        enableDateFilter: false,
+                        showAdvancedFilterButton: true,
+                        advancedFilterButtonLabel:
+                            l10n.commonFilterActionLabel,
+                        advancedFilterTitle:
+                            l10n.tenantFacilityTenantStatusLabel,
+                        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                        filterGroups: <AppSearchBarFilterGroup>[
+                          AppSearchBarFilterGroup(
+                            key: _TenantDetailsDialogState._statusFilterKey,
+                            label: l10n.tenantFacilityTenantStatusLabel,
+                            allLabel: l10n.commonAllLabel,
+                            choices: <AppSearchBarFilterChoice>[
+                              AppSearchBarFilterChoice(
+                                value:
+                                    _TenantDetailsDialogState._statusActive,
+                                label:
+                                    l10n.tenantFacilityTenantStatusActive,
+                                icon: Icons.check_circle_outline,
+                              ),
+                              AppSearchBarFilterChoice(
+                                value:
+                                    _TenantDetailsDialogState._statusDeleted,
+                                label:
+                                    l10n.tenantFacilityTenantStatusDeleted,
+                                icon: Icons.delete_outline,
+                              ),
+                            ],
+                          ),
+                        ],
+                        filterValue: filterValue,
+                        hasActiveFilters: hasActiveFilters,
+                        onFilterChanged: onFilterChanged,
+                      ),
                       columns: <AppListTableColumn<FacilityProfile>>[
                         AppListTableColumn<FacilityProfile>(
+                          id: 'name',
                           label: l10n.authFacilityNameLabel,
+                          sortComparator:
+                              (FacilityProfile left, FacilityProfile right) =>
+                                  left.name.toLowerCase().compareTo(
+                                    right.name.toLowerCase(),
+                                  ),
                           cellBuilder: (_, FacilityProfile facility) => Text(
                             facility.name,
                             style: facility.isDeleted
@@ -1701,12 +1931,22 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                           ),
                         ),
                         AppListTableColumn<FacilityProfile>(
+                          id: 'type',
                           label: l10n.profileFacilityTypeLabel,
+                          sortComparator:
+                              (FacilityProfile left, FacilityProfile right) =>
+                                  left.type.name.compareTo(right.type.name),
                           cellBuilder: (_, FacilityProfile facility) =>
                               Text(facility.type.name),
                         ),
                         AppListTableColumn<FacilityProfile>(
+                          id: 'status',
                           label: l10n.tenantFacilityTenantStatusLabel,
+                          sortComparator:
+                              (FacilityProfile left, FacilityProfile right) =>
+                                  statusLabelBuilder(left).compareTo(
+                                    statusLabelBuilder(right),
+                                  ),
                           cellBuilder: (_, FacilityProfile facility) =>
                               Text(statusLabelBuilder(facility)),
                         ),
@@ -1723,13 +1963,17 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                                   if (facility.isDeleted) {
                                     return const SizedBox.shrink();
                                   }
-                                  return _ManagementRowActions(
-                                    enabled: !loading,
-                                    editLabel: l10n.tenantFacilityEditAction,
-                                    deleteLabel:
-                                        l10n.tenantFacilityDeleteAction,
-                                    onEdit: () => onEdit(facility),
-                                    onDelete: () => onDelete(facility),
+                                  return GestureDetector(
+                                    onTap: () {},
+                                    child: _ManagementRowActions(
+                                      enabled: !loading,
+                                      editLabel:
+                                          l10n.tenantFacilityEditAction,
+                                      deleteLabel:
+                                          l10n.tenantFacilityDeleteAction,
+                                      onEdit: () => onEdit(facility),
+                                      onDelete: () => onDelete(facility),
+                                    ),
                                   );
                                 },
                           ),

@@ -193,6 +193,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonTableSettingsTitle => 'Table Settings';
 
   @override
+  String get commonGoToTopActionLabel => 'Go to top';
+
+  @override
   String get commonAdvancedFiltersTitle => 'Advanced filters';
 
   @override
@@ -6587,6 +6590,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityTenantDetailsIdLabel => 'ID';
+
+  @override
+  String get tenantFacilityTenantDetailsContactNameLabel => 'Contact name';
+
+  @override
+  String get tenantFacilityTenantDetailsHideSummaryAction => 'Hide details';
+
+  @override
+  String get tenantFacilityTenantDetailsShowSummaryAction => 'Show details';
 
   @override
   String get tenantFacilityTenantStatusLabel => 'Status';
