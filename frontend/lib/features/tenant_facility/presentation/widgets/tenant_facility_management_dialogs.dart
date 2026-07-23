@@ -262,15 +262,17 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
 
   List<TenantProfile> get _visibleTenants {
     final String? status = _filterValue.option(_statusFilterKey);
+    if (status == _statusActive) {
+      return _tenants
+          .where((TenantProfile tenant) => !tenant.isDeleted)
+          .toList(growable: false);
+    }
     if (status == _statusDeleted) {
       return _tenants
           .where((TenantProfile tenant) => tenant.isDeleted)
           .toList(growable: false);
     }
-    // Default / Active: soft-deleted tenants stay out of the live list.
-    return _tenants
-        .where((TenantProfile tenant) => !tenant.isDeleted)
-        .toList(growable: false);
+    return _tenants;
   }
 
   Future<void> _reloadScopedTenant({bool silent = false}) async {
@@ -3678,15 +3680,17 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
 
   List<FacilityProfile> get _visibleFacilities {
     final String? status = _filterValue.option(_statusFilterKey);
+    if (status == _statusActive) {
+      return _facilities
+          .where((FacilityProfile facility) => !facility.isDeleted)
+          .toList(growable: false);
+    }
     if (status == _statusDeleted) {
       return _facilities
           .where((FacilityProfile facility) => facility.isDeleted)
           .toList(growable: false);
     }
-    // Default / Active: soft-deleted facilities stay out of the live list.
-    return _facilities
-        .where((FacilityProfile facility) => !facility.isDeleted)
-        .toList(growable: false);
+    return _facilities;
   }
 
   Future<void> _applyFacilityFilters(AppSearchBarFilterValue value) async {
@@ -4356,7 +4360,6 @@ class _TenantManagementRowActions extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           AppButton.tertiary(
-            iconOnly: true,
             leadingIcon: Icons.restore_outlined,
             label: restoreLabel,
             semanticLabel: restoreLabel,
@@ -4366,7 +4369,6 @@ class _TenantManagementRowActions extends StatelessWidget {
           ),
           SizedBox(width: actionGap),
           AppButton.tertiary(
-            iconOnly: true,
             leadingIcon: Icons.delete_forever_outlined,
             label: permanentDeleteLabel,
             semanticLabel: permanentDeleteLabel,
@@ -4443,7 +4445,6 @@ class _FacilityManagementRowActions extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           AppButton.tertiary(
-            iconOnly: true,
             leadingIcon: Icons.restore_outlined,
             label: restoreLabel,
             semanticLabel: restoreLabel,
@@ -4453,7 +4454,6 @@ class _FacilityManagementRowActions extends StatelessWidget {
           ),
           SizedBox(width: actionGap),
           AppButton.tertiary(
-            iconOnly: true,
             leadingIcon: Icons.delete_forever_outlined,
             label: permanentDeleteLabel,
             semanticLabel: permanentDeleteLabel,
