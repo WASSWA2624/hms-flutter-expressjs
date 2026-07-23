@@ -1,26 +1,10 @@
-# `/admin/setup?section=clinical-services` action button inventory
-
-**Primary UI:** Clinical Services desk section on `/admin/setup`, rendered by `FacilityCatalogConfigPanel` via `_SetupBody` → `_buildClinicalCatalogBody`.
-
-**Permission gates:**
-- Section visible when `canManageFacility || canManageTenant` (same Catalog gate as other facility-setup tabs).
-- Mutating chrome (`Configure`, Add, row Edit/Delete, empty-state primary, row-select → edit) requires `enabled: canManageFacility || canManageTenant`. When `enabled` is false, tables remain browse-only (search / Filter / Settings still present).
-
-**Catalog model:** Desk tables load the **global** catalog (radiology tests, lab tests+panels, diagnosis terms). Facility context from the setup snapshot only prefills Configure / create tenant scope; it does not filter the desk lists to facility offerings.
-
----
 
 ## Clinical Services panel chrome (`FacilityCatalogConfigPanel`)
-
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Radiology / Lab / Diagnoses | Inner `AppTabStrip` (`variant: nested`) | Switches nested catalog table; loads that category’s global list on first visit (warmed thereafter). Default tab: Radiology. |
 
 Shared per nested tab (when `enabled`):
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Filters | `AppListTable` search bar (`commonFiltersActionLabel`) | Opens advanced-filter dialog for that category; footer **Apply filters** / **Clear filters**. While **Apply filters** runs, a large loading indicator is centered over the dialog without dimming it; dialog actions stay disabled until filters are applied and the dialog closes. |
 | Settings | Column-visibility control (`commonTableSettingsActionLabel`) | Opens column-settings dialog (**Apply columns** / **Reset columns** / **Close** defaults). Storage keys: `admin_catalog_radiology`, `admin_catalog_lab`, `admin_catalog_diagnoses`. |
 | Configure | Search trailing (`tenantFacilityCatalogConfigureAction`) | Opens **Select tenant and facility** scope picker, then the category enable dialog. Does not switch the desk table into facility-only mode. |
 | Edit | Row actions (`clinicalLabRequestEditSelectionAction`) | Opens global catalog edit/mutation dialog for that row. |
