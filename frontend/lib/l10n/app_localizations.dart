@@ -2440,7 +2440,7 @@ abstract class AppLocalizations {
   /// **'Configure offering price'**
   String get tenantFacilityCatalogEditPriceDialogTitle;
 
-  /// Primary action to enable a clinical catalog service for the facility.
+  /// Primary action to add a diagnosis catalog term or enable one for a facility.
   ///
   /// In en, this message translates to:
   /// **'Add diagnosis'**

@@ -233,7 +233,7 @@ String? tenantFacilitySetupDeskCreateLabel(
     TenantFacilitySetupDeskSection.rooms => l10n.tenantFacilityAddRoomAction,
     TenantFacilitySetupDeskSection.beds => l10n.tenantFacilityAddBedAction,
     TenantFacilitySetupDeskSection.clinicalCatalog =>
-      l10n.tenantFacilityCatalogAddServiceAction,
+      l10n.clinicalAddDiagnosisAction,
     TenantFacilitySetupDeskSection.roles => l10n.accessAdminCreateRoleAction,
     TenantFacilitySetupDeskSection.permissions => null,
     TenantFacilitySetupDeskSection.users => l10n.accessAdminCreateUserAction,

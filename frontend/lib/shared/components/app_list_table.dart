@@ -873,6 +873,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   int _accumulatedPageIndex = -1;
   bool _pendingLoadMore = false;
   ScrollPosition? _ancestorScrollPosition;
+  List<T>? _cachedSortSource;
+  String? _cachedSortColumnKey;
+  bool? _cachedSortAscending;
+  List<T>? _cachedSortedItems;
 
   @override
   void initState() {
@@ -904,8 +908,20 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         _handleColumnVisibilityChanged,
       );
     }
-    if (oldWidget.columns != widget.columns ||
-        oldWidget.columnChoices != widget.columnChoices ||
+    final bool columnsChanged = !_sameColumnIdentity(
+      oldWidget.columns,
+      widget.columns,
+    );
+    final List<AppListTableColumn<T>> previousChoices =
+        oldWidget.columnChoices ?? <AppListTableColumn<T>>[];
+    final List<AppListTableColumn<T>> nextChoices =
+        widget.columnChoices ?? <AppListTableColumn<T>>[];
+    final bool columnChoicesChanged = !_sameColumnIdentity(
+      previousChoices,
+      nextChoices,
+    );
+    if (columnsChanged ||
+        columnChoicesChanged ||
         oldWidget.columnVisibilityController !=
             widget.columnVisibilityController ||
         oldWidget.columnVisibilityStorageKey !=
@@ -915,18 +931,23 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       if (oldWidget.initialSortColumnKey != widget.initialSortColumnKey ||
           oldWidget.initialSortAscending != widget.initialSortAscending) {
         _sortColumnKey = null;
+        _invalidateSortCache();
       }
       _syncVisibleColumns();
       _ensureDefaultSortColumn();
     }
     if (oldWidget.columnWidthStorageKey != widget.columnWidthStorageKey ||
-        oldWidget.columns != widget.columns ||
-        oldWidget.columnChoices != widget.columnChoices) {
+        columnsChanged ||
+        columnChoicesChanged) {
       _syncColumnWidths();
     }
     if (oldWidget.page != widget.page ||
-        oldWidget.paginationMode != widget.paginationMode) {
+        oldWidget.paginationMode != widget.paginationMode ||
+        !identical(oldWidget.items, widget.items)) {
       _syncAccumulatedPage(widget.page);
+      if (!identical(oldWidget.items, widget.items)) {
+        _invalidateSortCache();
+      }
     }
     if (oldWidget.isLoading && !widget.isLoading) {
       _pendingLoadMore = false;
@@ -968,6 +989,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   void _syncAccumulatedPage(AppPage<T>? page) {
+    _invalidateSortCache();
     if (!_usesInfinitePagination || page == null) {
       _accumulatedItems = page?.items ?? widget.items ?? <T>[];
       _accumulatedPageIndex = page?.pageIndex ?? -1;
@@ -1612,12 +1634,54 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return sourceItems;
     }
 
+    if (identical(sourceItems, _cachedSortSource) &&
+        _cachedSortedItems != null &&
+        _cachedSortColumnKey == sortColumnKey &&
+        _cachedSortAscending == _sortAscending) {
+      return _cachedSortedItems!;
+    }
+
     final List<T> sortedItems = List<T>.of(sourceItems);
     sortedItems.sort((T left, T right) {
       final int result = comparator(left, right);
       return _sortAscending ? result : -result;
     });
+    _cachedSortSource = sourceItems;
+    _cachedSortColumnKey = sortColumnKey;
+    _cachedSortAscending = _sortAscending;
+    _cachedSortedItems = sortedItems;
     return sortedItems;
+  }
+
+  void _invalidateSortCache() {
+    _cachedSortSource = null;
+    _cachedSortColumnKey = null;
+    _cachedSortAscending = null;
+    _cachedSortedItems = null;
+  }
+
+  bool _sameColumnIdentity(
+    List<AppListTableColumn<T>> left,
+    List<AppListTableColumn<T>> right,
+  ) {
+    if (identical(left, right)) {
+      return true;
+    }
+    if (left.length != right.length) {
+      return false;
+    }
+    for (int index = 0; index < left.length; index += 1) {
+      final AppListTableColumn<T> a = left[index];
+      final AppListTableColumn<T> b = right[index];
+      if (a.key != b.key ||
+          a.label != b.label ||
+          a.isSortable != b.isSortable ||
+          a.alwaysVisible != b.alwaysVisible ||
+          a.numeric != b.numeric) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Widget? _buildToolbar(BuildContext context, Widget? searchBar) {
@@ -1787,6 +1851,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         _sortColumnKey = column.key;
         _sortAscending = true;
       }
+      // Keep prior cache until the next _sortedItems call rebuilds it for the
+      // new direction/column; clear so we never show a stale order.
+      _invalidateSortCache();
     });
   }
 
@@ -2367,7 +2434,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         ? theme.spacing.sm
         : theme.spacing.lg;
     final double rowMinHeight = widget.compact ? 40 : 48;
-    final double rowMaxHeight = widget.compact ? 64 : 72;
+    // Allow multi-line wrapped cell text without clipping actions or labels.
+    final double rowMaxHeight = widget.compact ? 96 : 112;
 
     _resolveTableStyles(theme);
 
@@ -2698,7 +2766,12 @@ class _AppListTableCell extends StatelessWidget {
       width: width,
       child: Align(
         alignment: numeric ? Alignment.centerRight : Alignment.centerLeft,
-        child: child,
+        child: DefaultTextStyle.merge(
+          softWrap: true,
+          overflow: TextOverflow.fade,
+          maxLines: 3,
+          child: child,
+        ),
       ),
     );
   }

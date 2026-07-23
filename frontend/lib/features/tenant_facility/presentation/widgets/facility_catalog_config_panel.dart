@@ -66,15 +66,20 @@ class _FacilityCatalogConfigPanelState
       TextEditingController();
 
   _CatalogDeskTab _tab = _CatalogDeskTab.radiology;
+  final Set<_CatalogDeskTab> _mountedTabs = <_CatalogDeskTab>{
+    _CatalogDeskTab.radiology,
+  };
   List<LabCatalogItem> _labItems = const <LabCatalogItem>[];
   List<RadiologyCatalogTest> _radiologyItems = const <RadiologyCatalogTest>[];
   List<ClinicalCatalogOption> _diagnosisItems = const <ClinicalCatalogOption>[];
+  List<LabCatalogItem> _labVisibleItems = const <LabCatalogItem>[];
+  List<RadiologyCatalogTest> _radiologyVisibleItems =
+      const <RadiologyCatalogTest>[];
+  List<ClinicalCatalogOption> _diagnosisVisibleItems =
+      const <ClinicalCatalogOption>[];
   AppSearchBarFilterValue _labFilterValue = AppSearchBarFilterValue.empty;
   AppSearchBarFilterValue _radiologyFilterValue = AppSearchBarFilterValue.empty;
   AppSearchBarFilterValue _diagnosisFilterValue = AppSearchBarFilterValue.empty;
-  AppPageRequest _radiologyRequest = const AppPageRequest(pageSize: _pageSize);
-  AppPageRequest _labRequest = const AppPageRequest(pageSize: _pageSize);
-  AppPageRequest _diagnosisRequest = const AppPageRequest(pageSize: _pageSize);
   bool _radiologyHydrated = false;
   bool _labHydrated = false;
   bool _diagnosisHydrated = false;
@@ -94,7 +99,7 @@ class _FacilityCatalogConfigPanelState
     _CatalogDeskTab.diagnoses => _diagnosisFailure,
   };
 
-  List<LabCatalogItem> get _filteredLabItems {
+  List<LabCatalogItem> _computeFilteredLabItems() {
     final String? type = _labFilterValue.option(_labTypeFilterKey);
     final String? category = _labFilterValue.option(_labCategoryFilterKey);
     return _labItems.where((LabCatalogItem item) {
@@ -110,7 +115,7 @@ class _FacilityCatalogConfigPanelState
     }).toList(growable: false);
   }
 
-  List<RadiologyCatalogTest> get _filteredRadiologyItems {
+  List<RadiologyCatalogTest> _computeFilteredRadiologyItems() {
     final String? modality = _radiologyFilterValue.option(_modalityFilterKey);
     if (modality == null || modality.isEmpty) {
       return _radiologyItems;
@@ -123,7 +128,7 @@ class _FacilityCatalogConfigPanelState
         .toList(growable: false);
   }
 
-  List<ClinicalCatalogOption> get _filteredDiagnosisItems {
+  List<ClinicalCatalogOption> _computeFilteredDiagnosisItems() {
     final String? category =
         _diagnosisFilterValue.option(_diagnosisCategoryFilterKey);
     if (category == null || category.isEmpty) {
@@ -137,12 +142,14 @@ class _FacilityCatalogConfigPanelState
         .toList(growable: false);
   }
 
-  List<RadiologyCatalogTest> get _radiologyVisibleItems {
+  void _recomputeRadiologyVisible() {
     final String query = _radiologySearchController.text.trim().toLowerCase();
+    final List<RadiologyCatalogTest> filtered = _computeFilteredRadiologyItems();
     if (query.isEmpty) {
-      return _filteredRadiologyItems;
+      _radiologyVisibleItems = filtered;
+      return;
     }
-    return _filteredRadiologyItems
+    _radiologyVisibleItems = filtered
         .where((RadiologyCatalogTest item) {
           final String haystack =
               '${item.name} ${item.code ?? ''} ${item.modality ?? ''}'
@@ -152,22 +159,27 @@ class _FacilityCatalogConfigPanelState
         .toList(growable: false);
   }
 
-  List<LabCatalogItem> get _labVisibleItems {
+  void _recomputeLabVisible() {
     final String query = _labSearchController.text.trim().toLowerCase();
+    final List<LabCatalogItem> filtered = _computeFilteredLabItems();
     if (query.isEmpty) {
-      return _filteredLabItems;
+      _labVisibleItems = filtered;
+      return;
     }
-    return _filteredLabItems
+    _labVisibleItems = filtered
         .where((LabCatalogItem item) => item.matchesSearch(query))
         .toList(growable: false);
   }
 
-  List<ClinicalCatalogOption> get _diagnosisVisibleItems {
+  void _recomputeDiagnosisVisible() {
     final String query = _diagnosisSearchController.text.trim().toLowerCase();
+    final List<ClinicalCatalogOption> filtered =
+        _computeFilteredDiagnosisItems();
     if (query.isEmpty) {
-      return _filteredDiagnosisItems;
+      _diagnosisVisibleItems = filtered;
+      return;
     }
-    return _filteredDiagnosisItems
+    _diagnosisVisibleItems = filtered
         .where((ClinicalCatalogOption item) {
           final String haystack =
               '${item.name ?? ''} ${item.code ?? ''} ${item.category ?? ''}'
@@ -177,37 +189,25 @@ class _FacilityCatalogConfigPanelState
         .toList(growable: false);
   }
 
-  AppPage<T> _pageOf<T>(List<T> items, AppPageRequest request) {
-    final List<T> slice = items
-        .skip(request.offset)
-        .take(request.pageSize)
-        .toList(growable: false);
-    return AppPage<T>(
-      items: slice,
-      request: request,
-      totalItemCount: items.length,
-    );
-  }
-
   void _onRadiologySearchChanged() {
     if (!mounted) {
       return;
     }
-    setState(() => _radiologyRequest = _radiologyRequest.first());
+    setState(_recomputeRadiologyVisible);
   }
 
   void _onLabSearchChanged() {
     if (!mounted) {
       return;
     }
-    setState(() => _labRequest = _labRequest.first());
+    setState(_recomputeLabVisible);
   }
 
   void _onDiagnosisSearchChanged() {
     if (!mounted) {
       return;
     }
-    setState(() => _diagnosisRequest = _diagnosisRequest.first());
+    setState(_recomputeDiagnosisVisible);
   }
 
   @override
@@ -284,14 +284,7 @@ class _FacilityCatalogConfigPanelState
             }
             setState(() {
               _tab = next;
-              switch (next) {
-                case _CatalogDeskTab.radiology:
-                  _radiologyRequest = _radiologyRequest.first();
-                case _CatalogDeskTab.lab:
-                  _labRequest = _labRequest.first();
-                case _CatalogDeskTab.diagnoses:
-                  _diagnosisRequest = _diagnosisRequest.first();
-              }
+              _mountedTabs.add(next);
             });
             unawaited(_ensureTabLoaded(next));
           },
@@ -305,17 +298,35 @@ class _FacilityCatalogConfigPanelState
               failure: failure,
             ),
           ),
-        Expanded(child: _buildTableBody(l10n)),
+        Expanded(
+          child: IndexedStack(
+            index: _CatalogDeskTab.values.indexOf(_tab),
+            sizing: StackFit.expand,
+            children: <Widget>[
+              for (final _CatalogDeskTab tab in _CatalogDeskTab.values)
+                _mountedTabs.contains(tab)
+                    ? KeyedSubtree(
+                        key: ValueKey<_CatalogDeskTab>(tab),
+                        child: _buildTableForTab(l10n, tab),
+                      )
+                    : const SizedBox.shrink(),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildTableBody(AppLocalizations l10n) {
-    return switch (_tab) {
+  Widget _buildTableForTab(AppLocalizations l10n, _CatalogDeskTab tab) {
+    return switch (tab) {
       _CatalogDeskTab.radiology => _buildRadiologyTable(l10n),
       _CatalogDeskTab.lab => _buildLabTable(l10n),
       _CatalogDeskTab.diagnoses => _buildDiagnosisTable(l10n),
     };
+  }
+
+  Widget _wrappedCellText(String value) {
+    return Text(value, softWrap: true);
   }
 
   Widget _buildRadiologyTable(AppLocalizations l10n) {
@@ -327,15 +338,9 @@ class _FacilityCatalogConfigPanelState
       ..sort();
 
     return AppListTable<RadiologyCatalogTest>(
-      page: _pageOf(_radiologyVisibleItems, _radiologyRequest),
-      onPageChanged: (AppPageRequest request) {
-        if (request == _radiologyRequest) {
-          return;
-        }
-        setState(() => _radiologyRequest = request);
-      },
-      paginationMode: AppListTablePaginationMode.infinite,
-      isLoading: _radiologyLoading,
+      items: _radiologyVisibleItems,
+      maxVisibleItems: _pageSize,
+      isLoading: _radiologyLoading && _radiologyItems.isEmpty,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_radiology',
@@ -371,7 +376,7 @@ class _FacilityCatalogConfigPanelState
         onFilterChanged: (AppSearchBarFilterValue value) {
           setState(() {
             _radiologyFilterValue = value;
-            _radiologyRequest = _radiologyRequest.first();
+            _recomputeRadiologyVisible();
           });
         },
         trailingActions: <AppSearchBarAction>[
@@ -406,18 +411,28 @@ class _FacilityCatalogConfigPanelState
           label: l10n.radiologyTestNameLabel,
           sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
               a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-          cellBuilder: (_, RadiologyCatalogTest item) => Text(item.name),
+          cellBuilder: (_, RadiologyCatalogTest item) =>
+              _wrappedCellText(item.name),
         ),
         AppListTableColumn<RadiologyCatalogTest>(
           id: 'code',
           label: l10n.labTestCodeLabel,
-          cellBuilder: (_, RadiologyCatalogTest item) =>
-              Text(item.code?.trim().isNotEmpty == true ? item.code! : '—'),
+          sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+              (a.code ?? '').toLowerCase().compareTo(
+                (b.code ?? '').toLowerCase(),
+              ),
+          cellBuilder: (_, RadiologyCatalogTest item) => _wrappedCellText(
+            item.code?.trim().isNotEmpty == true ? item.code! : '—',
+          ),
         ),
         AppListTableColumn<RadiologyCatalogTest>(
           id: 'modality',
           label: l10n.radiologyModalityLabel,
-          cellBuilder: (_, RadiologyCatalogTest item) => Text(
+          sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+              (a.modality ?? '').toLowerCase().compareTo(
+                (b.modality ?? '').toLowerCase(),
+              ),
+          cellBuilder: (_, RadiologyCatalogTest item) => _wrappedCellText(
             item.modality?.trim().isNotEmpty == true ? item.modality! : '—',
           ),
         ),
@@ -456,15 +471,9 @@ class _FacilityCatalogConfigPanelState
       ..sort();
 
     return AppListTable<LabCatalogItem>(
-      page: _pageOf(_labVisibleItems, _labRequest),
-      onPageChanged: (AppPageRequest request) {
-        if (request == _labRequest) {
-          return;
-        }
-        setState(() => _labRequest = request);
-      },
-      paginationMode: AppListTablePaginationMode.infinite,
-      isLoading: _labLoading,
+      items: _labVisibleItems,
+      maxVisibleItems: _pageSize,
+      isLoading: _labLoading && _labItems.isEmpty,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_lab',
@@ -514,7 +523,7 @@ class _FacilityCatalogConfigPanelState
         onFilterChanged: (AppSearchBarFilterValue value) {
           setState(() {
             _labFilterValue = value;
-            _labRequest = _labRequest.first();
+            _recomputeLabVisible();
           });
         },
         trailingActions: <AppSearchBarAction>[
@@ -558,12 +567,15 @@ class _FacilityCatalogConfigPanelState
           sortComparator: (LabCatalogItem a, LabCatalogItem b) => a.displayTitle
               .toLowerCase()
               .compareTo(b.displayTitle.toLowerCase()),
-          cellBuilder: (_, LabCatalogItem item) => Text(item.displayTitle),
+          cellBuilder: (_, LabCatalogItem item) =>
+              _wrappedCellText(item.displayTitle),
         ),
         AppListTableColumn<LabCatalogItem>(
           id: 'type',
           label: l10n.clinicalRequestSelectedTypeColumnLabel,
-          cellBuilder: (_, LabCatalogItem item) => Text(
+          sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
+              a.type.name.compareTo(b.type.name),
+          cellBuilder: (_, LabCatalogItem item) => _wrappedCellText(
             item.type == LabCatalogItemType.panel
                 ? l10n.clinicalLabRequestPanelTypeLabel
                 : l10n.clinicalLabRequestTestTypeLabel,
@@ -572,13 +584,22 @@ class _FacilityCatalogConfigPanelState
         AppListTableColumn<LabCatalogItem>(
           id: 'code',
           label: l10n.labTestCodeLabel,
-          cellBuilder: (_, LabCatalogItem item) =>
-              Text(item.code?.trim().isNotEmpty == true ? item.code! : '—'),
+          sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
+              (a.code ?? '').toLowerCase().compareTo(
+                (b.code ?? '').toLowerCase(),
+              ),
+          cellBuilder: (_, LabCatalogItem item) => _wrappedCellText(
+            item.code?.trim().isNotEmpty == true ? item.code! : '—',
+          ),
         ),
         AppListTableColumn<LabCatalogItem>(
           id: 'category',
           label: l10n.labCategoryLabel,
-          cellBuilder: (_, LabCatalogItem item) => Text(
+          sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
+              (a.category ?? '').toLowerCase().compareTo(
+                (b.category ?? '').toLowerCase(),
+              ),
+          cellBuilder: (_, LabCatalogItem item) => _wrappedCellText(
             item.category?.trim().isNotEmpty == true ? item.category! : '—',
           ),
         ),
@@ -622,15 +643,9 @@ class _FacilityCatalogConfigPanelState
       ..sort();
 
     return AppListTable<ClinicalCatalogOption>(
-      page: _pageOf(_diagnosisVisibleItems, _diagnosisRequest),
-      onPageChanged: (AppPageRequest request) {
-        if (request == _diagnosisRequest) {
-          return;
-        }
-        setState(() => _diagnosisRequest = request);
-      },
-      paginationMode: AppListTablePaginationMode.infinite,
-      isLoading: _diagnosisLoading,
+      items: _diagnosisVisibleItems,
+      maxVisibleItems: _pageSize,
+      isLoading: _diagnosisLoading && _diagnosisItems.isEmpty,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_diagnoses',
@@ -666,7 +681,7 @@ class _FacilityCatalogConfigPanelState
         onFilterChanged: (AppSearchBarFilterValue value) {
           setState(() {
             _diagnosisFilterValue = value;
-            _diagnosisRequest = _diagnosisRequest.first();
+            _recomputeDiagnosisVisible();
           });
         },
         trailingActions: <AppSearchBarAction>[
@@ -704,18 +719,27 @@ class _FacilityCatalogConfigPanelState
                 (b.name ?? '').toLowerCase(),
               ),
           cellBuilder: (_, ClinicalCatalogOption item) =>
-              Text(item.displayTitle),
+              _wrappedCellText(item.displayTitle),
         ),
         AppListTableColumn<ClinicalCatalogOption>(
           id: 'code',
           label: l10n.labTestCodeLabel,
-          cellBuilder: (_, ClinicalCatalogOption item) =>
-              Text(item.code?.trim().isNotEmpty == true ? item.code! : '—'),
+          sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
+              (a.code ?? '').toLowerCase().compareTo(
+                (b.code ?? '').toLowerCase(),
+              ),
+          cellBuilder: (_, ClinicalCatalogOption item) => _wrappedCellText(
+            item.code?.trim().isNotEmpty == true ? item.code! : '—',
+          ),
         ),
         AppListTableColumn<ClinicalCatalogOption>(
           id: 'category',
           label: l10n.labCategoryLabel,
-          cellBuilder: (_, ClinicalCatalogOption item) => Text(
+          sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
+              (a.category ?? '').toLowerCase().compareTo(
+                (b.category ?? '').toLowerCase(),
+              ),
+          cellBuilder: (_, ClinicalCatalogOption item) => _wrappedCellText(
             item.category?.trim().isNotEmpty == true ? item.category! : '—',
           ),
         ),
@@ -748,12 +772,22 @@ class _FacilityCatalogConfigPanelState
   Future<void> _ensureTabLoaded(
     _CatalogDeskTab tab, {
     bool force = false,
+    bool prefetchSiblings = true,
   }) async {
-    return switch (tab) {
+    await switch (tab) {
       _CatalogDeskTab.radiology => _loadRadiologyItems(force: force),
       _CatalogDeskTab.lab => _loadLabItems(force: force),
       _CatalogDeskTab.diagnoses => _loadDiagnosisItems(force: force),
     };
+    if (!prefetchSiblings || !mounted) {
+      return;
+    }
+    for (final _CatalogDeskTab other in _CatalogDeskTab.values) {
+      if (other == tab) {
+        continue;
+      }
+      unawaited(_ensureTabLoaded(other, prefetchSiblings: false));
+    }
   }
 
   Future<void> _loadRadiologyItems({bool force = false}) async {
@@ -783,7 +817,7 @@ class _FacilityCatalogConfigPanelState
         success: (List<RadiologyCatalogTest> items) {
           _radiologyItems = items;
           _radiologyHydrated = true;
-          _radiologyRequest = _radiologyRequest.first();
+          _recomputeRadiologyVisible();
         },
         failure: (AppFailure failure) {
           _radiologyFailure = failure;
@@ -838,7 +872,7 @@ class _FacilityCatalogConfigPanelState
       _labLoading = false;
       if (failure == null) {
         _labHydrated = true;
-        _labRequest = _labRequest.first();
+        _recomputeLabVisible();
       }
     });
   }
@@ -872,7 +906,7 @@ class _FacilityCatalogConfigPanelState
         success: (List<ClinicalCatalogOption> items) {
           _diagnosisItems = items;
           _diagnosisHydrated = true;
-          _diagnosisRequest = _diagnosisRequest.first();
+          _recomputeDiagnosisVisible();
         },
         failure: (AppFailure failure) {
           _diagnosisFailure = failure;

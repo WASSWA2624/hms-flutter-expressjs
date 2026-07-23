@@ -36,7 +36,7 @@ Shared per nested tab (when `enabled`):
 | Delete | Row actions (label varies by category) | Opens `LabDeleteReasonDialog` delete confirm for that catalog item. |
 | Row select | Non-disabled row | Same as **Edit** (opens mutation dialog). |
 
-Tables use `AppListTablePaginationMode.infinite` with client-warmed catalog pages (fetch beyond the prior 100-row cap; append on scroll).
+Tables use client-warmed catalog lists with `AppListTable` incremental reveal (`maxVisibleItems`); all data columns are sortable (actions excluded). Nested tabs keep warmed state via `IndexedStack` and background prefetch.
 
 ---
 
@@ -166,7 +166,7 @@ Opened after Configure → Next when the Diagnoses nested tab is active. Title: 
 | ----------------------- | -------- | ------------------------ |
 | Filter | Catalog search (when categories exist) | Category filters; **Apply filters** / **Clear filters**. |
 | Settings | Column visibility (`setup_catalog_diagnosis_enable`) | Column-settings dialog. |
-| Row select / Add service | Catalog row or row **Add service** (`tenantFacilityCatalogAddServiceAction`) | Upserts facility diagnosis offering (`upsertFacilityCatalogOffering`); on success pops `true`. Already-enabled rows show disabled **Configured**. |
+| Row select / Add diagnosis | Catalog row or row **Add diagnosis** (`clinicalAddDiagnosisAction`) | Upserts facility diagnosis offering (`upsertFacilityCatalogOffering`); on success pops `true`. Already-enabled rows show disabled **Configured**. |
 | Close | Footer | Dismisses picker. |
 
 ---
