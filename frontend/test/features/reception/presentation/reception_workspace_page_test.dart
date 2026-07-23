@@ -959,6 +959,8 @@ void main() {
       await tester.tap(statusFilter);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
       expect(find.text('Connie Confirmed'), findsOneWidget);
@@ -1071,6 +1073,8 @@ void main() {
       await tester.tap(currentStepFilter);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       expect(find.text('Priya Progressed'), findsOneWidget);
       expect(find.text('Quinn Queue'), findsNothing);
@@ -1167,6 +1171,8 @@ void main() {
       await tester.tap(currentStepFilter);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       expect(find.text('Casey Consultation'), findsOneWidget);
       expect(find.text('Alex Active'), findsNothing);
@@ -1238,6 +1244,8 @@ void main() {
       await tester.tap(sourceFilter);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       expect(find.text('Phoebe Pharmacy'), findsOneWidget);
       expect(find.text('Penny Payment'), findsNothing);

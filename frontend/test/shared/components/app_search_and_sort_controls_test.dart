@@ -85,7 +85,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byTooltip('Advanced filters'));
+    await tester.tap(find.byTooltip('Advanced filters (2)'));
     await tester.pumpAndSettle();
 
     expect(find.text('ADVANCED FILTERS'), findsOneWidget);
@@ -98,6 +98,8 @@ void main() {
     expect(find.text('Active'), findsOneWidget);
 
     await tester.tap(find.text('Apply filters'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
     expect(applied, filterValue);
@@ -137,7 +139,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byTooltip('Advanced filters'));
+    await tester.tap(find.byTooltip('Advanced filters (1)'));
     await tester.pumpAndSettle();
 
     expect(find.text('Search criteria'), findsOneWidget);
@@ -150,6 +152,8 @@ void main() {
       'E-1',
     );
     await tester.tap(find.text('Apply filters'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
     expect(applied?.text('patient'), 'Amina');

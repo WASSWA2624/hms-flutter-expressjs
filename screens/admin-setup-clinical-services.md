@@ -20,7 +20,7 @@ Shared per nested tab (when `enabled`):
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Filter | `AppListTable` search bar (`commonFilterActionLabel`) | Opens advanced-filter dialog for that category; footer **Apply filters** / **Clear filters**. |
+| Filters | `AppListTable` search bar (`commonFiltersActionLabel`) | Opens advanced-filter dialog for that category; footer **Apply filters** / **Clear filters**. While **Apply filters** runs, the dialog shows a loading indicator, disables form controls / Close / Clear, and keeps Apply in a busy state until filters are applied and the dialog closes. |
 | Settings | Column-visibility control (`commonTableSettingsActionLabel`) | Opens column-settings dialog (**Apply columns** / **Reset columns** / **Close** defaults). Storage keys: `admin_catalog_radiology`, `admin_catalog_lab`, `admin_catalog_diagnoses`. |
 | Configure | Search trailing (`tenantFacilityCatalogConfigureAction`) | Opens **Select tenant and facility** scope picker, then the category enable dialog. Does not switch the desk table into facility-only mode. |
 | Edit | Row actions (`clinicalLabRequestEditSelectionAction`) | Opens global catalog edit/mutation dialog for that row. |
@@ -180,7 +180,7 @@ Used for radiology / lab / diagnosis global catalog deletes from this panel. Cal
 | Cancel | Footers that include it (scope picker, mutation dialogs, lab price dialog) | Dismisses without applying. |
 | Close | Title bar of reachable `AppDialog`s; enable-dialog footers | Dismisses; often disabled while saving. |
 | Maximize / Restore | Title bar of `AppDialog` with default window controls | Expands or restores dialog size. Advanced-filter and column-settings dialogs disable this control. |
-| Apply filters / Clear filters | Advanced-filter footer | Applies or resets filter value. |
+| Apply filters / Clear filters | Advanced-filter footer | **Apply filters** applies criteria (dialog shows loading, disables chrome until done) or **Clear filters** resets filter value. |
 | Apply columns / Reset columns / Close | Column-settings dialog | Applies, resets, or dismisses column visibility. |
 
 ---
