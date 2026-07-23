@@ -19446,7 +19446,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyEnableOfferingDialogBody =>
-      'Select a catalog procedure and set the facility price.';
+      'Select catalog procedures to enable at this facility.';
 
   @override
   String get radiologyEnableOfferingNoItemsLabel =>
@@ -19510,7 +19510,7 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$count procedures selected',
       one: '1 procedure selected',
     );
-    return '$_temp0. Set a shared unit price for the selection.';
+    return '$_temp0. Set a unit price for each procedure.';
   }
 
   @override
@@ -19518,7 +19518,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyEnableOfferingPreviewBody =>
-      'Review the procedures to enable. Deselect any you want to remove, then continue to set each price individually.';
+      'Review the procedures and prices. Deselect any you want to remove, then enable the selection.';
+
+  @override
+  String get radiologyEnableOfferingSetPricesTitle => 'Set facility prices';
 
   @override
   String get radiologyEnableOfferingPreviewEmptyLabel =>

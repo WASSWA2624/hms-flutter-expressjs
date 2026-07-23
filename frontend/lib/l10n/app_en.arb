@@ -24949,7 +24949,7 @@
   "@radiologyEnableOfferingDialogTitle": {
     "description": "Radiology enable offering catalog picker dialog title."
   },
-  "radiologyEnableOfferingDialogBody": "Select a catalog procedure and set the facility price.",
+  "radiologyEnableOfferingDialogBody": "Select catalog procedures to enable at this facility.",
   "@radiologyEnableOfferingDialogBody": {
     "description": "Radiology enable offering catalog picker dialog body."
   },
@@ -25015,7 +25015,7 @@
   "@radiologyEnableSelectedProceduresTitle": {
     "description": "Title when enabling multiple radiology procedures at once."
   },
-  "radiologyEnableSelectedProceduresBody": "{count, plural, =1{1 procedure selected} other{{count} procedures selected}}. Set a shared unit price for the selection.",
+  "radiologyEnableSelectedProceduresBody": "{count, plural, =1{1 procedure selected} other{{count} procedures selected}}. Set a unit price for each procedure.",
   "@radiologyEnableSelectedProceduresBody": {
     "description": "Body copy for bulk radiology enable price dialog.",
     "placeholders": {
@@ -25026,11 +25026,15 @@
   },
   "radiologyEnableOfferingPreviewTitle": "Review selection",
   "@radiologyEnableOfferingPreviewTitle": {
-    "description": "Title for the radiology configure preview step before pricing."
+    "description": "Title for the radiology configure preview step after pricing."
   },
-  "radiologyEnableOfferingPreviewBody": "Review the procedures to enable. Deselect any you want to remove, then continue to set each price individually.",
+  "radiologyEnableOfferingPreviewBody": "Review the procedures and prices. Deselect any you want to remove, then enable the selection.",
   "@radiologyEnableOfferingPreviewBody": {
     "description": "Body copy for the radiology configure preview step."
+  },
+  "radiologyEnableOfferingSetPricesTitle": "Set facility prices",
+  "@radiologyEnableOfferingSetPricesTitle": {
+    "description": "Title for the radiology configure batch price step."
   },
   "radiologyEnableOfferingPreviewEmptyLabel": "No procedures selected. Go back to choose offerings.",
   "@radiologyEnableOfferingPreviewEmptyLabel": {

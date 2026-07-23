@@ -36238,7 +36238,7 @@ abstract class AppLocalizations {
   /// Radiology enable offering catalog picker dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Select a catalog procedure and set the facility price.'**
+  /// **'Select catalog procedures to enable at this facility.'**
   String get radiologyEnableOfferingDialogBody;
 
   /// Radiology enable offering empty state when all items are offered.
@@ -36322,10 +36322,10 @@ abstract class AppLocalizations {
   /// Body copy for bulk radiology enable price dialog.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 procedure selected} other{{count} procedures selected}}. Set a shared unit price for the selection.'**
+  /// **'{count, plural, =1{1 procedure selected} other{{count} procedures selected}}. Set a unit price for each procedure.'**
   String radiologyEnableSelectedProceduresBody(int count);
 
-  /// Title for the radiology configure preview step before pricing.
+  /// Title for the radiology configure preview step after pricing.
   ///
   /// In en, this message translates to:
   /// **'Review selection'**
@@ -36334,8 +36334,14 @@ abstract class AppLocalizations {
   /// Body copy for the radiology configure preview step.
   ///
   /// In en, this message translates to:
-  /// **'Review the procedures to enable. Deselect any you want to remove, then continue to set each price individually.'**
+  /// **'Review the procedures and prices. Deselect any you want to remove, then enable the selection.'**
   String get radiologyEnableOfferingPreviewBody;
+
+  /// Title for the radiology configure batch price step.
+  ///
+  /// In en, this message translates to:
+  /// **'Set facility prices'**
+  String get radiologyEnableOfferingSetPricesTitle;
 
   /// Empty state when all preview selections were deselected.
   ///
