@@ -208,6 +208,9 @@ final class TenantFacilitySetupSubmissionController
     String? currency,
     String? standardConsultationFee,
     bool clearStandardConsultationFee = false,
+    String? contactName,
+    String? contactEmail,
+    String? contactPhone,
     bool refreshSetup = true,
     bool updateSetupSnapshot = true,
   }) {
@@ -220,6 +223,9 @@ final class TenantFacilitySetupSubmissionController
         currency: currency,
         standardConsultationFee: standardConsultationFee,
         clearStandardConsultationFee: clearStandardConsultationFee,
+        contactName: contactName,
+        contactEmail: contactEmail,
+        contactPhone: contactPhone,
       ),
       updateSnapshot: updateSetupSnapshot
           ? (FacilitySetupSnapshot snapshot, TenantProfile tenant) {

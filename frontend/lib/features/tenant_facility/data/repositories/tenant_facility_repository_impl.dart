@@ -309,15 +309,24 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? currency,
     String? standardConsultationFee,
     bool clearStandardConsultationFee = false,
+    String? contactName,
+    String? contactEmail,
+    String? contactPhone,
   }) {
     final String? normalizedCurrency = _normalizedOptional(
       currency,
     )?.toUpperCase();
     final String? normalizedFee = _normalizedOptional(standardConsultationFee);
+    final String? normalizedContactName = _normalizedOptional(contactName);
+    final String? normalizedContactEmail = _normalizedOptional(contactEmail);
+    final String? normalizedContactPhone = _normalizedOptional(contactPhone);
+    final bool writeContact =
+        contactName != null || contactEmail != null || contactPhone != null;
     final bool writeExtension =
         normalizedCurrency != null ||
         normalizedFee != null ||
-        clearStandardConsultationFee;
+        clearStandardConsultationFee ||
+        writeContact;
     final Map<String, Object?>? extensionJson = writeExtension
         ? <String, Object?>{
             'currency': ?normalizedCurrency,
@@ -326,6 +335,12 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
                   ? null
                   : normalizedFee,
             },
+            if (writeContact)
+              'contact': <String, Object?>{
+                'name': normalizedContactName,
+                'email': normalizedContactEmail,
+                'phone': normalizedContactPhone,
+              },
           }
         : null;
     final payload = <String, Object?>{

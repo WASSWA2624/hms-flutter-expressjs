@@ -634,6 +634,10 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _slugController;
+  late final TextEditingController _contactNameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _feeController;
   late bool _isActive;
   late String _currency;
   bool _slugManuallyEdited = false;
@@ -647,6 +651,14 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     super.initState();
     _nameController = TextEditingController(text: widget.tenant?.name);
     _slugController = TextEditingController(text: widget.tenant?.slug);
+    _contactNameController = TextEditingController(
+      text: widget.tenant?.contactName,
+    );
+    _phoneController = TextEditingController(text: widget.tenant?.contactPhone);
+    _emailController = TextEditingController(text: widget.tenant?.contactEmail);
+    _feeController = TextEditingController(
+      text: widget.tenant?.standardConsultationFee,
+    );
     _isActive = widget.tenant?.isActive ?? true;
     _currency = resolveDefaultCurrency(tenantCurrency: widget.tenant?.currency);
     _slugManuallyEdited =
@@ -664,6 +676,10 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     if (oldWidget.tenant?.id != widget.tenant?.id) {
       _nameController.text = widget.tenant?.name ?? '';
       _slugController.text = widget.tenant?.slug ?? '';
+      _contactNameController.text = widget.tenant?.contactName ?? '';
+      _phoneController.text = widget.tenant?.contactPhone ?? '';
+      _emailController.text = widget.tenant?.contactEmail ?? '';
+      _feeController.text = widget.tenant?.standardConsultationFee ?? '';
       _isActive = widget.tenant?.isActive ?? true;
       _currency = resolveDefaultCurrency(
         tenantCurrency: widget.tenant?.currency,
@@ -682,6 +698,10 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     _slugController
       ..removeListener(_handleSlugChanged)
       ..dispose();
+    _contactNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _feeController.dispose();
     super.dispose();
   }
 
@@ -731,6 +751,11 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final String sectionBody =
         widget.sectionBody ?? l10n.tenantFacilityTenantSectionBody;
+    final bool fieldsEnabled = widget.canSubmit && !submission.isSubmitting;
+    final String? displayId = widget.tenant?.displayId?.trim();
+    final String resolvedCurrency = resolveDefaultCurrency(
+      tenantCurrency: _currency,
+    );
 
     final Widget form = Form(
       key: _formKey,
@@ -738,7 +763,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
         children: <Widget>[
           AppTextField(
             controller: _nameController,
-            enabled: widget.canSubmit && !submission.isSubmitting,
+            enabled: fieldsEnabled,
             labelText: l10n.tenantFacilityTenantNameLabel,
             isRequired: true,
             textCapitalization: TextCapitalization.words,
@@ -747,23 +772,57 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           ),
           AppTextField(
             controller: _slugController,
-            enabled: widget.canSubmit && !submission.isSubmitting,
+            enabled: fieldsEnabled,
             labelText: l10n.tenantFacilityTenantSlugLabel,
             errorText: _slugErrorText,
           ),
+          if (!widget.isCreate &&
+              displayId != null &&
+              displayId.isNotEmpty)
+            AppTextField(
+              initialValue: displayId,
+              enabled: false,
+              readOnly: true,
+              labelText: l10n.tenantFacilityTenantDetailsIdLabel,
+            ),
           AppSwitchField(
             title: l10n.tenantFacilityActiveLabel,
             value: _isActive,
-            enabled: widget.canSubmit && !submission.isSubmitting,
+            enabled: fieldsEnabled,
             onChanged: (bool value) {
               setState(() {
                 _isActive = value;
               });
             },
           ),
+          AppTextField(
+            controller: _contactNameController,
+            enabled: fieldsEnabled,
+            labelText: l10n.tenantFacilityTenantDetailsContactNameLabel,
+            textCapitalization: TextCapitalization.words,
+          ),
+          AppPhoneField(
+            controller: _phoneController,
+            enabled: fieldsEnabled,
+            labelText: l10n.profilePhoneLabel,
+            countryLabelText: l10n.appPhoneCountryLabel,
+            countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+            countryNoResultsText: l10n.appPhoneCountryNoResults,
+            numberLabelText: l10n.appPhoneNumberLabel,
+            numberHintText: l10n.appPhoneNumberHint,
+            invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+            requiredMessage: l10n.validationRequired,
+          ),
+          AppEmailField(
+            controller: _emailController,
+            enabled: fieldsEnabled,
+            labelText: l10n.profileEmailLabel,
+            requiredMessage: l10n.validationRequired,
+            invalidEmailMessage: l10n.authEmailInvalidMessage,
+          ),
           AppCurrencySelectField(
             value: _currency,
-            enabled: widget.canSubmit && !submission.isSubmitting,
+            enabled: fieldsEnabled,
             labelText: l10n.tenantFacilityDefaultCurrencyLabel,
             helperText: l10n.tenantFacilityTenantDefaultCurrencyHelper,
             onChanged: (String? value) {
@@ -774,6 +833,22 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
                 _currency = value.trim().toUpperCase();
               });
             },
+          ),
+          AppCurrencyAmountField(
+            amountController: _feeController,
+            currency: resolvedCurrency,
+            onCurrencyChanged: (String? value) {
+              if (value == null || value.trim().isEmpty) {
+                return;
+              }
+              setState(() {
+                _currency = value.trim().toUpperCase();
+              });
+            },
+            amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
+            currencyLabelText: l10n.tenantFacilityDefaultCurrencyLabel,
+            helperText: l10n.settingsConfigurationConsultationFeeHelper,
+            enabled: fieldsEnabled,
           ),
           if (_similarMatches.isNotEmpty)
             TenantSimilarityWarningPanel(matches: _similarMatches),
@@ -834,6 +909,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       }
     }
 
+    final String fee = _feeController.text.trim();
     return ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveTenant(
@@ -842,6 +918,11 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           slug: _slugController.text,
           isActive: _isActive,
           currency: resolveDefaultCurrency(tenantCurrency: _currency),
+          standardConsultationFee: fee.isEmpty ? null : fee,
+          clearStandardConsultationFee: fee.isEmpty,
+          contactName: _contactNameController.text,
+          contactEmail: _emailController.text,
+          contactPhone: _phoneController.text,
           refreshSetup: widget.refreshSetupAfterSave,
           updateSetupSnapshot: widget.updateSetupSnapshot,
         );

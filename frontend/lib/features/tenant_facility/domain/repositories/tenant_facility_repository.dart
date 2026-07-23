@@ -47,6 +47,9 @@ abstract interface class TenantFacilityRepository {
     String? currency,
     String? standardConsultationFee,
     bool clearStandardConsultationFee = false,
+    String? contactName,
+    String? contactEmail,
+    String? contactPhone,
   });
 
   Future<Result<FacilityProfile>> saveFacility({

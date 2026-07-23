@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
@@ -40,6 +41,7 @@ const double _mobileRowNumberColumnWidth = 28;
 const double _minResizableColumnWidth = 72;
 const String _defaultGoToTopLabel = 'Go to top';
 const Duration _goToTopAnimationDuration = Duration(milliseconds: 280);
+const double _goToTopButtonExtent = 48;
 const double _defaultColumnWidth = 160;
 const double _defaultCompactColumnWidth = 136;
 const double _columnResizeHandleWidth = 8;
@@ -2117,7 +2119,7 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
   }
 }
 
-class _MobileListTable<T> extends StatefulWidget {
+class _MobileListTable<T> extends StatelessWidget {
   const _MobileListTable({
     required this.items,
     required this.itemBuilder,
@@ -2141,109 +2143,56 @@ class _MobileListTable<T> extends StatefulWidget {
   final String goToTopLabel;
 
   @override
-  State<_MobileListTable<T>> createState() => _MobileListTableState<T>();
-}
-
-class _MobileListTableState<T> extends State<_MobileListTable<T>> {
-  late final ScrollController _scrollController;
-  bool _showGoToTop = false;
-
-  bool get _ownsScroll => !widget.shrinkWrap;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-    _scrollController.addListener(_handleScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_handleScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _handleScroll() {
-    if (!_scrollController.hasClients) {
-      return;
-    }
-    final bool next = _scrollController.offset > 64;
-    if (next == _showGoToTop) {
-      return;
-    }
-    setState(() => _showGoToTop = next);
-  }
-
-  Future<void> _goToTop() async {
-    if (!_scrollController.hasClients) {
-      return;
-    }
-    await _scrollController.animateTo(
-      0,
-      duration: _goToTopAnimationDuration,
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final Widget list = ListView.separated(
-      controller: _ownsScroll ? _scrollController : null,
-      itemCount: widget.items.length,
-      shrinkWrap: widget.shrinkWrap,
-      physics: widget.physics,
-      itemBuilder: (BuildContext context, int index) {
-        final T item = widget.items[index];
-        Widget row = KeyedSubtree(
-          key: appListTableUniqueRowKey<T>(
-            index: index,
-            itemKeyBuilder: widget.itemKeyBuilder,
-            item: item,
-          ),
-          child: _NumberedMobileListItem(
-            number: widget.rowNumberOffset + index + 1,
-            child: widget.itemBuilder(context, item),
-          ),
+    return _GoToTopHost(
+      label: goToTopLabel,
+      headerExtent: 56,
+      builder: (BuildContext context, Key headerKey) {
+        return ListView.separated(
+          itemCount: items.length,
+          shrinkWrap: shrinkWrap,
+          physics: physics,
+          itemBuilder: (BuildContext context, int index) {
+            final T item = items[index];
+            Widget row = KeyedSubtree(
+              key: appListTableUniqueRowKey<T>(
+                index: index,
+                itemKeyBuilder: itemKeyBuilder,
+                item: item,
+              ),
+              child: _NumberedMobileListItem(
+                number: rowNumberOffset + index + 1,
+                child: itemBuilder(context, item),
+              ),
+            );
+
+            if (onRowSelected != null) {
+              row = _SelectableMobileDataRow<T>(
+                item: item,
+                onSelected: onRowSelected!,
+                child: row,
+              );
+            }
+
+            final Color? rowColor = rowColorBuilder?.call(context, item);
+            if (rowColor != null) {
+              row = ColoredBox(color: rowColor, child: row);
+            }
+
+            if (index == 0) {
+              row = KeyedSubtree(key: headerKey, child: row);
+            }
+            return row;
+          },
+          separatorBuilder: (BuildContext context, int index) {
+            final ThemeData theme = Theme.of(context);
+            return Divider(
+              height: 1,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            );
+          },
         );
-
-        if (widget.onRowSelected != null) {
-          row = _SelectableMobileDataRow<T>(
-            item: item,
-            onSelected: widget.onRowSelected!,
-            child: row,
-          );
-        }
-
-        final Color? rowColor = widget.rowColorBuilder?.call(context, item);
-        if (rowColor == null) {
-          return row;
-        }
-
-        return ColoredBox(color: rowColor, child: row);
       },
-      separatorBuilder: (BuildContext context, int index) {
-        final ThemeData theme = Theme.of(context);
-        return Divider(
-          height: 1,
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-        );
-      },
-    );
-
-    if (!_ownsScroll) {
-      return list;
-    }
-
-    return Stack(
-      children: <Widget>[
-        list,
-        _GoToTopButton(
-          visible: _showGoToTop,
-          label: widget.goToTopLabel,
-          onPressed: _goToTop,
-        ),
-      ],
     );
   }
 }
@@ -2390,7 +2339,6 @@ class _DesktopListTable<T> extends StatefulWidget {
 class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   late final ScrollController _horizontalController;
   late final ScrollController _verticalController;
-  bool _showGoToTop = false;
 
   double get _headingRowHeight => widget.compact ? 44 : 48;
 
@@ -2399,37 +2347,13 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     super.initState();
     _horizontalController = ScrollController();
     _verticalController = ScrollController();
-    _verticalController.addListener(_handleVerticalScroll);
   }
 
   @override
   void dispose() {
-    _verticalController.removeListener(_handleVerticalScroll);
     _horizontalController.dispose();
     _verticalController.dispose();
     super.dispose();
-  }
-
-  void _handleVerticalScroll() {
-    if (!_verticalController.hasClients) {
-      return;
-    }
-    final bool next = _verticalController.offset > _headingRowHeight;
-    if (next == _showGoToTop) {
-      return;
-    }
-    setState(() => _showGoToTop = next);
-  }
-
-  Future<void> _goToTop() async {
-    if (!_verticalController.hasClients) {
-      return;
-    }
-    await _verticalController.animateTo(
-      0,
-      duration: _goToTopAnimationDuration,
-      curve: Curves.easeOutCubic,
-    );
   }
 
   @override
@@ -2447,110 +2371,116 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
 
     _resolveTableStyles(theme);
 
-    final Widget table = DataTable(
-      showCheckboxColumn: false,
-      horizontalMargin: horizontalMargin,
-      columnSpacing: columnSpacing,
-      headingRowHeight: _headingRowHeight,
-      dataRowMinHeight: rowMinHeight,
-      dataRowMaxHeight: rowMaxHeight,
-      headingRowColor: _cachedHeadingRowColor,
-      dividerThickness: theme.appTokens.dividerThickness,
-      headingTextStyle: _cachedHeadingTextStyle,
-      dataTextStyle: _cachedDataTextStyle,
-      border: TableBorder(
-        verticalInside: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.38),
-          width: theme.appTokens.dividerThickness,
+    return Material(
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
-      columns: <DataColumn>[
-        DataColumn(
-          numeric: true,
-          label: SizedBox(
-            width: _rowNumberColumnWidth,
-            child: Text(
-              '#',
-              textAlign: TextAlign.center,
-              style: _cachedNumberColumnStyle,
+      child: _GoToTopHost(
+        label: widget.goToTopLabel,
+        headerExtent: _headingRowHeight,
+        builder: (BuildContext context, Key headerKey) {
+          final Widget table = KeyedSubtree(
+            key: headerKey,
+            child: DataTable(
+              showCheckboxColumn: false,
+              horizontalMargin: horizontalMargin,
+              columnSpacing: columnSpacing,
+              headingRowHeight: _headingRowHeight,
+              dataRowMinHeight: rowMinHeight,
+              dataRowMaxHeight: rowMaxHeight,
+              headingRowColor: _cachedHeadingRowColor,
+              dividerThickness: theme.appTokens.dividerThickness,
+              headingTextStyle: _cachedHeadingTextStyle,
+              dataTextStyle: _cachedDataTextStyle,
+              border: TableBorder(
+                verticalInside: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.38),
+                  width: theme.appTokens.dividerThickness,
+                ),
+              ),
+              columns: <DataColumn>[
+                DataColumn(
+                  numeric: true,
+                  label: SizedBox(
+                    width: _rowNumberColumnWidth,
+                    child: Text(
+                      '#',
+                      textAlign: TextAlign.center,
+                      style: _cachedNumberColumnStyle,
+                    ),
+                  ),
+                ),
+                for (final AppListTableColumn<T> column in widget.columns)
+                  DataColumn(
+                    numeric: column.numeric,
+                    tooltip: column.tooltip,
+                    label: _DataColumnHeader<T>(
+                      column: column,
+                      isSorted: widget.sortColumnKey == column.key,
+                      sortAscending: widget.sortAscending,
+                      onSort: widget.onSort,
+                      width: widget.columnWidthFor(column),
+                      enableResize: widget.enableColumnResize,
+                      onWidthChanged: widget.onColumnWidthChanged == null
+                          ? null
+                          : (double width) {
+                              widget.onColumnWidthChanged!(column.key, width);
+                            },
+                    ),
+                  ),
+              ],
+              rows: <DataRow>[
+                for (var index = 0; index < widget.items.length; index += 1)
+                  _dataRow(context, index),
+                for (
+                  var index = widget.items.length;
+                  index < _minTableRowCount;
+                  index += 1
+                )
+                  _emptyRow(context, index),
+              ],
             ),
-          ),
-        ),
-        for (final AppListTableColumn<T> column in widget.columns)
-          DataColumn(
-            numeric: column.numeric,
-            tooltip: column.tooltip,
-            label: _DataColumnHeader<T>(
-              column: column,
-              isSorted: widget.sortColumnKey == column.key,
-              sortAscending: widget.sortAscending,
-              onSort: widget.onSort,
-              width: widget.columnWidthFor(column),
-              enableResize: widget.enableColumnResize,
-              onWidthChanged: widget.onColumnWidthChanged == null
-                  ? null
-                  : (double width) {
-                      widget.onColumnWidthChanged!(column.key, width);
-                    },
-            ),
-          ),
-      ],
-      rows: <DataRow>[
-        for (var index = 0; index < widget.items.length; index += 1)
-          _dataRow(context, index),
-        for (
-          var index = widget.items.length;
-          index < _minTableRowCount;
-          index += 1
-        )
-          _emptyRow(context, index),
-      ],
-    );
+          );
 
-    final Widget scrollableTable = widget.scrollVertically
-        ? LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final double tableWidth = math.max(
-                widget.minWidth,
-                constraints.maxWidth,
-              );
-              return Stack(
-                children: <Widget>[
-                  Scrollbar(
+          if (widget.scrollVertically) {
+            return LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double tableWidth = math.max(
+                  widget.minWidth,
+                  constraints.maxWidth,
+                );
+                return Scrollbar(
+                  controller: _horizontalController,
+                  thumbVisibility: true,
+                  scrollbarOrientation: ScrollbarOrientation.bottom,
+                  notificationPredicate: (ScrollNotification notification) {
+                    return notification.metrics.axis == Axis.horizontal;
+                  },
+                  child: SingleChildScrollView(
                     controller: _horizontalController,
-                    thumbVisibility: true,
-                    scrollbarOrientation: ScrollbarOrientation.bottom,
-                    notificationPredicate: (ScrollNotification notification) {
-                      return notification.metrics.axis == Axis.horizontal;
-                    },
-                    child: SingleChildScrollView(
-                      controller: _horizontalController,
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: tableWidth,
-                        height: constraints.maxHeight,
-                        child: Scrollbar(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: tableWidth,
+                      height: constraints.maxHeight,
+                      child: Scrollbar(
+                        controller: _verticalController,
+                        thumbVisibility: true,
+                        child: SingleChildScrollView(
                           controller: _verticalController,
-                          thumbVisibility: true,
-                          child: SingleChildScrollView(
-                            controller: _verticalController,
-                            child: table,
-                          ),
+                          child: table,
                         ),
                       ),
                     ),
                   ),
-                  _GoToTopButton(
-                    visible: _showGoToTop,
-                    label: widget.goToTopLabel,
-                    onPressed: _goToTop,
-                    bottom: theme.spacing.xl,
-                  ),
-                ],
-              );
-            },
-          )
-        : Scrollbar(
+                );
+              },
+            );
+          }
+
+          return Scrollbar(
             controller: _horizontalController,
             thumbVisibility: true,
             notificationPredicate: (ScrollNotification notification) {
@@ -2565,15 +2495,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               ),
             ),
           );
-
-    return Material(
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
+        },
       ),
-      child: scrollableTable,
     );
   }
 
@@ -3022,58 +2945,244 @@ class _ColumnResizeHandleState extends State<_ColumnResizeHandle> {
   }
 }
 
-class _GoToTopButton extends StatelessWidget {
-  const _GoToTopButton({
-    required this.visible,
+class _GoToTopHost extends StatefulWidget {
+  const _GoToTopHost({
     required this.label,
-    required this.onPressed,
-    this.bottom,
+    required this.headerExtent,
+    required this.builder,
   });
 
-  final bool visible;
   final String label;
-  final VoidCallback onPressed;
-  final double? bottom;
+  final double headerExtent;
+  final Widget Function(BuildContext context, Key headerKey) builder;
+
+  @override
+  State<_GoToTopHost> createState() => _GoToTopHostState();
+}
+
+class _GoToTopHostState extends State<_GoToTopHost> {
+  final GlobalKey _headerKey = GlobalKey(debugLabel: 'appListTableHeader');
+  OverlayEntry? _overlayEntry;
+  ScrollPosition? _trackedPosition;
+  bool _headerHidden = false;
+  bool _visibilityCheckScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _reattachScrollPosition();
+        _scheduleVisibilityCheck();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _detachScrollPosition();
+    _removeOverlay();
+    super.dispose();
+  }
+
+  void _scheduleVisibilityCheck() {
+    if (_visibilityCheckScheduled) {
+      return;
+    }
+    _visibilityCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _visibilityCheckScheduled = false;
+      if (!mounted) {
+        return;
+      }
+      _reattachScrollPosition();
+      _syncVisibility();
+    });
+  }
+
+  void _reattachScrollPosition() {
+    final BuildContext? headerContext = _headerKey.currentContext;
+    final ScrollPosition? position = headerContext == null
+        ? null
+        : Scrollable.maybeOf(headerContext)?.position;
+    if (identical(position, _trackedPosition)) {
+      return;
+    }
+    _detachScrollPosition();
+    _trackedPosition = position;
+    _trackedPosition?.addListener(_scheduleVisibilityCheck);
+  }
+
+  void _detachScrollPosition() {
+    _trackedPosition?.removeListener(_scheduleVisibilityCheck);
+    _trackedPosition = null;
+  }
+
+  bool _isHeaderHidden() {
+    final BuildContext? headerContext = _headerKey.currentContext;
+    if (headerContext == null) {
+      return false;
+    }
+    final RenderObject? headerRender = headerContext.findRenderObject();
+    if (headerRender == null || !headerRender.attached) {
+      return false;
+    }
+
+    final ScrollableState? scrollable = Scrollable.maybeOf(headerContext);
+    final ScrollPosition? position = scrollable?.position;
+    if (position == null || !position.hasPixels) {
+      return false;
+    }
+
+    final RenderAbstractViewport? viewport = RenderAbstractViewport.maybeOf(
+      headerRender,
+    );
+    if (viewport != null) {
+      final RevealedOffset revealed = viewport.getOffsetToReveal(
+        headerRender,
+        0,
+      );
+      // Headers are hidden as soon as their top edge leaves the viewport top.
+      return position.pixels > revealed.offset + 0.5;
+    }
+
+    return position.pixels > widget.headerExtent;
+  }
+
+  Rect? _viewportRectInOverlay(BuildContext overlayContext) {
+    final BuildContext? headerContext = _headerKey.currentContext;
+    if (headerContext == null) {
+      return null;
+    }
+    final ScrollableState? scrollable = Scrollable.maybeOf(headerContext);
+    if (scrollable == null) {
+      return null;
+    }
+    final RenderObject? viewportRender = scrollable.context.findRenderObject();
+    final RenderObject? overlayRender = overlayContext.findRenderObject();
+    if (viewportRender is! RenderBox ||
+        overlayRender is! RenderBox ||
+        !viewportRender.hasSize) {
+      return null;
+    }
+    final Offset topLeft = overlayRender.globalToLocal(
+      viewportRender.localToGlobal(Offset.zero),
+    );
+    return topLeft & viewportRender.size;
+  }
+
+  void _syncVisibility() {
+    final bool nextHidden = _isHeaderHidden();
+    if (nextHidden == _headerHidden && _overlayEntry != null) {
+      _overlayEntry!.markNeedsBuild();
+      return;
+    }
+    _headerHidden = nextHidden;
+    if (!_headerHidden) {
+      _removeOverlay();
+      return;
+    }
+    _ensureOverlay();
+    _overlayEntry?.markNeedsBuild();
+  }
+
+  void _ensureOverlay() {
+    if (_overlayEntry != null) {
+      return;
+    }
+    final OverlayState? overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) {
+      return;
+    }
+    _overlayEntry = OverlayEntry(builder: _buildOverlay);
+    overlay.insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  Future<void> _goToTop() async {
+    final BuildContext? headerContext = _headerKey.currentContext;
+    if (headerContext == null) {
+      return;
+    }
+    final ScrollableState? scrollable = Scrollable.maybeOf(headerContext);
+    final ScrollPosition? position = scrollable?.position;
+    if (position != null && position.hasPixels) {
+      await position.animateTo(
+        0,
+        duration: _goToTopAnimationDuration,
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      await Scrollable.ensureVisible(
+        headerContext,
+        duration: _goToTopAnimationDuration,
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _scheduleVisibilityCheck();
+  }
+
+  Widget _buildOverlay(BuildContext overlayContext) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    if (!_headerHidden) {
+      return const SizedBox.shrink();
+    }
+
+    final Rect? viewportRect = _viewportRectInOverlay(overlayContext);
+    final Widget button = Material(
+      elevation: 3,
+      color: colorScheme.surfaceContainerHighest,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: IconButton(
+        tooltip: widget.label,
+        onPressed: _goToTop,
+        icon: Icon(
+          Icons.vertical_align_top,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        style: IconButton.styleFrom(
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          foregroundColor: colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+
+    if (viewportRect == null) {
+      return Positioned(
+        right: theme.spacing.md,
+        bottom: theme.spacing.xl,
+        child: button,
+      );
+    }
+
+    return Positioned(
+      left: viewportRect.right - _goToTopButtonExtent - theme.spacing.md,
+      top: viewportRect.bottom - _goToTopButtonExtent - theme.spacing.xl,
+      child: button,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final double resolvedBottom = bottom ?? theme.spacing.md;
-
-    return Positioned(
-      right: theme.spacing.md,
-      bottom: resolvedBottom,
-      child: IgnorePointer(
-        ignoring: !visible,
-        child: AnimatedOpacity(
-          opacity: visible ? 1 : 0,
-          duration: const Duration(milliseconds: 180),
-          child: AnimatedScale(
-            scale: visible ? 1 : 0.85,
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            child: Material(
-              elevation: 3,
-              color: colorScheme.surfaceContainerHighest,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: IconButton(
-                tooltip: label,
-                onPressed: onPressed,
-                icon: Icon(
-                  Icons.vertical_align_top,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  foregroundColor: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification notification) {
+        if (notification.metrics.axis != Axis.vertical) {
+          return false;
+        }
+        if (notification is ScrollUpdateNotification ||
+            notification is ScrollEndNotification ||
+            notification is OverscrollNotification) {
+          _scheduleVisibilityCheck();
+        }
+        return false;
+      },
+      child: widget.builder(context, _headerKey),
     );
   }
 }

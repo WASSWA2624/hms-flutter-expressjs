@@ -20,6 +20,8 @@ final class TenantProfileDto {
   factory TenantProfileDto.fromJson(JsonMap json) {
     final JsonMap extensionJson = _map(json['extension_json']);
     final JsonMap billing = _map(extensionJson['billing']);
+    final bool hasContactOverride = extensionJson.containsKey('contact');
+    final JsonMap contactJson = _map(extensionJson['contact']);
     final JsonMap primaryAdmin = _map(json['primary_tenant_admin']);
 
     return TenantProfileDto(
@@ -32,9 +34,15 @@ final class TenantProfileDto {
         billing,
         'standard_consultation_fee',
       ),
-      contactName: _optionalString(primaryAdmin, 'full_name'),
-      contactEmail: _optionalString(primaryAdmin, 'email'),
-      contactPhone: _optionalString(primaryAdmin, 'phone'),
+      contactName: hasContactOverride
+          ? _optionalString(contactJson, 'name')
+          : _optionalString(primaryAdmin, 'full_name'),
+      contactEmail: hasContactOverride
+          ? _optionalString(contactJson, 'email')
+          : _optionalString(primaryAdmin, 'email'),
+      contactPhone: hasContactOverride
+          ? _optionalString(contactJson, 'phone')
+          : _optionalString(primaryAdmin, 'phone'),
       resourceUuid:
           _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),

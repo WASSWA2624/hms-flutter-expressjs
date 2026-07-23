@@ -1049,39 +1049,25 @@ void main() {
         size: const Size(960, 600),
       );
 
-      expect(find.byIcon(Icons.vertical_align_top), findsOneWidget);
-      final IgnorePointer ignoreBefore = tester.widget<IgnorePointer>(
-        find.ancestor(
-          of: find.byIcon(Icons.vertical_align_top),
-          matching: find.byType(IgnorePointer),
-        ),
-      );
-      expect(ignoreBefore.ignoring, isTrue);
+      final Finder goToTop = find.byTooltip('Go to top');
+      expect(goToTop, findsNothing);
 
-      await tester.drag(
-        find.byType(SingleChildScrollView).last,
-        const Offset(0, -240),
+      final Finder verticalScroll = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is SingleChildScrollView &&
+            widget.scrollDirection == Axis.vertical,
       );
+      expect(verticalScroll, findsOneWidget);
+
+      await tester.drag(verticalScroll, const Offset(0, -240));
       await tester.pumpAndSettle();
 
-      final IgnorePointer ignoreAfter = tester.widget<IgnorePointer>(
-        find.ancestor(
-          of: find.byIcon(Icons.vertical_align_top),
-          matching: find.byType(IgnorePointer),
-        ),
-      );
-      expect(ignoreAfter.ignoring, isFalse);
+      expect(goToTop, findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.vertical_align_top));
+      await tester.tap(goToTop);
       await tester.pumpAndSettle();
 
-      final IgnorePointer ignoreRestored = tester.widget<IgnorePointer>(
-        find.ancestor(
-          of: find.byIcon(Icons.vertical_align_top),
-          matching: find.byType(IgnorePointer),
-        ),
-      );
-      expect(ignoreRestored.ignoring, isTrue);
+      expect(goToTop, findsNothing);
       expect(find.text('Item 0'), findsOneWidget);
     },
   );
