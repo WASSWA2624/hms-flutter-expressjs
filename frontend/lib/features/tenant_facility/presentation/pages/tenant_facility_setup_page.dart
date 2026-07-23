@@ -548,6 +548,7 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
 
     return switch (section) {
       TenantFacilitySetupDeskSection.tenants => ManageTenantsPanel(
+        sessionTenant: snapshot.tenant,
         onMutated: (_) => _refreshSetup(),
       ),
       TenantFacilitySetupDeskSection.facility => ManageFacilitiesPanel(
@@ -827,7 +828,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     return ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveTenant(
-          id: widget.isCreate ? null : widget.tenant?.id,
+          id: widget.isCreate ? null : widget.tenant?.mutationId,
           name: _nameController.text,
           slug: _slugController.text,
           isActive: _isActive,

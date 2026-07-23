@@ -83,6 +83,14 @@ List<TenantFacilitySetupDeskSection> tenantFacilityVisibleSetupDeskSections({
       .toList(growable: false);
 }
 
+/// Scoped managers edit their own tenant; platform creators use the full list.
+bool tenantFacilityUsesScopedTenantPanel({
+  required bool canManageTenant,
+  required bool canCreateTenant,
+}) {
+  return canManageTenant && !canCreateTenant;
+}
+
 String tenantFacilitySetupDeskSectionLabel(
   AppLocalizations l10n,
   TenantFacilitySetupDeskSection section,

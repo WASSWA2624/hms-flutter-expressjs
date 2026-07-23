@@ -158,22 +158,32 @@ final class TenantFacilitySetupSubmissionState {
     this.isSubmitting = false,
     this.failure,
     this.successVersion = 0,
+    this.lastSavedEntity,
   });
 
   final bool isSubmitting;
   final AppFailure? failure;
   final int successVersion;
+  final Object? lastSavedEntity;
+
+  TenantProfile? get lastSavedTenant =>
+      lastSavedEntity is TenantProfile ? lastSavedEntity as TenantProfile : null;
 
   TenantFacilitySetupSubmissionState copyWith({
     bool? isSubmitting,
     AppFailure? failure,
     int? successVersion,
+    Object? lastSavedEntity,
     bool clearFailure = false,
+    bool clearLastSavedEntity = false,
   }) {
     return TenantFacilitySetupSubmissionState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
       failure: clearFailure ? null : failure ?? this.failure,
       successVersion: successVersion ?? this.successVersion,
+      lastSavedEntity: clearLastSavedEntity
+          ? null
+          : lastSavedEntity ?? this.lastSavedEntity,
     );
   }
 }
@@ -187,7 +197,7 @@ final class TenantFacilitySetupSubmissionController
   }
 
   void clearFailure() {
-    state = state.copyWith(clearFailure: true);
+    state = state.copyWith(clearFailure: true, clearLastSavedEntity: true);
   }
 
   Future<bool> saveTenant({
@@ -211,7 +221,13 @@ final class TenantFacilitySetupSubmissionController
         clearStandardConsultationFee: clearStandardConsultationFee,
       ),
       updateSnapshot: (FacilitySetupSnapshot snapshot, TenantProfile tenant) {
-        return snapshot.copyWith(tenant: tenant);
+        final TenantProfile? current = snapshot.tenant;
+        if (current == null ||
+            current.id == tenant.id ||
+            current.mutationId == tenant.mutationId) {
+          return snapshot.copyWith(tenant: tenant);
+        }
+        return snapshot;
       },
       refreshSetup: refreshSetup,
     );
@@ -777,6 +793,7 @@ final class TenantFacilitySetupSubmissionController
           isSubmitting: false,
           clearFailure: true,
           successVersion: state.successVersion + 1,
+          lastSavedEntity: value,
         );
 
         if (refreshSetup) {

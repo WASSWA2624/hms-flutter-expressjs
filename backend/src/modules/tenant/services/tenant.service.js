@@ -389,7 +389,7 @@ const updateTenant = async (id, data, context = {}) => {
     beforeTenant
   );
 
-  return tenant;
+  return normalizeTenantRecord(tenant);
 };
 
 /**

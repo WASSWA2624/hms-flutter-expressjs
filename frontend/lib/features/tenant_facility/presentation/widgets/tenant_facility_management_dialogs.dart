@@ -147,6 +147,7 @@ class ManageTenantsPanel extends ConsumerStatefulWidget {
   const ManageTenantsPanel({
     this.dialogMode = false,
     this.showCreateAction = true,
+    this.sessionTenant,
     this.reloadListenable,
     this.onMutated,
     super.key,
@@ -154,6 +155,7 @@ class ManageTenantsPanel extends ConsumerStatefulWidget {
 
   final bool dialogMode;
   final bool showCreateAction;
+  final TenantProfile? sessionTenant;
   final Listenable? reloadListenable;
   final ValueChanged<bool>? onMutated;
 
@@ -173,22 +175,56 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   List<TenantProfile> _tenants = const <TenantProfile>[];
+  TenantProfile? _scopedTenant;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   bool _mutated = false;
   int _reloadGeneration = 0;
   PlatformManagementListSync? _realtimeSync;
+
+  bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
+
+  bool get _canEdit => ref.read(appAccessPolicyProvider).canManageTenant();
+
+  bool get _canDelete => _canCreate;
+
+  bool get _isScopedTenantManager => tenantFacilityUsesScopedTenantPanel(
+    canManageTenant: _canEdit,
+    canCreateTenant: _canCreate,
+  );
 
   @override
   void initState() {
     super.initState();
     widget.reloadListenable?.addListener(_onReloadListenable);
     _searchController.addListener(_onSearchChanged);
-    unawaited(_reload(resetPage: true));
+    if (_isScopedTenantManager) {
+      _scopedTenant = widget.sessionTenant;
+      if (_scopedTenant != null) {
+        _loading = false;
+      } else {
+        unawaited(_reloadScopedTenant());
+      }
+    } else {
+      unawaited(_reload(resetPage: true));
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ManageTenantsPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isScopedTenantManager &&
+        widget.sessionTenant != null &&
+        widget.sessionTenant != oldWidget.sessionTenant) {
+      _scopedTenant = widget.sessionTenant;
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_isScopedTenantManager) {
+      return;
+    }
     _realtimeSync ??= PlatformManagementListSync(
       ref: ref,
       events: _tenantManagementRealtimeEvents,
@@ -210,6 +246,10 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   }
 
   void _onReloadListenable() {
+    if (_isScopedTenantManager) {
+      unawaited(_reloadScopedTenant(silent: true));
+      return;
+    }
     unawaited(_reload(resetPage: false, silent: true));
   }
 
@@ -233,6 +273,43 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
           .toList(growable: false);
     }
     return _tenants;
+  }
+
+  Future<void> _reloadScopedTenant({bool silent = false}) async {
+    final int generation = ++_reloadGeneration;
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _failure = null;
+      });
+    }
+
+    final Result<FacilitySetupSnapshot> result = await ref
+        .read(tenantFacilityRepositoryProvider)
+        .loadSetup();
+
+    if (!mounted || generation != _reloadGeneration) {
+      return;
+    }
+
+    result.when(
+      success: (FacilitySetupSnapshot snapshot) {
+        setState(() {
+          _loading = false;
+          _failure = null;
+          _scopedTenant = snapshot.tenant ?? widget.sessionTenant;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _loading = false;
+          _failure = failure;
+          if (!silent && _scopedTenant == null) {
+            _scopedTenant = widget.sessionTenant;
+          }
+        });
+      },
+    );
   }
 
   Future<void> _reload({required bool resetPage, bool silent = false}) async {
@@ -319,44 +396,32 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       return;
     }
 
+    final TenantProfile? savedTenant = ref
+        .read(tenantFacilitySetupSubmissionProvider)
+        .lastSavedTenant;
+    if (savedTenant != null) {
+      _upsertTenantLocally(savedTenant);
+    }
+
     _markMutated();
     if (forceCreate || tenant == null) {
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantCreated(),
       );
-    }
-
-    await _reload(resetPage: forceCreate, silent: true);
-    if (!mounted) {
-      return;
-    }
-
-    if (forceCreate || tenant == null) {
-      return;
-    }
-
-    if (wasActive == null) {
-      return;
-    }
-
-    TenantProfile? updatedTenant;
-    for (final TenantProfile entry in _tenants) {
-      if (entry.id == tenant.id) {
-        updatedTenant = entry;
-        break;
-      }
-    }
-
-    if (updatedTenant != null && updatedTenant.isActive != wasActive) {
+    } else if (wasActive != null &&
+        savedTenant != null &&
+        savedTenant.isActive != wasActive) {
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantActiveChanged(
           wasActive: wasActive,
-          isActive: updatedTenant.isActive,
+          isActive: savedTenant.isActive,
         ),
       );
     }
+
+    unawaited(_reload(resetPage: forceCreate, silent: true));
   }
 
   Future<void> _confirmDeleteTenant(TenantProfile tenant) async {
@@ -520,6 +585,39 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         entry.slug == tenantId;
   }
 
+  void _upsertTenantLocally(TenantProfile tenant) {
+    final int index = _tenants.indexWhere(
+      (TenantProfile entry) => _matchesTenant(entry, tenant),
+    );
+    final List<TenantProfile> next = List<TenantProfile>.of(_tenants);
+    if (index < 0) {
+      next.insert(0, tenant);
+      setState(() {
+        _tenants = next;
+        _totalItemCount += 1;
+        _loading = false;
+        _failure = null;
+      });
+      _reconcileDashboardFromLocalList();
+      return;
+    }
+
+    final TenantProfile previous = next[index];
+    next[index] = tenant.copyWith(
+      id: tenant.id.isNotEmpty ? tenant.id : previous.id,
+      resourceUuid: tenant.resourceUuid ?? previous.resourceUuid,
+      displayId: tenant.displayId ?? previous.displayId,
+      deletedAt: tenant.deletedAt,
+      clearDeletedAt: tenant.deletedAt == null && previous.deletedAt != null,
+    );
+    setState(() {
+      _tenants = next;
+      _loading = false;
+      _failure = null;
+    });
+    _reconcileDashboardFromLocalList();
+  }
+
   void _markTenantSoftDeletedLocally(TenantProfile tenant) {
     final int index = _tenants.indexWhere(
       (TenantProfile entry) => _matchesTenant(entry, tenant),
@@ -648,15 +746,105 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         : l10n.commonNoLabel;
   }
 
-  bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
-
-  bool get _canEdit => ref.read(appAccessPolicyProvider).canManageTenant();
-
-  bool get _canDelete => _canCreate;
-
   void _markMutated() {
     _mutated = true;
     widget.onMutated?.call(true);
+  }
+
+  Future<void> _editScopedTenant() async {
+    final TenantProfile? tenant = _scopedTenant;
+    if (tenant == null) {
+      return;
+    }
+
+    final bool? saved = await showTenantFacilityTenantFormDialog(
+      context,
+      tenant: tenant,
+      managementMode: true,
+    );
+    if (!mounted || saved != true) {
+      return;
+    }
+
+    final TenantProfile? savedTenant = ref
+        .read(tenantFacilitySetupSubmissionProvider)
+        .lastSavedTenant;
+    if (savedTenant != null) {
+      setState(() {
+        _scopedTenant = savedTenant.copyWith(
+          resourceUuid: savedTenant.resourceUuid ?? tenant.resourceUuid,
+          displayId: savedTenant.displayId ?? tenant.displayId,
+        );
+        _failure = null;
+      });
+    }
+
+    _markMutated();
+    unawaited(_reloadScopedTenant(silent: true));
+  }
+
+  Widget _buildScopedBody(AppLocalizations l10n) {
+    if (_loading && _scopedTenant == null) {
+      return AppWorkspaceStatePanel.loading(
+        title: l10n.tenantFacilityTenantDetailsTitle,
+        body: l10n.commonLoadingBody,
+      );
+    }
+
+    if (_failure != null && _scopedTenant == null) {
+      return AppFailureStateView(
+        failure: _failure!,
+        onRetry: () => unawaited(_reloadScopedTenant()),
+      );
+    }
+
+    final TenantProfile? tenant = _scopedTenant;
+    if (tenant == null) {
+      return AppWorkspaceStatePanel.empty(
+        title: l10n.tenantFacilityTenantSectionTitle,
+        body: l10n.tenantFacilityTenantSectionBody,
+        icon: Icons.corporate_fare_outlined,
+      );
+    }
+
+    final ThemeData theme = Theme.of(context);
+    final String statusLabel = _tenantStatusLabel(l10n, tenant);
+    final AppWorkspaceStatusTone statusTone = tenant.isDeleted
+        ? AppWorkspaceStatusTone.error
+        : (tenant.isActive
+              ? AppWorkspaceStatusTone.success
+              : AppWorkspaceStatusTone.neutral);
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(theme.spacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _TenantDetailsSummary(
+                tenant: tenant,
+                statusLabel: statusLabel,
+                statusTone: statusTone,
+              ),
+              if (_canEdit && !tenant.isDeleted) ...<Widget>[
+                SizedBox(height: theme.spacing.md),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppButton.secondary(
+                    label: l10n.tenantFacilityEditTenantAction,
+                    leadingIcon: Icons.edit_outlined,
+                    onPressed: () => unawaited(_editScopedTenant()),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTableBody(AppLocalizations l10n) {
@@ -835,20 +1023,28 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final Widget tableBody = _buildTableBody(l10n);
+    final Widget body = _isScopedTenantManager
+        ? _buildScopedBody(l10n)
+        : _buildTableBody(l10n);
 
     if (!widget.dialogMode) {
-      return tableBody;
+      return body;
     }
 
     return AppDialog(
-      title: Text(l10n.tenantFacilityManageTenantsTitle),
+      title: Text(
+        _isScopedTenantManager
+            ? l10n.tenantFacilityTenantDetailsTitle
+            : l10n.tenantFacilityManageTenantsTitle,
+      ),
       icon: const Icon(Icons.corporate_fare_outlined),
       pinActionsToBottom: true,
       maxWidth: 960,
-      content: SizedBox(height: 520, child: tableBody),
+      content: SizedBox(height: 520, child: body),
       actions: <Widget>[
-        if (widget.showCreateAction && _canCreate)
+        if (!_isScopedTenantManager &&
+            widget.showCreateAction &&
+            _canCreate)
           AppButton.primary(
             label: l10n.tenantFacilityAddTenantAction,
             leadingIcon: Icons.add_business_outlined,
@@ -1011,6 +1207,28 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
     }
 
     _mutated = true;
+    final TenantProfile? savedTenant = ref
+        .read(tenantFacilitySetupSubmissionProvider)
+        .lastSavedTenant;
+    if (savedTenant != null) {
+      setState(() {
+        _tenant = savedTenant.copyWith(
+          resourceUuid: savedTenant.resourceUuid ?? _tenant.resourceUuid,
+          displayId: savedTenant.displayId ?? _tenant.displayId,
+        );
+      });
+      if (savedTenant.isActive != wasActive) {
+        _syncPlatformDashboard(
+          ref,
+          patch: HomeDashboardOptimisticPatch.tenantActiveChanged(
+            wasActive: wasActive,
+            isActive: savedTenant.isActive,
+          ),
+        );
+      }
+      return;
+    }
+
     final Result<AppPage<TenantProfile>> result = await ref
         .read(tenantFacilityRepositoryProvider)
         .listTenants(
