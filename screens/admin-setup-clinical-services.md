@@ -162,8 +162,8 @@ Used for radiology / lab / diagnosis global catalog deletes from this panel. Cal
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
 | Cancel | Footers that include it (scope picker, mutation dialogs, lab price dialog) | Dismisses without applying. |
+| Maximize / Restore | Title bar of reachable `AppDialog`s | Expands or restores dialog size. |
 | Close | Title bar of reachable `AppDialog`s; enable-dialog footers | Dismisses; often disabled while saving. |
-| Maximize / Restore | Title bar of `AppDialog` with default window controls | Expands or restores dialog size. Advanced-filter and column-settings dialogs disable this control. |
 | Apply filters / Clear filters | Advanced-filter footer | **Apply filters** applies criteria (dialog shows loading, disables chrome until done) or **Clear filters** resets filter value. |
 | Apply columns / Reset columns / Close | Column-settings dialog | Applies, resets, or dismisses column visibility. |
 

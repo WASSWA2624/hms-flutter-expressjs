@@ -934,8 +934,6 @@ class _AppSearchBarFiltersDialogState
       title: Text(widget.title),
       icon: const Icon(Icons.filter_alt_outlined),
       scrollable: true,
-      showMaximizeButton: false,
-      resizable: false,
       closeEnabled: canInteract,
       maxWidth: 760,
       content: AppFieldRequirementScope(

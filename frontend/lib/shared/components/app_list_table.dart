@@ -1996,8 +1996,6 @@ class _ColumnVisibilityDialogState<T>
       icon: const Icon(Icons.settings_outlined),
       maxWidth: 480,
       scrollable: true,
-      showMaximizeButton: false,
-      resizable: false,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
