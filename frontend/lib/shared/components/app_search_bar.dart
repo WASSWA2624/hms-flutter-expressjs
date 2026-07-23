@@ -1223,7 +1223,6 @@ class _AppSearchBarFiltersDialogState
       return;
     }
 
-    final ThemeData theme = Theme.of(context);
     final String title = context.l10n.commonLoadingTitle;
     final String body = context.l10n.commonLoadingBody;
 
@@ -1231,21 +1230,12 @@ class _AppSearchBarFiltersDialogState
       builder: (BuildContext overlayContext) {
         return IgnorePointer(
           child: Center(
-            child: Material(
-              color: theme.colorScheme.surface,
-              elevation: theme.dialogTheme.elevation ?? 8,
-              shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.28),
-              borderRadius: BorderRadius.circular(theme.radius.lg),
-              child: Padding(
-                padding: EdgeInsets.all(theme.spacing.lg),
-                child: AppLoadingIndicator(
-                  size: AppLoadingIndicatorSize.large,
-                  title: title,
-                  body: body,
-                  expand: false,
-                  semanticLabel: title,
-                ),
-              ),
+            child: AppLoadingIndicator(
+              size: AppLoadingIndicatorSize.large,
+              title: title,
+              body: body,
+              expand: false,
+              semanticLabel: title,
             ),
           ),
         );
