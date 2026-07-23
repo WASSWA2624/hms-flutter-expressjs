@@ -1,2 +1,43 @@
-When I select okay, from the tenancy, from the tenancy tab when I select, when I click on tenant zero and I see the tenant details dialog, I want us to improve the look and feel for this dialog, this these details. They don't actually look nice, most especially the Left side, yeah, so Besides that within the The, the facility, okay, for each tenant there is a, there is a list of facility, there is a list of facilities that is listed. So in that table that displays the facilities, I want us to To add filter button, or to add a filters button or add under settings button, so that when I'm searching, the filters can be applied, and then also I can select which rows to display under the, the settings. So the labels for these buttons should be filters and settings, respectively. Olha só. When I click on a, when I click on a facility row, I should see the details, the facility details dialog. because this is already implemented, this detailed style is already implemented under facilities, so I think we are just reusing it. Then I think, I think the rest of the things look good. And yeah, the rest of the things look good. So maybe the tenant details section, the one which is displayed on the left in addition to improving its look and feel plus the design we can also add a small button for hiding it and showing it. You can hide or show it so that you can have a bigger, a bigger, you can have a bigger table. Then also on the tables, you need to add the Search functionality so you can s-s
-On the table, on the facilities table, I'll add the sort functionality so that you can sort by the By the column, respective column name. So by default we can sort by facility name also make sure that the search bar has the The filter and the filter and settings buttons, and they, so by default, the filter should be, should show everything, so the default filter should be all that by default, we are displaying all don't hide anything, either active or inactive. So the status, even if the status is inactive, is, even if it is deleted, so you should, by default, show all the facilities within that filter. then here, under tenant, because a tenant can have more fields parameters like email, contact the contact person's name and the details, because all this information, this information must be available when the tenant is being created, because when you're creating, there is someone who creates the tenant, so we need to see their contact, email, phone number, the ones they used when they were registered. So all the information about the tenant should be This board within the tenant section.
+# Refine Tenant details dialog on `/admin/setup`
+
+Improve the Tenants-tab **Tenant details** dialog: richer collapsible left summary, and facilities table Filter/Settings, sort, and row → Facility details.
+
+## Context
+
+- Opened from Tenants desk via `showTenantDetailsDialog` (`_TenantDetailsDialog`).
+- Left: `_TenantDetailsSummary` (sparse). Right: `_TenantDetailsFacilitiesPanel` (search + table; no Filter/Settings, sort, or row select).
+- Reuse `showFacilityDetailsDialog` and Filter/Settings patterns from `ManageTenantsPanel` / `ManageFacilitiesPanel`.
+- Hide unauthorized mutate controls via existing tenant/facility manage permissions.
+
+## Requirements
+
+1. Restyle the left summary with theme tokens; show all available tenant registration fields (name, slug, ID, status, contact name, email, phone, other persisted create/edit fields); empty → em dash.
+2. Add hide/show for the left summary so the facilities table can expand.
+3. Add **Filter** and **Settings** on the facilities search bar (same labels/behavior as other setup tables). Default filter = all statuses (active, inactive, deleted). Settings = column visibility.
+4. Keep search; add column sort; default sort = facility name ascending.
+5. Non-deleted facility row select opens existing Facility details; keep authorized Edit/Delete row actions.
+6. Handle loading, empty, error (+ retry); refresh facilities after nested mutations.
+7. Responsive on mobile/tablet/desktop; light and dark themes.
+
+## Constraints
+
+- Scope: Tenant details and nested facility flows only.
+- Reuse existing dialogs, table/search/filter/settings, l10n, and auth; no unrelated refactors.
+- Extend existing tenant/contact payloads; do not invent fields.
+
+## Acceptance Criteria
+
+- Summary is polished and lists available registration/contact fields (R1).
+- Hide/show toggles summary and expands the table (R2).
+- Filter defaults to all; Settings toggles columns; sort defaults to name (R3–R4).
+- Row opens Facility details; Edit/Delete remain when allowed (R5).
+- Loading/empty/error/retry and post-mutation refresh work; unauthorized actions stay hidden (R6–R7).
+- Manual: light/dark + narrow/wide; unauthorized user sees no mutate controls.
+
+## Relevant Files
+
+- `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart`
+- `frontend/lib/features/tenant_facility/domain/entities/tenant_facility_setup.dart`
+- `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/shared/components/app_search_bar.dart`
+- `screens/admin-setup.md`
