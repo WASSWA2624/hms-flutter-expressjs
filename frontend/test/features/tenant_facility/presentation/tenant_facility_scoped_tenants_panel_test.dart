@@ -137,7 +137,21 @@ void main() {
         isTrue,
       );
       expect(
-        managementDialogsSource.contains('lastSavedTenant'),
+        managementDialogsSource.contains('showTenantFacilityTenantFormDialog'),
+        isTrue,
+      );
+      expect(
+        managementDialogsSource.contains(
+          // Create/edit apply the returned profile before and after reload.
+          '_upsertTenantLocally(savedTenant)',
+        ),
+        isTrue,
+      );
+      expect(
+        File(
+          'lib/features/tenant_facility/presentation/pages/'
+          'tenant_facility_setup_page.dart',
+        ).readAsStringSync().contains('Future<TenantProfile?> showTenantFacilityTenantFormDialog'),
         isTrue,
       );
       expect(

@@ -938,11 +938,11 @@ Future<void> _handleQuickCreateAction(
 
   switch (entityKey) {
     case 'tenant':
-      final bool? saved = await showTenantFacilityTenantFormDialog(
+      final TenantProfile? saved = await showTenantFacilityTenantFormDialog(
         context,
         forceCreate: true,
       );
-      if (saved == true) onRefresh();
+      if (saved != null) onRefresh();
     case 'facility':
       final bool? saved = await showTenantFacilityFacilityFormDialog(
         context,

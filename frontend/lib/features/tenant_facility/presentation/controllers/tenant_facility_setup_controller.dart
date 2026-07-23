@@ -209,6 +209,7 @@ final class TenantFacilitySetupSubmissionController
     String? standardConsultationFee,
     bool clearStandardConsultationFee = false,
     bool refreshSetup = true,
+    bool updateSetupSnapshot = true,
   }) {
     return _submit(
       () => _repository.saveTenant(
@@ -220,15 +221,17 @@ final class TenantFacilitySetupSubmissionController
         standardConsultationFee: standardConsultationFee,
         clearStandardConsultationFee: clearStandardConsultationFee,
       ),
-      updateSnapshot: (FacilitySetupSnapshot snapshot, TenantProfile tenant) {
-        final TenantProfile? current = snapshot.tenant;
-        if (current == null ||
-            current.id == tenant.id ||
-            current.mutationId == tenant.mutationId) {
-          return snapshot.copyWith(tenant: tenant);
-        }
-        return snapshot;
-      },
+      updateSnapshot: updateSetupSnapshot
+          ? (FacilitySetupSnapshot snapshot, TenantProfile tenant) {
+              final TenantProfile? current = snapshot.tenant;
+              if (current == null ||
+                  current.id == tenant.id ||
+                  current.mutationId == tenant.mutationId) {
+                return snapshot.copyWith(tenant: tenant);
+              }
+              return snapshot;
+            }
+          : null,
       refreshSetup: refreshSetup,
     );
   }

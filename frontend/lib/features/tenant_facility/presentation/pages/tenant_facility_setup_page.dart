@@ -193,10 +193,16 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
       return;
     }
     if (saved) {
+      final TenantProfile? savedTenant = ref
+          .read(tenantFacilitySetupSubmissionProvider)
+          .lastSavedTenant;
+      if (savedTenant == null) {
+        return;
+      }
       if (widget.managementSnapshot == null) {
         _showSaved(context);
       }
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop<TenantProfile>(savedTenant);
     }
   }
 
@@ -285,7 +291,7 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
   }
 }
 
-Future<bool?> _openTenantProfileModal(
+Future<TenantProfile?> _openTenantProfileModal(
   BuildContext context, {
   TenantProfile? tenant,
   bool forceCreate = false,
@@ -297,7 +303,7 @@ Future<bool?> _openTenantProfileModal(
     context,
   ).read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
 
-  return showAppDialog<bool>(
+  return showAppDialog<TenantProfile>(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
@@ -346,6 +352,7 @@ Future<bool?> _openTenantProfileModal(
                       : l10n.tenantFacilityPermissionRequired,
                   hideSubmitButton: true,
                   refreshSetupAfterSave: !managementMode,
+                  updateSetupSnapshot: !managementMode,
                   registerSubmitHandler: registerSubmitHandler,
                   onDialogStateChanged: onDialogStateChanged,
                 );
@@ -598,6 +605,7 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
     this.permissionDeniedMessage,
     this.hideSubmitButton = false,
     this.refreshSetupAfterSave = true,
+    this.updateSetupSnapshot = true,
     this.registerSubmitHandler,
     this.onDialogStateChanged,
   });
@@ -610,6 +618,7 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
   final String? permissionDeniedMessage;
   final bool hideSubmitButton;
   final bool refreshSetupAfterSave;
+  final bool updateSetupSnapshot;
   final _ProfileFormSubmitRegistrar? registerSubmitHandler;
   final VoidCallback? onDialogStateChanged;
 
@@ -834,6 +843,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           isActive: _isActive,
           currency: resolveDefaultCurrency(tenantCurrency: _currency),
           refreshSetup: widget.refreshSetupAfterSave,
+          updateSetupSnapshot: widget.updateSetupSnapshot,
         );
   }
 
@@ -4347,7 +4357,7 @@ void _showSaved(BuildContext context) {
 }
 
 /// Opens the tenant profile create/edit dialog from the home dashboard.
-Future<bool?> showTenantFacilityTenantFormDialog(
+Future<TenantProfile?> showTenantFacilityTenantFormDialog(
   BuildContext context, {
   TenantProfile? tenant,
   bool forceCreate = false,

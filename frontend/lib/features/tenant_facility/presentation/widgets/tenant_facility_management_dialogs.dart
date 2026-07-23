@@ -386,32 +386,37 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     bool forceCreate = false,
   }) async {
     final bool? wasActive = tenant?.isActive;
-    final bool? saved = await showTenantFacilityTenantFormDialog(
+    final bool isCreate = forceCreate || tenant == null;
+    final TenantProfile? savedTenant = await showTenantFacilityTenantFormDialog(
       context,
       tenant: tenant,
       forceCreate: forceCreate,
       managementMode: true,
     );
-    if (!mounted || saved != true) {
+    if (!mounted || savedTenant == null) {
       return;
     }
 
-    final TenantProfile? savedTenant = ref
-        .read(tenantFacilitySetupSubmissionProvider)
-        .lastSavedTenant;
-    if (savedTenant != null) {
-      _upsertTenantLocally(savedTenant);
+    if (isCreate) {
+      _searchDebounce?.cancel();
+      if (_searchController.text.isNotEmpty) {
+        _searchController.removeListener(_onSearchChanged);
+        _searchController.clear();
+        _searchController.addListener(_onSearchChanged);
+      }
+      _filterValue = AppSearchBarFilterValue.empty;
+      _pageRequest = PlatformAdminListConfig.initialPageRequest;
     }
 
+    _upsertTenantLocally(savedTenant);
     _markMutated();
-    if (forceCreate || tenant == null) {
+
+    if (isCreate) {
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantCreated(),
       );
-    } else if (wasActive != null &&
-        savedTenant != null &&
-        savedTenant.isActive != wasActive) {
+    } else if (wasActive != null && savedTenant.isActive != wasActive) {
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantActiveChanged(
@@ -421,7 +426,12 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       );
     }
 
-    unawaited(_reload(resetPage: forceCreate, silent: true));
+    await _reload(resetPage: isCreate, silent: true);
+    if (!mounted) {
+      return;
+    }
+    // Keep the saved row visible even if the list refresh is briefly stale.
+    _upsertTenantLocally(savedTenant);
   }
 
   Future<void> _confirmDeleteTenant(TenantProfile tenant) async {
@@ -757,27 +767,22 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       return;
     }
 
-    final bool? saved = await showTenantFacilityTenantFormDialog(
+    final TenantProfile? savedTenant = await showTenantFacilityTenantFormDialog(
       context,
       tenant: tenant,
       managementMode: true,
     );
-    if (!mounted || saved != true) {
+    if (!mounted || savedTenant == null) {
       return;
     }
 
-    final TenantProfile? savedTenant = ref
-        .read(tenantFacilitySetupSubmissionProvider)
-        .lastSavedTenant;
-    if (savedTenant != null) {
-      setState(() {
-        _scopedTenant = savedTenant.copyWith(
-          resourceUuid: savedTenant.resourceUuid ?? tenant.resourceUuid,
-          displayId: savedTenant.displayId ?? tenant.displayId,
-        );
-        _failure = null;
-      });
-    }
+    setState(() {
+      _scopedTenant = savedTenant.copyWith(
+        resourceUuid: savedTenant.resourceUuid ?? tenant.resourceUuid,
+        displayId: savedTenant.displayId ?? tenant.displayId,
+      );
+      _failure = null;
+    });
 
     _markMutated();
     unawaited(_reloadScopedTenant(silent: true));
@@ -1197,77 +1202,31 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
 
   Future<void> _editTenant() async {
     final bool wasActive = _tenant.isActive;
-    final bool? saved = await showTenantFacilityTenantFormDialog(
+    final TenantProfile? savedTenant = await showTenantFacilityTenantFormDialog(
       context,
       tenant: _tenant,
       managementMode: true,
     );
-    if (!mounted || saved != true) {
+    if (!mounted || savedTenant == null) {
       return;
     }
 
     _mutated = true;
-    final TenantProfile? savedTenant = ref
-        .read(tenantFacilitySetupSubmissionProvider)
-        .lastSavedTenant;
-    if (savedTenant != null) {
-      setState(() {
-        _tenant = savedTenant.copyWith(
-          resourceUuid: savedTenant.resourceUuid ?? _tenant.resourceUuid,
-          displayId: savedTenant.displayId ?? _tenant.displayId,
-        );
-      });
-      if (savedTenant.isActive != wasActive) {
-        _syncPlatformDashboard(
-          ref,
-          patch: HomeDashboardOptimisticPatch.tenantActiveChanged(
-            wasActive: wasActive,
-            isActive: savedTenant.isActive,
-          ),
-        );
-      }
-      return;
+    setState(() {
+      _tenant = savedTenant.copyWith(
+        resourceUuid: savedTenant.resourceUuid ?? _tenant.resourceUuid,
+        displayId: savedTenant.displayId ?? _tenant.displayId,
+      );
+    });
+    if (savedTenant.isActive != wasActive) {
+      _syncPlatformDashboard(
+        ref,
+        patch: HomeDashboardOptimisticPatch.tenantActiveChanged(
+          wasActive: wasActive,
+          isActive: savedTenant.isActive,
+        ),
+      );
     }
-
-    final Result<AppPage<TenantProfile>> result = await ref
-        .read(tenantFacilityRepositoryProvider)
-        .listTenants(
-          request: const AppPageRequest(pageSize: 25),
-          search: _tenant.slug ?? _tenant.name,
-          includeDeleted: true,
-        );
-
-    if (!mounted) {
-      return;
-    }
-
-    result.when(
-      success: (AppPage<TenantProfile> page) {
-        TenantProfile? updated;
-        for (final TenantProfile entry in page.items) {
-          if (entry.id == _tenant.id ||
-              entry.mutationId == _tenant.mutationId) {
-            updated = entry;
-            break;
-          }
-        }
-        if (updated != null) {
-          setState(() {
-            _tenant = updated!;
-          });
-          if (updated.isActive != wasActive) {
-            _syncPlatformDashboard(
-              ref,
-              patch: HomeDashboardOptimisticPatch.tenantActiveChanged(
-                wasActive: wasActive,
-                isActive: updated.isActive,
-              ),
-            );
-          }
-        }
-      },
-      failure: (_) {},
-    );
   }
 
   Future<void> _deleteTenant() async {
