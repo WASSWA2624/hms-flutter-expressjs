@@ -64,6 +64,21 @@ const deleteFacilityCatalogOffering = asyncHandler(async (req, res) => {
   return sendNoContent(res);
 });
 
+const createCatalogTerm = asyncHandler(async (req, res) => {
+  const result = await clinicalCatalogService.createCatalogTerm(req.body, buildContext(req));
+  return sendSuccess(res, 201, 'messages.clinical_catalog.term.create.success', result);
+});
+
+const updateCatalogTerm = asyncHandler(async (req, res) => {
+  const result = await clinicalCatalogService.updateCatalogTerm(req.params.id, req.body, buildContext(req));
+  return sendSuccess(res, 200, 'messages.clinical_catalog.term.update.success', result);
+});
+
+const deleteCatalogTerm = asyncHandler(async (req, res) => {
+  await clinicalCatalogService.deleteCatalogTerm(req.params.id, buildContext(req));
+  return sendNoContent(res);
+});
+
 module.exports = {
   listClinicalTermSuggestions,
   listClinicalTermFavorites,
@@ -73,5 +88,8 @@ module.exports = {
   listFacilityCatalogOfferings,
   upsertFacilityCatalogOffering,
   deleteFacilityCatalogOffering,
+  createCatalogTerm,
+  updateCatalogTerm,
+  deleteCatalogTerm,
 };
 

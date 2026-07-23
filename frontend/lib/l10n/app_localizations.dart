@@ -2452,6 +2452,18 @@ abstract class AppLocalizations {
   /// **'No services enabled for this facility yet.'**
   String get tenantFacilityCatalogEmptyOfferings;
 
+  /// Empty state when the global clinical catalog list has no items.
+  ///
+  /// In en, this message translates to:
+  /// **'No catalog items yet. Add a definition or configure offerings for a facility.'**
+  String get tenantFacilityCatalogEmptyCatalog;
+
+  /// Action to configure catalog offerings for a selected tenant and facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure'**
+  String get tenantFacilityCatalogConfigureAction;
+
   /// Empty state when catalog tab is open without a facility context.
   ///
   /// In en, this message translates to:
@@ -14131,7 +14143,7 @@ abstract class AppLocalizations {
   /// Body text for facility clinical catalog configuration section.
   ///
   /// In en, this message translates to:
-  /// **'Manage lab, diagnostics, and service prices for this facility.'**
+  /// **'Manage radiology, lab, and diagnosis catalog definitions, then configure which facilities can offer them.'**
   String get clinicalCatalogConfigurationBody;
 
   /// Clinical diagnosis selected items section title.

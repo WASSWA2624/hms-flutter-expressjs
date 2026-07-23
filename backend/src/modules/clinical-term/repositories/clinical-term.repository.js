@@ -150,6 +150,38 @@ const updateFacilityOffering = async (id, data = {}) => {
   }
 };
 
+const findCatalogTerm = async (where = {}) => {
+  try {
+    return await prisma.clinical_term_catalog.findFirst({ where });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const createCatalogTerm = async (data = {}) => {
+  try {
+    return await prisma.clinical_term_catalog.create({ data });
+  } catch (error) {
+    if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409);
+    if (error.code === 'P2003') throw new HttpError('errors.database.foreign_key_field', 400);
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const updateCatalogTerm = async (id, data = {}) => {
+  try {
+    return await prisma.clinical_term_catalog.update({
+      where: { id },
+      data,
+    });
+  } catch (error) {
+    if (error.code === 'P2025') throw new HttpError('errors.clinical_term_catalog.not_found', 404);
+    if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409);
+    if (error.code === 'P2003') throw new HttpError('errors.database.foreign_key_field', 400);
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 const findLabTests = async (where = {}, take = 500) => {
   try {
     return await prisma.lab_test.findMany({
@@ -212,8 +244,10 @@ const findDrugs = async (where = {}, take = 500) => {
 };
 
 module.exports = {
+  createCatalogTerm,
   createFavorite,
   createFacilityOffering,
+  findCatalogTerm,
   findCatalogTerms,
   findDrugs,
   findFacilityOffering,
@@ -224,6 +258,7 @@ module.exports = {
   findRadiologyTests,
   findRecentDiagnoses,
   findRecentProcedures,
+  updateCatalogTerm,
   updateFacilityOffering,
   updateFavorite,
 };

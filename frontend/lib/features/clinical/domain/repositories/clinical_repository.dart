@@ -40,11 +40,24 @@ abstract interface class ClinicalRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<void>> deleteFacilityCatalogOffering(String offeringId);
+
   Future<Result<List<Map<String, Object?>>>> listFacilityCatalogOfferings({
     required String facilityId,
     String? termType,
     String? query,
   });
+
+  Future<Result<ClinicalCatalogOption>> createClinicalCatalogTerm(
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<ClinicalCatalogOption>> updateClinicalCatalogTerm(
+    String termId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deleteClinicalCatalogTerm(String termId);
 
   Future<Result<void>> createClinicalNote(Map<String, Object?> payload);
 

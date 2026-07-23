@@ -189,19 +189,24 @@ Department / Unit / Ward / Room / Bed create-edit dialogs share:
 
 ## Clinical Services tab (`FacilityCatalogConfigPanel`, inline)
 
-Requires facility + tenant ids; otherwise empty state prompts selecting/creating a facility.
+Global clinical catalog management (facility context optional — preferred tenant/facility only prefill Configure / create).
 
-Inner `AppTabStrip`: Diagnoses / Procedures / Prescriptions / Lab / Radiology. Each category uses `AppListTable` with search + Settings.
+Inner `AppTabStrip`: Radiology / Lab / Diagnoses. Each category uses `AppListTable` with search + Filter + Settings.
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
-| Add service | Clinical sub-tabs search trailing / empty primary | Opens browse dialog (`_ClinicalCatalogBrowseDialog`); row **Add** upserts facility clinical offering. |
-| Enable test | Lab search trailing / empty primary | Opens `LabEnableFacilityOfferingDialog`. |
-| Enable panel | Lab search trailing | Opens `LabEnableFacilityOfferingDialog` (panel kind). |
-| Radiology catalog | Radiology search trailing / empty primary | Opens `RadiologyEnableFacilityOfferingDialog`. |
-| Edit | Radiology row / actions column | Opens `RadiologyEditFacilityOfferingDialog`. |
+| Configure | Search trailing (all sub-tabs) | Opens tenant/facility scope picker, then category enable dialog (lab test enable / radiology enable / diagnosis enable). Does not switch the desk table to facility-only mode. |
+| Add / Create imaging test / Add test / Add panel / Add service | Search trailing / empty primary | Opens global catalog create dialog for that category. |
+| Edit | Row actions | Opens global catalog edit dialog (definition fields). |
+| Delete | Row actions | Soft-delete / delete confirm for the global catalog item. |
 
-### Lab enable offering dialog
+### Configure scope picker
+
+| Action button / control | Locations | Modal opened or function |
+| ----------------------- | --------- | ------------------------ |
+| Cancel / Next | Footer | Abort or continue with selected tenant + facility. |
+
+### Lab enable offering dialog (from Configure)
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
@@ -211,7 +216,7 @@ Inner `AppTabStrip`: Diagnoses / Procedures / Prescriptions / Lab / Radiology. E
 | Close | Footer | Dismisses picker. |
 | Cancel / Enable test or Enable panel | Nested price dialog (submit label by kind) | Abort or enable offering with unit price. |
 
-### Radiology enable offering dialog
+### Radiology enable offering dialog (from Configure)
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
@@ -219,6 +224,14 @@ Inner `AppTabStrip`: Diagnoses / Procedures / Prescriptions / Lab / Radiology. E
 | Row select (not yet offered) | Catalog row | Opens `RadiologyEnableOfferingPriceDialog`. |
 | Close | Footer | Dismisses picker. |
 | Enable procedure | Nested price dialog primary (no footer Cancel) | Enables radiology offering with unit price; dismiss via dialog Close to abort. |
+
+### Diagnosis enable offering dialog (from Configure)
+
+| Action button / control | Locations | Modal opened or function |
+| ----------------------- | --------- | ------------------------ |
+| Filter | Catalog search | Category filters. |
+| Row select / Add | Catalog row | Upserts facility diagnosis offering (`POST /clinical-catalog/offerings`). |
+| Close | Footer | Dismisses picker. |
 
 ---
 
@@ -252,7 +265,7 @@ Shared `AppConfirmActionDialog` / `AppTextInputActionDialog` pattern:
 
 ## Reachable modal chain
 
-- Clinical Services tab → browse/add clinical offerings; lab enable picker → lab price dialog; radiology enable picker → radiology price dialog; radiology row → edit offering dialog
+- Clinical Services tab → global catalog Add/Edit/Delete; **Configure** → tenant/facility scope picker → lab enable picker → lab price dialog; radiology enable picker → radiology price dialog; diagnosis enable picker
 - Tenants tab → tenant form (+ similarity); tenant soft-delete / restore / permanent-delete (type + confirm); row → **Tenant details** → facility edit/delete; tenant edit/delete
 - Facility tab → facility form (+ similarity + confirm-update); facility soft-delete / restore / permanent-delete; row → **Facility details** → logo remove confirm; users create/edit/delete/restore; structure add/edit/delete/restore; facility edit/delete
 - Structure tabs → entity forms; soft-delete / restore
@@ -283,6 +296,7 @@ Panels and form dialogs themselves **are** reachable from desk tabs even when th
 - `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart`
 - `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart`
 - `frontend/lib/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart`
+- `frontend/lib/shared/facility_catalog/clinical_catalog_admin_dialogs.dart`
 - `frontend/lib/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart`
 - `frontend/lib/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart`
 - `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_setup_wizard.dart` (present; unused from route)

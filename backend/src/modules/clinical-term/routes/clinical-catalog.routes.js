@@ -13,7 +13,34 @@ const {
   listFacilityCatalogOfferingsQuerySchema,
   upsertFacilityCatalogOfferingSchema,
   facilityCatalogOfferingIdParamsSchema,
+  createCatalogTermSchema,
+  updateCatalogTermSchema,
+  catalogTermIdParamsSchema,
 } = require('@validations/clinical-term/clinical-term.schema');
+
+router.post(
+  '/terms',
+  validateRequest({ body: createCatalogTermSchema }),
+  authenticate(),
+  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
+  clinicalTermController.createCatalogTerm
+);
+
+router.put(
+  '/terms/:id',
+  validateRequest({ params: catalogTermIdParamsSchema, body: updateCatalogTermSchema }),
+  authenticate(),
+  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
+  clinicalTermController.updateCatalogTerm
+);
+
+router.delete(
+  '/terms/:id',
+  validateRequest({ params: catalogTermIdParamsSchema }),
+  authenticate(),
+  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
+  clinicalTermController.deleteCatalogTerm
+);
 
 router.get(
   '/search',

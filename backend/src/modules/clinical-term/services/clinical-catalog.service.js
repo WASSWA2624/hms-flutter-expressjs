@@ -680,9 +680,161 @@ const deleteFacilityCatalogOffering = async (id, context = {}) => {
   }).catch(() => {});
 };
 
+const slugify = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 100) || `term_${Date.now()}`;
+
+const mapCatalogTermWriteRow = (row) => ({
+  id: row.id,
+  item_id: row.id,
+  term_type: row.term_type,
+  code: row.code || null,
+  description: row.description,
+  name: row.description,
+  category: row.category || null,
+  source: 'GLOBAL',
+  origin: row.source || 'CUSTOM',
+});
+
+const createCatalogTerm = async (payload = {}, context = {}) => {
+  const tenantId = context.tenant_id || payload.tenant_id || null;
+  const userId = context.user_id || null;
+  if (!tenantId || !userId) {
+    throw new HttpError('errors.auth.unauthorized', 401);
+  }
+
+  const termType = normalizeUpper(payload.term_type, 'DIAGNOSIS');
+  const description = normalizeText(payload.description);
+  if (!description) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'description' }]);
+  }
+
+  const code = payload.code ? normalizeText(payload.code) : null;
+  const rawKey = normalizeText(payload.catalog_key) || null;
+  let catalogKey = rawKey || (code ? slugify(code) : slugify(description));
+  if (!catalogKey.startsWith('custom_')) {
+    catalogKey = `custom_${catalogKey}`;
+  }
+
+  const data = {
+    tenant_id: tenantId,
+    facility_id: null,
+    term_type: termType,
+    code: code || null,
+    description,
+    category: payload.category ? normalizeText(payload.category) : null,
+    catalog_key: catalogKey,
+    source: normalizeText(payload.source) || 'CUSTOM',
+    sort_order: Number(payload.sort_order ?? 0),
+    usage_rank: Number(payload.usage_rank ?? 0),
+    is_active: true,
+    deleted_at: null,
+  };
+
+  let term;
+  try {
+    term = await clinicalTermRepository.createCatalogTerm(data);
+  } catch (err) {
+    if (err.message === 'errors.database.unique_field') {
+      const suffixedKey = `${catalogKey}_${Date.now().toString(36)}`;
+      term = await clinicalTermRepository.createCatalogTerm({ ...data, catalog_key: suffixedKey });
+    } else {
+      throw err;
+    }
+  }
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'CREATE',
+    entity: 'clinical_term_catalog',
+    entity_id: term.id,
+    diff: { after: term },
+    ip_address: context.ip_address,
+  }).catch(() => {});
+
+  return mapCatalogTermWriteRow(term);
+};
+
+const updateCatalogTerm = async (id, payload = {}, context = {}) => {
+  const tenantId = context.tenant_id || null;
+  const userId = context.user_id || null;
+  if (!tenantId || !userId) {
+    throw new HttpError('errors.auth.unauthorized', 401);
+  }
+
+  const existing = await clinicalTermRepository.findCatalogTerm({
+    id,
+    tenant_id: tenantId,
+    deleted_at: null,
+  });
+  if (!existing) {
+    throw new HttpError('errors.clinical_term_catalog.not_found', 404);
+  }
+
+  const data = {};
+  if (payload.code !== undefined) data.code = payload.code ? normalizeText(payload.code) : null;
+  if (payload.description !== undefined) data.description = normalizeText(payload.description);
+  if (payload.category !== undefined) data.category = payload.category ? normalizeText(payload.category) : null;
+  if (payload.source !== undefined) data.source = normalizeText(payload.source);
+  if (payload.sort_order !== undefined) data.sort_order = Number(payload.sort_order);
+  if (payload.usage_rank !== undefined) data.usage_rank = Number(payload.usage_rank);
+  if (payload.is_active !== undefined) data.is_active = Boolean(payload.is_active);
+
+  const term = await clinicalTermRepository.updateCatalogTerm(id, data);
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'UPDATE',
+    entity: 'clinical_term_catalog',
+    entity_id: term.id,
+    diff: { before: existing, after: term },
+    ip_address: context.ip_address,
+  }).catch(() => {});
+
+  return mapCatalogTermWriteRow(term);
+};
+
+const deleteCatalogTerm = async (id, context = {}) => {
+  const tenantId = context.tenant_id || null;
+  const userId = context.user_id || null;
+  if (!tenantId || !userId) {
+    throw new HttpError('errors.auth.unauthorized', 401);
+  }
+
+  const existing = await clinicalTermRepository.findCatalogTerm({
+    id,
+    tenant_id: tenantId,
+    deleted_at: null,
+  });
+  if (!existing) {
+    throw new HttpError('errors.clinical_term_catalog.not_found', 404);
+  }
+
+  await clinicalTermRepository.updateCatalogTerm(id, { deleted_at: new Date() });
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'DELETE',
+    entity: 'clinical_term_catalog',
+    entity_id: existing.id,
+    diff: { before: existing },
+    ip_address: context.ip_address,
+  }).catch(() => {});
+};
+
 module.exports = {
   listClinicalCatalogSearch,
   listFacilityCatalogOfferings,
   upsertFacilityCatalogOffering,
   deleteFacilityCatalogOffering,
+  createCatalogTerm,
+  updateCatalogTerm,
+  deleteCatalogTerm,
 };

@@ -1,0 +1,1024 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
+import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
+
+typedef CatalogTenantOptionsLoader = Future<List<TenantProfile>> Function();
+typedef CatalogFacilityOptionsLoader =
+    Future<List<FacilityProfile>> Function(String tenantId);
+
+typedef ClinicalCatalogTermSubmit =
+    Future<AppFailure?> Function(Map<String, Object?> payload);
+
+typedef ClinicalCatalogTermUpdateSubmit =
+    Future<AppFailure?> Function(String id, Map<String, Object?> payload);
+
+typedef DiagnosisCatalogSearch =
+    Future<Result<List<ClinicalCatalogOption>>> Function({
+      String? query,
+      int limit,
+    });
+
+typedef DiagnosisOfferingEnable =
+    Future<AppFailure?> Function(ClinicalCatalogOption item);
+
+const List<String> kRadiologyCatalogModalities = <String>[
+  'XRAY',
+  'CT',
+  'MRI',
+  'ULTRASOUND',
+  'FLUOROSCOPY',
+  'MAMMOGRAPHY',
+  'PET',
+  'NUCLEAR_MEDICINE',
+  'INTERVENTIONAL_RADIOLOGY',
+  'ECG',
+  'ECHO',
+  'ENDO',
+  'GASTRO',
+  'OTHER',
+];
+
+Future<FacilityCatalogScope?> showCatalogFacilityScopePicker({
+  required BuildContext context,
+  required CatalogTenantOptionsLoader loadTenants,
+  required CatalogFacilityOptionsLoader loadFacilities,
+  String? initialTenantId,
+  String? initialFacilityId,
+  String? title,
+  String? body,
+}) {
+  return showAppDialog<FacilityCatalogScope>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _CatalogFacilityScopePickerDialog(
+      loadTenants: loadTenants,
+      loadFacilities: loadFacilities,
+      initialTenantId: initialTenantId,
+      initialFacilityId: initialFacilityId,
+      title: title,
+      body: body,
+    ),
+  );
+}
+
+class _CatalogFacilityScopePickerDialog extends StatefulWidget {
+  const _CatalogFacilityScopePickerDialog({
+    required this.loadTenants,
+    required this.loadFacilities,
+    this.initialTenantId,
+    this.initialFacilityId,
+    this.title,
+    this.body,
+  });
+
+  final CatalogTenantOptionsLoader loadTenants;
+  final CatalogFacilityOptionsLoader loadFacilities;
+  final String? initialTenantId;
+  final String? initialFacilityId;
+  final String? title;
+  final String? body;
+
+  @override
+  State<_CatalogFacilityScopePickerDialog> createState() =>
+      _CatalogFacilityScopePickerDialogState();
+}
+
+class _CatalogFacilityScopePickerDialogState
+    extends State<_CatalogFacilityScopePickerDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  List<TenantProfile> _tenants = const <TenantProfile>[];
+  List<FacilityProfile> _facilities = const <FacilityProfile>[];
+  String? _tenantId;
+  String? _facilityId;
+  AppFailure? _failure;
+  bool _isLoadingTenants = true;
+  bool _isLoadingFacilities = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tenantId = widget.initialTenantId?.trim();
+    _facilityId = widget.initialFacilityId?.trim();
+    unawaited(_loadTenants());
+  }
+
+  Future<void> _loadTenants() async {
+    setState(() {
+      _isLoadingTenants = true;
+      _failure = null;
+    });
+    try {
+      final List<TenantProfile> tenants = await widget.loadTenants();
+      if (!mounted) {
+        return;
+      }
+      final String? preferred = _tenantId;
+      final String? resolvedTenant =
+          (preferred != null &&
+              preferred.isNotEmpty &&
+              tenants.any((TenantProfile t) => t.id == preferred))
+          ? preferred
+          : (tenants.length == 1 ? tenants.first.id : preferred);
+      setState(() {
+        _tenants = tenants;
+        _tenantId = resolvedTenant;
+        _isLoadingTenants = false;
+      });
+      if (resolvedTenant != null && resolvedTenant.isNotEmpty) {
+        await _loadFacilities(resolvedTenant);
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingTenants = false;
+        _failure = AppFailure.unexpected();
+      });
+    }
+  }
+
+  Future<void> _loadFacilities(String tenantId) async {
+    setState(() {
+      _isLoadingFacilities = true;
+      _failure = null;
+    });
+    try {
+      final List<FacilityProfile> facilities = await widget.loadFacilities(
+        tenantId,
+      );
+      if (!mounted) {
+        return;
+      }
+      final String? preferred = _facilityId;
+      final String? resolvedFacility =
+          (preferred != null &&
+              preferred.isNotEmpty &&
+              facilities.any((FacilityProfile f) => f.id == preferred))
+          ? preferred
+          : (facilities.length == 1 ? facilities.first.id : null);
+      setState(() {
+        _facilities = facilities;
+        _facilityId = resolvedFacility;
+        _isLoadingFacilities = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _facilities = const <FacilityProfile>[];
+        _facilityId = null;
+        _isLoadingFacilities = false;
+        _failure = AppFailure.unexpected();
+      });
+    }
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    final String? tenantId = _tenantId?.trim();
+    final String? facilityId = _facilityId?.trim();
+    if (tenantId == null ||
+        tenantId.isEmpty ||
+        facilityId == null ||
+        facilityId.isEmpty) {
+      return;
+    }
+    Navigator.of(context).pop(
+      FacilityCatalogScope(tenantId: tenantId, facilityId: facilityId),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(widget.title ?? l10n.accessAdminCreateUserSelectScopeTitle),
+      icon: const Icon(Icons.apartment_outlined),
+      scrollable: true,
+      maxWidth: 560,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            Text(
+              widget.body ?? l10n.radiologyConfigurationsSelectScopeBody,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            AppSelectField<String>.searchable(
+              value: _tenantId,
+              labelText: l10n.tenantFacilitySelectTenantLabel,
+              isRequired: true,
+              isLoading: _isLoadingTenants,
+              options: <AppSelectOption<String>>[
+                for (final TenantProfile tenant in _tenants)
+                  AppSelectOption<String>(
+                    value: tenant.id,
+                    label: tenant.name,
+                  ),
+              ],
+              validator: AppValidators.requiredValue(l10n.validationRequired),
+              onChanged: (String? value) {
+                setState(() {
+                  _tenantId = value;
+                  _facilityId = null;
+                  _facilities = const <FacilityProfile>[];
+                });
+                if (value != null && value.trim().isNotEmpty) {
+                  unawaited(_loadFacilities(value));
+                }
+              },
+            ),
+            AppSelectField<String>.searchable(
+              value: _facilityId,
+              labelText: l10n.tenantFacilityFacilitySelectLabel,
+              isRequired: true,
+              enabled: _tenantId != null && _tenantId!.trim().isNotEmpty,
+              isLoading: _isLoadingFacilities,
+              options: <AppSelectOption<String>>[
+                for (final FacilityProfile facility in _facilities)
+                  AppSelectOption<String>(
+                    value: facility.id,
+                    label: facility.name,
+                  ),
+              ],
+              validator: AppValidators.requiredValue(l10n.validationRequired),
+              onChanged: (String? value) {
+                setState(() => _facilityId = value);
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: l10n.commonNextActionLabel,
+          leadingIcon: Icons.arrow_forward_outlined,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+}
+
+class RadiologyCatalogMutationDialog extends StatefulWidget {
+  const RadiologyCatalogMutationDialog({
+    required this.onSubmit,
+    this.item,
+    this.tenantId,
+    super.key,
+  });
+
+  final RadiologyCatalogTest? item;
+  final String? tenantId;
+  final ClinicalCatalogTermSubmit onSubmit;
+
+  bool get isEditing => item != null;
+
+  @override
+  State<RadiologyCatalogMutationDialog> createState() =>
+      _RadiologyCatalogMutationDialogState();
+}
+
+class _RadiologyCatalogMutationDialogState
+    extends State<RadiologyCatalogMutationDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _codeController;
+  String? _modality;
+  AppFailure? _failure;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final RadiologyCatalogTest? item = widget.item;
+    _nameController = TextEditingController(text: item?.name ?? '');
+    _codeController = TextEditingController(text: item?.code ?? '');
+    _modality = item?.modality?.trim().isNotEmpty == true
+        ? item!.modality!.trim().toUpperCase()
+        : null;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final Map<String, Object?> payload = <String, Object?>{
+      if (!widget.isEditing) 'tenant_id': widget.tenantId,
+      'name': _nameController.text.trim(),
+      'code': _codeController.text.trim(),
+      'modality': _modality,
+    };
+    final AppFailure? failure = await widget.onSubmit(payload);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(
+        widget.isEditing
+            ? l10n.clinicalLabRequestEditSelectionAction
+            : l10n.radiologyCreateImagingTestAction,
+      ),
+      icon: Icon(
+        widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline,
+      ),
+      scrollable: true,
+      maxWidth: 560,
+      closeEnabled: !_isSaving,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            AppTextField(
+              controller: _nameController,
+              labelText: l10n.radiologyTestNameLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: AppTextField(
+                controller: _codeController,
+                labelText: l10n.labTestCodeLabel,
+                enabled: !_isSaving,
+              ),
+              right: AppSelectField<String>.searchable(
+                value: _modality,
+                labelText: l10n.radiologyModalityLabel,
+                isRequired: true,
+                enabled: !_isSaving,
+                options: <AppSelectOption<String>>[
+                  for (final String modality in kRadiologyCatalogModalities)
+                    AppSelectOption<String>(value: modality, label: modality),
+                ],
+                validator: AppValidators.requiredValue(l10n.validationRequired),
+                onChanged: (String? value) {
+                  setState(() => _modality = value);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: l10n.commonSaveActionLabel,
+          leadingIcon: Icons.save_outlined,
+          isLoading: _isSaving,
+          onPressed: _isSaving ? null : _submit,
+        ),
+      ],
+    );
+  }
+}
+
+class LabCatalogItemMutationDialog extends StatefulWidget {
+  const LabCatalogItemMutationDialog({
+    required this.kind,
+    required this.onSubmit,
+    this.item,
+    this.tenantId,
+    super.key,
+  });
+
+  final LabCatalogItemType kind;
+  final LabCatalogItem? item;
+  final String? tenantId;
+  final ClinicalCatalogTermSubmit onSubmit;
+
+  bool get isEditing => item != null;
+
+  @override
+  State<LabCatalogItemMutationDialog> createState() =>
+      _LabCatalogItemMutationDialogState();
+}
+
+class _LabCatalogItemMutationDialogState
+    extends State<LabCatalogItemMutationDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _codeController;
+  late final TextEditingController _categoryController;
+  late final TextEditingController _specimenController;
+  late final TextEditingController _descriptionController;
+  AppFailure? _failure;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final LabCatalogItem? item = widget.item;
+    _nameController = TextEditingController(text: item?.name ?? '');
+    _codeController = TextEditingController(text: item?.code ?? '');
+    _categoryController = TextEditingController(text: item?.category ?? '');
+    _specimenController = TextEditingController(text: item?.specimenType ?? '');
+    _descriptionController = TextEditingController(
+      text: item?.description ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _codeController.dispose();
+    _categoryController.dispose();
+    _specimenController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final Map<String, Object?> payload = <String, Object?>{
+      if (!widget.isEditing) 'tenant_id': widget.tenantId,
+      'name': _nameController.text.trim(),
+      'code': _codeController.text.trim(),
+      'category': _categoryController.text.trim(),
+      if (widget.kind == LabCatalogItemType.test)
+        'specimen_type': _specimenController.text.trim(),
+      'description': _descriptionController.text.trim(),
+    };
+    final AppFailure? failure = await widget.onSubmit(payload);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final bool isPanel = widget.kind == LabCatalogItemType.panel;
+    return AppDialog(
+      title: Text(
+        widget.isEditing
+            ? (isPanel
+                  ? l10n.labCreatePanelDialogTitle
+                  : l10n.labConfigureTestDialogTitle)
+            : (isPanel
+                  ? l10n.labCreatePanelDialogTitle
+                  : l10n.labCreateTestDialogTitle),
+      ),
+      icon: Icon(
+        widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline,
+      ),
+      scrollable: true,
+      maxWidth: 640,
+      closeEnabled: !_isSaving,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            AppTextField(
+              controller: _nameController,
+              labelText: isPanel ? l10n.labPanelNameLabel : l10n.labTestNameLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: AppTextField(
+                controller: _codeController,
+                labelText: l10n.labTestCodeLabel,
+                enabled: !_isSaving,
+              ),
+              right: AppTextField(
+                controller: _categoryController,
+                labelText: l10n.labCategoryLabel,
+                enabled: !_isSaving,
+              ),
+            ),
+            if (!isPanel)
+              AppTextField(
+                controller: _specimenController,
+                labelText: l10n.labSpecimenTypeLabel,
+                enabled: !_isSaving,
+              ),
+            AppTextField(
+              controller: _descriptionController,
+              labelText: isPanel
+                  ? l10n.labPanelDescriptionLabel
+                  : l10n.labTestDescriptionLabel,
+              enabled: !_isSaving,
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: l10n.commonSaveActionLabel,
+          leadingIcon: Icons.save_outlined,
+          isLoading: _isSaving,
+          onPressed: _isSaving ? null : _submit,
+        ),
+      ],
+    );
+  }
+}
+
+class DiagnosisCatalogMutationDialog extends StatefulWidget {
+  const DiagnosisCatalogMutationDialog({
+    required this.onSubmit,
+    this.item,
+    this.tenantId,
+    super.key,
+  });
+
+  final ClinicalCatalogOption? item;
+  final String? tenantId;
+  final ClinicalCatalogTermSubmit onSubmit;
+
+  bool get isEditing => item != null;
+
+  @override
+  State<DiagnosisCatalogMutationDialog> createState() =>
+      _DiagnosisCatalogMutationDialogState();
+}
+
+class _DiagnosisCatalogMutationDialogState
+    extends State<DiagnosisCatalogMutationDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _codeController;
+  late final TextEditingController _categoryController;
+  AppFailure? _failure;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final ClinicalCatalogOption? item = widget.item;
+    _descriptionController = TextEditingController(text: item?.name ?? '');
+    _codeController = TextEditingController(text: item?.code ?? '');
+    _categoryController = TextEditingController(text: item?.category ?? '');
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _codeController.dispose();
+    _categoryController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final Map<String, Object?> payload = <String, Object?>{
+      if (!widget.isEditing) ...<String, Object?>{
+        'tenant_id': widget.tenantId,
+        'term_type': 'DIAGNOSIS',
+      },
+      'description': _descriptionController.text.trim(),
+      'code': _codeController.text.trim(),
+      'category': _categoryController.text.trim(),
+    };
+    final AppFailure? failure = await widget.onSubmit(payload);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(
+        widget.isEditing
+            ? l10n.clinicalDiagnosisFormTitle
+            : l10n.tenantFacilityCatalogAddServiceAction,
+      ),
+      icon: Icon(
+        widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline,
+      ),
+      scrollable: true,
+      maxWidth: 560,
+      closeEnabled: !_isSaving,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            AppTextField(
+              controller: _descriptionController,
+              labelText: l10n.accessAdminColumnName,
+              enabled: !_isSaving,
+              isRequired: true,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppResponsiveFieldRow.two(
+              gap: AppResponsiveFieldRowGap.form,
+              left: AppTextField(
+                controller: _codeController,
+                labelText: l10n.labTestCodeLabel,
+                enabled: !_isSaving,
+              ),
+              right: AppTextField(
+                controller: _categoryController,
+                labelText: l10n.labCategoryLabel,
+                enabled: !_isSaving,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: l10n.commonSaveActionLabel,
+          leadingIcon: Icons.save_outlined,
+          isLoading: _isSaving,
+          onPressed: _isSaving ? null : _submit,
+        ),
+      ],
+    );
+  }
+}
+
+class DiagnosisEnableFacilityOfferingDialog extends StatefulWidget {
+  const DiagnosisEnableFacilityOfferingDialog({
+    required this.scope,
+    required this.onSearchCatalog,
+    required this.onEnable,
+    super.key,
+  });
+
+  final FacilityCatalogScope scope;
+  final DiagnosisCatalogSearch onSearchCatalog;
+  final DiagnosisOfferingEnable onEnable;
+
+  @override
+  State<DiagnosisEnableFacilityOfferingDialog> createState() =>
+      _DiagnosisEnableFacilityOfferingDialogState();
+}
+
+class _DiagnosisEnableFacilityOfferingDialogState
+    extends State<DiagnosisEnableFacilityOfferingDialog> {
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 200);
+  static const int _searchLimit = 100;
+  static const String _categoryFilterKey = 'category';
+
+  late final TextEditingController _searchController;
+  Timer? _searchDebounce;
+  List<ClinicalCatalogOption> _catalogItems = const <ClinicalCatalogOption>[];
+  final Set<String> _offeredIds = <String>{};
+  AppFailure? _failure;
+  bool _isSearching = true;
+  bool _isEnabling = false;
+  int _searchRequest = 0;
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+
+  List<ClinicalCatalogOption> get _filteredCatalogItems {
+    final String? category = _filterValue.option(_categoryFilterKey);
+    if (category == null || category.isEmpty) {
+      return _catalogItems;
+    }
+    return _catalogItems
+        .where(
+          (ClinicalCatalogOption item) =>
+              (item.category ?? '').trim() == category,
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _searchRequest += 1;
+    unawaited(_loadCatalog(query: null, requestId: _searchRequest));
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadCatalog({
+    required String? query,
+    required int requestId,
+  }) async {
+    setState(() {
+      _isSearching = true;
+      _failure = null;
+    });
+    final Result<List<ClinicalCatalogOption>> result = await widget
+        .onSearchCatalog(
+          query: query?.trim().isEmpty ?? true ? null : query?.trim(),
+          limit: _searchLimit,
+        );
+    if (!mounted || requestId != _searchRequest) {
+      return;
+    }
+    result.when(
+      success: (List<ClinicalCatalogOption> items) {
+        setState(() {
+          _catalogItems = items;
+          _isSearching = false;
+        });
+      },
+      failure: (AppFailure value) {
+        setState(() {
+          _catalogItems = const <ClinicalCatalogOption>[];
+          _isSearching = false;
+          _failure = value;
+        });
+      },
+    );
+  }
+
+  void _scheduleCatalogSearch(String query) {
+    _searchDebounce?.cancel();
+    _searchRequest += 1;
+    final int requestId = _searchRequest;
+    _searchDebounce = Timer(_searchDebounceDuration, () {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_loadCatalog(query: query, requestId: requestId));
+    });
+  }
+
+  Future<void> _enable(ClinicalCatalogOption item) async {
+    if (_offeredIds.contains(item.apiId) || _isEnabling) {
+      return;
+    }
+    setState(() {
+      _isEnabling = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await widget.onEnable(item);
+    if (!mounted) {
+      return;
+    }
+    if (failure != null) {
+      setState(() {
+        _failure = failure;
+        _isEnabling = false;
+      });
+      return;
+    }
+    setState(() {
+      _offeredIds.add(item.apiId);
+      _isEnabling = false;
+    });
+    Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final List<String> categories = _catalogItems
+        .map((ClinicalCatalogOption item) => (item.category ?? '').trim())
+        .where((String value) => value.isNotEmpty)
+        .toSet()
+        .toList(growable: false)
+      ..sort();
+
+    return AppDialog(
+      title: Text(l10n.tenantFacilityCatalogBrowseTitle),
+      icon: const Icon(Icons.medical_information_outlined),
+      scrollable: true,
+      maxWidth: 880,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_failure != null)
+            Padding(
+              padding: EdgeInsets.only(bottom: Theme.of(context).spacing.sm),
+              child: AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            ),
+          SizedBox(
+            height: 480,
+            child: AppListTable<ClinicalCatalogOption>(
+              items: _filteredCatalogItems,
+              isLoading: _isSearching || _isEnabling,
+              tableHorizontalMargin: 0,
+              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+              columnVisibilityStorageKey: 'setup_catalog_diagnosis_enable',
+              onRowSelected: (ClinicalCatalogOption item) {
+                if (_offeredIds.contains(item.apiId)) {
+                  return;
+                }
+                unawaited(_enable(item));
+              },
+              search: AppListTableSearch<ClinicalCatalogOption>(
+                controller: _searchController,
+                semanticLabel: l10n.clinicalDiagnosisSearchLabel,
+                hintText: l10n.clinicalDiagnosisSearchHint,
+                matcher: (ClinicalCatalogOption item, String query) {
+                  final String haystack =
+                      '${item.name ?? ''} ${item.code ?? ''} ${item.category ?? ''}'
+                          .toLowerCase();
+                  return haystack.contains(query.toLowerCase());
+                },
+                onChanged: _scheduleCatalogSearch,
+                showAdvancedFilterButton: categories.isNotEmpty,
+                advancedFilterButtonLabel: l10n.commonFilterActionLabel,
+                advancedFilterTitle: l10n.labCategoryLabel,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                enableDateFilter: false,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  if (categories.isNotEmpty)
+                    AppSearchBarFilterGroup(
+                      key: _categoryFilterKey,
+                      label: l10n.labCategoryLabel,
+                      allLabel: l10n.commonAllLabel,
+                      choices: <AppSearchBarFilterChoice>[
+                        for (final String category in categories)
+                          AppSearchBarFilterChoice(
+                            value: category,
+                            label: category,
+                          ),
+                      ],
+                    ),
+                ],
+                filterValue: _filterValue,
+                hasActiveFilters: _filterValue.isActive,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() => _filterValue = value);
+                },
+              ),
+              emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+                title: l10n.tenantFacilityCatalogTabDiagnoses,
+                body: l10n.clinicalDiagnosisNoCatalogOptions,
+              ),
+              columns: <AppListTableColumn<ClinicalCatalogOption>>[
+                AppListTableColumn<ClinicalCatalogOption>(
+                  id: 'name',
+                  label: l10n.accessAdminColumnName,
+                  cellBuilder: (_, ClinicalCatalogOption item) =>
+                      Text(item.displayTitle),
+                ),
+                AppListTableColumn<ClinicalCatalogOption>(
+                  id: 'code',
+                  label: l10n.labTestCodeLabel,
+                  cellBuilder: (_, ClinicalCatalogOption item) => Text(
+                    item.code?.trim().isNotEmpty == true ? item.code! : '—',
+                  ),
+                ),
+                AppListTableColumn<ClinicalCatalogOption>(
+                  id: 'category',
+                  label: l10n.labCategoryLabel,
+                  cellBuilder: (_, ClinicalCatalogOption item) => Text(
+                    item.category?.trim().isNotEmpty == true
+                        ? item.category!
+                        : '—',
+                  ),
+                ),
+                AppListTableColumn<ClinicalCatalogOption>(
+                  id: 'actions',
+                  label: l10n.accessAdminColumnActions,
+                  alwaysVisible: true,
+                  cellBuilder: (_, ClinicalCatalogOption item) {
+                    final bool offered = _offeredIds.contains(item.apiId);
+                    return AppButton.tertiary(
+                      label: offered
+                          ? l10n.tenantFacilitySummaryConfigured
+                          : l10n.tenantFacilityCatalogAddServiceAction,
+                      leadingIcon: offered
+                          ? Icons.check_circle_outline
+                          : Icons.add_circle_outline,
+                      onPressed: offered || _isEnabling
+                          ? null
+                          : () => unawaited(_enable(item)),
+                    );
+                  },
+                ),
+              ],
+              mobileItemBuilder:
+                  (BuildContext context, ClinicalCatalogOption item) {
+                    return AppListTableMobileItem(
+                      title: item.displayTitle,
+                      caption: item.category,
+                      meta: <AppListTableMobileMeta>[
+                        if (item.code?.trim().isNotEmpty == true)
+                          AppListTableMobileMeta(label: item.code!),
+                      ],
+                    );
+                  },
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+}

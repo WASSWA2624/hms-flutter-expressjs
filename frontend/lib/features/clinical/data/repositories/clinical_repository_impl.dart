@@ -220,6 +220,18 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   }
 
   @override
+  Future<Result<void>> deleteFacilityCatalogOffering(String offeringId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.clinicalCatalog.path,
+        'offerings',
+        offeringId,
+      ]),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<List<Map<String, Object?>>>> listFacilityCatalogOfferings({
     required String facilityId,
     String? termType,
@@ -245,6 +257,48 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
           growable: false,
         );
       },
+    );
+  }
+
+  @override
+  Future<Result<ClinicalCatalogOption>> createClinicalCatalogTerm(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<ClinicalCatalogOption>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.clinicalCatalog.path,
+        'terms',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: _decodeCatalogTerm,
+    );
+  }
+
+  @override
+  Future<Result<ClinicalCatalogOption>> updateClinicalCatalogTerm(
+    String termId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<ClinicalCatalogOption>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.clinicalCatalog.path,
+        'terms',
+        termId,
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: _decodeCatalogTerm,
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteClinicalCatalogTerm(String termId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.clinicalCatalog.path,
+        'terms',
+        termId,
+      ]),
+      decoder: (_) {},
     );
   }
 
@@ -454,6 +508,26 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       data: _withoutEmpty(payload),
       decoder: (_) {},
     );
+  }
+
+  ClinicalCatalogOption _decodeCatalogTerm(Object? responseData) {
+    if (responseData is Map<String, Object?>) {
+      final Object? data = responseData['data'];
+      if (data is Map<String, Object?>) {
+        return ClinicalTermOptionDto(data).toEntity();
+      }
+      if (data is List && data.isNotEmpty && data.first is Map<String, Object?>) {
+        return ClinicalTermOptionDto(
+          data.first as Map<String, Object?>,
+        ).toEntity();
+      }
+      if (responseData.containsKey('id') ||
+          responseData.containsKey('description') ||
+          responseData.containsKey('name')) {
+        return ClinicalTermOptionDto(responseData).toEntity();
+      }
+    }
+    throw const FormatException('Expected clinical catalog term response.');
   }
 
   Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {

@@ -632,23 +632,13 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
   }
 
   Widget _buildClinicalCatalogBody(FacilitySetupSnapshot snapshot) {
-    final AppLocalizations l10n = context.l10n;
     final String? facilityId = snapshot.facility?.id.trim();
     final String? tenantId =
         (snapshot.facility?.tenantId ?? snapshot.tenant?.id)?.trim();
-    if (facilityId == null ||
-        facilityId.isEmpty ||
-        tenantId == null ||
-        tenantId.isEmpty) {
-      return AppWorkspaceStatePanel.empty(
-        title: l10n.clinicalCatalogConfigurationTitle,
-        body: l10n.tenantFacilityCatalogSelectFacilityFirst,
-      );
-    }
 
     return FacilityCatalogConfigPanel(
-      facilityId: facilityId,
-      tenantId: tenantId,
+      facilityId: facilityId?.isEmpty == true ? null : facilityId,
+      tenantId: tenantId?.isEmpty == true ? null : tenantId,
       defaultCurrency: resolveDefaultCurrency(
         facilityCurrency: snapshot.facility?.currency,
         tenantCurrency: snapshot.tenant?.currency,

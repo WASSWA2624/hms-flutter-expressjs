@@ -1626,6 +1626,14 @@
   "@tenantFacilityCatalogEmptyOfferings": {
     "description": "Empty state when the facility has no catalog offerings in the selected category."
   },
+  "tenantFacilityCatalogEmptyCatalog": "No catalog items yet. Add a definition or configure offerings for a facility.",
+  "@tenantFacilityCatalogEmptyCatalog": {
+    "description": "Empty state when the global clinical catalog list has no items."
+  },
+  "tenantFacilityCatalogConfigureAction": "Configure",
+  "@tenantFacilityCatalogConfigureAction": {
+    "description": "Action to configure catalog offerings for a selected tenant and facility."
+  },
   "tenantFacilityCatalogSelectFacilityFirst": "Select or create a facility to manage the clinical service catalog.",
   "@tenantFacilityCatalogSelectFacilityFirst": {
     "description": "Empty state when catalog tab is open without a facility context."
@@ -9700,7 +9708,7 @@
   "@clinicalCatalogConfigurationTitle": {
     "description": "Title for facility clinical catalog configuration section."
   },
-  "clinicalCatalogConfigurationBody": "Manage lab, diagnostics, and service prices for this facility.",
+  "clinicalCatalogConfigurationBody": "Manage radiology, lab, and diagnosis catalog definitions, then configure which facilities can offer them.",
   "@clinicalCatalogConfigurationBody": {
     "description": "Body text for facility clinical catalog configuration section."
   },

@@ -70,6 +70,34 @@ const clinicalTermFavoriteIdParamsSchema = z.object({
   id: uuidSchema,
 });
 
+const CATALOG_TERM_TYPE_VALUES = ['DIAGNOSIS', 'PROCEDURE'];
+
+const createCatalogTermSchema = z.object({
+  tenant_id: uuidSchema.optional(),
+  term_type: z.enum(CATALOG_TERM_TYPE_VALUES).optional().default('DIAGNOSIS'),
+  code: z.string().trim().max(80).optional().nullable(),
+  description: z.string().trim().min(1).max(10000),
+  category: z.string().trim().max(120).optional().nullable(),
+  catalog_key: z.string().trim().max(120).optional().nullable(),
+  source: z.string().trim().max(80).optional().default('CUSTOM'),
+  sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
+  usage_rank: z.coerce.number().int().min(0).max(9999).optional().default(0),
+});
+
+const updateCatalogTermSchema = z.object({
+  code: z.string().trim().max(80).optional().nullable(),
+  description: z.string().trim().min(1).max(10000).optional(),
+  category: z.string().trim().max(120).optional().nullable(),
+  source: z.string().trim().max(80).optional(),
+  sort_order: z.coerce.number().int().min(0).max(9999).optional(),
+  usage_rank: z.coerce.number().int().min(0).max(9999).optional(),
+  is_active: z.boolean().optional(),
+});
+
+const catalogTermIdParamsSchema = z.object({
+  id: uuidSchema,
+});
+
 module.exports = {
   listClinicalTermSuggestionsQuerySchema,
   listClinicalCatalogSearchQuerySchema,
@@ -79,4 +107,7 @@ module.exports = {
   listFacilityCatalogOfferingsQuerySchema,
   upsertFacilityCatalogOfferingSchema,
   facilityCatalogOfferingIdParamsSchema,
+  createCatalogTermSchema,
+  updateCatalogTermSchema,
+  catalogTermIdParamsSchema,
 };

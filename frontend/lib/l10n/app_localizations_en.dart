@@ -1249,6 +1249,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'No services enabled for this facility yet.';
 
   @override
+  String get tenantFacilityCatalogEmptyCatalog =>
+      'No catalog items yet. Add a definition or configure offerings for a facility.';
+
+  @override
+  String get tenantFacilityCatalogConfigureAction => 'Configure';
+
+  @override
   String get tenantFacilityCatalogSelectFacilityFirst =>
       'Select or create a facility to manage the clinical service catalog.';
 
@@ -7627,7 +7634,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalCatalogConfigurationBody =>
-      'Manage lab, diagnostics, and service prices for this facility.';
+      'Manage radiology, lab, and diagnosis catalog definitions, then configure which facilities can offer them.';
 
   @override
   String get clinicalDiagnosisSelectedTitle => 'Selected diagnoses';
