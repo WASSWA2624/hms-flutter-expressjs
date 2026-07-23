@@ -50,7 +50,7 @@ class FacilityCatalogConfigPanel extends ConsumerStatefulWidget {
 
 class _FacilityCatalogConfigPanelState
     extends ConsumerState<FacilityCatalogConfigPanel> {
-  static const int _searchLimit = 200;
+  static const int _searchLimit = 100;
   static const String _labTypeFilterKey = 'type';
   static const String _labCategoryFilterKey = 'category';
   static const String _modalityFilterKey = 'modality';
