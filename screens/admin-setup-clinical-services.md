@@ -20,7 +20,7 @@ Shared per nested tab (when `enabled`):
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Filters | `AppListTable` search bar (`commonFiltersActionLabel`) | Opens advanced-filter dialog for that category; footer **Apply filters** / **Clear filters**. While **Apply filters** runs, the dialog shows a loading indicator, disables form controls / Close / Clear, and keeps Apply in a busy state until filters are applied and the dialog closes. |
+| Filters | `AppListTable` search bar (`commonFiltersActionLabel`) | Opens advanced-filter dialog for that category; footer **Apply filters** / **Clear filters**. While **Apply filters** runs, the dialog shows a centered loading overlay over the form, disables form controls / Close / Clear, and keeps Apply in a busy state until filters are applied and the dialog closes. |
 | Settings | Column-visibility control (`commonTableSettingsActionLabel`) | Opens column-settings dialog (**Apply columns** / **Reset columns** / **Close** defaults). Storage keys: `admin_catalog_radiology`, `admin_catalog_lab`, `admin_catalog_diagnoses`. |
 | Configure | Search trailing (`tenantFacilityCatalogConfigureAction`) | Opens **Select tenant and facility** scope picker, then the category enable dialog. Does not switch the desk table into facility-only mode. |
 | Edit | Row actions (`clinicalLabRequestEditSelectionAction`) | Opens global catalog edit/mutation dialog for that row. |

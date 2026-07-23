@@ -940,17 +940,9 @@ class _AppSearchBarFiltersDialogState
         showOptionalIndicators: false,
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Stack(
+            alignment: Alignment.center,
             children: <Widget>[
-              if (_isApplying) ...<Widget>[
-                AppLoadingIndicator.compact(
-                  expand: false,
-                  title: context.l10n.commonLoadingCompactTitle,
-                ),
-                SizedBox(height: theme.spacing.md),
-              ],
               AbsorbPointer(
                 absorbing: !canInteract,
                 child: Opacity(
@@ -1141,6 +1133,16 @@ class _AppSearchBarFiltersDialogState
                   ),
                 ),
               ),
+              if (_isApplying)
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: theme.colorScheme.surface.withValues(alpha: 0.94),
+                    child: AppLoadingIndicator.compact(
+                      title: context.l10n.commonLoadingCompactTitle,
+                      semanticLabel: context.l10n.commonLoadingCompactTitle,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
