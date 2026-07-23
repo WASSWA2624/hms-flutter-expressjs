@@ -1472,7 +1472,11 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   SizedBox(width: 320, child: tenantSummary),
-                  SizedBox(width: theme.spacing.md),
+                  VerticalDivider(
+                    width: theme.spacing.md,
+                    thickness: 1,
+                    color: colorScheme.outlineVariant,
+                  ),
                   Expanded(child: facilitiesPanel),
                 ],
               );
@@ -1649,34 +1653,24 @@ class _TenantDetailsSummary extends StatelessWidget {
       ],
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool boundedHeight = constraints.hasBoundedHeight;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: boundedHeight ? MainAxisSize.max : MainAxisSize.min,
-              children: <Widget>[
-                header,
-                SizedBox(height: theme.spacing.md),
-                const Divider(height: 1),
-                SizedBox(height: theme.spacing.sm),
-                if (boundedHeight)
-                  Expanded(child: SingleChildScrollView(child: meta))
-                else
-                  meta,
-              ],
-            );
-          },
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool boundedHeight = constraints.hasBoundedHeight;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: boundedHeight ? MainAxisSize.max : MainAxisSize.min,
+          children: <Widget>[
+            header,
+            SizedBox(height: theme.spacing.md),
+            const Divider(height: 1),
+            SizedBox(height: theme.spacing.sm),
+            if (boundedHeight)
+              Expanded(child: SingleChildScrollView(child: meta))
+            else
+              meta,
+          ],
+        );
+      },
     );
   }
 }
@@ -1806,203 +1800,183 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final String showLabel = l10n.tenantFacilityTenantDetailsShowSummaryAction;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                if (!summaryVisible) ...<Widget>[
-                  IconButton(
-                    tooltip: showLabel,
-                    visualDensity: VisualDensity.compact,
-                    onPressed: onShowSummary,
-                    icon: const Icon(Icons.visibility_outlined),
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                ],
-                Expanded(
-                  child: Text(
-                    l10n.tenantFacilityTenantDetailsFacilitiesHeading,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
+            if (!summaryVisible) ...<Widget>[
+              IconButton(
+                tooltip: showLabel,
+                visualDensity: VisualDensity.compact,
+                onPressed: onShowSummary,
+                icon: const Icon(Icons.visibility_outlined),
+              ),
+              SizedBox(width: theme.spacing.xs),
+            ],
             Expanded(
-              child: failure != null
-                  ? AppFailureStateView(failure: failure!, onRetry: onRetry)
-                  : AppListTable<FacilityProfile>(
-                      page: AppPage<FacilityProfile>(
-                        items: facilities,
-                        request: pageRequest,
-                        totalItemCount: totalItemCount,
-                      ),
-                      isLoading: loading,
-                      itemKeyBuilder: (FacilityProfile item) =>
-                          ValueKey<String>(item.id),
-                      onRowSelected: onRowSelected,
-                      initialSortColumnKey: 'name',
-                      previousPageLabel: l10n.hrPreviousPageLabel,
-                      nextPageLabel: l10n.hrNextPageLabel,
-                      pageLabelBuilder: (AppPage<FacilityProfile> page) {
-                        if (loading) {
-                          return '';
-                        }
-                        final int total =
-                            page.totalItemCount ?? page.items.length;
-                        if (total == 0) {
-                          return l10n.commonTableEmptyLabel;
-                        }
-                        final int start = page.pageIndex * page.pageSize + 1;
-                        final int end = start + page.items.length - 1;
-                        return '$start-$end / $total';
-                      },
-                      onPageChanged: onPageChanged,
-                      columnVisibilityStorageKey:
-                          'setup_tenant_details_facilities_v1',
-                      columnVisibilityLabel:
-                          l10n.commonTableSettingsActionLabel,
-                      search: AppListTableSearch<FacilityProfile>(
-                        controller: searchController,
-                        hintText: l10n.tenantFacilitySearchLabel,
-                        semanticLabel: l10n.tenantFacilitySearchLabel,
-                        matcher: (_, _) => true,
-                        enableDateFilter: false,
-                        showAdvancedFilterButton: true,
-                        advancedFilterButtonLabel:
-                            l10n.commonFilterActionLabel,
-                        advancedFilterTitle:
-                            l10n.tenantFacilityTenantStatusLabel,
-                        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                        advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                        filterGroups: <AppSearchBarFilterGroup>[
-                          AppSearchBarFilterGroup(
-                            key: _TenantDetailsDialogState._statusFilterKey,
-                            label: l10n.tenantFacilityTenantStatusLabel,
-                            allLabel: l10n.commonAllLabel,
-                            choices: <AppSearchBarFilterChoice>[
-                              AppSearchBarFilterChoice(
-                                value:
-                                    _TenantDetailsDialogState._statusActive,
-                                label:
-                                    l10n.tenantFacilityTenantStatusActive,
-                                icon: Icons.check_circle_outline,
-                              ),
-                              AppSearchBarFilterChoice(
-                                value:
-                                    _TenantDetailsDialogState._statusDeleted,
-                                label:
-                                    l10n.tenantFacilityTenantStatusDeleted,
-                                icon: Icons.delete_outline,
-                              ),
-                            ],
-                          ),
-                        ],
-                        filterValue: filterValue,
-                        hasActiveFilters: hasActiveFilters,
-                        onFilterChanged: onFilterChanged,
-                      ),
-                      columns: <AppListTableColumn<FacilityProfile>>[
-                        AppListTableColumn<FacilityProfile>(
-                          id: 'name',
-                          label: l10n.authFacilityNameLabel,
-                          sortComparator:
-                              (FacilityProfile left, FacilityProfile right) =>
-                                  left.name.toLowerCase().compareTo(
-                                    right.name.toLowerCase(),
-                                  ),
-                          cellBuilder: (_, FacilityProfile facility) => Text(
-                            facility.name,
-                            style: facility.isDeleted
-                                ? theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        AppListTableColumn<FacilityProfile>(
-                          id: 'type',
-                          label: l10n.profileFacilityTypeLabel,
-                          sortComparator:
-                              (FacilityProfile left, FacilityProfile right) =>
-                                  left.type.name.compareTo(right.type.name),
-                          cellBuilder: (_, FacilityProfile facility) =>
-                              Text(facility.type.name),
-                        ),
-                        AppListTableColumn<FacilityProfile>(
-                          id: 'status',
-                          label: l10n.tenantFacilityTenantStatusLabel,
-                          sortComparator:
-                              (FacilityProfile left, FacilityProfile right) =>
-                                  statusLabelBuilder(left).compareTo(
-                                    statusLabelBuilder(right),
-                                  ),
-                          cellBuilder: (_, FacilityProfile facility) =>
-                              Text(statusLabelBuilder(facility)),
-                        ),
-                        if (canManage)
-                          AppListTableColumn<FacilityProfile>(
-                            id: 'actions',
-                            label: l10n.accessAdminColumnActions,
-                            alwaysVisible: true,
-                            cellBuilder:
-                                (
-                                  BuildContext context,
-                                  FacilityProfile facility,
-                                ) {
-                                  if (facility.isDeleted) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return GestureDetector(
-                                    onTap: () {},
-                                    child: _ManagementRowActions(
-                                      enabled: !loading,
-                                      editLabel:
-                                          l10n.tenantFacilityEditAction,
-                                      deleteLabel:
-                                          l10n.tenantFacilityDeleteAction,
-                                      onEdit: () => onEdit(facility),
-                                      onDelete: () => onDelete(facility),
-                                    ),
-                                  );
-                                },
-                          ),
-                      ],
-                      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-                        title:
-                            l10n.tenantFacilityTenantDetailsFacilitiesHeading,
-                        body: l10n.tenantFacilityTenantDetailsNoFacilities,
-                      ),
-                      mobileItemBuilder:
-                          (BuildContext context, FacilityProfile facility) {
-                            return AppListTableMobileItem(
-                              title: facility.name,
-                              meta: <AppListTableMobileMeta>[
-                                AppListTableMobileMeta(
-                                  label: statusLabelBuilder(facility),
-                                ),
-                                AppListTableMobileMeta(
-                                  label: facility.type.name,
-                                  icon: Icons.business_outlined,
-                                ),
-                              ],
-                            );
-                          },
-                    ),
+              child: Text(
+                l10n.tenantFacilityTenantDetailsFacilitiesHeading,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
-      ),
+        SizedBox(height: theme.spacing.sm),
+        Expanded(
+          child: failure != null
+              ? AppFailureStateView(failure: failure!, onRetry: onRetry)
+              : AppListTable<FacilityProfile>(
+                  page: AppPage<FacilityProfile>(
+                    items: facilities,
+                    request: pageRequest,
+                    totalItemCount: totalItemCount,
+                  ),
+                  isLoading: loading,
+                  itemKeyBuilder: (FacilityProfile item) =>
+                      ValueKey<String>(item.id),
+                  onRowSelected: onRowSelected,
+                  initialSortColumnKey: 'name',
+                  previousPageLabel: l10n.hrPreviousPageLabel,
+                  nextPageLabel: l10n.hrNextPageLabel,
+                  pageLabelBuilder: (AppPage<FacilityProfile> page) {
+                    if (loading) {
+                      return '';
+                    }
+                    final int total = page.totalItemCount ?? page.items.length;
+                    if (total == 0) {
+                      return l10n.commonTableEmptyLabel;
+                    }
+                    final int start = page.pageIndex * page.pageSize + 1;
+                    final int end = start + page.items.length - 1;
+                    return '$start-$end / $total';
+                  },
+                  onPageChanged: onPageChanged,
+                  columnVisibilityStorageKey:
+                      'setup_tenant_details_facilities_v1',
+                  columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+                  search: AppListTableSearch<FacilityProfile>(
+                    controller: searchController,
+                    hintText: l10n.tenantFacilitySearchLabel,
+                    semanticLabel: l10n.tenantFacilitySearchLabel,
+                    matcher: (_, _) => true,
+                    enableDateFilter: false,
+                    showAdvancedFilterButton: true,
+                    advancedFilterButtonLabel: l10n.commonFilterActionLabel,
+                    advancedFilterTitle: l10n.tenantFacilityTenantStatusLabel,
+                    advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                    advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                    filterGroups: <AppSearchBarFilterGroup>[
+                      AppSearchBarFilterGroup(
+                        key: _TenantDetailsDialogState._statusFilterKey,
+                        label: l10n.tenantFacilityTenantStatusLabel,
+                        allLabel: l10n.commonAllLabel,
+                        choices: <AppSearchBarFilterChoice>[
+                          AppSearchBarFilterChoice(
+                            value: _TenantDetailsDialogState._statusActive,
+                            label: l10n.tenantFacilityTenantStatusActive,
+                            icon: Icons.check_circle_outline,
+                          ),
+                          AppSearchBarFilterChoice(
+                            value: _TenantDetailsDialogState._statusDeleted,
+                            label: l10n.tenantFacilityTenantStatusDeleted,
+                            icon: Icons.delete_outline,
+                          ),
+                        ],
+                      ),
+                    ],
+                    filterValue: filterValue,
+                    hasActiveFilters: hasActiveFilters,
+                    onFilterChanged: onFilterChanged,
+                  ),
+                  columns: <AppListTableColumn<FacilityProfile>>[
+                    AppListTableColumn<FacilityProfile>(
+                      id: 'name',
+                      label: l10n.authFacilityNameLabel,
+                      sortComparator:
+                          (FacilityProfile left, FacilityProfile right) => left
+                              .name
+                              .toLowerCase()
+                              .compareTo(right.name.toLowerCase()),
+                      cellBuilder: (_, FacilityProfile facility) => Text(
+                        facility.name,
+                        style: facility.isDeleted
+                            ? theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              )
+                            : null,
+                      ),
+                    ),
+                    AppListTableColumn<FacilityProfile>(
+                      id: 'type',
+                      label: l10n.profileFacilityTypeLabel,
+                      sortComparator:
+                          (FacilityProfile left, FacilityProfile right) =>
+                              left.type.name.compareTo(right.type.name),
+                      cellBuilder: (_, FacilityProfile facility) =>
+                          Text(facility.type.name),
+                    ),
+                    AppListTableColumn<FacilityProfile>(
+                      id: 'status',
+                      label: l10n.tenantFacilityTenantStatusLabel,
+                      sortComparator:
+                          (FacilityProfile left, FacilityProfile right) =>
+                              statusLabelBuilder(
+                                left,
+                              ).compareTo(statusLabelBuilder(right)),
+                      cellBuilder: (_, FacilityProfile facility) =>
+                          Text(statusLabelBuilder(facility)),
+                    ),
+                    if (canManage)
+                      AppListTableColumn<FacilityProfile>(
+                        id: 'actions',
+                        label: l10n.accessAdminColumnActions,
+                        alwaysVisible: true,
+                        cellBuilder:
+                            (
+                              BuildContext context,
+                              FacilityProfile facility,
+                            ) {
+                              if (facility.isDeleted) {
+                                return const SizedBox.shrink();
+                              }
+                              return GestureDetector(
+                                onTap: () {},
+                                child: _ManagementRowActions(
+                                  enabled: !loading,
+                                  editLabel: l10n.tenantFacilityEditAction,
+                                  deleteLabel: l10n.tenantFacilityDeleteAction,
+                                  onEdit: () => onEdit(facility),
+                                  onDelete: () => onDelete(facility),
+                                ),
+                              );
+                            },
+                      ),
+                  ],
+                  emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+                    title: l10n.tenantFacilityTenantDetailsFacilitiesHeading,
+                    body: l10n.tenantFacilityTenantDetailsNoFacilities,
+                  ),
+                  mobileItemBuilder:
+                      (BuildContext context, FacilityProfile facility) {
+                        return AppListTableMobileItem(
+                          title: facility.name,
+                          meta: <AppListTableMobileMeta>[
+                            AppListTableMobileMeta(
+                              label: statusLabelBuilder(facility),
+                            ),
+                            AppListTableMobileMeta(
+                              label: facility.type.name,
+                              icon: Icons.business_outlined,
+                            ),
+                          ],
+                        );
+                      },
+                ),
+        ),
+      ],
     );
   }
 }
