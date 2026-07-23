@@ -4,7 +4,7 @@
 
 **Permission gates (section visibility):**
 - Tenants tab: `canManageTenant`
-- Facility + Departments/Units/Wards/Rooms/Beds: `canManageFacility || canManageTenant`
+- Facility + Departments/Units/Wards/Rooms/Beds + Catalog: `canManageFacility || canManageTenant`
 - Roles / Permissions / Users: `canManageAccess` (system/tenant/facility admin or HR write)
 - Structure mutate: `canEditFacilitySetupStructure()` → `canManageFacility()` (permission grants; no HR-role-only path)
 - There is **no** HR-only alternate body; users without desk permissions see the empty workspace state
@@ -15,8 +15,7 @@
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
-| Clinical service catalog | Workspace toolbar secondary (`AppTabToolbarAction`), when `snapshot.facility?.id != null` | Opens clinical-catalog `AppDialog` hosting `FacilityCatalogConfigPanel`. |
-| Desk section tabs | `AppTabStrip` in `_SetupBody` | Switches Tenants / Facility / Departments / Units / Wards / Rooms / Beds / Roles / Permissions / Users (subset by permissions). |
+| Desk section tabs | `AppTabStrip` in `_SetupBody` | Switches Clinical Services / Tenants / Facility / Departments / Units / Wards / Rooms / Beds / Roles / Permissions / Users (subset by permissions). Synced to `?section=` (kebab-case); `?tab=` accepted as alias. |
 | Try again | Async load failure (`AsyncStateScaffold` / detail dialog failure views) | Retries setup snapshot load. |
 
 ---
@@ -188,18 +187,19 @@ Department / Unit / Ward / Room / Bed create-edit dialogs share:
 
 ---
 
-## Clinical service catalog dialog (`FacilityCatalogConfigPanel`)
+## Clinical Services tab (`FacilityCatalogConfigPanel`, inline)
 
-Opened from workspace toolbar. Dialog chrome only (no footer actions beyond Close / Maximize).
+Requires facility + tenant ids; otherwise empty state prompts selecting/creating a facility.
+
+Inner `AppTabStrip`: Diagnoses / Procedures / Prescriptions / Lab / Radiology. Each category uses `AppListTable` with search + Settings.
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
-| Add | Global catalog search result row (clinical mode) | Upserts facility clinical offering (no nested modal). |
-| Enable test | Lab mode primary | Opens `LabEnableFacilityOfferingDialog`. |
-| Enable panel | Lab mode secondary | Opens `LabEnableFacilityOfferingDialog` (panel kind). |
-| Radiology catalog | Radiology mode primary | Opens `RadiologyEnableFacilityOfferingDialog`. |
-
-Mode / term-type / catalog-source selects are field controls, not action buttons.
+| Add service | Clinical sub-tabs search trailing / empty primary | Opens browse dialog (`_ClinicalCatalogBrowseDialog`); row **Add** upserts facility clinical offering. |
+| Enable test | Lab search trailing / empty primary | Opens `LabEnableFacilityOfferingDialog`. |
+| Enable panel | Lab search trailing | Opens `LabEnableFacilityOfferingDialog` (panel kind). |
+| Radiology catalog | Radiology search trailing / empty primary | Opens `RadiologyEnableFacilityOfferingDialog`. |
+| Edit | Radiology row / actions column | Opens `RadiologyEditFacilityOfferingDialog`. |
 
 ### Lab enable offering dialog
 
@@ -252,7 +252,7 @@ Shared `AppConfirmActionDialog` / `AppTextInputActionDialog` pattern:
 
 ## Reachable modal chain
 
-- Toolbar **Clinical service catalog** → `FacilityCatalogConfigPanel` → lab enable picker → lab price dialog; or radiology enable picker → radiology price dialog
+- Clinical Services tab → browse/add clinical offerings; lab enable picker → lab price dialog; radiology enable picker → radiology price dialog; radiology row → edit offering dialog
 - Tenants tab → tenant form (+ similarity); tenant soft-delete / restore / permanent-delete (type + confirm); row → **Tenant details** → facility edit/delete; tenant edit/delete
 - Facility tab → facility form (+ similarity + confirm-update); facility soft-delete / restore / permanent-delete; row → **Facility details** → logo remove confirm; users create/edit/delete/restore; structure add/edit/delete/restore; facility edit/delete
 - Structure tabs → entity forms; soft-delete / restore
@@ -270,7 +270,6 @@ Shared `AppConfirmActionDialog` / `AppTextInputActionDialog` pattern:
 | `TenantFacilitySetupWizard` (+ step primary/secondary/next/fix actions, `TenantFacilityPermissionStrip`) | Guided wizard UI — **no constructor call sites** in the app |
 | `showManageTenantsDialog` / `showManageFacilitiesDialog` | Dialog-mode wrappers around the same panels (used from settings/home, not this page) |
 | `showAccessAdminWorkspaceDialog` | Full access-admin workspace shell |
-| `RadiologyEditFacilityOfferingDialog` / other lab catalog CRUD not opened from `FacilityCatalogConfigPanel` | Edit/disable offerings outside this enable-only path |
 | Wizard-only label helpers as UX (Create vs Manage by `hasRecords`) | Only matter if the wizard were mounted |
 
 Panels and form dialogs themselves **are** reachable from desk tabs even when the dialog-wrapper entry points above are not.

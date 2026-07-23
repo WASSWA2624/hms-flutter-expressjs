@@ -1207,6 +1207,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilitySetupTabUsers => 'Users';
 
   @override
+  String get tenantFacilitySetupTabClinicalCatalog => 'Clinical Services';
+
+  @override
+  String get tenantFacilityCatalogTabDiagnoses => 'Diagnoses';
+
+  @override
+  String get tenantFacilityCatalogTabProcedures => 'Procedures';
+
+  @override
+  String get tenantFacilityCatalogTabPrescriptions => 'Prescriptions';
+
+  @override
+  String get tenantFacilityCatalogTabLab => 'Lab';
+
+  @override
+  String get tenantFacilityCatalogTabRadiology => 'Radiology';
+
+  @override
+  String get tenantFacilityCatalogAddServiceAction => 'Add service';
+
+  @override
+  String get tenantFacilityCatalogEmptyOfferings =>
+      'No services enabled for this facility yet.';
+
+  @override
+  String get tenantFacilityCatalogSelectFacilityFirst =>
+      'Select or create a facility to manage the clinical service catalog.';
+
+  @override
+  String get tenantFacilityCatalogSearchHint =>
+      'Search by name, code, or category';
+
+  @override
+  String get tenantFacilityCatalogBrowseTitle => 'Browse catalog';
+
+  @override
   String get navigationPatientsLabel => 'Patient registry';
 
   @override

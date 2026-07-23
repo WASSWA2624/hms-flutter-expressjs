@@ -1574,6 +1574,50 @@
   "@tenantFacilitySetupTabUsers": {
     "description": "Setup workspace tab label for users."
   },
+  "tenantFacilitySetupTabClinicalCatalog": "Clinical Services",
+  "@tenantFacilitySetupTabClinicalCatalog": {
+    "description": "Setup workspace tab label for the clinical service catalog."
+  },
+  "tenantFacilityCatalogTabDiagnoses": "Diagnoses",
+  "@tenantFacilityCatalogTabDiagnoses": {
+    "description": "Catalog desk sub-tab for facility diagnosis offerings."
+  },
+  "tenantFacilityCatalogTabProcedures": "Procedures",
+  "@tenantFacilityCatalogTabProcedures": {
+    "description": "Catalog desk sub-tab for facility procedure offerings."
+  },
+  "tenantFacilityCatalogTabPrescriptions": "Prescriptions",
+  "@tenantFacilityCatalogTabPrescriptions": {
+    "description": "Catalog desk sub-tab for facility prescription offerings."
+  },
+  "tenantFacilityCatalogTabLab": "Lab",
+  "@tenantFacilityCatalogTabLab": {
+    "description": "Catalog desk sub-tab for facility lab offerings."
+  },
+  "tenantFacilityCatalogTabRadiology": "Radiology",
+  "@tenantFacilityCatalogTabRadiology": {
+    "description": "Catalog desk sub-tab for facility radiology offerings."
+  },
+  "tenantFacilityCatalogAddServiceAction": "Add service",
+  "@tenantFacilityCatalogAddServiceAction": {
+    "description": "Primary action to enable a clinical catalog service for the facility."
+  },
+  "tenantFacilityCatalogEmptyOfferings": "No services enabled for this facility yet.",
+  "@tenantFacilityCatalogEmptyOfferings": {
+    "description": "Empty state when the facility has no catalog offerings in the selected category."
+  },
+  "tenantFacilityCatalogSelectFacilityFirst": "Select or create a facility to manage the clinical service catalog.",
+  "@tenantFacilityCatalogSelectFacilityFirst": {
+    "description": "Empty state when catalog tab is open without a facility context."
+  },
+  "tenantFacilityCatalogSearchHint": "Search by name, code, or category",
+  "@tenantFacilityCatalogSearchHint": {
+    "description": "Search hint for facility clinical catalog offering tables."
+  },
+  "tenantFacilityCatalogBrowseTitle": "Browse catalog",
+  "@tenantFacilityCatalogBrowseTitle": {
+    "description": "Dialog title for browsing global clinical catalog items to enable."
+  },
   "navigationPatientsLabel": "Patient registry",
   "@navigationPatientsLabel": {
     "description": "Navigation label for the patient registry destination."

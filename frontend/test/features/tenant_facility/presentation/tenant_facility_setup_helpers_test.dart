@@ -31,12 +31,6 @@ void main() {
           logoUrl: 'https://example.com/logo.png',
         ),
         contactAddress: FacilityContactAddress(phone: '+256700000000'),
-            id: 'BRN0001',
-            tenantId: 'TEN0001',
-            name: 'Main',
-            facilityId: 'FAC0001',
-          ),
-        ],
         departments: <DepartmentProfile>[
           DepartmentProfile(
             id: 'DEP0001',
@@ -350,6 +344,45 @@ void main() {
     });
   });
 
+  group('tenant facility setup desk section routing', () {
+    test('maps every section to a stable query value and back', () {
+      for (final TenantFacilitySetupDeskSection section
+          in TenantFacilitySetupDeskSection.values) {
+        expect(
+          TenantFacilitySetupDeskSection.fromQuery(section.routeQueryValue),
+          section,
+        );
+      }
+    });
+
+    test('accepts aliases for clinical services and structure tabs', () {
+      expect(
+        TenantFacilitySetupDeskSection.fromQuery('clinical-catalog'),
+        TenantFacilitySetupDeskSection.clinicalCatalog,
+      );
+      expect(
+        TenantFacilitySetupDeskSection.fromQuery('catalog'),
+        TenantFacilitySetupDeskSection.clinicalCatalog,
+      );
+      expect(
+        TenantFacilitySetupDeskSection.fromQuery('facilities'),
+        TenantFacilitySetupDeskSection.facility,
+      );
+    });
+
+    test('parses section from uri query', () {
+      final TenantFacilitySetupPageQuery query =
+          TenantFacilitySetupPageQuery.fromUri(
+            Uri.parse('/admin/setup?section=users'),
+          );
+      expect(query.section, 'users');
+      expect(
+        TenantFacilitySetupDeskSection.fromQuery(query.section),
+        TenantFacilitySetupDeskSection.users,
+      );
+    });
+  });
+
   group('tenant facility setup desk sections', () {
     test('omits tenants for facility admins and keeps facility tabs', () {
       final List<TenantFacilitySetupDeskSection> sections =
@@ -365,6 +398,10 @@ void main() {
       );
       expect(
         sections.contains(TenantFacilitySetupDeskSection.facility),
+        isTrue,
+      );
+      expect(
+        sections.contains(TenantFacilitySetupDeskSection.clinicalCatalog),
         isTrue,
       );
       expect(sections.contains(TenantFacilitySetupDeskSection.users), isTrue);

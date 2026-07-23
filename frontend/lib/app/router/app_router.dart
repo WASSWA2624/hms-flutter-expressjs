@@ -369,7 +369,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.tenantFacilitySetup.path,
             name: AppRoutes.tenantFacilitySetup.name,
-            builder: (_, _) => const TenantFacilitySetupPage(),
+            builder: (_, GoRouterState state) => TenantFacilitySetupPage(
+              initialQuery: TenantFacilitySetupPageQuery.fromUri(state.uri),
+            ),
           ),
           GoRoute(
             path: AppRoutes.accessAdmin.path,

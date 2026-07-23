@@ -10,6 +10,7 @@ const String tenantFacilityNoneSelection = '__none__';
 
 /// Setup workspace tabs replacing Guided setup as primary navigation.
 enum TenantFacilitySetupDeskSection {
+  clinicalCatalog,
   tenants,
   facility,
   departments,
@@ -19,7 +20,87 @@ enum TenantFacilitySetupDeskSection {
   beds,
   roles,
   permissions,
-  users,
+  users;
+
+  /// Canonical `?section=` query value for this tab.
+  String get routeQueryValue {
+    return switch (this) {
+      TenantFacilitySetupDeskSection.clinicalCatalog => 'clinical-services',
+      TenantFacilitySetupDeskSection.tenants => 'tenants',
+      TenantFacilitySetupDeskSection.facility => 'facility',
+      TenantFacilitySetupDeskSection.departments => 'departments',
+      TenantFacilitySetupDeskSection.units => 'units',
+      TenantFacilitySetupDeskSection.wards => 'wards',
+      TenantFacilitySetupDeskSection.rooms => 'rooms',
+      TenantFacilitySetupDeskSection.beds => 'beds',
+      TenantFacilitySetupDeskSection.roles => 'roles',
+      TenantFacilitySetupDeskSection.permissions => 'permissions',
+      TenantFacilitySetupDeskSection.users => 'users',
+    };
+  }
+
+  /// Resolves a `?section=` / `?tab=` value to a desk section.
+  static TenantFacilitySetupDeskSection? fromQuery(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'clinical-services':
+      case 'clinical-catalog':
+      case 'clinical':
+      case 'catalog':
+      case 'services':
+        return TenantFacilitySetupDeskSection.clinicalCatalog;
+      case 'tenants':
+      case 'tenant':
+        return TenantFacilitySetupDeskSection.tenants;
+      case 'facility':
+      case 'facilities':
+        return TenantFacilitySetupDeskSection.facility;
+      case 'departments':
+      case 'department':
+        return TenantFacilitySetupDeskSection.departments;
+      case 'units':
+      case 'unit':
+        return TenantFacilitySetupDeskSection.units;
+      case 'wards':
+      case 'ward':
+        return TenantFacilitySetupDeskSection.wards;
+      case 'rooms':
+      case 'room':
+        return TenantFacilitySetupDeskSection.rooms;
+      case 'beds':
+      case 'bed':
+        return TenantFacilitySetupDeskSection.beds;
+      case 'roles':
+      case 'role':
+        return TenantFacilitySetupDeskSection.roles;
+      case 'permissions':
+      case 'permission':
+        return TenantFacilitySetupDeskSection.permissions;
+      case 'users':
+      case 'user':
+        return TenantFacilitySetupDeskSection.users;
+      default:
+        return null;
+    }
+  }
+}
+
+/// Deep-link targeting parsed from the `/admin/setup` route query string.
+@immutable
+final class TenantFacilitySetupPageQuery {
+  const TenantFacilitySetupPageQuery({this.section = ''});
+
+  /// Active desk tab from `?section=` or `?tab=`.
+  final String section;
+
+  factory TenantFacilitySetupPageQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    final String section = (params['section'] ?? params['tab'] ?? '').trim();
+    return TenantFacilitySetupPageQuery(section: section);
+  }
+
+  String get signature => section.toLowerCase();
+
+  bool get hasRouteTargeting => section.trim().isNotEmpty;
 }
 
 /// Shell nav label for `/admin/setup` by admin scope.
@@ -57,7 +138,8 @@ bool tenantFacilitySetupDeskSectionVisible({
     TenantFacilitySetupDeskSection.units ||
     TenantFacilitySetupDeskSection.wards ||
     TenantFacilitySetupDeskSection.rooms ||
-    TenantFacilitySetupDeskSection.beds =>
+    TenantFacilitySetupDeskSection.beds ||
+    TenantFacilitySetupDeskSection.clinicalCatalog =>
       canManageFacility || canManageTenant,
     TenantFacilitySetupDeskSection.roles ||
     TenantFacilitySetupDeskSection.permissions ||
@@ -106,6 +188,8 @@ String tenantFacilitySetupDeskSectionLabel(
     TenantFacilitySetupDeskSection.wards => l10n.tenantFacilityWizardStepWards,
     TenantFacilitySetupDeskSection.rooms => l10n.tenantFacilityWizardStepRooms,
     TenantFacilitySetupDeskSection.beds => l10n.tenantFacilityWizardStepBeds,
+    TenantFacilitySetupDeskSection.clinicalCatalog =>
+      l10n.tenantFacilitySetupTabClinicalCatalog,
     TenantFacilitySetupDeskSection.roles => l10n.tenantFacilitySetupTabRoles,
     TenantFacilitySetupDeskSection.permissions =>
       l10n.tenantFacilitySetupTabPermissions,
@@ -124,6 +208,8 @@ IconData tenantFacilitySetupDeskSectionIcon(
     TenantFacilitySetupDeskSection.wards => Icons.maps_home_work_outlined,
     TenantFacilitySetupDeskSection.rooms => Icons.meeting_room_outlined,
     TenantFacilitySetupDeskSection.beds => Icons.bed_outlined,
+    TenantFacilitySetupDeskSection.clinicalCatalog =>
+      Icons.medical_information_outlined,
     TenantFacilitySetupDeskSection.roles => Icons.badge_outlined,
     TenantFacilitySetupDeskSection.permissions => Icons.key_outlined,
     TenantFacilitySetupDeskSection.users => Icons.people_outline,
@@ -146,6 +232,8 @@ String? tenantFacilitySetupDeskCreateLabel(
     TenantFacilitySetupDeskSection.wards => l10n.tenantFacilityAddWardAction,
     TenantFacilitySetupDeskSection.rooms => l10n.tenantFacilityAddRoomAction,
     TenantFacilitySetupDeskSection.beds => l10n.tenantFacilityAddBedAction,
+    TenantFacilitySetupDeskSection.clinicalCatalog =>
+      l10n.tenantFacilityCatalogAddServiceAction,
     TenantFacilitySetupDeskSection.roles => l10n.accessAdminCreateRoleAction,
     TenantFacilitySetupDeskSection.permissions => null,
     TenantFacilitySetupDeskSection.users => l10n.accessAdminCreateUserAction,
@@ -164,6 +252,7 @@ IconData? tenantFacilitySetupDeskCreateIcon(
     TenantFacilitySetupDeskSection.wards ||
     TenantFacilitySetupDeskSection.rooms ||
     TenantFacilitySetupDeskSection.beds => Icons.add,
+    TenantFacilitySetupDeskSection.clinicalCatalog => Icons.add_circle_outline,
     TenantFacilitySetupDeskSection.roles => Icons.badge_outlined,
     TenantFacilitySetupDeskSection.permissions => null,
     TenantFacilitySetupDeskSection.users => Icons.person_add_alt_1_outlined,

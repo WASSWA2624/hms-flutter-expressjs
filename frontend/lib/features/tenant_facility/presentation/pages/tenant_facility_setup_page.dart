@@ -3,7 +3,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/config/app_config_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -36,7 +38,10 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class TenantFacilitySetupPage extends ConsumerWidget {
-  const TenantFacilitySetupPage({super.key});
+  const TenantFacilitySetupPage({super.key, this.initialQuery});
+
+  /// Deep-link targeting parsed from the `/admin/setup` route query string.
+  final TenantFacilitySetupPageQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,16 +71,23 @@ class TenantFacilitySetupPage extends ConsumerWidget {
         ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, FacilitySetupSnapshot snapshot) {
-        return _TenantFacilitySetupContent(snapshot: snapshot);
+        return _TenantFacilitySetupContent(
+          snapshot: snapshot,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _TenantFacilitySetupContent extends ConsumerWidget {
-  const _TenantFacilitySetupContent({required this.snapshot});
+  const _TenantFacilitySetupContent({
+    required this.snapshot,
+    this.initialQuery,
+  });
 
   final FacilitySetupSnapshot snapshot;
+  final TenantFacilitySetupPageQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -101,19 +113,10 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         showGlobalActions: false,
         showFaultReport: false,
         showHousekeepingRequest: false,
-        secondary: <Widget>[
-          if (snapshot.facility?.id != null)
-            AppTabToolbarAction(
-              label: l10n.clinicalCatalogConfigurationTitle,
-              icon: Icons.medical_information_outlined,
-              onPressed: () {
-                unawaited(_openFacilityCatalogModal(context, snapshot));
-              },
-            ),
-        ],
       ),
       body: _SetupBody(
         snapshot: snapshot,
+        initialQuery: initialQuery,
         canManageTenant: canManageTenant,
         canManageFacility: canManageFacility,
         canEditStructure: canEditStructure,
@@ -417,39 +420,6 @@ Future<bool?> _openFacilityProfileModal(
   );
 }
 
-Future<void> _openFacilityCatalogModal(
-  BuildContext context,
-  FacilitySetupSnapshot snapshot,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final String? facilityId = snapshot.facility?.id;
-  final String? tenantId = snapshot.facility?.tenantId ?? snapshot.tenant?.id;
-  if (facilityId == null ||
-      facilityId.isEmpty ||
-      tenantId == null ||
-      tenantId.isEmpty) {
-    return Future<void>.value();
-  }
-
-  return showAppDialog<void>(
-    context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(l10n.clinicalCatalogConfigurationTitle),
-      icon: const Icon(Icons.medical_information_outlined),
-      scrollable: true,
-      maxWidth: 920,
-      content: FacilityCatalogConfigPanel(
-        facilityId: facilityId,
-        tenantId: tenantId,
-        defaultCurrency: resolveDefaultCurrency(
-          facilityCurrency: snapshot.facility?.currency,
-          tenantCurrency: snapshot.tenant?.currency,
-        ),
-      ),
-    ),
-  );
-}
-
 AppFailure _setupFailure(Object error) {
   if (error is AppFailure) {
     return error;
@@ -465,9 +435,11 @@ class _SetupBody extends ConsumerStatefulWidget {
     required this.canManageFacility,
     required this.canEditStructure,
     required this.canManageAccess,
+    this.initialQuery,
   });
 
   final FacilitySetupSnapshot snapshot;
+  final TenantFacilitySetupPageQuery? initialQuery;
   final bool canManageTenant;
   final bool canManageFacility;
   final bool canEditStructure;
@@ -500,10 +472,73 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     return sections.first;
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _section = TenantFacilitySetupDeskSection.fromQuery(
+      widget.initialQuery?.section ?? '',
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _syncUrlToCurrentSection();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _SetupBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final String previous =
+        oldWidget.initialQuery?.signature ?? '';
+    final String next = widget.initialQuery?.signature ?? '';
+    if (previous == next) {
+      return;
+    }
+    final TenantFacilitySetupDeskSection? fromRoute =
+        TenantFacilitySetupDeskSection.fromQuery(
+          widget.initialQuery?.section ?? '',
+        );
+    if (fromRoute != null && fromRoute != _section) {
+      setState(() => _section = fromRoute);
+    }
+  }
+
   void _refreshSetup() {
     unawaited(
       ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
     );
+  }
+
+  void _updateUrlForSection(TenantFacilitySetupDeskSection section) {
+    if (!mounted) {
+      return;
+    }
+    final String tab = section.routeQueryValue;
+    final String location = AppRoutes.tenantFacilitySetup.location(
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  void _syncUrlToCurrentSection() {
+    final TenantFacilitySetupDeskSection current = _currentSection;
+    final TenantFacilitySetupDeskSection? fromRoute =
+        TenantFacilitySetupDeskSection.fromQuery(
+          widget.initialQuery?.section ?? '',
+        );
+    if (fromRoute == current) {
+      return;
+    }
+    _updateUrlForSection(current);
+  }
+
+  void _handleTabChanged(TenantFacilitySetupDeskSection section) {
+    if (section == _currentSection) {
+      return;
+    }
+    setState(() => _section = section);
+    _updateUrlForSection(section);
   }
 
   @override
@@ -536,7 +571,7 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
           onTabTapped: (String tabId) {
             for (final TenantFacilitySetupDeskSection section in sections) {
               if (section.name == tabId) {
-                setState(() => _section = section);
+                _handleTabChanged(section);
                 break;
               }
             }
@@ -581,6 +616,8 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
         snapshot: snapshot,
         canSubmit: canSubmitStructure,
       ),
+      TenantFacilitySetupDeskSection.clinicalCatalog =>
+          _buildClinicalCatalogBody(snapshot),
       TenantFacilitySetupDeskSection.roles => ManageRolesPermissionsPanel(
         onMutated: (_) => _refreshSetup(),
       ),
@@ -592,6 +629,32 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
         onMutated: (_) => _refreshSetup(),
       ),
     };
+  }
+
+  Widget _buildClinicalCatalogBody(FacilitySetupSnapshot snapshot) {
+    final AppLocalizations l10n = context.l10n;
+    final String? facilityId = snapshot.facility?.id.trim();
+    final String? tenantId =
+        (snapshot.facility?.tenantId ?? snapshot.tenant?.id)?.trim();
+    if (facilityId == null ||
+        facilityId.isEmpty ||
+        tenantId == null ||
+        tenantId.isEmpty) {
+      return AppWorkspaceStatePanel.empty(
+        title: l10n.clinicalCatalogConfigurationTitle,
+        body: l10n.tenantFacilityCatalogSelectFacilityFirst,
+      );
+    }
+
+    return FacilityCatalogConfigPanel(
+      facilityId: facilityId,
+      tenantId: tenantId,
+      defaultCurrency: resolveDefaultCurrency(
+        facilityCurrency: snapshot.facility?.currency,
+        tenantCurrency: snapshot.tenant?.currency,
+      ),
+      enabled: widget.canManageFacility || widget.canManageTenant,
+    );
   }
 }
 

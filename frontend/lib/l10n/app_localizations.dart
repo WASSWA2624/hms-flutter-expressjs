@@ -2374,6 +2374,72 @@ abstract class AppLocalizations {
   /// **'Users'**
   String get tenantFacilitySetupTabUsers;
 
+  /// Setup workspace tab label for the clinical service catalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical Services'**
+  String get tenantFacilitySetupTabClinicalCatalog;
+
+  /// Catalog desk sub-tab for facility diagnosis offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnoses'**
+  String get tenantFacilityCatalogTabDiagnoses;
+
+  /// Catalog desk sub-tab for facility procedure offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedures'**
+  String get tenantFacilityCatalogTabProcedures;
+
+  /// Catalog desk sub-tab for facility prescription offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescriptions'**
+  String get tenantFacilityCatalogTabPrescriptions;
+
+  /// Catalog desk sub-tab for facility lab offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab'**
+  String get tenantFacilityCatalogTabLab;
+
+  /// Catalog desk sub-tab for facility radiology offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology'**
+  String get tenantFacilityCatalogTabRadiology;
+
+  /// Primary action to enable a clinical catalog service for the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Add service'**
+  String get tenantFacilityCatalogAddServiceAction;
+
+  /// Empty state when the facility has no catalog offerings in the selected category.
+  ///
+  /// In en, this message translates to:
+  /// **'No services enabled for this facility yet.'**
+  String get tenantFacilityCatalogEmptyOfferings;
+
+  /// Empty state when catalog tab is open without a facility context.
+  ///
+  /// In en, this message translates to:
+  /// **'Select or create a facility to manage the clinical service catalog.'**
+  String get tenantFacilityCatalogSelectFacilityFirst;
+
+  /// Search hint for facility clinical catalog offering tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, code, or category'**
+  String get tenantFacilityCatalogSearchHint;
+
+  /// Dialog title for browsing global clinical catalog items to enable.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse catalog'**
+  String get tenantFacilityCatalogBrowseTitle;
+
   /// Navigation label for the patient registry destination.
   ///
   /// In en, this message translates to:
