@@ -20,7 +20,8 @@ import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
-import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart'
+    show TenantProfile;
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
