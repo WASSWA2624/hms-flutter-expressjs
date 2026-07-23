@@ -1598,6 +1598,26 @@
   "@tenantFacilityCatalogTabRadiology": {
     "description": "Catalog desk sub-tab for facility radiology offerings."
   },
+  "tenantFacilityCatalogTabDiagnostics": "Diagnostics",
+  "@tenantFacilityCatalogTabDiagnostics": {
+    "description": "Catalog desk sub-tab for facility diagnostic imaging offerings."
+  },
+  "tenantFacilityCatalogTabBudget": "Budget",
+  "@tenantFacilityCatalogTabBudget": {
+    "description": "Catalog desk sub-tab for facility service prices and charges."
+  },
+  "tenantFacilityCatalogConfigurePriceAction": "Configure price",
+  "@tenantFacilityCatalogConfigurePriceAction": {
+    "description": "Action to edit unit price for a facility clinical offering."
+  },
+  "tenantFacilityCatalogBudgetCategoryFilterLabel": "Service category",
+  "@tenantFacilityCatalogBudgetCategoryFilterLabel": {
+    "description": "Filter label for Budget tab service category (Lab vs Diagnostics)."
+  },
+  "tenantFacilityCatalogEditPriceDialogTitle": "Configure offering price",
+  "@tenantFacilityCatalogEditPriceDialogTitle": {
+    "description": "Dialog title when editing a facility offering unit price."
+  },
   "tenantFacilityCatalogAddServiceAction": "Add service",
   "@tenantFacilityCatalogAddServiceAction": {
     "description": "Primary action to enable a clinical catalog service for the facility."
@@ -9680,7 +9700,7 @@
   "@clinicalCatalogConfigurationTitle": {
     "description": "Title for facility clinical catalog configuration section."
   },
-  "clinicalCatalogConfigurationBody": "Choose diagnoses, procedures, lab, imaging, and prescriptions for this facility.",
+  "clinicalCatalogConfigurationBody": "Manage lab, diagnostics, and service prices for this facility.",
   "@clinicalCatalogConfigurationBody": {
     "description": "Body text for facility clinical catalog configuration section."
   },

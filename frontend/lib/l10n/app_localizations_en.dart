@@ -1225,6 +1225,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityCatalogTabRadiology => 'Radiology';
 
   @override
+  String get tenantFacilityCatalogTabDiagnostics => 'Diagnostics';
+
+  @override
+  String get tenantFacilityCatalogTabBudget => 'Budget';
+
+  @override
+  String get tenantFacilityCatalogConfigurePriceAction => 'Configure price';
+
+  @override
+  String get tenantFacilityCatalogBudgetCategoryFilterLabel =>
+      'Service category';
+
+  @override
+  String get tenantFacilityCatalogEditPriceDialogTitle =>
+      'Configure offering price';
+
+  @override
   String get tenantFacilityCatalogAddServiceAction => 'Add service';
 
   @override
@@ -7610,7 +7627,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalCatalogConfigurationBody =>
-      'Choose diagnoses, procedures, lab, imaging, and prescriptions for this facility.';
+      'Manage lab, diagnostics, and service prices for this facility.';
 
   @override
   String get clinicalDiagnosisSelectedTitle => 'Selected diagnoses';

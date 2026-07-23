@@ -2410,6 +2410,36 @@ abstract class AppLocalizations {
   /// **'Radiology'**
   String get tenantFacilityCatalogTabRadiology;
 
+  /// Catalog desk sub-tab for facility diagnostic imaging offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get tenantFacilityCatalogTabDiagnostics;
+
+  /// Catalog desk sub-tab for facility service prices and charges.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get tenantFacilityCatalogTabBudget;
+
+  /// Action to edit unit price for a facility clinical offering.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure price'**
+  String get tenantFacilityCatalogConfigurePriceAction;
+
+  /// Filter label for Budget tab service category (Lab vs Diagnostics).
+  ///
+  /// In en, this message translates to:
+  /// **'Service category'**
+  String get tenantFacilityCatalogBudgetCategoryFilterLabel;
+
+  /// Dialog title when editing a facility offering unit price.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure offering price'**
+  String get tenantFacilityCatalogEditPriceDialogTitle;
+
   /// Primary action to enable a clinical catalog service for the facility.
   ///
   /// In en, this message translates to:
@@ -14101,7 +14131,7 @@ abstract class AppLocalizations {
   /// Body text for facility clinical catalog configuration section.
   ///
   /// In en, this message translates to:
-  /// **'Choose diagnoses, procedures, lab, imaging, and prescriptions for this facility.'**
+  /// **'Manage lab, diagnostics, and service prices for this facility.'**
   String get clinicalCatalogConfigurationBody;
 
   /// Clinical diagnosis selected items section title.

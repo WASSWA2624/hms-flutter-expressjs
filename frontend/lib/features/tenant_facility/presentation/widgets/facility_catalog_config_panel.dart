@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
-import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/domain/repositories/lab_repository.dart';
@@ -15,21 +13,16 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 import 'package:hosspi_hms/features/radiology/domain/repositories/radiology_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_layer_selector.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
 
-enum _CatalogDeskTab {
-  diagnoses,
-  procedures,
-  prescriptions,
-  lab,
-  radiology,
-}
+enum _CatalogDeskTab { lab, diagnostics, budget }
+
+enum _BudgetSource { lab, diagnostics }
 
 /// Facility clinical service catalog management for the setup Catalog desk tab.
 class FacilityCatalogConfigPanel extends ConsumerStatefulWidget {
@@ -54,19 +47,24 @@ class FacilityCatalogConfigPanel extends ConsumerStatefulWidget {
 class _FacilityCatalogConfigPanelState
     extends ConsumerState<FacilityCatalogConfigPanel> {
   static const int _searchLimit = 200;
+  static const String _labTypeFilterKey = 'type';
+  static const String _labCategoryFilterKey = 'category';
+  static const String _modalityFilterKey = 'modality';
+  static const String _budgetSourceFilterKey = 'source';
 
-  final TextEditingController _clinicalSearchController =
-      TextEditingController();
   final TextEditingController _labSearchController = TextEditingController();
-  final TextEditingController _radiologySearchController =
+  final TextEditingController _diagnosticsSearchController =
       TextEditingController();
+  final TextEditingController _budgetSearchController = TextEditingController();
 
-  _CatalogDeskTab _tab = _CatalogDeskTab.diagnoses;
-  List<ClinicalCatalogOption> _clinicalOfferings =
-      const <ClinicalCatalogOption>[];
+  _CatalogDeskTab _tab = _CatalogDeskTab.lab;
   List<LabCatalogItem> _labOfferings = const <LabCatalogItem>[];
   List<RadiologyCatalogTest> _radiologyOfferings =
       const <RadiologyCatalogTest>[];
+  AppSearchBarFilterValue _labFilterValue = AppSearchBarFilterValue.empty;
+  AppSearchBarFilterValue _diagnosticsFilterValue =
+      AppSearchBarFilterValue.empty;
+  AppSearchBarFilterValue _budgetFilterValue = AppSearchBarFilterValue.empty;
   bool _isLoading = false;
   AppFailure? _failure;
 
@@ -78,18 +76,63 @@ class _FacilityCatalogConfigPanelState
   String get _resolvedCurrency =>
       resolveFacilityDefaultCurrency(widget.defaultCurrency);
 
-  ClinicalCatalogTermType get _clinicalTermType => switch (_tab) {
-    _CatalogDeskTab.diagnoses => ClinicalCatalogTermType.diagnosis,
-    _CatalogDeskTab.procedures => ClinicalCatalogTermType.procedure,
-    _CatalogDeskTab.prescriptions => ClinicalCatalogTermType.prescription,
-    _CatalogDeskTab.lab || _CatalogDeskTab.radiology =>
-      ClinicalCatalogTermType.diagnosis,
-  };
+  List<LabCatalogItem> get _filteredLabOfferings {
+    final String? type = _labFilterValue.option(_labTypeFilterKey);
+    final String? category = _labFilterValue.option(_labCategoryFilterKey);
+    return _labOfferings.where((LabCatalogItem item) {
+      if (type != null && type.isNotEmpty && item.type.name != type) {
+        return false;
+      }
+      if (category != null && category.isNotEmpty) {
+        final String itemCategory = (item.category ?? '').trim();
+        if (itemCategory != category) {
+          return false;
+        }
+      }
+      return true;
+    }).toList(growable: false);
+  }
 
-  bool get _isClinicalTab =>
-      _tab == _CatalogDeskTab.diagnoses ||
-      _tab == _CatalogDeskTab.procedures ||
-      _tab == _CatalogDeskTab.prescriptions;
+  List<RadiologyCatalogTest> get _filteredRadiologyOfferings {
+    final String? modality = _diagnosticsFilterValue.option(_modalityFilterKey);
+    if (modality == null || modality.isEmpty) {
+      return _radiologyOfferings;
+    }
+    return _radiologyOfferings
+        .where(
+          (RadiologyCatalogTest item) =>
+              (item.modality ?? '').trim() == modality,
+        )
+        .toList(growable: false);
+  }
+
+  List<_BudgetOffering> _budgetOfferings(AppLocalizations l10n) {
+    final List<_BudgetOffering> items = <_BudgetOffering>[
+      for (final LabCatalogItem item in _labOfferings)
+        _BudgetOffering.fromLab(item, l10n.tenantFacilityCatalogTabLab),
+      for (final RadiologyCatalogTest item in _radiologyOfferings)
+        _BudgetOffering.fromRadiology(
+          item,
+          l10n.tenantFacilityCatalogTabDiagnostics,
+        ),
+    ];
+    items.sort(
+      (_BudgetOffering a, _BudgetOffering b) =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return items;
+  }
+
+  List<_BudgetOffering> _filteredBudgetOfferings(AppLocalizations l10n) {
+    final String? source = _budgetFilterValue.option(_budgetSourceFilterKey);
+    final List<_BudgetOffering> offerings = _budgetOfferings(l10n);
+    if (source == null || source.isEmpty) {
+      return offerings;
+    }
+    return offerings
+        .where((_BudgetOffering item) => item.source.name == source)
+        .toList(growable: false);
+  }
 
   @override
   void initState() {
@@ -112,9 +155,9 @@ class _FacilityCatalogConfigPanelState
 
   @override
   void dispose() {
-    _clinicalSearchController.dispose();
     _labSearchController.dispose();
-    _radiologySearchController.dispose();
+    _diagnosticsSearchController.dispose();
+    _budgetSearchController.dispose();
     super.dispose();
   }
 
@@ -129,29 +172,19 @@ class _FacilityCatalogConfigPanelState
         AppTabStrip(
           tabs: <AppTabItem>[
             AppTabItem(
-              id: _CatalogDeskTab.diagnoses.name,
-              icon: Icons.healing_outlined,
-              label: l10n.tenantFacilityCatalogTabDiagnoses,
-            ),
-            AppTabItem(
-              id: _CatalogDeskTab.procedures.name,
-              icon: Icons.medical_services_outlined,
-              label: l10n.tenantFacilityCatalogTabProcedures,
-            ),
-            AppTabItem(
-              id: _CatalogDeskTab.prescriptions.name,
-              icon: Icons.medication_outlined,
-              label: l10n.tenantFacilityCatalogTabPrescriptions,
-            ),
-            AppTabItem(
               id: _CatalogDeskTab.lab.name,
               icon: Icons.biotech_outlined,
               label: l10n.tenantFacilityCatalogTabLab,
             ),
             AppTabItem(
-              id: _CatalogDeskTab.radiology.name,
+              id: _CatalogDeskTab.diagnostics.name,
               icon: Icons.image_search_outlined,
-              label: l10n.tenantFacilityCatalogTabRadiology,
+              label: l10n.tenantFacilityCatalogTabDiagnostics,
+            ),
+            AppTabItem(
+              id: _CatalogDeskTab.budget.name,
+              icon: Icons.payments_outlined,
+              label: l10n.tenantFacilityCatalogTabBudget,
             ),
           ],
           selectedId: _tab.name,
@@ -184,124 +217,74 @@ class _FacilityCatalogConfigPanelState
   }
 
   Widget _buildTableBody(AppLocalizations l10n) {
-    if (_isClinicalTab) {
-      return _buildClinicalTable(l10n);
-    }
-    if (_tab == _CatalogDeskTab.lab) {
-      return _buildLabTable(l10n);
-    }
-    return _buildRadiologyTable(l10n);
-  }
-
-  Widget _buildClinicalTable(AppLocalizations l10n) {
-    return AppListTable<ClinicalCatalogOption>(
-      items: _clinicalOfferings,
-      isLoading: _isLoading,
-      tableHorizontalMargin: 0,
-      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityStorageKey: 'setup_catalog_clinical_${_tab.name}',
-      search: AppListTableSearch<ClinicalCatalogOption>(
-        controller: _clinicalSearchController,
-        semanticLabel: l10n.settingsWorkspaceSearchLabel,
-        hintText: l10n.tenantFacilityCatalogSearchHint,
-        matcher: (ClinicalCatalogOption item, String query) {
-          final String haystack =
-              '${item.displayTitle} ${item.displaySubtitle ?? ''} '
-                      '${item.code ?? ''} ${item.category ?? ''} '
-                      '${item.searchText ?? ''}'
-                  .toLowerCase();
-          return haystack.contains(query.toLowerCase());
-        },
-        trailingActions: <AppSearchBarAction>[
-          if (widget.enabled)
-            AppSearchBarAction(
-              icon: Icons.add_circle_outline,
-              label: l10n.tenantFacilityCatalogAddServiceAction,
-              onPressed: () => unawaited(_openClinicalBrowseDialog()),
-            ),
-        ],
-      ),
-      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-        title: l10n.clinicalCatalogConfigurationTitle,
-        body: l10n.tenantFacilityCatalogEmptyOfferings,
-        action: widget.enabled
-            ? AppButton.primary(
-                label: l10n.tenantFacilityCatalogAddServiceAction,
-                leadingIcon: Icons.add_circle_outline,
-                onPressed: () => unawaited(_openClinicalBrowseDialog()),
-              )
-            : null,
-      ),
-      columns: <AppListTableColumn<ClinicalCatalogOption>>[
-        AppListTableColumn<ClinicalCatalogOption>(
-          id: 'name',
-          label: l10n.accessAdminColumnName,
-          sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
-              a.displayTitle.toLowerCase().compareTo(
-                b.displayTitle.toLowerCase(),
-              ),
-          cellBuilder: (_, ClinicalCatalogOption item) =>
-              Text(item.displayTitle),
-        ),
-        AppListTableColumn<ClinicalCatalogOption>(
-          id: 'code',
-          label: l10n.labTestCodeLabel,
-          sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
-              (a.code ?? '').toLowerCase().compareTo(
-                (b.code ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, ClinicalCatalogOption item) =>
-              Text(item.code?.trim().isNotEmpty == true ? item.code! : '—'),
-        ),
-        AppListTableColumn<ClinicalCatalogOption>(
-          id: 'category',
-          label: l10n.labCategoryLabel,
-          sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
-              (a.category ?? '').toLowerCase().compareTo(
-                (b.category ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, ClinicalCatalogOption item) => Text(
-            item.category?.trim().isNotEmpty == true ? item.category! : '—',
-          ),
-        ),
-        AppListTableColumn<ClinicalCatalogOption>(
-          id: 'status',
-          label: l10n.accessAdminColumnStatus,
-          cellBuilder: (_, ClinicalCatalogOption item) => Text(
-            item.status?.trim().isNotEmpty == true
-                ? item.status!
-                : l10n.tenantFacilityStatusActive,
-          ),
-        ),
-      ],
-      mobileItemBuilder: (BuildContext context, ClinicalCatalogOption item) {
-        return AppListTableMobileItem(
-          title: item.displayTitle,
-          caption: item.displaySubtitle,
-          meta: <AppListTableMobileMeta>[
-            if (item.code?.trim().isNotEmpty == true)
-              AppListTableMobileMeta(label: item.code!),
-            if (item.category?.trim().isNotEmpty == true)
-              AppListTableMobileMeta(label: item.category!),
-          ],
-        );
-      },
-    );
+    return switch (_tab) {
+      _CatalogDeskTab.lab => _buildLabTable(l10n),
+      _CatalogDeskTab.diagnostics => _buildDiagnosticsTable(l10n),
+      _CatalogDeskTab.budget => _buildBudgetTable(l10n),
+    };
   }
 
   Widget _buildLabTable(AppLocalizations l10n) {
+    final List<String> categories = _labOfferings
+        .map((LabCatalogItem item) => (item.category ?? '').trim())
+        .where((String value) => value.isNotEmpty)
+        .toSet()
+        .toList(growable: false)
+      ..sort();
+
     return AppListTable<LabCatalogItem>(
-      items: _labOfferings,
+      items: _filteredLabOfferings,
       isLoading: _isLoading,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'setup_catalog_lab',
+      onRowSelected: widget.enabled
+          ? (LabCatalogItem item) => unawaited(_openLabEditDialog(item))
+          : null,
       search: AppListTableSearch<LabCatalogItem>(
         controller: _labSearchController,
         semanticLabel: l10n.clinicalLabRequestSearchLabel,
         hintText: l10n.clinicalLabRequestSearchHint,
         matcher: (LabCatalogItem item, String query) =>
             item.matchesSearch(query),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.commonFilterActionLabel,
+        advancedFilterTitle: l10n.labFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _labTypeFilterKey,
+            label: l10n.clinicalRequestSelectedTypeColumnLabel,
+            allLabel: l10n.commonAllLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: LabCatalogItemType.test.name,
+                label: l10n.clinicalLabRequestTestTypeLabel,
+              ),
+              AppSearchBarFilterChoice(
+                value: LabCatalogItemType.panel.name,
+                label: l10n.clinicalLabRequestPanelTypeLabel,
+              ),
+            ],
+          ),
+          if (categories.isNotEmpty)
+            AppSearchBarFilterGroup(
+              key: _labCategoryFilterKey,
+              label: l10n.labCategoryLabel,
+              allLabel: l10n.commonAllLabel,
+              choices: <AppSearchBarFilterChoice>[
+                for (final String category in categories)
+                  AppSearchBarFilterChoice(value: category, label: category),
+              ],
+            ),
+        ],
+        filterValue: _labFilterValue,
+        hasActiveFilters: _labFilterValue.isActive,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          setState(() => _labFilterValue = value);
+        },
         trailingActions: <AppSearchBarAction>[
           if (widget.enabled) ...<AppSearchBarAction>[
             AppSearchBarAction(
@@ -368,17 +351,23 @@ class _FacilityCatalogConfigPanelState
         AppListTableColumn<LabCatalogItem>(
           id: 'price',
           label: l10n.clinicalRequestUnitPriceLabel,
-          cellBuilder: (_, LabCatalogItem item) {
-            if (item.unitPrice == null) {
-              return const Text('—');
-            }
-            final String currency =
-                item.currency?.trim().isNotEmpty == true
-                ? item.currency!
-                : _resolvedCurrency;
-            return Text('$currency ${item.unitPrice}');
-          },
+          cellBuilder: (_, LabCatalogItem item) =>
+              Text(_formatPrice(item.unitPrice, item.currency)),
         ),
+        if (widget.enabled)
+          AppListTableColumn<LabCatalogItem>(
+            id: 'actions',
+            label: l10n.accessAdminColumnActions,
+            alwaysVisible: true,
+            cellBuilder: (BuildContext context, LabCatalogItem item) {
+              return _CatalogRowActions(
+                editLabel: l10n.clinicalLabRequestEditSelectionAction,
+                deleteLabel: l10n.tenantFacilityDeleteAction,
+                onEdit: () => unawaited(_openLabEditDialog(item)),
+                onDelete: () => unawaited(_openLabDeleteDialog(item)),
+              );
+            },
+          ),
       ],
       mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
         return AppListTableMobileItem(
@@ -398,19 +387,26 @@ class _FacilityCatalogConfigPanelState
     );
   }
 
-  Widget _buildRadiologyTable(AppLocalizations l10n) {
+  Widget _buildDiagnosticsTable(AppLocalizations l10n) {
+    final List<String> modalities = _radiologyOfferings
+        .map((RadiologyCatalogTest item) => (item.modality ?? '').trim())
+        .where((String value) => value.isNotEmpty)
+        .toSet()
+        .toList(growable: false)
+      ..sort();
+
     return AppListTable<RadiologyCatalogTest>(
-      items: _radiologyOfferings,
+      items: _filteredRadiologyOfferings,
       isLoading: _isLoading,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityStorageKey: 'setup_catalog_radiology',
+      columnVisibilityStorageKey: 'setup_catalog_diagnostics',
       onRowSelected: widget.enabled
           ? (RadiologyCatalogTest item) =>
                 unawaited(_openRadiologyEditDialog(item))
           : null,
       search: AppListTableSearch<RadiologyCatalogTest>(
-        controller: _radiologySearchController,
+        controller: _diagnosticsSearchController,
         semanticLabel: l10n.clinicalRadiologyCatalogSelectTitle,
         hintText: l10n.tenantFacilityCatalogSearchHint,
         matcher: (RadiologyCatalogTest item, String query) {
@@ -419,6 +415,29 @@ class _FacilityCatalogConfigPanelState
                       '${item.bodyRegion ?? ''} ${item.searchText ?? ''}'
                   .toLowerCase();
           return haystack.contains(query.toLowerCase());
+        },
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.commonFilterActionLabel,
+        advancedFilterTitle: l10n.commonFilterActionLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        filterGroups: <AppSearchBarFilterGroup>[
+          if (modalities.isNotEmpty)
+            AppSearchBarFilterGroup(
+              key: _modalityFilterKey,
+              label: l10n.radiologyModalityLabel,
+              allLabel: l10n.commonAllLabel,
+              choices: <AppSearchBarFilterChoice>[
+                for (final String modality in modalities)
+                  AppSearchBarFilterChoice(value: modality, label: modality),
+              ],
+            ),
+        ],
+        filterValue: _diagnosticsFilterValue,
+        hasActiveFilters: _diagnosticsFilterValue.isActive,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          setState(() => _diagnosticsFilterValue = value);
         },
         trailingActions: <AppSearchBarAction>[
           if (widget.enabled)
@@ -430,7 +449,7 @@ class _FacilityCatalogConfigPanelState
         ],
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-        title: l10n.tenantFacilityCatalogTabRadiology,
+        title: l10n.tenantFacilityCatalogTabDiagnostics,
         body: l10n.tenantFacilityCatalogEmptyOfferings,
         action: widget.enabled
             ? AppButton.primary(
@@ -464,26 +483,20 @@ class _FacilityCatalogConfigPanelState
         AppListTableColumn<RadiologyCatalogTest>(
           id: 'price',
           label: l10n.clinicalRequestUnitPriceLabel,
-          cellBuilder: (_, RadiologyCatalogTest item) {
-            if (item.unitPrice == null) {
-              return const Text('—');
-            }
-            final String currency =
-                item.currency?.trim().isNotEmpty == true
-                ? item.currency!
-                : _resolvedCurrency;
-            return Text('$currency ${item.unitPrice}');
-          },
+          cellBuilder: (_, RadiologyCatalogTest item) =>
+              Text(_formatPrice(item.unitPrice, item.currency)),
         ),
         if (widget.enabled)
           AppListTableColumn<RadiologyCatalogTest>(
             id: 'actions',
             label: l10n.accessAdminColumnActions,
+            alwaysVisible: true,
             cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
-              return AppButton.tertiary(
-                label: l10n.clinicalLabRequestEditSelectionAction,
-                leadingIcon: Icons.edit_outlined,
-                onPressed: () => unawaited(_openRadiologyEditDialog(item)),
+              return _CatalogRowActions(
+                editLabel: l10n.clinicalLabRequestEditSelectionAction,
+                deleteLabel: l10n.clinicalRadiologyDeleteSelectionAction,
+                onEdit: () => unawaited(_openRadiologyEditDialog(item)),
+                onDelete: () => unawaited(_openRadiologyDeleteDialog(item)),
               );
             },
           ),
@@ -503,49 +516,161 @@ class _FacilityCatalogConfigPanelState
     );
   }
 
-  Future<void> _reloadCurrentTab() async {
-    if (_isClinicalTab) {
-      await _loadClinicalOfferings();
-      return;
+  Widget _buildBudgetTable(AppLocalizations l10n) {
+    return AppListTable<_BudgetOffering>(
+      items: _filteredBudgetOfferings(l10n),
+      isLoading: _isLoading,
+      tableHorizontalMargin: 0,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityStorageKey: 'setup_catalog_budget',
+      onRowSelected: widget.enabled
+          ? (_BudgetOffering item) => unawaited(_openBudgetEditDialog(item))
+          : null,
+      search: AppListTableSearch<_BudgetOffering>(
+        controller: _budgetSearchController,
+        semanticLabel: l10n.settingsWorkspaceSearchLabel,
+        hintText: l10n.tenantFacilityCatalogSearchHint,
+        matcher: (_BudgetOffering item, String query) {
+          final String haystack =
+              '${item.name} ${item.code ?? ''} ${item.categoryLabel} '
+                      '${item.unitPrice ?? ''}'
+                  .toLowerCase();
+          return haystack.contains(query.toLowerCase());
+        },
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.commonFilterActionLabel,
+        advancedFilterTitle: l10n.tenantFacilityCatalogBudgetCategoryFilterLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _budgetSourceFilterKey,
+            label: l10n.tenantFacilityCatalogBudgetCategoryFilterLabel,
+            allLabel: l10n.commonAllLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: _BudgetSource.lab.name,
+                label: l10n.tenantFacilityCatalogTabLab,
+              ),
+              AppSearchBarFilterChoice(
+                value: _BudgetSource.diagnostics.name,
+                label: l10n.tenantFacilityCatalogTabDiagnostics,
+              ),
+            ],
+          ),
+        ],
+        filterValue: _budgetFilterValue,
+        hasActiveFilters: _budgetFilterValue.isActive,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          setState(() => _budgetFilterValue = value);
+        },
+        trailingActions: <AppSearchBarAction>[
+          if (widget.enabled) ...<AppSearchBarAction>[
+            AppSearchBarAction(
+              icon: Icons.add_circle_outline,
+              label: l10n.labEnableTestAction,
+              onPressed: () => unawaited(
+                _openLabEnableDialog(LabEnableOfferingKind.test),
+              ),
+            ),
+            AppSearchBarAction(
+              icon: Icons.image_search_outlined,
+              label: l10n.clinicalRadiologyCatalogSelectTitle,
+              onPressed: () => unawaited(_openRadiologyEnableDialog()),
+            ),
+          ],
+        ],
+      ),
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.tenantFacilityCatalogTabBudget,
+        body: l10n.tenantFacilityCatalogEmptyOfferings,
+        action: widget.enabled
+            ? AppButton.primary(
+                label: l10n.labEnableTestAction,
+                leadingIcon: Icons.add_circle_outline,
+                onPressed: () => unawaited(
+                  _openLabEnableDialog(LabEnableOfferingKind.test),
+                ),
+              )
+            : null,
+      ),
+      columns: <AppListTableColumn<_BudgetOffering>>[
+        AppListTableColumn<_BudgetOffering>(
+          id: 'name',
+          label: l10n.accessAdminColumnName,
+          sortComparator: (_BudgetOffering a, _BudgetOffering b) =>
+              a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          cellBuilder: (_, _BudgetOffering item) => Text(item.name),
+        ),
+        AppListTableColumn<_BudgetOffering>(
+          id: 'category',
+          label: l10n.tenantFacilityCatalogBudgetCategoryFilterLabel,
+          cellBuilder: (_, _BudgetOffering item) => Text(item.categoryLabel),
+        ),
+        AppListTableColumn<_BudgetOffering>(
+          id: 'code',
+          label: l10n.labTestCodeLabel,
+          cellBuilder: (_, _BudgetOffering item) =>
+              Text(item.code?.trim().isNotEmpty == true ? item.code! : '—'),
+        ),
+        AppListTableColumn<_BudgetOffering>(
+          id: 'price',
+          label: l10n.clinicalRequestUnitPriceLabel,
+          cellBuilder: (_, _BudgetOffering item) =>
+              Text(_formatPrice(item.unitPrice, item.currency)),
+        ),
+        if (widget.enabled)
+          AppListTableColumn<_BudgetOffering>(
+            id: 'actions',
+            label: l10n.accessAdminColumnActions,
+            alwaysVisible: true,
+            cellBuilder: (BuildContext context, _BudgetOffering item) {
+              return _CatalogRowActions(
+                editLabel: l10n.tenantFacilityCatalogConfigurePriceAction,
+                deleteLabel: l10n.tenantFacilityDeleteAction,
+                onEdit: () => unawaited(_openBudgetEditDialog(item)),
+                onDelete: () => unawaited(_openBudgetDeleteDialog(item)),
+              );
+            },
+          ),
+      ],
+      mobileItemBuilder: (BuildContext context, _BudgetOffering item) {
+        return AppListTableMobileItem(
+          title: item.name,
+          caption: item.categoryLabel,
+          meta: <AppListTableMobileMeta>[
+            if (item.code?.trim().isNotEmpty == true)
+              AppListTableMobileMeta(label: item.code!),
+            AppListTableMobileMeta(
+              label: _formatPrice(item.unitPrice, item.currency),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatPrice(num? unitPrice, String? currency) {
+    if (unitPrice == null) {
+      return '—';
     }
+    final String code = currency?.trim().isNotEmpty == true
+        ? currency!
+        : _resolvedCurrency;
+    return '$code $unitPrice';
+  }
+
+  Future<void> _reloadCurrentTab() async {
     if (_tab == _CatalogDeskTab.lab) {
       await _loadLabOfferings();
       return;
     }
-    await _loadRadiologyOfferings();
-  }
-
-  Future<void> _loadClinicalOfferings() async {
-    if (!mounted) {
+    if (_tab == _CatalogDeskTab.diagnostics) {
+      await _loadRadiologyOfferings();
       return;
     }
-    setState(() {
-      _isLoading = true;
-      _failure = null;
-    });
-    final Result<List<ClinicalCatalogOption>> result = await ref
-        .read(clinicalRepositoryProvider)
-        .searchClinicalCatalog(
-          termType: _clinicalTermType.apiValue,
-          limit: _searchLimit,
-          source: ClinicalCatalogSource.facility.apiValue,
-          offeredOnly: true,
-          facilityId: widget.facilityId,
-        );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _clinicalOfferings = result.when(
-        success: (List<ClinicalCatalogOption> value) => value,
-        failure: (_) => const <ClinicalCatalogOption>[],
-      );
-      _failure = result.when(
-        success: (_) => null,
-        failure: (AppFailure failure) => failure,
-      );
-      _isLoading = false;
-    });
+    await _loadBudgetOfferings();
   }
 
   Future<void> _loadLabOfferings() async {
@@ -556,6 +681,68 @@ class _FacilityCatalogConfigPanelState
       _isLoading = true;
       _failure = null;
     });
+    final ({AppFailure? failure, List<LabCatalogItem> items}) loaded =
+        await _fetchLabOfferings();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _labOfferings = loaded.items;
+      _failure = loaded.failure;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _loadRadiologyOfferings() async {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _failure = null;
+    });
+    final ({AppFailure? failure, List<RadiologyCatalogTest> items}) loaded =
+        await _fetchRadiologyOfferings();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _radiologyOfferings = loaded.items;
+      _failure = loaded.failure;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _loadBudgetOfferings() async {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _failure = null;
+    });
+    final List<Object> loaded = await Future.wait(<Future<Object>>[
+      _fetchLabOfferings(),
+      _fetchRadiologyOfferings(),
+    ]);
+    if (!mounted) {
+      return;
+    }
+    final ({AppFailure? failure, List<LabCatalogItem> items}) lab =
+        loaded[0] as ({AppFailure? failure, List<LabCatalogItem> items});
+    final ({AppFailure? failure, List<RadiologyCatalogTest> items}) radiology =
+        loaded[1]
+            as ({AppFailure? failure, List<RadiologyCatalogTest> items});
+    setState(() {
+      _labOfferings = lab.items;
+      _radiologyOfferings = radiology.items;
+      _failure = lab.failure ?? radiology.failure;
+      _isLoading = false;
+    });
+  }
+
+  Future<({AppFailure? failure, List<LabCatalogItem> items})>
+  _fetchLabOfferings() async {
     final LabRepository repository = ref.read(labRepositoryProvider);
     final List<Result<List<LabCatalogItem>>> results =
         await Future.wait(<Future<Result<List<LabCatalogItem>>>>[
@@ -572,9 +759,6 @@ class _FacilityCatalogConfigPanelState
             limit: _searchLimit,
           ),
         ]);
-    if (!mounted) {
-      return;
-    }
     AppFailure? failure;
     final List<LabCatalogItem> merged = <LabCatalogItem>[];
     for (final Result<List<LabCatalogItem>> result in results) {
@@ -587,21 +771,11 @@ class _FacilityCatalogConfigPanelState
       (LabCatalogItem a, LabCatalogItem b) =>
           a.displayTitle.toLowerCase().compareTo(b.displayTitle.toLowerCase()),
     );
-    setState(() {
-      _labOfferings = merged;
-      _failure = failure;
-      _isLoading = false;
-    });
+    return (failure: failure, items: merged);
   }
 
-  Future<void> _loadRadiologyOfferings() async {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-      _failure = null;
-    });
+  Future<({AppFailure? failure, List<RadiologyCatalogTest> items})>
+  _fetchRadiologyOfferings() async {
     final Result<List<RadiologyCatalogTest>> result = await ref
         .read(radiologyRepositoryProvider)
         .listFacilityRadiologyTests(
@@ -610,36 +784,14 @@ class _FacilityCatalogConfigPanelState
           offeredOnly: true,
           limit: _searchLimit,
         );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _radiologyOfferings = result.when(
-        success: (List<RadiologyCatalogTest> value) => value,
-        failure: (_) => const <RadiologyCatalogTest>[],
-      );
-      _failure = result.when(
-        success: (_) => null,
-        failure: (AppFailure failure) => failure,
-      );
-      _isLoading = false;
-    });
-  }
-
-  Future<void> _openClinicalBrowseDialog() async {
-    final bool? added = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) => _ClinicalCatalogBrowseDialog(
-        facilityId: widget.facilityId,
-        termType: _clinicalTermType,
-        enabled: widget.enabled,
+    return result.when(
+      success: (List<RadiologyCatalogTest> value) =>
+          (failure: null, items: value),
+      failure: (AppFailure failure) => (
+        failure: failure,
+        items: const <RadiologyCatalogTest>[],
       ),
     );
-    if (!mounted || added != true) {
-      return;
-    }
-    await _loadClinicalOfferings();
   }
 
   Future<void> _openLabEnableDialog(LabEnableOfferingKind kind) async {
@@ -695,7 +847,103 @@ class _FacilityCatalogConfigPanelState
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(context.l10n.labSavedMessage)));
-    await _loadLabOfferings();
+    await _reloadCurrentTab();
+  }
+
+  Future<void> _openLabEditDialog(LabCatalogItem item) async {
+    final LabRepository repository = ref.read(labRepositoryProvider);
+    final FacilityCatalogScope scope = _scope;
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _FacilityOfferingPriceEditDialog(
+        title: context.l10n.tenantFacilityCatalogEditPriceDialogTitle,
+        name: item.displayTitle,
+        unitPrice: item.unitPrice,
+        currency: item.currency ?? _resolvedCurrency,
+        submitLabel: context.l10n.tenantFacilityCatalogConfigurePriceAction,
+        onSubmit: (num unitPrice, String currency) async {
+          final Map<String, Object?> payload = <String, Object?>{
+            'is_active': true,
+            'unit_price': unitPrice,
+            'currency': currency,
+          };
+          final Result<LabCatalogItem> result =
+              item.type == LabCatalogItemType.panel
+              ? await repository.upsertFacilityLabPanelOffering(
+                  item.apiId,
+                  payload,
+                  tenantId: scope.tenantId,
+                  facilityId: scope.facilityId,
+                )
+              : await repository.upsertFacilityLabTestOffering(
+                  item.apiId,
+                  payload,
+                  tenantId: scope.tenantId,
+                  facilityId: scope.facilityId,
+                );
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (!mounted || saved != true) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.labSavedMessage)));
+    await _reloadCurrentTab();
+  }
+
+  Future<void> _openLabDeleteDialog(LabCatalogItem item) async {
+    final LabRepository repository = ref.read(labRepositoryProvider);
+    final FacilityCatalogScope scope = _scope;
+    final AppLocalizations l10n = context.l10n;
+    final bool isPanel = item.type == LabCatalogItemType.panel;
+    final bool? deleted = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => LabDeleteReasonDialog(
+        title: isPanel
+            ? l10n.labDeletePanelDialogTitle
+            : l10n.labDeleteTestDialogTitle,
+        body: isPanel
+            ? l10n.labDeletePanelDialogBody(item.displayTitle)
+            : l10n.labDeleteTestDialogBody(item.displayTitle),
+        submitLabel: isPanel
+            ? l10n.labDeletePanelAction
+            : l10n.labDeleteTestAction,
+        onDelete: (String reason) async {
+          final Result<void> result = isPanel
+              ? await repository.disableFacilityLabPanelOffering(
+                  item.apiId,
+                  reason,
+                  tenantId: scope.tenantId,
+                  facilityId: scope.facilityId,
+                )
+              : await repository.disableFacilityLabTestOffering(
+                  item.apiId,
+                  reason,
+                  tenantId: scope.tenantId,
+                  facilityId: scope.facilityId,
+                );
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (!mounted || deleted != true) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.labDeletedMessage)));
+    await _reloadCurrentTab();
   }
 
   Future<void> _openRadiologyEnableDialog() async {
@@ -743,7 +991,7 @@ class _FacilityCatalogConfigPanelState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.radiologySaveConfigurationAction)),
     );
-    await _loadRadiologyOfferings();
+    await _reloadCurrentTab();
   }
 
   Future<void> _openRadiologyEditDialog(RadiologyCatalogTest item) async {
@@ -775,7 +1023,64 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || saved != true) {
       return;
     }
-    await _loadRadiologyOfferings();
+    await _reloadCurrentTab();
+  }
+
+  Future<void> _openRadiologyDeleteDialog(RadiologyCatalogTest item) async {
+    final RadiologyRepository repository = ref.read(
+      radiologyRepositoryProvider,
+    );
+    final FacilityCatalogScope scope = _scope;
+    final AppLocalizations l10n = context.l10n;
+    final bool? deleted = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => LabDeleteReasonDialog(
+        title: l10n.radiologyDisableOfferingDialogTitle,
+        body: l10n.radiologyDisableOfferingDialogBody(item.name),
+        submitLabel: l10n.clinicalRadiologyDeleteSelectionAction,
+        onDelete: (String reason) async {
+          final Result<void> result = await repository
+              .disableFacilityRadiologyTestOffering(
+                item.apiId,
+                reason,
+                tenantId: scope.tenantId,
+                facilityId: scope.facilityId,
+              );
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (!mounted || deleted != true) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.labDeletedMessage)));
+    await _reloadCurrentTab();
+  }
+
+  Future<void> _openBudgetEditDialog(_BudgetOffering item) async {
+    if (item.labItem != null) {
+      await _openLabEditDialog(item.labItem!);
+      return;
+    }
+    if (item.radiologyItem != null) {
+      await _openRadiologyEditDialog(item.radiologyItem!);
+    }
+  }
+
+  Future<void> _openBudgetDeleteDialog(_BudgetOffering item) async {
+    if (item.labItem != null) {
+      await _openLabDeleteDialog(item.labItem!);
+      return;
+    }
+    if (item.radiologyItem != null) {
+      await _openRadiologyDeleteDialog(item.radiologyItem!);
+    }
   }
 
   Future<Result<List<LabCatalogItem>>> _searchLabCatalog({
@@ -921,49 +1226,139 @@ class _FacilityCatalogConfigPanelState
   }
 }
 
-class _ClinicalCatalogBrowseDialog extends ConsumerStatefulWidget {
-  const _ClinicalCatalogBrowseDialog({
-    required this.facilityId,
-    required this.termType,
-    required this.enabled,
+@immutable
+final class _BudgetOffering {
+  const _BudgetOffering({
+    required this.id,
+    required this.name,
+    required this.source,
+    required this.categoryLabel,
+    this.code,
+    this.unitPrice,
+    this.currency,
+    this.labItem,
+    this.radiologyItem,
   });
 
-  final String facilityId;
-  final ClinicalCatalogTermType termType;
-  final bool enabled;
+  factory _BudgetOffering.fromLab(LabCatalogItem item, String categoryLabel) {
+    return _BudgetOffering(
+      id: 'lab:${item.apiId}',
+      name: item.displayTitle,
+      source: _BudgetSource.lab,
+      categoryLabel: categoryLabel,
+      code: item.code,
+      unitPrice: item.unitPrice,
+      currency: item.currency,
+      labItem: item,
+    );
+  }
 
-  @override
-  ConsumerState<_ClinicalCatalogBrowseDialog> createState() =>
-      _ClinicalCatalogBrowseDialogState();
+  factory _BudgetOffering.fromRadiology(
+    RadiologyCatalogTest item,
+    String categoryLabel,
+  ) {
+    return _BudgetOffering(
+      id: 'diagnostics:${item.apiId}',
+      name: item.name,
+      source: _BudgetSource.diagnostics,
+      categoryLabel: categoryLabel,
+      code: item.code,
+      unitPrice: item.unitPrice,
+      currency: item.currency,
+      radiologyItem: item,
+    );
+  }
+
+  final String id;
+  final String name;
+  final _BudgetSource source;
+  final String categoryLabel;
+  final String? code;
+  final num? unitPrice;
+  final String? currency;
+  final LabCatalogItem? labItem;
+  final RadiologyCatalogTest? radiologyItem;
 }
 
-class _ClinicalCatalogBrowseDialogState
-    extends ConsumerState<_ClinicalCatalogBrowseDialog> {
-  static const int _searchLimit = 40;
+class _CatalogRowActions extends StatelessWidget {
+  const _CatalogRowActions({
+    required this.editLabel,
+    required this.deleteLabel,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
-  final TextEditingController _searchController = TextEditingController();
-  Timer? _searchDebounce;
-  ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.global;
-  List<ClinicalCatalogOption> _results = const <ClinicalCatalogOption>[];
-  final Set<String> _addedIds = <String>{};
-  bool _isSearching = false;
-  bool _didAdd = false;
+  final String editLabel;
+  final String deleteLabel;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        AppButton.tertiary(
+          label: editLabel,
+          leadingIcon: Icons.edit_outlined,
+          onPressed: onEdit,
+        ),
+        AppButton.tertiary(
+          label: deleteLabel,
+          leadingIcon: Icons.delete_outline,
+          color: theme.colorScheme.error,
+          onPressed: onDelete,
+        ),
+      ],
+    );
+  }
+}
+
+class _FacilityOfferingPriceEditDialog extends StatefulWidget {
+  const _FacilityOfferingPriceEditDialog({
+    required this.title,
+    required this.name,
+    required this.currency,
+    required this.submitLabel,
+    required this.onSubmit,
+    this.unitPrice,
+  });
+
+  final String title;
+  final String name;
+  final num? unitPrice;
+  final String currency;
+  final String submitLabel;
+  final Future<AppFailure?> Function(num unitPrice, String currency) onSubmit;
+
+  @override
+  State<_FacilityOfferingPriceEditDialog> createState() =>
+      _FacilityOfferingPriceEditDialogState();
+}
+
+class _FacilityOfferingPriceEditDialogState
+    extends State<_FacilityOfferingPriceEditDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _priceController;
+  late String _currency;
   AppFailure? _failure;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        unawaited(_searchCatalog(''));
-      }
-    });
+    _priceController = TextEditingController(
+      text: widget.unitPrice?.toString() ?? '',
+    );
+    _currency = widget.currency;
   }
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
-    _searchController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -973,136 +1368,86 @@ class _ClinicalCatalogBrowseDialogState
     final ThemeData theme = Theme.of(context);
 
     return AppDialog(
-      title: Text(l10n.tenantFacilityCatalogBrowseTitle),
-      icon: const Icon(Icons.manage_search_outlined),
+      title: Text(widget.title),
+      icon: const Icon(Icons.payments_outlined),
       scrollable: true,
-      maxWidth: 840,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
-          ClinicalCatalogLayerSelector(
-            value: _catalogSource,
-            enabled: widget.enabled,
-            onChanged: (ClinicalCatalogSource source) {
-              setState(() => _catalogSource = source);
-              unawaited(_searchCatalog(_searchController.text));
-            },
-          ),
-          SizedBox(height: theme.spacing.sm),
-          AppTextField(
-            controller: _searchController,
-            labelText: l10n.settingsWorkspaceSearchLabel,
-            enabled: widget.enabled,
-            prefixIcon: const Icon(Icons.manage_search_outlined),
-            onChanged: _scheduleSearch,
-          ),
-          if (_isSearching) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            const LinearProgressIndicator(),
-          ],
-          SizedBox(height: theme.spacing.md),
-          if (_results.isEmpty)
-            Text(l10n.settingsWorkspaceEmptyStatus)
-          else
-            for (final ClinicalCatalogOption option in _results)
-              ListTile(
-                dense: true,
-                title: Text(option.displayTitle),
-                subtitle: option.displaySubtitle == null
-                    ? null
-                    : Text(option.displaySubtitle!),
-                trailing: AppButton.secondary(
-                  label: _addedIds.contains(option.apiId)
-                      ? l10n.tenantFacilityStatusActive
-                      : l10n.clinicalLabRequestAddSelectionAction,
-                  enabled:
-                      widget.enabled && !_addedIds.contains(option.apiId),
-                  onPressed: () => unawaited(_addOffering(option)),
-                ),
+      maxWidth: 520,
+      closeEnabled: !_isSaving,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
               ),
-        ],
+            Text(
+              widget.name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            AppCurrencyAmountField(
+              amountController: _priceController,
+              currency: _currency,
+              amountLabelText: l10n.clinicalRequestUnitPriceLabel,
+              currencyLabelText: l10n.opdCurrencyLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              allowZero: false,
+              onCurrencyChanged: (String? value) {
+                setState(() {
+                  _currency = value ?? appDefaultCurrencyCode;
+                });
+              },
+              validator: (String? value) {
+                final String normalized = normalizeCurrencyAmount(value ?? '');
+                if (normalized.isEmpty) {
+                  return l10n.validationRequired;
+                }
+                final num? parsed = num.tryParse(normalized);
+                if (parsed == null || parsed <= 0) {
+                  return l10n.validationRequired;
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).pop(_didAdd),
+        AppButton.primary(
+          label: widget.submitLabel,
+          leadingIcon: Icons.save_outlined,
+          isLoading: _isSaving,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
   }
 
-  void _scheduleSearch(String value) {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 200), () {
-      if (!mounted) {
-        return;
-      }
-      unawaited(_searchCatalog(value));
-    });
-  }
-
-  Future<void> _searchCatalog(String query) async {
-    if (!mounted) {
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     setState(() {
-      _isSearching = true;
+      _isSaving = true;
       _failure = null;
     });
-    final Result<List<ClinicalCatalogOption>> result = await ref
-        .read(clinicalRepositoryProvider)
-        .searchClinicalCatalog(
-          termType: widget.termType.apiValue,
-          query: query.trim().isEmpty ? null : query.trim(),
-          limit: _searchLimit,
-          source: _catalogSource.apiValue,
-          facilityId: widget.facilityId,
-        );
+    final num unitPrice =
+        num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0;
+    final AppFailure? failure = await widget.onSubmit(unitPrice, _currency);
     if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
       return;
     }
     setState(() {
-      _results = result.when(
-        success: (List<ClinicalCatalogOption> value) => value,
-        failure: (_) => const <ClinicalCatalogOption>[],
-      );
-      _failure = result.when(
-        success: (_) => null,
-        failure: (AppFailure failure) => failure,
-      );
-      _isSearching = false;
+      _failure = failure;
+      _isSaving = false;
     });
-  }
-
-  Future<void> _addOffering(ClinicalCatalogOption option) async {
-    if (!widget.enabled) {
-      return;
-    }
-    final Result<void> result = await ref
-        .read(clinicalRepositoryProvider)
-        .upsertFacilityCatalogOffering(<String, Object?>{
-          'facility_id': widget.facilityId,
-          'term_type': widget.termType.apiValue,
-          'item_id': option.id,
-        });
-    if (!mounted) {
-      return;
-    }
-    result.when(
-      success: (_) {
-        setState(() {
-          _didAdd = true;
-          _addedIds.add(option.apiId);
-        });
-      },
-      failure: (AppFailure failure) {
-        setState(() => _failure = failure);
-      },
-    );
   }
 }
