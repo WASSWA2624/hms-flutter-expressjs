@@ -1,1 +1,38 @@
-I want you to update the tenant's details. The tenant details here as follows. On the right, on the right side where we have the tenants and the tenants' details. I think that's okay, but under facilities, I want you to remove that border remove that border above the facility, above around the facility table, and then make that intersection that has the, the table and the search bar, both the table the search bar should actually be the, the up to date table component that's already defined. So when you scroll everything scrolls up. And then also on the left we'll have the tenant details remove, also remove that around, that corner around the border around the table, around, around that tenant details. so what you do in between now the tenant details and the facility table, just add a vertical separator. So in case the table is not, is not fitting or maybe more columns, so when you scroll, everything should scroll upwards but then also the tenant details if not if not, if it doesn't fit, then also add, make it independently scrollable. So the table and then the tenant details should be independently scrollable. Thank you.
+# Refine Tenant details layout — `/admin/setup?section=tenants`
+
+Update the **Tenant details** dialog: borderless split panes, vertical separator, independent scroll, facilities on current `AppListTable`.
+
+## Context
+
+- Tenants tab → row → `Tenant details` (`_TenantDetailsDialog`).
+- Left `_TenantDetailsSummary`; right `_TenantDetailsFacilitiesPanel` (`AppListTable` + search).
+- Both panes use outlined cards; wide `Row` has no divider.
+- Reuse table contracts, permissions, mutations, hide/show summary, footers.
+
+## Requirements
+
+1. Remove outline/card borders (and radius chrome) from summary and facilities panes.
+2. On wide layout, add a theme-token vertical separator between panes; keep spacing tokens.
+3. Keep facilities on current `AppListTable` so search and body scroll up together; horizontal overflow stays with the table.
+4. Make summary independently scrollable when content exceeds pane height.
+5. Preserve load, empty, error/retry, filter, column settings, row actions, and unauthorized omission; no mutation or permission changes.
+6. Keep narrow stacking without clipping; use theme tokens for light and dark.
+
+## Constraints
+
+- Layout/chrome only in Tenant details; no route, API, or RBAC changes; no unrelated refactors.
+
+## Acceptance Criteria
+
+- No outline card borders on either pane.
+- Wide layout shows a vertical separator between panes.
+- Facilities search + rows scroll together; summary scrolls independently when needed.
+- Extra columns still scroll horizontally in the table.
+- Existing states, actions, and auth visibility unchanged.
+- Manual check: wide/narrow, light/dark.
+
+## Relevant Files
+
+- `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart`
+- `frontend/lib/shared/components/app_list_table.dart`
+- `screens/admin-setup.md`
