@@ -485,6 +485,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
 
   Future<void> _confirmRestoreTenant(TenantProfile tenant) async {
     final AppLocalizations l10n = context.l10n;
+    TenantProfile? restoredTenant;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
@@ -498,7 +499,10 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
               .read(tenantFacilityRepositoryProvider)
               .restoreTenant(tenant.mutationId);
           return result.when(
-            success: (_) => null,
+            success: (TenantProfile value) {
+              restoredTenant = value;
+              return null;
+            },
             failure: (AppFailure failure) => failure,
           );
         },
@@ -509,15 +513,21 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       return;
     }
 
+    final TenantProfile applied =
+        restoredTenant ?? tenant.copyWith(clearDeletedAt: true);
+    _upsertTenantLocally(applied);
     _markMutated();
-    _markTenantRestoredLocally(tenant);
     _syncPlatformDashboard(
       ref,
       patch: HomeDashboardOptimisticPatch.tenantRestored(
-        isActive: tenant.isActive,
+        isActive: applied.isActive,
       ),
     );
-    unawaited(_reload(resetPage: false, silent: true));
+    await _reload(resetPage: false, silent: true);
+    if (mounted) {
+      // Keep the restored row active if the refresh is briefly stale.
+      _upsertTenantLocally(applied);
+    }
   }
 
   Future<void> _confirmPermanentDeleteTenant(TenantProfile tenant) async {
@@ -586,11 +596,23 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   }
 
   bool _matchesTenant(TenantProfile entry, TenantProfile target) {
-    return entry.id == target.id ||
-        entry.mutationId == target.mutationId ||
-        (target.slug != null &&
-            target.slug!.isNotEmpty &&
-            entry.slug == target.slug);
+    if (entry.id == target.id || entry.mutationId == target.mutationId) {
+      return true;
+    }
+    // Avoid matching a live slug against a soft-deleted mangled slug.
+    final String? entrySlug = entry.slug?.trim();
+    final String? targetSlug = target.slug?.trim();
+    if (entrySlug == null ||
+        entrySlug.isEmpty ||
+        targetSlug == null ||
+        targetSlug.isEmpty) {
+      return false;
+    }
+    if (entrySlug.contains('__deleted__') ||
+        targetSlug.contains('__deleted__')) {
+      return false;
+    }
+    return entrySlug == targetSlug;
   }
 
   bool _matchesTenantId(TenantProfile entry, String tenantId) {
@@ -3865,6 +3887,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
 
   Future<void> _confirmRestoreFacility(FacilityProfile facility) async {
     final AppLocalizations l10n = context.l10n;
+    FacilityProfile? restoredFacility;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
@@ -3878,7 +3901,10 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
               .read(tenantFacilityRepositoryProvider)
               .restoreFacility(facility.mutationId);
           return result.when(
-            success: (_) => null,
+            success: (FacilityProfile value) {
+              restoredFacility = value;
+              return null;
+            },
             failure: (AppFailure failure) => failure,
           );
         },
@@ -3889,16 +3915,21 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       return;
     }
 
+    final FacilityProfile applied =
+        restoredFacility ?? facility.copyWith(clearDeletedAt: true);
+    _markFacilityRestoredLocally(applied);
     _markMutated();
-    _markFacilityRestoredLocally(facility);
     _syncPlatformDashboard(
       ref,
       patch: HomeDashboardOptimisticPatch.facilityCreated(
-        isActive: facility.isActive,
+        isActive: applied.isActive,
       ),
     );
     await _loadTenants();
     await _reload(resetPage: false, silent: true);
+    if (mounted) {
+      _markFacilityRestoredLocally(applied);
+    }
   }
 
   Future<void> _confirmPermanentDeleteFacility(FacilityProfile facility) async {
