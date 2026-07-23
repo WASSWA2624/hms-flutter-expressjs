@@ -24,6 +24,18 @@
   "@startupErrorBody": {
     "description": "Safe user-facing startup error message."
   },
+  "commonLoadingTitle": "Loading",
+  "@commonLoadingTitle": {
+    "description": "Default title shown under the branded loading logo when no feature-specific title is provided."
+  },
+  "commonLoadingBody": "Please wait...",
+  "@commonLoadingBody": {
+    "description": "Default body shown under the branded loading logo for page and panel loads when no feature-specific body is provided."
+  },
+  "commonLoadingCompactTitle": "Loading...",
+  "@commonLoadingCompactTitle": {
+    "description": "Short default title shown under the compact branded loading logo."
+  },
   "commonRetryActionLabel": "Try again",
   "@commonRetryActionLabel": {
     "description": "Label for actions that retry a failed operation."

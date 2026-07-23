@@ -25,8 +25,12 @@ enum AppLoadingIndicatorSize {
 ///
 /// Prefer this over [CircularProgressIndicator] for page and component loads.
 /// By default, [expand] centers the mark within the loading parent’s available
-/// bounds and scales the logo down when that region is tight. Pass
+/// bounds and scales the logo + message down when that region is tight. Pass
 /// `expand: false` only for intrinsic inline slots (e.g. field trailing icons).
+///
+/// A context-appropriate message is always shown below the logo unless this is
+/// an intrinsic inline mark (`expand: false` with no [title]/[body]). Prefer
+/// passing feature-specific [title]/[body]; otherwise size-based defaults are used.
 class AppLoadingIndicator extends StatefulWidget {
   const AppLoadingIndicator({
     this.size = AppLoadingIndicatorSize.regular,
@@ -69,7 +73,11 @@ class AppLoadingIndicator extends StatefulWidget {
        expand = true;
 
   final AppLoadingIndicatorSize size;
+
+  /// Feature-specific loading title. When null/blank, a size-based default is used.
   final String? title;
+
+  /// Optional supporting copy under [title].
   final String? body;
   final bool expand;
   final String? semanticLabel;
@@ -101,7 +109,7 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
   @override
   Widget build(BuildContext context) {
     if (!widget.expand) {
-      return _buildContent(context, scale: 1);
+      return _buildContent(context);
     }
 
     return LayoutBuilder(
@@ -110,10 +118,14 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
             constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
         final bool hasBoundedWidth =
             constraints.hasBoundedWidth && constraints.maxWidth.isFinite;
-        final double scale = _fitScale(constraints);
 
+        // Scale the full mark + message together so tight parents never clip
+        // the context copy under the logo.
         Widget centered = Center(
-          child: _buildContent(context, scale: scale),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: _buildContent(context),
+          ),
         );
         if (hasBoundedHeight || hasBoundedWidth) {
           centered = SizedBox(
@@ -130,18 +142,18 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
     );
   }
 
-  Widget _buildContent(BuildContext context, {required double scale}) {
+  Widget _buildContent(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final _LoadingMetrics metrics = _LoadingMetrics.resolve(
       size: widget.size,
       breakpoint: breakpoint,
       spacing: theme.spacing,
-      scale: scale,
     );
+    final _LoadingCopy copy = _resolveCopy(context);
 
     return Semantics(
-      label: widget.semanticLabel ?? widget.title ?? 'Loading',
+      label: widget.semanticLabel ?? copy.title ?? 'Loading',
       liveRegion: true,
       child: AnimatedBuilder(
         animation: _controller,
@@ -163,26 +175,24 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
                   style: metrics.brandStyle(theme),
                 ),
               ],
-              if (widget.title != null &&
-                  widget.title!.trim().isNotEmpty) ...<Widget>[
+              if (copy.title != null) ...<Widget>[
                 SizedBox(
                   height: widget.showBrandName
                       ? theme.spacing.sm
                       : metrics.gapAfterLogo,
                 ),
                 Text(
-                  widget.title!,
+                  copy.title!,
                   textAlign: TextAlign.center,
                   style: metrics.titleStyle(theme),
                 ),
               ],
-              if (widget.body != null &&
-                  widget.body!.trim().isNotEmpty) ...<Widget>[
+              if (copy.body != null) ...<Widget>[
                 SizedBox(height: theme.spacing.xs),
                 ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: metrics.copyMaxWidth),
                   child: Text(
-                    widget.body!,
+                    copy.body!,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
@@ -203,27 +213,51 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
     );
   }
 
-  double _fitScale(BoxConstraints constraints) {
-    final ThemeData theme = Theme.of(context);
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final _LoadingMetrics preferred = _LoadingMetrics.resolve(
-      size: widget.size,
-      breakpoint: breakpoint,
-      spacing: theme.spacing,
-    );
-    final double preferredMark =
-        preferred.logoSize + (preferred.ringPadding * 2) + 16;
-    double scale = 1;
-    if (constraints.hasBoundedWidth && constraints.maxWidth.isFinite) {
-      // Leave room for title/body copy; mark should stay within the parent.
-      scale = math.min(scale, (constraints.maxWidth * 0.55) / preferredMark);
+  /// Resolves the message shown under the logo for the current loading context.
+  ///
+  /// Explicit [AppLoadingIndicator.title]/[AppLoadingIndicator.body] win.
+  /// Otherwise size-based localized defaults are used. Intrinsic inline marks
+  /// (`expand: false` with no copy) stay mark-only.
+  _LoadingCopy _resolveCopy(BuildContext context) {
+    final String? explicitTitle = _trimmedOrNull(widget.title);
+    final String? explicitBody = _trimmedOrNull(widget.body);
+    final bool hasExplicitTitle = explicitTitle != null;
+    final bool hasExplicitBody = explicitBody != null;
+
+    if (!widget.expand && !hasExplicitTitle && !hasExplicitBody) {
+      return const _LoadingCopy();
     }
-    if (constraints.hasBoundedHeight && constraints.maxHeight.isFinite) {
-      // Reserve space for copy + dots beneath the mark.
-      final double usableHeight = math.max(constraints.maxHeight * 0.55, 28);
-      scale = math.min(scale, usableHeight / preferredMark);
+
+    final l10n = context.l10n;
+    final String title =
+        explicitTitle ??
+        switch (widget.size) {
+          AppLoadingIndicatorSize.compact => l10n.commonLoadingCompactTitle,
+          AppLoadingIndicatorSize.regular => l10n.commonLoadingTitle,
+          AppLoadingIndicatorSize.large => l10n.commonLoadingTitle,
+          AppLoadingIndicatorSize.hero => l10n.startupLoadingTitle,
+        };
+
+    final String? body =
+        explicitBody ??
+        (hasExplicitTitle
+            ? null
+            : switch (widget.size) {
+                AppLoadingIndicatorSize.compact => null,
+                AppLoadingIndicatorSize.regular => l10n.commonLoadingBody,
+                AppLoadingIndicatorSize.large => l10n.commonLoadingBody,
+                AppLoadingIndicatorSize.hero => l10n.startupLoadingBody,
+              });
+
+    return _LoadingCopy(title: title, body: body);
+  }
+
+  static String? _trimmedOrNull(String? value) {
+    if (value == null) {
+      return null;
     }
-    return scale.clamp(0.45, 1.0);
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   String _brandName(BuildContext context, AppBreakpoint breakpoint) {
@@ -235,6 +269,13 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
       _ => l10n.appTitle,
     };
   }
+}
+
+class _LoadingCopy {
+  const _LoadingCopy({this.title, this.body});
+
+  final String? title;
+  final String? body;
 }
 
 class _LoadingMetrics {
@@ -258,13 +299,11 @@ class _LoadingMetrics {
     required AppLoadingIndicatorSize size,
     required AppBreakpoint breakpoint,
     required AppSpacingTokens spacing,
-    double scale = 1,
   }) {
     final bool compactViewport =
         breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
-    final double clampedScale = scale.clamp(0.45, 1.0);
 
-    final _LoadingMetrics base = switch (size) {
+    return switch (size) {
       AppLoadingIndicatorSize.compact => _LoadingMetrics(
         logoSize: 36,
         ringPadding: 10,
@@ -336,19 +375,6 @@ class _LoadingMetrics {
         ),
       ),
     };
-
-    if (clampedScale >= 0.999) {
-      return base;
-    }
-
-    return _LoadingMetrics(
-      logoSize: base.logoSize * clampedScale,
-      ringPadding: base.ringPadding * clampedScale,
-      gapAfterLogo: base.gapAfterLogo * clampedScale,
-      copyMaxWidth: base.copyMaxWidth * clampedScale,
-      brandStyle: base.brandStyle,
-      titleStyle: base.titleStyle,
-    );
   }
 }
 

@@ -130,6 +130,24 @@ abstract class AppLocalizations {
   /// **'Restart the app or try again.'**
   String get startupErrorBody;
 
+  /// Default title shown under the branded loading logo when no feature-specific title is provided.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get commonLoadingTitle;
+
+  /// Default body shown under the branded loading logo for page and panel loads when no feature-specific body is provided.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait...'**
+  String get commonLoadingBody;
+
+  /// Short default title shown under the compact branded loading logo.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get commonLoadingCompactTitle;
+
   /// Label for actions that retry a failed operation.
   ///
   /// In en, this message translates to:

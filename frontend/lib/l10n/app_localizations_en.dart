@@ -27,6 +27,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startupErrorBody => 'Restart the app or try again.';
 
   @override
+  String get commonLoadingTitle => 'Loading';
+
+  @override
+  String get commonLoadingBody => 'Please wait...';
+
+  @override
+  String get commonLoadingCompactTitle => 'Loading...';
+
+  @override
   String get commonRetryActionLabel => 'Try again';
 
   @override

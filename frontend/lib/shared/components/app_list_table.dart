@@ -2096,7 +2096,8 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
             const Spacer(),
           if (isLoadingMore) ...<Widget>[
             SizedBox(width: theme.spacing.sm),
-            const AppLoadingIndicator.compact(),
+            // Mark-only in the footer row; expanded loaders show default copy.
+            const AppLoadingIndicator.compact(expand: false),
           ] else if (reachedEnd)
             Text(
               'All rows loaded',

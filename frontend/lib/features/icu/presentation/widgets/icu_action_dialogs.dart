@@ -820,7 +820,13 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
         closeEnabled: false,
         initialMaximized: false,
         pinActionsToBottom: true,
-        content: const Center(child: AppLoadingIndicator.compact()),
+        content: Center(
+          child: AppLoadingIndicator.compact(
+            title: l10n.icuLoadingBoardTitle,
+            body: l10n.icuLoadingBoardBody,
+            semanticLabel: l10n.icuLoadingBoardTitle,
+          ),
+        ),
         actions: clinicalActionDialogActions(
           context,
           l10n.icuActionAssignBed,
