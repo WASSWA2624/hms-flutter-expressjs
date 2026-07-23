@@ -1,0 +1,1 @@
+Review the admin setup screen and the Get rid of any action button that has, that is any refresh action button, so that we don't have any manual, manual trigger the action refresh button. Because the refresh actually must happen automatically, so let's scan the entire admin setup and get rid of the action refresh button wherever it exists.
