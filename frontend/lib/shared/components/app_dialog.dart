@@ -619,6 +619,8 @@ class _DialogHeader extends StatelessWidget {
                 tooltip: isMaximized ? 'Restore dialog' : 'Maximize dialog',
                 onPressed: onMaximizeToggle,
               ),
+            if (showMaximizeButton && showCloseButton)
+              SizedBox(width: theme.spacing.sm),
             if (showCloseButton)
               AppButton(
                 iconOnly: true,
@@ -628,6 +630,7 @@ class _DialogHeader extends StatelessWidget {
                   context,
                 ).closeButtonTooltip,
                 tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                color: colorScheme.error,
                 enabled: closeEnabled,
                 onPressed: closeEnabled
                     ? () {

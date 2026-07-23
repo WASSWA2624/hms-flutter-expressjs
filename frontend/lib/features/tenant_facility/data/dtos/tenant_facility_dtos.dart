@@ -435,10 +435,17 @@ bool? _optionalBool(JsonMap json, String key) {
 
 DateTime? _optionalDateTime(JsonMap json, String key) {
   final Object? value = json[key];
-  if (value is! String || value.trim().isEmpty) {
+  if (value == null) {
     return null;
   }
-  return DateTime.tryParse(value.trim());
+  if (value is DateTime) {
+    return value;
+  }
+  final String text = value.toString().trim();
+  if (text.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(text);
 }
 
 JsonMap _map(Object? value) {

@@ -262,17 +262,15 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
 
   List<TenantProfile> get _visibleTenants {
     final String? status = _filterValue.option(_statusFilterKey);
-    if (status == _statusActive) {
-      return _tenants
-          .where((TenantProfile tenant) => !tenant.isDeleted)
-          .toList(growable: false);
-    }
     if (status == _statusDeleted) {
       return _tenants
           .where((TenantProfile tenant) => tenant.isDeleted)
           .toList(growable: false);
     }
-    return _tenants;
+    // Default / Active: soft-deleted tenants stay out of the live list.
+    return _tenants
+        .where((TenantProfile tenant) => !tenant.isDeleted)
+        .toList(growable: false);
   }
 
   Future<void> _reloadScopedTenant({bool silent = false}) async {
@@ -467,15 +465,19 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     }
 
     if (confirmed == true) {
-      _markMutated();
       _markTenantSoftDeletedLocally(tenant);
+      _markMutated();
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantDeleted(
           isActive: tenant.isActive && !tenant.isDeleted,
         ),
       );
-      unawaited(_reload(resetPage: false, silent: true));
+      await _reload(resetPage: false, silent: true);
+      if (mounted) {
+        // Keep soft-delete visible locally if the refresh is briefly stale.
+        _markTenantSoftDeletedLocally(tenant);
+      }
     }
   }
 
@@ -1754,7 +1756,8 @@ class _ManagementRowActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1767,6 +1770,7 @@ class _ManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
+        SizedBox(width: theme.spacing.sm),
         AppButton.tertiary(
           leadingIcon: Icons.delete_outline,
           label: deleteLabel,
@@ -3674,17 +3678,15 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
 
   List<FacilityProfile> get _visibleFacilities {
     final String? status = _filterValue.option(_statusFilterKey);
-    if (status == _statusActive) {
-      return _facilities
-          .where((FacilityProfile facility) => !facility.isDeleted)
-          .toList(growable: false);
-    }
     if (status == _statusDeleted) {
       return _facilities
           .where((FacilityProfile facility) => facility.isDeleted)
           .toList(growable: false);
     }
-    return _facilities;
+    // Default / Active: soft-deleted facilities stay out of the live list.
+    return _facilities
+        .where((FacilityProfile facility) => !facility.isDeleted)
+        .toList(growable: false);
   }
 
   Future<void> _applyFacilityFilters(AppSearchBarFilterValue value) async {
@@ -4342,7 +4344,9 @@ class _TenantManagementRowActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double actionGap = theme.spacing.sm;
 
     if (tenant.isDeleted) {
       if (!canDelete) {
@@ -4360,6 +4364,7 @@ class _TenantManagementRowActions extends StatelessWidget {
             enabled: enabled,
             onPressed: enabled ? onRestore : null,
           ),
+          SizedBox(width: actionGap),
           AppButton.tertiary(
             iconOnly: true,
             leadingIcon: Icons.delete_forever_outlined,
@@ -4385,7 +4390,8 @@ class _TenantManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
-        if (canDelete)
+        if (canDelete) ...<Widget>[
+          SizedBox(width: actionGap),
           AppButton.tertiary(
             leadingIcon: Icons.delete_outline,
             label: deleteLabel,
@@ -4395,6 +4401,7 @@ class _TenantManagementRowActions extends StatelessWidget {
             enabled: enabled,
             onPressed: enabled ? onDelete : null,
           ),
+        ],
       ],
     );
   }
@@ -4427,7 +4434,9 @@ class _FacilityManagementRowActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double actionGap = theme.spacing.sm;
 
     if (facility.isDeleted) {
       return Row(
@@ -4442,6 +4451,7 @@ class _FacilityManagementRowActions extends StatelessWidget {
             enabled: enabled,
             onPressed: enabled ? onRestore : null,
           ),
+          SizedBox(width: actionGap),
           AppButton.tertiary(
             iconOnly: true,
             leadingIcon: Icons.delete_forever_outlined,
@@ -4467,6 +4477,7 @@ class _FacilityManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
+        SizedBox(width: actionGap),
         AppButton.tertiary(
           leadingIcon: Icons.delete_outline,
           label: deleteLabel,
