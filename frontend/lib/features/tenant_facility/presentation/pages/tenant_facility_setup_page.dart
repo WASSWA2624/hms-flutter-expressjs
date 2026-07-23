@@ -106,8 +106,6 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         showGlobalActions: false,
         showFaultReport: false,
         showHousekeepingRequest: false,
-        onRefresh: () =>
-            ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
         secondary: <Widget>[
           if (snapshot.facility?.id != null)
             AppTabToolbarAction(

@@ -15,7 +15,6 @@
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
-| Refresh | Workspace toolbar (`appWorkspaceToolbarWithLabels`) | Reloads `tenantFacilitySetupControllerProvider`. |
 | Clinical service catalog | Workspace toolbar secondary (`AppTabToolbarAction`), when `snapshot.facility?.id != null` | Opens clinical-catalog `AppDialog` hosting `FacilityCatalogConfigPanel`. |
 | Desk section tabs | `AppTabStrip` in `_SetupBody` | Switches Tenants / Facility / Departments / Units / Wards / Rooms / Beds / Roles / Permissions / Users (subset by permissions). |
 | Try again | Async load failure (`AsyncStateScaffold` / detail dialog failure views) | Retries setup snapshot load. |
