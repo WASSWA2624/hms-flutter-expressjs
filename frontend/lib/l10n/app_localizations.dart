@@ -2443,7 +2443,7 @@ abstract class AppLocalizations {
   /// Primary action to enable a clinical catalog service for the facility.
   ///
   /// In en, this message translates to:
-  /// **'Add service'**
+  /// **'Add diagnosis'**
   String get tenantFacilityCatalogAddServiceAction;
 
   /// Empty state when the facility has no catalog offerings in the selected category.

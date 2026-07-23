@@ -1242,7 +1242,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure offering price';
 
   @override
-  String get tenantFacilityCatalogAddServiceAction => 'Add service';
+  String get tenantFacilityCatalogAddServiceAction => 'Add diagnosis';
 
   @override
   String get tenantFacilityCatalogEmptyOfferings =>

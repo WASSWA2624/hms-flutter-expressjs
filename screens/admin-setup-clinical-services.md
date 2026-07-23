@@ -23,7 +23,7 @@
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Radiology / Lab / Diagnoses | Inner `AppTabStrip` | Switches nested catalog table; reloads that category’s global list. Default tab: Radiology. |
+| Radiology / Lab / Diagnoses | Inner `AppTabStrip` (`variant: nested`) | Switches nested catalog table; loads that category’s global list on first visit (warmed thereafter). Default tab: Radiology. |
 
 Shared per nested tab (when `enabled`):
 
@@ -36,7 +36,7 @@ Shared per nested tab (when `enabled`):
 | Delete | Row actions (label varies by category) | Opens `LabDeleteReasonDialog` delete confirm for that catalog item. |
 | Row select | Non-disabled row | Same as **Edit** (opens mutation dialog). |
 
-No pager buttons: these tables are not wired to `AppPage` pagination.
+Tables use `AppListTablePaginationMode.infinite` with client-warmed catalog pages (fetch beyond the prior 100-row cap; append on scroll).
 
 ---
 
@@ -87,7 +87,7 @@ Titles use lab create/configure dialog title keys (test vs panel; edit reuses pa
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Add service | Search trailing; empty-state primary (`tenantFacilityCatalogAddServiceAction`) | May open scope picker when `tenantId` missing; then `DiagnosisCatalogMutationDialog` (create). |
+| Add diagnosis | Search trailing; empty-state primary (`clinicalAddDiagnosisAction`) | May open scope picker when `tenantId` missing; then `DiagnosisCatalogMutationDialog` (create). |
 | Edit | Row actions / row select | `DiagnosisCatalogMutationDialog` (edit). |
 | Delete | Row actions (**Delete**) | `LabDeleteReasonDialog` titled `clinicalDiagnosisFormTitle`; submit **Delete**; calls `deleteClinicalCatalogTerm`. |
 
@@ -100,7 +100,7 @@ Titles use lab create/configure dialog title keys (test vs panel; edit reuses pa
 | Cancel | Footer | Dismisses without save. |
 | Save | Footer | Creates or updates diagnosis catalog term; pops `true` on success. |
 
-Title: **Add service** (create) or `clinicalDiagnosisFormTitle` (edit).
+Title: **Add diagnosis** (create) or `clinicalDiagnosisFormTitle` (edit).
 
 ---
 

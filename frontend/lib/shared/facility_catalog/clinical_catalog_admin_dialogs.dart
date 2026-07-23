@@ -685,7 +685,7 @@ class _DiagnosisCatalogMutationDialogState
       title: Text(
         widget.isEditing
             ? l10n.clinicalDiagnosisFormTitle
-            : l10n.tenantFacilityCatalogAddServiceAction,
+            : l10n.clinicalAddDiagnosisAction,
       ),
       icon: Icon(
         widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline,
@@ -987,7 +987,7 @@ class _DiagnosisEnableFacilityOfferingDialogState
                     return AppButton.tertiary(
                       label: offered
                           ? l10n.tenantFacilitySummaryConfigured
-                          : l10n.tenantFacilityCatalogAddServiceAction,
+                          : l10n.clinicalAddDiagnosisAction,
                       leadingIcon: offered
                           ? Icons.check_circle_outline
                           : Icons.add_circle_outline,

@@ -1618,9 +1618,9 @@
   "@tenantFacilityCatalogEditPriceDialogTitle": {
     "description": "Dialog title when editing a facility offering unit price."
   },
-  "tenantFacilityCatalogAddServiceAction": "Add service",
+  "tenantFacilityCatalogAddServiceAction": "Add diagnosis",
   "@tenantFacilityCatalogAddServiceAction": {
-    "description": "Primary action to enable a clinical catalog service for the facility."
+    "description": "Primary action to add a diagnosis catalog term or enable one for a facility."
   },
   "tenantFacilityCatalogEmptyOfferings": "No services enabled for this facility yet.",
   "@tenantFacilityCatalogEmptyOfferings": {

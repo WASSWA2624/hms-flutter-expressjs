@@ -50,7 +50,10 @@ class FacilityCatalogConfigPanel extends ConsumerStatefulWidget {
 
 class _FacilityCatalogConfigPanelState
     extends ConsumerState<FacilityCatalogConfigPanel> {
-  static const int _searchLimit = 100;
+  static const int _pageSize = AppPageRequest.maxPageSize;
+  static const int _radiologyFetchLimit = 7500;
+  static const int _labFetchLimit = 5000;
+  static const int _diagnosisFetchLimit = 1000;
   static const String _labTypeFilterKey = 'type';
   static const String _labCategoryFilterKey = 'category';
   static const String _modalityFilterKey = 'modality';
@@ -69,11 +72,27 @@ class _FacilityCatalogConfigPanelState
   AppSearchBarFilterValue _labFilterValue = AppSearchBarFilterValue.empty;
   AppSearchBarFilterValue _radiologyFilterValue = AppSearchBarFilterValue.empty;
   AppSearchBarFilterValue _diagnosisFilterValue = AppSearchBarFilterValue.empty;
-  bool _isLoading = false;
-  AppFailure? _failure;
+  AppPageRequest _radiologyRequest = const AppPageRequest(pageSize: _pageSize);
+  AppPageRequest _labRequest = const AppPageRequest(pageSize: _pageSize);
+  AppPageRequest _diagnosisRequest = const AppPageRequest(pageSize: _pageSize);
+  bool _radiologyHydrated = false;
+  bool _labHydrated = false;
+  bool _diagnosisHydrated = false;
+  bool _radiologyLoading = false;
+  bool _labLoading = false;
+  bool _diagnosisLoading = false;
+  AppFailure? _radiologyFailure;
+  AppFailure? _labFailure;
+  AppFailure? _diagnosisFailure;
 
   String get _resolvedCurrency =>
       resolveFacilityDefaultCurrency(widget.defaultCurrency);
+
+  AppFailure? get _activeFailure => switch (_tab) {
+    _CatalogDeskTab.radiology => _radiologyFailure,
+    _CatalogDeskTab.lab => _labFailure,
+    _CatalogDeskTab.diagnoses => _diagnosisFailure,
+  };
 
   List<LabCatalogItem> get _filteredLabItems {
     final String? type = _labFilterValue.option(_labTypeFilterKey);
@@ -118,12 +137,88 @@ class _FacilityCatalogConfigPanelState
         .toList(growable: false);
   }
 
+  List<RadiologyCatalogTest> get _radiologyVisibleItems {
+    final String query = _radiologySearchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return _filteredRadiologyItems;
+    }
+    return _filteredRadiologyItems
+        .where((RadiologyCatalogTest item) {
+          final String haystack =
+              '${item.name} ${item.code ?? ''} ${item.modality ?? ''}'
+                  .toLowerCase();
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
+  }
+
+  List<LabCatalogItem> get _labVisibleItems {
+    final String query = _labSearchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return _filteredLabItems;
+    }
+    return _filteredLabItems
+        .where((LabCatalogItem item) => item.matchesSearch(query))
+        .toList(growable: false);
+  }
+
+  List<ClinicalCatalogOption> get _diagnosisVisibleItems {
+    final String query = _diagnosisSearchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return _filteredDiagnosisItems;
+    }
+    return _filteredDiagnosisItems
+        .where((ClinicalCatalogOption item) {
+          final String haystack =
+              '${item.name ?? ''} ${item.code ?? ''} ${item.category ?? ''}'
+                  .toLowerCase();
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
+  }
+
+  AppPage<T> _pageOf<T>(List<T> items, AppPageRequest request) {
+    final List<T> slice = items
+        .skip(request.offset)
+        .take(request.pageSize)
+        .toList(growable: false);
+    return AppPage<T>(
+      items: slice,
+      request: request,
+      totalItemCount: items.length,
+    );
+  }
+
+  void _onRadiologySearchChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() => _radiologyRequest = _radiologyRequest.first());
+  }
+
+  void _onLabSearchChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() => _labRequest = _labRequest.first());
+  }
+
+  void _onDiagnosisSearchChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() => _diagnosisRequest = _diagnosisRequest.first());
+  }
+
   @override
   void initState() {
     super.initState();
+    _radiologySearchController.addListener(_onRadiologySearchChanged);
+    _labSearchController.addListener(_onLabSearchChanged);
+    _diagnosisSearchController.addListener(_onDiagnosisSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        unawaited(_reloadCurrentTab());
+        unawaited(_ensureTabLoaded(_tab));
       }
     });
   }
@@ -133,12 +228,18 @@ class _FacilityCatalogConfigPanelState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.tenantId != widget.tenantId ||
         oldWidget.facilityId != widget.facilityId) {
-      unawaited(_reloadCurrentTab());
+      _radiologyHydrated = false;
+      _labHydrated = false;
+      _diagnosisHydrated = false;
+      unawaited(_ensureTabLoaded(_tab, force: true));
     }
   }
 
   @override
   void dispose() {
+    _radiologySearchController.removeListener(_onRadiologySearchChanged);
+    _labSearchController.removeListener(_onLabSearchChanged);
+    _diagnosisSearchController.removeListener(_onDiagnosisSearchChanged);
     _labSearchController.dispose();
     _radiologySearchController.dispose();
     _diagnosisSearchController.dispose();
@@ -149,11 +250,13 @@ class _FacilityCatalogConfigPanelState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final AppFailure? failure = _activeFailure;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppTabStrip(
+          variant: AppTabStripVariant.nested,
           tabs: <AppTabItem>[
             AppTabItem(
               id: _CatalogDeskTab.radiology.name,
@@ -181,18 +284,25 @@ class _FacilityCatalogConfigPanelState
             }
             setState(() {
               _tab = next;
-              _failure = null;
+              switch (next) {
+                case _CatalogDeskTab.radiology:
+                  _radiologyRequest = _radiologyRequest.first();
+                case _CatalogDeskTab.lab:
+                  _labRequest = _labRequest.first();
+                case _CatalogDeskTab.diagnoses:
+                  _diagnosisRequest = _diagnosisRequest.first();
+              }
             });
-            unawaited(_reloadCurrentTab());
+            unawaited(_ensureTabLoaded(next));
           },
         ),
         SizedBox(height: theme.spacing.sm),
-        if (_failure != null)
+        if (failure != null)
           Padding(
             padding: EdgeInsets.only(bottom: theme.spacing.sm),
             child: AppFormInformationBanner.failure(
               context: context,
-              failure: _failure!,
+              failure: failure,
             ),
           ),
         Expanded(child: _buildTableBody(l10n)),
@@ -217,8 +327,15 @@ class _FacilityCatalogConfigPanelState
       ..sort();
 
     return AppListTable<RadiologyCatalogTest>(
-      items: _filteredRadiologyItems,
-      isLoading: _isLoading,
+      page: _pageOf(_radiologyVisibleItems, _radiologyRequest),
+      onPageChanged: (AppPageRequest request) {
+        if (request == _radiologyRequest) {
+          return;
+        }
+        setState(() => _radiologyRequest = request);
+      },
+      paginationMode: AppListTablePaginationMode.infinite,
+      isLoading: _radiologyLoading,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_radiology',
@@ -230,12 +347,7 @@ class _FacilityCatalogConfigPanelState
         controller: _radiologySearchController,
         semanticLabel: l10n.tenantFacilityCatalogTabRadiology,
         hintText: l10n.tenantFacilityCatalogSearchHint,
-        matcher: (RadiologyCatalogTest item, String query) {
-          final String haystack =
-              '${item.name} ${item.code ?? ''} ${item.modality ?? ''}'
-                  .toLowerCase();
-          return haystack.contains(query.toLowerCase());
-        },
+        matcher: (_, _) => true,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFilterActionLabel,
         advancedFilterTitle: l10n.radiologyModalityLabel,
@@ -257,7 +369,10 @@ class _FacilityCatalogConfigPanelState
         filterValue: _radiologyFilterValue,
         hasActiveFilters: _radiologyFilterValue.isActive,
         onFilterChanged: (AppSearchBarFilterValue value) {
-          setState(() => _radiologyFilterValue = value);
+          setState(() {
+            _radiologyFilterValue = value;
+            _radiologyRequest = _radiologyRequest.first();
+          });
         },
         trailingActions: <AppSearchBarAction>[
           if (widget.enabled) ...<AppSearchBarAction>[
@@ -341,8 +456,15 @@ class _FacilityCatalogConfigPanelState
       ..sort();
 
     return AppListTable<LabCatalogItem>(
-      items: _filteredLabItems,
-      isLoading: _isLoading,
+      page: _pageOf(_labVisibleItems, _labRequest),
+      onPageChanged: (AppPageRequest request) {
+        if (request == _labRequest) {
+          return;
+        }
+        setState(() => _labRequest = request);
+      },
+      paginationMode: AppListTablePaginationMode.infinite,
+      isLoading: _labLoading,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_lab',
@@ -353,8 +475,7 @@ class _FacilityCatalogConfigPanelState
         controller: _labSearchController,
         semanticLabel: l10n.tenantFacilityCatalogTabLab,
         hintText: l10n.tenantFacilityCatalogSearchHint,
-        matcher: (LabCatalogItem item, String query) =>
-            item.matchesSearch(query),
+        matcher: (_, _) => true,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFilterActionLabel,
         advancedFilterTitle: l10n.labFiltersLabel,
@@ -391,7 +512,10 @@ class _FacilityCatalogConfigPanelState
         filterValue: _labFilterValue,
         hasActiveFilters: _labFilterValue.isActive,
         onFilterChanged: (AppSearchBarFilterValue value) {
-          setState(() => _labFilterValue = value);
+          setState(() {
+            _labFilterValue = value;
+            _labRequest = _labRequest.first();
+          });
         },
         trailingActions: <AppSearchBarAction>[
           if (widget.enabled) ...<AppSearchBarAction>[
@@ -498,8 +622,15 @@ class _FacilityCatalogConfigPanelState
       ..sort();
 
     return AppListTable<ClinicalCatalogOption>(
-      items: _filteredDiagnosisItems,
-      isLoading: _isLoading,
+      page: _pageOf(_diagnosisVisibleItems, _diagnosisRequest),
+      onPageChanged: (AppPageRequest request) {
+        if (request == _diagnosisRequest) {
+          return;
+        }
+        setState(() => _diagnosisRequest = request);
+      },
+      paginationMode: AppListTablePaginationMode.infinite,
+      isLoading: _diagnosisLoading,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_diagnoses',
@@ -511,12 +642,7 @@ class _FacilityCatalogConfigPanelState
         controller: _diagnosisSearchController,
         semanticLabel: l10n.tenantFacilityCatalogTabDiagnoses,
         hintText: l10n.tenantFacilityCatalogSearchHint,
-        matcher: (ClinicalCatalogOption item, String query) {
-          final String haystack =
-              '${item.name ?? ''} ${item.code ?? ''} ${item.category ?? ''}'
-                  .toLowerCase();
-          return haystack.contains(query.toLowerCase());
-        },
+        matcher: (_, _) => true,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFilterActionLabel,
         advancedFilterTitle: l10n.labCategoryLabel,
@@ -538,7 +664,10 @@ class _FacilityCatalogConfigPanelState
         filterValue: _diagnosisFilterValue,
         hasActiveFilters: _diagnosisFilterValue.isActive,
         onFilterChanged: (AppSearchBarFilterValue value) {
-          setState(() => _diagnosisFilterValue = value);
+          setState(() {
+            _diagnosisFilterValue = value;
+            _diagnosisRequest = _diagnosisRequest.first();
+          });
         },
         trailingActions: <AppSearchBarAction>[
           if (widget.enabled) ...<AppSearchBarAction>[
@@ -549,7 +678,7 @@ class _FacilityCatalogConfigPanelState
             ),
             AppSearchBarAction(
               icon: Icons.add_circle_outline,
-              label: l10n.tenantFacilityCatalogAddServiceAction,
+              label: l10n.clinicalAddDiagnosisAction,
               onPressed: () => unawaited(_openDiagnosisAddDialog()),
             ),
           ],
@@ -560,7 +689,7 @@ class _FacilityCatalogConfigPanelState
         body: l10n.tenantFacilityCatalogEmptyCatalog,
         action: widget.enabled
             ? AppButton.primary(
-                label: l10n.tenantFacilityCatalogAddServiceAction,
+                label: l10n.clinicalAddDiagnosisAction,
                 leadingIcon: Icons.add_circle_outline,
                 onPressed: () => unawaited(_openDiagnosisAddDialog()),
               )
@@ -616,52 +745,63 @@ class _FacilityCatalogConfigPanelState
     );
   }
 
-  Future<void> _reloadCurrentTab() async {
-    return switch (_tab) {
-      _CatalogDeskTab.radiology => _loadRadiologyItems(),
-      _CatalogDeskTab.lab => _loadLabItems(),
-      _CatalogDeskTab.diagnoses => _loadDiagnosisItems(),
+  Future<void> _ensureTabLoaded(
+    _CatalogDeskTab tab, {
+    bool force = false,
+  }) async {
+    return switch (tab) {
+      _CatalogDeskTab.radiology => _loadRadiologyItems(force: force),
+      _CatalogDeskTab.lab => _loadLabItems(force: force),
+      _CatalogDeskTab.diagnoses => _loadDiagnosisItems(force: force),
     };
   }
 
-  Future<void> _loadRadiologyItems() async {
+  Future<void> _loadRadiologyItems({bool force = false}) async {
     if (!mounted) {
       return;
     }
+    if (_radiologyHydrated && !force) {
+      return;
+    }
     setState(() {
-      _isLoading = true;
-      _failure = null;
+      _radiologyLoading = true;
+      _radiologyFailure = null;
     });
     final Result<List<RadiologyCatalogTest>> result = await ref
         .read(radiologyRepositoryProvider)
         .listRadiologyCatalogTests(
           includeStandardCatalog: true,
           search: null,
-          limit: _searchLimit,
+          limit: _radiologyFetchLimit,
         );
     if (!mounted) {
       return;
     }
     setState(() {
-      _isLoading = false;
+      _radiologyLoading = false;
       result.when(
         success: (List<RadiologyCatalogTest> items) {
           _radiologyItems = items;
+          _radiologyHydrated = true;
+          _radiologyRequest = _radiologyRequest.first();
         },
         failure: (AppFailure failure) {
-          _failure = failure;
+          _radiologyFailure = failure;
         },
       );
     });
   }
 
-  Future<void> _loadLabItems() async {
+  Future<void> _loadLabItems({bool force = false}) async {
     if (!mounted) {
       return;
     }
+    if (_labHydrated && !force) {
+      return;
+    }
     setState(() {
-      _isLoading = true;
-      _failure = null;
+      _labLoading = true;
+      _labFailure = null;
     });
     final LabRepository repository = ref.read(labRepositoryProvider);
     final List<Result<List<LabCatalogItem>>> results =
@@ -669,12 +809,12 @@ class _FacilityCatalogConfigPanelState
           repository.listTests(
             includeStandardCatalog: true,
             tenantId: widget.tenantId,
-            limit: _searchLimit,
+            limit: _labFetchLimit,
           ),
           repository.listPanels(
             includeStandardCatalog: true,
             tenantId: widget.tenantId,
-            limit: _searchLimit,
+            limit: _labFetchLimit,
           ),
         ]);
     if (!mounted) {
@@ -694,18 +834,25 @@ class _FacilityCatalogConfigPanelState
     );
     setState(() {
       _labItems = merged;
-      _failure = failure;
-      _isLoading = false;
+      _labFailure = failure;
+      _labLoading = false;
+      if (failure == null) {
+        _labHydrated = true;
+        _labRequest = _labRequest.first();
+      }
     });
   }
 
-  Future<void> _loadDiagnosisItems() async {
+  Future<void> _loadDiagnosisItems({bool force = false}) async {
     if (!mounted) {
       return;
     }
+    if (_diagnosisHydrated && !force) {
+      return;
+    }
     setState(() {
-      _isLoading = true;
-      _failure = null;
+      _diagnosisLoading = true;
+      _diagnosisFailure = null;
     });
     final Result<List<ClinicalCatalogOption>> result = await ref
         .read(clinicalRepositoryProvider)
@@ -713,20 +860,22 @@ class _FacilityCatalogConfigPanelState
           termType: 'DIAGNOSIS',
           source: 'GLOBAL',
           query: null,
-          limit: _searchLimit,
+          limit: _diagnosisFetchLimit,
           facilityId: null,
         );
     if (!mounted) {
       return;
     }
     setState(() {
-      _isLoading = false;
+      _diagnosisLoading = false;
       result.when(
         success: (List<ClinicalCatalogOption> items) {
           _diagnosisItems = items;
+          _diagnosisHydrated = true;
+          _diagnosisRequest = _diagnosisRequest.first();
         },
         failure: (AppFailure failure) {
-          _failure = failure;
+          _diagnosisFailure = failure;
         },
       );
     });
@@ -930,7 +1079,7 @@ class _FacilityCatalogConfigPanelState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.radiologySaveConfigurationAction)),
     );
-    await _loadRadiologyItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openRadiologyEditDialog(RadiologyCatalogTest item) async {
@@ -955,7 +1104,7 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || saved != true) {
       return;
     }
-    await _loadRadiologyItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openRadiologyDeleteDialog(RadiologyCatalogTest item) async {
@@ -986,7 +1135,7 @@ class _FacilityCatalogConfigPanelState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.labDeletedMessage)),
     );
-    await _loadRadiologyItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openLabAddDialog(LabCatalogItemType kind) async {
@@ -1018,7 +1167,7 @@ class _FacilityCatalogConfigPanelState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.labSavedMessage)),
     );
-    await _loadLabItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openLabEditDialog(LabCatalogItem item) async {
@@ -1044,7 +1193,7 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || saved != true) {
       return;
     }
-    await _loadLabItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openLabDeleteDialog(LabCatalogItem item) async {
@@ -1081,7 +1230,7 @@ class _FacilityCatalogConfigPanelState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.labDeletedMessage)),
     );
-    await _loadLabItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openDiagnosisAddDialog() async {
@@ -1111,7 +1260,7 @@ class _FacilityCatalogConfigPanelState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.labSavedMessage)),
     );
-    await _loadDiagnosisItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openDiagnosisEditDialog(ClinicalCatalogOption item) async {
@@ -1134,7 +1283,7 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || saved != true) {
       return;
     }
-    await _loadDiagnosisItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openDiagnosisDeleteDialog(ClinicalCatalogOption item) async {
@@ -1163,7 +1312,7 @@ class _FacilityCatalogConfigPanelState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.labDeletedMessage)),
     );
-    await _loadDiagnosisItems();
+    await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<String?> _resolveTenantIdForCreate() async {
