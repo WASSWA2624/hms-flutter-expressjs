@@ -896,7 +896,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         return '$start-$end / $total';
       },
       onPageChanged: _onPageChanged,
-      columnVisibilityStorageKey: 'setup_manage_tenants_v1',
+      columnVisibilityStorageKey: 'setup_manage_tenants_v2',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<TenantProfile>(
         controller: _searchController,
@@ -1761,8 +1761,10 @@ class _ManagementRowActions extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: theme.spacing.md,
+      runSpacing: theme.spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         AppButton.tertiary(
           leadingIcon: Icons.edit_outlined,
@@ -1772,7 +1774,6 @@ class _ManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
-        SizedBox(width: theme.spacing.sm),
         AppButton.tertiary(
           leadingIcon: Icons.delete_outline,
           label: deleteLabel,
@@ -4125,7 +4126,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         return '$start-$end / $total';
       },
       onPageChanged: _onPageChanged,
-      columnVisibilityStorageKey: 'setup_manage_facilities_v1',
+      columnVisibilityStorageKey: 'setup_manage_facilities_v2',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<FacilityProfile>(
         controller: _searchController,
@@ -4350,14 +4351,16 @@ class _TenantManagementRowActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double actionGap = theme.spacing.sm;
+    final double actionGap = theme.spacing.md;
 
     if (tenant.isDeleted) {
       if (!canDelete) {
         return const SizedBox.shrink();
       }
-      return Row(
-        mainAxisSize: MainAxisSize.min,
+      return Wrap(
+        spacing: actionGap,
+        runSpacing: theme.spacing.xs,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
           AppButton.tertiary(
             leadingIcon: Icons.restore_outlined,
@@ -4367,7 +4370,6 @@ class _TenantManagementRowActions extends StatelessWidget {
             enabled: enabled,
             onPressed: enabled ? onRestore : null,
           ),
-          SizedBox(width: actionGap),
           AppButton.tertiary(
             leadingIcon: Icons.delete_forever_outlined,
             label: permanentDeleteLabel,
@@ -4381,8 +4383,10 @@ class _TenantManagementRowActions extends StatelessWidget {
       );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: actionGap,
+      runSpacing: theme.spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         AppButton.tertiary(
           leadingIcon: Icons.edit_outlined,
@@ -4392,8 +4396,7 @@ class _TenantManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
-        if (canDelete) ...<Widget>[
-          SizedBox(width: actionGap),
+        if (canDelete)
           AppButton.tertiary(
             leadingIcon: Icons.delete_outline,
             label: deleteLabel,
@@ -4403,7 +4406,6 @@ class _TenantManagementRowActions extends StatelessWidget {
             enabled: enabled,
             onPressed: enabled ? onDelete : null,
           ),
-        ],
       ],
     );
   }
@@ -4438,11 +4440,13 @@ class _FacilityManagementRowActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double actionGap = theme.spacing.sm;
+    final double actionGap = theme.spacing.md;
 
     if (facility.isDeleted) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
+      return Wrap(
+        spacing: actionGap,
+        runSpacing: theme.spacing.xs,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: <Widget>[
           AppButton.tertiary(
             leadingIcon: Icons.restore_outlined,
@@ -4452,7 +4456,6 @@ class _FacilityManagementRowActions extends StatelessWidget {
             enabled: enabled,
             onPressed: enabled ? onRestore : null,
           ),
-          SizedBox(width: actionGap),
           AppButton.tertiary(
             leadingIcon: Icons.delete_forever_outlined,
             label: permanentDeleteLabel,
@@ -4466,8 +4469,10 @@ class _FacilityManagementRowActions extends StatelessWidget {
       );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: actionGap,
+      runSpacing: theme.spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         AppButton.tertiary(
           leadingIcon: Icons.edit_outlined,
@@ -4477,7 +4482,6 @@ class _FacilityManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
-        SizedBox(width: actionGap),
         AppButton.tertiary(
           leadingIcon: Icons.delete_outline,
           label: deleteLabel,

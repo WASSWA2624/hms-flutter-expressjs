@@ -1036,7 +1036,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return saved.clamp(_minResizableColumnWidth, 640);
     }
     if (_isActionsColumn(column)) {
-      return compact ? 200.0 : 240.0;
+      return compact ? 280.0 : 340.0;
     }
     return compact ? _defaultCompactColumnWidth : _defaultColumnWidth;
   }
