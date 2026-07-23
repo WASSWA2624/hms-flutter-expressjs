@@ -163,7 +163,7 @@ void main() {
     expect(find.byIcon(Icons.add), findsOneWidget);
   });
 
-  testWidgets('scrolls tabs horizontally when they overflow', (
+  testWidgets('shows overflow menu for tabs that do not fit', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(320, 640);
@@ -171,43 +171,50 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    String selected = 'a';
+
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
         home: Scaffold(
-          body: AppTabStrip(
-            tabs: const <AppTabItem>[
-              AppTabItem(id: 'a', label: 'Appointments'),
-              AppTabItem(id: 'b', label: 'Desk queue'),
-              AppTabItem(id: 'c', label: 'High priority'),
-              AppTabItem(id: 'd', label: 'Active visits'),
-              AppTabItem(id: 'e', label: 'Follow-ups'),
-              AppTabItem(id: 'f', label: 'Payment gate'),
-            ],
-            selectedId: 'a',
-            onTabTapped: (_) {},
+          body: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AppTabStrip(
+                tabs: const <AppTabItem>[
+                  AppTabItem(id: 'a', label: 'Appointments'),
+                  AppTabItem(id: 'b', label: 'Desk queue'),
+                  AppTabItem(id: 'c', label: 'High priority'),
+                  AppTabItem(id: 'd', label: 'Active visits'),
+                  AppTabItem(id: 'e', label: 'Follow-ups'),
+                  AppTabItem(id: 'f', label: 'Payment gate'),
+                ],
+                selectedId: selected,
+                onTabTapped: (String id) => setState(() => selected = id),
+              );
+            },
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    final Finder scrollable = find.byWidgetPredicate(
-      (Widget widget) =>
-          widget is SingleChildScrollView &&
-          widget.scrollDirection == Axis.horizontal,
-    );
-    expect(scrollable, findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('tabOverflowCueRight')), findsOneWidget);
-    expect(find.byKey(const ValueKey<String>('tabOverflowCueLeft')), findsNothing);
+    expect(find.byKey(const ValueKey<String>('tabOverflowMore')), findsOneWidget);
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+    expect(find.text('Appointments'), findsOneWidget);
+    expect(find.text('Payment gate'), findsNothing);
 
-    await tester.drag(scrollable, const Offset(-240, 0));
+    await tester.tap(find.byKey(const ValueKey<String>('tabOverflowMore')));
     await tester.pumpAndSettle();
+
+    expect(find.text('Payment gate'), findsOneWidget);
+    await tester.tap(find.text('Payment gate'));
+    await tester.pumpAndSettle();
+
+    expect(selected, 'f');
     expect(tester.takeException(), isNull);
-    expect(find.byKey(const ValueKey<String>('tabOverflowCueLeft')), findsOneWidget);
   });
 
-  testWidgets('hides overflow cues when all tabs fit', (
+  testWidgets('hides overflow menu when all tabs fit', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(1280, 800);
@@ -232,7 +239,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey<String>('tabOverflowCueLeft')), findsNothing);
-    expect(find.byKey(const ValueKey<String>('tabOverflowCueRight')), findsNothing);
+    expect(find.byKey(const ValueKey<String>('tabOverflowMore')), findsNothing);
+    expect(find.byIcon(Icons.more_vert), findsNothing);
   });
 }

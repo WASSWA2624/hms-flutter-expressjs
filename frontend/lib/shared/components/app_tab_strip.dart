@@ -1,9 +1,7 @@
-import 'dart:async';
-
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 
 /// Semantic tone for tab count superscripts.
 enum AppTabCountTone { info, warning, danger }
@@ -68,12 +66,11 @@ class AppTabStrip extends StatelessWidget {
       colorScheme.surface,
     );
 
-    final Widget tabRow = _AppTabScrollRow(
+    final Widget tabRow = _AppTabOverflowRow(
       tabs: tabs,
       selectedId: selectedId,
       onTabTapped: onTabTapped,
       activeFill: activeFill,
-      surfaceColor: colorScheme.surface,
     );
 
     if (!_hasToolbar) {
@@ -124,231 +121,246 @@ class AppTabStrip extends StatelessWidget {
   }
 }
 
-/// Horizontally scrollable tab chips with edge fades and chevrons when more
-/// tabs are off-screen to the left, right, or both.
-class _AppTabScrollRow extends StatefulWidget {
-  const _AppTabScrollRow({
+/// Tab chips that fit in the available width, with a more menu for the rest.
+class _AppTabOverflowRow extends StatelessWidget {
+  const _AppTabOverflowRow({
     required this.tabs,
     required this.selectedId,
     required this.onTabTapped,
     required this.activeFill,
-    required this.surfaceColor,
   });
+
+  static const double _moreButtonWidth = 40;
+  static const String _moreLabel = 'More tabs';
 
   final List<AppTabItem> tabs;
   final String? selectedId;
   final ValueChanged<String> onTabTapped;
   final Color activeFill;
-  final Color surfaceColor;
-
-  @override
-  State<_AppTabScrollRow> createState() => _AppTabScrollRowState();
-}
-
-class _AppTabScrollRowState extends State<_AppTabScrollRow> {
-  static const double _edgeFadeWidth = 28;
-  static const double _nudgeDistance = 120;
-
-  final ScrollController _controller = ScrollController();
-  bool _canScrollLeft = false;
-  bool _canScrollRight = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.addListener(_updateOverflow);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateOverflow());
-  }
-
-  @override
-  void didUpdateWidget(covariant _AppTabScrollRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.tabs.length != widget.tabs.length ||
-        oldWidget.selectedId != widget.selectedId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _updateOverflow());
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller
-      ..removeListener(_updateOverflow)
-      ..dispose();
-    super.dispose();
-  }
-
-  void _updateOverflow() {
-    if (!mounted || !_controller.hasClients) {
-      return;
-    }
-    final ScrollPosition position = _controller.position;
-    final bool canScrollLeft = position.pixels > 0.5;
-    final bool canScrollRight =
-        position.pixels < position.maxScrollExtent - 0.5;
-    if (canScrollLeft != _canScrollLeft || canScrollRight != _canScrollRight) {
-      setState(() {
-        _canScrollLeft = canScrollLeft;
-        _canScrollRight = canScrollRight;
-      });
-    }
-  }
-
-  Future<void> _nudge(double delta) async {
-    if (!_controller.hasClients) {
-      return;
-    }
-    final double target = (_controller.offset + delta).clamp(
-      0.0,
-      _controller.position.maxScrollExtent,
-    );
-    await _controller.animateTo(
-      target,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
-    return NotificationListener<ScrollMetricsNotification>(
-      onNotification: (ScrollMetricsNotification notification) {
-        _updateOverflow();
-        return false;
-      },
-      child: Stack(
-        children: <Widget>[
-          ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(
-              scrollbars: false,
-              dragDevices: <PointerDeviceKind>{
-                PointerDeviceKind.touch,
-                PointerDeviceKind.mouse,
-                PointerDeviceKind.trackpad,
-                PointerDeviceKind.stylus,
-              },
-            ),
-            child: SingleChildScrollView(
-              controller: _controller,
-              scrollDirection: Axis.horizontal,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final _TabPartition partition = _partitionTabs(
+          tabs: tabs,
+          selectedId: selectedId,
+          maxWidth: maxWidth,
+          theme: theme,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        );
+
+        return Row(
+          children: <Widget>[
+            Expanded(
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  for (int index = 0; index < widget.tabs.length; index += 1)
+                  for (
+                    int visiblePos = 0;
+                    visiblePos < partition.visibleIndices.length;
+                    visiblePos += 1
+                  )
                     _AppTabChip(
-                      label: widget.tabs[index].label,
-                      icon: widget.tabs[index].icon,
-                      count: widget.tabs[index].count,
-                      countTone: widget.tabs[index].countTone,
-                      isSelected: widget.selectedId == widget.tabs[index].id,
-                      isFirst: index == 0,
-                      activeFill: widget.activeFill,
-                      onTap: () => widget.onTabTapped(widget.tabs[index].id),
+                      label: tabs[partition.visibleIndices[visiblePos]].label,
+                      icon: tabs[partition.visibleIndices[visiblePos]].icon,
+                      count: tabs[partition.visibleIndices[visiblePos]].count,
+                      countTone:
+                          tabs[partition.visibleIndices[visiblePos]].countTone,
+                      isSelected:
+                          selectedId ==
+                          tabs[partition.visibleIndices[visiblePos]].id,
+                      isFirst: visiblePos == 0,
+                      activeFill: activeFill,
+                      onTap: () => onTabTapped(
+                        tabs[partition.visibleIndices[visiblePos]].id,
+                      ),
                     ),
                 ],
               ),
             ),
-          ),
-          if (_canScrollLeft)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              child: _TabOverflowCue(
-                alignment: Alignment.centerLeft,
-                surfaceColor: widget.surfaceColor,
-                icon: Icons.chevron_left,
-                semanticLabel: 'Scroll tabs left',
-                onPressed: () => unawaited(_nudge(-_nudgeDistance)),
-                fadeWidth: _edgeFadeWidth,
-                iconColor: colorScheme.onSurfaceVariant,
+            if (partition.overflowIndices.isNotEmpty)
+              MenuAnchor(
+                style: MenuStyle(
+                  visualDensity: VisualDensity.compact,
+                  alignment: AlignmentDirectional.bottomEnd,
+                  padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
+                    EdgeInsets.all(theme.spacing.xs),
+                  ),
+                ),
+                builder:
+                    (
+                      BuildContext context,
+                      MenuController controller,
+                      Widget? child,
+                    ) {
+                      return KeyedSubtree(
+                        key: const ValueKey<String>('tabOverflowMore'),
+                        child: AppButton.popupMenuTrigger(
+                          context: context,
+                          icon: Icons.more_vert,
+                          semanticLabel: _moreLabel,
+                          onPressed: () {
+                            if (controller.isOpen) {
+                              controller.close();
+                            } else {
+                              controller.open();
+                            }
+                          },
+                        ),
+                      );
+                    },
+                menuChildren: <Widget>[
+                  for (final int index in partition.overflowIndices)
+                    MenuItemButton(
+                      onPressed: () => onTabTapped(tabs[index].id),
+                      leadingIcon: tabs[index].icon == null
+                          ? null
+                          : Icon(tabs[index].icon, size: 18),
+                      trailingIcon: selectedId == tabs[index].id
+                          ? const Icon(Icons.check, size: 18)
+                          : null,
+                      child: Text(
+                        tabs[index].count == null
+                            ? tabs[index].label
+                            : '${tabs[index].label} (${tabs[index].count})',
+                      ),
+                    ),
+                ],
               ),
-            ),
-          if (_canScrollRight)
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              child: _TabOverflowCue(
-                alignment: Alignment.centerRight,
-                surfaceColor: widget.surfaceColor,
-                icon: Icons.chevron_right,
-                semanticLabel: 'Scroll tabs right',
-                onPressed: () => unawaited(_nudge(_nudgeDistance)),
-                fadeWidth: _edgeFadeWidth,
-                iconColor: colorScheme.onSurfaceVariant,
-              ),
-            ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }
 
-class _TabOverflowCue extends StatelessWidget {
-  const _TabOverflowCue({
-    required this.alignment,
-    required this.surfaceColor,
-    required this.icon,
-    required this.semanticLabel,
-    required this.onPressed,
-    required this.fadeWidth,
-    required this.iconColor,
+final class _TabPartition {
+  const _TabPartition({
+    required this.visibleIndices,
+    required this.overflowIndices,
   });
 
-  final Alignment alignment;
-  final Color surfaceColor;
-  final IconData icon;
-  final String semanticLabel;
-  final VoidCallback onPressed;
-  final double fadeWidth;
-  final Color iconColor;
+  final List<int> visibleIndices;
+  final List<int> overflowIndices;
+}
 
-  @override
-  Widget build(BuildContext context) {
-    final bool fromLeft = alignment == Alignment.centerLeft;
-    return IgnorePointer(
-      ignoring: false,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: fromLeft ? Alignment.centerLeft : Alignment.centerRight,
-            end: fromLeft ? Alignment.centerRight : Alignment.centerLeft,
-            colors: <Color>[
-              surfaceColor,
-              surfaceColor.withValues(alpha: 0.92),
-              surfaceColor.withValues(alpha: 0),
-            ],
-            stops: const <double>[0, 0.45, 1],
-          ),
-        ),
-        child: SizedBox(
-          width: fadeWidth + 8,
-          child: Align(
-            alignment: alignment,
-            child: IconButton(
-              key: ValueKey<String>(
-                fromLeft ? 'tabOverflowCueLeft' : 'tabOverflowCueRight',
-              ),
-              onPressed: onPressed,
-              tooltip: semanticLabel,
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 28, height: 28),
-              icon: Icon(icon, size: 22, color: iconColor),
-              style: IconButton.styleFrom(
-                foregroundColor: iconColor,
-                backgroundColor: surfaceColor.withValues(alpha: 0.72),
-                shape: const CircleBorder(),
-              ),
-            ),
-          ),
-        ),
-      ),
+_TabPartition _partitionTabs({
+  required List<AppTabItem> tabs,
+  required String? selectedId,
+  required double maxWidth,
+  required ThemeData theme,
+  required TextDirection textDirection,
+  required TextScaler textScaler,
+}) {
+  if (tabs.isEmpty) {
+    return const _TabPartition(
+      visibleIndices: <int>[],
+      overflowIndices: <int>[],
     );
   }
+
+  final List<double> widths = <double>[
+    for (final AppTabItem tab in tabs)
+      _estimateTabWidth(
+        tab: tab,
+        theme: theme,
+        textDirection: textDirection,
+        textScaler: textScaler,
+      ),
+  ];
+  final double totalWidth = widths.fold<double>(0, (double a, double b) => a + b);
+  if (totalWidth <= maxWidth) {
+    return _TabPartition(
+      visibleIndices: List<int>.generate(tabs.length, (int i) => i),
+      overflowIndices: const <int>[],
+    );
+  }
+
+  final double budget = (maxWidth - _AppTabOverflowRow._moreButtonWidth).clamp(
+    0.0,
+    maxWidth,
+  );
+  final List<int> visible = <int>[];
+  double used = 0;
+  for (int i = 0; i < tabs.length; i += 1) {
+    if (used + widths[i] <= budget) {
+      visible.add(i);
+      used += widths[i];
+    } else {
+      break;
+    }
+  }
+
+  final int selectedIndex = tabs.indexWhere(
+    (AppTabItem tab) => tab.id == selectedId,
+  );
+  if (selectedIndex >= 0 && !visible.contains(selectedIndex)) {
+    while (visible.isNotEmpty && used + widths[selectedIndex] > budget) {
+      used -= widths[visible.removeLast()];
+    }
+    visible
+      ..add(selectedIndex)
+      ..sort();
+  }
+
+  final Set<int> visibleSet = visible.toSet();
+  return _TabPartition(
+    visibleIndices: visible,
+    overflowIndices: <int>[
+      for (int i = 0; i < tabs.length; i += 1)
+        if (!visibleSet.contains(i)) i,
+    ],
+  );
+}
+
+double _estimateTabWidth({
+  required AppTabItem tab,
+  required ThemeData theme,
+  required TextDirection textDirection,
+  required TextScaler textScaler,
+}) {
+  // Unselected chip padding (no flare insets). Selected flares may add a few
+  // pixels; estimates stay slightly conservative via the more-button reserve.
+  double width = theme.spacing.sm * 2;
+  if (tab.icon != null) {
+    width += 18 + theme.spacing.xs;
+  }
+
+  final TextPainter labelPainter = TextPainter(
+    text: TextSpan(
+      text: tab.label.trim(),
+      style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
+    ),
+    maxLines: 1,
+    textDirection: textDirection,
+    textScaler: textScaler,
+  )..layout();
+  width += labelPainter.width;
+
+  if (tab.count != null) {
+    final TextPainter countPainter = TextPainter(
+      text: TextSpan(
+        text: '${tab.count}',
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: 10,
+          height: 1,
+        ),
+      ),
+      maxLines: 1,
+      textDirection: textDirection,
+      textScaler: textScaler,
+    )..layout();
+    width += 1 + countPainter.width;
+  }
+
+  return width;
 }
 
 /// Dense flat toolbar action (icon + label, no fill).
