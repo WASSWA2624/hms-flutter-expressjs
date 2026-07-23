@@ -107,7 +107,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(find.byType(AppLoadingIndicator), findsOneWidget);
     expect(find.text('Loading'), findsOneWidget);
     expect(find.text('Please wait...'), findsOneWidget);
 

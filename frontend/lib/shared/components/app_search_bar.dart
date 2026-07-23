@@ -904,6 +904,7 @@ class _AppSearchBarFiltersDialogState
   late Map<String, Set<String>> _selections;
   String? _dateRangeError;
   bool _isApplying = false;
+  OverlayEntry? _applyOverlay;
 
   @override
   void initState() {
@@ -917,6 +918,7 @@ class _AppSearchBarFiltersDialogState
 
   @override
   void dispose() {
+    _removeApplyOverlay();
     for (final TextEditingController controller in _textControllers.values) {
       controller.dispose();
     }
@@ -940,211 +942,183 @@ class _AppSearchBarFiltersDialogState
         showOptionalIndicators: false,
         child: Form(
           key: _formKey,
-          child: Stack(
-            alignment: Alignment.center,
-            children: <Widget>[
-              AbsorbPointer(
-                absorbing: !canInteract,
-                child: Opacity(
-                  opacity: canInteract ? 1 : 0.55,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      if (widget.searchFields.isNotEmpty) ...<Widget>[
-                        _FilterControlShell(
-                          child: AppSelectField<String>.searchable(
-                            value: _field,
-                            labelText: widget.searchFieldLabel,
-                            hintText: widget.allFieldsLabel,
-                            options: <AppSelectOption<String>>[
-                              AppSelectOption<String>(
-                                value: _allValue,
-                                label: widget.allFieldsLabel,
-                                leadingIcon: const Icon(
-                                  Icons.manage_search_outlined,
-                                ),
-                              ),
-                              for (final AppSearchBarFieldChoice field
-                                  in widget.searchFields)
+          child: AbsorbPointer(
+            absorbing: !canInteract,
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  if (widget.searchFields.isNotEmpty) ...<Widget>[
+                    _FilterControlShell(
+                      child: AppSelectField<String>.searchable(
+                        value: _field,
+                        labelText: widget.searchFieldLabel,
+                        hintText: widget.allFieldsLabel,
+                        options: <AppSelectOption<String>>[
+                          AppSelectOption<String>(
+                            value: _allValue,
+                            label: widget.allFieldsLabel,
+                            leadingIcon: const Icon(
+                              Icons.manage_search_outlined,
+                            ),
+                          ),
+                          for (final AppSearchBarFieldChoice field
+                              in widget.searchFields)
+                            AppSelectOption<String>(
+                              value: field.field,
+                              label: field.label,
+                              leadingIcon: field.icon == null
+                                  ? null
+                                  : Icon(field.icon),
+                            ),
+                        ],
+                        onChanged: (String? value) {
+                          setState(() {
+                            _field = value == null || value == _allValue
+                                ? null
+                                : value;
+                          });
+                        },
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.md),
+                  ],
+                  if (widget.textFilters.isNotEmpty) ...<Widget>[
+                    _DialogSectionTitle(label: widget.searchFieldLabel),
+                    SizedBox(height: theme.spacing.sm),
+                    _ResponsiveFilterGrid(
+                      children: <Widget>[
+                        for (final AppSearchBarTextFilter filter
+                            in widget.textFilters)
+                          AppTextField(
+                            controller: _textControllers[filter.key],
+                            labelText: filter.label,
+                            hintText: filter.hintText,
+                            prefixIcon: filter.icon == null
+                                ? null
+                                : Icon(filter.icon),
+                            keyboardType: filter.keyboardType,
+                            textInputAction:
+                                filter.textInputAction ?? TextInputAction.next,
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: theme.spacing.md),
+                  ],
+                  if (widget.enableDateFilter) ...<Widget>[
+                    _DialogSectionTitle(label: widget.dateFilterLabel),
+                    SizedBox(height: theme.spacing.sm),
+                    _ResponsiveFilterRow(
+                      left: _FilterControlShell(
+                        child: AppDateField(
+                          value: _dateFrom,
+                          firstDate: widget.firstDate,
+                          lastDate: widget.lastDate,
+                          currentDate: widget.currentDate,
+                          pickerButtonLabel: widget.datePickerButtonLabel,
+                          invalidDateMessage: widget.invalidDateMessage,
+                          labelText: widget.dateFromLabel,
+                          onChanged: (DateTime? value) {
+                            setState(() {
+                              _dateFrom = value;
+                              _dateRangeError = null;
+                            });
+                          },
+                        ),
+                      ),
+                      right: _FilterControlShell(
+                        child: AppDateField(
+                          value: _dateTo,
+                          firstDate: widget.firstDate,
+                          lastDate: widget.lastDate,
+                          currentDate: widget.currentDate,
+                          pickerButtonLabel: widget.datePickerButtonLabel,
+                          invalidDateMessage: widget.invalidDateMessage,
+                          labelText: widget.dateToLabel,
+                          onChanged: (DateTime? value) {
+                            setState(() {
+                              _dateTo = value;
+                              _dateRangeError = null;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    if (_dateRangeError != null) ...<Widget>[
+                      SizedBox(height: theme.spacing.xs),
+                      Text(
+                        _dateRangeError!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ],
+                  if (widget.filterGroups.any(_hasFilterChoices)) ...<Widget>[
+                    SizedBox(height: theme.spacing.md),
+                    _ResponsiveFilterGrid(
+                      children: <Widget>[
+                        for (final AppSearchBarFilterGroup group
+                            in widget.filterGroups) ...<Widget>[
+                          if (group.choices.isNotEmpty && !group.allowMultiple)
+                            AppSelectField<String>.searchable(
+                              value: _options[group.key],
+                              labelText: group.label,
+                              hintText: group.allLabel ?? widget.allFieldsLabel,
+                              options: <AppSelectOption<String>>[
                                 AppSelectOption<String>(
-                                  value: field.field,
-                                  label: field.label,
-                                  leadingIcon: field.icon == null
-                                      ? null
-                                      : Icon(field.icon),
+                                  value: _allValue,
+                                  label:
+                                      group.allLabel ?? widget.allFieldsLabel,
+                                  leadingIcon: const Icon(Icons.filter_list_off),
                                 ),
-                            ],
-                            onChanged: (String? value) {
-                              setState(() {
-                                _field = value == null || value == _allValue
-                                    ? null
-                                    : value;
-                              });
-                            },
-                          ),
-                        ),
-                        SizedBox(height: theme.spacing.md),
-                      ],
-                      if (widget.textFilters.isNotEmpty) ...<Widget>[
-                        _DialogSectionTitle(label: widget.searchFieldLabel),
-                        SizedBox(height: theme.spacing.sm),
-                        _ResponsiveFilterGrid(
-                          children: <Widget>[
-                            for (final AppSearchBarTextFilter filter
-                                in widget.textFilters)
-                              AppTextField(
-                                controller: _textControllers[filter.key],
-                                labelText: filter.label,
-                                hintText: filter.hintText,
-                                prefixIcon: filter.icon == null
-                                    ? null
-                                    : Icon(filter.icon),
-                                keyboardType: filter.keyboardType,
-                                textInputAction:
-                                    filter.textInputAction ??
-                                    TextInputAction.next,
-                              ),
-                          ],
-                        ),
-                        SizedBox(height: theme.spacing.md),
-                      ],
-                      if (widget.enableDateFilter) ...<Widget>[
-                        _DialogSectionTitle(label: widget.dateFilterLabel),
-                        SizedBox(height: theme.spacing.sm),
-                        _ResponsiveFilterRow(
-                          left: _FilterControlShell(
-                            child: AppDateField(
-                              value: _dateFrom,
-                              firstDate: widget.firstDate,
-                              lastDate: widget.lastDate,
-                              currentDate: widget.currentDate,
-                              pickerButtonLabel: widget.datePickerButtonLabel,
-                              invalidDateMessage: widget.invalidDateMessage,
-                              labelText: widget.dateFromLabel,
-                              onChanged: (DateTime? value) {
+                                for (final AppSearchBarFilterChoice choice
+                                    in group.choices)
+                                  AppSelectOption<String>(
+                                    value: choice.value,
+                                    label: choice.label,
+                                    leadingIcon: choice.icon == null
+                                        ? null
+                                        : Icon(choice.icon),
+                                  ),
+                              ],
+                              onChanged: (String? value) {
                                 setState(() {
-                                  _dateFrom = value;
-                                  _dateRangeError = null;
+                                  final Map<String, String> next =
+                                      Map<String, String>.of(_options);
+                                  if (value == null || value == _allValue) {
+                                    next.remove(group.key);
+                                  } else {
+                                    next[group.key] = value;
+                                  }
+                                  _options = next;
                                 });
                               },
                             ),
-                          ),
-                          right: _FilterControlShell(
-                            child: AppDateField(
-                              value: _dateTo,
-                              firstDate: widget.firstDate,
-                              lastDate: widget.lastDate,
-                              currentDate: widget.currentDate,
-                              pickerButtonLabel: widget.datePickerButtonLabel,
-                              invalidDateMessage: widget.invalidDateMessage,
-                              labelText: widget.dateToLabel,
-                              onChanged: (DateTime? value) {
+                          if (group.choices.isNotEmpty && group.allowMultiple)
+                            _MultiSelectFilterGroup(
+                              group: group,
+                              selected:
+                                  _selections[group.key] ?? const <String>{},
+                              onChanged: (Set<String> values) {
                                 setState(() {
-                                  _dateTo = value;
-                                  _dateRangeError = null;
+                                  final Map<String, Set<String>> next =
+                                      _copySelections(_selections);
+                                  if (values.isEmpty) {
+                                    next.remove(group.key);
+                                  } else {
+                                    next[group.key] = values;
+                                  }
+                                  _selections = next;
                                 });
                               },
                             ),
-                          ),
-                        ),
-                        if (_dateRangeError != null) ...<Widget>[
-                          SizedBox(height: theme.spacing.xs),
-                          Text(
-                            _dateRangeError!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.error,
-                            ),
-                          ),
                         ],
                       ],
-                      if (widget.filterGroups.any(_hasFilterChoices)) ...<Widget>[
-                        SizedBox(height: theme.spacing.md),
-                        _ResponsiveFilterGrid(
-                          children: <Widget>[
-                            for (final AppSearchBarFilterGroup group
-                                in widget.filterGroups) ...<Widget>[
-                              if (group.choices.isNotEmpty &&
-                                  !group.allowMultiple)
-                                AppSelectField<String>.searchable(
-                                  value: _options[group.key],
-                                  labelText: group.label,
-                                  hintText:
-                                      group.allLabel ?? widget.allFieldsLabel,
-                                  options: <AppSelectOption<String>>[
-                                    AppSelectOption<String>(
-                                      value: _allValue,
-                                      label:
-                                          group.allLabel ??
-                                          widget.allFieldsLabel,
-                                      leadingIcon: const Icon(
-                                        Icons.filter_list_off,
-                                      ),
-                                    ),
-                                    for (final AppSearchBarFilterChoice choice
-                                        in group.choices)
-                                      AppSelectOption<String>(
-                                        value: choice.value,
-                                        label: choice.label,
-                                        leadingIcon: choice.icon == null
-                                            ? null
-                                            : Icon(choice.icon),
-                                      ),
-                                  ],
-                                  onChanged: (String? value) {
-                                    setState(() {
-                                      final Map<String, String> next =
-                                          Map<String, String>.of(_options);
-                                      if (value == null ||
-                                          value == _allValue) {
-                                        next.remove(group.key);
-                                      } else {
-                                        next[group.key] = value;
-                                      }
-                                      _options = next;
-                                    });
-                                  },
-                                ),
-                              if (group.choices.isNotEmpty &&
-                                  group.allowMultiple)
-                                _MultiSelectFilterGroup(
-                                  group: group,
-                                  selected:
-                                      _selections[group.key] ??
-                                      const <String>{},
-                                  onChanged: (Set<String> values) {
-                                    setState(() {
-                                      final Map<String, Set<String>> next =
-                                          _copySelections(_selections);
-                                      if (values.isEmpty) {
-                                        next.remove(group.key);
-                                      } else {
-                                        next[group.key] = values;
-                                      }
-                                      _selections = next;
-                                    });
-                                  },
-                                ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              if (_isApplying)
-                Positioned.fill(
-                  child: ColoredBox(
-                    color: theme.colorScheme.surface.withValues(alpha: 0.94),
-                    child: AppLoadingIndicator(
-                      title: context.l10n.commonLoadingTitle,
-                      body: context.l10n.commonLoadingBody,
-                      semanticLabel: context.l10n.commonLoadingTitle,
                     ),
-                  ),
-                ),
-            ],
+                  ],
+                ],
+              ),
           ),
         ),
       ),
@@ -1158,8 +1132,8 @@ class _AppSearchBarFiltersDialogState
         AppButton.primary(
           label: widget.applyLabel,
           leadingIcon: Icons.check,
-          isLoading: _isApplying,
-          onPressed: _apply,
+          enabled: canInteract,
+          onPressed: canInteract ? _apply : null,
         ),
         AppButton.tertiary(
           label: widget.closeLabel,
@@ -1214,26 +1188,75 @@ class _AppSearchBarFiltersDialogState
 
   Future<void> _commitAndClose(AppSearchBarFilterValue value) async {
     setState(() => _isApplying = true);
+    _showApplyOverlay();
     // Paint the busy/disabled state before applying filters.
     await Future<void>.delayed(Duration.zero);
     if (!mounted) {
+      _removeApplyOverlay();
       return;
     }
 
     final Future<void> Function(AppSearchBarFilterValue value)? onApplying =
         widget.onApplying;
-    if (onApplying != null) {
-      await onApplying(value);
+    try {
+      if (onApplying != null) {
+        await onApplying(value);
+        if (!mounted) {
+          return;
+        }
+      }
+
+      await Future<void>.delayed(_applyBusyHold);
       if (!mounted) {
         return;
       }
+      Navigator.of(context).pop(value);
+    } finally {
+      _removeApplyOverlay();
     }
+  }
 
-    await Future<void>.delayed(_applyBusyHold);
-    if (!mounted) {
+  void _showApplyOverlay() {
+    _removeApplyOverlay();
+    final OverlayState? overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) {
       return;
     }
-    Navigator.of(context).pop(value);
+
+    final ThemeData theme = Theme.of(context);
+    final String title = context.l10n.commonLoadingTitle;
+    final String body = context.l10n.commonLoadingBody;
+
+    _applyOverlay = OverlayEntry(
+      builder: (BuildContext overlayContext) {
+        return IgnorePointer(
+          child: Center(
+            child: Material(
+              color: theme.colorScheme.surface,
+              elevation: theme.dialogTheme.elevation ?? 8,
+              shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(theme.radius.lg),
+              child: Padding(
+                padding: EdgeInsets.all(theme.spacing.lg),
+                child: AppLoadingIndicator(
+                  size: AppLoadingIndicatorSize.large,
+                  title: title,
+                  body: body,
+                  expand: false,
+                  semanticLabel: title,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    overlay.insert(_applyOverlay!);
+  }
+
+  void _removeApplyOverlay() {
+    _applyOverlay?.remove();
+    _applyOverlay = null;
   }
 
   AppSearchBarFilterValue get _value {
