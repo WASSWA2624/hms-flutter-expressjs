@@ -83,8 +83,7 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     final accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canManageTenant = accessPolicy.canManageTenant();
     final bool canManageFacility = accessPolicy.canManageFacility();
-    final bool canManageHrSetup = accessPolicy.canManageHrFacilitySetup();
-    final bool isHrSetupOnly = accessPolicy.isHrFacilitySetupOnlyUser();
+    final bool canEditStructure = accessPolicy.canEditFacilitySetupStructure();
     final bool canManageAccess = accessPolicy.grantsAny(const <AppPermission>[
       AppPermissions.systemAdmin,
       AppPermissions.tenantAdmin,
@@ -93,11 +92,7 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     ]);
 
     return AppWorkspace(
-      title: tenantFacilitySetupWorkspaceTitle(
-        accessPolicy,
-        l10n,
-        isHrSetupOnly: isHrSetupOnly,
-      ),
+      title: tenantFacilitySetupWorkspaceTitle(accessPolicy, l10n),
       leadingIcon: AppRouteIcons.setup,
       maxWidth: PageMaxWidth.dataHeavy,
       scrollable: false,
@@ -121,74 +116,8 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         snapshot: snapshot,
         canManageTenant: canManageTenant,
         canManageFacility: canManageFacility,
-        canManageHrSetup: canManageHrSetup,
+        canEditStructure: canEditStructure,
         canManageAccess: canManageAccess,
-        isHrSetupOnly: isHrSetupOnly,
-      ),
-    );
-  }
-}
-
-typedef _SetupDetailBuilder =
-    Widget Function(
-      BuildContext context,
-      FacilitySetupSnapshot snapshot,
-      bool canManageTenant,
-      bool canManageFacility,
-      bool canEditHrStructure,
-    );
-
-class _SetupDetailDialog extends ConsumerWidget {
-  const _SetupDetailDialog({
-    required this.title,
-    required this.icon,
-    required this.builder,
-  });
-
-  final String title;
-  final IconData icon;
-  final _SetupDetailBuilder builder;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final accessPolicy = ref.watch(appAccessPolicyProvider);
-    final setup = ref.watch(tenantFacilitySetupControllerProvider);
-
-    return AppDialog(
-      title: Text(title),
-      icon: Icon(icon),
-      scrollable: true,
-      maxWidth: 880,
-      content: setup.when(
-        data: (result) => result.when(
-          success: (FacilitySetupSnapshot snapshot) => builder(
-            context,
-            snapshot,
-            accessPolicy.canManageTenant(),
-            accessPolicy.canManageFacility(),
-            accessPolicy.canEditFacilitySetupStructure(),
-          ),
-          failure: (AppFailure failure) => AppFailureStateView(
-            failure: failure,
-            onRetry: () {
-              ref
-                  .read(tenantFacilitySetupControllerProvider.notifier)
-                  .refresh();
-            },
-          ),
-        ),
-        error: (Object error, StackTrace stackTrace) => AppFailureStateView(
-          failure: _setupFailure(error),
-          onRetry: () {
-            ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
-          },
-        ),
-        loading: () => AppStateView(
-          variant: AppStateViewVariant.loading,
-          title: l10n.tenantFacilitySetupLoadingTitle,
-          body: l10n.tenantFacilitySetupLoadingBody,
-        ),
       ),
     );
   }
@@ -481,54 +410,6 @@ Future<bool?> _openFacilityProfileModal(
   );
 }
 
-Future<void> _openDepartmentsModal(BuildContext context) {
-  final AppLocalizations l10n = context.l10n;
-
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityDepartmentsListTitle,
-      icon: Icons.groups_2_outlined,
-      builder:
-          (
-            BuildContext context,
-            FacilitySetupSnapshot snapshot,
-            bool canManageTenant,
-            bool canManageFacility,
-            bool canEditHrStructure,
-          ) => _DepartmentSetupSection(
-            snapshot: snapshot,
-            canSubmit: canEditHrStructure && snapshot.facility != null,
-            framed: false,
-          ),
-    ),
-  );
-}
-
-Future<void> _openUnitsModal(BuildContext context) {
-  final AppLocalizations l10n = context.l10n;
-
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityUnitsListTitle,
-      icon: Icons.hub_outlined,
-      builder:
-          (
-            BuildContext context,
-            FacilitySetupSnapshot snapshot,
-            bool canManageTenant,
-            bool canManageFacility,
-            bool canEditHrStructure,
-          ) => _UnitSetupSection(
-            snapshot: snapshot,
-            canSubmit: canEditHrStructure && snapshot.facility != null,
-            framed: false,
-          ),
-    ),
-  );
-}
-
 Future<void> _openFacilityCatalogModal(
   BuildContext context,
   FacilitySetupSnapshot snapshot,
@@ -575,17 +456,15 @@ class _SetupBody extends ConsumerStatefulWidget {
     required this.snapshot,
     required this.canManageTenant,
     required this.canManageFacility,
-    required this.canManageHrSetup,
+    required this.canEditStructure,
     required this.canManageAccess,
-    required this.isHrSetupOnly,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canManageTenant;
   final bool canManageFacility;
-  final bool canManageHrSetup;
+  final bool canEditStructure;
   final bool canManageAccess;
-  final bool isHrSetupOnly;
 
   @override
   ConsumerState<_SetupBody> createState() => _SetupBodyState();
@@ -594,16 +473,7 @@ class _SetupBody extends ConsumerStatefulWidget {
 class _SetupBodyState extends ConsumerState<_SetupBody> {
   TenantFacilitySetupDeskSection? _section;
 
-  bool get _canEditStructure =>
-      widget.canManageFacility || widget.canManageHrSetup;
-
   List<TenantFacilitySetupDeskSection> get _visibleSections {
-    if (widget.isHrSetupOnly) {
-      return const <TenantFacilitySetupDeskSection>[
-        TenantFacilitySetupDeskSection.departments,
-        TenantFacilitySetupDeskSection.units,
-      ];
-    }
     return tenantFacilityVisibleSetupDeskSections(
       canManageTenant: widget.canManageTenant,
       canManageFacility: widget.canManageFacility,
@@ -643,13 +513,6 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       );
     }
 
-    if (widget.isHrSetupOnly) {
-      return _HrFacilitySetupBody(
-        snapshot: widget.snapshot,
-        canEditStructure: _canEditStructure,
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -680,8 +543,8 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
 
   Widget _buildTabBody(TenantFacilitySetupDeskSection section) {
     final FacilitySetupSnapshot snapshot = widget.snapshot;
-    final bool canSubmitFacility =
-        widget.canManageFacility && snapshot.facility != null;
+    final bool canSubmitStructure =
+        widget.canEditStructure && snapshot.facility != null;
 
     return switch (section) {
       TenantFacilitySetupDeskSection.tenants => ManageTenantsPanel(
@@ -692,23 +555,23 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       ),
       TenantFacilitySetupDeskSection.departments => _DepartmentSetupSection(
         snapshot: snapshot,
-        canSubmit: canSubmitFacility || widget.canManageHrSetup,
+        canSubmit: canSubmitStructure,
       ),
       TenantFacilitySetupDeskSection.units => _UnitSetupSection(
         snapshot: snapshot,
-        canSubmit: canSubmitFacility || widget.canManageHrSetup,
+        canSubmit: canSubmitStructure,
       ),
       TenantFacilitySetupDeskSection.wards => _WardSetupSection(
         snapshot: snapshot,
-        canSubmit: canSubmitFacility,
+        canSubmit: canSubmitStructure,
       ),
       TenantFacilitySetupDeskSection.rooms => _RoomSetupSection(
         snapshot: snapshot,
-        canSubmit: canSubmitFacility,
+        canSubmit: canSubmitStructure,
       ),
       TenantFacilitySetupDeskSection.beds => _BedSetupSection(
         snapshot: snapshot,
-        canSubmit: canSubmitFacility,
+        canSubmit: canSubmitStructure,
       ),
       TenantFacilitySetupDeskSection.roles => ManageRolesPermissionsPanel(
         onMutated: (_) => _refreshSetup(),
@@ -721,81 +584,6 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
         onMutated: (_) => _refreshSetup(),
       ),
     };
-  }
-}
-
-class _HrFacilitySetupBody extends StatelessWidget {
-  const _HrFacilitySetupBody({
-    required this.snapshot,
-    required this.canEditStructure,
-  });
-
-  final FacilitySetupSnapshot snapshot;
-  final bool canEditStructure;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          l10n.tenantFacilityHrSetupBody,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.lg),
-        _SetupGrid(
-          children: <Widget>[
-            AppScreenSection(
-              title: l10n.tenantFacilityDepartmentsListTitle,
-              body: l10n.tenantFacilityHrSetupDepartmentsBody,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  AppInfoTile(
-                    label: l10n.settingsWorkspaceRecordsLabel,
-                    value: '${snapshot.departments.length}',
-                  ),
-                  SizedBox(height: theme.spacing.md),
-                  AppButton.primary(
-                    label: l10n.tenantFacilityHrSetupManageAction,
-                    leadingIcon: Icons.groups_2_outlined,
-                    onPressed: snapshot.facility?.id == null
-                        ? null
-                        : () => unawaited(_openDepartmentsModal(context)),
-                  ),
-                ],
-              ),
-            ),
-            AppScreenSection(
-              title: l10n.tenantFacilityUnitsListTitle,
-              body: l10n.tenantFacilityHrSetupUnitsBody,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  AppInfoTile(
-                    label: l10n.settingsWorkspaceRecordsLabel,
-                    value: '${snapshot.units.length}',
-                  ),
-                  SizedBox(height: theme.spacing.md),
-                  AppButton.primary(
-                    label: l10n.tenantFacilityHrSetupManageAction,
-                    leadingIcon: Icons.hub_outlined,
-                    onPressed: snapshot.facility?.id == null
-                        ? null
-                        : () => unawaited(_openUnitsModal(context)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 }
 
@@ -4406,37 +4194,6 @@ class _TwoColumnFields extends StatelessWidget {
             Expanded(child: left),
             SizedBox(width: theme.spacing.md),
             Expanded(child: right),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _SetupGrid extends StatelessWidget {
-  const _SetupGrid({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool useTwoColumns = constraints.maxWidth >= AppBreakpoints.lg;
-        final bool compact = constraints.maxWidth < AppBreakpoints.sm;
-        final double gap = compact ? theme.spacing.sm : theme.spacing.md;
-        final double itemWidth = useTwoColumns
-            ? (constraints.maxWidth - gap) / 2
-            : constraints.maxWidth;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: <Widget>[
-            for (final Widget child in children)
-              SizedBox(width: itemWidth, child: child),
           ],
         );
       },

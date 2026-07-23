@@ -39,12 +39,8 @@ String tenantFacilitySetupNavigationLabel(
 /// Page title for setup workspace by admin scope.
 String tenantFacilitySetupWorkspaceTitle(
   AppAccessPolicy policy,
-  AppLocalizations l10n, {
-  required bool isHrSetupOnly,
-}) {
-  if (isHrSetupOnly) {
-    return l10n.tenantFacilityHrSetupTitle;
-  }
+  AppLocalizations l10n,
+) {
   return tenantFacilitySetupNavigationLabel(policy, l10n);
 }
 

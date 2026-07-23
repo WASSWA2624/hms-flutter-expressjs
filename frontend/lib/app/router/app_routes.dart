@@ -241,7 +241,6 @@ abstract final class AppRoutes {
   ];
   static const List<AppRole> tenantSetupWorkspaceRoles = <AppRole>[
     ...adminShellRoles,
-    AppRole.hr,
   ];
 
   static const AppRouteData home = AppRouteData(
@@ -579,8 +578,6 @@ abstract final class AppRoutes {
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
       AppPermissions.systemAdmin,
-      AppPermissions.hrRead,
-      AppPermissions.hrWrite,
     ],
     requiredAnyRoles: tenantSetupWorkspaceRoles,
     requiresFacilityContext: true,

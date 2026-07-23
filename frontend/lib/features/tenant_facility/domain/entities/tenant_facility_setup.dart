@@ -436,7 +436,7 @@ final class FacilitySetupPermissions {
   final bool canViewSubscriptions;
   final bool isHrSetupOnly;
 
-  bool get canEditStructure => canManageFacility || canManageHrSetup;
+  bool get canEditStructure => canManageFacility;
 }
 
 final class FacilitySetupSnapshot {

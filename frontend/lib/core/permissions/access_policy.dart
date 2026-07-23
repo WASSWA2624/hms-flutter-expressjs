@@ -350,20 +350,6 @@ final class AppAccessPolicy {
     return permissions.contains(AppPermissions.subscriptionsWrite);
   }
 
-  bool canManageHrFacilitySetup() {
-    return hasRole(AppRole.hr) &&
-        grantsAny(const <AppPermission>[
-          AppPermissions.hrWrite,
-          AppPermissions.unitManage,
-        ]);
-  }
-
-  bool isHrFacilitySetupOnlyUser() {
-    return canManageHrFacilitySetup() &&
-        !canManageFacility() &&
-        !canManageTenant();
-  }
-
   /// Lab technologists and lab-only custom roles see a reduced application shell.
   bool get isLabFocusedShellUser {
     if (isElevated) {
@@ -650,8 +636,9 @@ final class AppAccessPolicy {
     return normalized.substring(0, separator);
   }
 
+  /// Structure mutate on Admin Setup / facility details — facility manage only.
   bool canEditFacilitySetupStructure() {
-    return canManageFacility() || canManageHrFacilitySetup();
+    return canManageFacility();
   }
 
   bool canReadBedManagement() {

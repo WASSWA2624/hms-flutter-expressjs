@@ -346,7 +346,6 @@ void main() {
           );
 
       expect(steps.contains(TenantFacilitySetupWizardStep.tenant), isFalse);
-      expect(steps.contains(TenantFacilitySetupWizardStep.branches), isFalse);
       expect(steps.first, TenantFacilitySetupWizardStep.facility);
     });
   });
@@ -362,10 +361,6 @@ void main() {
 
       expect(
         sections.contains(TenantFacilitySetupDeskSection.tenants),
-        isFalse,
-      );
-      expect(
-        sections.contains(TenantFacilitySetupDeskSection.branches),
         isFalse,
       );
       expect(

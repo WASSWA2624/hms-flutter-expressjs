@@ -6,8 +6,8 @@
 - Tenants tab: `canManageTenant`
 - Facility + Departments/Units/Wards/Rooms/Beds: `canManageFacility || canManageTenant`
 - Roles / Permissions / Users: `canManageAccess` (system/tenant/facility admin or HR write)
-- HR-only users (`isHrSetupOnly`): replace desk tabs with `_HrFacilitySetupBody` (Departments + Units Manage cards only); catalog toolbar hidden unless a facility id exists for non-HR chrome
-- Structure mutate on facility details / HR modals: `canEditFacilitySetupStructure` / facility manage as noted per surface
+- Structure mutate: `canEditFacilitySetupStructure()` → `canManageFacility()` (permission grants; no HR-role-only path)
+- There is **no** HR-only alternate body; users without desk permissions see the empty workspace state
 
 ---
 
@@ -18,13 +18,6 @@
 | Clinical service catalog | Workspace toolbar secondary (`AppTabToolbarAction`), when `snapshot.facility?.id != null` | Opens clinical-catalog `AppDialog` hosting `FacilityCatalogConfigPanel`. |
 | Desk section tabs | `AppTabStrip` in `_SetupBody` | Switches Tenants / Facility / Departments / Units / Wards / Rooms / Beds / Roles / Permissions / Users (subset by permissions). |
 | Try again | Async load failure (`AsyncStateScaffold` / detail dialog failure views) | Retries setup snapshot load. |
-
-### HR-only body (`_HrFacilitySetupBody`)
-
-| Action button / control | Locations | Modal opened or function |
-| ----------------------- | --------- | ------------------------ |
-| Manage | Departments card primary | Opens departments `_SetupDetailDialog` (same CRUD as Departments tab). Disabled when no facility id. |
-| Manage | Units card primary | Opens units `_SetupDetailDialog`. Disabled when no facility id. |
 
 ---
 
@@ -62,7 +55,7 @@
 
 ## Structure desk tabs (Departments / Units / Wards / Rooms / Beds)
 
-Shared pattern via `_SearchableEntityGroup` (and HR detail modals with `framed: false`).
+Shared pattern via `_SearchableEntityGroup`.
 
 | Action button / control | Locations | Modal opened or function |
 | ----------------------- | --------- | ------------------------ |
@@ -256,7 +249,6 @@ Shared `AppConfirmActionDialog` / `AppTextInputActionDialog` pattern:
 ## Reachable modal chain
 
 - Toolbar **Clinical service catalog** → `FacilityCatalogConfigPanel` → lab enable picker → lab price dialog; or radiology enable picker → radiology price dialog
-- HR **Manage** → departments/units detail dialog → structure form / soft-delete / restore
 - Tenants tab → tenant form (+ similarity); tenant soft-delete / restore / permanent-delete (type + confirm); row → **Tenant details** → facility edit/delete; tenant edit/delete
 - Facility tab → facility form (+ similarity + confirm-update); facility soft-delete / restore / permanent-delete; row → **Facility details** → logo remove confirm; users create/edit/delete/restore; structure add/edit/delete/restore; facility edit/delete
 - Structure tabs → entity forms; soft-delete / restore
