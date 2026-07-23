@@ -31,13 +31,40 @@ void main() {
     ) async {
       await _pumpEnableDialog(tester);
 
-      await tester.tap(find.text('Chest X-ray').first);
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Enable selected').first);
       await tester.pumpAndSettle();
 
       expect(
         find.widgetWithIcon(AppButton, Icons.check_circle_outline),
-        findsOneWidget,
+        findsWidgets,
       );
+      expect(find.text('Enable procedure'), findsWidgets);
+    });
+
+    testWidgets('supports multi-select enable without leaving the catalog', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(tester);
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Enable selected'), findsWidgets);
+
+      await tester.tap(find.textContaining('Enable selected').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enable procedure'), findsWidgets);
+      expect(find.byType(AppCurrencyAmountField), findsOneWidget);
+
+      await tester.tap(find.widgetWithIcon(AppButton, Icons.close).first);
+      await tester.pumpAndSettle();
+
+      // Parent enable catalog remains after dismissing the price step.
+      expect(find.textContaining('Enable selected'), findsWidgets);
+      expect(find.text('Chest X-ray'), findsWidgets);
     });
   });
 }

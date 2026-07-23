@@ -36307,6 +36307,24 @@ abstract class AppLocalizations {
   /// **'Enable procedure'**
   String get radiologyEnableProcedureAction;
 
+  /// Radiology action to enable multiple selected catalog procedures.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable selected'**
+  String get radiologyEnableSelectedProceduresAction;
+
+  /// Title when enabling multiple radiology procedures at once.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable procedures'**
+  String get radiologyEnableSelectedProceduresTitle;
+
+  /// Body copy for bulk radiology enable price dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 procedure selected} other{{count} procedures selected}}. Set a shared unit price for the selection.'**
+  String radiologyEnableSelectedProceduresBody(int count);
+
   /// Radiology edit facility offering dialog title.
   ///
   /// In en, this message translates to:

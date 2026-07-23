@@ -25007,6 +25007,23 @@
   "@radiologyEnableProcedureAction": {
     "description": "Radiology action to enable a facility procedure offering."
   },
+  "radiologyEnableSelectedProceduresAction": "Enable selected",
+  "@radiologyEnableSelectedProceduresAction": {
+    "description": "Radiology action to enable multiple selected catalog procedures."
+  },
+  "radiologyEnableSelectedProceduresTitle": "Enable procedures",
+  "@radiologyEnableSelectedProceduresTitle": {
+    "description": "Title when enabling multiple radiology procedures at once."
+  },
+  "radiologyEnableSelectedProceduresBody": "{count, plural, =1{1 procedure selected} other{{count} procedures selected}}. Set a shared unit price for the selection.",
+  "@radiologyEnableSelectedProceduresBody": {
+    "description": "Body copy for bulk radiology enable price dialog.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "radiologyEditOfferingDialogTitle": "Edit facility offering",
   "@radiologyEditOfferingDialogTitle": {
     "description": "Radiology edit facility offering dialog title."

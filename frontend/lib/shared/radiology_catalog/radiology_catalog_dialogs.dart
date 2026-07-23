@@ -26,13 +26,20 @@ class RadiologyEnableFacilityOfferingDialog extends StatefulWidget {
     required this.onSearchCatalog,
     required this.onEnable,
     this.defaultCurrency = appDefaultCurrencyCode,
+    this.showBackAction = false,
     super.key,
   });
+
+  /// Sentinel popped when the user presses Back to return to the scope step.
+  static const Object backResult = Object();
 
   final RadiologyCatalogScope scope;
   final RadiologyOfferingCatalogSearch onSearchCatalog;
   final RadiologyCatalogUpdateSubmit onEnable;
   final String defaultCurrency;
+
+  /// When true, footer shows Back (returns [backResult]) to revisit the scope step.
+  final bool showBackAction;
 
   @override
   State<RadiologyEnableFacilityOfferingDialog> createState() =>
@@ -54,6 +61,8 @@ class _RadiologyEnableFacilityOfferingDialogState
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   List<AppSearchBarFilterChoice> _modalityFilterChoices =
       const <AppSearchBarFilterChoice>[];
+  final Set<String> _selectedIds = <String>{};
+  bool _enabledAny = false;
 
   List<RadiologyCatalogTest> get _filteredCatalogItems {
     final String? modality = _filterValue.option(_modalityFilterKey);
@@ -78,22 +87,38 @@ class _RadiologyEnableFacilityOfferingDialogState
     return items;
   }
 
-  void _markItemOfferedLocally(RadiologyCatalogTest item) {
+  List<RadiologyCatalogTest> get _selectedAvailableItems {
+    return _sortedFilteredCatalogItems
+        .where(
+          (RadiologyCatalogTest item) =>
+              !item.isOfferedAtFacility && _selectedIds.contains(item.apiId),
+        )
+        .toList(growable: false);
+  }
+
+  void _markItemsOfferedLocally(List<RadiologyCatalogTest> items) {
+    final Set<String> ids = items.map((RadiologyCatalogTest i) => i.apiId).toSet();
     setState(() {
       _catalogItems = _catalogItems
           .map((RadiologyCatalogTest catalogItem) {
-            if (catalogItem.apiId != item.apiId) {
+            if (!ids.contains(catalogItem.apiId)) {
               return catalogItem;
             }
+            final RadiologyCatalogTest source = items.firstWhere(
+              (RadiologyCatalogTest i) => i.apiId == catalogItem.apiId,
+              orElse: () => catalogItem,
+            );
             return catalogItem.copyWith(
-              unitPrice: item.unitPrice ?? catalogItem.unitPrice,
-              currency: item.currency ?? catalogItem.currency,
+              unitPrice: source.unitPrice ?? catalogItem.unitPrice,
+              currency: source.currency ?? catalogItem.currency,
               isOfferedAtFacility: true,
               facilityOfferingId:
-                  item.facilityOfferingId ?? catalogItem.facilityOfferingId,
+                  source.facilityOfferingId ?? catalogItem.facilityOfferingId,
             );
           })
           .toList(growable: false);
+      _selectedIds.removeWhere(ids.contains);
+      _enabledAny = true;
     });
   }
 
@@ -111,6 +136,27 @@ class _RadiologyEnableFacilityOfferingDialogState
               AppSearchBarFilterChoice(value: value, label: value),
         )
         .toList(growable: false);
+  }
+
+  void _pruneSelection() {
+    final Set<String> valid = _catalogItems
+        .where((RadiologyCatalogTest item) => !item.isOfferedAtFacility)
+        .map((RadiologyCatalogTest item) => item.apiId)
+        .toSet();
+    _selectedIds.removeWhere((String id) => !valid.contains(id));
+  }
+
+  void _toggleSelection(RadiologyCatalogTest item, {required bool selected}) {
+    if (item.isOfferedAtFacility) {
+      return;
+    }
+    setState(() {
+      if (selected) {
+        _selectedIds.add(item.apiId);
+      } else {
+        _selectedIds.remove(item.apiId);
+      }
+    });
   }
 
   @override
@@ -151,6 +197,7 @@ class _RadiologyEnableFacilityOfferingDialogState
           _catalogItems = items;
           _isSearching = false;
           _syncModalityFilterChoices();
+          _pruneSelection();
         });
       },
       failure: (AppFailure value) {
@@ -159,6 +206,7 @@ class _RadiologyEnableFacilityOfferingDialogState
           _isSearching = false;
           _modalityFilterChoices = const <AppSearchBarFilterChoice>[];
           _failure = value;
+          _selectedIds.clear();
         });
       },
     );
@@ -176,26 +224,34 @@ class _RadiologyEnableFacilityOfferingDialogState
     });
   }
 
-  Future<void> _openPriceDialog(RadiologyCatalogTest item) async {
-    if (item.isOfferedAtFacility) {
+  Future<void> _openPriceDialog(List<RadiologyCatalogTest> items) async {
+    final List<RadiologyCatalogTest> available = items
+        .where((RadiologyCatalogTest item) => !item.isOfferedAtFacility)
+        .toList(growable: false);
+    if (available.isEmpty) {
       return;
     }
     final bool? enabled = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => RadiologyEnableOfferingPriceDialog(
-        item: item,
+        items: available,
         defaultCurrency: widget.defaultCurrency,
         onEnable: widget.onEnable,
       ),
     );
-    if (!mounted) {
+    if (!mounted || enabled != true) {
       return;
     }
-    if (enabled == true) {
-      _markItemOfferedLocally(item);
-      Navigator.of(context).pop(true);
+    _markItemsOfferedLocally(available);
+  }
+
+  Future<void> _enableSelected() async {
+    final List<RadiologyCatalogTest> selected = _selectedAvailableItems;
+    if (selected.isEmpty) {
+      return;
     }
+    await _openPriceDialog(selected);
   }
 
   @override
@@ -203,6 +259,7 @@ class _RadiologyEnableFacilityOfferingDialogState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final List<RadiologyCatalogTest> items = _sortedFilteredCatalogItems;
+    final int selectedCount = _selectedAvailableItems.length;
 
     return AppDialog(
       title: Text(l10n.radiologyEnableOfferingDialogTitle),
@@ -244,9 +301,13 @@ class _RadiologyEnableFacilityOfferingDialogState
                 tableHorizontalMargin: 0,
                 isLoading: _isSearching,
                 onRowSelected: (RadiologyCatalogTest item) {
-                  if (!item.isOfferedAtFacility) {
-                    unawaited(_openPriceDialog(item));
+                  if (item.isOfferedAtFacility) {
+                    return;
                   }
+                  _toggleSelection(
+                    item,
+                    selected: !_selectedIds.contains(item.apiId),
+                  );
                 },
                 search: AppListTableSearch<RadiologyCatalogTest>(
                   controller: _searchController,
@@ -275,6 +336,15 @@ class _RadiologyEnableFacilityOfferingDialogState
                   onFilterChanged: (AppSearchBarFilterValue value) {
                     setState(() => _filterValue = value);
                   },
+                  trailingActions: <AppSearchBarAction>[
+                    if (selectedCount > 0)
+                      AppSearchBarAction(
+                        icon: Icons.check_circle_outline,
+                        label:
+                            '${l10n.radiologyEnableSelectedProceduresAction} ($selectedCount)',
+                        onPressed: () => unawaited(_enableSelected()),
+                      ),
+                  ],
                 ),
                 emptyBuilder: (_) => Center(
                   child: AppMutedText(
@@ -285,7 +355,19 @@ class _RadiologyEnableFacilityOfferingDialogState
                 columns: _enableOfferingColumns(context),
                 mobileItemBuilder:
                     (BuildContext context, RadiologyCatalogTest item) {
+                      final bool selectable = !item.isOfferedAtFacility;
                       return AppListTableMobileItem(
+                        leading: selectable
+                            ? Checkbox(
+                                value: _selectedIds.contains(item.apiId),
+                                onChanged: (bool? value) => _toggleSelection(
+                                  item,
+                                  selected: value ?? false,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                              )
+                            : null,
+                        showAvatar: !selectable,
                         title: item.name,
                         caption: item.code,
                         meta: <AppListTableMobileMeta>[
@@ -308,11 +390,26 @@ class _RadiologyEnableFacilityOfferingDialogState
         ],
       ),
       actions: <Widget>[
+        if (widget.showBackAction)
+          AppButton.tertiary(
+            label: l10n.commonBackActionLabel,
+            leadingIcon: Icons.arrow_back_outlined,
+            onPressed: () => Navigator.of(context).pop(
+              RadiologyEnableFacilityOfferingDialog.backResult,
+            ),
+          ),
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(context).pop(_enabledAny),
         ),
+        if (selectedCount > 0)
+          AppButton.primary(
+            label:
+                '${l10n.radiologyEnableSelectedProceduresAction} ($selectedCount)',
+            leadingIcon: Icons.check_circle_outline,
+            onPressed: () => unawaited(_enableSelected()),
+          ),
       ],
     );
   }
@@ -322,6 +419,22 @@ class _RadiologyEnableFacilityOfferingDialogState
   ) {
     final AppLocalizations l10n = context.l10n;
     return <AppListTableColumn<RadiologyCatalogTest>>[
+      AppListTableColumn<RadiologyCatalogTest>(
+        id: 'select',
+        label: l10n.commonSelectActionLabel,
+        alwaysVisible: true,
+        cellBuilder: (_, RadiologyCatalogTest item) {
+          if (item.isOfferedAtFacility) {
+            return const SizedBox.shrink();
+          }
+          return Checkbox(
+            value: _selectedIds.contains(item.apiId),
+            onChanged: (bool? value) =>
+                _toggleSelection(item, selected: value ?? false),
+            visualDensity: VisualDensity.compact,
+          );
+        },
+      ),
       AppListTableColumn<RadiologyCatalogTest>(
         id: 'name',
         label: l10n.radiologyTestNameLabel,
@@ -360,21 +473,40 @@ class _RadiologyEnableFacilityOfferingDialogState
           return AppMutedText(l10n.radiologyEnableOfferingAvailableLabel);
         },
       ),
+      AppListTableColumn<RadiologyCatalogTest>(
+        id: 'actions',
+        label: l10n.accessAdminColumnActions,
+        cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
+          if (item.isOfferedAtFacility) {
+            return const SizedBox.shrink();
+          }
+          return AppButton(
+            iconOnly: true,
+            leadingIcon: Icons.add_circle_outline,
+            label: l10n.radiologyEnableProcedureAction,
+            semanticLabel: l10n.radiologyEnableProcedureAction,
+            tooltip: l10n.radiologyEnableProcedureAction,
+            onPressed: () => unawaited(_openPriceDialog(<RadiologyCatalogTest>[item])),
+          );
+        },
+      ),
     ];
   }
 }
 
 class RadiologyEnableOfferingPriceDialog extends StatefulWidget {
   const RadiologyEnableOfferingPriceDialog({
-    required this.item,
+    required this.items,
     required this.onEnable,
     required this.defaultCurrency,
     super.key,
-  });
+  }) : assert(items.length > 0, 'items must not be empty');
 
-  final RadiologyCatalogTest item;
+  final List<RadiologyCatalogTest> items;
   final RadiologyCatalogUpdateSubmit onEnable;
   final String defaultCurrency;
+
+  bool get isBatch => items.length > 1;
 
   @override
   State<RadiologyEnableOfferingPriceDialog> createState() =>
@@ -392,10 +524,11 @@ class _RadiologyEnableOfferingPriceDialogState
   @override
   void initState() {
     super.initState();
+    final RadiologyCatalogTest first = widget.items.first;
     _priceController = TextEditingController(
-      text: widget.item.unitPrice?.toString() ?? '',
+      text: first.unitPrice?.toString() ?? '',
     );
-    _currency = widget.item.currency ?? widget.defaultCurrency;
+    _currency = first.currency ?? widget.defaultCurrency;
   }
 
   @override
@@ -408,10 +541,15 @@ class _RadiologyEnableOfferingPriceDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final RadiologyCatalogTest item = widget.item;
+    final RadiologyCatalogTest first = widget.items.first;
+    final bool isBatch = widget.isBatch;
 
     return AppDialog(
-      title: Text(l10n.radiologyEnableProcedureAction),
+      title: Text(
+        isBatch
+            ? l10n.radiologyEnableSelectedProceduresTitle
+            : l10n.radiologyEnableProcedureAction,
+      ),
       icon: const Icon(Icons.image_search_outlined),
       scrollable: true,
       maxWidth: 520,
@@ -425,18 +563,37 @@ class _RadiologyEnableOfferingPriceDialogState
                 context: context,
                 failure: _failure!,
               ),
-            Text(
-              item.name,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+            if (isBatch)
+              Text(
+                l10n.radiologyEnableSelectedProceduresBody(widget.items.length),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else ...<Widget>[
+              Text(
+                first.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            if (item.code != null && item.code!.isNotEmpty)
+              if (first.code != null && first.code!.isNotEmpty)
+                AppMutedText(
+                  <String?>[
+                    first.code,
+                    first.modality,
+                  ].whereType<String>().join(' · '),
+                ),
+            ],
+            if (isBatch)
               AppMutedText(
-                <String?>[
-                  item.code,
-                  item.modality,
-                ].whereType<String>().join(' · '),
+                widget.items
+                    .take(5)
+                    .map((RadiologyCatalogTest item) => item.name)
+                    .join(', ')
+                    + (widget.items.length > 5
+                        ? '…'
+                        : ''),
               ),
             AppCurrencyAmountField(
               amountController: _priceController,
@@ -459,7 +616,9 @@ class _RadiologyEnableOfferingPriceDialogState
       ),
       actions: <Widget>[
         AppButton.primary(
-          label: l10n.radiologyEnableProcedureAction,
+          label: isBatch
+              ? l10n.radiologyEnableSelectedProceduresAction
+              : l10n.radiologyEnableProcedureAction,
           leadingIcon: Icons.check_circle_outline,
           isLoading: _isSaving,
           onPressed: _isSaving ? null : _submit,
@@ -476,25 +635,33 @@ class _RadiologyEnableOfferingPriceDialogState
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget
-        .onEnable(widget.item.apiId, <String, Object?>{
-          'radiology_test_id': widget.item.apiId,
+    final num unitPrice =
+        num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0;
+    for (final RadiologyCatalogTest item in widget.items) {
+      final AppFailure? failure = await widget.onEnable(
+        item.apiId,
+        <String, Object?>{
+          'radiology_test_id': item.apiId,
           'is_active': true,
-          'unit_price':
-              num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
+          'unit_price': unitPrice,
           'currency': _currency,
+        },
+      );
+      if (!mounted) {
+        return;
+      }
+      if (failure != null) {
+        setState(() {
+          _failure = failure;
+          _isSaving = false;
         });
+        return;
+      }
+    }
     if (!mounted) {
       return;
     }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
+    Navigator.of(context).pop(true);
   }
 }
 

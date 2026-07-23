@@ -19497,6 +19497,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyEnableProcedureAction => 'Enable procedure';
 
   @override
+  String get radiologyEnableSelectedProceduresAction => 'Enable selected';
+
+  @override
+  String get radiologyEnableSelectedProceduresTitle => 'Enable procedures';
+
+  @override
+  String radiologyEnableSelectedProceduresBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count procedures selected',
+      one: '1 procedure selected',
+    );
+    return '$_temp0. Set a shared unit price for the selection.';
+  }
+
+  @override
   String get radiologyEditOfferingDialogTitle => 'Edit facility offering';
 
   @override

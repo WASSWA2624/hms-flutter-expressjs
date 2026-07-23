@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hosspi_hms/shared/components/app_currency.dart';
 
 @immutable
 final class FacilityCatalogScope {
@@ -39,4 +40,28 @@ final class FacilityCatalogScope {
 
   @override
   int get hashCode => Object.hash(tenantId, facilityId);
+}
+
+/// Scope pick result including currencies for price defaults.
+@immutable
+final class FacilityCatalogScopePick {
+  const FacilityCatalogScopePick({
+    required this.scope,
+    this.tenantCurrency,
+    this.facilityCurrency,
+  });
+
+  final FacilityCatalogScope scope;
+  final String? tenantCurrency;
+  final String? facilityCurrency;
+
+  String? get tenantId => scope.tenantId;
+  String? get facilityId => scope.facilityId;
+  bool get isReady => scope.isReady;
+
+  /// Facility currency wins when set; otherwise tenant; otherwise app default.
+  String get defaultCurrency => resolveDefaultCurrency(
+        facilityCurrency: facilityCurrency,
+        tenantCurrency: tenantCurrency,
+      );
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
@@ -17,7 +18,32 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 typedef CatalogTenantOptionsLoader = Future<List<TenantProfile>> Function();
 typedef CatalogFacilityOptionsLoader =
-    Future<List<FacilityProfile>> Function(String tenantId);
+    Future<List<FacilityProfile>> Function(String? tenantId);
+
+/// Role-aware visibility for Clinical Services Configure scope step.
+@immutable
+final class CatalogConfigureScopeVisibility {
+  const CatalogConfigureScopeVisibility({
+    required this.showTenantSelector,
+    required this.showFacilitySelector,
+  });
+
+  factory CatalogConfigureScopeVisibility.fromPolicy(AppAccessPolicy policy) {
+    final bool showTenantSelector = policy.isElevated;
+    final bool showFacilitySelector = policy.isElevated ||
+        (policy.canManageTenant() && !policy.hasFacilityContext);
+    return CatalogConfigureScopeVisibility(
+      showTenantSelector: showTenantSelector,
+      showFacilitySelector: showFacilitySelector,
+    );
+  }
+
+  final bool showTenantSelector;
+  final bool showFacilitySelector;
+
+  /// Facility admins (and other fixed-context actors) skip the picker.
+  bool get skipPicker => !showTenantSelector && !showFacilitySelector;
+}
 
 typedef ClinicalCatalogTermSubmit =
     Future<AppFailure?> Function(Map<String, Object?> payload);
@@ -51,7 +77,7 @@ const List<String> kRadiologyCatalogModalities = <String>[
   'OTHER',
 ];
 
-Future<FacilityCatalogScope?> showCatalogFacilityScopePicker({
+Future<FacilityCatalogScopePick?> showCatalogFacilityScopePicker({
   required BuildContext context,
   required CatalogTenantOptionsLoader loadTenants,
   required CatalogFacilityOptionsLoader loadFacilities,
@@ -59,8 +85,11 @@ Future<FacilityCatalogScope?> showCatalogFacilityScopePicker({
   String? initialFacilityId,
   String? title,
   String? body,
+  bool showTenantSelector = true,
+  bool showFacilitySelector = true,
+  bool lockTenant = false,
 }) {
-  return showAppDialog<FacilityCatalogScope>(
+  return showAppDialog<FacilityCatalogScopePick>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _CatalogFacilityScopePickerDialog(
@@ -70,6 +99,9 @@ Future<FacilityCatalogScope?> showCatalogFacilityScopePicker({
       initialFacilityId: initialFacilityId,
       title: title,
       body: body,
+      showTenantSelector: showTenantSelector,
+      showFacilitySelector: showFacilitySelector,
+      lockTenant: lockTenant,
     ),
   );
 }
@@ -78,6 +110,9 @@ class _CatalogFacilityScopePickerDialog extends StatefulWidget {
   const _CatalogFacilityScopePickerDialog({
     required this.loadTenants,
     required this.loadFacilities,
+    required this.showTenantSelector,
+    required this.showFacilitySelector,
+    required this.lockTenant,
     this.initialTenantId,
     this.initialFacilityId,
     this.title,
@@ -90,6 +125,9 @@ class _CatalogFacilityScopePickerDialog extends StatefulWidget {
   final String? initialFacilityId;
   final String? title;
   final String? body;
+  final bool showTenantSelector;
+  final bool showFacilitySelector;
+  final bool lockTenant;
 
   @override
   State<_CatalogFacilityScopePickerDialog> createState() =>
@@ -107,12 +145,50 @@ class _CatalogFacilityScopePickerDialogState
   bool _isLoadingTenants = true;
   bool _isLoadingFacilities = false;
 
+  bool get _canSubmit {
+    final String? tenantId = _tenantId?.trim();
+    final String? facilityId = _facilityId?.trim();
+    return !_isLoadingTenants &&
+        !_isLoadingFacilities &&
+        tenantId != null &&
+        tenantId.isNotEmpty &&
+        facilityId != null &&
+        facilityId.isNotEmpty;
+  }
+
+  bool get _facilitySelectorEnabled {
+    if (!widget.showFacilitySelector) {
+      return false;
+    }
+    if (!widget.showTenantSelector || widget.lockTenant) {
+      return true;
+    }
+    // Elevated: facilities can load without a tenant (facility→tenant fill).
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
     _tenantId = widget.initialTenantId?.trim();
     _facilityId = widget.initialFacilityId?.trim();
-    unawaited(_loadTenants());
+    unawaited(_bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    if (widget.showTenantSelector) {
+      await _loadTenants();
+      return;
+    }
+    setState(() => _isLoadingTenants = false);
+    final String? tenantId = _tenantId;
+    if (tenantId != null && tenantId.isNotEmpty) {
+      await _loadFacilities(tenantId);
+      return;
+    }
+    if (widget.showFacilitySelector) {
+      await _loadFacilities(null);
+    }
   }
 
   Future<void> _loadTenants() async {
@@ -139,6 +215,8 @@ class _CatalogFacilityScopePickerDialogState
       });
       if (resolvedTenant != null && resolvedTenant.isNotEmpty) {
         await _loadFacilities(resolvedTenant);
+      } else if (widget.showFacilitySelector) {
+        await _loadFacilities(null);
       }
     } catch (_) {
       if (!mounted) {
@@ -146,19 +224,19 @@ class _CatalogFacilityScopePickerDialogState
       }
       setState(() {
         _isLoadingTenants = false;
-        _failure = AppFailure.unexpected();
+        _failure = const AppFailure.unexpected();
       });
     }
   }
 
-  Future<void> _loadFacilities(String tenantId) async {
+  Future<void> _loadFacilities(String? tenantId) async {
     setState(() {
       _isLoadingFacilities = true;
       _failure = null;
     });
     try {
       final List<FacilityProfile> facilities = await widget.loadFacilities(
-        tenantId,
+        tenantId?.trim().isEmpty ?? true ? null : tenantId?.trim(),
       );
       if (!mounted) {
         return;
@@ -170,9 +248,21 @@ class _CatalogFacilityScopePickerDialogState
               facilities.any((FacilityProfile f) => f.id == preferred))
           ? preferred
           : (facilities.length == 1 ? facilities.first.id : null);
+      String? resolvedTenant = _tenantId;
+      if (resolvedFacility != null) {
+        final FacilityProfile? facility = _findFacility(
+          facilities,
+          resolvedFacility,
+        );
+        final String facilityTenant = facility?.tenantId.trim() ?? '';
+        if (facilityTenant.isNotEmpty) {
+          resolvedTenant = facilityTenant;
+        }
+      }
       setState(() {
         _facilities = facilities;
         _facilityId = resolvedFacility;
+        _tenantId = resolvedTenant;
         _isLoadingFacilities = false;
       });
     } catch (_) {
@@ -183,13 +273,47 @@ class _CatalogFacilityScopePickerDialogState
         _facilities = const <FacilityProfile>[];
         _facilityId = null;
         _isLoadingFacilities = false;
-        _failure = AppFailure.unexpected();
+        _failure = const AppFailure.unexpected();
       });
     }
   }
 
+  void _onFacilityChanged(String? value) {
+    final String? facilityId = value?.trim();
+    if (facilityId == null || facilityId.isEmpty) {
+      setState(() => _facilityId = null);
+      return;
+    }
+    final FacilityProfile? facility = _findFacility(_facilities, facilityId);
+    final String facilityTenant = facility?.tenantId.trim() ?? '';
+    setState(() {
+      _facilityId = facilityId;
+      if (facilityTenant.isNotEmpty) {
+        _tenantId = facilityTenant;
+      }
+    });
+  }
+
+  TenantProfile? _findTenant(List<TenantProfile> tenants, String id) {
+    for (final TenantProfile tenant in tenants) {
+      if (tenant.id == id) {
+        return tenant;
+      }
+    }
+    return null;
+  }
+
+  FacilityProfile? _findFacility(List<FacilityProfile> facilities, String id) {
+    for (final FacilityProfile facility in facilities) {
+      if (facility.id == id) {
+        return facility;
+      }
+    }
+    return null;
+  }
+
   void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!(_formKey.currentState?.validate() ?? false) || !_canSubmit) {
       return;
     }
     final String? tenantId = _tenantId?.trim();
@@ -200,14 +324,25 @@ class _CatalogFacilityScopePickerDialogState
         facilityId.isEmpty) {
       return;
     }
+    final TenantProfile? tenant = _findTenant(_tenants, tenantId);
+    final FacilityProfile? facility = _findFacility(_facilities, facilityId);
     Navigator.of(context).pop(
-      FacilityCatalogScope(tenantId: tenantId, facilityId: facilityId),
+      FacilityCatalogScopePick(
+        scope: FacilityCatalogScope(
+          tenantId: tenantId,
+          facilityId: facilityId,
+        ),
+        tenantCurrency: tenant?.currency,
+        facilityCurrency: facility?.currency,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool tenantEditable =
+        widget.showTenantSelector && !widget.lockTenant;
     return AppDialog(
       title: Text(widget.title ?? l10n.accessAdminCreateUserSelectScopeTitle),
       icon: const Icon(Icons.apartment_outlined),
@@ -228,48 +363,53 @@ class _CatalogFacilityScopePickerDialogState
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            AppSelectField<String>.searchable(
-              value: _tenantId,
-              labelText: l10n.tenantFacilitySelectTenantLabel,
-              isRequired: true,
-              isLoading: _isLoadingTenants,
-              options: <AppSelectOption<String>>[
-                for (final TenantProfile tenant in _tenants)
-                  AppSelectOption<String>(
-                    value: tenant.id,
-                    label: tenant.name,
-                  ),
-              ],
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              onChanged: (String? value) {
-                setState(() {
-                  _tenantId = value;
-                  _facilityId = null;
-                  _facilities = const <FacilityProfile>[];
-                });
-                if (value != null && value.trim().isNotEmpty) {
-                  unawaited(_loadFacilities(value));
-                }
-              },
-            ),
-            AppSelectField<String>.searchable(
-              value: _facilityId,
-              labelText: l10n.tenantFacilityFacilitySelectLabel,
-              isRequired: true,
-              enabled: _tenantId != null && _tenantId!.trim().isNotEmpty,
-              isLoading: _isLoadingFacilities,
-              options: <AppSelectOption<String>>[
-                for (final FacilityProfile facility in _facilities)
-                  AppSelectOption<String>(
-                    value: facility.id,
-                    label: facility.name,
-                  ),
-              ],
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              onChanged: (String? value) {
-                setState(() => _facilityId = value);
-              },
-            ),
+            if (widget.showTenantSelector)
+              AppSelectField<String>.searchable(
+                value: _tenantId,
+                labelText: l10n.tenantFacilitySelectTenantLabel,
+                isRequired: true,
+                enabled: tenantEditable,
+                isLoading: _isLoadingTenants,
+                options: <AppSelectOption<String>>[
+                  for (final TenantProfile tenant in _tenants)
+                    AppSelectOption<String>(
+                      value: tenant.id,
+                      label: tenant.name,
+                    ),
+                ],
+                validator: AppValidators.requiredValue(l10n.validationRequired),
+                onChanged: tenantEditable
+                    ? (String? value) {
+                        setState(() {
+                          _tenantId = value;
+                          _facilityId = null;
+                          _facilities = const <FacilityProfile>[];
+                        });
+                        if (value != null && value.trim().isNotEmpty) {
+                          unawaited(_loadFacilities(value));
+                        } else {
+                          unawaited(_loadFacilities(null));
+                        }
+                      }
+                    : null,
+              ),
+            if (widget.showFacilitySelector)
+              AppSelectField<String>.searchable(
+                value: _facilityId,
+                labelText: l10n.tenantFacilityFacilitySelectLabel,
+                isRequired: true,
+                enabled: _facilitySelectorEnabled,
+                isLoading: _isLoadingFacilities,
+                options: <AppSelectOption<String>>[
+                  for (final FacilityProfile facility in _facilities)
+                    AppSelectOption<String>(
+                      value: facility.id,
+                      label: facility.name,
+                    ),
+                ],
+                validator: AppValidators.requiredValue(l10n.validationRequired),
+                onChanged: _onFacilityChanged,
+              ),
           ],
         ),
       ),
@@ -281,7 +421,7 @@ class _CatalogFacilityScopePickerDialogState
         AppButton.primary(
           label: l10n.commonNextActionLabel,
           leadingIcon: Icons.arrow_forward_outlined,
-          onPressed: _submit,
+          onPressed: _canSubmit ? _submit : null,
         ),
       ],
     );

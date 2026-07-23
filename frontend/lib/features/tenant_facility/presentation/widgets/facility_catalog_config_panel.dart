@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -916,56 +918,138 @@ class _FacilityCatalogConfigPanelState
   }
 
   Future<void> _openConfigureFlow() async {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final CatalogConfigureScopeVisibility visibility =
+        CatalogConfigureScopeVisibility.fromPolicy(policy);
     final TenantFacilityRepository tenantRepo = ref.read(
       tenantFacilityRepositoryProvider,
     );
-    final FacilityCatalogScope? scope = await showCatalogFacilityScopePicker(
-      context: context,
-      loadTenants: () async {
-        final Result<AppPage<TenantProfile>> result = await tenantRepo
-            .listTenants(request: const AppPageRequest(pageSize: 100));
-        return result.when(
-          success: (AppPage<TenantProfile> page) => page.items,
-          failure: (_) => const <TenantProfile>[],
-        );
-      },
-      loadFacilities: (String tenantId) async {
-        final Result<AppPage<FacilityProfile>> result = await tenantRepo
-            .listFacilities(
-              request: const AppPageRequest(pageSize: 100),
-              tenantId: tenantId,
-            );
-        return result.when(
-          success: (AppPage<FacilityProfile> page) => page.items,
-          failure: (_) => const <FacilityProfile>[],
-        );
-      },
-      initialTenantId: widget.tenantId,
-      initialFacilityId: widget.facilityId,
-    );
-    if (!mounted || scope == null || !scope.isReady) {
-      return;
+
+    Future<List<TenantProfile>> loadTenants() async {
+      final Result<AppPage<TenantProfile>> result = await tenantRepo.listTenants(
+        request: const AppPageRequest(pageSize: 100),
+      );
+      return result.when(
+        success: (AppPage<TenantProfile> page) => page.items,
+        failure: (_) => const <TenantProfile>[],
+      );
     }
-    switch (_tab) {
-      case _CatalogDeskTab.radiology:
-        await _openRadiologyConfigureDialog(scope);
-      case _CatalogDeskTab.lab:
-        await _openLabConfigureDialog(scope);
-      case _CatalogDeskTab.diagnoses:
-        await _openDiagnosisConfigureDialog(scope);
+
+    Future<List<FacilityProfile>> loadFacilities(String? tenantId) async {
+      final Result<AppPage<FacilityProfile>> result = await tenantRepo
+          .listFacilities(
+            request: const AppPageRequest(pageSize: 100),
+            tenantId: tenantId,
+          );
+      return result.when(
+        success: (AppPage<FacilityProfile> page) => page.items,
+        failure: (_) => const <FacilityProfile>[],
+      );
+    }
+
+    FacilityCatalogScopePick? pick;
+    final bool showScopeStep = !visibility.skipPicker;
+
+    if (!showScopeStep) {
+      final String? tenantId =
+          (policy.tenantId ?? widget.tenantId)?.trim();
+      final String? facilityId =
+          (policy.facilityId ?? widget.facilityId)?.trim();
+      final FacilityCatalogScope scope = FacilityCatalogScope(
+        tenantId: tenantId,
+        facilityId: facilityId,
+      );
+      if (!scope.isReady) {
+        return;
+      }
+      pick = FacilityCatalogScopePick(
+        scope: scope,
+        tenantCurrency: null,
+        facilityCurrency: widget.defaultCurrency,
+      );
+    }
+
+    while (mounted) {
+      if (showScopeStep) {
+        pick = await showCatalogFacilityScopePicker(
+          context: context,
+          loadTenants: loadTenants,
+          loadFacilities: loadFacilities,
+          initialTenantId: pick?.tenantId ??
+              policy.tenantId ??
+              widget.tenantId,
+          initialFacilityId: pick?.facilityId ??
+              (visibility.showFacilitySelector
+                  ? widget.facilityId
+                  : policy.facilityId ?? widget.facilityId),
+          showTenantSelector: visibility.showTenantSelector,
+          showFacilitySelector: visibility.showFacilitySelector,
+          lockTenant: !visibility.showTenantSelector &&
+              visibility.showFacilitySelector,
+        );
+        if (!mounted || pick == null || !pick.isReady) {
+          return;
+        }
+      }
+
+      final FacilityCatalogScopePick resolved = pick!;
+      final Object? outcome = switch (_tab) {
+        _CatalogDeskTab.radiology => await _openRadiologyConfigureDialog(
+          resolved,
+          showBackAction: showScopeStep,
+        ),
+        _CatalogDeskTab.lab => await _openLabConfigureDialog(
+          resolved.scope,
+          defaultCurrency: resolved.defaultCurrency,
+        ),
+        _CatalogDeskTab.diagnoses =>
+          await _openDiagnosisConfigureDialog(resolved.scope),
+      };
+
+      if (!mounted) {
+        return;
+      }
+      if (identical(
+            outcome,
+            RadiologyEnableFacilityOfferingDialog.backResult,
+          ) &&
+          showScopeStep) {
+        continue;
+      }
+      if (outcome == true) {
+        final String message = switch (_tab) {
+          _CatalogDeskTab.radiology =>
+            context.l10n.radiologySaveConfigurationAction,
+          _CatalogDeskTab.lab ||
+          _CatalogDeskTab.diagnoses => context.l10n.labSavedMessage,
+        };
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+      return;
     }
   }
 
-  Future<void> _openRadiologyConfigureDialog(FacilityCatalogScope scope) async {
+  Future<Object?> _openRadiologyConfigureDialog(
+    FacilityCatalogScopePick pick, {
+    required bool showBackAction,
+  }) async {
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
-    final bool? saved = await showAppDialog<bool>(
+    final FacilityCatalogScope scope = pick.scope;
+    final String currency = pick.facilityCurrency?.trim().isNotEmpty == true ||
+            pick.tenantCurrency?.trim().isNotEmpty == true
+        ? pick.defaultCurrency
+        : _resolvedCurrency;
+    return showAppDialog<Object>(
       context: context,
       barrierDismissible: false,
       builder: (_) => RadiologyEnableFacilityOfferingDialog(
         scope: scope,
-        defaultCurrency: _resolvedCurrency,
+        defaultCurrency: currency,
+        showBackAction: showBackAction,
         onSearchCatalog: ({
           required RadiologyCatalogScope scope,
           String? query,
@@ -992,15 +1076,12 @@ class _FacilityCatalogConfigPanelState
         },
       ),
     );
-    if (!mounted || saved != true) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.radiologySaveConfigurationAction)),
-    );
   }
 
-  Future<void> _openLabConfigureDialog(FacilityCatalogScope scope) async {
+  Future<bool?> _openLabConfigureDialog(
+    FacilityCatalogScope scope, {
+    String? defaultCurrency,
+  }) async {
     final LabRepository repository = ref.read(labRepositoryProvider);
     final bool? saved = await showAppDialog<bool>(
       context: context,
@@ -1008,7 +1089,7 @@ class _FacilityCatalogConfigPanelState
       builder: (_) => LabEnableFacilityOfferingDialog(
         kind: LabEnableOfferingKind.test,
         scope: scope,
-        defaultCurrency: _resolvedCurrency,
+        defaultCurrency: defaultCurrency ?? _resolvedCurrency,
         onSearchCatalog: ({
           required LabEnableOfferingKind kind,
           required LabCatalogScope scope,
@@ -1037,15 +1118,10 @@ class _FacilityCatalogConfigPanelState
         },
       ),
     );
-    if (!mounted || saved != true) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.labSavedMessage)),
-    );
+    return saved;
   }
 
-  Future<void> _openDiagnosisConfigureDialog(FacilityCatalogScope scope) async {
+  Future<bool?> _openDiagnosisConfigureDialog(FacilityCatalogScope scope) async {
     final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
     final bool? saved = await showAppDialog<bool>(
       context: context,
@@ -1076,12 +1152,7 @@ class _FacilityCatalogConfigPanelState
         },
       ),
     );
-    if (!mounted || saved != true) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.labSavedMessage)),
-    );
+    return saved;
   }
 
   Future<void> _openRadiologyAddDialog() async {
@@ -1357,7 +1428,7 @@ class _FacilityCatalogConfigPanelState
     final TenantFacilityRepository tenantRepo = ref.read(
       tenantFacilityRepositoryProvider,
     );
-    final FacilityCatalogScope? scope = await showCatalogFacilityScopePicker(
+    final FacilityCatalogScopePick? scope = await showCatalogFacilityScopePicker(
       context: context,
       loadTenants: () async {
         final Result<AppPage<TenantProfile>> result = await tenantRepo
@@ -1367,7 +1438,7 @@ class _FacilityCatalogConfigPanelState
           failure: (_) => const <TenantProfile>[],
         );
       },
-      loadFacilities: (String tenantId) async {
+      loadFacilities: (String? tenantId) async {
         final Result<AppPage<FacilityProfile>> result = await tenantRepo
             .listFacilities(
               request: const AppPageRequest(pageSize: 100),
