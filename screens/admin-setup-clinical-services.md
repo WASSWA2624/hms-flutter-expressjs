@@ -10,15 +10,6 @@
 
 ---
 
-## Screen chrome (parent `/admin/setup` while this section is active)
-
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Desk section tabs | `AppTabStrip` in `_SetupBody` | Switches Tenants / Facility / Departments / Units / Wards / Rooms / Beds / Roles / Permissions / Users / Clinical Services (subset by permissions). Synced to `?section=` (kebab-case); `?tab=` accepted as alias. Selecting another desk tab leaves this inventory’s scope. |
-| Retry / reload setup | `AsyncStateScaffold` failure view (`onRetry`) | Reloads facility setup snapshot for the page. |
-
----
-
 ## Clinical Services panel chrome (`FacilityCatalogConfigPanel`)
 
 | Action button / control | Location | Modal opened or function |
