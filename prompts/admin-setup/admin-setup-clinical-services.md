@@ -1,3 +1,82 @@
-On the left, on the The radio DJ panel on the radio DJ tab. Under clinical services let's, let's see. Let's implement the config. So that we, we are able to configure Radiology Services for a given tenant and facility. So when I click, when I click the configure button, if I'm logged in as a super admin, the first dialog that comes should allow me to select a tenant and then the facility. So in other words if I select a tenant, then the I can either select a facility Tenant, or if I select a facility, then the tenant has to be selected automatically because of course, a facility belongs to only one tenant. So unless those two configured or selected correctly, then the next button should be the next button should be anybody. So meaning that So meaning that When I, when I, when I, when I select a facility, then it has to be selected automatically, and when I select a tenant, then I can either do configurations for the tenants. So if I've logged in as, as a admin, then I can select a tenant, but if I've logged as a tenant admin or any other admin that has access, if I've logged in as a facility admin, admin tenant admin, then I can select a facility, but if I've logged in as a facility admin this step has to be skipped so that the tenant and the facility set automatically. Then the next button becomes active when all these are set. So when I click next, it should open it should take me to the enable radiology offering, where I have a list of platform pre-configured radiology procedures or tests. And then, because this is, we are not actually opening a new dialogue, but we are proceeding the next step, so there should be a next or back button or close button which actually closes all this thing. Then When I go to the Enable Radiology Offerings, I should be able to either select I should be able to select the already offering. I should be able to select when I pay the payment, I can set the price. The default currency is the, the default currency is the tenant of facility or facility If a tenant was selected, if we are, if the scope is for tenant, then we should select for tenant, but if it, we should use the tenant's tenant's currency, but if it is for, if it is for the facility, then we should use the facility's scope facility currency. Now, all these should actually, this should have a next and back button so that we are able to know until we are on the last step when we can you know, after when we can add the procedure to the respective scope. So meaning that as these proce these steps are happening the scope has to be considered The scope has to be cnsidered.
+# Clinical Services — Configure Radiology (tenant / facility scope)
 
-One should also be able to select more than one radiology offerings at a go. The process should be as simple and easy as possible.
+**Screen:** `/admin/setup?section=clinical-services`  
+**Active nested tab:** Radiology (also Lab / Diagnoses exist; this prompt focuses on the Radiology **Configure** flow shown in screenshots)
+
+## Screen chrome (Radiology tab)
+
+- Nested tabs: **Radiology** | **Lab** | **Diagnoses**
+- Search: placeholder *Search by name, code, or category*
+- Toolbar: **Filters** | **Settings** | **Configure** | **+ Create imaging test**
+- Table columns: `#` | **Name** | **Test code** | **Modality** | **Actions** (Edit / Delete)
+
+## Goal
+
+When the user clicks **Configure** on the Radiology tab, run a stepped wizard that configures radiology offerings for a given **tenant** and/or **facility** scope. Keep the flow simple: pick scope → browse platform catalog → set price(s) → enable.
+
+---
+
+## Step 1 — Select tenant and facility
+
+**Dialog title:** SELECT TENANT AND FACILITY  
+**Copy:** *Select tenant and facility to configure the radiology catalog.*  
+**Fields:** Select tenant * | Facility *  
+**Footer:** Cancel | Next (Next disabled until scope is valid)
+
+### Role-based scope behavior
+
+| Actor | Behavior |
+| ----- | -------- |
+| Super admin | Show tenant + facility pickers. Selecting a **facility** auto-selects its tenant. Selecting a **tenant** alone may allow tenant-scoped configuration, or the user may then pick a facility under that tenant. |
+| Tenant admin (or other admin with tenant access) | Can select a facility under their tenant. Tenant is fixed / pre-filled as appropriate. |
+| Facility admin | **Skip this step.** Tenant and facility are set automatically from the session. Proceed straight to Enable radiology offering. |
+
+**Next** becomes active only when the required scope for the actor is complete (tenant + facility when both are required; auto-resolved pair for facility admin).
+
+---
+
+## Step 2 — Enable radiology offering
+
+**Dialog title:** ENABLE RADIOLOGY OFFERING  
+**Copy:** *Select a catalog procedure and set the facility price.*  
+**Chrome:** Search (*Search tests, modality, code, source, or status*) | Filters | Settings  
+**Table columns:** `#` | **Name** | **Code** | **Modality** | **Status** (e.g. Available)  
+**Footer:** Close (dismisses the whole configure wizard). Prefer **Back** to return to Step 1 when that step was shown.
+
+- List is the platform pre-configured radiology procedures/tests.
+- User can select **one or more** offerings in one pass (multi-select) so enabling several procedures is as simple as possible.
+- Selecting a not-yet-enabled row proceeds to Step 3 (price) for that selection (or for the batch when multi-select is used).
+
+---
+
+## Step 3 — Enable procedure (price)
+
+**Dialog title:** ENABLE PROCEDURE  
+**Header:** Procedure name + metadata (e.g. `RAD-05245 · FLUOROSCOPY`)  
+**Field:** Unit price * with currency selector  
+**Footer primary:** **Enable procedure**
+
+### Currency / scope rules
+
+- If the configure scope is **facility**, use the **facility** currency (default).
+- If the configure scope is **tenant**, use the **tenant** currency.
+- All enable writes must respect the active scope (tenant vs facility) for the rest of the wizard.
+
+After enable, return to Step 2 so more offerings can be enabled, or close when done. On the last step of a batch, **Enable procedure** (or equivalent) commits into the selected scope.
+
+---
+
+## Navigation rules
+
+- This is one continuous wizard, not a stack of unrelated dialogs: **Back** / **Next** (or Close) between steps.
+- **Close** / Cancel at any step dismisses the entire configure flow.
+- Scope chosen in Step 1 stays in force through Steps 2–3.
+
+## Acceptance criteria
+
+1. **Configure** on Radiology opens the scope step (or skips it for facility admin).
+2. Facility selection auto-fills tenant; Next stays disabled until scope is valid.
+3. Step 2 shows platform radiology catalog with search/filters and Close/Back.
+4. Step 3 sets unit price in the correct tenant/facility currency and enables into that scope.
+5. Multi-select of offerings is supported; flow stays simple end-to-end.
+)
