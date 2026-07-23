@@ -41,20 +41,38 @@ When the user clicks **Configure** on the Radiology tab, run a stepped wizard th
 **Copy:** *Select a catalog procedure and set the facility price.*  
 **Chrome:** Search (*Search tests, modality, code, source, or status*) | Filters | Settings  
 **Table columns:** `#` | **Name** | **Code** | **Modality** | **Status** (e.g. Available)  
-**Footer:** Close (dismisses the whole configure wizard). Prefer **Back** to return to Step 1 when that step was shown.
+**Footer:** **Back** | Close | **Next** (when one or more available rows are selected)
 
 - List is the platform pre-configured radiology procedures/tests.
-- User can select **one or more** offerings in one pass (multi-select) so enabling several procedures is as simple as possible.
-- Selecting a not-yet-enabled row proceeds to Step 3 (price) for that selection (or for the batch when multi-select is used).
+- User can select **one or more** offerings in one pass (multi-select).
+- **Next** opens the preview step (not the price form yet).
+- **Back** returns to Step 1 when that step was shown; otherwise dismisses configure.
 
 ---
 
-## Step 3 — Enable procedure (price)
+## Step 3 — Review selection (preview)
+
+**Dialog title:** REVIEW SELECTION  
+**Copy:** Review the procedures to enable. Deselect any you want to remove, then continue to set each price individually.  
+**Footer:** **Back** (to Step 2) | Close | **Next** (requires at least one remaining selection)
+
+- Shows only the selected procedures with checkboxes so the user can deselect before pricing.
+- **Next** starts individual pricing for each remaining selection.
+
+---
+
+## Step 4 — Enable procedure (price, one at a time)
 
 **Dialog title:** ENABLE PROCEDURE  
 **Header:** Procedure name + metadata (e.g. `RAD-05245 · FLUOROSCOPY`)  
+**Progress (multi):** *Procedure N of M*  
 **Field:** Unit price * with currency selector  
-**Footer primary:** **Enable procedure**
+**Footer:** **Back** | Close | **Enable procedure**
+
+- Each selected procedure is priced **individually** (never a shared batch price).
+- **Enable procedure** commits that one offering, then advances to the next selected item.
+- **Back** on the first priced item returns to preview; on later items returns to the previous procedure in the queue.
+- After the last item is enabled, return to Step 2 so more offerings can be configured.
 
 ### Currency / scope rules
 
@@ -62,21 +80,20 @@ When the user clicks **Configure** on the Radiology tab, run a stepped wizard th
 - If the configure scope is **tenant**, use the **tenant** currency.
 - All enable writes must respect the active scope (tenant vs facility) for the rest of the wizard.
 
-After enable, return to Step 2 so more offerings can be enabled, or close when done. On the last step of a batch, **Enable procedure** (or equivalent) commits into the selected scope.
-
 ---
 
 ## Navigation rules
 
-- This is one continuous wizard, not a stack of unrelated dialogs: **Back** / **Next** (or Close) between steps.
+- This is one continuous wizard, not a stack of unrelated dialogs: **Back** / **Next** / **Close** between steps.
 - **Close** / Cancel at any step dismisses the entire configure flow.
-- Scope chosen in Step 1 stays in force through Steps 2–3.
+- Scope chosen in Step 1 stays in force through Steps 2–4.
 
 ## Acceptance criteria
 
 1. **Configure** on Radiology opens the scope step (or skips it for facility admin).
 2. Facility selection auto-fills tenant; Next stays disabled until scope is valid.
-3. Step 2 shows platform radiology catalog with search/filters and Close/Back.
-4. Step 3 sets unit price in the correct tenant/facility currency and enables into that scope.
-5. Multi-select of offerings is supported; flow stays simple end-to-end.
+3. Step 2 shows platform radiology catalog with search/filters and **Back** / Close / Next.
+4. Step 3 preview lets the user deselect items or go **Back** to the catalog.
+5. Step 4 sets unit price **per procedure** in the correct tenant/facility currency and enables into that scope.
+6. Multi-select is supported end-to-end via catalog → preview → individual prices.
 )

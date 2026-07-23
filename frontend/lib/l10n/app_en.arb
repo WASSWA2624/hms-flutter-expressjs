@@ -25024,6 +25024,30 @@
       }
     }
   },
+  "radiologyEnableOfferingPreviewTitle": "Review selection",
+  "@radiologyEnableOfferingPreviewTitle": {
+    "description": "Title for the radiology configure preview step before pricing."
+  },
+  "radiologyEnableOfferingPreviewBody": "Review the procedures to enable. Deselect any you want to remove, then continue to set each price individually.",
+  "@radiologyEnableOfferingPreviewBody": {
+    "description": "Body copy for the radiology configure preview step."
+  },
+  "radiologyEnableOfferingPreviewEmptyLabel": "No procedures selected. Go back to choose offerings.",
+  "@radiologyEnableOfferingPreviewEmptyLabel": {
+    "description": "Empty state when all preview selections were deselected."
+  },
+  "radiologyEnableOfferingPriceProgressLabel": "Procedure {current} of {total}",
+  "@radiologyEnableOfferingPriceProgressLabel": {
+    "description": "Progress caption while setting individual radiology offering prices.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "radiologyEditOfferingDialogTitle": "Edit facility offering",
   "@radiologyEditOfferingDialogTitle": {
     "description": "Radiology edit facility offering dialog title."

@@ -36325,6 +36325,30 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 procedure selected} other{{count} procedures selected}}. Set a shared unit price for the selection.'**
   String radiologyEnableSelectedProceduresBody(int count);
 
+  /// Title for the radiology configure preview step before pricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Review selection'**
+  String get radiologyEnableOfferingPreviewTitle;
+
+  /// Body copy for the radiology configure preview step.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the procedures to enable. Deselect any you want to remove, then continue to set each price individually.'**
+  String get radiologyEnableOfferingPreviewBody;
+
+  /// Empty state when all preview selections were deselected.
+  ///
+  /// In en, this message translates to:
+  /// **'No procedures selected. Go back to choose offerings.'**
+  String get radiologyEnableOfferingPreviewEmptyLabel;
+
+  /// Progress caption while setting individual radiology offering prices.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure {current} of {total}'**
+  String radiologyEnableOfferingPriceProgressLabel(int current, int total);
+
   /// Radiology edit facility offering dialog title.
   ///
   /// In en, this message translates to:

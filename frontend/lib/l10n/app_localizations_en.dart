@@ -19514,6 +19514,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get radiologyEnableOfferingPreviewTitle => 'Review selection';
+
+  @override
+  String get radiologyEnableOfferingPreviewBody =>
+      'Review the procedures to enable. Deselect any you want to remove, then continue to set each price individually.';
+
+  @override
+  String get radiologyEnableOfferingPreviewEmptyLabel =>
+      'No procedures selected. Go back to choose offerings.';
+
+  @override
+  String radiologyEnableOfferingPriceProgressLabel(int current, int total) {
+    return 'Procedure $current of $total';
+  }
+
+  @override
   String get radiologyEditOfferingDialogTitle => 'Edit facility offering';
 
   @override

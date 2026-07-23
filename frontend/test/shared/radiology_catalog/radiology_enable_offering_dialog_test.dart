@@ -15,61 +15,83 @@ const RadiologyCatalogTest _availableTest = RadiologyCatalogTest(
   modality: 'XRAY',
 );
 
+const RadiologyCatalogTest _availableTestTwo = RadiologyCatalogTest(
+  id: 'RT0000002',
+  name: 'Brain MRI',
+  code: 'RAD-00002',
+  modality: 'MRI',
+);
+
 void main() {
   group('RadiologyEnableFacilityOfferingDialog', () {
-    testWidgets('close action renders a close icon', (
+    testWidgets('close and back actions render on enable catalog step', (
       WidgetTester tester,
     ) async {
-      await _pumpEnableDialog(tester);
+      await _pumpEnableDialog(tester, showBackAction: true);
 
       expect(find.widgetWithIcon(AppButton, Icons.close), findsWidgets);
+      expect(find.widgetWithIcon(AppButton, Icons.arrow_back_outlined), findsWidgets);
       expect(find.text('Chest X-ray'), findsWidgets);
     });
 
-    testWidgets('enable price dialog exposes the enable action icon', (
+    testWidgets('selection goes to preview then individual price step', (
       WidgetTester tester,
     ) async {
       await _pumpEnableDialog(tester);
 
       await tester.tap(find.byType(Checkbox).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('Enable selected').first);
+      await tester.tap(find.text('Next').first);
       await tester.pumpAndSettle();
 
+      expect(find.text('REVIEW SELECTION'), findsOneWidget);
+      expect(find.text('Chest X-ray'), findsWidgets);
+
+      await tester.tap(find.text('Next').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('ENABLE PROCEDURE'), findsWidgets);
+      expect(find.byType(AppCurrencyAmountField), findsOneWidget);
       expect(
-        find.widgetWithIcon(AppButton, Icons.check_circle_outline),
+        find.widgetWithIcon(AppButton, Icons.arrow_back_outlined),
         findsWidgets,
       );
-      expect(find.text('Enable procedure'), findsWidgets);
     });
 
-    testWidgets('supports multi-select enable without leaving the catalog', (
+    testWidgets('preview allows deselect and back to catalog', (
       WidgetTester tester,
     ) async {
-      await _pumpEnableDialog(tester);
+      await _pumpEnableDialog(
+        tester,
+        items: const <RadiologyCatalogTest>[_availableTest, _availableTestTwo],
+      );
 
-      await tester.tap(find.byType(Checkbox).first);
+      await tester.tap(find.byType(Checkbox).at(0));
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next').first);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Enable selected'), findsWidgets);
+      expect(find.text('REVIEW SELECTION'), findsOneWidget);
+      expect(find.byType(Checkbox), findsNWidgets(2));
 
-      await tester.tap(find.textContaining('Enable selected').first);
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithIcon(AppButton, Icons.arrow_back_outlined));
       await tester.pumpAndSettle();
 
-      expect(find.text('Enable procedure'), findsWidgets);
-      expect(find.byType(AppCurrencyAmountField), findsOneWidget);
-
-      await tester.tap(find.widgetWithIcon(AppButton, Icons.close).first);
-      await tester.pumpAndSettle();
-
-      // Parent enable catalog remains after dismissing the price step.
-      expect(find.textContaining('Enable selected'), findsWidgets);
-      expect(find.text('Chest X-ray'), findsWidgets);
+      expect(find.text('ENABLE RADIOLOGY OFFERING'), findsOneWidget);
     });
   });
 }
 
-Future<void> _pumpEnableDialog(WidgetTester tester) async {
+Future<void> _pumpEnableDialog(
+  WidgetTester tester, {
+  bool showBackAction = false,
+  List<RadiologyCatalogTest> items = const <RadiologyCatalogTest>[
+    _availableTest,
+  ],
+}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(1400, 900);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -88,15 +110,14 @@ Future<void> _pumpEnableDialog(WidgetTester tester) async {
               tenantId: 'TEN0000001',
               facilityId: 'FAC0000001',
             ),
+            showBackAction: showBackAction,
             onSearchCatalog:
                 ({
                   required RadiologyCatalogScope scope,
                   String? query,
                   int limit = 100,
                 }) async {
-                  return const Result<List<RadiologyCatalogTest>>.success(
-                    <RadiologyCatalogTest>[_availableTest],
-                  );
+                  return Result<List<RadiologyCatalogTest>>.success(items);
                 },
             onEnable: (String id, Map<String, Object?> payload) async {
               return null;
