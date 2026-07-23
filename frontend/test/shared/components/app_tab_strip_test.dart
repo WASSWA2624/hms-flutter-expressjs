@@ -28,6 +28,37 @@ void main() {
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
   });
 
+  testWidgets('renders leading icons when provided on tabs', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: AppTabStrip(
+            tabs: const <AppTabItem>[
+              AppTabItem(
+                id: 'tenants',
+                label: 'Tenants',
+                icon: Icons.corporate_fare_outlined,
+              ),
+              AppTabItem(
+                id: 'users',
+                label: 'Users',
+                icon: Icons.people_outline,
+              ),
+            ],
+            selectedId: 'tenants',
+            onTabTapped: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.corporate_fare_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.people_outline), findsOneWidget);
+  });
+
   testWidgets('shows full button labels on large screens', (
     WidgetTester tester,
   ) async {

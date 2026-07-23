@@ -25,7 +25,7 @@ final class AppTabItem {
   /// Color of the count superscript when [count] is non-null.
   final AppTabCountTone countTone;
 
-  /// Retained for call-site compatibility; not rendered in the tab chrome.
+  /// Optional leading icon shown beside the tab label.
   final IconData? icon;
 }
 
@@ -239,6 +239,7 @@ class _AppTabScrollRowState extends State<_AppTabScrollRow> {
                   for (int index = 0; index < widget.tabs.length; index += 1)
                     _AppTabChip(
                       label: widget.tabs[index].label,
+                      icon: widget.tabs[index].icon,
                       count: widget.tabs[index].count,
                       countTone: widget.tabs[index].countTone,
                       isSelected: widget.selectedId == widget.tabs[index].id,
@@ -623,10 +624,12 @@ class _AppTabChip extends StatefulWidget {
     required this.onTap,
     required this.countTone,
     required this.activeFill,
+    this.icon,
     this.count,
   });
 
   final String label;
+  final IconData? icon;
   final int? count;
   final AppTabCountTone countTone;
   final bool isSelected;
@@ -708,18 +711,22 @@ class _AppTabChipState extends State<_AppTabChip> {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Text(
-                      fullLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: foregroundColor,
-                        fontWeight: fontWeight,
-                      ),
+                  if (widget.icon != null) ...<Widget>[
+                    Icon(
+                      widget.icon,
+                      size: 18,
+                      color: foregroundColor,
+                    ),
+                    SizedBox(width: theme.spacing.xs),
+                  ],
+                  Text(
+                    fullLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: foregroundColor,
+                      fontWeight: fontWeight,
                     ),
                   ),
                   if (widget.count != null)
