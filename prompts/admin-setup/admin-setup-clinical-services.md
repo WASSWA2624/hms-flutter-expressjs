@@ -1,1 +1,33 @@
-金不换 On the, on the admin setup screen under the clinical services tab we have the radiology lab and the diagnoses sub-tab. I want those sub tabs to look distinctly from, from the main tab, so that actually when somebody sees, they really know that these are actual sub tabs under the currently active, m-main tab. So the Radiology tab displays nicely because it's, it has the filters, that one in the settings the configure, and then the create imaging test, yeah, which is okay. also the lab tab. The bathtub Displays the filters, the settings, the configure and add test and then add panel tabs, yeah, which is okay. Then also we have the diagnostics which has Which has the filters, the, the settings, and then the configure plus the add services add service. However, on the diagnosis, we should say add the diagnosis because it's, when you say add the service, it's again what? Then what I've also noted is that when I click these tabs they really take long to switch between one tab to the next, and the tables also look so heavy when I'm, when I'm scrolling. The tables as such, I wish we need to improve on how they load. Then also, for example, when I'm scrolling down to to the bottom of the radiology tab, I expect that there are much more radiology imaging tests that should be displayed, but it scrolls only up to one hundred. I want the table to update as I scroll so that I have a continuous fill of the scroll. Then also, this table should also have Yeah, it should, it should behave nicely. The labs also I want all the tables to update in real time as I scroll, such that the table also looks seamless with a very nice user experience. do the same to the diagnosis table as well.
+# Refine Clinical Services nested catalogs
+
+On `/admin/setup?section=clinical-services`, subordinate Radiology / Lab / Diagnoses, rename Diagnoses create copy, and infinite-scroll past the 100-row cap.
+
+## Context
+
+Nested catalog tabs share `AppTabStrip` with parent desk tabs. Lists use `limit: 100` with no append-on-scroll; switches feel slow. Diagnoses create says **Add service**; change to **Add diagnosis**. Keep Radiology **Create imaging test**, Lab **Add test** / **Add panel**, and Filter / Settings / Configure.
+
+## Requirements
+
+1. Restyle nested Radiology / Lab / Diagnoses as subordinate to the parent desk `AppTabStrip` (theme tokens; leave parent tabs unchanged).
+2. Rename Diagnoses create action and create-dialog title to **Add diagnosis** (l10n); keep Edit / Delete / Configure.
+3. Switch nested tabs without full-panel blocking; warm prior data when possible; show loading / empty / error / success only on the active catalog.
+4. Wire all three `AppListTable`s to infinite scroll that appends until exhausted; reuse `AppListTablePaginationMode.infinite` and list contracts; keep scroll responsive.
+5. Show mutate actions only when `canManageFacility || canManageTenant`; omit forbidden mutate UI.
+6. After create / edit / delete, synchronize the active list in place.
+
+## Constraints
+
+Reuse routes, repositories, dialogs, RBAC, `AppListTable`, and theme tokens. No unrelated desk/wizard work. Mobile/tablet/desktop; light and dark.
+
+## Acceptance Criteria
+
+- Nested tabs clearly read as sub-tabs under Clinical Services.
+- Diagnoses CTA/create title is **Add diagnosis**; Radiology/Lab labels unchanged.
+- Nested switches feel immediate; feedback scoped to the active catalog.
+- Scroll past 100 rows until exhausted on all three tables.
+- Unauthorized users never see mutate actions; authorized mutations appear in-table.
+- Check the route (three tabs, light/dark, narrow) and test infinite load plus Diagnoses copy.
+
+## Relevant Files
+
+- `facility_catalog_config_panel.dart`, `app_tab_strip.dart`, `app_list_table.dart`, `clinical_catalog_admin_dialogs.dart`, `app_en.arb`, catalog repositories, `screens/admin-setup-clinical-services.md`
