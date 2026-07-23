@@ -108,7 +108,8 @@ void main() {
 
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsWidgets);
-    expect(find.text('Loading...'), findsOneWidget);
+    expect(find.text('Loading'), findsOneWidget);
+    expect(find.text('Please wait...'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();

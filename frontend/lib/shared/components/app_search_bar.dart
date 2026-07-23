@@ -1137,9 +1137,10 @@ class _AppSearchBarFiltersDialogState
                 Positioned.fill(
                   child: ColoredBox(
                     color: theme.colorScheme.surface.withValues(alpha: 0.94),
-                    child: AppLoadingIndicator.compact(
-                      title: context.l10n.commonLoadingCompactTitle,
-                      semanticLabel: context.l10n.commonLoadingCompactTitle,
+                    child: AppLoadingIndicator(
+                      title: context.l10n.commonLoadingTitle,
+                      body: context.l10n.commonLoadingBody,
+                      semanticLabel: context.l10n.commonLoadingTitle,
                     ),
                   ),
                 ),
