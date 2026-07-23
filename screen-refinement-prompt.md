@@ -1,4 +1,4 @@
-# Action Button Inventory — Target Screen: `/reception`
+# Action Button Inventory — Target Screen: `/admin/setup`
 
 Produce a complete inventory of every action button on the target screen, including buttons inside modal dialogs and any nested dialogs those modals open. Save the inventory under `screens/`.
 
