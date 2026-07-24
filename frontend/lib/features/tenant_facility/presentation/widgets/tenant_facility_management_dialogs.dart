@@ -215,7 +215,10 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     if (_isScopedTenantManager &&
         widget.sessionTenant != null &&
         widget.sessionTenant != oldWidget.sessionTenant) {
-      _scopedTenant = widget.sessionTenant;
+      _scopedTenant = _mergeScopedTenantProfile(
+        previous: _scopedTenant,
+        incoming: widget.sessionTenant!,
+      );
     }
   }
 
@@ -297,7 +300,14 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         setState(() {
           _loading = false;
           _failure = null;
-          _scopedTenant = snapshot.tenant ?? widget.sessionTenant;
+          final TenantProfile? loaded =
+              snapshot.tenant ?? widget.sessionTenant;
+          _scopedTenant = loaded == null
+              ? _scopedTenant
+              : _mergeScopedTenantProfile(
+                  previous: _scopedTenant,
+                  incoming: loaded,
+                );
         });
       },
       failure: (AppFailure failure) {
@@ -309,6 +319,40 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
           }
         });
       },
+    );
+  }
+
+  TenantProfile _mergeScopedTenantProfile({
+    required TenantProfile? previous,
+    required TenantProfile incoming,
+  }) {
+    if (previous == null) {
+      return incoming;
+    }
+
+    String? prefer(String? next, String? current) {
+      final String? trimmedNext = next?.trim();
+      if (trimmedNext != null && trimmedNext.isNotEmpty) {
+        return trimmedNext;
+      }
+      final String? trimmedCurrent = current?.trim();
+      if (trimmedCurrent != null && trimmedCurrent.isNotEmpty) {
+        return trimmedCurrent;
+      }
+      return next ?? current;
+    }
+
+    return incoming.copyWith(
+      resourceUuid: incoming.resourceUuid ?? previous.resourceUuid,
+      displayId: incoming.displayId ?? previous.displayId,
+      currency: prefer(incoming.currency, previous.currency),
+      standardConsultationFee: prefer(
+        incoming.standardConsultationFee,
+        previous.standardConsultationFee,
+      ),
+      contactName: prefer(incoming.contactName, previous.contactName),
+      contactEmail: prefer(incoming.contactEmail, previous.contactEmail),
+      contactPhone: prefer(incoming.contactPhone, previous.contactPhone),
     );
   }
 
@@ -804,9 +848,9 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     }
 
     setState(() {
-      _scopedTenant = savedTenant.copyWith(
-        resourceUuid: savedTenant.resourceUuid ?? tenant.resourceUuid,
-        displayId: savedTenant.displayId ?? tenant.displayId,
+      _scopedTenant = _mergeScopedTenantProfile(
+        previous: tenant,
+        incoming: savedTenant,
       );
       _failure = null;
     });

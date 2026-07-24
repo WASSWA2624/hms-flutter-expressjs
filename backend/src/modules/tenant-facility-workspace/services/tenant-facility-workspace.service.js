@@ -125,6 +125,25 @@ const serializeTenant = (record) => {
     typeof extensionJson.currency === 'string' && extensionJson.currency.trim()
       ? extensionJson.currency.trim().toUpperCase()
       : null;
+  const contactRaw =
+    extensionJson.contact && typeof extensionJson.contact === 'object'
+      ? extensionJson.contact
+      : null;
+  const billingRaw =
+    extensionJson.billing && typeof extensionJson.billing === 'object'
+      ? extensionJson.billing
+      : null;
+  const consultationFee = (() => {
+    const raw = billingRaw?.standard_consultation_fee;
+    if (raw === null || raw === undefined) return null;
+    const asString = String(raw).trim();
+    return asString ? asString : null;
+  })();
+  const normalizeContactField = (value) => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  };
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
@@ -135,6 +154,22 @@ const serializeTenant = (record) => {
     is_active: Boolean(record.is_active),
     extension_json: {
       currency,
+      ...(contactRaw
+        ? {
+            contact: {
+              name: normalizeContactField(contactRaw.name),
+              email: normalizeContactField(contactRaw.email),
+              phone: normalizeContactField(contactRaw.phone),
+            },
+          }
+        : {}),
+      ...(billingRaw
+        ? {
+            billing: {
+              standard_consultation_fee: consultationFee,
+            },
+          }
+        : {}),
     },
   };
 };
