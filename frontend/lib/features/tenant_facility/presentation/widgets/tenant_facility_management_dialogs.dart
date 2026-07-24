@@ -1850,10 +1850,10 @@ class _TenantDetailsSummary extends StatelessWidget {
       color: colorScheme.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(theme.radius.lg),
+        borderRadius: BorderRadius.zero,
         side: BorderSide(color: colorScheme.outlineVariant),
       ),
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: Clip.hardEdge,
       child: framedBody,
     );
 
@@ -1886,7 +1886,7 @@ class _TenantStatusBadge extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: foreground.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: foreground.withValues(alpha: 0.24)),
       ),
       child: Padding(
