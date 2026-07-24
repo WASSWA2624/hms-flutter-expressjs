@@ -44,17 +44,17 @@ usernames, passwords, tokens, or other credentials.
 Development can use a local HTTP endpoint:
 
 ```sh
-flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation --no-web-resources-cdn
 ```
 
 Staging and production should use public HTTPS endpoints:
 
 ```sh
-flutter run -d chrome --dart-define-from-file=env/staging.json.example --no-web-enable-expression-evaluation
+flutter run -d chrome --dart-define-from-file=env/staging.json.example --no-web-enable-expression-evaluation --no-web-resources-cdn
 ```
 
 ```sh
-flutter build web --release --dart-define-from-file=env/production.json.example
+flutter build web --release --no-web-resources-cdn --dart-define-from-file=env/production.json.example
 ```
 
 Command-line `--dart-define=KEY=value` entries can still be used for CI or

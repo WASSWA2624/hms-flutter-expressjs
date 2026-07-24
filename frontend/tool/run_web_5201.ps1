@@ -103,7 +103,8 @@ function Get-FlutterWebRunArgs {
     '-d', $RunDevice,
     "--web-hostname=$HostName",
     "--web-port=$Port",
-    "--dart-define-from-file=$DartDefineFile"
+    "--dart-define-from-file=$DartDefineFile",
+    '--no-web-resources-cdn'
   )
 
   if (-not $EnableExpressionEvaluation) {

@@ -59,7 +59,7 @@ artifact.
 CI uses the production-safe placeholder values in `env/production.json.example`:
 
 ```sh
-flutter build web --release --dart-define-from-file=env/production.json.example
+flutter build web --release --no-web-resources-cdn --dart-define-from-file=env/production.json.example
 ```
 
 Replace the placeholder URL by providing a secure CI define file or CI-only
@@ -73,7 +73,7 @@ Run platform builds only on hosts with the required SDKs installed.
 ### Web
 
 ```sh
-flutter build web --release --dart-define-from-file=env/production.json.example
+flutter build web --release --no-web-resources-cdn --dart-define-from-file=env/production.json.example
 ```
 
 Artifact path: `build/web/`.

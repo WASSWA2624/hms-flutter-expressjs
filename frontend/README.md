@@ -60,7 +60,7 @@ hot reload on save for active debug sessions.
 Run the starter app on Chrome:
 
 ```sh
-flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation --no-web-resources-cdn
 ```
 
 On Windows PowerShell, prefer the project launcher when reusing port `5201`.
@@ -129,7 +129,7 @@ flutter test --coverage
 Build Web locally:
 
 ```sh
-flutter build web --release --dart-define-from-file=env/production.json.example
+flutter build web --release --no-web-resources-cdn --dart-define-from-file=env/production.json.example
 ```
 
 Platform release commands for Web, Android, iOS, Windows, macOS, Linux, and CI

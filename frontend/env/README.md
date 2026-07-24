@@ -7,7 +7,7 @@ Run or build with Flutter's define file flag:
 
 ```sh
 flutter run -d chrome --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation
-flutter build web --release --dart-define-from-file=env/production.json.example
+flutter build web --release --no-web-resources-cdn --dart-define-from-file=env/production.json.example
 ```
 
 Copy an example to `env/development.json`, `env/staging.json`, or

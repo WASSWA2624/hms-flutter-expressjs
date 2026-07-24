@@ -14,6 +14,7 @@
         "--web-port=5201",
         "--dart-define-from-file=env/development.json.example",
         "--no-web-enable-expression-evaluation",
+        "--no-web-resources-cdn",
         "--web-browser-flag=--user-data-dir=${workspaceFolder}/.dart_tool/flutter_chrome_profile",
         "--web-browser-flag=--disable-extensions",
         "--web-browser-flag=--no-first-run",

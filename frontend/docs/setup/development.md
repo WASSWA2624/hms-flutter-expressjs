@@ -15,7 +15,7 @@
 ```sh
 flutter pub get
 flutter test
-flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation --no-web-resources-cdn
 flutter run -d windows --dart-define-from-file=env/development.json.example
 ```
 
@@ -60,7 +60,7 @@ target platform command, then press `r` for hot reload, `R` for hot restart, and
 `q` to quit.
 
 ```sh
-flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation --no-web-resources-cdn
 flutter run -d android --dart-define-from-file=env/development.json.example
 flutter run -d ios --dart-define-from-file=env/development.json.example
 flutter run -d macos --dart-define-from-file=env/development.json.example
