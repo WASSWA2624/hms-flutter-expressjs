@@ -110,6 +110,16 @@ void main() {
         isTrue,
       );
       expect(
+        managementDialogsSource.contains('framed: true'),
+        isTrue,
+        reason: 'scoped tenant details should use the framed summary layout',
+      );
+      expect(
+        managementDialogsSource.contains('AppInfoTileGrid'),
+        isTrue,
+        reason: 'scoped tenant details should present fields in info tiles',
+      );
+      expect(
         managementDialogsSource.contains(
           'if (_isScopedTenantManager) {\n      return;',
         ),
