@@ -192,21 +192,20 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
       return;
     }
     final bool saved = await submit();
-    if (!mounted) {
+    if (!mounted || !saved) {
       return;
     }
-    if (saved) {
-      final TenantProfile? savedTenant = ref
-          .read(tenantFacilitySetupSubmissionProvider)
-          .lastSavedTenant;
-      if (savedTenant == null) {
-        return;
-      }
-      if (widget.managementSnapshot == null) {
-        _showSaved(context);
-      }
-      Navigator.of(context).pop<TenantProfile>(savedTenant);
+
+    final TenantProfile? savedTenant = ref
+        .read(tenantFacilitySetupSubmissionProvider)
+        .lastSavedTenant;
+    if (savedTenant == null) {
+      return;
     }
+    if (widget.managementSnapshot == null) {
+      _showSaved(context);
+    }
+    Navigator.of(context).pop<TenantProfile>(savedTenant);
   }
 
   @override
@@ -719,6 +718,9 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     _nameController.addListener(_handleNameChanged);
     _slugController.addListener(_handleSlugChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       widget.registerSubmitHandler?.call(_submit);
     });
   }
@@ -726,6 +728,15 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
   @override
   void didUpdateWidget(_TenantProfileForm oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.registerSubmitHandler != widget.registerSubmitHandler ||
+        oldWidget.tenant?.id != widget.tenant?.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        widget.registerSubmitHandler?.call(_submit);
+      });
+    }
     if (oldWidget.tenant?.id != widget.tenant?.id) {
       _nameController.text = widget.tenant?.name ?? '';
       _slugController.text = widget.tenant?.slug ?? '';

@@ -115,9 +115,14 @@ void main() {
         reason: 'scoped tenant details should use the framed summary layout',
       );
       expect(
-        managementDialogsSource.contains('AppInfoTileGrid'),
+        managementDialogsSource.contains('AppInfoSheetGrid'),
         isTrue,
-        reason: 'scoped tenant details should present fields in info tiles',
+        reason: 'scoped tenant details should present fields in info sheets',
+      );
+      expect(
+        managementDialogsSource.contains('expandToFill: true'),
+        isTrue,
+        reason: 'scoped tenant details should expand across available space',
       );
       expect(
         managementDialogsSource.contains(

@@ -789,12 +789,13 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
 
   Future<void> _editScopedTenant() async {
     final TenantProfile? tenant = _scopedTenant;
-    if (tenant == null) {
+    if (tenant == null || !mounted) {
       return;
     }
 
+    final BuildContext dialogContext = context;
     final TenantProfile? savedTenant = await showTenantFacilityTenantFormDialog(
-      context,
+      dialogContext,
       tenant: tenant,
       managementMode: true,
     );
@@ -847,26 +848,21 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
               : AppWorkspaceStatusTone.neutral);
     final bool canEditTenant = _canEdit && !tenant.isDeleted;
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 840),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.lg,
-            vertical: theme.spacing.md,
-          ),
-          child: _TenantDetailsSummary(
-            tenant: tenant,
-            statusLabel: statusLabel,
-            statusTone: statusTone,
-            framed: true,
-            onEdit: canEditTenant
-                ? () => unawaited(_editScopedTenant())
-                : null,
-            editLabel: l10n.tenantFacilityEditTenantAction,
-          ),
-        ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.md,
+        theme.spacing.sm,
+        theme.spacing.md,
+        theme.spacing.md,
+      ),
+      child: _TenantDetailsSummary(
+        tenant: tenant,
+        statusLabel: statusLabel,
+        statusTone: statusTone,
+        framed: true,
+        expandToFill: true,
+        onEdit: canEditTenant ? _editScopedTenant : null,
+        editLabel: l10n.tenantFacilityEditTenantAction,
       ),
     );
   }
@@ -1524,15 +1520,17 @@ class _TenantDetailsSummary extends StatelessWidget {
     this.onEdit,
     this.editLabel,
     this.framed = false,
+    this.expandToFill = false,
   });
 
   final TenantProfile tenant;
   final String statusLabel;
   final AppWorkspaceStatusTone statusTone;
   final VoidCallback? onHide;
-  final VoidCallback? onEdit;
+  final Future<void> Function()? onEdit;
   final String? editLabel;
   final bool framed;
+  final bool expandToFill;
 
   String _initials(String name) {
     final List<String> parts = name
@@ -1557,24 +1555,51 @@ class _TenantDetailsSummary extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final String hideLabel = l10n.tenantFacilityTenantDetailsHideSummaryAction;
     final VoidCallback? hideAction = onHide;
-    final VoidCallback? editAction = onEdit;
+    final Future<void> Function()? editAction = onEdit;
     final String? resolvedEditLabel = editLabel;
     final String emptyValue = l10n.profileUnknownValue;
     final Set<String> emptyPlaceholders = <String>{emptyValue, '—'};
+    final String? slug = tenant.slug?.trim();
+    final bool showSlug = slug != null && slug.isNotEmpty;
 
-    final Widget identity = Row(
+    final Widget editButton =
+        editAction != null &&
+            resolvedEditLabel != null &&
+            resolvedEditLabel.isNotEmpty
+        ? AppButton.secondary(
+            label: resolvedEditLabel,
+            leadingIcon: Icons.edit_outlined,
+            onPressed: () {
+              unawaited(editAction());
+            },
+          )
+        : const SizedBox.shrink();
+
+    final Widget headerContent = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        CircleAvatar(
-          radius: framed ? 28 : 22,
-          backgroundColor: colorScheme.primaryContainer,
-          foregroundColor: colorScheme.onPrimaryContainer,
-          child: Text(
-            _initials(tenant.name),
-            style: (framed
-                    ? theme.textTheme.titleLarge
-                    : theme.textTheme.titleMedium)
-                ?.copyWith(fontWeight: FontWeight.w700),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.22),
+            ),
+          ),
+          child: SizedBox.square(
+            dimension: framed ? 56 : 44,
+            child: Center(
+              child: Text(
+                _initials(tenant.name),
+                style: (framed
+                        ? theme.textTheme.titleLarge
+                        : theme.textTheme.titleMedium)
+                    ?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ),
           ),
         ),
         SizedBox(width: theme.spacing.md),
@@ -1587,7 +1612,7 @@ class _TenantDetailsSummary extends StatelessWidget {
                 style: (framed
                         ? theme.textTheme.headlineSmall
                         : theme.textTheme.titleLarge)
-                    ?.copyWith(fontWeight: FontWeight.w700, height: 1.2),
+                    ?.copyWith(fontWeight: FontWeight.w800, height: 1.15),
               ),
               SizedBox(height: theme.spacing.xs),
               Wrap(
@@ -1596,11 +1621,12 @@ class _TenantDetailsSummary extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
                   _TenantStatusBadge(label: statusLabel, tone: statusTone),
-                  if ((tenant.slug ?? '').trim().isNotEmpty)
+                  if (showSlug)
                     Text(
-                      tenant.slug!.trim(),
+                      slug,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                 ],
@@ -1608,57 +1634,54 @@ class _TenantDetailsSummary extends StatelessWidget {
             ],
           ),
         ),
+        if (hideAction != null)
+          IconButton(
+            tooltip: hideLabel,
+            visualDensity: VisualDensity.compact,
+            onPressed: hideAction,
+            icon: const Icon(Icons.visibility_off_outlined),
+          ),
       ],
     );
 
-    final Widget? editButton =
-        editAction != null &&
-            resolvedEditLabel != null &&
-            resolvedEditLabel.isNotEmpty
-        ? AppButton.secondary(
-            label: resolvedEditLabel,
-            leadingIcon: Icons.edit_outlined,
-            onPressed: editAction,
-          )
-        : null;
-
-    final Widget header = LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool stackActions =
-            editButton != null && constraints.maxWidth < 520;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(child: identity),
-                if (!stackActions && editButton != null) ...<Widget>[
-                  SizedBox(width: theme.spacing.sm),
-                  editButton,
+    final Widget header = Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.lg,
+        theme.spacing.lg,
+        theme.spacing.md,
+        theme.spacing.md,
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool stackEdit =
+              editAction != null && constraints.maxWidth < 560;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: headerContent),
+                  if (!stackEdit && editAction != null) ...<Widget>[
+                    SizedBox(width: theme.spacing.sm),
+                    editButton,
+                  ],
                 ],
-                if (hideAction != null)
-                  IconButton(
-                    tooltip: hideLabel,
-                    visualDensity: VisualDensity.compact,
-                    onPressed: hideAction,
-                    icon: const Icon(Icons.visibility_off_outlined),
-                  ),
+              ),
+              if (stackEdit) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                Align(alignment: Alignment.centerLeft, child: editButton),
               ],
-            ),
-            if (stackActions) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Align(alignment: Alignment.centerLeft, child: editButton),
             ],
-          ],
-        );
-      },
+          );
+        },
+      ),
     );
 
     Widget section({
       required String title,
       required IconData icon,
-      required List<AppInfoTileData> items,
+      required List<AppInfoSheetItem> items,
       int maxColumns = 3,
     }) {
       return Column(
@@ -1677,123 +1700,168 @@ class _TenantDetailsSummary extends StatelessWidget {
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
+                    letterSpacing: 0.1,
                   ),
                 ),
               ),
             ],
           ),
-          SizedBox(height: theme.spacing.sm),
-          AppInfoTileGrid(
+          SizedBox(height: theme.spacing.md),
+          AppInfoSheetGrid(
             emptyValue: emptyValue,
             maxColumns: maxColumns,
-            minItemWidth: framed ? 168 : 132,
+            minItemWidth: framed ? 180 : 120,
             items: items,
           ),
         ],
       );
     }
 
-    final Widget sections = Column(
+    final Widget sections = Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.lg,
+        theme.spacing.md,
+        theme.spacing.lg,
+        theme.spacing.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          section(
+            title: l10n.hrStaffOverviewSectionTitle,
+            icon: Icons.info_outline,
+            items: <AppInfoSheetItem>[
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityTenantSlugLabel,
+                value: tenant.slug,
+                copyable: true,
+                copyTooltip: l10n.copyIdentifierAction,
+                copiedMessage: l10n.identifierCopiedMessage,
+                copyPlaceholderValues: emptyPlaceholders,
+              ),
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityTenantDetailsIdLabel,
+                value: tenant.displayId,
+                copyable: true,
+                copyTooltip: l10n.copyIdentifierAction,
+                copiedMessage: l10n.identifierCopiedMessage,
+                copyPlaceholderValues: emptyPlaceholders,
+              ),
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityTenantStatusLabel,
+                value: statusLabel,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.lg),
+          Divider(
+            height: 1,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+          ),
+          SizedBox(height: theme.spacing.lg),
+          section(
+            title: l10n.tenantFacilityFacilityDetailsContactHeading,
+            icon: Icons.contact_mail_outlined,
+            items: <AppInfoSheetItem>[
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityTenantDetailsContactNameLabel,
+                value: tenant.contactName,
+              ),
+              AppInfoSheetItem(
+                label: l10n.profilePhoneLabel,
+                value: tenant.contactPhone,
+              ),
+              AppInfoSheetItem(
+                label: l10n.profileEmailLabel,
+                value: tenant.contactEmail,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.lg),
+          Divider(
+            height: 1,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+          ),
+          SizedBox(height: theme.spacing.lg),
+          section(
+            title: l10n.settingsConfigurationTenantTitle,
+            icon: Icons.tune_outlined,
+            maxColumns: 2,
+            items: <AppInfoSheetItem>[
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityDefaultCurrencyLabel,
+                value: tenant.currency,
+              ),
+              AppInfoSheetItem(
+                label: l10n.settingsConfigurationConsultationFeeLabel,
+                value: tenant.standardConsultationFee,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final Widget framedBody = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        section(
-          title: l10n.hrStaffOverviewSectionTitle,
-          icon: Icons.info_outline,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.tenantFacilityTenantSlugLabel,
-              value: tenant.slug,
-              icon: Icons.link_outlined,
-              copyable: true,
-              copyTooltip: l10n.copyIdentifierAction,
-              copiedMessage: l10n.identifierCopiedMessage,
-              copyPlaceholderValues: emptyPlaceholders,
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[
+                colorScheme.primaryContainer.withValues(alpha: 0.72),
+                colorScheme.surface,
+              ],
             ),
-            AppInfoTileData(
-              label: l10n.tenantFacilityTenantDetailsIdLabel,
-              value: tenant.displayId,
-              icon: Icons.badge_outlined,
-              copyable: true,
-              copyTooltip: l10n.copyIdentifierAction,
-              copiedMessage: l10n.identifierCopiedMessage,
-              copyPlaceholderValues: emptyPlaceholders,
-            ),
-            AppInfoTileData(
-              label: l10n.tenantFacilityTenantStatusLabel,
-              value: statusLabel,
-              icon: Icons.flag_outlined,
-            ),
-          ],
+          ),
+          child: header,
         ),
-        SizedBox(height: theme.spacing.md),
-        section(
-          title: l10n.tenantFacilityFacilityDetailsContactHeading,
-          icon: Icons.contact_mail_outlined,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.tenantFacilityTenantDetailsContactNameLabel,
-              value: tenant.contactName,
-              icon: Icons.person_outline,
-            ),
-            AppInfoTileData(
-              label: l10n.profilePhoneLabel,
-              value: tenant.contactPhone,
-              icon: Icons.phone_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.profileEmailLabel,
-              value: tenant.contactEmail,
-              icon: Icons.email_outlined,
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        section(
-          title: l10n.settingsConfigurationTenantTitle,
-          icon: Icons.tune_outlined,
-          maxColumns: 2,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.tenantFacilityDefaultCurrencyLabel,
-              value: tenant.currency,
-              icon: Icons.payments_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.settingsConfigurationConsultationFeeLabel,
-              value: tenant.standardConsultationFee,
-              icon: Icons.local_hospital_outlined,
-            ),
-          ],
-        ),
+        Divider(height: 1, color: colorScheme.outlineVariant),
+        if (expandToFill)
+          Expanded(child: SingleChildScrollView(child: sections))
+        else
+          sections,
       ],
     );
 
-    final Widget body = LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool boundedHeight = constraints.hasBoundedHeight;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: boundedHeight ? MainAxisSize.max : MainAxisSize.min,
-          children: <Widget>[
-            header,
-            SizedBox(height: framed ? theme.spacing.lg : theme.spacing.md),
-            if (boundedHeight)
-              Expanded(child: SingleChildScrollView(child: sections))
-            else
-              sections,
-          ],
-        );
-      },
-    );
-
     if (!framed) {
-      return body;
+      return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool boundedHeight = constraints.hasBoundedHeight;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: boundedHeight ? MainAxisSize.max : MainAxisSize.min,
+            children: <Widget>[
+              header,
+              SizedBox(height: theme.spacing.md),
+              if (boundedHeight)
+                Expanded(child: SingleChildScrollView(child: sections))
+              else
+                sections,
+            ],
+          );
+        },
+      );
     }
 
-    return AppContentPanel(
-      density: AppContentPanelDensity.spacious,
-      child: body,
+    final Widget card = Material(
+      color: colorScheme.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(theme.radius.lg),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: framedBody,
     );
+
+    if (!expandToFill) {
+      return card;
+    }
+
+    return SizedBox.expand(child: card);
   }
 }
 
