@@ -17,7 +17,7 @@ final class RadiologyCatalogSimilarityMatch {
     this.modalityScore,
   });
 
-  final RadiologyCatalogTest test;
+  final RadiologyCatalogProcedure test;
 
   /// Composite match score across available parameters (name/code/modality).
   final int score;
@@ -274,8 +274,8 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
   required String name,
   String? code,
   String? modality,
-  required List<RadiologyCatalogTest> existing,
-  String? excludeTestId,
+  required List<RadiologyCatalogProcedure> existing,
+  String? excludeProcedureId,
   bool includeTokenSimilarity = true,
 }) {
   final String normalizedName = normalizeRadiologyCatalogName(name);
@@ -292,9 +292,9 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
   final List<RadiologyCatalogSimilarityMatch> matches =
       <RadiologyCatalogSimilarityMatch>[];
 
-  for (final RadiologyCatalogTest test in existing) {
-    if (excludeTestId != null &&
-        (test.id == excludeTestId || test.apiId == excludeTestId)) {
+  for (final RadiologyCatalogProcedure test in existing) {
+    if (excludeProcedureId != null &&
+        (test.id == excludeProcedureId || test.apiId == excludeProcedureId)) {
       continue;
     }
 

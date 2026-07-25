@@ -343,7 +343,7 @@ final class RadiologyWorkspaceController
       _emit(
         current.copyWith(
           catalogScope: scope,
-          catalogTests: const <RadiologyCatalogTest>[],
+          catalogTests: const <RadiologyCatalogProcedure>[],
           isLoadingCatalog: false,
           clearCatalogLoadFailure: true,
         ),
@@ -358,8 +358,8 @@ final class RadiologyWorkspaceController
         clearCatalogLoadFailure: true,
       ),
     );
-    final Result<List<RadiologyCatalogTest>> testsResult = await _repository
-        .listFacilityRadiologyTests(
+    final Result<List<RadiologyCatalogProcedure>> testsResult = await _repository
+        .listFacilityRadiologyProcedures(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
           search: search,
@@ -367,11 +367,11 @@ final class RadiologyWorkspaceController
         );
 
     AppFailure? failure;
-    final List<RadiologyCatalogTest> tests = testsResult.when(
-      success: (List<RadiologyCatalogTest> value) => value,
+    final List<RadiologyCatalogProcedure> tests = testsResult.when(
+      success: (List<RadiologyCatalogProcedure> value) => value,
       failure: (AppFailure value) {
         failure ??= value;
-        return const <RadiologyCatalogTest>[];
+        return const <RadiologyCatalogProcedure>[];
       },
     );
     final RadiologyWorkspaceState? latest = _currentState;
@@ -389,30 +389,30 @@ final class RadiologyWorkspaceController
     return failure;
   }
 
-  Future<Result<List<RadiologyCatalogTest>>>
+  Future<Result<List<RadiologyCatalogProcedure>>>
   searchPlatformRadiologyCatalogForOffering({
     required RadiologyCatalogScope scope,
     String? query,
     int limit = 100,
   }) async {
     if (!scope.isReady) {
-      return const Result<List<RadiologyCatalogTest>>.success(
-        <RadiologyCatalogTest>[],
+      return const Result<List<RadiologyCatalogProcedure>>.success(
+        <RadiologyCatalogProcedure>[],
       );
     }
 
-    final Future<Result<List<RadiologyCatalogTest>>> platformFuture =
-        _repository.listRadiologyCatalogTests(search: query, limit: limit);
-    final Future<Result<List<RadiologyCatalogTest>>> offeredFuture = _repository
-        .listFacilityRadiologyTests(
+    final Future<Result<List<RadiologyCatalogProcedure>>> platformFuture =
+        _repository.listRadiologyCatalogProcedures(search: query, limit: limit);
+    final Future<Result<List<RadiologyCatalogProcedure>>> offeredFuture = _repository
+        .listFacilityRadiologyProcedures(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
           offeredOnly: true,
           limit: limit,
         );
 
-    final List<Result<List<RadiologyCatalogTest>>> results = await Future.wait(
-      <Future<Result<List<RadiologyCatalogTest>>>>[
+    final List<Result<List<RadiologyCatalogProcedure>>> results = await Future.wait(
+      <Future<Result<List<RadiologyCatalogProcedure>>>>[
         platformFuture,
         offeredFuture,
       ],
@@ -420,17 +420,17 @@ final class RadiologyWorkspaceController
     return _mergePlatformRadiologyOfferingStatus(results[0], results[1]);
   }
 
-  Result<List<RadiologyCatalogTest>> _mergePlatformRadiologyOfferingStatus(
-    Result<List<RadiologyCatalogTest>> platformResult,
-    Result<List<RadiologyCatalogTest>> offeredResult,
+  Result<List<RadiologyCatalogProcedure>> _mergePlatformRadiologyOfferingStatus(
+    Result<List<RadiologyCatalogProcedure>> platformResult,
+    Result<List<RadiologyCatalogProcedure>> offeredResult,
   ) {
     return platformResult.when(
-      success: (List<RadiologyCatalogTest> platformItems) {
+      success: (List<RadiologyCatalogProcedure> platformItems) {
         final Set<String> offeredIds = <String>{};
         final Set<String> offeredCodes = <String>{};
         offeredResult.when(
-          success: (List<RadiologyCatalogTest> offeredItems) {
-            for (final RadiologyCatalogTest item in offeredItems) {
+          success: (List<RadiologyCatalogProcedure> offeredItems) {
+            for (final RadiologyCatalogProcedure item in offeredItems) {
               offeredIds.add(item.apiId);
               final String? code = item.code?.trim();
               if (code != null && code.isNotEmpty) {
@@ -440,9 +440,9 @@ final class RadiologyWorkspaceController
           },
           failure: (_) {},
         );
-        return Result<List<RadiologyCatalogTest>>.success(
+        return Result<List<RadiologyCatalogProcedure>>.success(
           platformItems
-              .map((RadiologyCatalogTest item) {
+              .map((RadiologyCatalogProcedure item) {
                 final String? code = item.code?.trim();
                 final bool isOffered =
                     offeredIds.contains(item.apiId) ||
@@ -452,7 +452,7 @@ final class RadiologyWorkspaceController
                 if (!isOffered) {
                   return item;
                 }
-                return RadiologyCatalogTest(
+                return RadiologyCatalogProcedure(
                   id: item.id,
                   name: item.name,
                   displayId: item.displayId,
@@ -477,7 +477,7 @@ final class RadiologyWorkspaceController
         );
       },
       failure: (AppFailure failure) =>
-          Result<List<RadiologyCatalogTest>>.failure(failure),
+          Result<List<RadiologyCatalogProcedure>>.failure(failure),
     );
   }
 
@@ -492,20 +492,20 @@ final class RadiologyWorkspaceController
     }
     final RadiologyCatalogScope? effectiveScope = scope ?? current.catalogScope;
     _emit(current.copyWith(isMutating: true, clearLastFailure: true));
-    final Result<RadiologyCatalogTest> result = await _repository
-        .upsertFacilityRadiologyTestOffering(
+    final Result<RadiologyCatalogProcedure> result = await _repository
+        .upsertFacilityRadiologyProcedureOffering(
           testId,
           payload,
           tenantId: effectiveScope?.tenantId,
           facilityId: effectiveScope?.facilityId,
         );
     return result.when(
-      success: (RadiologyCatalogTest updated) async {
+      success: (RadiologyCatalogProcedure updated) async {
         final RadiologyWorkspaceState? latest = _currentState;
         if (latest == null) {
           return null;
         }
-        final List<RadiologyCatalogTest> tests = _mergeCatalogOfferingUpdate(
+        final List<RadiologyCatalogProcedure> tests = _mergeCatalogOfferingUpdate(
           latest.catalogTests,
           updated,
           testId,
@@ -543,7 +543,7 @@ final class RadiologyWorkspaceController
     }
     _emit(current.copyWith(isMutating: true, clearLastFailure: true));
     final Result<void> result = await _repository
-        .disableFacilityRadiologyTestOffering(
+        .disableFacilityRadiologyProcedureOffering(
           testId,
           reason,
           tenantId: effectiveScope?.tenantId,
@@ -557,7 +557,7 @@ final class RadiologyWorkspaceController
             latest.copyWith(
               catalogTests: latest.catalogTests
                   .where(
-                    (RadiologyCatalogTest item) =>
+                    (RadiologyCatalogProcedure item) =>
                         item.apiId != testId && item.id != testId,
                   )
                   .toList(growable: false),
@@ -603,7 +603,7 @@ final class RadiologyWorkspaceController
     final Set<String> removedIds = <String>{};
     for (final String testId in normalizedIds) {
       final Result<void> result = await _repository
-          .disableFacilityRadiologyTestOffering(
+          .disableFacilityRadiologyProcedureOffering(
             testId,
             reason,
             tenantId: effectiveScope?.tenantId,
@@ -621,7 +621,7 @@ final class RadiologyWorkspaceController
         latest.copyWith(
           catalogTests: latest.catalogTests
               .where(
-                (RadiologyCatalogTest item) =>
+                (RadiologyCatalogProcedure item) =>
                     !removedIds.contains(item.apiId) &&
                     !removedIds.contains(item.id),
               )
@@ -1210,15 +1210,15 @@ final class RadiologyWorkspaceController
     );
   }
 
-  List<RadiologyCatalogTest> _mergeCatalogOfferingUpdate(
-    List<RadiologyCatalogTest> items,
-    RadiologyCatalogTest updated,
+  List<RadiologyCatalogProcedure> _mergeCatalogOfferingUpdate(
+    List<RadiologyCatalogProcedure> items,
+    RadiologyCatalogProcedure updated,
     String requestId,
   ) {
     final String normalizedRequestId = requestId.trim();
     var replaced = false;
-    final List<RadiologyCatalogTest> merged = <RadiologyCatalogTest>[];
-    for (final RadiologyCatalogTest item in items) {
+    final List<RadiologyCatalogProcedure> merged = <RadiologyCatalogProcedure>[];
+    for (final RadiologyCatalogProcedure item in items) {
       if (_catalogItemMatchesRequest(item, updated, normalizedRequestId)) {
         replaced = true;
         merged.add(updated.copyWith(isOfferedAtFacility: true));
@@ -1233,8 +1233,8 @@ final class RadiologyWorkspaceController
   }
 
   bool _catalogItemMatchesRequest(
-    RadiologyCatalogTest item,
-    RadiologyCatalogTest updated,
+    RadiologyCatalogProcedure item,
+    RadiologyCatalogProcedure updated,
     String requestId,
   ) {
     final String normalizedRequestId = requestId.trim();

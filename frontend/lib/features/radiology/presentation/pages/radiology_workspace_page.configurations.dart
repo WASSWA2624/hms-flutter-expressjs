@@ -16,7 +16,7 @@ class _RadiologyConfigurationsDialogState
   static const int _maxVisibleItems = 140;
 
   late final TextEditingController _searchController;
-  late final AppListTableColumnVisibilityController<RadiologyCatalogTest>
+  late final AppListTableColumnVisibilityController<RadiologyCatalogProcedure>
   _testColumnController;
   late RadiologyWorkspaceState _dialogState;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
@@ -59,7 +59,7 @@ class _RadiologyConfigurationsDialogState
     _dialogState = widget.state;
     _searchController = TextEditingController();
     _testColumnController =
-        AppListTableColumnVisibilityController<RadiologyCatalogTest>();
+        AppListTableColumnVisibilityController<RadiologyCatalogProcedure>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -139,9 +139,9 @@ class _RadiologyConfigurationsDialogState
     );
     final RadiologyWorkspaceState state = _dialogState;
     final String query = _searchController.text;
-    final List<RadiologyCatalogTest> tests = state.catalogTests
-        .where((RadiologyCatalogTest test) => test.matchesSearch(query))
-        .where((RadiologyCatalogTest test) {
+    final List<RadiologyCatalogProcedure> tests = state.catalogTests
+        .where((RadiologyCatalogProcedure test) => test.matchesSearch(query))
+        .where((RadiologyCatalogProcedure test) {
           final String? modality = _filterValue.option(_modalityFilterKey);
           if (modality != null && test.modality != modality) {
             return false;
@@ -266,7 +266,7 @@ class _RadiologyConfigurationsDialogState
 
   Widget _buildTestsTable(
     BuildContext context,
-    List<RadiologyCatalogTest> tests, {
+    List<RadiologyCatalogProcedure> tests, {
     required bool isLoadingCatalog,
     required bool isMutating,
   }) {
@@ -324,7 +324,7 @@ class _RadiologyConfigurationsDialogState
             ],
           ),
         ),
-        AppListTable<RadiologyCatalogTest>(
+        AppListTable<RadiologyCatalogProcedure>(
           items: tests,
           isLoading: tableBusy,
           maxVisibleItems: _maxVisibleItems,
@@ -338,14 +338,14 @@ class _RadiologyConfigurationsDialogState
           columnWidthStorageKey: 'radiology_catalog_cw_tests',
           columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
           columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
-          onRowSelected: (RadiologyCatalogTest item) {
+          onRowSelected: (RadiologyCatalogProcedure item) {
             unawaited(_openEditOfferingDialog(context, item));
           },
-          search: AppListTableSearch<RadiologyCatalogTest>(
+          search: AppListTableSearch<RadiologyCatalogProcedure>(
             controller: _searchController,
             semanticLabel: l10n.radiologyConfigurationSearchLabel,
             hintText: l10n.radiologyConfigurationSearchHint,
-            matcher: (RadiologyCatalogTest item, String query) =>
+            matcher: (RadiologyCatalogProcedure item, String query) =>
                 item.matchesSearch(query),
             onChanged: (_) => setState(() {}),
             showAdvancedFilterButton: true,
@@ -369,19 +369,19 @@ class _RadiologyConfigurationsDialogState
             },
           ),
           emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-            title: l10n.radiologyNoImagingTestsTitle,
+            title: l10n.radiologyNoProceduresTitle,
             body: l10n.radiologyEnableOfferingNoItemsLabel,
             icon: Icons.image_search_outlined,
             minHeight: 180,
           ),
-          columns: <AppListTableColumn<RadiologyCatalogTest>>[
-            AppListTableColumn<RadiologyCatalogTest>(
+          columns: <AppListTableColumn<RadiologyCatalogProcedure>>[
+            AppListTableColumn<RadiologyCatalogProcedure>(
               id: 'name',
-              label: l10n.radiologyTestNameLabel,
+              label: l10n.radiologyProcedureNameLabel,
               sortComparator:
-                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                  (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
                       appListTableCompareText(left.name, right.name),
-              cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
+              cellBuilder: (BuildContext context, RadiologyCatalogProcedure item) {
                 final ThemeData theme = Theme.of(context);
                 return AppListItemRow(
                   title: item.name,
@@ -394,55 +394,55 @@ class _RadiologyConfigurationsDialogState
                 );
               },
             ),
-            AppListTableColumn<RadiologyCatalogTest>(
+            AppListTableColumn<RadiologyCatalogProcedure>(
               id: 'code',
-              label: l10n.radiologyTestCodeLabel,
+              label: l10n.radiologyProcedureCodeLabel,
               sortComparator:
-                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                  (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
                       appListTableCompareText(left.code, right.code),
-              cellBuilder: (_, RadiologyCatalogTest item) =>
+              cellBuilder: (_, RadiologyCatalogProcedure item) =>
                   Text(item.code ?? l10n.profileUnknownValue),
             ),
-            AppListTableColumn<RadiologyCatalogTest>(
+            AppListTableColumn<RadiologyCatalogProcedure>(
               id: 'modality',
               label: l10n.radiologyModalityLabel,
               sortComparator:
-                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                  (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
                       appListTableCompareText(left.modality, right.modality),
-              cellBuilder: (_, RadiologyCatalogTest item) =>
+              cellBuilder: (_, RadiologyCatalogProcedure item) =>
                   _ModalityLabel(modality: item.modality),
             ),
-            AppListTableColumn<RadiologyCatalogTest>(
+            AppListTableColumn<RadiologyCatalogProcedure>(
               id: 'price',
               label: l10n.clinicalRequestUnitPriceLabel,
               sortComparator:
-                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                  (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
                       (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0),
-              cellBuilder: (BuildContext context, RadiologyCatalogTest item) =>
+              cellBuilder: (BuildContext context, RadiologyCatalogProcedure item) =>
                   Text(_formatRadiologyCatalogUnitPrice(context, item, l10n)),
             ),
-            AppListTableColumn<RadiologyCatalogTest>(
+            AppListTableColumn<RadiologyCatalogProcedure>(
               id: 'body_region',
               label: l10n.radiologyBodyRegionLabel,
               sortComparator:
-                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                  (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
                       appListTableCompareText(
                         left.bodyRegion,
                         right.bodyRegion,
                       ),
-              cellBuilder: (_, RadiologyCatalogTest item) =>
+              cellBuilder: (_, RadiologyCatalogProcedure item) =>
                   Text(item.bodyRegion ?? l10n.profileUnknownValue),
             ),
           ],
-          columnChoices: <AppListTableColumn<RadiologyCatalogTest>>[
-            AppListTableColumn<RadiologyCatalogTest>(
+          columnChoices: <AppListTableColumn<RadiologyCatalogProcedure>>[
+            AppListTableColumn<RadiologyCatalogProcedure>(
               id: 'laterality',
               label: l10n.radiologyLateralityLabel,
-              cellBuilder: (_, RadiologyCatalogTest item) =>
+              cellBuilder: (_, RadiologyCatalogProcedure item) =>
                   Text(item.laterality ?? l10n.profileUnknownValue),
             ),
           ],
-          mobileItemBuilder: (BuildContext context, RadiologyCatalogTest item) {
+          mobileItemBuilder: (BuildContext context, RadiologyCatalogProcedure item) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -490,7 +490,7 @@ class _RadiologyConfigurationsDialogState
 
   Widget _testActionButtons(
     BuildContext context,
-    RadiologyCatalogTest item,
+    RadiologyCatalogProcedure item,
     bool isBusy,
   ) {
     final AppLocalizations l10n = context.l10n;
@@ -502,9 +502,9 @@ class _RadiologyConfigurationsDialogState
         AppButton(
           iconOnly: true,
           leadingIcon: Icons.edit_outlined,
-          label: l10n.radiologyEditImagingTestAction,
-          semanticLabel: l10n.radiologyEditImagingTestAction,
-          tooltip: l10n.radiologyEditImagingTestAction,
+          label: l10n.radiologyEditProcedureAction,
+          semanticLabel: l10n.radiologyEditProcedureAction,
+          tooltip: l10n.radiologyEditProcedureAction,
           onPressed: isBusy
               ? null
               : () => _openEditOfferingDialog(context, item),
@@ -512,9 +512,9 @@ class _RadiologyConfigurationsDialogState
         AppButton(
           iconOnly: true,
           leadingIcon: Icons.delete_outline,
-          label: l10n.radiologyDeleteImagingTestAction,
-          semanticLabel: l10n.radiologyDeleteImagingTestAction,
-          tooltip: l10n.radiologyDeleteImagingTestAction,
+          label: l10n.radiologyDeleteProcedureAction,
+          semanticLabel: l10n.radiologyDeleteProcedureAction,
+          tooltip: l10n.radiologyDeleteProcedureAction,
           color: colorScheme.error,
           onPressed: isBusy
               ? null
@@ -579,7 +579,7 @@ class _RadiologyConfigurationsDialogState
 
   Future<void> _openEditOfferingDialog(
     BuildContext context,
-    RadiologyCatalogTest item,
+    RadiologyCatalogProcedure item,
   ) async {
     final AppLocalizations l10n = context.l10n;
     final RadiologyWorkspaceController controller = ref.read(
@@ -608,7 +608,7 @@ class _RadiologyConfigurationsDialogState
 
   Future<void> _openDeleteOfferingDialog(
     BuildContext context,
-    RadiologyCatalogTest test,
+    RadiologyCatalogProcedure test,
   ) async {
     final AppLocalizations l10n = context.l10n;
     final RadiologyWorkspaceController controller = ref.read(
@@ -620,7 +620,7 @@ class _RadiologyConfigurationsDialogState
       builder: (_) => LabDeleteReasonDialog(
         title: l10n.radiologyDisableOfferingDialogTitle,
         body: l10n.radiologyDisableOfferingDialogBody(test.name),
-        submitLabel: l10n.radiologyDeleteImagingTestAction,
+        submitLabel: l10n.radiologyDeleteProcedureAction,
         destructiveSubmit: true,
         onDelete: (String reason) => controller.disableRadiologyTestOffering(
           test.apiId,
@@ -644,7 +644,7 @@ class _RadiologyConfigurationsDialogState
 
   Future<void> _openDeleteSelectedOfferingsDialog(
     BuildContext context,
-    List<RadiologyCatalogTest> visibleTests,
+    List<RadiologyCatalogProcedure> visibleTests,
   ) async {
     if (_selectedOfferingIds.isEmpty) {
       return;
@@ -655,10 +655,10 @@ class _RadiologyConfigurationsDialogState
     );
     final List<String> selectedIds = visibleTests
         .where(
-          (RadiologyCatalogTest item) =>
+          (RadiologyCatalogProcedure item) =>
               _selectedOfferingIds.contains(_offeringSelectionKey(item)),
         )
-        .map((RadiologyCatalogTest item) => item.apiId)
+        .map((RadiologyCatalogProcedure item) => item.apiId)
         .toList(growable: false);
     if (selectedIds.isEmpty) {
       return;
@@ -691,10 +691,10 @@ class _RadiologyConfigurationsDialogState
     }
   }
 
-  String _offeringSelectionKey(RadiologyCatalogTest item) => item.apiId;
+  String _offeringSelectionKey(RadiologyCatalogProcedure item) => item.apiId;
 
   void _toggleOfferingSelection(
-    RadiologyCatalogTest item, {
+    RadiologyCatalogProcedure item, {
     required bool selected,
   }) {
     final String key = _offeringSelectionKey(item);
@@ -707,7 +707,7 @@ class _RadiologyConfigurationsDialogState
     });
   }
 
-  void _pruneOfferingSelection(List<RadiologyCatalogTest> catalogTests) {
+  void _pruneOfferingSelection(List<RadiologyCatalogProcedure> catalogTests) {
     final Set<String> validKeys = catalogTests
         .map(_offeringSelectionKey)
         .toSet();
@@ -788,10 +788,10 @@ class _RadiologyConfigurationsDialogState
   }
 
   List<AppSearchBarFilterChoice> _modalityFilterChoices(
-    List<RadiologyCatalogTest> items,
+    List<RadiologyCatalogProcedure> items,
   ) {
     final Set<String> values = <String>{};
-    for (final RadiologyCatalogTest item in items) {
+    for (final RadiologyCatalogProcedure item in items) {
       final String? modality = item.modality?.trim();
       if (modality != null && modality.isNotEmpty) {
         values.add(modality);
@@ -808,7 +808,7 @@ class _RadiologyConfigurationsDialogState
 
 String _formatRadiologyCatalogUnitPrice(
   BuildContext context,
-  RadiologyCatalogTest item,
+  RadiologyCatalogProcedure item,
   AppLocalizations l10n,
 ) {
   final num? price = item.unitPrice;

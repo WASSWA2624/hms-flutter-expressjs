@@ -14,14 +14,14 @@ abstract interface class RadiologyRepository {
     int limit = 20,
   });
 
-  Future<Result<List<RadiologyCatalogTest>>> listRadiologyCatalogTests({
+  Future<Result<List<RadiologyCatalogProcedure>>> listRadiologyCatalogProcedures({
     String? search,
     String? tenantId,
     bool includeStandardCatalog = true,
     int limit = 100,
   });
 
-  Future<Result<List<RadiologyCatalogTest>>> listFacilityRadiologyTests({
+  Future<Result<List<RadiologyCatalogProcedure>>> listFacilityRadiologyProcedures({
     String? tenantId,
     String? facilityId,
     String? search,
@@ -30,37 +30,37 @@ abstract interface class RadiologyRepository {
     bool offeredOnly = false,
   });
 
-  Future<Result<List<RadiologyCatalogTest>>> searchFacilityRadiologyCatalog({
+  Future<Result<List<RadiologyCatalogProcedure>>> searchFacilityRadiologyCatalog({
     String? tenantId,
     String? facilityId,
     String? query,
     int limit = 25,
   });
 
-  Future<Result<RadiologyCatalogTest>> upsertFacilityRadiologyTestOffering(
-    String testId,
+  Future<Result<RadiologyCatalogProcedure>> upsertFacilityRadiologyProcedureOffering(
+    String procedureId,
     Map<String, Object?> payload, {
     String? tenantId,
     String? facilityId,
   });
 
-  Future<Result<void>> disableFacilityRadiologyTestOffering(
-    String testId,
+  Future<Result<void>> disableFacilityRadiologyProcedureOffering(
+    String procedureId,
     String reason, {
     String? tenantId,
     String? facilityId,
   });
 
-  Future<Result<RadiologyCatalogTest>> createRadiologyCatalogTest(
+  Future<Result<RadiologyCatalogProcedure>> createRadiologyCatalogProcedure(
     Map<String, Object?> payload,
   );
 
-  Future<Result<RadiologyCatalogTest>> updateRadiologyCatalogTest(
-    String testId,
+  Future<Result<RadiologyCatalogProcedure>> updateRadiologyCatalogProcedure(
+    String procedureId,
     Map<String, Object?> payload,
   );
 
-  Future<Result<void>> deleteRadiologyCatalogTest(String testId);
+  Future<Result<void>> deleteRadiologyCatalogProcedure(String procedureId);
 
   Future<Result<List<RadiologyEquipmentRecord>>> listEquipmentRecords({
     String? search,

@@ -70,14 +70,14 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
   }
 
   @override
-  Future<Result<List<RadiologyCatalogTest>>> listRadiologyCatalogTests({
+  Future<Result<List<RadiologyCatalogProcedure>>> listRadiologyCatalogProcedures({
     String? search,
     String? tenantId,
     bool includeStandardCatalog = true,
     int limit = 100,
   }) {
-    return _apiClient.get<List<RadiologyCatalogTest>>(
-      ApiEndpoints.collection(HmsApiResource.radiologyTests),
+    return _apiClient.get<List<RadiologyCatalogProcedure>>(
+      ApiEndpoints.collection(HmsApiResource.radiologyProcedures),
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': 1,
         'search': search,
@@ -87,12 +87,12 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
         'sort_by': 'name',
         'order': 'asc',
       }),
-      decoder: RadiologyCatalogTestDto.listFromResponse,
+      decoder: RadiologyCatalogProcedureDto.listFromResponse,
     );
   }
 
   @override
-  Future<Result<List<RadiologyCatalogTest>>> listFacilityRadiologyTests({
+  Future<Result<List<RadiologyCatalogProcedure>>> listFacilityRadiologyProcedures({
     String? tenantId,
     String? facilityId,
     String? search,
@@ -100,7 +100,7 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
     int limit = 100,
     bool offeredOnly = false,
   }) {
-    return _apiClient.get<List<RadiologyCatalogTest>>(
+    return _apiClient.get<List<RadiologyCatalogProcedure>>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.facilityRadiologyCatalog.path,
         'tests',
@@ -114,18 +114,18 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
         'sort_by': 'name',
         'order': 'asc',
       }),
-      decoder: RadiologyCatalogTestDto.listFromResponse,
+      decoder: RadiologyCatalogProcedureDto.listFromResponse,
     );
   }
 
   @override
-  Future<Result<List<RadiologyCatalogTest>>> searchFacilityRadiologyCatalog({
+  Future<Result<List<RadiologyCatalogProcedure>>> searchFacilityRadiologyCatalog({
     String? tenantId,
     String? facilityId,
     String? query,
     int limit = 25,
   }) {
-    return _apiClient.get<List<RadiologyCatalogTest>>(
+    return _apiClient.get<List<RadiologyCatalogProcedure>>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.facilityRadiologyCatalog.path,
         'search',
@@ -137,34 +137,34 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
         'limit': limit,
         'offered_only': 'false',
       }),
-      decoder: RadiologyCatalogTestDto.listFromResponse,
+      decoder: RadiologyCatalogProcedureDto.listFromResponse,
     );
   }
 
   @override
-  Future<Result<RadiologyCatalogTest>> upsertFacilityRadiologyTestOffering(
-    String testId,
+  Future<Result<RadiologyCatalogProcedure>> upsertFacilityRadiologyProcedureOffering(
+    String procedureId,
     Map<String, Object?> payload, {
     String? tenantId,
     String? facilityId,
   }) {
-    return _apiClient.put<RadiologyCatalogTest>(
+    return _apiClient.put<RadiologyCatalogProcedure>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.facilityRadiologyCatalog.path,
         'tests',
-        testId,
+        procedureId,
       ]),
       data: _withoutEmpty(<String, Object?>{
         ...payload,
         ..._catalogScopeParams(tenantId: tenantId, facilityId: facilityId),
       }),
-      decoder: radiologyCatalogTestFromResponse,
+      decoder: radiologyCatalogProcedureFromResponse,
     );
   }
 
   @override
-  Future<Result<void>> disableFacilityRadiologyTestOffering(
-    String testId,
+  Future<Result<void>> disableFacilityRadiologyProcedureOffering(
+    String procedureId,
     String reason, {
     String? tenantId,
     String? facilityId,
@@ -173,7 +173,7 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.facilityRadiologyCatalog.path,
         'tests',
-        testId,
+        procedureId,
       ]),
       data: _withoutEmpty(<String, Object?>{
         'reason': reason,
@@ -184,32 +184,32 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
   }
 
   @override
-  Future<Result<RadiologyCatalogTest>> createRadiologyCatalogTest(
+  Future<Result<RadiologyCatalogProcedure>> createRadiologyCatalogProcedure(
     Map<String, Object?> payload,
   ) {
-    return _apiClient.post<RadiologyCatalogTest>(
-      ApiEndpoints.collection(HmsApiResource.radiologyTests),
+    return _apiClient.post<RadiologyCatalogProcedure>(
+      ApiEndpoints.collection(HmsApiResource.radiologyProcedures),
       data: _withoutEmpty(payload),
-      decoder: radiologyCatalogTestFromResponse,
+      decoder: radiologyCatalogProcedureFromResponse,
     );
   }
 
   @override
-  Future<Result<RadiologyCatalogTest>> updateRadiologyCatalogTest(
-    String testId,
+  Future<Result<RadiologyCatalogProcedure>> updateRadiologyCatalogProcedure(
+    String procedureId,
     Map<String, Object?> payload,
   ) {
-    return _apiClient.put<RadiologyCatalogTest>(
-      ApiEndpoints.byId(HmsApiResource.radiologyTests, testId),
+    return _apiClient.put<RadiologyCatalogProcedure>(
+      ApiEndpoints.byId(HmsApiResource.radiologyProcedures, procedureId),
       data: _withoutEmpty(payload),
-      decoder: radiologyCatalogTestFromResponse,
+      decoder: radiologyCatalogProcedureFromResponse,
     );
   }
 
   @override
-  Future<Result<void>> deleteRadiologyCatalogTest(String testId) {
+  Future<Result<void>> deleteRadiologyCatalogProcedure(String procedureId) {
     return _apiClient.delete<void>(
-      ApiEndpoints.byId(HmsApiResource.radiologyTests, testId),
+      ApiEndpoints.byId(HmsApiResource.radiologyProcedures, procedureId),
       decoder: (_) {},
     );
   }

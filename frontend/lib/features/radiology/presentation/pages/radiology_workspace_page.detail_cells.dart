@@ -215,11 +215,11 @@ String _activeOrderCountLabel(AppLocalizations l10n, int count) {
 List<ClinicalActionCatalogOption> _radiologyCatalogOptions(
   RadiologyWorkspaceState? state,
 ) {
-  final List<RadiologyCatalogTest> catalogTests =
-      state?.catalogTests ?? const <RadiologyCatalogTest>[];
+  final List<RadiologyCatalogProcedure> catalogTests =
+      state?.catalogTests ?? const <RadiologyCatalogProcedure>[];
   if (catalogTests.isNotEmpty) {
     return <ClinicalActionCatalogOption>[
-      for (final RadiologyCatalogTest test in catalogTests)
+      for (final RadiologyCatalogProcedure test in catalogTests)
         ClinicalActionCatalogOption(
           id: test.id,
           publicId: test.effectiveId,
@@ -258,7 +258,7 @@ List<ClinicalActionCatalogOption> _radiologyCatalogOptions(
   }
 
   final List<RadiologyReferenceOption> references =
-      state?.references.radiologyTests ?? const <RadiologyReferenceOption>[];
+      state?.references.radiologyProcedures ?? const <RadiologyReferenceOption>[];
   return <ClinicalActionCatalogOption>[
     for (final RadiologyReferenceOption option in references)
       ClinicalActionCatalogOption(

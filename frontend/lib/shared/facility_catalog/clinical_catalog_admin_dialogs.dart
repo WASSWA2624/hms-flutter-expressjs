@@ -435,15 +435,15 @@ class RadiologyCatalogMutationDialog extends StatefulWidget {
     required this.onSubmit,
     this.item,
     this.tenantId,
-    this.existingItems = const <RadiologyCatalogTest>[],
+    this.existingItems = const <RadiologyCatalogProcedure>[],
     this.loadExistingItems,
     super.key,
   });
 
-  final RadiologyCatalogTest? item;
+  final RadiologyCatalogProcedure? item;
   final String? tenantId;
-  final List<RadiologyCatalogTest> existingItems;
-  final Future<List<RadiologyCatalogTest>> Function()? loadExistingItems;
+  final List<RadiologyCatalogProcedure> existingItems;
+  final Future<List<RadiologyCatalogProcedure>> Function()? loadExistingItems;
   final ClinicalCatalogTermSubmit onSubmit;
 
   bool get isEditing => item != null;
@@ -458,7 +458,7 @@ class _RadiologyCatalogMutationDialogState
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _codeController;
-  late List<RadiologyCatalogTest> _existingItems;
+  late List<RadiologyCatalogProcedure> _existingItems;
   String? _modality;
   AppFailure? _failure;
   String? _nameErrorText;
@@ -472,8 +472,8 @@ class _RadiologyCatalogMutationDialogState
   @override
   void initState() {
     super.initState();
-    final RadiologyCatalogTest? item = widget.item;
-    _existingItems = List<RadiologyCatalogTest>.of(widget.existingItems);
+    final RadiologyCatalogProcedure? item = widget.item;
+    _existingItems = List<RadiologyCatalogProcedure>.of(widget.existingItems);
     _nameController = TextEditingController(text: item?.name ?? '');
     _codeController = TextEditingController(text: item?.code ?? '');
     _modality = item?.modality?.trim().isNotEmpty == true
@@ -481,7 +481,7 @@ class _RadiologyCatalogMutationDialogState
         : null;
     _nameController.addListener(_clearSimilarityState);
     _codeController.addListener(_clearSimilarityState);
-    final Future<List<RadiologyCatalogTest>> Function()? loader =
+    final Future<List<RadiologyCatalogProcedure>> Function()? loader =
         widget.loadExistingItems;
     if (loader != null) {
       _isLoadingCatalog = true;
@@ -490,10 +490,10 @@ class _RadiologyCatalogMutationDialogState
   }
 
   Future<void> _loadSimilarityCatalog(
-    Future<List<RadiologyCatalogTest>> Function() loader,
+    Future<List<RadiologyCatalogProcedure>> Function() loader,
   ) async {
     try {
-      final List<RadiologyCatalogTest> items = await loader();
+      final List<RadiologyCatalogProcedure> items = await loader();
       if (!mounted) {
         return;
       }
@@ -547,11 +547,11 @@ class _RadiologyCatalogMutationDialogState
 
     late final RadiologyCatalogDuplicateCheckResult result;
     try {
-      final List<RadiologyCatalogTest> tenantItems = _existingItems
-          .where((RadiologyCatalogTest item) => !item.isStandard)
+      final List<RadiologyCatalogProcedure> tenantItems = _existingItems
+          .where((RadiologyCatalogProcedure item) => !item.isStandard)
           .toList(growable: false);
-      final List<RadiologyCatalogTest> standardItems = _existingItems
-          .where((RadiologyCatalogTest item) => item.isStandard)
+      final List<RadiologyCatalogProcedure> standardItems = _existingItems
+          .where((RadiologyCatalogProcedure item) => item.isStandard)
           .toList(growable: false);
       result = await Future<RadiologyCatalogDuplicateCheckResult>(
         () => mergeRadiologyCatalogDuplicateChecks(
@@ -561,14 +561,14 @@ class _RadiologyCatalogMutationDialogState
               code: proposedCode,
               modality: proposedModality,
               existing: tenantItems,
-              excludeTestId: widget.item?.apiId,
+              excludeProcedureId: widget.item?.apiId,
             ),
             checkRadiologyCatalogDuplicates(
               name: proposedName,
               code: proposedCode,
               modality: proposedModality,
               existing: standardItems,
-              excludeTestId: widget.item?.apiId,
+              excludeProcedureId: widget.item?.apiId,
               includeTokenSimilarity: false,
             ),
           ],
@@ -613,7 +613,7 @@ class _RadiologyCatalogMutationDialogState
           });
           return false;
         case RadiologyCatalogSimilarityAction.useExisting:
-          final RadiologyCatalogTest? existing = dialogResult.selectedTest;
+          final RadiologyCatalogProcedure? existing = dialogResult.selectedTest;
           if (existing == null) {
             setState(() => _isSaving = false);
             return false;
@@ -625,10 +625,10 @@ class _RadiologyCatalogMutationDialogState
             setState(() {
               _isSaving = false;
               _nameErrorText = result.exactNameConflict
-                  ? l10n.radiologyImagingTestNameAlreadyInUse
+                  ? l10n.radiologyProcedureNameAlreadyInUse
                   : null;
               _codeErrorText = result.exactCodeConflict
-                  ? l10n.radiologyImagingTestCodeAlreadyInUse
+                  ? l10n.radiologyProcedureCodeAlreadyInUse
                   : null;
             });
             return false;
@@ -704,7 +704,7 @@ class _RadiologyCatalogMutationDialogState
     final AppLocalizations l10n = context.l10n;
     final String title = widget.isEditing
         ? l10n.radiologyEditProcedureDialogTitle
-        : l10n.radiologyCreateImagingTestAction;
+        : l10n.radiologyCreateProcedureAction;
     final IconData iconData =
         widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline;
 
@@ -761,7 +761,7 @@ class _RadiologyCatalogMutationDialogState
               ),
             AppTextField(
               controller: _nameController,
-              labelText: l10n.radiologyTestNameLabel,
+              labelText: l10n.radiologyProcedureNameLabel,
               enabled: !formLocked,
               isRequired: true,
               errorText: _nameErrorText,

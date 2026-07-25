@@ -9,21 +9,21 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
 
-const RadiologyCatalogTest _availableTest = RadiologyCatalogTest(
+const RadiologyCatalogProcedure _availableTest = RadiologyCatalogProcedure(
   id: 'RT0000001',
   name: 'Chest X-ray',
   code: 'RAD-00001',
   modality: 'XRAY',
 );
 
-const RadiologyCatalogTest _availableTestTwo = RadiologyCatalogTest(
+const RadiologyCatalogProcedure _availableTestTwo = RadiologyCatalogProcedure(
   id: 'RT0000002',
   name: 'Brain MRI',
   code: 'RAD-00002',
   modality: 'MRI',
 );
 
-const RadiologyCatalogTest _alreadyOfferedTest = RadiologyCatalogTest(
+const RadiologyCatalogProcedure _alreadyOfferedTest = RadiologyCatalogProcedure(
   id: 'RT0000003',
   name: 'Spine CT',
   code: 'RAD-00003',
@@ -56,7 +56,7 @@ void main() {
     ) async {
       await _pumpEnableDialog(
         tester,
-        items: const <RadiologyCatalogTest>[
+        items: const <RadiologyCatalogProcedure>[
           _availableTest,
           _alreadyOfferedTest,
         ],
@@ -72,7 +72,7 @@ void main() {
       final List<Map<String, Object?>> enables = <Map<String, Object?>>[];
       await _pumpEnableDialog(
         tester,
-        items: const <RadiologyCatalogTest>[_availableTest, _availableTestTwo],
+        items: const <RadiologyCatalogProcedure>[_availableTest, _availableTestTwo],
         onEnable: (String id, Map<String, Object?> payload) async {
           enables.add(payload);
           return null;
@@ -119,7 +119,7 @@ void main() {
     ) async {
       await _pumpEnableDialog(
         tester,
-        items: const <RadiologyCatalogTest>[_availableTest, _availableTestTwo],
+        items: const <RadiologyCatalogProcedure>[_availableTest, _availableTestTwo],
       );
 
       await tester.tap(find.byType(Checkbox).at(0));
@@ -154,7 +154,7 @@ void main() {
 Future<void> _pumpEnableDialog(
   WidgetTester tester, {
   bool showBackAction = false,
-  List<RadiologyCatalogTest> items = const <RadiologyCatalogTest>[
+  List<RadiologyCatalogProcedure> items = const <RadiologyCatalogProcedure>[
     _availableTest,
   ],
   Future<AppFailure?> Function(String id, Map<String, Object?> payload)?
@@ -185,7 +185,7 @@ Future<void> _pumpEnableDialog(
                   String? query,
                   int limit = 100,
                 }) async {
-                  return Result<List<RadiologyCatalogTest>>.success(items);
+                  return Result<List<RadiologyCatalogProcedure>>.success(items);
                 },
             onEnable: onEnable ??
                 (String id, Map<String, Object?> payload) async {

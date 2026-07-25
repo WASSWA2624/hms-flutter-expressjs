@@ -14,7 +14,7 @@ typedef RadiologyCatalogUpdateSubmit =
     Future<AppFailure?> Function(String id, Map<String, Object?> payload);
 
 typedef RadiologyOfferingCatalogSearch =
-    Future<Result<List<RadiologyCatalogTest>>> Function({
+    Future<Result<List<RadiologyCatalogProcedure>>> Function({
       required RadiologyCatalogScope scope,
       String? query,
       int limit,
@@ -60,7 +60,7 @@ class _RadiologyEnableFacilityOfferingDialogState
       <String, TextEditingController>{};
   final Map<String, String> _currencies = <String, String>{};
   Timer? _searchDebounce;
-  List<RadiologyCatalogTest> _catalogItems = const <RadiologyCatalogTest>[];
+  List<RadiologyCatalogProcedure> _catalogItems = const <RadiologyCatalogProcedure>[];
   AppFailure? _failure;
   bool _isSearching = true;
   int _searchRequest = 0;
@@ -72,57 +72,57 @@ class _RadiologyEnableFacilityOfferingDialogState
   _RadiologyEnableWizardStep _step = _RadiologyEnableWizardStep.catalog;
   bool _isSaving = false;
 
-  List<RadiologyCatalogTest> get _availableCatalogItems {
+  List<RadiologyCatalogProcedure> get _availableCatalogItems {
     return _catalogItems
-        .where((RadiologyCatalogTest item) => !item.isOfferedAtFacility)
+        .where((RadiologyCatalogProcedure item) => !item.isOfferedAtFacility)
         .toList(growable: false);
   }
 
-  List<RadiologyCatalogTest> get _filteredCatalogItems {
+  List<RadiologyCatalogProcedure> get _filteredCatalogItems {
     final String? modality = _filterValue.option(_modalityFilterKey);
-    final List<RadiologyCatalogTest> available = _availableCatalogItems;
+    final List<RadiologyCatalogProcedure> available = _availableCatalogItems;
     if (modality == null) {
       return available;
     }
     return available
-        .where((RadiologyCatalogTest item) => item.modality == modality)
+        .where((RadiologyCatalogProcedure item) => item.modality == modality)
         .toList(growable: false);
   }
 
-  List<RadiologyCatalogTest> get _sortedFilteredCatalogItems {
-    final List<RadiologyCatalogTest> items = List<RadiologyCatalogTest>.of(
+  List<RadiologyCatalogProcedure> get _sortedFilteredCatalogItems {
+    final List<RadiologyCatalogProcedure> items = List<RadiologyCatalogProcedure>.of(
       _filteredCatalogItems,
     );
     items.sort(
-      (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+      (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
           appListTableCompareText(left.name, right.name),
     );
     return items;
   }
 
-  List<RadiologyCatalogTest> get _selectedAvailableItems {
+  List<RadiologyCatalogProcedure> get _selectedAvailableItems {
     return _availableCatalogItems
         .where(
-          (RadiologyCatalogTest item) => _selectedIds.contains(item.apiId),
+          (RadiologyCatalogProcedure item) => _selectedIds.contains(item.apiId),
         )
         .toList(growable: false)
       ..sort(
-        (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+        (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
             appListTableCompareText(left.name, right.name),
       );
   }
 
-  void _markItemsOfferedLocally(List<RadiologyCatalogTest> items) {
+  void _markItemsOfferedLocally(List<RadiologyCatalogProcedure> items) {
     if (items.isEmpty) {
       return;
     }
-    final Map<String, RadiologyCatalogTest> byId = <String, RadiologyCatalogTest>{
-      for (final RadiologyCatalogTest item in items) item.apiId: item,
+    final Map<String, RadiologyCatalogProcedure> byId = <String, RadiologyCatalogProcedure>{
+      for (final RadiologyCatalogProcedure item in items) item.apiId: item,
     };
     setState(() {
       _catalogItems = _catalogItems
-          .map((RadiologyCatalogTest catalogItem) {
-            final RadiologyCatalogTest? updated = byId[catalogItem.apiId];
+          .map((RadiologyCatalogProcedure catalogItem) {
+            final RadiologyCatalogProcedure? updated = byId[catalogItem.apiId];
             if (updated == null) {
               return catalogItem;
             }
@@ -142,7 +142,7 @@ class _RadiologyEnableFacilityOfferingDialogState
 
   void _syncModalityFilterChoices() {
     final Set<String> values = <String>{};
-    for (final RadiologyCatalogTest item in _availableCatalogItems) {
+    for (final RadiologyCatalogProcedure item in _availableCatalogItems) {
       final String? modality = item.modality?.trim();
       if (modality != null && modality.isNotEmpty) {
         values.add(modality);
@@ -158,12 +158,12 @@ class _RadiologyEnableFacilityOfferingDialogState
 
   void _pruneSelection() {
     final Set<String> valid = _availableCatalogItems
-        .map((RadiologyCatalogTest item) => item.apiId)
+        .map((RadiologyCatalogProcedure item) => item.apiId)
         .toSet();
     _selectedIds.removeWhere((String id) => !valid.contains(id));
   }
 
-  void _toggleSelection(RadiologyCatalogTest item, {required bool selected}) {
+  void _toggleSelection(RadiologyCatalogProcedure item, {required bool selected}) {
     if (item.isOfferedAtFacility) {
       return;
     }
@@ -176,8 +176,8 @@ class _RadiologyEnableFacilityOfferingDialogState
     });
   }
 
-  void _ensurePriceFields(List<RadiologyCatalogTest> items) {
-    for (final RadiologyCatalogTest item in items) {
+  void _ensurePriceFields(List<RadiologyCatalogProcedure> items) {
+    for (final RadiologyCatalogProcedure item in items) {
       _priceControllers.putIfAbsent(
         item.apiId,
         () => TextEditingController(text: item.unitPrice?.toString() ?? ''),
@@ -189,7 +189,7 @@ class _RadiologyEnableFacilityOfferingDialogState
     }
   }
 
-  String _priceDisplay(RadiologyCatalogTest item) {
+  String _priceDisplay(RadiologyCatalogProcedure item) {
     final TextEditingController? controller = _priceControllers[item.apiId];
     final String amount = controller?.text.trim().isNotEmpty == true
         ? controller!.text.trim()
@@ -202,8 +202,8 @@ class _RadiologyEnableFacilityOfferingDialogState
     return '$amount $currency';
   }
 
-  bool _selectionHasValidPrices(List<RadiologyCatalogTest> items) {
-    for (final RadiologyCatalogTest item in items) {
+  bool _selectionHasValidPrices(List<RadiologyCatalogProcedure> items) {
+    for (final RadiologyCatalogProcedure item in items) {
       final String raw = _priceControllers[item.apiId]?.text ?? '';
       final String normalized = normalizeCurrencyAmount(raw);
       final num? parsed = num.tryParse(normalized);
@@ -223,7 +223,7 @@ class _RadiologyEnableFacilityOfferingDialogState
   }
 
   void _goToPriceStep() {
-    final List<RadiologyCatalogTest> selected = _selectedAvailableItems;
+    final List<RadiologyCatalogProcedure> selected = _selectedAvailableItems;
     if (selected.isEmpty) {
       return;
     }
@@ -236,7 +236,7 @@ class _RadiologyEnableFacilityOfferingDialogState
   }
 
   void _goToPreview() {
-    final List<RadiologyCatalogTest> selected = _selectedAvailableItems;
+    final List<RadiologyCatalogProcedure> selected = _selectedAvailableItems;
     if (selected.isEmpty) {
       return;
     }
@@ -300,7 +300,7 @@ class _RadiologyEnableFacilityOfferingDialogState
       _isSearching = true;
       _failure = null;
     });
-    final Result<List<RadiologyCatalogTest>> result = await widget
+    final Result<List<RadiologyCatalogProcedure>> result = await widget
         .onSearchCatalog(
           scope: widget.scope,
           query: query?.trim().isEmpty ?? true ? null : query?.trim(),
@@ -310,7 +310,7 @@ class _RadiologyEnableFacilityOfferingDialogState
       return;
     }
     result.when(
-      success: (List<RadiologyCatalogTest> items) {
+      success: (List<RadiologyCatalogProcedure> items) {
         setState(() {
           _catalogItems = items;
           _isSearching = false;
@@ -320,7 +320,7 @@ class _RadiologyEnableFacilityOfferingDialogState
       },
       failure: (AppFailure value) {
         setState(() {
-          _catalogItems = const <RadiologyCatalogTest>[];
+          _catalogItems = const <RadiologyCatalogProcedure>[];
           _isSearching = false;
           _modalityFilterChoices = const <AppSearchBarFilterChoice>[];
           _failure = value;
@@ -343,7 +343,7 @@ class _RadiologyEnableFacilityOfferingDialogState
   }
 
   Future<void> _submitAllSelected() async {
-    final List<RadiologyCatalogTest> selected = _selectedAvailableItems;
+    final List<RadiologyCatalogProcedure> selected = _selectedAvailableItems;
     if (selected.isEmpty || !_selectionHasValidPrices(selected)) {
       return;
     }
@@ -351,8 +351,8 @@ class _RadiologyEnableFacilityOfferingDialogState
       _isSaving = true;
       _failure = null;
     });
-    final List<RadiologyCatalogTest> enabled = <RadiologyCatalogTest>[];
-    for (final RadiologyCatalogTest item in selected) {
+    final List<RadiologyCatalogProcedure> enabled = <RadiologyCatalogProcedure>[];
+    for (final RadiologyCatalogProcedure item in selected) {
       final String currency =
           _currencies[item.apiId] ?? item.currency ?? widget.defaultCurrency;
       final num unitPrice =
@@ -495,7 +495,7 @@ class _RadiologyEnableFacilityOfferingDialogState
   Widget _buildCatalogStep(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<RadiologyCatalogTest> items = _sortedFilteredCatalogItems;
+    final List<RadiologyCatalogProcedure> items = _sortedFilteredCatalogItems;
     final int selectedCount = _selectedAvailableItems.length;
     final bool hasSearchOrFilter =
         _searchController.text.trim().isNotEmpty || _filterValue.isActive;
@@ -525,24 +525,24 @@ class _RadiologyEnableFacilityOfferingDialogState
         ),
         SizedBox(height: theme.spacing.md),
         if (_isSearching) const LinearProgressIndicator(minHeight: 2),
-        AppListTable<RadiologyCatalogTest>(
+        AppListTable<RadiologyCatalogProcedure>(
           items: items,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           tableHorizontalMargin: 0,
           isLoading: _isSearching,
-          onRowSelected: (RadiologyCatalogTest item) {
+          onRowSelected: (RadiologyCatalogProcedure item) {
             _toggleSelection(
               item,
               selected: !_selectedIds.contains(item.apiId),
             );
           },
-          search: AppListTableSearch<RadiologyCatalogTest>(
+          search: AppListTableSearch<RadiologyCatalogProcedure>(
             controller: _searchController,
             semanticLabel: l10n.radiologyConfigurationSearchLabel,
             hintText: l10n.radiologyConfigurationSearchHint,
             isLoading: _isSearching,
-            matcher: (RadiologyCatalogTest item, String query) => true,
+            matcher: (RadiologyCatalogProcedure item, String query) => true,
             onChanged: _scheduleCatalogSearch,
             showAdvancedFilterButton: true,
             advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
@@ -575,7 +575,7 @@ class _RadiologyEnableFacilityOfferingDialogState
           ),
           columns: _enableOfferingColumns(context),
           mobileItemBuilder:
-              (BuildContext context, RadiologyCatalogTest item) {
+              (BuildContext context, RadiologyCatalogProcedure item) {
                 return AppListTableMobileItem(
                   leading: Checkbox(
                     value: _selectedIds.contains(item.apiId),
@@ -610,7 +610,7 @@ class _RadiologyEnableFacilityOfferingDialogState
   Widget _buildPriceStep(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<RadiologyCatalogTest> selected = _selectedAvailableItems;
+    final List<RadiologyCatalogProcedure> selected = _selectedAvailableItems;
 
     return Form(
       key: _priceFormKey,
@@ -635,7 +635,7 @@ class _RadiologyEnableFacilityOfferingDialogState
           if (selected.isEmpty)
             AppMutedText(l10n.radiologyEnableOfferingPreviewEmptyLabel)
           else
-            ...selected.map((RadiologyCatalogTest item) {
+            ...selected.map((RadiologyCatalogProcedure item) {
               final TextEditingController? controller =
                   _priceControllers[item.apiId];
               if (controller == null) {
@@ -689,7 +689,7 @@ class _RadiologyEnableFacilityOfferingDialogState
   Widget _buildPreviewStep(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<RadiologyCatalogTest> selected = _selectedAvailableItems;
+    final List<RadiologyCatalogProcedure> selected = _selectedAvailableItems;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -712,17 +712,17 @@ class _RadiologyEnableFacilityOfferingDialogState
         if (selected.isEmpty)
           AppMutedText(l10n.radiologyEnableOfferingPreviewEmptyLabel)
         else
-          AppListTable<RadiologyCatalogTest>(
+          AppListTable<RadiologyCatalogProcedure>(
             items: selected,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             tableHorizontalMargin: 0,
-            columns: <AppListTableColumn<RadiologyCatalogTest>>[
-              AppListTableColumn<RadiologyCatalogTest>(
+            columns: <AppListTableColumn<RadiologyCatalogProcedure>>[
+              AppListTableColumn<RadiologyCatalogProcedure>(
                 id: 'select',
                 label: l10n.commonSelectActionLabel,
                 alwaysVisible: true,
-                cellBuilder: (_, RadiologyCatalogTest item) {
+                cellBuilder: (_, RadiologyCatalogProcedure item) {
                   return Checkbox(
                     value: _selectedIds.contains(item.apiId),
                     onChanged: _isSaving
@@ -733,32 +733,32 @@ class _RadiologyEnableFacilityOfferingDialogState
                   );
                 },
               ),
-              AppListTableColumn<RadiologyCatalogTest>(
+              AppListTableColumn<RadiologyCatalogProcedure>(
                 id: 'name',
-                label: l10n.radiologyTestNameLabel,
-                cellBuilder: (_, RadiologyCatalogTest item) => Text(item.name),
+                label: l10n.radiologyProcedureNameLabel,
+                cellBuilder: (_, RadiologyCatalogProcedure item) => Text(item.name),
               ),
-              AppListTableColumn<RadiologyCatalogTest>(
+              AppListTableColumn<RadiologyCatalogProcedure>(
                 id: 'code',
-                label: l10n.radiologyTestCodeLabel,
-                cellBuilder: (_, RadiologyCatalogTest item) =>
+                label: l10n.radiologyProcedureCodeLabel,
+                cellBuilder: (_, RadiologyCatalogProcedure item) =>
                     Text(item.code ?? l10n.profileUnknownValue),
               ),
-              AppListTableColumn<RadiologyCatalogTest>(
+              AppListTableColumn<RadiologyCatalogProcedure>(
                 id: 'modality',
                 label: l10n.radiologyModalityLabel,
-                cellBuilder: (_, RadiologyCatalogTest item) =>
+                cellBuilder: (_, RadiologyCatalogProcedure item) =>
                     Text(item.modality ?? l10n.profileUnknownValue),
               ),
-              AppListTableColumn<RadiologyCatalogTest>(
+              AppListTableColumn<RadiologyCatalogProcedure>(
                 id: 'price',
                 label: l10n.clinicalRequestUnitPriceLabel,
-                cellBuilder: (_, RadiologyCatalogTest item) =>
+                cellBuilder: (_, RadiologyCatalogProcedure item) =>
                     Text(_priceDisplay(item)),
               ),
             ],
             mobileItemBuilder:
-                (BuildContext context, RadiologyCatalogTest item) {
+                (BuildContext context, RadiologyCatalogProcedure item) {
                   return AppListTableMobileItem(
                     leading: Checkbox(
                       value: _selectedIds.contains(item.apiId),
@@ -791,16 +791,16 @@ class _RadiologyEnableFacilityOfferingDialogState
     );
   }
 
-  List<AppListTableColumn<RadiologyCatalogTest>> _enableOfferingColumns(
+  List<AppListTableColumn<RadiologyCatalogProcedure>> _enableOfferingColumns(
     BuildContext context,
   ) {
     final AppLocalizations l10n = context.l10n;
-    return <AppListTableColumn<RadiologyCatalogTest>>[
-      AppListTableColumn<RadiologyCatalogTest>(
+    return <AppListTableColumn<RadiologyCatalogProcedure>>[
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'select',
         label: l10n.commonSelectActionLabel,
         alwaysVisible: true,
-        cellBuilder: (_, RadiologyCatalogTest item) {
+        cellBuilder: (_, RadiologyCatalogProcedure item) {
           return Checkbox(
             value: _selectedIds.contains(item.apiId),
             onChanged: (bool? value) =>
@@ -809,30 +809,30 @@ class _RadiologyEnableFacilityOfferingDialogState
           );
         },
       ),
-      AppListTableColumn<RadiologyCatalogTest>(
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'name',
-        label: l10n.radiologyTestNameLabel,
+        label: l10n.radiologyProcedureNameLabel,
         sortComparator:
-            (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+            (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
                 appListTableCompareText(left.name, right.name),
-        cellBuilder: (_, RadiologyCatalogTest item) => Text(item.name),
+        cellBuilder: (_, RadiologyCatalogProcedure item) => Text(item.name),
       ),
-      AppListTableColumn<RadiologyCatalogTest>(
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'code',
-        label: l10n.radiologyTestCodeLabel,
+        label: l10n.radiologyProcedureCodeLabel,
         sortComparator:
-            (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+            (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
                 appListTableCompareText(left.code, right.code),
-        cellBuilder: (_, RadiologyCatalogTest item) =>
+        cellBuilder: (_, RadiologyCatalogProcedure item) =>
             Text(item.code ?? l10n.profileUnknownValue),
       ),
-      AppListTableColumn<RadiologyCatalogTest>(
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'modality',
         label: l10n.radiologyModalityLabel,
         sortComparator:
-            (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+            (RadiologyCatalogProcedure left, RadiologyCatalogProcedure right) =>
                 appListTableCompareText(left.modality, right.modality),
-        cellBuilder: (_, RadiologyCatalogTest item) =>
+        cellBuilder: (_, RadiologyCatalogProcedure item) =>
             Text(item.modality ?? l10n.profileUnknownValue),
       ),
     ];
@@ -849,7 +849,7 @@ class RadiologyEnableOfferingPriceDialog extends StatefulWidget {
     super.key,
   });
 
-  final RadiologyCatalogTest item;
+  final RadiologyCatalogProcedure item;
   final RadiologyCatalogUpdateSubmit onEnable;
   final String defaultCurrency;
   final bool showBackAction;
@@ -886,7 +886,7 @@ class _RadiologyEnableOfferingPriceDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final RadiologyCatalogTest item = widget.item;
+    final RadiologyCatalogProcedure item = widget.item;
 
     return AppDialog(
       title: Text(l10n.radiologyEnableProcedureAction),
@@ -992,7 +992,7 @@ class RadiologyEditFacilityOfferingDialog extends StatefulWidget {
     super.key,
   });
 
-  final RadiologyCatalogTest item;
+  final RadiologyCatalogProcedure item;
   final RadiologyCatalogUpdateSubmit onUpdate;
   final String defaultCurrency;
 

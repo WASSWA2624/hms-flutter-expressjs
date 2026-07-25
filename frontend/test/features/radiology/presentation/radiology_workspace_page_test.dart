@@ -162,18 +162,18 @@ void _stubRadiologyRepository(_MockRadiologyRepository repository) {
     );
   });
   when(
-    () => repository.listRadiologyCatalogTests(
+    () => repository.listRadiologyCatalogProcedures(
       search: any(named: 'search'),
       includeStandardCatalog: any(named: 'includeStandardCatalog'),
       limit: any(named: 'limit'),
     ),
   ).thenAnswer(
-    (_) async => const Result<List<RadiologyCatalogTest>>.success(
-      <RadiologyCatalogTest>[],
+    (_) async => const Result<List<RadiologyCatalogProcedure>>.success(
+      <RadiologyCatalogProcedure>[],
     ),
   );
   when(
-    () => repository.listFacilityRadiologyTests(
+    () => repository.listFacilityRadiologyProcedures(
       tenantId: any(named: 'tenantId'),
       facilityId: any(named: 'facilityId'),
       search: any(named: 'search'),
@@ -182,8 +182,8 @@ void _stubRadiologyRepository(_MockRadiologyRepository repository) {
       offeredOnly: any(named: 'offeredOnly'),
     ),
   ).thenAnswer(
-    (_) async => const Result<List<RadiologyCatalogTest>>.success(
-      <RadiologyCatalogTest>[],
+    (_) async => const Result<List<RadiologyCatalogProcedure>>.success(
+      <RadiologyCatalogProcedure>[],
     ),
   );
   when(

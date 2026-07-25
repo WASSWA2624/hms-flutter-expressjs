@@ -168,7 +168,8 @@ apiV1Router.use('/drug-batches', require('../modules/drug-batch/routes/drug-batc
 apiV1Router.use('/formulary-items', require('../modules/formulary-item/routes/formulary-item.routes'));
 apiV1Router.use('/pharmacy-orders', require('../modules/pharmacy-order/routes/pharmacy-order.routes'));
 apiV1Router.use('/pharmacy-order-items', require('../modules/pharmacy-order-item/routes/pharmacy-order-item.routes'));
-apiV1Router.use('/radiology-tests', require('../modules/radiology-test/routes/radiology-test.routes'));
+apiV1Router.use('/radiology-procedures', require('../modules/radiology-procedure/routes/radiology-procedure.routes'));
+apiV1Router.use('/radiology-tests', require('../modules/radiology-procedure/routes/radiology-procedure.routes'));
 apiV1Router.use('/radiology-orders', require('../modules/radiology-order/routes/radiology-order.routes'));
 apiV1Router.use('/radiology-results', require('../modules/radiology-result/routes/radiology-result.routes'));
 apiV1Router.use('/dispense-logs', require('../modules/dispense-log/routes/dispense-log.routes'));

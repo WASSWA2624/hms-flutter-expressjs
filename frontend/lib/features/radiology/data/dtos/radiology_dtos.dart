@@ -139,11 +139,11 @@ final class RadiologyCatalogProcedureDto {
     );
   }
 
-  static List<RadiologyCatalogTest> listFromResponse(Object? responseData) {
+  static List<RadiologyCatalogProcedure> listFromResponse(Object? responseData) {
     return _entityRows(responseData)
-        .map(RadiologyCatalogTestDto.new)
-        .map((RadiologyCatalogTestDto dto) => dto.toEntity())
-        .where((RadiologyCatalogTest item) => item.id.isNotEmpty)
+        .map(RadiologyCatalogProcedureDto.new)
+        .map((RadiologyCatalogProcedureDto dto) => dto.toEntity())
+        .where((RadiologyCatalogProcedure item) => item.id.isNotEmpty)
         .toList(growable: false);
   }
 }
@@ -190,11 +190,11 @@ final class RadiologyEquipmentRecordDto {
   }
 }
 
-RadiologyCatalogTest radiologyCatalogTestFromResponse(Object? responseData) {
+RadiologyCatalogProcedure radiologyCatalogProcedureFromResponse(Object? responseData) {
   final RadiologyJsonMap response = _expectMap(responseData);
   final Object? data = response['data'];
   final RadiologyJsonMap row = data is RadiologyJsonMap ? data : response;
-  return RadiologyCatalogTestDto(row).toEntity();
+  return RadiologyCatalogProcedureDto(row).toEntity();
 }
 
 final class RadiologySummaryDto {
@@ -554,6 +554,8 @@ List<RadiologyJsonMap> _entityRows(Object? responseData) {
       'data',
       'rows',
       'results',
+      'radiologyProcedures',
+      'radiology_procedures',
       'radiologyTests',
       'radiology_tests',
       'equipmentRegistries',

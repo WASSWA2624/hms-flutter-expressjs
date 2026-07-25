@@ -54,14 +54,14 @@ RadiologyWorkflow _workflow({String status = 'ORDERED'}) {
   );
 }
 
-const RadiologyCatalogTest _platformRadiologyTest = RadiologyCatalogTest(
+const RadiologyCatalogProcedure _platformRadiologyTest = RadiologyCatalogProcedure(
   id: 'RT-PLATFORM',
   name: 'Chest X-ray',
   code: 'RAD-00001',
   modality: 'XRAY',
 );
 
-const RadiologyCatalogTest _offeredRadiologyTest = RadiologyCatalogTest(
+const RadiologyCatalogProcedure _offeredRadiologyTest = RadiologyCatalogProcedure(
   id: 'RT-OFFERED',
   name: 'LFT',
   code: 'RAD-00002',
@@ -91,18 +91,18 @@ void main() {
       () => repository.getWorkbench(any()),
     ).thenAnswer((_) async => Result<RadiologyWorkbench>.success(_workbench()));
     when(
-      () => repository.listRadiologyCatalogTests(
+      () => repository.listRadiologyCatalogProcedures(
         search: any(named: 'search'),
         includeStandardCatalog: any(named: 'includeStandardCatalog'),
         limit: any(named: 'limit'),
       ),
     ).thenAnswer(
-      (_) async => const Result<List<RadiologyCatalogTest>>.success(
-        <RadiologyCatalogTest>[],
+      (_) async => const Result<List<RadiologyCatalogProcedure>>.success(
+        <RadiologyCatalogProcedure>[],
       ),
     );
     when(
-      () => repository.listFacilityRadiologyTests(
+      () => repository.listFacilityRadiologyProcedures(
         tenantId: any(named: 'tenantId'),
         facilityId: any(named: 'facilityId'),
         search: any(named: 'search'),
@@ -111,8 +111,8 @@ void main() {
         offeredOnly: any(named: 'offeredOnly'),
       ),
     ).thenAnswer(
-      (_) async => const Result<List<RadiologyCatalogTest>>.success(
-        <RadiologyCatalogTest>[],
+      (_) async => const Result<List<RadiologyCatalogProcedure>>.success(
+        <RadiologyCatalogProcedure>[],
       ),
     );
     when(
@@ -226,7 +226,7 @@ void main() {
     () async {
       final _MockRadiologyRepository repository = _MockRadiologyRepository();
       stubInitialLoad(repository);
-      const RadiologyCatalogTest enabledTest = RadiologyCatalogTest(
+      const RadiologyCatalogProcedure enabledTest = RadiologyCatalogProcedure(
         id: 'RT-1',
         name: 'Chest X-ray',
         code: 'RAD-00001',
@@ -235,14 +235,14 @@ void main() {
         currency: 'UGX',
       );
       when(
-        () => repository.upsertFacilityRadiologyTestOffering(
+        () => repository.upsertFacilityRadiologyProcedureOffering(
           any(),
           any(),
           tenantId: any(named: 'tenantId'),
           facilityId: any(named: 'facilityId'),
         ),
       ).thenAnswer(
-        (_) async => const Result<RadiologyCatalogTest>.success(enabledTest),
+        (_) async => const Result<RadiologyCatalogProcedure>.success(enabledTest),
       );
       final ProviderContainer container = buildContainer(repository);
 
@@ -275,7 +275,7 @@ void main() {
       expect(state.isMutating, isFalse);
 
       verify(
-        () => repository.upsertFacilityRadiologyTestOffering(
+        () => repository.upsertFacilityRadiologyProcedureOffering(
           'RT-1',
           any(),
           tenantId: 'TEN0000001',
@@ -283,7 +283,7 @@ void main() {
         ),
       ).called(1);
       verifyNever(
-        () => repository.listFacilityRadiologyTests(
+        () => repository.listFacilityRadiologyProcedures(
           tenantId: any(named: 'tenantId'),
           facilityId: any(named: 'facilityId'),
           search: any(named: 'search'),
@@ -301,18 +301,18 @@ void main() {
       final _MockRadiologyRepository repository = _MockRadiologyRepository();
       stubInitialLoad(repository);
       when(
-        () => repository.listRadiologyCatalogTests(
+        () => repository.listRadiologyCatalogProcedures(
           search: any(named: 'search'),
           includeStandardCatalog: any(named: 'includeStandardCatalog'),
           limit: any(named: 'limit'),
         ),
       ).thenAnswer(
-        (_) async => const Result<List<RadiologyCatalogTest>>.success(
-          <RadiologyCatalogTest>[_platformRadiologyTest, _offeredRadiologyTest],
+        (_) async => const Result<List<RadiologyCatalogProcedure>>.success(
+          <RadiologyCatalogProcedure>[_platformRadiologyTest, _offeredRadiologyTest],
         ),
       );
       when(
-        () => repository.listFacilityRadiologyTests(
+        () => repository.listFacilityRadiologyProcedures(
           tenantId: any(named: 'tenantId'),
           facilityId: any(named: 'facilityId'),
           search: any(named: 'search'),
@@ -321,8 +321,8 @@ void main() {
           offeredOnly: true,
         ),
       ).thenAnswer(
-        (_) async => const Result<List<RadiologyCatalogTest>>.success(
-          <RadiologyCatalogTest>[_offeredRadiologyTest],
+        (_) async => const Result<List<RadiologyCatalogProcedure>>.success(
+          <RadiologyCatalogProcedure>[_offeredRadiologyTest],
         ),
       );
 
@@ -332,7 +332,7 @@ void main() {
       final RadiologyWorkspaceController controller = container.read(
         radiologyWorkspaceControllerProvider.notifier,
       );
-      final Result<List<RadiologyCatalogTest>> result = await controller
+      final Result<List<RadiologyCatalogProcedure>> result = await controller
           .searchPlatformRadiologyCatalogForOffering(
             scope: const RadiologyCatalogScope(
               tenantId: 'TEN0000001',
@@ -341,22 +341,22 @@ void main() {
             query: 'Chest',
           );
 
-      expect(result, isA<ResultSuccess<List<RadiologyCatalogTest>>>());
-      final List<RadiologyCatalogTest> items =
-          (result as ResultSuccess<List<RadiologyCatalogTest>>).value;
+      expect(result, isA<ResultSuccess<List<RadiologyCatalogProcedure>>>());
+      final List<RadiologyCatalogProcedure> items =
+          (result as ResultSuccess<List<RadiologyCatalogProcedure>>).value;
       expect(items, hasLength(2));
       expect(items.first.isOfferedAtFacility, isFalse);
       expect(items.last.code, 'RAD-00002');
       expect(items.last.isOfferedAtFacility, isTrue);
 
       verify(
-        () => repository.listRadiologyCatalogTests(
+        () => repository.listRadiologyCatalogProcedures(
           search: 'Chest',
           limit: any<int>(named: 'limit'),
         ),
       ).called(1);
       verify(
-        () => repository.listFacilityRadiologyTests(
+        () => repository.listFacilityRadiologyProcedures(
           tenantId: 'TEN0000001',
           facilityId: 'FAC0000001',
           offeredOnly: true,
@@ -377,18 +377,18 @@ void main() {
       final RadiologyWorkspaceController controller = container.read(
         radiologyWorkspaceControllerProvider.notifier,
       );
-      final Result<List<RadiologyCatalogTest>> result = await controller
+      final Result<List<RadiologyCatalogProcedure>> result = await controller
           .searchPlatformRadiologyCatalogForOffering(
             scope: const RadiologyCatalogScope(tenantId: 'TEN0000001'),
           );
 
-      expect(result, isA<ResultSuccess<List<RadiologyCatalogTest>>>());
+      expect(result, isA<ResultSuccess<List<RadiologyCatalogProcedure>>>());
       expect(
-        (result as ResultSuccess<List<RadiologyCatalogTest>>).value,
+        (result as ResultSuccess<List<RadiologyCatalogProcedure>>).value,
         isEmpty,
       );
       verifyNever(
-        () => repository.listRadiologyCatalogTests(
+        () => repository.listRadiologyCatalogProcedures(
           search: any(named: 'search'),
           limit: any(named: 'limit'),
         ),

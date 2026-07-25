@@ -69,11 +69,11 @@ class _FacilityCatalogConfigPanelState
 
   _CatalogDeskTab _tab = _CatalogDeskTab.radiology;
   List<LabCatalogItem> _labItems = const <LabCatalogItem>[];
-  List<RadiologyCatalogTest> _radiologyItems = const <RadiologyCatalogTest>[];
+  List<RadiologyCatalogProcedure> _radiologyItems = const <RadiologyCatalogProcedure>[];
   List<ClinicalCatalogOption> _diagnosisItems = const <ClinicalCatalogOption>[];
   List<LabCatalogItem> _labVisibleItems = const <LabCatalogItem>[];
-  List<RadiologyCatalogTest> _radiologyVisibleItems =
-      const <RadiologyCatalogTest>[];
+  List<RadiologyCatalogProcedure> _radiologyVisibleItems =
+      const <RadiologyCatalogProcedure>[];
   List<ClinicalCatalogOption> _diagnosisVisibleItems =
       const <ClinicalCatalogOption>[];
   AppSearchBarFilterValue _labFilterValue = AppSearchBarFilterValue.empty;
@@ -120,14 +120,14 @@ class _FacilityCatalogConfigPanelState
     }).toList(growable: false);
   }
 
-  List<RadiologyCatalogTest> _computeFilteredRadiologyItems() {
+  List<RadiologyCatalogProcedure> _computeFilteredRadiologyItems() {
     final String? modality = _radiologyFilterValue.option(_modalityFilterKey);
     if (modality == null || modality.isEmpty) {
       return _radiologyItems;
     }
     return _radiologyItems
         .where(
-          (RadiologyCatalogTest item) =>
+          (RadiologyCatalogProcedure item) =>
               (item.modality ?? '').trim() == modality,
         )
         .toList(growable: false);
@@ -161,7 +161,7 @@ class _FacilityCatalogConfigPanelState
 
   void _refreshRadiologyFilterOptions() {
     _radiologyModalities = _uniqueSortedFieldValues(
-      _radiologyItems.map((RadiologyCatalogTest item) => item.modality),
+      _radiologyItems.map((RadiologyCatalogProcedure item) => item.modality),
     );
   }
 
@@ -179,13 +179,13 @@ class _FacilityCatalogConfigPanelState
 
   void _recomputeRadiologyVisible() {
     final String query = _radiologySearchController.text.trim().toLowerCase();
-    final List<RadiologyCatalogTest> filtered = _computeFilteredRadiologyItems();
+    final List<RadiologyCatalogProcedure> filtered = _computeFilteredRadiologyItems();
     if (query.isEmpty) {
       _radiologyVisibleItems = filtered;
       return;
     }
     _radiologyVisibleItems = filtered
-        .where((RadiologyCatalogTest item) {
+        .where((RadiologyCatalogProcedure item) {
           final String haystack =
               '${item.name} ${item.code ?? ''} ${item.modality ?? ''}'
                   .toLowerCase();
@@ -387,56 +387,56 @@ class _FacilityCatalogConfigPanelState
     return parts.isEmpty ? '—' : parts.join(' · ');
   }
 
-  List<AppListTableColumn<RadiologyCatalogTest>> _radiologyColumnChoices(
+  List<AppListTableColumn<RadiologyCatalogProcedure>> _radiologyColumnChoices(
     AppLocalizations l10n,
   ) {
-    return <AppListTableColumn<RadiologyCatalogTest>>[
-      AppListTableColumn<RadiologyCatalogTest>(
+    return <AppListTableColumn<RadiologyCatalogProcedure>>[
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'body_region',
         label: l10n.radiologyBodyRegionLabel,
-        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
             appListTableCompareText(a.bodyRegion, b.bodyRegion),
-        cellBuilder: (_, RadiologyCatalogTest item) =>
+        cellBuilder: (_, RadiologyCatalogProcedure item) =>
             _wrappedCellText(_dashOr(item.bodyRegion)),
       ),
-      AppListTableColumn<RadiologyCatalogTest>(
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'laterality',
         label: l10n.radiologyLateralityLabel,
-        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
             appListTableCompareText(a.laterality, b.laterality),
-        cellBuilder: (_, RadiologyCatalogTest item) =>
+        cellBuilder: (_, RadiologyCatalogProcedure item) =>
             _wrappedCellText(_dashOr(item.laterality)),
       ),
-      AppListTableColumn<RadiologyCatalogTest>(
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'procedure_type',
         label: l10n.clinicalResultsModuleProcedureLabel,
-        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
             appListTableCompareText(a.procedureType, b.procedureType),
-        cellBuilder: (_, RadiologyCatalogTest item) =>
+        cellBuilder: (_, RadiologyCatalogProcedure item) =>
             _wrappedCellText(_dashOr(item.procedureType)),
       ),
-      AppListTableColumn<RadiologyCatalogTest>(
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'equipment',
         label: l10n.radiologyEquipmentColumnLabel,
-        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
             appListTableCompareText(a.equipment, b.equipment),
-        cellBuilder: (_, RadiologyCatalogTest item) =>
+        cellBuilder: (_, RadiologyCatalogProcedure item) =>
             _wrappedCellText(_dashOr(item.equipment)),
       ),
-      AppListTableColumn<RadiologyCatalogTest>(
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'status',
         label: l10n.radiologyStatusColumnLabel,
-        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
             appListTableCompareText(a.status, b.status),
-        cellBuilder: (_, RadiologyCatalogTest item) =>
+        cellBuilder: (_, RadiologyCatalogProcedure item) =>
             _wrappedCellText(_dashOr(item.status)),
       ),
-      AppListTableColumn<RadiologyCatalogTest>(
+      AppListTableColumn<RadiologyCatalogProcedure>(
         id: 'source',
         label: l10n.radiologySourceColumnLabel,
-        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
             appListTableCompareText(a.source, b.source),
-        cellBuilder: (_, RadiologyCatalogTest item) =>
+        cellBuilder: (_, RadiologyCatalogProcedure item) =>
             _wrappedCellText(_dashOr(item.source)),
       ),
     ];
@@ -519,7 +519,7 @@ class _FacilityCatalogConfigPanelState
   }
 
   Widget _buildRadiologyTable(AppLocalizations l10n) {
-    return AppListTable<RadiologyCatalogTest>(
+    return AppListTable<RadiologyCatalogProcedure>(
       items: _radiologyVisibleItems,
       maxVisibleItems: _pageSize,
       isLoading: _radiologyLoading && _radiologyItems.isEmpty,
@@ -528,10 +528,10 @@ class _FacilityCatalogConfigPanelState
       columnVisibilityStorageKey: 'admin_catalog_radiology',
       columnChoices: _radiologyColumnChoices(l10n),
       onRowSelected: widget.enabled
-          ? (RadiologyCatalogTest item) =>
+          ? (RadiologyCatalogProcedure item) =>
                 unawaited(_openRadiologyEditDialog(item))
           : null,
-      search: AppListTableSearch<RadiologyCatalogTest>(
+      search: AppListTableSearch<RadiologyCatalogProcedure>(
         controller: _radiologySearchController,
         semanticLabel: l10n.tenantFacilityCatalogTabRadiology,
         hintText: l10n.tenantFacilityCatalogSearchHint,
@@ -571,7 +571,7 @@ class _FacilityCatalogConfigPanelState
             ),
             AppSearchBarAction(
               icon: Icons.add_circle_outline,
-              label: l10n.radiologyCreateImagingTestAction,
+              label: l10n.radiologyCreateProcedureAction,
               onPressed: () => unawaited(_openRadiologyAddDialog()),
             ),
           ],
@@ -582,49 +582,49 @@ class _FacilityCatalogConfigPanelState
         body: l10n.tenantFacilityCatalogEmptyCatalog,
         action: widget.enabled
             ? AppButton.primary(
-                label: l10n.radiologyCreateImagingTestAction,
+                label: l10n.radiologyCreateProcedureAction,
                 leadingIcon: Icons.add_circle_outline,
                 onPressed: () => unawaited(_openRadiologyAddDialog()),
               )
             : null,
       ),
-      columns: <AppListTableColumn<RadiologyCatalogTest>>[
-        AppListTableColumn<RadiologyCatalogTest>(
+      columns: <AppListTableColumn<RadiologyCatalogProcedure>>[
+        AppListTableColumn<RadiologyCatalogProcedure>(
           id: 'name',
-          label: l10n.radiologyTestNameLabel,
-          sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+          label: l10n.radiologyProcedureNameLabel,
+          sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
               a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-          cellBuilder: (_, RadiologyCatalogTest item) =>
+          cellBuilder: (_, RadiologyCatalogProcedure item) =>
               _wrappedCellText(item.name),
         ),
-        AppListTableColumn<RadiologyCatalogTest>(
+        AppListTableColumn<RadiologyCatalogProcedure>(
           id: 'code',
           label: l10n.labTestCodeLabel,
-          sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+          sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
               (a.code ?? '').toLowerCase().compareTo(
                 (b.code ?? '').toLowerCase(),
               ),
-          cellBuilder: (_, RadiologyCatalogTest item) => _wrappedCellText(
+          cellBuilder: (_, RadiologyCatalogProcedure item) => _wrappedCellText(
             item.code?.trim().isNotEmpty == true ? item.code! : '—',
           ),
         ),
-        AppListTableColumn<RadiologyCatalogTest>(
+        AppListTableColumn<RadiologyCatalogProcedure>(
           id: 'modality',
           label: l10n.radiologyModalityLabel,
-          sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+          sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
               (a.modality ?? '').toLowerCase().compareTo(
                 (b.modality ?? '').toLowerCase(),
               ),
-          cellBuilder: (_, RadiologyCatalogTest item) => _wrappedCellText(
+          cellBuilder: (_, RadiologyCatalogProcedure item) => _wrappedCellText(
             item.modality?.trim().isNotEmpty == true ? item.modality! : '—',
           ),
         ),
         if (widget.enabled)
-          AppListTableColumn<RadiologyCatalogTest>(
+          AppListTableColumn<RadiologyCatalogProcedure>(
             id: 'actions',
             label: l10n.accessAdminColumnActions,
             alwaysVisible: true,
-            cellBuilder: (BuildContext context, RadiologyCatalogTest item) =>
+            cellBuilder: (BuildContext context, RadiologyCatalogProcedure item) =>
                 _CatalogRowActions(
                   editLabel: l10n.clinicalLabRequestEditSelectionAction,
                   deleteLabel: l10n.clinicalRadiologyDeleteSelectionAction,
@@ -633,7 +633,7 @@ class _FacilityCatalogConfigPanelState
                 ),
           ),
       ],
-      mobileItemBuilder: (BuildContext context, RadiologyCatalogTest item) =>
+      mobileItemBuilder: (BuildContext context, RadiologyCatalogProcedure item) =>
           AppListTableMobileItem(
             title: item.name,
             caption: item.modality,
@@ -1014,9 +1014,9 @@ class _FacilityCatalogConfigPanelState
       setState(() {});
     }
     try {
-      final Result<List<RadiologyCatalogTest>> result = await ref
+      final Result<List<RadiologyCatalogProcedure>> result = await ref
           .read(radiologyRepositoryProvider)
-          .listRadiologyCatalogTests(
+          .listRadiologyCatalogProcedures(
             includeStandardCatalog: true,
             search: null,
             limit: _radiologyFetchLimit,
@@ -1025,7 +1025,7 @@ class _FacilityCatalogConfigPanelState
         return;
       }
       result.when(
-        success: (List<RadiologyCatalogTest> items) {
+        success: (List<RadiologyCatalogProcedure> items) {
           _radiologyItems = items;
           _radiologyHydrated = true;
           _refreshRadiologyFilterOptions();
@@ -1293,8 +1293,8 @@ class _FacilityCatalogConfigPanelState
               limit: limit,
             ),
         onEnable: (String id, Map<String, Object?> payload) async {
-          final Result<RadiologyCatalogTest> result = await repository
-              .upsertFacilityRadiologyTestOffering(
+          final Result<RadiologyCatalogProcedure> result = await repository
+              .upsertFacilityRadiologyProcedureOffering(
                 id,
                 payload,
                 tenantId: scope.tenantId,
@@ -1393,27 +1393,27 @@ class _FacilityCatalogConfigPanelState
     return saved;
   }
 
-  Future<List<RadiologyCatalogTest>> _loadRadiologySimilarityCandidates({
+  Future<List<RadiologyCatalogProcedure>> _loadRadiologySimilarityCandidates({
     String? tenantId,
   }) async {
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
-    final Result<List<RadiologyCatalogTest>> candidatesResult =
-        await repository.listRadiologyCatalogTests(
+    final Result<List<RadiologyCatalogProcedure>> candidatesResult =
+        await repository.listRadiologyCatalogProcedures(
           tenantId: tenantId,
           limit: 7500,
         );
     return candidatesResult.when(
-      success: (List<RadiologyCatalogTest> items) => items,
+      success: (List<RadiologyCatalogProcedure> items) => items,
       failure: (_) => _radiologyItems,
     );
   }
 
-  RadiologyCatalogTest _resolveRadiologyCatalogItem(
-    RadiologyCatalogTest item,
+  RadiologyCatalogProcedure _resolveRadiologyCatalogItem(
+    RadiologyCatalogProcedure item,
   ) {
-    for (final RadiologyCatalogTest candidate in _radiologyItems) {
+    for (final RadiologyCatalogProcedure candidate in _radiologyItems) {
       if (candidate.apiId == item.apiId || candidate.id == item.id) {
         return candidate;
       }
@@ -1438,8 +1438,8 @@ class _FacilityCatalogConfigPanelState
         loadExistingItems: () =>
             _loadRadiologySimilarityCandidates(tenantId: tenantId),
         onSubmit: (Map<String, Object?> payload) async {
-          final Result<RadiologyCatalogTest> created = await repository
-              .createRadiologyCatalogTest(payload);
+          final Result<RadiologyCatalogProcedure> created = await repository
+              .createRadiologyCatalogProcedure(payload);
           return created.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -1450,7 +1450,7 @@ class _FacilityCatalogConfigPanelState
     if (!mounted) {
       return;
     }
-    if (result is RadiologyCatalogTest) {
+    if (result is RadiologyCatalogProcedure) {
       await _openRadiologyEditDialog(_resolveRadiologyCatalogItem(result));
       return;
     }
@@ -1463,7 +1463,7 @@ class _FacilityCatalogConfigPanelState
     await _ensureTabLoaded(_tab, force: true);
   }
 
-  Future<void> _openRadiologyEditDialog(RadiologyCatalogTest item) async {
+  Future<void> _openRadiologyEditDialog(RadiologyCatalogProcedure item) async {
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
@@ -1478,8 +1478,8 @@ class _FacilityCatalogConfigPanelState
         loadExistingItems: () =>
             _loadRadiologySimilarityCandidates(tenantId: tenantId),
         onSubmit: (Map<String, Object?> payload) async {
-          final Result<RadiologyCatalogTest> updated = await repository
-              .updateRadiologyCatalogTest(item.apiId, payload);
+          final Result<RadiologyCatalogProcedure> updated = await repository
+              .updateRadiologyCatalogProcedure(item.apiId, payload);
           return updated.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -1490,8 +1490,8 @@ class _FacilityCatalogConfigPanelState
     if (!mounted) {
       return;
     }
-    if (result is RadiologyCatalogTest) {
-      final RadiologyCatalogTest selected =
+    if (result is RadiologyCatalogProcedure) {
+      final RadiologyCatalogProcedure selected =
           _resolveRadiologyCatalogItem(result);
       if (selected.apiId != item.apiId) {
         await _openRadiologyEditDialog(selected);
@@ -1504,7 +1504,7 @@ class _FacilityCatalogConfigPanelState
     await _ensureTabLoaded(_tab, force: true);
   }
 
-  Future<void> _openRadiologyDeleteDialog(RadiologyCatalogTest item) async {
+  Future<void> _openRadiologyDeleteDialog(RadiologyCatalogProcedure item) async {
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
@@ -1518,7 +1518,7 @@ class _FacilityCatalogConfigPanelState
         submitLabel: l10n.clinicalRadiologyDeleteSelectionAction,
         onDelete: (String _) async {
           final Result<void> result = await repository
-              .deleteRadiologyCatalogTest(item.apiId);
+              .deleteRadiologyCatalogProcedure(item.apiId);
           return result.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -1856,39 +1856,39 @@ class _FacilityCatalogConfigPanelState
     );
   }
 
-  Future<Result<List<RadiologyCatalogTest>>> _searchRadiologyCatalog({
+  Future<Result<List<RadiologyCatalogProcedure>>> _searchRadiologyCatalog({
     required RadiologyRepository repository,
     required RadiologyCatalogScope scope,
     String? query,
     int limit = 100,
   }) async {
     if (!scope.isReady) {
-      return const Result<List<RadiologyCatalogTest>>.success(
-        <RadiologyCatalogTest>[],
+      return const Result<List<RadiologyCatalogProcedure>>.success(
+        <RadiologyCatalogProcedure>[],
       );
     }
-    final Future<Result<List<RadiologyCatalogTest>>> platformFuture = repository
-        .listRadiologyCatalogTests(search: query, limit: limit);
-    final Future<Result<List<RadiologyCatalogTest>>> offeredFuture = repository
-        .listFacilityRadiologyTests(
+    final Future<Result<List<RadiologyCatalogProcedure>>> platformFuture = repository
+        .listRadiologyCatalogProcedures(search: query, limit: limit);
+    final Future<Result<List<RadiologyCatalogProcedure>>> offeredFuture = repository
+        .listFacilityRadiologyProcedures(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
           offeredOnly: true,
           limit: limit,
         );
-    final List<Result<List<RadiologyCatalogTest>>> results = await Future.wait(
-      <Future<Result<List<RadiologyCatalogTest>>>>[
+    final List<Result<List<RadiologyCatalogProcedure>>> results = await Future.wait(
+      <Future<Result<List<RadiologyCatalogProcedure>>>>[
         platformFuture,
         offeredFuture,
       ],
     );
     return results[0].when(
-      success: (List<RadiologyCatalogTest> platformItems) {
+      success: (List<RadiologyCatalogProcedure> platformItems) {
         final Set<String> offeredIds = <String>{};
         final Set<String> offeredCodes = <String>{};
         results[1].when(
-          success: (List<RadiologyCatalogTest> offeredItems) {
-            for (final RadiologyCatalogTest item in offeredItems) {
+          success: (List<RadiologyCatalogProcedure> offeredItems) {
+            for (final RadiologyCatalogProcedure item in offeredItems) {
               offeredIds.add(item.apiId);
               final String? code = item.code?.trim();
               if (code != null && code.isNotEmpty) {
@@ -1898,9 +1898,9 @@ class _FacilityCatalogConfigPanelState
           },
           failure: (_) {},
         );
-        return Result<List<RadiologyCatalogTest>>.success(
+        return Result<List<RadiologyCatalogProcedure>>.success(
           platformItems
-              .map((RadiologyCatalogTest item) {
+              .map((RadiologyCatalogProcedure item) {
                 final String? code = item.code?.trim();
                 final bool isOffered =
                     offeredIds.contains(item.apiId) ||
@@ -1915,7 +1915,7 @@ class _FacilityCatalogConfigPanelState
         );
       },
       failure: (AppFailure failure) =>
-          Result<List<RadiologyCatalogTest>>.failure(failure),
+          Result<List<RadiologyCatalogProcedure>>.failure(failure),
     );
   }
 }

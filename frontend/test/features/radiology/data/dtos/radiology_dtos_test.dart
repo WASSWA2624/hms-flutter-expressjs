@@ -165,10 +165,10 @@ void main() {
     });
   });
 
-  group('RadiologyCatalogTestDto', () {
+  group('RadiologyCatalogProcedureDto', () {
     test('decodes a paginated radiology catalog response', () {
-      final List<RadiologyCatalogTest> tests =
-          RadiologyCatalogTestDto.listFromResponse(<String, Object?>{
+      final List<RadiologyCatalogProcedure> tests =
+          RadiologyCatalogProcedureDto.listFromResponse(<String, Object?>{
             'success': true,
             'data': <String, Object?>{
               'items': <Object?>[
@@ -187,7 +187,7 @@ void main() {
           });
 
       expect(tests, hasLength(1));
-      final RadiologyCatalogTest test = tests.single;
+      final RadiologyCatalogProcedure test = tests.single;
       expect(test.id, 'RT-001');
       expect(test.effectiveId, 'RDT0000001');
       expect(test.modality, 'XRAY');
@@ -197,7 +197,7 @@ void main() {
     });
 
     test('decodes a single catalog test envelope', () {
-      final RadiologyCatalogTest test = radiologyCatalogTestFromResponse(
+      final RadiologyCatalogProcedure test = radiologyCatalogProcedureFromResponse(
         <String, Object?>{
           'success': true,
           'data': <String, Object?>{
@@ -279,7 +279,7 @@ void main() {
 
       expect(data.patients.single.value, 'PAT0000001');
       expect(data.encounters.single.patientId, 'PAT0000001');
-      expect(data.radiologyTests.single.label, 'Chest X-ray');
+      expect(data.radiologyProcedures.single.label, 'Chest X-ray');
       expect(data.assignees.single.value, 'USR0000001');
     });
   });

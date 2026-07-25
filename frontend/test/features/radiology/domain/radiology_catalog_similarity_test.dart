@@ -4,14 +4,14 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 
 void main() {
   group('checkRadiologyCatalogDuplicates', () {
-    const List<RadiologyCatalogTest> existing = <RadiologyCatalogTest>[
-      RadiologyCatalogTest(
+    const List<RadiologyCatalogProcedure> existing = <RadiologyCatalogProcedure>[
+      RadiologyCatalogProcedure(
         id: 'rad-1',
         name: 'Chest X-Ray',
         code: 'CXR-001',
         modality: 'XRAY',
       ),
-      RadiologyCatalogTest(
+      RadiologyCatalogProcedure(
         id: 'rad-2',
         name: 'Brain MRI',
         code: 'MRI-001',
@@ -161,7 +161,7 @@ void main() {
             code: 'CXR-001',
             modality: 'XRAY',
             existing: existing,
-            excludeTestId: 'rad-1',
+            excludeProcedureId: 'rad-1',
           );
 
       expect(result.hasExactConflict, isFalse);

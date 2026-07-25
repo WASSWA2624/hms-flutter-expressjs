@@ -125,6 +125,10 @@ enum HmsApiResource {
     'pharmacy-order-items',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,
   ),
+  radiologyProcedures(
+    'radiology-procedures',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
   radiologyTests(
     'radiology-tests',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,

@@ -34,14 +34,14 @@ final class RadiologyCatalogSimilarityDialogResult {
     : this._(action: RadiologyCatalogSimilarityAction.proceed);
 
   const RadiologyCatalogSimilarityDialogResult.useExisting(
-    RadiologyCatalogTest test,
+    RadiologyCatalogProcedure test,
   ) : this._(
         action: RadiologyCatalogSimilarityAction.useExisting,
         selectedTest: test,
       );
 
   final RadiologyCatalogSimilarityAction action;
-  final RadiologyCatalogTest? selectedTest;
+  final RadiologyCatalogProcedure? selectedTest;
 }
 
 Future<RadiologyCatalogSimilarityDialogResult>
@@ -74,7 +74,7 @@ showRadiologyCatalogSimilarityDialog(
       final ThemeData theme = Theme.of(dialogContext);
 
       return AppDialog(
-        title: Text(l10n.radiologySimilarImagingTestDialogTitle),
+        title: Text(l10n.radiologySimilarProcedureDialogTitle),
         icon: Icon(
           hasExactMatch
               ? Icons.gpp_bad_outlined
@@ -102,14 +102,14 @@ showRadiologyCatalogSimilarityDialog(
               children: <Widget>[
                 Expanded(
                   child: Text(
-                    l10n.radiologySimilarImagingTestMatchesHeading,
+                    l10n.radiologySimilarProcedureMatchesHeading,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
                 Text(
-                  l10n.radiologySimilarImagingTestMatchCountLabel(
+                  l10n.radiologySimilarProcedureMatchCountLabel(
                     visibleMatches.length,
                   ),
                   style: theme.textTheme.labelMedium?.copyWith(
@@ -145,7 +145,7 @@ showRadiologyCatalogSimilarityDialog(
             ),
           ),
           AppButton.primary(
-            label: l10n.radiologyProceedCreateImagingTestAction,
+            label: l10n.radiologyProceedCreateProcedureAction,
             leadingIcon: Icons.add_circle_outline,
             onPressed: canProceed
                 ? () => Navigator.of(dialogContext).pop(
@@ -171,12 +171,12 @@ Future<bool> showRadiologyCatalogNoSimilarDialog(BuildContext context) {
       final ThemeData theme = Theme.of(dialogContext);
 
       return AppDialog(
-        title: Text(l10n.radiologyNoSimilarImagingTestDialogTitle),
+        title: Text(l10n.radiologyNoSimilarProcedureDialogTitle),
         icon: const Icon(Icons.verified_outlined),
         scrollable: true,
         maxWidth: 520,
         content: Text(
-          l10n.radiologyNoSimilarImagingTestDialogBody,
+          l10n.radiologyNoSimilarProcedureDialogBody,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -188,7 +188,7 @@ Future<bool> showRadiologyCatalogNoSimilarDialog(BuildContext context) {
             onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
-            label: l10n.radiologyContinueSaveImagingTestAction,
+            label: l10n.radiologyContinueSaveProcedureAction,
             leadingIcon: Icons.save_outlined,
             onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
@@ -211,13 +211,13 @@ class _ProposedTestCard extends StatelessWidget {
       tone: AppWorkspaceStatusTone.info,
       density: AppContentPanelDensity.compact,
       leadingIcon: Icons.edit_note_outlined,
-      title: l10n.radiologySimilarImagingTestProposedHeading,
+      title: l10n.radiologySimilarProcedureProposedHeading,
       children: <Widget>[
         _ProposedFactGrid(
           facts: <(String, String)>[
-            (l10n.radiologyTestNameLabel, proposed.name),
+            (l10n.radiologyProcedureNameLabel, proposed.name),
             (
-              l10n.radiologyTestCodeOptionalLabel,
+              l10n.radiologyProcedureCodeOptionalLabel,
               _displayValue(proposed.code),
             ),
             (
@@ -287,7 +287,7 @@ class _SimilarityMatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final RadiologyCatalogTest test = match.test;
+    final RadiologyCatalogProcedure test = match.test;
     final AppStatusColors statusColors = theme.statusColors;
     final AppWorkspaceStatusTone tone = match.isExact
         ? AppWorkspaceStatusTone.error
@@ -328,7 +328,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      l10n.radiologySimilarImagingTestExistingHeading,
+                      l10n.radiologySimilarProcedureExistingHeading,
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: accent,
@@ -375,7 +375,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: <Widget>[
                     Text(
-                      l10n.radiologySimilarImagingTestScoreLabel(match.score),
+                      l10n.radiologySimilarProcedureScoreLabel(match.score),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: badgeOnContainer,
                         fontWeight: FontWeight.w800,
@@ -383,10 +383,10 @@ class _SimilarityMatchCard extends StatelessWidget {
                     ),
                     Text(
                       match.isExact
-                          ? l10n.radiologySimilarImagingTestExactMatchLabel
+                          ? l10n.radiologySimilarProcedureExactMatchLabel
                           : _isPartialMatch(proposed, match)
-                          ? l10n.radiologySimilarImagingTestPartialMatchLabel
-                          : l10n.radiologySimilarImagingTestNearMatchLabel,
+                          ? l10n.radiologySimilarProcedurePartialMatchLabel
+                          : l10n.radiologySimilarProcedureNearMatchLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: badgeOnContainer,
                         fontWeight: FontWeight.w700,
@@ -412,7 +412,7 @@ class _SimilarityMatchCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   Text(
-                    l10n.radiologySimilarImagingTestComparisonHeading,
+                    l10n.radiologySimilarProcedureComparisonHeading,
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -456,7 +456,7 @@ class _SimilarityMatchCard extends StatelessWidget {
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: AppButton.secondary(
-              label: l10n.radiologyUseThisImagingTestAction,
+              label: l10n.radiologyUseThisProcedureAction,
               leadingIcon: Icons.check_circle_outline,
               onPressed: onUseThis,
             ),
@@ -481,25 +481,25 @@ class _ComparisonTableHeader extends StatelessWidget {
       children: <Widget>[
         SizedBox(
           width: 88,
-          child: Text(l10n.radiologySimilarImagingTestFieldColumnLabel, style: style),
+          child: Text(l10n.radiologySimilarProcedureFieldColumnLabel, style: style),
         ),
         Expanded(
           child: Text(
-            l10n.radiologySimilarImagingTestYourEntryLabel,
+            l10n.radiologySimilarProcedureYourEntryLabel,
             style: style,
           ),
         ),
         SizedBox(width: theme.spacing.sm),
         Expanded(
           child: Text(
-            l10n.radiologySimilarImagingTestExistingValueLabel,
+            l10n.radiologySimilarProcedureExistingValueLabel,
             style: style,
           ),
         ),
         SizedBox(
           width: 96,
           child: Text(
-            l10n.radiologySimilarImagingTestStatusColumnLabel,
+            l10n.radiologySimilarProcedureStatusColumnLabel,
             style: style,
             textAlign: TextAlign.end,
           ),
@@ -531,7 +531,7 @@ List<_FieldComparison> _buildFieldComparisons({
   required RadiologyCatalogProposedTest proposed,
   required RadiologyCatalogSimilarityMatch match,
 }) {
-  final RadiologyCatalogTest test = match.test;
+  final RadiologyCatalogProcedure test = match.test;
   final String proposedName = proposed.name.trim();
   final String existingName = test.name.trim();
   final String proposedCode = (proposed.code ?? '').trim();
@@ -717,12 +717,12 @@ class _FieldComparisonStacked extends StatelessWidget {
         ),
         SizedBox(height: theme.spacing.xs),
         Text(
-          '${l10n.radiologySimilarImagingTestYourEntryLabel}: '
+          '${l10n.radiologySimilarProcedureYourEntryLabel}: '
           '${comparison.proposedValue}',
           style: theme.textTheme.bodySmall,
         ),
         Text(
-          '${l10n.radiologySimilarImagingTestExistingValueLabel}: '
+          '${l10n.radiologySimilarProcedureExistingValueLabel}: '
           '${comparison.existingValue}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: comparison.status == _FieldCompareStatus.match
@@ -774,7 +774,7 @@ _StatusVisual _statusVisual(
       color: statusColors.error,
     ),
     _FieldCompareStatus.onlyExisting => _StatusVisual(
-      label: l10n.radiologySimilarImagingTestOnlyExistingLabel,
+      label: l10n.radiologySimilarProcedureOnlyExistingLabel,
       icon: Icons.info_outline,
       color: theme.colorScheme.onSurfaceVariant,
     ),
@@ -783,8 +783,8 @@ _StatusVisual _statusVisual(
 
 String _fieldLabel(AppLocalizations l10n, String label) {
   return switch (label) {
-    'name' => l10n.radiologyTestNameLabel,
-    'code' => l10n.radiologyTestCodeLabel,
+    'name' => l10n.radiologyProcedureNameLabel,
+    'code' => l10n.radiologyProcedureCodeLabel,
     'modality' => l10n.radiologyModalityLabel,
     _ => label,
   };
@@ -811,15 +811,15 @@ _SimilarityBannerCopy _similarityBannerCopy({
   final int score = topMatch?.score ?? 0;
   if (hasExactMatch) {
     return _SimilarityBannerCopy(
-      title: l10n.radiologySimilarImagingTestExactBannerTitle,
-      message: l10n.radiologySimilarImagingTestExactBannerBody(score),
+      title: l10n.radiologySimilarProcedureExactBannerTitle,
+      message: l10n.radiologySimilarProcedureExactBannerBody(score),
     );
   }
 
   if (topMatch == null) {
     return _SimilarityBannerCopy(
-      title: l10n.radiologySimilarImagingTestReviewBannerTitle(0),
-      message: l10n.radiologySimilarImagingTestDialogBody,
+      title: l10n.radiologySimilarProcedureReviewBannerTitle(0),
+      message: l10n.radiologySimilarProcedureDialogBody,
     );
   }
 
@@ -830,7 +830,7 @@ _SimilarityBannerCopy _similarityBannerCopy({
   final String fieldSummary = comparisons
       .map(
         (_FieldComparison comparison) =>
-            l10n.radiologySimilarImagingTestFieldStatusPart(
+            l10n.radiologySimilarProcedureFieldStatusPart(
               _fieldLabel(l10n, comparison.label),
               _fieldStatusPlainLabel(l10n, comparison),
             ),
@@ -838,8 +838,8 @@ _SimilarityBannerCopy _similarityBannerCopy({
       .join(' · ');
 
   return _SimilarityBannerCopy(
-    title: l10n.radiologySimilarImagingTestReviewBannerTitle(score),
-    message: l10n.radiologySimilarImagingTestReviewBannerBody(
+    title: l10n.radiologySimilarProcedureReviewBannerTitle(score),
+    message: l10n.radiologySimilarProcedureReviewBannerBody(
       score,
       fieldSummary,
     ),
@@ -858,7 +858,7 @@ String _fieldStatusPlainLabel(
               '${comparison.similarityPercent}%',
     _FieldCompareStatus.conflict => l10n.patientsDuplicateStatusConflictLabel,
     _FieldCompareStatus.onlyExisting =>
-      l10n.radiologySimilarImagingTestOnlyExistingLabel,
+      l10n.radiologySimilarProcedureOnlyExistingLabel,
   };
 }
 
