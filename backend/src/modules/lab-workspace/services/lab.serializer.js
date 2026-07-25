@@ -216,6 +216,8 @@ const mapLabPanelItemRecord = (record) => {
 const mapLabTestRecord = (record) => {
   if (!record || typeof record !== 'object') return null;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
+  const apiId = publicId || toApiIdentifier(record.id);
+  if (!apiId) return null;
   const referenceRanges = Array.isArray(record.reference_ranges)
     ? record.reference_ranges.map((entry) => mapLabReferenceRangeRecord(entry)).filter(Boolean)
     : [];
@@ -226,8 +228,8 @@ const mapLabTestRecord = (record) => {
     ? record.result_options.map((entry) => mapLabResultOptionRecord(entry)).filter(Boolean)
     : [];
   return {
-    id: publicId,
-    display_id: publicId,
+    id: apiId,
+    display_id: apiId,
     name: toText(record.name) || null,
     code: toText(record.code) || null,
     category: toText(record.category) || null,
@@ -251,12 +253,14 @@ const mapLabTestRecord = (record) => {
 const mapLabPanelRecord = (record) => {
   if (!record || typeof record !== 'object') return null;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
+  const apiId = publicId || toApiIdentifier(record.id);
+  if (!apiId) return null;
   const panelItems = Array.isArray(record.panel_items)
     ? record.panel_items.map((entry) => mapLabPanelItemRecord(entry)).filter(Boolean)
     : [];
   return {
-    id: publicId,
-    display_id: publicId,
+    id: apiId,
+    display_id: apiId,
     name: toText(record.name) || null,
     code: toText(record.code) || null,
     category: toText(record.category) || null,

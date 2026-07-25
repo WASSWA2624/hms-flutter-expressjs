@@ -252,9 +252,28 @@ class _FacilityCatalogConfigPanelState
   }
 
   void _recomputeLabVisible() {
-    // Advanced filters only — text search is applied by AppListTable.matcher so
-    // the table never paints a stale unfiltered list while the parent rebuilds.
-    _labVisibleItems = _computeFilteredLabItems();
+    final List<LabCatalogItem> filtered = _computeFilteredLabItems();
+    final String query = _labSearchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      _labVisibleItems = filtered;
+      return;
+    }
+    final List<LabCatalogItem> matched = filtered
+        .where((LabCatalogItem item) => _labDeskSearchMatches(item, query))
+        .toList();
+    matched.sort((LabCatalogItem left, LabCatalogItem right) {
+      final int rankCompare = _labDeskSearchRank(
+        left,
+        query,
+      ).compareTo(_labDeskSearchRank(right, query));
+      if (rankCompare != 0) {
+        return rankCompare;
+      }
+      return left.displayTitle.toLowerCase().compareTo(
+        right.displayTitle.toLowerCase(),
+      );
+    });
+    _labVisibleItems = matched;
   }
 
   bool _labDeskSearchMatches(LabCatalogItem item, String query) {
@@ -272,6 +291,23 @@ class _FacilityCatalogConfigPanelState
       item.id,
     ].whereType<String>().join(' ').toLowerCase();
     return haystack.contains(needle);
+  }
+
+  int _labDeskSearchRank(LabCatalogItem item, String query) {
+    final String needle = query.trim().toLowerCase();
+    final String name = (item.name ?? '').trim().toLowerCase();
+    final String code = (item.code ?? '').trim().toLowerCase();
+    if (name == needle || code == needle) {
+      return 0;
+    }
+    if (name.startsWith(needle) || code.startsWith(needle)) {
+      return 1;
+    }
+    final RegExp word = RegExp('\\b${RegExp.escape(needle)}\\b');
+    if (word.hasMatch(name) || word.hasMatch(code)) {
+      return 2;
+    }
+    return 3;
   }
 
   void _recomputeDiagnosisVisible() {
@@ -1252,8 +1288,21 @@ class _FacilityCatalogConfigPanelState
     }
     try {
       final LabRepository repository = ref.read(labRepositoryProvider);
+      // Tenant-only loads are authoritative for custom catalog rows. The
+      // include_standard responses can truncate late-alphabet tenant names when
+      // merging thousands of LOINC standards — never rely on them alone.
       final List<Result<List<LabCatalogItem>>> results =
           await Future.wait(<Future<Result<List<LabCatalogItem>>>>[
+            repository.listTests(
+              includeStandardCatalog: false,
+              tenantId: widget.tenantId,
+              limit: _labFetchLimit,
+            ),
+            repository.listPanels(
+              includeStandardCatalog: false,
+              tenantId: widget.tenantId,
+              limit: _labFetchLimit,
+            ),
             repository.listTests(
               includeStandardCatalog: true,
               tenantId: widget.tenantId,
@@ -1269,23 +1318,31 @@ class _FacilityCatalogConfigPanelState
         return;
       }
       AppFailure? failure;
-      final List<LabCatalogItem> merged = <LabCatalogItem>[];
-      for (final Result<List<LabCatalogItem>> result in results) {
-        result.when(
-          success: merged.addAll,
+      final List<LabCatalogItem> tenantItems = <LabCatalogItem>[];
+      final List<LabCatalogItem> standardItems = <LabCatalogItem>[];
+      for (int index = 0; index < results.length; index++) {
+        results[index].when(
+          success: (List<LabCatalogItem> items) {
+            if (index < 2) {
+              tenantItems.addAll(items);
+            } else {
+              standardItems.addAll(
+                items.where((LabCatalogItem item) => item.isStandard),
+              );
+            }
+          },
           failure: (AppFailure f) => failure ??= f,
         );
       }
-      merged.sort(
-        (LabCatalogItem a, LabCatalogItem b) => a.displayTitle
-            .toLowerCase()
-            .compareTo(b.displayTitle.toLowerCase()),
+      final List<LabCatalogItem> merged = _mergeLabDeskCatalogItems(
+        tenantItems: tenantItems,
+        standardItems: standardItems,
       );
       _labItems = merged;
       _labFailure = failure;
       _labLoading = false;
-      if (failure == null) {
-        _labHydrated = true;
+      if (failure == null || merged.isNotEmpty) {
+        _labHydrated = failure == null;
         _refreshLabFilterOptions();
         _recomputeLabVisible();
       }
@@ -1293,6 +1350,64 @@ class _FacilityCatalogConfigPanelState
     } finally {
       _labLoadInFlight = false;
     }
+  }
+
+  List<LabCatalogItem> _mergeLabDeskCatalogItems({
+    required List<LabCatalogItem> tenantItems,
+    required List<LabCatalogItem> standardItems,
+  }) {
+    final Map<String, LabCatalogItem> byPrimaryKey = <String, LabCatalogItem>{};
+    final Set<String> seenCodes = <String>{};
+
+    String primaryKey(LabCatalogItem item) {
+      final String apiId = item.apiId.trim();
+      if (apiId.isNotEmpty) {
+        return apiId;
+      }
+      return item.id.trim();
+    }
+
+    void putTenant(LabCatalogItem item) {
+      final String key = primaryKey(item);
+      if (key.isEmpty) {
+        return;
+      }
+      byPrimaryKey[key] = item;
+      final String code = (item.code ?? '').trim().toUpperCase();
+      if (code.isNotEmpty) {
+        seenCodes.add('${item.type.name}:$code');
+      }
+    }
+
+    void putStandard(LabCatalogItem item) {
+      final String key = primaryKey(item);
+      if (key.isEmpty || byPrimaryKey.containsKey(key)) {
+        return;
+      }
+      final String code = (item.code ?? '').trim().toUpperCase();
+      if (code.isNotEmpty && seenCodes.contains('${item.type.name}:$code')) {
+        return;
+      }
+      byPrimaryKey[key] = item;
+      if (code.isNotEmpty) {
+        seenCodes.add('${item.type.name}:$code');
+      }
+    }
+
+    for (final LabCatalogItem item in tenantItems) {
+      putTenant(item);
+    }
+    for (final LabCatalogItem item in standardItems) {
+      putStandard(item);
+    }
+
+    final List<LabCatalogItem> merged = byPrimaryKey.values.toList();
+    merged.sort(
+      (LabCatalogItem a, LabCatalogItem b) => a.displayTitle
+          .toLowerCase()
+          .compareTo(b.displayTitle.toLowerCase()),
+    );
+    return merged;
   }
 
   Future<void> _loadDiagnosisItems({bool force = false}) async {
