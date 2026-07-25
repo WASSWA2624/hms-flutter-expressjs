@@ -1,18 +1,6 @@
 
 ## Clinical Services panel chrome (`FacilityCatalogConfigPanel`)
 
-Shared per nested tab (when `enabled`):
-
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Edit | Row actions (`clinicalLabRequestEditSelectionAction`) | Opens global catalog edit/mutation dialog for that row. |
-| Delete | Row actions (label varies by category) | Opens `LabDeleteReasonDialog` delete confirm for that catalog item. |
-| Row select | Non-disabled row | Same as **Edit** (opens mutation dialog). |
-
-Tables use client-warmed catalog lists with `AppListTable` incremental reveal (`maxVisibleItems`); all data columns are sortable (actions excluded). Nested tabs keep warmed state via `IndexedStack` and background prefetch.
-
----
-
 ## Radiology nested tab
 
 | Action button / control | Location | Modal opened or function |
