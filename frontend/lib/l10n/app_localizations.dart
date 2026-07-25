@@ -36694,6 +36694,12 @@ abstract class AppLocalizations {
   /// **'Create anyway'**
   String get radiologyProceedCreateProcedureAction;
 
+  /// Primary action to update the procedure despite similar catalog matches
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get radiologyProceedUpdateProcedureAction;
+
   /// Inline validation when procedure name duplicates an existing procedure.
   ///
   /// In en, this message translates to:

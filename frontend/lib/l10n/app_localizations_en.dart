@@ -19729,6 +19729,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyProceedCreateProcedureAction => 'Create anyway';
 
   @override
+  String get radiologyProceedUpdateProcedureAction => 'Save anyway';
+
+  @override
   String get radiologyProcedureNameAlreadyInUse =>
       'A procedure with this name already exists.';
 

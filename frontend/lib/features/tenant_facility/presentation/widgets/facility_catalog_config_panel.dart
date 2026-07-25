@@ -1555,6 +1555,9 @@ class _FacilityCatalogConfigPanelState
     if (saved != null) {
       setState(() => _upsertRadiologyItemLocally(saved));
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.radiologySaveConfigurationAction)),
+    );
     await _ensureTabLoaded(_tab, force: true);
   }
 

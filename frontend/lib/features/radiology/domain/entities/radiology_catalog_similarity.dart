@@ -270,6 +270,21 @@ int _min3(int a, int b, int c) {
   return a < b ? (a < c ? a : c) : (b < c ? b : c);
 }
 
+bool radiologyCatalogProcedureMatchesExcludeId(
+  RadiologyCatalogProcedure procedure,
+  String? excludeProcedureId,
+) {
+  final String? excludeId = excludeProcedureId?.trim();
+  if (excludeId == null || excludeId.isEmpty) {
+    return false;
+  }
+  return procedure.id == excludeId ||
+      procedure.apiId == excludeId ||
+      (procedure.displayId?.trim().isNotEmpty == true &&
+          procedure.displayId!.trim() == excludeId) ||
+      procedure.effectiveId == excludeId;
+}
+
 RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
   required String name,
   String? code,
@@ -293,8 +308,7 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
       <RadiologyCatalogSimilarityMatch>[];
 
   for (final RadiologyCatalogProcedure test in existing) {
-    if (excludeProcedureId != null &&
-        (test.id == excludeProcedureId || test.apiId == excludeProcedureId)) {
+    if (radiologyCatalogProcedureMatchesExcludeId(test, excludeProcedureId)) {
       continue;
     }
 

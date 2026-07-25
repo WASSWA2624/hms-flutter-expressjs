@@ -168,6 +168,53 @@ void main() {
       expect(result.similarMatches, isEmpty);
     });
 
+    test('ignores excluded procedure when exclude id matches displayId', () {
+      const List<RadiologyCatalogProcedure> withDisplayIds =
+          <RadiologyCatalogProcedure>[
+            const RadiologyCatalogProcedure(
+              id: 'uuid-1',
+              displayId: 'RAD-CHEST-1',
+              name: 'Chest X-Ray',
+              code: 'CXR-001',
+              modality: 'XRAY',
+            ),
+            const RadiologyCatalogProcedure(
+              id: 'uuid-2',
+              displayId: 'RAD-MRI-1',
+              name: 'Brain MRI',
+              code: 'MRI-001',
+              modality: 'MRI',
+            ),
+          ];
+
+      final RadiologyCatalogDuplicateCheckResult result =
+          checkRadiologyCatalogDuplicates(
+            name: 'Chest X-Ray',
+            code: 'CXR-001',
+            modality: 'XRAY',
+            existing: withDisplayIds,
+            excludeProcedureId: 'RAD-CHEST-1',
+          );
+
+      expect(result.hasExactConflict, isFalse);
+      expect(result.similarMatches, isEmpty);
+    });
+
+    test('still flags exact conflicts against other procedures while editing', () {
+      final RadiologyCatalogDuplicateCheckResult result =
+          checkRadiologyCatalogDuplicates(
+            name: 'Brain MRI',
+            code: 'MRI-001',
+            modality: 'MRI',
+            existing: existing,
+            excludeProcedureId: 'rad-1',
+          );
+
+      expect(result.exactNameConflict, isTrue);
+      expect(result.exactCodeConflict, isTrue);
+      expect(result.hasExactConflict, isTrue);
+    });
+
     test('ignores empty code when checking code conflicts', () {
       final RadiologyCatalogDuplicateCheckResult result =
           checkRadiologyCatalogDuplicates(

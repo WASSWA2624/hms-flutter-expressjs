@@ -533,10 +533,27 @@ class _RadiologyCatalogMutationDialogState
     });
   }
 
+  String? get _excludeProcedureId {
+    final RadiologyCatalogProcedure? item = widget.item;
+    if (item == null) {
+      return null;
+    }
+    final String apiId = item.apiId.trim();
+    if (apiId.isNotEmpty) {
+      return apiId;
+    }
+    final String? displayId = item.displayId?.trim();
+    if (displayId != null && displayId.isNotEmpty) {
+      return displayId;
+    }
+    return item.id.trim().isEmpty ? null : item.id.trim();
+  }
+
   Future<bool> _guardAgainstDuplicates(AppLocalizations l10n) async {
     final String proposedName = _nameController.text.trim();
     final String proposedCode = _codeController.text.trim();
     final String? proposedModality = _modality;
+    final String? excludeProcedureId = _excludeProcedureId;
 
     setState(() => _isCheckingSimilarity = true);
     // Let the loading indicator paint before the composite scan.
@@ -561,14 +578,14 @@ class _RadiologyCatalogMutationDialogState
               code: proposedCode,
               modality: proposedModality,
               existing: tenantItems,
-              excludeProcedureId: widget.item?.apiId,
+              excludeProcedureId: excludeProcedureId,
             ),
             checkRadiologyCatalogDuplicates(
               name: proposedName,
               code: proposedCode,
               modality: proposedModality,
               existing: standardItems,
-              excludeProcedureId: widget.item?.apiId,
+              excludeProcedureId: excludeProcedureId,
               includeTokenSimilarity: false,
             ),
           ],
@@ -583,10 +600,26 @@ class _RadiologyCatalogMutationDialogState
       return false;
     }
 
+    // Exact clashes block save with clear field errors — no proceed path.
+    if (result.hasExactConflict) {
+      setState(() {
+        _isSaving = false;
+        _similarityAccepted = false;
+        _noSimilarConfirmed = false;
+        _nameErrorText = result.exactNameConflict
+            ? l10n.radiologyProcedureNameAlreadyInUse
+            : null;
+        _codeErrorText = result.exactCodeConflict
+            ? l10n.radiologyProcedureCodeAlreadyInUse
+            : null;
+      });
+      return false;
+    }
+
     final List<RadiologyCatalogSimilarityMatch> similarMatches =
-        result.similarMatches;
+        result.nonExactSimilarMatches;
     if (similarMatches.isNotEmpty) {
-      if (_similarityAccepted && !result.hasExactConflict) {
+      if (_similarityAccepted) {
         return true;
       }
       final RadiologyCatalogSimilarityDialogResult dialogResult =
@@ -598,7 +631,8 @@ class _RadiologyCatalogMutationDialogState
               modality: proposedModality,
             ),
             matches: similarMatches,
-            allowProceed: !result.hasExactConflict,
+            allowProceed: true,
+            isEditing: widget.isEditing,
           );
       if (!mounted) {
         return false;
@@ -622,18 +656,6 @@ class _RadiologyCatalogMutationDialogState
           Navigator.of(context).pop(existing);
           return false;
         case RadiologyCatalogSimilarityAction.proceed:
-          if (result.hasExactConflict) {
-            setState(() {
-              _isSaving = false;
-              _nameErrorText = result.exactNameConflict
-                  ? l10n.radiologyProcedureNameAlreadyInUse
-                  : null;
-              _codeErrorText = result.exactCodeConflict
-                  ? l10n.radiologyProcedureCodeAlreadyInUse
-                  : null;
-            });
-            return false;
-          }
           setState(() {
             _similarityAccepted = true;
             _noSimilarConfirmed = false;
@@ -645,6 +667,11 @@ class _RadiologyCatalogMutationDialogState
     }
 
     if (_noSimilarConfirmed || _similarityAccepted) {
+      return true;
+    }
+
+    // Edit: skip the extra no-similar confirm so single-field saves stay seamless.
+    if (widget.isEditing) {
       return true;
     }
 

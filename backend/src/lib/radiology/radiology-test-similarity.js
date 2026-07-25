@@ -189,7 +189,14 @@ const checkRadiologyTestDuplicates = ({
   const matches = [];
 
   for (const test of existing) {
-    if (excludeTestId && test?.id === excludeTestId) {
+    if (
+      excludeTestId
+      && (
+        test?.id === excludeTestId
+        || test?.display_id === excludeTestId
+        || test?.human_friendly_id === excludeTestId
+      )
+    ) {
       continue;
     }
 

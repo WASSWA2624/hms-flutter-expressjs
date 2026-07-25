@@ -25318,6 +25318,10 @@
   "@radiologyProceedCreateProcedureAction": {
     "description": "Primary action to create the procedure despite similar catalog matches"
   },
+  "radiologyProceedUpdateProcedureAction": "Save anyway",
+  "@radiologyProceedUpdateProcedureAction": {
+    "description": "Primary action to update the procedure despite similar catalog matches"
+  },
   "radiologyProcedureNameAlreadyInUse": "A procedure with this name already exists.",
   "@radiologyProcedureNameAlreadyInUse": {
     "description": "Inline validation when procedure name duplicates an existing procedure."

@@ -50,6 +50,7 @@ showRadiologyCatalogSimilarityDialog(
   required RadiologyCatalogProposedTest proposed,
   required List<RadiologyCatalogSimilarityMatch> matches,
   bool allowProceed = true,
+  bool isEditing = false,
 }) {
   final AppLocalizations l10n = context.l10n;
   final List<RadiologyCatalogSimilarityMatch> visibleMatches = matches
@@ -67,6 +68,12 @@ showRadiologyCatalogSimilarityDialog(
     topMatch: topMatch,
     hasExactMatch: hasExactMatch,
   );
+  final String proceedLabel = isEditing
+      ? l10n.radiologyProceedUpdateProcedureAction
+      : l10n.radiologyProceedCreateProcedureAction;
+  final IconData proceedIcon = isEditing
+      ? Icons.save_outlined
+      : Icons.add_circle_outline;
 
   return showAppDialog<RadiologyCatalogSimilarityDialogResult>(
     context: context,
@@ -144,15 +151,14 @@ showRadiologyCatalogSimilarityDialog(
               const RadiologyCatalogSimilarityDialogResult.cancel(),
             ),
           ),
-          AppButton.primary(
-            label: l10n.radiologyProceedCreateProcedureAction,
-            leadingIcon: Icons.add_circle_outline,
-            onPressed: canProceed
-                ? () => Navigator.of(dialogContext).pop(
-                    const RadiologyCatalogSimilarityDialogResult.proceed(),
-                  )
-                : null,
-          ),
+          if (canProceed)
+            AppButton.primary(
+              label: proceedLabel,
+              leadingIcon: proceedIcon,
+              onPressed: () => Navigator.of(dialogContext).pop(
+                const RadiologyCatalogSimilarityDialogResult.proceed(),
+              ),
+            ),
         ],
       );
     },

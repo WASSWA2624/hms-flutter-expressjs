@@ -148,6 +148,48 @@ describe('radiology-procedure-similarity', () => {
     expect(result.similarMatches).toEqual([]);
   });
 
+  it('ignores excluded tests matched by display_id while editing', () => {
+    const result = checkRadiologyProcedureDuplicates({
+      name: 'Chest X-Ray',
+      code: 'CXR-001',
+      modality: 'XRAY',
+      existing: [
+        {
+          id: 'uuid-1',
+          display_id: 'RAD-CHEST-1',
+          name: 'Chest X-Ray',
+          code: 'CXR-001',
+          modality: 'XRAY'
+        },
+        {
+          id: 'uuid-2',
+          display_id: 'RAD-MRI-1',
+          name: 'Brain MRI',
+          code: 'MRI-001',
+          modality: 'MRI'
+        }
+      ],
+      excludeTestId: 'RAD-CHEST-1'
+    });
+
+    expect(result.hasExactConflict).toBe(false);
+    expect(result.similarMatches).toEqual([]);
+  });
+
+  it('still flags exact conflicts against other procedures while editing', () => {
+    const result = checkRadiologyProcedureDuplicates({
+      name: 'Brain MRI',
+      code: 'MRI-001',
+      modality: 'MRI',
+      existing,
+      excludeTestId: 'rad-1'
+    });
+
+    expect(result.exactNameConflict).toBe(true);
+    expect(result.exactCodeConflict).toBe(true);
+    expect(result.hasExactConflict).toBe(true);
+  });
+
   it('scores identical normalized names as 100', () => {
     expect(nameSimilarityScore('chest xray', 'chest xray')).toBe(100);
     expect(textSimilarityScore('chest xray', 'chest xray')).toBe(100);

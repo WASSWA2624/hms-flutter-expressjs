@@ -476,6 +476,40 @@ describe('Radiology Test Service', () => {
       expect(radiologyProcedureRepository.findMany).toHaveBeenCalled();
     });
 
+    it('should allow single-field update when existing list includes the procedure being edited', async () => {
+      radiologyProcedureRepository.findById.mockResolvedValue(mockBeforeUpdate);
+      radiologyProcedureRepository.findMany.mockResolvedValue([
+        mockBeforeUpdate,
+        {
+          id: 'existing-other',
+          name: 'Unrelated Ultrasound',
+          code: 'US-99',
+          modality: 'US'
+        }
+      ]);
+      radiologyProcedureRepository.update.mockResolvedValue({
+        ...mockBeforeUpdate,
+        modality: 'CT'
+      });
+      createAuditLog.mockResolvedValue({});
+
+      const result = await radiologyProcedureService.updateRadiologyProcedure(
+        radiologyTestId,
+        { modality: 'CT' },
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(result).toEqual({
+        ...mockBeforeUpdate,
+        modality: 'CT'
+      });
+      expect(radiologyProcedureRepository.update).toHaveBeenCalledWith(
+        radiologyTestId,
+        { modality: 'CT' }
+      );
+    });
+
     it('should throw HttpError if radiology test not found', async () => {
       radiologyProcedureRepository.findById.mockResolvedValue(null);
 
