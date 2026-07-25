@@ -181,7 +181,7 @@ final class RadiologyWorkspaceState {
     required this.references,
     required this.query,
     this.catalogScope,
-    this.catalogTests = const <RadiologyCatalogTest>[],
+    this.catalogTests = const <RadiologyCatalogProcedure>[],
     this.equipmentRecords = const <RadiologyEquipmentRecord>[],
     this.selectedWorkflow,
     this.detailViewMode = RadiologyDetailViewMode.imagingFloor,
@@ -198,7 +198,7 @@ final class RadiologyWorkspaceState {
   final RadiologyReferenceData references;
   final RadiologyWorkspaceQuery query;
   final RadiologyCatalogScope? catalogScope;
-  final List<RadiologyCatalogTest> catalogTests;
+  final List<RadiologyCatalogProcedure> catalogTests;
   final List<RadiologyEquipmentRecord> equipmentRecords;
   final RadiologyWorkflow? selectedWorkflow;
   final RadiologyDetailViewMode detailViewMode;
@@ -236,7 +236,7 @@ final class RadiologyWorkspaceState {
     RadiologyReferenceData? references,
     RadiologyWorkspaceQuery? query,
     RadiologyCatalogScope? catalogScope,
-    List<RadiologyCatalogTest>? catalogTests,
+    List<RadiologyCatalogProcedure>? catalogTests,
     List<RadiologyEquipmentRecord>? equipmentRecords,
     RadiologyWorkflow? selectedWorkflow,
     RadiologyDetailViewMode? detailViewMode,
@@ -275,8 +275,8 @@ final class RadiologyWorkspaceState {
 }
 
 @immutable
-final class RadiologyCatalogTest {
-  const RadiologyCatalogTest({
+final class RadiologyCatalogProcedure {
+  const RadiologyCatalogProcedure({
     required this.id,
     required this.name,
     this.displayId,
@@ -322,7 +322,9 @@ final class RadiologyCatalogTest {
   bool get isStandard {
     final String sourceKey = (source ?? status ?? '').trim().toUpperCase();
     return id.startsWith('STD_RAD_TEST_') ||
+        id.startsWith('STD_RAD_PROCEDURE_') ||
         effectiveId.startsWith('STD_RAD_TEST_') ||
+        effectiveId.startsWith('STD_RAD_PROCEDURE_') ||
         sourceKey == 'STANDARD' ||
         sourceKey == 'STANDARD_RADIOLOGY_CATALOG';
   }
@@ -352,7 +354,7 @@ final class RadiologyCatalogTest {
         .every(haystack.contains);
   }
 
-  RadiologyCatalogTest copyWith({
+  RadiologyCatalogProcedure copyWith({
     String? id,
     String? name,
     String? displayId,
@@ -372,7 +374,7 @@ final class RadiologyCatalogTest {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return RadiologyCatalogTest(
+    return RadiologyCatalogProcedure(
       id: id ?? this.id,
       name: name ?? this.name,
       displayId: displayId ?? this.displayId,
@@ -970,13 +972,13 @@ final class RadiologyReferenceData {
   const RadiologyReferenceData({
     this.patients = const <RadiologyReferenceOption>[],
     this.encounters = const <RadiologyReferenceOption>[],
-    this.radiologyTests = const <RadiologyReferenceOption>[],
+    this.radiologyProcedures = const <RadiologyReferenceOption>[],
     this.assignees = const <RadiologyReferenceOption>[],
   });
 
   final List<RadiologyReferenceOption> patients;
   final List<RadiologyReferenceOption> encounters;
-  final List<RadiologyReferenceOption> radiologyTests;
+  final List<RadiologyReferenceOption> radiologyProcedures;
   final List<RadiologyReferenceOption> assignees;
 
   static const empty = RadiologyReferenceData();

@@ -14575,19 +14575,19 @@ abstract class AppLocalizations {
   /// Clinical radiology searchable catalog selector body.
   ///
   /// In en, this message translates to:
-  /// **'Select an imaging test, then add it to the request.'**
+  /// **'Select a procedure, then add it to the request.'**
   String get clinicalRadiologyCatalogSelectBody;
 
   /// Clinical radiology searchable catalog selector label.
   ///
   /// In en, this message translates to:
-  /// **'Imaging test'**
+  /// **'Procedure'**
   String get clinicalRadiologyCatalogSelectLabel;
 
   /// Clinical radiology searchable catalog selector hint.
   ///
   /// In en, this message translates to:
-  /// **'Search and select an imaging test'**
+  /// **'Search and select a procedure'**
   String get clinicalRadiologyCatalogSelectHint;
 
   /// Clinical radiology duplicate selected request message.
@@ -36493,11 +36493,11 @@ abstract class AppLocalizations {
   /// **'INTERVENTIONAL RADIOLOGY'**
   String get radiologyModalityInterventionalRadiology;
 
-  /// Radiology configuration imaging tests tab label.
+  /// Radiology configuration procedures tab label.
   ///
   /// In en, this message translates to:
-  /// **'Imaging tests'**
-  String get radiologyImagingTestsTabLabel;
+  /// **'Procedures'**
+  String get radiologyProceduresTabLabel;
 
   /// Radiology configuration equipment tab label.
   ///
@@ -36514,50 +36514,50 @@ abstract class AppLocalizations {
   /// Radiology configuration search hint.
   ///
   /// In en, this message translates to:
-  /// **'Search tests, modality, code, source, or status'**
+  /// **'Search procedures, modality, code, source, or status'**
   String get radiologyConfigurationSearchHint;
 
-  /// Radiology create imaging test action.
+  /// Radiology create procedure action.
   ///
   /// In en, this message translates to:
-  /// **'Create imaging test'**
-  String get radiologyCreateImagingTestAction;
+  /// **'Create procedure'**
+  String get radiologyCreateProcedureAction;
 
-  /// Dialog title when creating an imaging test similar to an existing one.
+  /// Dialog title when creating a procedure similar to an existing one.
   ///
   /// In en, this message translates to:
-  /// **'Similar imaging test found'**
-  String get radiologySimilarImagingTestDialogTitle;
+  /// **'Similar procedure found'**
+  String get radiologySimilarProcedureDialogTitle;
 
-  /// Dialog body when creating an imaging test similar to an existing one.
+  /// Dialog body when creating a procedure similar to an existing one.
   ///
   /// In en, this message translates to:
-  /// **'Similar imaging tests exist in this catalog scope. Review matches before continuing.'**
-  String get radiologySimilarImagingTestDialogBody;
+  /// **'Similar procedures exist in this catalog scope. Review matches before continuing.'**
+  String get radiologySimilarProcedureDialogBody;
 
   /// Banner title when similarity check finds a hard exact duplicate.
   ///
   /// In en, this message translates to:
   /// **'Match status: Exact duplicate'**
-  String get radiologySimilarImagingTestExactBannerTitle;
+  String get radiologySimilarProcedureExactBannerTitle;
 
   /// Banner body when similarity check finds a hard exact duplicate.
   ///
   /// In en, this message translates to:
-  /// **'An identical name and modality, or an identical code, already exists ({score}% composite). Create is blocked — use the existing test instead.'**
-  String radiologySimilarImagingTestExactBannerBody(int score);
+  /// **'An identical name and modality, or an identical code, already exists ({score}% composite). Create is blocked — use the existing procedure instead.'**
+  String radiologySimilarProcedureExactBannerBody(int score);
 
   /// Banner title when similarity check finds near matches only.
   ///
   /// In en, this message translates to:
   /// **'Match status: Similar ({score}%)'**
-  String radiologySimilarImagingTestReviewBannerTitle(int score);
+  String radiologySimilarProcedureReviewBannerTitle(int score);
 
   /// Banner body summarizing near-match field statuses.
   ///
   /// In en, this message translates to:
-  /// **'Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing test, or create anyway.'**
-  String radiologySimilarImagingTestReviewBannerBody(
+  /// **'Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing procedure, or create anyway.'**
+  String radiologySimilarProcedureReviewBannerBody(
     int score,
     String fieldSummary,
   );
@@ -36566,94 +36566,91 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{field}: {status}'**
-  String radiologySimilarImagingTestFieldStatusPart(
-    String field,
-    String status,
-  );
+  String radiologySimilarProcedureFieldStatusPart(String field, String status);
 
-  /// Heading for the proposed imaging test in the similarity dialog.
+  /// Heading for the proposed procedure in the similarity dialog.
   ///
   /// In en, this message translates to:
-  /// **'New imaging test'**
-  String get radiologySimilarImagingTestProposedHeading;
+  /// **'New procedure'**
+  String get radiologySimilarProcedureProposedHeading;
 
-  /// Heading for an existing imaging test match in the similarity dialog.
+  /// Heading for an existing procedure match in the similarity dialog.
   ///
   /// In en, this message translates to:
-  /// **'Existing imaging test'**
-  String get radiologySimilarImagingTestExistingHeading;
+  /// **'Existing procedure'**
+  String get radiologySimilarProcedureExistingHeading;
 
   /// Heading above similarity match cards.
   ///
   /// In en, this message translates to:
   /// **'Closest matches'**
-  String get radiologySimilarImagingTestMatchesHeading;
+  String get radiologySimilarProcedureMatchesHeading;
 
   /// Heading above field-by-field comparison rows.
   ///
   /// In en, this message translates to:
   /// **'Field comparison'**
-  String get radiologySimilarImagingTestComparisonHeading;
+  String get radiologySimilarProcedureComparisonHeading;
 
-  /// Badge label for an exact imaging-test similarity match.
+  /// Badge label for an exact procedure similarity match.
   ///
   /// In en, this message translates to:
   /// **'Exact match'**
-  String get radiologySimilarImagingTestExactMatchLabel;
+  String get radiologySimilarProcedureExactMatchLabel;
 
-  /// Badge label for a near imaging-test similarity match.
+  /// Badge label for a near procedure similarity match.
   ///
   /// In en, this message translates to:
   /// **'Similar'**
-  String get radiologySimilarImagingTestNearMatchLabel;
+  String get radiologySimilarProcedureNearMatchLabel;
 
   /// Badge label when some fields match exactly but others conflict.
   ///
   /// In en, this message translates to:
   /// **'Partial match'**
-  String get radiologySimilarImagingTestPartialMatchLabel;
+  String get radiologySimilarProcedurePartialMatchLabel;
 
   /// Label for the proposed field value in a similarity comparison row.
   ///
   /// In en, this message translates to:
   /// **'Your entry'**
-  String get radiologySimilarImagingTestYourEntryLabel;
+  String get radiologySimilarProcedureYourEntryLabel;
 
   /// Label for the existing field value in a similarity comparison row.
   ///
   /// In en, this message translates to:
   /// **'Existing'**
-  String get radiologySimilarImagingTestExistingValueLabel;
+  String get radiologySimilarProcedureExistingValueLabel;
 
   /// Count of closest imaging-test similarity matches.
   ///
   /// In en, this message translates to:
   /// **'{count} matches'**
-  String radiologySimilarImagingTestMatchCountLabel(int count);
+  String radiologySimilarProcedureMatchCountLabel(int count);
 
-  /// Per-match action to use a specific similar imaging test.
+  /// Per-match action to use a specific similar procedure.
   ///
   /// In en, this message translates to:
-  /// **'Use this test'**
-  String get radiologyUseThisImagingTestAction;
+  /// **'Use this procedure'**
+  String get radiologyUseThisProcedureAction;
 
   /// Column header for field names in similarity comparison.
   ///
   /// In en, this message translates to:
   /// **'Field'**
-  String get radiologySimilarImagingTestFieldColumnLabel;
+  String get radiologySimilarProcedureFieldColumnLabel;
 
   /// Column header for comparison status in similarity dialog.
   ///
   /// In en, this message translates to:
   /// **'Status'**
-  String get radiologySimilarImagingTestStatusColumnLabel;
+  String get radiologySimilarProcedureStatusColumnLabel;
 
-  /// Status when a value exists only on the matched imaging test.
+  /// Status when a value exists only on the matched procedure.
   ///
   /// In en, this message translates to:
   /// **'Only on existing'**
-  String get radiologySimilarImagingTestOnlyExistingLabel;
+  String get radiologySimilarProcedureOnlyExistingLabel;
 
   /// Loading title while imaging-test similarity is evaluated.
   ///
@@ -36676,62 +36673,62 @@ abstract class AppLocalizations {
   /// Loading body while radiology similarity candidates are fetched.
   ///
   /// In en, this message translates to:
-  /// **'Preparing imaging tests for similarity review…'**
+  /// **'Preparing procedures for similarity review…'**
   String get radiologySimilarityCatalogLoadingBody;
 
-  /// Similarity score label for imaging test duplicate warning.
+  /// Similarity score label for procedure duplicate warning.
   ///
   /// In en, this message translates to:
   /// **'{score}% match'**
-  String radiologySimilarImagingTestScoreLabel(int score);
+  String radiologySimilarProcedureScoreLabel(int score);
 
-  /// Dismiss create and keep an existing similar imaging test.
+  /// Dismiss create and keep an existing similar procedure.
   ///
   /// In en, this message translates to:
   /// **'Use existing'**
-  String get radiologyUseExistingImagingTestAction;
+  String get radiologyUseExistingProcedureAction;
 
-  /// Primary action to create the imaging test despite similar catalog matches
+  /// Primary action to create the procedure despite similar catalog matches
   ///
   /// In en, this message translates to:
   /// **'Create anyway'**
-  String get radiologyProceedCreateImagingTestAction;
+  String get radiologyProceedCreateProcedureAction;
 
-  /// Inline validation when imaging test name duplicates an existing test.
+  /// Inline validation when procedure name duplicates an existing procedure.
   ///
   /// In en, this message translates to:
-  /// **'An imaging test with this name already exists.'**
-  String get radiologyImagingTestNameAlreadyInUse;
+  /// **'A procedure with this name already exists.'**
+  String get radiologyProcedureNameAlreadyInUse;
 
-  /// Inline validation when imaging test code duplicates an existing test.
+  /// Inline validation when procedure code duplicates an existing procedure.
   ///
   /// In en, this message translates to:
-  /// **'An imaging test with this code already exists.'**
-  String get radiologyImagingTestCodeAlreadyInUse;
+  /// **'A procedure with this code already exists.'**
+  String get radiologyProcedureCodeAlreadyInUse;
 
   /// Dialog title when similarity check finds no near matches before save.
   ///
   /// In en, this message translates to:
-  /// **'No similar imaging test found'**
-  String get radiologyNoSimilarImagingTestDialogTitle;
+  /// **'No similar procedure found'**
+  String get radiologyNoSimilarProcedureDialogTitle;
 
-  /// Dialog body confirming no similar imaging tests before save.
+  /// Dialog body confirming no similar procedures before save.
   ///
   /// In en, this message translates to:
-  /// **'No similar imaging tests were found in this catalog scope. Continue saving this test?'**
-  String get radiologyNoSimilarImagingTestDialogBody;
+  /// **'No similar procedures were found in this catalog scope. Continue saving this procedure?'**
+  String get radiologyNoSimilarProcedureDialogBody;
 
-  /// Confirm saving an imaging test after a no-similar-match check.
+  /// Confirm saving a procedure after a no-similar-match check.
   ///
   /// In en, this message translates to:
   /// **'Continue save'**
-  String get radiologyContinueSaveImagingTestAction;
+  String get radiologyContinueSaveProcedureAction;
 
-  /// Radiology edit imaging test action.
+  /// Radiology edit procedure action.
   ///
   /// In en, this message translates to:
-  /// **'Edit imaging test'**
-  String get radiologyEditImagingTestAction;
+  /// **'Edit procedure'**
+  String get radiologyEditProcedureAction;
 
   /// Title for the edit radiology procedure dialog in Clinical Services setup.
   ///
@@ -36739,11 +36736,11 @@ abstract class AppLocalizations {
   /// **'Edit Radiology procedure'**
   String get radiologyEditProcedureDialogTitle;
 
-  /// Radiology delete imaging test action.
+  /// Radiology delete procedure action.
   ///
   /// In en, this message translates to:
-  /// **'Delete imaging test'**
-  String get radiologyDeleteImagingTestAction;
+  /// **'Delete procedure'**
+  String get radiologyDeleteProcedureAction;
 
   /// Radiology copy standard catalog test action.
   ///
@@ -36763,23 +36760,23 @@ abstract class AppLocalizations {
   /// **'Custom'**
   String get radiologyCustomCatalogBadge;
 
-  /// Radiology test name label.
+  /// Radiology procedure name label.
   ///
   /// In en, this message translates to:
   /// **'Name'**
-  String get radiologyTestNameLabel;
+  String get radiologyProcedureNameLabel;
 
-  /// Radiology test code label.
+  /// Radiology procedure code label.
   ///
   /// In en, this message translates to:
   /// **'Code'**
-  String get radiologyTestCodeLabel;
+  String get radiologyProcedureCodeLabel;
 
-  /// Radiology test optional code label.
+  /// Radiology procedure optional code label.
   ///
   /// In en, this message translates to:
   /// **'Code (optional)'**
-  String get radiologyTestCodeOptionalLabel;
+  String get radiologyProcedureCodeOptionalLabel;
 
   /// Radiology source column label.
   ///
@@ -36799,17 +36796,17 @@ abstract class AppLocalizations {
   /// **'Action'**
   String get radiologyActionColumnLabel;
 
-  /// Radiology imaging tests empty state title.
+  /// Radiology procedures empty state title.
   ///
   /// In en, this message translates to:
-  /// **'No imaging tests'**
-  String get radiologyNoImagingTestsTitle;
+  /// **'No procedures'**
+  String get radiologyNoProceduresTitle;
 
-  /// Radiology imaging tests empty state body.
+  /// Radiology procedures empty state body.
   ///
   /// In en, this message translates to:
-  /// **'Create a custom imaging test or refresh the standard catalog.'**
-  String get radiologyNoImagingTestsBody;
+  /// **'Create a custom procedure or refresh the standard catalog.'**
+  String get radiologyNoProceduresBody;
 
   /// Radiology standard catalog read-only title.
   ///

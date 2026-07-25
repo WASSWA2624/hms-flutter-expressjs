@@ -1,4 +1,34 @@
 ---
+description: Always enforce loading feedback, realtime UI sync, and access checks on every change.
 alwaysApply: true
 ---
-Whenever You are loading data or maybe saving something or doing anything make sure that the loading indicator is implemented appropriately and it has the relevant messages. it should do actually display nicely so the loading indi there is a loading indicator for the UI, for example, when content i-i-in the UI is changing or maybe when you're switching from one part of the UI to another or when you are loading data, and then there's also loading indicators on buttons, prefer loading indicators that For that, that, that use the, that, that use the predefined loading indicator which uses the, the logo. for the button, that's only when an action is being done, but it is not routing or changing the interface broadly. then also make sure that whenever you're implementing something that affects the back end and the front end, make sure that the front end is also the two synchronized so always check to confirm for conflicts and then always check that Role-based access and action-based access are implemented for the different available permissions, for all the permissions that are available within the app, make sure that access is implemented. So this rule should always be referenced whenever a piece of code is modified.
+
+# Mandatory Change Checks
+
+Apply on every code change. Do not ship UI or API work that skips these.
+
+## Loading feedback
+
+- Any data load, save, panel switch, or content swap must show loading with a relevant localized message.
+- Prefer logo-based `AppLoadingIndicator` for page, panel, table, and content-region loads (`AsyncStateScaffold` or shared wrappers).
+- Prefer feature-specific `title`/`body`; size defaults are fine when none apply.
+- For in-place actions that do not change the broad UI (Save, Delete, submit), use `AppButton.isLoading`—not a full-region logo loader.
+
+## Realtime UI updates
+
+- Shared, multi-user data must update the acting user’s UI immediately on successful save (Riverpod patch from the response or typed local delta).
+- Workspaces showing shared data must subscribe in `build()` via `RealtimeEventGroups` + `listenForRealtimeRefresh`, scoped with `RealtimeScope` when tenant/facility-bound.
+- Reconcile through `WorkspaceSyncEngine` (typed `RealtimeDelta` or smallest `WorkspaceRefreshPlan`); defer while saving; refresh on reconnect.
+- Prefer smallest patch over blanket `ref.invalidate`; must not navigate, toast, or `setState` from realtime handlers.
+- When a change touches both stacks, keep contracts aligned and publish scoped domain events for user-visible mutations.
+
+## Access control
+
+- Enforce role-based and action-based permissions for every new or changed surface.
+- Hide or disable unauthorized menus, routes, buttons, and workflows (`AppAccessPolicy`, `AccessGate`, `AppAccessActionGate`).
+- Backend authorization remains mandatory even when the UI is gated.
+
+## Related
+
+- `frontend/.cursor/ui-feedback.mdc`, `frontend/.cursor/instant_ui_sync.mdc`, `frontend/.cursor/realtime_sync.mdc`
+- `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`

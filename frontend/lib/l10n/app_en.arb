@@ -25172,12 +25172,12 @@
   "@radiologySimilarProcedureDialogBody": {
     "description": "Dialog body when creating a procedure similar to an existing one."
   },
-  "radiologySimilarImagingTestExactBannerTitle": "Match status: Exact duplicate",
-  "@radiologySimilarImagingTestExactBannerTitle": {
+  "radiologySimilarProcedureExactBannerTitle": "Match status: Exact duplicate",
+  "@radiologySimilarProcedureExactBannerTitle": {
     "description": "Banner title when similarity check finds a hard exact duplicate."
   },
-  "radiologySimilarImagingTestExactBannerBody": "An identical name and modality, or an identical code, already exists ({score}% composite). Create is blocked — use the existing test instead.",
-  "@radiologySimilarImagingTestExactBannerBody": {
+  "radiologySimilarProcedureExactBannerBody": "An identical name and modality, or an identical code, already exists ({score}% composite). Create is blocked — use the existing procedure instead.",
+  "@radiologySimilarProcedureExactBannerBody": {
     "description": "Banner body when similarity check finds a hard exact duplicate.",
     "placeholders": {
       "score": {
@@ -25186,8 +25186,8 @@
       }
     }
   },
-  "radiologySimilarImagingTestReviewBannerTitle": "Match status: Similar ({score}%)",
-  "@radiologySimilarImagingTestReviewBannerTitle": {
+  "radiologySimilarProcedureReviewBannerTitle": "Match status: Similar ({score}%)",
+  "@radiologySimilarProcedureReviewBannerTitle": {
     "description": "Banner title when similarity check finds near matches only.",
     "placeholders": {
       "score": {
@@ -25196,8 +25196,8 @@
       }
     }
   },
-  "radiologySimilarImagingTestReviewBannerBody": "Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing test, or create anyway.",
-  "@radiologySimilarImagingTestReviewBannerBody": {
+  "radiologySimilarProcedureReviewBannerBody": "Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing procedure, or create anyway.",
+  "@radiologySimilarProcedureReviewBannerBody": {
     "description": "Banner body summarizing near-match field statuses.",
     "placeholders": {
       "score": {
@@ -25210,8 +25210,8 @@
       }
     }
   },
-  "radiologySimilarImagingTestFieldStatusPart": "{field}: {status}",
-  "@radiologySimilarImagingTestFieldStatusPart": {
+  "radiologySimilarProcedureFieldStatusPart": "{field}: {status}",
+  "@radiologySimilarProcedureFieldStatusPart": {
     "description": "One field status fragment in the similarity banner summary.",
     "placeholders": {
       "field": {
@@ -25224,44 +25224,44 @@
       }
     }
   },
-  "radiologySimilarImagingTestProposedHeading": "New imaging test",
-  "@radiologySimilarImagingTestProposedHeading": {
-    "description": "Heading for the proposed imaging test in the similarity dialog."
+  "radiologySimilarProcedureProposedHeading": "New procedure",
+  "@radiologySimilarProcedureProposedHeading": {
+    "description": "Heading for the proposed procedure in the similarity dialog."
   },
-  "radiologySimilarImagingTestExistingHeading": "Existing imaging test",
-  "@radiologySimilarImagingTestExistingHeading": {
-    "description": "Heading for an existing imaging test match in the similarity dialog."
+  "radiologySimilarProcedureExistingHeading": "Existing procedure",
+  "@radiologySimilarProcedureExistingHeading": {
+    "description": "Heading for an existing procedure match in the similarity dialog."
   },
-  "radiologySimilarImagingTestMatchesHeading": "Closest matches",
-  "@radiologySimilarImagingTestMatchesHeading": {
+  "radiologySimilarProcedureMatchesHeading": "Closest matches",
+  "@radiologySimilarProcedureMatchesHeading": {
     "description": "Heading above similarity match cards."
   },
-  "radiologySimilarImagingTestComparisonHeading": "Field comparison",
-  "@radiologySimilarImagingTestComparisonHeading": {
+  "radiologySimilarProcedureComparisonHeading": "Field comparison",
+  "@radiologySimilarProcedureComparisonHeading": {
     "description": "Heading above field-by-field comparison rows."
   },
-  "radiologySimilarImagingTestExactMatchLabel": "Exact match",
-  "@radiologySimilarImagingTestExactMatchLabel": {
-    "description": "Badge label for an exact imaging-test similarity match."
+  "radiologySimilarProcedureExactMatchLabel": "Exact match",
+  "@radiologySimilarProcedureExactMatchLabel": {
+    "description": "Badge label for an exact procedure similarity match."
   },
-  "radiologySimilarImagingTestNearMatchLabel": "Similar",
-  "@radiologySimilarImagingTestNearMatchLabel": {
-    "description": "Badge label for a near imaging-test similarity match."
+  "radiologySimilarProcedureNearMatchLabel": "Similar",
+  "@radiologySimilarProcedureNearMatchLabel": {
+    "description": "Badge label for a near procedure similarity match."
   },
-  "radiologySimilarImagingTestPartialMatchLabel": "Partial match",
-  "@radiologySimilarImagingTestPartialMatchLabel": {
+  "radiologySimilarProcedurePartialMatchLabel": "Partial match",
+  "@radiologySimilarProcedurePartialMatchLabel": {
     "description": "Badge label when some fields match exactly but others conflict."
   },
-  "radiologySimilarImagingTestYourEntryLabel": "Your entry",
-  "@radiologySimilarImagingTestYourEntryLabel": {
+  "radiologySimilarProcedureYourEntryLabel": "Your entry",
+  "@radiologySimilarProcedureYourEntryLabel": {
     "description": "Label for the proposed field value in a similarity comparison row."
   },
-  "radiologySimilarImagingTestExistingValueLabel": "Existing",
-  "@radiologySimilarImagingTestExistingValueLabel": {
+  "radiologySimilarProcedureExistingValueLabel": "Existing",
+  "@radiologySimilarProcedureExistingValueLabel": {
     "description": "Label for the existing field value in a similarity comparison row."
   },
-  "radiologySimilarImagingTestMatchCountLabel": "{count} matches",
-  "@radiologySimilarImagingTestMatchCountLabel": {
+  "radiologySimilarProcedureMatchCountLabel": "{count} matches",
+  "@radiologySimilarProcedureMatchCountLabel": {
     "description": "Count of closest imaging-test similarity matches.",
     "placeholders": {
       "count": {
@@ -25269,21 +25269,21 @@
       }
     }
   },
-  "radiologyUseThisImagingTestAction": "Use this test",
-  "@radiologyUseThisImagingTestAction": {
-    "description": "Per-match action to use a specific similar imaging test."
+  "radiologyUseThisProcedureAction": "Use this procedure",
+  "@radiologyUseThisProcedureAction": {
+    "description": "Per-match action to use a specific similar procedure."
   },
-  "radiologySimilarImagingTestFieldColumnLabel": "Field",
-  "@radiologySimilarImagingTestFieldColumnLabel": {
+  "radiologySimilarProcedureFieldColumnLabel": "Field",
+  "@radiologySimilarProcedureFieldColumnLabel": {
     "description": "Column header for field names in similarity comparison."
   },
-  "radiologySimilarImagingTestStatusColumnLabel": "Status",
-  "@radiologySimilarImagingTestStatusColumnLabel": {
+  "radiologySimilarProcedureStatusColumnLabel": "Status",
+  "@radiologySimilarProcedureStatusColumnLabel": {
     "description": "Column header for comparison status in similarity dialog."
   },
-  "radiologySimilarImagingTestOnlyExistingLabel": "Only on existing",
-  "@radiologySimilarImagingTestOnlyExistingLabel": {
-    "description": "Status when a value exists only on the matched imaging test."
+  "radiologySimilarProcedureOnlyExistingLabel": "Only on existing",
+  "@radiologySimilarProcedureOnlyExistingLabel": {
+    "description": "Status when a value exists only on the matched procedure."
   },
   "radiologySimilarityCheckLoadingTitle": "Checking similarity",
   "@radiologySimilarityCheckLoadingTitle": {
@@ -25297,59 +25297,59 @@
   "@radiologySimilarityCatalogLoadingTitle": {
     "description": "Loading title while radiology similarity candidates are fetched."
   },
-  "radiologySimilarityCatalogLoadingBody": "Preparing imaging tests for similarity review…",
+  "radiologySimilarityCatalogLoadingBody": "Preparing procedures for similarity review…",
   "@radiologySimilarityCatalogLoadingBody": {
     "description": "Loading body while radiology similarity candidates are fetched."
   },
-  "radiologySimilarImagingTestScoreLabel": "{score}% match",
-  "@radiologySimilarImagingTestScoreLabel": {
-    "description": "Similarity score label for imaging test duplicate warning.",
+  "radiologySimilarProcedureScoreLabel": "{score}% match",
+  "@radiologySimilarProcedureScoreLabel": {
+    "description": "Similarity score label for procedure duplicate warning.",
     "placeholders": {
       "score": {
         "type": "int"
       }
     }
   },
-  "radiologyUseExistingImagingTestAction": "Use existing",
-  "@radiologyUseExistingImagingTestAction": {
-    "description": "Dismiss create and keep an existing similar imaging test."
+  "radiologyUseExistingProcedureAction": "Use existing",
+  "@radiologyUseExistingProcedureAction": {
+    "description": "Dismiss create and keep an existing similar procedure."
   },
-  "radiologyProceedCreateImagingTestAction": "Create anyway",
-  "@radiologyProceedCreateImagingTestAction": {
-    "description": "Primary action to create the imaging test despite similar catalog matches"
+  "radiologyProceedCreateProcedureAction": "Create anyway",
+  "@radiologyProceedCreateProcedureAction": {
+    "description": "Primary action to create the procedure despite similar catalog matches"
   },
-  "radiologyImagingTestNameAlreadyInUse": "An imaging test with this name already exists.",
-  "@radiologyImagingTestNameAlreadyInUse": {
-    "description": "Inline validation when imaging test name duplicates an existing test."
+  "radiologyProcedureNameAlreadyInUse": "A procedure with this name already exists.",
+  "@radiologyProcedureNameAlreadyInUse": {
+    "description": "Inline validation when procedure name duplicates an existing procedure."
   },
-  "radiologyImagingTestCodeAlreadyInUse": "An imaging test with this code already exists.",
-  "@radiologyImagingTestCodeAlreadyInUse": {
-    "description": "Inline validation when imaging test code duplicates an existing test."
+  "radiologyProcedureCodeAlreadyInUse": "A procedure with this code already exists.",
+  "@radiologyProcedureCodeAlreadyInUse": {
+    "description": "Inline validation when procedure code duplicates an existing procedure."
   },
-  "radiologyNoSimilarImagingTestDialogTitle": "No similar imaging test found",
-  "@radiologyNoSimilarImagingTestDialogTitle": {
+  "radiologyNoSimilarProcedureDialogTitle": "No similar procedure found",
+  "@radiologyNoSimilarProcedureDialogTitle": {
     "description": "Dialog title when similarity check finds no near matches before save."
   },
-  "radiologyNoSimilarImagingTestDialogBody": "No similar imaging tests were found in this catalog scope. Continue saving this test?",
-  "@radiologyNoSimilarImagingTestDialogBody": {
-    "description": "Dialog body confirming no similar imaging tests before save."
+  "radiologyNoSimilarProcedureDialogBody": "No similar procedures were found in this catalog scope. Continue saving this procedure?",
+  "@radiologyNoSimilarProcedureDialogBody": {
+    "description": "Dialog body confirming no similar procedures before save."
   },
-  "radiologyContinueSaveImagingTestAction": "Continue save",
-  "@radiologyContinueSaveImagingTestAction": {
-    "description": "Confirm saving an imaging test after a no-similar-match check."
+  "radiologyContinueSaveProcedureAction": "Continue save",
+  "@radiologyContinueSaveProcedureAction": {
+    "description": "Confirm saving a procedure after a no-similar-match check."
   },
-  "radiologyEditImagingTestAction": "Edit imaging test",
+  "radiologyEditProcedureAction": "Edit procedure",
 
-  "@radiologyEditImagingTestAction": {
-    "description": "Radiology edit imaging test action."
+  "@radiologyEditProcedureAction": {
+    "description": "Radiology edit procedure action."
   },
   "radiologyEditProcedureDialogTitle": "Edit Radiology procedure",
   "@radiologyEditProcedureDialogTitle": {
     "description": "Title for the edit radiology procedure dialog in Clinical Services setup."
   },
-  "radiologyDeleteImagingTestAction": "Delete imaging test",
-  "@radiologyDeleteImagingTestAction": {
-    "description": "Radiology delete imaging test action."
+  "radiologyDeleteProcedureAction": "Delete procedure",
+  "@radiologyDeleteProcedureAction": {
+    "description": "Radiology delete procedure action."
   },
   "radiologyCopyStandardTestAction": "Copy standard test",
   "@radiologyCopyStandardTestAction": {
@@ -25363,17 +25363,17 @@
   "@radiologyCustomCatalogBadge": {
     "description": "Radiology custom catalog badge."
   },
-  "radiologyTestNameLabel": "Name",
-  "@radiologyTestNameLabel": {
-    "description": "Radiology test name label."
+  "radiologyProcedureNameLabel": "Name",
+  "@radiologyProcedureNameLabel": {
+    "description": "Radiology procedure name label."
   },
-  "radiologyTestCodeLabel": "Code",
-  "@radiologyTestCodeLabel": {
-    "description": "Radiology test code label."
+  "radiologyProcedureCodeLabel": "Code",
+  "@radiologyProcedureCodeLabel": {
+    "description": "Radiology procedure code label."
   },
-  "radiologyTestCodeOptionalLabel": "Code (optional)",
-  "@radiologyTestCodeOptionalLabel": {
-    "description": "Radiology test optional code label."
+  "radiologyProcedureCodeOptionalLabel": "Code (optional)",
+  "@radiologyProcedureCodeOptionalLabel": {
+    "description": "Radiology procedure optional code label."
   },
   "radiologySourceColumnLabel": "Source",
   "@radiologySourceColumnLabel": {
@@ -25387,13 +25387,13 @@
   "@radiologyActionColumnLabel": {
     "description": "Radiology action column label."
   },
-  "radiologyNoImagingTestsTitle": "No imaging tests",
-  "@radiologyNoImagingTestsTitle": {
-    "description": "Radiology imaging tests empty state title."
+  "radiologyNoProceduresTitle": "No procedures",
+  "@radiologyNoProceduresTitle": {
+    "description": "Radiology procedures empty state title."
   },
-  "radiologyNoImagingTestsBody": "Create a custom imaging test or refresh the standard catalog.",
-  "@radiologyNoImagingTestsBody": {
-    "description": "Radiology imaging tests empty state body."
+  "radiologyNoProceduresBody": "Create a custom procedure or refresh the standard catalog.",
+  "@radiologyNoProceduresBody": {
+    "description": "Radiology procedures empty state body."
   },
   "radiologyReadOnlyStandardTestTitle": "Standard test is read-only",
   "@radiologyReadOnlyStandardTestTitle": {

@@ -49,7 +49,7 @@ final class RadiologyReferenceDataDto {
     return RadiologyReferenceData(
       patients: _referenceList(json['patients']),
       encounters: _referenceList(json['encounters']),
-      radiologyTests: _referenceList(json['radiology_tests']),
+      radiologyProcedures: _referenceList(json['radiology_tests']),
       assignees: _referenceList(json['assignees']),
     );
   }
@@ -103,18 +103,18 @@ final class RadiologyWorkflowDto {
   }
 }
 
-final class RadiologyCatalogTestDto {
-  const RadiologyCatalogTestDto(this.json);
+final class RadiologyCatalogProcedureDto {
+  const RadiologyCatalogProcedureDto(this.json);
 
   final RadiologyJsonMap json;
 
-  RadiologyCatalogTest toEntity() {
+  RadiologyCatalogProcedure toEntity() {
     final String id =
         _string(json['id']) ??
         _string(json['display_id']) ??
         _string(json['human_friendly_id']) ??
         '';
-    return RadiologyCatalogTest(
+    return RadiologyCatalogProcedure(
       id: id,
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),

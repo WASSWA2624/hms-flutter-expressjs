@@ -7887,14 +7887,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalRadiologyCatalogSelectBody =>
-      'Select an imaging test, then add it to the request.';
+      'Select a procedure, then add it to the request.';
 
   @override
-  String get clinicalRadiologyCatalogSelectLabel => 'Imaging test';
+  String get clinicalRadiologyCatalogSelectLabel => 'Procedure';
 
   @override
   String get clinicalRadiologyCatalogSelectHint =>
-      'Search and select an imaging test';
+      'Search and select a procedure';
 
   @override
   String get clinicalRadiologyDuplicateSelectionMessage =>
@@ -19609,7 +19609,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'INTERVENTIONAL RADIOLOGY';
 
   @override
-  String get radiologyImagingTestsTabLabel => 'Imaging tests';
+  String get radiologyProceduresTabLabel => 'Procedures';
 
   @override
   String get radiologyEquipmentTabLabel => 'Equipment';
@@ -19620,93 +19620,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyConfigurationSearchHint =>
-      'Search tests, modality, code, source, or status';
+      'Search procedures, modality, code, source, or status';
 
   @override
-  String get radiologyCreateImagingTestAction => 'Create imaging test';
+  String get radiologyCreateProcedureAction => 'Create procedure';
 
   @override
-  String get radiologySimilarImagingTestDialogTitle =>
-      'Similar imaging test found';
+  String get radiologySimilarProcedureDialogTitle => 'Similar procedure found';
 
   @override
-  String get radiologySimilarImagingTestDialogBody =>
-      'Similar imaging tests exist in this catalog scope. Review matches before continuing.';
+  String get radiologySimilarProcedureDialogBody =>
+      'Similar procedures exist in this catalog scope. Review matches before continuing.';
 
   @override
-  String get radiologySimilarImagingTestExactBannerTitle =>
+  String get radiologySimilarProcedureExactBannerTitle =>
       'Match status: Exact duplicate';
 
   @override
-  String radiologySimilarImagingTestExactBannerBody(int score) {
-    return 'An identical name and modality, or an identical code, already exists ($score% composite). Create is blocked — use the existing test instead.';
+  String radiologySimilarProcedureExactBannerBody(int score) {
+    return 'An identical name and modality, or an identical code, already exists ($score% composite). Create is blocked — use the existing procedure instead.';
   }
 
   @override
-  String radiologySimilarImagingTestReviewBannerTitle(int score) {
+  String radiologySimilarProcedureReviewBannerTitle(int score) {
     return 'Match status: Similar ($score%)';
   }
 
   @override
-  String radiologySimilarImagingTestReviewBannerBody(
+  String radiologySimilarProcedureReviewBannerBody(
     int score,
     String fieldSummary,
   ) {
-    return 'Closest catalog match is $score% overall. $fieldSummary Review matches below, use an existing test, or create anyway.';
+    return 'Closest catalog match is $score% overall. $fieldSummary Review matches below, use an existing procedure, or create anyway.';
   }
 
   @override
-  String radiologySimilarImagingTestFieldStatusPart(
-    String field,
-    String status,
-  ) {
+  String radiologySimilarProcedureFieldStatusPart(String field, String status) {
     return '$field: $status';
   }
 
   @override
-  String get radiologySimilarImagingTestProposedHeading => 'New imaging test';
+  String get radiologySimilarProcedureProposedHeading => 'New procedure';
 
   @override
-  String get radiologySimilarImagingTestExistingHeading =>
-      'Existing imaging test';
+  String get radiologySimilarProcedureExistingHeading => 'Existing procedure';
 
   @override
-  String get radiologySimilarImagingTestMatchesHeading => 'Closest matches';
+  String get radiologySimilarProcedureMatchesHeading => 'Closest matches';
 
   @override
-  String get radiologySimilarImagingTestComparisonHeading => 'Field comparison';
+  String get radiologySimilarProcedureComparisonHeading => 'Field comparison';
 
   @override
-  String get radiologySimilarImagingTestExactMatchLabel => 'Exact match';
+  String get radiologySimilarProcedureExactMatchLabel => 'Exact match';
 
   @override
-  String get radiologySimilarImagingTestNearMatchLabel => 'Similar';
+  String get radiologySimilarProcedureNearMatchLabel => 'Similar';
 
   @override
-  String get radiologySimilarImagingTestPartialMatchLabel => 'Partial match';
+  String get radiologySimilarProcedurePartialMatchLabel => 'Partial match';
 
   @override
-  String get radiologySimilarImagingTestYourEntryLabel => 'Your entry';
+  String get radiologySimilarProcedureYourEntryLabel => 'Your entry';
 
   @override
-  String get radiologySimilarImagingTestExistingValueLabel => 'Existing';
+  String get radiologySimilarProcedureExistingValueLabel => 'Existing';
 
   @override
-  String radiologySimilarImagingTestMatchCountLabel(int count) {
+  String radiologySimilarProcedureMatchCountLabel(int count) {
     return '$count matches';
   }
 
   @override
-  String get radiologyUseThisImagingTestAction => 'Use this test';
+  String get radiologyUseThisProcedureAction => 'Use this procedure';
 
   @override
-  String get radiologySimilarImagingTestFieldColumnLabel => 'Field';
+  String get radiologySimilarProcedureFieldColumnLabel => 'Field';
 
   @override
-  String get radiologySimilarImagingTestStatusColumnLabel => 'Status';
+  String get radiologySimilarProcedureStatusColumnLabel => 'Status';
 
   @override
-  String get radiologySimilarImagingTestOnlyExistingLabel => 'Only on existing';
+  String get radiologySimilarProcedureOnlyExistingLabel => 'Only on existing';
 
   @override
   String get radiologySimilarityCheckLoadingTitle => 'Checking similarity';
@@ -19720,46 +19715,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologySimilarityCatalogLoadingBody =>
-      'Preparing imaging tests for similarity review…';
+      'Preparing procedures for similarity review…';
 
   @override
-  String radiologySimilarImagingTestScoreLabel(int score) {
+  String radiologySimilarProcedureScoreLabel(int score) {
     return '$score% match';
   }
 
   @override
-  String get radiologyUseExistingImagingTestAction => 'Use existing';
+  String get radiologyUseExistingProcedureAction => 'Use existing';
 
   @override
-  String get radiologyProceedCreateImagingTestAction => 'Create anyway';
+  String get radiologyProceedCreateProcedureAction => 'Create anyway';
 
   @override
-  String get radiologyImagingTestNameAlreadyInUse =>
-      'An imaging test with this name already exists.';
+  String get radiologyProcedureNameAlreadyInUse =>
+      'A procedure with this name already exists.';
 
   @override
-  String get radiologyImagingTestCodeAlreadyInUse =>
-      'An imaging test with this code already exists.';
+  String get radiologyProcedureCodeAlreadyInUse =>
+      'A procedure with this code already exists.';
 
   @override
-  String get radiologyNoSimilarImagingTestDialogTitle =>
-      'No similar imaging test found';
+  String get radiologyNoSimilarProcedureDialogTitle =>
+      'No similar procedure found';
 
   @override
-  String get radiologyNoSimilarImagingTestDialogBody =>
-      'No similar imaging tests were found in this catalog scope. Continue saving this test?';
+  String get radiologyNoSimilarProcedureDialogBody =>
+      'No similar procedures were found in this catalog scope. Continue saving this procedure?';
 
   @override
-  String get radiologyContinueSaveImagingTestAction => 'Continue save';
+  String get radiologyContinueSaveProcedureAction => 'Continue save';
 
   @override
-  String get radiologyEditImagingTestAction => 'Edit imaging test';
+  String get radiologyEditProcedureAction => 'Edit procedure';
 
   @override
   String get radiologyEditProcedureDialogTitle => 'Edit Radiology procedure';
 
   @override
-  String get radiologyDeleteImagingTestAction => 'Delete imaging test';
+  String get radiologyDeleteProcedureAction => 'Delete procedure';
 
   @override
   String get radiologyCopyStandardTestAction => 'Copy standard test';
@@ -19771,13 +19766,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyCustomCatalogBadge => 'Custom';
 
   @override
-  String get radiologyTestNameLabel => 'Name';
+  String get radiologyProcedureNameLabel => 'Name';
 
   @override
-  String get radiologyTestCodeLabel => 'Code';
+  String get radiologyProcedureCodeLabel => 'Code';
 
   @override
-  String get radiologyTestCodeOptionalLabel => 'Code (optional)';
+  String get radiologyProcedureCodeOptionalLabel => 'Code (optional)';
 
   @override
   String get radiologySourceColumnLabel => 'Source';
@@ -19789,11 +19784,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyActionColumnLabel => 'Action';
 
   @override
-  String get radiologyNoImagingTestsTitle => 'No imaging tests';
+  String get radiologyNoProceduresTitle => 'No procedures';
 
   @override
-  String get radiologyNoImagingTestsBody =>
-      'Create a custom imaging test or refresh the standard catalog.';
+  String get radiologyNoProceduresBody =>
+      'Create a custom procedure or refresh the standard catalog.';
 
   @override
   String get radiologyReadOnlyStandardTestTitle => 'Standard test is read-only';
