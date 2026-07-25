@@ -252,15 +252,26 @@ class _FacilityCatalogConfigPanelState
   }
 
   void _recomputeLabVisible() {
-    final String query = _labSearchController.text.trim().toLowerCase();
-    final List<LabCatalogItem> filtered = _computeFilteredLabItems();
-    if (query.isEmpty) {
-      _labVisibleItems = filtered;
-      return;
+    // Advanced filters only — text search is applied by AppListTable.matcher so
+    // the table never paints a stale unfiltered list while the parent rebuilds.
+    _labVisibleItems = _computeFilteredLabItems();
+  }
+
+  bool _labDeskSearchMatches(LabCatalogItem item, String query) {
+    final String needle = query.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
     }
-    _labVisibleItems = filtered
-        .where((LabCatalogItem item) => item.matchesSearch(query))
-        .toList(growable: false);
+    // Name/code/category/id only — descriptions like "Pregnancy testing bundle"
+    // must not drown out an exact catalog name such as "testing".
+    final String haystack = <String?>[
+      item.name,
+      item.code,
+      item.category,
+      item.displayId,
+      item.id,
+    ].whereType<String>().join(' ').toLowerCase();
+    return haystack.contains(needle);
   }
 
   void _recomputeDiagnosisVisible() {
@@ -800,7 +811,7 @@ class _FacilityCatalogConfigPanelState
         controller: _labSearchController,
         semanticLabel: l10n.tenantFacilityCatalogTabLab,
         hintText: l10n.tenantFacilityCatalogSearchHint,
-        matcher: (_, _) => true,
+        matcher: _labDeskSearchMatches,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.labFiltersLabel,
@@ -2267,6 +2278,18 @@ class _FacilityCatalogConfigPanelState
         SnackBar(content: Text(context.l10n.labSavedMessage)),
       );
       await _ensureTabLoaded(_tab, force: true);
+      // Reload can omit a just-created row when the standard-catalog merge
+      // truncates; keep the saved entity visible either way.
+      if (!mounted || saved == null) {
+        return;
+      }
+      final bool present = _labItems.any(
+        (LabCatalogItem item) =>
+            item.apiId == saved.apiId || item.id == saved.id,
+      );
+      if (!present) {
+        setState(() => _upsertLabItemLocally(saved));
+      }
     });
   }
 

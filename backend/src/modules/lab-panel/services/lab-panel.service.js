@@ -81,12 +81,15 @@ const mergeStandardLabPanels = ({ mappedRecords, filters, limit, sortBy, order }
 
   const direction = String(order || 'asc').toLowerCase() === 'desc' ? -1 : 1;
   const sortableField = sortBy || 'name';
-  return [...mappedRecords, ...standardRecords]
-    .sort((left, right) => (
-      normalizeText(left?.[sortableField] || left?.name)
-        .localeCompare(normalizeText(right?.[sortableField] || right?.name)) * direction
-    ))
-    .slice(0, limit);
+  const compare = (left, right) => (
+    normalizeText(left?.[sortableField] || left?.name)
+      .localeCompare(normalizeText(right?.[sortableField] || right?.name)) * direction
+  );
+
+  const sortedMapped = [...mappedRecords].sort(compare);
+  const remaining = Math.max(0, (Number(limit) || 0) - sortedMapped.length);
+  const sortedStandards = [...standardRecords].sort(compare).slice(0, remaining);
+  return [...sortedMapped, ...sortedStandards].sort(compare);
 };
 
 const resolvePanelItems = async (items, tenantId) => {
