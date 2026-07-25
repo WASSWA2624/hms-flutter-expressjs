@@ -1,5 +1,5 @@
 ---
-description: Always enforce loading feedback, realtime UI sync, migrations, and access checks.
+description: Always enforce loading feedback, responsive UI, realtime UI sync, migrations, and access checks.
 alwaysApply: true
 ---
 
@@ -13,6 +13,14 @@ Apply on every code change. Do not ship UI or API work that skips these.
 - Prefer logo-based `AppLoadingIndicator` for page, panel, table, and content-region loads (`AsyncStateScaffold` or shared wrappers).
 - Prefer feature-specific `title`/`body`; size defaults are fine when none apply.
 - For in-place actions that do not change the broad UI (Save, Delete, submit), use `AppButton.isLoading`—not a full-region logo loader.
+
+## Responsive UI
+
+- Every new or changed UI surface must work across mobile, tablet, and desktop (`xs`/`sm` through `xxl` per `frontend/.cursor/layouts.mdc`).
+- Use `lib/core/responsive/` utilities and shared layout (`ResponsivePage`, `ResponsiveAppShell`, `PageMaxWidth`, `AppResponsiveFieldRow`)—do not hard-code widths or duplicate screens per breakpoint unless the interaction model changes.
+- Scale one-column to multi-column; use readable max widths; keep touch/pointer targets comfortable.
+- Dense tables may become list rows/cards on narrow widths with the same meaning; keep worklists and shells usable at every supported breakpoint.
+- Verify no overflow, clipped actions, or unusable panels at narrow widths before shipping.
 
 ## Realtime UI updates
 
@@ -36,6 +44,7 @@ Apply on every code change. Do not ship UI or API work that skips these.
 
 ## Related
 
-- `frontend/.cursor/ui-feedback.mdc`, `frontend/.cursor/instant_ui_sync.mdc`, `frontend/.cursor/realtime_sync.mdc`
+- `frontend/.cursor/ui-feedback.mdc`, `frontend/.cursor/layouts.mdc`, `frontend/.cursor/ui-patterns.mdc`
+- `frontend/.cursor/instant_ui_sync.mdc`, `frontend/.cursor/realtime_sync.mdc`
 - `backend/.cursor/prisma.mdc`
 - `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`
