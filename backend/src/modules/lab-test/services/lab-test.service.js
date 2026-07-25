@@ -234,8 +234,14 @@ const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddre
     }
     if (filters.result_kind) whereClause.result_kind = filters.result_kind;
     if (String(filters.include_pending_review || '').toLowerCase() !== 'true') {
+      // NULL descriptions must remain visible: SQL treats NOT (NULL LIKE ...) as
+      // unknown and would otherwise drop custom tests with no description.
       whereClause.NOT = {
-        description: { startsWith: 'PENDING LAB CATALOG REVIEW' }};
+        AND: [
+          { description: { not: null } },
+          { description: { startsWith: 'PENDING LAB CATALOG REVIEW' } },
+        ],
+      };
     }
 
     const searchTerm = normalizeSearchTerm(filters.search);
