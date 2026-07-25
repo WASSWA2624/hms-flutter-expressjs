@@ -56,6 +56,27 @@ String labAgeBandPresetLabel(AppLocalizations l10n, String id) {
   }
 }
 
+IconData labAgeBandPresetIcon(String id) {
+  switch (id) {
+    case 'neonate':
+      return Icons.baby_changing_station_outlined;
+    case 'infant':
+      return Icons.child_care_outlined;
+    case 'child':
+      return Icons.face_outlined;
+    case 'adolescent':
+      return Icons.school_outlined;
+    case 'adult':
+      return Icons.person_outline;
+    case 'geriatric':
+      return Icons.elderly;
+    case 'pediatric':
+      return Icons.family_restroom;
+    default:
+      return Icons.event_outlined;
+  }
+}
+
 class EditableLabReferenceRange {
   EditableLabReferenceRange({
     LabReferenceRange? range,
@@ -733,7 +754,8 @@ class _LabReferenceRangeCard extends StatelessWidget {
   }
 }
 
-/// Gender applicability as a horizontal chip row. "All genders" is exclusive.
+/// Gender applicability as a horizontal chip row. "All genders" is exclusive
+/// with specifics, but specifics stay enabled so they can be chosen directly.
 class _LabGenderApplicabilityField extends StatelessWidget {
   const _LabGenderApplicabilityField({
     required this.gender,
@@ -805,16 +827,14 @@ class _LabGenderApplicabilityField extends StatelessWidget {
                     ? _isAllGenders
                     : !_isAllGenders && gender == option.value,
                 showCheckmark: false,
-                // Specifics stay inactive while All genders covers them.
-                onSelected: (!enabled ||
-                        (option.value != kLabReferenceRangeAnyGender &&
-                            _isAllGenders))
+                onSelected: !enabled
                     ? null
                     : (bool selected) {
                         if (option.value == kLabReferenceRangeAnyGender) {
                           if (selected) {
                             onChanged(kLabReferenceRangeAnyGender);
                           } else {
+                            // Leaving All requires a specific gender — default Male.
                             onChanged('MALE');
                           }
                           return;
@@ -828,15 +848,6 @@ class _LabGenderApplicabilityField extends StatelessWidget {
               ),
           ],
         ),
-        if (_isAllGenders) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            l10n.labGenderAnyHelper,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -891,6 +902,7 @@ class _LabAgeApplicabilityField extends StatelessWidget {
             ),
             for (final LabAgeBandPreset preset in kLabAgeBandPresets)
               FilterChip(
+                avatar: Icon(labAgeBandPresetIcon(preset.id), size: 16),
                 label: Text(labAgeBandPresetLabel(l10n, preset.id)),
                 selected: !range.allAges && matchedPresetId == preset.id,
                 showCheckmark: false,

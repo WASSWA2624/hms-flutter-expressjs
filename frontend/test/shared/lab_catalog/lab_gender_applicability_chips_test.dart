@@ -6,7 +6,7 @@ import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_list_field.dar
 
 void main() {
   testWidgets(
-    'All genders disables specific gender chips',
+    'All genders keeps specific gender chips enabled and exclusive',
     (WidgetTester tester) async {
       final EditableLabReferenceRange range = EditableLabReferenceRange();
       addTearDown(range.dispose);
@@ -16,39 +16,29 @@ void main() {
       expect(find.text('All genders'), findsOneWidget);
       expect(find.text('Male'), findsOneWidget);
       expect(find.text('All ages'), findsOneWidget);
-      expect(
-        find.text(
-          'Specific genders are cleared while All genders is selected.',
-        ),
-        findsOneWidget,
-      );
 
       expect(_chipWithLabel(tester, 'All genders').selected, isTrue);
-      expect(_chipWithLabel(tester, 'Male').onSelected, isNull);
-
-      // Uncheck All genders → Male becomes active.
-      await tester.tap(find.text('All genders'));
-      await tester.pumpAndSettle();
-      expect(range.gender, 'MALE');
       expect(_chipWithLabel(tester, 'Male').onSelected, isNotNull);
-      expect(_chipWithLabel(tester, 'Male').selected, isTrue);
+      expect(_chipWithLabel(tester, 'Female').onSelected, isNotNull);
 
+      // Specifics stay enabled while All genders is selected; tapping Female
+      // replaces All genders.
       await tester.tap(find.text('Female'));
       await tester.pumpAndSettle();
       expect(range.gender, 'FEMALE');
       expect(_chipWithLabel(tester, 'All genders').selected, isFalse);
+      expect(_chipWithLabel(tester, 'Female').selected, isTrue);
 
-      // Re-select All genders → specifics inactivated again.
       await tester.tap(find.text('All genders'));
       await tester.pumpAndSettle();
       expect(range.appliesToAllGenders, isTrue);
-      expect(_chipWithLabel(tester, 'Male').onSelected, isNull);
-      expect(_chipWithLabel(tester, 'Female').onSelected, isNull);
+      expect(_chipWithLabel(tester, 'Male').onSelected, isNotNull);
+      expect(_chipWithLabel(tester, 'Female').selected, isFalse);
     },
   );
 
   testWidgets(
-    'Age presets fill bounds; All ages hides and clears them',
+    'Age presets include icons and fill bounds; All ages hides and clears them',
     (WidgetTester tester) async {
       final EditableLabReferenceRange range = EditableLabReferenceRange()
         ..allAges = false
@@ -61,6 +51,13 @@ void main() {
       expect(range.allAges, isFalse);
       expect(find.text('Age min'), findsOneWidget);
       expect(find.text('Adult'), findsWidgets);
+
+      final FilterChip adultChip = _chipWithLabel(tester, 'Adult');
+      expect(adultChip.avatar, isA<Icon>());
+      expect((adultChip.avatar! as Icon).icon, Icons.person_outline);
+
+      final FilterChip neonateChip = _chipWithLabel(tester, 'Neonate');
+      expect((neonateChip.avatar! as Icon).icon, Icons.baby_changing_station_outlined);
 
       await tester.tap(find.text('All ages'));
       await tester.pumpAndSettle();
@@ -122,6 +119,16 @@ void main() {
     expect(range.ageMaxController.text, isEmpty);
     expect(range.labelController.text, 'Geriatric');
     expect(range.matchingAgePresetId(), 'geriatric');
+  });
+
+  test('labAgeBandPresetIcon covers all catalog age bands', () {
+    expect(labAgeBandPresetIcon('neonate'), Icons.baby_changing_station_outlined);
+    expect(labAgeBandPresetIcon('infant'), Icons.child_care_outlined);
+    expect(labAgeBandPresetIcon('child'), Icons.face_outlined);
+    expect(labAgeBandPresetIcon('adolescent'), Icons.school_outlined);
+    expect(labAgeBandPresetIcon('adult'), Icons.person_outline);
+    expect(labAgeBandPresetIcon('geriatric'), Icons.elderly);
+    expect(labAgeBandPresetIcon('pediatric'), Icons.family_restroom);
   });
 }
 
