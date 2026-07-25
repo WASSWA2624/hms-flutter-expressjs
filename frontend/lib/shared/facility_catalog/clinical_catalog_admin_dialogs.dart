@@ -898,7 +898,7 @@ class _LabCatalogItemMutationDialogState
   bool _isLoadingCatalog = false;
   bool _similarityAccepted = false;
   bool _noSimilarConfirmed = false;
-  bool _didPrefillAdultLabel = false;
+  bool _didPrefillAllAgesLabel = false;
   String? _rangeErrorText;
 
   late final List<String> _cachedCategoryOptions;
@@ -968,7 +968,7 @@ class _LabCatalogItemMutationDialogState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_didPrefillAdultLabel ||
+    if (_didPrefillAllAgesLabel ||
         _isPanel ||
         widget.isEditing ||
         _referenceRanges.isEmpty) {
@@ -976,9 +976,9 @@ class _LabCatalogItemMutationDialogState
     }
     final EditableLabReferenceRange first = _referenceRanges.first;
     if (first.labelController.text.trim().isEmpty) {
-      first.labelController.text = context.l10n.labAdultRangeLabel;
+      first.labelController.text = context.l10n.labAgeAnyLabel;
     }
-    _didPrefillAdultLabel = true;
+    _didPrefillAllAgesLabel = true;
   }
 
   @override
@@ -1558,6 +1558,7 @@ class _LabCatalogItemMutationDialogState
                   final EditableLabReferenceRange next =
                       EditableLabReferenceRange(
                         defaultUnit: _unitController.text.trim(),
+                        defaultLabel: context.l10n.labAgeAnyLabel,
                       );
                   final List<EditableLabReferenceRange> proposed =
                       <EditableLabReferenceRange>[

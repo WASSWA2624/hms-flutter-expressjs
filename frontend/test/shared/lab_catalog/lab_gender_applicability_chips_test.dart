@@ -104,16 +104,18 @@ void main() {
     expect(payload['age_max_value'], isNull);
   });
 
-  test('applyAgePresetFromLabel maps category names to bounds', () {
-    final EditableLabReferenceRange range = EditableLabReferenceRange();
+  test('applyAgePreset replaces All ages default label', () {
+    final EditableLabReferenceRange range = EditableLabReferenceRange(
+      defaultLabel: 'All ages',
+    );
     addTearDown(range.dispose);
 
-    // Use English labels via a lightweight fake by calling presets directly.
     range.applyAgePreset(
       kLabAgeBandPresets.firstWhere(
         (LabAgeBandPreset p) => p.id == 'geriatric',
       ),
       labelIfEmpty: 'Geriatric',
+      allAgesLabel: 'All ages',
     );
     expect(range.allAges, isFalse);
     expect(range.ageMinController.text, '65');

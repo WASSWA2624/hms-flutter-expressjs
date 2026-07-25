@@ -807,6 +807,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                 final EditableLabReferenceRange next =
                     EditableLabReferenceRange(
                       defaultUnit: _unitController.text.trim(),
+                      defaultLabel: context.l10n.labAgeAnyLabel,
                     );
                 final List<EditableLabReferenceRange> proposed =
                     <EditableLabReferenceRange>[

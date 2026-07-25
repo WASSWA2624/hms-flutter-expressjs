@@ -57,38 +57,44 @@ String labAgeBandPresetLabel(AppLocalizations l10n, String id) {
 }
 
 class EditableLabReferenceRange {
-  EditableLabReferenceRange({LabReferenceRange? range, String? defaultUnit})
-    : id = range?.id,
-      labelController = TextEditingController(text: range?.label ?? ''),
-      ageMinController = TextEditingController(
-        text: range?.ageMinValue?.toString() ?? '',
-      ),
-      ageMaxController = TextEditingController(
-        text: range?.ageMaxValue?.toString() ?? '',
-      ),
-      rangeUnitController = TextEditingController(
-        text: range?.unit ?? defaultUnit ?? '',
-      ),
-      normalMinController = TextEditingController(
-        text: range?.normalMinValue ?? '',
-      ),
-      normalMaxController = TextEditingController(
-        text: range?.normalMaxValue ?? '',
-      ),
-      criticalMinController = TextEditingController(
-        text: range?.criticalMinValue ?? '',
-      ),
-      criticalMaxController = TextEditingController(
-        text: range?.criticalMaxValue ?? '',
-      ),
-      referenceTextController = TextEditingController(
-        text: range?.referenceText ?? '',
-      ),
-      notesController = TextEditingController(text: range?.notes ?? ''),
-      gender = range?.gender ?? kLabReferenceRangeAnyGender,
-      ageUnit = range?.ageMinUnit ?? range?.ageMaxUnit ?? 'YEAR',
-      allAges =
-          range?.ageMinValue == null && range?.ageMaxValue == null;
+  EditableLabReferenceRange({
+    LabReferenceRange? range,
+    String? defaultUnit,
+    String? defaultLabel,
+  }) : id = range?.id,
+       labelController = TextEditingController(
+         text: range?.label ?? defaultLabel ?? '',
+       ),
+       ageMinController = TextEditingController(
+         text: range?.ageMinValue?.toString() ?? '',
+       ),
+       ageMaxController = TextEditingController(
+         text: range?.ageMaxValue?.toString() ?? '',
+       ),
+       rangeUnitController = TextEditingController(
+         text: range?.unit ?? defaultUnit ?? '',
+       ),
+       normalMinController = TextEditingController(
+         text: range?.normalMinValue ?? '',
+       ),
+       normalMaxController = TextEditingController(
+         text: range?.normalMaxValue ?? '',
+       ),
+       criticalMinController = TextEditingController(
+         text: range?.criticalMinValue ?? '',
+       ),
+       criticalMaxController = TextEditingController(
+         text: range?.criticalMaxValue ?? '',
+       ),
+       referenceTextController = TextEditingController(
+         text: range?.referenceText ?? '',
+       ),
+       notesController = TextEditingController(text: range?.notes ?? ''),
+       gender = range?.gender ?? kLabReferenceRangeAnyGender,
+       ageUnit = range?.ageMinUnit ?? range?.ageMaxUnit ?? 'YEAR',
+       // New ranges and ranges without bounds default to All ages.
+       allAges =
+           range?.ageMinValue == null && range?.ageMaxValue == null;
 
   String? id;
   final TextEditingController labelController;
@@ -139,16 +145,25 @@ class EditableLabReferenceRange {
     }
   }
 
-  /// Quick-fill age bounds from a catalog age band; optionally seed the range name.
-  void applyAgePreset(LabAgeBandPreset preset, {String? labelIfEmpty}) {
+  /// Quick-fill age bounds from a catalog age band; optionally seed the range name
+  /// when empty or still set to the All ages default label.
+  void applyAgePreset(
+    LabAgeBandPreset preset, {
+    String? labelIfEmpty,
+    String? allAgesLabel,
+  }) {
     allAges = false;
     ageUnit = preset.unit;
     ageMinController.text = preset.min?.toString() ?? '';
     ageMaxController.text = preset.max?.toString() ?? '';
     final String? seed = labelIfEmpty?.trim();
-    if (seed != null &&
-        seed.isNotEmpty &&
-        labelController.text.trim().isEmpty) {
+    if (seed == null || seed.isEmpty) {
+      return;
+    }
+    final String current = labelController.text.trim();
+    final String anyLabel = (allAgesLabel ?? '').trim().toLowerCase();
+    if (current.isEmpty ||
+        (anyLabel.isNotEmpty && current.toLowerCase() == anyLabel)) {
       labelController.text = seed;
     }
   }
@@ -174,19 +189,10 @@ class EditableLabReferenceRange {
     return null;
   }
 
-  /// Apply age bounds when the range name matches a known age category.
+  /// Only "All ages" as a range name affects age applicability — other category
+  /// names stay labels and leave All ages as the default.
   void applyAgePresetFromLabel(String? label, AppLocalizations l10n) {
     final String normalized = (label ?? '').trim().toLowerCase();
-    if (normalized.isEmpty) {
-      return;
-    }
-    for (final LabAgeBandPreset preset in kLabAgeBandPresets) {
-      if (labAgeBandPresetLabel(l10n, preset.id).toLowerCase() ==
-          normalized) {
-        applyAgePreset(preset);
-        return;
-      }
-    }
     if (normalized == l10n.labAgeAnyLabel.toLowerCase()) {
       setAllAges(value: true);
     }
@@ -898,6 +904,7 @@ class _LabAgeApplicabilityField extends StatelessWidget {
                               l10n,
                               preset.id,
                             ),
+                            allAgesLabel: l10n.labAgeAnyLabel,
                           );
                         } else if (matchedPresetId == preset.id) {
                           range.setAllAges(value: true);

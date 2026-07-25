@@ -24,7 +24,7 @@ void main() {
       expect(find.text('Result configuration'), findsOneWidget);
       expect(find.text('Reference ranges'), findsOneWidget);
       expect(find.text('Add reference range'), findsOneWidget);
-      expect(find.text('Adult'), findsWidgets);
+      expect(find.text('All ages'), findsWidgets);
       expect(find.widgetWithText(AppButton, 'Save'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
       expect(
@@ -57,8 +57,9 @@ void main() {
 
       // Add control sits above range cards (top of reference-range block).
       final double addY = tester.getTopLeft(find.text('Add reference range')).dy;
-      final double adultY = tester.getTopLeft(find.text('Adult').first).dy;
-      expect(addY, lessThan(adultY));
+      final double allAgesY =
+          tester.getTopLeft(find.text('All ages').first).dy;
+      expect(addY, lessThan(allAgesY));
     });
 
     testWidgets('qualitative kind shows result options and hides unit options', (
@@ -116,7 +117,7 @@ void main() {
       expect(ranges, isNotEmpty);
       final Map<String, Object?> firstRange =
           Map<String, Object?>.from(ranges.first! as Map<dynamic, dynamic>);
-      expect(firstRange['label'], 'Adult');
+      expect(firstRange['label'], 'All ages');
       expect(firstRange['age_min_value'], isNull);
       expect(firstRange['notes'], isNull);
     });
@@ -308,7 +309,7 @@ void main() {
       expect(find.text('CREATE LAB TEST'), findsNothing);
     });
 
-    testWidgets('duplicate reference range blocks save', (
+    testWidgets('duplicate reference range blocks add when All ages defaults collide', (
       WidgetTester tester,
     ) async {
       var submitCount = 0;
@@ -326,30 +327,27 @@ void main() {
       await tester.tap(find.text('Add reference range'));
       await tester.pumpAndSettle();
 
+      // First range already defaults to All ages / All genders — a second
+      // identical range is rejected at add time.
       final Finder rangeLabelFields = find.byWidgetPredicate(
         (Widget widget) =>
             widget is AppSelectField<String> &&
-            widget.labelText == 'Reference range',
+            widget.labelText == 'Range name',
       );
-      expect(rangeLabelFields, findsNWidgets(2));
-      final AppSelectField<String> secondLabel = tester.widget(
-        rangeLabelFields.at(1),
-      );
-      secondLabel.onChanged?.call('Adult');
-      await tester.pump();
-
-      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
-      await tester.tap(find.widgetWithText(AppButton, 'Save'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(submitCount, 0);
+      expect(rangeLabelFields, findsOneWidget);
       expect(
         find.text(
           'A reference range with the same label already covers this gender and age (including All genders / All ages).',
         ),
         findsOneWidget,
       );
+
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      // Similarity / save must not proceed past the range error.
+      expect(submitCount, 0);
     });
 
     testWidgets('text kind hides unit and qualitative options', (
