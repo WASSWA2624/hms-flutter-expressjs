@@ -71,24 +71,26 @@ class EditableLabReferenceRange {
     required int sortOrder,
     required String fallbackUnit,
   }) {
+    final String? ageMin = _emptyToNull(ageMinController.text);
+    final String? ageMax = _emptyToNull(ageMaxController.text);
+    final String? unit = _emptyToNull(rangeUnitController.text) ??
+        _emptyToNull(fallbackUnit);
     return <String, Object?>{
       if (id != null) 'id': id,
-      'label': labelController.text.trim(),
+      'label': _emptyToNull(labelController.text),
       if (gender != null && gender != kLabReferenceRangeAnyGender)
         'gender': gender,
-      'age_min_value': ageMinController.text.trim(),
-      'age_min_unit': ageMinController.text.trim().isEmpty ? null : ageUnit,
-      'age_max_value': ageMaxController.text.trim(),
-      'age_max_unit': ageMaxController.text.trim().isEmpty ? null : ageUnit,
-      'unit': rangeUnitController.text.trim().isEmpty
-          ? fallbackUnit
-          : rangeUnitController.text.trim(),
-      'normal_min_value': normalMinController.text.trim(),
-      'normal_max_value': normalMaxController.text.trim(),
-      'critical_min_value': criticalMinController.text.trim(),
-      'critical_max_value': criticalMaxController.text.trim(),
-      'reference_text': referenceTextController.text.trim(),
-      'notes': notesController.text.trim(),
+      'age_min_value': ageMin,
+      'age_min_unit': ageMin == null ? null : ageUnit,
+      'age_max_value': ageMax,
+      'age_max_unit': ageMax == null ? null : ageUnit,
+      'unit': unit,
+      'normal_min_value': _emptyToNull(normalMinController.text),
+      'normal_max_value': _emptyToNull(normalMaxController.text),
+      'critical_min_value': _emptyToNull(criticalMinController.text),
+      'critical_max_value': _emptyToNull(criticalMaxController.text),
+      'reference_text': _emptyToNull(referenceTextController.text),
+      'notes': _emptyToNull(notesController.text),
       'sort_order': sortOrder,
     };
   }
@@ -146,6 +148,11 @@ class EditableLabReferenceRange {
     }
     return allowEqual ? minNumber <= maxNumber : minNumber < maxNumber;
   }
+}
+
+String? _emptyToNull(String? value) {
+  final String trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 class LabReferenceRangeListField extends StatelessWidget {

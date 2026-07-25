@@ -6,6 +6,7 @@ import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/facility_catalog/clinical_catalog_admin_dialogs.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 
 void main() {
   group('LabCatalogItemMutationDialog', () {
@@ -15,17 +16,21 @@ void main() {
       await _pumpMutationDialog(tester);
 
       expect(find.text('CREATE LAB TEST'), findsOneWidget);
-      expect(find.text('Test name'), findsOneWidget);
-      expect(find.text('Code'), findsOneWidget);
-      expect(find.text('Category'), findsOneWidget);
-      expect(find.text('Specimen type'), findsOneWidget);
-      expect(find.text('Result kind'), findsOneWidget);
-      expect(find.text('Default unit'), findsOneWidget);
-      expect(find.text('Unit options'), findsOneWidget);
-      expect(find.text('Description'), findsOneWidget);
-      expect(find.text('Reference range override'), findsOneWidget);
-      expect(find.text('Adult'), findsOneWidget);
       expect(find.text('Add reference range'), findsOneWidget);
+      expect(find.text('Adult'), findsWidgets);
+      expect(find.widgetWithText(AppButton, 'Save'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> &&
+              widget.labelText == 'Result kind',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(LabSearchableTextField), findsWidgets);
+      expect(find.byType(LabEditableValueListField), findsOneWidget);
+      expect(find.byType(LabReferenceRangeListField), findsOneWidget);
     });
 
     testWidgets('qualitative kind shows result options and hides unit options', (
@@ -33,14 +38,14 @@ void main() {
     ) async {
       await _pumpMutationDialog(tester);
 
-      await tester.tap(find.text('Numeric'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Qualitative').last);
-      await tester.pumpAndSettle();
+      await _selectResultKind(tester, 'QUALITATIVE');
 
-      expect(find.text('Qualitative result options'), findsOneWidget);
-      expect(find.text('Unit options'), findsNothing);
-      expect(find.text('Default unit'), findsOneWidget);
+      expect(find.byType(LabEditableValueListField), findsOneWidget);
+      final LabEditableValueListField optionsField = tester
+          .widget<LabEditableValueListField>(
+            find.byType(LabEditableValueListField),
+          );
+      expect(optionsField.labelText, 'Qualitative result options');
     });
 
     testWidgets('save submits full test payload', (WidgetTester tester) async {
@@ -67,8 +72,39 @@ void main() {
       expect(submitted!['unit_options'], isA<List<Object?>>());
       expect(submitted!['result_options'], isA<List<Object?>>());
       expect(submitted!['reference_ranges'], isA<List<Object?>>());
+      final List<Object?> ranges =
+          submitted!['reference_ranges']! as List<Object?>;
+      expect(ranges, isNotEmpty);
+      final Map<String, Object?> firstRange =
+          Map<String, Object?>.from(ranges.first! as Map<dynamic, dynamic>);
+      expect(firstRange['label'], 'Adult');
+      expect(firstRange['age_min_value'], isNull);
+      expect(firstRange['notes'], isNull);
+    });
+
+    testWidgets('text kind hides unit and qualitative options', (
+      WidgetTester tester,
+    ) async {
+      await _pumpMutationDialog(tester);
+
+      await _selectResultKind(tester, 'TEXT');
+
+      expect(find.byType(LabEditableValueListField), findsNothing);
+      expect(find.byType(LabReferenceRangeListField), findsOneWidget);
+      expect(find.text('Add reference range'), findsOneWidget);
     });
   });
+}
+
+Future<void> _selectResultKind(WidgetTester tester, String value) async {
+  final Finder resultKindField = find.byWidgetPredicate(
+    (Widget widget) =>
+        widget is AppSelectField<String> && widget.labelText == 'Result kind',
+  );
+  expect(resultKindField, findsOneWidget);
+  final AppSelectField<String> field = tester.widget(resultKindField);
+  field.onChanged?.call(value);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpMutationDialog(
@@ -77,7 +113,7 @@ Future<void> _pumpMutationDialog(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
-      theme: AppTheme.light(),
+      theme: AppTheme.light,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(

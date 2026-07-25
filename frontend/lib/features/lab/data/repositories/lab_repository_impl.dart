@@ -346,7 +346,7 @@ final class LabRepositoryImpl implements LabRepository {
   Future<Result<LabCatalogItem>> createLabTest(Map<String, Object?> payload) {
     return _apiClient.post<LabCatalogItem>(
       ApiEndpoints.collection(HmsApiResource.labTests),
-      data: _withoutEmpty(payload),
+      data: _withoutEmpty(payload, preserveEmptyIterables: true),
       decoder: (Object? data) =>
           _decodeCatalogItem(data, LabCatalogItemType.test),
     );
