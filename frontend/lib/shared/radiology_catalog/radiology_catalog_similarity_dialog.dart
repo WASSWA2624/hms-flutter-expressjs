@@ -598,6 +598,13 @@ List<_FieldComparison> _buildFieldComparisons({
 
   return <_FieldComparison>[
     _FieldComparison(
+      label: 'id',
+      proposedValue: _displayValue(null),
+      existingValue: _displayValue(test.effectiveId),
+      status: _FieldCompareStatus.onlyExisting,
+      similarityPercent: null,
+    ),
+    _FieldComparison(
       label: 'name',
       proposedValue: _displayValue(proposedName),
       existingValue: _displayValue(existingName),
@@ -628,6 +635,30 @@ List<_FieldComparison> _buildFieldComparisons({
       status: modalityStatus(),
       similarityPercent: modalityExact ? 100 : modalityScore,
     ),
+    if ((test.bodyRegion ?? '').trim().isNotEmpty)
+      _FieldComparison(
+        label: 'bodyRegion',
+        proposedValue: _displayValue(null),
+        existingValue: _displayValue(test.bodyRegion),
+        status: _FieldCompareStatus.onlyExisting,
+        similarityPercent: null,
+      ),
+    if ((test.laterality ?? '').trim().isNotEmpty)
+      _FieldComparison(
+        label: 'laterality',
+        proposedValue: _displayValue(null),
+        existingValue: _displayValue(test.laterality),
+        status: _FieldCompareStatus.onlyExisting,
+        similarityPercent: null,
+      ),
+    if ((test.equipment ?? '').trim().isNotEmpty)
+      _FieldComparison(
+        label: 'equipment',
+        proposedValue: _displayValue(null),
+        existingValue: _displayValue(test.equipment),
+        status: _FieldCompareStatus.onlyExisting,
+        similarityPercent: null,
+      ),
   ];
 }
 
@@ -806,9 +837,13 @@ _StatusVisual _statusVisual(
 
 String _fieldLabel(AppLocalizations l10n, String label) {
   return switch (label) {
+    'id' => l10n.radiologyCatalogProcedureIdLabel,
     'name' => l10n.radiologyProcedureNameLabel,
     'code' => l10n.radiologyProcedureCodeLabel,
     'modality' => l10n.radiologyModalityLabel,
+    'bodyRegion' => l10n.radiologyBodyRegionLabel,
+    'laterality' => l10n.radiologyLateralityLabel,
+    'equipment' => l10n.radiologyEquipmentLabel,
     _ => label,
   };
 }

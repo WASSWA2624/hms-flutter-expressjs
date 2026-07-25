@@ -540,11 +540,6 @@ class _RadiologyCatalogMutationDialogState
     });
   }
 
-  String? get _excludeProcedureId {
-    final List<String> ids = _excludeProcedureIds;
-    return ids.isEmpty ? null : ids.first;
-  }
-
   List<String> get _excludeProcedureIds {
     final RadiologyCatalogProcedure? item = widget.item;
     if (item == null) {
@@ -1001,11 +996,6 @@ class _LabCatalogItemMutationDialogState
     });
   }
 
-  String? get _excludeTestId {
-    final List<String> ids = _excludeTestIds;
-    return ids.isEmpty ? null : ids.first;
-  }
-
   List<String> get _excludeTestIds {
     final LabCatalogItem? item = widget.item;
     if (item == null) {
@@ -1016,6 +1006,17 @@ class _LabCatalogItemMutationDialogState
       item.apiId.trim(),
       if ((item.displayId ?? '').trim().isNotEmpty) item.displayId!.trim(),
     ].where((String id) => id.isNotEmpty).toList(growable: false);
+  }
+
+  String _proposedReferenceRangeSummary() {
+    final List<String> labels = <String>[];
+    for (final EditableLabReferenceRange range in _referenceRanges) {
+      final String label = range.labelController.text.trim();
+      if (label.isNotEmpty) {
+        labels.add(label);
+      }
+    }
+    return labels.join(', ');
   }
 
   Future<void> _loadSimilarityCatalog(
@@ -1124,6 +1125,10 @@ class _LabCatalogItemMutationDialogState
       return true;
     }
 
+    final String proposedSpecimen = _specimenController.text.trim();
+    final String proposedUnit = _unitController.text.trim();
+    final String proposedDescription = _descriptionController.text.trim();
+    final String proposedRanges = _proposedReferenceRangeSummary();
     final LabCatalogSimilarityDialogResult dialogResult =
         await showLabCatalogSimilarityDialog(
           context,
@@ -1131,6 +1136,15 @@ class _LabCatalogItemMutationDialogState
             name: proposedName,
             code: proposedCode.isEmpty ? null : proposedCode,
             category: proposedCategory.isEmpty ? null : proposedCategory,
+            specimenType: proposedSpecimen.isEmpty ? null : proposedSpecimen,
+            resultKind: _resultKind,
+            unit: proposedUnit.isEmpty ? null : proposedUnit,
+            description: proposedDescription.isEmpty
+                ? null
+                : proposedDescription,
+            referenceRangeSummary: proposedRanges.isEmpty
+                ? null
+                : proposedRanges,
           ),
           matches: reviewMatches,
           allowProceed: true,

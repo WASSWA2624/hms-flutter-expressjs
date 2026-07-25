@@ -14,11 +14,21 @@ final class LabCatalogProposedTest {
     required this.name,
     this.code,
     this.category,
+    this.specimenType,
+    this.resultKind,
+    this.unit,
+    this.description,
+    this.referenceRangeSummary,
   });
 
   final String name;
   final String? code;
   final String? category;
+  final String? specimenType;
+  final String? resultKind;
+  final String? unit;
+  final String? description;
+  final String? referenceRangeSummary;
 }
 
 final class LabCatalogSimilarityDialogResult {
@@ -206,13 +216,21 @@ class _ProposedTestCard extends StatelessWidget {
         _ProposedFactGrid(
           facts: <(String, String)>[
             (l10n.labTestNameLabel, proposed.name),
+            (l10n.labTestCodeLabel, _displayValue(proposed.code)),
+            (l10n.labCategoryLabel, _displayValue(proposed.category)),
             (
-              l10n.labTestCodeLabel,
-              _displayValue(proposed.code),
+              l10n.labSpecimenTypeLabel,
+              _displayValue(proposed.specimenType),
+            ),
+            (l10n.labResultKindLabel, _displayValue(proposed.resultKind)),
+            (l10n.labDefaultUnitLabel, _displayValue(proposed.unit)),
+            (
+              l10n.labTestDescriptionLabel,
+              _displayValue(proposed.description),
             ),
             (
-              l10n.labCategoryLabel,
-              _displayValue(proposed.category),
+              l10n.labTestRangesSectionTitle,
+              _displayValue(proposed.referenceRangeSummary),
             ),
           ],
         ),
@@ -331,22 +349,25 @@ class _SimilarityMatchCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (test.apiId.trim().isNotEmpty ||
-                        test.isStandard) ...<Widget>[
-                      SizedBox(height: theme.spacing.xs / 2),
-                      Text(
-                        <String>[
-                          if (test.apiId.trim().isNotEmpty)
-                            test.apiId,
-                          if (test.isStandard)
-                            l10n.labStandardCatalogBadge,
-                        ].join(' · '),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    SizedBox(height: theme.spacing.xs / 2),
+                    Text(
+                      <String>[
+                        if (test.apiId.trim().isNotEmpty) test.apiId,
+                        if ((test.code ?? '').trim().isNotEmpty)
+                          test.code!.trim(),
+                        if ((test.category ?? '').trim().isNotEmpty)
+                          test.category!.trim(),
+                        if ((test.specimenType ?? '').trim().isNotEmpty)
+                          test.specimenType!.trim(),
+                        if ((test.resultKind ?? '').trim().isNotEmpty)
+                          test.resultKind!.trim(),
+                        if (test.isStandard) l10n.labStandardCatalogBadge,
+                      ].join(' · '),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),
@@ -524,109 +545,161 @@ List<_FieldComparison> _buildFieldComparisons({
   required LabCatalogSimilarityMatch match,
 }) {
   final LabCatalogItem test = match.item;
-  final String proposedName = proposed.name.trim();
-  final String existingName = (test.name ?? '').trim();
-  final String proposedCode = (proposed.code ?? '').trim();
-  final String existingCode = (test.code ?? '').trim();
-  final String proposedCategory = (proposed.category ?? '').trim();
-  final String existingCategory = (test.category ?? '').trim();
-
-  final String normalizedProposedName = normalizeLabCatalogName(
-    proposedName,
-  );
-  final String normalizedExistingName = normalizeLabCatalogName(
-    existingName,
-  );
-  final String normalizedProposedCode =
-      normalizeLabCatalogCodeForSimilarity(proposedCode);
-  final String normalizedExistingCode =
-      normalizeLabCatalogCodeForSimilarity(existingCode);
-
-  final bool nameExact =
-      normalizedProposedName.isNotEmpty &&
-      normalizedProposedName == normalizedExistingName;
-  final bool codeExact =
-      normalizedProposedCode.isNotEmpty &&
-      normalizedExistingCode.isNotEmpty &&
-      normalizedProposedCode == normalizedExistingCode;
-  final String normalizedProposedCategory =
-      normalizeLabCatalogCategory(proposedCategory);
-  final String normalizedExistingCategory =
-      normalizeLabCatalogCategory(existingCategory);
-  final bool categoryExact =
-      normalizedProposedCategory.isNotEmpty &&
-      normalizedExistingCategory.isNotEmpty &&
-      normalizedProposedCategory == normalizedExistingCategory;
-
-  final bool nameReason = match.reasons.contains('name');
-  final bool codeReason = match.reasons.contains('code');
-  final bool categoryReason = match.reasons.contains('category');
-  final int? nameScore = match.nameScore;
-  final int? codeScore = match.codeScore;
-  final int? categoryScore = match.categoryScore;
-
-  _FieldCompareStatus codeStatus() {
-    if (codeExact || (proposedCode.isEmpty && existingCode.isEmpty)) {
-      return _FieldCompareStatus.match;
-    }
-    if (codeReason ||
-        (codeScore != null && codeScore >= labCatalogSimilarityThreshold)) {
-      return _FieldCompareStatus.similar;
-    }
-    if (proposedCode.isEmpty && existingCode.isNotEmpty) {
-      return _FieldCompareStatus.onlyExisting;
-    }
-    return _FieldCompareStatus.conflict;
-  }
-
-  _FieldCompareStatus categoryStatus() {
-    if (categoryExact) {
-      return _FieldCompareStatus.match;
-    }
-    if (proposedCategory.isEmpty && existingCategory.isNotEmpty) {
-      return _FieldCompareStatus.onlyExisting;
-    }
-    if (categoryReason ||
-        (categoryScore != null &&
-            categoryScore >= labCatalogSimilarityThreshold)) {
-      return _FieldCompareStatus.similar;
-    }
-    return _FieldCompareStatus.conflict;
-  }
+  final String existingRanges = _existingReferenceRangeSummary(test);
 
   return <_FieldComparison>[
-    _FieldComparison(
+    _compareScoredField(
+      label: 'id',
+      proposedValue: '',
+      existingValue: test.apiId,
+      scoredPercent: null,
+      strongReason: false,
+      normalize: (String value) => value.trim().toUpperCase(),
+    ),
+    _compareScoredField(
       label: 'name',
-      proposedValue: _displayValue(proposedName),
-      existingValue: _displayValue(existingName),
-      status: nameExact
-          ? _FieldCompareStatus.match
-          : nameReason ||
-                (nameScore != null &&
-                    nameScore >= labCatalogSimilarityThreshold)
-          ? _FieldCompareStatus.similar
-          : _FieldCompareStatus.conflict,
-      similarityPercent: nameExact ? 100 : nameScore,
+      proposedValue: proposed.name,
+      existingValue: test.name,
+      scoredPercent: match.nameScore,
+      strongReason: match.reasons.contains('name'),
+      normalize: normalizeLabCatalogName,
     ),
-    _FieldComparison(
+    _compareScoredField(
       label: 'code',
-      proposedValue: _displayValue(proposedCode),
-      existingValue: _displayValue(existingCode),
-      status: codeStatus(),
-      similarityPercent: codeExact
-          ? 100
-          : (proposedCode.isEmpty && existingCode.isEmpty)
-          ? 100
-          : codeScore,
+      proposedValue: proposed.code,
+      existingValue: test.code,
+      scoredPercent: match.codeScore,
+      strongReason: match.reasons.contains('code'),
+      normalize: normalizeLabCatalogCodeForSimilarity,
     ),
-    _FieldComparison(
+    _compareScoredField(
       label: 'category',
-      proposedValue: _displayValue(proposedCategory),
-      existingValue: _displayValue(existingCategory),
-      status: categoryStatus(),
-      similarityPercent: categoryExact ? 100 : categoryScore,
+      proposedValue: proposed.category,
+      existingValue: test.category,
+      scoredPercent: match.categoryScore,
+      strongReason: match.reasons.contains('category'),
+      normalize: normalizeLabCatalogCategory,
     ),
+    _compareScoredField(
+      label: 'specimen',
+      proposedValue: proposed.specimenType,
+      existingValue: test.specimenType,
+      scoredPercent: null,
+      strongReason: false,
+      normalize: normalizeLabCatalogName,
+    ),
+    _compareScoredField(
+      label: 'resultKind',
+      proposedValue: proposed.resultKind,
+      existingValue: test.resultKind,
+      scoredPercent: null,
+      strongReason: false,
+      normalize: (String value) => value.trim().toUpperCase(),
+    ),
+    _compareScoredField(
+      label: 'unit',
+      proposedValue: proposed.unit,
+      existingValue: test.unit,
+      scoredPercent: null,
+      strongReason: false,
+      normalize: normalizeLabCatalogName,
+    ),
+    _compareScoredField(
+      label: 'description',
+      proposedValue: proposed.description,
+      existingValue: test.description,
+      scoredPercent: null,
+      strongReason: false,
+      normalize: normalizeLabCatalogName,
+    ),
+    _compareScoredField(
+      label: 'ranges',
+      proposedValue: proposed.referenceRangeSummary,
+      existingValue: existingRanges,
+      scoredPercent: null,
+      strongReason: false,
+      normalize: normalizeLabCatalogName,
+    ),
+    if (test.isStandard)
+      _compareScoredField(
+        label: 'source',
+        proposedValue: '',
+        existingValue: 'STANDARD',
+        scoredPercent: null,
+        strongReason: false,
+        normalize: (String value) => value.trim().toUpperCase(),
+      ),
   ];
+}
+
+_FieldComparison _compareScoredField({
+  required String label,
+  required String? proposedValue,
+  required String? existingValue,
+  required int? scoredPercent,
+  required bool strongReason,
+  required String Function(String value) normalize,
+}) {
+  final String proposed = (proposedValue ?? '').trim();
+  final String existing = (existingValue ?? '').trim();
+  final String normalizedProposed = normalize(proposed);
+  final String normalizedExisting = normalize(existing);
+
+  final bool bothEmpty = proposed.isEmpty && existing.isEmpty;
+  final bool exact =
+      bothEmpty ||
+      (normalizedProposed.isNotEmpty &&
+          normalizedExisting.isNotEmpty &&
+          normalizedProposed == normalizedExisting);
+
+  int? percent = scoredPercent;
+  if (percent == null &&
+      normalizedProposed.isNotEmpty &&
+      normalizedExisting.isNotEmpty) {
+    percent = exact
+        ? 100
+        : labTextSimilarityScore(normalizedProposed, normalizedExisting);
+  } else if (exact) {
+    percent = 100;
+  }
+
+  final _FieldCompareStatus status;
+  if (exact) {
+    status = _FieldCompareStatus.match;
+  } else if (proposed.isEmpty && existing.isNotEmpty) {
+    status = _FieldCompareStatus.onlyExisting;
+  } else if (proposed.isNotEmpty && existing.isEmpty) {
+    status = _FieldCompareStatus.conflict;
+  } else if (strongReason ||
+      (percent != null && percent >= labCatalogSimilarityThreshold)) {
+    status = _FieldCompareStatus.similar;
+  } else {
+    status = _FieldCompareStatus.conflict;
+  }
+
+  return _FieldComparison(
+    label: label,
+    proposedValue: _displayValue(proposed),
+    existingValue: _displayValue(existing),
+    status: status,
+    similarityPercent: percent,
+  );
+}
+
+String _existingReferenceRangeSummary(LabCatalogItem item) {
+  if (item.referenceRanges.isNotEmpty) {
+    return item.referenceRanges
+        .map((LabReferenceRange range) => range.displayLabel)
+        .where((String value) => value.trim().isNotEmpty)
+        .join(', ');
+  }
+  if ((item.referenceRange ?? '').trim().isNotEmpty) {
+    return item.referenceRange!.trim();
+  }
+  if (item.referenceRangeCount > 0) {
+    return '${item.referenceRangeCount}';
+  }
+  return '';
 }
 
 class _FieldComparisonRow extends StatelessWidget {
@@ -804,9 +877,16 @@ _StatusVisual _statusVisual(
 
 String _fieldLabel(AppLocalizations l10n, String label) {
   return switch (label) {
+    'id' => l10n.labCatalogItemIdLabel,
     'name' => l10n.labTestNameLabel,
     'code' => l10n.labTestCodeLabel,
     'category' => l10n.labCategoryLabel,
+    'specimen' => l10n.labSpecimenTypeLabel,
+    'resultKind' => l10n.labResultKindLabel,
+    'unit' => l10n.labDefaultUnitLabel,
+    'description' => l10n.labTestDescriptionLabel,
+    'ranges' => l10n.labTestRangesSectionTitle,
+    'source' => l10n.labStandardCatalogBadge,
     _ => label,
   };
 }

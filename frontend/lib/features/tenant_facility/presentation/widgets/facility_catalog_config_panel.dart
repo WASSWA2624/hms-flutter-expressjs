@@ -1974,14 +1974,10 @@ class _FacilityCatalogConfigPanelState
     if (result is RadiologyCatalogProcedure) {
       final RadiologyCatalogProcedure existing =
           _resolveRadiologyCatalogItem(result);
-      if (existing.isStandard) {
-        await showRadiologyCatalogProcedureDetailsDialog(
-          context,
-          procedure: existing,
-        );
-      } else {
-        await _openRadiologyEditDialog(existing);
-      }
+      await showRadiologyCatalogProcedureDetailsDialog(
+        context,
+        procedure: existing,
+      );
       return;
     }
     if (result != true) {
@@ -2041,9 +2037,10 @@ class _FacilityCatalogConfigPanelState
     if (result is RadiologyCatalogProcedure) {
       final RadiologyCatalogProcedure selected =
           _resolveRadiologyCatalogItem(result);
-      if (selected.apiId != item.apiId) {
-        await _openRadiologyEditDialog(selected);
-      }
+      await showRadiologyCatalogProcedureDetailsDialog(
+        context,
+        procedure: selected,
+      );
       return;
     }
     if (result != true) {
@@ -2395,11 +2392,7 @@ class _FacilityCatalogConfigPanelState
       }
       if (result is LabCatalogItem) {
         final LabCatalogItem existing = _resolveLabCatalogItem(result);
-        if (existing.isStandard) {
-          await showLabCatalogItemDetailsDialog(context, item: existing);
-        } else {
-          await _openLabEditDialog(existing);
-        }
+        await showLabCatalogItemDetailsDialog(context, item: existing);
         return;
       }
       if (result != true) {
@@ -2470,9 +2463,7 @@ class _FacilityCatalogConfigPanelState
       }
       if (result is LabCatalogItem) {
         final LabCatalogItem existing = _resolveLabCatalogItem(result);
-        if (existing.apiId != item.apiId && !existing.isStandard) {
-          await _openLabEditDialog(existing);
-        }
+        await showLabCatalogItemDetailsDialog(context, item: existing);
         return;
       }
       if (result != true) {
