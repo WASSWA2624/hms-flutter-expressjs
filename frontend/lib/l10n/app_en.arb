@@ -25172,13 +25172,57 @@
   "@radiologySimilarImagingTestDialogBody": {
     "description": "Dialog body when creating an imaging test similar to an existing one."
   },
-  "radiologySimilarImagingTestExactBannerTitle": "Exact imaging test match",
+  "radiologySimilarImagingTestExactBannerTitle": "Match status: Exact duplicate",
   "@radiologySimilarImagingTestExactBannerTitle": {
-    "description": "Banner title when similarity check finds an exact name or code match."
+    "description": "Banner title when similarity check finds a hard exact duplicate."
   },
-  "radiologySimilarImagingTestExactBannerBody": "An exact name or code match was found. Review contradictions below and use the existing test instead of creating a duplicate.",
+  "radiologySimilarImagingTestExactBannerBody": "An identical name and modality, or an identical code, already exists ({score}% composite). Create is blocked — use the existing test instead.",
   "@radiologySimilarImagingTestExactBannerBody": {
-    "description": "Banner body when similarity check finds an exact name or code match."
+    "description": "Banner body when similarity check finds a hard exact duplicate.",
+    "placeholders": {
+      "score": {
+        "type": "int",
+        "example": "100"
+      }
+    }
+  },
+  "radiologySimilarImagingTestReviewBannerTitle": "Match status: Similar ({score}%)",
+  "@radiologySimilarImagingTestReviewBannerTitle": {
+    "description": "Banner title when similarity check finds near matches only.",
+    "placeholders": {
+      "score": {
+        "type": "int",
+        "example": "71"
+      }
+    }
+  },
+  "radiologySimilarImagingTestReviewBannerBody": "Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing test, or create anyway.",
+  "@radiologySimilarImagingTestReviewBannerBody": {
+    "description": "Banner body summarizing near-match field statuses.",
+    "placeholders": {
+      "score": {
+        "type": "int",
+        "example": "71"
+      },
+      "fieldSummary": {
+        "type": "String",
+        "example": "Name: Match · Modality: Conflict"
+      }
+    }
+  },
+  "radiologySimilarImagingTestFieldStatusPart": "{field}: {status}",
+  "@radiologySimilarImagingTestFieldStatusPart": {
+    "description": "One field status fragment in the similarity banner summary.",
+    "placeholders": {
+      "field": {
+        "type": "String",
+        "example": "Name"
+      },
+      "status": {
+        "type": "String",
+        "example": "Match"
+      }
+    }
   },
   "radiologySimilarImagingTestProposedHeading": "New imaging test",
   "@radiologySimilarImagingTestProposedHeading": {
@@ -25204,6 +25248,10 @@
   "@radiologySimilarImagingTestNearMatchLabel": {
     "description": "Badge label for a near imaging-test similarity match."
   },
+  "radiologySimilarImagingTestPartialMatchLabel": "Partial match",
+  "@radiologySimilarImagingTestPartialMatchLabel": {
+    "description": "Badge label when some fields match exactly but others conflict."
+  },
   "radiologySimilarImagingTestYourEntryLabel": "Your entry",
   "@radiologySimilarImagingTestYourEntryLabel": {
     "description": "Label for the proposed field value in a similarity comparison row."
@@ -25211,10 +25259,6 @@
   "radiologySimilarImagingTestExistingValueLabel": "Existing",
   "@radiologySimilarImagingTestExistingValueLabel": {
     "description": "Label for the existing field value in a similarity comparison row."
-  },
-  "radiologySimilarImagingTestReviewBannerTitle": "Review similar imaging tests",
-  "@radiologySimilarImagingTestReviewBannerTitle": {
-    "description": "Banner title when near imaging-test matches are found."
   },
   "radiologySimilarImagingTestMatchCountLabel": "{count} matches",
   "@radiologySimilarImagingTestMatchCountLabel": {
@@ -25270,9 +25314,9 @@
   "@radiologyUseExistingImagingTestAction": {
     "description": "Dismiss create and keep an existing similar imaging test."
   },
-  "radiologyProceedCreateImagingTestAction": "Proceed create",
+  "radiologyProceedCreateImagingTestAction": "Create anyway",
   "@radiologyProceedCreateImagingTestAction": {
-    "description": "Confirm create imaging test despite similar matches."
+    "description": "Primary action to create the imaging test despite similar catalog matches"
   },
   "radiologyImagingTestNameAlreadyInUse": "An imaging test with this name already exists.",
   "@radiologyImagingTestNameAlreadyInUse": {

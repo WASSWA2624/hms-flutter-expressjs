@@ -59,6 +59,14 @@ showRadiologyCatalogSimilarityDialog(
     (RadiologyCatalogSimilarityMatch match) => match.isExact,
   );
   final bool canProceed = allowProceed && !hasExactMatch;
+  final RadiologyCatalogSimilarityMatch? topMatch =
+      visibleMatches.isEmpty ? null : visibleMatches.first;
+  final _SimilarityBannerCopy banner = _similarityBannerCopy(
+    l10n: l10n,
+    proposed: proposed,
+    topMatch: topMatch,
+    hasExactMatch: hasExactMatch,
+  );
 
   return showAppDialog<RadiologyCatalogSimilarityDialogResult>(
     context: context,
@@ -78,12 +86,8 @@ showRadiologyCatalogSimilarityDialog(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AppFormInformationBanner(
-              title: hasExactMatch
-                  ? l10n.radiologySimilarImagingTestExactBannerTitle
-                  : l10n.radiologySimilarImagingTestReviewBannerTitle,
-              message: hasExactMatch
-                  ? l10n.radiologySimilarImagingTestExactBannerBody
-                  : l10n.radiologySimilarImagingTestDialogBody,
+              title: banner.title,
+              message: banner.message,
               variant: hasExactMatch
                   ? AppFormInformationVariant.error
                   : AppFormInformationVariant.warning,
@@ -140,14 +144,15 @@ showRadiologyCatalogSimilarityDialog(
               const RadiologyCatalogSimilarityDialogResult.cancel(),
             ),
           ),
-          if (canProceed)
-            AppButton.primary(
-              label: l10n.radiologyProceedCreateImagingTestAction,
-              leadingIcon: Icons.add_circle_outline,
-              onPressed: () => Navigator.of(dialogContext).pop(
-                const RadiologyCatalogSimilarityDialogResult.proceed(),
-              ),
-            ),
+          AppButton.primary(
+            label: l10n.radiologyProceedCreateImagingTestAction,
+            leadingIcon: Icons.add_circle_outline,
+            onPressed: canProceed
+                ? () => Navigator.of(dialogContext).pop(
+                    const RadiologyCatalogSimilarityDialogResult.proceed(),
+                  )
+                : null,
+          ),
         ],
       );
     },
@@ -379,6 +384,8 @@ class _SimilarityMatchCard extends StatelessWidget {
                     Text(
                       match.isExact
                           ? l10n.radiologySimilarImagingTestExactMatchLabel
+                          : _isPartialMatch(proposed, match)
+                          ? l10n.radiologySimilarImagingTestPartialMatchLabel
                           : l10n.radiologySimilarImagingTestNearMatchLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: badgeOnContainer,
@@ -786,4 +793,95 @@ String _fieldLabel(AppLocalizations l10n, String label) {
 String _displayValue(String? value) {
   final String trimmed = value?.trim() ?? '';
   return trimmed.isEmpty ? '—' : trimmed;
+}
+
+final class _SimilarityBannerCopy {
+  const _SimilarityBannerCopy({required this.title, required this.message});
+
+  final String title;
+  final String message;
+}
+
+_SimilarityBannerCopy _similarityBannerCopy({
+  required AppLocalizations l10n,
+  required RadiologyCatalogProposedTest proposed,
+  required RadiologyCatalogSimilarityMatch? topMatch,
+  required bool hasExactMatch,
+}) {
+  final int score = topMatch?.score ?? 0;
+  if (hasExactMatch) {
+    return _SimilarityBannerCopy(
+      title: l10n.radiologySimilarImagingTestExactBannerTitle,
+      message: l10n.radiologySimilarImagingTestExactBannerBody(score),
+    );
+  }
+
+  if (topMatch == null) {
+    return _SimilarityBannerCopy(
+      title: l10n.radiologySimilarImagingTestReviewBannerTitle(0),
+      message: l10n.radiologySimilarImagingTestDialogBody,
+    );
+  }
+
+  final List<_FieldComparison> comparisons = _buildFieldComparisons(
+    proposed: proposed,
+    match: topMatch,
+  );
+  final String fieldSummary = comparisons
+      .map(
+        (_FieldComparison comparison) =>
+            l10n.radiologySimilarImagingTestFieldStatusPart(
+              _fieldLabel(l10n, comparison.label),
+              _fieldStatusPlainLabel(l10n, comparison),
+            ),
+      )
+      .join(' · ');
+
+  return _SimilarityBannerCopy(
+    title: l10n.radiologySimilarImagingTestReviewBannerTitle(score),
+    message: l10n.radiologySimilarImagingTestReviewBannerBody(
+      score,
+      fieldSummary,
+    ),
+  );
+}
+
+String _fieldStatusPlainLabel(
+  AppLocalizations l10n,
+  _FieldComparison comparison,
+) {
+  return switch (comparison.status) {
+    _FieldCompareStatus.match => l10n.patientsDuplicateStatusMatchLabel,
+    _FieldCompareStatus.similar => comparison.similarityPercent == null
+        ? l10n.patientsDuplicateStatusSimilarLabel
+        : '${l10n.patientsDuplicateStatusSimilarLabel} · '
+              '${comparison.similarityPercent}%',
+    _FieldCompareStatus.conflict => l10n.patientsDuplicateStatusConflictLabel,
+    _FieldCompareStatus.onlyExisting =>
+      l10n.radiologySimilarImagingTestOnlyExistingLabel,
+  };
+}
+
+bool _isPartialMatch(
+  RadiologyCatalogProposedTest proposed,
+  RadiologyCatalogSimilarityMatch match,
+) {
+  if (match.isExact) {
+    return false;
+  }
+  final List<_FieldComparison> comparisons = _buildFieldComparisons(
+    proposed: proposed,
+    match: match,
+  );
+  final bool hasExactField = comparisons.any(
+    (_FieldComparison comparison) =>
+        comparison.status == _FieldCompareStatus.match,
+  );
+  final bool hasConflictOrSimilar = comparisons.any(
+    (_FieldComparison comparison) =>
+        comparison.status == _FieldCompareStatus.conflict ||
+        comparison.status == _FieldCompareStatus.similar ||
+        comparison.status == _FieldCompareStatus.onlyExisting,
+  );
+  return hasExactField && hasConflictOrSimilar;
 }

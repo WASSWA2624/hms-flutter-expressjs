@@ -247,9 +247,14 @@ const checkRadiologyTestDuplicates = ({
       modalityScore
     });
 
-    const isExact = nameExact || codeExact;
+    // Same name with a different modality is a near match, not a hard block.
+    const bothModalitiesPresent = Boolean(normalizedModality)
+      && Boolean(testModality);
+    const hardNameConflict = nameExact
+      && (!bothModalitiesPresent || modalityExact);
+    const isExact = hardNameConflict || codeExact;
     if (isExact) {
-      if (nameExact) exactNameConflict = true;
+      if (hardNameConflict) exactNameConflict = true;
       if (codeExact) exactCodeConflict = true;
       matches.push({
         id: test?.id || null,
@@ -260,7 +265,7 @@ const checkRadiologyTestDuplicates = ({
         reasons: reasons.length
           ? reasons
           : [
-            ...(nameExact ? ['name'] : []),
+            ...(hardNameConflict ? ['name'] : []),
             ...(codeExact ? ['code'] : [])
           ],
         isExact: true,

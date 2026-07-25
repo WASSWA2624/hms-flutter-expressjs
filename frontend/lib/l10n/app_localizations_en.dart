@@ -19635,11 +19635,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologySimilarImagingTestExactBannerTitle =>
-      'Exact imaging test match';
+      'Match status: Exact duplicate';
 
   @override
-  String get radiologySimilarImagingTestExactBannerBody =>
-      'An exact name or code match was found. Review contradictions below and use the existing test instead of creating a duplicate.';
+  String radiologySimilarImagingTestExactBannerBody(int score) {
+    return 'An identical name and modality, or an identical code, already exists ($score% composite). Create is blocked — use the existing test instead.';
+  }
+
+  @override
+  String radiologySimilarImagingTestReviewBannerTitle(int score) {
+    return 'Match status: Similar ($score%)';
+  }
+
+  @override
+  String radiologySimilarImagingTestReviewBannerBody(
+    int score,
+    String fieldSummary,
+  ) {
+    return 'Closest catalog match is $score% overall. $fieldSummary Review matches below, use an existing test, or create anyway.';
+  }
+
+  @override
+  String radiologySimilarImagingTestFieldStatusPart(
+    String field,
+    String status,
+  ) {
+    return '$field: $status';
+  }
 
   @override
   String get radiologySimilarImagingTestProposedHeading => 'New imaging test';
@@ -19661,14 +19683,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologySimilarImagingTestNearMatchLabel => 'Similar';
 
   @override
+  String get radiologySimilarImagingTestPartialMatchLabel => 'Partial match';
+
+  @override
   String get radiologySimilarImagingTestYourEntryLabel => 'Your entry';
 
   @override
   String get radiologySimilarImagingTestExistingValueLabel => 'Existing';
-
-  @override
-  String get radiologySimilarImagingTestReviewBannerTitle =>
-      'Review similar imaging tests';
 
   @override
   String radiologySimilarImagingTestMatchCountLabel(int count) {
@@ -19710,7 +19731,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyUseExistingImagingTestAction => 'Use existing';
 
   @override
-  String get radiologyProceedCreateImagingTestAction => 'Proceed create';
+  String get radiologyProceedCreateImagingTestAction => 'Create anyway';
 
   @override
   String get radiologyImagingTestNameAlreadyInUse =>

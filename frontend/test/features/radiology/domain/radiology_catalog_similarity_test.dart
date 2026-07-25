@@ -44,11 +44,12 @@ void main() {
             existing: existing,
           );
 
-      expect(result.exactNameConflict, isTrue);
-      expect(result.similarMatches, isNotEmpty);
-      expect(result.similarMatches.first.score, lessThan(100));
-      expect(result.similarMatches.first.modalityScore, 0);
-      expect(result.similarMatches.first.nameScore, 100);
+      expect(result.exactNameConflict, isFalse);
+      expect(result.hasExactConflict, isFalse);
+      expect(result.nonExactSimilarMatches, isNotEmpty);
+      expect(result.nonExactSimilarMatches.first.score, lessThan(100));
+      expect(result.nonExactSimilarMatches.first.modalityScore, 0);
+      expect(result.nonExactSimilarMatches.first.nameScore, 100);
     });
 
     test('detects punctuation-equivalent codes as exact conflicts', () {

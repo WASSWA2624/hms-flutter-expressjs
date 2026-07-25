@@ -364,9 +364,14 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
       modalityScore: modalityScore,
     );
 
-    final bool isExact = nameExact || codeExact;
+    // Same name with a different modality is a near match, not a hard block.
+    final bool bothModalitiesPresent =
+        normalizedModality.isNotEmpty && testModality.isNotEmpty;
+    final bool hardNameConflict =
+        nameExact && (!bothModalitiesPresent || modalityExact);
+    final bool isExact = hardNameConflict || codeExact;
     if (isExact) {
-      if (nameExact) {
+      if (hardNameConflict) {
         exactNameConflict = true;
       }
       if (codeExact) {
@@ -378,7 +383,7 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
           score: compositeScore,
           reasons: reasons.isEmpty
               ? <String>[
-                  if (nameExact) 'name',
+                  if (hardNameConflict) 'name',
                   if (codeExact) 'code',
                 ]
               : reasons,

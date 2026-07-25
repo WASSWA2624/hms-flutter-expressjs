@@ -51,10 +51,12 @@ describe('radiology-test-similarity', () => {
       existing
     });
 
-    expect(result.exactNameConflict).toBe(true);
-    expect(result.similarMatches[0].score).toBeLessThan(100);
-    expect(result.similarMatches[0].modalityScore).toBe(0);
-    expect(result.similarMatches[0].nameScore).toBe(100);
+    expect(result.exactNameConflict).toBe(false);
+    expect(result.hasExactConflict).toBe(false);
+    expect(result.nonExactSimilarMatches.length).toBeGreaterThan(0);
+    expect(result.nonExactSimilarMatches[0].score).toBeLessThan(100);
+    expect(result.nonExactSimilarMatches[0].modalityScore).toBe(0);
+    expect(result.nonExactSimilarMatches[0].nameScore).toBe(100);
   });
 
   it('detects punctuation-equivalent codes as exact conflicts', () => {

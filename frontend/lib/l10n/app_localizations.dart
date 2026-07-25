@@ -36535,17 +36535,41 @@ abstract class AppLocalizations {
   /// **'Similar imaging tests exist in this catalog scope. Review matches before continuing.'**
   String get radiologySimilarImagingTestDialogBody;
 
-  /// Banner title when similarity check finds an exact name or code match.
+  /// Banner title when similarity check finds a hard exact duplicate.
   ///
   /// In en, this message translates to:
-  /// **'Exact imaging test match'**
+  /// **'Match status: Exact duplicate'**
   String get radiologySimilarImagingTestExactBannerTitle;
 
-  /// Banner body when similarity check finds an exact name or code match.
+  /// Banner body when similarity check finds a hard exact duplicate.
   ///
   /// In en, this message translates to:
-  /// **'An exact name or code match was found. Review contradictions below and use the existing test instead of creating a duplicate.'**
-  String get radiologySimilarImagingTestExactBannerBody;
+  /// **'An identical name and modality, or an identical code, already exists ({score}% composite). Create is blocked — use the existing test instead.'**
+  String radiologySimilarImagingTestExactBannerBody(int score);
+
+  /// Banner title when similarity check finds near matches only.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: Similar ({score}%)'**
+  String radiologySimilarImagingTestReviewBannerTitle(int score);
+
+  /// Banner body summarizing near-match field statuses.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing test, or create anyway.'**
+  String radiologySimilarImagingTestReviewBannerBody(
+    int score,
+    String fieldSummary,
+  );
+
+  /// One field status fragment in the similarity banner summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{field}: {status}'**
+  String radiologySimilarImagingTestFieldStatusPart(
+    String field,
+    String status,
+  );
 
   /// Heading for the proposed imaging test in the similarity dialog.
   ///
@@ -36583,6 +36607,12 @@ abstract class AppLocalizations {
   /// **'Similar'**
   String get radiologySimilarImagingTestNearMatchLabel;
 
+  /// Badge label when some fields match exactly but others conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial match'**
+  String get radiologySimilarImagingTestPartialMatchLabel;
+
   /// Label for the proposed field value in a similarity comparison row.
   ///
   /// In en, this message translates to:
@@ -36594,12 +36624,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Existing'**
   String get radiologySimilarImagingTestExistingValueLabel;
-
-  /// Banner title when near imaging-test matches are found.
-  ///
-  /// In en, this message translates to:
-  /// **'Review similar imaging tests'**
-  String get radiologySimilarImagingTestReviewBannerTitle;
 
   /// Count of closest imaging-test similarity matches.
   ///
@@ -36667,10 +36691,10 @@ abstract class AppLocalizations {
   /// **'Use existing'**
   String get radiologyUseExistingImagingTestAction;
 
-  /// Confirm create imaging test despite similar matches.
+  /// Primary action to create the imaging test despite similar catalog matches
   ///
   /// In en, this message translates to:
-  /// **'Proceed create'**
+  /// **'Create anyway'**
   String get radiologyProceedCreateImagingTestAction;
 
   /// Inline validation when imaging test name duplicates an existing test.
