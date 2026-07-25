@@ -1410,6 +1410,17 @@ class _FacilityCatalogConfigPanelState
     );
   }
 
+  RadiologyCatalogTest _resolveRadiologyCatalogItem(
+    RadiologyCatalogTest item,
+  ) {
+    for (final RadiologyCatalogTest candidate in _radiologyItems) {
+      if (candidate.apiId == item.apiId || candidate.id == item.id) {
+        return candidate;
+      }
+    }
+    return item;
+  }
+
   Future<void> _openRadiologyAddDialog() async {
     final String? tenantId = await _resolveTenantIdForCreate();
     if (!mounted || tenantId == null) {
@@ -1418,7 +1429,7 @@ class _FacilityCatalogConfigPanelState
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
-    final bool? saved = await showAppDialog<bool>(
+    final Object? result = await showAppDialog<Object>(
       context: context,
       barrierDismissible: false,
       builder: (_) => RadiologyCatalogMutationDialog(
@@ -1427,16 +1438,23 @@ class _FacilityCatalogConfigPanelState
         loadExistingItems: () =>
             _loadRadiologySimilarityCandidates(tenantId: tenantId),
         onSubmit: (Map<String, Object?> payload) async {
-          final Result<RadiologyCatalogTest> result = await repository
+          final Result<RadiologyCatalogTest> created = await repository
               .createRadiologyCatalogTest(payload);
-          return result.when(
+          return created.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
           );
         },
       ),
     );
-    if (!mounted || saved != true) {
+    if (!mounted) {
+      return;
+    }
+    if (result is RadiologyCatalogTest) {
+      await _openRadiologyEditDialog(_resolveRadiologyCatalogItem(result));
+      return;
+    }
+    if (result != true) {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1450,7 +1468,7 @@ class _FacilityCatalogConfigPanelState
       radiologyRepositoryProvider,
     );
     final String? tenantId = widget.tenantId?.trim();
-    final bool? saved = await showAppDialog<bool>(
+    final Object? result = await showAppDialog<Object>(
       context: context,
       barrierDismissible: false,
       builder: (_) => RadiologyCatalogMutationDialog(
@@ -1460,16 +1478,27 @@ class _FacilityCatalogConfigPanelState
         loadExistingItems: () =>
             _loadRadiologySimilarityCandidates(tenantId: tenantId),
         onSubmit: (Map<String, Object?> payload) async {
-          final Result<RadiologyCatalogTest> result = await repository
+          final Result<RadiologyCatalogTest> updated = await repository
               .updateRadiologyCatalogTest(item.apiId, payload);
-          return result.when(
+          return updated.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
           );
         },
       ),
     );
-    if (!mounted || saved != true) {
+    if (!mounted) {
+      return;
+    }
+    if (result is RadiologyCatalogTest) {
+      final RadiologyCatalogTest selected =
+          _resolveRadiologyCatalogItem(result);
+      if (selected.apiId != item.apiId) {
+        await _openRadiologyEditDialog(selected);
+      }
+      return;
+    }
+    if (result != true) {
       return;
     }
     await _ensureTabLoaded(_tab, force: true);

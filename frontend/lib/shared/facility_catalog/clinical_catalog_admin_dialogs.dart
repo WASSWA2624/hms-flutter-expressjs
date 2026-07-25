@@ -613,7 +613,12 @@ class _RadiologyCatalogMutationDialogState
           });
           return false;
         case RadiologyCatalogSimilarityAction.useExisting:
-          Navigator.of(context).pop(false);
+          final RadiologyCatalogTest? existing = dialogResult.selectedTest;
+          if (existing == null) {
+            setState(() => _isSaving = false);
+            return false;
+          }
+          Navigator.of(context).pop(existing);
           return false;
         case RadiologyCatalogSimilarityAction.proceed:
           if (result.hasExactConflict) {

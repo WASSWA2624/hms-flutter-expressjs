@@ -10055,15 +10055,15 @@
   "@clinicalRadiologyCatalogSelectTitle": {
     "description": "Clinical radiology searchable catalog selector title."
   },
-  "clinicalRadiologyCatalogSelectBody": "Select an imaging test, then add it to the request.",
+  "clinicalRadiologyCatalogSelectBody": "Select a procedure, then add it to the request.",
   "@clinicalRadiologyCatalogSelectBody": {
     "description": "Clinical radiology searchable catalog selector body."
   },
-  "clinicalRadiologyCatalogSelectLabel": "Imaging test",
+  "clinicalRadiologyCatalogSelectLabel": "Procedure",
   "@clinicalRadiologyCatalogSelectLabel": {
     "description": "Clinical radiology searchable catalog selector label."
   },
-  "clinicalRadiologyCatalogSelectHint": "Search and select an imaging test",
+  "clinicalRadiologyCatalogSelectHint": "Search and select a procedure",
   "@clinicalRadiologyCatalogSelectHint": {
     "description": "Clinical radiology searchable catalog selector hint."
   },
@@ -25144,9 +25144,9 @@
   "@radiologyModalityInterventionalRadiology": {
     "description": "Radiology modality label."
   },
-  "radiologyImagingTestsTabLabel": "Imaging tests",
-  "@radiologyImagingTestsTabLabel": {
-    "description": "Radiology configuration imaging tests tab label."
+  "radiologyProceduresTabLabel": "Procedures",
+  "@radiologyProceduresTabLabel": {
+    "description": "Radiology configuration procedures tab label."
   },
   "radiologyEquipmentTabLabel": "Equipment",
   "@radiologyEquipmentTabLabel": {
@@ -25156,21 +25156,21 @@
   "@radiologyConfigurationSearchLabel": {
     "description": "Radiology configuration search semantic label."
   },
-  "radiologyConfigurationSearchHint": "Search tests, modality, code, source, or status",
+  "radiologyConfigurationSearchHint": "Search procedures, modality, code, source, or status",
   "@radiologyConfigurationSearchHint": {
     "description": "Radiology configuration search hint."
   },
-  "radiologyCreateImagingTestAction": "Create imaging test",
-  "@radiologyCreateImagingTestAction": {
-    "description": "Radiology create imaging test action."
+  "radiologyCreateProcedureAction": "Create procedure",
+  "@radiologyCreateProcedureAction": {
+    "description": "Radiology create procedure action."
   },
-  "radiologySimilarImagingTestDialogTitle": "Similar imaging test found",
-  "@radiologySimilarImagingTestDialogTitle": {
-    "description": "Dialog title when creating an imaging test similar to an existing one."
+  "radiologySimilarProcedureDialogTitle": "Similar procedure found",
+  "@radiologySimilarProcedureDialogTitle": {
+    "description": "Dialog title when creating a procedure similar to an existing one."
   },
-  "radiologySimilarImagingTestDialogBody": "Similar imaging tests exist in this catalog scope. Review matches before continuing.",
-  "@radiologySimilarImagingTestDialogBody": {
-    "description": "Dialog body when creating an imaging test similar to an existing one."
+  "radiologySimilarProcedureDialogBody": "Similar procedures exist in this catalog scope. Review matches before continuing.",
+  "@radiologySimilarProcedureDialogBody": {
+    "description": "Dialog body when creating a procedure similar to an existing one."
   },
   "radiologySimilarImagingTestExactBannerTitle": "Match status: Exact duplicate",
   "@radiologySimilarImagingTestExactBannerTitle": {
