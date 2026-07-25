@@ -1,1 +1,37 @@
-On The admin setup screen under Clinical Services tab and then also under the Lab tab There is a create test, create test button when you open it it opens, it creates lab test, create lab test create lab test dialog. Right now, it, this lab test shows only Few fields, the name, then the test codes, the category, specimen type and description. This is extremely very basic, but the tests, lab tests can have wide variations in the nature of tests, in the name, in the codes, in the categories, they can fall under several categories. The specimen types also fall under several categories. Like, for example, they are known categories, all lab tests have known categories, and all speci-specimens are known, so which means that the category can be replaced by That such a specific component, and then the same applies to the specimen type, but you know, lab tests have latest have different result types, like for example maybe the result, it might be a numerical, it might be a qualitative value reference ranges, things like reference ranges, all those ones. So which means the great lab test dialogue form should be extremely comprehensive, but also easy to use, such that when someone is using it and when someone is reading it, it is chronological, so you choose the test, the code, you can type the code, you can choose the category, and the category, the specimen type reference ranges, reference ranges can also be categorized by age by gender, because some people, they, they are, they are in a test that have more than one reference ranges, for example, different reference range for adults for the, the children, for the Different age brackets even for males and females, different genders, so all those things need to be included so that it is the, the most of the things are pre-configured and, like, normally things are already pre-filled the, the flow should be, the flow of creating a new lab test should be very easy and also, but comprehensive and extremely flexible, even the database should support all that. 
+# Expand Clinical Services Lab Create Test dialog
+
+Make Create Lab Test on Clinical Services → Lab comprehensive, chronological, and easy to use.
+
+## Context
+
+- Route: `/admin/setup?section=clinical-services`, Lab tab.
+- **Create test** opens `LabCatalogItemMutationDialog` with only name, code, category, specimen, description as plain text.
+- Backend create schema already supports `result_kind`, units, options, and age/gender ranges; reuse `LabCatalogTestDialog` patterns.
+
+## Requirements
+
+1. Expand create/edit for lab **tests**: name and code first; searchable known **category** and **specimen type** (not free-text-only).
+2. Add result config next: `result_kind` (NUMERIC / QUALITATIVE / TEXT), unit / unit options, qualitative options when needed, description.
+3. Support multiple reference ranges (label, unit, gender, age bounds, normal/critical or text); add/remove; prefill one Adult range.
+4. Persist full payload via existing create/update APIs; refresh Lab table; localize loading, validation, error, success.
+5. Gate Create/Edit with lab-catalog permissions; hide unauthorized actions; backend authoritative.
+6. Keep scope picker when `tenantId` missing. Migrate only if needed.
+
+## Constraints
+
+- Reuse lab reference-range widgets, validators, repositories, and form controls from `LabCatalogTestDialog`.
+- Progressive disclosure by result kind; no radiology/diagnosis refactors.
+- Follow `.cursor/mandatories.mdc` and access rules; responsive; theme tokens.
+
+## Acceptance Criteria
+
+- Ordered form: identity → category/specimen → result kind/units/options → reference ranges.
+- Category/specimen use searchable known options; multiple age/gender ranges save and reload.
+- Table syncs after save; unauthorized Create/Edit absent.
+- Tests/manual checks cover payload, range validation, permissions; spot-check viewports/themes.
+
+## Relevant Files
+
+- `screens/admin-setup/clinical-services.md`, `facility_catalog_config_panel.dart`, `clinical_catalog_admin_dialogs.dart`, `lab_catalog_dialogs.dart`
+- `backend/src/modules/lab-test/`, `backend/prisma/schema.prisma`
+- `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`
