@@ -707,9 +707,7 @@ class _RadiologyCatalogMutationDialogState
       return AppDialog(
         title: Text(title),
         icon: Icon(iconData),
-        maxWidth: 420,
-        initialMaximized: false,
-        showMaximizeButton: false,
+        maxWidth: 560,
         closeEnabled: true,
         content: SizedBox(
           height: 160,
@@ -733,7 +731,6 @@ class _RadiologyCatalogMutationDialogState
       icon: Icon(iconData),
       scrollable: true,
       maxWidth: 560,
-      initialMaximized: false,
       closeEnabled: !formLocked,
       content: Form(
         key: _formKey,
