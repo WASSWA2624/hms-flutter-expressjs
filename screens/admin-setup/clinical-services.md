@@ -1,22 +1,6 @@
 
 ## Clinical Services panel chrome (`FacilityCatalogConfigPanel`)
 
-## Radiology nested tab
-
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Delete | Active row actions (`clinicalRadiologyDeleteSelectionAction`) | `AppConfirmActionDialog` titled `radiologySoftDeleteProcedureDialogTitle`; body names tenant catalog scope; submit **Delete**; soft-deletes via `deleteRadiologyCatalogProcedure`. |
-| Restore | Soft-deleted row actions (`radiologyRestoreProcedureAction`) | `AppConfirmActionDialog`; calls `restoreRadiologyCatalogProcedure`. |
-| Permanent delete | Soft-deleted row actions (`radiologyPermanentDeleteProcedureAction`) | Type-name `AppTextInputActionDialog`, then `AppConfirmActionDialog`; calls `permanentDeleteRadiologyCatalogProcedure`. |
-
-**Realtime:** panel listens for `diagnostic.radiology_catalog_updated`; soft-delete / restore / permanent-delete patch the table immediately; create/update force a silent reload. Mutations defer inbound events while in flight.
-
-**Columns:** name, code, modality, **Deletion status** (`Active` / `Soft deleted`), actions.
-
-**Filter groups:** modality (from loaded rows).
-
-List loads with `includeDeleted: true` so soft-deleted procedures remain visible.
-
 ### `RadiologyCatalogMutationDialog` (create / edit)
 
 | Action button / control | Location | Modal opened or function |
