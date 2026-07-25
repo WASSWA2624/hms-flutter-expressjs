@@ -5,7 +5,6 @@
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Edit | Row actions / row select | `RadiologyCatalogMutationDialog` (edit). |
 | Delete | Row actions (`clinicalRadiologyDeleteSelectionAction`) | `LabDeleteReasonDialog` titled with `radiologyDisableOfferingDialogTitle`; submit **Delete**; calls `deleteRadiologyCatalogTest`. |
 
 **Filter groups:** modality (from loaded rows).
