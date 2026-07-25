@@ -116,20 +116,31 @@ Opened after Configure → Next when the Lab nested tab is active.
 
 ## Radiology enable offering dialog (`RadiologyEnableFacilityOfferingDialog`)
 
-Opened after Configure → Next when the Radiology nested tab is active.
+Opened after Configure → Next when the Radiology nested tab is active. Wizard: **catalog → batch prices → preview → one batch enable**.
+
+Catalog lists only procedures **not** already offered at the scoped facility.
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
 | Filters | Catalog search (`radiologyFiltersLabel`) | Modality filters; **Apply filters** / **Clear filters** (`radiologyClearFiltersAction`). |
 | Settings | Column visibility (when >1 columns) | Column-settings dialog. |
-| Row select (not yet offered) | Catalog row | Opens `RadiologyEnableOfferingPriceDialog`. |
-| Close | Footer | Dismisses picker (`false`). |
+| Row select / checkbox | Catalog row (available only) | Toggles multi-select for batch enable. |
+| Back | Footer leftmost | Catalog: returns to scope picker when `showBackAction` (pops `backResult`); otherwise dismisses. Price → catalog; Preview → price. |
+| Next | Footer middle (`commonNextActionLabel`) | Always visible on catalog/price. Catalog: disabled with `radiologySelectAtLeastOneTestMessage` until ≥1 selected; then opens batch price. Price: validates required unit prices, then opens preview. |
+| Close | Footer rightmost | Aborts without enable (pops whether any were already enabled this session). |
+| Enable selected | Preview footer primary (`radiologyEnableSelectedProceduresAction`) | Enables all remaining selected via `onEnable`; shows failure banner; pops `true` on full success. Disabled with reason when selection empty or prices invalid. |
 
-### Nested `RadiologyEnableOfferingPriceDialog`
+### Batch price step
 
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Enable procedure | Footer primary only (`radiologyEnableProcedureAction`) | Upserts facility radiology offering with unit price; pops `true`. No footer Cancel — abort via dialog title-bar **Close**. |
+Stacked fields for each selected procedure: name/code/modality plus required `AppCurrencyAmountField` (no per-item nested price dialogs).
+
+### Preview step
+
+Table of name / code / modality / price; checkboxes remove items from the batch before submit.
+
+### Standalone `RadiologyEnableOfferingPriceDialog`
+
+Single-procedure price enable used by other callers (e.g. workspace nested flows), not by this panel’s Configure wizard.
 
 ---
 
@@ -173,7 +184,7 @@ Used for radiology / lab / diagnosis global catalog deletes from this panel. Cal
 
 - Clinical Services → nested Radiology / Lab / Diagnoses tables
 - **Configure** → **Select tenant and facility** →
-  - Radiology → `RadiologyEnableFacilityOfferingDialog` → `RadiologyEnableOfferingPriceDialog`
+  - Radiology → `RadiologyEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable; Back can return to scope)
   - Lab → `LabEnableFacilityOfferingDialog` (tests only from this route) → `_LabEnableOfferingPriceDialog`
   - Diagnoses → `DiagnosisEnableFacilityOfferingDialog` (row enable; no nested price dialog)
 - Add / Create (no tenant) → **Select tenant and facility** → category mutation dialog
