@@ -5,7 +5,6 @@
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Create imaging test | Search trailing; empty-state primary (`radiologyCreateImagingTestAction`) | May open **Select tenant and facility** when `tenantId` is missing; then `RadiologyCatalogMutationDialog` (create). |
 | Edit | Row actions / row select | `RadiologyCatalogMutationDialog` (edit). |
 | Delete | Row actions (`clinicalRadiologyDeleteSelectionAction`) | `LabDeleteReasonDialog` titled with `radiologyDisableOfferingDialogTitle`; submit **Delete**; calls `deleteRadiologyCatalogTest`. |
 
