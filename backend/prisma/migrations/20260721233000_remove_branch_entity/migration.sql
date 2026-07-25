@@ -78,6 +78,20 @@ WHERE p.branch_id IS NOT NULL
   AND p.facility_id IS NULL
   AND b.facility_id IS NOT NULL;
 
+UPDATE analytics_event a
+INNER JOIN branch b ON b.id = a.branch_id
+SET a.facility_id = COALESCE(a.facility_id, b.facility_id)
+WHERE a.branch_id IS NOT NULL
+  AND a.facility_id IS NULL
+  AND b.facility_id IS NOT NULL;
+
+UPDATE kpi_snapshot k
+INNER JOIN branch b ON b.id = k.branch_id
+SET k.facility_id = COALESCE(k.facility_id, b.facility_id)
+WHERE k.branch_id IS NOT NULL
+  AND k.facility_id IS NULL
+  AND b.facility_id IS NOT NULL;
+
 -- Drop FKs that reference branch.
 ALTER TABLE `department` DROP FOREIGN KEY `department_branch_id_fkey`;
 ALTER TABLE `address` DROP FOREIGN KEY `address_branch_id_fkey`;
@@ -90,6 +104,8 @@ ALTER TABLE `day_close` DROP FOREIGN KEY `day_close_branch_id_fkey`;
 ALTER TABLE `handover` DROP FOREIGN KEY `handover_branch_id_fkey`;
 ALTER TABLE `custody_snapshot` DROP FOREIGN KEY `custody_snapshot_branch_id_fkey`;
 ALTER TABLE `closeout_pack` DROP FOREIGN KEY `closeout_pack_branch_id_fkey`;
+ALTER TABLE `analytics_event` DROP FOREIGN KEY `analytics_event_branch_id_fkey`;
+ALTER TABLE `kpi_snapshot` DROP FOREIGN KEY `kpi_snapshot_branch_id_fkey`;
 
 -- Drop indexes on branch_id.
 DROP INDEX `department_branch_id_idx` ON `department`;
@@ -103,6 +119,8 @@ DROP INDEX `day_close_branch_id_idx` ON `day_close`;
 DROP INDEX `handover_branch_id_idx` ON `handover`;
 DROP INDEX `custody_snapshot_branch_id_idx` ON `custody_snapshot`;
 DROP INDEX `closeout_pack_branch_id_idx` ON `closeout_pack`;
+DROP INDEX `analytics_event_branch_id_idx` ON `analytics_event`;
+DROP INDEX `kpi_snapshot_branch_id_idx` ON `kpi_snapshot`;
 
 -- Drop branch_id columns.
 ALTER TABLE `department` DROP COLUMN `branch_id`;
@@ -116,6 +134,8 @@ ALTER TABLE `day_close` DROP COLUMN `branch_id`;
 ALTER TABLE `handover` DROP COLUMN `branch_id`;
 ALTER TABLE `custody_snapshot` DROP COLUMN `branch_id`;
 ALTER TABLE `closeout_pack` DROP COLUMN `branch_id`;
+ALTER TABLE `analytics_event` DROP COLUMN `branch_id`;
+ALTER TABLE `kpi_snapshot` DROP COLUMN `branch_id`;
 
 -- Drop branch table FKs then table.
 ALTER TABLE `branch` DROP FOREIGN KEY `branch_tenant_id_fkey`;
