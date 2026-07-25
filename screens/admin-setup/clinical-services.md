@@ -11,7 +11,7 @@
 | Edit | Row actions / row select | `LabCatalogItemMutationDialog` for the row’s kind. |
 | Delete | Row actions (`tenantFacilityDeleteAction` → **Delete**) | `LabDeleteReasonDialog`; submit **Delete test** or **Delete panel**. |
 
-**Filter groups:** type (test / panel); category (from loaded rows).
+**Filter groups:** type (test / panel); category; result kind; specimen type; source (from loaded rows).
 
 ### `LabCatalogItemMutationDialog` (create / edit)
 
@@ -73,7 +73,7 @@ Opened after Configure → Next when the Lab nested tab is active.
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Laboratory filters / Filter | Catalog search (`labFiltersLabel`) | Category + result-kind filter groups; **Apply filters** / **Clear filters**. |
+| Laboratory filters / Filter | Catalog search (`labFiltersLabel`) | Type (when all), category, result-kind, specimen type, and source filter groups; **Apply filters** / **Clear filters**. |
 | Settings | Column visibility (when >1 columns) | Column-settings dialog. |
 | Row select (not yet offered) | Catalog row | Opens nested `_LabEnableOfferingPriceDialog`. |
 | Close | Footer | Dismisses picker (`false`). |

@@ -30,6 +30,7 @@ import 'package:hosspi_hms/shared/facility_catalog/clinical_catalog_admin_dialog
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 import 'package:hosspi_hms/shared/facility_catalog/lab_catalog_mutate_visibility.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_dialogs.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_fields.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
@@ -63,6 +64,9 @@ class _FacilityCatalogConfigPanelState
   static const int _diagnosisFetchLimit = 1000;
   static const String _labTypeFilterKey = 'type';
   static const String _labCategoryFilterKey = 'category';
+  static const String _labResultKindFilterKey = 'result_kind';
+  static const String _labSpecimenFilterKey = 'specimen_type';
+  static const String _labSourceFilterKey = 'source';
   static const String _modalityFilterKey = 'modality';
   static const String _diagnosisCategoryFilterKey = 'category';
 
@@ -95,6 +99,9 @@ class _FacilityCatalogConfigPanelState
   bool _diagnosisLoadInFlight = false;
   List<String> _radiologyModalities = const <String>[];
   List<String> _labCategories = const <String>[];
+  List<String> _labResultKinds = const <String>[];
+  List<String> _labSpecimenTypes = const <String>[];
+  List<String> _labSources = const <String>[];
   List<String> _diagnosisCategories = const <String>[];
   AppFailure? _radiologyFailure;
   AppFailure? _labFailure;
@@ -124,6 +131,9 @@ class _FacilityCatalogConfigPanelState
   List<LabCatalogItem> _computeFilteredLabItems() {
     final String? type = _labFilterValue.option(_labTypeFilterKey);
     final String? category = _labFilterValue.option(_labCategoryFilterKey);
+    final String? resultKind = _labFilterValue.option(_labResultKindFilterKey);
+    final String? specimen = _labFilterValue.option(_labSpecimenFilterKey);
+    final String? source = _labFilterValue.option(_labSourceFilterKey);
     return _labItems.where((LabCatalogItem item) {
       if (type != null && type.isNotEmpty && item.type.name != type) {
         return false;
@@ -131,6 +141,23 @@ class _FacilityCatalogConfigPanelState
       if (category != null &&
           category.isNotEmpty &&
           (item.category ?? '').trim() != category) {
+        return false;
+      }
+      if (resultKind != null &&
+          resultKind.isNotEmpty &&
+          item.type == LabCatalogItemType.test &&
+          (item.resultKind ?? '').trim().toUpperCase() !=
+              resultKind.toUpperCase()) {
+        return false;
+      }
+      if (specimen != null &&
+          specimen.isNotEmpty &&
+          (item.specimenType ?? '').trim() != specimen) {
+        return false;
+      }
+      if (source != null &&
+          source.isNotEmpty &&
+          (item.source ?? '').trim() != source) {
         return false;
       }
       return true;
@@ -185,6 +212,19 @@ class _FacilityCatalogConfigPanelState
   void _refreshLabFilterOptions() {
     _labCategories = _uniqueSortedFieldValues(
       _labItems.map((LabCatalogItem item) => item.category),
+    );
+    _labResultKinds = _uniqueSortedFieldValues(<String?>[
+      'NUMERIC',
+      'QUALITATIVE',
+      'TEXT',
+      for (final LabCatalogItem item in _labItems)
+        if (item.type == LabCatalogItemType.test) item.resultKind,
+    ]);
+    _labSpecimenTypes = _uniqueSortedFieldValues(
+      _labItems.map((LabCatalogItem item) => item.specimenType),
+    );
+    _labSources = _uniqueSortedFieldValues(
+      _labItems.map((LabCatalogItem item) => item.source),
     );
   }
 
@@ -790,7 +830,44 @@ class _FacilityCatalogConfigPanelState
               allLabel: l10n.commonAllLabel,
               choices: <AppSearchBarFilterChoice>[
                 for (final String category in _labCategories)
-                  AppSearchBarFilterChoice(value: category, label: category),
+                  AppSearchBarFilterChoice(
+                    value: category,
+                    label: category,
+                    icon: labCatalogCategoryIcon(category),
+                  ),
+              ],
+            ),
+          if (_labResultKinds.isNotEmpty)
+            AppSearchBarFilterGroup(
+              key: _labResultKindFilterKey,
+              label: l10n.labResultKindLabel,
+              allLabel: l10n.commonAllLabel,
+              choices: <AppSearchBarFilterChoice>[
+                for (final String kind in _labResultKinds)
+                  AppSearchBarFilterChoice(
+                    value: kind,
+                    label: _labResultKindLabel(l10n, kind),
+                  ),
+              ],
+            ),
+          if (_labSpecimenTypes.isNotEmpty)
+            AppSearchBarFilterGroup(
+              key: _labSpecimenFilterKey,
+              label: l10n.labSpecimenTypeLabel,
+              allLabel: l10n.commonAllLabel,
+              choices: <AppSearchBarFilterChoice>[
+                for (final String specimen in _labSpecimenTypes)
+                  AppSearchBarFilterChoice(value: specimen, label: specimen),
+              ],
+            ),
+          if (_labSources.isNotEmpty)
+            AppSearchBarFilterGroup(
+              key: _labSourceFilterKey,
+              label: l10n.radiologySourceColumnLabel,
+              allLabel: l10n.commonAllLabel,
+              choices: <AppSearchBarFilterChoice>[
+                for (final String source in _labSources)
+                  AppSearchBarFilterChoice(value: source, label: source),
               ],
             ),
         ],

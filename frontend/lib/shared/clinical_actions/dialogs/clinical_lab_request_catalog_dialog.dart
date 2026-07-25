@@ -11,6 +11,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_layer_select
 import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_fields.dart';
 
 enum ClinicalLabRequestCatalogKind { tests, panels }
 
@@ -508,7 +509,11 @@ class _ClinicalLabRequestCatalogDialogState
     final List<String> sorted = categories.toList(growable: false)..sort();
     return <AppSearchBarFilterChoice>[
       for (final String category in sorted)
-        AppSearchBarFilterChoice(value: category, label: category),
+        AppSearchBarFilterChoice(
+          value: category,
+          label: category,
+          icon: labCatalogCategoryIcon(category),
+        ),
     ];
   }
 

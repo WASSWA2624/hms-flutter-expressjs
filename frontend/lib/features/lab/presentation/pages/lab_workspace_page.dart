@@ -1518,6 +1518,7 @@ class _LabConfigurationsDialogState
                             _catalogItems(
                               state,
                             ).map((LabCatalogItem item) => item.category),
+                            iconForValue: labCatalogCategoryIcon,
                           ),
                         ),
                         if (showingTests)
@@ -1864,11 +1865,17 @@ class _LabConfigurationsDialogState
         .toList(growable: false);
   }
 
-  List<AppSearchBarFilterChoice> _filterChoices(Iterable<String?> values) {
+  List<AppSearchBarFilterChoice> _filterChoices(
+    Iterable<String?> values, {
+    IconData Function(String value)? iconForValue,
+  }) {
     return _uniqueNonEmpty(values)
         .map(
-          (String value) =>
-              AppSearchBarFilterChoice(value: value, label: value),
+          (String value) => AppSearchBarFilterChoice(
+            value: value,
+            label: value,
+            icon: iconForValue?.call(value),
+          ),
         )
         .toList(growable: false);
   }

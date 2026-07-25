@@ -329,7 +329,8 @@ void main() {
 
       // First range already defaults to All ages / All genders — a second
       // identical range is rejected at add time.
-      expect(find.text('Range name'), findsOneWidget);
+      expect(find.byType(LabReferenceRangeListField), findsOneWidget);
+      expect(find.text('All ages'), findsWidgets);
       expect(
         find.text(
           'A reference range with the same label already covers this gender and age (including All genders / All ages).',

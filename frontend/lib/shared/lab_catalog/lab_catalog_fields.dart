@@ -163,6 +163,7 @@ class LabSearchableTextField extends StatefulWidget {
     this.validator,
     this.onChanged,
     this.onFieldSubmitted,
+    this.optionIcon,
     super.key,
   });
 
@@ -177,6 +178,7 @@ class LabSearchableTextField extends StatefulWidget {
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
+  final IconData Function(String value)? optionIcon;
 
   @override
   State<LabSearchableTextField> createState() => _LabSearchableTextFieldState();
@@ -278,6 +280,9 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
                       final String option = visibleOptions[index];
                       return ListTile(
                         dense: true,
+                        leading: widget.optionIcon == null
+                            ? null
+                            : Icon(widget.optionIcon!(option)),
                         title: Text(option),
                         onTap: () => onSelected(option),
                       );
@@ -293,6 +298,56 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
 
 String labNormalizeCatalogToken(String? value) {
   return (value ?? '').trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+}
+
+/// Icon for a lab catalog category name (known presets + sensible default).
+IconData labCatalogCategoryIcon(String? category) {
+  switch (labNormalizeCatalogToken(category)) {
+    case 'blood gas':
+      return Icons.air_outlined;
+    case 'cardiac':
+      return Icons.favorite_outline;
+    case 'chemistry':
+      return Icons.science_outlined;
+    case 'coagulation':
+      return Icons.water_drop_outlined;
+    case 'critical care':
+      return Icons.monitor_heart_outlined;
+    case 'endocrine':
+      return Icons.medication_liquid_outlined;
+    case 'hematology':
+      return Icons.bloodtype_outlined;
+    case 'immunology':
+      return Icons.shield_outlined;
+    case 'inflammation':
+      return Icons.local_fire_department_outlined;
+    case 'lipids':
+      return Icons.opacity_outlined;
+    case 'liver':
+      return Icons.spa_outlined;
+    case 'microbiology':
+      return Icons.biotech_outlined;
+    case 'nutrition':
+      return Icons.restaurant_outlined;
+    case 'parasitology':
+      return Icons.bug_report_outlined;
+    case 'renal':
+      return Icons.medical_services_outlined;
+    case 'reproductive health':
+      return Icons.pregnant_woman_outlined;
+    case 'serology':
+      return Icons.coronavirus_outlined;
+    case 'transfusion':
+      return Icons.volunteer_activism_outlined;
+    case 'tuberculosis':
+      return Icons.masks_outlined;
+    case 'urinalysis':
+      return Icons.science_outlined;
+    case 'virology':
+      return Icons.coronavirus_outlined;
+    default:
+      return Icons.category_outlined;
+  }
 }
 
 List<String> labUniqueNonEmpty(Iterable<String?> values) {

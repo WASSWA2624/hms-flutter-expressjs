@@ -32,13 +32,16 @@ List<AppSelectOption<String>> labResultKindSelectOptions(
 List<AppSelectOption<String>> _stringSelectOptions(
   Iterable<String> values, {
   IconData? icon,
+  IconData Function(String value)? iconForValue,
 }) {
   return <AppSelectOption<String>>[
     for (final String value in values)
       AppSelectOption<String>(
         value: value,
         label: value,
-        leadingIcon: icon == null ? null : Icon(icon),
+        leadingIcon: iconForValue != null
+            ? Icon(iconForValue(value))
+            : (icon == null ? null : Icon(icon)),
       ),
   ];
 }
@@ -139,6 +142,7 @@ class LabTestDefinitionForm extends StatelessWidget {
     ]);
     final List<String> units = labUniqueNonEmpty(<String?>[
       ...unitSuggestions,
+      for (final EditableLabValue option in unitOptions) option.value,
       unitController.text,
     ]);
 
@@ -200,7 +204,7 @@ class LabTestDefinitionForm extends StatelessWidget {
                 allowClear: true,
                 options: _stringSelectOptions(
                   categories,
-                  icon: Icons.category_outlined,
+                  iconForValue: labCatalogCategoryIcon,
                 ),
                 validator: AppValidators.maxLength(
                   80,
@@ -333,6 +337,7 @@ class LabTestDefinitionForm extends StatelessWidget {
                 ranges: referenceRanges,
                 enabled: enabled,
                 fallbackUnit: unitController.text.trim(),
+                unitSuggestions: units,
                 showHeader: false,
                 onChanged: onRangesChanged,
                 onAdd: onRangeAdd,

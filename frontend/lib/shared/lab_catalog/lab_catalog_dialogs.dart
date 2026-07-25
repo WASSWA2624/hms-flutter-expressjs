@@ -1170,6 +1170,7 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
               enabled: !_isSaving,
               prefixIcon: const Icon(Icons.category_outlined),
               options: _categoryOptions,
+              optionIcon: labCatalogCategoryIcon,
             ),
             AppTextField(
               controller: _descriptionController,
@@ -1334,6 +1335,8 @@ class _LabEnableFacilityOfferingDialogState
   static const String _typeFilterKey = 'type';
   static const String _categoryFilterKey = 'category';
   static const String _resultKindFilterKey = 'result_kind';
+  static const String _specimenFilterKey = 'specimen_type';
+  static const String _sourceFilterKey = 'source';
 
   late final TextEditingController _searchController;
   Timer? _searchDebounce;
@@ -1362,6 +1365,8 @@ class _LabEnableFacilityOfferingDialogState
   List<LabCatalogItem> get _filteredCatalogItems {
     final String? category = _filterValue.option(_categoryFilterKey);
     final String? resultKind = _filterValue.option(_resultKindFilterKey);
+    final String? specimen = _filterValue.option(_specimenFilterKey);
+    final String? source = _filterValue.option(_sourceFilterKey);
     final String? type = _selectedType;
     return _catalogItems
         .where((LabCatalogItem item) {
@@ -1370,13 +1375,27 @@ class _LabEnableFacilityOfferingDialogState
               item.type.name != type) {
             return false;
           }
-          if (category != null && item.category != category) {
+          if (category != null &&
+              category.isNotEmpty &&
+              (item.category ?? '').trim() != category) {
             return false;
           }
           if (_includeResultKindFilter &&
               item.type == LabCatalogItemType.test &&
               resultKind != null &&
-              item.resultKind != resultKind) {
+              resultKind.isNotEmpty &&
+              (item.resultKind ?? '').trim().toUpperCase() !=
+                  resultKind.toUpperCase()) {
+            return false;
+          }
+          if (specimen != null &&
+              specimen.isNotEmpty &&
+              (item.specimenType ?? '').trim() != specimen) {
+            return false;
+          }
+          if (source != null &&
+              source.isNotEmpty &&
+              (item.source ?? '').trim() != source) {
             return false;
           }
           return true;
@@ -1575,6 +1594,7 @@ class _LabEnableFacilityOfferingDialogState
                     allLabel: l10n.labScopeAll,
                     choices: _enableOfferingFilterChoices(
                       _catalogItems.map((LabCatalogItem item) => item.category),
+                      iconForValue: labCatalogCategoryIcon,
                     ),
                   ),
                   if (_includeResultKindFilter)
@@ -1582,13 +1602,40 @@ class _LabEnableFacilityOfferingDialogState
                       key: _resultKindFilterKey,
                       label: l10n.labResultKindLabel,
                       allLabel: l10n.labScopeAll,
-                      choices: _enableOfferingFilterChoices(
+                      choices: _enableOfferingResultKindChoices(
+                        l10n,
                         _catalogItems
                             .where(
                               (LabCatalogItem item) =>
                                   item.type == LabCatalogItemType.test,
                             )
                             .map((LabCatalogItem item) => item.resultKind),
+                      ),
+                    ),
+                  if (_enableOfferingFilterChoices(
+                    _catalogItems.map(
+                      (LabCatalogItem item) => item.specimenType,
+                    ),
+                  ).isNotEmpty)
+                    AppSearchBarFilterGroup(
+                      key: _specimenFilterKey,
+                      label: l10n.labSpecimenTypeLabel,
+                      allLabel: l10n.labScopeAll,
+                      choices: _enableOfferingFilterChoices(
+                        _catalogItems.map(
+                          (LabCatalogItem item) => item.specimenType,
+                        ),
+                      ),
+                    ),
+                  if (_enableOfferingFilterChoices(
+                    _catalogItems.map((LabCatalogItem item) => item.source),
+                  ).isNotEmpty)
+                    AppSearchBarFilterGroup(
+                      key: _sourceFilterKey,
+                      label: l10n.radiologySourceColumnLabel,
+                      allLabel: l10n.labScopeAll,
+                      choices: _enableOfferingFilterChoices(
+                        _catalogItems.map((LabCatalogItem item) => item.source),
                       ),
                     ),
                 ],
@@ -1733,11 +1780,41 @@ String _joinEnableOfferingSubtitle(AppLocalizations l10n, LabCatalogItem item) {
 }
 
 List<AppSearchBarFilterChoice> _enableOfferingFilterChoices(
-  Iterable<String?> values,
-) {
+  Iterable<String?> values, {
+  IconData Function(String value)? iconForValue,
+}) {
   return labUniqueNonEmpty(values)
       .map(
-        (String value) => AppSearchBarFilterChoice(value: value, label: value),
+        (String value) => AppSearchBarFilterChoice(
+          value: value,
+          label: value,
+          icon: iconForValue?.call(value),
+        ),
+      )
+      .toList(growable: false);
+}
+
+List<AppSearchBarFilterChoice> _enableOfferingResultKindChoices(
+  AppLocalizations l10n,
+  Iterable<String?> values,
+) {
+  final List<String> kinds = labUniqueNonEmpty(<String?>[
+    'NUMERIC',
+    'QUALITATIVE',
+    'TEXT',
+    ...values,
+  ]);
+  return kinds
+      .map(
+        (String value) => AppSearchBarFilterChoice(
+          value: value,
+          label: switch (value.toUpperCase()) {
+            'NUMERIC' => l10n.labResultKindNumeric,
+            'QUALITATIVE' => l10n.labResultKindQualitative,
+            'TEXT' => l10n.labResultKindText,
+            _ => value,
+          },
+        ),
       )
       .toList(growable: false);
 }

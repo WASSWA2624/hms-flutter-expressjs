@@ -723,6 +723,7 @@ class LabReferenceRangeListField extends StatelessWidget {
     required this.onChanged,
     required this.onAdd,
     required this.onRemove,
+    this.unitSuggestions = const <String>[],
     this.showHeader = true,
     super.key,
   });
@@ -730,6 +731,7 @@ class LabReferenceRangeListField extends StatelessWidget {
   final List<EditableLabReferenceRange> ranges;
   final bool enabled;
   final String fallbackUnit;
+  final List<String> unitSuggestions;
   final VoidCallback onChanged;
   final VoidCallback onAdd;
   final ValueChanged<EditableLabReferenceRange> onRemove;
@@ -804,6 +806,8 @@ class LabReferenceRangeListField extends StatelessWidget {
             index: index,
             enabled: enabled,
             canRemove: ranges.length > 1,
+            unitSuggestions: unitSuggestions,
+            fallbackUnit: fallbackUnit,
             onChanged: onChanged,
             onRemove: () => onRemove(ranges[index]),
           ),
@@ -819,6 +823,8 @@ class _LabReferenceRangeCard extends StatelessWidget {
     required this.index,
     required this.enabled,
     required this.canRemove,
+    required this.unitSuggestions,
+    required this.fallbackUnit,
     required this.onChanged,
     required this.onRemove,
     super.key,
@@ -828,6 +834,8 @@ class _LabReferenceRangeCard extends StatelessWidget {
   final int index;
   final bool enabled;
   final bool canRemove;
+  final List<String> unitSuggestions;
+  final String fallbackUnit;
   final VoidCallback onChanged;
   final VoidCallback onRemove;
 
@@ -905,11 +913,16 @@ class _LabReferenceRangeCard extends StatelessWidget {
               onChanged: onChanged,
             ),
             SizedBox(height: theme.spacing.xs),
-            AppTextField(
+            LabSearchableTextField(
               controller: range.rangeUnitController,
               labelText: l10n.labResultUnitLabel,
               enabled: enabled,
               prefixIcon: const Icon(Icons.straighten_outlined),
+              options: labUniqueNonEmpty(<String?>[
+                ...unitSuggestions,
+                fallbackUnit,
+                range.rangeUnitController.text,
+              ]),
               onChanged: (_) => onChanged(),
             ),
             SizedBox(height: theme.spacing.xs),
