@@ -436,12 +436,14 @@ class RadiologyCatalogMutationDialog extends StatefulWidget {
     this.item,
     this.tenantId,
     this.existingItems = const <RadiologyCatalogTest>[],
+    this.loadExistingItems,
     super.key,
   });
 
   final RadiologyCatalogTest? item;
   final String? tenantId;
   final List<RadiologyCatalogTest> existingItems;
+  final Future<List<RadiologyCatalogTest>> Function()? loadExistingItems;
   final ClinicalCatalogTermSubmit onSubmit;
 
   bool get isEditing => item != null;
@@ -456,12 +458,14 @@ class _RadiologyCatalogMutationDialogState
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _codeController;
+  late List<RadiologyCatalogTest> _existingItems;
   String? _modality;
   AppFailure? _failure;
   String? _nameErrorText;
   String? _codeErrorText;
   bool _isSaving = false;
   bool _isCheckingSimilarity = false;
+  bool _isLoadingCatalog = false;
   bool _similarityAccepted = false;
   bool _noSimilarConfirmed = false;
 
@@ -469,6 +473,7 @@ class _RadiologyCatalogMutationDialogState
   void initState() {
     super.initState();
     final RadiologyCatalogTest? item = widget.item;
+    _existingItems = List<RadiologyCatalogTest>.of(widget.existingItems);
     _nameController = TextEditingController(text: item?.name ?? '');
     _codeController = TextEditingController(text: item?.code ?? '');
     _modality = item?.modality?.trim().isNotEmpty == true
@@ -476,6 +481,32 @@ class _RadiologyCatalogMutationDialogState
         : null;
     _nameController.addListener(_clearSimilarityState);
     _codeController.addListener(_clearSimilarityState);
+    final Future<List<RadiologyCatalogTest>> Function()? loader =
+        widget.loadExistingItems;
+    if (loader != null) {
+      _isLoadingCatalog = true;
+      unawaited(_loadSimilarityCatalog(loader));
+    }
+  }
+
+  Future<void> _loadSimilarityCatalog(
+    Future<List<RadiologyCatalogTest>> Function() loader,
+  ) async {
+    try {
+      final List<RadiologyCatalogTest> items = await loader();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _existingItems = items;
+        _isLoadingCatalog = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isLoadingCatalog = false);
+    }
   }
 
   @override
@@ -516,10 +547,10 @@ class _RadiologyCatalogMutationDialogState
 
     late final RadiologyCatalogDuplicateCheckResult result;
     try {
-      final List<RadiologyCatalogTest> tenantItems = widget.existingItems
+      final List<RadiologyCatalogTest> tenantItems = _existingItems
           .where((RadiologyCatalogTest item) => !item.isStandard)
           .toList(growable: false);
-      final List<RadiologyCatalogTest> standardItems = widget.existingItems
+      final List<RadiologyCatalogTest> standardItems = _existingItems
           .where((RadiologyCatalogTest item) => item.isStandard)
           .toList(growable: false);
       result = await Future<RadiologyCatalogDuplicateCheckResult>(
@@ -666,18 +697,43 @@ class _RadiologyCatalogMutationDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final String title = widget.isEditing
+        ? l10n.radiologyEditProcedureDialogTitle
+        : l10n.radiologyCreateImagingTestAction;
+    final IconData iconData =
+        widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline;
+
+    if (_isLoadingCatalog) {
+      return AppDialog(
+        title: Text(title),
+        icon: Icon(iconData),
+        maxWidth: 420,
+        initialMaximized: false,
+        showMaximizeButton: false,
+        closeEnabled: true,
+        content: SizedBox(
+          height: 160,
+          child: AppLoadingIndicator.compact(
+            title: l10n.radiologySimilarityCatalogLoadingTitle,
+            body: l10n.radiologySimilarityCatalogLoadingBody,
+          ),
+        ),
+        actions: <Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      );
+    }
+
     final bool formLocked = _isSaving || _isCheckingSimilarity;
     return AppDialog(
-      title: Text(
-        widget.isEditing
-            ? l10n.radiologyEditProcedureDialogTitle
-            : l10n.radiologyCreateImagingTestAction,
-      ),
-      icon: Icon(
-        widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline,
-      ),
+      title: Text(title),
+      icon: Icon(iconData),
       scrollable: true,
       maxWidth: 560,
+      initialMaximized: false,
       closeEnabled: !formLocked,
       content: Form(
         key: _formKey,
