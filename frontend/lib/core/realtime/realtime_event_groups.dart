@@ -186,6 +186,7 @@ abstract final class RealtimeEventGroups {
 
   static const Set<String> radiology = <String>{
     RealtimeEvents.radiologyWorkflowUpdated,
+    RealtimeEvents.radiologyCatalogUpdated,
     RealtimeEvents.radiologyResultReady,
     RealtimeEvents.radiologyResultUpdated,
     ...billing,

@@ -9,6 +9,8 @@
 | Restore | Soft-deleted row actions (`radiologyRestoreProcedureAction`) | `AppConfirmActionDialog`; calls `restoreRadiologyCatalogProcedure`. |
 | Permanent delete | Soft-deleted row actions (`radiologyPermanentDeleteProcedureAction`) | Type-name `AppTextInputActionDialog`, then `AppConfirmActionDialog`; calls `permanentDeleteRadiologyCatalogProcedure`. |
 
+**Realtime:** panel listens for `diagnostic.radiology_catalog_updated`; soft-delete / restore / permanent-delete patch the table immediately; create/update force a silent reload. Mutations defer inbound events while in flight.
+
 **Columns:** name, code, modality, **Deletion status** (`Active` / `Soft deleted`), actions.
 
 **Filter groups:** modality (from loaded rows).

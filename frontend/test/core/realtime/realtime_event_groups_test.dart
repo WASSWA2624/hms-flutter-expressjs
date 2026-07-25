@@ -83,6 +83,13 @@ void main() {
       );
     });
 
+    test('radiology group includes catalog updates', () {
+      expect(
+        RealtimeEventGroups.radiology,
+        contains(RealtimeEvents.radiologyCatalogUpdated),
+      );
+    });
+
     test('every billing-consuming workspace reacts to billing events', () {
       // A payment/refund/adjustment recorded anywhere must update these
       // workspaces in real time.

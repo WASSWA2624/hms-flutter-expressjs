@@ -14,6 +14,9 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies
 jest.mock('@repositories/radiology-procedure/radiology-procedure.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/websocket/crud-realtime', () => ({
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(0)
+}));
 
 describe('Radiology Test Service', () => {
   beforeEach(() => {
@@ -348,7 +351,7 @@ describe('Radiology Test Service', () => {
 
       const result = await radiologyProcedureService.createRadiologyProcedure(createData, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockCreatedRadiologyTest);
+      expect(result).toEqual({ ...mockCreatedRadiologyTest, tenant_name: null });
       expect(radiologyProcedureRepository.create).toHaveBeenCalledWith({
         tenant_id: createData.tenant_id,
         name: createData.name,
@@ -385,7 +388,7 @@ describe('Radiology Test Service', () => {
 
       const result = await radiologyProcedureService.createRadiologyProcedure(createData, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockCreatedRadiologyTest);
+      expect(result).toEqual({ ...mockCreatedRadiologyTest, tenant_name: null });
     });
 
     it('should reject exact name duplicates', async () => {
@@ -463,7 +466,7 @@ describe('Radiology Test Service', () => {
         '127.0.0.1'
       );
 
-      expect(result).toEqual(mockCreatedRadiologyTest);
+      expect(result).toEqual({ ...mockCreatedRadiologyTest, tenant_name: null });
       expect(radiologyProcedureRepository.create).toHaveBeenCalledWith({
         tenant_id: createData.tenant_id,
         name: createData.name,
@@ -523,7 +526,7 @@ describe('Radiology Test Service', () => {
 
       const result = await radiologyProcedureService.updateRadiologyProcedure(radiologyTestId, updateData, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockUpdatedRadiologyTest);
+      expect(result).toEqual({ ...mockUpdatedRadiologyTest, tenant_name: null });
       expect(radiologyProcedureRepository.update).toHaveBeenCalledWith(radiologyTestId, updateData);
       expect(radiologyProcedureRepository.findMany).toHaveBeenCalled();
     });
@@ -554,7 +557,8 @@ describe('Radiology Test Service', () => {
 
       expect(result).toEqual({
         ...mockBeforeUpdate,
-        modality: 'CT'
+        modality: 'CT',
+        tenant_name: null
       });
       expect(radiologyProcedureRepository.update).toHaveBeenCalledWith(
         radiologyTestId,
@@ -616,7 +620,7 @@ describe('Radiology Test Service', () => {
         '127.0.0.1'
       );
 
-      expect(result).toEqual(mockUpdatedRadiologyTest);
+      expect(result).toEqual({ ...mockUpdatedRadiologyTest, tenant_name: null });
       expect(radiologyProcedureRepository.update).toHaveBeenCalledWith(
         radiologyTestId,
         updateData
@@ -647,7 +651,7 @@ describe('Radiology Test Service', () => {
 
       const result = await radiologyProcedureService.updateRadiologyProcedure(radiologyTestId, updateData, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockUpdatedRadiologyTest);
+      expect(result).toEqual({ ...mockUpdatedRadiologyTest, tenant_name: null });
     });
 
     it('should handle repository errors', async () => {
@@ -680,13 +684,26 @@ describe('Radiology Test Service', () => {
     };
 
     it('should delete radiology test', async () => {
+      const softDeleted = {
+        ...mockRadiologyTest,
+        tenant_id: '550e8400-e29b-41d4-a716-446655440001',
+        deleted_at: new Date('2026-01-01T00:00:00.000Z')
+      };
       radiologyProcedureRepository.findById.mockResolvedValue(mockRadiologyTest);
-      radiologyProcedureRepository.softDelete.mockResolvedValue({});
+      radiologyProcedureRepository.softDelete.mockResolvedValue(softDeleted);
       createAuditLog.mockResolvedValue({});
 
       await radiologyProcedureService.deleteRadiologyProcedure(radiologyTestId, 'user-id', '127.0.0.1');
 
       expect(radiologyProcedureRepository.softDelete).toHaveBeenCalledWith(radiologyTestId);
+      const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
+      expect(publishCrudRealtimeEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'diagnostic.radiology_catalog_updated',
+          resource_type: 'radiology_procedure',
+          payload: expect.objectContaining({ action: 'SOFT_DELETED' })
+        })
+      );
     });
 
     it('should throw HttpError if radiology test not found', async () => {
@@ -704,8 +721,13 @@ describe('Radiology Test Service', () => {
     });
 
     it('should create audit log on success', async () => {
+      const softDeleted = {
+        ...mockRadiologyTest,
+        tenant_id: '550e8400-e29b-41d4-a716-446655440001',
+        deleted_at: new Date('2026-01-01T00:00:00.000Z')
+      };
       radiologyProcedureRepository.findById.mockResolvedValue(mockRadiologyTest);
-      radiologyProcedureRepository.softDelete.mockResolvedValue({});
+      radiologyProcedureRepository.softDelete.mockResolvedValue(softDeleted);
       createAuditLog.mockResolvedValue({});
 
       await radiologyProcedureService.deleteRadiologyProcedure(radiologyTestId, 'user-id', '127.0.0.1');
@@ -715,7 +737,7 @@ describe('Radiology Test Service', () => {
         action: 'DELETE',
         entity: 'radiology_procedure',
         entity_id: radiologyTestId,
-        diff: { before: mockRadiologyTest, after: {} },
+        diff: { before: mockRadiologyTest, after: softDeleted },
         ip_address: '127.0.0.1'
       });
     });

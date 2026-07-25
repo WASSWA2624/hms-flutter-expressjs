@@ -158,6 +158,9 @@ abstract final class WorkspaceEventRefreshPlan {
   }
 
   static WorkspaceRefreshPlan forRadiology(String event) {
+    if (event == RealtimeEvents.radiologyCatalogUpdated) {
+      return const WorkspaceRefreshPlan(catalogs: true);
+    }
     if (RealtimeEventGroups.radiology.contains(event) ||
         RealtimeEventGroups.billing.contains(event) ||
         RealtimeCrudEvents.matches(event)) {

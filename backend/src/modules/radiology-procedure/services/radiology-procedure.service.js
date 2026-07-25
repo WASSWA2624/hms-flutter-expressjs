@@ -20,6 +20,8 @@ const {
   checkRadiologyProcedureDuplicates,
   mergeDuplicateChecks
 } = require('@lib/radiology/radiology-procedure-similarity');
+const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
+const { DIAGNOSTIC_EVENTS } = require('@lib/websocket/events');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -36,6 +38,29 @@ const buildEmptyListResult = (page, limit) => ({
   radiologyProcedures: [],
   pagination: buildPagination(page, limit, 0)});
 
+const publishRadiologyCatalogRealtimeUpdate = async ({
+  resource,
+  actorUserId = null,
+  action = 'UPDATED'
+} = {}) => {
+  if (!resource?.tenant_id || !resource?.id) {
+    return;
+  }
+  publishCrudRealtimeEvent({
+    event: DIAGNOSTIC_EVENTS.RADIOLOGY_CATALOG_UPDATED,
+    resource,
+    resource_type: 'radiology_procedure',
+    actor_user_id: actorUserId,
+    payload: {
+      action: String(action || 'UPDATED').trim().toUpperCase(),
+      deleted_at: resource.deleted_at || null,
+      name: resource.name || null,
+      code: resource.code || null,
+      modality: resource.modality || null,
+      tenant_name: resource.tenant_name || resource.tenant?.name || null
+    }
+  }).catch(() => {});
+};
 const resolveResourceId = async (model, identifier, { includeDeleted = false } = {}) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return normalized;
@@ -759,7 +784,13 @@ const createRadiologyProcedure = async (data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
-    return radiologyProcedure;
+    const normalized = normalizeRadiologyProcedure(radiologyProcedure);
+    publishRadiologyCatalogRealtimeUpdate({
+      resource: normalized,
+      actorUserId: userId,
+      action: 'CREATED'
+    });
+    return normalized;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -830,7 +861,13 @@ const updateRadiologyProcedure = async (id, data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
-    return radiologyProcedure;
+    const normalized = normalizeRadiologyProcedure(radiologyProcedure);
+    publishRadiologyCatalogRealtimeUpdate({
+      resource: normalized,
+      actorUserId: userId,
+      action: 'UPDATED'
+    });
+    return normalized;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -871,7 +908,13 @@ const deleteRadiologyProcedure = async (id, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
-    return normalizeRadiologyProcedure(deleted);
+    const normalized = normalizeRadiologyProcedure(deleted);
+    publishRadiologyCatalogRealtimeUpdate({
+      resource: normalized,
+      actorUserId: userId,
+      action: 'SOFT_DELETED'
+    });
+    return normalized;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -911,7 +954,13 @@ const restoreRadiologyProcedure = async (id, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
-    return normalizeRadiologyProcedure(restored);
+    const normalized = normalizeRadiologyProcedure(restored);
+    publishRadiologyCatalogRealtimeUpdate({
+      resource: normalized,
+      actorUserId: userId,
+      action: 'RESTORED'
+    });
+    return normalized;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -956,6 +1005,12 @@ const permanentDeleteRadiologyProcedure = async (id, userId, ipAddress) => {
       diff: { before, irreversible: true },
       ip_address: ipAddress
     }).catch(() => {});
+
+    publishRadiologyCatalogRealtimeUpdate({
+      resource: normalizeRadiologyProcedure(before),
+      actorUserId: userId,
+      action: 'PERMANENTLY_DELETED'
+    });
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

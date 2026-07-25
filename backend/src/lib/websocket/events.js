@@ -116,6 +116,7 @@ const DIAGNOSTIC_EVENTS = {
   LAB_RESULT_UPDATED: 'diagnostic.lab_result_updated',
   LAB_RESULT_CRITICAL: 'diagnostic.lab_result_critical',
   RADIOLOGY_WORKFLOW_UPDATED: 'diagnostic.radiology_workflow_updated',
+  RADIOLOGY_CATALOG_UPDATED: 'diagnostic.radiology_catalog_updated',
   RADIOLOGY_RESULT_READY: 'diagnostic.radiology_result_ready',
   RADIOLOGY_RESULT_UPDATED: 'diagnostic.radiology_result_updated'
 };

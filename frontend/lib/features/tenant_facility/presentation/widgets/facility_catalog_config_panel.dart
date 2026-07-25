@@ -7,6 +7,8 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -28,6 +30,7 @@ import 'package:hosspi_hms/shared/facility_catalog/clinical_catalog_admin_dialog
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
 
 enum _CatalogDeskTab { radiology, lab, diagnoses }
@@ -95,6 +98,12 @@ class _FacilityCatalogConfigPanelState
   AppFailure? _radiologyFailure;
   AppFailure? _labFailure;
   AppFailure? _diagnosisFailure;
+  PlatformManagementListSync? _radiologyRealtimeSync;
+  int _radiologyMutationDepth = 0;
+
+  static const Set<String> _radiologyCatalogRealtimeEvents = <String>{
+    RealtimeEvents.radiologyCatalogUpdated,
+  };
 
   String get _resolvedCurrency =>
       resolveFacilityDefaultCurrency(widget.defaultCurrency);
@@ -272,7 +281,27 @@ class _FacilityCatalogConfigPanelState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _radiologyRealtimeSync ??= PlatformManagementListSync(
+      ref: ref,
+      events: _radiologyCatalogRealtimeEvents,
+      onMutated: () {},
+      reload: ({bool silent = false, RealtimeMessage? message}) async {
+        if (_radiologyMutationDepth > 0) {
+          return;
+        }
+        final bool applied = _applyRadiologyCatalogRealtimeMessage(message);
+        if (!applied || !_radiologyHydrated) {
+          await _loadRadiologyItems(force: true);
+        }
+      },
+    )..attach();
+  }
+
+  @override
   void dispose() {
+    _radiologyRealtimeSync?.dispose();
     _radiologySearchController.removeListener(_onRadiologySearchChanged);
     _labSearchController.removeListener(_onLabSearchChanged);
     _diagnosisSearchController.removeListener(_onDiagnosisSearchChanged);
@@ -1608,7 +1637,115 @@ class _FacilityCatalogConfigPanelState
     });
   }
 
+  bool _matchesRadiologyItemId(RadiologyCatalogProcedure item, String id) {
+    final String normalized = id.trim();
+    if (normalized.isEmpty) {
+      return false;
+    }
+    return item.apiId == normalized ||
+        item.id == normalized ||
+        (item.displayId ?? '') == normalized;
+  }
+
+  String? _radiologyResourceIdFromMessage(RealtimeMessage message) {
+    for (final String key in const <String>[
+      'resource_id',
+      'radiology_procedure_id',
+      'id',
+    ]) {
+      final Object? value = message.payload[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
+  bool _applyRadiologyCatalogRealtimeMessage(RealtimeMessage? message) {
+    if (message == null ||
+        message.event != RealtimeEvents.radiologyCatalogUpdated) {
+      return false;
+    }
+    final String action =
+        (message.payload['action'] as String?)?.trim().toUpperCase() ?? '';
+    final String? procedureId = _radiologyResourceIdFromMessage(message);
+    if (procedureId == null) {
+      return false;
+    }
+
+    final String? scopedTenantId = widget.tenantId?.trim();
+    final String? eventTenantId =
+        (message.payload['tenant_id'] as String?)?.trim();
+    if (scopedTenantId != null &&
+        scopedTenantId.isNotEmpty &&
+        eventTenantId != null &&
+        eventTenantId.isNotEmpty &&
+        scopedTenantId != eventTenantId) {
+      return true;
+    }
+
+    switch (action) {
+      case 'SOFT_DELETED':
+        final int index = _radiologyItems.indexWhere(
+          (RadiologyCatalogProcedure item) =>
+              _matchesRadiologyItemId(item, procedureId),
+        );
+        if (index < 0) {
+          return false;
+        }
+        final Object? deletedAtRaw = message.payload['deleted_at'];
+        final DateTime deletedAt = deletedAtRaw is String
+            ? (DateTime.tryParse(deletedAtRaw) ?? DateTime.now().toUtc())
+            : DateTime.now().toUtc();
+        setState(() {
+          _upsertRadiologyItemLocally(
+            _radiologyItems[index].copyWith(deletedAt: deletedAt),
+          );
+        });
+        return true;
+      case 'RESTORED':
+        final int index = _radiologyItems.indexWhere(
+          (RadiologyCatalogProcedure item) =>
+              _matchesRadiologyItemId(item, procedureId),
+        );
+        if (index < 0) {
+          return false;
+        }
+        setState(() {
+          _upsertRadiologyItemLocally(
+            _radiologyItems[index].copyWith(clearDeletedAt: true),
+          );
+        });
+        return true;
+      case 'PERMANENTLY_DELETED':
+        final int index = _radiologyItems.indexWhere(
+          (RadiologyCatalogProcedure item) =>
+              _matchesRadiologyItemId(item, procedureId),
+        );
+        if (index < 0) {
+          return true;
+        }
+        setState(() => _removeRadiologyItemLocally(_radiologyItems[index]));
+        return true;
+      case 'CREATED':
+      case 'UPDATED':
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  Future<T> _withRadiologyMutationGuard<T>(Future<T> Function() action) async {
+    _radiologyMutationDepth += 1;
+    try {
+      return await action();
+    } finally {
+      _radiologyMutationDepth = (_radiologyMutationDepth - 1).clamp(0, 1 << 30);
+    }
+  }
+
   Future<void> _openRadiologyDeleteDialog(RadiologyCatalogProcedure item) async {
+    await _withRadiologyMutationGuard(() async {
     if (!_canMutateRadiologyCatalog || item.isDeleted || item.isStandard) {
       return;
     }
@@ -1662,9 +1799,11 @@ class _FacilityCatalogConfigPanelState
     if (mounted) {
       _markRadiologyItemSoftDeletedLocally(applied);
     }
+    });
   }
 
   Future<void> _openRadiologyRestoreDialog(RadiologyCatalogProcedure item) async {
+    await _withRadiologyMutationGuard(() async {
     if (!_canMutateRadiologyCatalog || !item.isDeleted || item.isStandard) {
       return;
     }
@@ -1708,11 +1847,13 @@ class _FacilityCatalogConfigPanelState
     if (mounted) {
       setState(() => _upsertRadiologyItemLocally(applied));
     }
+    });
   }
 
   Future<void> _openRadiologyPermanentDeleteDialog(
     RadiologyCatalogProcedure item,
   ) async {
+    await _withRadiologyMutationGuard(() async {
     if (!_canMutateRadiologyCatalog || !item.isDeleted || item.isStandard) {
       return;
     }
@@ -1780,6 +1921,7 @@ class _FacilityCatalogConfigPanelState
       SnackBar(content: Text(l10n.radiologyProcedurePermanentlyDeletedMessage)),
     );
     unawaited(_ensureTabLoaded(_tab, force: true));
+    });
   }
 
   Future<void> _openLabAddDialog(LabCatalogItemType kind) async {

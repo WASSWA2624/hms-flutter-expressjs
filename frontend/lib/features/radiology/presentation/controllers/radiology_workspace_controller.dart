@@ -963,7 +963,8 @@ final class RadiologyWorkspaceController
 
     final bool refreshWorkbench = workspacePlanRefreshesPrimaryList(plan);
     final bool refreshDetail = plan.selectedDetail;
-    if (!refreshWorkbench && !refreshDetail) {
+    final bool refreshCatalogs = plan.catalogs;
+    if (!refreshWorkbench && !refreshDetail && !refreshCatalogs) {
       return null;
     }
 
@@ -985,6 +986,13 @@ final class RadiologyWorkspaceController
         );
         if (failure != null) {
           return failure;
+        }
+      }
+
+      if (refreshCatalogs) {
+        final RadiologyCatalogScope? scope = _currentState?.catalogScope;
+        if (scope != null && scope.isReady) {
+          await loadFacilityCatalogConfig(scope);
         }
       }
 
