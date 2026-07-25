@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_list_field.dart';
 
 void main() {
   testWidgets(
-    'All genders disables specific gender checkboxes',
+    'All genders disables specific gender chips',
     (WidgetTester tester) async {
       final EditableLabReferenceRange range = EditableLabReferenceRange();
       addTearDown(range.dispose);
@@ -17,39 +16,39 @@ void main() {
       expect(find.text('All genders'), findsOneWidget);
       expect(find.text('Male'), findsOneWidget);
       expect(find.text('All ages'), findsOneWidget);
-      expect(find.text('Specific genders are cleared while All genders is selected.'), findsOneWidget);
-
-      final AppCheckboxField allGenders = _checkboxWithTitle(
-        tester,
-        'All genders',
+      expect(
+        find.text(
+          'Specific genders are cleared while All genders is selected.',
+        ),
+        findsOneWidget,
       );
-      final AppCheckboxField male = _checkboxWithTitle(tester, 'Male');
-      expect(allGenders.value, isTrue);
-      expect(male.enabled, isFalse);
+
+      expect(_chipWithLabel(tester, 'All genders').selected, isTrue);
+      expect(_chipWithLabel(tester, 'Male').onSelected, isNull);
 
       // Uncheck All genders → Male becomes active.
       await tester.tap(find.text('All genders'));
       await tester.pumpAndSettle();
       expect(range.gender, 'MALE');
-      expect(_checkboxWithTitle(tester, 'Male').enabled, isTrue);
-      expect(_checkboxWithTitle(tester, 'Male').value, isTrue);
+      expect(_chipWithLabel(tester, 'Male').onSelected, isNotNull);
+      expect(_chipWithLabel(tester, 'Male').selected, isTrue);
 
       await tester.tap(find.text('Female'));
       await tester.pumpAndSettle();
       expect(range.gender, 'FEMALE');
-      expect(_checkboxWithTitle(tester, 'All genders').value, isFalse);
+      expect(_chipWithLabel(tester, 'All genders').selected, isFalse);
 
       // Re-select All genders → specifics inactivated again.
       await tester.tap(find.text('All genders'));
       await tester.pumpAndSettle();
       expect(range.appliesToAllGenders, isTrue);
-      expect(_checkboxWithTitle(tester, 'Male').enabled, isFalse);
-      expect(_checkboxWithTitle(tester, 'Female').enabled, isFalse);
+      expect(_chipWithLabel(tester, 'Male').onSelected, isNull);
+      expect(_chipWithLabel(tester, 'Female').onSelected, isNull);
     },
   );
 
   testWidgets(
-    'All ages clears and disables age bounds; typing re-enables specific ages',
+    'Age presets fill bounds; All ages hides and clears them',
     (WidgetTester tester) async {
       final EditableLabReferenceRange range = EditableLabReferenceRange()
         ..allAges = false
@@ -61,6 +60,7 @@ void main() {
 
       expect(range.allAges, isFalse);
       expect(find.text('Age min'), findsOneWidget);
+      expect(find.text('Adult'), findsWidgets);
 
       await tester.tap(find.text('All ages'));
       await tester.pumpAndSettle();
@@ -68,22 +68,23 @@ void main() {
       expect(range.allAges, isTrue);
       expect(range.ageMinController.text, isEmpty);
       expect(range.ageMaxController.text, isEmpty);
-      expect(_checkboxWithTitle(tester, 'All ages').value, isTrue);
+      expect(_chipWithLabel(tester, 'All ages').selected, isTrue);
+      expect(find.text('Age min'), findsNothing);
 
-      // Turn off All ages, then type a bound.
-      await tester.tap(find.text('All ages'));
+      await tester.tap(find.widgetWithText(FilterChip, 'Adult'));
       await tester.pumpAndSettle();
       expect(range.allAges, isFalse);
+      expect(range.ageUnit, 'YEAR');
+      expect(range.ageMinController.text, '18');
+      expect(range.ageMaxController.text, '64');
+      expect(range.labelController.text, 'Adult');
+      expect(find.text('Age min'), findsOneWidget);
 
-      await tester.enterText(find.widgetWithText(TextFormField, 'Age min'), '0');
+      await tester.tap(find.widgetWithText(FilterChip, 'Neonate'));
       await tester.pumpAndSettle();
-      expect(range.allAges, isFalse);
+      expect(range.ageUnit, 'DAY');
       expect(range.ageMinController.text, '0');
-
-      // Clearing both bounds restores All ages.
-      await tester.enterText(find.widgetWithText(TextFormField, 'Age min'), '');
-      await tester.pumpAndSettle();
-      expect(range.allAges, isTrue);
+      expect(range.ageMaxController.text, '28');
     },
   );
 
@@ -102,13 +103,29 @@ void main() {
     expect(payload['age_min_value'], isNull);
     expect(payload['age_max_value'], isNull);
   });
+
+  test('applyAgePresetFromLabel maps category names to bounds', () {
+    final EditableLabReferenceRange range = EditableLabReferenceRange();
+    addTearDown(range.dispose);
+
+    // Use English labels via a lightweight fake by calling presets directly.
+    range.applyAgePreset(
+      kLabAgeBandPresets.firstWhere(
+        (LabAgeBandPreset p) => p.id == 'geriatric',
+      ),
+      labelIfEmpty: 'Geriatric',
+    );
+    expect(range.allAges, isFalse);
+    expect(range.ageMinController.text, '65');
+    expect(range.ageMaxController.text, isEmpty);
+    expect(range.labelController.text, 'Geriatric');
+    expect(range.matchingAgePresetId(), 'geriatric');
+  });
 }
 
-AppCheckboxField _checkboxWithTitle(WidgetTester tester, String title) {
-  return tester.widget<AppCheckboxField>(
-    find.byWidgetPredicate(
-      (Widget widget) => widget is AppCheckboxField && widget.title == title,
-    ),
+FilterChip _chipWithLabel(WidgetTester tester, String label) {
+  return tester.widget<FilterChip>(
+    find.widgetWithText(FilterChip, label),
   );
 }
 

@@ -16257,9 +16257,9 @@
   "@labNoTimelineLabel": {
     "description": "Localized text for labNoTimelineLabel."
   },
-  "labReferenceRangeLabel": "Reference range",
+  "labReferenceRangeLabel": "Range name",
   "@labReferenceRangeLabel": {
-    "description": "Localized text for labReferenceRangeLabel."
+    "description": "Label for the reference-range name/category field (e.g. Adult, Pediatric)."
   },
   "labReportedAtLabel": "Reported",
   "@labReportedAtLabel": {
@@ -24496,6 +24496,10 @@
   "labAgeAnyHelper": "Age min, max, and unit are cleared while All ages is selected.",
   "@labAgeAnyHelper": {
     "description": "Helper text shown when All ages is selected on a lab reference range."
+  },
+  "labAgePresetsLabel": "Age presets",
+  "@labAgePresetsLabel": {
+    "description": "Label above age-band preset chips on a lab reference range."
   },
   "labGenderMaleLabel": "Male",
   "@labGenderMaleLabel": {

@@ -9,6 +9,53 @@ import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_fields.dart';
 
 const String kLabReferenceRangeAnyGender = '__ANY__';
 
+/// Clinical age-band preset applied to min/max/unit (and optionally the range name).
+class LabAgeBandPreset {
+  const LabAgeBandPreset({
+    required this.id,
+    required this.min,
+    required this.max,
+    required this.unit,
+  });
+
+  final String id;
+  final int? min;
+  final int? max;
+  final String unit;
+}
+
+/// Standard catalog age bands used as quick-fill presets.
+const List<LabAgeBandPreset> kLabAgeBandPresets = <LabAgeBandPreset>[
+  LabAgeBandPreset(id: 'neonate', min: 0, max: 28, unit: 'DAY'),
+  LabAgeBandPreset(id: 'infant', min: 1, max: 12, unit: 'MONTH'),
+  LabAgeBandPreset(id: 'child', min: 1, max: 12, unit: 'YEAR'),
+  LabAgeBandPreset(id: 'adolescent', min: 13, max: 17, unit: 'YEAR'),
+  LabAgeBandPreset(id: 'adult', min: 18, max: 64, unit: 'YEAR'),
+  LabAgeBandPreset(id: 'geriatric', min: 65, max: null, unit: 'YEAR'),
+  LabAgeBandPreset(id: 'pediatric', min: 0, max: 17, unit: 'YEAR'),
+];
+
+String labAgeBandPresetLabel(AppLocalizations l10n, String id) {
+  switch (id) {
+    case 'neonate':
+      return l10n.labNeonateRangeLabel;
+    case 'infant':
+      return l10n.labInfantRangeLabel;
+    case 'child':
+      return l10n.labChildRangeLabel;
+    case 'adolescent':
+      return l10n.labAdolescentRangeLabel;
+    case 'adult':
+      return l10n.labAdultRangeLabel;
+    case 'geriatric':
+      return l10n.labGeriatricRangeLabel;
+    case 'pediatric':
+      return l10n.labPediatricRangeLabel;
+    default:
+      return id;
+  }
+}
+
 class EditableLabReferenceRange {
   EditableLabReferenceRange({LabReferenceRange? range, String? defaultUnit})
     : id = range?.id,
@@ -89,6 +136,59 @@ class EditableLabReferenceRange {
     } else if (!allAges) {
       // Both cleared while in specific mode → treat as all ages again.
       allAges = true;
+    }
+  }
+
+  /// Quick-fill age bounds from a catalog age band; optionally seed the range name.
+  void applyAgePreset(LabAgeBandPreset preset, {String? labelIfEmpty}) {
+    allAges = false;
+    ageUnit = preset.unit;
+    ageMinController.text = preset.min?.toString() ?? '';
+    ageMaxController.text = preset.max?.toString() ?? '';
+    final String? seed = labelIfEmpty?.trim();
+    if (seed != null &&
+        seed.isNotEmpty &&
+        labelController.text.trim().isEmpty) {
+      labelController.text = seed;
+    }
+  }
+
+  /// Returns the matching preset id when current bounds equal a catalog band.
+  String? matchingAgePresetId() {
+    if (allAges) {
+      return null;
+    }
+    final String unit = (ageUnit ?? 'YEAR').trim().toUpperCase();
+    final String minText = ageMinController.text.trim();
+    final String maxText = ageMaxController.text.trim();
+    for (final LabAgeBandPreset preset in kLabAgeBandPresets) {
+      if (preset.unit != unit) {
+        continue;
+      }
+      final String expectedMin = preset.min?.toString() ?? '';
+      final String expectedMax = preset.max?.toString() ?? '';
+      if (minText == expectedMin && maxText == expectedMax) {
+        return preset.id;
+      }
+    }
+    return null;
+  }
+
+  /// Apply age bounds when the range name matches a known age category.
+  void applyAgePresetFromLabel(String? label, AppLocalizations l10n) {
+    final String normalized = (label ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return;
+    }
+    for (final LabAgeBandPreset preset in kLabAgeBandPresets) {
+      if (labAgeBandPresetLabel(l10n, preset.id).toLowerCase() ==
+          normalized) {
+        applyAgePreset(preset);
+        return;
+      }
+    }
+    if (normalized == l10n.labAgeAnyLabel.toLowerCase()) {
+      setAllAges(value: true);
     }
   }
 
@@ -473,13 +573,20 @@ class _LabReferenceRangeCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
+        padding: EdgeInsets.all(theme.spacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Row(
               children: <Widget>[
-                Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
                 if (canRemove)
                   AppButton(
                     iconOnly: true,
@@ -492,7 +599,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                   ),
               ],
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.xs),
             AppSelectField<String>.searchable(
               value: range.labelController.text.trim().isEmpty
                   ? null
@@ -502,13 +609,14 @@ class _LabReferenceRangeCard extends StatelessWidget {
               allowClear: true,
               options: <AppSelectOption<String>>[
                 for (final String label in labUniqueNonEmpty(<String?>[
-                  l10n.labAdultRangeLabel,
-                  l10n.labPediatricRangeLabel,
+                  l10n.labAgeAnyLabel,
                   l10n.labNeonateRangeLabel,
                   l10n.labInfantRangeLabel,
                   l10n.labChildRangeLabel,
                   l10n.labAdolescentRangeLabel,
+                  l10n.labAdultRangeLabel,
                   l10n.labGeriatricRangeLabel,
+                  l10n.labPediatricRangeLabel,
                   range.labelController.text,
                 ]))
                   AppSelectOption<String>(
@@ -519,10 +627,11 @@ class _LabReferenceRangeCard extends StatelessWidget {
               ],
               onChanged: (String? value) {
                 range.labelController.text = value?.trim() ?? '';
+                range.applyAgePresetFromLabel(value, l10n);
                 onChanged();
               },
             ),
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             _LabGenderApplicabilityField(
               gender: range.gender,
               enabled: enabled,
@@ -531,13 +640,13 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 onChanged();
               },
             ),
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             _LabAgeApplicabilityField(
               range: range,
               enabled: enabled,
               onChanged: onChanged,
             ),
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             AppTextField(
               controller: range.rangeUnitController,
               labelText: l10n.labResultUnitLabel,
@@ -545,7 +654,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
               prefixIcon: const Icon(Icons.straighten_outlined),
               onChanged: (_) => onChanged(),
             ),
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: AppTextField(
@@ -569,7 +678,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 onChanged: (_) => onChanged(),
               ),
             ),
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: AppTextField(
@@ -593,21 +702,21 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 onChanged: (_) => onChanged(),
               ),
             ),
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             AppTextField(
               controller: range.referenceTextController,
               labelText: l10n.labReferenceTextLabel,
               enabled: enabled,
-              maxLines: 2,
+              maxLines: 1,
               prefixIcon: const Icon(Icons.notes_outlined),
               onChanged: (_) => onChanged(),
             ),
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             AppTextField(
               controller: range.notesController,
               labelText: l10n.labReferenceNotesLabel,
               enabled: enabled,
-              maxLines: 2,
+              maxLines: 1,
               prefixIcon: const Icon(Icons.sticky_note_2_outlined),
               onChanged: (_) => onChanged(),
             ),
@@ -618,8 +727,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
   }
 }
 
-/// Gender applicability checkboxes with icons. "All genders" is exclusive —
-/// selecting it clears specifics; selecting a specific gender clears All.
+/// Gender applicability as a horizontal chip row. "All genders" is exclusive.
 class _LabGenderApplicabilityField extends StatelessWidget {
   const _LabGenderApplicabilityField({
     required this.gender,
@@ -638,8 +746,13 @@ class _LabGenderApplicabilityField extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
-    final List<({String value, String label, IconData icon})> specifics =
+    final List<({String value, String label, IconData icon})> options =
         <({String value, String label, IconData icon})>[
+          (
+            value: kLabReferenceRangeAnyGender,
+            label: l10n.labGenderAnyLabel,
+            icon: Icons.people_outline,
+          ),
           (
             value: 'MALE',
             label: l10n.labGenderMaleLabel,
@@ -673,49 +786,58 @@ class _LabGenderApplicabilityField extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.xs),
-        AppCheckboxField(
-          title: l10n.labGenderAnyLabel,
-          value: _isAllGenders,
-          enabled: enabled,
-          secondary: const Icon(Icons.people_outline),
-          subtitle: _isAllGenders ? l10n.labGenderAnyHelper : null,
-          onChanged: !enabled
-              ? null
-              : (bool checked) {
-                  if (checked) {
-                    onChanged(kLabReferenceRangeAnyGender);
-                  } else {
-                    // Leaving All requires a specific gender — default Male.
-                    onChanged('MALE');
-                  }
-                },
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[
+            for (final ({String value, String label, IconData icon}) option
+                in options)
+              FilterChip(
+                avatar: Icon(option.icon, size: 16),
+                label: Text(option.label),
+                selected: option.value == kLabReferenceRangeAnyGender
+                    ? _isAllGenders
+                    : !_isAllGenders && gender == option.value,
+                showCheckmark: false,
+                // Specifics stay inactive while All genders covers them.
+                onSelected: (!enabled ||
+                        (option.value != kLabReferenceRangeAnyGender &&
+                            _isAllGenders))
+                    ? null
+                    : (bool selected) {
+                        if (option.value == kLabReferenceRangeAnyGender) {
+                          if (selected) {
+                            onChanged(kLabReferenceRangeAnyGender);
+                          } else {
+                            onChanged('MALE');
+                          }
+                          return;
+                        }
+                        if (selected) {
+                          onChanged(option.value);
+                        } else if (gender == option.value) {
+                          onChanged(kLabReferenceRangeAnyGender);
+                        }
+                      },
+              ),
+          ],
         ),
-        for (final ({String value, String label, IconData icon}) option
-            in specifics)
-          AppCheckboxField(
-            title: option.label,
-            value: !_isAllGenders && gender == option.value,
-            // All genders covers every option — specifics stay inactive.
-            enabled: enabled && !_isAllGenders,
-            secondary: Icon(option.icon),
-            onChanged: (!enabled || _isAllGenders)
-                ? null
-                : (bool checked) {
-                    if (checked) {
-                      onChanged(option.value);
-                    } else if (gender == option.value) {
-                      // Unchecking the active specific returns to All genders.
-                      onChanged(kLabReferenceRangeAnyGender);
-                    }
-                  },
+        if (_isAllGenders) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            l10n.labGenderAnyHelper,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
+        ],
       ],
     );
   }
 }
 
-/// Age applicability: "All ages" checkbox clears/disables bounds; entering a
-/// bound automatically turns All ages off.
+/// Age applicability with horizontal All ages + age-band presets; bounds hidden
+/// when All ages is selected to spare vertical space.
 class _LabAgeApplicabilityField extends StatelessWidget {
   const _LabAgeApplicabilityField({
     required this.range,
@@ -732,6 +854,7 @@ class _LabAgeApplicabilityField extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
     final bool boundsEnabled = enabled && !range.allAges;
+    final String? matchedPresetId = range.matchingAgePresetId();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -744,90 +867,127 @@ class _LabAgeApplicabilityField extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.xs),
-        AppCheckboxField(
-          title: l10n.labAgeAnyLabel,
-          value: range.allAges,
-          enabled: enabled,
-          secondary: const Icon(Icons.all_inclusive),
-          subtitle: range.allAges ? l10n.labAgeAnyHelper : null,
-          onChanged: !enabled
-              ? null
-              : (bool checked) {
-                  range.setAllAges(value: checked);
-                  onChanged();
-                },
-        ),
-        SizedBox(height: theme.spacing.sm),
-        AppSelectField<String>.searchable(
-          value: range.ageUnit,
-          labelText: l10n.labAgeUnitLabel,
-          enabled: boundsEnabled,
-          allowClear: false,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: 'DAY',
-              label: l10n.labAgeUnitDays,
-              leadingIcon: const Icon(Icons.today_outlined),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[
+            FilterChip(
+              avatar: const Icon(Icons.all_inclusive, size: 16),
+              label: Text(l10n.labAgeAnyLabel),
+              selected: range.allAges,
+              showCheckmark: false,
+              onSelected: !enabled
+                  ? null
+                  : (bool selected) {
+                      range.setAllAges(value: selected);
+                      onChanged();
+                    },
             ),
-            AppSelectOption<String>(
-              value: 'WEEK',
-              label: l10n.labAgeUnitWeeks,
-              leadingIcon: const Icon(Icons.view_week_outlined),
-            ),
-            AppSelectOption<String>(
-              value: 'MONTH',
-              label: l10n.labAgeUnitMonths,
-              leadingIcon: const Icon(Icons.calendar_view_month_outlined),
-            ),
-            AppSelectOption<String>(
-              value: 'YEAR',
-              label: l10n.labAgeUnitYears,
-              leadingIcon: const Icon(Icons.event_outlined),
-            ),
+            for (final LabAgeBandPreset preset in kLabAgeBandPresets)
+              FilterChip(
+                label: Text(labAgeBandPresetLabel(l10n, preset.id)),
+                selected: !range.allAges && matchedPresetId == preset.id,
+                showCheckmark: false,
+                onSelected: !enabled
+                    ? null
+                    : (bool selected) {
+                        if (selected) {
+                          range.applyAgePreset(
+                            preset,
+                            labelIfEmpty: labAgeBandPresetLabel(
+                              l10n,
+                              preset.id,
+                            ),
+                          );
+                        } else if (matchedPresetId == preset.id) {
+                          range.setAllAges(value: true);
+                        }
+                        onChanged();
+                      },
+              ),
           ],
-          onChanged: boundsEnabled
-              ? (String? value) {
-                  range.ageUnit = value;
-                  onChanged();
-                }
-              : null,
         ),
-        SizedBox(height: theme.spacing.sm),
-        AppResponsiveFieldRow.two(
-          gap: AppResponsiveFieldRowGap.form,
-          left: AppTextField(
-            controller: range.ageMinController,
-            labelText: l10n.labAgeMinLabel,
+        if (range.allAges) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            l10n.labAgeAnyHelper,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ] else ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          AppSelectField<String>.searchable(
+            value: range.ageUnit,
+            labelText: l10n.labAgeUnitLabel,
             enabled: boundsEnabled,
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
+            allowClear: false,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: 'DAY',
+                label: l10n.labAgeUnitDays,
+                leadingIcon: const Icon(Icons.today_outlined),
+              ),
+              AppSelectOption<String>(
+                value: 'WEEK',
+                label: l10n.labAgeUnitWeeks,
+                leadingIcon: const Icon(Icons.view_week_outlined),
+              ),
+              AppSelectOption<String>(
+                value: 'MONTH',
+                label: l10n.labAgeUnitMonths,
+                leadingIcon: const Icon(Icons.calendar_view_month_outlined),
+              ),
+              AppSelectOption<String>(
+                value: 'YEAR',
+                label: l10n.labAgeUnitYears,
+                leadingIcon: const Icon(Icons.event_outlined),
+              ),
             ],
-            prefixIcon: const Icon(Icons.arrow_downward),
             onChanged: boundsEnabled
-                ? (_) {
-                    range.syncAllAgesFromBounds();
+                ? (String? value) {
+                    range.ageUnit = value;
                     onChanged();
                   }
                 : null,
           ),
-          right: AppTextField(
-            controller: range.ageMaxController,
-            labelText: l10n.labAgeMaxLabel,
-            enabled: boundsEnabled,
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            prefixIcon: const Icon(Icons.arrow_upward),
-            onChanged: boundsEnabled
-                ? (_) {
-                    range.syncAllAgesFromBounds();
-                    onChanged();
-                  }
-                : null,
+          SizedBox(height: theme.spacing.xs),
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: range.ageMinController,
+              labelText: l10n.labAgeMinLabel,
+              enabled: boundsEnabled,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              prefixIcon: const Icon(Icons.arrow_downward),
+              onChanged: boundsEnabled
+                  ? (_) {
+                      range.syncAllAgesFromBounds();
+                      onChanged();
+                    }
+                  : null,
+            ),
+            right: AppTextField(
+              controller: range.ageMaxController,
+              labelText: l10n.labAgeMaxLabel,
+              enabled: boundsEnabled,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              prefixIcon: const Icon(Icons.arrow_upward),
+              onChanged: boundsEnabled
+                  ? (_) {
+                      range.syncAllAgesFromBounds();
+                      onChanged();
+                    }
+                  : null,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

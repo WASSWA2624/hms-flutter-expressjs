@@ -23462,10 +23462,10 @@ abstract class AppLocalizations {
   /// **'No timeline entries'**
   String get labNoTimelineLabel;
 
-  /// Localized text for labReferenceRangeLabel.
+  /// Label for the reference-range name/category field (e.g. Adult, Pediatric).
   ///
   /// In en, this message translates to:
-  /// **'Reference range'**
+  /// **'Range name'**
   String get labReferenceRangeLabel;
 
   /// Localized text for labReportedAtLabel.
@@ -35616,6 +35616,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Age min, max, and unit are cleared while All ages is selected.'**
   String get labAgeAnyHelper;
+
+  /// Label above age-band preset chips on a lab reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Age presets'**
+  String get labAgePresetsLabel;
 
   /// Localized text for labGenderMaleLabel.
   ///

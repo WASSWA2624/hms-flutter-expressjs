@@ -12668,7 +12668,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labNoTimelineLabel => 'No timeline entries';
 
   @override
-  String get labReferenceRangeLabel => 'Reference range';
+  String get labReferenceRangeLabel => 'Range name';
 
   @override
   String get labReportedAtLabel => 'Reported';
@@ -19088,6 +19088,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get labAgeAnyHelper =>
       'Age min, max, and unit are cleared while All ages is selected.';
+
+  @override
+  String get labAgePresetsLabel => 'Age presets';
 
   @override
   String get labGenderMaleLabel => 'Male';
