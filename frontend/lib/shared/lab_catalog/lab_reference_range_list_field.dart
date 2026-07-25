@@ -509,7 +509,7 @@ class EditableLabReferenceRange {
     } else if (!_isRangeValid(
       ageMinController.text,
       ageMaxController.text,
-      allowEqual: false,
+      allowEqual: true,
     )) {
       return false;
     }

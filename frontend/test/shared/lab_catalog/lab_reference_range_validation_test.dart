@@ -175,6 +175,17 @@ void main() {
       range.dispose();
     });
 
+    test('allows equal age min and max', () {
+      final EditableLabReferenceRange range = EditableLabReferenceRange()
+        ..setAllAges(value: false)
+        ..ageMinController.text = '0'
+        ..ageMaxController.text = '0'
+        ..normalMinController.text = '10'
+        ..normalMaxController.text = '15';
+      expect(range.isValid(), isTrue);
+      range.dispose();
+    });
+
     test('rejects critical min above normal min', () {
       final EditableLabReferenceRange range = EditableLabReferenceRange();
       range.normalMinController.text = '10';

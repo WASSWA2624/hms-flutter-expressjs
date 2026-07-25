@@ -794,14 +794,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                 setState(() => _resultOptions.remove(value));
               },
               onRangesChanged: () {
-                setState(() {
-                  _rangeErrorText =
-                      labReferenceRangesHaveDuplicateApplicability(
-                        _referenceRanges,
-                      )
-                      ? l10n.labReferenceRangeDuplicateMessage
-                      : null;
-                });
+                setState(() => _syncRangeValidationFeedback());
               },
               onRangeAdd: () {
                 final EditableLabReferenceRange next =
@@ -824,6 +817,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                 }
                 setState(() {
                   _rangeErrorText = null;
+                  _failure = null;
                   _referenceRanges.add(next);
                 });
               },
@@ -831,7 +825,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                 setState(() {
                   range.dispose();
                   _referenceRanges.remove(range);
-                  _rangeErrorText = null;
+                  _syncRangeValidationFeedback();
                 });
               },
             ),
@@ -956,10 +950,21 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
         if (range.contradictsCriticalVsNormal()) {
           return l10n.labReferenceRangeCriticalVsNormalMessage;
         }
+        if (range.hasNonNumericBound()) {
+          return l10n.labReferenceRangeInvalidValueMessage;
+        }
         return l10n.labReferenceRangeInvalidBoundsMessage;
       }
     }
     return null;
+  }
+
+  void _syncRangeValidationFeedback() {
+    final String? nextError = _rangeValidationMessage();
+    _rangeErrorText = nextError;
+    if (nextError == null) {
+      _failure = null;
+    }
   }
 
   Map<String, Object?> _payload() {

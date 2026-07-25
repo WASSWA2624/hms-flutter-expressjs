@@ -1296,6 +1296,15 @@ class _LabCatalogItemMutationDialogState
     return null;
   }
 
+  void _syncRangeValidationFeedback(AppLocalizations l10n) {
+    final String? nextError = _rangeValidationMessage(l10n);
+    _rangeErrorText = nextError;
+    // Drop the form-level "Check the details" banner once ranges are clean.
+    if (nextError == null) {
+      _failure = null;
+    }
+  }
+
   Map<String, Object?> _payload() {
     final Map<String, Object?> payload = <String, Object?>{
       if (!widget.isEditing) 'tenant_id': widget.tenantId,
@@ -1580,14 +1589,7 @@ class _LabCatalogItemMutationDialogState
                   setState(() => _resultOptions.remove(value));
                 },
                 onRangesChanged: () {
-                  setState(() {
-                    _rangeErrorText =
-                        labReferenceRangesHaveDuplicateApplicability(
-                          _referenceRanges,
-                        )
-                        ? l10n.labReferenceRangeDuplicateMessage
-                        : null;
-                  });
+                  setState(() => _syncRangeValidationFeedback(l10n));
                 },
                 onRangeAdd: () {
                   final EditableLabReferenceRange next =
@@ -1610,6 +1612,7 @@ class _LabCatalogItemMutationDialogState
                   }
                   setState(() {
                     _rangeErrorText = null;
+                    _failure = null;
                     _referenceRanges.add(next);
                   });
                 },
@@ -1617,7 +1620,7 @@ class _LabCatalogItemMutationDialogState
                   setState(() {
                     range.dispose();
                     _referenceRanges.remove(range);
-                    _rangeErrorText = null;
+                    _syncRangeValidationFeedback(l10n);
                   });
                 },
               ),
