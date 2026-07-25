@@ -618,6 +618,7 @@ const getRadiologyTestById = async (id, userId, ipAddress) => {
 const assertRadiologyTestUniqueness = async ({
   name,
   code,
+  modality,
   tenantId,
   excludeTestId = null,
   confirmSimilar = false
@@ -640,6 +641,7 @@ const assertRadiologyTestUniqueness = async ({
     checkRadiologyTestDuplicates({
       name,
       code,
+      modality,
       existing: existingDbTests,
       excludeTestId,
       includeTokenSimilarity: true
@@ -647,6 +649,7 @@ const assertRadiologyTestUniqueness = async ({
     checkRadiologyTestDuplicates({
       name,
       code,
+      modality,
       existing: standardCandidates,
       excludeTestId,
       // Standard catalog is large; use full-string scoring only.
@@ -689,6 +692,7 @@ const createRadiologyTest = async (data, userId, ipAddress) => {
     await assertRadiologyTestUniqueness({
       name: data.name,
       code: data.code,
+      modality: data.modality,
       tenantId,
       confirmSimilar
     });
@@ -756,11 +760,15 @@ const updateRadiologyTest = async (id, data, userId, ipAddress) => {
     const nextCode = Object.prototype.hasOwnProperty.call(payload, 'code')
       ? payload.code
       : before.code;
+    const nextModality = Object.prototype.hasOwnProperty.call(payload, 'modality')
+      ? payload.modality
+      : before.modality;
     const tenantId = payload.tenant_id || before.tenant_id;
 
     await assertRadiologyTestUniqueness({
       name: nextName,
       code: nextCode,
+      modality: nextModality,
       tenantId,
       excludeTestId: resolvedId,
       confirmSimilar

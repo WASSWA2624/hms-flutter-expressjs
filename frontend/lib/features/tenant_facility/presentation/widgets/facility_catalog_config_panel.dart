@@ -1393,6 +1393,49 @@ class _FacilityCatalogConfigPanelState
     return saved;
   }
 
+  Future<List<RadiologyCatalogTest>> _loadRadiologySimilarityCandidates({
+    String? tenantId,
+  }) async {
+    final AppLocalizations l10n = context.l10n;
+    final RadiologyRepository repository = ref.read(
+      radiologyRepositoryProvider,
+    );
+    unawaited(
+      showAppDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.radiologySimilarityCatalogLoadingTitle),
+          icon: const Icon(Icons.manage_search_outlined),
+          closeEnabled: false,
+          maxWidth: 420,
+          content: SizedBox(
+            height: 140,
+            child: AppLoadingIndicator.compact(
+              title: l10n.radiologySimilarityCatalogLoadingTitle,
+              body: l10n.radiologySimilarityCatalogLoadingBody,
+            ),
+          ),
+        ),
+      ),
+    );
+    try {
+      final Result<List<RadiologyCatalogTest>> candidatesResult =
+          await repository.listRadiologyCatalogTests(
+            tenantId: tenantId,
+            limit: 7500,
+          );
+      return candidatesResult.when(
+        success: (List<RadiologyCatalogTest> items) => items,
+        failure: (_) => _radiologyItems,
+      );
+    } finally {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
   Future<void> _openRadiologyAddDialog() async {
     final String? tenantId = await _resolveTenantIdForCreate();
     if (!mounted || tenantId == null) {
@@ -1401,18 +1444,11 @@ class _FacilityCatalogConfigPanelState
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
-    final Result<List<RadiologyCatalogTest>> candidatesResult =
-        await repository.listRadiologyCatalogTests(
-          tenantId: tenantId,
-          limit: 7500,
-        );
+    final List<RadiologyCatalogTest> existingItems =
+        await _loadRadiologySimilarityCandidates(tenantId: tenantId);
     if (!mounted) {
       return;
     }
-    final List<RadiologyCatalogTest> existingItems = candidatesResult.when(
-      success: (List<RadiologyCatalogTest> items) => items,
-      failure: (_) => _radiologyItems,
-    );
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -1443,18 +1479,11 @@ class _FacilityCatalogConfigPanelState
       radiologyRepositoryProvider,
     );
     final String? tenantId = widget.tenantId?.trim();
-    final Result<List<RadiologyCatalogTest>> candidatesResult =
-        await repository.listRadiologyCatalogTests(
-          tenantId: tenantId,
-          limit: 7500,
-        );
+    final List<RadiologyCatalogTest> existingItems =
+        await _loadRadiologySimilarityCandidates(tenantId: tenantId);
     if (!mounted) {
       return;
     }
-    final List<RadiologyCatalogTest> existingItems = candidatesResult.when(
-      success: (List<RadiologyCatalogTest> items) => items,
-      failure: (_) => _radiologyItems,
-    );
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,

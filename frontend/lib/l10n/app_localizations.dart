@@ -36595,6 +36595,66 @@ abstract class AppLocalizations {
   /// **'Existing'**
   String get radiologySimilarImagingTestExistingValueLabel;
 
+  /// Banner title when near imaging-test matches are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar imaging tests'**
+  String get radiologySimilarImagingTestReviewBannerTitle;
+
+  /// Count of closest imaging-test similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} matches'**
+  String radiologySimilarImagingTestMatchCountLabel(int count);
+
+  /// Per-match action to use a specific similar imaging test.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this test'**
+  String get radiologyUseThisImagingTestAction;
+
+  /// Column header for field names in similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get radiologySimilarImagingTestFieldColumnLabel;
+
+  /// Column header for comparison status in similarity dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get radiologySimilarImagingTestStatusColumnLabel;
+
+  /// Status when a value exists only on the matched imaging test.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on existing'**
+  String get radiologySimilarImagingTestOnlyExistingLabel;
+
+  /// Loading title while imaging-test similarity is evaluated.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking similarity'**
+  String get radiologySimilarityCheckLoadingTitle;
+
+  /// Loading body while imaging-test similarity is evaluated.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparing name, code, and modality against the catalog…'**
+  String get radiologySimilarityCheckLoadingBody;
+
+  /// Loading title while radiology similarity candidates are fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading catalog'**
+  String get radiologySimilarityCatalogLoadingTitle;
+
+  /// Loading body while radiology similarity candidates are fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing imaging tests for similarity review…'**
+  String get radiologySimilarityCatalogLoadingBody;
+
   /// Similarity score label for imaging test duplicate warning.
   ///
   /// In en, this message translates to:

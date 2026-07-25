@@ -1,11 +1,14 @@
 /**
  * Radiology test duplicate / similarity helpers.
  *
- * Percentage similarity on name and code with token-aware fuzzy matching.
+ * Composite percentage similarity across name, code, and modality.
  */
 
 const SIMILARITY_THRESHOLD = 80;
 const TOKEN_MATCH_THRESHOLD = 85;
+const NAME_WEIGHT = 50;
+const CODE_WEIGHT = 30;
+const MODALITY_WEIGHT = 20;
 
 const normalizeName = (value) => String(value || '')
   .toLowerCase()
@@ -16,6 +19,8 @@ const normalizeName = (value) => String(value || '')
 const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 
 const normalizeCodeForSimilarity = (value) => normalizeCode(value).replace(/[^A-Z0-9]/g, '');
+
+const normalizeModality = (value) => String(value || '').trim().toUpperCase();
 
 const tokensOf = (value) => String(value || '')
   .split(/\s+/)
@@ -129,6 +134,31 @@ const textSimilarityScore = (
   return Math.max(fullScore, tokenSimilarityPercent(left, right));
 };
 
+const compositeSimilarityScore = ({
+  nameScore = null,
+  codeScore = null,
+  modalityScore = null
+} = {}) => {
+  let weightedTotal = 0;
+  let weightSum = 0;
+
+  if (nameScore != null) {
+    weightedTotal += nameScore * NAME_WEIGHT;
+    weightSum += NAME_WEIGHT;
+  }
+  if (codeScore != null) {
+    weightedTotal += codeScore * CODE_WEIGHT;
+    weightSum += CODE_WEIGHT;
+  }
+  if (modalityScore != null) {
+    weightedTotal += modalityScore * MODALITY_WEIGHT;
+    weightSum += MODALITY_WEIGHT;
+  }
+
+  if (!weightSum) return 0;
+  return Math.round(weightedTotal / weightSum);
+};
+
 /** @deprecated Prefer textSimilarityScore; kept for existing imports/tests. */
 const nameSimilarityScore = (left, right) => textSimilarityScore(left, right);
 
@@ -136,6 +166,7 @@ const nameSimilarityScore = (left, right) => textSimilarityScore(left, right);
  * @param {Object} params
  * @param {string} params.name
  * @param {string|null|undefined} params.code
+ * @param {string|null|undefined} params.modality
  * @param {Array<{id?: string, name?: string, code?: string, modality?: string}>} params.existing
  * @param {string|null} [params.excludeTestId]
  * @param {boolean} [params.includeTokenSimilarity]
@@ -143,6 +174,7 @@ const nameSimilarityScore = (left, right) => textSimilarityScore(left, right);
 const checkRadiologyTestDuplicates = ({
   name,
   code,
+  modality,
   existing = [],
   excludeTestId = null,
   includeTokenSimilarity = true
@@ -150,6 +182,7 @@ const checkRadiologyTestDuplicates = ({
   const normalizedName = normalizeName(name);
   const normalizedCode = normalizeCode(code);
   const similarityCode = normalizeCodeForSimilarity(code);
+  const normalizedModality = normalizeModality(modality);
 
   let exactNameConflict = false;
   let exactCodeConflict = false;
@@ -163,6 +196,8 @@ const checkRadiologyTestDuplicates = ({
     const testName = normalizeName(test?.name);
     const testCode = normalizeCode(test?.code);
     const testSimilarityCode = normalizeCodeForSimilarity(test?.code);
+    const testModality = normalizeModality(test?.modality);
+
     const nameExact = Boolean(normalizedName) && testName === normalizedName;
     const codeExact = Boolean(normalizedCode)
       && Boolean(testCode)
@@ -170,8 +205,50 @@ const checkRadiologyTestDuplicates = ({
         testCode === normalizedCode
         || (Boolean(similarityCode) && testSimilarityCode === similarityCode)
       );
+    const modalityExact = Boolean(normalizedModality)
+      && Boolean(testModality)
+      && normalizedModality === testModality;
 
-    if (nameExact || codeExact) {
+    let nameScore = null;
+    let codeScore = null;
+    let modalityScore = null;
+    const reasons = [];
+
+    if (normalizedName && testName) {
+      nameScore = nameExact
+        ? 100
+        : textSimilarityScore(normalizedName, testName, { includeTokenSimilarity });
+      if (nameExact || nameScore >= SIMILARITY_THRESHOLD) {
+        reasons.push('name');
+      }
+    }
+
+    if (similarityCode && testSimilarityCode) {
+      codeScore = codeExact
+        ? 100
+        : textSimilarityScore(similarityCode, testSimilarityCode, {
+          includeTokenSimilarity: false
+        });
+      if (codeExact || codeScore >= SIMILARITY_THRESHOLD) {
+        reasons.push('code');
+      }
+    }
+
+    if (normalizedModality && testModality) {
+      modalityScore = modalityExact ? 100 : 0;
+      if (modalityExact) {
+        reasons.push('modality');
+      }
+    }
+
+    const score = compositeSimilarityScore({
+      nameScore,
+      codeScore,
+      modalityScore
+    });
+
+    const isExact = nameExact || codeExact;
+    if (isExact) {
       if (nameExact) exactNameConflict = true;
       if (codeExact) exactCodeConflict = true;
       matches.push({
@@ -179,40 +256,27 @@ const checkRadiologyTestDuplicates = ({
         name: test?.name || null,
         code: test?.code || null,
         modality: test?.modality || null,
-        score: 100,
-        reasons: [
-          ...(nameExact ? ['name'] : []),
-          ...(codeExact ? ['code'] : [])
-        ],
-        isExact: true
+        score,
+        reasons: reasons.length
+          ? reasons
+          : [
+            ...(nameExact ? ['name'] : []),
+            ...(codeExact ? ['code'] : [])
+          ],
+        isExact: true,
+        nameScore,
+        codeScore,
+        modalityScore
       });
       continue;
     }
 
-    const reasons = [];
-    let bestScore = 0;
-
-    if (normalizedName && testName) {
-      const nameScore = textSimilarityScore(normalizedName, testName, {
-        includeTokenSimilarity
-      });
-      if (nameScore >= SIMILARITY_THRESHOLD) {
-        reasons.push('name');
-        bestScore = Math.max(bestScore, nameScore);
-      }
-    }
-
-    if (similarityCode && testSimilarityCode) {
-      const codeScore = textSimilarityScore(similarityCode, testSimilarityCode, {
-        includeTokenSimilarity: false
-      });
-      if (codeScore >= SIMILARITY_THRESHOLD) {
-        reasons.push('code');
-        bestScore = Math.max(bestScore, codeScore);
-      }
-    }
-
-    if (!reasons.length) {
+    const strongFieldSignal = (
+      (nameScore != null && nameScore >= SIMILARITY_THRESHOLD)
+      || (codeScore != null && codeScore >= SIMILARITY_THRESHOLD)
+    );
+    const compositeSignal = score >= SIMILARITY_THRESHOLD;
+    if (!strongFieldSignal && !compositeSignal) {
       continue;
     }
 
@@ -221,9 +285,12 @@ const checkRadiologyTestDuplicates = ({
       name: test?.name || null,
       code: test?.code || null,
       modality: test?.modality || null,
-      score: bestScore,
-      reasons,
-      isExact: false
+      score,
+      reasons: reasons.length ? reasons : ['name'],
+      isExact: false,
+      nameScore,
+      codeScore,
+      modalityScore
     });
   }
 
@@ -263,11 +330,16 @@ const mergeDuplicateChecks = (...checks) => {
 module.exports = {
   SIMILARITY_THRESHOLD,
   TOKEN_MATCH_THRESHOLD,
+  NAME_WEIGHT,
+  CODE_WEIGHT,
+  MODALITY_WEIGHT,
   normalizeName,
   normalizeCode,
   normalizeCodeForSimilarity,
+  normalizeModality,
   nameSimilarityScore,
   textSimilarityScore,
+  compositeSimilarityScore,
   checkRadiologyTestDuplicates,
   mergeDuplicateChecks
 };

@@ -461,6 +461,7 @@ class _RadiologyCatalogMutationDialogState
   String? _nameErrorText;
   String? _codeErrorText;
   bool _isSaving = false;
+  bool _isCheckingSimilarity = false;
   bool _similarityAccepted = false;
   bool _noSimilarConfirmed = false;
 
@@ -504,28 +505,52 @@ class _RadiologyCatalogMutationDialogState
   Future<bool> _guardAgainstDuplicates(AppLocalizations l10n) async {
     final String proposedName = _nameController.text.trim();
     final String proposedCode = _codeController.text.trim();
-    final List<RadiologyCatalogTest> tenantItems = widget.existingItems
-        .where((RadiologyCatalogTest item) => !item.isStandard)
-        .toList(growable: false);
-    final List<RadiologyCatalogTest> standardItems = widget.existingItems
-        .where((RadiologyCatalogTest item) => item.isStandard)
-        .toList(growable: false);
-    final RadiologyCatalogDuplicateCheckResult result =
-        mergeRadiologyCatalogDuplicateChecks(<RadiologyCatalogDuplicateCheckResult>[
-          checkRadiologyCatalogDuplicates(
-            name: proposedName,
-            code: proposedCode,
-            existing: tenantItems,
-            excludeTestId: widget.item?.apiId,
-          ),
-          checkRadiologyCatalogDuplicates(
-            name: proposedName,
-            code: proposedCode,
-            existing: standardItems,
-            excludeTestId: widget.item?.apiId,
-            includeTokenSimilarity: false,
-          ),
-        ]);
+    final String? proposedModality = _modality;
+
+    setState(() => _isCheckingSimilarity = true);
+    // Let the loading indicator paint before the composite scan.
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) {
+      return false;
+    }
+
+    late final RadiologyCatalogDuplicateCheckResult result;
+    try {
+      final List<RadiologyCatalogTest> tenantItems = widget.existingItems
+          .where((RadiologyCatalogTest item) => !item.isStandard)
+          .toList(growable: false);
+      final List<RadiologyCatalogTest> standardItems = widget.existingItems
+          .where((RadiologyCatalogTest item) => item.isStandard)
+          .toList(growable: false);
+      result = await Future<RadiologyCatalogDuplicateCheckResult>(
+        () => mergeRadiologyCatalogDuplicateChecks(
+          <RadiologyCatalogDuplicateCheckResult>[
+            checkRadiologyCatalogDuplicates(
+              name: proposedName,
+              code: proposedCode,
+              modality: proposedModality,
+              existing: tenantItems,
+              excludeTestId: widget.item?.apiId,
+            ),
+            checkRadiologyCatalogDuplicates(
+              name: proposedName,
+              code: proposedCode,
+              modality: proposedModality,
+              existing: standardItems,
+              excludeTestId: widget.item?.apiId,
+              includeTokenSimilarity: false,
+            ),
+          ],
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingSimilarity = false);
+      }
+    }
+    if (!mounted) {
+      return false;
+    }
 
     final List<RadiologyCatalogSimilarityMatch> similarMatches =
         result.similarMatches;
@@ -533,13 +558,13 @@ class _RadiologyCatalogMutationDialogState
       if (_similarityAccepted && !result.hasExactConflict) {
         return true;
       }
-      final RadiologyCatalogSimilarityAction action =
+      final RadiologyCatalogSimilarityDialogResult dialogResult =
           await showRadiologyCatalogSimilarityDialog(
             context,
             proposed: RadiologyCatalogProposedTest(
               name: proposedName,
               code: proposedCode,
-              modality: _modality,
+              modality: proposedModality,
             ),
             matches: similarMatches,
             allowProceed: !result.hasExactConflict,
@@ -548,7 +573,7 @@ class _RadiologyCatalogMutationDialogState
         return false;
       }
 
-      switch (action) {
+      switch (dialogResult.action) {
         case RadiologyCatalogSimilarityAction.cancel:
           setState(() {
             _isSaving = false;
@@ -641,6 +666,7 @@ class _RadiologyCatalogMutationDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool formLocked = _isSaving || _isCheckingSimilarity;
     return AppDialog(
       title: Text(
         widget.isEditing
@@ -652,11 +678,24 @@ class _RadiologyCatalogMutationDialogState
       ),
       scrollable: true,
       maxWidth: 560,
-      closeEnabled: !_isSaving,
+      closeEnabled: !formLocked,
       content: Form(
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
+            if (_isCheckingSimilarity)
+              AppFormInformationBanner(
+                title: l10n.radiologySimilarityCheckLoadingTitle,
+                message: l10n.radiologySimilarityCheckLoadingBody,
+                variant: AppFormInformationVariant.info,
+                icon: Icons.manage_search_outlined,
+                children: <Widget>[
+                  SizedBox(
+                    height: 40,
+                    child: AppLoadingIndicator.compact(expand: false),
+                  ),
+                ],
+              ),
             if (_failure != null)
               AppFormInformationBanner.failure(
                 context: context,
@@ -665,7 +704,7 @@ class _RadiologyCatalogMutationDialogState
             AppTextField(
               controller: _nameController,
               labelText: l10n.radiologyTestNameLabel,
-              enabled: !_isSaving,
+              enabled: !formLocked,
               isRequired: true,
               errorText: _nameErrorText,
               validator: AppValidators.requiredText(l10n.validationRequired),
@@ -675,14 +714,14 @@ class _RadiologyCatalogMutationDialogState
               left: AppTextField(
                 controller: _codeController,
                 labelText: l10n.labTestCodeLabel,
-                enabled: !_isSaving,
+                enabled: !formLocked,
                 errorText: _codeErrorText,
               ),
               right: AppSelectField<String>.searchable(
                 value: _modality,
                 labelText: l10n.radiologyModalityLabel,
                 isRequired: true,
-                enabled: !_isSaving,
+                enabled: !formLocked,
                 options: <AppSelectOption<String>>[
                   for (final String modality in kRadiologyCatalogModalities)
                     AppSelectOption<String>(value: modality, label: modality),
@@ -703,13 +742,15 @@ class _RadiologyCatalogMutationDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          onPressed: formLocked ? null : () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: l10n.commonSaveActionLabel,
+          label: _isCheckingSimilarity
+              ? l10n.radiologySimilarityCheckLoadingTitle
+              : l10n.commonSaveActionLabel,
           leadingIcon: Icons.save_outlined,
-          isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
+          isLoading: formLocked,
+          onPressed: formLocked ? null : _submit,
         ),
       ],
     );

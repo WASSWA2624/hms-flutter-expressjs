@@ -2,6 +2,9 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 
 const int radiologyCatalogSimilarityThreshold = 80;
 const int radiologyCatalogTokenMatchThreshold = 85;
+const int radiologyCatalogNameWeight = 50;
+const int radiologyCatalogCodeWeight = 30;
+const int radiologyCatalogModalityWeight = 20;
 
 final class RadiologyCatalogSimilarityMatch {
   const RadiologyCatalogSimilarityMatch({
@@ -9,12 +12,20 @@ final class RadiologyCatalogSimilarityMatch {
     required this.score,
     required this.reasons,
     required this.isExact,
+    this.nameScore,
+    this.codeScore,
+    this.modalityScore,
   });
 
   final RadiologyCatalogTest test;
+
+  /// Composite match score across available parameters (name/code/modality).
   final int score;
   final List<String> reasons;
   final bool isExact;
+  final int? nameScore;
+  final int? codeScore;
+  final int? modalityScore;
 }
 
 final class RadiologyCatalogDuplicateCheckResult {
@@ -80,6 +91,10 @@ String normalizeRadiologyCatalogCodeForSimilarity(String value) {
   return normalizeRadiologyCatalogCode(value).replaceAll(RegExp(r'[^A-Z0-9]'), '');
 }
 
+String normalizeRadiologyCatalogModality(String value) {
+  return value.trim().toUpperCase();
+}
+
 List<String> radiologyCatalogTokens(String normalizedValue) {
   return normalizedValue
       .split(RegExp(r'\s+'))
@@ -108,6 +123,34 @@ int radiologyTextSimilarityScore(
   }
   final int tokenScore = _tokenSimilarityPercent(left, right);
   return fullScore > tokenScore ? fullScore : tokenScore;
+}
+
+/// Weighted composite of available parameter scores (name/code/modality).
+int radiologyCompositeSimilarityScore({
+  int? nameScore,
+  int? codeScore,
+  int? modalityScore,
+}) {
+  var weightedTotal = 0;
+  var weightSum = 0;
+
+  if (nameScore != null) {
+    weightedTotal += nameScore * radiologyCatalogNameWeight;
+    weightSum += radiologyCatalogNameWeight;
+  }
+  if (codeScore != null) {
+    weightedTotal += codeScore * radiologyCatalogCodeWeight;
+    weightSum += radiologyCatalogCodeWeight;
+  }
+  if (modalityScore != null) {
+    weightedTotal += modalityScore * radiologyCatalogModalityWeight;
+    weightSum += radiologyCatalogModalityWeight;
+  }
+
+  if (weightSum == 0) {
+    return 0;
+  }
+  return (weightedTotal / weightSum).round().clamp(0, 100);
 }
 
 bool _canReachSimilarityThreshold(int leftLength, int rightLength) {
@@ -230,6 +273,7 @@ int _min3(int a, int b, int c) {
 RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
   required String name,
   String? code,
+  String? modality,
   required List<RadiologyCatalogTest> existing,
   String? excludeTestId,
   bool includeTokenSimilarity = true,
@@ -238,6 +282,9 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
   final String normalizedCode = normalizeRadiologyCatalogCode(code ?? '');
   final String similarityCode = normalizeRadiologyCatalogCodeForSimilarity(
     code ?? '',
+  );
+  final String normalizedModality = normalizeRadiologyCatalogModality(
+    modality ?? '',
   );
 
   var exactNameConflict = false;
@@ -256,6 +303,10 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
     final String testSimilarityCode = normalizeRadiologyCatalogCodeForSimilarity(
       test.code ?? '',
     );
+    final String testModality = normalizeRadiologyCatalogModality(
+      test.modality ?? '',
+    );
+
     final bool nameExact =
         normalizedName.isNotEmpty && testName == normalizedName;
     final bool codeExact =
@@ -264,8 +315,57 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
         (testCode == normalizedCode ||
             (similarityCode.isNotEmpty &&
                 testSimilarityCode == similarityCode));
+    final bool modalityExact =
+        normalizedModality.isNotEmpty &&
+        testModality.isNotEmpty &&
+        normalizedModality == testModality;
 
-    if (nameExact || codeExact) {
+    int? nameScore;
+    int? codeScore;
+    int? modalityScore;
+    final List<String> reasons = <String>[];
+
+    if (normalizedName.isNotEmpty && testName.isNotEmpty) {
+      nameScore = nameExact
+          ? 100
+          : radiologyTextSimilarityScore(
+              normalizedName,
+              testName,
+              includeTokenSimilarity: includeTokenSimilarity,
+            );
+      if (nameExact || nameScore >= radiologyCatalogSimilarityThreshold) {
+        reasons.add('name');
+      }
+    }
+
+    if (similarityCode.isNotEmpty && testSimilarityCode.isNotEmpty) {
+      codeScore = codeExact
+          ? 100
+          : radiologyTextSimilarityScore(
+              similarityCode,
+              testSimilarityCode,
+              includeTokenSimilarity: false,
+            );
+      if (codeExact || codeScore >= radiologyCatalogSimilarityThreshold) {
+        reasons.add('code');
+      }
+    }
+
+    if (normalizedModality.isNotEmpty && testModality.isNotEmpty) {
+      modalityScore = modalityExact ? 100 : 0;
+      if (modalityExact) {
+        reasons.add('modality');
+      }
+    }
+
+    final int compositeScore = radiologyCompositeSimilarityScore(
+      nameScore: nameScore,
+      codeScore: codeScore,
+      modalityScore: modalityScore,
+    );
+
+    final bool isExact = nameExact || codeExact;
+    if (isExact) {
       if (nameExact) {
         exactNameConflict = true;
       }
@@ -275,58 +375,43 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
       matches.add(
         RadiologyCatalogSimilarityMatch(
           test: test,
-          score: 100,
-          reasons: <String>[
-            if (nameExact) 'name',
-            if (codeExact) 'code',
-          ],
+          score: compositeScore,
+          reasons: reasons.isEmpty
+              ? <String>[
+                  if (nameExact) 'name',
+                  if (codeExact) 'code',
+                ]
+              : reasons,
           isExact: true,
+          nameScore: nameScore,
+          codeScore: codeScore,
+          modalityScore: modalityScore,
         ),
       );
       continue;
     }
 
-    final List<String> reasons = <String>[];
-    var bestScore = 0;
+    final bool strongFieldSignal =
+        (nameScore != null &&
+            nameScore >= radiologyCatalogSimilarityThreshold) ||
+        (codeScore != null &&
+            codeScore >= radiologyCatalogSimilarityThreshold);
+    final bool compositeSignal =
+        compositeScore >= radiologyCatalogSimilarityThreshold;
 
-    if (normalizedName.isNotEmpty && testName.isNotEmpty) {
-      final int nameScore = radiologyTextSimilarityScore(
-        normalizedName,
-        testName,
-        includeTokenSimilarity: includeTokenSimilarity,
-      );
-      if (nameScore >= radiologyCatalogSimilarityThreshold) {
-        reasons.add('name');
-        if (nameScore > bestScore) {
-          bestScore = nameScore;
-        }
-      }
-    }
-
-    if (similarityCode.isNotEmpty && testSimilarityCode.isNotEmpty) {
-      final int codeScore = radiologyTextSimilarityScore(
-        similarityCode,
-        testSimilarityCode,
-        includeTokenSimilarity: false,
-      );
-      if (codeScore >= radiologyCatalogSimilarityThreshold) {
-        reasons.add('code');
-        if (codeScore > bestScore) {
-          bestScore = codeScore;
-        }
-      }
-    }
-
-    if (reasons.isEmpty) {
+    if (!strongFieldSignal && !compositeSignal) {
       continue;
     }
 
     matches.add(
       RadiologyCatalogSimilarityMatch(
         test: test,
-        score: bestScore,
-        reasons: reasons,
+        score: compositeScore,
+        reasons: reasons.isEmpty ? const <String>['name'] : reasons,
         isExact: false,
+        nameScore: nameScore,
+        codeScore: codeScore,
+        modalityScore: modalityScore,
       ),
     );
   }

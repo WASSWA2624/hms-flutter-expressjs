@@ -24,12 +24,31 @@ void main() {
           checkRadiologyCatalogDuplicates(
             name: 'Chest X-Ray',
             code: 'CXR-001',
+            modality: 'XRAY',
             existing: existing,
           );
 
       expect(result.exactNameConflict, isTrue);
       expect(result.exactCodeConflict, isTrue);
       expect(result.similarMatches, isNotEmpty);
+      expect(result.similarMatches.first.score, 100);
+      expect(result.similarMatches.first.reasons, contains('modality'));
+    });
+
+    test('lowers composite score when modality differs on exact name', () {
+      final RadiologyCatalogDuplicateCheckResult result =
+          checkRadiologyCatalogDuplicates(
+            name: 'Chest X-Ray',
+            code: '',
+            modality: 'MRI',
+            existing: existing,
+          );
+
+      expect(result.exactNameConflict, isTrue);
+      expect(result.similarMatches, isNotEmpty);
+      expect(result.similarMatches.first.score, lessThan(100));
+      expect(result.similarMatches.first.modalityScore, 0);
+      expect(result.similarMatches.first.nameScore, 100);
     });
 
     test('detects punctuation-equivalent codes as exact conflicts', () {
@@ -37,6 +56,7 @@ void main() {
           checkRadiologyCatalogDuplicates(
             name: 'Unique Procedure',
             code: 'CXR001',
+            modality: 'XRAY',
             existing: existing,
           );
 
@@ -48,18 +68,54 @@ void main() {
           checkRadiologyCatalogDuplicates(
             name: 'Chest X-Rayy',
             code: 'NEW-001',
+            modality: 'XRAY',
             existing: existing,
           );
 
       expect(result.hasExactConflict, isFalse);
       expect(result.nonExactSimilarMatches, isNotEmpty);
       expect(
-        result.nonExactSimilarMatches.first.score,
-        greaterThanOrEqualTo(radiologyCatalogSimilarityThreshold),
-      );
-      expect(
         result.nonExactSimilarMatches.first.reasons,
         contains('name'),
+      );
+      expect(result.nonExactSimilarMatches.first.nameScore, isNotNull);
+      expect(
+        result.nonExactSimilarMatches.first.nameScore!,
+        greaterThanOrEqualTo(radiologyCatalogSimilarityThreshold),
+      );
+    });
+
+    test('composite score uses name, code, and modality weights', () {
+      final RadiologyCatalogDuplicateCheckResult result =
+          checkRadiologyCatalogDuplicates(
+            name: 'Chest X-Rayy',
+            code: 'CXR-002',
+            modality: 'XRAY',
+            existing: existing,
+          );
+
+      expect(result.hasExactConflict, isFalse);
+      expect(result.nonExactSimilarMatches, isNotEmpty);
+      final RadiologyCatalogSimilarityMatch match =
+          result.nonExactSimilarMatches.first;
+      expect(match.codeScore, isNotNull);
+      expect(
+        match.codeScore!,
+        greaterThanOrEqualTo(radiologyCatalogSimilarityThreshold),
+      );
+      expect(match.modalityScore, 100);
+      expect(match.nameScore, isNotNull);
+      expect(
+        match.score,
+        radiologyCompositeSimilarityScore(
+          nameScore: match.nameScore,
+          codeScore: match.codeScore,
+          modalityScore: match.modalityScore,
+        ),
+      );
+      expect(
+        match.score,
+        lessThan(100),
       );
     });
 
@@ -68,6 +124,7 @@ void main() {
           checkRadiologyCatalogDuplicates(
             name: 'Totally Unique Procedure',
             code: 'CXR-002',
+            modality: 'CT',
             existing: existing,
           );
 
@@ -84,13 +141,14 @@ void main() {
           checkRadiologyCatalogDuplicates(
             name: 'Xray Chest',
             code: 'UNIQUE-99',
+            modality: 'XRAY',
             existing: existing,
           );
 
       expect(result.hasExactConflict, isFalse);
       expect(result.nonExactSimilarMatches, isNotEmpty);
       expect(
-        result.nonExactSimilarMatches.first.score,
+        result.nonExactSimilarMatches.first.nameScore!,
         greaterThanOrEqualTo(radiologyCatalogSimilarityThreshold),
       );
     });
@@ -100,6 +158,7 @@ void main() {
           checkRadiologyCatalogDuplicates(
             name: 'Chest X-Ray',
             code: 'CXR-001',
+            modality: 'XRAY',
             existing: existing,
             excludeTestId: 'rad-1',
           );
@@ -113,11 +172,32 @@ void main() {
           checkRadiologyCatalogDuplicates(
             name: 'Unique Procedure',
             code: '',
+            modality: 'CT',
             existing: existing,
           );
 
       expect(result.exactCodeConflict, isFalse);
       expect(result.hasExactConflict, isFalse);
+    });
+  });
+
+  group('radiologyCompositeSimilarityScore', () {
+    test('weights name, code, and modality', () {
+      expect(
+        radiologyCompositeSimilarityScore(
+          nameScore: 100,
+          codeScore: 0,
+          modalityScore: 100,
+        ),
+        70,
+      );
+    });
+
+    test('ignores missing parameters', () {
+      expect(
+        radiologyCompositeSimilarityScore(nameScore: 80, modalityScore: 100),
+        86,
+      );
     });
   });
 

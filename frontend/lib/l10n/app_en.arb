@@ -25212,6 +25212,51 @@
   "@radiologySimilarImagingTestExistingValueLabel": {
     "description": "Label for the existing field value in a similarity comparison row."
   },
+  "radiologySimilarImagingTestReviewBannerTitle": "Review similar imaging tests",
+  "@radiologySimilarImagingTestReviewBannerTitle": {
+    "description": "Banner title when near imaging-test matches are found."
+  },
+  "radiologySimilarImagingTestMatchCountLabel": "{count} matches",
+  "@radiologySimilarImagingTestMatchCountLabel": {
+    "description": "Count of closest imaging-test similarity matches.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "radiologyUseThisImagingTestAction": "Use this test",
+  "@radiologyUseThisImagingTestAction": {
+    "description": "Per-match action to use a specific similar imaging test."
+  },
+  "radiologySimilarImagingTestFieldColumnLabel": "Field",
+  "@radiologySimilarImagingTestFieldColumnLabel": {
+    "description": "Column header for field names in similarity comparison."
+  },
+  "radiologySimilarImagingTestStatusColumnLabel": "Status",
+  "@radiologySimilarImagingTestStatusColumnLabel": {
+    "description": "Column header for comparison status in similarity dialog."
+  },
+  "radiologySimilarImagingTestOnlyExistingLabel": "Only on existing",
+  "@radiologySimilarImagingTestOnlyExistingLabel": {
+    "description": "Status when a value exists only on the matched imaging test."
+  },
+  "radiologySimilarityCheckLoadingTitle": "Checking similarity",
+  "@radiologySimilarityCheckLoadingTitle": {
+    "description": "Loading title while imaging-test similarity is evaluated."
+  },
+  "radiologySimilarityCheckLoadingBody": "Comparing name, code, and modality against the catalog…",
+  "@radiologySimilarityCheckLoadingBody": {
+    "description": "Loading body while imaging-test similarity is evaluated."
+  },
+  "radiologySimilarityCatalogLoadingTitle": "Loading catalog",
+  "@radiologySimilarityCatalogLoadingTitle": {
+    "description": "Loading title while radiology similarity candidates are fetched."
+  },
+  "radiologySimilarityCatalogLoadingBody": "Preparing imaging tests for similarity review…",
+  "@radiologySimilarityCatalogLoadingBody": {
+    "description": "Loading body while radiology similarity candidates are fetched."
+  },
   "radiologySimilarImagingTestScoreLabel": "{score}% match",
   "@radiologySimilarImagingTestScoreLabel": {
     "description": "Similarity score label for imaging test duplicate warning.",

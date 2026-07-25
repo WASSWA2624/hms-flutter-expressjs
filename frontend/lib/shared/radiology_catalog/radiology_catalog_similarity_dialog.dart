@@ -5,6 +5,7 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 enum RadiologyCatalogSimilarityAction { cancel, useExisting, proceed }
 
@@ -20,7 +21,31 @@ final class RadiologyCatalogProposedTest {
   final String? modality;
 }
 
-Future<RadiologyCatalogSimilarityAction> showRadiologyCatalogSimilarityDialog(
+final class RadiologyCatalogSimilarityDialogResult {
+  const RadiologyCatalogSimilarityDialogResult._({
+    required this.action,
+    this.selectedTest,
+  });
+
+  const RadiologyCatalogSimilarityDialogResult.cancel()
+    : this._(action: RadiologyCatalogSimilarityAction.cancel);
+
+  const RadiologyCatalogSimilarityDialogResult.proceed()
+    : this._(action: RadiologyCatalogSimilarityAction.proceed);
+
+  const RadiologyCatalogSimilarityDialogResult.useExisting(
+    RadiologyCatalogTest test,
+  ) : this._(
+        action: RadiologyCatalogSimilarityAction.useExisting,
+        selectedTest: test,
+      );
+
+  final RadiologyCatalogSimilarityAction action;
+  final RadiologyCatalogTest? selectedTest;
+}
+
+Future<RadiologyCatalogSimilarityDialogResult>
+showRadiologyCatalogSimilarityDialog(
   BuildContext context, {
   required RadiologyCatalogProposedTest proposed,
   required List<RadiologyCatalogSimilarityMatch> matches,
@@ -35,23 +60,27 @@ Future<RadiologyCatalogSimilarityAction> showRadiologyCatalogSimilarityDialog(
   );
   final bool canProceed = allowProceed && !hasExactMatch;
 
-  return showAppDialog<RadiologyCatalogSimilarityAction>(
+  return showAppDialog<RadiologyCatalogSimilarityDialogResult>(
     context: context,
     builder: (BuildContext dialogContext) {
       final ThemeData theme = Theme.of(dialogContext);
 
       return AppDialog(
         title: Text(l10n.radiologySimilarImagingTestDialogTitle),
-        icon: const Icon(Icons.warning_amber_outlined),
+        icon: Icon(
+          hasExactMatch
+              ? Icons.gpp_bad_outlined
+              : Icons.warning_amber_outlined,
+        ),
         scrollable: true,
-        maxWidth: 720,
+        maxWidth: 760,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AppFormInformationBanner(
               title: hasExactMatch
                   ? l10n.radiologySimilarImagingTestExactBannerTitle
-                  : l10n.radiologySimilarImagingTestDialogTitle,
+                  : l10n.radiologySimilarImagingTestReviewBannerTitle,
               message: hasExactMatch
                   ? l10n.radiologySimilarImagingTestExactBannerBody
                   : l10n.radiologySimilarImagingTestDialogBody,
@@ -59,26 +88,46 @@ Future<RadiologyCatalogSimilarityAction> showRadiologyCatalogSimilarityDialog(
                   ? AppFormInformationVariant.error
                   : AppFormInformationVariant.warning,
               icon: hasExactMatch
-                  ? Icons.block
-                  : Icons.warning_amber_outlined,
+                  ? Icons.gpp_bad_outlined
+                  : Icons.manage_search_outlined,
             ),
             SizedBox(height: theme.spacing.md),
             _ProposedTestCard(proposed: proposed),
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.radiologySimilarImagingTestMatchesHeading,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+            SizedBox(height: theme.spacing.lg),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.radiologySimilarImagingTestMatchesHeading,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Text(
+                  l10n.radiologySimilarImagingTestMatchCountLabel(
+                    visibleMatches.length,
+                  ),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: theme.spacing.sm),
             for (int index = 0; index < visibleMatches.length; index += 1) ...<
               Widget
             >[
-              if (index > 0) SizedBox(height: theme.spacing.sm),
+              if (index > 0) SizedBox(height: theme.spacing.md),
               _SimilarityMatchCard(
                 proposed: proposed,
                 match: visibleMatches[index],
+                onUseThis: () => Navigator.of(dialogContext).pop(
+                  RadiologyCatalogSimilarityDialogResult.useExisting(
+                    visibleMatches[index].test,
+                  ),
+                ),
               ),
             ],
           ],
@@ -87,32 +136,24 @@ Future<RadiologyCatalogSimilarityAction> showRadiologyCatalogSimilarityDialog(
           AppButton.tertiary(
             label: l10n.commonCancelActionLabel,
             leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(
-              dialogContext,
-            ).pop(RadiologyCatalogSimilarityAction.cancel),
+            onPressed: () => Navigator.of(dialogContext).pop(
+              const RadiologyCatalogSimilarityDialogResult.cancel(),
+            ),
           ),
-          AppButton.secondary(
-            label: l10n.radiologyUseExistingImagingTestAction,
-            leadingIcon: Icons.content_copy_outlined,
-            onPressed: () => Navigator.of(
-              dialogContext,
-            ).pop(RadiologyCatalogSimilarityAction.useExisting),
-          ),
-          AppButton.primary(
-            label: l10n.radiologyProceedCreateImagingTestAction,
-            leadingIcon: Icons.add_circle_outline,
-            onPressed: canProceed
-                ? () => Navigator.of(
-                    dialogContext,
-                  ).pop(RadiologyCatalogSimilarityAction.proceed)
-                : null,
-          ),
+          if (canProceed)
+            AppButton.primary(
+              label: l10n.radiologyProceedCreateImagingTestAction,
+              leadingIcon: Icons.add_circle_outline,
+              onPressed: () => Navigator.of(dialogContext).pop(
+                const RadiologyCatalogSimilarityDialogResult.proceed(),
+              ),
+            ),
         ],
       );
     },
   ).then(
-    (RadiologyCatalogSimilarityAction? value) =>
-        value ?? RadiologyCatalogSimilarityAction.cancel,
+    (RadiologyCatalogSimilarityDialogResult? value) =>
+        value ?? const RadiologyCatalogSimilarityDialogResult.cancel(),
   );
 }
 
@@ -160,56 +201,68 @@ class _ProposedTestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+
+    return AppSectionPanel(
+      tone: AppWorkspaceStatusTone.info,
+      density: AppContentPanelDensity.compact,
+      leadingIcon: Icons.edit_note_outlined,
+      title: l10n.radiologySimilarImagingTestProposedHeading,
+      children: <Widget>[
+        _ProposedFactGrid(
+          facts: <(String, String)>[
+            (l10n.radiologyTestNameLabel, proposed.name),
+            (
+              l10n.radiologyTestCodeOptionalLabel,
+              _displayValue(proposed.code),
+            ),
+            (
+              l10n.radiologyModalityLabel,
+              _displayValue(proposed.modality),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ProposedFactGrid extends StatelessWidget {
+  const _ProposedFactGrid({required this.facts});
+
+  final List<(String, String)> facts;
+
+  @override
+  Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.35)),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
+    return Wrap(
+      spacing: theme.spacing.md,
+      runSpacing: theme.spacing.sm,
+      children: <Widget>[
+        for (final (String label, String value) in facts)
+          SizedBox(
+            width: 220,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Icon(
-                  Icons.edit_note_outlined,
-                  color: theme.colorScheme.primary,
-                  size: theme.appTokens.listIconSize,
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Text(
-                    l10n.radiologySimilarImagingTestProposedHeading,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.primary,
-                    ),
+                SizedBox(height: theme.spacing.xs / 2),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: theme.spacing.sm),
-            _SummaryValue(
-              label: l10n.radiologyTestNameLabel,
-              value: proposed.name,
-            ),
-            SizedBox(height: theme.spacing.xs),
-            _SummaryValue(
-              label: l10n.radiologyTestCodeOptionalLabel,
-              value: _displayValue(proposed.code),
-            ),
-            SizedBox(height: theme.spacing.xs),
-            _SummaryValue(
-              label: l10n.radiologyModalityLabel,
-              value: _displayValue(proposed.modality),
-            ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }
@@ -218,10 +271,12 @@ class _SimilarityMatchCard extends StatelessWidget {
   const _SimilarityMatchCard({
     required this.proposed,
     required this.match,
+    required this.onUseThis,
   });
 
   final RadiologyCatalogProposedTest proposed;
   final RadiologyCatalogSimilarityMatch match;
+  final VoidCallback onUseThis;
 
   @override
   Widget build(BuildContext context) {
@@ -229,13 +284,16 @@ class _SimilarityMatchCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final RadiologyCatalogTest test = match.test;
     final AppStatusColors statusColors = theme.statusColors;
+    final AppWorkspaceStatusTone tone = match.isExact
+        ? AppWorkspaceStatusTone.error
+        : AppWorkspaceStatusTone.warning;
     final Color accent = match.isExact
         ? statusColors.error
         : statusColors.warning;
-    final Color container = match.isExact
+    final Color badgeContainer = match.isExact
         ? statusColors.errorContainer
         : statusColors.warningContainer;
-    final Color onContainer = match.isExact
+    final Color badgeOnContainer = match.isExact
         ? statusColors.onErrorContainer
         : statusColors.onWarningContainer;
     final List<_FieldComparison> comparisons = _buildFieldComparisons(
@@ -243,116 +301,208 @@ class _SimilarityMatchCard extends StatelessWidget {
       match: match,
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: accent.withValues(alpha: 0.45)),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Icon(
-                  match.isExact
-                      ? Icons.copy_all_outlined
-                      : Icons.find_replace_outlined,
-                  color: accent,
-                  size: theme.appTokens.listIconSize,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        l10n.radiologySimilarImagingTestExistingHeading,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+    return AppContentPanel(
+      tone: tone,
+      density: AppContentPanelDensity.compact,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                match.isExact
+                    ? Icons.copy_all_outlined
+                    : Icons.find_replace_outlined,
+                color: accent,
+                size: theme.appTokens.listIconSize,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      l10n.radiologySimilarImagingTestExistingHeading,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: accent,
                       ),
+                    ),
+                    SizedBox(height: theme.spacing.xs / 2),
+                    Text(
+                      test.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (test.effectiveId.trim().isNotEmpty ||
+                        test.isStandard) ...<Widget>[
                       SizedBox(height: theme.spacing.xs / 2),
                       Text(
-                        test.name,
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        <String>[
+                          if (test.effectiveId.trim().isNotEmpty)
+                            test.effectiveId,
+                          if (test.isStandard)
+                            l10n.radiologyStandardCatalogBadge,
+                        ].join(' · '),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (test.isStandard) ...<Widget>[
-                        SizedBox(height: theme.spacing.xs / 2),
-                        Text(
-                          l10n.radiologyStandardCatalogBadge,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
-                SizedBox(width: theme.spacing.sm),
-                Column(
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.sm,
+                  vertical: theme.spacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: badgeContainer,
+                  borderRadius: BorderRadius.circular(theme.radius.md),
+                  border: Border.all(color: accent.withValues(alpha: 0.55)),
+                ),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: <Widget>[
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: theme.spacing.sm,
-                        vertical: theme.spacing.xs / 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: container,
-                        borderRadius: BorderRadius.circular(theme.radius.full),
-                        border: Border.all(color: accent),
-                      ),
-                      child: Text(
-                        l10n.radiologySimilarImagingTestScoreLabel(match.score),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: onContainer,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    Text(
+                      l10n.radiologySimilarImagingTestScoreLabel(match.score),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: badgeOnContainer,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(height: theme.spacing.xs),
                     Text(
                       match.isExact
                           ? l10n.radiologySimilarImagingTestExactMatchLabel
                           : l10n.radiologySimilarImagingTestNearMatchLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: accent,
+                        color: badgeOnContainer,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.radiologySimilarImagingTestComparisonHeading,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(theme.radius.sm),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
               ),
             ),
-            SizedBox(height: theme.spacing.sm),
-            for (int index = 0; index < comparisons.length; index += 1) ...<
-              Widget
-            >[
-              if (index > 0) SizedBox(height: theme.spacing.sm),
-              _FieldComparisonRow(comparison: comparisons[index]),
-            ],
-          ],
-        ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    l10n.radiologySimilarImagingTestComparisonHeading,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                  LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints constraints) {
+                      final bool compact = constraints.maxWidth < 560;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          if (!compact) ...<Widget>[
+                            _ComparisonTableHeader(),
+                            SizedBox(height: theme.spacing.xs),
+                          ],
+                          for (
+                            int index = 0;
+                            index < comparisons.length;
+                            index += 1
+                          ) ...<Widget>[
+                            if (index > 0 || !compact)
+                              Divider(
+                                height: theme.spacing.md,
+                                color: theme.colorScheme.outlineVariant
+                                    .withValues(alpha: 0.55),
+                              ),
+                            if (compact)
+                              _FieldComparisonStacked(comparison: comparisons[index])
+                            else
+                              _FieldComparisonRow(comparison: comparisons[index]),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: AppButton.secondary(
+              label: l10n.radiologyUseThisImagingTestAction,
+              leadingIcon: Icons.check_circle_outline,
+              onPressed: onUseThis,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-enum _FieldCompareStatus { match, similar, conflict }
+class _ComparisonTableHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? style = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w800,
+    );
+
+    return Row(
+      children: <Widget>[
+        SizedBox(
+          width: 88,
+          child: Text(l10n.radiologySimilarImagingTestFieldColumnLabel, style: style),
+        ),
+        Expanded(
+          child: Text(
+            l10n.radiologySimilarImagingTestYourEntryLabel,
+            style: style,
+          ),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Text(
+            l10n.radiologySimilarImagingTestExistingValueLabel,
+            style: style,
+          ),
+        ),
+        SizedBox(
+          width: 96,
+          child: Text(
+            l10n.radiologySimilarImagingTestStatusColumnLabel,
+            style: style,
+            textAlign: TextAlign.end,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+enum _FieldCompareStatus { match, similar, conflict, onlyExisting }
 
 final class _FieldComparison {
   const _FieldComparison({
@@ -408,6 +558,19 @@ List<_FieldComparison> _buildFieldComparisons({
   final bool nameReason = match.reasons.contains('name');
   final bool codeReason = match.reasons.contains('code');
 
+  _FieldCompareStatus codeStatus() {
+    if (codeExact || (proposedCode.isEmpty && existingCode.isEmpty)) {
+      return _FieldCompareStatus.match;
+    }
+    if (codeReason) {
+      return _FieldCompareStatus.similar;
+    }
+    if (proposedCode.isEmpty && existingCode.isNotEmpty) {
+      return _FieldCompareStatus.onlyExisting;
+    }
+    return _FieldCompareStatus.conflict;
+  }
+
   return <_FieldComparison>[
     _FieldComparison(
       label: 'name',
@@ -418,20 +581,14 @@ List<_FieldComparison> _buildFieldComparisons({
           : nameReason
           ? _FieldCompareStatus.similar
           : _FieldCompareStatus.conflict,
-      similarityPercent: nameReason && !nameExact ? match.score : null,
+      similarityPercent: nameReason && !nameExact ? match.nameScore : null,
     ),
     _FieldComparison(
       label: 'code',
       proposedValue: _displayValue(proposedCode),
       existingValue: _displayValue(existingCode),
-      status: codeExact
-          ? _FieldCompareStatus.match
-          : (codeReason
-                ? _FieldCompareStatus.similar
-                : (proposedCode.isEmpty && existingCode.isEmpty
-                      ? _FieldCompareStatus.match
-                      : _FieldCompareStatus.conflict)),
-      similarityPercent: codeReason && !codeExact ? match.score : null,
+      status: codeStatus(),
+      similarityPercent: codeReason && !codeExact ? match.codeScore : null,
     ),
     _FieldComparison(
       label: 'modality',
@@ -439,7 +596,10 @@ List<_FieldComparison> _buildFieldComparisons({
       existingValue: _displayValue(existingModality),
       status: modalityExact
           ? _FieldCompareStatus.match
-          : _FieldCompareStatus.conflict,
+          : (proposedModality.isEmpty && existingModality.isNotEmpty
+                ? _FieldCompareStatus.onlyExisting
+                : _FieldCompareStatus.conflict),
+      similarityPercent: match.modalityScore,
     ),
   ];
 }
@@ -453,89 +613,58 @@ class _FieldComparisonRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final AppStatusColors statusColors = theme.statusColors;
-    final (String statusLabel, IconData icon, Color color) = switch (
-      comparison.status
-    ) {
-      _FieldCompareStatus.match => (
-        l10n.patientsDuplicateStatusMatchLabel,
-        Icons.check_circle_outline,
-        statusColors.success,
-      ),
-      _FieldCompareStatus.similar => (
-        comparison.similarityPercent == null
-            ? l10n.patientsDuplicateStatusSimilarLabel
-            : '${l10n.patientsDuplicateStatusSimilarLabel} · '
-                  '${l10n.patientsDuplicateSimilarityLabel(comparison.similarityPercent!)}',
-        Icons.change_circle_outlined,
-        statusColors.warning,
-      ),
-      _FieldCompareStatus.conflict => (
-        l10n.patientsDuplicateStatusConflictLabel,
-        Icons.cancel_outlined,
-        statusColors.error,
-      ),
-    };
-    final String fieldLabel = switch (comparison.label) {
-      'name' => l10n.radiologyTestNameLabel,
-      'code' => l10n.radiologyTestCodeLabel,
-      'modality' => l10n.radiologyModalityLabel,
-      _ => comparison.label,
-    };
-    final bool valuesAgree =
-        comparison.status == _FieldCompareStatus.match ||
-        comparison.proposedValue == comparison.existingValue;
+    final _StatusVisual status = _statusVisual(theme, l10n, comparison);
+    final String fieldLabel = _fieldLabel(l10n, comparison.label);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Icon(icon, size: theme.appTokens.listIconSize, color: color),
+        SizedBox(
+          width: 88,
+          child: Row(
+            children: <Widget>[
+              Icon(status.icon, size: 18, color: status.color),
+              SizedBox(width: theme.spacing.xs),
+              Expanded(
+                child: Text(
+                  fieldLabel,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Text(
+            comparison.proposedValue,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
         SizedBox(width: theme.spacing.sm),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      fieldLabel,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    statusLabel,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: theme.spacing.xs / 2),
-              if (valuesAgree)
-                Text(
-                  comparison.existingValue,
-                  style: theme.textTheme.bodySmall,
-                )
-              else ...<Widget>[
-                Text(
-                  '${l10n.radiologySimilarImagingTestYourEntryLabel}: '
-                  '${comparison.proposedValue}',
-                  style: theme.textTheme.bodySmall,
-                ),
-                Text(
-                  '${l10n.radiologySimilarImagingTestExistingValueLabel}: '
-                  '${comparison.existingValue}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ],
+          child: Text(
+            comparison.existingValue,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: comparison.status == _FieldCompareStatus.match
+                  ? theme.colorScheme.onSurface
+                  : status.color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 96,
+          child: Text(
+            status.label,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: status.color,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],
@@ -543,31 +672,115 @@ class _FieldComparisonRow extends StatelessWidget {
   }
 }
 
-class _SummaryValue extends StatelessWidget {
-  const _SummaryValue({required this.label, required this.value});
+class _FieldComparisonStacked extends StatelessWidget {
+  const _FieldComparisonStacked({required this.comparison});
 
-  final String label;
-  final String value;
+  final _FieldComparison comparison;
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final _StatusVisual status = _statusVisual(theme, l10n, comparison);
+    final String fieldLabel = _fieldLabel(l10n, comparison.label);
 
-    return Text.rich(
-      TextSpan(
-        children: <InlineSpan>[
-          TextSpan(
-            text: '$label: ',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Icon(status.icon, size: 18, color: status.color),
+            SizedBox(width: theme.spacing.xs),
+            Expanded(
+              child: Text(
+                fieldLabel,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
+            Text(
+              status.label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: status.color,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          '${l10n.radiologySimilarImagingTestYourEntryLabel}: '
+          '${comparison.proposedValue}',
+          style: theme.textTheme.bodySmall,
+        ),
+        Text(
+          '${l10n.radiologySimilarImagingTestExistingValueLabel}: '
+          '${comparison.existingValue}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: comparison.status == _FieldCompareStatus.match
+                ? theme.colorScheme.onSurface
+                : status.color,
+            fontWeight: FontWeight.w600,
           ),
-          TextSpan(text: value, style: theme.textTheme.bodyMedium),
-        ],
-      ),
+        ),
+      ],
     );
   }
+}
+
+final class _StatusVisual {
+  const _StatusVisual({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+}
+
+_StatusVisual _statusVisual(
+  ThemeData theme,
+  AppLocalizations l10n,
+  _FieldComparison comparison,
+) {
+  final AppStatusColors statusColors = theme.statusColors;
+  return switch (comparison.status) {
+    _FieldCompareStatus.match => _StatusVisual(
+      label: l10n.patientsDuplicateStatusMatchLabel,
+      icon: Icons.check_circle_outline,
+      color: statusColors.success,
+    ),
+    _FieldCompareStatus.similar => _StatusVisual(
+      label: comparison.similarityPercent == null
+          ? l10n.patientsDuplicateStatusSimilarLabel
+          : '${l10n.patientsDuplicateStatusSimilarLabel} · '
+                '${comparison.similarityPercent}%',
+      icon: Icons.change_circle_outlined,
+      color: statusColors.warning,
+    ),
+    _FieldCompareStatus.conflict => _StatusVisual(
+      label: l10n.patientsDuplicateStatusConflictLabel,
+      icon: Icons.cancel_outlined,
+      color: statusColors.error,
+    ),
+    _FieldCompareStatus.onlyExisting => _StatusVisual(
+      label: l10n.radiologySimilarImagingTestOnlyExistingLabel,
+      icon: Icons.info_outline,
+      color: theme.colorScheme.onSurfaceVariant,
+    ),
+  };
+}
+
+String _fieldLabel(AppLocalizations l10n, String label) {
+  return switch (label) {
+    'name' => l10n.radiologyTestNameLabel,
+    'code' => l10n.radiologyTestCodeLabel,
+    'modality' => l10n.radiologyModalityLabel,
+    _ => label,
+  };
 }
 
 String _displayValue(String? value) {

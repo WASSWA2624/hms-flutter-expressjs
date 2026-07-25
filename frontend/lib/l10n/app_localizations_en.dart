@@ -19667,6 +19667,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologySimilarImagingTestExistingValueLabel => 'Existing';
 
   @override
+  String get radiologySimilarImagingTestReviewBannerTitle =>
+      'Review similar imaging tests';
+
+  @override
+  String radiologySimilarImagingTestMatchCountLabel(int count) {
+    return '$count matches';
+  }
+
+  @override
+  String get radiologyUseThisImagingTestAction => 'Use this test';
+
+  @override
+  String get radiologySimilarImagingTestFieldColumnLabel => 'Field';
+
+  @override
+  String get radiologySimilarImagingTestStatusColumnLabel => 'Status';
+
+  @override
+  String get radiologySimilarImagingTestOnlyExistingLabel => 'Only on existing';
+
+  @override
+  String get radiologySimilarityCheckLoadingTitle => 'Checking similarity';
+
+  @override
+  String get radiologySimilarityCheckLoadingBody =>
+      'Comparing name, code, and modality against the catalog…';
+
+  @override
+  String get radiologySimilarityCatalogLoadingTitle => 'Loading catalog';
+
+  @override
+  String get radiologySimilarityCatalogLoadingBody =>
+      'Preparing imaging tests for similarity review…';
+
+  @override
   String radiologySimilarImagingTestScoreLabel(int score) {
     return '$score% match';
   }
