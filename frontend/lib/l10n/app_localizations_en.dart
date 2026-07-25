@@ -19653,6 +19653,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'An imaging test with this code already exists.';
 
   @override
+  String get radiologyNoSimilarImagingTestDialogTitle =>
+      'No similar imaging test found';
+
+  @override
+  String get radiologyNoSimilarImagingTestDialogBody =>
+      'No similar imaging tests were found in this catalog scope. Continue saving this test?';
+
+  @override
+  String get radiologyContinueSaveImagingTestAction => 'Continue save';
+
+  @override
   String get radiologyEditImagingTestAction => 'Edit imaging test';
 
   @override

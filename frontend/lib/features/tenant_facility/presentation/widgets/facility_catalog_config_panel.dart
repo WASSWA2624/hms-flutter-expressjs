@@ -1442,11 +1442,26 @@ class _FacilityCatalogConfigPanelState
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
+    final String? tenantId = widget.tenantId?.trim();
+    final Result<List<RadiologyCatalogTest>> candidatesResult =
+        await repository.listRadiologyCatalogTests(
+          tenantId: tenantId,
+          limit: 7500,
+        );
+    if (!mounted) {
+      return;
+    }
+    final List<RadiologyCatalogTest> existingItems = candidatesResult.when(
+      success: (List<RadiologyCatalogTest> items) => items,
+      failure: (_) => _radiologyItems,
+    );
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => RadiologyCatalogMutationDialog(
         item: item,
+        tenantId: tenantId,
+        existingItems: existingItems,
         onSubmit: (Map<String, Object?> payload) async {
           final Result<RadiologyCatalogTest> result = await repository
               .updateRadiologyCatalogTest(item.apiId, payload);

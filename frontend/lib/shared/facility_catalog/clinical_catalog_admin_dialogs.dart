@@ -462,6 +462,7 @@ class _RadiologyCatalogMutationDialogState
   String? _codeErrorText;
   bool _isSaving = false;
   bool _similarityAccepted = false;
+  bool _noSimilarConfirmed = false;
 
   @override
   void initState() {
@@ -487,25 +488,42 @@ class _RadiologyCatalogMutationDialogState
 
   void _clearSimilarityState() {
     if (!_similarityAccepted &&
+        !_noSimilarConfirmed &&
         _nameErrorText == null &&
         _codeErrorText == null) {
       return;
     }
     setState(() {
       _similarityAccepted = false;
+      _noSimilarConfirmed = false;
       _nameErrorText = null;
       _codeErrorText = null;
     });
   }
 
-  Future<bool> _guardCreateAgainstDuplicates(AppLocalizations l10n) async {
+  Future<bool> _guardAgainstDuplicates(AppLocalizations l10n) async {
+    final List<RadiologyCatalogTest> tenantItems = widget.existingItems
+        .where((RadiologyCatalogTest item) => !item.isStandard)
+        .toList(growable: false);
+    final List<RadiologyCatalogTest> standardItems = widget.existingItems
+        .where((RadiologyCatalogTest item) => item.isStandard)
+        .toList(growable: false);
     final RadiologyCatalogDuplicateCheckResult result =
-        checkRadiologyCatalogDuplicates(
-          name: _nameController.text.trim(),
-          code: _codeController.text.trim(),
-          existing: widget.existingItems,
-          excludeTestId: widget.item?.apiId,
-        );
+        mergeRadiologyCatalogDuplicateChecks(<RadiologyCatalogDuplicateCheckResult>[
+          checkRadiologyCatalogDuplicates(
+            name: _nameController.text.trim(),
+            code: _codeController.text.trim(),
+            existing: tenantItems,
+            excludeTestId: widget.item?.apiId,
+          ),
+          checkRadiologyCatalogDuplicates(
+            name: _nameController.text.trim(),
+            code: _codeController.text.trim(),
+            existing: standardItems,
+            excludeTestId: widget.item?.apiId,
+            includeTokenSimilarity: false,
+          ),
+        ]);
 
     if (result.hasExactConflict) {
       setState(() {
@@ -517,36 +535,59 @@ class _RadiologyCatalogMutationDialogState
             : null;
         _failure = null;
         _isSaving = false;
+        _similarityAccepted = false;
+        _noSimilarConfirmed = false;
       });
       return false;
     }
 
     final List<RadiologyCatalogSimilarityMatch> similarMatches =
         result.nonExactSimilarMatches;
-    if (similarMatches.isEmpty || _similarityAccepted) {
+    if (similarMatches.isNotEmpty) {
+      if (_similarityAccepted) {
+        return true;
+      }
+      final RadiologyCatalogSimilarityAction action =
+          await showRadiologyCatalogSimilarityDialog(
+            context,
+            matches: similarMatches,
+          );
+      if (!mounted) {
+        return false;
+      }
+
+      switch (action) {
+        case RadiologyCatalogSimilarityAction.cancel:
+          setState(() => _isSaving = false);
+          return false;
+        case RadiologyCatalogSimilarityAction.useExisting:
+          Navigator.of(context).pop(false);
+          return false;
+        case RadiologyCatalogSimilarityAction.proceed:
+          setState(() {
+            _similarityAccepted = true;
+            _noSimilarConfirmed = false;
+          });
+          return true;
+      }
+    }
+
+    if (_noSimilarConfirmed || _similarityAccepted) {
       return true;
     }
 
-    final RadiologyCatalogSimilarityAction action =
-        await showRadiologyCatalogSimilarityDialog(
-          context,
-          matches: similarMatches,
-        );
+    final bool continueSave = await showRadiologyCatalogNoSimilarDialog(
+      context,
+    );
     if (!mounted) {
       return false;
     }
-
-    switch (action) {
-      case RadiologyCatalogSimilarityAction.cancel:
-        setState(() => _isSaving = false);
-        return false;
-      case RadiologyCatalogSimilarityAction.useExisting:
-        Navigator.of(context).pop(false);
-        return false;
-      case RadiologyCatalogSimilarityAction.proceed:
-        setState(() => _similarityAccepted = true);
-        return true;
+    if (!continueSave) {
+      setState(() => _isSaving = false);
+      return false;
     }
+    setState(() => _noSimilarConfirmed = true);
+    return true;
   }
 
   Future<void> _submit() async {
@@ -561,16 +602,14 @@ class _RadiologyCatalogMutationDialogState
     });
 
     final AppLocalizations l10n = context.l10n;
-    if (!widget.isEditing) {
-      final bool mayCreate = await _guardCreateAgainstDuplicates(l10n);
-      if (!mounted || !mayCreate) {
-        return;
-      }
+    final bool maySave = await _guardAgainstDuplicates(l10n);
+    if (!mounted || !maySave) {
+      return;
     }
 
     final Map<String, Object?> payload = <String, Object?>{
       if (!widget.isEditing) 'tenant_id': widget.tenantId,
-      if (!widget.isEditing && _similarityAccepted) 'confirm_similar': true,
+      if (_similarityAccepted) 'confirm_similar': true,
       'name': _nameController.text.trim(),
       'code': _codeController.text.trim(),
       'modality': _modality,
@@ -643,6 +682,7 @@ class _RadiologyCatalogMutationDialogState
                   setState(() {
                     _modality = value;
                     _similarityAccepted = false;
+                    _noSimilarConfirmed = false;
                   });
                 },
               ),

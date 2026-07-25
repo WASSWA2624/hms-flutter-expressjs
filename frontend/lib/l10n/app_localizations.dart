@@ -36565,6 +36565,24 @@ abstract class AppLocalizations {
   /// **'An imaging test with this code already exists.'**
   String get radiologyImagingTestCodeAlreadyInUse;
 
+  /// Dialog title when similarity check finds no near matches before save.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar imaging test found'**
+  String get radiologyNoSimilarImagingTestDialogTitle;
+
+  /// Dialog body confirming no similar imaging tests before save.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar imaging tests were found in this catalog scope. Continue saving this test?'**
+  String get radiologyNoSimilarImagingTestDialogBody;
+
+  /// Confirm saving an imaging test after a no-similar-match check.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue save'**
+  String get radiologyContinueSaveImagingTestAction;
+
   /// Radiology edit imaging test action.
   ///
   /// In en, this message translates to:

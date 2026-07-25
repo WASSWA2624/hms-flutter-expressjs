@@ -1,10 +1,11 @@
 /**
  * Radiology test duplicate / similarity helpers.
  *
- * Mirrors frontend Levenshtein-based catalog similarity (threshold 80).
+ * Percentage similarity on name and code with token-aware fuzzy matching.
  */
 
 const SIMILARITY_THRESHOLD = 80;
+const TOKEN_MATCH_THRESHOLD = 85;
 
 const normalizeName = (value) => String(value || '')
   .toLowerCase()
@@ -13,6 +14,22 @@ const normalizeName = (value) => String(value || '')
   .replace(/\s+/g, ' ');
 
 const normalizeCode = (value) => String(value || '').trim().toUpperCase();
+
+const normalizeCodeForSimilarity = (value) => normalizeCode(value).replace(/[^A-Z0-9]/g, '');
+
+const tokensOf = (value) => String(value || '')
+  .split(/\s+/)
+  .filter(Boolean);
+
+const canReachSimilarityThreshold = (leftLength, rightLength) => {
+  const maxLength = Math.max(leftLength, rightLength);
+  if (!maxLength) return true;
+  const lengthDelta = Math.abs(leftLength - rightLength);
+  const maxDistance = Math.floor(
+    (maxLength * (100 - SIMILARITY_THRESHOLD)) / 100
+  );
+  return lengthDelta <= maxDistance;
+};
 
 const levenshteinDistance = (left, right) => {
   if (left === right) return 0;
@@ -40,13 +57,80 @@ const levenshteinDistance = (left, right) => {
   return previous[right.length];
 };
 
-const nameSimilarityScore = (left, right) => {
+const levenshteinSimilarityPercent = (left, right) => {
   if (left === right) return 100;
   if (!left || !right) return 0;
+  if (!canReachSimilarityThreshold(left.length, right.length)) return 0;
   const distance = levenshteinDistance(left, right);
   const maxLength = Math.max(left.length, right.length);
   return Math.round(((maxLength - distance) / maxLength) * 100);
 };
+
+const averageBestTokenScore = (source, target) => {
+  if (!source.length || !target.length) return 0;
+  let total = 0;
+  for (const token of source) {
+    let best = 0;
+    for (const candidate of target) {
+      best = Math.max(best, levenshteinSimilarityPercent(token, candidate));
+    }
+    total += best;
+  }
+  return Math.round(total / source.length);
+};
+
+const tokenSimilarityPercent = (left, right) => {
+  const leftTokens = tokensOf(left);
+  const rightTokens = tokensOf(right);
+  if (!leftTokens.length || !rightTokens.length) return 0;
+
+  const forward = averageBestTokenScore(leftTokens, rightTokens);
+  const reverse = averageBestTokenScore(rightTokens, leftTokens);
+  const averageDirectional = Math.round((forward + reverse) / 2);
+
+  const used = Array.from({ length: rightTokens.length }, () => false);
+  let fuzzyIntersection = 0;
+  for (const leftToken of leftTokens) {
+    let bestIndex = -1;
+    let bestScore = -1;
+    for (let i = 0; i < rightTokens.length; i += 1) {
+      if (used[i]) continue;
+      const score = levenshteinSimilarityPercent(leftToken, rightTokens[i]);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    }
+    if (bestIndex >= 0 && bestScore >= TOKEN_MATCH_THRESHOLD) {
+      used[bestIndex] = true;
+      fuzzyIntersection += 1;
+    }
+  }
+
+  const union = leftTokens.length + rightTokens.length - fuzzyIntersection;
+  const jaccard = union === 0
+    ? 0
+    : Math.round((fuzzyIntersection / union) * 100);
+
+  return Math.max(averageDirectional, jaccard);
+};
+
+const textSimilarityScore = (
+  left,
+  right,
+  { includeTokenSimilarity = true } = {}
+) => {
+  if (left === right) return 100;
+  if (!left || !right) return 0;
+  if (!canReachSimilarityThreshold(left.length, right.length)) return 0;
+
+  const fullScore = levenshteinSimilarityPercent(left, right);
+  if (!includeTokenSimilarity) return fullScore;
+  return Math.max(fullScore, tokenSimilarityPercent(left, right));
+};
+
+/** @deprecated Prefer textSimilarityScore; kept for existing imports/tests. */
+const nameSimilarityScore = (left, right) => textSimilarityScore(left, right);
 
 /**
  * @param {Object} params
@@ -54,15 +138,18 @@ const nameSimilarityScore = (left, right) => {
  * @param {string|null|undefined} params.code
  * @param {Array<{id?: string, name?: string, code?: string, modality?: string}>} params.existing
  * @param {string|null} [params.excludeTestId]
+ * @param {boolean} [params.includeTokenSimilarity]
  */
 const checkRadiologyTestDuplicates = ({
   name,
   code,
   existing = [],
-  excludeTestId = null
+  excludeTestId = null,
+  includeTokenSimilarity = true
 }) => {
   const normalizedName = normalizeName(name);
   const normalizedCode = normalizeCode(code);
+  const similarityCode = normalizeCodeForSimilarity(code);
 
   let exactNameConflict = false;
   let exactCodeConflict = false;
@@ -75,10 +162,14 @@ const checkRadiologyTestDuplicates = ({
 
     const testName = normalizeName(test?.name);
     const testCode = normalizeCode(test?.code);
+    const testSimilarityCode = normalizeCodeForSimilarity(test?.code);
     const nameExact = Boolean(normalizedName) && testName === normalizedName;
     const codeExact = Boolean(normalizedCode)
       && Boolean(testCode)
-      && testCode === normalizedCode;
+      && (
+        testCode === normalizedCode
+        || (Boolean(similarityCode) && testSimilarityCode === similarityCode)
+      );
 
     if (nameExact || codeExact) {
       if (nameExact) exactNameConflict = true;
@@ -98,22 +189,64 @@ const checkRadiologyTestDuplicates = ({
       continue;
     }
 
-    if (!normalizedName || !testName) {
+    const reasons = [];
+    let bestScore = 0;
+
+    if (normalizedName && testName) {
+      const nameScore = textSimilarityScore(normalizedName, testName, {
+        includeTokenSimilarity
+      });
+      if (nameScore >= SIMILARITY_THRESHOLD) {
+        reasons.push('name');
+        bestScore = Math.max(bestScore, nameScore);
+      }
+    }
+
+    if (similarityCode && testSimilarityCode) {
+      const codeScore = textSimilarityScore(similarityCode, testSimilarityCode, {
+        includeTokenSimilarity: false
+      });
+      if (codeScore >= SIMILARITY_THRESHOLD) {
+        reasons.push('code');
+        bestScore = Math.max(bestScore, codeScore);
+      }
+    }
+
+    if (!reasons.length) {
       continue;
     }
 
-    const score = nameSimilarityScore(normalizedName, testName);
-    if (score >= SIMILARITY_THRESHOLD) {
-      matches.push({
-        id: test?.id || null,
-        name: test?.name || null,
-        code: test?.code || null,
-        modality: test?.modality || null,
-        score,
-        reasons: ['name'],
-        isExact: false
-      });
-    }
+    matches.push({
+      id: test?.id || null,
+      name: test?.name || null,
+      code: test?.code || null,
+      modality: test?.modality || null,
+      score: bestScore,
+      reasons,
+      isExact: false
+    });
+  }
+
+  matches.sort((left, right) => right.score - left.score);
+
+  return {
+    exactNameConflict,
+    exactCodeConflict,
+    hasExactConflict: exactNameConflict || exactCodeConflict,
+    similarMatches: matches,
+    nonExactSimilarMatches: matches.filter((match) => !match.isExact)
+  };
+};
+
+const mergeDuplicateChecks = (...checks) => {
+  const matches = [];
+  let exactNameConflict = false;
+  let exactCodeConflict = false;
+
+  for (const check of checks) {
+    exactNameConflict = exactNameConflict || check.exactNameConflict;
+    exactCodeConflict = exactCodeConflict || check.exactCodeConflict;
+    matches.push(...(check.similarMatches || []));
   }
 
   matches.sort((left, right) => right.score - left.score);
@@ -129,8 +262,12 @@ const checkRadiologyTestDuplicates = ({
 
 module.exports = {
   SIMILARITY_THRESHOLD,
+  TOKEN_MATCH_THRESHOLD,
   normalizeName,
   normalizeCode,
+  normalizeCodeForSimilarity,
   nameSimilarityScore,
-  checkRadiologyTestDuplicates
+  textSimilarityScore,
+  checkRadiologyTestDuplicates,
+  mergeDuplicateChecks
 };

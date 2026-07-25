@@ -17,7 +17,8 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 const {
-  checkRadiologyTestDuplicates
+  checkRadiologyTestDuplicates,
+  mergeDuplicateChecks
 } = require('@lib/radiology/radiology-test-similarity');
 
 const buildPagination = (page, limit, total) => {
@@ -614,6 +615,68 @@ const getRadiologyTestById = async (id, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Created radiology test
  */
+const assertRadiologyTestUniqueness = async ({
+  name,
+  code,
+  tenantId,
+  excludeTestId = null,
+  confirmSimilar = false
+}) => {
+  const existingDbTests = await radiologyTestRepository.findMany(
+    { tenant_id: tenantId },
+    0,
+    7500,
+    { name: 'asc' }
+  );
+  const standardCandidates = Object.entries(STANDARD_RADIOLOGY_TESTS).map(
+    ([key, definition]) => ({
+      id: standardRadiologyTestId(key),
+      name: definition.name,
+      code: definition.code,
+      modality: definition.modality
+    })
+  );
+  const duplicateCheck = mergeDuplicateChecks(
+    checkRadiologyTestDuplicates({
+      name,
+      code,
+      existing: existingDbTests,
+      excludeTestId,
+      includeTokenSimilarity: true
+    }),
+    checkRadiologyTestDuplicates({
+      name,
+      code,
+      existing: standardCandidates,
+      excludeTestId,
+      // Standard catalog is large; use full-string scoring only.
+      includeTokenSimilarity: false
+    })
+  );
+
+  if (duplicateCheck.exactNameConflict) {
+    throw new HttpError('errors.radiology_test.duplicate_name', 409, [
+      { field: 'name' }
+    ]);
+  }
+  if (duplicateCheck.exactCodeConflict) {
+    throw new HttpError('errors.radiology_test.duplicate_code', 409, [
+      { field: 'code' }
+    ]);
+  }
+  if (
+    duplicateCheck.nonExactSimilarMatches.length > 0
+    && !confirmSimilar
+  ) {
+    throw new HttpError('errors.radiology_test.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.nonExactSimilarMatches.slice(0, 5)
+      }
+    ]);
+  }
+};
+
 const createRadiologyTest = async (data, userId, ipAddress) => {
   try {
     const confirmSimilar = data?.confirm_similar === true;
@@ -623,47 +686,12 @@ const createRadiologyTest = async (data, userId, ipAddress) => {
       model: 'tenant',
       where: { deleted_at: null }});
 
-    const existingDbTests = await radiologyTestRepository.findMany(
-      { tenant_id: tenantId },
-      0,
-      7500,
-      { name: 'asc' }
-    );
-    const standardCandidates = Object.entries(STANDARD_RADIOLOGY_TESTS).map(
-      ([key, definition]) => ({
-        id: standardRadiologyTestId(key),
-        name: definition.name,
-        code: definition.code,
-        modality: definition.modality
-      })
-    );
-    const duplicateCheck = checkRadiologyTestDuplicates({
+    await assertRadiologyTestUniqueness({
       name: data.name,
       code: data.code,
-      existing: [...existingDbTests, ...standardCandidates]
+      tenantId,
+      confirmSimilar
     });
-
-    if (duplicateCheck.exactNameConflict) {
-      throw new HttpError('errors.radiology_test.duplicate_name', 409, [
-        { field: 'name' }
-      ]);
-    }
-    if (duplicateCheck.exactCodeConflict) {
-      throw new HttpError('errors.radiology_test.duplicate_code', 409, [
-        { field: 'code' }
-      ]);
-    }
-    if (
-      duplicateCheck.nonExactSimilarMatches.length > 0
-      && !confirmSimilar
-    ) {
-      throw new HttpError('errors.radiology_test.similar_exists', 409, [
-        {
-          field: 'name',
-          matches: duplicateCheck.nonExactSimilarMatches.slice(0, 5)
-        }
-      ]);
-    }
 
     const normalizedData = {
       tenant_id: tenantId,
@@ -711,7 +739,9 @@ const updateRadiologyTest = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.radiology_test.not_found', 404);
     }
 
+    const confirmSimilar = data?.confirm_similar === true;
     const payload = { ...data };
+    delete payload.confirm_similar;
     if (Object.prototype.hasOwnProperty.call(payload, 'tenant_id')) {
       payload.tenant_id = await resolveIdentifierForPayload({
         value: payload.tenant_id,
@@ -719,6 +749,22 @@ const updateRadiologyTest = async (id, data, userId, ipAddress) => {
         model: 'tenant',
         where: { deleted_at: null }});
     }
+
+    const nextName = Object.prototype.hasOwnProperty.call(payload, 'name')
+      ? payload.name
+      : before.name;
+    const nextCode = Object.prototype.hasOwnProperty.call(payload, 'code')
+      ? payload.code
+      : before.code;
+    const tenantId = payload.tenant_id || before.tenant_id;
+
+    await assertRadiologyTestUniqueness({
+      name: nextName,
+      code: nextCode,
+      tenantId,
+      excludeTestId: resolvedId,
+      confirmSimilar
+    });
 
     const radiologyTest = await radiologyTestRepository.update(resolvedId, payload);
 

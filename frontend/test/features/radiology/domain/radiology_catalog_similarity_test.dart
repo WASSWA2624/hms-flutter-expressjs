@@ -32,11 +32,58 @@ void main() {
       expect(result.similarMatches, isNotEmpty);
     });
 
+    test('detects punctuation-equivalent codes as exact conflicts', () {
+      final RadiologyCatalogDuplicateCheckResult result =
+          checkRadiologyCatalogDuplicates(
+            name: 'Unique Procedure',
+            code: 'CXR001',
+            existing: existing,
+          );
+
+      expect(result.exactCodeConflict, isTrue);
+    });
+
     test('detects similar names above threshold', () {
       final RadiologyCatalogDuplicateCheckResult result =
           checkRadiologyCatalogDuplicates(
             name: 'Chest X-Rayy',
             code: 'NEW-001',
+            existing: existing,
+          );
+
+      expect(result.hasExactConflict, isFalse);
+      expect(result.nonExactSimilarMatches, isNotEmpty);
+      expect(
+        result.nonExactSimilarMatches.first.score,
+        greaterThanOrEqualTo(radiologyCatalogSimilarityThreshold),
+      );
+      expect(
+        result.nonExactSimilarMatches.first.reasons,
+        contains('name'),
+      );
+    });
+
+    test('detects similar codes above threshold', () {
+      final RadiologyCatalogDuplicateCheckResult result =
+          checkRadiologyCatalogDuplicates(
+            name: 'Totally Unique Procedure',
+            code: 'CXR-002',
+            existing: existing,
+          );
+
+      expect(result.hasExactConflict, isFalse);
+      expect(result.nonExactSimilarMatches, isNotEmpty);
+      expect(
+        result.nonExactSimilarMatches.first.reasons,
+        contains('code'),
+      );
+    });
+
+    test('detects token-order and misspelling variants in names', () {
+      final RadiologyCatalogDuplicateCheckResult result =
+          checkRadiologyCatalogDuplicates(
+            name: 'Xray Chest',
+            code: 'UNIQUE-99',
             existing: existing,
           );
 
@@ -71,6 +118,12 @@ void main() {
 
       expect(result.exactCodeConflict, isFalse);
       expect(result.hasExactConflict, isFalse);
+    });
+  });
+
+  group('radiologyTextSimilarityScore', () {
+    test('scores identical normalized text as 100', () {
+      expect(radiologyTextSimilarityScore('chest xray', 'chest xray'), 100);
     });
   });
 }

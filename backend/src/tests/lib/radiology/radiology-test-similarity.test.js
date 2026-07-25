@@ -5,6 +5,7 @@
 const {
   checkRadiologyTestDuplicates,
   nameSimilarityScore,
+  textSimilarityScore,
   SIMILARITY_THRESHOLD
 } = require('@lib/radiology/radiology-test-similarity');
 
@@ -36,10 +37,47 @@ describe('radiology-test-similarity', () => {
     expect(result.hasExactConflict).toBe(true);
   });
 
+  it('detects punctuation-equivalent codes as exact conflicts', () => {
+    const result = checkRadiologyTestDuplicates({
+      name: 'Unique Procedure',
+      code: 'CXR001',
+      existing
+    });
+
+    expect(result.exactCodeConflict).toBe(true);
+  });
+
   it('detects similar names above threshold', () => {
     const result = checkRadiologyTestDuplicates({
       name: 'Chest X-Rayy',
       code: 'NEW-001',
+      existing
+    });
+
+    expect(result.hasExactConflict).toBe(false);
+    expect(result.nonExactSimilarMatches.length).toBeGreaterThan(0);
+    expect(result.nonExactSimilarMatches[0].score).toBeGreaterThanOrEqual(
+      SIMILARITY_THRESHOLD
+    );
+    expect(result.nonExactSimilarMatches[0].reasons).toContain('name');
+  });
+
+  it('detects similar codes above threshold', () => {
+    const result = checkRadiologyTestDuplicates({
+      name: 'Totally Unique Procedure',
+      code: 'CXR-002',
+      existing
+    });
+
+    expect(result.hasExactConflict).toBe(false);
+    expect(result.nonExactSimilarMatches.length).toBeGreaterThan(0);
+    expect(result.nonExactSimilarMatches[0].reasons).toContain('code');
+  });
+
+  it('detects token-order variants in names', () => {
+    const result = checkRadiologyTestDuplicates({
+      name: 'Xray Chest',
+      code: 'UNIQUE-99',
       existing
     });
 
@@ -64,5 +102,6 @@ describe('radiology-test-similarity', () => {
 
   it('scores identical normalized names as 100', () => {
     expect(nameSimilarityScore('chest xray', 'chest xray')).toBe(100);
+    expect(textSimilarityScore('chest xray', 'chest xray')).toBe(100);
   });
 });

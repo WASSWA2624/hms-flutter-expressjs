@@ -441,22 +441,28 @@ describe('Radiology Test Service', () => {
   describe('updateRadiologyTest', () => {
     const radiologyTestId = '550e8400-e29b-41d4-a716-446655440000';
     const updateData = {
-      name: 'Updated X-Ray',
+      name: 'Zzyx Updated Imaging Beta',
       modality: 'CT'
     };
 
     const mockBeforeUpdate = {
       id: radiologyTestId,
-      name: 'Chest X-Ray',
-      code: 'CXR-001',
+      tenant_id: '550e8400-e29b-41d4-a716-446655440001',
+      name: 'Zzyx Custom Imaging Alpha',
+      code: 'ZZYX-ALPHA-001',
       modality: 'XRAY'
     };
 
     const mockUpdatedRadiologyTest = {
       id: radiologyTestId,
+      tenant_id: mockBeforeUpdate.tenant_id,
       ...updateData,
-      code: 'CXR-001'
+      code: 'ZZYX-ALPHA-001'
     };
+
+    beforeEach(() => {
+      radiologyTestRepository.findMany.mockResolvedValue([]);
+    });
 
     it('should update radiology test', async () => {
       radiologyTestRepository.findById.mockResolvedValue(mockBeforeUpdate);
@@ -467,6 +473,7 @@ describe('Radiology Test Service', () => {
 
       expect(result).toEqual(mockUpdatedRadiologyTest);
       expect(radiologyTestRepository.update).toHaveBeenCalledWith(radiologyTestId, updateData);
+      expect(radiologyTestRepository.findMany).toHaveBeenCalled();
     });
 
     it('should throw HttpError if radiology test not found', async () => {
@@ -481,6 +488,53 @@ describe('Radiology Test Service', () => {
         message: 'errors.radiology_test.not_found',
         statusCode: 404
       });
+    });
+
+    it('should reject similar names without confirm_similar', async () => {
+      radiologyTestRepository.findById.mockResolvedValue(mockBeforeUpdate);
+      radiologyTestRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-2',
+          name: 'Zzyx Updated Imaging Bet',
+          code: 'OTHER',
+          modality: 'CT'
+        }
+      ]);
+
+      await expect(
+        radiologyTestService.updateRadiologyTest(radiologyTestId, updateData, 'user-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        message: 'errors.radiology_test.similar_exists',
+        statusCode: 409
+      });
+      expect(radiologyTestRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should update when confirm_similar is true for near matches', async () => {
+      radiologyTestRepository.findById.mockResolvedValue(mockBeforeUpdate);
+      radiologyTestRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-2',
+          name: 'Zzyx Updated Imaging Bet',
+          code: 'OTHER',
+          modality: 'CT'
+        }
+      ]);
+      radiologyTestRepository.update.mockResolvedValue(mockUpdatedRadiologyTest);
+      createAuditLog.mockResolvedValue({});
+
+      const result = await radiologyTestService.updateRadiologyTest(
+        radiologyTestId,
+        { ...updateData, confirm_similar: true },
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(result).toEqual(mockUpdatedRadiologyTest);
+      expect(radiologyTestRepository.update).toHaveBeenCalledWith(
+        radiologyTestId,
+        updateData
+      );
     });
 
     it('should create audit log on success', async () => {

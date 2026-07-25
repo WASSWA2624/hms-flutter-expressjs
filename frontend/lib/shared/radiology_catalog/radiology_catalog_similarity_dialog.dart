@@ -71,6 +71,42 @@ Future<RadiologyCatalogSimilarityAction> showRadiologyCatalogSimilarityDialog(
   );
 }
 
+Future<bool> showRadiologyCatalogNoSimilarDialog(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+
+  return showAppDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      final ThemeData theme = Theme.of(dialogContext);
+
+      return AppDialog(
+        title: Text(l10n.radiologyNoSimilarImagingTestDialogTitle),
+        icon: const Icon(Icons.verified_outlined),
+        scrollable: true,
+        maxWidth: 520,
+        content: Text(
+          l10n.radiologyNoSimilarImagingTestDialogBody,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        actions: <Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            leadingIcon: Icons.close,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+          ),
+          AppButton.primary(
+            label: l10n.radiologyContinueSaveImagingTestAction,
+            leadingIcon: Icons.save_outlined,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      );
+    },
+  ).then((bool? value) => value ?? false);
+}
+
 class _RadiologyCatalogSimilarityLine extends StatelessWidget {
   const _RadiologyCatalogSimilarityLine({required this.match});
 

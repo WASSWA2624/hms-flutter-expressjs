@@ -72,7 +72,8 @@ const createRadiologyTestSchema = z.object({
 const updateRadiologyTestSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   code: z.string().trim().max(80).optional().nullable(),
-  modality: imagingModalitySchema.optional()
+  modality: imagingModalitySchema.optional(),
+  confirm_similar: optionalBooleanSchema
 });
 
 // ==================== URL Params ====================
