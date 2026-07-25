@@ -21,7 +21,12 @@ const router = express.Router();
 
 const LAB_READ_SCOPES = [PERMISSIONS.LAB_READ];
 
-const LAB_WRITE_SCOPES = [PERMISSIONS.LAB_WRITE];
+const LAB_CATALOG_WRITE_SCOPES = [
+  PERMISSIONS.LAB_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN
+];
 
 router.get(
   '/',
@@ -43,7 +48,7 @@ router.post(
   '/',
   validateRequest({ body: createLabTestSchema }),
   authenticate(),
-  authorize(LAB_WRITE_SCOPES, 'permission'),
+  authorize(LAB_CATALOG_WRITE_SCOPES, 'permission'),
   labTestController.createLabTest
 );
 
@@ -51,7 +56,7 @@ router.put(
   '/:id',
   validateRequest({ params: labTestIdParamsSchema, body: updateLabTestSchema }),
   authenticate(),
-  authorize(LAB_WRITE_SCOPES, 'permission'),
+  authorize(LAB_CATALOG_WRITE_SCOPES, 'permission'),
   labTestController.updateLabTest
 );
 
@@ -59,7 +64,7 @@ router.delete(
   '/:id',
   validateRequest({ params: labTestIdParamsSchema, body: deleteLabTestSchema }),
   authenticate(),
-  authorize(LAB_WRITE_SCOPES, 'permission'),
+  authorize(LAB_CATALOG_WRITE_SCOPES, 'permission'),
   labTestController.deleteLabTest
 );
 

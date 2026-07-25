@@ -82,31 +82,50 @@ class _LabEditableValueListFieldState extends State<LabEditableValueListField> {
           enabled: widget.enabled,
           prefixIcon: const Icon(Icons.search),
           options: widget.suggestions,
-          suffixIcon: AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.add,
-            label: l10n.labAddValueAction,
-            semanticLabel: l10n.labAddValueAction,
-            tooltip: l10n.labAddValueAction,
-            enabled: widget.enabled,
-            onPressed: widget.enabled ? _addCurrentValue : null,
+          suffixIcon: Padding(
+            padding: EdgeInsets.only(right: theme.spacing.xs),
+            child: AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.add,
+              label: l10n.labAddValueAction,
+              semanticLabel: l10n.labAddValueAction,
+              tooltip: l10n.labAddValueAction,
+              enabled: widget.enabled,
+              onPressed: widget.enabled ? _addCurrentValue : null,
+            ),
           ),
           onFieldSubmitted: (_) => _addCurrentValue(),
         ),
         if (widget.values.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (final EditableLabValue value in widget.values)
-                InputChip(
-                  label: Text(value.value),
-                  onDeleted: widget.enabled
-                      ? () => widget.onRemove(value)
-                      : null,
-                ),
-            ],
+          SizedBox(height: theme.spacing.sm),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.35,
+              ),
+              borderRadius: BorderRadius.circular(
+                context.responsiveRadius(theme.radius.md),
+              ),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.sm),
+              child: Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.sm,
+                children: <Widget>[
+                  for (final EditableLabValue value in widget.values)
+                    InputChip(
+                      label: Text(value.value),
+                      onDeleted: widget.enabled
+                          ? () => widget.onRemove(value)
+                          : null,
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       ],

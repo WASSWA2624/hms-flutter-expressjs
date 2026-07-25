@@ -29,6 +29,25 @@ List<AppSelectOption<String>> labResultKindSelectOptions(
   ];
 }
 
+List<AppSelectOption<String>> _stringSelectOptions(
+  Iterable<String> values, {
+  IconData? icon,
+}) {
+  return <AppSelectOption<String>>[
+    for (final String value in values)
+      AppSelectOption<String>(
+        value: value,
+        label: value,
+        leadingIcon: icon == null ? null : Icon(icon),
+      ),
+  ];
+}
+
+String? _selectValueOrNull(TextEditingController controller) {
+  final String trimmed = controller.text.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 /// Chronological lab-test definition fields used by catalog create/edit and
 /// facility configure dialogs.
 class LabTestDefinitionForm extends StatelessWidget {
@@ -60,6 +79,9 @@ class LabTestDefinitionForm extends StatelessWidget {
     this.codeEnabled = true,
     this.nameValidator,
     this.codeValidator,
+    this.nameErrorText,
+    this.codeErrorText,
+    this.rangeErrorText,
     this.namePrefixIcon = const Icon(Icons.biotech_outlined),
     this.density = AppFormSectionDensity.regular,
     this.showReferenceRanges = true,
@@ -86,6 +108,9 @@ class LabTestDefinitionForm extends StatelessWidget {
   final bool codeEnabled;
   final FormFieldValidator<String>? nameValidator;
   final FormFieldValidator<String>? codeValidator;
+  final String? nameErrorText;
+  final String? codeErrorText;
+  final String? rangeErrorText;
   final Widget namePrefixIcon;
   final ValueChanged<String> onUnitOptionAdd;
   final ValueChanged<EditableLabValue> onUnitOptionRemove;
@@ -104,6 +129,19 @@ class LabTestDefinitionForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final List<String> categories = labUniqueNonEmpty(<String?>[
+      ...categoryOptions,
+      categoryController.text,
+    ]);
+    final List<String> specimens = labUniqueNonEmpty(<String?>[
+      ...specimenOptions,
+      specimenController.text,
+    ]);
+    final List<String> units = labUniqueNonEmpty(<String?>[
+      ...unitSuggestions,
+      unitController.text,
+    ]);
+
     return AppFormSection(
       density: density,
       children: <Widget>[
@@ -118,6 +156,7 @@ class LabTestDefinitionForm extends StatelessWidget {
               enabled: enabled && nameEnabled,
               isRequired: true,
               prefixIcon: namePrefixIcon,
+              errorText: nameErrorText,
               validator: nameValidator,
             ),
             AppResponsiveFieldRow.two(
@@ -127,14 +166,22 @@ class LabTestDefinitionForm extends StatelessWidget {
                 labelText: l10n.labTestCodeLabel,
                 enabled: enabled && codeEnabled,
                 prefixIcon: const Icon(Icons.tag_outlined),
+                errorText: codeErrorText,
                 validator: codeValidator,
               ),
-              right: LabSearchableTextField(
-                controller: categoryController,
+              right: AppSelectField<String>.searchable(
+                value: _selectValueOrNull(categoryController),
                 labelText: l10n.labCategoryLabel,
                 enabled: enabled,
-                prefixIcon: const Icon(Icons.category_outlined),
-                options: categoryOptions,
+                allowClear: true,
+                options: _stringSelectOptions(
+                  categories,
+                  icon: Icons.category_outlined,
+                ),
+                onChanged: (String? value) {
+                  categoryController.text = value?.trim() ?? '';
+                  onRangesChanged();
+                },
               ),
             ),
           ],
@@ -146,12 +193,19 @@ class LabTestDefinitionForm extends StatelessWidget {
           children: <Widget>[
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
-              left: LabSearchableTextField(
-                controller: specimenController,
+              left: AppSelectField<String>.searchable(
+                value: _selectValueOrNull(specimenController),
                 labelText: l10n.labSpecimenTypeLabel,
                 enabled: enabled,
-                prefixIcon: const Icon(Icons.bloodtype_outlined),
-                options: specimenOptions,
+                allowClear: true,
+                options: _stringSelectOptions(
+                  specimens,
+                  icon: Icons.bloodtype_outlined,
+                ),
+                onChanged: (String? value) {
+                  specimenController.text = value?.trim() ?? '';
+                  onRangesChanged();
+                },
               ),
               right: AppSelectField<String>.searchable(
                 value: resultKind,
@@ -165,12 +219,19 @@ class LabTestDefinitionForm extends StatelessWidget {
               ),
             ),
             if (_showsUnit)
-              LabSearchableTextField(
-                controller: unitController,
+              AppSelectField<String>.searchable(
+                value: _selectValueOrNull(unitController),
                 labelText: l10n.labDefaultUnitLabel,
                 enabled: enabled,
-                prefixIcon: const Icon(Icons.straighten_outlined),
-                options: unitSuggestions,
+                allowClear: true,
+                options: _stringSelectOptions(
+                  units,
+                  icon: Icons.straighten_outlined,
+                ),
+                onChanged: (String? value) {
+                  unitController.text = value?.trim() ?? '';
+                  onRangesChanged();
+                },
               ),
             if (_isNumeric)
               LabEditableValueListField(
@@ -205,6 +266,13 @@ class LabTestDefinitionForm extends StatelessWidget {
             description: l10n.labTestRangesSectionBody,
             density: density,
             children: <Widget>[
+              if (rangeErrorText != null && rangeErrorText!.trim().isNotEmpty)
+                AppFormInformationBanner(
+                  title: l10n.labReferenceRangeOverrideLabel,
+                  message: rangeErrorText!,
+                  variant: AppFormInformationVariant.error,
+                  icon: Icons.error_outline,
+                ),
               LabReferenceRangeListField(
                 ranges: referenceRanges,
                 enabled: enabled,

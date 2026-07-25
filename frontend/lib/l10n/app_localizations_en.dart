@@ -19654,6 +19654,148 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyCreateProcedureAction => 'Create procedure';
 
   @override
+  String get labSimilarTestDialogTitle => 'Similar lab test found';
+
+  @override
+  String get labSimilarTestDialogBody =>
+      'Similar lab tests exist in this catalog scope. Review matches before continuing.';
+
+  @override
+  String get labSimilarTestExactBannerTitle => 'Match status: Exact duplicate';
+
+  @override
+  String labSimilarTestExactBannerBody(int score) {
+    return 'An identical name and category, or an identical code, already exists ($score% composite). Create is blocked — use the existing test instead.';
+  }
+
+  @override
+  String labSimilarTestReviewBannerTitle(int score) {
+    return 'Match status: Similar ($score%)';
+  }
+
+  @override
+  String labSimilarTestReviewBannerBody(int score, String fieldSummary) {
+    return 'Closest catalog match is $score% overall. $fieldSummary Review matches below, use an existing test, or create anyway.';
+  }
+
+  @override
+  String labSimilarTestFieldStatusPart(String field, String status) {
+    return '$field: $status';
+  }
+
+  @override
+  String get labSimilarTestProposedHeading => 'New lab test';
+
+  @override
+  String get labSimilarTestExistingHeading => 'Existing lab test';
+
+  @override
+  String get labSimilarTestMatchesHeading => 'Closest matches';
+
+  @override
+  String get labSimilarTestComparisonHeading => 'Field comparison';
+
+  @override
+  String get labSimilarTestExactMatchLabel => 'Exact match';
+
+  @override
+  String get labSimilarTestNearMatchLabel => 'Similar';
+
+  @override
+  String get labSimilarTestPartialMatchLabel => 'Partial match';
+
+  @override
+  String get labSimilarTestYourEntryLabel => 'Your entry';
+
+  @override
+  String get labSimilarTestExistingValueLabel => 'Existing';
+
+  @override
+  String labSimilarTestMatchCountLabel(int count) {
+    return '$count matches';
+  }
+
+  @override
+  String get labSimilarTestFieldColumnLabel => 'Field';
+
+  @override
+  String get labSimilarTestStatusColumnLabel => 'Status';
+
+  @override
+  String get labSimilarTestOnlyExistingLabel => 'Only on existing';
+
+  @override
+  String get labSimilarityCheckLoadingTitle => 'Checking similarity';
+
+  @override
+  String get labSimilarityCheckLoadingBody =>
+      'Comparing name, code, and category against the catalog…';
+
+  @override
+  String get labSimilarityCatalogLoadingTitle => 'Loading catalog';
+
+  @override
+  String get labSimilarityCatalogLoadingBody =>
+      'Preparing lab tests for similarity review…';
+
+  @override
+  String labSimilarTestScoreLabel(int score) {
+    return '$score% match';
+  }
+
+  @override
+  String get labUseExistingTestAction => 'Use existing';
+
+  @override
+  String get labUseThisTestAction => 'Use this test';
+
+  @override
+  String get labProceedCreateTestAction => 'Create anyway';
+
+  @override
+  String get labProceedUpdateTestAction => 'Save anyway';
+
+  @override
+  String get labNoSimilarTestDialogTitle => 'No similar lab test found';
+
+  @override
+  String get labNoSimilarTestBannerTitle => 'Match status: No similar found';
+
+  @override
+  String get labNoSimilarTestDialogBody =>
+      'Review the lab test details below. No similar tests were found in this catalog scope.';
+
+  @override
+  String get labContinueSaveTestAction => 'Continue save';
+
+  @override
+  String get labStandardCatalogBadge => 'Standard catalog';
+
+  @override
+  String get labReferenceRangeDuplicateMessage =>
+      'A reference range with the same label, gender, and age band already exists.';
+
+  @override
+  String get labInfantRangeLabel => 'Infant';
+
+  @override
+  String get labChildRangeLabel => 'Child';
+
+  @override
+  String get labAdolescentRangeLabel => 'Adolescent';
+
+  @override
+  String get labGeriatricRangeLabel => 'Geriatric';
+
+  @override
+  String get labReferenceRangeInvalidBoundsMessage =>
+      'Min must be less than or equal to max where both are set.';
+
+  @override
+  String get labReferenceRangeCriticalVsNormalMessage =>
+      'Critical bounds must not contradict normal bounds.';
+
+  @override
   String get radiologySimilarProcedureDialogTitle => 'Similar procedure found';
 
   @override

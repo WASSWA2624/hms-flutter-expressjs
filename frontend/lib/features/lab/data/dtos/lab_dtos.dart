@@ -169,6 +169,8 @@ final class LabCatalogItemDto {
           json['offering_is_active'] == true,
       facilityOfferingId: _string(json['facility_offering_id']),
       usesPlatformDefaults: json['uses_platform_defaults'] != false,
+      source: _string(json['source']),
+      status: _string(json['status']),
     );
   }
 }

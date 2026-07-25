@@ -15,6 +15,10 @@ const {
   toOptionalText} = require('@services/lab-workspace/lab.configuration');
 const { mapLabTestRecord } = require('@services/lab-workspace/lab.serializer');
 const { STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
+const {
+  checkLabTestDuplicates,
+  mergeDuplicateChecks
+} = require('@lib/lab/lab-test-similarity');
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 const standardLabTestId = (key) => `STD_LAB_TEST:${key}`;
@@ -114,6 +118,7 @@ const buildNestedChildWritePayload = (entries = [], options = {}) => {
 
 const buildLabTestWritePayload = (data = {}, options = {}) => {
   const payload = { ...data };
+  delete payload.confirm_similar;
   const preserveExistingChildren = options.includeDeleteMany === true;
   const hasReferenceRanges = hasOwn(payload, 'reference_ranges');
   const normalizedRanges = hasReferenceRanges
@@ -263,8 +268,75 @@ const getLabTestById = async (id, userId, ipAddress) => {
   }
 };
 
+const assertLabTestUniqueness = async ({
+  name,
+  code,
+  category,
+  tenantId,
+  excludeTestId = null,
+  confirmSimilar = false
+}) => {
+  const existingDbTests = await labTestRepository.findMany(
+    { tenant_id: tenantId, deleted_at: null },
+    0,
+    7500,
+    { name: 'asc' }
+  );
+  const standardCandidates = Object.entries(STANDARD_LAB_TESTS).map(
+    ([key, definition]) => ({
+      id: standardLabTestId(key),
+      display_id: standardLabTestId(key),
+      human_friendly_id: standardLabTestId(key),
+      name: definition.name,
+      code: definition.code,
+      category: definition.category
+    })
+  );
+  const duplicateCheck = mergeDuplicateChecks(
+    checkLabTestDuplicates({
+      name,
+      code,
+      category,
+      existing: existingDbTests,
+      excludeTestId,
+      includeTokenSimilarity: true
+    }),
+    checkLabTestDuplicates({
+      name,
+      code,
+      category,
+      existing: standardCandidates,
+      excludeTestId,
+      includeTokenSimilarity: false
+    })
+  );
+
+  if (duplicateCheck.exactNameConflict) {
+    throw new HttpError('errors.lab_test.duplicate_name', 409, [
+      { field: 'name' }
+    ]);
+  }
+  if (duplicateCheck.exactCodeConflict) {
+    throw new HttpError('errors.lab_test.duplicate_code', 409, [
+      { field: 'code' }
+    ]);
+  }
+  if (
+    duplicateCheck.nonExactSimilarMatches.length > 0
+    && !confirmSimilar
+  ) {
+    throw new HttpError('errors.lab_test.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.nonExactSimilarMatches.slice(0, 5)
+      }
+    ]);
+  }
+};
+
 const createLabTest = async (data, userId, ipAddress) => {
   try {
+    const confirmSimilar = data?.confirm_similar === true;
     const payload = buildLabTestWritePayload(data, {
       createDefaultUnitOption: true,
       includeDeleteMany: false});
@@ -273,6 +345,14 @@ const createLabTest = async (data, userId, ipAddress) => {
       model: 'tenant',
       where: { deleted_at: null },
       errorKey: 'errors.tenant.not_found'});
+
+    await assertLabTestUniqueness({
+      name: payload.name ?? data.name,
+      code: payload.code ?? data.code,
+      category: payload.category ?? data.category,
+      tenantId: payload.tenant_id,
+      confirmSimilar
+    });
 
     const labTest = await labTestRepository.create(payload);
     const created = await labTestRepository.findById(labTest.id, LAB_TEST_WITH_RELATIONS_INCLUDE);
@@ -294,6 +374,7 @@ const createLabTest = async (data, userId, ipAddress) => {
 
 const updateLabTest = async (id, data, userId, ipAddress) => {
   try {
+    const confirmSimilar = data?.confirm_similar === true;
     const before = await resolveModelRecordOrThrow({
       identifier: id,
       model: 'lab_test',
@@ -302,6 +383,7 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
       errorKey: 'errors.lab_test.not_found'});
 
     const payload = buildLabTestWritePayload(data, { includeDeleteMany: true });
+    delete payload.confirm_similar;
     if (Object.prototype.hasOwnProperty.call(payload, 'tenant_id') && payload.tenant_id) {
       payload.tenant_id = await resolveModelIdOrThrow({
         identifier: payload.tenant_id,
@@ -309,6 +391,26 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
         where: { deleted_at: null },
         errorKey: 'errors.tenant.not_found'});
     }
+
+    const nextName = Object.prototype.hasOwnProperty.call(payload, 'name')
+      ? payload.name
+      : before.name;
+    const nextCode = Object.prototype.hasOwnProperty.call(payload, 'code')
+      ? payload.code
+      : before.code;
+    const nextCategory = Object.prototype.hasOwnProperty.call(payload, 'category')
+      ? payload.category
+      : before.category;
+    const tenantId = payload.tenant_id || before.tenant_id;
+
+    await assertLabTestUniqueness({
+      name: nextName,
+      code: nextCode,
+      category: nextCategory,
+      tenantId,
+      excludeTestId: before.id,
+      confirmSimilar
+    });
 
     const updated = await labTestRepository.update(before.id, payload);
     const labTest = await labTestRepository.findById(updated.id, LAB_TEST_WITH_RELATIONS_INCLUDE);

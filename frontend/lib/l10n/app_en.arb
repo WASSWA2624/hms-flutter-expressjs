@@ -25196,7 +25196,224 @@
   "@radiologyCreateProcedureAction": {
     "description": "Radiology create procedure action."
   },
-  "radiologySimilarProcedureDialogTitle": "Similar procedure found",
+    "labSimilarTestDialogTitle": "Similar lab test found",
+  "@labSimilarTestDialogTitle": {
+    "description": "Dialog title when creating a lab test similar to an existing one."
+  },
+  "labSimilarTestDialogBody": "Similar lab tests exist in this catalog scope. Review matches before continuing.",
+  "@labSimilarTestDialogBody": {
+    "description": "Dialog body when creating a lab test similar to an existing one."
+  },
+  "labSimilarTestExactBannerTitle": "Match status: Exact duplicate",
+  "@labSimilarTestExactBannerTitle": {
+    "description": "Banner title when lab similarity check finds a hard exact duplicate."
+  },
+  "labSimilarTestExactBannerBody": "An identical name and category, or an identical code, already exists ({score}% composite). Create is blocked — use the existing test instead.",
+  "@labSimilarTestExactBannerBody": {
+    "description": "Banner body when lab similarity check finds a hard exact duplicate.",
+    "placeholders": {
+      "score": {
+        "type": "int",
+        "example": "100"
+      }
+    }
+  },
+  "labSimilarTestReviewBannerTitle": "Match status: Similar ({score}%)",
+  "@labSimilarTestReviewBannerTitle": {
+    "description": "Banner title when lab similarity check finds near matches only.",
+    "placeholders": {
+      "score": {
+        "type": "int",
+        "example": "71"
+      }
+    }
+  },
+  "labSimilarTestReviewBannerBody": "Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing test, or create anyway.",
+  "@labSimilarTestReviewBannerBody": {
+    "description": "Banner body summarizing near-match field statuses for lab tests.",
+    "placeholders": {
+      "score": {
+        "type": "int",
+        "example": "71"
+      },
+      "fieldSummary": {
+        "type": "String",
+        "example": "name: Similar · code: Conflict"
+      }
+    }
+  },
+  "labSimilarTestFieldStatusPart": "{field}: {status}",
+  "@labSimilarTestFieldStatusPart": {
+    "description": "Field status fragment in lab similarity review banner.",
+    "placeholders": {
+      "field": {
+        "type": "String",
+        "example": "name"
+      },
+      "status": {
+        "type": "String",
+        "example": "Similar"
+      }
+    }
+  },
+  "labSimilarTestProposedHeading": "New lab test",
+  "@labSimilarTestProposedHeading": {
+    "description": "Heading for proposed lab test card in similarity dialog."
+  },
+  "labSimilarTestExistingHeading": "Existing lab test",
+  "@labSimilarTestExistingHeading": {
+    "description": "Heading for existing lab test match card."
+  },
+  "labSimilarTestMatchesHeading": "Closest matches",
+  "@labSimilarTestMatchesHeading": {
+    "description": "Heading above lab similarity match list."
+  },
+  "labSimilarTestComparisonHeading": "Field comparison",
+  "@labSimilarTestComparisonHeading": {
+    "description": "Heading for lab similarity field comparison table."
+  },
+  "labSimilarTestExactMatchLabel": "Exact match",
+  "@labSimilarTestExactMatchLabel": {
+    "description": "Exact match badge for lab similarity."
+  },
+  "labSimilarTestNearMatchLabel": "Similar",
+  "@labSimilarTestNearMatchLabel": {
+    "description": "Near match badge for lab similarity."
+  },
+  "labSimilarTestPartialMatchLabel": "Partial match",
+  "@labSimilarTestPartialMatchLabel": {
+    "description": "Partial match badge for lab similarity."
+  },
+  "labSimilarTestYourEntryLabel": "Your entry",
+  "@labSimilarTestYourEntryLabel": {
+    "description": "Column label for proposed lab test values."
+  },
+  "labSimilarTestExistingValueLabel": "Existing",
+  "@labSimilarTestExistingValueLabel": {
+    "description": "Column label for existing lab test values."
+  },
+  "labSimilarTestMatchCountLabel": "{count} matches",
+  "@labSimilarTestMatchCountLabel": {
+    "description": "Count of lab similarity matches shown.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "labSimilarTestFieldColumnLabel": "Field",
+  "@labSimilarTestFieldColumnLabel": {
+    "description": "Field column header in lab similarity comparison."
+  },
+  "labSimilarTestStatusColumnLabel": "Status",
+  "@labSimilarTestStatusColumnLabel": {
+    "description": "Status column header in lab similarity comparison."
+  },
+  "labSimilarTestOnlyExistingLabel": "Only on existing",
+  "@labSimilarTestOnlyExistingLabel": {
+    "description": "Status when a field exists only on the catalog match."
+  },
+  "labSimilarityCheckLoadingTitle": "Checking similarity",
+  "@labSimilarityCheckLoadingTitle": {
+    "description": "Title while lab test similarity scan runs."
+  },
+  "labSimilarityCheckLoadingBody": "Comparing name, code, and category against the catalog…",
+  "@labSimilarityCheckLoadingBody": {
+    "description": "Body while lab test similarity scan runs."
+  },
+  "labSimilarityCatalogLoadingTitle": "Loading catalog",
+  "@labSimilarityCatalogLoadingTitle": {
+    "description": "Title while loading lab catalog for similarity review."
+  },
+  "labSimilarityCatalogLoadingBody": "Preparing lab tests for similarity review…",
+  "@labSimilarityCatalogLoadingBody": {
+    "description": "Body while loading lab catalog for similarity review."
+  },
+  "labSimilarTestScoreLabel": "{score}% match",
+  "@labSimilarTestScoreLabel": {
+    "description": "Composite similarity score badge for a lab test match.",
+    "placeholders": {
+      "score": {
+        "type": "int",
+        "example": "86"
+      }
+    }
+  },
+  "labUseExistingTestAction": "Use existing",
+  "@labUseExistingTestAction": {
+    "description": "Action to use an existing similar lab test."
+  },
+  "labUseThisTestAction": "Use this test",
+  "@labUseThisTestAction": {
+    "description": "Action to select a specific similar lab test."
+  },
+  "labProceedCreateTestAction": "Create anyway",
+  "@labProceedCreateTestAction": {
+    "description": "Proceed with creating a lab test despite similar matches."
+  },
+  "labProceedUpdateTestAction": "Save anyway",
+  "@labProceedUpdateTestAction": {
+    "description": "Proceed with updating a lab test despite similar matches."
+  },
+  "labNoSimilarTestDialogTitle": "No similar lab test found",
+  "@labNoSimilarTestDialogTitle": {
+    "description": "Dialog title when no similar lab tests are found."
+  },
+  "labNoSimilarTestBannerTitle": "Match status: No similar found",
+  "@labNoSimilarTestBannerTitle": {
+    "description": "Banner title when no similar lab tests are found."
+  },
+  "labNoSimilarTestDialogBody": "Review the lab test details below. No similar tests were found in this catalog scope.",
+  "@labNoSimilarTestDialogBody": {
+    "description": "Dialog body when no similar lab tests are found."
+  },
+  "labContinueSaveTestAction": "Continue save",
+  "@labContinueSaveTestAction": {
+    "description": "Confirm save after no-similar lab test check."
+  },
+  "labStandardCatalogBadge": "Standard catalog",
+  "@labStandardCatalogBadge": {
+    "description": "Badge for standard lab catalog entries."
+  },
+  "labReferenceRangeDuplicateMessage": "A reference range with the same label, gender, and age band already exists.",
+  "@labReferenceRangeDuplicateMessage": {
+    "description": "Validation when adding a duplicate lab reference range applicability."
+  },
+  "labPediatricRangeLabel": "Pediatric",
+  "@labPediatricRangeLabel": {
+    "description": "Preset label for pediatric lab reference range."
+  },
+  "labNeonateRangeLabel": "Neonate",
+  "@labNeonateRangeLabel": {
+    "description": "Preset label for neonate lab reference range."
+  },
+  "labInfantRangeLabel": "Infant",
+  "@labInfantRangeLabel": {
+    "description": "Preset label for infant lab reference range."
+  },
+  "labChildRangeLabel": "Child",
+  "@labChildRangeLabel": {
+    "description": "Preset label for child lab reference range."
+  },
+  "labAdolescentRangeLabel": "Adolescent",
+  "@labAdolescentRangeLabel": {
+    "description": "Preset label for adolescent lab reference range."
+  },
+  "labGeriatricRangeLabel": "Geriatric",
+  "@labGeriatricRangeLabel": {
+    "description": "Preset label for geriatric lab reference range."
+  },
+  "labReferenceRangeInvalidBoundsMessage": "Min must be less than or equal to max where both are set.",
+  "@labReferenceRangeInvalidBoundsMessage": {
+    "description": "Validation for invalid min/max lab reference range bounds."
+  },
+  "labReferenceRangeCriticalVsNormalMessage": "Critical bounds must not contradict normal bounds.",
+  "@labReferenceRangeCriticalVsNormalMessage": {
+    "description": "Validation when critical range contradicts normal range."
+  },
+
+"radiologySimilarProcedureDialogTitle": "Similar procedure found",
   "@radiologySimilarProcedureDialogTitle": {
     "description": "Dialog title when creating a procedure similar to an existing one."
   },

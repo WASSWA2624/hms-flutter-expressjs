@@ -219,7 +219,8 @@ const createLabTestSchema = withUniqueResultOptions(
       reference_range: optionalTrimmedString(255),
       reference_ranges: z.array(labReferenceRangeSchema).max(25).optional(),
       unit_options: z.array(labUnitOptionSchema).max(20).optional(),
-      result_options: z.array(labResultOptionSchema).max(20).optional()
+      result_options: z.array(labResultOptionSchema).max(20).optional(),
+      confirm_similar: optionalBooleanSchema
     })
   )
 );
@@ -242,7 +243,8 @@ const updateLabTestSchema = withUniqueResultOptions(
       reference_range: optionalTrimmedString(255),
       reference_ranges: z.array(labReferenceRangeSchema).max(25).optional(),
       unit_options: z.array(labUnitOptionSchema).max(20).optional(),
-      result_options: z.array(labResultOptionSchema).max(20).optional()
+      result_options: z.array(labResultOptionSchema).max(20).optional(),
+      confirm_similar: optionalBooleanSchema
     })
   )
 );

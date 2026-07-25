@@ -714,6 +714,7 @@ class _FacilityCatalogConfigPanelState
   }
 
   Widget _buildLabTable(AppLocalizations l10n) {
+    final bool canMutateLab = widget.enabled && _canMutateLabCatalog;
     return AppListTable<LabCatalogItem>(
       items: _labVisibleItems,
       maxVisibleItems: _pageSize,
@@ -722,8 +723,13 @@ class _FacilityCatalogConfigPanelState
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_lab',
       columnChoices: _labColumnChoices(l10n),
-      onRowSelected: widget.enabled
-          ? (LabCatalogItem item) => unawaited(_openLabEditDialog(item))
+      onRowSelected: canMutateLab
+          ? (LabCatalogItem item) {
+              if (item.isStandard) {
+                return;
+              }
+              unawaited(_openLabEditDialog(item));
+            }
           : null,
       search: AppListTableSearch<LabCatalogItem>(
         controller: _labSearchController,
@@ -778,25 +784,27 @@ class _FacilityCatalogConfigPanelState
               label: l10n.tenantFacilityCatalogConfigureAction,
               onPressed: () => unawaited(_openConfigureFlow()),
             ),
-            AppSearchBarAction(
-              icon: Icons.add_circle_outline,
-              label: l10n.labCreateTestAction,
-              onPressed: () =>
-                  unawaited(_openLabAddDialog(LabCatalogItemType.test)),
-            ),
-            AppSearchBarAction(
-              icon: Icons.add_box_outlined,
-              label: l10n.labCreatePanelAction,
-              onPressed: () =>
-                  unawaited(_openLabAddDialog(LabCatalogItemType.panel)),
-            ),
+            if (canMutateLab) ...<AppSearchBarAction>[
+              AppSearchBarAction(
+                icon: Icons.add_circle_outline,
+                label: l10n.labCreateTestAction,
+                onPressed: () =>
+                    unawaited(_openLabAddDialog(LabCatalogItemType.test)),
+              ),
+              AppSearchBarAction(
+                icon: Icons.add_box_outlined,
+                label: l10n.labCreatePanelAction,
+                onPressed: () =>
+                    unawaited(_openLabAddDialog(LabCatalogItemType.panel)),
+              ),
+            ],
           ],
         ],
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.tenantFacilityCatalogTabLab,
         body: l10n.tenantFacilityCatalogEmptyCatalog,
-        action: widget.enabled
+        action: canMutateLab
             ? AppButton.primary(
                 label: l10n.labCreateTestAction,
                 leadingIcon: Icons.add_circle_outline,
@@ -848,7 +856,7 @@ class _FacilityCatalogConfigPanelState
             item.category?.trim().isNotEmpty == true ? item.category! : '—',
           ),
         ),
-        if (widget.enabled)
+        if (canMutateLab)
           AppListTableColumn<LabCatalogItem>(
             id: 'actions',
             label: l10n.accessAdminColumnActions,
@@ -857,8 +865,12 @@ class _FacilityCatalogConfigPanelState
                 _CatalogRowActions(
                   editLabel: l10n.clinicalLabRequestEditSelectionAction,
                   deleteLabel: l10n.tenantFacilityDeleteAction,
-                  onEdit: () => unawaited(_openLabEditDialog(item)),
-                  onDelete: () => unawaited(_openLabDeleteDialog(item)),
+                  onEdit: item.isStandard
+                      ? null
+                      : () => unawaited(_openLabEditDialog(item)),
+                  onDelete: item.isStandard
+                      ? null
+                      : () => unawaited(_openLabDeleteDialog(item)),
                 ),
           ),
       ],
@@ -1493,6 +1505,38 @@ class _FacilityCatalogConfigPanelState
   bool get _canMutateRadiologyCatalog =>
       ref.watch(appAccessPolicyProvider).canMutateRadiologyCatalog();
 
+  bool get _canMutateLabCatalog =>
+      ref.watch(appAccessPolicyProvider).canMutateLabCatalog();
+
+  Future<List<LabCatalogItem>> _loadLabSimilarityCandidates({
+    String? tenantId,
+  }) async {
+    final LabRepository repository = ref.read(labRepositoryProvider);
+    final Result<List<LabCatalogItem>> candidatesResult = await repository
+        .listTests(
+          tenantId: tenantId,
+          limit: 7500,
+          includeStandardCatalog: true,
+        );
+    return candidatesResult.when(
+      success: (List<LabCatalogItem> items) => items
+          .where((LabCatalogItem item) => item.type == LabCatalogItemType.test)
+          .toList(growable: false),
+      failure: (_) => _labItems
+          .where((LabCatalogItem item) => item.type == LabCatalogItemType.test)
+          .toList(growable: false),
+    );
+  }
+
+  LabCatalogItem _resolveLabCatalogItem(LabCatalogItem item) {
+    for (final LabCatalogItem candidate in _labItems) {
+      if (candidate.apiId == item.apiId || candidate.id == item.id) {
+        return candidate;
+      }
+    }
+    return item;
+  }
+
   void _upsertRadiologyItemLocally(RadiologyCatalogProcedure item) {
     final List<RadiologyCatalogProcedure> next =
         List<RadiologyCatalogProcedure>.of(_radiologyItems);
@@ -1925,30 +1969,47 @@ class _FacilityCatalogConfigPanelState
   }
 
   Future<void> _openLabAddDialog(LabCatalogItemType kind) async {
+    if (!_canMutateLabCatalog) {
+      return;
+    }
     final String? tenantId = await _resolveTenantIdForCreate();
     if (!mounted || tenantId == null) {
       return;
     }
     final LabRepository repository = ref.read(labRepositoryProvider);
-    final bool? saved = await showAppDialog<bool>(
+    final Object? result = await showAppDialog<Object>(
       context: context,
       barrierDismissible: false,
       builder: (_) => LabCatalogItemMutationDialog(
         kind: kind,
         tenantId: tenantId,
         catalogItems: _labItems,
+        loadExistingItems: kind == LabCatalogItemType.test
+            ? () => _loadLabSimilarityCandidates(tenantId: tenantId)
+            : null,
         onSubmit: (Map<String, Object?> payload) async {
-          final Result<LabCatalogItem> result = kind == LabCatalogItemType.panel
+          final Result<LabCatalogItem> createResult =
+              kind == LabCatalogItemType.panel
               ? await repository.createLabPanel(payload)
               : await repository.createLabTest(payload);
-          return result.when(
+          return createResult.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
           );
         },
       ),
     );
-    if (!mounted || saved != true) {
+    if (!mounted) {
+      return;
+    }
+    if (result is LabCatalogItem) {
+      final LabCatalogItem existing = _resolveLabCatalogItem(result);
+      if (!existing.isStandard) {
+        await _openLabEditDialog(existing);
+      }
+      return;
+    }
+    if (result != true) {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1958,33 +2019,53 @@ class _FacilityCatalogConfigPanelState
   }
 
   Future<void> _openLabEditDialog(LabCatalogItem item) async {
+    if (!_canMutateLabCatalog || item.isStandard) {
+      return;
+    }
     final LabRepository repository = ref.read(labRepositoryProvider);
-    final bool? saved = await showAppDialog<bool>(
+    final String? tenantId = widget.tenantId?.trim();
+    final Object? result = await showAppDialog<Object>(
       context: context,
       barrierDismissible: false,
       builder: (_) => LabCatalogItemMutationDialog(
         kind: item.type,
         item: item,
         catalogItems: _labItems,
+        loadExistingItems: item.type == LabCatalogItemType.test
+            ? () => _loadLabSimilarityCandidates(tenantId: tenantId)
+            : null,
         onSubmit: (Map<String, Object?> payload) async {
-          final Result<LabCatalogItem> result =
+          final Result<LabCatalogItem> updateResult =
               item.type == LabCatalogItemType.panel
               ? await repository.updateLabPanel(item.apiId, payload)
               : await repository.updateLabTest(item.apiId, payload);
-          return result.when(
+          return updateResult.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
           );
         },
       ),
     );
-    if (!mounted || saved != true) {
+    if (!mounted) {
+      return;
+    }
+    if (result is LabCatalogItem) {
+      final LabCatalogItem existing = _resolveLabCatalogItem(result);
+      if (existing.apiId != item.apiId && !existing.isStandard) {
+        await _openLabEditDialog(existing);
+      }
+      return;
+    }
+    if (result != true) {
       return;
     }
     await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openLabDeleteDialog(LabCatalogItem item) async {
+    if (!_canMutateLabCatalog || item.isStandard) {
+      return;
+    }
     final LabRepository repository = ref.read(labRepositoryProvider);
     final AppLocalizations l10n = context.l10n;
     final bool isPanel = item.type == LabCatalogItemType.panel;

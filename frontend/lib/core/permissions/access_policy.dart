@@ -347,6 +347,20 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Who may create, edit/update, or delete global lab catalog tests/panels.
+  ///
+  /// Matches backend `LAB_CATALOG_WRITE_SCOPES` on `/api/v1/lab-tests`
+  /// (and lab-panel) mutations.
+  bool canMutateLabCatalog() {
+    return isElevated ||
+        grantsAny(const <AppPermission>[
+          AppPermissions.labWrite,
+          AppPermissions.tenantAdmin,
+          AppPermissions.facilityAdmin,
+          AppPermissions.systemAdmin,
+        ]);
+  }
+
   /// Who may start/complete subscription upgrade or renewal flows.
   ///
   /// Super / tenant / facility admins always qualify (even when the

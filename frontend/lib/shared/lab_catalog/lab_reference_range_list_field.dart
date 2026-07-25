@@ -5,6 +5,7 @@ import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_fields.dart';
 
 const String kLabReferenceRangeAnyGender = '__ANY__';
 
@@ -114,21 +115,53 @@ class EditableLabReferenceRange {
   }
 
   bool isValid() {
-    return _isRangeValid(
+    if (!_isRangeValid(
           normalMinController.text,
           normalMaxController.text,
           allowEqual: true,
-        ) &&
-        _isRangeValid(
+        ) ||
+        !_isRangeValid(
           criticalMinController.text,
           criticalMaxController.text,
           allowEqual: true,
-        ) &&
-        _isRangeValid(
+        ) ||
+        !_isRangeValid(
           ageMinController.text,
           ageMaxController.text,
           allowEqual: false,
-        );
+        )) {
+      return false;
+    }
+    return !_criticalContradictsNormal();
+  }
+
+  /// Stable key for label + gender + age band + age unit applicability.
+  String applicabilityKey() {
+    final String label = labelController.text.trim().toLowerCase();
+    final String genderKey = (gender ?? kLabReferenceRangeAnyGender)
+        .trim()
+        .toUpperCase();
+    final String ageMin = ageMinController.text.trim();
+    final String ageMax = ageMaxController.text.trim();
+    final String unit = (ageUnit ?? 'YEAR').trim().toUpperCase();
+    return '$label|$genderKey|$ageMin|$ageMax|$unit';
+  }
+
+  bool contradictsCriticalVsNormal() => _criticalContradictsNormal();
+
+  bool _criticalContradictsNormal() {
+    final num? normalMin = num.tryParse(normalMinController.text.trim());
+    final num? normalMax = num.tryParse(normalMaxController.text.trim());
+    final num? criticalMin = num.tryParse(criticalMinController.text.trim());
+    final num? criticalMax = num.tryParse(criticalMaxController.text.trim());
+
+    if (criticalMin != null && normalMin != null && criticalMin > normalMin) {
+      return true;
+    }
+    if (criticalMax != null && normalMax != null && criticalMax < normalMax) {
+      return true;
+    }
+    return false;
   }
 
   bool _isRangeValid(
@@ -148,6 +181,24 @@ class EditableLabReferenceRange {
     }
     return allowEqual ? minNumber <= maxNumber : minNumber < maxNumber;
   }
+}
+
+bool labReferenceRangesHaveDuplicateApplicability(
+  Iterable<EditableLabReferenceRange> ranges,
+) {
+  final Set<String> seen = <String>{};
+  for (final EditableLabReferenceRange range in ranges) {
+    final String label = range.labelController.text.trim();
+    final String ageMin = range.ageMinController.text.trim();
+    final String ageMax = range.ageMaxController.text.trim();
+    if (label.isEmpty && ageMin.isEmpty && ageMax.isEmpty) {
+      continue;
+    }
+    if (!seen.add(range.applicabilityKey())) {
+      return true;
+    }
+  }
+  return false;
 }
 
 String? _emptyToNull(String? value) {
@@ -202,17 +253,42 @@ class LabReferenceRangeListField extends StatelessWidget {
           ),
           SizedBox(height: theme.spacing.sm),
         ] else
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              l10n.labReferenceRangeCount(ranges.length),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppButton.tertiary(
+                    label: l10n.labAddReferenceRangeAction,
+                    leadingIcon: Icons.add,
+                    enabled: enabled,
+                    onPressed: onAdd,
+                  ),
+                ),
               ),
+              Text(
+                l10n.labReferenceRangeCount(ranges.length),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        if (showHeader) ...<Widget>[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton.tertiary(
+              label: l10n.labAddReferenceRangeAction,
+              leadingIcon: Icons.add,
+              enabled: enabled,
+              onPressed: onAdd,
             ),
           ),
+          SizedBox(height: theme.spacing.md),
+        ] else
+          SizedBox(height: theme.spacing.md),
         for (int index = 0; index < ranges.length; index++) ...<Widget>[
-          if (index > 0) SizedBox(height: theme.spacing.sm),
+          if (index > 0) SizedBox(height: theme.spacing.md),
           _LabReferenceRangeCard(
             key: ValueKey<String>(ranges[index].id ?? 'new-range-$index'),
             range: ranges[index],
@@ -223,16 +299,6 @@ class LabReferenceRangeListField extends StatelessWidget {
             onRemove: () => onRemove(ranges[index]),
           ),
         ],
-        SizedBox(height: theme.spacing.sm),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: AppButton.tertiary(
-            label: l10n.labAddReferenceRangeAction,
-            leadingIcon: Icons.add,
-            enabled: enabled,
-            onPressed: onAdd,
-          ),
-        ),
       ],
     );
   }
@@ -295,14 +361,37 @@ class _LabReferenceRangeCard extends StatelessWidget {
                   ),
               ],
             ),
-            SizedBox(height: theme.spacing.sm),
-            AppTextField(
-              controller: range.labelController,
+            SizedBox(height: theme.spacing.md),
+            AppSelectField<String>.searchable(
+              value: range.labelController.text.trim().isEmpty
+                  ? null
+                  : range.labelController.text.trim(),
               labelText: l10n.labReferenceRangeLabel,
               enabled: enabled,
-              prefixIcon: const Icon(Icons.label_outline),
-              onChanged: (_) => onChanged(),
+              allowClear: true,
+              options: <AppSelectOption<String>>[
+                for (final String label in labUniqueNonEmpty(<String?>[
+                  l10n.labAdultRangeLabel,
+                  l10n.labPediatricRangeLabel,
+                  l10n.labNeonateRangeLabel,
+                  l10n.labInfantRangeLabel,
+                  l10n.labChildRangeLabel,
+                  l10n.labAdolescentRangeLabel,
+                  l10n.labGeriatricRangeLabel,
+                  range.labelController.text,
+                ]))
+                  AppSelectOption<String>(
+                    value: label,
+                    label: label,
+                    leadingIcon: const Icon(Icons.label_outline),
+                  ),
+              ],
+              onChanged: (String? value) {
+                range.labelController.text = value?.trim() ?? '';
+                onChanged();
+              },
             ),
+            SizedBox(height: theme.spacing.sm),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: AppSelectField<String>.searchable(
@@ -375,6 +464,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 },
               ),
             ),
+            SizedBox(height: theme.spacing.sm),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: AppTextField(
@@ -400,6 +490,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 onChanged: (_) => onChanged(),
               ),
             ),
+            SizedBox(height: theme.spacing.sm),
             AppTextField(
               controller: range.rangeUnitController,
               labelText: l10n.labResultUnitLabel,
@@ -407,6 +498,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
               prefixIcon: const Icon(Icons.straighten_outlined),
               onChanged: (_) => onChanged(),
             ),
+            SizedBox(height: theme.spacing.sm),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: AppTextField(
@@ -430,6 +522,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 onChanged: (_) => onChanged(),
               ),
             ),
+            SizedBox(height: theme.spacing.sm),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: AppTextField(
@@ -453,6 +546,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 onChanged: (_) => onChanged(),
               ),
             ),
+            SizedBox(height: theme.spacing.sm),
             AppTextField(
               controller: range.referenceTextController,
               labelText: l10n.labReferenceTextLabel,
@@ -461,6 +555,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
               prefixIcon: const Icon(Icons.notes_outlined),
               onChanged: (_) => onChanged(),
             ),
+            SizedBox(height: theme.spacing.sm),
             AppTextField(
               controller: range.notesController,
               labelText: l10n.labReferenceNotesLabel,

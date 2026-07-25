@@ -241,6 +241,8 @@ final class LabCatalogItem {
     this.isOfferedAtFacility = false,
     this.facilityOfferingId,
     this.usesPlatformDefaults = true,
+    this.source,
+    this.status,
   });
 
   final String id;
@@ -266,6 +268,15 @@ final class LabCatalogItem {
   final bool isOfferedAtFacility;
   final String? facilityOfferingId;
   final bool usesPlatformDefaults;
+  final String? source;
+  final String? status;
+
+  bool get isStandard {
+    final String sourceKey = (source ?? status ?? '').trim().toUpperCase();
+    return id.startsWith('STD_LAB_TEST:') ||
+        sourceKey == 'STANDARD' ||
+        sourceKey == 'STANDARD_LAB_CATALOG';
+  }
 
   LabCatalogItem copyWith({
     String? id,
@@ -291,6 +302,8 @@ final class LabCatalogItem {
     bool? isOfferedAtFacility,
     String? facilityOfferingId,
     bool? usesPlatformDefaults,
+    String? source,
+    String? status,
   }) {
     return LabCatalogItem(
       id: id ?? this.id,
@@ -316,6 +329,8 @@ final class LabCatalogItem {
       isOfferedAtFacility: isOfferedAtFacility ?? this.isOfferedAtFacility,
       facilityOfferingId: facilityOfferingId ?? this.facilityOfferingId,
       usesPlatformDefaults: usesPlatformDefaults ?? this.usesPlatformDefaults,
+      source: source ?? this.source,
+      status: status ?? this.status,
     );
   }
 

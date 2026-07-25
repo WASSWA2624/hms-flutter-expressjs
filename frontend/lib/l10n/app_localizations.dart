@@ -36067,13 +36067,13 @@ abstract class AppLocalizations {
   /// **'Adult'**
   String get labAdultRangeLabel;
 
-  /// Default pediatric lab reference range label.
+  /// Preset label for pediatric lab reference range.
   ///
   /// In en, this message translates to:
   /// **'Pediatric'**
   String get labPediatricRangeLabel;
 
-  /// Default neonate lab reference range label.
+  /// Preset label for neonate lab reference range.
   ///
   /// In en, this message translates to:
   /// **'Neonate'**
@@ -36570,6 +36570,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create procedure'**
   String get radiologyCreateProcedureAction;
+
+  /// Dialog title when creating a lab test similar to an existing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar lab test found'**
+  String get labSimilarTestDialogTitle;
+
+  /// Dialog body when creating a lab test similar to an existing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar lab tests exist in this catalog scope. Review matches before continuing.'**
+  String get labSimilarTestDialogBody;
+
+  /// Banner title when lab similarity check finds a hard exact duplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: Exact duplicate'**
+  String get labSimilarTestExactBannerTitle;
+
+  /// Banner body when lab similarity check finds a hard exact duplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'An identical name and category, or an identical code, already exists ({score}% composite). Create is blocked — use the existing test instead.'**
+  String labSimilarTestExactBannerBody(int score);
+
+  /// Banner title when lab similarity check finds near matches only.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: Similar ({score}%)'**
+  String labSimilarTestReviewBannerTitle(int score);
+
+  /// Banner body summarizing near-match field statuses for lab tests.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing test, or create anyway.'**
+  String labSimilarTestReviewBannerBody(int score, String fieldSummary);
+
+  /// Field status fragment in lab similarity review banner.
+  ///
+  /// In en, this message translates to:
+  /// **'{field}: {status}'**
+  String labSimilarTestFieldStatusPart(String field, String status);
+
+  /// Heading for proposed lab test card in similarity dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New lab test'**
+  String get labSimilarTestProposedHeading;
+
+  /// Heading for existing lab test match card.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing lab test'**
+  String get labSimilarTestExistingHeading;
+
+  /// Heading above lab similarity match list.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest matches'**
+  String get labSimilarTestMatchesHeading;
+
+  /// Heading for lab similarity field comparison table.
+  ///
+  /// In en, this message translates to:
+  /// **'Field comparison'**
+  String get labSimilarTestComparisonHeading;
+
+  /// Exact match badge for lab similarity.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match'**
+  String get labSimilarTestExactMatchLabel;
+
+  /// Near match badge for lab similarity.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar'**
+  String get labSimilarTestNearMatchLabel;
+
+  /// Partial match badge for lab similarity.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial match'**
+  String get labSimilarTestPartialMatchLabel;
+
+  /// Column label for proposed lab test values.
+  ///
+  /// In en, this message translates to:
+  /// **'Your entry'**
+  String get labSimilarTestYourEntryLabel;
+
+  /// Column label for existing lab test values.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get labSimilarTestExistingValueLabel;
+
+  /// Count of lab similarity matches shown.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} matches'**
+  String labSimilarTestMatchCountLabel(int count);
+
+  /// Field column header in lab similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get labSimilarTestFieldColumnLabel;
+
+  /// Status column header in lab similarity comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get labSimilarTestStatusColumnLabel;
+
+  /// Status when a field exists only on the catalog match.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on existing'**
+  String get labSimilarTestOnlyExistingLabel;
+
+  /// Title while lab test similarity scan runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking similarity'**
+  String get labSimilarityCheckLoadingTitle;
+
+  /// Body while lab test similarity scan runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparing name, code, and category against the catalog…'**
+  String get labSimilarityCheckLoadingBody;
+
+  /// Title while loading lab catalog for similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading catalog'**
+  String get labSimilarityCatalogLoadingTitle;
+
+  /// Body while loading lab catalog for similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing lab tests for similarity review…'**
+  String get labSimilarityCatalogLoadingBody;
+
+  /// Composite similarity score badge for a lab test match.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}% match'**
+  String labSimilarTestScoreLabel(int score);
+
+  /// Action to use an existing similar lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing'**
+  String get labUseExistingTestAction;
+
+  /// Action to select a specific similar lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this test'**
+  String get labUseThisTestAction;
+
+  /// Proceed with creating a lab test despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get labProceedCreateTestAction;
+
+  /// Proceed with updating a lab test despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get labProceedUpdateTestAction;
+
+  /// Dialog title when no similar lab tests are found.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar lab test found'**
+  String get labNoSimilarTestDialogTitle;
+
+  /// Banner title when no similar lab tests are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get labNoSimilarTestBannerTitle;
+
+  /// Dialog body when no similar lab tests are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the lab test details below. No similar tests were found in this catalog scope.'**
+  String get labNoSimilarTestDialogBody;
+
+  /// Confirm save after no-similar lab test check.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue save'**
+  String get labContinueSaveTestAction;
+
+  /// Badge for standard lab catalog entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard catalog'**
+  String get labStandardCatalogBadge;
+
+  /// Validation when adding a duplicate lab reference range applicability.
+  ///
+  /// In en, this message translates to:
+  /// **'A reference range with the same label, gender, and age band already exists.'**
+  String get labReferenceRangeDuplicateMessage;
+
+  /// Preset label for infant lab reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Infant'**
+  String get labInfantRangeLabel;
+
+  /// Preset label for child lab reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Child'**
+  String get labChildRangeLabel;
+
+  /// Preset label for adolescent lab reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Adolescent'**
+  String get labAdolescentRangeLabel;
+
+  /// Preset label for geriatric lab reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Geriatric'**
+  String get labGeriatricRangeLabel;
+
+  /// Validation for invalid min/max lab reference range bounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Min must be less than or equal to max where both are set.'**
+  String get labReferenceRangeInvalidBoundsMessage;
+
+  /// Validation when critical range contradicts normal range.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical bounds must not contradict normal bounds.'**
+  String get labReferenceRangeCriticalVsNormalMessage;
 
   /// Dialog title when creating a procedure similar to an existing one.
   ///
