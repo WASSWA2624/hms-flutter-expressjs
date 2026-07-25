@@ -179,7 +179,7 @@ const mapRadiologyResultRecord = (record) => {
   if (!record || typeof record !== 'object') return null;
   const order = record.radiology_order;
   const patient = order?.patient;
-  const test = order?.radiology_test;
+  const test = order?.radiology_procedure || order?.radiology_test;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
   const attestations = Array.isArray(record.attestations)
     ? record.attestations.map(mapRadiologyResultAttestationRecord).filter(Boolean)
@@ -197,14 +197,15 @@ const mapRadiologyResultRecord = (record) => {
     ),
     patient_id: toPublicIdentifier(patient?.human_friendly_id, order?.patient_id),
     patient_display_name: toDisplayName(patient?.first_name, patient?.last_name),
-    radiology_test_id: toPublicIdentifier(test?.human_friendly_id, order?.radiology_test_id),
+    radiology_procedure_id: toPublicIdentifier(test?.human_friendly_id, order?.radiology_procedure_id || order?.radiology_test_id),
+    radiology_test_id: toPublicIdentifier(test?.human_friendly_id, order?.radiology_procedure_id || order?.radiology_test_id),
     test_display_name:
       toText(test?.name) ||
       toText(test?.code) ||
       toText(order?.request_details?.new_test_name) ||
       null,
     modality:
-      toText(order?.radiology_test?.modality).toUpperCase() ||
+      toText((order?.radiology_procedure || order?.radiology_test)?.modality).toUpperCase() ||
       toText(order?.request_details?.modality).toUpperCase() ||
       toText(order?.imaging_studies?.[0]?.modality).toUpperCase() ||
       null,
@@ -233,7 +234,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
   const { includeChildren = true } = options;
   const patient = record.patient;
   const encounter = record.encounter;
-  const test = record.radiology_test;
+  const test = record.radiology_procedure || record.radiology_test;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
   const requestDetails =
     record.request_details &&
@@ -279,7 +280,8 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
     encounter_id: toPublicIdentifier(encounter?.human_friendly_id, record.encounter_id),
     patient_id: toPublicIdentifier(patient?.human_friendly_id, record.patient_id),
     patient_display_name: toDisplayName(patient?.first_name, patient?.last_name),
-    radiology_test_id: toPublicIdentifier(test?.human_friendly_id, record.radiology_test_id),
+    radiology_procedure_id: toPublicIdentifier(test?.human_friendly_id, record.radiology_procedure_id || record.radiology_test_id),
+    radiology_test_id: toPublicIdentifier(test?.human_friendly_id, record.radiology_procedure_id || record.radiology_test_id),
     test_display_name: testDisplayName,
     radiology_test_display_name: testDisplayName,
     modality,
@@ -302,23 +304,28 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
     equipment_display_name: equipment?.equipment_name || null,
     request_details: {
       ...requestDetails,
+      radiology_procedure_id: toPublicIdentifier(
+        test?.human_friendly_id,
+        requestDetails.radiology_procedure_id || requestDetails.radiology_test_id
+      ),
       radiology_test_id: toPublicIdentifier(
         test?.human_friendly_id,
-        requestDetails.radiology_test_id
+        requestDetails.radiology_procedure_id || requestDetails.radiology_test_id
       ),
       new_test_name: toText(requestDetails.new_test_name) || null,
       modality,
       ...(storedBilling ? { billing: storedBilling } : {})},
     requested_tests: [
       {
-        radiology_test_id: toPublicIdentifier(test?.human_friendly_id, record.radiology_test_id),
+        radiology_procedure_id: toPublicIdentifier(test?.human_friendly_id, record.radiology_procedure_id || record.radiology_test_id),
+        radiology_test_id: toPublicIdentifier(test?.human_friendly_id, record.radiology_procedure_id || record.radiology_test_id),
         radiology_test_display_name: testDisplayName,
         test_display_name: testDisplayName,
         modality,
         body_region: toText(requestDetails.body_region) || null,
         laterality: toText(requestDetails.laterality) || null,
         priority: toText(requestDetails.priority) || null}].filter(
-      (entry) => entry.radiology_test_id || entry.test_display_name || entry.modality
+      (entry) => entry.radiology_procedure_id || entry.radiology_test_id || entry.test_display_name || entry.modality
     ),
     ordered_at: toIsoDateTime(record.ordered_at),
     created_at: toIsoDateTime(record.created_at),

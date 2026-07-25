@@ -26,7 +26,7 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
 const {
-  resolveOrCreateStandardRadiologyTest} = require('@services/radiology-test/radiology-test.service');
+  resolveOrCreateStandardRadiologyTest} = require('@services/radiology-procedure/radiology-procedure.service');
 const { resolveLabOrderEncounterId } = require('@services/lab-workspace/lab.shared');
 
 const buildPagination = (page, limit, total) => {
@@ -90,12 +90,12 @@ const resolveRadiologyTestLabel = async (radiologyTestId) => {
   const normalizedId = sanitizeString(radiologyTestId);
   if (!normalizedId) return '';
 
-  const radiologyTest = await prisma.radiology_test.findFirst({
+  const radiologyProcedure = await prisma.radiology_procedure.findFirst({
     where: { id: normalizedId, deleted_at: null },
     select: { human_friendly_id: true, name: true, code: true }});
 
   return sanitizeString(
-    radiologyTest?.name || radiologyTest?.code || radiologyTest?.human_friendly_id
+    radiologyProcedure?.name || radiologyProcedure?.code || radiologyProcedure?.human_friendly_id
   );
 };
 
@@ -104,8 +104,9 @@ const resolveOrCreateRadiologyTest = async ({
   tenantId,
   userId,
   ipAddress}) => {
-  if (request?.radiology_test_id) {
-    const requestedRadiologyTestId = sanitizeString(request.radiology_test_id);
+  const requestedId = request?.radiology_procedure_id ?? request?.radiology_test_id;
+  if (requestedId) {
+    const requestedRadiologyTestId = sanitizeString(requestedId);
     if (requestedRadiologyTestId.startsWith('STD_RAD_TEST_')) {
       const standardCode = requestedRadiologyTestId.slice('STD_RAD_TEST_'.length);
       const standardRadiologyTest = await resolveOrCreateStandardRadiologyTest({
@@ -117,9 +118,9 @@ const resolveOrCreateRadiologyTest = async ({
     }
 
     return resolveIdentifierForPayload({
-      value: request.radiology_test_id,
-      field: 'radiology_test_id',
-      model: 'radiology_test',
+      value: requestedId,
+      field: 'radiology_procedure_id',
+      model: 'radiology_procedure',
       where: { deleted_at: null, tenant_id: tenantId },
       nullable: true});
   }
@@ -132,7 +133,7 @@ const resolveOrCreateRadiologyTest = async ({
   }
 
   const code = sanitizeString(newTest.code);
-  const existing = await prisma.radiology_test.findFirst({
+  const existing = await prisma.radiology_procedure.findFirst({
     where: {
       tenant_id: tenantId,
       deleted_at: null,
@@ -140,7 +141,7 @@ const resolveOrCreateRadiologyTest = async ({
     select: { id: true }});
   if (existing) return existing.id;
 
-  const radiologyTest = await prisma.radiology_test.create({
+  const radiologyProcedure = await prisma.radiology_procedure.create({
     data: {
       tenant_id: tenantId,
       name,
@@ -152,12 +153,12 @@ const resolveOrCreateRadiologyTest = async ({
     tenant_id: tenantId,
     user_id: userId,
     action: 'CREATE',
-    entity: 'radiology_test',
-    entity_id: radiologyTest.id,
-    diff: { after: { ...newTest, id: radiologyTest.id } },
+    entity: 'radiology_procedure',
+    entity_id: radiologyProcedure.id,
+    diff: { after: { ...newTest, id: radiologyProcedure.id } },
     ip_address: ipAddress}).catch(() => {});
 
-  return radiologyTest.id;
+  return radiologyProcedure.id;
 };
 
 const createImagingRequestClinicalNote = async ({
@@ -188,9 +189,11 @@ const normalizeRequestDetails = (request = {}) => {
     ? request.new_test
     : null;
 
+  const resolvedId = (request.radiology_procedure_id ?? request.radiology_test_id) || null;
   return {
-    request_mode: request.radiology_test_id ? 'existing' : 'new',
-    radiology_test_id: sanitizeString(request.radiology_test_id) || null,
+    request_mode: resolvedId ? 'existing' : 'new',
+    radiology_procedure_id: sanitizeString(resolvedId) || null,
+    radiology_test_id: sanitizeString(resolvedId) || null,
     new_test_name: sanitizeString(newTest?.name) || null,
     new_test_code: sanitizeString(newTest?.code) || null,
     modality: sanitizeString(newTest?.modality || details.modality) || null,
@@ -202,8 +205,9 @@ const normalizeRequestDetails = (request = {}) => {
 };
 
 const buildRequestDuplicateKey = (request = {}) => {
-  if (request.radiology_test_id) {
-    return `existing:${sanitizeString(request.radiology_test_id).toLowerCase()}`;
+  const testId = request.radiology_procedure_id ?? request.radiology_test_id;
+  if (testId) {
+    return `existing:${sanitizeString(testId).toLowerCase()}`;
   }
   const newTest = request.new_test || {};
   const details = request.request_details || {};
@@ -265,13 +269,14 @@ const listRadiologyOrders = async (filters, page, limit, sortBy, order, userId, 
       if (patientId === null) return buildEmptyListResult(page, limit);
       if (patientId !== undefined) whereClause.patient_id = patientId;
     }
-    if (filters.radiology_test_id !== undefined) {
+    const procedureIdFilter = filters.radiology_procedure_id ?? filters.radiology_test_id;
+    if (procedureIdFilter !== undefined) {
       const radiologyTestId = await resolveIdentifierForFilter({
-        value: filters.radiology_test_id,
-        model: 'radiology_test',
+        value: procedureIdFilter,
+        model: 'radiology_procedure',
         where: { deleted_at: null }});
       if (radiologyTestId === null) return buildEmptyListResult(page, limit);
-      if (radiologyTestId !== undefined) whereClause.radiology_test_id = radiologyTestId;
+      if (radiologyTestId !== undefined) whereClause.radiology_procedure_id = radiologyTestId;
     }
     if (filters.status) whereClause.status = filters.status;
 
@@ -363,12 +368,13 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
       status: 'ORDERED',
       ordered_at: orderedAt};
 
+    const legacyTestId = data.radiology_procedure_id ?? data.radiology_test_id;
     const orderRequests =
       requestedTests.length > 0
         ? requestedTests
         : [
-            data.radiology_test_id
-              ? { radiology_test_id: data.radiology_test_id }
+            legacyTestId
+              ? { radiology_procedure_id: legacyTestId }
               : null].filter(Boolean);
 
     if (!orderRequests.length) {
@@ -391,7 +397,7 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
         (await resolveRadiologyTestLabel(radiologyTestId));
       const radiologyOrder = await radiologyOrderRepository.create({
         ...baseOrderData,
-        radiology_test_id: radiologyTestId || null,
+        radiology_procedure_id: radiologyTestId || null,
         clinical_note: sanitizeString(request?.clinical_note) || null,
         request_details: requestDetails});
 
@@ -406,8 +412,8 @@ const createRadiologyOrder = async (data, userId, ipAddress) => {
             facilityId: patient.facility_id || null,
             patientId,
             catalogItemId:
-              sanitizeString(request?.radiology_test_id) ||
-              sanitizeString(requestDetails?.radiology_test_id) ||
+              sanitizeString(request?.radiology_procedure_id ?? request?.radiology_test_id) ||
+              sanitizeString(requestDetails?.radiology_procedure_id ?? requestDetails?.radiology_test_id) ||
               radiologyTestId,
             description: `Radiology: ${testLabel}`});
         });
@@ -491,13 +497,16 @@ const updateRadiologyOrder = async (id, data, userId, ipAddress) => {
         model: 'patient',
         where: { deleted_at: null }});
     }
-    if (Object.prototype.hasOwnProperty.call(data, 'radiology_test_id')) {
-      normalizedData.radiology_test_id = await resolveIdentifierForPayload({
-        value: data.radiology_test_id,
-        field: 'radiology_test_id',
-        model: 'radiology_test',
+    if (Object.prototype.hasOwnProperty.call(data, 'radiology_procedure_id') ||
+        Object.prototype.hasOwnProperty.call(data, 'radiology_test_id')) {
+      const rawId = data.radiology_procedure_id ?? data.radiology_test_id;
+      normalizedData.radiology_procedure_id = await resolveIdentifierForPayload({
+        value: rawId,
+        field: 'radiology_procedure_id',
+        model: 'radiology_procedure',
         where: { deleted_at: null },
         nullable: true});
+      delete normalizedData.radiology_test_id;
     }
 
     const radiologyOrder = await radiologyOrderRepository.update(resolvedId, normalizedData);

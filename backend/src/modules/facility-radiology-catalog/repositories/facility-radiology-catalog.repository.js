@@ -6,7 +6,7 @@ const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
 const FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE = {
-  radiology_test: true,
+  radiology_procedure: true,
 };
 
 const findTestOffering = async (
@@ -14,7 +14,7 @@ const findTestOffering = async (
   include = FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE
 ) => {
   try {
-    return await prisma.facility_radiology_test_offering.findFirst({
+    return await prisma.facility_radiology_procedure_offering.findFirst({
       where: { deleted_at: null, ...where },
       include,
     });
@@ -31,7 +31,7 @@ const findTestOfferings = async (
   include = FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE
 ) => {
   try {
-    return await prisma.facility_radiology_test_offering.findMany({
+    return await prisma.facility_radiology_procedure_offering.findMany({
       where: { deleted_at: null, ...filters },
       skip,
       take,
@@ -45,7 +45,7 @@ const findTestOfferings = async (
 
 const countTestOfferings = async (filters = {}) => {
   try {
-    return await prisma.facility_radiology_test_offering.count({
+    return await prisma.facility_radiology_procedure_offering.count({
       where: { deleted_at: null, ...filters },
     });
   } catch (error) {
@@ -55,7 +55,7 @@ const countTestOfferings = async (filters = {}) => {
 
 const createTestOffering = async (data) => {
   try {
-    return await prisma.facility_radiology_test_offering.create({
+    return await prisma.facility_radiology_procedure_offering.create({
       data,
       include: FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE,
     });
@@ -69,7 +69,7 @@ const createTestOffering = async (data) => {
 
 const updateTestOffering = async (id, data) => {
   try {
-    return await prisma.facility_radiology_test_offering.update({
+    return await prisma.facility_radiology_procedure_offering.update({
       where: { id },
       data,
       include: FACILITY_RADIOLOGY_TEST_OFFERING_INCLUDE,

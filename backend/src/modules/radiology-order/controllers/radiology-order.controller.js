@@ -23,6 +23,7 @@ const listRadiologyOrders = asyncHandler(async (req, res) => {
   const {
     encounter_id,
     patient_id,
+    radiology_procedure_id,
     radiology_test_id,
     status,
     search,
@@ -35,7 +36,7 @@ const listRadiologyOrders = asyncHandler(async (req, res) => {
   const filters = {
     encounter_id,
     patient_id,
-    radiology_test_id,
+    radiology_procedure_id: radiology_procedure_id ?? radiology_test_id,
     status,
     search
   };

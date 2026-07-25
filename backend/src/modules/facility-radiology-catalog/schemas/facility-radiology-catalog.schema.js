@@ -26,6 +26,7 @@ const upsertFacilityRadiologyTestOfferingSchema = z
   .object({
     tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
     facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+    radiology_procedure_id: facilityRadiologyTestIdentifierSchema.optional(),
     radiology_test_id: facilityRadiologyTestIdentifierSchema.optional(),
     is_active: z.boolean().optional().default(true),
     sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),
@@ -47,7 +48,8 @@ const disableFacilityRadiologyOfferingSchema = z.object({
 });
 
 const facilityRadiologyTestParamsSchema = z.object({
-  radiology_test_id: facilityRadiologyTestIdentifierSchema,
+  radiology_procedure_id: facilityRadiologyTestIdentifierSchema.optional(),
+  radiology_test_id: facilityRadiologyTestIdentifierSchema.optional(),
 });
 
 const listFacilityRadiologyCatalogQuerySchema = listQuerySchema.extend({

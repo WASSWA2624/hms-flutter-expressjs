@@ -50,7 +50,7 @@ const EQUIPMENT_REGISTRY_PUBLIC_SELECT = {
 const RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE = {
   patient: { select: PATIENT_PUBLIC_SELECT },
   encounter: { select: ENCOUNTER_PUBLIC_SELECT },
-  radiology_test: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
+  radiology_procedure: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
   assigned_user: { select: ASSIGNED_USER_PUBLIC_SELECT },
   equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
   results: {
@@ -83,7 +83,7 @@ const RADIOLOGY_STUDY_WITH_RELATIONS_INCLUDE = {
     include: {
       patient: { select: PATIENT_PUBLIC_SELECT },
       encounter: { select: ENCOUNTER_PUBLIC_SELECT },
-      radiology_test: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
+      radiology_procedure: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
       assigned_user: { select: ASSIGNED_USER_PUBLIC_SELECT },
       equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT }}},
   equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
@@ -108,7 +108,7 @@ const RADIOLOGY_RESULT_WITH_RELATIONS_INCLUDE = {
     include: {
       patient: { select: PATIENT_PUBLIC_SELECT },
       encounter: { select: ENCOUNTER_PUBLIC_SELECT },
-      radiology_test: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
+      radiology_procedure: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
       assigned_user: { select: ASSIGNED_USER_PUBLIC_SELECT },
       equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT }}}};
 

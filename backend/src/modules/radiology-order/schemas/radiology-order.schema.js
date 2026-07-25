@@ -56,12 +56,13 @@ const requestDetailsSchema = z
 
 const requestedRadiologyTestSchema = z
   .object({
+    radiology_procedure_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     new_test: newRadiologyTestSchema.optional().nullable(),
     clinical_note: z.string().trim().max(5000).optional().nullable(),
     request_details: requestDetailsSchema})
   .superRefine((value, ctx) => {
-    if (value.radiology_test_id || value.new_test?.name) return;
+    if (value.radiology_procedure_id || value.radiology_test_id || value.new_test?.name) return;
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['radiology_test_id'],
@@ -72,6 +73,7 @@ const requestedRadiologyTestSchema = z
 const createRadiologyOrderSchema = z.object({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   patient_id: uuidOrFriendlyIdentifierSchema,
+  radiology_procedure_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   requested_tests: z.array(requestedRadiologyTestSchema).optional(),
   status: radiologyOrderStatusSchema.optional().default('ORDERED'),
@@ -86,6 +88,7 @@ const createRadiologyOrderSchema = z.object({
 const updateRadiologyOrderSchema = z.object({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
+  radiology_procedure_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   status: radiologyOrderStatusSchema.optional(),
   clinical_note: z.string().trim().max(5000).optional().nullable(),
@@ -113,6 +116,7 @@ const radiologyOrderIdParamsSchema = z.object({
 const listRadiologyOrdersQuerySchema = listQuerySchema.extend({
   encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
+  radiology_procedure_id: uuidOrFriendlyIdentifierSchema.optional(),
   radiology_test_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: radiologyOrderStatusSchema.optional(),
   search: z.string().trim().optional()

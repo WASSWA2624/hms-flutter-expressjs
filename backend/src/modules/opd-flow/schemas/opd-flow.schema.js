@@ -350,6 +350,7 @@ const doctorReviewSchema = z.object({
   radiology_requests: z
     .array(
       z.object({
+        radiology_procedure_id: resourceFriendlyIdSchema.optional().nullable(),
         radiology_test_id: resourceFriendlyIdSchema.optional().nullable(),
         status: z.enum(RADIOLOGY_ORDER_STATUS_VALUES).optional()
       })

@@ -61,6 +61,7 @@ const requestDetailsSchema = z.object({
   standard_study_code: z.string().trim().max(80).optional().nullable()}).passthrough();
 
 const requestedRadiologyTestSchema = z.object({
+  radiology_procedure_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   clinical_note: z.string().trim().max(65535).optional().nullable(),
   request_details: requestDetailsSchema.optional().default({}),
@@ -68,7 +69,7 @@ const requestedRadiologyTestSchema = z.object({
     name: z.string().trim().min(1).max(255),
     code: z.string().trim().max(80).optional().nullable(),
     modality: imagingModalitySchema.optional()}).optional()}).refine(
-  (value) => Boolean(value.radiology_test_id || value.new_test?.name),
+  (value) => Boolean(value.radiology_procedure_id || value.radiology_test_id || value.new_test?.name),
   {
     message: 'errors.validation.required',
     path: ['radiology_test_id']}
@@ -77,6 +78,7 @@ const requestedRadiologyTestSchema = z.object({
 const createRadiologyOrderSchema = z.object({
   patient_id: uuidOrFriendlyIdentifierSchema,
   encounter_id: uuidOrFriendlyIdentifierSchema,
+  radiology_procedure_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   ordered_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable(),
@@ -84,7 +86,7 @@ const createRadiologyOrderSchema = z.object({
   request_details: requestDetailsSchema.optional().default({}),
   requested_tests: z.array(requestedRadiologyTestSchema).min(1).max(50).optional()}).refine(
   (value) =>
-    Boolean(value.radiology_test_id) ||
+    Boolean(value.radiology_procedure_id || value.radiology_test_id) ||
     (Array.isArray(value.requested_tests) && value.requested_tests.length > 0),
   {
     message: 'errors.validation.required',

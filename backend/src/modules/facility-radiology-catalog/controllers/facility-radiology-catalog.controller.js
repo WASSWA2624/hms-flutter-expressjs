@@ -45,7 +45,7 @@ const listFacilityRadiologyTests = asyncHandler(async (req, res) => {
 });
 
 const getFacilityRadiologyTest = asyncHandler(async (req, res) => {
-  const { radiology_test_id: radiologyTestId } = req.params;
+  const radiologyTestId = req.params.radiology_procedure_id ?? req.params.radiology_test_id;
   const item = await facilityRadiologyCatalogService.getFacilityRadiologyTest(
     radiologyTestId,
     buildContext(req),
@@ -55,15 +55,16 @@ const getFacilityRadiologyTest = asyncHandler(async (req, res) => {
 });
 
 const upsertFacilityRadiologyTestOffering = asyncHandler(async (req, res) => {
+  const radiologyTestId = req.params.radiology_procedure_id ?? req.params.radiology_test_id;
   const item = await facilityRadiologyCatalogService.upsertFacilityRadiologyTestOffering(
-    { ...req.body, radiology_test_id: req.params.radiology_test_id },
+    { ...req.body, radiology_procedure_id: radiologyTestId },
     buildContext(req)
   );
   sendSuccess(res, 200, 'messages.facility_radiology_catalog.tests.upsert.success', item);
 });
 
 const disableFacilityRadiologyTestOffering = asyncHandler(async (req, res) => {
-  const { radiology_test_id: radiologyTestId } = req.params;
+  const radiologyTestId = req.params.radiology_procedure_id ?? req.params.radiology_test_id;
   await facilityRadiologyCatalogService.disableFacilityRadiologyTestOffering(
     radiologyTestId,
     req.body,

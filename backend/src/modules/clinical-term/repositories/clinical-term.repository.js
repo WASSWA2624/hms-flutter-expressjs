@@ -206,7 +206,7 @@ const findLabTests = async (where = {}, take = 500) => {
 
 const findRadiologyTests = async (where = {}, take = 500) => {
   try {
-    return await prisma.radiology_test.findMany({
+    return await prisma.radiology_procedure.findMany({
       where,
       orderBy: [{ name: 'asc' }],
       take,

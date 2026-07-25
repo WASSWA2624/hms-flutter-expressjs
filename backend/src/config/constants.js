@@ -127,7 +127,7 @@ const HMS_SEED_MODEL_ORDER = Object.freeze([
   'lab_sample',
   'lab_result',
   'lab_qc_log',
-  'radiology_test',
+  'radiology_procedure',
   'radiology_order',
   'radiology_result',
   'imaging_study',

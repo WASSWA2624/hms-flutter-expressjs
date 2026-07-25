@@ -19,7 +19,7 @@ const { HttpError } = require('@lib/errors');
  */
 const findById = async (id, include = {}) => {
   try {
-    return await prisma.radiology_test.findFirst({
+    return await prisma.radiology_procedure.findFirst({
       where: {
         id,
         deleted_at: null
@@ -49,7 +49,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       ...filters
     };
 
-    return await prisma.radiology_test.findMany({
+    return await prisma.radiology_procedure.findMany({
       where,
       skip,
       take,
@@ -74,7 +74,7 @@ const count = async (filters = {}) => {
       ...filters
     };
 
-    return await prisma.radiology_test.count({ where });
+    return await prisma.radiology_procedure.count({ where });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -88,7 +88,7 @@ const count = async (filters = {}) => {
  */
 const create = async (data) => {
   try {
-    return await prisma.radiology_test.create({
+    return await prisma.radiology_procedure.create({
       data
     });
   } catch (error) {
@@ -115,7 +115,7 @@ const create = async (data) => {
  */
 const update = async (id, data) => {
   try {
-    return await prisma.radiology_test.update({
+    return await prisma.radiology_procedure.update({
       where: { id },
       data
     });
@@ -146,7 +146,7 @@ const update = async (id, data) => {
  */
 const softDelete = async (id) => {
   try {
-    return await prisma.radiology_test.update({
+    return await prisma.radiology_procedure.update({
       where: { id },
       data: {
         deleted_at: new Date()

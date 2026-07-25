@@ -262,7 +262,7 @@ const loadFacilityCatalogItems = async ({ termType, tenantId, facilityId, q, lim
         is_active: true,
         ...(q
           ? {
-              radiology_test: {
+              radiology_procedure: {
                 deleted_at: null,
                 OR: [
                   { name: { contains: q } },
@@ -277,7 +277,7 @@ const loadFacilityCatalogItems = async ({ termType, tenantId, facilityId, q, lim
       limit
     );
     return offerings
-      .map((offering) => mapClinicalCatalogRadiologyTestRow(offering.radiology_test, offering))
+      .map((offering) => mapClinicalCatalogRadiologyTestRow(offering.radiology_procedure, offering))
       .filter(Boolean);
   }
 

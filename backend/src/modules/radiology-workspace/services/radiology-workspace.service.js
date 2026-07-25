@@ -105,13 +105,13 @@ const normalizeWorkspaceCreateOrderPayload = (payload = {}) => {
       )};
   }
 
-  const legacyRadiologyTestId = String(payload.radiology_test_id || '').trim();
+  const legacyRadiologyTestId = String(payload.radiology_procedure_id || payload.radiology_test_id || '').trim();
   return {
     ...payload,
     requested_tests: legacyRadiologyTestId
       ? [
           normalizeWorkspaceOrderRequest(
-            { radiology_test_id: legacyRadiologyTestId },
+            { radiology_procedure_id: legacyRadiologyTestId },
             payload
           )]
       : []};
@@ -235,7 +235,7 @@ const LEGACY_ROUTE_CONFIG = Object.freeze({
     resource: 'results',
     route: '/radiology/results'},
   'radiology-tests': {
-    model: 'radiology_test',
+    model: 'radiology_procedure',
     resource: 'tests',
     route: '/radiology/tests'},
   'imaging-studies': {
@@ -417,7 +417,7 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
   if (filters.modality) {
     appendAnd(where, {
       OR: [
-        { radiology_test: { modality: filters.modality } },
+        { radiology_procedure: { modality: filters.modality } },
         { imaging_studies: { some: { deleted_at: null, modality: filters.modality } } }]});
   }
 
@@ -483,9 +483,9 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
         { patient: { first_name: { contains: searchTerm.raw } } },
         { patient: { last_name: { contains: searchTerm.raw } } },
         { encounter: { human_friendly_id: { contains: searchTerm.upper } } },
-        { radiology_test: { human_friendly_id: { contains: searchTerm.upper } } },
-        { radiology_test: { name: { contains: searchTerm.raw } } },
-        { radiology_test: { code: { contains: searchTerm.raw } } },
+        { radiology_procedure: { human_friendly_id: { contains: searchTerm.upper } } },
+        { radiology_procedure: { name: { contains: searchTerm.raw } } },
+        { radiology_procedure: { code: { contains: searchTerm.raw } } },
         { results: { some: { human_friendly_id: { contains: searchTerm.upper } } } },
         { imaging_studies: { some: { human_friendly_id: { contains: searchTerm.upper } } } },
         { imaging_studies: { some: { assets: { some: { file_name: { contains: searchTerm.raw } } } } } }]});
@@ -1367,7 +1367,7 @@ const createRadiologyStudy = async (identifier, payload = {}, userId, ipAddress)
 
       const modality =
         String(payload.modality || '').trim().toUpperCase() ||
-        String(order?.radiology_test?.modality || '').trim().toUpperCase() ||
+        String((order?.radiology_procedure || order?.radiology_test)?.modality || '').trim().toUpperCase() ||
         'XRAY';
 
       const equipmentRegistryId = payload.equipment_registry_id

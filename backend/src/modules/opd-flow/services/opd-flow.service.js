@@ -4812,8 +4812,9 @@ const doctorReview = async (id, data, context = {}) => {
     if (Array.isArray(data.radiology_requests) && data.radiology_requests.length) {
       for (const [index, request] of data.radiology_requests.entries()) {
         let radiologyTestId = null;
-        if (request.radiology_test_id) {
-          const radiologyTest = await resolveEntityByIdentifier(tx, 'radiology_test', request.radiology_test_id, {
+        const radRequestId = request.radiology_procedure_id ?? request.radiology_test_id;
+        if (radRequestId) {
+          const radiologyTest = await resolveEntityByIdentifier(tx, 'radiology_procedure', radRequestId, {
             tenant_id: encounter.tenant_id
           });
           if (!radiologyTest) {
@@ -4828,7 +4829,7 @@ const doctorReview = async (id, data, context = {}) => {
           data: {
             encounter_id: encounter.id,
             patient_id: encounter.patient_id,
-            radiology_test_id: radiologyTestId,
+            radiology_procedure_id: radiologyTestId,
             status: request.status || 'ORDERED',
             ordered_at: new Date()
           }

@@ -234,12 +234,12 @@ const resolveCatalogFallback = async ({
 
   if (catalogType === 'RADIOLOGY_TEST') {
     if (facilityId) {
-      const offering = await prisma.facility_radiology_test_offering.findFirst({
+      const offering = await prisma.facility_radiology_procedure_offering.findFirst({
         where: {
           deleted_at: null,
           is_active: true,
           facility_id: facilityId,
-          radiology_test_id: catalogItemId,
+          radiology_procedure_id: catalogItemId,
         },
         select: { unit_price: true, currency: true },
       });
@@ -251,7 +251,7 @@ const resolveCatalogFallback = async ({
         };
       }
     }
-    const test = await prisma.radiology_test.findFirst({
+    const test = await prisma.radiology_procedure.findFirst({
       where: { id: catalogItemId, tenant_id: tenantId, deleted_at: null },
       select: { unit_price: true, currency: true },
     });
