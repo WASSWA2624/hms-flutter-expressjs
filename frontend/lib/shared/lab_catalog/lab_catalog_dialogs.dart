@@ -606,8 +606,8 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   late final TextEditingController _specimenController;
   late final TextEditingController _unitController;
   late final TextEditingController _descriptionController;
-  late List<_EditableLabValue> _unitOptions;
-  late List<_EditableLabValue> _resultOptions;
+  late List<EditableLabValue> _unitOptions;
+  late List<EditableLabValue> _resultOptions;
   late List<EditableLabReferenceRange> _referenceRanges;
   late final TextEditingController _priceController;
   String? _resultKind;
@@ -633,12 +633,12 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
       text: item.description ?? '',
     );
     _unitOptions = item.unitOptions
-        .map(_EditableLabValue.fromUnitOption)
-        .where((_EditableLabValue value) => value.value.trim().isNotEmpty)
+        .map(EditableLabValue.fromUnitOption)
+        .where((EditableLabValue value) => value.value.trim().isNotEmpty)
         .toList(growable: true);
     _resultOptions = item.resultOptions
-        .map(_EditableLabValue.fromResultOption)
-        .where((_EditableLabValue value) => value.value.trim().isNotEmpty)
+        .map(EditableLabValue.fromResultOption)
+        .where((EditableLabValue value) => value.value.trim().isNotEmpty)
         .toList(growable: true);
     _referenceRanges = item.referenceRanges.isEmpty
         ? <EditableLabReferenceRange>[
@@ -816,31 +816,31 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
               prefixIcon: const Icon(Icons.straighten_outlined),
               options: _unitOptionsCatalog,
             ),
-            _EditableValueListField(
+            LabEditableValueListField(
               labelText: l10n.labUnitOptionsLabel,
               values: _unitOptions,
               suggestions: _unitOptionsCatalog,
               enabled: !_isSaving,
               onAdd: (String value) {
                 setState(
-                  () => _unitOptions.add(_EditableLabValue(value: value)),
+                  () => _unitOptions.add(EditableLabValue(value: value)),
                 );
               },
-              onRemove: (_EditableLabValue value) {
+              onRemove: (EditableLabValue value) {
                 setState(() => _unitOptions.remove(value));
               },
             ),
-            _EditableValueListField(
+            LabEditableValueListField(
               labelText: l10n.labQualitativeOptionsLabel,
               values: _resultOptions,
               suggestions: _resultOptionsCatalog(l10n),
               enabled: !_isSaving,
               onAdd: (String value) {
                 setState(
-                  () => _resultOptions.add(_EditableLabValue(value: value)),
+                  () => _resultOptions.add(EditableLabValue(value: value)),
                 );
               },
-              onRemove: (_EditableLabValue value) {
+              onRemove: (EditableLabValue value) {
                 setState(() => _resultOptions.remove(value));
               },
             ),
@@ -896,7 +896,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
       for (final LabCatalogItem item in widget.catalogTests)
         for (final LabUnitOption option in item.unitOptions)
           option.unit ?? option.label,
-      for (final _EditableLabValue option in _unitOptions) option.value,
+      for (final EditableLabValue option in _unitOptions) option.value,
     ]);
   }
 
@@ -907,7 +907,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
       for (final LabCatalogItem item in widget.catalogTests)
         for (final LabResultOption option in item.resultOptions)
           option.value ?? option.label,
-      for (final _EditableLabValue option in _resultOptions) option.value,
+      for (final EditableLabValue option in _resultOptions) option.value,
     ]);
   }
 
@@ -998,7 +998,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
       'unit_options': _unitOptions
           .asMap()
           .entries
-          .map((MapEntry<int, _EditableLabValue> entry) {
+          .map((MapEntry<int, EditableLabValue> entry) {
             return <String, Object?>{
               if (entry.value.id != null) 'id': entry.value.id,
               'unit': entry.value.value,
@@ -1011,7 +1011,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
       'result_options': _resultOptions
           .asMap()
           .entries
-          .map((MapEntry<int, _EditableLabValue> entry) {
+          .map((MapEntry<int, EditableLabValue> entry) {
             return <String, Object?>{
               if (entry.value.id != null) 'id': entry.value.id,
               'value': entry.value.value,
@@ -2208,29 +2208,30 @@ class _SelectedPanelTestRow extends StatelessWidget {
   }
 }
 
-class _EditableValueListField extends StatefulWidget {
-  const _EditableValueListField({
+class LabEditableValueListField extends StatefulWidget {
+  const LabEditableValueListField({
     required this.labelText,
     required this.values,
     required this.suggestions,
     required this.enabled,
     required this.onAdd,
     required this.onRemove,
+    super.key,
   });
 
   final String labelText;
-  final List<_EditableLabValue> values;
+  final List<EditableLabValue> values;
   final List<String> suggestions;
   final bool enabled;
   final ValueChanged<String> onAdd;
-  final ValueChanged<_EditableLabValue> onRemove;
+  final ValueChanged<EditableLabValue> onRemove;
 
   @override
-  State<_EditableValueListField> createState() =>
-      _EditableValueListFieldState();
+  State<LabEditableValueListField> createState() =>
+      _LabEditableValueListFieldState();
 }
 
-class _EditableValueListFieldState extends State<_EditableValueListField> {
+class _LabEditableValueListFieldState extends State<LabEditableValueListField> {
   late final TextEditingController _controller;
 
   @override
@@ -2276,7 +2277,7 @@ class _EditableValueListFieldState extends State<_EditableValueListField> {
             spacing: theme.spacing.xs,
             runSpacing: theme.spacing.xs,
             children: <Widget>[
-              for (final _EditableLabValue value in widget.values)
+              for (final EditableLabValue value in widget.values)
                 InputChip(
                   label: Text(value.value),
                   onDeleted: widget.enabled
@@ -2296,7 +2297,7 @@ class _EditableValueListFieldState extends State<_EditableValueListField> {
       return;
     }
     if (widget.values.any(
-      (_EditableLabValue existing) =>
+      (EditableLabValue existing) =>
           _normalizeCatalogToken(existing.value) ==
           _normalizeCatalogToken(value),
     )) {
@@ -2442,19 +2443,19 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
 }
 
 @immutable
-final class _EditableLabValue {
-  const _EditableLabValue({required this.value, this.id, this.label});
+final class EditableLabValue {
+  const EditableLabValue({required this.value, this.id, this.label});
 
-  factory _EditableLabValue.fromUnitOption(LabUnitOption option) {
-    return _EditableLabValue(
+  factory EditableLabValue.fromUnitOption(LabUnitOption option) {
+    return EditableLabValue(
       id: option.id,
       value: option.unit ?? option.label ?? '',
       label: option.label,
     );
   }
 
-  factory _EditableLabValue.fromResultOption(LabResultOption option) {
-    return _EditableLabValue(
+  factory EditableLabValue.fromResultOption(LabResultOption option) {
+    return EditableLabValue(
       id: option.id,
       value: option.value ?? option.label ?? '',
       label: option.label,

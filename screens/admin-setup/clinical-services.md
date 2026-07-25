@@ -19,8 +19,14 @@
 | ----------------------- | -------- | ------------------------ |
 | Cancel | Footer | Dismisses without save. |
 | Save | Footer | Creates or updates lab test/panel; pops `true` on success. |
+| Add reference range | Test form range list | Appends another age/gender reference-range row (tests only). |
+| Remove reference range | Per range row | Removes that reference-range row (tests only). |
+| Add unit / qualitative value | Test form option lists | Adds chip values for unit or qualitative options (by result kind). |
+| Remove unit / qualitative value | Option chips | Removes the selected option chip. |
 
 Titles: create uses lab create dialog title keys; edit uses **Edit Lab Test** / **Edit Lab Panel** by kind.
+
+**Test form field order:** name → code → searchable category → specimen type → result kind → unit / options (by kind) → description → multi-row reference ranges (age/gender). Category and specimen options combine known catalogs with loaded rows. Panel form stays name/code/category/description.
 
 ---
 

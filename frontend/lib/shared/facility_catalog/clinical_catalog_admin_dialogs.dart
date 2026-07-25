@@ -15,6 +15,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_similarity_dialog.dart';
 
@@ -77,6 +78,50 @@ const List<String> kRadiologyCatalogModalities = <String>[
   'ENDO',
   'GASTRO',
   'OTHER',
+];
+
+const List<String> kLabCatalogCategories = <String>[
+  'Blood Gas',
+  'Cardiac',
+  'Chemistry',
+  'Coagulation',
+  'Critical Care',
+  'Endocrine',
+  'Hematology',
+  'Immunology',
+  'Inflammation',
+  'Lipids',
+  'Liver',
+  'Microbiology',
+  'Nutrition',
+  'Parasitology',
+  'Renal',
+  'Reproductive Health',
+  'Serology',
+  'Transfusion',
+  'Tuberculosis',
+  'Urinalysis',
+  'Virology',
+];
+
+const List<String> kLabCatalogSpecimenTypes = <String>[
+  'Arterial blood',
+  'Blood culture',
+  'Blood film',
+  'Derived',
+  'Nasopharyngeal swab',
+  'Plasma',
+  'Serum',
+  'Serum / Plasma',
+  'Serum / donor unit',
+  'Serum / plasma / CSF',
+  'Sputum / sample',
+  'Stool',
+  'Swab / body fluid',
+  'Urine',
+  'Whole blood',
+  'Whole blood / Plasma',
+  'Whole blood / Serum / Plasma',
 ];
 
 Future<FacilityCatalogScopePick?> showCatalogFacilityScopePicker({
@@ -854,12 +899,14 @@ class LabCatalogItemMutationDialog extends StatefulWidget {
     required this.onSubmit,
     this.item,
     this.tenantId,
+    this.catalogItems = const <LabCatalogItem>[],
     super.key,
   });
 
   final LabCatalogItemType kind;
   final LabCatalogItem? item;
   final String? tenantId;
+  final List<LabCatalogItem> catalogItems;
   final ClinicalCatalogTermSubmit onSubmit;
 
   bool get isEditing => item != null;
@@ -876,21 +923,84 @@ class _LabCatalogItemMutationDialogState
   late final TextEditingController _codeController;
   late final TextEditingController _categoryController;
   late final TextEditingController _specimenController;
+  late final TextEditingController _unitController;
   late final TextEditingController _descriptionController;
+  late List<EditableLabValue> _unitOptions;
+  late List<EditableLabValue> _resultOptions;
+  late List<EditableLabReferenceRange> _referenceRanges;
+  String? _resultKind;
   AppFailure? _failure;
   bool _isSaving = false;
+  bool _didPrefillAdultLabel = false;
+
+  late final List<String> _cachedCategoryOptions;
+  late final List<String> _cachedSpecimenOptions;
+  late final List<LabCatalogItem> _catalogTests;
+
+  bool get _isPanel => widget.kind == LabCatalogItemType.panel;
 
   @override
   void initState() {
     super.initState();
     final LabCatalogItem? item = widget.item;
+    _catalogTests = widget.catalogItems
+        .where((LabCatalogItem entry) => entry.type == LabCatalogItemType.test)
+        .toList(growable: false);
     _nameController = TextEditingController(text: item?.name ?? '');
     _codeController = TextEditingController(text: item?.code ?? '');
     _categoryController = TextEditingController(text: item?.category ?? '');
     _specimenController = TextEditingController(text: item?.specimenType ?? '');
+    _unitController = TextEditingController(text: item?.unit ?? '');
     _descriptionController = TextEditingController(
       text: item?.description ?? '',
     );
+    _resultKind = item?.resultKind ?? 'NUMERIC';
+    _unitOptions = (item?.unitOptions ?? const <LabUnitOption>[])
+        .map(EditableLabValue.fromUnitOption)
+        .where((EditableLabValue value) => value.value.trim().isNotEmpty)
+        .toList(growable: true);
+    _resultOptions = (item?.resultOptions ?? const <LabResultOption>[])
+        .map(EditableLabValue.fromResultOption)
+        .where((EditableLabValue value) => value.value.trim().isNotEmpty)
+        .toList(growable: true);
+    final List<LabReferenceRange> existingRanges =
+        item?.referenceRanges ?? const <LabReferenceRange>[];
+    _referenceRanges = existingRanges.isEmpty
+        ? <EditableLabReferenceRange>[
+            EditableLabReferenceRange(defaultUnit: item?.unit),
+          ]
+        : existingRanges
+              .map(
+                (LabReferenceRange range) => EditableLabReferenceRange(
+                  range: range,
+                  defaultUnit: item?.unit,
+                ),
+              )
+              .toList(growable: true);
+    _cachedCategoryOptions = _uniqueNonEmpty(<String?>[
+      ...kLabCatalogCategories,
+      for (final LabCatalogItem entry in widget.catalogItems) entry.category,
+    ]);
+    _cachedSpecimenOptions = _uniqueNonEmpty(<String?>[
+      ...kLabCatalogSpecimenTypes,
+      for (final LabCatalogItem entry in _catalogTests) entry.specimenType,
+    ]);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didPrefillAdultLabel ||
+        _isPanel ||
+        widget.isEditing ||
+        _referenceRanges.isEmpty) {
+      return;
+    }
+    final EditableLabReferenceRange first = _referenceRanges.first;
+    if (first.labelController.text.trim().isEmpty) {
+      first.labelController.text = context.l10n.labAdultRangeLabel;
+    }
+    _didPrefillAdultLabel = true;
   }
 
   @override
@@ -899,7 +1009,11 @@ class _LabCatalogItemMutationDialogState
     _codeController.dispose();
     _categoryController.dispose();
     _specimenController.dispose();
+    _unitController.dispose();
     _descriptionController.dispose();
+    for (final EditableLabReferenceRange range in _referenceRanges) {
+      range.dispose();
+    }
     super.dispose();
   }
 
@@ -907,20 +1021,15 @@ class _LabCatalogItemMutationDialogState
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    if (!_isPanel && !_rangesAreValid()) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
     });
-    final Map<String, Object?> payload = <String, Object?>{
-      if (!widget.isEditing) 'tenant_id': widget.tenantId,
-      'name': _nameController.text.trim(),
-      'code': _codeController.text.trim(),
-      'category': _categoryController.text.trim(),
-      if (widget.kind == LabCatalogItemType.test)
-        'specimen_type': _specimenController.text.trim(),
-      'description': _descriptionController.text.trim(),
-    };
-    final AppFailure? failure = await widget.onSubmit(payload);
+    final AppFailure? failure = await widget.onSubmit(_payload());
     if (!mounted) {
       return;
     }
@@ -934,17 +1043,142 @@ class _LabCatalogItemMutationDialogState
     });
   }
 
+  bool _rangesAreValid() {
+    return _referenceRanges.every(
+      (EditableLabReferenceRange range) => range.isValid(),
+    );
+  }
+
+  Map<String, Object?> _payload() {
+    final Map<String, Object?> payload = <String, Object?>{
+      if (!widget.isEditing) 'tenant_id': widget.tenantId,
+      'name': _nameController.text.trim(),
+      'code': _codeController.text.trim(),
+      'category': _categoryController.text.trim(),
+      'description': _descriptionController.text.trim(),
+    };
+    if (_isPanel) {
+      return payload;
+    }
+
+    final String unit = _unitController.text.trim();
+    final List<Map<String, Object?>> referenceRanges =
+        <Map<String, Object?>>[];
+    for (int index = 0; index < _referenceRanges.length; index++) {
+      final EditableLabReferenceRange range = _referenceRanges[index];
+      if (!range.hasContent(unit)) {
+        continue;
+      }
+      referenceRanges.add(
+        range.toPayload(sortOrder: referenceRanges.length, fallbackUnit: unit),
+      );
+    }
+
+    return <String, Object?>{
+      ...payload,
+      'specimen_type': _specimenController.text.trim(),
+      'result_kind': _resultKind,
+      'unit': unit,
+      'unit_options': _unitOptions
+          .asMap()
+          .entries
+          .map((MapEntry<int, EditableLabValue> entry) {
+            return <String, Object?>{
+              if (entry.value.id != null) 'id': entry.value.id,
+              'unit': entry.value.value,
+              'label': entry.value.label ?? entry.value.value,
+              'is_default': entry.key == 0,
+              'sort_order': entry.key,
+            };
+          })
+          .toList(growable: false),
+      'result_options': _resultOptions
+          .asMap()
+          .entries
+          .map((MapEntry<int, EditableLabValue> entry) {
+            return <String, Object?>{
+              if (entry.value.id != null) 'id': entry.value.id,
+              'value': entry.value.value,
+              'label': entry.value.label ?? entry.value.value,
+              'status': 'NORMAL',
+              'sort_order': entry.key,
+            };
+          })
+          .toList(growable: false),
+      'reference_ranges': referenceRanges,
+    };
+  }
+
+  List<String> get _unitOptionsCatalog {
+    return _uniqueNonEmpty(<String?>[
+      for (final LabCatalogItem item in _catalogTests) item.unit,
+      for (final LabCatalogItem item in _catalogTests)
+        for (final LabUnitOption option in item.unitOptions)
+          option.unit ?? option.label,
+      for (final EditableLabValue option in _unitOptions) option.value,
+      _unitController.text,
+    ]);
+  }
+
+  List<String> _resultOptionsCatalog(AppLocalizations l10n) {
+    return _uniqueNonEmpty(<String?>[
+      l10n.labPositiveOption,
+      l10n.labNegativeOption,
+      for (final LabCatalogItem item in _catalogTests)
+        for (final LabResultOption option in item.resultOptions)
+          option.value ?? option.label,
+      for (final EditableLabValue option in _resultOptions) option.value,
+    ]);
+  }
+
+  bool _hasDuplicateName(String? value) {
+    final String normalized = _normalizeCatalogToken(value);
+    if (normalized.isEmpty) {
+      return false;
+    }
+    return widget.catalogItems.any(
+      (LabCatalogItem item) =>
+          !_isCurrentItem(item) &&
+          item.type == widget.kind &&
+          _normalizeCatalogToken(item.name) == normalized,
+    );
+  }
+
+  bool _hasDuplicateCode(String? value) {
+    final String normalized = _normalizeCatalogToken(value);
+    if (normalized.isEmpty) {
+      return false;
+    }
+    return widget.catalogItems.any(
+      (LabCatalogItem item) =>
+          !_isCurrentItem(item) &&
+          item.type == widget.kind &&
+          _normalizeCatalogToken(item.code) == normalized,
+    );
+  }
+
+  bool _isCurrentItem(LabCatalogItem candidate) {
+    final LabCatalogItem? item = widget.item;
+    if (item == null) {
+      return false;
+    }
+    return candidate.id == item.id ||
+        candidate.apiId == item.apiId ||
+        candidate.displayId == item.displayId;
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool isPanel = widget.kind == LabCatalogItemType.panel;
+    final bool isNumeric = _resultKind == 'NUMERIC';
+    final bool isQualitative = _resultKind == 'QUALITATIVE';
     return AppDialog(
       title: Text(
         widget.isEditing
-            ? (isPanel
+            ? (_isPanel
                   ? l10n.labUpdatePanelDialogTitle
                   : l10n.labUpdateTestDialogTitle)
-            : (isPanel
+            : (_isPanel
                   ? l10n.labCreatePanelDialogTitle
                   : l10n.labCreateTestDialogTitle),
       ),
@@ -952,7 +1186,7 @@ class _LabCatalogItemMutationDialogState
         widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline,
       ),
       scrollable: true,
-      maxWidth: 640,
+      maxWidth: _isPanel ? 640 : 820,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
@@ -965,10 +1199,27 @@ class _LabCatalogItemMutationDialogState
               ),
             AppTextField(
               controller: _nameController,
-              labelText: isPanel ? l10n.labPanelNameLabel : l10n.labTestNameLabel,
+              labelText: _isPanel
+                  ? l10n.labPanelNameLabel
+                  : l10n.labTestNameLabel,
               enabled: !_isSaving,
               isRequired: true,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+              prefixIcon: Icon(
+                _isPanel ? Icons.science_outlined : Icons.biotech_outlined,
+              ),
+              validator: (String? value) {
+                final String? requiredFailure = AppValidators.requiredText(
+                  l10n.validationRequired,
+                )(value);
+                if (requiredFailure != null) {
+                  return requiredFailure;
+                }
+                return _hasDuplicateName(value)
+                    ? (_isPanel
+                          ? l10n.labDuplicatePanelNameMessage
+                          : l10n.labDuplicateTestNameMessage)
+                    : null;
+              },
             ),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
@@ -976,27 +1227,132 @@ class _LabCatalogItemMutationDialogState
                 controller: _codeController,
                 labelText: l10n.labTestCodeLabel,
                 enabled: !_isSaving,
+                prefixIcon: const Icon(Icons.tag_outlined),
+                validator: (String? value) => _hasDuplicateCode(value)
+                    ? (_isPanel
+                          ? l10n.labDuplicatePanelCodeMessage
+                          : l10n.labDuplicateTestCodeMessage)
+                    : null,
               ),
-              right: AppTextField(
+              right: LabSearchableTextField(
                 controller: _categoryController,
                 labelText: l10n.labCategoryLabel,
                 enabled: !_isSaving,
+                prefixIcon: const Icon(Icons.category_outlined),
+                options: _cachedCategoryOptions,
               ),
             ),
-            if (!isPanel)
-              AppTextField(
-                controller: _specimenController,
-                labelText: l10n.labSpecimenTypeLabel,
-                enabled: !_isSaving,
+            if (!_isPanel) ...<Widget>[
+              AppResponsiveFieldRow.two(
+                gap: AppResponsiveFieldRowGap.form,
+                left: LabSearchableTextField(
+                  controller: _specimenController,
+                  labelText: l10n.labSpecimenTypeLabel,
+                  enabled: !_isSaving,
+                  prefixIcon: const Icon(Icons.bloodtype_outlined),
+                  options: _cachedSpecimenOptions,
+                ),
+                right: AppSelectField<String>.searchable(
+                  value: _resultKind,
+                  labelText: l10n.labResultKindLabel,
+                  enabled: !_isSaving,
+                  allowClear: false,
+                  isRequired: true,
+                  validator: AppValidators.requiredValue(
+                    l10n.validationRequired,
+                  ),
+                  options: <AppSelectOption<String>>[
+                    AppSelectOption<String>(
+                      value: 'NUMERIC',
+                      label: l10n.labResultKindNumeric,
+                      leadingIcon: const Icon(Icons.pin_outlined),
+                    ),
+                    AppSelectOption<String>(
+                      value: 'QUALITATIVE',
+                      label: l10n.labResultKindQualitative,
+                      leadingIcon: const Icon(Icons.checklist_outlined),
+                    ),
+                    AppSelectOption<String>(
+                      value: 'TEXT',
+                      label: l10n.labResultKindText,
+                      leadingIcon: const Icon(Icons.notes_outlined),
+                    ),
+                  ],
+                  onChanged: (String? value) =>
+                      setState(() => _resultKind = value),
+                ),
               ),
+              if (isNumeric || isQualitative)
+                LabSearchableTextField(
+                  controller: _unitController,
+                  labelText: l10n.labDefaultUnitLabel,
+                  enabled: !_isSaving,
+                  prefixIcon: const Icon(Icons.straighten_outlined),
+                  options: _unitOptionsCatalog,
+                ),
+              if (isNumeric)
+                LabEditableValueListField(
+                  labelText: l10n.labUnitOptionsLabel,
+                  values: _unitOptions,
+                  suggestions: _unitOptionsCatalog,
+                  enabled: !_isSaving,
+                  onAdd: (String value) {
+                    setState(
+                      () => _unitOptions.add(EditableLabValue(value: value)),
+                    );
+                  },
+                  onRemove: (EditableLabValue value) {
+                    setState(() => _unitOptions.remove(value));
+                  },
+                ),
+              if (isQualitative)
+                LabEditableValueListField(
+                  labelText: l10n.labQualitativeOptionsLabel,
+                  values: _resultOptions,
+                  suggestions: _resultOptionsCatalog(l10n),
+                  enabled: !_isSaving,
+                  onAdd: (String value) {
+                    setState(
+                      () => _resultOptions.add(EditableLabValue(value: value)),
+                    );
+                  },
+                  onRemove: (EditableLabValue value) {
+                    setState(() => _resultOptions.remove(value));
+                  },
+                ),
+            ],
             AppTextField(
               controller: _descriptionController,
-              labelText: isPanel
+              labelText: _isPanel
                   ? l10n.labPanelDescriptionLabel
                   : l10n.labTestDescriptionLabel,
               enabled: !_isSaving,
               maxLines: 2,
             ),
+            if (!_isPanel) ...<Widget>[
+              const Divider(height: 24),
+              LabReferenceRangeListField(
+                ranges: _referenceRanges,
+                enabled: !_isSaving,
+                fallbackUnit: _unitController.text.trim(),
+                onChanged: () => setState(() {}),
+                onAdd: () {
+                  setState(
+                    () => _referenceRanges.add(
+                      EditableLabReferenceRange(
+                        defaultUnit: _unitController.text.trim(),
+                      ),
+                    ),
+                  );
+                },
+                onRemove: (EditableLabReferenceRange range) {
+                  setState(() {
+                    range.dispose();
+                    _referenceRanges.remove(range);
+                  });
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -1014,6 +1370,30 @@ class _LabCatalogItemMutationDialogState
       ],
     );
   }
+}
+
+String _normalizeCatalogToken(String? value) {
+  return (value ?? '').trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+}
+
+List<String> _uniqueNonEmpty(Iterable<String?> values) {
+  final Set<String> seen = <String>{};
+  final List<String> result = <String>[];
+  for (final String? value in values) {
+    final String trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      continue;
+    }
+    final String key = trimmed.toLowerCase();
+    if (seen.add(key)) {
+      result.add(trimmed);
+    }
+  }
+  result.sort(
+    (String left, String right) =>
+        left.toLowerCase().compareTo(right.toLowerCase()),
+  );
+  return result;
 }
 
 class DiagnosisCatalogMutationDialog extends StatefulWidget {

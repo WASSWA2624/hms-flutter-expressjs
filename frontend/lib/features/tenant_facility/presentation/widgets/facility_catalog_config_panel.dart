@@ -1936,6 +1936,7 @@ class _FacilityCatalogConfigPanelState
       builder: (_) => LabCatalogItemMutationDialog(
         kind: kind,
         tenantId: tenantId,
+        catalogItems: _labItems,
         onSubmit: (Map<String, Object?> payload) async {
           final Result<LabCatalogItem> result = kind == LabCatalogItemType.panel
               ? await repository.createLabPanel(payload)
@@ -1964,6 +1965,7 @@ class _FacilityCatalogConfigPanelState
       builder: (_) => LabCatalogItemMutationDialog(
         kind: item.type,
         item: item,
+        catalogItems: _labItems,
         onSubmit: (Map<String, Object?> payload) async {
           final Result<LabCatalogItem> result =
               item.type == LabCatalogItemType.panel
