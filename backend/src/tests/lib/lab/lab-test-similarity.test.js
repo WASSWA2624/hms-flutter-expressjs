@@ -52,8 +52,38 @@ describe('lab-test-similarity', () => {
     expect(result.exactNameConflict).toBe(true);
     expect(result.hasExactConflict).toBe(true);
     expect(result.similarMatches[0].isExact).toBe(true);
-    expect(result.similarMatches[0].categoryScore).toBe(0);
+    expect(result.similarMatches[0].categoryScore).toBeGreaterThanOrEqual(0);
+    expect(result.similarMatches[0].categoryScore).toBeLessThan(
+      SIMILARITY_THRESHOLD
+    );
     expect(result.similarMatches[0].nameScore).toBe(100);
+    expect(result.similarMatches[0].score).toBe(
+      compositeSimilarityScore({
+        nameScore: result.similarMatches[0].nameScore,
+        categoryScore: result.similarMatches[0].categoryScore
+      })
+    );
+  });
+
+  it('scores category misspellings in the composite percentage', () => {
+    const result = checkLabTestDuplicates({
+      name: 'Complete Blood Count',
+      code: 'CBC-001',
+      category: 'Haematology',
+      existing
+    });
+
+    expect(result.hasExactConflict).toBe(true);
+    const match = result.similarMatches[0];
+    expect(match.categoryScore).toBeGreaterThan(0);
+    expect(match.categoryScore).toBeLessThan(100);
+    expect(match.score).toBe(
+      compositeSimilarityScore({
+        nameScore: match.nameScore,
+        codeScore: match.codeScore,
+        categoryScore: match.categoryScore
+      })
+    );
   });
 
   it('detects short exact names such as test', () => {

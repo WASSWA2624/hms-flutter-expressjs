@@ -25312,6 +25312,10 @@
   "@labSimilarTestExactMatchLabel": {
     "description": "Exact match badge for lab similarity."
   },
+  "labSimilarTestExactFieldMatchLabel": "Exact name/code",
+  "@labSimilarTestExactFieldMatchLabel": {
+    "description": "Badge when name or code is an exact uniqueness conflict but composite score is below 100%."
+  },
   "labSimilarTestNearMatchLabel": "Similar",
   "@labSimilarTestNearMatchLabel": {
     "description": "Near match badge for lab similarity."
@@ -25544,6 +25548,10 @@
   "radiologySimilarProcedureExactMatchLabel": "Exact match",
   "@radiologySimilarProcedureExactMatchLabel": {
     "description": "Badge label for an exact procedure similarity match."
+  },
+  "radiologySimilarProcedureExactFieldMatchLabel": "Exact name/code",
+  "@radiologySimilarProcedureExactFieldMatchLabel": {
+    "description": "Badge when name or code is an exact uniqueness conflict but composite score is below 100%."
   },
   "radiologySimilarProcedureNearMatchLabel": "Similar",
   "@radiologySimilarProcedureNearMatchLabel": {

@@ -371,7 +371,9 @@ class _SimilarityMatchCard extends StatelessWidget {
                     ),
                     Text(
                       match.isExact
-                          ? l10n.radiologySimilarProcedureExactMatchLabel
+                          ? (match.score >= 100
+                                ? l10n.radiologySimilarProcedureExactMatchLabel
+                                : l10n.radiologySimilarProcedureExactFieldMatchLabel)
                           : _isPartialMatch(proposed, match)
                           ? l10n.radiologySimilarProcedurePartialMatchLabel
                           : l10n.radiologySimilarProcedureNearMatchLabel,
@@ -545,23 +547,48 @@ List<_FieldComparison> _buildFieldComparisons({
       normalizedProposedCode.isNotEmpty &&
       normalizedExistingCode.isNotEmpty &&
       normalizedProposedCode == normalizedExistingCode;
+  final String normalizedProposedModality =
+      normalizeRadiologyCatalogModality(proposedModality);
+  final String normalizedExistingModality =
+      normalizeRadiologyCatalogModality(existingModality);
   final bool modalityExact =
-      proposedModality.isNotEmpty &&
-      existingModality.isNotEmpty &&
-      proposedModality.toUpperCase() == existingModality.toUpperCase();
+      normalizedProposedModality.isNotEmpty &&
+      normalizedExistingModality.isNotEmpty &&
+      normalizedProposedModality == normalizedExistingModality;
 
   final bool nameReason = match.reasons.contains('name');
   final bool codeReason = match.reasons.contains('code');
+  final bool modalityReason = match.reasons.contains('modality');
+  final int? nameScore = match.nameScore;
+  final int? codeScore = match.codeScore;
+  final int? modalityScore = match.modalityScore;
 
   _FieldCompareStatus codeStatus() {
     if (codeExact || (proposedCode.isEmpty && existingCode.isEmpty)) {
       return _FieldCompareStatus.match;
     }
-    if (codeReason) {
+    if (codeReason ||
+        (codeScore != null &&
+            codeScore >= radiologyCatalogSimilarityThreshold)) {
       return _FieldCompareStatus.similar;
     }
     if (proposedCode.isEmpty && existingCode.isNotEmpty) {
       return _FieldCompareStatus.onlyExisting;
+    }
+    return _FieldCompareStatus.conflict;
+  }
+
+  _FieldCompareStatus modalityStatus() {
+    if (modalityExact) {
+      return _FieldCompareStatus.match;
+    }
+    if (proposedModality.isEmpty && existingModality.isNotEmpty) {
+      return _FieldCompareStatus.onlyExisting;
+    }
+    if (modalityReason ||
+        (modalityScore != null &&
+            modalityScore >= radiologyCatalogSimilarityThreshold)) {
+      return _FieldCompareStatus.similar;
     }
     return _FieldCompareStatus.conflict;
   }
@@ -573,28 +600,30 @@ List<_FieldComparison> _buildFieldComparisons({
       existingValue: _displayValue(existingName),
       status: nameExact
           ? _FieldCompareStatus.match
-          : nameReason
+          : nameReason ||
+                (nameScore != null &&
+                    nameScore >= radiologyCatalogSimilarityThreshold)
           ? _FieldCompareStatus.similar
           : _FieldCompareStatus.conflict,
-      similarityPercent: nameReason && !nameExact ? match.nameScore : null,
+      similarityPercent: nameExact ? 100 : nameScore,
     ),
     _FieldComparison(
       label: 'code',
       proposedValue: _displayValue(proposedCode),
       existingValue: _displayValue(existingCode),
       status: codeStatus(),
-      similarityPercent: codeReason && !codeExact ? match.codeScore : null,
+      similarityPercent: codeExact
+          ? 100
+          : (proposedCode.isEmpty && existingCode.isEmpty)
+          ? 100
+          : codeScore,
     ),
     _FieldComparison(
       label: 'modality',
       proposedValue: _displayValue(proposedModality),
       existingValue: _displayValue(existingModality),
-      status: modalityExact
-          ? _FieldCompareStatus.match
-          : (proposedModality.isEmpty && existingModality.isNotEmpty
-                ? _FieldCompareStatus.onlyExisting
-                : _FieldCompareStatus.conflict),
-      similarityPercent: match.modalityScore,
+      status: modalityStatus(),
+      similarityPercent: modalityExact ? 100 : modalityScore,
     ),
   ];
 }
@@ -757,7 +786,10 @@ _StatusVisual _statusVisual(
       color: statusColors.warning,
     ),
     _FieldCompareStatus.conflict => _StatusVisual(
-      label: l10n.patientsDuplicateStatusConflictLabel,
+      label: comparison.similarityPercent == null
+          ? l10n.patientsDuplicateStatusConflictLabel
+          : '${l10n.patientsDuplicateStatusConflictLabel} · '
+                '${comparison.similarityPercent}%',
       icon: Icons.cancel_outlined,
       color: statusColors.error,
     ),
@@ -844,7 +876,10 @@ String _fieldStatusPlainLabel(
         ? l10n.patientsDuplicateStatusSimilarLabel
         : '${l10n.patientsDuplicateStatusSimilarLabel} · '
               '${comparison.similarityPercent}%',
-    _FieldCompareStatus.conflict => l10n.patientsDuplicateStatusConflictLabel,
+    _FieldCompareStatus.conflict => comparison.similarityPercent == null
+        ? l10n.patientsDuplicateStatusConflictLabel
+        : '${l10n.patientsDuplicateStatusConflictLabel} · '
+              '${comparison.similarityPercent}%',
     _FieldCompareStatus.onlyExisting =>
       l10n.radiologySimilarProcedureOnlyExistingLabel,
   };

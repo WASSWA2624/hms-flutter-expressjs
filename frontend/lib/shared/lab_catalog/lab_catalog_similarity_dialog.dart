@@ -371,7 +371,9 @@ class _SimilarityMatchCard extends StatelessWidget {
                     ),
                     Text(
                       match.isExact
-                          ? l10n.labSimilarTestExactMatchLabel
+                          ? (match.score >= 100
+                                ? l10n.labSimilarTestExactMatchLabel
+                                : l10n.labSimilarTestExactFieldMatchLabel)
                           : _isPartialMatch(proposed, match)
                           ? l10n.labSimilarTestPartialMatchLabel
                           : l10n.labSimilarTestNearMatchLabel,
@@ -545,23 +547,47 @@ List<_FieldComparison> _buildFieldComparisons({
       normalizedProposedCode.isNotEmpty &&
       normalizedExistingCode.isNotEmpty &&
       normalizedProposedCode == normalizedExistingCode;
+  final String normalizedProposedCategory =
+      normalizeLabCatalogCategory(proposedCategory);
+  final String normalizedExistingCategory =
+      normalizeLabCatalogCategory(existingCategory);
   final bool categoryExact =
-      proposedCategory.isNotEmpty &&
-      existingCategory.isNotEmpty &&
-      proposedCategory.toUpperCase() == existingCategory.toUpperCase();
+      normalizedProposedCategory.isNotEmpty &&
+      normalizedExistingCategory.isNotEmpty &&
+      normalizedProposedCategory == normalizedExistingCategory;
 
   final bool nameReason = match.reasons.contains('name');
   final bool codeReason = match.reasons.contains('code');
+  final bool categoryReason = match.reasons.contains('category');
+  final int? nameScore = match.nameScore;
+  final int? codeScore = match.codeScore;
+  final int? categoryScore = match.categoryScore;
 
   _FieldCompareStatus codeStatus() {
     if (codeExact || (proposedCode.isEmpty && existingCode.isEmpty)) {
       return _FieldCompareStatus.match;
     }
-    if (codeReason) {
+    if (codeReason ||
+        (codeScore != null && codeScore >= labCatalogSimilarityThreshold)) {
       return _FieldCompareStatus.similar;
     }
     if (proposedCode.isEmpty && existingCode.isNotEmpty) {
       return _FieldCompareStatus.onlyExisting;
+    }
+    return _FieldCompareStatus.conflict;
+  }
+
+  _FieldCompareStatus categoryStatus() {
+    if (categoryExact) {
+      return _FieldCompareStatus.match;
+    }
+    if (proposedCategory.isEmpty && existingCategory.isNotEmpty) {
+      return _FieldCompareStatus.onlyExisting;
+    }
+    if (categoryReason ||
+        (categoryScore != null &&
+            categoryScore >= labCatalogSimilarityThreshold)) {
+      return _FieldCompareStatus.similar;
     }
     return _FieldCompareStatus.conflict;
   }
@@ -573,28 +599,30 @@ List<_FieldComparison> _buildFieldComparisons({
       existingValue: _displayValue(existingName),
       status: nameExact
           ? _FieldCompareStatus.match
-          : nameReason
+          : nameReason ||
+                (nameScore != null &&
+                    nameScore >= labCatalogSimilarityThreshold)
           ? _FieldCompareStatus.similar
           : _FieldCompareStatus.conflict,
-      similarityPercent: nameReason && !nameExact ? match.nameScore : null,
+      similarityPercent: nameExact ? 100 : nameScore,
     ),
     _FieldComparison(
       label: 'code',
       proposedValue: _displayValue(proposedCode),
       existingValue: _displayValue(existingCode),
       status: codeStatus(),
-      similarityPercent: codeReason && !codeExact ? match.codeScore : null,
+      similarityPercent: codeExact
+          ? 100
+          : (proposedCode.isEmpty && existingCode.isEmpty)
+          ? 100
+          : codeScore,
     ),
     _FieldComparison(
       label: 'category',
       proposedValue: _displayValue(proposedCategory),
       existingValue: _displayValue(existingCategory),
-      status: categoryExact
-          ? _FieldCompareStatus.match
-          : (proposedCategory.isEmpty && existingCategory.isNotEmpty
-                ? _FieldCompareStatus.onlyExisting
-                : _FieldCompareStatus.conflict),
-      similarityPercent: match.categoryScore,
+      status: categoryStatus(),
+      similarityPercent: categoryExact ? 100 : categoryScore,
     ),
   ];
 }
@@ -757,7 +785,10 @@ _StatusVisual _statusVisual(
       color: statusColors.warning,
     ),
     _FieldCompareStatus.conflict => _StatusVisual(
-      label: l10n.patientsDuplicateStatusConflictLabel,
+      label: comparison.similarityPercent == null
+          ? l10n.patientsDuplicateStatusConflictLabel
+          : '${l10n.patientsDuplicateStatusConflictLabel} · '
+                '${comparison.similarityPercent}%',
       icon: Icons.cancel_outlined,
       color: statusColors.error,
     ),
@@ -844,7 +875,10 @@ String _fieldStatusPlainLabel(
         ? l10n.patientsDuplicateStatusSimilarLabel
         : '${l10n.patientsDuplicateStatusSimilarLabel} · '
               '${comparison.similarityPercent}%',
-    _FieldCompareStatus.conflict => l10n.patientsDuplicateStatusConflictLabel,
+    _FieldCompareStatus.conflict => comparison.similarityPercent == null
+        ? l10n.patientsDuplicateStatusConflictLabel
+        : '${l10n.patientsDuplicateStatusConflictLabel} · '
+              '${comparison.similarityPercent}%',
     _FieldCompareStatus.onlyExisting =>
       l10n.labSimilarTestOnlyExistingLabel,
   };

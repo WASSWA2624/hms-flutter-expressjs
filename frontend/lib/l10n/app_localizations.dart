@@ -36685,6 +36685,12 @@ abstract class AppLocalizations {
   /// **'Exact match'**
   String get labSimilarTestExactMatchLabel;
 
+  /// Badge when name or code is an exact uniqueness conflict but composite score is below 100%.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact name/code'**
+  String get labSimilarTestExactFieldMatchLabel;
+
   /// Near match badge for lab similarity.
   ///
   /// In en, this message translates to:
@@ -36957,6 +36963,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exact match'**
   String get radiologySimilarProcedureExactMatchLabel;
+
+  /// Badge when name or code is an exact uniqueness conflict but composite score is below 100%.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact name/code'**
+  String get radiologySimilarProcedureExactFieldMatchLabel;
 
   /// Badge label for a near procedure similarity match.
   ///

@@ -20,21 +20,11 @@ const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 
 const normalizeCodeForSimilarity = (value) => normalizeCode(value).replace(/[^A-Z0-9]/g, '');
 
-const normalizeCategory = (value) => String(value || '').trim().toUpperCase();
+const normalizeCategory = (value) => normalizeName(value);
 
 const tokensOf = (value) => String(value || '')
   .split(/\s+/)
   .filter(Boolean);
-
-const canReachSimilarityThreshold = (leftLength, rightLength) => {
-  const maxLength = Math.max(leftLength, rightLength);
-  if (!maxLength) return true;
-  const lengthDelta = Math.abs(leftLength - rightLength);
-  const maxDistance = Math.floor(
-    (maxLength * (100 - SIMILARITY_THRESHOLD)) / 100
-  );
-  return lengthDelta <= maxDistance;
-};
 
 const levenshteinDistance = (left, right) => {
   if (left === right) return 0;
@@ -65,7 +55,6 @@ const levenshteinDistance = (left, right) => {
 const levenshteinSimilarityPercent = (left, right) => {
   if (left === right) return 100;
   if (!left || !right) return 0;
-  if (!canReachSimilarityThreshold(left.length, right.length)) return 0;
   const distance = levenshteinDistance(left, right);
   const maxLength = Math.max(left.length, right.length);
   return Math.round(((maxLength - distance) / maxLength) * 100);
@@ -88,6 +77,11 @@ const tokenSimilarityPercent = (left, right) => {
   const leftTokens = tokensOf(left);
   const rightTokens = tokensOf(right);
   if (!leftTokens.length || !rightTokens.length) return 0;
+  // Single-token pairs: use edit distance directly so misspellings
+  // (e.g. Haematology vs Hematology) do not collapse to 100% via Jaccard.
+  if (leftTokens.length === 1 && rightTokens.length === 1) {
+    return levenshteinSimilarityPercent(leftTokens[0], rightTokens[0]);
+  }
 
   const forward = averageBestTokenScore(leftTokens, rightTokens);
   const reverse = averageBestTokenScore(rightTokens, leftTokens);
@@ -127,8 +121,9 @@ const textSimilarityScore = (
 ) => {
   if (left === right) return 100;
   if (!left || !right) return 0;
-  if (!canReachSimilarityThreshold(left.length, right.length)) return 0;
 
+  // Always compute the real edit/token score so misspellings surface in the
+  // composite % even when they sit below the match threshold.
   const fullScore = levenshteinSimilarityPercent(left, right);
   if (!includeTokenSimilarity) return fullScore;
   return Math.max(fullScore, tokenSimilarityPercent(left, right));
@@ -242,8 +237,12 @@ const checkLabTestDuplicates = ({
     }
 
     if (normalizedModality && testModality) {
-      categoryScore = categoryExact ? 100 : 0;
-      if (categoryExact) {
+      categoryScore = categoryExact
+        ? 100
+        : textSimilarityScore(normalizedModality, testModality, {
+          includeTokenSimilarity
+        });
+      if (categoryExact || categoryScore >= SIMILARITY_THRESHOLD) {
         reasons.push('category');
       }
     }
@@ -254,8 +253,8 @@ const checkLabTestDuplicates = ({
       categoryScore
     });
 
-    // Exact name is always a hard block (tenant-wide uniqueness).
-    // Category still affects the composite % score for display.
+    // Exact name/code is a hard uniqueness block. Composite % still weights
+    // every available parameter (name, code, category), including misspellings.
     const hardNameConflict = nameExact;
     const isExact = hardNameConflict || codeExact;
     if (isExact) {
@@ -284,6 +283,7 @@ const checkLabTestDuplicates = ({
     const strongFieldSignal = (
       (nameScore != null && nameScore >= SIMILARITY_THRESHOLD)
       || (codeScore != null && codeScore >= SIMILARITY_THRESHOLD)
+      || (categoryScore != null && categoryScore >= SIMILARITY_THRESHOLD)
     );
     const compositeSignal = score >= SIMILARITY_THRESHOLD;
     if (!strongFieldSignal && !compositeSignal) {

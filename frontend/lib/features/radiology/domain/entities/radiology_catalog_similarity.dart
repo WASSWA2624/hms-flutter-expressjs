@@ -92,7 +92,8 @@ String normalizeRadiologyCatalogCodeForSimilarity(String value) {
 }
 
 String normalizeRadiologyCatalogModality(String value) {
-  return value.trim().toUpperCase();
+  // Same shape as names so modality misspellings score consistently.
+  return normalizeRadiologyCatalogName(value);
 }
 
 List<String> radiologyCatalogTokens(String normalizedValue) {
@@ -113,10 +114,9 @@ int radiologyTextSimilarityScore(
   if (left.isEmpty || right.isEmpty) {
     return 0;
   }
-  if (!_canReachSimilarityThreshold(left.length, right.length)) {
-    return 0;
-  }
 
+  // Always compute the real edit/token score so misspellings surface in the
+  // composite % even when they sit below the match threshold.
   final int fullScore = _levenshteinSimilarityPercent(left, right);
   if (!includeTokenSimilarity) {
     return fullScore;
@@ -153,18 +153,6 @@ int radiologyCompositeSimilarityScore({
   return (weightedTotal / weightSum).round().clamp(0, 100);
 }
 
-bool _canReachSimilarityThreshold(int leftLength, int rightLength) {
-  final int maxLength = leftLength > rightLength ? leftLength : rightLength;
-  if (maxLength == 0) {
-    return true;
-  }
-  final int lengthDelta = (leftLength - rightLength).abs();
-  final int maxDistance =
-      ((maxLength * (100 - radiologyCatalogSimilarityThreshold)) / 100)
-          .floor();
-  return lengthDelta <= maxDistance;
-}
-
 int _levenshteinSimilarityPercent(String left, String right) {
   final int distance = _levenshteinDistance(left, right);
   final int maxLength = left.length > right.length ? left.length : right.length;
@@ -179,6 +167,11 @@ int _tokenSimilarityPercent(String left, String right) {
   final List<String> rightTokens = radiologyCatalogTokens(right);
   if (leftTokens.isEmpty || rightTokens.isEmpty) {
     return 0;
+  }
+  // Single-token pairs: use edit distance directly so misspellings
+  // do not collapse to 100% via Jaccard.
+  if (leftTokens.length == 1 && rightTokens.length == 1) {
+    return _levenshteinSimilarityPercent(leftTokens.first, rightTokens.first);
   }
 
   final int forward = _averageBestTokenScore(leftTokens, rightTokens);
@@ -366,8 +359,15 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
     }
 
     if (normalizedModality.isNotEmpty && testModality.isNotEmpty) {
-      modalityScore = modalityExact ? 100 : 0;
-      if (modalityExact) {
+      modalityScore = modalityExact
+          ? 100
+          : radiologyTextSimilarityScore(
+              normalizedModality,
+              testModality,
+              includeTokenSimilarity: includeTokenSimilarity,
+            );
+      if (modalityExact ||
+          modalityScore >= radiologyCatalogSimilarityThreshold) {
         reasons.add('modality');
       }
     }
@@ -379,6 +379,7 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
     );
 
     // Same name with a different modality is a near match, not a hard block.
+    // Composite % still weights every available parameter, including misspellings.
     final bool bothModalitiesPresent =
         normalizedModality.isNotEmpty && testModality.isNotEmpty;
     final bool hardNameConflict =
@@ -414,7 +415,9 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
         (nameScore != null &&
             nameScore >= radiologyCatalogSimilarityThreshold) ||
         (codeScore != null &&
-            codeScore >= radiologyCatalogSimilarityThreshold);
+            codeScore >= radiologyCatalogSimilarityThreshold) ||
+        (modalityScore != null &&
+            modalityScore >= radiologyCatalogSimilarityThreshold);
     final bool compositeSignal =
         compositeScore >= radiologyCatalogSimilarityThreshold;
 

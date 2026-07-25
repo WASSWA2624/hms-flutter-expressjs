@@ -48,8 +48,59 @@ void main() {
       expect(result.hasExactConflict, isTrue);
       expect(result.similarMatches, isNotEmpty);
       expect(result.similarMatches.first.isExact, isTrue);
-      expect(result.similarMatches.first.categoryScore, 0);
+      expect(result.similarMatches.first.categoryScore, isNotNull);
+      expect(
+        result.similarMatches.first.categoryScore!,
+        lessThan(labCatalogSimilarityThreshold),
+      );
       expect(result.similarMatches.first.nameScore, 100);
+      // Composite uses name + fuzzy category weights.
+      expect(
+        result.similarMatches.first.score,
+        labCompositeSimilarityScore(
+          nameScore: result.similarMatches.first.nameScore,
+          categoryScore: result.similarMatches.first.categoryScore,
+        ),
+      );
+    });
+
+    test('scores category misspellings in the composite percentage', () {
+      final LabCatalogDuplicateCheckResult result = checkLabCatalogDuplicates(
+        name: 'Complete Blood Count',
+        code: 'CBC-001',
+        category: 'Haematology',
+        existing: existing,
+      );
+
+      expect(result.hasExactConflict, isTrue);
+      final LabCatalogSimilarityMatch match = result.similarMatches.first;
+      expect(match.categoryScore, isNotNull);
+      expect(match.categoryScore!, greaterThan(0));
+      expect(match.categoryScore!, lessThan(100));
+      expect(
+        match.score,
+        labCompositeSimilarityScore(
+          nameScore: match.nameScore,
+          codeScore: match.codeScore,
+          categoryScore: match.categoryScore,
+        ),
+      );
+    });
+
+    test('detects name misspellings above threshold', () {
+      final LabCatalogDuplicateCheckResult result = checkLabCatalogDuplicates(
+        name: 'Complet Blood Count',
+        code: 'ZZZ-999',
+        category: 'Hematology',
+        existing: existing,
+      );
+
+      expect(result.hasExactConflict, isFalse);
+      expect(result.nonExactSimilarMatches, isNotEmpty);
+      expect(
+        result.nonExactSimilarMatches.first.nameScore!,
+        greaterThanOrEqualTo(labCatalogSimilarityThreshold),
+      );
     });
 
     test('detects short exact names such as test', () {

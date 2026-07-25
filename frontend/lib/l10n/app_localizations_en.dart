@@ -19725,6 +19725,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labSimilarTestExactMatchLabel => 'Exact match';
 
   @override
+  String get labSimilarTestExactFieldMatchLabel => 'Exact name/code';
+
+  @override
   String get labSimilarTestNearMatchLabel => 'Similar';
 
   @override
@@ -19882,6 +19885,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologySimilarProcedureExactMatchLabel => 'Exact match';
+
+  @override
+  String get radiologySimilarProcedureExactFieldMatchLabel => 'Exact name/code';
 
   @override
   String get radiologySimilarProcedureNearMatchLabel => 'Similar';

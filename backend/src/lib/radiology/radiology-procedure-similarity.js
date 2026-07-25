@@ -20,21 +20,11 @@ const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 
 const normalizeCodeForSimilarity = (value) => normalizeCode(value).replace(/[^A-Z0-9]/g, '');
 
-const normalizeModality = (value) => String(value || '').trim().toUpperCase();
+const normalizeModality = (value) => normalizeName(value);
 
 const tokensOf = (value) => String(value || '')
   .split(/\s+/)
   .filter(Boolean);
-
-const canReachSimilarityThreshold = (leftLength, rightLength) => {
-  const maxLength = Math.max(leftLength, rightLength);
-  if (!maxLength) return true;
-  const lengthDelta = Math.abs(leftLength - rightLength);
-  const maxDistance = Math.floor(
-    (maxLength * (100 - SIMILARITY_THRESHOLD)) / 100
-  );
-  return lengthDelta <= maxDistance;
-};
 
 const levenshteinDistance = (left, right) => {
   if (left === right) return 0;
@@ -65,7 +55,6 @@ const levenshteinDistance = (left, right) => {
 const levenshteinSimilarityPercent = (left, right) => {
   if (left === right) return 100;
   if (!left || !right) return 0;
-  if (!canReachSimilarityThreshold(left.length, right.length)) return 0;
   const distance = levenshteinDistance(left, right);
   const maxLength = Math.max(left.length, right.length);
   return Math.round(((maxLength - distance) / maxLength) * 100);
@@ -88,6 +77,11 @@ const tokenSimilarityPercent = (left, right) => {
   const leftTokens = tokensOf(left);
   const rightTokens = tokensOf(right);
   if (!leftTokens.length || !rightTokens.length) return 0;
+  // Single-token pairs: use edit distance directly so misspellings
+  // do not collapse to 100% via Jaccard.
+  if (leftTokens.length === 1 && rightTokens.length === 1) {
+    return levenshteinSimilarityPercent(leftTokens[0], rightTokens[0]);
+  }
 
   const forward = averageBestTokenScore(leftTokens, rightTokens);
   const reverse = averageBestTokenScore(rightTokens, leftTokens);
@@ -127,8 +121,9 @@ const textSimilarityScore = (
 ) => {
   if (left === right) return 100;
   if (!left || !right) return 0;
-  if (!canReachSimilarityThreshold(left.length, right.length)) return 0;
 
+  // Always compute the real edit/token score so misspellings surface in the
+  // composite % even when they sit below the match threshold.
   const fullScore = levenshteinSimilarityPercent(left, right);
   if (!includeTokenSimilarity) return fullScore;
   return Math.max(fullScore, tokenSimilarityPercent(left, right));
@@ -242,8 +237,12 @@ const checkRadiologyProcedureDuplicates = ({
     }
 
     if (normalizedModality && testModality) {
-      modalityScore = modalityExact ? 100 : 0;
-      if (modalityExact) {
+      modalityScore = modalityExact
+        ? 100
+        : textSimilarityScore(normalizedModality, testModality, {
+          includeTokenSimilarity
+        });
+      if (modalityExact || modalityScore >= SIMILARITY_THRESHOLD) {
         reasons.push('modality');
       }
     }
@@ -255,6 +254,7 @@ const checkRadiologyProcedureDuplicates = ({
     });
 
     // Same name with a different modality is a near match, not a hard block.
+    // Composite % still weights every available parameter, including misspellings.
     const bothModalitiesPresent = Boolean(normalizedModality)
       && Boolean(testModality);
     const hardNameConflict = nameExact
@@ -286,6 +286,7 @@ const checkRadiologyProcedureDuplicates = ({
     const strongFieldSignal = (
       (nameScore != null && nameScore >= SIMILARITY_THRESHOLD)
       || (codeScore != null && codeScore >= SIMILARITY_THRESHOLD)
+      || (modalityScore != null && modalityScore >= SIMILARITY_THRESHOLD)
     );
     const compositeSignal = score >= SIMILARITY_THRESHOLD;
     if (!strongFieldSignal && !compositeSignal) {
