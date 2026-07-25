@@ -25408,6 +25408,18 @@
   "@labContinueSaveTestAction": {
     "description": "Confirm save after no-similar lab test check."
   },
+  "labCatalogTestDetailsDialogTitle": "Lab test details",
+  "@labCatalogTestDetailsDialogTitle": {
+    "description": "Title for the post-create lab test details dialog."
+  },
+  "labCatalogPanelDetailsDialogTitle": "Lab panel details",
+  "@labCatalogPanelDetailsDialogTitle": {
+    "description": "Title for the post-create lab panel details dialog."
+  },
+  "labCatalogItemIdLabel": "Catalog ID",
+  "@labCatalogItemIdLabel": {
+    "description": "Label for a lab catalog item public ID in details."
+  },
   "labStandardCatalogBadge": "Standard catalog",
   "@labStandardCatalogBadge": {
     "description": "Badge for standard lab catalog entries."
@@ -25634,6 +25646,14 @@
   "radiologyContinueSaveProcedureAction": "Continue save",
   "@radiologyContinueSaveProcedureAction": {
     "description": "Confirm saving a procedure after a no-similar-match check."
+  },
+  "radiologyCatalogProcedureDetailsDialogTitle": "Procedure details",
+  "@radiologyCatalogProcedureDetailsDialogTitle": {
+    "description": "Title for the post-create radiology procedure details dialog."
+  },
+  "radiologyCatalogProcedureIdLabel": "Catalog ID",
+  "@radiologyCatalogProcedureIdLabel": {
+    "description": "Label for a radiology procedure public ID in details."
   },
   "radiologyEditProcedureAction": "Edit procedure",
 

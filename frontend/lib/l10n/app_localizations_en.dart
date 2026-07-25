@@ -19795,6 +19795,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labContinueSaveTestAction => 'Continue save';
 
   @override
+  String get labCatalogTestDetailsDialogTitle => 'Lab test details';
+
+  @override
+  String get labCatalogPanelDetailsDialogTitle => 'Lab panel details';
+
+  @override
+  String get labCatalogItemIdLabel => 'Catalog ID';
+
+  @override
   String get labStandardCatalogBadge => 'Standard catalog';
 
   @override
@@ -19953,6 +19962,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyContinueSaveProcedureAction => 'Continue save';
+
+  @override
+  String get radiologyCatalogProcedureDetailsDialogTitle => 'Procedure details';
+
+  @override
+  String get radiologyCatalogProcedureIdLabel => 'Catalog ID';
 
   @override
   String get radiologyEditProcedureAction => 'Edit procedure';

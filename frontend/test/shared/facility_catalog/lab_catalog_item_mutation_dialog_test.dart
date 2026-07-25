@@ -77,7 +77,7 @@ void main() {
       expect(optionsField.labelText, 'Qualitative result options');
     });
 
-    testWidgets('save confirms no-similar then submits full test payload', (
+    testWidgets('save opens similarity review at 0% then submits full test payload', (
       WidgetTester tester,
     ) async {
       Map<String, Object?>? submitted;
@@ -96,8 +96,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Dialog title is normalized to uppercase; banner copy stays sentence case.
-      expect(find.text('Match status: No similar found'), findsOneWidget);
+      // Even 0% similarity goes through the dedicated similarity modal.
+      expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
+      expect(find.text('Match status: Similar (0%)'), findsOneWidget);
+      expect(find.text('0% match'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Continue save'), findsOneWidget);
       await tester.tap(find.widgetWithText(AppButton, 'Continue save'));
       await tester.pump();
@@ -112,6 +114,7 @@ void main() {
       expect(submitted!['unit_options'], isA<List<Object?>>());
       expect(submitted!['result_options'], isA<List<Object?>>());
       expect(submitted!['reference_ranges'], isA<List<Object?>>());
+      expect(submitted!.containsKey('confirm_similar'), isFalse);
       final List<Object?> ranges =
           submitted!['reference_ranges']! as List<Object?>;
       expect(ranges, isNotEmpty);
@@ -149,7 +152,7 @@ void main() {
         find.text('A lab test with this name already exists.'),
         findsOneWidget,
       );
-      expect(find.text('Match status: No similar found'), findsNothing);
+      expect(find.text('Match status: Similar (0%)'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Continue save'), findsNothing);
     });
 
@@ -316,6 +319,73 @@ void main() {
       expect(submissions, hasLength(2));
       expect(submissions.last.containsKey('confirm_similar'), isFalse);
       expect(submissions.last['name'], 'Unique Serum Zinc Assay');
+    });
+
+    testWidgets('near-match use existing returns selected catalog item', (
+      WidgetTester tester,
+    ) async {
+      Object? dialogResult;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              return Scaffold(
+                body: Center(
+                  child: AppButton.primary(
+                    label: 'Open',
+                    onPressed: () async {
+                      dialogResult = await showAppDialog<Object>(
+                        context: context,
+                        builder: (_) => LabCatalogItemMutationDialog(
+                          kind: LabCatalogItemType.test,
+                          tenantId: 'tenant-1',
+                          catalogItems: const <LabCatalogItem>[
+                            LabCatalogItem(
+                              id: 'LBT1',
+                              type: LabCatalogItemType.test,
+                              name: 'Complete Blood Count',
+                              code: 'CBC-001',
+                              category: 'Hematology',
+                            ),
+                          ],
+                          onSubmit: (_) async => null,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'Complete Blood Countt',
+      );
+      await tester.enterText(find.byType(TextFormField).at(1), 'CBC-NEW');
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.widgetWithText(AppButton, 'Use this test'), findsOneWidget);
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Use this test'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Use this test'));
+      await tester.pumpAndSettle();
+
+      expect(dialogResult, isA<LabCatalogItem>());
+      final LabCatalogItem selected = dialogResult! as LabCatalogItem;
+      expect(selected.id, 'LBT1');
+      expect(selected.name, 'Complete Blood Count');
     });
 
     testWidgets('Cancel stays enabled during similarity scan', (

@@ -36811,6 +36811,24 @@ abstract class AppLocalizations {
   /// **'Continue save'**
   String get labContinueSaveTestAction;
 
+  /// Title for the post-create lab test details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab test details'**
+  String get labCatalogTestDetailsDialogTitle;
+
+  /// Title for the post-create lab panel details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab panel details'**
+  String get labCatalogPanelDetailsDialogTitle;
+
+  /// Label for a lab catalog item public ID in details.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog ID'**
+  String get labCatalogItemIdLabel;
+
   /// Badge for standard lab catalog entries.
   ///
   /// In en, this message translates to:
@@ -37077,6 +37095,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue save'**
   String get radiologyContinueSaveProcedureAction;
+
+  /// Title for the post-create radiology procedure details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure details'**
+  String get radiologyCatalogProcedureDetailsDialogTitle;
+
+  /// Label for a radiology procedure public ID in details.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog ID'**
+  String get radiologyCatalogProcedureIdLabel;
 
   /// Radiology edit procedure action.
   ///

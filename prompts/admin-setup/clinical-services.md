@@ -8,7 +8,7 @@ Raise lab-test create/edit under Clinical Services to radiology save-guard and f
 
 ## Requirements
 
-1. Before create/update, run similarity on tenant plus standard catalog; show field-level percent; exact name/code conflicts block with field errors; near-matches open Cancel, Use existing, Proceed; no-match create needs no-similar confirm; proceed sends `confirm_similar`; clearing name/code resets acceptance.
+1. Before create/update, run similarity on tenant plus standard catalog; show field-level percent in a dedicated similarity modal on every create (including 0% / no matches); exact name/code conflicts block with field errors; near-matches and zero-match create open Cancel, Use existing, Proceed; proceed after near-match sends `confirm_similar`; clearing name/code resets acceptance. After successful create, open a details modal for the new item.
 2. Save shows `AppButton.isLoading` during similarity and save; Cancel stays available during scan.
 3. Polish `LabTestDefinitionForm`: even category and code columns; finished unit-option list; spaced range cards; Add reference range above cards with count; sections Test identity, Result configuration, Reference ranges.
 4. Block duplicate ranges by label, gender, and age band; validate age, normal, and critical min/max; incomplete filled ranges fail; empty optional ranges pass.
@@ -23,10 +23,10 @@ Raise lab-test create/edit under Clinical Services to radiology save-guard and f
 
 ## Acceptance Criteria
 
-- Exact conflicts block; near-matches need confirm; `confirm_similar` only after proceed.
+- Exact conflicts block; every create opens the similarity modal (including 0%); near-matches need confirm; `confirm_similar` only after near-match proceed; successful create opens details.
 - Requirement 3 layout holds; Add range top; duplicates cannot save.
 - Catalog selects; `xs`–`xxl` usable; Save loading; l10n complete.
-- Tests cover similarity flows, duplicate-range validation, and absent unauthorized mutate UI.
+- Tests cover similarity flows (including 0% and use existing), duplicate-range validation, and absent unauthorized mutate UI.
 
 ## Relevant Files
 

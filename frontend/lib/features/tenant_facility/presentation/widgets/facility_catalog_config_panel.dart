@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -30,10 +29,12 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/clinical_catalog_admin_dialogs.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 import 'package:hosspi_hms/shared/facility_catalog/lab_catalog_mutate_visibility.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_details_dialog.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_fields.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
+import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_details_dialog.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
 
 enum _CatalogDeskTab { radiology, lab, diagnoses }
@@ -275,55 +276,6 @@ class _FacilityCatalogConfigPanelState
       );
     });
     _labVisibleItems = matched;
-    // #region agent log
-    if (query.contains('test')) {
-      LabCatalogItem? testingInCatalog;
-      for (final LabCatalogItem item in _labItems) {
-        if (_agentIsTestingRow(item)) {
-          testingInCatalog = item;
-          break;
-        }
-      }
-      LabCatalogItem? testingInFiltered;
-      for (final LabCatalogItem item in filtered) {
-        if (_agentIsTestingRow(item)) {
-          testingInFiltered = item;
-          break;
-        }
-      }
-      final bool testingMatches = testingInCatalog == null
-          ? false
-          : _labDeskSearchMatches(testingInCatalog, query);
-      _agentDebugLog(
-        'C',
-        'facility_catalog_config_panel.dart:_recomputeLabVisible',
-        'lab search recompute',
-        <String, Object?>{
-          'query': query,
-          'labItemsCount': _labItems.length,
-          'filteredCount': filtered.length,
-          'matchedCount': matched.length,
-          'testingInCatalog': testingInCatalog != null,
-          'testingInFiltered': testingInFiltered != null,
-          'testingMatchesQuery': testingMatches,
-          'testingSnapshot': testingInCatalog == null
-              ? null
-              : _agentItemSnapshot(testingInCatalog),
-          'topMatches': matched
-              .take(5)
-              .map(_agentItemSnapshot)
-              .toList(growable: false),
-          'activeFilters': <String, Object?>{
-            'type': _labFilterValue.option(_labTypeFilterKey),
-            'category': _labFilterValue.option(_labCategoryFilterKey),
-            'resultKind': _labFilterValue.option(_labResultKindFilterKey),
-            'specimen': _labFilterValue.option(_labSpecimenFilterKey),
-            'source': _labFilterValue.option(_labSourceFilterKey),
-          },
-        },
-      );
-    }
-    // #endregion
   }
 
   bool _labDeskSearchMatches(LabCatalogItem item, String query) {
@@ -391,64 +343,6 @@ class _FacilityCatalogConfigPanelState
     }
     setState(_recomputeLabVisible);
   }
-
-  // #region agent log
-  void _agentDebugLog(
-    String hypothesisId,
-    String location,
-    String message,
-    Map<String, Object?> data,
-  ) {
-    unawaited(
-      Future<void>(() async {
-        try {
-          await Dio().post<void>(
-            'http://127.0.0.1:7780/ingest/f18842a6-46f4-4182-a2ca-386b20b78304',
-            data: <String, Object?>{
-              'sessionId': 'ff2d76',
-              'runId': 'post-fix',
-              'hypothesisId': hypothesisId,
-              'location': location,
-              'message': message,
-              'data': data,
-              'timestamp': DateTime.now().millisecondsSinceEpoch,
-            },
-            options: Options(
-              headers: <String, String>{
-                'Content-Type': 'application/json',
-                'X-Debug-Session-Id': 'ff2d76',
-              },
-              sendTimeout: const Duration(milliseconds: 800),
-              receiveTimeout: const Duration(milliseconds: 800),
-            ),
-          );
-        } catch (_) {}
-      }),
-    );
-  }
-
-  Map<String, Object?> _agentItemSnapshot(LabCatalogItem item) {
-    return <String, Object?>{
-      'name': item.name,
-      'code': item.code,
-      'type': item.type.name,
-      'id': item.id,
-      'apiId': item.apiId,
-      'isStandard': item.isStandard,
-      'category': item.category,
-    };
-  }
-
-  bool _agentIsTestingRow(LabCatalogItem item) {
-    final String name = (item.name ?? '').trim().toLowerCase();
-    final String code = (item.code ?? '').trim().toLowerCase();
-    final String id = item.apiId.trim().toUpperCase();
-    return name == 'testing' ||
-        code == 'testing' ||
-        id == 'LAB0000002' ||
-        id.contains('LAB0000002');
-  }
-  // #endregion
 
   void _onDiagnosisSearchChanged() {
     if (!mounted) {
@@ -1449,53 +1343,6 @@ class _FacilityCatalogConfigPanelState
       _labItems = merged;
       _labFailure = failure;
       _labLoading = false;
-      // #region agent log
-      final List<LabCatalogItem> tenantTesting = tenantItems
-          .where(_agentIsTestingRow)
-          .toList(growable: false);
-      final List<LabCatalogItem> mergedTesting = merged
-          .where(_agentIsTestingRow)
-          .toList(growable: false);
-      final List<Result<List<LabCatalogItem>>> loadResults = results;
-      _agentDebugLog(
-        'A',
-        'facility_catalog_config_panel.dart:_loadLabItems',
-        'lab catalog load complete',
-        <String, Object?>{
-          'tenantId': widget.tenantId,
-          'facilityId': widget.facilityId,
-          'tenantItemCount': tenantItems.length,
-          'standardItemCount': standardItems.length,
-          'mergedCount': merged.length,
-          'failureCode': failure?.code,
-          'failureMessageKey': failure?.messageKey,
-          'resultSuccessFlags': <bool>[
-            for (final Result<List<LabCatalogItem>> result in loadResults)
-              result.when(success: (_) => true, failure: (_) => false),
-          ],
-          'resultCounts': <int>[
-            for (final Result<List<LabCatalogItem>> result in loadResults)
-              result.when(
-                success: (List<LabCatalogItem> items) => items.length,
-                failure: (_) => -1,
-              ),
-          ],
-          'tenantTestingCount': tenantTesting.length,
-          'mergedTestingCount': mergedTesting.length,
-          'tenantTesting': tenantTesting
-              .map(_agentItemSnapshot)
-              .toList(growable: false),
-          'mergedTesting': mergedTesting
-              .map(_agentItemSnapshot)
-              .toList(growable: false),
-          'sampleTenantNames': tenantItems
-              .where((LabCatalogItem item) => item.type == LabCatalogItemType.test)
-              .take(8)
-              .map((LabCatalogItem item) => item.name)
-              .toList(growable: false),
-        },
-      );
-      // #endregion
       if (failure == null || merged.isNotEmpty) {
         _labHydrated = failure == null;
         _refreshLabFilterOptions();
@@ -2125,7 +1972,16 @@ class _FacilityCatalogConfigPanelState
       return;
     }
     if (result is RadiologyCatalogProcedure) {
-      await _openRadiologyEditDialog(_resolveRadiologyCatalogItem(result));
+      final RadiologyCatalogProcedure existing =
+          _resolveRadiologyCatalogItem(result);
+      if (existing.isStandard) {
+        await showRadiologyCatalogProcedureDetailsDialog(
+          context,
+          procedure: existing,
+        );
+      } else {
+        await _openRadiologyEditDialog(existing);
+      }
       return;
     }
     if (result != true) {
@@ -2139,6 +1995,13 @@ class _FacilityCatalogConfigPanelState
       SnackBar(content: Text(context.l10n.radiologySaveConfigurationAction)),
     );
     await _ensureTabLoaded(_tab, force: true);
+    if (!mounted || saved == null) {
+      return;
+    }
+    await showRadiologyCatalogProcedureDetailsDialog(
+      context,
+      procedure: saved,
+    );
   }
 
   Future<void> _openRadiologyEditDialog(RadiologyCatalogProcedure item) async {
@@ -2532,7 +2395,9 @@ class _FacilityCatalogConfigPanelState
       }
       if (result is LabCatalogItem) {
         final LabCatalogItem existing = _resolveLabCatalogItem(result);
-        if (!existing.isStandard) {
+        if (existing.isStandard) {
+          await showLabCatalogItemDetailsDialog(context, item: existing);
+        } else {
           await _openLabEditDialog(existing);
         }
         return;
@@ -2560,6 +2425,10 @@ class _FacilityCatalogConfigPanelState
       if (!present) {
         setState(() => _upsertLabItemLocally(saved));
       }
+      if (!mounted) {
+        return;
+      }
+      await showLabCatalogItemDetailsDialog(context, item: saved);
     });
   }
 

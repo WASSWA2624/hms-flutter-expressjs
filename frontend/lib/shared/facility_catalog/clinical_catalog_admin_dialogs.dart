@@ -607,98 +607,91 @@ class _RadiologyCatalogMutationDialogState
       return false;
     }
 
-    // Exact clashes block save with clear field errors — no proceed path.
-    if (result.hasExactConflict) {
-      setState(() {
-        _isSaving = false;
-        _similarityAccepted = false;
-        _noSimilarConfirmed = false;
-        _nameErrorText = result.exactNameConflict
-            ? l10n.radiologyProcedureNameAlreadyInUse
-            : null;
-        _codeErrorText = result.exactCodeConflict
-            ? l10n.radiologyProcedureCodeAlreadyInUse
-            : null;
-      });
-      return false;
-    }
-
-    final List<RadiologyCatalogSimilarityMatch> similarMatches =
-        result.nonExactSimilarMatches;
-    if (similarMatches.isNotEmpty) {
-      if (_similarityAccepted) {
-        return true;
-      }
-      final RadiologyCatalogSimilarityDialogResult dialogResult =
-          await showRadiologyCatalogSimilarityDialog(
-            context,
-            proposed: RadiologyCatalogProposedTest(
-              name: proposedName,
-              code: proposedCode,
-              modality: proposedModality,
-            ),
-            matches: similarMatches,
-            allowProceed: true,
-            isEditing: widget.isEditing,
-          );
-      if (!mounted) {
-        return false;
-      }
-
-      switch (dialogResult.action) {
-        case RadiologyCatalogSimilarityAction.cancel:
-          setState(() {
-            _isSaving = false;
-            _nameErrorText = null;
-            _codeErrorText = null;
-          });
-          return false;
-        case RadiologyCatalogSimilarityAction.useExisting:
-          final RadiologyCatalogProcedure? existing =
-              dialogResult.selectedProcedure;
-          if (existing == null) {
-            setState(() => _isSaving = false);
-            return false;
-          }
-          Navigator.of(context).pop(existing);
-          return false;
-        case RadiologyCatalogSimilarityAction.proceed:
-          setState(() {
-            _similarityAccepted = true;
-            _noSimilarConfirmed = false;
-            _nameErrorText = null;
-            _codeErrorText = null;
-          });
-          return true;
-      }
-    }
-
-    if (_noSimilarConfirmed || _similarityAccepted) {
+    final List<RadiologyCatalogSimilarityMatch> reviewMatches =
+        result.similarMatches;
+    final bool hasExactConflict = result.hasExactConflict;
+    // Create always reviews similarity in a dedicated modal — including 0%
+    // and exact duplicates (Use existing; proceed blocked for exact).
+    // Edit only opens the modal when matches exist.
+    final bool mustReviewSimilarity =
+        reviewMatches.isNotEmpty || hasExactConflict || !widget.isEditing;
+    if (!mustReviewSimilarity) {
       return true;
     }
 
-    // Edit: skip the extra no-similar confirm so single-field saves stay seamless.
-    if (widget.isEditing) {
+    if (!hasExactConflict &&
+        (_similarityAccepted ||
+            (_noSimilarConfirmed && reviewMatches.isEmpty))) {
       return true;
     }
 
-    final bool continueSave = await showRadiologyCatalogNoSimilarDialog(
-      context,
-      proposed: RadiologyCatalogProposedTest(
-        name: proposedName,
-        code: proposedCode,
-        modality: proposedModality,
-      ),
-    );
+    final RadiologyCatalogSimilarityDialogResult dialogResult =
+        await showRadiologyCatalogSimilarityDialog(
+          context,
+          proposed: RadiologyCatalogProposedTest(
+            name: proposedName,
+            code: proposedCode,
+            modality: proposedModality,
+          ),
+          matches: reviewMatches,
+          allowProceed: !hasExactConflict,
+          isEditing: widget.isEditing,
+        );
     if (!mounted) {
       return false;
     }
-    if (!continueSave) {
-      setState(() => _isSaving = false);
-      return false;
+
+    switch (dialogResult.action) {
+      case RadiologyCatalogSimilarityAction.cancel:
+        setState(() {
+          _isSaving = false;
+          _similarityAccepted = false;
+          _noSimilarConfirmed = false;
+          _nameErrorText = result.exactNameConflict
+              ? l10n.radiologyProcedureNameAlreadyInUse
+              : null;
+          _codeErrorText = result.exactCodeConflict
+              ? l10n.radiologyProcedureCodeAlreadyInUse
+              : null;
+        });
+        return false;
+      case RadiologyCatalogSimilarityAction.useExisting:
+        final RadiologyCatalogProcedure? existing =
+            dialogResult.selectedProcedure;
+        if (existing == null) {
+          setState(() => _isSaving = false);
+          return false;
+        }
+        Navigator.of(context).pop(existing);
+        return false;
+      case RadiologyCatalogSimilarityAction.proceed:
+        if (hasExactConflict) {
+          setState(() {
+            _isSaving = false;
+            _similarityAccepted = false;
+            _noSimilarConfirmed = false;
+            _nameErrorText = result.exactNameConflict
+                ? l10n.radiologyProcedureNameAlreadyInUse
+                : null;
+            _codeErrorText = result.exactCodeConflict
+                ? l10n.radiologyProcedureCodeAlreadyInUse
+                : null;
+          });
+          return false;
+        }
+        setState(() {
+          if (reviewMatches.isNotEmpty) {
+            _similarityAccepted = true;
+            _noSimilarConfirmed = false;
+          } else {
+            _similarityAccepted = false;
+            _noSimilarConfirmed = true;
+          }
+          _nameErrorText = null;
+          _codeErrorText = null;
+        });
+        return true;
     }
-    setState(() => _noSimilarConfirmed = true);
-    return true;
   }
 
   Future<void> _submit() async {
@@ -1124,97 +1117,91 @@ class _LabCatalogItemMutationDialogState
       return false;
     }
 
-    // Exact clashes block save with clear field errors — no proceed path.
-    if (result.hasExactConflict) {
-      setState(() {
-        _isSaving = false;
-        _similarityAccepted = false;
-        _noSimilarConfirmed = false;
-        _nameErrorText = result.exactNameConflict
-            ? l10n.labDuplicateTestNameMessage
-            : null;
-        _codeErrorText = result.exactCodeConflict
-            ? l10n.labDuplicateTestCodeMessage
-            : null;
-      });
-      return false;
-    }
-
-    final List<LabCatalogSimilarityMatch> similarMatches =
-        result.nonExactSimilarMatches;
-    if (similarMatches.isNotEmpty) {
-      if (_similarityAccepted) {
-        return true;
-      }
-      final LabCatalogSimilarityDialogResult dialogResult =
-          await showLabCatalogSimilarityDialog(
-            context,
-            proposed: LabCatalogProposedTest(
-              name: proposedName,
-              code: proposedCode.isEmpty ? null : proposedCode,
-              category: proposedCategory.isEmpty ? null : proposedCategory,
-            ),
-            matches: similarMatches,
-            allowProceed: true,
-            isEditing: widget.isEditing,
-          );
-      if (!mounted) {
-        return false;
-      }
-
-      switch (dialogResult.action) {
-        case LabCatalogSimilarityAction.cancel:
-          setState(() {
-            _isSaving = false;
-            _nameErrorText = null;
-            _codeErrorText = null;
-          });
-          return false;
-        case LabCatalogSimilarityAction.useExisting:
-          final LabCatalogItem? existing = dialogResult.selectedItem;
-          if (existing == null) {
-            setState(() => _isSaving = false);
-            return false;
-          }
-          Navigator.of(context).pop(existing);
-          return false;
-        case LabCatalogSimilarityAction.proceed:
-          setState(() {
-            _similarityAccepted = true;
-            _noSimilarConfirmed = false;
-            _nameErrorText = null;
-            _codeErrorText = null;
-          });
-          return true;
-      }
-    }
-
-    if (_noSimilarConfirmed || _similarityAccepted) {
+    final List<LabCatalogSimilarityMatch> reviewMatches =
+        result.similarMatches;
+    final bool hasExactConflict = result.hasExactConflict;
+    // Create always reviews similarity in a dedicated modal — including 0%
+    // and exact duplicates (Use existing; proceed blocked for exact).
+    // Edit only opens the modal when matches exist.
+    final bool mustReviewSimilarity =
+        reviewMatches.isNotEmpty || hasExactConflict || !widget.isEditing;
+    if (!mustReviewSimilarity) {
       return true;
     }
 
-    // Edit: skip the extra no-similar confirm so single-field saves stay seamless.
-    if (widget.isEditing) {
+    if (!hasExactConflict &&
+        (_similarityAccepted ||
+            (_noSimilarConfirmed && reviewMatches.isEmpty))) {
       return true;
     }
 
-    final bool continueSave = await showLabCatalogNoSimilarDialog(
-      context,
-      proposed: LabCatalogProposedTest(
-        name: proposedName,
-        code: proposedCode.isEmpty ? null : proposedCode,
-        category: proposedCategory.isEmpty ? null : proposedCategory,
-      ),
-    );
+    final LabCatalogSimilarityDialogResult dialogResult =
+        await showLabCatalogSimilarityDialog(
+          context,
+          proposed: LabCatalogProposedTest(
+            name: proposedName,
+            code: proposedCode.isEmpty ? null : proposedCode,
+            category: proposedCategory.isEmpty ? null : proposedCategory,
+          ),
+          matches: reviewMatches,
+          allowProceed: !hasExactConflict,
+          isEditing: widget.isEditing,
+        );
     if (!mounted) {
       return false;
     }
-    if (!continueSave) {
-      setState(() => _isSaving = false);
-      return false;
+
+    switch (dialogResult.action) {
+      case LabCatalogSimilarityAction.cancel:
+        setState(() {
+          _isSaving = false;
+          _similarityAccepted = false;
+          _noSimilarConfirmed = false;
+          // Keep field errors after dismissing an exact-conflict review.
+          _nameErrorText = result.exactNameConflict
+              ? l10n.labDuplicateTestNameMessage
+              : null;
+          _codeErrorText = result.exactCodeConflict
+              ? l10n.labDuplicateTestCodeMessage
+              : null;
+        });
+        return false;
+      case LabCatalogSimilarityAction.useExisting:
+        final LabCatalogItem? existing = dialogResult.selectedItem;
+        if (existing == null) {
+          setState(() => _isSaving = false);
+          return false;
+        }
+        Navigator.of(context).pop(existing);
+        return false;
+      case LabCatalogSimilarityAction.proceed:
+        if (hasExactConflict) {
+          setState(() {
+            _isSaving = false;
+            _similarityAccepted = false;
+            _noSimilarConfirmed = false;
+            _nameErrorText = result.exactNameConflict
+                ? l10n.labDuplicateTestNameMessage
+                : null;
+            _codeErrorText = result.exactCodeConflict
+                ? l10n.labDuplicateTestCodeMessage
+                : null;
+          });
+          return false;
+        }
+        setState(() {
+          if (reviewMatches.isNotEmpty) {
+            _similarityAccepted = true;
+            _noSimilarConfirmed = false;
+          } else {
+            _similarityAccepted = false;
+            _noSimilarConfirmed = true;
+          }
+          _nameErrorText = null;
+          _codeErrorText = null;
+        });
+        return true;
     }
-    setState(() => _noSimilarConfirmed = true);
-    return true;
   }
 
   Future<void> _submit() async {

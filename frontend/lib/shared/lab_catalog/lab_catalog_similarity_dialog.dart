@@ -59,6 +59,7 @@ showLabCatalogSimilarityDialog(
   final bool hasExactMatch = visibleMatches.any(
     (LabCatalogSimilarityMatch match) => match.isExact,
   );
+  final bool hasMatches = visibleMatches.isNotEmpty;
   final bool canProceed = allowProceed && !hasExactMatch;
   final LabCatalogSimilarityMatch? topMatch =
       visibleMatches.isEmpty ? null : visibleMatches.first;
@@ -70,8 +71,10 @@ showLabCatalogSimilarityDialog(
   );
   final String proceedLabel = isEditing
       ? l10n.labProceedUpdateTestAction
-      : l10n.labProceedCreateTestAction;
-  final IconData proceedIcon = isEditing
+      : hasMatches
+      ? l10n.labProceedCreateTestAction
+      : l10n.labContinueSaveTestAction;
+  final IconData proceedIcon = isEditing || !hasMatches
       ? Icons.save_outlined
       : Icons.add_circle_outline;
 
@@ -79,13 +82,20 @@ showLabCatalogSimilarityDialog(
     context: context,
     builder: (BuildContext dialogContext) {
       final ThemeData theme = Theme.of(dialogContext);
+      final AppFormInformationVariant bannerVariant = hasExactMatch
+          ? AppFormInformationVariant.error
+          : hasMatches
+          ? AppFormInformationVariant.warning
+          : AppFormInformationVariant.success;
 
       return AppDialog(
         title: Text(l10n.labSimilarTestDialogTitle),
         icon: Icon(
           hasExactMatch
               ? Icons.gpp_bad_outlined
-              : Icons.warning_amber_outlined,
+              : hasMatches
+              ? Icons.warning_amber_outlined
+              : Icons.verified_outlined,
         ),
         scrollable: true,
         maxWidth: 760,
@@ -95,12 +105,12 @@ showLabCatalogSimilarityDialog(
             AppFormInformationBanner(
               title: banner.title,
               message: banner.message,
-              variant: hasExactMatch
-                  ? AppFormInformationVariant.error
-                  : AppFormInformationVariant.warning,
+              variant: bannerVariant,
               icon: hasExactMatch
                   ? Icons.gpp_bad_outlined
-                  : Icons.manage_search_outlined,
+                  : hasMatches
+                  ? Icons.manage_search_outlined
+                  : Icons.verified_outlined,
             ),
             SizedBox(height: theme.spacing.md),
             _ProposedTestCard(proposed: proposed),
@@ -127,20 +137,28 @@ showLabCatalogSimilarityDialog(
               ],
             ),
             SizedBox(height: theme.spacing.sm),
-            for (int index = 0; index < visibleMatches.length; index += 1) ...<
-              Widget
-            >[
-              if (index > 0) SizedBox(height: theme.spacing.md),
-              _SimilarityMatchCard(
-                proposed: proposed,
-                match: visibleMatches[index],
-                onUseThis: () => Navigator.of(dialogContext).pop(
-                  LabCatalogSimilarityDialogResult.useExisting(
-                    visibleMatches[index].item,
+            if (!hasMatches)
+              AppFormInformationBanner(
+                title: l10n.labSimilarTestScoreLabel(0),
+                message: l10n.labNoSimilarTestDialogBody,
+                variant: AppFormInformationVariant.success,
+                icon: Icons.percent_outlined,
+              )
+            else
+              for (int index = 0; index < visibleMatches.length; index += 1) ...<
+                Widget
+              >[
+                if (index > 0) SizedBox(height: theme.spacing.md),
+                _SimilarityMatchCard(
+                  proposed: proposed,
+                  match: visibleMatches[index],
+                  onUseThis: () => Navigator.of(dialogContext).pop(
+                    LabCatalogSimilarityDialogResult.useExisting(
+                      visibleMatches[index].item,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
           ],
         ),
         actions: <Widget>[
@@ -166,52 +184,6 @@ showLabCatalogSimilarityDialog(
     (LabCatalogSimilarityDialogResult? value) =>
         value ?? const LabCatalogSimilarityDialogResult.cancel(),
   );
-}
-
-Future<bool> showLabCatalogNoSimilarDialog(
-  BuildContext context, {
-  required LabCatalogProposedTest proposed,
-}) {
-  final AppLocalizations l10n = context.l10n;
-
-  return showAppDialog<bool>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      final ThemeData theme = Theme.of(dialogContext);
-
-      return AppDialog(
-        title: Text(l10n.labNoSimilarTestDialogTitle),
-        icon: const Icon(Icons.verified_outlined),
-        maxWidth: 560,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            AppFormInformationBanner(
-              title: l10n.labNoSimilarTestBannerTitle,
-              message: l10n.labNoSimilarTestDialogBody,
-              variant: AppFormInformationVariant.success,
-              icon: Icons.verified_outlined,
-            ),
-            SizedBox(height: theme.spacing.md),
-            _ProposedTestCard(proposed: proposed),
-          ],
-        ),
-        actions: <Widget>[
-          AppButton.tertiary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          AppButton.primary(
-            label: l10n.labContinueSaveTestAction,
-            leadingIcon: Icons.save_outlined,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
-      );
-    },
-  ).then((bool? value) => value ?? false);
 }
 
 class _ProposedTestCard extends StatelessWidget {
@@ -835,7 +807,7 @@ _SimilarityBannerCopy _similarityBannerCopy({
   if (topMatch == null) {
     return _SimilarityBannerCopy(
       title: l10n.labSimilarTestReviewBannerTitle(0),
-      message: l10n.labSimilarTestDialogBody,
+      message: l10n.labNoSimilarTestDialogBody,
     );
   }
 
