@@ -484,12 +484,17 @@ const mergeStandardRadiologyTests = ({
 
   const direction = String(order || 'asc').toLowerCase() === 'desc' ? -1 : 1;
   const sortableField = sortBy || 'name';
-  const records = [...mappedRecords, ...standardRecords]
+  // Keep every DB row already fetched for this page (including soft-deleted).
+  // Only fill remaining capacity with standard catalog entries.
+  const remainingSlots = Math.max(0, Number(limit || 0) - mappedRecords.length);
+  const standardsToInclude = remainingSlots > 0
+    ? standardRecords.slice(0, remainingSlots)
+    : [];
+  const records = [...mappedRecords, ...standardsToInclude]
     .sort((left, right) => (
       normalizeText(left?.[sortableField] || left?.name)
         .localeCompare(normalizeText(right?.[sortableField] || right?.name)) * direction
-    ))
-    .slice(0, limit);
+    ));
 
   return {
     records,

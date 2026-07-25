@@ -214,6 +214,46 @@ describe('Radiology Test Service', () => {
       expect(result.pagination.total).toBeGreaterThanOrEqual(5000);
     });
 
+    it('keeps soft-deleted DB rows when merging standard catalog', async () => {
+      const softDeleted = {
+        id: '550e8400-e29b-41d4-a716-446655440099',
+        name: 'ZZZ Soft Deleted Custom',
+        code: 'ZZZ-SOFT',
+        modality: 'XRAY',
+        deleted_at: '2026-01-01T00:00:00.000Z',
+        tenant_name: 'Acme Health'
+      };
+      radiologyProcedureRepository.findMany.mockResolvedValue([softDeleted]);
+      radiologyProcedureRepository.count.mockResolvedValue(1);
+
+      const result = await radiologyProcedureService.listRadiologyProcedures(
+        {
+          include_standard_catalog: true,
+          include_deleted: true
+        },
+        1,
+        5,
+        'name',
+        'asc',
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(
+        result.radiologyProcedures.some(
+          (row) => row.id === softDeleted.id && row.deleted_at
+        )
+      ).toBe(true);
+      expect(result.radiologyProcedures).toHaveLength(5);
+      expect(radiologyProcedureRepository.findMany).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(Number),
+        expect.any(Number),
+        expect.any(Array),
+        expect.objectContaining({ includeDeleted: true })
+      );
+    });
+
     it('should handle repository errors', async () => {
       radiologyProcedureRepository.findMany.mockRejectedValue(new Error('DB Error'));
 
