@@ -825,7 +825,7 @@ class _DiagnosisCatalogMutationDialogState
       title: Text(
         widget.isEditing
             ? l10n.clinicalDiagnosisFormTitle
-            : l10n.clinicalAddDiagnosisAction,
+            : l10n.clinicalCreateDiagnosisAction,
       ),
       icon: Icon(
         widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline,

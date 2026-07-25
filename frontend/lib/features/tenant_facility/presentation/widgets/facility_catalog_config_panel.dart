@@ -864,7 +864,7 @@ class _FacilityCatalogConfigPanelState
             ),
             AppSearchBarAction(
               icon: Icons.add_circle_outline,
-              label: l10n.clinicalAddDiagnosisAction,
+              label: l10n.clinicalCreateDiagnosisAction,
               onPressed: () => unawaited(_openDiagnosisAddDialog()),
             ),
           ],
@@ -875,7 +875,7 @@ class _FacilityCatalogConfigPanelState
         body: l10n.tenantFacilityCatalogEmptyCatalog,
         action: widget.enabled
             ? AppButton.primary(
-                label: l10n.clinicalAddDiagnosisAction,
+                label: l10n.clinicalCreateDiagnosisAction,
                 leadingIcon: Icons.add_circle_outline,
                 onPressed: () => unawaited(_openDiagnosisAddDialog()),
               )

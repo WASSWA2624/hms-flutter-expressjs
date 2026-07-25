@@ -38,8 +38,8 @@ Title: **Create imaging test** (create) or **Edit** (edit).
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Add test | Search trailing; empty-state primary (`labCreateTestAction`) | May open scope picker when `tenantId` missing; then `LabCatalogItemMutationDialog` for `LabCatalogItemType.test`. |
-| Add panel | Search trailing only (`labCreatePanelAction`) | Same create flow for `LabCatalogItemType.panel`. |
+| Create test | Search trailing; empty-state primary (`labCreateTestAction`) | May open scope picker when `tenantId` missing; then `LabCatalogItemMutationDialog` for `LabCatalogItemType.test`. |
+| Create panel | Search trailing only (`labCreatePanelAction`) | Same create flow for `LabCatalogItemType.panel`. |
 | Edit | Row actions / row select | `LabCatalogItemMutationDialog` for the row’s kind. |
 | Delete | Row actions (`tenantFacilityDeleteAction` → **Delete**) | `LabDeleteReasonDialog`; submit **Delete test** or **Delete panel**. |
 
@@ -60,7 +60,7 @@ Titles use lab create/configure dialog title keys (test vs panel; edit reuses pa
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Add diagnosis | Search trailing; empty-state primary (`clinicalAddDiagnosisAction`) | May open scope picker when `tenantId` missing; then `DiagnosisCatalogMutationDialog` (create). |
+| Create diagnosis | Search trailing; empty-state primary (`clinicalCreateDiagnosisAction`) | May open scope picker when `tenantId` missing; then `DiagnosisCatalogMutationDialog` (create). |
 | Edit | Row actions / row select | `DiagnosisCatalogMutationDialog` (edit). |
 | Delete | Row actions (**Delete**) | `LabDeleteReasonDialog` titled `clinicalDiagnosisFormTitle`; submit **Delete**; calls `deleteClinicalCatalogTerm`. |
 
@@ -73,7 +73,7 @@ Titles use lab create/configure dialog title keys (test vs panel; edit reuses pa
 | Cancel | Footer | Dismisses without save. |
 | Save | Footer | Creates or updates diagnosis catalog term; pops `true` on success. |
 
-Title: **Add diagnosis** (create) or `clinicalDiagnosisFormTitle` (edit).
+Title: **Create diagnosis** (create) or `clinicalDiagnosisFormTitle` (edit).
 
 ---
 

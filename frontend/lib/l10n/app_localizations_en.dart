@@ -7611,6 +7611,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalAddDiagnosisAction => 'Add diagnosis';
 
   @override
+  String get clinicalCreateDiagnosisAction => 'Create diagnosis';
+
+  @override
   String get clinicalDiagnosisSearchLabel => 'Search diagnosis';
 
   @override
@@ -19142,7 +19145,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateOrderDialogTitle => 'Create Lab Order';
 
   @override
-  String get labCreateTestAction => 'Add test';
+  String get labCreateTestAction => 'Create test';
 
   @override
   String get labCreateTestChoiceBody =>
@@ -19152,7 +19155,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateTestDialogTitle => 'Create Lab Test';
 
   @override
-  String get labCreatePanelAction => 'Add panel';
+  String get labCreatePanelAction => 'Create panel';
 
   @override
   String get labCreatePanelChoiceBody =>

@@ -9680,6 +9680,10 @@
   "@clinicalAddDiagnosisAction": {
     "description": "Clinical add diagnosis action label."
   },
+  "clinicalCreateDiagnosisAction": "Create diagnosis",
+  "@clinicalCreateDiagnosisAction": {
+    "description": "Action label for creating a diagnosis catalog term in Clinical Services setup."
+  },
   "clinicalDiagnosisSearchLabel": "Search diagnosis",
   "@clinicalDiagnosisSearchLabel": {
     "description": "Clinical diagnosis search field label."
@@ -24561,9 +24565,9 @@
   "@labCreateOrderDialogTitle": {
     "description": "Title for the create lab order dialog."
   },
-  "labCreateTestAction": "Add test",
+  "labCreateTestAction": "Create test",
   "@labCreateTestAction": {
-    "description": "Action label for creating a lab test."
+    "description": "Action label for creating a lab test in the catalog."
   },
   "labCreateTestChoiceBody": "Add a configurable test to the lab catalog.",
   "@labCreateTestChoiceBody": {
@@ -24573,9 +24577,9 @@
   "@labCreateTestDialogTitle": {
     "description": "Title for the create lab test dialog."
   },
-  "labCreatePanelAction": "Add panel",
+  "labCreatePanelAction": "Create panel",
   "@labCreatePanelAction": {
-    "description": "Action label for creating a lab panel."
+    "description": "Action label for creating a lab panel in the catalog."
   },
   "labCreatePanelChoiceBody": "Group existing tests into a reusable panel.",
   "@labCreatePanelChoiceBody": {

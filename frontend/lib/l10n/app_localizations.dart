@@ -14098,6 +14098,12 @@ abstract class AppLocalizations {
   /// **'Add diagnosis'**
   String get clinicalAddDiagnosisAction;
 
+  /// Action label for creating a diagnosis catalog term in Clinical Services setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create diagnosis'**
+  String get clinicalCreateDiagnosisAction;
+
   /// Clinical diagnosis search field label.
   ///
   /// In en, this message translates to:
@@ -35725,10 +35731,10 @@ abstract class AppLocalizations {
   /// **'Create Lab Order'**
   String get labCreateOrderDialogTitle;
 
-  /// Action label for creating a lab test.
+  /// Action label for creating a lab test in the catalog.
   ///
   /// In en, this message translates to:
-  /// **'Add test'**
+  /// **'Create test'**
   String get labCreateTestAction;
 
   /// Description for the create lab test choice.
@@ -35743,10 +35749,10 @@ abstract class AppLocalizations {
   /// **'Create Lab Test'**
   String get labCreateTestDialogTitle;
 
-  /// Action label for creating a lab panel.
+  /// Action label for creating a lab panel in the catalog.
   ///
   /// In en, this message translates to:
-  /// **'Add panel'**
+  /// **'Create panel'**
   String get labCreatePanelAction;
 
   /// Description for the create lab panel choice.
