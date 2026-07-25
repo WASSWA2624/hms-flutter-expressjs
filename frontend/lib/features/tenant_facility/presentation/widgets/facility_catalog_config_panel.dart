@@ -2054,6 +2054,15 @@ class _FacilityCatalogConfigPanelState
       SnackBar(content: Text(context.l10n.radiologySaveConfigurationAction)),
     );
     await _ensureTabLoaded(_tab, force: true);
+    if (!mounted) {
+      return;
+    }
+    final RadiologyCatalogProcedure detailsItem =
+        saved ?? _resolveRadiologyCatalogItem(item);
+    await showRadiologyCatalogProcedureDetailsDialog(
+      context,
+      procedure: detailsItem,
+    );
   }
 
   void _markRadiologyItemSoftDeletedLocally(RadiologyCatalogProcedure item) {
@@ -2474,6 +2483,11 @@ class _FacilityCatalogConfigPanelState
         setState(() => _upsertLabItemLocally(saved));
       }
       await _ensureTabLoaded(_tab, force: true);
+      if (!mounted) {
+        return;
+      }
+      final LabCatalogItem detailsItem = saved ?? _resolveLabCatalogItem(item);
+      await showLabCatalogItemDetailsDialog(context, item: detailsItem);
     });
   }
 
