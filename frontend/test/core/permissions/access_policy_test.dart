@@ -673,5 +673,57 @@ void main() {
         expect(AppRoutes.theater.accessRequirement.isAllowed(policy), isFalse);
       },
     );
+
+    test('canMutateRadiologyCatalog grants radiology write and admin scopes', () {
+      final radiologyTech = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['RADIOLOGY_TECH']),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'radiology-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+      final facilityAdmin = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['FACILITY_ADMIN']),
+        ),
+      );
+      final nurse = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['NURSE']),
+        ),
+      );
+
+      expect(radiologyTech.canMutateRadiologyCatalog(), isTrue);
+      expect(facilityAdmin.canMutateRadiologyCatalog(), isTrue);
+      expect(nurse.canMutateRadiologyCatalog(), isFalse);
+    });
+
+    test(
+      'canMutateRadiologyCatalog respects explicit permission ceiling',
+      () {
+        final policy = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(roles: <String>['RADIOLOGY_TECH']),
+            permissions: <AppPermission>{AppPermissions.radiologyRead},
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'radiology-workflows',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        expect(policy.canMutateRadiologyCatalog(), isFalse);
+      },
+    );
   });
 }

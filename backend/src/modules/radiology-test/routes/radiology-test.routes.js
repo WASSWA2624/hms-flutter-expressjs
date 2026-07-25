@@ -11,13 +11,21 @@ const express = require('express');
 const router = express.Router();
 const radiologyTestController = require('@controllers/radiology-test/radiology-test.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createRadiologyTestSchema,
   updateRadiologyTestSchema,
   radiologyTestIdParamsSchema,
   listRadiologyTestsQuerySchema
 } = require('@validations/radiology-test/radiology-test.schema');
+
+const RADIOLOGY_CATALOG_WRITE_SCOPES = [
+  PERMISSIONS.RADIOLOGY_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List radiology tests with pagination and filters
@@ -40,7 +48,8 @@ const {
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listRadiologyTestsQuerySchema }),
+  '/',
+  validateRequest({ query: listRadiologyTestsQuerySchema }),
 
   authenticate(),
   radiologyTestController.listRadiologyTests
@@ -60,7 +69,8 @@ router.get(
  * @throws 404 Radiology test not found
  */
 router.get(
-  '/:id',  validateRequest({ params: radiologyTestIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: radiologyTestIdParamsSchema }),
 
   authenticate(),
   radiologyTestController.getRadiologyTestById
@@ -71,7 +81,7 @@ router.get(
  * @method POST
  * @route /api/v1/radiology-tests/
  * @authentication Required (JWT)
- * @permissions Authenticated users
+ * @permissions radiology:write or tenant/facility/system admin
  * @urlParams None
  * @queryParams None
  * @bodyParams {string} tenant_id - Tenant ID (required, UUID)
@@ -80,14 +90,17 @@ router.get(
  * @bodyParams {string} modality - Imaging modality (required, XRAY/CT/MRI/ULTRASOUND/PET/OTHER)
  * @returns {Object} Created radiology test
  * @throws 401 Unauthorized
+ * @throws 403 Forbidden
  * @throws 400 Validation error
  * @throws 400 Foreign key constraint violation
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createRadiologyTestSchema }),
+  '/',
+  validateRequest({ body: createRadiologyTestSchema }),
 
   authenticate(),
+  authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
   radiologyTestController.createRadiologyTest
 );
 
@@ -96,7 +109,7 @@ router.post(
  * @method PUT
  * @route /api/v1/radiology-tests/:id
  * @authentication Required (JWT)
- * @permissions Authenticated users
+ * @permissions radiology:write or tenant/facility/system admin
  * @urlParams {string} id - Radiology test ID (UUID)
  * @queryParams None
  * @bodyParams {string} [name] - Test name (max 255 chars)
@@ -104,15 +117,18 @@ router.post(
  * @bodyParams {string} [modality] - Imaging modality (XRAY/CT/MRI/ULTRASOUND/PET/OTHER)
  * @returns {Object} Updated radiology test
  * @throws 401 Unauthorized
+ * @throws 403 Forbidden
  * @throws 400 Validation error
  * @throws 404 Radiology test not found
  * @throws 400 Foreign key constraint violation
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: radiologyTestIdParamsSchema, body: updateRadiologyTestSchema }),
+  '/:id',
+  validateRequest({ params: radiologyTestIdParamsSchema, body: updateRadiologyTestSchema }),
 
   authenticate(),
+  authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
   radiologyTestController.updateRadiologyTest
 );
 
@@ -121,18 +137,21 @@ router.put(
  * @method DELETE
  * @route /api/v1/radiology-tests/:id
  * @authentication Required (JWT)
- * @permissions Authenticated users
+ * @permissions radiology:write or tenant/facility/system admin
  * @urlParams {string} id - Radiology test ID (UUID)
  * @queryParams None
  * @bodyParams None
  * @returns {void} 204 No Content
  * @throws 401 Unauthorized
+ * @throws 403 Forbidden
  * @throws 404 Radiology test not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: radiologyTestIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: radiologyTestIdParamsSchema }),
 
   authenticate(),
+  authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
   radiologyTestController.deleteRadiologyTest
 );
 

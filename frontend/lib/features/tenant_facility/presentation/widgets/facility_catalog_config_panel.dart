@@ -519,6 +519,7 @@ class _FacilityCatalogConfigPanelState
   }
 
   Widget _buildRadiologyTable(AppLocalizations l10n) {
+    final bool canMutateRadiology = _canMutateRadiologyCatalog;
     return AppListTable<RadiologyCatalogProcedure>(
       items: _radiologyVisibleItems,
       maxVisibleItems: _pageSize,
@@ -527,7 +528,7 @@ class _FacilityCatalogConfigPanelState
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_radiology',
       columnChoices: _radiologyColumnChoices(l10n),
-      onRowSelected: widget.enabled
+      onRowSelected: canMutateRadiology
           ? (RadiologyCatalogProcedure item) =>
                 unawaited(_openRadiologyEditDialog(item))
           : null,
@@ -563,24 +564,24 @@ class _FacilityCatalogConfigPanelState
           });
         },
         trailingActions: <AppSearchBarAction>[
-          if (widget.enabled) ...<AppSearchBarAction>[
+          if (widget.enabled)
             AppSearchBarAction(
               icon: Icons.settings_suggest_outlined,
               label: l10n.tenantFacilityCatalogConfigureAction,
               onPressed: () => unawaited(_openConfigureFlow()),
             ),
+          if (canMutateRadiology)
             AppSearchBarAction(
               icon: Icons.add_circle_outline,
               label: l10n.radiologyCreateProcedureAction,
               onPressed: () => unawaited(_openRadiologyAddDialog()),
             ),
-          ],
         ],
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.tenantFacilityCatalogTabRadiology,
         body: l10n.tenantFacilityCatalogEmptyCatalog,
-        action: widget.enabled
+        action: canMutateRadiology
             ? AppButton.primary(
                 label: l10n.radiologyCreateProcedureAction,
                 leadingIcon: Icons.add_circle_outline,
@@ -619,7 +620,7 @@ class _FacilityCatalogConfigPanelState
             item.modality?.trim().isNotEmpty == true ? item.modality! : '—',
           ),
         ),
-        if (widget.enabled)
+        if (canMutateRadiology)
           AppListTableColumn<RadiologyCatalogProcedure>(
             id: 'actions',
             label: l10n.accessAdminColumnActions,
@@ -1421,7 +1422,41 @@ class _FacilityCatalogConfigPanelState
     return item;
   }
 
+  bool get _canMutateRadiologyCatalog =>
+      ref.watch(appAccessPolicyProvider).canMutateRadiologyCatalog();
+
+  void _upsertRadiologyItemLocally(RadiologyCatalogProcedure item) {
+    final List<RadiologyCatalogProcedure> next =
+        List<RadiologyCatalogProcedure>.of(_radiologyItems);
+    final int index = next.indexWhere(
+      (RadiologyCatalogProcedure candidate) =>
+          candidate.apiId == item.apiId || candidate.id == item.id,
+    );
+    if (index >= 0) {
+      next[index] = item;
+    } else {
+      next.insert(0, item);
+    }
+    _radiologyItems = next;
+    _refreshRadiologyFilterOptions();
+    _recomputeRadiologyVisible();
+  }
+
+  void _removeRadiologyItemLocally(RadiologyCatalogProcedure item) {
+    _radiologyItems = _radiologyItems
+        .where(
+          (RadiologyCatalogProcedure candidate) =>
+              candidate.apiId != item.apiId && candidate.id != item.id,
+        )
+        .toList(growable: false);
+    _refreshRadiologyFilterOptions();
+    _recomputeRadiologyVisible();
+  }
+
   Future<void> _openRadiologyAddDialog() async {
+    if (!_canMutateRadiologyCatalog) {
+      return;
+    }
     final String? tenantId = await _resolveTenantIdForCreate();
     if (!mounted || tenantId == null) {
       return;
@@ -1429,6 +1464,7 @@ class _FacilityCatalogConfigPanelState
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
+    RadiologyCatalogProcedure? createdProcedure;
     final Object? result = await showAppDialog<Object>(
       context: context,
       barrierDismissible: false,
@@ -1441,7 +1477,10 @@ class _FacilityCatalogConfigPanelState
           final Result<RadiologyCatalogProcedure> created = await repository
               .createRadiologyCatalogProcedure(payload);
           return created.when(
-            success: (_) => null,
+            success: (RadiologyCatalogProcedure item) {
+              createdProcedure = item;
+              return null;
+            },
             failure: (AppFailure failure) => failure,
           );
         },
@@ -1457,6 +1496,10 @@ class _FacilityCatalogConfigPanelState
     if (result != true) {
       return;
     }
+    final RadiologyCatalogProcedure? saved = createdProcedure;
+    if (saved != null) {
+      setState(() => _upsertRadiologyItemLocally(saved));
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.radiologySaveConfigurationAction)),
     );
@@ -1464,10 +1507,14 @@ class _FacilityCatalogConfigPanelState
   }
 
   Future<void> _openRadiologyEditDialog(RadiologyCatalogProcedure item) async {
+    if (!_canMutateRadiologyCatalog) {
+      return;
+    }
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
     final String? tenantId = widget.tenantId?.trim();
+    RadiologyCatalogProcedure? updatedProcedure;
     final Object? result = await showAppDialog<Object>(
       context: context,
       barrierDismissible: false,
@@ -1481,7 +1528,10 @@ class _FacilityCatalogConfigPanelState
           final Result<RadiologyCatalogProcedure> updated = await repository
               .updateRadiologyCatalogProcedure(item.apiId, payload);
           return updated.when(
-            success: (_) => null,
+            success: (RadiologyCatalogProcedure next) {
+              updatedProcedure = next;
+              return null;
+            },
             failure: (AppFailure failure) => failure,
           );
         },
@@ -1501,10 +1551,17 @@ class _FacilityCatalogConfigPanelState
     if (result != true) {
       return;
     }
+    final RadiologyCatalogProcedure? saved = updatedProcedure;
+    if (saved != null) {
+      setState(() => _upsertRadiologyItemLocally(saved));
+    }
     await _ensureTabLoaded(_tab, force: true);
   }
 
   Future<void> _openRadiologyDeleteDialog(RadiologyCatalogProcedure item) async {
+    if (!_canMutateRadiologyCatalog) {
+      return;
+    }
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
@@ -1529,6 +1586,7 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || deleted != true) {
       return;
     }
+    setState(() => _removeRadiologyItemLocally(item));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.labDeletedMessage)),
     );

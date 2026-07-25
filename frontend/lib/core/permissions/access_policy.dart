@@ -333,6 +333,20 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Who may create, edit/update, or delete global radiology catalog procedures.
+  ///
+  /// Matches backend `RADIOLOGY_CATALOG_WRITE_SCOPES` on
+  /// `/api/v1/radiology-procedures` mutations.
+  bool canMutateRadiologyCatalog() {
+    return isElevated ||
+        grantsAny(const <AppPermission>[
+          AppPermissions.radiologyWrite,
+          AppPermissions.tenantAdmin,
+          AppPermissions.facilityAdmin,
+          AppPermissions.systemAdmin,
+        ]);
+  }
+
   /// Who may start/complete subscription upgrade or renewal flows.
   ///
   /// Super / tenant / facility admins always qualify (even when the
