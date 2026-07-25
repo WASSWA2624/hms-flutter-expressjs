@@ -19691,7 +19691,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String labSimilarTestExactBannerBody(int score) {
-    return 'An identical name and category, or an identical code, already exists ($score% composite). Create is blocked — use the existing test instead.';
+    return 'An identical name or code already exists ($score% composite). Prefer Use this test, or create/save anyway if you still need a separate entry.';
   }
 
   @override
@@ -19850,7 +19850,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String radiologySimilarProcedureExactBannerBody(int score) {
-    return 'An identical name and modality, or an identical code, already exists ($score% composite). Create is blocked — use the existing procedure instead.';
+    return 'An identical name or code already exists ($score% composite). Prefer Use this procedure, or create/save anyway if you still need a separate entry.';
   }
 
   @override

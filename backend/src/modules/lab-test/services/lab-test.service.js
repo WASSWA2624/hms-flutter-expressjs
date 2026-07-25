@@ -311,6 +311,7 @@ const assertLabTestUniqueness = async ({
   category,
   tenantId,
   excludeTestId = null,
+  excludeTestIds = [],
   confirmSimilar = false
 }) => {
   const existingDbTests = await labTestRepository.findMany(
@@ -336,6 +337,7 @@ const assertLabTestUniqueness = async ({
       category,
       existing: existingDbTests,
       excludeTestId,
+      excludeTestIds,
       includeTokenSimilarity: true
     }),
     checkLabTestDuplicates({
@@ -344,16 +346,19 @@ const assertLabTestUniqueness = async ({
       category,
       existing: standardCandidates,
       excludeTestId,
+      excludeTestIds,
       includeTokenSimilarity: false
     })
   );
 
-  if (duplicateCheck.exactNameConflict) {
+  // confirm_similar acknowledges both near matches and exact name/code clashes
+  // (create/save anyway after the similarity modal).
+  if (duplicateCheck.exactNameConflict && !confirmSimilar) {
     throw new HttpError('errors.lab_test.duplicate_name', 409, [
       { field: 'name' }
     ]);
   }
-  if (duplicateCheck.exactCodeConflict) {
+  if (duplicateCheck.exactCodeConflict && !confirmSimilar) {
     throw new HttpError('errors.lab_test.duplicate_code', 409, [
       { field: 'code' }
     ]);
@@ -452,6 +457,11 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
       category: nextCategory,
       tenantId,
       excludeTestId: before.id,
+      excludeTestIds: [
+        before.id,
+        before.display_id,
+        before.human_friendly_id
+      ].filter(Boolean),
       confirmSimilar
     });
 

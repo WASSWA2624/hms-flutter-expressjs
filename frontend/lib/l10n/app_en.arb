@@ -25244,9 +25244,9 @@
   "@labSimilarTestExactBannerTitle": {
     "description": "Banner title when lab similarity check finds a hard exact duplicate."
   },
-  "labSimilarTestExactBannerBody": "An identical name and category, or an identical code, already exists ({score}% composite). Create is blocked — use the existing test instead.",
+  "labSimilarTestExactBannerBody": "An identical name or code already exists ({score}% composite). Prefer Use this test, or create/save anyway if you still need a separate entry.",
   "@labSimilarTestExactBannerBody": {
-    "description": "Banner body when lab similarity check finds a hard exact duplicate.",
+    "description": "Banner body when lab similarity check finds an exact name/code clash.",
     "placeholders": {
       "score": {
         "type": "int",
@@ -25481,9 +25481,9 @@
   "@radiologySimilarProcedureExactBannerTitle": {
     "description": "Banner title when similarity check finds a hard exact duplicate."
   },
-  "radiologySimilarProcedureExactBannerBody": "An identical name and modality, or an identical code, already exists ({score}% composite). Create is blocked — use the existing procedure instead.",
+  "radiologySimilarProcedureExactBannerBody": "An identical name or code already exists ({score}% composite). Prefer Use this procedure, or create/save anyway if you still need a separate entry.",
   "@radiologySimilarProcedureExactBannerBody": {
-    "description": "Banner body when similarity check finds a hard exact duplicate.",
+    "description": "Banner body when similarity check finds an exact name/code clash.",
     "placeholders": {
       "score": {
         "type": "int",

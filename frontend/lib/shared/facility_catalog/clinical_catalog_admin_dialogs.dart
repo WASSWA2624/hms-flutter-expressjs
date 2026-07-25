@@ -541,26 +541,28 @@ class _RadiologyCatalogMutationDialogState
   }
 
   String? get _excludeProcedureId {
+    final List<String> ids = _excludeProcedureIds;
+    return ids.isEmpty ? null : ids.first;
+  }
+
+  List<String> get _excludeProcedureIds {
     final RadiologyCatalogProcedure? item = widget.item;
     if (item == null) {
-      return null;
+      return const <String>[];
     }
-    final String apiId = item.apiId.trim();
-    if (apiId.isNotEmpty) {
-      return apiId;
-    }
-    final String? displayId = item.displayId?.trim();
-    if (displayId != null && displayId.isNotEmpty) {
-      return displayId;
-    }
-    return item.id.trim().isEmpty ? null : item.id.trim();
+    return <String>[
+      item.id.trim(),
+      item.apiId.trim(),
+      item.effectiveId.trim(),
+      if ((item.displayId ?? '').trim().isNotEmpty) item.displayId!.trim(),
+    ].where((String id) => id.isNotEmpty).toList(growable: false);
   }
 
   Future<bool> _guardAgainstDuplicates(AppLocalizations l10n) async {
     final String proposedName = _nameController.text.trim();
     final String proposedCode = _codeController.text.trim();
     final String? proposedModality = _modality;
-    final String? excludeProcedureId = _excludeProcedureId;
+    final List<String> excludeProcedureIds = _excludeProcedureIds;
 
     setState(() => _isCheckingSimilarity = true);
     // Let the loading indicator paint before the composite scan.
@@ -585,14 +587,14 @@ class _RadiologyCatalogMutationDialogState
               code: proposedCode,
               modality: proposedModality,
               existing: tenantItems,
-              excludeProcedureId: excludeProcedureId,
+              excludeProcedureIds: excludeProcedureIds,
             ),
             checkRadiologyCatalogDuplicates(
               name: proposedName,
               code: proposedCode,
               modality: proposedModality,
               existing: standardItems,
-              excludeProcedureId: excludeProcedureId,
+              excludeProcedureIds: excludeProcedureIds,
               includeTokenSimilarity: false,
             ),
           ],
@@ -610,18 +612,11 @@ class _RadiologyCatalogMutationDialogState
     final List<RadiologyCatalogSimilarityMatch> reviewMatches =
         result.similarMatches;
     final bool hasExactConflict = result.hasExactConflict;
-    // Create always reviews similarity in a dedicated modal — including 0%
-    // and exact duplicates (Use existing; proceed blocked for exact).
-    // Edit only opens the modal when matches exist.
-    final bool mustReviewSimilarity =
-        reviewMatches.isNotEmpty || hasExactConflict || !widget.isEditing;
-    if (!mustReviewSimilarity) {
-      return true;
-    }
 
-    if (!hasExactConflict &&
-        (_similarityAccepted ||
-            (_noSimilarConfirmed && reviewMatches.isEmpty))) {
+    // Create and edit use the same similarity modal (including 0%). The
+    // procedure being edited is excluded via excludeProcedureIds.
+    if (_similarityAccepted ||
+        (_noSimilarConfirmed && reviewMatches.isEmpty && !hasExactConflict)) {
       return true;
     }
 
@@ -634,7 +629,7 @@ class _RadiologyCatalogMutationDialogState
             modality: proposedModality,
           ),
           matches: reviewMatches,
-          allowProceed: !hasExactConflict,
+          allowProceed: true,
           isEditing: widget.isEditing,
         );
     if (!mounted) {
@@ -662,25 +657,25 @@ class _RadiologyCatalogMutationDialogState
           setState(() => _isSaving = false);
           return false;
         }
+        if (radiologyCatalogProcedureMatchesExcludeId(
+          existing,
+          null,
+          excludeProcedureIds: excludeProcedureIds,
+        )) {
+          setState(() {
+            _isSaving = false;
+            _similarityAccepted = true;
+            _noSimilarConfirmed = false;
+            _nameErrorText = null;
+            _codeErrorText = null;
+          });
+          return true;
+        }
         Navigator.of(context).pop(existing);
         return false;
       case RadiologyCatalogSimilarityAction.proceed:
-        if (hasExactConflict) {
-          setState(() {
-            _isSaving = false;
-            _similarityAccepted = false;
-            _noSimilarConfirmed = false;
-            _nameErrorText = result.exactNameConflict
-                ? l10n.radiologyProcedureNameAlreadyInUse
-                : null;
-            _codeErrorText = result.exactCodeConflict
-                ? l10n.radiologyProcedureCodeAlreadyInUse
-                : null;
-          });
-          return false;
-        }
         setState(() {
-          if (reviewMatches.isNotEmpty) {
+          if (reviewMatches.isNotEmpty || hasExactConflict) {
             _similarityAccepted = true;
             _noSimilarConfirmed = false;
           } else {
@@ -1007,19 +1002,20 @@ class _LabCatalogItemMutationDialogState
   }
 
   String? get _excludeTestId {
+    final List<String> ids = _excludeTestIds;
+    return ids.isEmpty ? null : ids.first;
+  }
+
+  List<String> get _excludeTestIds {
     final LabCatalogItem? item = widget.item;
     if (item == null) {
-      return null;
+      return const <String>[];
     }
-    final String apiId = item.apiId.trim();
-    if (apiId.isNotEmpty) {
-      return apiId;
-    }
-    final String? displayId = item.displayId?.trim();
-    if (displayId != null && displayId.isNotEmpty) {
-      return displayId;
-    }
-    return item.id.trim().isEmpty ? null : item.id.trim();
+    return <String>[
+      item.id.trim(),
+      item.apiId.trim(),
+      if ((item.displayId ?? '').trim().isNotEmpty) item.displayId!.trim(),
+    ].where((String id) => id.isNotEmpty).toList(growable: false);
   }
 
   Future<void> _loadSimilarityCatalog(
@@ -1050,7 +1046,7 @@ class _LabCatalogItemMutationDialogState
     final String proposedName = _nameController.text.trim();
     final String proposedCode = _codeController.text.trim();
     final String proposedCategory = _categoryController.text.trim();
-    final String? excludeTestId = _excludeTestId;
+    final List<String> excludeTestIds = _excludeTestIds;
 
     setState(() => _isCheckingSimilarity = true);
     // Let the loading indicator paint before the composite scan.
@@ -1095,14 +1091,14 @@ class _LabCatalogItemMutationDialogState
               code: proposedCode,
               category: proposedCategory,
               existing: tenantItems,
-              excludeTestId: excludeTestId,
+              excludeTestIds: excludeTestIds,
             ),
             checkLabCatalogDuplicates(
               name: proposedName,
               code: proposedCode,
               category: proposedCategory,
               existing: standardItems,
-              excludeTestId: excludeTestId,
+              excludeTestIds: excludeTestIds,
               includeTokenSimilarity: false,
             ),
           ],
@@ -1120,18 +1116,11 @@ class _LabCatalogItemMutationDialogState
     final List<LabCatalogSimilarityMatch> reviewMatches =
         result.similarMatches;
     final bool hasExactConflict = result.hasExactConflict;
-    // Create always reviews similarity in a dedicated modal — including 0%
-    // and exact duplicates (Use existing; proceed blocked for exact).
-    // Edit only opens the modal when matches exist.
-    final bool mustReviewSimilarity =
-        reviewMatches.isNotEmpty || hasExactConflict || !widget.isEditing;
-    if (!mustReviewSimilarity) {
-      return true;
-    }
 
-    if (!hasExactConflict &&
-        (_similarityAccepted ||
-            (_noSimilarConfirmed && reviewMatches.isEmpty))) {
+    // Create and edit use the same similarity modal (including 0%). The test
+    // being edited is excluded via excludeTestIds.
+    if (_similarityAccepted ||
+        (_noSimilarConfirmed && reviewMatches.isEmpty && !hasExactConflict)) {
       return true;
     }
 
@@ -1144,7 +1133,7 @@ class _LabCatalogItemMutationDialogState
             category: proposedCategory.isEmpty ? null : proposedCategory,
           ),
           matches: reviewMatches,
-          allowProceed: !hasExactConflict,
+          allowProceed: true,
           isEditing: widget.isEditing,
         );
     if (!mounted) {
@@ -1172,25 +1161,26 @@ class _LabCatalogItemMutationDialogState
           setState(() => _isSaving = false);
           return false;
         }
+        // Ignore "use existing" when it resolves to the row already being edited.
+        if (labCatalogItemMatchesExcludeId(
+          existing,
+          null,
+          excludeTestIds: excludeTestIds,
+        )) {
+          setState(() {
+            _isSaving = false;
+            _similarityAccepted = true;
+            _noSimilarConfirmed = false;
+            _nameErrorText = null;
+            _codeErrorText = null;
+          });
+          return true;
+        }
         Navigator.of(context).pop(existing);
         return false;
       case LabCatalogSimilarityAction.proceed:
-        if (hasExactConflict) {
-          setState(() {
-            _isSaving = false;
-            _similarityAccepted = false;
-            _noSimilarConfirmed = false;
-            _nameErrorText = result.exactNameConflict
-                ? l10n.labDuplicateTestNameMessage
-                : null;
-            _codeErrorText = result.exactCodeConflict
-                ? l10n.labDuplicateTestCodeMessage
-                : null;
-          });
-          return false;
-        }
         setState(() {
-          if (reviewMatches.isNotEmpty) {
+          if (reviewMatches.isNotEmpty || hasExactConflict) {
             _similarityAccepted = true;
             _noSimilarConfirmed = false;
           } else {

@@ -164,14 +164,45 @@ const nameSimilarityScore = (left, right) => textSimilarityScore(left, right);
  * @param {string|null|undefined} params.category
  * @param {Array<{id?: string, name?: string, code?: string, category?: string}>} params.existing
  * @param {string|null} [params.excludeTestId]
+ * @param {string[]} [params.excludeTestIds]
  * @param {boolean} [params.includeTokenSimilarity]
  */
+const matchesExcludeId = (test, excludeTestId, excludeTestIds = []) => {
+  const excluded = new Set(
+    [excludeTestId, ...(excludeTestIds || [])]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+  );
+  if (!excluded.size) return false;
+  const candidates = [
+    test?.id,
+    test?.display_id,
+    test?.human_friendly_id,
+    test?.apiId,
+    test?.api_id
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  for (const candidate of candidates) {
+    for (const excludedId of excluded) {
+      if (
+        candidate === excludedId
+        || candidate.toUpperCase() === excludedId.toUpperCase()
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
 const checkLabTestDuplicates = ({
   name,
   code,
   category,
   existing = [],
   excludeTestId = null,
+  excludeTestIds = [],
   includeTokenSimilarity = true
 }) => {
   const normalizedName = normalizeName(name);
@@ -184,14 +215,7 @@ const checkLabTestDuplicates = ({
   const matches = [];
 
   for (const test of existing) {
-    if (
-      excludeTestId
-      && (
-        test?.id === excludeTestId
-        || test?.display_id === excludeTestId
-        || test?.human_friendly_id === excludeTestId
-      )
-    ) {
+    if (matchesExcludeId(test, excludeTestId, excludeTestIds)) {
       continue;
     }
 
@@ -280,10 +304,11 @@ const checkLabTestDuplicates = ({
       continue;
     }
 
+    // Category contributes to composite %, but alone must not surface every
+    // row that shares a common category.
     const strongFieldSignal = (
       (nameScore != null && nameScore >= SIMILARITY_THRESHOLD)
       || (codeScore != null && codeScore >= SIMILARITY_THRESHOLD)
-      || (categoryScore != null && categoryScore >= SIMILARITY_THRESHOLD)
     );
     const compositeSignal = score >= SIMILARITY_THRESHOLD;
     if (!strongFieldSignal && !compositeSignal) {

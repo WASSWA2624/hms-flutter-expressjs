@@ -283,10 +283,11 @@ const checkRadiologyProcedureDuplicates = ({
       continue;
     }
 
+    // Modality contributes to composite %, but alone must not surface every
+    // row that shares a common modality.
     const strongFieldSignal = (
       (nameScore != null && nameScore >= SIMILARITY_THRESHOLD)
       || (codeScore != null && codeScore >= SIMILARITY_THRESHOLD)
-      || (modalityScore != null && modalityScore >= SIMILARITY_THRESHOLD)
     );
     const compositeSignal = score >= SIMILARITY_THRESHOLD;
     if (!strongFieldSignal && !compositeSignal) {

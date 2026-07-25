@@ -8,7 +8,7 @@ Raise lab-test create/edit under Clinical Services to radiology save-guard and f
 
 ## Requirements
 
-1. Before create/update, run similarity on tenant plus standard catalog; show field-level percent in a dedicated similarity modal on every create (including 0% / no matches and exact duplicates); exact matches block proceed but offer Use existing (Cancel also sets field errors); near-matches and zero-match create open Cancel, Use existing, Proceed; proceed after near-match sends `confirm_similar`; clearing name/code resets acceptance. After successful create, open a details modal for the new item.
+1. Before create/update, run similarity on tenant plus standard catalog; show field-level percent in a dedicated similarity modal on every create and edit (including 0% / no matches and exact duplicates), excluding the lab test id being edited; Cancel / Use existing / Create or Save anyway always available; proceed sends `confirm_similar`; clearing name/code resets acceptance. After successful create, open a details modal for the new item.
 2. Save shows `AppButton.isLoading` during similarity and save; Cancel stays available during scan.
 3. Polish `LabTestDefinitionForm`: even category and code columns; finished unit-option list; spaced range cards; Add reference range above cards with count; sections Test identity, Result configuration, Reference ranges.
 4. Block duplicate ranges by label, gender, and age band; validate age, normal, and critical min/max; incomplete filled ranges fail; empty optional ranges pass.

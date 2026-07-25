@@ -264,16 +264,32 @@ int _min3(int a, int b, int c) {
 
 bool labCatalogItemMatchesExcludeId(
   LabCatalogItem item,
-  String? excludeTestId,
-) {
-  final String? excludeId = excludeTestId?.trim();
-  if (excludeId == null || excludeId.isEmpty) {
+  String? excludeTestId, {
+  Iterable<String> excludeTestIds = const <String>[],
+}) {
+  final Set<String> excluded = <String>{
+    if (excludeTestId != null && excludeTestId.trim().isNotEmpty)
+      excludeTestId.trim(),
+    for (final String id in excludeTestIds)
+      if (id.trim().isNotEmpty) id.trim(),
+  };
+  if (excluded.isEmpty) {
     return false;
   }
-  return item.id == excludeId ||
-      item.apiId == excludeId ||
-      (item.displayId?.trim().isNotEmpty == true &&
-          item.displayId!.trim() == excludeId);
+  final Set<String> candidates = <String>{
+    item.id.trim(),
+    item.apiId.trim(),
+    if ((item.displayId ?? '').trim().isNotEmpty) item.displayId!.trim(),
+  }..removeWhere((String value) => value.isEmpty);
+  for (final String candidate in candidates) {
+    for (final String excludedId in excluded) {
+      if (candidate == excludedId ||
+          candidate.toUpperCase() == excludedId.toUpperCase()) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 LabCatalogDuplicateCheckResult checkLabCatalogDuplicates({
@@ -282,6 +298,7 @@ LabCatalogDuplicateCheckResult checkLabCatalogDuplicates({
   String? category,
   required List<LabCatalogItem> existing,
   String? excludeTestId,
+  Iterable<String> excludeTestIds = const <String>[],
   bool includeTokenSimilarity = true,
 }) {
   final String normalizedName = normalizeLabCatalogName(name);
@@ -297,7 +314,11 @@ LabCatalogDuplicateCheckResult checkLabCatalogDuplicates({
       <LabCatalogSimilarityMatch>[];
 
   for (final LabCatalogItem test in existing) {
-    if (labCatalogItemMatchesExcludeId(test, excludeTestId)) {
+    if (labCatalogItemMatchesExcludeId(
+      test,
+      excludeTestId,
+      excludeTestIds: excludeTestIds,
+    )) {
       continue;
     }
 
@@ -401,13 +422,13 @@ LabCatalogDuplicateCheckResult checkLabCatalogDuplicates({
       continue;
     }
 
+    // Category contributes to composite %, but alone must not surface every
+    // row that shares a common category (e.g. Hematology).
     final bool strongFieldSignal =
         (nameScore != null &&
             nameScore >= labCatalogSimilarityThreshold) ||
         (codeScore != null &&
-            codeScore >= labCatalogSimilarityThreshold) ||
-        (categoryScore != null &&
-            categoryScore >= labCatalogSimilarityThreshold);
+            codeScore >= labCatalogSimilarityThreshold);
     final bool compositeSignal =
         compositeScore >= labCatalogSimilarityThreshold;
 

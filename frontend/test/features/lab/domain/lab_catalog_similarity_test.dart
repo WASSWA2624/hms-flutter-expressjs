@@ -165,6 +165,28 @@ void main() {
       expect(result.similarMatches, isEmpty);
     });
 
+    test('excludes the current item by any known public id', () {
+      final LabCatalogDuplicateCheckResult result = checkLabCatalogDuplicates(
+        name: 'Complete Blood Count',
+        code: 'CBC-001',
+        category: 'Hematology',
+        existing: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 'uuid-1',
+            displayId: 'LAB0000001',
+            type: LabCatalogItemType.test,
+            name: 'Complete Blood Count',
+            code: 'CBC-001',
+            category: 'Hematology',
+          ),
+        ],
+        excludeTestIds: const <String>['LAB0000001', 'uuid-1'],
+      );
+
+      expect(result.hasExactConflict, isFalse);
+      expect(result.similarMatches, isEmpty);
+    });
+
     test('mergeLabCatalogDuplicateChecks combines exact conflicts', () {
       final LabCatalogDuplicateCheckResult merged =
           mergeLabCatalogDuplicateChecks(<LabCatalogDuplicateCheckResult>[

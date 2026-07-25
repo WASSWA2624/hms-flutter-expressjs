@@ -265,17 +265,34 @@ int _min3(int a, int b, int c) {
 
 bool radiologyCatalogProcedureMatchesExcludeId(
   RadiologyCatalogProcedure procedure,
-  String? excludeProcedureId,
-) {
-  final String? excludeId = excludeProcedureId?.trim();
-  if (excludeId == null || excludeId.isEmpty) {
+  String? excludeProcedureId, {
+  Iterable<String> excludeProcedureIds = const <String>[],
+}) {
+  final Set<String> excluded = <String>{
+    if (excludeProcedureId != null && excludeProcedureId.trim().isNotEmpty)
+      excludeProcedureId.trim(),
+    for (final String id in excludeProcedureIds)
+      if (id.trim().isNotEmpty) id.trim(),
+  };
+  if (excluded.isEmpty) {
     return false;
   }
-  return procedure.id == excludeId ||
-      procedure.apiId == excludeId ||
-      (procedure.displayId?.trim().isNotEmpty == true &&
-          procedure.displayId!.trim() == excludeId) ||
-      procedure.effectiveId == excludeId;
+  final Set<String> candidates = <String>{
+    procedure.id.trim(),
+    procedure.apiId.trim(),
+    procedure.effectiveId.trim(),
+    if ((procedure.displayId ?? '').trim().isNotEmpty)
+      procedure.displayId!.trim(),
+  }..removeWhere((String value) => value.isEmpty);
+  for (final String candidate in candidates) {
+    for (final String excludedId in excluded) {
+      if (candidate == excludedId ||
+          candidate.toUpperCase() == excludedId.toUpperCase()) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
@@ -284,6 +301,7 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
   String? modality,
   required List<RadiologyCatalogProcedure> existing,
   String? excludeProcedureId,
+  Iterable<String> excludeProcedureIds = const <String>[],
   bool includeTokenSimilarity = true,
 }) {
   final String normalizedName = normalizeRadiologyCatalogName(name);
@@ -301,7 +319,11 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
       <RadiologyCatalogSimilarityMatch>[];
 
   for (final RadiologyCatalogProcedure test in existing) {
-    if (radiologyCatalogProcedureMatchesExcludeId(test, excludeProcedureId)) {
+    if (radiologyCatalogProcedureMatchesExcludeId(
+      test,
+      excludeProcedureId,
+      excludeProcedureIds: excludeProcedureIds,
+    )) {
       continue;
     }
 
@@ -411,13 +433,13 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
       continue;
     }
 
+    // Modality contributes to composite %, but alone must not surface every
+    // row that shares a common modality.
     final bool strongFieldSignal =
         (nameScore != null &&
             nameScore >= radiologyCatalogSimilarityThreshold) ||
         (codeScore != null &&
-            codeScore >= radiologyCatalogSimilarityThreshold) ||
-        (modalityScore != null &&
-            modalityScore >= radiologyCatalogSimilarityThreshold);
+            codeScore >= radiologyCatalogSimilarityThreshold);
     final bool compositeSignal =
         compositeScore >= radiologyCatalogSimilarityThreshold;
 

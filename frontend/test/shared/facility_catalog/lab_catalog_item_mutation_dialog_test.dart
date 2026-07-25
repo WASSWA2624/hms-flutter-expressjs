@@ -125,14 +125,14 @@ void main() {
       expect(firstRange['notes'], isNull);
     });
 
-    testWidgets('exact duplicate name opens similarity modal without proceed', (
+    testWidgets('exact duplicate name opens similarity modal with create anyway', (
       WidgetTester tester,
     ) async {
-      var submitCount = 0;
+      Map<String, Object?>? submitted;
       await _pumpMutationDialog(
         tester,
         onSubmit: (Map<String, Object?> payload) async {
-          submitCount += 1;
+          submitted = payload;
           return null;
         },
       );
@@ -147,18 +147,22 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(submitCount, 0);
       expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
       expect(find.text('Match status: Exact duplicate'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Use this test'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Create anyway'), findsNothing);
-      expect(find.widgetWithText(AppButton, 'Continue save'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Create anyway'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Create anyway'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(submitted, isNotNull);
+      expect(submitted!['confirm_similar'], isTrue);
     });
 
     testWidgets('exact duplicate name opens modal even when category differs', (
       WidgetTester tester,
     ) async {
-      var submitCount = 0;
+      Map<String, Object?>? submitted;
       await _pumpMutationDialog(
         tester,
         catalogItems: const <LabCatalogItem>[
@@ -170,8 +174,8 @@ void main() {
             category: 'Chemistry',
           ),
         ],
-        onSubmit: (_) async {
-          submitCount += 1;
+        onSubmit: (Map<String, Object?> payload) async {
+          submitted = payload;
           return null;
         },
       );
@@ -183,21 +187,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(submitCount, 0);
       expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
       expect(find.text('Match status: Exact duplicate'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Use this test'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Create anyway'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Create anyway'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Create anyway'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(submitted!['confirm_similar'], isTrue);
     });
 
-    testWidgets('exact duplicate code opens similarity modal without proceed', (
+    testWidgets('exact duplicate code opens similarity modal with create anyway', (
       WidgetTester tester,
     ) async {
-      var submitCount = 0;
+      Map<String, Object?>? submitted;
       await _pumpMutationDialog(
         tester,
-        onSubmit: (_) async {
-          submitCount += 1;
+        onSubmit: (Map<String, Object?> payload) async {
+          submitted = payload;
           return null;
         },
       );
@@ -209,11 +216,98 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(submitCount, 0);
       expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
       expect(find.text('Match status: Exact duplicate'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Use this test'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Create anyway'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Create anyway'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Create anyway'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(submitted!['confirm_similar'], isTrue);
+    });
+
+    testWidgets('edit excludes current test id and still offers save anyway', (
+      WidgetTester tester,
+    ) async {
+      Map<String, Object?>? submitted;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (BuildContext context) {
+                return AppButton.primary(
+                  label: 'Open',
+                  onPressed: () {
+                    showAppDialog<Object>(
+                      context: context,
+                      builder: (_) => LabCatalogItemMutationDialog(
+                        kind: LabCatalogItemType.test,
+                        tenantId: 'tenant-1',
+                        item: const LabCatalogItem(
+                          id: 'lab-uuid-1',
+                          displayId: 'LAB0000001',
+                          type: LabCatalogItemType.test,
+                          name: 'Hemoglobin',
+                          code: 'HB',
+                          category: 'Hematology',
+                          resultKind: 'NUMERIC',
+                        ),
+                        catalogItems: const <LabCatalogItem>[
+                          LabCatalogItem(
+                            id: 'lab-uuid-1',
+                            displayId: 'LAB0000001',
+                            type: LabCatalogItemType.test,
+                            name: 'Hemoglobin',
+                            code: 'HB',
+                            category: 'Hematology',
+                          ),
+                          LabCatalogItem(
+                            id: 'lab-uuid-2',
+                            displayId: 'LAB0000002',
+                            type: LabCatalogItemType.test,
+                            name: 'Complete Blood Count',
+                            code: 'CBC-001',
+                            category: 'Hematology',
+                          ),
+                        ],
+                        onSubmit: (Map<String, Object?> payload) async {
+                          submitted = payload;
+                          return null;
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // Unchanged exact self identity should not count as a conflict.
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
+      expect(find.text('Match status: Exact duplicate'), findsNothing);
+      expect(find.text('Match status: Similar (0%)'), findsOneWidget);
+      // Edit always uses the Save anyway proceed label.
+      expect(find.widgetWithText(AppButton, 'Save anyway'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Save anyway'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(submitted, isNotNull);
+      expect(submitted!.containsKey('confirm_similar'), isFalse);
+      expect(submitted!['name'], 'Hemoglobin');
     });
 
     testWidgets('near-match proceed sends confirm_similar', (

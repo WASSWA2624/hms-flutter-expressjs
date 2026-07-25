@@ -36631,10 +36631,10 @@ abstract class AppLocalizations {
   /// **'Match status: Exact duplicate'**
   String get labSimilarTestExactBannerTitle;
 
-  /// Banner body when lab similarity check finds a hard exact duplicate.
+  /// Banner body when lab similarity check finds an exact name/code clash.
   ///
   /// In en, this message translates to:
-  /// **'An identical name and category, or an identical code, already exists ({score}% composite). Create is blocked — use the existing test instead.'**
+  /// **'An identical name or code already exists ({score}% composite). Prefer Use this test, or create/save anyway if you still need a separate entry.'**
   String labSimilarTestExactBannerBody(int score);
 
   /// Banner title when lab similarity check finds near matches only.
@@ -36907,10 +36907,10 @@ abstract class AppLocalizations {
   /// **'Match status: Exact duplicate'**
   String get radiologySimilarProcedureExactBannerTitle;
 
-  /// Banner body when similarity check finds a hard exact duplicate.
+  /// Banner body when similarity check finds an exact name/code clash.
   ///
   /// In en, this message translates to:
-  /// **'An identical name and modality, or an identical code, already exists ({score}% composite). Create is blocked — use the existing procedure instead.'**
+  /// **'An identical name or code already exists ({score}% composite). Prefer Use this procedure, or create/save anyway if you still need a separate entry.'**
   String radiologySimilarProcedureExactBannerBody(int score);
 
   /// Banner title when similarity check finds near matches only.

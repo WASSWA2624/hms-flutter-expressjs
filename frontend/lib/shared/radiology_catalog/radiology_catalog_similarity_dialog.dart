@@ -60,7 +60,9 @@ showRadiologyCatalogSimilarityDialog(
     (RadiologyCatalogSimilarityMatch match) => match.isExact,
   );
   final bool hasMatches = visibleMatches.isNotEmpty;
-  final bool canProceed = allowProceed && !hasExactMatch;
+  // Create/Save anyway stays available even for exact name/code clashes;
+  // the caller sends confirm_similar after proceed.
+  final bool canProceed = allowProceed;
   final RadiologyCatalogSimilarityMatch? topMatch =
       visibleMatches.isEmpty ? null : visibleMatches.first;
   final _SimilarityBannerCopy banner = _similarityBannerCopy(
@@ -71,10 +73,11 @@ showRadiologyCatalogSimilarityDialog(
   );
   final String proceedLabel = isEditing
       ? l10n.radiologyProceedUpdateProcedureAction
-      : hasMatches
+      : hasMatches || hasExactMatch
       ? l10n.radiologyProceedCreateProcedureAction
       : l10n.radiologyContinueSaveProcedureAction;
-  final IconData proceedIcon = isEditing || !hasMatches
+  final IconData proceedIcon =
+      isEditing || !(hasMatches || hasExactMatch)
       ? Icons.save_outlined
       : Icons.add_circle_outline;
 

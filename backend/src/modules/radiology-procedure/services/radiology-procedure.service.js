@@ -726,12 +726,14 @@ const assertRadiologyTestUniqueness = async ({
     })
   );
 
-  if (duplicateCheck.exactNameConflict) {
+  // confirm_similar acknowledges both near matches and exact name/code clashes
+  // (create/save anyway after the similarity modal).
+  if (duplicateCheck.exactNameConflict && !confirmSimilar) {
     throw new HttpError('errors.radiology_test.duplicate_name', 409, [
       { field: 'name' }
     ]);
   }
-  if (duplicateCheck.exactCodeConflict) {
+  if (duplicateCheck.exactCodeConflict && !confirmSimilar) {
     throw new HttpError('errors.radiology_test.duplicate_code', 409, [
       { field: 'code' }
     ]);

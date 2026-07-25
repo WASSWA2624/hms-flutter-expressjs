@@ -60,7 +60,9 @@ showLabCatalogSimilarityDialog(
     (LabCatalogSimilarityMatch match) => match.isExact,
   );
   final bool hasMatches = visibleMatches.isNotEmpty;
-  final bool canProceed = allowProceed && !hasExactMatch;
+  // Create/Save anyway stays available even for exact name/code clashes;
+  // the caller sends confirm_similar after proceed.
+  final bool canProceed = allowProceed;
   final LabCatalogSimilarityMatch? topMatch =
       visibleMatches.isEmpty ? null : visibleMatches.first;
   final _SimilarityBannerCopy banner = _similarityBannerCopy(
@@ -71,10 +73,10 @@ showLabCatalogSimilarityDialog(
   );
   final String proceedLabel = isEditing
       ? l10n.labProceedUpdateTestAction
-      : hasMatches
+      : hasMatches || hasExactMatch
       ? l10n.labProceedCreateTestAction
       : l10n.labContinueSaveTestAction;
-  final IconData proceedIcon = isEditing || !hasMatches
+  final IconData proceedIcon = isEditing || !(hasMatches || hasExactMatch)
       ? Icons.save_outlined
       : Icons.add_circle_outline;
 
