@@ -103,7 +103,7 @@ const findReferenceEncounters = async ({ where = {}, take = 20 } = {}) =>
 
 const findReferenceRadiologyTests = async ({ where = {}, take = 20 } = {}) =>
   withDbErrorHandling(() =>
-    prisma.radiology_test.findMany({
+    prisma.radiology_procedure.findMany({
       where: { deleted_at: null, ...(where || {}) },
       take,
       orderBy: [{ name: 'asc' }, { code: 'asc' }],

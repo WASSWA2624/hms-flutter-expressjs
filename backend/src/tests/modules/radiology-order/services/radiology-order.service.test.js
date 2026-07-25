@@ -27,7 +27,7 @@ jest.mock('@services/lab-workspace/lab.shared', () => ({
 jest.mock('@prisma/client', () => ({
   patient: {
     findFirst: jest.fn()},
-  radiology_test: {
+  radiology_procedure: {
     findFirst: jest.fn(),
     create: jest.fn()},
   encounter: {
@@ -58,8 +58,8 @@ describe('Radiology Order Service', () => {
     prisma.patient.findFirst.mockResolvedValue({
       tenant_id: 'tenant-1',
       facility_id: 'facility-1'});
-    prisma.radiology_test.findFirst.mockResolvedValue(null);
-    prisma.radiology_test.create.mockImplementation(async (args) => ({
+    prisma.radiology_procedure.findFirst.mockResolvedValue(null);
+    prisma.radiology_procedure.create.mockImplementation(async (args) => ({
       id: 'created-radiology-test-id',
       ...args.data}));
     prisma.clinical_note.create.mockResolvedValue({});
@@ -299,7 +299,7 @@ describe('Radiology Order Service', () => {
       expect(radiologyOrderRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           patient_id: '550e8400-e29b-41d4-a716-446655440002',
-          radiology_test_id: '550e8400-e29b-41d4-a716-446655440003',
+          radiology_procedure_id: '550e8400-e29b-41d4-a716-446655440003',
           status: 'ORDERED',
           ordered_at: expect.any(Date)})
       );

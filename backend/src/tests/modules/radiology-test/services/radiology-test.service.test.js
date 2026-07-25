@@ -320,7 +320,7 @@ describe('Radiology Test Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-id',
         action: 'CREATE',
-        entity: 'radiology_test',
+        entity: 'radiology_procedure',
         entity_id: mockCreatedRadiologyTest.id,
         diff: { after: mockCreatedRadiologyTest },
         ip_address: '127.0.0.1'
@@ -547,7 +547,7 @@ describe('Radiology Test Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-id',
         action: 'UPDATE',
-        entity: 'radiology_test',
+        entity: 'radiology_procedure',
         entity_id: mockUpdatedRadiologyTest.id,
         diff: { before: mockBeforeUpdate, after: mockUpdatedRadiologyTest },
         ip_address: '127.0.0.1'
@@ -627,7 +627,7 @@ describe('Radiology Test Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-id',
         action: 'DELETE',
-        entity: 'radiology_test',
+        entity: 'radiology_procedure',
         entity_id: radiologyTestId,
         diff: { before: mockRadiologyTest },
         ip_address: '127.0.0.1'

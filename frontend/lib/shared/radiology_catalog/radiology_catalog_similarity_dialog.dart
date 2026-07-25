@@ -24,7 +24,7 @@ final class RadiologyCatalogProposedTest {
 final class RadiologyCatalogSimilarityDialogResult {
   const RadiologyCatalogSimilarityDialogResult._({
     required this.action,
-    this.selectedTest,
+    this.selectedProcedure,
   });
 
   const RadiologyCatalogSimilarityDialogResult.cancel()
@@ -34,14 +34,14 @@ final class RadiologyCatalogSimilarityDialogResult {
     : this._(action: RadiologyCatalogSimilarityAction.proceed);
 
   const RadiologyCatalogSimilarityDialogResult.useExisting(
-    RadiologyCatalogProcedure test,
+    RadiologyCatalogProcedure procedure,
   ) : this._(
         action: RadiologyCatalogSimilarityAction.useExisting,
-        selectedTest: test,
+        selectedProcedure: procedure,
       );
 
   final RadiologyCatalogSimilarityAction action;
-  final RadiologyCatalogProcedure? selectedTest;
+  final RadiologyCatalogProcedure? selectedProcedure;
 }
 
 Future<RadiologyCatalogSimilarityDialogResult>
@@ -129,7 +129,7 @@ showRadiologyCatalogSimilarityDialog(
                 match: visibleMatches[index],
                 onUseThis: () => Navigator.of(dialogContext).pop(
                   RadiologyCatalogSimilarityDialogResult.useExisting(
-                    visibleMatches[index].test,
+                    visibleMatches[index].procedure,
                   ),
                 ),
               ),
@@ -287,7 +287,7 @@ class _SimilarityMatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final RadiologyCatalogProcedure test = match.test;
+    final RadiologyCatalogProcedure test = match.procedure;
     final AppStatusColors statusColors = theme.statusColors;
     final AppWorkspaceStatusTone tone = match.isExact
         ? AppWorkspaceStatusTone.error
@@ -531,7 +531,7 @@ List<_FieldComparison> _buildFieldComparisons({
   required RadiologyCatalogProposedTest proposed,
   required RadiologyCatalogSimilarityMatch match,
 }) {
-  final RadiologyCatalogProcedure test = match.test;
+  final RadiologyCatalogProcedure test = match.procedure;
   final String proposedName = proposed.name.trim();
   final String existingName = test.name.trim();
   final String proposedCode = (proposed.code ?? '').trim();

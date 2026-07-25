@@ -19751,7 +19751,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyEditProcedureAction => 'Edit procedure';
 
   @override
-  String get radiologyEditProcedureDialogTitle => 'Edit Radiology procedure';
+  String get radiologyEditProcedureDialogTitle => 'Edit procedure';
 
   @override
   String get radiologyDeleteProcedureAction => 'Delete procedure';
@@ -19791,18 +19791,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create a custom procedure or refresh the standard catalog.';
 
   @override
-  String get radiologyReadOnlyStandardTestTitle => 'Standard test is read-only';
+  String get radiologyReadOnlyStandardTestTitle =>
+      'Standard procedure is read-only';
 
   @override
   String get radiologyReadOnlyStandardTestMessage =>
-      'Standard catalog rows are read-only. Copy one to create a custom test.';
+      'Standard catalog rows are read-only. Copy one to create a custom procedure.';
 
   @override
-  String get radiologyDeleteImagingTestDialogTitle => 'Delete imaging test?';
+  String get radiologyDeleteImagingTestDialogTitle => 'Delete procedure?';
 
   @override
   String get radiologyTenantRequiredForConfigMessage =>
-      'Tenant context is required to save a custom imaging test.';
+      'Tenant context is required to save a custom procedure.';
 
   @override
   String get radiologyEquipmentRecordsTitle => 'Equipment records';

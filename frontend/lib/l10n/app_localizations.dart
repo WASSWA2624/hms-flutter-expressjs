@@ -36733,7 +36733,7 @@ abstract class AppLocalizations {
   /// Title for the edit radiology procedure dialog in Clinical Services setup.
   ///
   /// In en, this message translates to:
-  /// **'Edit Radiology procedure'**
+  /// **'Edit procedure'**
   String get radiologyEditProcedureDialogTitle;
 
   /// Radiology delete procedure action.
@@ -36811,25 +36811,25 @@ abstract class AppLocalizations {
   /// Radiology standard catalog read-only title.
   ///
   /// In en, this message translates to:
-  /// **'Standard test is read-only'**
+  /// **'Standard procedure is read-only'**
   String get radiologyReadOnlyStandardTestTitle;
 
   /// Radiology standard catalog read-only body.
   ///
   /// In en, this message translates to:
-  /// **'Standard catalog rows are read-only. Copy one to create a custom test.'**
+  /// **'Standard catalog rows are read-only. Copy one to create a custom procedure.'**
   String get radiologyReadOnlyStandardTestMessage;
 
-  /// Radiology delete imaging test dialog title.
+  /// Radiology delete procedure dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Delete imaging test?'**
+  /// **'Delete procedure?'**
   String get radiologyDeleteImagingTestDialogTitle;
 
   /// Radiology tenant required validation message.
   ///
   /// In en, this message translates to:
-  /// **'Tenant context is required to save a custom imaging test.'**
+  /// **'Tenant context is required to save a custom procedure.'**
   String get radiologyTenantRequiredForConfigMessage;
 
   /// Radiology equipment records title.
@@ -37144,7 +37144,7 @@ abstract class AppLocalizations {
   /// **'{count} active orders'**
   String radiologyActiveOrdersLabel(int count);
 
-  /// Radiology delete imaging test dialog body.
+  /// Radiology delete procedure dialog body.
   ///
   /// In en, this message translates to:
   /// **'Delete {name}? It will no longer be available for new requests.'**

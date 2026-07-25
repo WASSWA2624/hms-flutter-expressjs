@@ -6,13 +6,13 @@
  * Per testing.mdc: Mock all Prisma calls, test error handling
  */
 
-const radiologyProcedureRepository = require('@repositories/radiology-test/radiology-procedure.repository');
+const radiologyProcedureRepository = require('@repositories/radiology-procedure/radiology-procedure.repository');
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
 // Mock Prisma client
 jest.mock('@prisma/client', () => ({
-  radiology_test: {
+  radiology_procedure: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
@@ -44,7 +44,7 @@ describe('Radiology Test Repository', () => {
       expect(result).toEqual(mockRadiologyTest);
       expect(prisma.radiology_procedure.findFirst).toHaveBeenCalledWith({
         where: { id: radiologyTestId, deleted_at: null },
-        include: undefined
+        include: {}
       });
     });
 
@@ -118,7 +118,7 @@ describe('Radiology Test Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: undefined
+        include: {}
       });
     });
 

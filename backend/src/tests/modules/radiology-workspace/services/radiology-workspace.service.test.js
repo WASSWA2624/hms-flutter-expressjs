@@ -61,7 +61,7 @@ const buildOrder = (overrides = {}) => ({
   encounter: {
     id: 'encounter-internal-1',
     human_friendly_id: 'ENC0000001'},
-  radiology_test: {
+  radiology_procedure: {
     id: 'rtest-internal-1',
     human_friendly_id: 'RDT0000001',
     name: 'Chest XRay',

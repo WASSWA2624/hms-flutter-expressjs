@@ -12,7 +12,7 @@ const { HttpError } = require('@lib/errors');
 
 // Mock Prisma client
 jest.mock('@prisma/client', () => ({
-  radiology_test: {
+  radiology_procedure: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
@@ -37,19 +37,19 @@ describe('Radiology Test Repository', () => {
     };
 
     it('should find radiology test by ID', async () => {
-      prisma.radiology_test.findFirst.mockResolvedValue(mockRadiologyTest);
+      prisma.radiology_procedure.findFirst.mockResolvedValue(mockRadiologyTest);
 
       const result = await radiologyTestRepository.findById(radiologyTestId);
 
       expect(result).toEqual(mockRadiologyTest);
-      expect(prisma.radiology_test.findFirst).toHaveBeenCalledWith({
+      expect(prisma.radiology_procedure.findFirst).toHaveBeenCalledWith({
         where: { id: radiologyTestId, deleted_at: null },
         include: undefined
       });
     });
 
     it('should return null if radiology test not found', async () => {
-      prisma.radiology_test.findFirst.mockResolvedValue(null);
+      prisma.radiology_procedure.findFirst.mockResolvedValue(null);
 
       const result = await radiologyTestRepository.findById(radiologyTestId);
 
@@ -57,11 +57,11 @@ describe('Radiology Test Repository', () => {
     });
 
     it('should filter out soft-deleted radiology tests', async () => {
-      prisma.radiology_test.findFirst.mockResolvedValue(null);
+      prisma.radiology_procedure.findFirst.mockResolvedValue(null);
 
       await radiologyTestRepository.findById(radiologyTestId);
 
-      expect(prisma.radiology_test.findFirst).toHaveBeenCalledWith(
+      expect(prisma.radiology_procedure.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ deleted_at: null })
         })
@@ -70,18 +70,18 @@ describe('Radiology Test Repository', () => {
 
     it('should accept include parameter', async () => {
       const include = { orders: true };
-      prisma.radiology_test.findFirst.mockResolvedValue(mockRadiologyTest);
+      prisma.radiology_procedure.findFirst.mockResolvedValue(mockRadiologyTest);
 
       await radiologyTestRepository.findById(radiologyTestId, include);
 
-      expect(prisma.radiology_test.findFirst).toHaveBeenCalledWith({
+      expect(prisma.radiology_procedure.findFirst).toHaveBeenCalledWith({
         where: { id: radiologyTestId, deleted_at: null },
         include
       });
     });
 
     it('should throw HttpError on database error', async () => {
-      prisma.radiology_test.findFirst.mockRejectedValue(new Error('DB Error'));
+      prisma.radiology_procedure.findFirst.mockRejectedValue(new Error('DB Error'));
 
       await expect(radiologyTestRepository.findById(radiologyTestId)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.findById(radiologyTestId)).rejects.toMatchObject({
@@ -108,12 +108,12 @@ describe('Radiology Test Repository', () => {
     ];
 
     it('should find many radiology tests with default params', async () => {
-      prisma.radiology_test.findMany.mockResolvedValue(mockRadiologyTests);
+      prisma.radiology_procedure.findMany.mockResolvedValue(mockRadiologyTests);
 
       const result = await radiologyTestRepository.findMany();
 
       expect(result).toEqual(mockRadiologyTests);
-      expect(prisma.radiology_test.findMany).toHaveBeenCalledWith({
+      expect(prisma.radiology_procedure.findMany).toHaveBeenCalledWith({
         where: { deleted_at: null },
         skip: 0,
         take: 20,
@@ -124,11 +124,11 @@ describe('Radiology Test Repository', () => {
 
     it('should apply filters', async () => {
       const filters = { tenant_id: '550e8400-e29b-41d4-a716-446655440002', modality: 'XRAY' };
-      prisma.radiology_test.findMany.mockResolvedValue(mockRadiologyTests);
+      prisma.radiology_procedure.findMany.mockResolvedValue(mockRadiologyTests);
 
       await radiologyTestRepository.findMany(filters);
 
-      expect(prisma.radiology_test.findMany).toHaveBeenCalledWith(
+      expect(prisma.radiology_procedure.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { deleted_at: null, ...filters }
         })
@@ -136,11 +136,11 @@ describe('Radiology Test Repository', () => {
     });
 
     it('should apply pagination', async () => {
-      prisma.radiology_test.findMany.mockResolvedValue(mockRadiologyTests);
+      prisma.radiology_procedure.findMany.mockResolvedValue(mockRadiologyTests);
 
       await radiologyTestRepository.findMany({}, 20, 10);
 
-      expect(prisma.radiology_test.findMany).toHaveBeenCalledWith(
+      expect(prisma.radiology_procedure.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           skip: 20,
           take: 10
@@ -150,28 +150,28 @@ describe('Radiology Test Repository', () => {
 
     it('should apply custom ordering', async () => {
       const orderBy = { name: 'asc' };
-      prisma.radiology_test.findMany.mockResolvedValue(mockRadiologyTests);
+      prisma.radiology_procedure.findMany.mockResolvedValue(mockRadiologyTests);
 
       await radiologyTestRepository.findMany({}, 0, 20, orderBy);
 
-      expect(prisma.radiology_test.findMany).toHaveBeenCalledWith(
+      expect(prisma.radiology_procedure.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ orderBy })
       );
     });
 
     it('should accept include parameter', async () => {
       const include = { orders: true };
-      prisma.radiology_test.findMany.mockResolvedValue(mockRadiologyTests);
+      prisma.radiology_procedure.findMany.mockResolvedValue(mockRadiologyTests);
 
       await radiologyTestRepository.findMany({}, 0, 20, { created_at: 'desc' }, include);
 
-      expect(prisma.radiology_test.findMany).toHaveBeenCalledWith(
+      expect(prisma.radiology_procedure.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ include })
       );
     });
 
     it('should throw HttpError on database error', async () => {
-      prisma.radiology_test.findMany.mockRejectedValue(new Error('DB Error'));
+      prisma.radiology_procedure.findMany.mockRejectedValue(new Error('DB Error'));
 
       await expect(radiologyTestRepository.findMany()).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.findMany()).rejects.toMatchObject({
@@ -183,29 +183,29 @@ describe('Radiology Test Repository', () => {
 
   describe('count', () => {
     it('should count radiology tests', async () => {
-      prisma.radiology_test.count.mockResolvedValue(5);
+      prisma.radiology_procedure.count.mockResolvedValue(5);
 
       const result = await radiologyTestRepository.count();
 
       expect(result).toBe(5);
-      expect(prisma.radiology_test.count).toHaveBeenCalledWith({
+      expect(prisma.radiology_procedure.count).toHaveBeenCalledWith({
         where: { deleted_at: null }
       });
     });
 
     it('should apply filters to count', async () => {
       const filters = { modality: 'XRAY' };
-      prisma.radiology_test.count.mockResolvedValue(3);
+      prisma.radiology_procedure.count.mockResolvedValue(3);
 
       await radiologyTestRepository.count(filters);
 
-      expect(prisma.radiology_test.count).toHaveBeenCalledWith({
+      expect(prisma.radiology_procedure.count).toHaveBeenCalledWith({
         where: { deleted_at: null, ...filters }
       });
     });
 
     it('should throw HttpError on database error', async () => {
-      prisma.radiology_test.count.mockRejectedValue(new Error('DB Error'));
+      prisma.radiology_procedure.count.mockRejectedValue(new Error('DB Error'));
 
       await expect(radiologyTestRepository.count()).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.count()).rejects.toMatchObject({
@@ -229,12 +229,12 @@ describe('Radiology Test Repository', () => {
     };
 
     it('should create radiology test', async () => {
-      prisma.radiology_test.create.mockResolvedValue(mockCreatedRadiologyTest);
+      prisma.radiology_procedure.create.mockResolvedValue(mockCreatedRadiologyTest);
 
       const result = await radiologyTestRepository.create(createData);
 
       expect(result).toEqual(mockCreatedRadiologyTest);
-      expect(prisma.radiology_test.create).toHaveBeenCalledWith({
+      expect(prisma.radiology_procedure.create).toHaveBeenCalledWith({
         data: createData
       });
     });
@@ -243,7 +243,7 @@ describe('Radiology Test Repository', () => {
       const error = new Error('Unique constraint');
       error.code = 'P2002';
       error.meta = { target: ['code'] };
-      prisma.radiology_test.create.mockRejectedValue(error);
+      prisma.radiology_procedure.create.mockRejectedValue(error);
 
       await expect(radiologyTestRepository.create(createData)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.create(createData)).rejects.toMatchObject({
@@ -256,7 +256,7 @@ describe('Radiology Test Repository', () => {
       const error = new Error('Foreign key constraint');
       error.code = 'P2003';
       error.meta = { field_name: 'tenant_id' };
-      prisma.radiology_test.create.mockRejectedValue(error);
+      prisma.radiology_procedure.create.mockRejectedValue(error);
 
       await expect(radiologyTestRepository.create(createData)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.create(createData)).rejects.toMatchObject({
@@ -266,7 +266,7 @@ describe('Radiology Test Repository', () => {
     });
 
     it('should throw HttpError on generic database error', async () => {
-      prisma.radiology_test.create.mockRejectedValue(new Error('DB Error'));
+      prisma.radiology_procedure.create.mockRejectedValue(new Error('DB Error'));
 
       await expect(radiologyTestRepository.create(createData)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.create(createData)).rejects.toMatchObject({
@@ -290,12 +290,12 @@ describe('Radiology Test Repository', () => {
     };
 
     it('should update radiology test', async () => {
-      prisma.radiology_test.update.mockResolvedValue(mockUpdatedRadiologyTest);
+      prisma.radiology_procedure.update.mockResolvedValue(mockUpdatedRadiologyTest);
 
       const result = await radiologyTestRepository.update(radiologyTestId, updateData);
 
       expect(result).toEqual(mockUpdatedRadiologyTest);
-      expect(prisma.radiology_test.update).toHaveBeenCalledWith({
+      expect(prisma.radiology_procedure.update).toHaveBeenCalledWith({
         where: { id: radiologyTestId },
         data: updateData
       });
@@ -304,7 +304,7 @@ describe('Radiology Test Repository', () => {
     it('should throw HttpError if radiology test not found', async () => {
       const error = new Error('Not found');
       error.code = 'P2025';
-      prisma.radiology_test.update.mockRejectedValue(error);
+      prisma.radiology_procedure.update.mockRejectedValue(error);
 
       await expect(radiologyTestRepository.update(radiologyTestId, updateData)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.update(radiologyTestId, updateData)).rejects.toMatchObject({
@@ -317,7 +317,7 @@ describe('Radiology Test Repository', () => {
       const error = new Error('Unique constraint');
       error.code = 'P2002';
       error.meta = { target: ['code'] };
-      prisma.radiology_test.update.mockRejectedValue(error);
+      prisma.radiology_procedure.update.mockRejectedValue(error);
 
       await expect(radiologyTestRepository.update(radiologyTestId, updateData)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.update(radiologyTestId, updateData)).rejects.toMatchObject({
@@ -330,7 +330,7 @@ describe('Radiology Test Repository', () => {
       const error = new Error('Foreign key constraint');
       error.code = 'P2003';
       error.meta = { field_name: 'tenant_id' };
-      prisma.radiology_test.update.mockRejectedValue(error);
+      prisma.radiology_procedure.update.mockRejectedValue(error);
 
       await expect(radiologyTestRepository.update(radiologyTestId, updateData)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.update(radiologyTestId, updateData)).rejects.toMatchObject({
@@ -340,7 +340,7 @@ describe('Radiology Test Repository', () => {
     });
 
     it('should throw HttpError on generic database error', async () => {
-      prisma.radiology_test.update.mockRejectedValue(new Error('DB Error'));
+      prisma.radiology_procedure.update.mockRejectedValue(new Error('DB Error'));
 
       await expect(radiologyTestRepository.update(radiologyTestId, updateData)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.update(radiologyTestId, updateData)).rejects.toMatchObject({
@@ -362,12 +362,12 @@ describe('Radiology Test Repository', () => {
     };
 
     it('should soft delete radiology test', async () => {
-      prisma.radiology_test.update.mockResolvedValue(mockDeletedRadiologyTest);
+      prisma.radiology_procedure.update.mockResolvedValue(mockDeletedRadiologyTest);
 
       const result = await radiologyTestRepository.softDelete(radiologyTestId);
 
       expect(result).toEqual(mockDeletedRadiologyTest);
-      expect(prisma.radiology_test.update).toHaveBeenCalledWith({
+      expect(prisma.radiology_procedure.update).toHaveBeenCalledWith({
         where: { id: radiologyTestId },
         data: { deleted_at: expect.any(Date) }
       });
@@ -376,7 +376,7 @@ describe('Radiology Test Repository', () => {
     it('should throw HttpError if radiology test not found', async () => {
       const error = new Error('Not found');
       error.code = 'P2025';
-      prisma.radiology_test.update.mockRejectedValue(error);
+      prisma.radiology_procedure.update.mockRejectedValue(error);
 
       await expect(radiologyTestRepository.softDelete(radiologyTestId)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.softDelete(radiologyTestId)).rejects.toMatchObject({
@@ -386,7 +386,7 @@ describe('Radiology Test Repository', () => {
     });
 
     it('should throw HttpError on generic database error', async () => {
-      prisma.radiology_test.update.mockRejectedValue(new Error('DB Error'));
+      prisma.radiology_procedure.update.mockRejectedValue(new Error('DB Error'));
 
       await expect(radiologyTestRepository.softDelete(radiologyTestId)).rejects.toThrow(HttpError);
       await expect(radiologyTestRepository.softDelete(radiologyTestId)).rejects.toMatchObject({

@@ -7,11 +7,11 @@
  */
 
 const {
-  createRadiologyTestSchema,
-  updateRadiologyTestSchema,
-  radiologyTestIdParamsSchema,
-  listRadiologyTestsQuerySchema
-} = require('@validations/radiology-test/radiology-procedure.schema');
+  createRadiologyProcedureSchema: createRadiologyTestSchema,
+  updateRadiologyProcedureSchema: updateRadiologyTestSchema,
+  radiologyProcedureIdParamsSchema: radiologyTestIdParamsSchema,
+  listRadiologyProceduresQuerySchema: listRadiologyTestsQuerySchema
+} = require('@validations/radiology-procedure/radiology-procedure.schema');
 
 describe('Radiology Test Schemas', () => {
   describe('createRadiologyTestSchema', () => {

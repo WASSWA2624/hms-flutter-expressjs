@@ -25343,7 +25343,7 @@
   "@radiologyEditProcedureAction": {
     "description": "Radiology edit procedure action."
   },
-  "radiologyEditProcedureDialogTitle": "Edit Radiology procedure",
+  "radiologyEditProcedureDialogTitle": "Edit procedure",
   "@radiologyEditProcedureDialogTitle": {
     "description": "Title for the edit radiology procedure dialog in Clinical Services setup."
   },
@@ -25395,19 +25395,19 @@
   "@radiologyNoProceduresBody": {
     "description": "Radiology procedures empty state body."
   },
-  "radiologyReadOnlyStandardTestTitle": "Standard test is read-only",
+  "radiologyReadOnlyStandardTestTitle": "Standard procedure is read-only",
   "@radiologyReadOnlyStandardTestTitle": {
     "description": "Radiology standard catalog read-only title."
   },
-  "radiologyReadOnlyStandardTestMessage": "Standard catalog rows are read-only. Copy one to create a custom test.",
+  "radiologyReadOnlyStandardTestMessage": "Standard catalog rows are read-only. Copy one to create a custom procedure.",
   "@radiologyReadOnlyStandardTestMessage": {
     "description": "Radiology standard catalog read-only body."
   },
-  "radiologyDeleteImagingTestDialogTitle": "Delete imaging test?",
+  "radiologyDeleteImagingTestDialogTitle": "Delete procedure?",
   "@radiologyDeleteImagingTestDialogTitle": {
-    "description": "Radiology delete imaging test dialog title."
+    "description": "Radiology delete procedure dialog title."
   },
-  "radiologyTenantRequiredForConfigMessage": "Tenant context is required to save a custom imaging test.",
+  "radiologyTenantRequiredForConfigMessage": "Tenant context is required to save a custom procedure.",
   "@radiologyTenantRequiredForConfigMessage": {
     "description": "Radiology tenant required validation message."
   },
@@ -25626,7 +25626,7 @@
   },
   "radiologyDeleteImagingTestDialogBody": "Delete {name}? It will no longer be available for new requests.",
   "@radiologyDeleteImagingTestDialogBody": {
-    "description": "Radiology delete imaging test dialog body.",
+    "description": "Radiology delete procedure dialog body.",
     "placeholders": {
       "name": {
         "type": "String"

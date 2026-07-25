@@ -74,7 +74,7 @@ describe('Radiology Order Repository', () => {
     });
 
     it('should accept include parameter', async () => {
-      const include = { patient: true, radiology_test: true };
+      const include = { patient: true, radiology_procedure: true };
       prisma.radiology_order.findFirst.mockResolvedValue(mockRadiologyOrder);
 
       await radiologyOrderRepository.findById(radiologyOrderId, include);

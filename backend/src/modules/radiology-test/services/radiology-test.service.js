@@ -508,7 +508,7 @@ const resolveOrCreateStandardRadiologyTest = async ({
     tenant_id: tenantId,
     user_id: userId,
     action: 'CREATE',
-    entity: 'radiology_test',
+    entity: 'radiology_procedure',
     entity_id: radiologyTest.id,
     diff: {
       after: {
@@ -592,7 +592,7 @@ const listRadiologyTests = async (filters, page, limit, sortBy, order, userId, i
  */
 const getRadiologyTestById = async (id, userId, ipAddress) => {
   try {
-    const resolvedId = await resolveResourceId('radiology_test', id);
+    const resolvedId = await resolveResourceId('radiology_procedure', id);
     const radiologyTest = await radiologyTestRepository.findById(resolvedId);
 
     if (!radiologyTest) {
@@ -709,7 +709,7 @@ const createRadiologyTest = async (data, userId, ipAddress) => {
     createAuditLog({
       user_id: userId,
       action: 'CREATE',
-      entity: 'radiology_test',
+      entity: 'radiology_procedure',
       entity_id: radiologyTest.id,
       diff: { after: radiologyTest },
       ip_address: ipAddress
@@ -734,7 +734,7 @@ const createRadiologyTest = async (data, userId, ipAddress) => {
  */
 const updateRadiologyTest = async (id, data, userId, ipAddress) => {
   try {
-    const resolvedId = await resolveResourceId('radiology_test', id);
+    const resolvedId = await resolveResourceId('radiology_procedure', id);
 
     // Get current state for audit
     const before = await radiologyTestRepository.findById(resolvedId);
@@ -780,7 +780,7 @@ const updateRadiologyTest = async (id, data, userId, ipAddress) => {
     createAuditLog({
       user_id: userId,
       action: 'UPDATE',
-      entity: 'radiology_test',
+      entity: 'radiology_procedure',
       entity_id: radiologyTest.id,
       diff: { before, after: radiologyTest },
       ip_address: ipAddress
@@ -804,7 +804,7 @@ const updateRadiologyTest = async (id, data, userId, ipAddress) => {
  */
 const deleteRadiologyTest = async (id, userId, ipAddress) => {
   try {
-    const resolvedId = await resolveResourceId('radiology_test', id);
+    const resolvedId = await resolveResourceId('radiology_procedure', id);
 
     // Get current state for audit
     const before = await radiologyTestRepository.findById(resolvedId);
@@ -819,7 +819,7 @@ const deleteRadiologyTest = async (id, userId, ipAddress) => {
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
-      entity: 'radiology_test',
+      entity: 'radiology_procedure',
       entity_id: resolvedId,
       diff: { before },
       ip_address: ipAddress

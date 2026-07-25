@@ -7,7 +7,7 @@
  */
 
 // Mock dependencies BEFORE requiring modules
-jest.mock('@services/radiology-test/radiology-procedure.service', () => ({
+jest.mock('@services/radiology-procedure/radiology-procedure.service', () => ({
   listRadiologyProcedures: jest.fn(),
   getRadiologyProcedureById: jest.fn(),
   createRadiologyProcedure: jest.fn(),
@@ -21,8 +21,8 @@ jest.mock('@lib/response', () => ({
   sendNoContent: jest.fn()
 }));
 
-const radiologyProcedureController = require('@controllers/radiology-test/radiology-procedure.controller');
-const radiologyProcedureService = require('@services/radiology-test/radiology-procedure.service');
+const radiologyProcedureController = require('@controllers/radiology-procedure/radiology-procedure.controller');
+const radiologyProcedureService = require('@services/radiology-procedure/radiology-procedure.service');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
 
@@ -78,7 +78,7 @@ describe('Radiology Test Controller', () => {
       );
       expect(sendPaginated).toHaveBeenCalledWith(
         res,
-        'messages.radiology_test.list.success',
+        'messages.radiology_procedure.list.success',
         mockResult.radiologyProcedures,
         mockResult.pagination
       );
@@ -158,7 +158,7 @@ describe('Radiology Test Controller', () => {
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
         200,
-        'messages.radiology_test.get.success',
+        'messages.radiology_procedure.get.success',
         mockRadiologyTest
       );
     });
@@ -205,7 +205,7 @@ describe('Radiology Test Controller', () => {
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
         201,
-        'messages.radiology_test.create.success',
+        'messages.radiology_procedure.create.success',
         mockCreatedRadiologyTest
       );
     });
@@ -254,7 +254,7 @@ describe('Radiology Test Controller', () => {
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
         200,
-        'messages.radiology_test.update.success',
+        'messages.radiology_procedure.update.success',
         mockUpdatedRadiologyTest
       );
     });

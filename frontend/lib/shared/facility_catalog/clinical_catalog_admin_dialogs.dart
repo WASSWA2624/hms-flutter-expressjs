@@ -613,7 +613,8 @@ class _RadiologyCatalogMutationDialogState
           });
           return false;
         case RadiologyCatalogSimilarityAction.useExisting:
-          final RadiologyCatalogProcedure? existing = dialogResult.selectedTest;
+          final RadiologyCatalogProcedure? existing =
+              dialogResult.selectedProcedure;
           if (existing == null) {
             setState(() => _isSaving = false);
             return false;

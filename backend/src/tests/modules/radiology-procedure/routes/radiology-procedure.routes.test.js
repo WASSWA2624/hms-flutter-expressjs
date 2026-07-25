@@ -1,4 +1,4 @@
-const subject = require('@routes/radiology-test/radiology-procedure.routes');
+const subject = require('@routes/radiology-procedure/radiology-procedure.routes');
 
 describe('radiology-procedure.routes contract', () => {
   it('exports an express router with registered handlers', () => {

@@ -1977,7 +1977,7 @@ visit_queue: {
       radiology_order: {
         create: jest.fn().mockResolvedValue({ id: 'rad-1' })
       },
-      radiology_test: {
+      radiology_procedure: {
         findFirst: jest.fn().mockResolvedValue({ id: 'rad-test-1' })
       },
       pharmacy_order: {
@@ -2103,7 +2103,7 @@ visit_queue: {
       radiology_order: {
         create: jest.fn()
       },
-      radiology_test: {
+      radiology_procedure: {
         findFirst: jest.fn()
       },
       pharmacy_order: {

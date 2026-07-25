@@ -6,13 +6,13 @@
  * Per testing.mdc: Mock repository, test business logic
  */
 
-const radiologyProcedureService = require('@services/radiology-test/radiology-procedure.service');
-const radiologyProcedureRepository = require('@repositories/radiology-test/radiology-procedure.repository');
+const radiologyProcedureService = require('@services/radiology-procedure/radiology-procedure.service');
+const radiologyProcedureRepository = require('@repositories/radiology-procedure/radiology-procedure.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 
 // Mock dependencies
-jest.mock('@repositories/radiology-test/radiology-procedure.repository');
+jest.mock('@repositories/radiology-procedure/radiology-procedure.repository');
 jest.mock('@lib/audit');
 
 describe('Radiology Test Service', () => {
@@ -320,7 +320,7 @@ describe('Radiology Test Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-id',
         action: 'CREATE',
-        entity: 'radiology_test',
+        entity: 'radiology_procedure',
         entity_id: mockCreatedRadiologyTest.id,
         diff: { after: mockCreatedRadiologyTest },
         ip_address: '127.0.0.1'
@@ -547,7 +547,7 @@ describe('Radiology Test Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-id',
         action: 'UPDATE',
-        entity: 'radiology_test',
+        entity: 'radiology_procedure',
         entity_id: mockUpdatedRadiologyTest.id,
         diff: { before: mockBeforeUpdate, after: mockUpdatedRadiologyTest },
         ip_address: '127.0.0.1'
@@ -627,7 +627,7 @@ describe('Radiology Test Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-id',
         action: 'DELETE',
-        entity: 'radiology_test',
+        entity: 'radiology_procedure',
         entity_id: radiologyTestId,
         diff: { before: mockRadiologyTest },
         ip_address: '127.0.0.1'

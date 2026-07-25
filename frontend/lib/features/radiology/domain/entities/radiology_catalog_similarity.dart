@@ -8,7 +8,7 @@ const int radiologyCatalogModalityWeight = 20;
 
 final class RadiologyCatalogSimilarityMatch {
   const RadiologyCatalogSimilarityMatch({
-    required this.test,
+    required this.procedure,
     required this.score,
     required this.reasons,
     required this.isExact,
@@ -17,7 +17,7 @@ final class RadiologyCatalogSimilarityMatch {
     this.modalityScore,
   });
 
-  final RadiologyCatalogProcedure test;
+  final RadiologyCatalogProcedure procedure;
 
   /// Composite match score across available parameters (name/code/modality).
   final int score;
@@ -379,7 +379,7 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
       }
       matches.add(
         RadiologyCatalogSimilarityMatch(
-          test: test,
+          procedure: test,
           score: compositeScore,
           reasons: reasons.isEmpty
               ? <String>[
@@ -410,7 +410,7 @@ RadiologyCatalogDuplicateCheckResult checkRadiologyCatalogDuplicates({
 
     matches.add(
       RadiologyCatalogSimilarityMatch(
-        test: test,
+        procedure: test,
         score: compositeScore,
         reasons: reasons.isEmpty ? const <String>['name'] : reasons,
         isExact: false,
