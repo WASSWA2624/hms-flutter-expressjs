@@ -783,11 +783,8 @@ class _RadiologyCatalogMutationDialogState
                 message: l10n.labSimilarityCheckLoadingBody,
                 variant: AppFormInformationVariant.info,
                 icon: Icons.manage_search_outlined,
-                children: <Widget>[
-                  SizedBox(
-                    height: 40,
-                    child: AppLoadingIndicator.compact(expand: false),
-                  ),
+                children: const <Widget>[
+                  LinearProgressIndicator(minHeight: 3),
                 ],
               ),
             if (_failure != null)
@@ -1431,11 +1428,8 @@ class _LabCatalogItemMutationDialogState
                 message: l10n.labSimilarityCheckLoadingBody,
                 variant: AppFormInformationVariant.info,
                 icon: Icons.manage_search_outlined,
-                children: <Widget>[
-                  SizedBox(
-                    height: 40,
-                    child: AppLoadingIndicator.compact(expand: false),
-                  ),
+                children: const <Widget>[
+                  LinearProgressIndicator(minHeight: 3),
                 ],
               ),
             if (_failure != null)

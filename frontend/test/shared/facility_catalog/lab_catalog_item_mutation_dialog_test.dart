@@ -31,10 +31,30 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byType(LabSearchableTextField), findsWidgets);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> &&
+              widget.labelText == 'Category',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> &&
+              widget.labelText == 'Specimen type',
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(LabEditableValueListField), findsOneWidget);
       expect(find.byType(LabReferenceRangeListField), findsOneWidget);
       expect(find.byType(LabTestDefinitionForm), findsOneWidget);
+
+      // Add control sits above range cards (top of reference-range block).
+      final double addY = tester.getTopLeft(find.text('Add reference range')).dy;
+      final double adultY = tester.getTopLeft(find.text('Adult').first).dy;
+      expect(addY, lessThan(adultY));
     });
 
     testWidgets('qualitative kind shows result options and hides unit options', (
@@ -52,7 +72,9 @@ void main() {
       expect(optionsField.labelText, 'Qualitative result options');
     });
 
-    testWidgets('save submits full test payload', (WidgetTester tester) async {
+    testWidgets('save confirms no-similar then submits full test payload', (
+      WidgetTester tester,
+    ) async {
       Map<String, Object?>? submitted;
       await _pumpMutationDialog(
         tester,
@@ -64,8 +86,17 @@ void main() {
 
       await tester.enterText(find.byType(TextFormField).at(0), 'Glucose');
       await tester.enterText(find.byType(TextFormField).at(1), 'GLU');
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Dialog title is normalized to uppercase; banner copy stays sentence case.
+      expect(find.text('Match status: No similar found'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Continue save'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Continue save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(submitted, isNotNull);
       expect(submitted!['name'], 'Glucose');
@@ -84,6 +115,37 @@ void main() {
       expect(firstRange['label'], 'Adult');
       expect(firstRange['age_min_value'], isNull);
       expect(firstRange['notes'], isNull);
+    });
+
+    testWidgets('exact duplicate name blocks save without submit', (
+      WidgetTester tester,
+    ) async {
+      var submitCount = 0;
+      await _pumpMutationDialog(
+        tester,
+        onSubmit: (Map<String, Object?> payload) async {
+          submitCount += 1;
+          return null;
+        },
+      );
+
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'Hemoglobin',
+      );
+      await tester.enterText(find.byType(TextFormField).at(1), 'HB-NEW');
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(submitCount, 0);
+      expect(
+        find.text('A lab test with this name already exists.'),
+        findsOneWidget,
+      );
+      expect(find.text('Match status: No similar found'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Continue save'), findsNothing);
     });
 
     testWidgets('text kind hides unit and qualitative options', (
@@ -126,7 +188,7 @@ Future<void> _pumpMutationDialog(
             return AppButton.primary(
               label: 'Open',
               onPressed: () {
-                showAppDialog<bool>(
+                showAppDialog<Object>(
                   context: context,
                   builder: (_) => LabCatalogItemMutationDialog(
                     kind: LabCatalogItemType.test,
