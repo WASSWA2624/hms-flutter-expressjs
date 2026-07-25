@@ -1,39 +1,35 @@
-# Strengthen Radiology Imaging-Test Similarity Engine
+# Admin Setup — Clinical Services Radiology Create Procedure
 
-Make radiology create/edit run percentage similarity on name and code before save, with match and no-match feedback.
+Verify and fix Create procedure on Admin Setup Clinical Services Radiology: mutation dialog, create path, similarity check, sync, and permission-gated create/edit/delete.
 
 ## Context
 
-- Surface: `RadiologyCatalogMutationDialog` (create and edit) on Clinical Services → Radiology.
-- Current guard is too weak: exact matching misses misspellings; edit skips the check.
-- Similarity = percentage fuzzy match on normalized name and code in active catalog scope.
+- Route: `/admin/setup?section=clinical-services`, Radiology tab (`FacilityCatalogConfigPanel`).
+- Create procedure opens `RadiologyCatalogMutationDialog` and persists via `createRadiologyCatalogProcedure`.
+- Similarity runs against catalog candidates before create/edit.
+- Radiology procedures means global catalog procedures (not order priority).
 
 ## Requirements
 
-1. Score name and code by percentage similarity, not exact-string-only matching.
-2. Detect near-duplicates from misspellings, spacing/punctuation variants, and token overlap.
-3. Run the check on Save for create and edit; exclude the edited row.
-4. Threshold matches open Cancel / Use existing / Proceed with percentage scores.
-5. When none match, show visible pre-save “no similar test” feedback, then continue save.
-6. Exact conflicts stay field-blocked; Proceed sends `confirm_similar` for backend enforcement.
-7. Keep permission, loading, validation, error, success states; hide unauthorized create/edit.
+1. Confirm Create procedure (search trailing and empty state) opens the create dialog; open the scope picker first when `tenantId` is missing.
+2. Confirm create persists via the API, refreshes the Radiology table, and shows success without stale rows.
+3. Confirm similarity on create/edit covers loading, match review, and proceed/cancel, aligned with backend uniqueness.
+4. Gate Create, Edit, and Delete to roles that may create, edit/update, and delete radiology catalog procedures; hide unauthorized controls; enforce the same on backend mutations.
+5. Align payloads and post-mutation UI sync with backend responses and refresh patterns.
 
 ## Constraints
 
-- Extend existing radiology similarity helpers/dialog and create/update API only.
-- Align backend/frontend scoring. No silent duplicates.
+- Reuse existing catalog dialogs, similarity helpers, repositories, routes, and design-system components.
+- Follow `.cursor/mandatories.mdc` and access rules; backend RBAC is authoritative.
+- Skip Lab, Diagnoses, and Configure enable wizards unless needed for gating.
 
 ## Acceptance Criteria
 
-- Near-matching name/code opens the similarity dialog with scores on create/edit.
-- Exact duplicates stay blocked with visible field feedback.
-- No-match Save shows “no similar test” feedback, then saves.
-- Use existing does not mutate; Proceed confirms once and syncs the list.
-- Unauthorized users never see create/edit.
-- Works on mobile/tablet/desktop in light and dark themes.
+- Authorized: create dialog opens; create persists; table updates immediately.
+- Similarity: near-duplicates surface; cancel/proceed match UX; backend rejects true conflicts.
+- Unauthorized: Create/Edit/Delete absent; API rejects those mutations.
+- Loading, empty, error, validation, and success states stay localized.
 
 ## Relevant Files
 
-- `clinical_catalog_admin_dialogs.dart`, `radiology_catalog_similarity.dart`, similarity dialog
-- `facility_catalog_config_panel.dart`, `radiology-test-similarity.js`, radiology-test module
-- Radiology similarity unit/service tests
+- `screens/admin-setup-clinical-services.md`, `facility_catalog_config_panel.dart`, radiology catalog dialogs/similarity, API, permissions, `.cursor/mandatories.mdc`, `.cursor/access/permissions.mdc`
