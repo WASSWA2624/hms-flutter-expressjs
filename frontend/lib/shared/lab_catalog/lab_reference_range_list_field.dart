@@ -135,6 +135,15 @@ class EditableLabReferenceRange {
     return !_criticalContradictsNormal();
   }
 
+  bool hasNonNumericBound() {
+    return _hasNonNumericSide(normalMinController.text) ||
+        _hasNonNumericSide(normalMaxController.text) ||
+        _hasNonNumericSide(criticalMinController.text) ||
+        _hasNonNumericSide(criticalMaxController.text) ||
+        _hasNonNumericSide(ageMinController.text) ||
+        _hasNonNumericSide(ageMaxController.text);
+  }
+
   /// Stable key for label + gender + age band + age unit applicability.
   String applicabilityKey() {
     final String label = labelController.text.trim().toLowerCase();
@@ -164,6 +173,11 @@ class EditableLabReferenceRange {
     return false;
   }
 
+  bool _hasNonNumericSide(String value) {
+    final String text = value.trim();
+    return text.isNotEmpty && num.tryParse(text) == null;
+  }
+
   bool _isRangeValid(
     String minValue,
     String maxValue, {
@@ -171,15 +185,22 @@ class EditableLabReferenceRange {
   }) {
     final String minText = minValue.trim();
     final String maxText = maxValue.trim();
-    if (minText.isEmpty || maxText.isEmpty) {
+    if (minText.isEmpty && maxText.isEmpty) {
       return true;
     }
-    final num? minNumber = num.tryParse(minText);
-    final num? maxNumber = num.tryParse(maxText);
-    if (minNumber == null || maxNumber == null) {
+    final num? minNumber = minText.isEmpty ? null : num.tryParse(minText);
+    final num? maxNumber = maxText.isEmpty ? null : num.tryParse(maxText);
+    // Filled sides must be numeric; open-ended (one-sided) bounds are allowed.
+    if (minText.isNotEmpty && minNumber == null) {
       return false;
     }
-    return allowEqual ? minNumber <= maxNumber : minNumber < maxNumber;
+    if (maxText.isNotEmpty && maxNumber == null) {
+      return false;
+    }
+    if (minNumber != null && maxNumber != null) {
+      return allowEqual ? minNumber <= maxNumber : minNumber < maxNumber;
+    }
+    return true;
   }
 }
 

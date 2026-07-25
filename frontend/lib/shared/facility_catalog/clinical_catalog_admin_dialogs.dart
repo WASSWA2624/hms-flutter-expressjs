@@ -25,6 +25,10 @@ typedef CatalogTenantOptionsLoader = Future<List<TenantProfile>> Function();
 typedef CatalogFacilityOptionsLoader =
     Future<List<FacilityProfile>> Function(String? tenantId);
 
+/// Yield before lab similarity scoring so Save loading / Cancel can paint.
+@visibleForTesting
+Duration debugLabCatalogSimilarityPaintDelay = Duration.zero;
+
 /// Role-aware visibility for Clinical Services Configure scope step.
 @immutable
 final class CatalogConfigureScopeVisibility {
@@ -1057,7 +1061,7 @@ class _LabCatalogItemMutationDialogState
 
     setState(() => _isCheckingSimilarity = true);
     // Let the loading indicator paint before the composite scan.
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(debugLabCatalogSimilarityPaintDelay);
     if (!mounted) {
       return false;
     }
@@ -1205,7 +1209,6 @@ class _LabCatalogItemMutationDialogState
       return;
     }
     setState(() {
-      _isSaving = true;
       _failure = null;
       _nameErrorText = null;
       _codeErrorText = null;
@@ -1219,6 +1222,7 @@ class _LabCatalogItemMutationDialogState
       }
     }
 
+    setState(() => _isSaving = true);
     final AppFailure? failure = await widget.onSubmit(_payload());
     if (!mounted) {
       return;
@@ -1250,6 +1254,9 @@ class _LabCatalogItemMutationDialogState
       if (!range.isValid()) {
         if (range.contradictsCriticalVsNormal()) {
           return l10n.labReferenceRangeCriticalVsNormalMessage;
+        }
+        if (range.hasNonNumericBound()) {
+          return l10n.labReferenceRangeInvalidValueMessage;
         }
         return l10n.labReferenceRangeInvalidBoundsMessage;
       }
@@ -1588,6 +1595,8 @@ class _LabCatalogItemMutationDialogState
             : l10n.commonSaveActionLabel,
         submitIcon: Icons.save_outlined,
         isSubmitting: formLocked,
+        // Cancel stays available during similarity scan; only lock while saving.
+        cancelEnabled: !_isSaving,
         onCancel: _isSaving ? null : () => Navigator.of(context).pop(),
         onSubmit: formLocked ? null : _submit,
       ),

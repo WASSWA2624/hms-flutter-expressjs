@@ -7385,6 +7385,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String validationFieldMaxLengthMessage(String field, int max) {
+    return '$field must be at most $max characters.';
+  }
+
+  @override
   String get errorNetworkTitle => 'Connection problem';
 
   @override
@@ -19794,6 +19799,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get labReferenceRangeCriticalVsNormalMessage =>
       'Critical bounds must not contradict normal bounds.';
+
+  @override
+  String get labReferenceRangeInvalidValueMessage =>
+      'Enter valid numbers for filled reference-range bounds.';
 
   @override
   String get radiologySimilarProcedureDialogTitle => 'Similar procedure found';

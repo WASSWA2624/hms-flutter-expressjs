@@ -175,6 +175,23 @@ describe('Lab Test Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should fail validation when critical min contradicts normal min', () => {
+      const invalidData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Complete Blood Count',
+        reference_ranges: [
+          {
+            label: 'Adult',
+            normal_min_value: '10',
+            critical_min_value: '12'
+          }
+        ]
+      };
+
+      const result = createLabTestSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
     it('should fail validation when unit options contain duplicates', () => {
       const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',

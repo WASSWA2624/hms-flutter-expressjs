@@ -84,4 +84,44 @@ void main() {
     expect(cancelCount, 0);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
+
+  testWidgets(
+    'buildAppDialogFormActions keeps Cancel enabled while Save loads',
+    (WidgetTester tester) async {
+      var cancelCount = 0;
+      var submitCount = 0;
+
+      await pumpComponent(
+        tester,
+        Row(
+          children: buildAppDialogFormActions(
+            cancelLabel: 'Cancel',
+            submitLabel: 'Save',
+            isSubmitting: true,
+            cancelEnabled: true,
+            onCancel: () {
+              cancelCount += 1;
+            },
+            onSubmit: () {
+              submitCount += 1;
+            },
+          ),
+        ),
+      );
+
+      final AppButton cancel = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, 'Cancel'),
+      );
+      expect(cancel.enabled, isTrue);
+      expect(cancel.onPressed, isNotNull);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Save'));
+      await tester.pump();
+
+      expect(cancelCount, 1);
+      expect(submitCount, 0);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    },
+  );
 }

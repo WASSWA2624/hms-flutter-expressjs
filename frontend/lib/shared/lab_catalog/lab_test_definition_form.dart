@@ -157,7 +157,19 @@ class LabTestDefinitionForm extends StatelessWidget {
               isRequired: true,
               prefixIcon: namePrefixIcon,
               errorText: nameErrorText,
-              validator: nameValidator,
+              validator: AppValidators.compose<String>(
+                <FormFieldValidator<String>>[
+                  ?nameValidator,
+                  AppValidators.maxLength(
+                    255,
+                    l10n.validationFieldMaxLengthMessage(
+                      l10n.labTestNameLabel,
+                      255,
+                    ),
+                    trim: true,
+                  ),
+                ],
+              ),
             ),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
@@ -167,7 +179,19 @@ class LabTestDefinitionForm extends StatelessWidget {
                 enabled: enabled && codeEnabled,
                 prefixIcon: const Icon(Icons.tag_outlined),
                 errorText: codeErrorText,
-                validator: codeValidator,
+                validator: AppValidators.compose<String>(
+                  <FormFieldValidator<String>>[
+                    ?codeValidator,
+                    AppValidators.maxLength(
+                      80,
+                      l10n.validationFieldMaxLengthMessage(
+                        l10n.labTestCodeLabel,
+                        80,
+                      ),
+                      trim: true,
+                    ),
+                  ],
+                ),
               ),
               right: AppSelectField<String>.searchable(
                 value: _selectValueOrNull(categoryController),
@@ -177,6 +201,14 @@ class LabTestDefinitionForm extends StatelessWidget {
                 options: _stringSelectOptions(
                   categories,
                   icon: Icons.category_outlined,
+                ),
+                validator: AppValidators.maxLength(
+                  80,
+                  l10n.validationFieldMaxLengthMessage(
+                    l10n.labCategoryLabel,
+                    80,
+                  ),
+                  trim: true,
                 ),
                 onChanged: (String? value) {
                   categoryController.text = value?.trim() ?? '';
@@ -201,6 +233,14 @@ class LabTestDefinitionForm extends StatelessWidget {
                 options: _stringSelectOptions(
                   specimens,
                   icon: Icons.bloodtype_outlined,
+                ),
+                validator: AppValidators.maxLength(
+                  80,
+                  l10n.validationFieldMaxLengthMessage(
+                    l10n.labSpecimenTypeLabel,
+                    80,
+                  ),
+                  trim: true,
                 ),
                 onChanged: (String? value) {
                   specimenController.text = value?.trim() ?? '';
@@ -227,6 +267,14 @@ class LabTestDefinitionForm extends StatelessWidget {
                 options: _stringSelectOptions(
                   units,
                   icon: Icons.straighten_outlined,
+                ),
+                validator: AppValidators.maxLength(
+                  40,
+                  l10n.validationFieldMaxLengthMessage(
+                    l10n.labDefaultUnitLabel,
+                    40,
+                  ),
+                  trim: true,
                 ),
                 onChanged: (String? value) {
                   unitController.text = value?.trim() ?? '';
@@ -257,6 +305,14 @@ class LabTestDefinitionForm extends StatelessWidget {
               enabled: enabled,
               maxLines: 2,
               prefixIcon: const Icon(Icons.notes_outlined),
+              validator: AppValidators.maxLength(
+                255,
+                l10n.validationFieldMaxLengthMessage(
+                  l10n.labTestDescriptionLabel,
+                  255,
+                ),
+                trim: true,
+              ),
             ),
           ],
         ),

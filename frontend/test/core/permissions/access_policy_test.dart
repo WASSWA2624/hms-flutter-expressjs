@@ -725,5 +725,54 @@ void main() {
         expect(policy.canMutateRadiologyCatalog(), isFalse);
       },
     );
+
+    test('canMutateLabCatalog grants lab write and admin scopes', () {
+      final labTech = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['LAB_TECH']),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+      final facilityAdmin = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['FACILITY_ADMIN']),
+        ),
+      );
+      final nurse = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['NURSE']),
+        ),
+      );
+
+      expect(labTech.canMutateLabCatalog(), isTrue);
+      expect(facilityAdmin.canMutateLabCatalog(), isTrue);
+      expect(nurse.canMutateLabCatalog(), isFalse);
+    });
+
+    test('canMutateLabCatalog respects explicit permission ceiling', () {
+      final policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['LAB_TECH']),
+          permissions: <AppPermission>{AppPermissions.labRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+
+      expect(policy.canMutateLabCatalog(), isFalse);
+    });
   });
 }

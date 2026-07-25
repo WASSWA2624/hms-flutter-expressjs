@@ -4,6 +4,9 @@ import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 
 /// Standard Cancel + primary actions for [AppDialog.actions] footers.
+///
+/// [isSubmitting] drives Save loading and disables Save. Cancel stays enabled
+/// unless [cancelEnabled] is false (defaults to `!isSubmitting`).
 List<Widget> buildAppDialogFormActions({
   required String cancelLabel,
   required String submitLabel,
@@ -12,12 +15,14 @@ List<Widget> buildAppDialogFormActions({
   IconData? cancelIcon,
   IconData? submitIcon,
   bool isSubmitting = false,
+  bool? cancelEnabled,
   bool emphasized = false,
 }) {
+  final bool canCancel = cancelEnabled ?? !isSubmitting;
   if (emphasized) {
     return <Widget>[
       OutlinedButton.icon(
-        onPressed: isSubmitting ? null : onCancel,
+        onPressed: canCancel ? onCancel : null,
         icon: Icon(cancelIcon ?? Icons.close),
         label: Text(cancelLabel),
       ),
@@ -40,14 +45,14 @@ List<Widget> buildAppDialogFormActions({
       AppButton.secondary(
         label: cancelLabel,
         leadingIcon: cancelIcon,
-        enabled: !isSubmitting,
-        onPressed: isSubmitting ? null : onCancel,
+        enabled: canCancel,
+        onPressed: canCancel ? onCancel : null,
       )
     else
       AppButton.tertiary(
         label: cancelLabel,
-        enabled: !isSubmitting,
-        onPressed: isSubmitting ? null : onCancel,
+        enabled: canCancel,
+        onPressed: canCancel ? onCancel : null,
       ),
     AppButton.primary(
       label: submitLabel,

@@ -28,6 +28,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/clinical_catalog_admin_dialogs.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
+import 'package:hosspi_hms/shared/facility_catalog/lab_catalog_mutate_visibility.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
@@ -735,7 +736,10 @@ class _FacilityCatalogConfigPanelState
   }
 
   Widget _buildLabTable(AppLocalizations l10n) {
-    final bool canMutateLab = widget.enabled && _canMutateLabCatalog;
+    final bool canMutateLab = labCatalogMutateControlsVisible(
+      panelEnabled: widget.enabled,
+      canMutateLabCatalog: _canMutateLabCatalog,
+    );
     return AppListTable<LabCatalogItem>(
       items: _labVisibleItems,
       maxVisibleItems: _pageSize,

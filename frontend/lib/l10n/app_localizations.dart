@@ -13660,6 +13660,12 @@ abstract class AppLocalizations {
   /// **'{field} is already in use.'**
   String validationFieldAlreadyInUseMessage(String field);
 
+  /// Validation message when a named field exceeds max length.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} must be at most {max} characters.'**
+  String validationFieldMaxLengthMessage(String field, int max);
+
   /// Title for a generic network failure.
   ///
   /// In en, this message translates to:
@@ -36816,6 +36822,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Critical bounds must not contradict normal bounds.'**
   String get labReferenceRangeCriticalVsNormalMessage;
+
+  /// Validation when a filled lab reference-range bound is not numeric.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter valid numbers for filled reference-range bounds.'**
+  String get labReferenceRangeInvalidValueMessage;
 
   /// Dialog title when creating a procedure similar to an existing one.
   ///

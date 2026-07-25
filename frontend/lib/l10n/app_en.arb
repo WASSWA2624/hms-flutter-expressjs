@@ -9388,6 +9388,18 @@
       }
     }
   },
+  "validationFieldMaxLengthMessage": "{field} must be at most {max} characters.",
+  "@validationFieldMaxLengthMessage": {
+    "description": "Validation message when a named field exceeds max length.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "errorNetworkTitle": "Connection problem",
   "@errorNetworkTitle": {
     "description": "Title for a generic network failure."
@@ -25411,6 +25423,10 @@
   "labReferenceRangeCriticalVsNormalMessage": "Critical bounds must not contradict normal bounds.",
   "@labReferenceRangeCriticalVsNormalMessage": {
     "description": "Validation when critical range contradicts normal range."
+  },
+  "labReferenceRangeInvalidValueMessage": "Enter valid numbers for filled reference-range bounds.",
+  "@labReferenceRangeInvalidValueMessage": {
+    "description": "Validation when a filled lab reference-range bound is not numeric."
   },
 
 "radiologySimilarProcedureDialogTitle": "Similar procedure found",

@@ -125,6 +125,22 @@ const labReferenceRangeSchema = z
       });
     }
 
+    if (criticalMin != null && normalMin != null && criticalMin > normalMin) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Critical minimum cannot be above the normal minimum.',
+        path: ['critical_min_value']
+      });
+    }
+
+    if (criticalMax != null && normalMax != null && criticalMax < normalMax) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Critical maximum cannot be below the normal maximum.',
+        path: ['critical_max_value']
+      });
+    }
+
     if (value.effective_from && value.effective_to) {
       const from = Date.parse(value.effective_from);
       const to = Date.parse(value.effective_to);
