@@ -36838,6 +36838,102 @@ abstract class AppLocalizations {
   /// **'Delete procedure?'**
   String get radiologyDeleteImagingTestDialogTitle;
 
+  /// Title for soft-deleting a tenant radiology catalog procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete radiology procedure?'**
+  String get radiologySoftDeleteProcedureDialogTitle;
+
+  /// Body for soft-deleting a tenant radiology catalog procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete \"{name}\" from the tenant catalog ({scope})? It stays listed as soft deleted and can be restored. This is not facility offering removal.'**
+  String radiologySoftDeleteProcedureDialogBody(String name, String scope);
+
+  /// Body for soft-deleting a radiology catalog procedure when tenant name is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete \"{name}\" from the tenant radiology catalog? It stays listed as soft deleted and can be restored. This is not facility offering removal.'**
+  String radiologySoftDeleteProcedureDialogBodyNoScope(String name);
+
+  /// Title for restoring a soft-deleted radiology catalog procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore radiology procedure?'**
+  String get radiologyRestoreProcedureDialogTitle;
+
+  /// Body for restoring a soft-deleted radiology catalog procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore \"{name}\" to the tenant radiology catalog?'**
+  String radiologyRestoreProcedureDialogBody(String name);
+
+  /// Restore soft-deleted radiology procedure action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get radiologyRestoreProcedureAction;
+
+  /// Permanent delete radiology procedure action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent delete'**
+  String get radiologyPermanentDeleteProcedureAction;
+
+  /// Title for permanently deleting a soft-deleted radiology catalog procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete radiology procedure?'**
+  String get radiologyPermanentDeleteProcedureDialogTitle;
+
+  /// Warning before typing confirmation for permanent radiology procedure delete.
+  ///
+  /// In en, this message translates to:
+  /// **'WARNING: Permanently deleting \"{name}\" erases this tenant catalog procedure and related facility offerings forever. This cannot be recovered.'**
+  String radiologyPermanentDeleteProcedureWarningBody(String name);
+
+  /// Final confirmation body for permanent radiology procedure delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete radiology procedure \"{name}\"? This action is irreversible.'**
+  String radiologyPermanentDeleteProcedureConfirmationBody(String name);
+
+  /// Radiology catalog table column for soft-delete status.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion status'**
+  String get radiologyDeletionStatusColumnLabel;
+
+  /// Active radiology catalog procedure deletion status.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get radiologyDeletionStatusActive;
+
+  /// Soft-deleted radiology catalog procedure deletion status.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft deleted'**
+  String get radiologyDeletionStatusSoftDeleted;
+
+  /// Snackbar after soft-deleting a radiology catalog procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology procedure soft-deleted.'**
+  String get radiologyProcedureSoftDeletedMessage;
+
+  /// Snackbar after restoring a radiology catalog procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology procedure restored.'**
+  String get radiologyProcedureRestoredMessage;
+
+  /// Snackbar after permanently deleting a radiology catalog procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology procedure permanently deleted.'**
+  String get radiologyProcedurePermanentlyDeletedMessage;
+
   /// Radiology tenant required validation message.
   ///
   /// In en, this message translates to:

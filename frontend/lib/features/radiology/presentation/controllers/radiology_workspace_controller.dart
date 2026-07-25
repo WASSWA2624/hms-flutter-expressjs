@@ -469,8 +469,11 @@ final class RadiologyWorkspaceController
                   currency: item.currency,
                   isOfferedAtFacility: true,
                   facilityOfferingId: item.facilityOfferingId,
+                  tenantId: item.tenantId,
+                  tenantName: item.tenantName,
                   createdAt: item.createdAt,
                   updatedAt: item.updatedAt,
+                  deletedAt: item.deletedAt,
                 );
               })
               .toList(growable: false),

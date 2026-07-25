@@ -133,18 +133,18 @@ router.put(
 );
 
 /**
- * @description Delete radiology test (soft delete)
+ * @description Delete radiology procedure (soft delete)
  * @method DELETE
  * @route /api/v1/radiology-procedures/:id
  * @authentication Required (JWT)
  * @permissions radiology:write or tenant/facility/system admin
- * @urlParams {string} id - Radiology test ID (UUID)
+ * @urlParams {string} id - Radiology procedure ID (UUID)
  * @queryParams None
  * @bodyParams None
- * @returns {void} 204 No Content
+ * @returns {Object} Soft-deleted radiology procedure
  * @throws 401 Unauthorized
  * @throws 403 Forbidden
- * @throws 404 Radiology test not found
+ * @throws 404 Radiology procedure not found
  */
 router.delete(
   '/:id',
@@ -153,6 +153,48 @@ router.delete(
   authenticate(),
   authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
   radiologyProcedureController.deleteRadiologyProcedure
+);
+
+/**
+ * @description Restore soft-deleted radiology procedure
+ * @method POST
+ * @route /api/v1/radiology-procedures/:id/restore
+ * @authentication Required (JWT)
+ * @permissions radiology:write or tenant/facility/system admin
+ * @urlParams {string} id - Radiology procedure ID (UUID)
+ * @returns {Object} Restored radiology procedure
+ * @throws 401 Unauthorized
+ * @throws 403 Forbidden
+ * @throws 404 Radiology procedure not found
+ */
+router.post(
+  '/:id/restore',
+  validateRequest({ params: radiologyProcedureIdParamsSchema }),
+
+  authenticate(),
+  authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
+  radiologyProcedureController.restoreRadiologyProcedure
+);
+
+/**
+ * @description Permanently delete soft-deleted radiology procedure
+ * @method DELETE
+ * @route /api/v1/radiology-procedures/:id/permanent
+ * @authentication Required (JWT)
+ * @permissions radiology:write or tenant/facility/system admin
+ * @urlParams {string} id - Radiology procedure ID (UUID)
+ * @returns {void} 204 No Content
+ * @throws 401 Unauthorized
+ * @throws 403 Forbidden
+ * @throws 400 Procedure must be soft-deleted first
+ */
+router.delete(
+  '/:id/permanent',
+  validateRequest({ params: radiologyProcedureIdParamsSchema }),
+
+  authenticate(),
+  authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
+  radiologyProcedureController.permanentDeleteRadiologyProcedure
 );
 
 module.exports = router;

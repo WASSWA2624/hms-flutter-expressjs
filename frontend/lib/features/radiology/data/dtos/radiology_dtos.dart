@@ -134,8 +134,13 @@ final class RadiologyCatalogProcedureDto {
           json['is_offered_at_facility'] == true ||
           json['offering_is_active'] == true,
       facilityOfferingId: _string(json['facility_offering_id']),
+      tenantId: _string(json['tenant_id']) ??
+          _string(_map(json['tenant'])['id']),
+      tenantName: _string(json['tenant_name']) ??
+          _string(_map(json['tenant'])['name']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
+      deletedAt: _date(json['deleted_at']),
     );
   }
 

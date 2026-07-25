@@ -29,6 +29,7 @@ const listRadiologyProcedures = asyncHandler(async (req, res) => {
     body_region,
     procedure_type,
     include_standard_catalog,
+    include_deleted,
     search,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
@@ -45,6 +46,7 @@ const listRadiologyProcedures = asyncHandler(async (req, res) => {
     body_region,
     procedure_type,
     include_standard_catalog,
+    include_deleted,
     search
   };
 
@@ -115,7 +117,7 @@ const updateRadiologyProcedure = asyncHandler(async (req, res) => {
 });
 
 /**
- * Delete radiology test (soft delete)
+ * Delete radiology procedure (soft delete)
  * DELETE /api/v1/radiology-procedures/:id
  *
  * @param {Object} req - Express request
@@ -126,7 +128,53 @@ const deleteRadiologyProcedure = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await radiologyProcedureService.deleteRadiologyProcedure(id, userId, ipAddress);
+  const radiologyProcedure = await radiologyProcedureService.deleteRadiologyProcedure(
+    id,
+    userId,
+    ipAddress
+  );
+
+  sendSuccess(res, 200, 'messages.radiology_test.update.success', radiologyProcedure);
+});
+
+/**
+ * Restore soft-deleted radiology procedure
+ * POST /api/v1/radiology-procedures/:id/restore
+ *
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+const restoreRadiologyProcedure = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  const radiologyProcedure = await radiologyProcedureService.restoreRadiologyProcedure(
+    id,
+    userId,
+    ipAddress
+  );
+
+  sendSuccess(res, 200, 'messages.radiology_test.update.success', radiologyProcedure);
+});
+
+/**
+ * Permanently delete soft-deleted radiology procedure
+ * DELETE /api/v1/radiology-procedures/:id/permanent
+ *
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+const permanentDeleteRadiologyProcedure = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  await radiologyProcedureService.permanentDeleteRadiologyProcedure(
+    id,
+    userId,
+    ipAddress
+  );
 
   sendNoContent(res);
 });
@@ -136,5 +184,7 @@ module.exports = {
   getRadiologyProcedureById,
   createRadiologyProcedure,
   updateRadiologyProcedure,
-  deleteRadiologyProcedure
+  deleteRadiologyProcedure,
+  restoreRadiologyProcedure,
+  permanentDeleteRadiologyProcedure
 };

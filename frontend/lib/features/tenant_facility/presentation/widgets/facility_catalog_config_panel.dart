@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facil
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/clinical_catalog_admin_dialogs.dart';
@@ -529,8 +530,12 @@ class _FacilityCatalogConfigPanelState
       columnVisibilityStorageKey: 'admin_catalog_radiology',
       columnChoices: _radiologyColumnChoices(l10n),
       onRowSelected: canMutateRadiology
-          ? (RadiologyCatalogProcedure item) =>
-                unawaited(_openRadiologyEditDialog(item))
+          ? (RadiologyCatalogProcedure item) {
+              if (item.isDeleted || item.isStandard) {
+                return;
+              }
+              unawaited(_openRadiologyEditDialog(item));
+            }
           : null,
       search: AppListTableSearch<RadiologyCatalogProcedure>(
         controller: _radiologySearchController,
@@ -620,6 +625,19 @@ class _FacilityCatalogConfigPanelState
             item.modality?.trim().isNotEmpty == true ? item.modality! : '—',
           ),
         ),
+        AppListTableColumn<RadiologyCatalogProcedure>(
+          id: 'deletion_status',
+          label: l10n.radiologyDeletionStatusColumnLabel,
+          sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
+              a.isDeleted == b.isDeleted
+                  ? 0
+                  : (a.isDeleted ? 1 : -1),
+          cellBuilder: (_, RadiologyCatalogProcedure item) => _wrappedCellText(
+            item.isDeleted
+                ? l10n.radiologyDeletionStatusSoftDeleted
+                : l10n.radiologyDeletionStatusActive,
+          ),
+        ),
         if (canMutateRadiology)
           AppListTableColumn<RadiologyCatalogProcedure>(
             id: 'actions',
@@ -629,8 +647,23 @@ class _FacilityCatalogConfigPanelState
                 _CatalogRowActions(
                   editLabel: l10n.clinicalLabRequestEditSelectionAction,
                   deleteLabel: l10n.clinicalRadiologyDeleteSelectionAction,
-                  onEdit: () => unawaited(_openRadiologyEditDialog(item)),
-                  onDelete: () => unawaited(_openRadiologyDeleteDialog(item)),
+                  restoreLabel: l10n.radiologyRestoreProcedureAction,
+                  permanentDeleteLabel:
+                      l10n.radiologyPermanentDeleteProcedureAction,
+                  isDeleted: item.isDeleted,
+                  onEdit: item.isDeleted || item.isStandard
+                      ? null
+                      : () => unawaited(_openRadiologyEditDialog(item)),
+                  onDelete: item.isDeleted || item.isStandard
+                      ? null
+                      : () => unawaited(_openRadiologyDeleteDialog(item)),
+                  onRestore: item.isDeleted && !item.isStandard
+                      ? () => unawaited(_openRadiologyRestoreDialog(item))
+                      : null,
+                  onPermanentDelete: item.isDeleted && !item.isStandard
+                      ? () =>
+                            unawaited(_openRadiologyPermanentDeleteDialog(item))
+                      : null,
                 ),
           ),
       ],
@@ -641,6 +674,11 @@ class _FacilityCatalogConfigPanelState
             meta: <AppListTableMobileMeta>[
               if (item.code?.trim().isNotEmpty == true)
                 AppListTableMobileMeta(label: item.code!),
+              AppListTableMobileMeta(
+                label: item.isDeleted
+                    ? l10n.radiologyDeletionStatusSoftDeleted
+                    : l10n.radiologyDeletionStatusActive,
+              ),
             ],
           ),
     );
@@ -1019,6 +1057,7 @@ class _FacilityCatalogConfigPanelState
           .read(radiologyRepositoryProvider)
           .listRadiologyCatalogProcedures(
             includeStandardCatalog: true,
+            includeDeleted: true,
             search: null,
             limit: _radiologyFetchLimit,
           );
@@ -1507,7 +1546,7 @@ class _FacilityCatalogConfigPanelState
   }
 
   Future<void> _openRadiologyEditDialog(RadiologyCatalogProcedure item) async {
-    if (!_canMutateRadiologyCatalog) {
+    if (!_canMutateRadiologyCatalog || item.isDeleted || item.isStandard) {
       return;
     }
     final RadiologyRepository repository = ref.read(
@@ -1561,27 +1600,50 @@ class _FacilityCatalogConfigPanelState
     await _ensureTabLoaded(_tab, force: true);
   }
 
+  void _markRadiologyItemSoftDeletedLocally(RadiologyCatalogProcedure item) {
+    setState(() {
+      _upsertRadiologyItemLocally(
+        item.copyWith(deletedAt: item.deletedAt ?? DateTime.now()),
+      );
+    });
+  }
+
   Future<void> _openRadiologyDeleteDialog(RadiologyCatalogProcedure item) async {
-    if (!_canMutateRadiologyCatalog) {
+    if (!_canMutateRadiologyCatalog || item.isDeleted || item.isStandard) {
       return;
     }
     final RadiologyRepository repository = ref.read(
       radiologyRepositoryProvider,
     );
     final AppLocalizations l10n = context.l10n;
+    final String scope = item.catalogScopeLabel;
+    RadiologyCatalogProcedure? softDeleted;
     final bool? deleted = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => LabDeleteReasonDialog(
-        title: l10n.radiologyDisableOfferingDialogTitle,
-        body: l10n.radiologyDisableOfferingDialogBody(item.name),
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.radiologySoftDeleteProcedureDialogTitle,
+        body: scope.isEmpty
+            ? l10n.radiologySoftDeleteProcedureDialogBodyNoScope(item.name)
+            : l10n.radiologySoftDeleteProcedureDialogBody(item.name, scope),
+        highlightedText: item.name,
         submitLabel: l10n.clinicalRadiologyDeleteSelectionAction,
-        onDelete: (String _) async {
-          final Result<void> result = await repository
+        destructive: true,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () async {
+          final Result<RadiologyCatalogProcedure> result = await repository
               .deleteRadiologyCatalogProcedure(item.apiId);
           return result.when(
-            success: (_) => null,
-            failure: (AppFailure failure) => failure,
+            success: (RadiologyCatalogProcedure value) {
+              softDeleted = value;
+              return null;
+            },
+            failure: (AppFailure failure) {
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
           );
         },
       ),
@@ -1589,11 +1651,135 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || deleted != true) {
       return;
     }
-    setState(() => _removeRadiologyItemLocally(item));
+    final RadiologyCatalogProcedure applied =
+        softDeleted ??
+        item.copyWith(deletedAt: item.deletedAt ?? DateTime.now());
+    _markRadiologyItemSoftDeletedLocally(applied);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.labDeletedMessage)),
+      SnackBar(content: Text(l10n.radiologyProcedureSoftDeletedMessage)),
     );
     await _ensureTabLoaded(_tab, force: true);
+    if (mounted) {
+      _markRadiologyItemSoftDeletedLocally(applied);
+    }
+  }
+
+  Future<void> _openRadiologyRestoreDialog(RadiologyCatalogProcedure item) async {
+    if (!_canMutateRadiologyCatalog || !item.isDeleted || item.isStandard) {
+      return;
+    }
+    final RadiologyRepository repository = ref.read(
+      radiologyRepositoryProvider,
+    );
+    final AppLocalizations l10n = context.l10n;
+    RadiologyCatalogProcedure? restored;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.radiologyRestoreProcedureDialogTitle,
+        body: l10n.radiologyRestoreProcedureDialogBody(item.name),
+        highlightedText: item.name,
+        submitLabel: l10n.radiologyRestoreProcedureAction,
+        icon: const Icon(Icons.restore_outlined),
+        onConfirm: () async {
+          final Result<RadiologyCatalogProcedure> result = await repository
+              .restoreRadiologyCatalogProcedure(item.apiId);
+          return result.when(
+            success: (RadiologyCatalogProcedure value) {
+              restored = value;
+              return null;
+            },
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (!mounted || confirmed != true) {
+      return;
+    }
+    final RadiologyCatalogProcedure applied =
+        restored ?? item.copyWith(clearDeletedAt: true);
+    setState(() => _upsertRadiologyItemLocally(applied));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.radiologyProcedureRestoredMessage)),
+    );
+    await _ensureTabLoaded(_tab, force: true);
+    if (mounted) {
+      setState(() => _upsertRadiologyItemLocally(applied));
+    }
+  }
+
+  Future<void> _openRadiologyPermanentDeleteDialog(
+    RadiologyCatalogProcedure item,
+  ) async {
+    if (!_canMutateRadiologyCatalog || !item.isDeleted || item.isStandard) {
+      return;
+    }
+    final RadiologyRepository repository = ref.read(
+      radiologyRepositoryProvider,
+    );
+    final AppLocalizations l10n = context.l10n;
+    final String? typed = await showAppDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppTextInputActionDialog(
+        title: l10n.radiologyPermanentDeleteProcedureDialogTitle,
+        description: l10n.radiologyPermanentDeleteProcedureWarningBody(
+          item.name,
+        ),
+        fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
+          item.name,
+        ),
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        cancelLabel: l10n.commonCancelActionLabel,
+        requiredMessage: l10n.validationRequired,
+        destructive: true,
+        minLines: 1,
+        maxLines: 1,
+        icon: const Icon(Icons.delete_forever_outlined),
+      ),
+    );
+    if (!mounted || typed == null) {
+      return;
+    }
+    if (typed.trim() != item.name.trim()) {
+      return;
+    }
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.radiologyPermanentDeleteProcedureDialogTitle,
+        body: l10n.radiologyPermanentDeleteProcedureConfirmationBody(item.name),
+        highlightedText: item.name,
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_forever_outlined),
+        onConfirm: () async {
+          final Result<void> result = await repository
+              .permanentDeleteRadiologyCatalogProcedure(item.apiId);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) {
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
+          );
+        },
+      ),
+    );
+    if (!mounted || confirmed != true) {
+      return;
+    }
+    setState(() => _removeRadiologyItemLocally(item));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.radiologyProcedurePermanentlyDeletedMessage)),
+    );
+    unawaited(_ensureTabLoaded(_tab, force: true));
   }
 
   Future<void> _openLabAddDialog(LabCatalogItemType kind) async {
@@ -1985,34 +2171,76 @@ class _CatalogRowActions extends StatelessWidget {
   const _CatalogRowActions({
     required this.editLabel,
     required this.deleteLabel,
-    required this.onEdit,
-    required this.onDelete,
+    this.restoreLabel,
+    this.permanentDeleteLabel,
+    this.isDeleted = false,
+    this.onEdit,
+    this.onDelete,
+    this.onRestore,
+    this.onPermanentDelete,
   });
 
   final String editLabel;
   final String deleteLabel;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final String? restoreLabel;
+  final String? permanentDeleteLabel;
+  final bool isDeleted;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onRestore;
+  final VoidCallback? onPermanentDelete;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    if (isDeleted) {
+      if (onRestore == null && onPermanentDelete == null) {
+        return const SizedBox.shrink();
+      }
+      return Wrap(
+        spacing: theme.spacing.sm,
+        runSpacing: theme.spacing.xs,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          if (onRestore != null)
+            AppButton.tertiary(
+              label: restoreLabel ?? '',
+              leadingIcon: Icons.restore_outlined,
+              semanticLabel: restoreLabel,
+              tooltip: restoreLabel,
+              onPressed: onRestore,
+            ),
+          if (onPermanentDelete != null)
+            AppButton.tertiary(
+              label: permanentDeleteLabel ?? '',
+              leadingIcon: Icons.delete_forever_outlined,
+              semanticLabel: permanentDeleteLabel,
+              tooltip: permanentDeleteLabel,
+              color: theme.colorScheme.error,
+              onPressed: onPermanentDelete,
+            ),
+        ],
+      );
+    }
+
     return Wrap(
       spacing: theme.spacing.sm,
       runSpacing: theme.spacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        AppButton.tertiary(
-          label: editLabel,
-          leadingIcon: Icons.edit_outlined,
-          onPressed: onEdit,
-        ),
-        AppButton.tertiary(
-          label: deleteLabel,
-          leadingIcon: Icons.delete_outline,
-          color: theme.colorScheme.error,
-          onPressed: onDelete,
-        ),
+        if (onEdit != null)
+          AppButton.tertiary(
+            label: editLabel,
+            leadingIcon: Icons.edit_outlined,
+            onPressed: onEdit,
+          ),
+        if (onDelete != null)
+          AppButton.tertiary(
+            label: deleteLabel,
+            leadingIcon: Icons.delete_outline,
+            color: theme.colorScheme.error,
+            onPressed: onDelete,
+          ),
       ],
     );
   }

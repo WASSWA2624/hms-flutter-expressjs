@@ -19809,6 +19809,70 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyDeleteImagingTestDialogTitle => 'Delete procedure?';
 
   @override
+  String get radiologySoftDeleteProcedureDialogTitle =>
+      'Soft-delete radiology procedure?';
+
+  @override
+  String radiologySoftDeleteProcedureDialogBody(String name, String scope) {
+    return 'Soft-delete \"$name\" from the tenant catalog ($scope)? It stays listed as soft deleted and can be restored. This is not facility offering removal.';
+  }
+
+  @override
+  String radiologySoftDeleteProcedureDialogBodyNoScope(String name) {
+    return 'Soft-delete \"$name\" from the tenant radiology catalog? It stays listed as soft deleted and can be restored. This is not facility offering removal.';
+  }
+
+  @override
+  String get radiologyRestoreProcedureDialogTitle =>
+      'Restore radiology procedure?';
+
+  @override
+  String radiologyRestoreProcedureDialogBody(String name) {
+    return 'Restore \"$name\" to the tenant radiology catalog?';
+  }
+
+  @override
+  String get radiologyRestoreProcedureAction => 'Restore';
+
+  @override
+  String get radiologyPermanentDeleteProcedureAction => 'Permanent delete';
+
+  @override
+  String get radiologyPermanentDeleteProcedureDialogTitle =>
+      'Permanently delete radiology procedure?';
+
+  @override
+  String radiologyPermanentDeleteProcedureWarningBody(String name) {
+    return 'WARNING: Permanently deleting \"$name\" erases this tenant catalog procedure and related facility offerings forever. This cannot be recovered.';
+  }
+
+  @override
+  String radiologyPermanentDeleteProcedureConfirmationBody(String name) {
+    return 'Final confirmation: permanently delete radiology procedure \"$name\"? This action is irreversible.';
+  }
+
+  @override
+  String get radiologyDeletionStatusColumnLabel => 'Deletion status';
+
+  @override
+  String get radiologyDeletionStatusActive => 'Active';
+
+  @override
+  String get radiologyDeletionStatusSoftDeleted => 'Soft deleted';
+
+  @override
+  String get radiologyProcedureSoftDeletedMessage =>
+      'Radiology procedure soft-deleted.';
+
+  @override
+  String get radiologyProcedureRestoredMessage =>
+      'Radiology procedure restored.';
+
+  @override
+  String get radiologyProcedurePermanentlyDeletedMessage =>
+      'Radiology procedure permanently deleted.';
+
+  @override
   String get radiologyTenantRequiredForConfigMessage =>
       'Tenant context is required to save a custom procedure.';
 

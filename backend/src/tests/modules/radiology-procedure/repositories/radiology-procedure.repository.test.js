@@ -235,7 +235,15 @@ describe('Radiology Test Repository', () => {
 
       expect(result).toEqual(mockCreatedRadiologyTest);
       expect(prisma.radiology_procedure.create).toHaveBeenCalledWith({
-        data: createData
+        data: createData,
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
       });
     });
 
@@ -297,7 +305,15 @@ describe('Radiology Test Repository', () => {
       expect(result).toEqual(mockUpdatedRadiologyTest);
       expect(prisma.radiology_procedure.update).toHaveBeenCalledWith({
         where: { id: radiologyTestId },
-        data: updateData
+        data: updateData,
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
       });
     });
 
@@ -369,7 +385,15 @@ describe('Radiology Test Repository', () => {
       expect(result).toEqual(mockDeletedRadiologyTest);
       expect(prisma.radiology_procedure.update).toHaveBeenCalledWith({
         where: { id: radiologyTestId },
-        data: { deleted_at: expect.any(Date) }
+        data: { deleted_at: expect.any(Date) },
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
       });
     });
 

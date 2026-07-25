@@ -18,6 +18,7 @@ abstract interface class RadiologyRepository {
     String? search,
     String? tenantId,
     bool includeStandardCatalog = true,
+    bool includeDeleted = false,
     int limit = 100,
   });
 
@@ -60,7 +61,17 @@ abstract interface class RadiologyRepository {
     Map<String, Object?> payload,
   );
 
-  Future<Result<void>> deleteRadiologyCatalogProcedure(String procedureId);
+  Future<Result<RadiologyCatalogProcedure>> deleteRadiologyCatalogProcedure(
+    String procedureId,
+  );
+
+  Future<Result<RadiologyCatalogProcedure>> restoreRadiologyCatalogProcedure(
+    String procedureId,
+  );
+
+  Future<Result<void>> permanentDeleteRadiologyCatalogProcedure(
+    String procedureId,
+  );
 
   Future<Result<List<RadiologyEquipmentRecord>>> listEquipmentRecords({
     String? search,

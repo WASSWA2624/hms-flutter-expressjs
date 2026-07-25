@@ -36,16 +36,36 @@ const buildEmptyListResult = (page, limit) => ({
   radiologyProcedures: [],
   pagination: buildPagination(page, limit, 0)});
 
-const resolveResourceId = async (model, identifier) => {
+const resolveResourceId = async (model, identifier, { includeDeleted = false } = {}) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return normalized;
 
   const resolved = await resolveModelIdByIdentifier({
     model,
     identifier: normalized,
-    where: { deleted_at: null }});
+    where: includeDeleted ? {} : { deleted_at: null }});
 
   return resolved || normalized;
+};
+
+const TENANT_NAME_INCLUDE = Object.freeze({
+  tenant: {
+    select: {
+      id: true,
+      name: true
+    }
+  }
+});
+
+const normalizeRadiologyProcedure = (row) => {
+  if (!row || typeof row !== 'object') {
+    return row;
+  }
+  const tenant = row.tenant && typeof row.tenant === 'object' ? row.tenant : null;
+  return {
+    ...row,
+    tenant_name: tenant?.name ?? row.tenant_name ?? null
+  };
 };
 
 const STANDARD_RADIOLOGY_CATALOG_TARGET_SIZE = 6500;
@@ -535,7 +555,12 @@ const resolveOrCreateStandardRadiologyTest = async ({
 const listRadiologyProcedures = async (filters, page, limit, sortBy, order, userId, ipAddress) => {
   try {
     const skip = (page - 1) * limit;
-    const orderBy = sortBy ? { [sortBy]: order } : { created_at: 'desc' };
+    const includeDeleted =
+      filters.include_deleted === true || filters.include_deleted === 'true';
+    const primaryOrder = sortBy ? { [sortBy]: order } : { created_at: 'desc' };
+    const orderBy = includeDeleted
+      ? [{ deleted_at: 'asc' }, primaryOrder]
+      : primaryOrder;
 
     // Build filter object
     const whereClause = {};
@@ -560,13 +585,24 @@ const listRadiologyProcedures = async (filters, page, limit, sortBy, order, user
       ];
     }
 
+    const listOptions = {
+      includeDeleted,
+      include: TENANT_NAME_INCLUDE
+    };
     const [radiologyProcedures, total] = await Promise.all([
-      radiologyProcedureRepository.findMany(whereClause, skip, limit, orderBy),
-      radiologyProcedureRepository.count(whereClause)
+      radiologyProcedureRepository.findMany(
+        whereClause,
+        skip,
+        limit,
+        orderBy,
+        listOptions
+      ),
+      radiologyProcedureRepository.count(whereClause, { includeDeleted })
     ]);
+    const normalized = radiologyProcedures.map(normalizeRadiologyProcedure);
     const merged = mergeStandardRadiologyTests({
-      mappedRecords: radiologyProcedures,
-      dbRecords: radiologyProcedures,
+      mappedRecords: normalized,
+      dbRecords: normalized,
       dbTotal: total,
       filters,
       limit,
@@ -593,13 +629,16 @@ const listRadiologyProcedures = async (filters, page, limit, sortBy, order, user
 const getRadiologyProcedureById = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveResourceId('radiology_procedure', id);
-    const radiologyProcedure = await radiologyProcedureRepository.findById(resolvedId);
+    const radiologyProcedure = await radiologyProcedureRepository.findById(
+      resolvedId,
+      { include: TENANT_NAME_INCLUDE }
+    );
 
     if (!radiologyProcedure) {
       throw new HttpError('errors.radiology_test.not_found', 404);
     }
 
-    return radiologyProcedure;
+    return normalizeRadiologyProcedure(radiologyProcedure);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -794,26 +833,28 @@ const updateRadiologyProcedure = async (id, data, userId, ipAddress) => {
 };
 
 /**
- * Delete radiology test (soft delete)
+ * Delete radiology procedure (soft delete)
  * Per prisma.mdc: Mutations must create audit logs
  *
- * @param {string} id - Radiology test ID
+ * @param {string} id - Radiology procedure ID
  * @param {string} userId - User ID for audit
  * @param {string} ipAddress - User IP for audit
- * @returns {Promise<void>}
+ * @returns {Promise<Object>} Soft-deleted radiology procedure
  */
 const deleteRadiologyProcedure = async (id, userId, ipAddress) => {
   try {
     const resolvedId = await resolveResourceId('radiology_procedure', id);
 
     // Get current state for audit
-    const before = await radiologyProcedureRepository.findById(resolvedId);
+    const before = await radiologyProcedureRepository.findById(resolvedId, {
+      include: TENANT_NAME_INCLUDE
+    });
 
     if (!before) {
       throw new HttpError('errors.radiology_test.not_found', 404);
     }
 
-    await radiologyProcedureRepository.softDelete(resolvedId);
+    const deleted = await radiologyProcedureRepository.softDelete(resolvedId);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -821,7 +862,93 @@ const deleteRadiologyProcedure = async (id, userId, ipAddress) => {
       action: 'DELETE',
       entity: 'radiology_procedure',
       entity_id: resolvedId,
-      diff: { before },
+      diff: { before, after: deleted },
+      ip_address: ipAddress
+    }).catch(() => {});
+
+    return normalizeRadiologyProcedure(deleted);
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Restore soft-deleted radiology procedure
+ *
+ * @param {string} id - Radiology procedure ID
+ * @param {string} userId - User ID for audit
+ * @param {string} ipAddress - User IP for audit
+ * @returns {Promise<Object>} Restored radiology procedure
+ */
+const restoreRadiologyProcedure = async (id, userId, ipAddress) => {
+  try {
+    const resolvedId = await resolveResourceId('radiology_procedure', id, {
+      includeDeleted: true
+    });
+    const before = await radiologyProcedureRepository.findById(resolvedId, {
+      includeDeleted: true,
+      include: TENANT_NAME_INCLUDE
+    });
+
+    if (!before || !before.deleted_at) {
+      throw new HttpError('errors.radiology_test.not_found', 404);
+    }
+
+    const restored = await radiologyProcedureRepository.restore(resolvedId);
+
+    createAuditLog({
+      user_id: userId,
+      action: 'RESTORE',
+      entity: 'radiology_procedure',
+      entity_id: resolvedId,
+      diff: { before, after: restored },
+      ip_address: ipAddress
+    }).catch(() => {});
+
+    return normalizeRadiologyProcedure(restored);
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Permanently delete a soft-deleted radiology procedure
+ *
+ * @param {string} id - Radiology procedure ID
+ * @param {string} userId - User ID for audit
+ * @param {string} ipAddress - User IP for audit
+ * @returns {Promise<void>}
+ */
+const permanentDeleteRadiologyProcedure = async (id, userId, ipAddress) => {
+  try {
+    const resolvedId = await resolveResourceId('radiology_procedure', id, {
+      includeDeleted: true
+    });
+    const before = await radiologyProcedureRepository.findById(resolvedId, {
+      includeDeleted: true,
+      include: TENANT_NAME_INCLUDE
+    });
+
+    if (!before) {
+      return;
+    }
+    if (!before.deleted_at) {
+      throw new HttpError(
+        'errors.radiology_test.permanent_delete_requires_soft_delete',
+        400
+      );
+    }
+
+    await radiologyProcedureRepository.permanentDelete(resolvedId);
+
+    createAuditLog({
+      user_id: userId,
+      action: 'PERMANENT_DELETE',
+      entity: 'radiology_procedure',
+      entity_id: resolvedId,
+      diff: { before, irreversible: true },
       ip_address: ipAddress
     }).catch(() => {});
   } catch (error) {
@@ -837,5 +964,7 @@ module.exports = {
   getRadiologyProcedureById,
   createRadiologyProcedure,
   updateRadiologyProcedure,
-  deleteRadiologyProcedure
+  deleteRadiologyProcedure,
+  restoreRadiologyProcedure,
+  permanentDeleteRadiologyProcedure
 };

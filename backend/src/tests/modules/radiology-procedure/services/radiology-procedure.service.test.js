@@ -42,7 +42,9 @@ describe('Radiology Test Service', () => {
 
       const result = await radiologyProcedureService.listRadiologyProcedures({}, 1, 20, null, 'asc', 'user-id', '127.0.0.1');
 
-      expect(result).toHaveProperty('radiologyProcedures', mockRadiologyTests);
+      expect(result.radiologyProcedures).toEqual(
+        mockRadiologyTests.map((row) => ({ ...row, tenant_name: null }))
+      );
       expect(result).toHaveProperty('pagination');
       expect(result.pagination).toMatchObject({
         page: 1,
@@ -71,7 +73,8 @@ describe('Radiology Test Service', () => {
         }),
         expect.any(Number),
         expect.any(Number),
-        expect.any(Object)
+        expect.any(Object),
+      expect.any(Object)
       );
     });
 
@@ -88,7 +91,8 @@ describe('Radiology Test Service', () => {
         }),
         expect.any(Number),
         expect.any(Number),
-        expect.any(Object)
+        expect.any(Object),
+      expect.any(Object)
       );
     });
 
@@ -105,7 +109,8 @@ describe('Radiology Test Service', () => {
         }),
         expect.any(Number),
         expect.any(Number),
-        expect.any(Object)
+        expect.any(Object),
+      expect.any(Object)
       );
     });
 
@@ -125,7 +130,8 @@ describe('Radiology Test Service', () => {
         }),
         expect.any(Number),
         expect.any(Number),
-        expect.any(Object)
+        expect.any(Object),
+      expect.any(Object)
       );
     });
 
@@ -161,7 +167,8 @@ describe('Radiology Test Service', () => {
         expect.any(Object),
         expect.any(Number),
         expect.any(Number),
-        { name: 'desc' }
+        { name: 'desc' },
+      expect.any(Object)
       );
     });
 
@@ -175,7 +182,8 @@ describe('Radiology Test Service', () => {
         expect.any(Object),
         expect.any(Number),
         expect.any(Number),
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+      expect.any(Object)
       );
     });
 
@@ -237,8 +245,11 @@ describe('Radiology Test Service', () => {
 
       const result = await radiologyProcedureService.getRadiologyProcedureById(radiologyTestId, 'requester-id', '127.0.0.1');
 
-      expect(result).toEqual(mockRadiologyTest);
-      expect(radiologyProcedureRepository.findById).toHaveBeenCalledWith(radiologyTestId);
+      expect(result).toEqual({ ...mockRadiologyTest, tenant_name: null });
+      expect(radiologyProcedureRepository.findById).toHaveBeenCalledWith(
+        radiologyTestId,
+        expect.objectContaining({ include: expect.any(Object) })
+      );
     });
 
     it('should throw HttpError if radiology test not found', async () => {
@@ -307,7 +318,8 @@ describe('Radiology Test Service', () => {
         { tenant_id: createData.tenant_id },
         0,
         7500,
-        { name: 'asc' }
+        { name: 'asc' },
+      expect.any(Object)
       );
     });
 
@@ -663,7 +675,7 @@ describe('Radiology Test Service', () => {
         action: 'DELETE',
         entity: 'radiology_procedure',
         entity_id: radiologyTestId,
-        diff: { before: mockRadiologyTest },
+        diff: { before: mockRadiologyTest, after: {} },
         ip_address: '127.0.0.1'
       });
     });

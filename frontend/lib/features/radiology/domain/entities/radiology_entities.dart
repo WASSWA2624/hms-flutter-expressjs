@@ -293,8 +293,11 @@ final class RadiologyCatalogProcedure {
     this.currency,
     this.isOfferedAtFacility = false,
     this.facilityOfferingId,
+    this.tenantId,
+    this.tenantName,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
   });
 
   final String id;
@@ -313,11 +316,27 @@ final class RadiologyCatalogProcedure {
   final String? currency;
   final bool isOfferedAtFacility;
   final String? facilityOfferingId;
+  final String? tenantId;
+  final String? tenantName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
 
   String get effectiveId => displayId ?? id;
   String get apiId => id;
+  bool get isDeleted => deletedAt != null;
+
+  String get catalogScopeLabel {
+    final String? name = tenantName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    final String? idValue = tenantId?.trim();
+    if (idValue != null && idValue.isNotEmpty) {
+      return idValue;
+    }
+    return '';
+  }
 
   bool get isStandard {
     final String sourceKey = (source ?? status ?? '').trim().toUpperCase();
@@ -347,6 +366,8 @@ final class RadiologyCatalogProcedure {
       status,
       source,
       searchText,
+      tenantId,
+      tenantName,
     ].whereType<String>().join(' ').toLowerCase();
     return normalized
         .split(RegExp(r'\s+'))
@@ -371,8 +392,12 @@ final class RadiologyCatalogProcedure {
     String? currency,
     bool? isOfferedAtFacility,
     String? facilityOfferingId,
+    String? tenantId,
+    String? tenantName,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
   }) {
     return RadiologyCatalogProcedure(
       id: id ?? this.id,
@@ -391,8 +416,11 @@ final class RadiologyCatalogProcedure {
       currency: currency ?? this.currency,
       isOfferedAtFacility: isOfferedAtFacility ?? this.isOfferedAtFacility,
       facilityOfferingId: facilityOfferingId ?? this.facilityOfferingId,
+      tenantId: tenantId ?? this.tenantId,
+      tenantName: tenantName ?? this.tenantName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
 }

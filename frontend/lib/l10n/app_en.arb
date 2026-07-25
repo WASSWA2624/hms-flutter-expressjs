@@ -25415,6 +25415,98 @@
   "@radiologyDeleteImagingTestDialogTitle": {
     "description": "Radiology delete procedure dialog title."
   },
+  "radiologySoftDeleteProcedureDialogTitle": "Soft-delete radiology procedure?",
+  "@radiologySoftDeleteProcedureDialogTitle": {
+    "description": "Title for soft-deleting a tenant radiology catalog procedure."
+  },
+  "radiologySoftDeleteProcedureDialogBody": "Soft-delete \"{name}\" from the tenant catalog ({scope})? It stays listed as soft deleted and can be restored. This is not facility offering removal.",
+  "@radiologySoftDeleteProcedureDialogBody": {
+    "description": "Body for soft-deleting a tenant radiology catalog procedure.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "scope": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologySoftDeleteProcedureDialogBodyNoScope": "Soft-delete \"{name}\" from the tenant radiology catalog? It stays listed as soft deleted and can be restored. This is not facility offering removal.",
+  "@radiologySoftDeleteProcedureDialogBodyNoScope": {
+    "description": "Body for soft-deleting a radiology catalog procedure when tenant name is unknown.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyRestoreProcedureDialogTitle": "Restore radiology procedure?",
+  "@radiologyRestoreProcedureDialogTitle": {
+    "description": "Title for restoring a soft-deleted radiology catalog procedure."
+  },
+  "radiologyRestoreProcedureDialogBody": "Restore \"{name}\" to the tenant radiology catalog?",
+  "@radiologyRestoreProcedureDialogBody": {
+    "description": "Body for restoring a soft-deleted radiology catalog procedure.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyRestoreProcedureAction": "Restore",
+  "@radiologyRestoreProcedureAction": {
+    "description": "Restore soft-deleted radiology procedure action label."
+  },
+  "radiologyPermanentDeleteProcedureAction": "Permanent delete",
+  "@radiologyPermanentDeleteProcedureAction": {
+    "description": "Permanent delete radiology procedure action label."
+  },
+  "radiologyPermanentDeleteProcedureDialogTitle": "Permanently delete radiology procedure?",
+  "@radiologyPermanentDeleteProcedureDialogTitle": {
+    "description": "Title for permanently deleting a soft-deleted radiology catalog procedure."
+  },
+  "radiologyPermanentDeleteProcedureWarningBody": "WARNING: Permanently deleting \"{name}\" erases this tenant catalog procedure and related facility offerings forever. This cannot be recovered.",
+  "@radiologyPermanentDeleteProcedureWarningBody": {
+    "description": "Warning before typing confirmation for permanent radiology procedure delete.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyPermanentDeleteProcedureConfirmationBody": "Final confirmation: permanently delete radiology procedure \"{name}\"? This action is irreversible.",
+  "@radiologyPermanentDeleteProcedureConfirmationBody": {
+    "description": "Final confirmation body for permanent radiology procedure delete.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyDeletionStatusColumnLabel": "Deletion status",
+  "@radiologyDeletionStatusColumnLabel": {
+    "description": "Radiology catalog table column for soft-delete status."
+  },
+  "radiologyDeletionStatusActive": "Active",
+  "@radiologyDeletionStatusActive": {
+    "description": "Active radiology catalog procedure deletion status."
+  },
+  "radiologyDeletionStatusSoftDeleted": "Soft deleted",
+  "@radiologyDeletionStatusSoftDeleted": {
+    "description": "Soft-deleted radiology catalog procedure deletion status."
+  },
+  "radiologyProcedureSoftDeletedMessage": "Radiology procedure soft-deleted.",
+  "@radiologyProcedureSoftDeletedMessage": {
+    "description": "Snackbar after soft-deleting a radiology catalog procedure."
+  },
+  "radiologyProcedureRestoredMessage": "Radiology procedure restored.",
+  "@radiologyProcedureRestoredMessage": {
+    "description": "Snackbar after restoring a radiology catalog procedure."
+  },
+  "radiologyProcedurePermanentlyDeletedMessage": "Radiology procedure permanently deleted.",
+  "@radiologyProcedurePermanentlyDeletedMessage": {
+    "description": "Snackbar after permanently deleting a radiology catalog procedure."
+  },
   "radiologyTenantRequiredForConfigMessage": "Tenant context is required to save a custom procedure.",
   "@radiologyTenantRequiredForConfigMessage": {
     "description": "Radiology tenant required validation message."

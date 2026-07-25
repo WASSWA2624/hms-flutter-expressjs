@@ -290,7 +290,8 @@ describe('Radiology Test Controller', () => {
 
     it('should delete radiology test', async () => {
       req.params = { id: radiologyTestId };
-      radiologyProcedureService.deleteRadiologyProcedure.mockResolvedValue(undefined);
+      const deleted = { id: radiologyTestId, deleted_at: new Date().toISOString() };
+      radiologyProcedureService.deleteRadiologyProcedure.mockResolvedValue(deleted);
 
       await radiologyProcedureController.deleteRadiologyProcedure(req, res);
 
@@ -299,7 +300,12 @@ describe('Radiology Test Controller', () => {
         'requester-id',
         '127.0.0.1'
       );
-      expect(sendNoContent).toHaveBeenCalledWith(res);
+      expect(sendSuccess).toHaveBeenCalledWith(
+        res,
+        200,
+        'messages.radiology_test.update.success',
+        deleted
+      );
     });
 
     it('should handle missing user in request', async () => {

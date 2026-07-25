@@ -296,6 +296,7 @@
   "errors.radiology_test.duplicate_name": "A procedure with this name already exists",
   "errors.radiology_test.duplicate_code": "A procedure with this code already exists",
   "errors.radiology_test.similar_exists": "A similar procedure already exists. Confirm to create anyway.",
+  "errors.radiology_test.permanent_delete_requires_soft_delete": "Radiology procedure must be soft-deleted before permanent delete",
   "errors.radiology_workflow.invalid_transition": "Invalid radiology workflow transition",
   "errors.radiology_workspace.attestation.same_user": "Radiology finalization must be attested by a different user",
   "errors.rate_limit.exceeded": "Rate limit exceeded. Please try again later.",

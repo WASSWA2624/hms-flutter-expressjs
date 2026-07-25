@@ -103,6 +103,7 @@ const listRadiologyProceduresQuerySchema = listQuerySchema.extend({
   body_region: z.string().trim().optional(),
   procedure_type: z.string().trim().optional(),
   include_standard_catalog: optionalBooleanSchema,
+  include_deleted: optionalBooleanSchema,
   search: z.string().trim().optional()
 });
 

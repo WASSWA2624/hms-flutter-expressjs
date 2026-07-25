@@ -74,6 +74,7 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
     String? search,
     String? tenantId,
     bool includeStandardCatalog = true,
+    bool includeDeleted = false,
     int limit = 100,
   }) {
     return _apiClient.get<List<RadiologyCatalogProcedure>>(
@@ -83,6 +84,7 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
         'search': search,
         'tenant_id': tenantId,
         'include_standard_catalog': includeStandardCatalog,
+        'include_deleted': includeDeleted ? true : null,
         'limit': limit,
         'sort_by': 'name',
         'order': 'asc',
@@ -207,9 +209,39 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
   }
 
   @override
-  Future<Result<void>> deleteRadiologyCatalogProcedure(String procedureId) {
-    return _apiClient.delete<void>(
+  Future<Result<RadiologyCatalogProcedure>> deleteRadiologyCatalogProcedure(
+    String procedureId,
+  ) {
+    return _apiClient.delete<RadiologyCatalogProcedure>(
       ApiEndpoints.byId(HmsApiResource.radiologyProcedures, procedureId),
+      decoder: radiologyCatalogProcedureFromResponse,
+    );
+  }
+
+  @override
+  Future<Result<RadiologyCatalogProcedure>> restoreRadiologyCatalogProcedure(
+    String procedureId,
+  ) {
+    return _apiClient.post<RadiologyCatalogProcedure>(
+      ApiEndpoints.nested(
+        HmsApiResource.radiologyProcedures,
+        procedureId,
+        const <String>['restore'],
+      ),
+      decoder: radiologyCatalogProcedureFromResponse,
+    );
+  }
+
+  @override
+  Future<Result<void>> permanentDeleteRadiologyCatalogProcedure(
+    String procedureId,
+  ) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.radiologyProcedures,
+        procedureId,
+        const <String>['permanent'],
+      ),
       decoder: (_) {},
     );
   }
