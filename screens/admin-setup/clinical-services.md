@@ -1,15 +1,5 @@
 
 ## Clinical Services panel chrome (`FacilityCatalogConfigPanel`)
-
-### `RadiologyCatalogMutationDialog` (create / edit)
-
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Cancel | Footer | Dismisses without save. |
-| Save | Footer (`commonSaveActionLabel`) | Creates or updates radiology catalog test; pops `true` on success. |
-
-Title: **Create imaging test** (create) or **Edit Radiology procedure** (edit).
-
 ---
 
 ## Lab nested tab
