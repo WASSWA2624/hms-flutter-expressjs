@@ -99,10 +99,16 @@ class _FacilityCatalogConfigPanelState
   AppFailure? _labFailure;
   AppFailure? _diagnosisFailure;
   PlatformManagementListSync? _radiologyRealtimeSync;
+  PlatformManagementListSync? _labRealtimeSync;
   int _radiologyMutationDepth = 0;
+  int _labMutationDepth = 0;
 
   static const Set<String> _radiologyCatalogRealtimeEvents = <String>{
     RealtimeEvents.radiologyCatalogUpdated,
+  };
+
+  static const Set<String> _labCatalogRealtimeEvents = <String>{
+    RealtimeEvents.labCatalogUpdated,
   };
 
   String get _resolvedCurrency =>
@@ -297,11 +303,26 @@ class _FacilityCatalogConfigPanelState
         }
       },
     )..attach();
+    _labRealtimeSync ??= PlatformManagementListSync(
+      ref: ref,
+      events: _labCatalogRealtimeEvents,
+      onMutated: () {},
+      reload: ({bool silent = false, RealtimeMessage? message}) async {
+        if (_labMutationDepth > 0) {
+          return;
+        }
+        final bool applied = _applyLabCatalogRealtimeMessage(message);
+        if (!applied || !_labHydrated) {
+          await _loadLabItems(force: true);
+        }
+      },
+    )..attach();
   }
 
   @override
   void dispose() {
     _radiologyRealtimeSync?.dispose();
+    _labRealtimeSync?.dispose();
     _radiologySearchController.removeListener(_onRadiologySearchChanged);
     _labSearchController.removeListener(_onLabSearchChanged);
     _diagnosisSearchController.removeListener(_onDiagnosisSearchChanged);
@@ -1537,6 +1558,108 @@ class _FacilityCatalogConfigPanelState
     return item;
   }
 
+  void _upsertLabItemLocally(LabCatalogItem item) {
+    final List<LabCatalogItem> next = List<LabCatalogItem>.of(_labItems);
+    final int index = next.indexWhere(
+      (LabCatalogItem candidate) =>
+          candidate.apiId == item.apiId || candidate.id == item.id,
+    );
+    if (index >= 0) {
+      next[index] = item;
+    } else {
+      next.insert(0, item);
+    }
+    _labItems = next;
+    _refreshLabFilterOptions();
+    _recomputeLabVisible();
+  }
+
+  void _removeLabItemLocally(LabCatalogItem item) {
+    _labItems = _labItems
+        .where(
+          (LabCatalogItem candidate) =>
+              candidate.apiId != item.apiId && candidate.id != item.id,
+        )
+        .toList(growable: false);
+    _refreshLabFilterOptions();
+    _recomputeLabVisible();
+  }
+
+  bool _matchesLabItemId(LabCatalogItem item, String id) {
+    final String normalized = id.trim();
+    if (normalized.isEmpty) {
+      return false;
+    }
+    return item.apiId == normalized ||
+        item.id == normalized ||
+        (item.displayId ?? '') == normalized;
+  }
+
+  String? _labResourceIdFromMessage(RealtimeMessage message) {
+    for (final String key in const <String>[
+      'resource_id',
+      'lab_test_id',
+      'human_friendly_id',
+      'id',
+    ]) {
+      final Object? value = message.payload[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
+  bool _applyLabCatalogRealtimeMessage(RealtimeMessage? message) {
+    if (message == null || message.event != RealtimeEvents.labCatalogUpdated) {
+      return false;
+    }
+    final String action =
+        (message.payload['action'] as String?)?.trim().toUpperCase() ?? '';
+    final String? testId = _labResourceIdFromMessage(message);
+    if (testId == null) {
+      return false;
+    }
+
+    final String? scopedTenantId = widget.tenantId?.trim();
+    final String? eventTenantId =
+        (message.payload['tenant_id'] as String?)?.trim();
+    if (scopedTenantId != null &&
+        scopedTenantId.isNotEmpty &&
+        eventTenantId != null &&
+        eventTenantId.isNotEmpty &&
+        scopedTenantId != eventTenantId) {
+      return true;
+    }
+
+    switch (action) {
+      case 'SOFT_DELETED':
+      case 'PERMANENTLY_DELETED':
+        final int index = _labItems.indexWhere(
+          (LabCatalogItem item) => _matchesLabItemId(item, testId),
+        );
+        if (index < 0) {
+          return action == 'PERMANENTLY_DELETED';
+        }
+        setState(() => _removeLabItemLocally(_labItems[index]));
+        return true;
+      case 'CREATED':
+      case 'UPDATED':
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  Future<T> _withLabMutationGuard<T>(Future<T> Function() action) async {
+    _labMutationDepth += 1;
+    try {
+      return await action();
+    } finally {
+      _labMutationDepth = (_labMutationDepth - 1).clamp(0, 1 << 30);
+    }
+  }
+
   void _upsertRadiologyItemLocally(RadiologyCatalogProcedure item) {
     final List<RadiologyCatalogProcedure> next =
         List<RadiologyCatalogProcedure>.of(_radiologyItems);
@@ -1976,130 +2099,153 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || tenantId == null) {
       return;
     }
-    final LabRepository repository = ref.read(labRepositoryProvider);
-    final Object? result = await showAppDialog<Object>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => LabCatalogItemMutationDialog(
-        kind: kind,
-        tenantId: tenantId,
-        catalogItems: _labItems,
-        loadExistingItems: kind == LabCatalogItemType.test
-            ? () => _loadLabSimilarityCandidates(tenantId: tenantId)
-            : null,
-        onSubmit: (Map<String, Object?> payload) async {
-          final Result<LabCatalogItem> createResult =
-              kind == LabCatalogItemType.panel
-              ? await repository.createLabPanel(payload)
-              : await repository.createLabTest(payload);
-          return createResult.when(
-            success: (_) => null,
-            failure: (AppFailure failure) => failure,
-          );
-        },
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (result is LabCatalogItem) {
-      final LabCatalogItem existing = _resolveLabCatalogItem(result);
-      if (!existing.isStandard) {
-        await _openLabEditDialog(existing);
+    await _withLabMutationGuard(() async {
+      final LabRepository repository = ref.read(labRepositoryProvider);
+      LabCatalogItem? createdItem;
+      final Object? result = await showAppDialog<Object>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => LabCatalogItemMutationDialog(
+          kind: kind,
+          tenantId: tenantId,
+          catalogItems: _labItems,
+          loadExistingItems: kind == LabCatalogItemType.test
+              ? () => _loadLabSimilarityCandidates(tenantId: tenantId)
+              : null,
+          onSubmit: (Map<String, Object?> payload) async {
+            final Result<LabCatalogItem> createResult =
+                kind == LabCatalogItemType.panel
+                ? await repository.createLabPanel(payload)
+                : await repository.createLabTest(payload);
+            return createResult.when(
+              success: (LabCatalogItem item) {
+                createdItem = item;
+                return null;
+              },
+              failure: (AppFailure failure) => failure,
+            );
+          },
+        ),
+      );
+      if (!mounted) {
+        return;
       }
-      return;
-    }
-    if (result != true) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.labSavedMessage)),
-    );
-    await _ensureTabLoaded(_tab, force: true);
+      if (result is LabCatalogItem) {
+        final LabCatalogItem existing = _resolveLabCatalogItem(result);
+        if (!existing.isStandard) {
+          await _openLabEditDialog(existing);
+        }
+        return;
+      }
+      if (result != true) {
+        return;
+      }
+      final LabCatalogItem? saved = createdItem;
+      if (saved != null) {
+        setState(() => _upsertLabItemLocally(saved));
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.labSavedMessage)),
+      );
+      await _ensureTabLoaded(_tab, force: true);
+    });
   }
 
   Future<void> _openLabEditDialog(LabCatalogItem item) async {
     if (!_canMutateLabCatalog || item.isStandard) {
       return;
     }
-    final LabRepository repository = ref.read(labRepositoryProvider);
-    final String? tenantId = widget.tenantId?.trim();
-    final Object? result = await showAppDialog<Object>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => LabCatalogItemMutationDialog(
-        kind: item.type,
-        item: item,
-        catalogItems: _labItems,
-        loadExistingItems: item.type == LabCatalogItemType.test
-            ? () => _loadLabSimilarityCandidates(tenantId: tenantId)
-            : null,
-        onSubmit: (Map<String, Object?> payload) async {
-          final Result<LabCatalogItem> updateResult =
-              item.type == LabCatalogItemType.panel
-              ? await repository.updateLabPanel(item.apiId, payload)
-              : await repository.updateLabTest(item.apiId, payload);
-          return updateResult.when(
-            success: (_) => null,
-            failure: (AppFailure failure) => failure,
-          );
-        },
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (result is LabCatalogItem) {
-      final LabCatalogItem existing = _resolveLabCatalogItem(result);
-      if (existing.apiId != item.apiId && !existing.isStandard) {
-        await _openLabEditDialog(existing);
+    await _withLabMutationGuard(() async {
+      final LabRepository repository = ref.read(labRepositoryProvider);
+      final String? tenantId = widget.tenantId?.trim();
+      LabCatalogItem? updatedItem;
+      final Object? result = await showAppDialog<Object>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => LabCatalogItemMutationDialog(
+          kind: item.type,
+          item: item,
+          catalogItems: _labItems,
+          loadExistingItems: item.type == LabCatalogItemType.test
+              ? () => _loadLabSimilarityCandidates(tenantId: tenantId)
+              : null,
+          onSubmit: (Map<String, Object?> payload) async {
+            final Result<LabCatalogItem> updateResult =
+                item.type == LabCatalogItemType.panel
+                ? await repository.updateLabPanel(item.apiId, payload)
+                : await repository.updateLabTest(item.apiId, payload);
+            return updateResult.when(
+              success: (LabCatalogItem next) {
+                updatedItem = next;
+                return null;
+              },
+              failure: (AppFailure failure) => failure,
+            );
+          },
+        ),
+      );
+      if (!mounted) {
+        return;
       }
-      return;
-    }
-    if (result != true) {
-      return;
-    }
-    await _ensureTabLoaded(_tab, force: true);
+      if (result is LabCatalogItem) {
+        final LabCatalogItem existing = _resolveLabCatalogItem(result);
+        if (existing.apiId != item.apiId && !existing.isStandard) {
+          await _openLabEditDialog(existing);
+        }
+        return;
+      }
+      if (result != true) {
+        return;
+      }
+      final LabCatalogItem? saved = updatedItem;
+      if (saved != null) {
+        setState(() => _upsertLabItemLocally(saved));
+      }
+      await _ensureTabLoaded(_tab, force: true);
+    });
   }
 
   Future<void> _openLabDeleteDialog(LabCatalogItem item) async {
     if (!_canMutateLabCatalog || item.isStandard) {
       return;
     }
-    final LabRepository repository = ref.read(labRepositoryProvider);
-    final AppLocalizations l10n = context.l10n;
-    final bool isPanel = item.type == LabCatalogItemType.panel;
-    final bool? deleted = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => LabDeleteReasonDialog(
-        title: isPanel
-            ? l10n.labDeletePanelDialogTitle
-            : l10n.labDeleteTestDialogTitle,
-        body: isPanel
-            ? l10n.labDeletePanelDialogBody(item.displayTitle)
-            : l10n.labDeleteTestDialogBody(item.displayTitle),
-        submitLabel: isPanel
-            ? l10n.labDeletePanelAction
-            : l10n.labDeleteTestAction,
-        onDelete: (String reason) async {
-          final Result<void> result = isPanel
-              ? await repository.deleteLabPanel(item.apiId, reason)
-              : await repository.deleteLabTest(item.apiId, reason);
-          return result.when(
-            success: (_) => null,
-            failure: (AppFailure failure) => failure,
-          );
-        },
-      ),
-    );
-    if (!mounted || deleted != true) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.labDeletedMessage)),
-    );
-    await _ensureTabLoaded(_tab, force: true);
+    await _withLabMutationGuard(() async {
+      final LabRepository repository = ref.read(labRepositoryProvider);
+      final AppLocalizations l10n = context.l10n;
+      final bool isPanel = item.type == LabCatalogItemType.panel;
+      final bool? deleted = await showAppDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => LabDeleteReasonDialog(
+          title: isPanel
+              ? l10n.labDeletePanelDialogTitle
+              : l10n.labDeleteTestDialogTitle,
+          body: isPanel
+              ? l10n.labDeletePanelDialogBody(item.displayTitle)
+              : l10n.labDeleteTestDialogBody(item.displayTitle),
+          submitLabel: isPanel
+              ? l10n.labDeletePanelAction
+              : l10n.labDeleteTestAction,
+          onDelete: (String reason) async {
+            final Result<void> result = isPanel
+                ? await repository.deleteLabPanel(item.apiId, reason)
+                : await repository.deleteLabTest(item.apiId, reason);
+            return result.when(
+              success: (_) => null,
+              failure: (AppFailure failure) => failure,
+            );
+          },
+        ),
+      );
+      if (!mounted || deleted != true) {
+        return;
+      }
+      setState(() => _removeLabItemLocally(item));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.labDeletedMessage)),
+      );
+      await _ensureTabLoaded(_tab, force: true);
+    });
   }
 
   Future<void> _openDiagnosisAddDialog() async {

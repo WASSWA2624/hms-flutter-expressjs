@@ -17,16 +17,17 @@
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Cancel | Footer | Dismisses without save. |
-| Save | Footer | Creates or updates lab test/panel; pops `true` on success. |
-| Add reference range | Test form range list | Appends another age/gender reference-range row (tests only). |
+| Cancel | Footer | Dismisses without save. Remains available during similarity scan; disabled only while saving. |
+| Save | Footer | For **tests**: runs similarity scan (button loading), then creates/updates; pops `true` on success. For **panels**: validates and saves directly. |
+| Similarity review | Modal after Save (tests) | Exact name/code conflicts set field errors and block save. Near matches open `showLabCatalogSimilarityDialog` (Cancel / Use this test / Create or Save anyway). Create with no matches opens no-similar confirm. Proceed sends `confirm_similar: true`. Use existing pops `LabCatalogItem` so the parent can open edit. |
+| Add reference range | Top of test form range list | Appends another age/gender reference-range row (tests only); blocks duplicate label+gender+age-band keys. |
 | Remove reference range | Per range row | Removes that reference-range row (tests only). |
 | Add unit / qualitative value | Test form option lists | Adds chip values for unit or qualitative options (by result kind). |
 | Remove unit / qualitative value | Option chips | Removes the selected option chip. |
 
 Titles: create uses lab create dialog title keys; edit uses **Edit Lab Test** / **Edit Lab Panel** by kind.
 
-**Test form field order:** framed sections — **Test identity** (name → code → searchable category) → **Result configuration** (specimen → result kind → unit / options by kind → description) → **Reference ranges** (age/gender rows). Category and specimen options combine known catalogs with loaded rows. Panel form uses a single **Panel details** section. Create/configure dialogs share `LabTestDefinitionForm`.
+**Test form field order:** framed sections — **Test identity** (name → code → searchable category select) → **Result configuration** (specimen select → result kind → default unit select / options by kind → description) → **Reference ranges** (preset labels + age/gender rows; Add at top). Category, specimen, and unit options combine known catalogs with loaded rows. Panel form uses a single **Panel details** section. Create/configure dialogs share `LabTestDefinitionForm`. Catalog mutate actions require `canMutateLabCatalog` (lab:write or tenant/facility/system admin).
 
 ---
 

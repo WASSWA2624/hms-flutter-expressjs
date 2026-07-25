@@ -618,6 +618,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   bool _isOfferedAtFacility = false;
   AppFailure? _failure;
   bool _isSaving = false;
+  String? _rangeErrorText;
 
   late final List<String> _cachedCategoryOptions;
   late final List<String> _cachedSpecimenOptions;
@@ -760,6 +761,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
               enabled: !_isSaving,
               nameEnabled: false,
               codeEnabled: false,
+              rangeErrorText: _rangeErrorText,
               namePrefixIcon: const Icon(Icons.science_outlined),
               nameValidator: (String? value) {
                 final String? requiredFailure = AppValidators.requiredText(
@@ -791,20 +793,44 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
               onResultOptionRemove: (EditableLabValue value) {
                 setState(() => _resultOptions.remove(value));
               },
-              onRangesChanged: () => setState(() {}),
+              onRangesChanged: () {
+                setState(() {
+                  _rangeErrorText =
+                      labReferenceRangesHaveDuplicateApplicability(
+                        _referenceRanges,
+                      )
+                      ? l10n.labReferenceRangeDuplicateMessage
+                      : null;
+                });
+              },
               onRangeAdd: () {
-                setState(
-                  () => _referenceRanges.add(
+                final EditableLabReferenceRange next =
                     EditableLabReferenceRange(
                       defaultUnit: _unitController.text.trim(),
-                    ),
-                  ),
-                );
+                    );
+                final List<EditableLabReferenceRange> proposed =
+                    <EditableLabReferenceRange>[
+                      ..._referenceRanges,
+                      next,
+                    ];
+                if (labReferenceRangesHaveDuplicateApplicability(proposed)) {
+                  next.dispose();
+                  setState(
+                    () => _rangeErrorText =
+                        l10n.labReferenceRangeDuplicateMessage,
+                  );
+                  return;
+                }
+                setState(() {
+                  _rangeErrorText = null;
+                  _referenceRanges.add(next);
+                });
               },
               onRangeRemove: (EditableLabReferenceRange range) {
                 setState(() {
                   range.dispose();
                   _referenceRanges.remove(range);
+                  _rangeErrorText = null;
                 });
               },
             ),
@@ -883,7 +909,10 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
       return;
     }
     if (!_rangesAreValid()) {
-      setState(() => _failure = AppFailure.validation());
+      setState(() {
+        _failure = AppFailure.validation();
+        _rangeErrorText = _rangeValidationMessage();
+      });
       return;
     }
     setState(() {
@@ -908,9 +937,28 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   }
 
   bool _rangesAreValid() {
+    if (labReferenceRangesHaveDuplicateApplicability(_referenceRanges)) {
+      return false;
+    }
     return _referenceRanges.every(
       (EditableLabReferenceRange range) => range.isValid(),
     );
+  }
+
+  String? _rangeValidationMessage() {
+    final AppLocalizations l10n = context.l10n;
+    if (labReferenceRangesHaveDuplicateApplicability(_referenceRanges)) {
+      return l10n.labReferenceRangeDuplicateMessage;
+    }
+    for (final EditableLabReferenceRange range in _referenceRanges) {
+      if (!range.isValid()) {
+        if (range.contradictsCriticalVsNormal()) {
+          return l10n.labReferenceRangeCriticalVsNormalMessage;
+        }
+        return l10n.labReferenceRangeInvalidBoundsMessage;
+      }
+    }
+    return null;
   }
 
   Map<String, Object?> _payload() {

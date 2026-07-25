@@ -19,6 +19,32 @@ const {
   checkLabTestDuplicates,
   mergeDuplicateChecks
 } = require('@lib/lab/lab-test-similarity');
+const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
+const { DIAGNOSTIC_EVENTS } = require('@lib/websocket/events');
+
+const publishLabCatalogRealtimeUpdate = async ({
+  resource,
+  actorUserId = null,
+  action = 'UPDATED'
+} = {}) => {
+  if (!resource?.tenant_id || !resource?.id) {
+    return;
+  }
+  publishCrudRealtimeEvent({
+    event: DIAGNOSTIC_EVENTS.LAB_CATALOG_UPDATED,
+    resource,
+    resource_type: 'lab_test',
+    actor_user_id: actorUserId,
+    payload: {
+      action: String(action || 'UPDATED').trim().toUpperCase(),
+      deleted_at: resource.deleted_at || null,
+      name: resource.name || null,
+      code: resource.code || null,
+      category: resource.category || null,
+      human_friendly_id: resource.human_friendly_id || null
+    }
+  })?.catch?.(() => {});
+};
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 const standardLabTestId = (key) => `STD_LAB_TEST:${key}`;
@@ -277,7 +303,7 @@ const assertLabTestUniqueness = async ({
   confirmSimilar = false
 }) => {
   const existingDbTests = await labTestRepository.findMany(
-    { tenant_id: tenantId, deleted_at: null },
+    { tenant_id: tenantId },
     0,
     7500,
     { name: 'asc' }
@@ -365,7 +391,13 @@ const createLabTest = async (data, userId, ipAddress) => {
       diff: { after: created || labTest },
       ip_address: ipAddress}).catch(() => {});
 
-    return mapLabTestRecord(created || labTest);
+    const mapped = mapLabTestRecord(created || labTest);
+    publishLabCatalogRealtimeUpdate({
+      resource: created || labTest,
+      actorUserId: userId,
+      action: 'CREATED'
+    });
+    return mapped;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -423,7 +455,13 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
       diff: { before, after: labTest },
       ip_address: ipAddress}).catch(() => {});
 
-    return mapLabTestRecord(labTest || updated);
+    const mapped = mapLabTestRecord(labTest || updated);
+    publishLabCatalogRealtimeUpdate({
+      resource: labTest || updated,
+      actorUserId: userId,
+      action: 'UPDATED'
+    });
+    return mapped;
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -454,6 +492,12 @@ const deleteLabTest = async (id, data = {}, userId, ipAddress) => {
       entity_id: labTest.id,
       diff: { before, deletion_reason: deletionReason },
       ip_address: ipAddress}).catch(() => {});
+
+    publishLabCatalogRealtimeUpdate({
+      resource: { ...before, deleted_at: labTest?.deleted_at || new Date() },
+      actorUserId: userId,
+      action: 'SOFT_DELETED'
+    });
 
     return mapLabTestRecord(before);
   } catch (error) {

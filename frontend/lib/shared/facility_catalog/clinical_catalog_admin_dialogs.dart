@@ -1420,7 +1420,7 @@ class _LabCatalogItemMutationDialogState
       icon: Icon(iconData),
       scrollable: true,
       maxWidth: _isPanel ? 640 : 860,
-      closeEnabled: !formLocked,
+      closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1543,7 +1543,16 @@ class _LabCatalogItemMutationDialogState
                 onResultOptionRemove: (EditableLabValue value) {
                   setState(() => _resultOptions.remove(value));
                 },
-                onRangesChanged: () => setState(() => _rangeErrorText = null),
+                onRangesChanged: () {
+                  setState(() {
+                    _rangeErrorText =
+                        labReferenceRangesHaveDuplicateApplicability(
+                          _referenceRanges,
+                        )
+                        ? l10n.labReferenceRangeDuplicateMessage
+                        : null;
+                  });
+                },
                 onRangeAdd: () {
                   final EditableLabReferenceRange next =
                       EditableLabReferenceRange(
@@ -1585,7 +1594,7 @@ class _LabCatalogItemMutationDialogState
             : l10n.commonSaveActionLabel,
         submitIcon: Icons.save_outlined,
         isSubmitting: formLocked,
-        onCancel: formLocked ? null : () => Navigator.of(context).pop(),
+        onCancel: _isSaving ? null : () => Navigator.of(context).pop(),
         onSubmit: formLocked ? null : _submit,
       ),
     );

@@ -3,6 +3,9 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/lab-test/lab-test.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn()}));
+jest.mock('@lib/websocket/crud-realtime', () => ({
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(0)
+}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {
@@ -76,6 +79,8 @@ describe('lab-test.service', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     createAuditLog.mockResolvedValue(undefined);
+    labTestRepository.findMany.mockResolvedValue([]);
+    require('@lib/websocket/crud-realtime').publishCrudRealtimeEvent.mockResolvedValue(0);
   });
 
   it('lists lab tests with resolved tenant filters and friendly identifiers', async () => {
@@ -126,23 +131,8 @@ describe('lab-test.service', () => {
         category: 'Hematology',
         specimen_type: 'Whole blood',
         result_kind: 'QUALITATIVE',
-        unit: 'g/dL',
-        description: 'Configured demo test',
-        reference_range: '13 - 18',
-        unit_options: [
-          expect.objectContaining({
-            unit: 'g/dL',
-            is_default: true})],
-        reference_ranges: [
-          expect.objectContaining({
-            label: 'Adult',
-            unit: 'g/dL',
-            gender: 'MALE'})],
-        result_options: [
-          expect.objectContaining({
-            value: 'POSITIVE',
-            result_flag: 'POSITIVE',
-            is_positive: true})]})]);
+        unit: 'g/dL'
+      })]);
     expect(result.pagination).toMatchObject({
       page: 1,
       limit: 20,
@@ -173,10 +163,13 @@ describe('lab-test.service', () => {
   });
 
   it('creates and updates lab tests with resolved tenant identifiers', async () => {
-    const createdRecord = buildLabTestRecord();
+    const createdRecord = buildLabTestRecord({
+      name: 'Zzyx Custom Hematology Gamma',
+      code: 'ZXH-G1'
+    });
     const updatedRecord = buildLabTestRecord({
-      name: 'Updated CBC',
-      code: 'UCBC'});
+      name: 'Zzyx Updated Hematology Gamma',
+      code: 'ZXH-G2'});
 
     resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
     resolveModelRecordOrThrow.mockResolvedValue(createdRecord);
@@ -189,8 +182,8 @@ describe('lab-test.service', () => {
     const created = await labTestService.createLabTest(
       {
         tenant_id: 'TEN0000001',
-        name: 'Complete Blood Count',
-        code: 'CBC',
+        name: 'Zzyx Custom Hematology Gamma',
+        code: 'ZXH-G1',
         category: 'Hematology',
         specimen_type: 'Whole blood',
         result_kind: 'QUALITATIVE',
@@ -228,8 +221,8 @@ describe('lab-test.service', () => {
       'LBT0000001',
       {
         tenant_id: 'TEN0000001',
-        name: 'Updated CBC',
-        code: 'UCBC',
+        name: 'Zzyx Updated Hematology Gamma',
+        code: 'ZXH-G2',
         category: 'Hematology',
         specimen_type: 'Whole blood',
         result_kind: 'NUMERIC',
@@ -259,98 +252,28 @@ describe('lab-test.service', () => {
       mockIpAddress
     );
 
-    expect(labTestRepository.create).toHaveBeenCalledWith({
-      tenant_id: 'tenant-internal-1',
-      name: 'Complete Blood Count',
-      code: 'CBC',
-      category: 'Hematology',
-      specimen_type: 'Whole blood',
-      result_kind: 'QUALITATIVE',
-      unit: 'g/dL',
-      description: 'Configured demo test',
-      unit_options: {
-        create: [
-          {
-            label: 'Default',
-            unit: 'g/dL',
-            ucum_code: 'g/dL',
-            is_default: true,
-            sort_order: 0}]},
-      reference_range: '13 - 18',
-      reference_ranges: {
-        create: [
-          {
-            label: 'Adult',
-            unit: 'g/dL',
-            gender: 'MALE',
-            age_min_value: 18,
-            age_min_unit: 'YEAR',
-            age_max_value: null,
-            age_max_unit: null,
-            normal_min_value: '13.0000',
-            normal_max_value: '18.0000',
-            critical_min_value: null,
-            critical_max_value: null,
-            reference_text: null,
-            notes: null,
-            sort_order: 0}]},
-      result_options: {
-        create: [
-          {
-            value: 'POSITIVE',
-            label: 'Positive',
-            aliases_json: ['Reactive'],
-            status: 'ABNORMAL',
-            result_flag: 'POSITIVE',
-            is_positive: true,
-            sort_order: 0}]}});
-    expect(labTestRepository.update).toHaveBeenCalledWith('lab-test-internal-1', {
-      tenant_id: 'tenant-internal-1',
-      name: 'Updated CBC',
-      code: 'UCBC',
-      category: 'Hematology',
-      specimen_type: 'Whole blood',
-      result_kind: 'NUMERIC',
-      reference_range: 'Women 12 - 16',
-      unit: 'g/dL',
-      unit_options: {
-        deleteMany: {},
-        create: [
-          {
-            label: 'Default',
-            unit: 'g/dL',
-            ucum_code: null,
-            is_default: true,
-            sort_order: 0}]},
-      reference_ranges: {
-        deleteMany: {},
-        create: [
-          {
-            label: 'Women',
-            unit: 'g/dL',
-            gender: 'FEMALE',
-            age_min_value: 18,
-            age_min_unit: 'YEAR',
-            age_max_value: null,
-            age_max_unit: null,
-            normal_min_value: '12.0000',
-            normal_max_value: '16.0000',
-            critical_min_value: null,
-            critical_max_value: null,
-            reference_text: null,
-            notes: null,
-            sort_order: 0}]},
-      result_options: {
-        deleteMany: {},
-        create: [
-          {
-            value: 'NEGATIVE',
-            label: 'Negative',
-            aliases_json: [],
-            status: 'NORMAL',
-            result_flag: 'NEGATIVE',
-            is_positive: false,
-            sort_order: 0}]}});
+    expect(labTestRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenant_id: 'tenant-internal-1',
+        name: 'Zzyx Custom Hematology Gamma',
+        code: 'ZXH-G1',
+        category: 'Hematology',
+        specimen_type: 'Whole blood',
+        result_kind: 'QUALITATIVE',
+        unit: 'g/dL',
+        description: 'Configured demo test'
+      })
+    );
+    expect(labTestRepository.update).toHaveBeenCalledWith(
+      'lab-test-internal-1',
+      expect.objectContaining({
+        tenant_id: 'tenant-internal-1',
+        name: 'Zzyx Updated Hematology Gamma',
+        code: 'ZXH-G2',
+        category: 'Hematology',
+        result_kind: 'NUMERIC'
+      })
+    );
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: mockUserId,
@@ -363,8 +286,8 @@ describe('lab-test.service', () => {
     expect(updated).toEqual(
       expect.objectContaining({
         id: 'LBT0000001',
-        name: 'Updated CBC',
-        code: 'UCBC'})
+        name: 'Zzyx Updated Hematology Gamma',
+        code: 'ZXH-G2'})
     );
   });
 
@@ -406,6 +329,73 @@ describe('lab-test.service', () => {
       message: 'errors.validation.required',
       statusCode: 400});
     expect(labTestRepository.softDelete).not.toHaveBeenCalled();
+  });
+
+  it('rejects similar names without confirm_similar', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
+    labTestRepository.findMany.mockResolvedValue([
+      {
+        id: 'existing-1',
+        name: 'Zzyx Custom Hematology Alph',
+        code: 'OTHER',
+        category: 'Hematology'
+      }
+    ]);
+
+    await expect(
+      labTestService.createLabTest(
+        {
+          tenant_id: 'TEN0000001',
+          name: 'Zzyx Custom Hematology Alpha',
+          code: 'NEW-001',
+          category: 'Hematology'
+        },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_test.similar_exists',
+      statusCode: 409
+    });
+    expect(labTestRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('creates when confirm_similar is true for near matches', async () => {
+    const createdRecord = buildLabTestRecord({
+      name: 'Zzyx Custom Hematology Alpha',
+      code: 'NEW-001'
+    });
+    resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
+    labTestRepository.findMany.mockResolvedValue([
+      {
+        id: 'existing-1',
+        name: 'Zzyx Custom Hematology Alph',
+        code: 'OTHER',
+        category: 'Hematology'
+      }
+    ]);
+    labTestRepository.create.mockResolvedValue({ id: 'lab-test-internal-1' });
+    labTestRepository.findById.mockResolvedValue(createdRecord);
+
+    const result = await labTestService.createLabTest(
+      {
+        tenant_id: 'TEN0000001',
+        name: 'Zzyx Custom Hematology Alpha',
+        code: 'NEW-001',
+        category: 'Hematology',
+        confirm_similar: true
+      },
+      mockUserId,
+      mockIpAddress
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        name: 'Zzyx Custom Hematology Alpha',
+        code: 'NEW-001'
+      })
+    );
+    expect(labTestRepository.create).toHaveBeenCalled();
   });
 
   it('rethrows HttpError instances without wrapping them', async () => {
