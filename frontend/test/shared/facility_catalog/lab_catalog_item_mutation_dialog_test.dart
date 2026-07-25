@@ -125,7 +125,7 @@ void main() {
       expect(firstRange['notes'], isNull);
     });
 
-    testWidgets('exact duplicate name blocks save without submit', (
+    testWidgets('exact duplicate name opens similarity modal without proceed', (
       WidgetTester tester,
     ) async {
       var submitCount = 0;
@@ -148,15 +148,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(submitCount, 0);
-      expect(
-        find.text('A lab test with this name already exists.'),
-        findsOneWidget,
-      );
-      expect(find.text('Match status: Similar (0%)'), findsNothing);
+      expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
+      expect(find.text('Match status: Exact duplicate'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Use this test'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Create anyway'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Continue save'), findsNothing);
     });
 
-    testWidgets('exact duplicate name blocks even when category differs', (
+    testWidgets('exact duplicate name opens modal even when category differs', (
       WidgetTester tester,
     ) async {
       var submitCount = 0;
@@ -185,14 +184,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(submitCount, 0);
-      expect(
-        find.text('A lab test with this name already exists.'),
-        findsOneWidget,
-      );
+      expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
+      expect(find.text('Match status: Exact duplicate'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Use this test'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Create anyway'), findsNothing);
     });
 
-    testWidgets('exact duplicate code blocks save without submit', (
+    testWidgets('exact duplicate code opens similarity modal without proceed', (
       WidgetTester tester,
     ) async {
       var submitCount = 0;
@@ -212,10 +210,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(submitCount, 0);
-      expect(
-        find.text('A lab test with this code already exists.'),
-        findsOneWidget,
-      );
+      expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
+      expect(find.text('Match status: Exact duplicate'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Use this test'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Create anyway'), findsNothing);
     });
 

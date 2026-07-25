@@ -19,7 +19,7 @@
 | ----------------------- | -------- | ------------------------ |
 | Cancel | Footer | Dismisses without save. Remains available during similarity scan; disabled only while saving. |
 | Save | Footer | For **tests**: runs similarity scan (button loading), then always opens `showLabCatalogSimilarityDialog` with percent score (including **0%** / empty matches); creates/updates; pops `true` on success. For **panels**: validates and saves directly. |
-| Similarity review | Modal after Save (tests) | Exact name/code conflicts set field errors and block save. Otherwise opens similarity dialog with score (Cancel / Use this test / Continue save or Create/Save anyway). Proceed after near-match sends `confirm_similar: true`. Use existing pops `LabCatalogItem` so the parent can open edit (tenant) or details (standard). |
+| Similarity review | Modal after Save (tests) | Always opens similarity dialog with score (including 0% and exact duplicates). Exact matches: Cancel / Use this test only (no proceed); Cancel also sets field errors. Near/zero: Cancel / Use this test / Continue save or Create/Save anyway. Proceed after near-match sends `confirm_similar: true`. Use existing pops `LabCatalogItem` so the parent can open edit (tenant) or details (standard). |
 | Details | After successful create | Parent opens `showLabCatalogItemDetailsDialog` for the newly created test or panel. |
 | Add reference range | Top of test form range list | Appends another age/gender reference-range row (tests only); blocks duplicate label+gender+age-band keys. |
 | Remove reference range | Per range row | Removes that reference-range row (tests only). |
