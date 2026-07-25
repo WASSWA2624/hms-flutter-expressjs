@@ -19076,6 +19076,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labGenderAnyLabel => 'All genders';
 
   @override
+  String get labGenderAnyHelper =>
+      'Specific genders are cleared while All genders is selected.';
+
+  @override
   String get labAgeApplicabilityLabel => 'Age applicability';
 
   @override
@@ -19788,7 +19792,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labReferenceRangeDuplicateMessage =>
-      'A reference range with the same label, gender, and age band already exists.';
+      'A reference range with the same label already covers this gender and age (including All genders / All ages).';
 
   @override
   String get labInfantRangeLabel => 'Infant';

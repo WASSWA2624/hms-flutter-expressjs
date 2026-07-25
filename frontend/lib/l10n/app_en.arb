@@ -24481,6 +24481,10 @@
   "@labGenderAnyLabel": {
     "description": "Gender applicability option that covers every gender for a lab reference range."
   },
+  "labGenderAnyHelper": "Specific genders are cleared while All genders is selected.",
+  "@labGenderAnyHelper": {
+    "description": "Helper text shown when All genders is selected on a lab reference range."
+  },
   "labAgeApplicabilityLabel": "Age applicability",
   "@labAgeApplicabilityLabel": {
     "description": "Section label for lab reference-range age applicability."
@@ -25400,9 +25404,9 @@
   "@labStandardCatalogBadge": {
     "description": "Badge for standard lab catalog entries."
   },
-  "labReferenceRangeDuplicateMessage": "A reference range with the same label, gender, and age band already exists.",
+  "labReferenceRangeDuplicateMessage": "A reference range with the same label already covers this gender and age (including All genders / All ages).",
   "@labReferenceRangeDuplicateMessage": {
-    "description": "Validation when adding a duplicate lab reference range applicability."
+    "description": "Validation when lab reference ranges overlap on label, gender, and age applicability."
   },
   "labPediatricRangeLabel": "Pediatric",
   "@labPediatricRangeLabel": {

@@ -17,6 +17,7 @@ void main() {
       expect(find.text('All genders'), findsOneWidget);
       expect(find.text('Male'), findsOneWidget);
       expect(find.text('All ages'), findsOneWidget);
+      expect(find.text('Specific genders are cleared while All genders is selected.'), findsOneWidget);
 
       final AppCheckboxField allGenders = _checkboxWithTitle(
         tester,
@@ -37,6 +38,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(range.gender, 'FEMALE');
       expect(_checkboxWithTitle(tester, 'All genders').value, isFalse);
+
+      // Re-select All genders → specifics inactivated again.
+      await tester.tap(find.text('All genders'));
+      await tester.pumpAndSettle();
+      expect(range.appliesToAllGenders, isTrue);
+      expect(_checkboxWithTitle(tester, 'Male').enabled, isFalse);
+      expect(_checkboxWithTitle(tester, 'Female').enabled, isFalse);
     },
   );
 

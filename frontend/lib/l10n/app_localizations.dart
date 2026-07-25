@@ -35593,6 +35593,12 @@ abstract class AppLocalizations {
   /// **'All genders'**
   String get labGenderAnyLabel;
 
+  /// Helper text shown when All genders is selected on a lab reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Specific genders are cleared while All genders is selected.'**
+  String get labGenderAnyHelper;
+
   /// Section label for lab reference-range age applicability.
   ///
   /// In en, this message translates to:
@@ -36799,10 +36805,10 @@ abstract class AppLocalizations {
   /// **'Standard catalog'**
   String get labStandardCatalogBadge;
 
-  /// Validation when adding a duplicate lab reference range applicability.
+  /// Validation when lab reference ranges overlap on label, gender, and age applicability.
   ///
   /// In en, this message translates to:
-  /// **'A reference range with the same label, gender, and age band already exists.'**
+  /// **'A reference range with the same label already covers this gender and age (including All genders / All ages).'**
   String get labReferenceRangeDuplicateMessage;
 
   /// Preset label for infant lab reference range.

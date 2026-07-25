@@ -346,7 +346,7 @@ void main() {
       expect(submitCount, 0);
       expect(
         find.text(
-          'A reference range with the same label, gender, and age band already exists.',
+          'A reference range with the same label already covers this gender and age (including All genders / All ages).',
         ),
         findsOneWidget,
       );

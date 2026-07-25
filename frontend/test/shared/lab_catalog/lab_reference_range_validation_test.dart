@@ -21,14 +21,19 @@ void main() {
       second.dispose();
     });
 
-    test('allows same label with different age bands', () {
-      final EditableLabReferenceRange adult = EditableLabReferenceRange();
-      final EditableLabReferenceRange pediatric = EditableLabReferenceRange();
-      adult.labelController.text = 'Adult';
-      adult.ageMinController.text = '18';
-      pediatric.labelController.text = 'Adult';
-      pediatric.ageMinController.text = '0';
-      pediatric.ageMaxController.text = '17';
+    test('allows same label with different non-overlapping age bands', () {
+      final EditableLabReferenceRange adult = EditableLabReferenceRange()
+        ..labelController.text = 'Adult'
+        ..setAllAges(value: false)
+        ..setSpecificGender('MALE')
+        ..ageMinController.text = '18'
+        ..ageMaxController.text = '65';
+      final EditableLabReferenceRange pediatric = EditableLabReferenceRange()
+        ..labelController.text = 'Adult'
+        ..setAllAges(value: false)
+        ..setSpecificGender('MALE')
+        ..ageMinController.text = '0'
+        ..ageMaxController.text = '17';
 
       expect(
         labReferenceRangesHaveDuplicateApplicability(<EditableLabReferenceRange>[
@@ -40,6 +45,85 @@ void main() {
 
       adult.dispose();
       pediatric.dispose();
+    });
+
+    test('All genders overlaps a specific gender on the same age band', () {
+      final EditableLabReferenceRange allGenders = EditableLabReferenceRange()
+        ..labelController.text = 'Adult'
+        ..setAllGenders()
+        ..setAllAges(value: false)
+        ..ageMinController.text = '18'
+        ..ageMaxController.text = '65';
+      final EditableLabReferenceRange male = EditableLabReferenceRange()
+        ..labelController.text = 'Adult'
+        ..setSpecificGender('MALE')
+        ..setAllAges(value: false)
+        ..ageMinController.text = '18'
+        ..ageMaxController.text = '65';
+
+      expect(labReferenceRangesOverlap(allGenders, male), isTrue);
+      expect(
+        labReferenceRangesHaveDuplicateApplicability(<EditableLabReferenceRange>[
+          allGenders,
+          male,
+        ]),
+        isTrue,
+      );
+
+      allGenders.dispose();
+      male.dispose();
+    });
+
+    test('All ages overlaps a specific age band on the same gender', () {
+      final EditableLabReferenceRange allAges = EditableLabReferenceRange()
+        ..labelController.text = 'Adult'
+        ..setSpecificGender('FEMALE')
+        ..setAllAges(value: true);
+      final EditableLabReferenceRange band = EditableLabReferenceRange()
+        ..labelController.text = 'Adult'
+        ..setSpecificGender('FEMALE')
+        ..setAllAges(value: false)
+        ..ageMinController.text = '18'
+        ..ageMaxController.text = '45';
+
+      expect(labReferenceRangesOverlap(allAges, band), isTrue);
+      expect(
+        labReferenceRangesHaveDuplicateApplicability(<EditableLabReferenceRange>[
+          allAges,
+          band,
+        ]),
+        isTrue,
+      );
+
+      allAges.dispose();
+      band.dispose();
+    });
+
+    test('allows same label with different genders and same age band', () {
+      final EditableLabReferenceRange male = EditableLabReferenceRange()
+        ..labelController.text = 'Adult'
+        ..setSpecificGender('MALE')
+        ..setAllAges(value: false)
+        ..ageMinController.text = '18'
+        ..ageMaxController.text = '65';
+      final EditableLabReferenceRange female = EditableLabReferenceRange()
+        ..labelController.text = 'Adult'
+        ..setSpecificGender('FEMALE')
+        ..setAllAges(value: false)
+        ..ageMinController.text = '18'
+        ..ageMaxController.text = '65';
+
+      expect(labReferenceRangesOverlap(male, female), isFalse);
+      expect(
+        labReferenceRangesHaveDuplicateApplicability(<EditableLabReferenceRange>[
+          male,
+          female,
+        ]),
+        isFalse,
+      );
+
+      male.dispose();
+      female.dispose();
     });
 
     test('ignores fully empty optional rows', () {
@@ -68,8 +152,9 @@ void main() {
     });
 
     test('allows open-ended numeric bounds', () {
-      final EditableLabReferenceRange range = EditableLabReferenceRange();
-      range.normalMinController.text = '10';
+      final EditableLabReferenceRange range = EditableLabReferenceRange()
+        ..setAllAges(value: false)
+        ..normalMinController.text = '10';
       expect(range.isValid(), isTrue);
       range.dispose();
     });

@@ -192,7 +192,7 @@ class EditableLabReferenceRange {
         _hasNonNumericSide(criticalMaxController.text);
   }
 
-  /// Stable key for label + gender + age band + age unit applicability.
+  /// Stable key for exact label + gender + age band + age unit applicability.
   String applicabilityKey() {
     final String label = labelController.text.trim().toLowerCase();
     final String genderKey = (gender ?? kLabReferenceRangeAnyGender)
@@ -254,19 +254,79 @@ class EditableLabReferenceRange {
   }
 }
 
+/// True when two ranges share a label and their gender/age applicability overlaps
+/// (including All genders / All ages covering more specific rows).
+bool labReferenceRangesOverlap(
+  EditableLabReferenceRange left,
+  EditableLabReferenceRange right,
+) {
+  final String leftLabel = left.labelController.text.trim().toLowerCase();
+  final String rightLabel = right.labelController.text.trim().toLowerCase();
+  if (leftLabel.isEmpty || rightLabel.isEmpty || leftLabel != rightLabel) {
+    return false;
+  }
+  return _labGendersOverlap(left, right) && _labAgesOverlap(left, right);
+}
+
+bool _labGendersOverlap(
+  EditableLabReferenceRange left,
+  EditableLabReferenceRange right,
+) {
+  if (left.appliesToAllGenders || right.appliesToAllGenders) {
+    return true;
+  }
+  return (left.gender ?? '').trim().toUpperCase() ==
+      (right.gender ?? '').trim().toUpperCase();
+}
+
+bool _labAgesOverlap(
+  EditableLabReferenceRange left,
+  EditableLabReferenceRange right,
+) {
+  if (left.allAges || right.allAges) {
+    return true;
+  }
+  final String leftUnit = (left.ageUnit ?? 'YEAR').trim().toUpperCase();
+  final String rightUnit = (right.ageUnit ?? 'YEAR').trim().toUpperCase();
+  if (leftUnit != rightUnit) {
+    return false;
+  }
+  final num leftMin =
+      num.tryParse(left.ageMinController.text.trim()) ?? double.negativeInfinity;
+  final num leftMax =
+      num.tryParse(left.ageMaxController.text.trim()) ?? double.infinity;
+  final num rightMin =
+      num.tryParse(right.ageMinController.text.trim()) ??
+      double.negativeInfinity;
+  final num rightMax =
+      num.tryParse(right.ageMaxController.text.trim()) ?? double.infinity;
+  return leftMin <= rightMax && rightMin <= leftMax;
+}
+
 bool labReferenceRangesHaveDuplicateApplicability(
   Iterable<EditableLabReferenceRange> ranges,
 ) {
+  final List<EditableLabReferenceRange> candidates = ranges
+      .where((EditableLabReferenceRange range) {
+        final String label = range.labelController.text.trim();
+        final bool hasAge =
+            !range.allAges &&
+            (range.ageMinController.text.trim().isNotEmpty ||
+                range.ageMaxController.text.trim().isNotEmpty);
+        return label.isNotEmpty || hasAge || !range.appliesToAllGenders;
+      })
+      .toList(growable: false);
+
   final Set<String> seen = <String>{};
-  for (final EditableLabReferenceRange range in ranges) {
-    final String label = range.labelController.text.trim();
-    final String ageMin = range.ageMinController.text.trim();
-    final String ageMax = range.ageMaxController.text.trim();
-    if (label.isEmpty && ageMin.isEmpty && ageMax.isEmpty) {
-      continue;
-    }
+  for (int i = 0; i < candidates.length; i++) {
+    final EditableLabReferenceRange range = candidates[i];
     if (!seen.add(range.applicabilityKey())) {
       return true;
+    }
+    for (int j = i + 1; j < candidates.length; j++) {
+      if (labReferenceRangesOverlap(range, candidates[j])) {
+        return true;
+      }
     }
   }
   return false;
@@ -558,8 +618,8 @@ class _LabReferenceRangeCard extends StatelessWidget {
   }
 }
 
-/// Gender applicability checkboxes. "All genders" is exclusive — selecting it
-/// clears and disables specific genders; picking a specific gender clears All.
+/// Gender applicability checkboxes with icons. "All genders" is exclusive —
+/// selecting it clears specifics; selecting a specific gender clears All.
 class _LabGenderApplicabilityField extends StatelessWidget {
   const _LabGenderApplicabilityField({
     required this.gender,
@@ -618,6 +678,7 @@ class _LabGenderApplicabilityField extends StatelessWidget {
           value: _isAllGenders,
           enabled: enabled,
           secondary: const Icon(Icons.people_outline),
+          subtitle: _isAllGenders ? l10n.labGenderAnyHelper : null,
           onChanged: !enabled
               ? null
               : (bool checked) {
@@ -634,8 +695,7 @@ class _LabGenderApplicabilityField extends StatelessWidget {
           AppCheckboxField(
             title: option.label,
             value: !_isAllGenders && gender == option.value,
-            // All genders covers every option — specifics stay inactive until
-            // All is cleared (or a specific is chosen via intelligence below).
+            // All genders covers every option — specifics stay inactive.
             enabled: enabled && !_isAllGenders,
             secondary: Icon(option.icon),
             onChanged: (!enabled || _isAllGenders)
