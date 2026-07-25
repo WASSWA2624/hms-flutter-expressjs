@@ -16,6 +16,14 @@ const LabCatalogItem _availableTest = LabCatalogItem(
   category: 'Hematology',
 );
 
+const LabCatalogItem _availablePanel = LabCatalogItem(
+  id: 'LBP0000001',
+  type: LabCatalogItemType.panel,
+  name: 'Metabolic panel',
+  code: 'CMP',
+  category: 'Chemistry',
+);
+
 void main() {
   group('LabEnableFacilityOfferingDialog', () {
     testWidgets('close action renders a close icon', (
@@ -24,6 +32,26 @@ void main() {
       await _pumpEnableDialog(tester);
 
       expect(find.widgetWithIcon(AppButton, Icons.close), findsWidgets);
+    });
+
+    testWidgets('shows enable lab tests and panels title', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(tester);
+
+      expect(find.text('ENABLE LAB TESTS AND PANELS'), findsOneWidget);
+    });
+
+    testWidgets('all kind lists tests and panels', (WidgetTester tester) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[_availableTest, _availablePanel],
+      );
+
+      expect(find.text('Complete blood count'), findsWidgets);
+      expect(find.text('Metabolic panel'), findsWidgets);
+      expect(find.text('ENABLE LAB TESTS AND PANELS'), findsOneWidget);
     });
 
     testWidgets('enable price dialog exposes cancel and enable action icons', (
@@ -40,10 +68,29 @@ void main() {
       );
       expect(find.widgetWithIcon(AppButton, Icons.close), findsWidgets);
     });
+
+    testWidgets('all kind opens panel enable action for panel rows', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[_availableTest, _availablePanel],
+      );
+
+      await tester.tap(find.text('Metabolic panel').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('ENABLE PANEL'), findsWidgets);
+    });
   });
 }
 
-Future<void> _pumpEnableDialog(WidgetTester tester) async {
+Future<void> _pumpEnableDialog(
+  WidgetTester tester, {
+  LabEnableOfferingKind kind = LabEnableOfferingKind.test,
+  List<LabCatalogItem> items = const <LabCatalogItem>[_availableTest],
+}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(1400, 900);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -58,7 +105,7 @@ Future<void> _pumpEnableDialog(WidgetTester tester) async {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Scaffold(
           body: LabEnableFacilityOfferingDialog(
-            kind: LabEnableOfferingKind.test,
+            kind: kind,
             scope: const LabCatalogScope(
               tenantId: 'TEN0000001',
               facilityId: 'FAC0000001',
@@ -70,11 +117,9 @@ Future<void> _pumpEnableDialog(WidgetTester tester) async {
                   String? query,
                   int limit = 100,
                 }) async {
-                  return const Result<List<LabCatalogItem>>.success(
-                    <LabCatalogItem>[_availableTest],
-                  );
+                  return Result<List<LabCatalogItem>>.success(items);
                 },
-            onEnable: (String id, Map<String, Object?> payload) async {
+            onEnable: (LabCatalogItem item, Map<String, Object?> payload) async {
               return null;
             },
           ),

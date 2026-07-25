@@ -38,6 +38,8 @@ void main() {
     ) async {
       await _pumpEnableDialog(tester, showBackAction: true);
 
+      expect(find.text('ENABLE RADIOLOGY PROCEDURES'), findsOneWidget);
+
       final Finder nextButton = find.widgetWithText(AppButton, 'Next');
       expect(nextButton, findsOneWidget);
       expect(find.widgetWithIcon(AppButton, Icons.arrow_back_outlined), findsWidgets);

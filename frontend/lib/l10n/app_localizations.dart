@@ -2476,10 +2476,10 @@ abstract class AppLocalizations {
   /// **'Search by name, code, or category'**
   String get tenantFacilityCatalogSearchHint;
 
-  /// Dialog title for browsing global clinical catalog items to enable.
+  /// Dialog title for enabling clinical diagnoses at a facility from Clinical Services Configure.
   ///
   /// In en, this message translates to:
-  /// **'Browse catalog'**
+  /// **'Enable clinical diagnoses'**
   String get tenantFacilityCatalogBrowseTitle;
 
   /// Navigation label for the patient registry destination.
@@ -35377,10 +35377,10 @@ abstract class AppLocalizations {
   /// **'Enable panel'**
   String get labEnablePanelAction;
 
-  /// Title for the dialog that enables a platform lab test or panel at the facility.
+  /// Title for the dialog that enables platform lab tests and panels at the facility.
   ///
   /// In en, this message translates to:
-  /// **'Enable Lab Offering'**
+  /// **'Enable lab tests and panels'**
   String get labEnableOfferingDialogTitle;
 
   /// Body for the dialog that enables a platform lab test or panel at the facility.
@@ -36232,7 +36232,7 @@ abstract class AppLocalizations {
   /// Radiology enable offering catalog picker dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Enable Radiology Offering'**
+  /// **'Enable radiology procedures'**
   String get radiologyEnableOfferingDialogTitle;
 
   /// Radiology enable offering catalog picker dialog body.

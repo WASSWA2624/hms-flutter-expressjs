@@ -20,6 +20,12 @@ const int _maxVisibleLabCatalogDialogItems = 160;
 typedef LabCatalogUpdateSubmit =
     Future<AppFailure?> Function(String id, Map<String, Object?> payload);
 
+typedef LabEnableOfferingSubmit =
+    Future<AppFailure?> Function(
+      LabCatalogItem item,
+      Map<String, Object?> payload,
+    );
+
 @immutable
 final class LabOrderContextInput {
   const LabOrderContextInput({
@@ -1303,7 +1309,7 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
   }
 }
 
-enum LabEnableOfferingKind { test, panel }
+enum LabEnableOfferingKind { test, panel, all }
 
 typedef LabEnableOfferingCatalogSearch =
     Future<Result<List<LabCatalogItem>>> Function({
@@ -1326,7 +1332,7 @@ class LabEnableFacilityOfferingDialog extends StatefulWidget {
   final LabEnableOfferingKind kind;
   final LabCatalogScope scope;
   final LabEnableOfferingCatalogSearch onSearchCatalog;
-  final LabCatalogUpdateSubmit onEnable;
+  final LabEnableOfferingSubmit onEnable;
   final String defaultCurrency;
 
   @override
@@ -1338,6 +1344,7 @@ class _LabEnableFacilityOfferingDialogState
     extends State<LabEnableFacilityOfferingDialog> {
   static const Duration _searchDebounceDuration = Duration(milliseconds: 200);
   static const int _searchLimit = 100;
+  static const String _typeFilterKey = 'type';
   static const String _categoryFilterKey = 'category';
   static const String _resultKindFilterKey = 'result_kind';
 
@@ -1349,15 +1356,38 @@ class _LabEnableFacilityOfferingDialogState
   int _searchRequest = 0;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
 
+  bool get _showingAll => widget.kind == LabEnableOfferingKind.all;
+
+  String? get _selectedType => _filterValue.option(_typeFilterKey);
+
+  bool get _showingTestsOnly =>
+      widget.kind == LabEnableOfferingKind.test ||
+      (_showingAll && _selectedType == LabCatalogItemType.test.name);
+
+  bool get _showingPanelsOnly =>
+      widget.kind == LabEnableOfferingKind.panel ||
+      (_showingAll && _selectedType == LabCatalogItemType.panel.name);
+
+  bool get _includeResultKindFilter =>
+      widget.kind == LabEnableOfferingKind.test ||
+      (_showingAll && _selectedType != LabCatalogItemType.panel.name);
+
   List<LabCatalogItem> get _filteredCatalogItems {
     final String? category = _filterValue.option(_categoryFilterKey);
     final String? resultKind = _filterValue.option(_resultKindFilterKey);
+    final String? type = _selectedType;
     return _catalogItems
         .where((LabCatalogItem item) {
+          if (_showingAll &&
+              type != null &&
+              item.type.name != type) {
+            return false;
+          }
           if (category != null && item.category != category) {
             return false;
           }
-          if (_showingTests &&
+          if (_includeResultKindFilter &&
+              item.type == LabCatalogItemType.test &&
               resultKind != null &&
               item.resultKind != resultKind) {
             return false;
@@ -1366,8 +1396,6 @@ class _LabEnableFacilityOfferingDialogState
         })
         .toList(growable: false);
   }
-
-  bool get _showingTests => widget.kind == LabEnableOfferingKind.test;
 
   @override
   void initState() {
@@ -1430,6 +1458,15 @@ class _LabEnableFacilityOfferingDialogState
     });
   }
 
+  LabEnableOfferingKind _kindForItem(LabCatalogItem item) {
+    if (widget.kind != LabEnableOfferingKind.all) {
+      return widget.kind;
+    }
+    return item.type == LabCatalogItemType.panel
+        ? LabEnableOfferingKind.panel
+        : LabEnableOfferingKind.test;
+  }
+
   Future<void> _openPriceDialog(LabCatalogItem item) async {
     if (item.isOfferedAtFacility) {
       return;
@@ -1439,7 +1476,7 @@ class _LabEnableFacilityOfferingDialogState
       barrierDismissible: false,
       builder: (_) => _LabEnableOfferingPriceDialog(
         item: item,
-        kind: widget.kind,
+        kind: _kindForItem(item),
         defaultCurrency: widget.defaultCurrency,
         onEnable: widget.onEnable,
       ),
@@ -1464,9 +1501,9 @@ class _LabEnableFacilityOfferingDialogState
     return AppDialog(
       title: Text(l10n.labEnableOfferingDialogTitle),
       icon: Icon(
-        widget.kind == LabEnableOfferingKind.test
-            ? Icons.add_circle_outline
-            : Icons.add_box_outlined,
+        _showingPanelsOnly
+            ? Icons.add_box_outlined
+            : Icons.add_circle_outline,
       ),
       scrollable: true,
       maxWidth: 980,
@@ -1529,6 +1566,22 @@ class _LabEnableFacilityOfferingDialogState
                 enableDateFilter: false,
                 allFieldsLabel: l10n.labScopeAll,
                 filterGroups: <AppSearchBarFilterGroup>[
+                  if (_showingAll)
+                    AppSearchBarFilterGroup(
+                      key: _typeFilterKey,
+                      label: l10n.clinicalRequestSelectedTypeColumnLabel,
+                      allLabel: l10n.labScopeAll,
+                      choices: <AppSearchBarFilterChoice>[
+                        AppSearchBarFilterChoice(
+                          value: LabCatalogItemType.test.name,
+                          label: l10n.clinicalLabRequestTestTypeLabel,
+                        ),
+                        AppSearchBarFilterChoice(
+                          value: LabCatalogItemType.panel.name,
+                          label: l10n.clinicalLabRequestPanelTypeLabel,
+                        ),
+                      ],
+                    ),
                   AppSearchBarFilterGroup(
                     key: _categoryFilterKey,
                     label: l10n.labCategoryLabel,
@@ -1537,15 +1590,18 @@ class _LabEnableFacilityOfferingDialogState
                       _catalogItems.map((LabCatalogItem item) => item.category),
                     ),
                   ),
-                  if (_showingTests)
+                  if (_includeResultKindFilter)
                     AppSearchBarFilterGroup(
                       key: _resultKindFilterKey,
                       label: l10n.labResultKindLabel,
                       allLabel: l10n.labScopeAll,
                       choices: _enableOfferingFilterChoices(
-                        _catalogItems.map(
-                          (LabCatalogItem item) => item.resultKind,
-                        ),
+                        _catalogItems
+                            .where(
+                              (LabCatalogItem item) =>
+                                  item.type == LabCatalogItemType.test,
+                            )
+                            .map((LabCatalogItem item) => item.resultKind),
                       ),
                     ),
                 ],
@@ -1557,9 +1613,9 @@ class _LabEnableFacilityOfferingDialogState
               ),
               emptyBuilder: (_) => Center(
                 child: AppMutedText(
-                  _showingTests
-                      ? l10n.labNoOfferedTestsLabel
-                      : l10n.labNoOfferedPanelsLabel,
+                  _showingPanelsOnly
+                      ? l10n.labNoOfferedPanelsLabel
+                      : l10n.labNoOfferedTestsLabel,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -1569,6 +1625,12 @@ class _LabEnableFacilityOfferingDialogState
                   title: item.name ?? item.displayTitle,
                   caption: item.code,
                   meta: <AppListTableMobileMeta>[
+                    if (_showingAll)
+                      AppListTableMobileMeta(
+                        label: item.type == LabCatalogItemType.panel
+                            ? l10n.clinicalLabRequestPanelTypeLabel
+                            : l10n.clinicalLabRequestTestTypeLabel,
+                      ),
                     AppListTableMobileMeta(
                       label: _joinEnableOfferingSubtitle(l10n, item),
                     ),
@@ -1597,18 +1659,41 @@ class _LabEnableFacilityOfferingDialogState
     BuildContext context,
   ) {
     final AppLocalizations l10n = context.l10n;
+    final bool showTypeColumn = _showingAll && _selectedType == null;
+    final bool showSpecimen = _showingTestsOnly ||
+        (_showingAll && !_showingPanelsOnly);
     return <AppListTableColumn<LabCatalogItem>>[
       AppListTableColumn<LabCatalogItem>(
         id: 'name',
-        label: _showingTests ? l10n.labTestNameLabel : l10n.labPanelNameLabel,
+        label: _showingAll
+            ? l10n.accessAdminColumnName
+            : (_showingTestsOnly
+                  ? l10n.labTestNameLabel
+                  : l10n.labPanelNameLabel),
         sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
             appListTableCompareText(left.name, right.name),
         cellBuilder: (_, LabCatalogItem item) =>
             _catalogOfferingNameCell(item.name ?? item.displayTitle),
       ),
+      if (showTypeColumn)
+        AppListTableColumn<LabCatalogItem>(
+          id: 'type',
+          label: l10n.clinicalRequestSelectedTypeColumnLabel,
+          sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+              left.type.name.compareTo(right.type.name),
+          cellBuilder: (_, LabCatalogItem item) => Text(
+            item.type == LabCatalogItemType.panel
+                ? l10n.clinicalLabRequestPanelTypeLabel
+                : l10n.clinicalLabRequestTestTypeLabel,
+          ),
+        ),
       AppListTableColumn<LabCatalogItem>(
         id: 'code',
-        label: _showingTests ? l10n.labTestCodeLabel : l10n.labPanelCodeLabel,
+        label: _showingAll
+            ? l10n.labTestCodeLabel
+            : (_showingTestsOnly
+                  ? l10n.labTestCodeLabel
+                  : l10n.labPanelCodeLabel),
         sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
             appListTableCompareText(left.code, right.code),
         cellBuilder: (_, LabCatalogItem item) =>
@@ -1622,12 +1707,15 @@ class _LabEnableFacilityOfferingDialogState
         cellBuilder: (_, LabCatalogItem item) =>
             Text(item.category ?? l10n.profileUnknownValue),
       ),
-      if (_showingTests)
+      if (showSpecimen)
         AppListTableColumn<LabCatalogItem>(
           id: 'specimen',
           label: l10n.labSpecimenTypeLabel,
-          cellBuilder: (_, LabCatalogItem item) =>
-              Text(item.specimenType ?? l10n.profileUnknownValue),
+          cellBuilder: (_, LabCatalogItem item) => Text(
+            item.type == LabCatalogItemType.test
+                ? (item.specimenType ?? l10n.profileUnknownValue)
+                : l10n.profileUnknownValue,
+          ),
         ),
       AppListTableColumn<LabCatalogItem>(
         id: 'status',
@@ -1687,7 +1775,7 @@ class _LabEnableOfferingPriceDialog extends StatefulWidget {
 
   final LabCatalogItem item;
   final LabEnableOfferingKind kind;
-  final LabCatalogUpdateSubmit onEnable;
+  final LabEnableOfferingSubmit onEnable;
   final String defaultCurrency;
 
   @override
@@ -1791,13 +1879,15 @@ class _LabEnableOfferingPriceDialogState
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget
-        .onEnable(widget.item.apiId, <String, Object?>{
-          'is_active': true,
-          'unit_price':
-              num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
-          'currency': _currency,
-        });
+    final AppFailure? failure = await widget.onEnable(
+      widget.item,
+      <String, Object?>{
+        'is_active': true,
+        'unit_price':
+            num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
+        'currency': _currency,
+      },
+    );
     if (!mounted) {
       return;
     }

@@ -1264,7 +1264,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search by name, code, or category';
 
   @override
-  String get tenantFacilityCatalogBrowseTitle => 'Browse catalog';
+  String get tenantFacilityCatalogBrowseTitle => 'Enable clinical diagnoses';
 
   @override
   String get navigationPatientsLabel => 'Patient registry';
@@ -18954,7 +18954,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEnablePanelAction => 'Enable panel';
 
   @override
-  String get labEnableOfferingDialogTitle => 'Enable Lab Offering';
+  String get labEnableOfferingDialogTitle => 'Enable lab tests and panels';
 
   @override
   String get labEnableOfferingDialogBody =>
@@ -19442,7 +19442,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get radiologyEnableOfferingDialogTitle => 'Enable Radiology Offering';
+  String get radiologyEnableOfferingDialogTitle =>
+      'Enable radiology procedures';
 
   @override
   String get radiologyEnableOfferingDialogBody =>

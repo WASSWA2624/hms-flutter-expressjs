@@ -1789,8 +1789,8 @@ class _LabConfigurationsDialogState
                 limit: limit,
               );
             },
-        onEnable: (String id, Map<String, Object?> payload) =>
-            controller.updateLabTest(id, payload, scope: scope),
+        onEnable: (LabCatalogItem item, Map<String, Object?> payload) =>
+            controller.updateLabTest(item.apiId, payload, scope: scope),
       ),
     );
     if (!context.mounted) {
@@ -1831,8 +1831,8 @@ class _LabConfigurationsDialogState
                 limit: limit,
               );
             },
-        onEnable: (String id, Map<String, Object?> payload) =>
-            controller.updateLabPanel(id, payload, scope: scope),
+        onEnable: (LabCatalogItem item, Map<String, Object?> payload) =>
+            controller.updateLabPanel(item.apiId, payload, scope: scope),
       ),
     );
     if (!context.mounted) {

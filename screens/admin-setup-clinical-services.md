@@ -95,7 +95,7 @@ Dialog title default: **Select tenant and facility**.
 
 Opened after Configure → Next when the Lab nested tab is active.
 
-**Note from source:** `_openLabConfigureDialog` always passes `kind: LabEnableOfferingKind.test`. Panel enable is **not** reachable from this screen’s Configure path (dialog supports panels when called with `LabEnableOfferingKind.panel` elsewhere).
+**Note from source:** `_openLabConfigureDialog` passes `kind: LabEnableOfferingKind.all` so both tests and panels are listed (type filter available). Row enable routes to test or panel upsert by item type.
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
@@ -145,7 +145,7 @@ Single-procedure price enable used by other callers (e.g. workspace nested flows
 
 ## Diagnosis enable offering dialog (`DiagnosisEnableFacilityOfferingDialog`)
 
-Opened after Configure → Next when the Diagnoses nested tab is active. Title: `tenantFacilityCatalogBrowseTitle`.
+Opened after Configure → Next when the Diagnoses nested tab is active. Title: **Enable clinical diagnoses** (`tenantFacilityCatalogBrowseTitle`).
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
@@ -184,7 +184,7 @@ Used for radiology / lab / diagnosis global catalog deletes from this panel. Cal
 - Clinical Services → nested Radiology / Lab / Diagnoses tables
 - **Configure** → **Select tenant and facility** →
   - Radiology → `RadiologyEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable; Back can return to scope)
-  - Lab → `LabEnableFacilityOfferingDialog` (tests only from this route) → `_LabEnableOfferingPriceDialog`
+  - Lab → `LabEnableFacilityOfferingDialog` (tests and panels) → `_LabEnableOfferingPriceDialog`
   - Diagnoses → `DiagnosisEnableFacilityOfferingDialog` (row enable; no nested price dialog)
 - Add / Create (no tenant) → **Select tenant and facility** → category mutation dialog
 - Add / Create (tenant present) → category mutation dialog
@@ -197,7 +197,7 @@ Used for radiology / lab / diagnosis global catalog deletes from this panel. Cal
 
 | Helper | Would open or do |
 | ------ | ---------------- |
-| `LabEnableFacilityOfferingDialog` with `LabEnableOfferingKind.panel` | Enable lab panels for a facility — used from lab workspace Configure, not from this panel’s Configure |
+| `LabEnableFacilityOfferingDialog` with `LabEnableOfferingKind.test` / `panel` only | Lab workspace Configure still opens kind-specific dialogs; Clinical Services Configure uses `all` |
 | Procedures / Prescriptions / Budget catalog tabs | l10n keys exist; not mounted in `FacilityCatalogConfigPanel` nested strip |
 | Other `/admin/setup` desk tabs’ tenant/facility/structure/access dialogs | Reachable only after leaving Clinical Services |
 

@@ -1256,6 +1256,7 @@ class _FacilityCatalogConfigPanelState
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(message)));
+        await _ensureTabLoaded(_tab, force: true);
       }
       return;
     }
@@ -1317,7 +1318,7 @@ class _FacilityCatalogConfigPanelState
       context: context,
       barrierDismissible: false,
       builder: (_) => LabEnableFacilityOfferingDialog(
-        kind: LabEnableOfferingKind.test,
+        kind: LabEnableOfferingKind.all,
         scope: scope,
         defaultCurrency: defaultCurrency ?? _resolvedCurrency,
         onSearchCatalog: ({
@@ -1333,14 +1334,21 @@ class _FacilityCatalogConfigPanelState
               query: query,
               limit: limit,
             ),
-        onEnable: (String id, Map<String, Object?> payload) async {
+        onEnable: (LabCatalogItem item, Map<String, Object?> payload) async {
           final Result<LabCatalogItem> result =
-              await repository.upsertFacilityLabTestOffering(
-                id,
-                payload,
-                tenantId: scope.tenantId,
-                facilityId: scope.facilityId,
-              );
+              item.type == LabCatalogItemType.panel
+              ? await repository.upsertFacilityLabPanelOffering(
+                  item.apiId,
+                  payload,
+                  tenantId: scope.tenantId,
+                  facilityId: scope.facilityId,
+                )
+              : await repository.upsertFacilityLabTestOffering(
+                  item.apiId,
+                  payload,
+                  tenantId: scope.tenantId,
+                  facilityId: scope.facilityId,
+                );
           return result.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -1692,6 +1700,39 @@ class _FacilityCatalogConfigPanelState
   }) async {
     if (!scope.isReady) {
       return const Result<List<LabCatalogItem>>.success(<LabCatalogItem>[]);
+    }
+    if (kind == LabEnableOfferingKind.all) {
+      final List<Result<List<LabCatalogItem>>> combined =
+          await Future.wait(<Future<Result<List<LabCatalogItem>>>>[
+            _searchLabCatalog(
+              repository: repository,
+              kind: LabEnableOfferingKind.test,
+              scope: scope,
+              query: query,
+              limit: limit,
+            ),
+            _searchLabCatalog(
+              repository: repository,
+              kind: LabEnableOfferingKind.panel,
+              scope: scope,
+              query: query,
+              limit: limit,
+            ),
+          ]);
+      final List<LabCatalogItem> items = <LabCatalogItem>[];
+      AppFailure? failure;
+      for (final Result<List<LabCatalogItem>> result in combined) {
+        result.when(
+          success: items.addAll,
+          failure: (AppFailure value) {
+            failure ??= value;
+          },
+        );
+      }
+      if (items.isEmpty && failure != null) {
+        return Result<List<LabCatalogItem>>.failure(failure!);
+      }
+      return Result<List<LabCatalogItem>>.success(items);
     }
     final Future<Result<List<LabCatalogItem>>> platformFuture =
         kind == LabEnableOfferingKind.test

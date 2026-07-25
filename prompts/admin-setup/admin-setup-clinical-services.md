@@ -1,1 +1,33 @@
-On the administrator screen. The for each, for each subtab like Radiology, Lab, and Diagnoses, there is a, a Configure button. this Configure button should open the respective Enable Enable dialogue. For example for the RADIO RJ For the R&D subject, the configure button should open the enable R&D offerings. I think it should be enable R&D, it should be labeled, it should be labeled, enable R&D procedures. Then for the laboratory For the laboratory or the laptop, the configuration should should be labeled enable lab tests and panels. Then for the diagnosis The enable button should be labeled enable clinical diagnoses. So that's what the configure button is to do for these three tabs.
+# Clinical Services Configure → Enable Offerings
+
+Make Clinical Services **Configure** open each nested tab’s facility enable dialog with the titles below.
+
+## Context
+
+- Target: `/admin/setup?section=clinical-services` (`FacilityCatalogConfigPanel`).
+- Nested tabs Radiology, Lab, Diagnoses already expose **Configure**. Keep the scope-picker → enable-dialog chain; correct titles and Lab coverage.
+
+## Requirements
+
+1. Keep **Configure** on Radiology, Lab, and Diagnoses when the panel is enabled and configuration is authorized.
+2. On Configure, open the scope picker when needed; after a valid scope, open the matching enable dialog without switching the desk to facility-only mode.
+3. Set enable-dialog titles (l10n): Radiology → **Enable radiology procedures**; Lab → **Enable lab tests and panels**; Diagnoses → **Enable clinical diagnoses**.
+4. From Clinical Services Lab Configure, allow enabling both tests and panels (not tests-only).
+5. Preserve existing enable flows and their loading, empty, error, success, and validation feedback.
+6. Unauthorized Configure/enable UI must not render; after successful enable, refresh warmed catalog/offering state.
+
+## Constraints
+
+- Reuse existing enable dialogs, scope picker, RBAC/ABAC, theme tokens, and design-system components; no unrelated refactors.
+- Stay responsive on mobile, tablet, and desktop in light and dark themes.
+
+## Acceptance Criteria
+
+- Each tab’s Configure opens the correctly titled enable dialog via the existing scope chain.
+- Lab Configure can enable tests and panels.
+- Unauthorized users never see Configure/enable chrome; authorized users retain access.
+- Tests or manual checks cover the three Configure paths, titles, Lab test+panel enable, and post-enable refresh.
+
+## Relevant Files
+
+- `facility_catalog_config_panel.dart`, radiology/lab/diagnosis enable dialogs, `app_en.arb`, `screens/admin-setup-clinical-services.md`

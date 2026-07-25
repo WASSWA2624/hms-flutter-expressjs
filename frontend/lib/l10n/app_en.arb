@@ -1642,9 +1642,9 @@
   "@tenantFacilityCatalogSearchHint": {
     "description": "Search hint for facility clinical catalog offering tables."
   },
-  "tenantFacilityCatalogBrowseTitle": "Browse catalog",
+  "tenantFacilityCatalogBrowseTitle": "Enable clinical diagnoses",
   "@tenantFacilityCatalogBrowseTitle": {
-    "description": "Dialog title for browsing global clinical catalog items to enable."
+    "description": "Dialog title for enabling clinical diagnoses at a facility from Clinical Services Configure."
   },
   "navigationPatientsLabel": "Patient registry",
   "@navigationPatientsLabel": {
@@ -24319,9 +24319,9 @@
   "@labEnablePanelAction": {
     "description": "Action to enable a platform lab panel at the facility."
   },
-  "labEnableOfferingDialogTitle": "Enable Lab Offering",
+  "labEnableOfferingDialogTitle": "Enable lab tests and panels",
   "@labEnableOfferingDialogTitle": {
-    "description": "Title for the dialog that enables a platform lab test or panel at the facility."
+    "description": "Title for the dialog that enables platform lab tests and panels at the facility."
   },
   "labEnableOfferingDialogBody": "Select a catalog item and set the facility price for ordering.",
   "@labEnableOfferingDialogBody": {
@@ -24945,7 +24945,7 @@
       }
     }
   },
-  "radiologyEnableOfferingDialogTitle": "Enable Radiology Offering",
+  "radiologyEnableOfferingDialogTitle": "Enable radiology procedures",
   "@radiologyEnableOfferingDialogTitle": {
     "description": "Radiology enable offering catalog picker dialog title."
   },
