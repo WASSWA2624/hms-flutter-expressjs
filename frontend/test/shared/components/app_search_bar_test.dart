@@ -247,8 +247,8 @@ void main() {
       size: const Size(720, 498),
     );
 
-    expect(find.text('Filters'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Filters'), findsNothing);
+    expect(find.text('Settings'), findsNothing);
     expect(find.byTooltip('Filters'), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
   });
