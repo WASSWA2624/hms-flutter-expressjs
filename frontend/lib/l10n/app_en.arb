@@ -25172,6 +25172,46 @@
   "@radiologySimilarImagingTestDialogBody": {
     "description": "Dialog body when creating an imaging test similar to an existing one."
   },
+  "radiologySimilarImagingTestExactBannerTitle": "Exact imaging test match",
+  "@radiologySimilarImagingTestExactBannerTitle": {
+    "description": "Banner title when similarity check finds an exact name or code match."
+  },
+  "radiologySimilarImagingTestExactBannerBody": "An exact name or code match was found. Review contradictions below and use the existing test instead of creating a duplicate.",
+  "@radiologySimilarImagingTestExactBannerBody": {
+    "description": "Banner body when similarity check finds an exact name or code match."
+  },
+  "radiologySimilarImagingTestProposedHeading": "New imaging test",
+  "@radiologySimilarImagingTestProposedHeading": {
+    "description": "Heading for the proposed imaging test in the similarity dialog."
+  },
+  "radiologySimilarImagingTestExistingHeading": "Existing imaging test",
+  "@radiologySimilarImagingTestExistingHeading": {
+    "description": "Heading for an existing imaging test match in the similarity dialog."
+  },
+  "radiologySimilarImagingTestMatchesHeading": "Closest matches",
+  "@radiologySimilarImagingTestMatchesHeading": {
+    "description": "Heading above similarity match cards."
+  },
+  "radiologySimilarImagingTestComparisonHeading": "Field comparison",
+  "@radiologySimilarImagingTestComparisonHeading": {
+    "description": "Heading above field-by-field comparison rows."
+  },
+  "radiologySimilarImagingTestExactMatchLabel": "Exact match",
+  "@radiologySimilarImagingTestExactMatchLabel": {
+    "description": "Badge label for an exact imaging-test similarity match."
+  },
+  "radiologySimilarImagingTestNearMatchLabel": "Similar",
+  "@radiologySimilarImagingTestNearMatchLabel": {
+    "description": "Badge label for a near imaging-test similarity match."
+  },
+  "radiologySimilarImagingTestYourEntryLabel": "Your entry",
+  "@radiologySimilarImagingTestYourEntryLabel": {
+    "description": "Label for the proposed field value in a similarity comparison row."
+  },
+  "radiologySimilarImagingTestExistingValueLabel": "Existing",
+  "@radiologySimilarImagingTestExistingValueLabel": {
+    "description": "Label for the existing field value in a similarity comparison row."
+  },
   "radiologySimilarImagingTestScoreLabel": "{score}% match",
   "@radiologySimilarImagingTestScoreLabel": {
     "description": "Similarity score label for imaging test duplicate warning.",

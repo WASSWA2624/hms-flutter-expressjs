@@ -36535,6 +36535,66 @@ abstract class AppLocalizations {
   /// **'Similar imaging tests exist in this catalog scope. Review matches before continuing.'**
   String get radiologySimilarImagingTestDialogBody;
 
+  /// Banner title when similarity check finds an exact name or code match.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact imaging test match'**
+  String get radiologySimilarImagingTestExactBannerTitle;
+
+  /// Banner body when similarity check finds an exact name or code match.
+  ///
+  /// In en, this message translates to:
+  /// **'An exact name or code match was found. Review contradictions below and use the existing test instead of creating a duplicate.'**
+  String get radiologySimilarImagingTestExactBannerBody;
+
+  /// Heading for the proposed imaging test in the similarity dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New imaging test'**
+  String get radiologySimilarImagingTestProposedHeading;
+
+  /// Heading for an existing imaging test match in the similarity dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing imaging test'**
+  String get radiologySimilarImagingTestExistingHeading;
+
+  /// Heading above similarity match cards.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest matches'**
+  String get radiologySimilarImagingTestMatchesHeading;
+
+  /// Heading above field-by-field comparison rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Field comparison'**
+  String get radiologySimilarImagingTestComparisonHeading;
+
+  /// Badge label for an exact imaging-test similarity match.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match'**
+  String get radiologySimilarImagingTestExactMatchLabel;
+
+  /// Badge label for a near imaging-test similarity match.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar'**
+  String get radiologySimilarImagingTestNearMatchLabel;
+
+  /// Label for the proposed field value in a similarity comparison row.
+  ///
+  /// In en, this message translates to:
+  /// **'Your entry'**
+  String get radiologySimilarImagingTestYourEntryLabel;
+
+  /// Label for the existing field value in a similarity comparison row.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get radiologySimilarImagingTestExistingValueLabel;
+
   /// Similarity score label for imaging test duplicate warning.
   ///
   /// In en, this message translates to:

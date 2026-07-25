@@ -19634,6 +19634,39 @@ class AppLocalizationsEn extends AppLocalizations {
       'Similar imaging tests exist in this catalog scope. Review matches before continuing.';
 
   @override
+  String get radiologySimilarImagingTestExactBannerTitle =>
+      'Exact imaging test match';
+
+  @override
+  String get radiologySimilarImagingTestExactBannerBody =>
+      'An exact name or code match was found. Review contradictions below and use the existing test instead of creating a duplicate.';
+
+  @override
+  String get radiologySimilarImagingTestProposedHeading => 'New imaging test';
+
+  @override
+  String get radiologySimilarImagingTestExistingHeading =>
+      'Existing imaging test';
+
+  @override
+  String get radiologySimilarImagingTestMatchesHeading => 'Closest matches';
+
+  @override
+  String get radiologySimilarImagingTestComparisonHeading => 'Field comparison';
+
+  @override
+  String get radiologySimilarImagingTestExactMatchLabel => 'Exact match';
+
+  @override
+  String get radiologySimilarImagingTestNearMatchLabel => 'Similar';
+
+  @override
+  String get radiologySimilarImagingTestYourEntryLabel => 'Your entry';
+
+  @override
+  String get radiologySimilarImagingTestExistingValueLabel => 'Existing';
+
+  @override
   String radiologySimilarImagingTestScoreLabel(int score) {
     return '$score% match';
   }
