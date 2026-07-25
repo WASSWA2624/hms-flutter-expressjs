@@ -413,77 +413,46 @@ class _LabReferenceRangeCard extends StatelessWidget {
               },
             ),
             SizedBox(height: theme.spacing.sm),
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppSelectField<String>.searchable(
-                value: range.gender,
-                labelText: l10n.labGenderApplicabilityLabel,
-                enabled: enabled,
-                allowClear: false,
-                options: <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: kLabReferenceRangeAnyGender,
-                    label: l10n.labGenderAnyLabel,
-                    leadingIcon: const Icon(Icons.people_outline),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'MALE',
-                    label: l10n.labGenderMaleLabel,
-                    leadingIcon: const Icon(Icons.male),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'FEMALE',
-                    label: l10n.labGenderFemaleLabel,
-                    leadingIcon: const Icon(Icons.female),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'OTHER',
-                    label: l10n.labGenderOtherLabel,
-                    leadingIcon: const Icon(Icons.diversity_3_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'UNKNOWN',
-                    label: l10n.labGenderUnknownLabel,
-                    leadingIcon: const Icon(Icons.help_outline),
-                  ),
-                ],
-                onChanged: (String? value) {
-                  range.gender = value ?? kLabReferenceRangeAnyGender;
-                  onChanged();
-                },
-              ),
-              right: AppSelectField<String>.searchable(
-                value: range.ageUnit,
-                labelText: l10n.labAgeUnitLabel,
-                enabled: enabled,
-                allowClear: false,
-                options: <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: 'DAY',
-                    label: l10n.labAgeUnitDays,
-                    leadingIcon: const Icon(Icons.today_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'WEEK',
-                    label: l10n.labAgeUnitWeeks,
-                    leadingIcon: const Icon(Icons.view_week_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'MONTH',
-                    label: l10n.labAgeUnitMonths,
-                    leadingIcon: const Icon(Icons.calendar_view_month_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'YEAR',
-                    label: l10n.labAgeUnitYears,
-                    leadingIcon: const Icon(Icons.event_outlined),
-                  ),
-                ],
-                onChanged: (String? value) {
-                  range.ageUnit = value;
-                  onChanged();
-                },
-              ),
+            _LabGenderApplicabilityField(
+              gender: range.gender,
+              enabled: enabled,
+              onChanged: (String value) {
+                range.gender = value;
+                onChanged();
+              },
+            ),
+            SizedBox(height: theme.spacing.sm),
+            AppSelectField<String>.searchable(
+              value: range.ageUnit,
+              labelText: l10n.labAgeUnitLabel,
+              enabled: enabled,
+              allowClear: false,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: 'DAY',
+                  label: l10n.labAgeUnitDays,
+                  leadingIcon: const Icon(Icons.today_outlined),
+                ),
+                AppSelectOption<String>(
+                  value: 'WEEK',
+                  label: l10n.labAgeUnitWeeks,
+                  leadingIcon: const Icon(Icons.view_week_outlined),
+                ),
+                AppSelectOption<String>(
+                  value: 'MONTH',
+                  label: l10n.labAgeUnitMonths,
+                  leadingIcon: const Icon(Icons.calendar_view_month_outlined),
+                ),
+                AppSelectOption<String>(
+                  value: 'YEAR',
+                  label: l10n.labAgeUnitYears,
+                  leadingIcon: const Icon(Icons.event_outlined),
+                ),
+              ],
+              onChanged: (String? value) {
+                range.ageUnit = value;
+                onChanged();
+              },
             ),
             SizedBox(height: theme.spacing.sm),
             AppResponsiveFieldRow.two(
@@ -588,6 +557,132 @@ class _LabReferenceRangeCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Gender applicability chips. Selecting [kLabReferenceRangeAnyGender] ("All
+/// genders") disables the specific gender chips until All is turned off.
+class _LabGenderApplicabilityField extends StatelessWidget {
+  const _LabGenderApplicabilityField({
+    required this.gender,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String? gender;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+
+  bool get _isAllGenders =>
+      gender == null || gender == kLabReferenceRangeAnyGender;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<({String value, String label, IconData icon})> specifics =
+        <({String value, String label, IconData icon})>[
+          (
+            value: 'MALE',
+            label: l10n.labGenderMaleLabel,
+            icon: Icons.male,
+          ),
+          (
+            value: 'FEMALE',
+            label: l10n.labGenderFemaleLabel,
+            icon: Icons.female,
+          ),
+          (
+            value: 'OTHER',
+            label: l10n.labGenderOtherLabel,
+            icon: Icons.diversity_3_outlined,
+          ),
+          (
+            value: 'UNKNOWN',
+            label: l10n.labGenderUnknownLabel,
+            icon: Icons.help_outline,
+          ),
+        ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          l10n.labGenderApplicabilityLabel,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            FilterChip(
+              avatar: Icon(
+                Icons.people_outline,
+                size: 18,
+                color: _isAllGenders
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+              ),
+              label: Text(l10n.labGenderAnyLabel),
+              selected: _isAllGenders,
+              onSelected: !enabled
+                  ? null
+                  : (bool selected) {
+                      // Selecting All covers every gender. Deselecting All
+                      // falls back to Male so specific chips become active.
+                      onChanged(
+                        selected ? kLabReferenceRangeAnyGender : 'MALE',
+                      );
+                    },
+              selectedColor: colorScheme.primaryContainer,
+              checkmarkColor: colorScheme.primary,
+              labelStyle: theme.textTheme.labelLarge?.copyWith(
+                color: _isAllGenders
+                    ? colorScheme.primary
+                    : colorScheme.onSurface,
+                fontWeight: _isAllGenders ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            for (final ({String value, String label, IconData icon}) option
+                in specifics)
+              FilterChip(
+                avatar: Icon(
+                  option.icon,
+                  size: 18,
+                  color: (!_isAllGenders && gender == option.value)
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                ),
+                label: Text(option.label),
+                selected: !_isAllGenders && gender == option.value,
+                // All genders covers every option — specifics stay inactive.
+                onSelected: (!enabled || _isAllGenders)
+                    ? null
+                    : (bool selected) {
+                        if (selected) {
+                          onChanged(option.value);
+                        }
+                      },
+                selectedColor: colorScheme.primaryContainer,
+                checkmarkColor: colorScheme.primary,
+                labelStyle: theme.textTheme.labelLarge?.copyWith(
+                  color: (!_isAllGenders && gender == option.value)
+                      ? colorScheme.primary
+                      : colorScheme.onSurface,
+                  fontWeight: (!_isAllGenders && gender == option.value)
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

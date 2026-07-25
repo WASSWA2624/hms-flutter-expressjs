@@ -35587,10 +35587,10 @@ abstract class AppLocalizations {
   /// **'Gender applicability'**
   String get labGenderApplicabilityLabel;
 
-  /// Localized text for labGenderAnyLabel.
+  /// Gender applicability option that covers every gender for a lab reference range.
   ///
   /// In en, this message translates to:
-  /// **'Any'**
+  /// **'All genders'**
   String get labGenderAnyLabel;
 
   /// Localized text for labGenderMaleLabel.

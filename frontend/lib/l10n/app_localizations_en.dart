@@ -19073,7 +19073,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labGenderApplicabilityLabel => 'Gender applicability';
 
   @override
-  String get labGenderAnyLabel => 'Any';
+  String get labGenderAnyLabel => 'All genders';
 
   @override
   String get labGenderMaleLabel => 'Male';

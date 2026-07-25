@@ -24477,9 +24477,9 @@
   "@labGenderApplicabilityLabel": {
     "description": "Localized text for labGenderApplicabilityLabel."
   },
-  "labGenderAnyLabel": "Any",
+  "labGenderAnyLabel": "All genders",
   "@labGenderAnyLabel": {
-    "description": "Localized text for labGenderAnyLabel."
+    "description": "Gender applicability option that covers every gender for a lab reference range."
   },
   "labGenderMaleLabel": "Male",
   "@labGenderMaleLabel": {
