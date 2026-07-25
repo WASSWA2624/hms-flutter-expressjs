@@ -331,6 +331,171 @@ class _FacilityCatalogConfigPanelState
     return Text(value, softWrap: true);
   }
 
+  String _dashOr(String? value) {
+    final String trimmed = (value ?? '').trim();
+    return trimmed.isEmpty ? '—' : trimmed;
+  }
+
+  String _labResultKindLabel(AppLocalizations l10n, String? value) {
+    return switch ((value ?? '').toUpperCase()) {
+      'NUMERIC' => l10n.labResultKindNumeric,
+      'QUALITATIVE' => l10n.labResultKindQualitative,
+      'TEXT' => l10n.labResultKindText,
+      _ => _dashOr(value),
+    };
+  }
+
+  String _labUnitRangeOrTestCount(
+    AppLocalizations l10n,
+    LabCatalogItem item,
+  ) {
+    if (item.type == LabCatalogItemType.panel) {
+      return l10n.clinicalLabOrderItemCount(item.testCount);
+    }
+    final int rangeCount = item.referenceRangeCount > 0
+        ? item.referenceRangeCount
+        : item.referenceRanges.length;
+    final List<String> parts = <String>[
+      if ((item.unit ?? '').trim().isNotEmpty) item.unit!.trim(),
+      if (rangeCount > 0)
+        l10n.labReferenceRangeCount(rangeCount)
+      else if ((item.referenceRange ?? '').trim().isNotEmpty)
+        item.referenceRange!.trim(),
+    ];
+    return parts.isEmpty ? '—' : parts.join(' · ');
+  }
+
+  List<AppListTableColumn<RadiologyCatalogTest>> _radiologyColumnChoices(
+    AppLocalizations l10n,
+  ) {
+    return <AppListTableColumn<RadiologyCatalogTest>>[
+      AppListTableColumn<RadiologyCatalogTest>(
+        id: 'body_region',
+        label: l10n.radiologyBodyRegionLabel,
+        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+            appListTableCompareText(a.bodyRegion, b.bodyRegion),
+        cellBuilder: (_, RadiologyCatalogTest item) =>
+            _wrappedCellText(_dashOr(item.bodyRegion)),
+      ),
+      AppListTableColumn<RadiologyCatalogTest>(
+        id: 'laterality',
+        label: l10n.radiologyLateralityLabel,
+        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+            appListTableCompareText(a.laterality, b.laterality),
+        cellBuilder: (_, RadiologyCatalogTest item) =>
+            _wrappedCellText(_dashOr(item.laterality)),
+      ),
+      AppListTableColumn<RadiologyCatalogTest>(
+        id: 'procedure_type',
+        label: l10n.clinicalResultsModuleProcedureLabel,
+        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+            appListTableCompareText(a.procedureType, b.procedureType),
+        cellBuilder: (_, RadiologyCatalogTest item) =>
+            _wrappedCellText(_dashOr(item.procedureType)),
+      ),
+      AppListTableColumn<RadiologyCatalogTest>(
+        id: 'equipment',
+        label: l10n.radiologyEquipmentColumnLabel,
+        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+            appListTableCompareText(a.equipment, b.equipment),
+        cellBuilder: (_, RadiologyCatalogTest item) =>
+            _wrappedCellText(_dashOr(item.equipment)),
+      ),
+      AppListTableColumn<RadiologyCatalogTest>(
+        id: 'status',
+        label: l10n.radiologyStatusColumnLabel,
+        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+            appListTableCompareText(a.status, b.status),
+        cellBuilder: (_, RadiologyCatalogTest item) =>
+            _wrappedCellText(_dashOr(item.status)),
+      ),
+      AppListTableColumn<RadiologyCatalogTest>(
+        id: 'source',
+        label: l10n.radiologySourceColumnLabel,
+        sortComparator: (RadiologyCatalogTest a, RadiologyCatalogTest b) =>
+            appListTableCompareText(a.source, b.source),
+        cellBuilder: (_, RadiologyCatalogTest item) =>
+            _wrappedCellText(_dashOr(item.source)),
+      ),
+    ];
+  }
+
+  List<AppListTableColumn<LabCatalogItem>> _labColumnChoices(
+    AppLocalizations l10n,
+  ) {
+    return <AppListTableColumn<LabCatalogItem>>[
+      AppListTableColumn<LabCatalogItem>(
+        id: 'specimen',
+        label: l10n.labSpecimenTypeLabel,
+        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
+            appListTableCompareText(a.specimenType, b.specimenType),
+        cellBuilder: (_, LabCatalogItem item) =>
+            _wrappedCellText(_dashOr(item.specimenType)),
+      ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'result_kind',
+        label: l10n.labResultKindLabel,
+        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
+            appListTableCompareText(a.resultKind, b.resultKind),
+        cellBuilder: (_, LabCatalogItem item) =>
+            _wrappedCellText(_labResultKindLabel(l10n, item.resultKind)),
+      ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'unit_range',
+        label: l10n.labUnitRangeCountColumnLabel,
+        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
+            appListTableCompareText(
+              _labUnitRangeOrTestCount(l10n, a),
+              _labUnitRangeOrTestCount(l10n, b),
+            ),
+        cellBuilder: (_, LabCatalogItem item) =>
+            _wrappedCellText(_labUnitRangeOrTestCount(l10n, item)),
+      ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'tests_count',
+        label: l10n.labTestsColumnLabel,
+        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
+            a.testCount.compareTo(b.testCount),
+        cellBuilder: (_, LabCatalogItem item) => _wrappedCellText(
+          item.type == LabCatalogItemType.panel
+              ? l10n.clinicalLabOrderItemCount(item.testCount)
+              : '—',
+        ),
+      ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'description',
+        label: l10n.labPanelDescriptionLabel,
+        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
+            appListTableCompareText(a.description, b.description),
+        cellBuilder: (_, LabCatalogItem item) =>
+            _wrappedCellText(_dashOr(item.description)),
+      ),
+    ];
+  }
+
+  List<AppListTableColumn<ClinicalCatalogOption>> _diagnosisColumnChoices(
+    AppLocalizations l10n,
+  ) {
+    return <AppListTableColumn<ClinicalCatalogOption>>[
+      AppListTableColumn<ClinicalCatalogOption>(
+        id: 'status',
+        label: l10n.accessAdminColumnStatus,
+        sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
+            appListTableCompareText(a.status, b.status),
+        cellBuilder: (_, ClinicalCatalogOption item) =>
+            _wrappedCellText(_dashOr(item.status)),
+      ),
+      AppListTableColumn<ClinicalCatalogOption>(
+        id: 'details',
+        label: l10n.accessAdminColumnDetails,
+        sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
+            appListTableCompareText(a.secondaryText, b.secondaryText),
+        cellBuilder: (_, ClinicalCatalogOption item) =>
+            _wrappedCellText(_dashOr(item.secondaryText)),
+      ),
+    ];
+  }
+
   Widget _buildRadiologyTable(AppLocalizations l10n) {
     final List<String> modalities = _radiologyItems
         .map((RadiologyCatalogTest item) => (item.modality ?? '').trim())
@@ -346,6 +511,7 @@ class _FacilityCatalogConfigPanelState
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_radiology',
+      columnChoices: _radiologyColumnChoices(l10n),
       onRowSelected: widget.enabled
           ? (RadiologyCatalogTest item) =>
                 unawaited(_openRadiologyEditDialog(item))
@@ -479,6 +645,7 @@ class _FacilityCatalogConfigPanelState
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_lab',
+      columnChoices: _labColumnChoices(l10n),
       onRowSelected: widget.enabled
           ? (LabCatalogItem item) => unawaited(_openLabEditDialog(item))
           : null,
@@ -651,6 +818,7 @@ class _FacilityCatalogConfigPanelState
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_diagnoses',
+      columnChoices: _diagnosisColumnChoices(l10n),
       onRowSelected: widget.enabled
           ? (ClinicalCatalogOption item) =>
                 unawaited(_openDiagnosisEditDialog(item))
