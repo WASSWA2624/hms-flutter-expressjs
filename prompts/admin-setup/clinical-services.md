@@ -1,1 +1,36 @@
-So now on the setup, on admin setup screen, there is under clinical services, there is radio button, and on every, on every On every item in the table, there's an edit button. When you click that edit button, it opens the edit procedure model dialog. Yeah. So that dialog sh-uh, should be used to edit the, should be used to edit the procedure. So similar to how the create procedure dialog works this should also have a similarity check, but it should be only checking for the other procedures other than the current procedure that is being edited, such that When you are editing the comparison for the similarity is done on other procedures other than the one which is currently being edited, and the same flow should follow so meaning that the fields that haven't been changed shouldn't affect shouldn't affect the, shouldn't affect the existing ones, and the confirmation procedure should even allow editing on a single field within the procedure instead of editing everything. So the edit should be seamless and should also be robust with that similarity check. And the conflicts, like conflicts, because if there is a conflict, then why, why do you bring confusion?
+# Admin Setup — Clinical Services Radiology Edit Procedure
+
+Verify and fix Edit procedure on Admin Setup Clinical Services Radiology: edit dialog, single-field updates, similarity excluding the edited row, sync, permissions.
+
+## Context
+
+- Route: `/admin/setup?section=clinical-services`, Radiology tab (`FacilityCatalogConfigPanel`).
+- Row Edit / row select opens `RadiologyCatalogMutationDialog` (edit); persist via `updateRadiologyCatalogProcedure`.
+- Similarity mirrors create but excludes the current procedure id/apiId; exact clashes with another procedure must block without a proceed path.
+- Radiology procedures means global catalog procedures (not order priority).
+
+## Requirements
+
+1. Confirm every Radiology row Edit (and row select) opens the edit dialog prefilled.
+2. Confirm saving one changed field updates without requiring other fields to change.
+3. Confirm similarity excludes the edited procedure so unchanged values never self-match.
+4. Confirm near-match flow matches create; exact conflicts block with clear field errors.
+5. Confirm update persists via API, refreshes the table immediately, with localized loading/error/validation/success.
+6. Gate Edit to update-capable roles; hide unauthorized Edit; enforce on backend.
+
+## Constraints
+
+- Reuse mutation dialog, similarity helpers (`excludeProcedureId`), repositories, routes, and design-system.
+- Follow `.cursor/mandatories.mdc` and access rules; backend RBAC authoritative.
+- Skip Create, Lab, Diagnoses, and Configure wizards unless shared edit code needs them.
+
+## Acceptance Criteria
+
+- Authorized: edit opens prefilled; single-field save persists; table updates immediately.
+- Similarity: current row excluded; near-duplicates surface; exact conflicts block clearly.
+- Unauthorized: Edit absent; API rejects.
+- Localized loading, error, validation, and success states stay visible.
+
+## Relevant Files
+
+- `screens/admin-setup/clinical-services.md`, `facility_catalog_config_panel.dart`, `clinical_catalog_admin_dialogs.dart`, radiology similarity/update API, permissions, `.cursor/mandatories.mdc`
