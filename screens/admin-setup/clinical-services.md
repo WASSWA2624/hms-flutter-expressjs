@@ -26,7 +26,7 @@
 
 Titles: create uses lab create dialog title keys; edit uses **Edit Lab Test** / **Edit Lab Panel** by kind.
 
-**Test form field order:** name → code → searchable category → specimen type → result kind → unit / options (by kind) → description → multi-row reference ranges (age/gender). Category and specimen options combine known catalogs with loaded rows. Panel form stays name/code/category/description.
+**Test form field order:** framed sections — **Test identity** (name → code → searchable category) → **Result configuration** (specimen → result kind → unit / options by kind → description) → **Reference ranges** (age/gender rows). Category and specimen options combine known catalogs with loaded rows. Panel form uses a single **Panel details** section. Create/configure dialogs share `LabTestDefinitionForm`.
 
 ---
 

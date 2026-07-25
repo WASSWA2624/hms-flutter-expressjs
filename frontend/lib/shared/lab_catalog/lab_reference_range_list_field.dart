@@ -163,6 +163,7 @@ class LabReferenceRangeListField extends StatelessWidget {
     required this.onChanged,
     required this.onAdd,
     required this.onRemove,
+    this.showHeader = true,
     super.key,
   });
 
@@ -172,6 +173,7 @@ class LabReferenceRangeListField extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback onAdd;
   final ValueChanged<EditableLabReferenceRange> onRemove;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -181,24 +183,36 @@ class LabReferenceRangeListField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                l10n.labReferenceRangeOverrideLabel,
-                style: theme.textTheme.titleSmall,
+        if (showHeader) ...<Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  l10n.labReferenceRangeOverrideLabel,
+                  style: theme.textTheme.titleSmall,
+                ),
               ),
-            ),
-            Text(
+              Text(
+                l10n.labReferenceRangeCount(ranges.length),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.sm),
+        ] else
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
               l10n.labReferenceRangeCount(ranges.length),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.sm),
-        for (int index = 0; index < ranges.length; index++)
+          ),
+        for (int index = 0; index < ranges.length; index++) ...<Widget>[
+          if (index > 0) SizedBox(height: theme.spacing.sm),
           _LabReferenceRangeCard(
             key: ValueKey<String>(ranges[index].id ?? 'new-range-$index'),
             range: ranges[index],
@@ -208,10 +222,13 @@ class LabReferenceRangeListField extends StatelessWidget {
             onChanged: onChanged,
             onRemove: () => onRemove(ranges[index]),
           ),
+        ],
+        SizedBox(height: theme.spacing.sm),
         Align(
           alignment: Alignment.centerLeft,
           child: AppButton.tertiary(
             label: l10n.labAddReferenceRangeAction,
+            leadingIcon: Icons.add,
             enabled: enabled,
             onPressed: onAdd,
           ),
@@ -247,8 +264,17 @@ class _LabReferenceRangeCard extends StatelessWidget {
         ? l10n.labReferenceRangeCount(index + 1)
         : range.labelController.text.trim();
 
-    return Card(
-      margin: EdgeInsets.only(bottom: theme.spacing.sm),
+    return Material(
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          context.responsiveRadius(theme.radius.md),
+        ),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.8),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
         child: Column(
@@ -258,13 +284,18 @@ class _LabReferenceRangeCard extends StatelessWidget {
               children: <Widget>[
                 Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
                 if (canRemove)
-                  IconButton(
+                  AppButton(
+                    iconOnly: true,
+                    leadingIcon: Icons.delete_outline,
+                    label: l10n.commonRemoveActionLabel,
+                    semanticLabel: l10n.commonRemoveActionLabel,
                     tooltip: l10n.commonRemoveActionLabel,
+                    enabled: enabled,
                     onPressed: enabled ? onRemove : null,
-                    icon: const Icon(Icons.delete_outline),
                   ),
               ],
             ),
+            SizedBox(height: theme.spacing.sm),
             AppTextField(
               controller: range.labelController,
               labelText: l10n.labReferenceRangeLabel,
@@ -354,6 +385,8 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 inputFormatters: <TextInputFormatter>[
                   FilteringTextInputFormatter.digitsOnly,
                 ],
+                prefixIcon: const Icon(Icons.arrow_downward),
+                onChanged: (_) => onChanged(),
               ),
               right: AppTextField(
                 controller: range.ageMaxController,
@@ -363,6 +396,8 @@ class _LabReferenceRangeCard extends StatelessWidget {
                 inputFormatters: <TextInputFormatter>[
                   FilteringTextInputFormatter.digitsOnly,
                 ],
+                prefixIcon: const Icon(Icons.arrow_upward),
+                onChanged: (_) => onChanged(),
               ),
             ),
             AppTextField(
@@ -382,6 +417,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                   decimal: true,
                   signed: true,
                 ),
+                onChanged: (_) => onChanged(),
               ),
               right: AppTextField(
                 controller: range.normalMaxController,
@@ -391,6 +427,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                   decimal: true,
                   signed: true,
                 ),
+                onChanged: (_) => onChanged(),
               ),
             ),
             AppResponsiveFieldRow.two(
@@ -403,6 +440,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                   decimal: true,
                   signed: true,
                 ),
+                onChanged: (_) => onChanged(),
               ),
               right: AppTextField(
                 controller: range.criticalMaxController,
@@ -412,6 +450,7 @@ class _LabReferenceRangeCard extends StatelessWidget {
                   decimal: true,
                   signed: true,
                 ),
+                onChanged: (_) => onChanged(),
               ),
             ),
             AppTextField(
@@ -419,12 +458,16 @@ class _LabReferenceRangeCard extends StatelessWidget {
               labelText: l10n.labReferenceTextLabel,
               enabled: enabled,
               maxLines: 2,
+              prefixIcon: const Icon(Icons.notes_outlined),
+              onChanged: (_) => onChanged(),
             ),
             AppTextField(
               controller: range.notesController,
               labelText: l10n.labReferenceNotesLabel,
               enabled: enabled,
               maxLines: 2,
+              prefixIcon: const Icon(Icons.sticky_note_2_outlined),
+              onChanged: (_) => onChanged(),
             ),
           ],
         ),

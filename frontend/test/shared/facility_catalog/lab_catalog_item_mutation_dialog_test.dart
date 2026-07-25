@@ -16,6 +16,9 @@ void main() {
       await _pumpMutationDialog(tester);
 
       expect(find.text('CREATE LAB TEST'), findsOneWidget);
+      expect(find.text('Test identity'), findsOneWidget);
+      expect(find.text('Result configuration'), findsOneWidget);
+      expect(find.text('Reference ranges'), findsOneWidget);
       expect(find.text('Add reference range'), findsOneWidget);
       expect(find.text('Adult'), findsWidgets);
       expect(find.widgetWithText(AppButton, 'Save'), findsOneWidget);
@@ -31,6 +34,7 @@ void main() {
       expect(find.byType(LabSearchableTextField), findsWidgets);
       expect(find.byType(LabEditableValueListField), findsOneWidget);
       expect(find.byType(LabReferenceRangeListField), findsOneWidget);
+      expect(find.byType(LabTestDefinitionForm), findsOneWidget);
     });
 
     testWidgets('qualitative kind shows result options and hides unit options', (

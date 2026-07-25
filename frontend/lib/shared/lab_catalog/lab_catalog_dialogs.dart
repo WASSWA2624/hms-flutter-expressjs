@@ -12,7 +12,10 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_constants.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_fields.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_list_field.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_test_definition_form.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 const int _maxVisibleLabCatalogDialogItems = 160;
@@ -616,7 +619,6 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   AppFailure? _failure;
   bool _isSaving = false;
 
-  late final List<String> _cachedTestNameOptions;
   late final List<String> _cachedCategoryOptions;
   late final List<String> _cachedSpecimenOptions;
 
@@ -659,15 +661,14 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
     _isOfferedAtFacility = item.isOfferedAtFacility;
     _resultKind = item.resultKind ?? 'NUMERIC';
 
-    _cachedTestNameOptions = _uniqueNonEmpty(
-      widget.catalogTests.map((LabCatalogItem item) => item.name),
-    );
-    _cachedCategoryOptions = _uniqueNonEmpty(
-      widget.catalogTests.map((LabCatalogItem item) => item.category),
-    );
-    _cachedSpecimenOptions = _uniqueNonEmpty(
-      widget.catalogTests.map((LabCatalogItem item) => item.specimenType),
-    );
+    _cachedCategoryOptions = labUniqueNonEmpty(<String?>[
+      ...kLabCatalogCategories,
+      for (final LabCatalogItem item in widget.catalogTests) item.category,
+    ]);
+    _cachedSpecimenOptions = labUniqueNonEmpty(<String?>[
+      ...kLabCatalogSpecimenTypes,
+      for (final LabCatalogItem item in widget.catalogTests) item.specimenType,
+    ]);
   }
 
   @override
@@ -703,45 +704,64 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                 context: context,
                 failure: _failure!,
               ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.labOfferAtFacilityLabel),
-              subtitle: widget.item.usesPlatformDefaults
-                  ? Text(l10n.labPlatformDefaultsHint)
+            AppFormSection(
+              title: l10n.labOfferAtFacilityLabel,
+              description: widget.item.usesPlatformDefaults
+                  ? l10n.labPlatformDefaultsHint
                   : null,
-              value: _isOfferedAtFacility,
-              onChanged: _isSaving
-                  ? null
-                  : (bool value) {
-                      setState(() => _isOfferedAtFacility = value);
-                    },
+              children: <Widget>[
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.labOfferAtFacilityLabel),
+                  value: _isOfferedAtFacility,
+                  onChanged: _isSaving
+                      ? null
+                      : (bool value) {
+                          setState(() => _isOfferedAtFacility = value);
+                        },
+                ),
+                AppCurrencyAmountField(
+                  amountController: _priceController,
+                  currency: _currency,
+                  amountLabelText: l10n.clinicalRequestUnitPriceLabel,
+                  currencyLabelText: l10n.opdCurrencyLabel,
+                  enabled: !_isSaving && _isOfferedAtFacility,
+                  isRequired: _isOfferedAtFacility,
+                  allowZero: false,
+                  onCurrencyChanged: (String? value) {
+                    setState(() {
+                      _currency = value ?? appDefaultCurrencyCode;
+                    });
+                  },
+                  validator: _isOfferedAtFacility
+                      ? (String? value) =>
+                            _positiveUnitPriceValidator(l10n, value)
+                      : null,
+                ),
+              ],
             ),
-            AppCurrencyAmountField(
-              amountController: _priceController,
-              currency: _currency,
-              amountLabelText: l10n.clinicalRequestUnitPriceLabel,
-              currencyLabelText: l10n.opdCurrencyLabel,
-              enabled: !_isSaving && _isOfferedAtFacility,
-              isRequired: _isOfferedAtFacility,
-              allowZero: false,
-              onCurrencyChanged: (String? value) {
-                setState(() {
-                  _currency = value ?? appDefaultCurrencyCode;
-                });
-              },
-              validator: _isOfferedAtFacility
-                  ? (String? value) => _positiveUnitPriceValidator(l10n, value)
-                  : null,
-            ),
-            const Divider(height: 24),
-            LabSearchableTextField(
-              controller: _nameController,
-              labelText: l10n.labTestNameLabel,
-              enabled: false,
-              isRequired: true,
-              prefixIcon: const Icon(Icons.science_outlined),
-              options: _testNameOptions,
-              validator: (String? value) {
+            LabTestDefinitionForm(
+              nameController: _nameController,
+              codeController: _codeController,
+              categoryController: _categoryController,
+              specimenController: _specimenController,
+              unitController: _unitController,
+              descriptionController: _descriptionController,
+              resultKind: _resultKind,
+              onResultKindChanged: (String? value) =>
+                  setState(() => _resultKind = value),
+              unitOptions: _unitOptions,
+              resultOptions: _resultOptions,
+              referenceRanges: _referenceRanges,
+              categoryOptions: _categoryOptions,
+              specimenOptions: _specimenOptions,
+              unitSuggestions: _unitOptionsCatalog,
+              resultSuggestions: _resultOptionsCatalog(l10n),
+              enabled: !_isSaving,
+              nameEnabled: false,
+              codeEnabled: false,
+              namePrefixIcon: const Icon(Icons.science_outlined),
+              nameValidator: (String? value) {
                 final String? requiredFailure = AppValidators.requiredText(
                   l10n.validationRequired,
                 )(value);
@@ -752,111 +772,27 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                     ? l10n.labDuplicateTestNameMessage
                     : null;
               },
-            ),
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppTextField(
-                controller: _codeController,
-                labelText: l10n.labTestCodeLabel,
-                enabled: false,
-                prefixIcon: const Icon(Icons.tag_outlined),
-                validator: (String? value) => _hasDuplicateCode(value)
-                    ? l10n.labDuplicateTestCodeMessage
-                    : null,
-              ),
-              right: LabSearchableTextField(
-                controller: _categoryController,
-                labelText: l10n.labCategoryLabel,
-                enabled: !_isSaving,
-                prefixIcon: const Icon(Icons.category_outlined),
-                options: _categoryOptions,
-              ),
-            ),
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: LabSearchableTextField(
-                controller: _specimenController,
-                labelText: l10n.labSpecimenTypeLabel,
-                enabled: !_isSaving,
-                prefixIcon: const Icon(Icons.bloodtype_outlined),
-                options: _specimenOptions,
-              ),
-              right: AppSelectField<String>.searchable(
-                value: _resultKind,
-                labelText: l10n.labResultKindLabel,
-                enabled: !_isSaving,
-                allowClear: false,
-                isRequired: true,
-                validator: AppValidators.requiredValue(l10n.validationRequired),
-                options: <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: 'NUMERIC',
-                    label: l10n.labResultKindNumeric,
-                    leadingIcon: const Icon(Icons.pin_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'QUALITATIVE',
-                    label: l10n.labResultKindQualitative,
-                    leadingIcon: const Icon(Icons.checklist_outlined),
-                  ),
-                  AppSelectOption<String>(
-                    value: 'TEXT',
-                    label: l10n.labResultKindText,
-                    leadingIcon: const Icon(Icons.notes_outlined),
-                  ),
-                ],
-                onChanged: (String? value) =>
-                    setState(() => _resultKind = value),
-              ),
-            ),
-            LabSearchableTextField(
-              controller: _unitController,
-              labelText: l10n.labDefaultUnitLabel,
-              enabled: !_isSaving,
-              prefixIcon: const Icon(Icons.straighten_outlined),
-              options: _unitOptionsCatalog,
-            ),
-            LabEditableValueListField(
-              labelText: l10n.labUnitOptionsLabel,
-              values: _unitOptions,
-              suggestions: _unitOptionsCatalog,
-              enabled: !_isSaving,
-              onAdd: (String value) {
+              codeValidator: (String? value) => _hasDuplicateCode(value)
+                  ? l10n.labDuplicateTestCodeMessage
+                  : null,
+              onUnitOptionAdd: (String value) {
                 setState(
                   () => _unitOptions.add(EditableLabValue(value: value)),
                 );
               },
-              onRemove: (EditableLabValue value) {
+              onUnitOptionRemove: (EditableLabValue value) {
                 setState(() => _unitOptions.remove(value));
               },
-            ),
-            LabEditableValueListField(
-              labelText: l10n.labQualitativeOptionsLabel,
-              values: _resultOptions,
-              suggestions: _resultOptionsCatalog(l10n),
-              enabled: !_isSaving,
-              onAdd: (String value) {
+              onResultOptionAdd: (String value) {
                 setState(
                   () => _resultOptions.add(EditableLabValue(value: value)),
                 );
               },
-              onRemove: (EditableLabValue value) {
+              onResultOptionRemove: (EditableLabValue value) {
                 setState(() => _resultOptions.remove(value));
               },
-            ),
-            AppTextField(
-              controller: _descriptionController,
-              labelText: l10n.labTestDescriptionLabel,
-              enabled: !_isSaving,
-              maxLines: 2,
-            ),
-            const Divider(height: 24),
-            LabReferenceRangeListField(
-              ranges: _referenceRanges,
-              enabled: !_isSaving,
-              fallbackUnit: _unitController.text.trim(),
-              onChanged: () => setState(() {}),
-              onAdd: () {
+              onRangesChanged: () => setState(() {}),
+              onRangeAdd: () {
                 setState(
                   () => _referenceRanges.add(
                     EditableLabReferenceRange(
@@ -865,7 +801,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
                   ),
                 );
               },
-              onRemove: (EditableLabReferenceRange range) {
+              onRangeRemove: (EditableLabReferenceRange range) {
                 setState(() {
                   range.dispose();
                   _referenceRanges.remove(range);
@@ -875,23 +811,23 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
           ],
         ),
       ),
-      actions: _dialogActions(
-        context,
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
         submitLabel: l10n.commonSaveActionLabel,
-        isSaving: _isSaving,
+        submitIcon: Icons.save_outlined,
+        isSubmitting: _isSaving,
+        onCancel: () => Navigator.of(context).pop(false),
         onSubmit: _submit,
       ),
     );
   }
-
-  List<String> get _testNameOptions => _cachedTestNameOptions;
 
   List<String> get _categoryOptions => _cachedCategoryOptions;
 
   List<String> get _specimenOptions => _cachedSpecimenOptions;
 
   List<String> get _unitOptionsCatalog {
-    return _uniqueNonEmpty(<String?>[
+    return labUniqueNonEmpty(<String?>[
       for (final LabCatalogItem item in widget.catalogTests) item.unit,
       for (final LabCatalogItem item in widget.catalogTests)
         for (final LabUnitOption option in item.unitOptions)
@@ -901,7 +837,7 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   }
 
   List<String> _resultOptionsCatalog(AppLocalizations l10n) {
-    return _uniqueNonEmpty(<String?>[
+    return labUniqueNonEmpty(<String?>[
       l10n.labPositiveOption,
       l10n.labNegativeOption,
       for (final LabCatalogItem item in widget.catalogTests)
@@ -912,26 +848,26 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   }
 
   bool _hasDuplicateName(String? value) {
-    final String normalized = _normalizeCatalogToken(value);
+    final String normalized = labNormalizeCatalogToken(value);
     if (normalized.isEmpty) {
       return false;
     }
     return widget.catalogTests.any(
       (LabCatalogItem item) =>
           !_isCurrentItem(item) &&
-          _normalizeCatalogToken(item.name) == normalized,
+          labNormalizeCatalogToken(item.name) == normalized,
     );
   }
 
   bool _hasDuplicateCode(String? value) {
-    final String normalized = _normalizeCatalogToken(value);
+    final String normalized = labNormalizeCatalogToken(value);
     if (normalized.isEmpty) {
       return false;
     }
     return widget.catalogTests.any(
       (LabCatalogItem item) =>
           !_isCurrentItem(item) &&
-          _normalizeCatalogToken(item.code) == normalized,
+          labNormalizeCatalogToken(item.code) == normalized,
     );
   }
 
@@ -1092,10 +1028,10 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
     _isOfferedAtFacility = item.isOfferedAtFacility;
     _selectedTests = _initialSelectedTests(item);
 
-    _cachedPanelNameOptions = _uniqueNonEmpty(
+    _cachedPanelNameOptions = labUniqueNonEmpty(
       widget.catalogPanels.map((LabCatalogItem item) => item.name),
     );
-    _cachedPanelCategoryOptions = _uniqueNonEmpty(<String?>[
+    _cachedPanelCategoryOptions = labUniqueNonEmpty(<String?>[
       ...widget.catalogTests.map((LabCatalogItem item) => item.category),
       ...widget.catalogPanels.map((LabCatalogItem item) => item.category),
     ]);
@@ -1224,8 +1160,8 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
             panelItem.labTestId,
             panelItem.testCode,
           ) ||
-          _normalizeCatalogToken(test.code) ==
-              _normalizeCatalogToken(panelItem.testCode)) {
+          labNormalizeCatalogToken(test.code) ==
+              labNormalizeCatalogToken(panelItem.testCode)) {
         return test;
       }
     }
@@ -1748,7 +1684,7 @@ String _joinEnableOfferingSubtitle(AppLocalizations l10n, LabCatalogItem item) {
 List<AppSearchBarFilterChoice> _enableOfferingFilterChoices(
   Iterable<String?> values,
 ) {
-  return _uniqueNonEmpty(values)
+  return labUniqueNonEmpty(values)
       .map(
         (String value) => AppSearchBarFilterChoice(value: value, label: value),
       )
@@ -2208,265 +2144,6 @@ class _SelectedPanelTestRow extends StatelessWidget {
   }
 }
 
-class LabEditableValueListField extends StatefulWidget {
-  const LabEditableValueListField({
-    required this.labelText,
-    required this.values,
-    required this.suggestions,
-    required this.enabled,
-    required this.onAdd,
-    required this.onRemove,
-    super.key,
-  });
-
-  final String labelText;
-  final List<EditableLabValue> values;
-  final List<String> suggestions;
-  final bool enabled;
-  final ValueChanged<String> onAdd;
-  final ValueChanged<EditableLabValue> onRemove;
-
-  @override
-  State<LabEditableValueListField> createState() =>
-      _LabEditableValueListFieldState();
-}
-
-class _LabEditableValueListFieldState extends State<LabEditableValueListField> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        LabSearchableTextField(
-          controller: _controller,
-          labelText: widget.labelText,
-          hintText: l10n.labAddValueFieldHint,
-          enabled: widget.enabled,
-          prefixIcon: const Icon(Icons.search),
-          options: widget.suggestions,
-          suffixIcon: AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.add,
-            label: l10n.labAddValueAction,
-            semanticLabel: l10n.labAddValueAction,
-            tooltip: l10n.labAddValueAction,
-            enabled: widget.enabled,
-            onPressed: widget.enabled ? _addCurrentValue : null,
-          ),
-          onFieldSubmitted: (_) => _addCurrentValue(),
-        ),
-        if (widget.values.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (final EditableLabValue value in widget.values)
-                InputChip(
-                  label: Text(value.value),
-                  onDeleted: widget.enabled
-                      ? () => widget.onRemove(value)
-                      : null,
-                ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  void _addCurrentValue() {
-    final String value = _controller.text.trim();
-    if (value.isEmpty) {
-      return;
-    }
-    if (widget.values.any(
-      (EditableLabValue existing) =>
-          _normalizeCatalogToken(existing.value) ==
-          _normalizeCatalogToken(value),
-    )) {
-      _controller.clear();
-      return;
-    }
-    widget.onAdd(value);
-    _controller.clear();
-  }
-}
-
-class LabSearchableTextField extends StatefulWidget {
-  const LabSearchableTextField({
-    required this.controller,
-    required this.labelText,
-    required this.options,
-    this.enabled = true,
-    this.isRequired = false,
-    this.hintText,
-    this.prefixIcon,
-    this.suffixIcon,
-    this.validator,
-    this.onFieldSubmitted,
-    super.key,
-  });
-
-  final TextEditingController controller;
-  final String labelText;
-  final List<String> options;
-  final bool enabled;
-  final bool isRequired;
-  final String? hintText;
-  final Widget? prefixIcon;
-  final Widget? suffixIcon;
-  final FormFieldValidator<String>? validator;
-  final ValueChanged<String>? onFieldSubmitted;
-
-  @override
-  State<LabSearchableTextField> createState() => _LabSearchableTextFieldState();
-}
-
-class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
-  late final FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = FocusNode();
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return RawAutocomplete<String>(
-      textEditingController: widget.controller,
-      focusNode: _focusNode,
-      optionsBuilder: (TextEditingValue value) {
-        final String query = value.text.trim().toLowerCase();
-        final List<String> matches = widget.options
-            .where(
-              (String option) =>
-                  query.isEmpty || option.toLowerCase().contains(query),
-            )
-            .take(10)
-            .toList(growable: false);
-        if (query.isEmpty ||
-            matches.any((String option) => option.toLowerCase() == query)) {
-          return matches;
-        }
-        return <String>[value.text.trim(), ...matches];
-      },
-      onSelected: (String value) {
-        widget.controller.text = value;
-      },
-      fieldViewBuilder:
-          (
-            BuildContext context,
-            TextEditingController controller,
-            FocusNode focusNode,
-            VoidCallback onFieldSubmitted,
-          ) {
-            return AppTextField(
-              controller: controller,
-              focusNode: focusNode,
-              labelText: widget.labelText,
-              hintText: widget.hintText,
-              prefixIcon: widget.prefixIcon,
-              suffixIcon: widget.suffixIcon,
-              enabled: widget.enabled,
-              isRequired: widget.isRequired,
-              validator: widget.validator,
-              onFieldSubmitted: (String value) {
-                onFieldSubmitted();
-                widget.onFieldSubmitted?.call(value);
-              },
-            );
-          },
-      optionsViewBuilder:
-          (
-            BuildContext context,
-            AutocompleteOnSelected<String> onSelected,
-            Iterable<String> options,
-          ) {
-            final ThemeData theme = Theme.of(context);
-            final List<String> visibleOptions = options.toList(growable: false);
-            if (visibleOptions.isEmpty) {
-              return const SizedBox.shrink();
-            }
-            return Align(
-              alignment: AlignmentDirectional.topStart,
-              child: Material(
-                elevation: 4,
-                color: theme.colorScheme.surface,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 240,
-                    maxWidth: 420,
-                  ),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: visibleOptions.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final String option = visibleOptions[index];
-                      return ListTile(
-                        dense: true,
-                        title: Text(option),
-                        onTap: () => onSelected(option),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            );
-          },
-    );
-  }
-}
-
-@immutable
-final class EditableLabValue {
-  const EditableLabValue({required this.value, this.id, this.label});
-
-  factory EditableLabValue.fromUnitOption(LabUnitOption option) {
-    return EditableLabValue(
-      id: option.id,
-      value: option.unit ?? option.label ?? '',
-      label: option.label,
-    );
-  }
-
-  factory EditableLabValue.fromResultOption(LabResultOption option) {
-    return EditableLabValue(
-      id: option.id,
-      value: option.value ?? option.label ?? '',
-      label: option.label,
-    );
-  }
-
-  final String value;
-  final String? id;
-  final String? label;
-}
-
 String? _positiveUnitPriceValidator(AppLocalizations l10n, String? value) {
   final String? requiredFailure = AppValidators.requiredText(
     l10n.validationRequired,
@@ -2525,41 +2202,17 @@ bool _containsCatalogItem(List<LabCatalogItem> items, LabCatalogItem item) {
 }
 
 bool _isSameCatalogIdentity(LabCatalogItem item, String? id, String? code) {
-  final String normalizedId = _normalizeCatalogToken(id);
+  final String normalizedId = labNormalizeCatalogToken(id);
   if (normalizedId.isNotEmpty) {
-    if (_normalizeCatalogToken(item.apiId) == normalizedId ||
-        _normalizeCatalogToken(item.id) == normalizedId ||
-        _normalizeCatalogToken(item.displayId) == normalizedId) {
+    if (labNormalizeCatalogToken(item.apiId) == normalizedId ||
+        labNormalizeCatalogToken(item.id) == normalizedId ||
+        labNormalizeCatalogToken(item.displayId) == normalizedId) {
       return true;
     }
   }
-  final String normalizedCode = _normalizeCatalogToken(code);
+  final String normalizedCode = labNormalizeCatalogToken(code);
   return normalizedCode.isNotEmpty &&
-      _normalizeCatalogToken(item.code) == normalizedCode;
-}
-
-String _normalizeCatalogToken(String? value) {
-  return (value ?? '').trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
-}
-
-List<String> _uniqueNonEmpty(Iterable<String?> values) {
-  final Set<String> seen = <String>{};
-  final List<String> result = <String>[];
-  for (final String? value in values) {
-    final String trimmed = value?.trim() ?? '';
-    if (trimmed.isEmpty) {
-      continue;
-    }
-    final String key = trimmed.toLowerCase();
-    if (seen.add(key)) {
-      result.add(trimmed);
-    }
-  }
-  result.sort(
-    (String left, String right) =>
-        left.toLowerCase().compareTo(right.toLowerCase()),
-  );
-  return result;
+      labNormalizeCatalogToken(item.code) == normalizedCode;
 }
 
 String? _emptyToNull(String? value) {

@@ -19158,6 +19158,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateTestDialogTitle => 'Create Lab Test';
 
   @override
+  String get labTestIdentitySectionTitle => 'Test identity';
+
+  @override
+  String get labTestIdentitySectionBody =>
+      'Start with the catalog name, optional code, and category.';
+
+  @override
+  String get labTestResultSectionTitle => 'Result configuration';
+
+  @override
+  String get labTestResultSectionBody =>
+      'Choose specimen type and result kind, then set units or qualitative values.';
+
+  @override
+  String get labTestRangesSectionTitle => 'Reference ranges';
+
+  @override
+  String get labTestRangesSectionBody =>
+      'Add age- and gender-specific normal and critical ranges when needed.';
+
+  @override
+  String get labPanelIdentitySectionTitle => 'Panel details';
+
+  @override
+  String get labPanelIdentitySectionBody =>
+      'Name the panel, add an optional code and category, then describe it.';
+
+  @override
   String get labCreatePanelAction => 'Create panel';
 
   @override

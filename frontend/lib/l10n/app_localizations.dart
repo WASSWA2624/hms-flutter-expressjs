@@ -35755,6 +35755,54 @@ abstract class AppLocalizations {
   /// **'Create Lab Test'**
   String get labCreateTestDialogTitle;
 
+  /// Section title for lab test name, code, and category.
+  ///
+  /// In en, this message translates to:
+  /// **'Test identity'**
+  String get labTestIdentitySectionTitle;
+
+  /// Section description for lab test identity fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with the catalog name, optional code, and category.'**
+  String get labTestIdentitySectionBody;
+
+  /// Section title for specimen, result kind, units, and options.
+  ///
+  /// In en, this message translates to:
+  /// **'Result configuration'**
+  String get labTestResultSectionTitle;
+
+  /// Section description for lab test result configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose specimen type and result kind, then set units or qualitative values.'**
+  String get labTestResultSectionBody;
+
+  /// Section title for age and gender reference ranges.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference ranges'**
+  String get labTestRangesSectionTitle;
+
+  /// Section description for lab reference ranges.
+  ///
+  /// In en, this message translates to:
+  /// **'Add age- and gender-specific normal and critical ranges when needed.'**
+  String get labTestRangesSectionBody;
+
+  /// Section title for lab panel create/edit fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Panel details'**
+  String get labPanelIdentitySectionTitle;
+
+  /// Section description for lab panel create/edit fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Name the panel, add an optional code and category, then describe it.'**
+  String get labPanelIdentitySectionBody;
+
   /// Action label for creating a lab panel in the catalog.
   ///
   /// In en, this message translates to:

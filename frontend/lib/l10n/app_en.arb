@@ -24581,6 +24581,38 @@
   "@labCreateTestDialogTitle": {
     "description": "Title for the create lab test dialog."
   },
+  "labTestIdentitySectionTitle": "Test identity",
+  "@labTestIdentitySectionTitle": {
+    "description": "Section title for lab test name, code, and category."
+  },
+  "labTestIdentitySectionBody": "Start with the catalog name, optional code, and category.",
+  "@labTestIdentitySectionBody": {
+    "description": "Section description for lab test identity fields."
+  },
+  "labTestResultSectionTitle": "Result configuration",
+  "@labTestResultSectionTitle": {
+    "description": "Section title for specimen, result kind, units, and options."
+  },
+  "labTestResultSectionBody": "Choose specimen type and result kind, then set units or qualitative values.",
+  "@labTestResultSectionBody": {
+    "description": "Section description for lab test result configuration."
+  },
+  "labTestRangesSectionTitle": "Reference ranges",
+  "@labTestRangesSectionTitle": {
+    "description": "Section title for age and gender reference ranges."
+  },
+  "labTestRangesSectionBody": "Add age- and gender-specific normal and critical ranges when needed.",
+  "@labTestRangesSectionBody": {
+    "description": "Section description for lab reference ranges."
+  },
+  "labPanelIdentitySectionTitle": "Panel details",
+  "@labPanelIdentitySectionTitle": {
+    "description": "Section title for lab panel create/edit fields."
+  },
+  "labPanelIdentitySectionBody": "Name the panel, add an optional code and category, then describe it.",
+  "@labPanelIdentitySectionBody": {
+    "description": "Section description for lab panel create/edit fields."
+  },
   "labCreatePanelAction": "Create panel",
   "@labCreatePanelAction": {
     "description": "Action label for creating a lab panel in the catalog."
