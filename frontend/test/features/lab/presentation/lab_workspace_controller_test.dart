@@ -96,6 +96,7 @@ void main() {
         search: any(named: 'search'),
         tenantId: any(named: 'tenantId'),
         includeStandardCatalog: any(named: 'includeStandardCatalog'),
+        includePendingReview: any(named: 'includePendingReview'),
         limit: any(named: 'limit'),
       ),
     ).thenAnswer(

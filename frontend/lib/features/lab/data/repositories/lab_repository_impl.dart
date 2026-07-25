@@ -94,6 +94,7 @@ final class LabRepositoryImpl implements LabRepository {
     String? search,
     String? tenantId,
     bool includeStandardCatalog = false,
+    bool includePendingReview = false,
     int limit = 100,
   }) {
     return _apiClient.get<List<LabCatalogItem>>(
@@ -104,6 +105,7 @@ final class LabRepositoryImpl implements LabRepository {
         'search': search,
         'tenant_id': tenantId,
         if (includeStandardCatalog) 'include_standard_catalog': 'true',
+        if (includePendingReview) 'include_pending_review': 'true',
         'sort_by': 'name',
         'order': 'asc',
       }),

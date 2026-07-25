@@ -12,7 +12,7 @@ const { uuidOrFriendlyIdentifierSchema, listQuerySchema } = require('@lib/valida
 
 const optionalTrimmedString = (maxLength) => z.string().trim().min(1).max(maxLength).optional().nullable();
 
-const LAB_CATALOG_MAX_PAGE_LIMIT = 5000;
+const LAB_CATALOG_MAX_PAGE_LIMIT = 7500;
 const labCatalogLimitSchema = z.coerce
   .number()
   .int('Limit must be an integer')

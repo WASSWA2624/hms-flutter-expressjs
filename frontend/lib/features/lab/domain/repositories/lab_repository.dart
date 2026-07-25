@@ -20,6 +20,7 @@ abstract interface class LabRepository {
     String? search,
     String? tenantId,
     bool includeStandardCatalog = false,
+    bool includePendingReview = false,
     int limit = 100,
   });
 

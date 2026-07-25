@@ -153,6 +153,42 @@ void main() {
       expect(find.widgetWithText(AppButton, 'Continue save'), findsNothing);
     });
 
+    testWidgets('exact duplicate name blocks even when category differs', (
+      WidgetTester tester,
+    ) async {
+      var submitCount = 0;
+      await _pumpMutationDialog(
+        tester,
+        catalogItems: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 'LBT1',
+            type: LabCatalogItemType.test,
+            name: 'test',
+            code: 'OTHER',
+            category: 'Chemistry',
+          ),
+        ],
+        onSubmit: (_) async {
+          submitCount += 1;
+          return null;
+        },
+      );
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'test');
+      await tester.enterText(find.byType(TextFormField).at(1), 'test');
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(submitCount, 0);
+      expect(
+        find.text('A lab test with this name already exists.'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppButton, 'Create anyway'), findsNothing);
+    });
+
     testWidgets('exact duplicate code blocks save without submit', (
       WidgetTester tester,
     ) async {

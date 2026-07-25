@@ -60,7 +60,7 @@ class _FacilityCatalogConfigPanelState
     extends ConsumerState<FacilityCatalogConfigPanel> {
   static const int _pageSize = 40;
   static const int _radiologyFetchLimit = 7500;
-  static const int _labFetchLimit = 5000;
+  static const int _labFetchLimit = 7500;
   static const int _diagnosisFetchLimit = 1000;
   static const String _labTypeFilterKey = 'type';
   static const String _labCategoryFilterKey = 'category';
@@ -1617,17 +1617,55 @@ class _FacilityCatalogConfigPanelState
     final Result<List<LabCatalogItem>> candidatesResult = await repository
         .listTests(
           tenantId: tenantId,
+          // Match backend lab catalog max page limit + uniqueness scan size.
           limit: 7500,
           includeStandardCatalog: true,
+          // Uniqueness includes pending-review rows; similarity must too.
+          includePendingReview: true,
         );
     return candidatesResult.when(
-      success: (List<LabCatalogItem> items) => items
-          .where((LabCatalogItem item) => item.type == LabCatalogItemType.test)
-          .toList(growable: false),
+      success: (List<LabCatalogItem> items) {
+        final List<LabCatalogItem> tests = items
+            .where(
+              (LabCatalogItem item) => item.type == LabCatalogItemType.test,
+            )
+            .toList(growable: false);
+        // Merge desk rows so a just-saved local upsert is never dropped if the
+        // list response is momentarily stale.
+        return _mergeLabSimilarityCandidates(tests, _labItems);
+      },
       failure: (_) => _labItems
           .where((LabCatalogItem item) => item.type == LabCatalogItemType.test)
           .toList(growable: false),
     );
+  }
+
+  List<LabCatalogItem> _mergeLabSimilarityCandidates(
+    List<LabCatalogItem> primary,
+    List<LabCatalogItem> fallback,
+  ) {
+    final Map<String, LabCatalogItem> byKey = <String, LabCatalogItem>{};
+    void put(LabCatalogItem item) {
+      if (item.type != LabCatalogItemType.test) {
+        return;
+      }
+      final String apiId = item.apiId.trim();
+      final String id = item.id.trim();
+      if (apiId.isNotEmpty) {
+        byKey[apiId] = item;
+      }
+      if (id.isNotEmpty && id != apiId) {
+        byKey.putIfAbsent(id, () => item);
+      }
+    }
+
+    for (final LabCatalogItem item in primary) {
+      put(item);
+    }
+    for (final LabCatalogItem item in fallback) {
+      put(item);
+    }
+    return byKey.values.toList(growable: false);
   }
 
   LabCatalogItem _resolveLabCatalogItem(LabCatalogItem item) {

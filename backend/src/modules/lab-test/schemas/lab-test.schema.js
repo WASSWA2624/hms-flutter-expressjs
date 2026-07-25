@@ -32,7 +32,7 @@ const labReferenceGenderSchema = z.enum(['MALE', 'FEMALE', 'OTHER', 'UNKNOWN']);
 const labReferenceAgeUnitSchema = z.enum(['DAY', 'WEEK', 'MONTH', 'YEAR']);
 const labTestResultKindSchema = z.enum(['NUMERIC', 'QUALITATIVE', 'TEXT']);
 const labResultStatusSchema = z.enum(['NORMAL', 'ABNORMAL', 'CRITICAL', 'PENDING']);
-const LAB_CATALOG_MAX_PAGE_LIMIT = 5000;
+const LAB_CATALOG_MAX_PAGE_LIMIT = 7500;
 const labCatalogLimitSchema = z.coerce
   .number()
   .int('Limit must be an integer')

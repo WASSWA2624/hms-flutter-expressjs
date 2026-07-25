@@ -254,11 +254,9 @@ const checkLabTestDuplicates = ({
       categoryScore
     });
 
-    // Same name with a different category is a near match, not a hard block.
-    const bothCategoriesPresent = Boolean(normalizedModality)
-      && Boolean(testModality);
-    const hardNameConflict = nameExact
-      && (!bothCategoriesPresent || categoryExact);
+    // Exact name is always a hard block (tenant-wide uniqueness).
+    // Category still affects the composite % score for display.
+    const hardNameConflict = nameExact;
     const isExact = hardNameConflict || codeExact;
     if (isExact) {
       if (hardNameConflict) exactNameConflict = true;

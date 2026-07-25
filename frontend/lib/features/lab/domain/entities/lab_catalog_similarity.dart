@@ -371,11 +371,9 @@ LabCatalogDuplicateCheckResult checkLabCatalogDuplicates({
       categoryScore: categoryScore,
     );
 
-    // Same name with a different category is a near match, not a hard block.
-    final bool bothCategoriesPresent =
-        normalizedCategory.isNotEmpty && testCategory.isNotEmpty;
-    final bool hardNameConflict =
-        nameExact && (!bothCategoriesPresent || categoryExact);
+    // Exact name is always a hard block (matches backend uniqueness / 409).
+    // Category still affects the composite % score for display.
+    final bool hardNameConflict = nameExact;
     final bool isExact = hardNameConflict || codeExact;
     if (isExact) {
       if (hardNameConflict) {

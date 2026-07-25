@@ -36,7 +36,7 @@ void main() {
       expect(result.similarMatches.first.reasons, contains('category'));
     });
 
-    test('lowers composite score when category differs on exact name', () {
+    test('detects exact name conflict even when category differs', () {
       final LabCatalogDuplicateCheckResult result = checkLabCatalogDuplicates(
         name: 'Complete Blood Count',
         code: '',
@@ -44,12 +44,32 @@ void main() {
         existing: existing,
       );
 
-      expect(result.exactNameConflict, isFalse);
-      expect(result.hasExactConflict, isFalse);
-      expect(result.nonExactSimilarMatches, isNotEmpty);
-      expect(result.nonExactSimilarMatches.first.score, lessThan(100));
-      expect(result.nonExactSimilarMatches.first.categoryScore, 0);
-      expect(result.nonExactSimilarMatches.first.nameScore, 100);
+      expect(result.exactNameConflict, isTrue);
+      expect(result.hasExactConflict, isTrue);
+      expect(result.similarMatches, isNotEmpty);
+      expect(result.similarMatches.first.isExact, isTrue);
+      expect(result.similarMatches.first.categoryScore, 0);
+      expect(result.similarMatches.first.nameScore, 100);
+    });
+
+    test('detects short exact names such as test', () {
+      final LabCatalogDuplicateCheckResult result = checkLabCatalogDuplicates(
+        name: 'test',
+        code: 'test',
+        category: 'Admission',
+        existing: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 'lab-3',
+            type: LabCatalogItemType.test,
+            name: 'test',
+            code: 'OTHER',
+            category: 'Chemistry',
+          ),
+        ],
+      );
+
+      expect(result.exactNameConflict, isTrue);
+      expect(result.hasExactConflict, isTrue);
     });
 
     test('detects punctuation-equivalent codes as exact conflicts', () {

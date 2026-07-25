@@ -1066,6 +1066,26 @@ class _LabCatalogItemMutationDialogState
       return false;
     }
 
+    // Refresh candidates right before the scan so a stale/empty open-time
+    // catalog cannot skip exact duplicates that the API would still reject.
+    final Future<List<LabCatalogItem>> Function()? loader =
+        widget.loadExistingItems;
+    if (loader != null) {
+      try {
+        final List<LabCatalogItem> items = await loader();
+        if (!mounted) {
+          return false;
+        }
+        _existingItems = items
+            .where(
+              (LabCatalogItem e) => e.type == LabCatalogItemType.test,
+            )
+            .toList(growable: false);
+      } catch (_) {
+        // Keep the catalog already loaded into the dialog.
+      }
+    }
+
     late final LabCatalogDuplicateCheckResult result;
     try {
       final List<LabCatalogItem> tenantItems = _existingItems
@@ -1231,9 +1251,30 @@ class _LabCatalogItemMutationDialogState
       Navigator.of(context).pop(true);
       return;
     }
+    final AppLocalizations l10n = context.l10n;
     setState(() {
       _failure = failure;
       _isSaving = false;
+      // Belt-and-suspenders: map backend duplicate 409s onto field errors so a
+      // missed client-side scan still surfaces like the similarity guard.
+      if (failure.category == AppFailureCategory.conflict) {
+        final bool nameConflict =
+            failure.validationFields.contains('name') ||
+            (failure.detailMessage ?? '').toLowerCase().contains(
+              'name already exists',
+            );
+        final bool codeConflict =
+            failure.validationFields.contains('code') ||
+            (failure.detailMessage ?? '').toLowerCase().contains(
+              'code already exists',
+            );
+        if (nameConflict) {
+          _nameErrorText = l10n.labDuplicateTestNameMessage;
+        }
+        if (codeConflict) {
+          _codeErrorText = l10n.labDuplicateTestCodeMessage;
+        }
+      }
     });
   }
 
