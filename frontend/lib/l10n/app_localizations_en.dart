@@ -7614,6 +7614,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalCreateDiagnosisAction => 'Create diagnosis';
 
   @override
+  String get clinicalEditDiagnosisDialogTitle => 'Edit diagnosis';
+
+  @override
   String get clinicalDiagnosisSearchLabel => 'Search diagnosis';
 
   @override
@@ -19259,6 +19262,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'A lab panel with this code already exists.';
 
   @override
+  String get labUpdateTestDialogTitle => 'Edit Lab Test';
+
+  @override
   String get labUpdatePanelDialogTitle => 'Edit Lab Panel';
 
   @override
@@ -19621,6 +19627,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyEditImagingTestAction => 'Edit imaging test';
+
+  @override
+  String get radiologyEditProcedureDialogTitle => 'Edit Radiology procedure';
 
   @override
   String get radiologyDeleteImagingTestAction => 'Delete imaging test';

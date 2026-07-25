@@ -14104,6 +14104,12 @@ abstract class AppLocalizations {
   /// **'Create diagnosis'**
   String get clinicalCreateDiagnosisAction;
 
+  /// Title for the edit diagnosis catalog term dialog in Clinical Services setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit diagnosis'**
+  String get clinicalEditDiagnosisDialogTitle;
+
   /// Clinical diagnosis search field label.
   ///
   /// In en, this message translates to:
@@ -35935,6 +35941,12 @@ abstract class AppLocalizations {
   /// **'A lab panel with this code already exists.'**
   String get labDuplicatePanelCodeMessage;
 
+  /// Dialog title for editing a lab test in Clinical Services setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Lab Test'**
+  String get labUpdateTestDialogTitle;
+
   /// Dialog title for editing a lab panel.
   ///
   /// In en, this message translates to:
@@ -36516,6 +36528,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit imaging test'**
   String get radiologyEditImagingTestAction;
+
+  /// Title for the edit radiology procedure dialog in Clinical Services setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Radiology procedure'**
+  String get radiologyEditProcedureDialogTitle;
 
   /// Radiology delete imaging test action.
   ///

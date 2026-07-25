@@ -30,7 +30,7 @@ Tables use client-warmed catalog lists with `AppListTable` incremental reveal (`
 | Cancel | Footer | Dismisses without save. |
 | Save | Footer (`commonSaveActionLabel`) | Creates or updates radiology catalog test; pops `true` on success. |
 
-Title: **Create imaging test** (create) or **Edit** (edit).
+Title: **Create imaging test** (create) or **Edit Radiology procedure** (edit).
 
 ---
 
@@ -52,7 +52,7 @@ Title: **Create imaging test** (create) or **Edit** (edit).
 | Cancel | Footer | Dismisses without save. |
 | Save | Footer | Creates or updates lab test/panel; pops `true` on success. |
 
-Titles use lab create/configure dialog title keys (test vs panel; edit reuses panel create title / configure-test title).
+Titles: create uses lab create dialog title keys; edit uses **Edit Lab Test** / **Edit Lab Panel** by kind.
 
 ---
 
@@ -73,7 +73,7 @@ Titles use lab create/configure dialog title keys (test vs panel; edit reuses pa
 | Cancel | Footer | Dismisses without save. |
 | Save | Footer | Creates or updates diagnosis catalog term; pops `true` on success. |
 
-Title: **Create diagnosis** (create) or `clinicalDiagnosisFormTitle` (edit).
+Title: **Create diagnosis** (create) or **Edit diagnosis** (edit).
 
 ---
 

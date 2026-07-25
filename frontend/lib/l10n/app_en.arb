@@ -9684,6 +9684,10 @@
   "@clinicalCreateDiagnosisAction": {
     "description": "Action label for creating a diagnosis catalog term in Clinical Services setup."
   },
+  "clinicalEditDiagnosisDialogTitle": "Edit diagnosis",
+  "@clinicalEditDiagnosisDialogTitle": {
+    "description": "Title for the edit diagnosis catalog term dialog in Clinical Services setup."
+  },
   "clinicalDiagnosisSearchLabel": "Search diagnosis",
   "@clinicalDiagnosisSearchLabel": {
     "description": "Clinical diagnosis search field label."
@@ -24713,6 +24717,10 @@
   "@labDuplicatePanelCodeMessage": {
     "description": "Validation message for duplicate lab panel codes."
   },
+  "labUpdateTestDialogTitle": "Edit Lab Test",
+  "@labUpdateTestDialogTitle": {
+    "description": "Dialog title for editing a lab test in Clinical Services setup."
+  },
   "labUpdatePanelDialogTitle": "Edit Lab Panel",
   "@labUpdatePanelDialogTitle": {
     "description": "Dialog title for editing a lab panel."
@@ -25159,6 +25167,10 @@
   "radiologyEditImagingTestAction": "Edit imaging test",
   "@radiologyEditImagingTestAction": {
     "description": "Radiology edit imaging test action."
+  },
+  "radiologyEditProcedureDialogTitle": "Edit Radiology procedure",
+  "@radiologyEditProcedureDialogTitle": {
+    "description": "Title for the edit radiology procedure dialog in Clinical Services setup."
   },
   "radiologyDeleteImagingTestAction": "Delete imaging test",
   "@radiologyDeleteImagingTestAction": {

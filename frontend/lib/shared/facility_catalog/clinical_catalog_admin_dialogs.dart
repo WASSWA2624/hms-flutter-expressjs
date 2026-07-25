@@ -508,7 +508,7 @@ class _RadiologyCatalogMutationDialogState
     return AppDialog(
       title: Text(
         widget.isEditing
-            ? l10n.clinicalLabRequestEditSelectionAction
+            ? l10n.radiologyEditProcedureDialogTitle
             : l10n.radiologyCreateImagingTestAction,
       ),
       icon: Icon(
@@ -668,8 +668,8 @@ class _LabCatalogItemMutationDialogState
       title: Text(
         widget.isEditing
             ? (isPanel
-                  ? l10n.labCreatePanelDialogTitle
-                  : l10n.labConfigureTestDialogTitle)
+                  ? l10n.labUpdatePanelDialogTitle
+                  : l10n.labUpdateTestDialogTitle)
             : (isPanel
                   ? l10n.labCreatePanelDialogTitle
                   : l10n.labCreateTestDialogTitle),
@@ -824,7 +824,7 @@ class _DiagnosisCatalogMutationDialogState
     return AppDialog(
       title: Text(
         widget.isEditing
-            ? l10n.clinicalDiagnosisFormTitle
+            ? l10n.clinicalEditDiagnosisDialogTitle
             : l10n.clinicalCreateDiagnosisAction,
       ),
       icon: Icon(
