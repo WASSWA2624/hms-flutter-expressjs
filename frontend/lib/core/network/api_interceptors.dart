@@ -145,7 +145,10 @@ final class CsrfInterceptor extends QueuedInterceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (err.response?.statusCode == 403 && _isCsrfFailure(err.response?.data)) {
+    if (err.response?.statusCode == 403 &&
+        _isCsrfFailure(err.response?.data)) {
+      // Drop the cached token so the next state-changing call fetches a
+      // fresh CSRF token bound to the current session cookie.
       _token = null;
     }
 
@@ -221,8 +224,23 @@ final class CsrfInterceptor extends QueuedInterceptor {
 
   static bool _isCsrfFailure(Object? payload) {
     if (payload case {'code': final String code}) {
-      final normalizedCode = code.toUpperCase();
-      return normalizedCode == 'MISSING' || normalizedCode == 'INVALID';
+      final String normalizedCode = code.toUpperCase();
+      if (normalizedCode == 'MISSING' ||
+          normalizedCode == 'INVALID' ||
+          normalizedCode == 'CSRF_MISSING' ||
+          normalizedCode == 'CSRF_INVALID') {
+        return true;
+      }
+    }
+
+    if (payload case {'type': final String type}) {
+      if (type.toLowerCase().contains('csrf')) {
+        return true;
+      }
+    }
+
+    if (payload case {'messageKey': final String messageKey}) {
+      return messageKey.toLowerCase().contains('csrf');
     }
 
     return false;

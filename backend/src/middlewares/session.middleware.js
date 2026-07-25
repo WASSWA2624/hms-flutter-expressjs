@@ -4,6 +4,10 @@
  * Provides session storage for CSRF tokens and other session data.
  * Uses simple in-memory session store for development.
  * Per auth-security.mdc: CSRF protection requires session storage.
+ *
+ * Session mutations are persisted immediately so a follow-up request
+ * (e.g. POST after GET /csrf-token) cannot race the response `finish`
+ * hook and validate against a stale CSRF token.
  */
 
 const sessions = new Map();
@@ -39,6 +43,19 @@ const store = {
   },
 
   /**
+   * Replace session data (no merge with prior keys).
+   *
+   * @param {string} sessionId - Session ID
+   * @param {Object} data - Session data
+   */
+  replace: (sessionId, data) => {
+    sessions.set(sessionId, {
+      ...data,
+      lastAccessed: Date.now()
+    });
+  },
+
+  /**
    * Delete session.
    *
    * @param {string} sessionId - Session ID
@@ -60,6 +77,34 @@ const store = {
       }
     }
   }
+};
+
+/**
+ * Persist session mutations as they happen so CSRF token reads cannot race
+ * the asynchronous response `finish` save.
+ *
+ * @param {string} sessionId
+ * @param {Object} sessionData
+ * @returns {Proxy}
+ */
+const createSessionProxy = (sessionId, sessionData) => {
+  const persist = () => {
+    const { lastAccessed: _ignored, ...data } = sessionData;
+    store.replace(sessionId, data);
+  };
+
+  return new Proxy(sessionData, {
+    set(target, prop, value) {
+      target[prop] = value;
+      persist();
+      return true;
+    },
+    deleteProperty(target, prop) {
+      delete target[prop];
+      persist();
+      return true;
+    }
+  });
 };
 
 /**
@@ -87,13 +132,17 @@ const sessionMiddleware = () => {
       });
     }
 
-    // Attach session to request
-    req.session = store.get(sessionId) || {};
+    const existing = store.get(sessionId) || {};
+    const { lastAccessed: _ignored, ...sessionData } = existing;
+
+    // Attach session to request (immediate-persist proxy)
+    req.session = createSessionProxy(sessionId, { ...sessionData });
     req.sessionId = sessionId;
 
-    // Save session on response
+    // Final flush on response end (covers in-place mutations of nested objects)
     res.on('finish', () => {
-      store.set(sessionId, req.session);
+      const { lastAccessed: _finishIgnored, ...data } = req.session || {};
+      store.replace(sessionId, data);
     });
 
     // Periodically clear expired sessions
@@ -106,3 +155,5 @@ const sessionMiddleware = () => {
 };
 
 module.exports = sessionMiddleware;
+module.exports._store = store;
+module.exports._createSessionProxy = createSessionProxy;

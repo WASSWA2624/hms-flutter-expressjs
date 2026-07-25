@@ -137,6 +137,49 @@ void main() {
 
       expect(sentTokens, <Object?>['csrf-token-1', 'csrf-token-2']);
     });
+
+    test('clears cached token for problem-details CSRF codes', () async {
+      var tokenRequestCount = 0;
+      final tokenAdapter = _StaticHttpClientAdapter((_) {
+        tokenRequestCount += 1;
+        return ResponseBody.fromString(
+          '{"data":{"token":"csrf-token-$tokenRequestCount"}}',
+          200,
+          headers: <String, List<String>>{
+            Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+          },
+        );
+      });
+      var requestCount = 0;
+      final sentTokens = <Object?>[];
+      final requestAdapter = _StaticHttpClientAdapter((options) {
+        requestCount += 1;
+        sentTokens.add(options.headers[csrfHeaderName]);
+        if (requestCount == 1) {
+          return ResponseBody.fromString(
+            '{"code":"INVALID","type":"urn:problem-type:hms:INVALID","messageKey":"errors.csrf.invalid"}',
+            403,
+            headers: <String, List<String>>{
+              Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+            },
+          );
+        }
+        return ResponseBody.fromString('{}', 200);
+      });
+      final tokenDio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = tokenAdapter;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = requestAdapter
+        ..interceptors.add(CsrfInterceptor(tokenDio: tokenDio));
+
+      await expectLater(
+        dio.post<Object?>('/api/v1/lab-tests'),
+        throwsA(isA<DioException>()),
+      );
+      await dio.post<Object?>('/api/v1/lab-tests');
+
+      expect(sentTokens, <Object?>['csrf-token-1', 'csrf-token-2']);
+    });
   });
 
   group('SafeDiagnosticsInterceptor', () {
