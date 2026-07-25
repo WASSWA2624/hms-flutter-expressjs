@@ -153,6 +153,7 @@ describe('Radiology Test Service', () => {
         expect.any(Object),
         10, // skip: (2-1) * 10
         10,
+        expect.any(Object),
         expect.any(Object)
       );
     });
@@ -318,8 +319,7 @@ describe('Radiology Test Service', () => {
         { tenant_id: createData.tenant_id },
         0,
         7500,
-        { name: 'asc' },
-      expect.any(Object)
+        { name: 'asc' }
       );
     });
 
@@ -707,6 +707,100 @@ describe('Radiology Test Service', () => {
       await expect(
         radiologyProcedureService.deleteRadiologyProcedure(radiologyTestId, 'user-id', '127.0.0.1')
       ).rejects.toThrow(httpError);
+    });
+  });
+
+  describe('restoreRadiologyProcedure', () => {
+    const radiologyTestId = '550e8400-e29b-41d4-a716-446655440000';
+    const softDeleted = {
+      id: radiologyTestId,
+      name: 'Chest X-Ray',
+      deleted_at: new Date('2026-01-01T00:00:00.000Z'),
+      tenant: { id: 'tenant-1', name: 'Acme Health' }
+    };
+    const restored = {
+      ...softDeleted,
+      deleted_at: null
+    };
+
+    it('restores a soft-deleted radiology procedure', async () => {
+      radiologyProcedureRepository.findById.mockResolvedValue(softDeleted);
+      radiologyProcedureRepository.restore.mockResolvedValue(restored);
+      createAuditLog.mockResolvedValue({});
+
+      const result = await radiologyProcedureService.restoreRadiologyProcedure(
+        radiologyTestId,
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(radiologyProcedureRepository.restore).toHaveBeenCalledWith(radiologyTestId);
+      expect(result).toMatchObject({
+        id: radiologyTestId,
+        deleted_at: null,
+        tenant_name: 'Acme Health'
+      });
+    });
+
+    it('rejects restore when procedure is not soft-deleted', async () => {
+      radiologyProcedureRepository.findById.mockResolvedValue({
+        id: radiologyTestId,
+        deleted_at: null
+      });
+
+      await expect(
+        radiologyProcedureService.restoreRadiologyProcedure(
+          radiologyTestId,
+          'user-id',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({
+        message: 'errors.radiology_test.not_found',
+        statusCode: 404
+      });
+    });
+  });
+
+  describe('permanentDeleteRadiologyProcedure', () => {
+    const radiologyTestId = '550e8400-e29b-41d4-a716-446655440000';
+    const softDeleted = {
+      id: radiologyTestId,
+      name: 'Chest X-Ray',
+      deleted_at: new Date('2026-01-01T00:00:00.000Z')
+    };
+
+    it('permanently deletes a soft-deleted radiology procedure', async () => {
+      radiologyProcedureRepository.findById.mockResolvedValue(softDeleted);
+      radiologyProcedureRepository.permanentDelete.mockResolvedValue(undefined);
+      createAuditLog.mockResolvedValue({});
+
+      await radiologyProcedureService.permanentDeleteRadiologyProcedure(
+        radiologyTestId,
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(radiologyProcedureRepository.permanentDelete).toHaveBeenCalledWith(
+        radiologyTestId
+      );
+    });
+
+    it('rejects permanent delete when procedure is still active', async () => {
+      radiologyProcedureRepository.findById.mockResolvedValue({
+        id: radiologyTestId,
+        deleted_at: null
+      });
+
+      await expect(
+        radiologyProcedureService.permanentDeleteRadiologyProcedure(
+          radiologyTestId,
+          'user-id',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({
+        message: 'errors.radiology_test.permanent_delete_requires_soft_delete',
+        statusCode: 400
+      });
     });
   });
 });

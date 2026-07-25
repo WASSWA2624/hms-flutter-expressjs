@@ -5,9 +5,15 @@
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Delete | Row actions (`clinicalRadiologyDeleteSelectionAction`) | `LabDeleteReasonDialog` titled with `radiologyDisableOfferingDialogTitle`; submit **Delete**; calls `deleteRadiologyCatalogTest`. |
+| Delete | Active row actions (`clinicalRadiologyDeleteSelectionAction`) | `AppConfirmActionDialog` titled `radiologySoftDeleteProcedureDialogTitle`; body names tenant catalog scope; submit **Delete**; soft-deletes via `deleteRadiologyCatalogProcedure`. |
+| Restore | Soft-deleted row actions (`radiologyRestoreProcedureAction`) | `AppConfirmActionDialog`; calls `restoreRadiologyCatalogProcedure`. |
+| Permanent delete | Soft-deleted row actions (`radiologyPermanentDeleteProcedureAction`) | Type-name `AppTextInputActionDialog`, then `AppConfirmActionDialog`; calls `permanentDeleteRadiologyCatalogProcedure`. |
+
+**Columns:** name, code, modality, **Deletion status** (`Active` / `Soft deleted`), actions.
 
 **Filter groups:** modality (from loaded rows).
+
+List loads with `includeDeleted: true` so soft-deleted procedures remain visible.
 
 ### `RadiologyCatalogMutationDialog` (create / edit)
 
@@ -141,13 +147,19 @@ Opened after Configure → Next when the Diagnoses nested tab is active. Title: 
 
 ---
 
-## Delete confirms (`LabDeleteReasonDialog`)
+## Delete confirms
 
-Used for radiology / lab / diagnosis global catalog deletes from this panel. Call sites pass `showCancelButton: false` (default).
+### Radiology catalog soft-delete / restore / permanent-delete
+
+Uses shared Admin Setup dialogs (`AppConfirmActionDialog` / `AppTextInputActionDialog`). Soft-delete copy states tenant catalog ownership (not facility offering removal). Permanent delete requires soft-delete first and type-name confirmation.
+
+### Lab / diagnosis deletes (`LabDeleteReasonDialog`)
+
+Used for lab / diagnosis global catalog deletes from this panel. Call sites pass `showCancelButton: false` (default).
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Submit (dynamic label) | Footer primary | Confirms delete after required reason text: **Delete** (radiology / diagnosis), **Delete test**, or **Delete panel**. |
+| Submit (dynamic label) | Footer primary | Confirms delete after required reason text: **Delete test**, **Delete panel**, or **Delete** (diagnosis). |
 | Close | Title bar | Aborts (no footer Cancel on this screen’s call sites). |
 
 ---
@@ -173,8 +185,10 @@ Used for radiology / lab / diagnosis global catalog deletes from this panel. Cal
   - Diagnoses → `DiagnosisEnableFacilityOfferingDialog` (row enable; no nested price dialog)
 - Add / Create (no tenant) → **Select tenant and facility** → category mutation dialog
 - Add / Create (tenant present) → category mutation dialog
-- Edit / row select → category mutation dialog
-- Delete → `LabDeleteReasonDialog`
+- Edit / row select → category mutation dialog (radiology skips soft-deleted / standard rows)
+- Radiology Delete (active) → soft-delete `AppConfirmActionDialog` (tenant catalog scope copy)
+- Radiology Restore / Permanent delete (soft-deleted) → restore confirm / type-name + permanent confirm
+- Lab / Diagnoses Delete → `LabDeleteReasonDialog`
 
 ---
 

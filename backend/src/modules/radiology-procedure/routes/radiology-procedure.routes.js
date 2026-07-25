@@ -133,29 +133,6 @@ router.put(
 );
 
 /**
- * @description Delete radiology procedure (soft delete)
- * @method DELETE
- * @route /api/v1/radiology-procedures/:id
- * @authentication Required (JWT)
- * @permissions radiology:write or tenant/facility/system admin
- * @urlParams {string} id - Radiology procedure ID (UUID)
- * @queryParams None
- * @bodyParams None
- * @returns {Object} Soft-deleted radiology procedure
- * @throws 401 Unauthorized
- * @throws 403 Forbidden
- * @throws 404 Radiology procedure not found
- */
-router.delete(
-  '/:id',
-  validateRequest({ params: radiologyProcedureIdParamsSchema }),
-
-  authenticate(),
-  authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
-  radiologyProcedureController.deleteRadiologyProcedure
-);
-
-/**
  * @description Restore soft-deleted radiology procedure
  * @method POST
  * @route /api/v1/radiology-procedures/:id/restore
@@ -195,6 +172,29 @@ router.delete(
   authenticate(),
   authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
   radiologyProcedureController.permanentDeleteRadiologyProcedure
+);
+
+/**
+ * @description Delete radiology procedure (soft delete)
+ * @method DELETE
+ * @route /api/v1/radiology-procedures/:id
+ * @authentication Required (JWT)
+ * @permissions radiology:write or tenant/facility/system admin
+ * @urlParams {string} id - Radiology procedure ID (UUID)
+ * @queryParams None
+ * @bodyParams None
+ * @returns {Object} Soft-deleted radiology procedure
+ * @throws 401 Unauthorized
+ * @throws 403 Forbidden
+ * @throws 404 Radiology procedure not found
+ */
+router.delete(
+  '/:id',
+  validateRequest({ params: radiologyProcedureIdParamsSchema }),
+
+  authenticate(),
+  authorize(RADIOLOGY_CATALOG_WRITE_SCOPES, 'permission'),
+  radiologyProcedureController.deleteRadiologyProcedure
 );
 
 module.exports = router;
