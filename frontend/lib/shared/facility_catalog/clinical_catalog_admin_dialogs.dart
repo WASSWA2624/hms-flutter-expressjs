@@ -650,6 +650,11 @@ class _RadiologyCatalogMutationDialogState
 
     final bool continueSave = await showRadiologyCatalogNoSimilarDialog(
       context,
+      proposed: RadiologyCatalogProposedTest(
+        name: proposedName,
+        code: proposedCode,
+        modality: proposedModality,
+      ),
     );
     if (!mounted) {
       return false;

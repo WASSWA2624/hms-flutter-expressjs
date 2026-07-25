@@ -162,7 +162,10 @@ showRadiologyCatalogSimilarityDialog(
   );
 }
 
-Future<bool> showRadiologyCatalogNoSimilarDialog(BuildContext context) {
+Future<bool> showRadiologyCatalogNoSimilarDialog(
+  BuildContext context, {
+  required RadiologyCatalogProposedTest proposed,
+}) {
   final AppLocalizations l10n = context.l10n;
 
   return showAppDialog<bool>(
@@ -173,13 +176,20 @@ Future<bool> showRadiologyCatalogNoSimilarDialog(BuildContext context) {
       return AppDialog(
         title: Text(l10n.radiologyNoSimilarProcedureDialogTitle),
         icon: const Icon(Icons.verified_outlined),
-        scrollable: true,
-        maxWidth: 520,
-        content: Text(
-          l10n.radiologyNoSimilarProcedureDialogBody,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        maxWidth: 560,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            AppFormInformationBanner(
+              title: l10n.radiologyNoSimilarProcedureBannerTitle,
+              message: l10n.radiologyNoSimilarProcedureDialogBody,
+              variant: AppFormInformationVariant.success,
+              icon: Icons.verified_outlined,
+            ),
+            SizedBox(height: theme.spacing.md),
+            _ProposedTestCard(proposed: proposed),
+          ],
         ),
         actions: <Widget>[
           AppButton.tertiary(

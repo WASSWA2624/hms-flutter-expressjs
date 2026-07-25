@@ -19741,8 +19741,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'No similar procedure found';
 
   @override
+  String get radiologyNoSimilarProcedureBannerTitle =>
+      'Match status: No similar found';
+
+  @override
   String get radiologyNoSimilarProcedureDialogBody =>
-      'No similar procedures were found in this catalog scope. Continue saving this procedure?';
+      'Review the procedure details below. No similar procedures were found in this catalog scope.';
 
   @override
   String get radiologyContinueSaveProcedureAction => 'Continue save';

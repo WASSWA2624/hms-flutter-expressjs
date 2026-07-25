@@ -25330,7 +25330,11 @@
   "@radiologyNoSimilarProcedureDialogTitle": {
     "description": "Dialog title when similarity check finds no near matches before save."
   },
-  "radiologyNoSimilarProcedureDialogBody": "No similar procedures were found in this catalog scope. Continue saving this procedure?",
+  "radiologyNoSimilarProcedureBannerTitle": "Match status: No similar found",
+  "@radiologyNoSimilarProcedureBannerTitle": {
+    "description": "Banner title when similarity check finds no near matches before save."
+  },
+  "radiologyNoSimilarProcedureDialogBody": "Review the procedure details below. No similar procedures were found in this catalog scope.",
   "@radiologyNoSimilarProcedureDialogBody": {
     "description": "Dialog body confirming no similar procedures before save."
   },

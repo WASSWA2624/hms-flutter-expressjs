@@ -36712,10 +36712,16 @@ abstract class AppLocalizations {
   /// **'No similar procedure found'**
   String get radiologyNoSimilarProcedureDialogTitle;
 
+  /// Banner title when similarity check finds no near matches before save.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get radiologyNoSimilarProcedureBannerTitle;
+
   /// Dialog body confirming no similar procedures before save.
   ///
   /// In en, this message translates to:
-  /// **'No similar procedures were found in this catalog scope. Continue saving this procedure?'**
+  /// **'Review the procedure details below. No similar procedures were found in this catalog scope.'**
   String get radiologyNoSimilarProcedureDialogBody;
 
   /// Confirm saving a procedure after a no-similar-match check.
