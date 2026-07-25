@@ -19076,6 +19076,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labGenderAnyLabel => 'All genders';
 
   @override
+  String get labAgeApplicabilityLabel => 'Age applicability';
+
+  @override
+  String get labAgeAnyLabel => 'All ages';
+
+  @override
+  String get labAgeAnyHelper =>
+      'Age min, max, and unit are cleared while All ages is selected.';
+
+  @override
   String get labGenderMaleLabel => 'Male';
 
   @override

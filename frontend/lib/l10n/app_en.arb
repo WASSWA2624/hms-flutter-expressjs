@@ -24481,6 +24481,18 @@
   "@labGenderAnyLabel": {
     "description": "Gender applicability option that covers every gender for a lab reference range."
   },
+  "labAgeApplicabilityLabel": "Age applicability",
+  "@labAgeApplicabilityLabel": {
+    "description": "Section label for lab reference-range age applicability."
+  },
+  "labAgeAnyLabel": "All ages",
+  "@labAgeAnyLabel": {
+    "description": "Age applicability option that covers every age for a lab reference range."
+  },
+  "labAgeAnyHelper": "Age min, max, and unit are cleared while All ages is selected.",
+  "@labAgeAnyHelper": {
+    "description": "Helper text shown when All ages is selected on a lab reference range."
+  },
   "labGenderMaleLabel": "Male",
   "@labGenderMaleLabel": {
     "description": "Localized text for labGenderMaleLabel."

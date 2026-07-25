@@ -35593,6 +35593,24 @@ abstract class AppLocalizations {
   /// **'All genders'**
   String get labGenderAnyLabel;
 
+  /// Section label for lab reference-range age applicability.
+  ///
+  /// In en, this message translates to:
+  /// **'Age applicability'**
+  String get labAgeApplicabilityLabel;
+
+  /// Age applicability option that covers every age for a lab reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'All ages'**
+  String get labAgeAnyLabel;
+
+  /// Helper text shown when All ages is selected on a lab reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Age min, max, and unit are cleared while All ages is selected.'**
+  String get labAgeAnyHelper;
+
   /// Localized text for labGenderMaleLabel.
   ///
   /// In en, this message translates to:
