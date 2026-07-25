@@ -1,5 +1,5 @@
 ---
-description: Always enforce loading feedback, realtime UI sync, and access checks on every change.
+description: Always enforce loading feedback, realtime UI sync, migrations, and access checks.
 alwaysApply: true
 ---
 
@@ -22,6 +22,12 @@ Apply on every code change. Do not ship UI or API work that skips these.
 - Prefer smallest patch over blanket `ref.invalidate`; must not navigate, toast, or `setState` from realtime handlers.
 - When a change touches both stacks, keep contracts aligned and publish scoped domain events for user-visible mutations.
 
+## Database migrations
+
+- Any Prisma schema or database structure change must create a migration and apply it so the local/dev database stays current (`npm run prisma:migrate` / `prisma migrate dev` in `backend/`).
+- Commit migration files with the schema change; do not leave drift between `schema.prisma` and applied migrations.
+- Destructive migrations require a documented rollback plan; prefer a new reversing migration over editing applied ones.
+
 ## Access control
 
 - Enforce role-based and action-based permissions for every new or changed surface.
@@ -31,4 +37,5 @@ Apply on every code change. Do not ship UI or API work that skips these.
 ## Related
 
 - `frontend/.cursor/ui-feedback.mdc`, `frontend/.cursor/instant_ui_sync.mdc`, `frontend/.cursor/realtime_sync.mdc`
+- `backend/.cursor/prisma.mdc`
 - `.cursor/access/permissions.mdc`, `frontend/.cursor/permissions.mdc`
