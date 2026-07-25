@@ -36523,6 +36523,48 @@ abstract class AppLocalizations {
   /// **'Create imaging test'**
   String get radiologyCreateImagingTestAction;
 
+  /// Dialog title when creating an imaging test similar to an existing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar imaging test found'**
+  String get radiologySimilarImagingTestDialogTitle;
+
+  /// Dialog body when creating an imaging test similar to an existing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar imaging tests exist in this catalog scope. Review matches before continuing.'**
+  String get radiologySimilarImagingTestDialogBody;
+
+  /// Similarity score label for imaging test duplicate warning.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}% match'**
+  String radiologySimilarImagingTestScoreLabel(int score);
+
+  /// Dismiss create and keep an existing similar imaging test.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing'**
+  String get radiologyUseExistingImagingTestAction;
+
+  /// Confirm create imaging test despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Proceed create'**
+  String get radiologyProceedCreateImagingTestAction;
+
+  /// Inline validation when imaging test name duplicates an existing test.
+  ///
+  /// In en, this message translates to:
+  /// **'An imaging test with this name already exists.'**
+  String get radiologyImagingTestNameAlreadyInUse;
+
+  /// Inline validation when imaging test code duplicates an existing test.
+  ///
+  /// In en, this message translates to:
+  /// **'An imaging test with this code already exists.'**
+  String get radiologyImagingTestCodeAlreadyInUse;
+
   /// Radiology edit imaging test action.
   ///
   /// In en, this message translates to:

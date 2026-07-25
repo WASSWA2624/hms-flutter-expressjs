@@ -16,6 +16,9 @@ const {
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload} = require('@lib/identifiers/service-identifier-resolution');
+const {
+  checkRadiologyTestDuplicates
+} = require('@lib/radiology/radiology-test-similarity');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -613,13 +616,61 @@ const getRadiologyTestById = async (id, userId, ipAddress) => {
  */
 const createRadiologyTest = async (data, userId, ipAddress) => {
   try {
+    const confirmSimilar = data?.confirm_similar === true;
+    const tenantId = await resolveIdentifierForPayload({
+      value: data.tenant_id,
+      field: 'tenant_id',
+      model: 'tenant',
+      where: { deleted_at: null }});
+
+    const existingDbTests = await radiologyTestRepository.findMany(
+      { tenant_id: tenantId },
+      0,
+      7500,
+      { name: 'asc' }
+    );
+    const standardCandidates = Object.entries(STANDARD_RADIOLOGY_TESTS).map(
+      ([key, definition]) => ({
+        id: standardRadiologyTestId(key),
+        name: definition.name,
+        code: definition.code,
+        modality: definition.modality
+      })
+    );
+    const duplicateCheck = checkRadiologyTestDuplicates({
+      name: data.name,
+      code: data.code,
+      existing: [...existingDbTests, ...standardCandidates]
+    });
+
+    if (duplicateCheck.exactNameConflict) {
+      throw new HttpError('errors.radiology_test.duplicate_name', 409, [
+        { field: 'name' }
+      ]);
+    }
+    if (duplicateCheck.exactCodeConflict) {
+      throw new HttpError('errors.radiology_test.duplicate_code', 409, [
+        { field: 'code' }
+      ]);
+    }
+    if (
+      duplicateCheck.nonExactSimilarMatches.length > 0
+      && !confirmSimilar
+    ) {
+      throw new HttpError('errors.radiology_test.similar_exists', 409, [
+        {
+          field: 'name',
+          matches: duplicateCheck.nonExactSimilarMatches.slice(0, 5)
+        }
+      ]);
+    }
+
     const normalizedData = {
-      ...data,
-      tenant_id: await resolveIdentifierForPayload({
-        value: data.tenant_id,
-        field: 'tenant_id',
-        model: 'tenant',
-        where: { deleted_at: null }})};
+      tenant_id: tenantId,
+      name: data.name,
+      code: data.code,
+      modality: data.modality
+    };
     const radiologyTest = await radiologyTestRepository.create(normalizedData);
 
     // Create audit log (non-blocking)

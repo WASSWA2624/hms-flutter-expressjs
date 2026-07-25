@@ -276,8 +276,8 @@ describe('Radiology Test Service', () => {
   describe('createRadiologyTest', () => {
     const createData = {
       tenant_id: '550e8400-e29b-41d4-a716-446655440001',
-      name: 'Chest X-Ray',
-      code: 'CXR-001',
+      name: 'Zzyx Custom Imaging Alpha',
+      code: 'ZZYX-ALPHA-001',
       modality: 'XRAY'
     };
 
@@ -286,6 +286,10 @@ describe('Radiology Test Service', () => {
       ...createData
     };
 
+    beforeEach(() => {
+      radiologyTestRepository.findMany.mockResolvedValue([]);
+    });
+
     it('should create radiology test', async () => {
       radiologyTestRepository.create.mockResolvedValue(mockCreatedRadiologyTest);
       createAuditLog.mockResolvedValue({});
@@ -293,7 +297,18 @@ describe('Radiology Test Service', () => {
       const result = await radiologyTestService.createRadiologyTest(createData, 'user-id', '127.0.0.1');
 
       expect(result).toEqual(mockCreatedRadiologyTest);
-      expect(radiologyTestRepository.create).toHaveBeenCalledWith(createData);
+      expect(radiologyTestRepository.create).toHaveBeenCalledWith({
+        tenant_id: createData.tenant_id,
+        name: createData.name,
+        code: createData.code,
+        modality: createData.modality
+      });
+      expect(radiologyTestRepository.findMany).toHaveBeenCalledWith(
+        { tenant_id: createData.tenant_id },
+        0,
+        7500,
+        { name: 'asc' }
+      );
     });
 
     it('should create audit log on success', async () => {
@@ -319,6 +334,90 @@ describe('Radiology Test Service', () => {
       const result = await radiologyTestService.createRadiologyTest(createData, 'user-id', '127.0.0.1');
 
       expect(result).toEqual(mockCreatedRadiologyTest);
+    });
+
+    it('should reject exact name duplicates', async () => {
+      radiologyTestRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-1',
+          name: 'Zzyx Custom Imaging Alpha',
+          code: 'OTHER',
+          modality: 'XRAY'
+        }
+      ]);
+
+      await expect(
+        radiologyTestService.createRadiologyTest(createData, 'user-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        message: 'errors.radiology_test.duplicate_name',
+        statusCode: 409
+      });
+      expect(radiologyTestRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should reject exact code duplicates', async () => {
+      radiologyTestRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-1',
+          name: 'Different Name',
+          code: 'zzyx-alpha-001',
+          modality: 'XRAY'
+        }
+      ]);
+
+      await expect(
+        radiologyTestService.createRadiologyTest(createData, 'user-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        message: 'errors.radiology_test.duplicate_code',
+        statusCode: 409
+      });
+      expect(radiologyTestRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should reject similar names without confirm_similar', async () => {
+      radiologyTestRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-1',
+          name: 'Zzyx Custom Imaging Alph',
+          code: 'OTHER',
+          modality: 'XRAY'
+        }
+      ]);
+
+      await expect(
+        radiologyTestService.createRadiologyTest(createData, 'user-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        message: 'errors.radiology_test.similar_exists',
+        statusCode: 409
+      });
+      expect(radiologyTestRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should create when confirm_similar is true for near matches', async () => {
+      radiologyTestRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-1',
+          name: 'Zzyx Custom Imaging Alph',
+          code: 'OTHER',
+          modality: 'XRAY'
+        }
+      ]);
+      radiologyTestRepository.create.mockResolvedValue(mockCreatedRadiologyTest);
+      createAuditLog.mockResolvedValue({});
+
+      const result = await radiologyTestService.createRadiologyTest(
+        { ...createData, confirm_similar: true },
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(result).toEqual(mockCreatedRadiologyTest);
+      expect(radiologyTestRepository.create).toHaveBeenCalledWith({
+        tenant_id: createData.tenant_id,
+        name: createData.name,
+        code: createData.code,
+        modality: createData.modality
+      });
     });
 
     it('should handle repository errors', async () => {

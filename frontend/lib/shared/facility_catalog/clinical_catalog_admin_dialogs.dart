@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
+import 'package:hosspi_hms/features/radiology/domain/entities/radiology_catalog_similarity.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -15,6 +16,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_similarity_dialog.dart';
 
 typedef CatalogTenantOptionsLoader = Future<List<TenantProfile>> Function();
 typedef CatalogFacilityOptionsLoader =
@@ -433,11 +435,13 @@ class RadiologyCatalogMutationDialog extends StatefulWidget {
     required this.onSubmit,
     this.item,
     this.tenantId,
+    this.existingItems = const <RadiologyCatalogTest>[],
     super.key,
   });
 
   final RadiologyCatalogTest? item;
   final String? tenantId;
+  final List<RadiologyCatalogTest> existingItems;
   final ClinicalCatalogTermSubmit onSubmit;
 
   bool get isEditing => item != null;
@@ -454,7 +458,10 @@ class _RadiologyCatalogMutationDialogState
   late final TextEditingController _codeController;
   String? _modality;
   AppFailure? _failure;
+  String? _nameErrorText;
+  String? _codeErrorText;
   bool _isSaving = false;
+  bool _similarityAccepted = false;
 
   @override
   void initState() {
@@ -465,13 +472,81 @@ class _RadiologyCatalogMutationDialogState
     _modality = item?.modality?.trim().isNotEmpty == true
         ? item!.modality!.trim().toUpperCase()
         : null;
+    _nameController.addListener(_clearSimilarityState);
+    _codeController.addListener(_clearSimilarityState);
   }
 
   @override
   void dispose() {
+    _nameController.removeListener(_clearSimilarityState);
+    _codeController.removeListener(_clearSimilarityState);
     _nameController.dispose();
     _codeController.dispose();
     super.dispose();
+  }
+
+  void _clearSimilarityState() {
+    if (!_similarityAccepted &&
+        _nameErrorText == null &&
+        _codeErrorText == null) {
+      return;
+    }
+    setState(() {
+      _similarityAccepted = false;
+      _nameErrorText = null;
+      _codeErrorText = null;
+    });
+  }
+
+  Future<bool> _guardCreateAgainstDuplicates(AppLocalizations l10n) async {
+    final RadiologyCatalogDuplicateCheckResult result =
+        checkRadiologyCatalogDuplicates(
+          name: _nameController.text.trim(),
+          code: _codeController.text.trim(),
+          existing: widget.existingItems,
+          excludeTestId: widget.item?.apiId,
+        );
+
+    if (result.hasExactConflict) {
+      setState(() {
+        _nameErrorText = result.exactNameConflict
+            ? l10n.radiologyImagingTestNameAlreadyInUse
+            : null;
+        _codeErrorText = result.exactCodeConflict
+            ? l10n.radiologyImagingTestCodeAlreadyInUse
+            : null;
+        _failure = null;
+        _isSaving = false;
+      });
+      return false;
+    }
+
+    final List<RadiologyCatalogSimilarityMatch> similarMatches =
+        result.nonExactSimilarMatches;
+    if (similarMatches.isEmpty || _similarityAccepted) {
+      return true;
+    }
+
+    final RadiologyCatalogSimilarityAction action =
+        await showRadiologyCatalogSimilarityDialog(
+          context,
+          matches: similarMatches,
+        );
+    if (!mounted) {
+      return false;
+    }
+
+    switch (action) {
+      case RadiologyCatalogSimilarityAction.cancel:
+        setState(() => _isSaving = false);
+        return false;
+      case RadiologyCatalogSimilarityAction.useExisting:
+        Navigator.of(context).pop(false);
+        return false;
+      case RadiologyCatalogSimilarityAction.proceed:
+        setState(() => _similarityAccepted = true);
+        return true;
+    }
   }
 
   Future<void> _submit() async {
@@ -481,9 +556,21 @@ class _RadiologyCatalogMutationDialogState
     setState(() {
       _isSaving = true;
       _failure = null;
+      _nameErrorText = null;
+      _codeErrorText = null;
     });
+
+    final AppLocalizations l10n = context.l10n;
+    if (!widget.isEditing) {
+      final bool mayCreate = await _guardCreateAgainstDuplicates(l10n);
+      if (!mounted || !mayCreate) {
+        return;
+      }
+    }
+
     final Map<String, Object?> payload = <String, Object?>{
       if (!widget.isEditing) 'tenant_id': widget.tenantId,
+      if (!widget.isEditing && _similarityAccepted) 'confirm_similar': true,
       'name': _nameController.text.trim(),
       'code': _codeController.text.trim(),
       'modality': _modality,
@@ -531,6 +618,7 @@ class _RadiologyCatalogMutationDialogState
               labelText: l10n.radiologyTestNameLabel,
               enabled: !_isSaving,
               isRequired: true,
+              errorText: _nameErrorText,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
             AppResponsiveFieldRow.two(
@@ -539,6 +627,7 @@ class _RadiologyCatalogMutationDialogState
                 controller: _codeController,
                 labelText: l10n.labTestCodeLabel,
                 enabled: !_isSaving,
+                errorText: _codeErrorText,
               ),
               right: AppSelectField<String>.searchable(
                 value: _modality,
@@ -551,7 +640,10 @@ class _RadiologyCatalogMutationDialogState
                 ],
                 validator: AppValidators.requiredValue(l10n.validationRequired),
                 onChanged: (String? value) {
-                  setState(() => _modality = value);
+                  setState(() {
+                    _modality = value;
+                    _similarityAccepted = false;
+                  });
                 },
               ),
             ),

@@ -72,6 +72,7 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
   @override
   Future<Result<List<RadiologyCatalogTest>>> listRadiologyCatalogTests({
     String? search,
+    String? tenantId,
     bool includeStandardCatalog = true,
     int limit = 100,
   }) {
@@ -80,6 +81,7 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': 1,
         'search': search,
+        'tenant_id': tenantId,
         'include_standard_catalog': includeStandardCatalog,
         'limit': limit,
         'sort_by': 'name',

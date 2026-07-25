@@ -60,7 +60,8 @@ const createRadiologyTestSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   name: z.string().trim().min(1).max(255),
   code: z.string().trim().max(80).optional().nullable(),
-  modality: imagingModalitySchema
+  modality: imagingModalitySchema,
+  confirm_similar: optionalBooleanSchema
 });
 
 /**

@@ -25164,6 +25164,39 @@
   "@radiologyCreateImagingTestAction": {
     "description": "Radiology create imaging test action."
   },
+  "radiologySimilarImagingTestDialogTitle": "Similar imaging test found",
+  "@radiologySimilarImagingTestDialogTitle": {
+    "description": "Dialog title when creating an imaging test similar to an existing one."
+  },
+  "radiologySimilarImagingTestDialogBody": "Similar imaging tests exist in this catalog scope. Review matches before continuing.",
+  "@radiologySimilarImagingTestDialogBody": {
+    "description": "Dialog body when creating an imaging test similar to an existing one."
+  },
+  "radiologySimilarImagingTestScoreLabel": "{score}% match",
+  "@radiologySimilarImagingTestScoreLabel": {
+    "description": "Similarity score label for imaging test duplicate warning.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "radiologyUseExistingImagingTestAction": "Use existing",
+  "@radiologyUseExistingImagingTestAction": {
+    "description": "Dismiss create and keep an existing similar imaging test."
+  },
+  "radiologyProceedCreateImagingTestAction": "Proceed create",
+  "@radiologyProceedCreateImagingTestAction": {
+    "description": "Confirm create imaging test despite similar matches."
+  },
+  "radiologyImagingTestNameAlreadyInUse": "An imaging test with this name already exists.",
+  "@radiologyImagingTestNameAlreadyInUse": {
+    "description": "Inline validation when imaging test name duplicates an existing test."
+  },
+  "radiologyImagingTestCodeAlreadyInUse": "An imaging test with this code already exists.",
+  "@radiologyImagingTestCodeAlreadyInUse": {
+    "description": "Inline validation when imaging test code duplicates an existing test."
+  },
   "radiologyEditImagingTestAction": "Edit imaging test",
   "@radiologyEditImagingTestAction": {
     "description": "Radiology edit imaging test action."

@@ -19626,6 +19626,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyCreateImagingTestAction => 'Create imaging test';
 
   @override
+  String get radiologySimilarImagingTestDialogTitle =>
+      'Similar imaging test found';
+
+  @override
+  String get radiologySimilarImagingTestDialogBody =>
+      'Similar imaging tests exist in this catalog scope. Review matches before continuing.';
+
+  @override
+  String radiologySimilarImagingTestScoreLabel(int score) {
+    return '$score% match';
+  }
+
+  @override
+  String get radiologyUseExistingImagingTestAction => 'Use existing';
+
+  @override
+  String get radiologyProceedCreateImagingTestAction => 'Proceed create';
+
+  @override
+  String get radiologyImagingTestNameAlreadyInUse =>
+      'An imaging test with this name already exists.';
+
+  @override
+  String get radiologyImagingTestCodeAlreadyInUse =>
+      'An imaging test with this code already exists.';
+
+  @override
   String get radiologyEditImagingTestAction => 'Edit imaging test';
 
   @override
