@@ -16,23 +16,67 @@ class LabAgeBandPreset {
     required this.min,
     required this.max,
     required this.unit,
+    required this.defaultLabel,
   });
 
   final String id;
   final int? min;
   final int? max;
   final String unit;
+  final String defaultLabel;
 }
 
 /// Standard catalog age bands used as quick-fill presets.
 const List<LabAgeBandPreset> kLabAgeBandPresets = <LabAgeBandPreset>[
-  LabAgeBandPreset(id: 'neonate', min: 0, max: 28, unit: 'DAY'),
-  LabAgeBandPreset(id: 'infant', min: 1, max: 12, unit: 'MONTH'),
-  LabAgeBandPreset(id: 'child', min: 1, max: 12, unit: 'YEAR'),
-  LabAgeBandPreset(id: 'adolescent', min: 13, max: 17, unit: 'YEAR'),
-  LabAgeBandPreset(id: 'adult', min: 18, max: 64, unit: 'YEAR'),
-  LabAgeBandPreset(id: 'geriatric', min: 65, max: null, unit: 'YEAR'),
-  LabAgeBandPreset(id: 'pediatric', min: 0, max: 17, unit: 'YEAR'),
+  LabAgeBandPreset(
+    id: 'neonate',
+    min: 0,
+    max: 28,
+    unit: 'DAY',
+    defaultLabel: 'Neonate',
+  ),
+  LabAgeBandPreset(
+    id: 'infant',
+    min: 1,
+    max: 12,
+    unit: 'MONTH',
+    defaultLabel: 'Infant',
+  ),
+  LabAgeBandPreset(
+    id: 'child',
+    min: 1,
+    max: 12,
+    unit: 'YEAR',
+    defaultLabel: 'Child',
+  ),
+  LabAgeBandPreset(
+    id: 'adolescent',
+    min: 13,
+    max: 17,
+    unit: 'YEAR',
+    defaultLabel: 'Adolescent',
+  ),
+  LabAgeBandPreset(
+    id: 'adult',
+    min: 18,
+    max: 64,
+    unit: 'YEAR',
+    defaultLabel: 'Adult',
+  ),
+  LabAgeBandPreset(
+    id: 'geriatric',
+    min: 65,
+    max: null,
+    unit: 'YEAR',
+    defaultLabel: 'Geriatric',
+  ),
+  LabAgeBandPreset(
+    id: 'pediatric',
+    min: 0,
+    max: 17,
+    unit: 'YEAR',
+    defaultLabel: 'Pediatric',
+  ),
 ];
 
 String labAgeBandPresetLabel(AppLocalizations l10n, String id) {
@@ -77,6 +121,32 @@ IconData labAgeBandPresetIcon(String id) {
   }
 }
 
+/// Prefixed catalog labels for Range name (All ages first); allows free typing too.
+List<String> _labRangeNameOptions(AppLocalizations l10n, String current) {
+  final Set<String> seen = <String>{};
+  final List<String> result = <String>[];
+  for (final String? value in <String?>[
+    l10n.labAgeAnyLabel,
+    l10n.labNeonateRangeLabel,
+    l10n.labInfantRangeLabel,
+    l10n.labChildRangeLabel,
+    l10n.labAdolescentRangeLabel,
+    l10n.labAdultRangeLabel,
+    l10n.labGeriatricRangeLabel,
+    l10n.labPediatricRangeLabel,
+    current,
+  ]) {
+    final String trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      continue;
+    }
+    if (seen.add(trimmed.toLowerCase())) {
+      result.add(trimmed);
+    }
+  }
+  return result;
+}
+
 class EditableLabReferenceRange {
   EditableLabReferenceRange({
     LabReferenceRange? range,
@@ -115,7 +185,18 @@ class EditableLabReferenceRange {
        ageUnit = range?.ageMinUnit ?? range?.ageMaxUnit ?? 'YEAR',
        // New ranges and ranges without bounds default to All ages.
        allAges =
-           range?.ageMinValue == null && range?.ageMaxValue == null;
+           range?.ageMinValue == null && range?.ageMaxValue == null,
+       selectedAgePresetIds = <String>{} {
+    final String? matched = _matchPresetId(
+      ageMin: range?.ageMinValue?.toString(),
+      ageMax: range?.ageMaxValue?.toString(),
+      ageUnit: range?.ageMinUnit ?? range?.ageMaxUnit,
+      allAges: range?.ageMinValue == null && range?.ageMaxValue == null,
+    );
+    if (matched != null) {
+      selectedAgePresetIds.add(matched);
+    }
+  }
 
   String? id;
   final TextEditingController labelController;
@@ -134,8 +215,13 @@ class EditableLabReferenceRange {
   /// When true, age bounds are cleared and omitted from the payload.
   bool allAges;
 
+  /// Selected catalog age-band presets (multi-select). Empty when [allAges] or custom.
+  final Set<String> selectedAgePresetIds;
+
   bool get appliesToAllGenders =>
       gender == null || gender == kLabReferenceRangeAnyGender;
+
+  bool get hasMultipleAgePresets => selectedAgePresetIds.length > 1;
 
   void setAllGenders() {
     gender = kLabReferenceRangeAnyGender;
@@ -148,22 +234,74 @@ class EditableLabReferenceRange {
   void setAllAges({required bool value}) {
     allAges = value;
     if (value) {
+      selectedAgePresetIds.clear();
       ageMinController.clear();
       ageMaxController.clear();
     }
   }
 
-  /// Typing into age bounds turns off "All ages".
+  /// Typing into age bounds turns off "All ages" and clears preset multi-select.
   void syncAllAgesFromBounds() {
     final bool hasBound =
         ageMinController.text.trim().isNotEmpty ||
         ageMaxController.text.trim().isNotEmpty;
     if (hasBound) {
       allAges = false;
-    } else if (!allAges) {
-      // Both cleared while in specific mode → treat as all ages again.
+      // Custom edits leave preset multi-select only when still an exact single match.
+      final String? matched = matchingAgePresetId();
+      selectedAgePresetIds
+        ..clear()
+        ..addAll(<String>{if (matched != null) matched});
+    } else if (!allAges && selectedAgePresetIds.isEmpty) {
       allAges = true;
     }
+  }
+
+  /// Toggle a catalog age band. All ages is cleared when any preset is selected.
+  void toggleAgePreset(
+    LabAgeBandPreset preset, {
+    String? labelIfEmpty,
+    String? allAgesLabel,
+  }) {
+    if (selectedAgePresetIds.contains(preset.id)) {
+      selectedAgePresetIds.remove(preset.id);
+      if (selectedAgePresetIds.isEmpty) {
+        setAllAges(value: true);
+        return;
+      }
+      _syncBoundsFromSelectedPresets(
+        labelIfEmpty: labelIfEmpty,
+        allAgesLabel: allAgesLabel,
+      );
+      return;
+    }
+    allAges = false;
+    selectedAgePresetIds.add(preset.id);
+    _syncBoundsFromSelectedPresets(
+      labelIfEmpty: labelIfEmpty,
+      allAgesLabel: allAgesLabel,
+    );
+  }
+
+  void _syncBoundsFromSelectedPresets({
+    String? labelIfEmpty,
+    String? allAgesLabel,
+  }) {
+    if (selectedAgePresetIds.length != 1) {
+      // Multiple bands: bounds come from each preset on save.
+      ageMinController.clear();
+      ageMaxController.clear();
+      return;
+    }
+    final LabAgeBandPreset preset = kLabAgeBandPresets.firstWhere(
+      (LabAgeBandPreset item) => item.id == selectedAgePresetIds.single,
+    );
+    applyAgePreset(
+      preset,
+      labelIfEmpty: labelIfEmpty ?? preset.defaultLabel,
+      allAgesLabel: allAgesLabel,
+      replaceSelection: false,
+    );
   }
 
   /// Quick-fill age bounds from a catalog age band; optionally seed the range name
@@ -172,8 +310,14 @@ class EditableLabReferenceRange {
     LabAgeBandPreset preset, {
     String? labelIfEmpty,
     String? allAgesLabel,
+    bool replaceSelection = true,
   }) {
     allAges = false;
+    if (replaceSelection) {
+      selectedAgePresetIds
+        ..clear()
+        ..add(preset.id);
+    }
     ageUnit = preset.unit;
     ageMinController.text = preset.min?.toString() ?? '';
     ageMaxController.text = preset.max?.toString() ?? '';
@@ -189,14 +333,38 @@ class EditableLabReferenceRange {
     }
   }
 
-  /// Returns the matching preset id when current bounds equal a catalog band.
+  /// Returns the matching preset id when a single catalog band is selected or
+  /// current bounds equal exactly one catalog band.
   String? matchingAgePresetId() {
     if (allAges) {
       return null;
     }
+    if (selectedAgePresetIds.length == 1) {
+      return selectedAgePresetIds.single;
+    }
+    if (selectedAgePresetIds.length > 1) {
+      return null;
+    }
+    return _matchPresetId(
+      ageMin: ageMinController.text,
+      ageMax: ageMaxController.text,
+      ageUnit: ageUnit,
+      allAges: false,
+    );
+  }
+
+  static String? _matchPresetId({
+    required String? ageMin,
+    required String? ageMax,
+    required String? ageUnit,
+    required bool allAges,
+  }) {
+    if (allAges) {
+      return null;
+    }
     final String unit = (ageUnit ?? 'YEAR').trim().toUpperCase();
-    final String minText = ageMinController.text.trim();
-    final String maxText = ageMaxController.text.trim();
+    final String minText = (ageMin ?? '').trim();
+    final String maxText = (ageMax ?? '').trim();
     for (final LabAgeBandPreset preset in kLabAgeBandPresets) {
       if (preset.unit != unit) {
         continue;
@@ -236,35 +404,88 @@ class EditableLabReferenceRange {
     required int sortOrder,
     required String fallbackUnit,
   }) {
-    final String? ageMin = allAges
-        ? null
-        : _emptyToNull(ageMinController.text);
-    final String? ageMax = allAges
-        ? null
-        : _emptyToNull(ageMaxController.text);
+    return toPayloads(
+      startSortOrder: sortOrder,
+      fallbackUnit: fallbackUnit,
+    ).first;
+  }
+
+  /// Expands multi-selected age presets into one payload per band.
+  List<Map<String, Object?>> toPayloads({
+    required int startSortOrder,
+    required String fallbackUnit,
+  }) {
     final String? unit = _emptyToNull(rangeUnitController.text) ??
         _emptyToNull(fallbackUnit);
-    return <String, Object?>{
-      if (id != null) 'id': id,
-      'label': _emptyToNull(labelController.text),
-      if (gender != null && gender != kLabReferenceRangeAnyGender)
-        'gender': gender,
-      'age_min_value': ageMin,
-      'age_min_unit': ageMin == null ? null : ageUnit,
-      'age_max_value': ageMax,
-      'age_max_unit': ageMax == null ? null : ageUnit,
-      'unit': unit,
-      'normal_min_value': _emptyToNull(normalMinController.text),
-      'normal_max_value': _emptyToNull(normalMaxController.text),
-      'critical_min_value': _emptyToNull(criticalMinController.text),
-      'critical_max_value': _emptyToNull(criticalMaxController.text),
-      'reference_text': _emptyToNull(referenceTextController.text),
-      'notes': _emptyToNull(notesController.text),
-      'sort_order': sortOrder,
-    };
+    final String? sharedLabel = _emptyToNull(labelController.text);
+
+    if (allAges || selectedAgePresetIds.isEmpty) {
+      final String? ageMin = allAges
+          ? null
+          : _emptyToNull(ageMinController.text);
+      final String? ageMax = allAges
+          ? null
+          : _emptyToNull(ageMaxController.text);
+      return <Map<String, Object?>>[
+        <String, Object?>{
+          if (id != null) 'id': id,
+          'label': sharedLabel,
+          if (gender != null && gender != kLabReferenceRangeAnyGender)
+            'gender': gender,
+          'age_min_value': ageMin,
+          'age_min_unit': ageMin == null ? null : ageUnit,
+          'age_max_value': ageMax,
+          'age_max_unit': ageMax == null ? null : ageUnit,
+          'unit': unit,
+          'normal_min_value': _emptyToNull(normalMinController.text),
+          'normal_max_value': _emptyToNull(normalMaxController.text),
+          'critical_min_value': _emptyToNull(criticalMinController.text),
+          'critical_max_value': _emptyToNull(criticalMaxController.text),
+          'reference_text': _emptyToNull(referenceTextController.text),
+          'notes': _emptyToNull(notesController.text),
+          'sort_order': startSortOrder,
+        },
+      ];
+    }
+
+    final List<Map<String, Object?>> payloads = <Map<String, Object?>>[];
+    var order = startSortOrder;
+    final bool single = selectedAgePresetIds.length == 1;
+    for (final LabAgeBandPreset preset in kLabAgeBandPresets) {
+      if (!selectedAgePresetIds.contains(preset.id)) {
+        continue;
+      }
+      final String presetLabel = preset.defaultLabel;
+      final String? label = single
+          ? (sharedLabel ?? presetLabel)
+          : presetLabel;
+      payloads.add(<String, Object?>{
+        if (single && id != null) 'id': id,
+        'label': label,
+        if (gender != null && gender != kLabReferenceRangeAnyGender)
+          'gender': gender,
+        'age_min_value': preset.min?.toString(),
+        'age_min_unit': preset.min == null ? null : preset.unit,
+        'age_max_value': preset.max?.toString(),
+        'age_max_unit': preset.max == null ? null : preset.unit,
+        'unit': unit,
+        'normal_min_value': _emptyToNull(normalMinController.text),
+        'normal_max_value': _emptyToNull(normalMaxController.text),
+        'critical_min_value': _emptyToNull(criticalMinController.text),
+        'critical_max_value': _emptyToNull(criticalMaxController.text),
+        'reference_text': _emptyToNull(referenceTextController.text),
+        'notes': _emptyToNull(notesController.text),
+        'sort_order': order,
+      });
+      order += 1;
+    }
+    return payloads;
   }
 
   bool hasContent(String fallbackUnit) {
+    if (selectedAgePresetIds.isNotEmpty) {
+      return true;
+    }
     final Map<String, Object?> payload = toPayload(
       sortOrder: 0,
       fallbackUnit: fallbackUnit,
@@ -283,8 +504,8 @@ class EditableLabReferenceRange {
   }
 
   bool isValid() {
-    if (allAges) {
-      // Age bounds are intentionally empty when applying to all ages.
+    if (allAges || selectedAgePresetIds.isNotEmpty) {
+      // Preset bands are known-valid; All ages intentionally has empty bounds.
     } else if (!_isRangeValid(
       ageMinController.text,
       ageMaxController.text,
@@ -309,6 +530,7 @@ class EditableLabReferenceRange {
 
   bool hasNonNumericBound() {
     if (!allAges &&
+        selectedAgePresetIds.isEmpty &&
         (_hasNonNumericSide(ageMinController.text) ||
             _hasNonNumericSide(ageMaxController.text))) {
       return true;
@@ -325,12 +547,42 @@ class EditableLabReferenceRange {
     final String genderKey = (gender ?? kLabReferenceRangeAnyGender)
         .trim()
         .toUpperCase();
-    final String ageMin = allAges ? '' : ageMinController.text.trim();
-    final String ageMax = allAges ? '' : ageMaxController.text.trim();
-    final String unit = allAges
-        ? 'ANY'
-        : (ageUnit ?? 'YEAR').trim().toUpperCase();
+    if (allAges) {
+      return '$label|$genderKey|||ANY';
+    }
+    if (selectedAgePresetIds.isNotEmpty) {
+      final String presets = (selectedAgePresetIds.toList()..sort()).join(',');
+      return '$label|$genderKey|presets:$presets';
+    }
+    final String ageMin = ageMinController.text.trim();
+    final String ageMax = ageMaxController.text.trim();
+    final String unit = (ageUnit ?? 'YEAR').trim().toUpperCase();
     return '$label|$genderKey|$ageMin|$ageMax|$unit';
+  }
+
+  Iterable<({String unit, num min, num max})> ageBandsForOverlap() sync* {
+    if (allAges) {
+      return;
+    }
+    if (selectedAgePresetIds.isNotEmpty) {
+      for (final LabAgeBandPreset preset in kLabAgeBandPresets) {
+        if (!selectedAgePresetIds.contains(preset.id)) {
+          continue;
+        }
+        yield (
+          unit: preset.unit,
+          min: preset.min?.toDouble() ?? double.negativeInfinity,
+          max: preset.max?.toDouble() ?? double.infinity,
+        );
+      }
+      return;
+    }
+    yield (
+      unit: (ageUnit ?? 'YEAR').trim().toUpperCase(),
+      min: num.tryParse(ageMinController.text.trim()) ??
+          double.negativeInfinity,
+      max: num.tryParse(ageMaxController.text.trim()) ?? double.infinity,
+    );
   }
 
   bool contradictsCriticalVsNormal() => _criticalContradictsNormal();
@@ -413,21 +665,19 @@ bool _labAgesOverlap(
   if (left.allAges || right.allAges) {
     return true;
   }
-  final String leftUnit = (left.ageUnit ?? 'YEAR').trim().toUpperCase();
-  final String rightUnit = (right.ageUnit ?? 'YEAR').trim().toUpperCase();
-  if (leftUnit != rightUnit) {
-    return false;
+  for (final ({String unit, num min, num max}) leftBand
+      in left.ageBandsForOverlap()) {
+    for (final ({String unit, num min, num max}) rightBand
+        in right.ageBandsForOverlap()) {
+      if (leftBand.unit != rightBand.unit) {
+        continue;
+      }
+      if (leftBand.min <= rightBand.max && rightBand.min <= leftBand.max) {
+        return true;
+      }
+    }
   }
-  final num leftMin =
-      num.tryParse(left.ageMinController.text.trim()) ?? double.negativeInfinity;
-  final num leftMax =
-      num.tryParse(left.ageMaxController.text.trim()) ?? double.infinity;
-  final num rightMin =
-      num.tryParse(right.ageMinController.text.trim()) ??
-      double.negativeInfinity;
-  final num rightMax =
-      num.tryParse(right.ageMaxController.text.trim()) ?? double.infinity;
-  return leftMin <= rightMax && rightMin <= leftMax;
+  return false;
 }
 
 bool labReferenceRangesHaveDuplicateApplicability(
@@ -438,7 +688,8 @@ bool labReferenceRangesHaveDuplicateApplicability(
         final String label = range.labelController.text.trim();
         final bool hasAge =
             !range.allAges &&
-            (range.ageMinController.text.trim().isNotEmpty ||
+            (range.selectedAgePresetIds.isNotEmpty ||
+                range.ageMinController.text.trim().isNotEmpty ||
                 range.ageMaxController.text.trim().isNotEmpty);
         return label.isNotEmpty || hasAge || !range.appliesToAllGenders;
       })
@@ -627,33 +878,13 @@ class _LabReferenceRangeCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: theme.spacing.xs),
-            AppSelectField<String>.searchable(
-              value: range.labelController.text.trim().isEmpty
-                  ? null
-                  : range.labelController.text.trim(),
+            LabSearchableTextField(
+              controller: range.labelController,
               labelText: l10n.labReferenceRangeLabel,
               enabled: enabled,
-              allowClear: true,
-              options: <AppSelectOption<String>>[
-                for (final String label in labUniqueNonEmpty(<String?>[
-                  l10n.labAgeAnyLabel,
-                  l10n.labNeonateRangeLabel,
-                  l10n.labInfantRangeLabel,
-                  l10n.labChildRangeLabel,
-                  l10n.labAdolescentRangeLabel,
-                  l10n.labAdultRangeLabel,
-                  l10n.labGeriatricRangeLabel,
-                  l10n.labPediatricRangeLabel,
-                  range.labelController.text,
-                ]))
-                  AppSelectOption<String>(
-                    value: label,
-                    label: label,
-                    leadingIcon: const Icon(Icons.label_outline),
-                  ),
-              ],
-              onChanged: (String? value) {
-                range.labelController.text = value?.trim() ?? '';
+              prefixIcon: const Icon(Icons.label_outline),
+              options: _labRangeNameOptions(l10n, range.labelController.text),
+              onChanged: (String value) {
                 range.applyAgePresetFromLabel(value, l10n);
                 onChanged();
               },
@@ -853,8 +1084,8 @@ class _LabGenderApplicabilityField extends StatelessWidget {
   }
 }
 
-/// Age applicability with horizontal All ages + age-band presets; bounds hidden
-/// when All ages is selected to spare vertical space.
+/// Age applicability with horizontal All ages + multi-select age-band presets.
+/// Bounds are hidden for All ages and for multi-preset selection.
 class _LabAgeApplicabilityField extends StatelessWidget {
   const _LabAgeApplicabilityField({
     required this.range,
@@ -870,8 +1101,9 @@ class _LabAgeApplicabilityField extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
-    final bool boundsEnabled = enabled && !range.allAges;
-    final String? matchedPresetId = range.matchingAgePresetId();
+    final bool showManualBounds =
+        enabled && !range.allAges && !range.hasMultipleAgePresets;
+    final bool boundsEnabled = showManualBounds;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -904,23 +1136,20 @@ class _LabAgeApplicabilityField extends StatelessWidget {
               FilterChip(
                 avatar: Icon(labAgeBandPresetIcon(preset.id), size: 16),
                 label: Text(labAgeBandPresetLabel(l10n, preset.id)),
-                selected: !range.allAges && matchedPresetId == preset.id,
+                selected: !range.allAges &&
+                    range.selectedAgePresetIds.contains(preset.id),
                 showCheckmark: false,
                 onSelected: !enabled
                     ? null
-                    : (bool selected) {
-                        if (selected) {
-                          range.applyAgePreset(
-                            preset,
-                            labelIfEmpty: labAgeBandPresetLabel(
-                              l10n,
-                              preset.id,
-                            ),
-                            allAgesLabel: l10n.labAgeAnyLabel,
-                          );
-                        } else if (matchedPresetId == preset.id) {
-                          range.setAllAges(value: true);
-                        }
+                    : (_) {
+                        range.toggleAgePreset(
+                          preset,
+                          labelIfEmpty: labAgeBandPresetLabel(
+                            l10n,
+                            preset.id,
+                          ),
+                          allAgesLabel: l10n.labAgeAnyLabel,
+                        );
                         onChanged();
                       },
               ),
@@ -930,6 +1159,14 @@ class _LabAgeApplicabilityField extends StatelessWidget {
           SizedBox(height: theme.spacing.xs),
           Text(
             l10n.labAgeAnyHelper,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ] else if (range.hasMultipleAgePresets) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            l10n.labAgeMultiPresetHelper,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

@@ -1285,8 +1285,11 @@ class _LabCatalogItemMutationDialogState
       if (!range.hasContent(unit)) {
         continue;
       }
-      referenceRanges.add(
-        range.toPayload(sortOrder: referenceRanges.length, fallbackUnit: unit),
+      referenceRanges.addAll(
+        range.toPayloads(
+          startSortOrder: referenceRanges.length,
+          fallbackUnit: unit,
+        ),
       );
     }
 

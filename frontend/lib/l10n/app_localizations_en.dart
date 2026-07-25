@@ -19090,6 +19090,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Age min, max, and unit are cleared while All ages is selected.';
 
   @override
+  String get labAgeMultiPresetHelper =>
+      'Each selected age band is saved as its own reference range with these result limits.';
+
+  @override
   String get labAgePresetsLabel => 'Age presets';
 
   @override

@@ -329,12 +329,7 @@ void main() {
 
       // First range already defaults to All ages / All genders — a second
       // identical range is rejected at add time.
-      final Finder rangeLabelFields = find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppSelectField<String> &&
-            widget.labelText == 'Range name',
-      );
-      expect(rangeLabelFields, findsOneWidget);
+      expect(find.text('Range name'), findsOneWidget);
       expect(
         find.text(
           'A reference range with the same label already covers this gender and age (including All genders / All ages).',

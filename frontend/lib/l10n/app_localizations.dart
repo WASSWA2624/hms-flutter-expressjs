@@ -35617,6 +35617,12 @@ abstract class AppLocalizations {
   /// **'Age min, max, and unit are cleared while All ages is selected.'**
   String get labAgeAnyHelper;
 
+  /// Helper text when multiple age-band presets are selected on one lab reference range card.
+  ///
+  /// In en, this message translates to:
+  /// **'Each selected age band is saved as its own reference range with these result limits.'**
+  String get labAgeMultiPresetHelper;
+
   /// Label above age-band preset chips on a lab reference range.
   ///
   /// In en, this message translates to:

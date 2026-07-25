@@ -1014,13 +1014,15 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
     final List<Map<String, Object?>> payloads = <Map<String, Object?>>[];
     for (int index = 0; index < _referenceRanges.length; index++) {
       final EditableLabReferenceRange range = _referenceRanges[index];
-      final Map<String, Object?> payload = range.toPayload(
-        sortOrder: index,
-        fallbackUnit: unit,
-      );
-      if (range.hasContent(unit)) {
-        payloads.add(payload);
+      if (!range.hasContent(unit)) {
+        continue;
       }
+      payloads.addAll(
+        range.toPayloads(
+          startSortOrder: payloads.length,
+          fallbackUnit: unit,
+        ),
+      );
     }
     return payloads;
   }

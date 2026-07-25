@@ -161,6 +161,7 @@ class LabSearchableTextField extends StatefulWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.validator,
+    this.onChanged,
     this.onFieldSubmitted,
     super.key,
   });
@@ -174,6 +175,7 @@ class LabSearchableTextField extends StatefulWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final FormFieldValidator<String>? validator;
+  final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
 
   @override
@@ -217,6 +219,7 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
       },
       onSelected: (String value) {
         widget.controller.text = value;
+        widget.onChanged?.call(value);
       },
       fieldViewBuilder:
           (
@@ -235,6 +238,7 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
               enabled: widget.enabled,
               isRequired: widget.isRequired,
               validator: widget.validator,
+              onChanged: widget.onChanged,
               onFieldSubmitted: (String value) {
                 onFieldSubmitted();
                 widget.onFieldSubmitted?.call(value);

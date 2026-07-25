@@ -24497,6 +24497,10 @@
   "@labAgeAnyHelper": {
     "description": "Helper text shown when All ages is selected on a lab reference range."
   },
+  "labAgeMultiPresetHelper": "Each selected age band is saved as its own reference range with these result limits.",
+  "@labAgeMultiPresetHelper": {
+    "description": "Helper text when multiple age-band presets are selected on one lab reference range card."
+  },
   "labAgePresetsLabel": "Age presets",
   "@labAgePresetsLabel": {
     "description": "Label above age-band preset chips on a lab reference range."

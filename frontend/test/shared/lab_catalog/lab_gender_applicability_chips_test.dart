@@ -21,8 +21,6 @@ void main() {
       expect(_chipWithLabel(tester, 'Male').onSelected, isNotNull);
       expect(_chipWithLabel(tester, 'Female').onSelected, isNotNull);
 
-      // Specifics stay enabled while All genders is selected; tapping Female
-      // replaces All genders.
       await tester.tap(find.text('Female'));
       await tester.pumpAndSettle();
       expect(range.gender, 'FEMALE');
@@ -38,50 +36,67 @@ void main() {
   );
 
   testWidgets(
-    'Age presets include icons and fill bounds; All ages hides and clears them',
+    'Age presets support multi-select and expand on save',
     (WidgetTester tester) async {
-      final EditableLabReferenceRange range = EditableLabReferenceRange()
-        ..allAges = false
-        ..ageMinController.text = '18'
-        ..ageMaxController.text = '65';
+      final EditableLabReferenceRange range = EditableLabReferenceRange(
+        defaultLabel: 'All ages',
+      );
       addTearDown(range.dispose);
 
       await _pumpRangeEditor(tester, range);
 
-      expect(range.allAges, isFalse);
-      expect(find.text('Age min'), findsOneWidget);
-      expect(find.text('Adult'), findsWidgets);
-
-      final FilterChip adultChip = _chipWithLabel(tester, 'Adult');
-      expect(adultChip.avatar, isA<Icon>());
-      expect((adultChip.avatar! as Icon).icon, Icons.person_outline);
-
-      final FilterChip neonateChip = _chipWithLabel(tester, 'Neonate');
-      expect((neonateChip.avatar! as Icon).icon, Icons.baby_changing_station_outlined);
-
-      await tester.tap(find.text('All ages'));
-      await tester.pumpAndSettle();
-
       expect(range.allAges, isTrue);
-      expect(range.ageMinController.text, isEmpty);
-      expect(range.ageMaxController.text, isEmpty);
       expect(_chipWithLabel(tester, 'All ages').selected, isTrue);
-      expect(find.text('Age min'), findsNothing);
 
       await tester.tap(find.widgetWithText(FilterChip, 'Adult'));
       await tester.pumpAndSettle();
       expect(range.allAges, isFalse);
-      expect(range.ageUnit, 'YEAR');
+      expect(range.selectedAgePresetIds, <String>{'adult'});
       expect(range.ageMinController.text, '18');
       expect(range.ageMaxController.text, '64');
-      expect(range.labelController.text, 'Adult');
       expect(find.text('Age min'), findsOneWidget);
 
       await tester.tap(find.widgetWithText(FilterChip, 'Neonate'));
       await tester.pumpAndSettle();
-      expect(range.ageUnit, 'DAY');
-      expect(range.ageMinController.text, '0');
-      expect(range.ageMaxController.text, '28');
+      expect(range.selectedAgePresetIds, <String>{'adult', 'neonate'});
+      expect(range.hasMultipleAgePresets, isTrue);
+      expect(find.text('Age min'), findsNothing);
+      expect(
+        find.text(
+          'Each selected age band is saved as its own reference range with these result limits.',
+        ),
+        findsOneWidget,
+      );
+
+      final List<Map<String, Object?>> payloads = range.toPayloads(
+        startSortOrder: 0,
+        fallbackUnit: 'g/dL',
+      );
+      expect(payloads, hasLength(2));
+      expect(payloads.map((Map<String, Object?> p) => p['label']),
+          containsAll(<String>['Neonate', 'Adult']));
+      expect(
+        payloads.firstWhere(
+          (Map<String, Object?> p) => p['label'] == 'Neonate',
+        )['age_min_unit'],
+        'DAY',
+      );
+      expect(
+        payloads.firstWhere(
+          (Map<String, Object?> p) => p['label'] == 'Adult',
+        )['age_min_value'],
+        '18',
+      );
+
+      await tester.tap(find.widgetWithText(FilterChip, 'Adult'));
+      await tester.pumpAndSettle();
+      expect(range.selectedAgePresetIds, <String>{'neonate'});
+      expect(find.text('Age min'), findsOneWidget);
+
+      await tester.tap(find.text('All ages'));
+      await tester.pumpAndSettle();
+      expect(range.allAges, isTrue);
+      expect(range.selectedAgePresetIds, isEmpty);
     },
   );
 
@@ -115,6 +130,7 @@ void main() {
       allAgesLabel: 'All ages',
     );
     expect(range.allAges, isFalse);
+    expect(range.selectedAgePresetIds, <String>{'geriatric'});
     expect(range.ageMinController.text, '65');
     expect(range.ageMaxController.text, isEmpty);
     expect(range.labelController.text, 'Geriatric');
