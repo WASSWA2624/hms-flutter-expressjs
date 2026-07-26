@@ -79,7 +79,7 @@ void main() {
       expect(next.onPressed, isNull);
     });
 
-    testWidgets('hides already offered items from catalog', (
+    testWidgets('shows already offered items as Configured and non-selectable', (
       WidgetTester tester,
     ) async {
       await _pumpEnableDialog(
@@ -94,7 +94,46 @@ void main() {
 
       expect(find.text('Complete blood count'), findsWidgets);
       expect(find.text('Metabolic panel'), findsWidgets);
-      expect(find.text('Lipid panel'), findsNothing);
+      expect(find.text('Lipid panel'), findsWidgets);
+      expect(find.text('Configured'), findsWidgets);
+
+      // Select-all only covers available rows.
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+      expect(find.widgetWithText(AppButton, 'Next (2)'), findsOneWidget);
+
+      // Offered row tap must not change selection.
+      await tester.tap(find.text('Lipid panel').first);
+      await tester.pump();
+      expect(find.widgetWithText(AppButton, 'Next (2)'), findsOneWidget);
+
+      final List<Checkbox> checkboxes = tester
+          .widgetList<Checkbox>(find.byType(Checkbox))
+          .toList(growable: false);
+      expect(
+        checkboxes.where((Checkbox box) => box.onChanged == null),
+        isNotEmpty,
+      );
+    });
+
+    testWidgets('select-all excludes already offered rows', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[
+          _availableTest,
+          _alreadyOfferedTest,
+          _availablePanel,
+        ],
+      );
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+
+      expect(find.widgetWithText(AppButton, 'Next (2)'), findsOneWidget);
+      expect(find.text('Configured'), findsWidgets);
     });
 
     testWidgets('all kind lists tests and panels', (WidgetTester tester) async {
@@ -337,6 +376,54 @@ void main() {
         enables.map((Map<String, Object?> p) => p['unit_price']),
         containsAll(<Object?>[1000, 2500]),
       );
+
+      // Dialog stays open; enabled rows are marked Configured and locked.
+      expect(find.text('ENABLE LAB TESTS AND PANELS'), findsOneWidget);
+      expect(find.text('Configured'), findsNWidgets(2));
+      expect(find.widgetWithText(AppButton, 'Next'), findsOneWidget);
+      final AppButton next = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, 'Next'),
+      );
+      expect(next.enabled, isFalse);
+    });
+
+    testWidgets('post-enable rows stay non-selectable in session', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[_availableTest, _availablePanel],
+      );
+
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pump();
+      await tester.tap(_nextButton());
+      await tester.pumpAndSettle();
+
+      final Finder amountFields = find.descendant(
+        of: find.byType(AppCurrencyAmountField),
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(amountFields.first, '1500');
+      await tester.pumpAndSettle();
+      await tester.tap(_nextButton());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Enable selected').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Configured'), findsOneWidget);
+      expect(find.text('Complete blood count'), findsWidgets);
+      expect(find.text('Metabolic panel'), findsWidgets);
+
+      await tester.tap(find.text('Complete blood count').first);
+      await tester.pump();
+      expect(find.widgetWithText(AppButton, 'Next'), findsOneWidget);
+
+      // Remaining available panel can still be selected.
+      await tester.tap(find.text('Metabolic panel').first);
+      await tester.pump();
+      expect(find.widgetWithText(AppButton, 'Next (1)'), findsOneWidget);
     });
 
     testWidgets('preview allows deselect and back to batch price', (

@@ -81,18 +81,18 @@ Dialog title default: **Select tenant and facility**.
 
 Opened after Configure → Next when the Lab nested tab is active. Wizard: **catalog → batch prices → preview → one batch enable** (same pattern as Radiology).
 
-**Note from source:** `_openLabConfigureDialog` passes `kind: LabEnableOfferingKind.all` so both tests and panels are listed (type filter available). Catalog lists only items **not** already offered at the scoped facility.
+**Note from source:** `_openLabConfigureDialog` passes `kind: LabEnableOfferingKind.all` so both tests and panels are listed (type filter available). Already-offered rows stay visible, marked **Configured** (disabled select), and are excluded from select-all / batch enable. Catalog rows are deduped by type + identity before render and enable.
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
 | Laboratory filters / Filter | Catalog search (`labFiltersLabel`) | Type (when all), category, result-kind, specimen type, and source filter groups; **Apply filters** / **Clear filters**. |
 | Settings | Column visibility (when >1 columns) | Column-settings dialog. |
 | Select-all header checkbox | Select column header (tristate, left-aligned) | Checks all currently listed available rows; unchecks to clear those listed rows. Shows indeterminate when only some listed rows are selected. Tooltip reflects Select all / partial count / Clear selection. |
-| Row select / checkbox | Catalog row (available only) | Toggles multi-select for batch enable (selection updates without rebuilding the full table). Rows already offered at the scoped facility are excluded from the catalog (matched by id/code/name against facility offerings). Selection count appears under the dialog body; Next shows `(count)` when ≥1 selected. Catalog load uses `AppLoadingIndicator`; in-place refresh uses a thin progress bar. |
+| Row select / checkbox | Catalog row | Toggles multi-select for available rows only (selection updates without rebuilding the full table). Rows already offered at the scoped facility remain listed, show **Configured** (tooltip: Already offered), and have disabled checkboxes. Select-all ignores offered rows. Selection count appears under the dialog body; Next shows `(count)` when ≥1 available selected. Catalog load uses `AppLoadingIndicator`; in-place refresh uses a thin progress bar. |
 | Back | Footer leftmost | Catalog: returns to scope picker when `showBackAction` (pops `backResult`); otherwise dismisses. Price → catalog; Preview → price. |
-| Next | Footer middle (`commonNextActionLabel`) | Always visible on catalog/price. Catalog: disabled with `labSelectAtLeastOneItemMessage` until ≥1 selected; then opens batch price. Price: validates required unit prices, then opens preview. |
-| Close | Footer rightmost | Aborts without enable (pops whether any were already enabled this session). |
-| Enable selected | Preview footer primary (`labEnableSelectedItemsAction`) | Enables all remaining selected via `onEnable`; shows failure banner; pops `true` on full success. Disabled with reason when selection empty or prices invalid. |
+| Next | Footer middle (`commonNextActionLabel`) | Always visible on catalog/price. Catalog: disabled with `labSelectAtLeastOneItemMessage` until ≥1 available selected; then opens batch price. Price: validates required unit prices, then opens preview. |
+| Close | Footer rightmost | Aborts without further enable (pops whether any were already enabled this session). |
+| Enable selected | Preview footer primary (`labEnableSelectedItemsAction`) | Enables all remaining selected via `onEnable`; shows failure banner; on success stays on catalog with those rows marked Configured and cleared from selection (no re-enable in-session). Disabled with reason when selection empty or prices invalid. |
 
 ### Batch price step
 
@@ -185,7 +185,7 @@ Used for lab / diagnosis global catalog deletes from this panel. Call sites pass
 - Clinical Services → nested Radiology / Lab / Diagnoses tables
 - **Configure** → **Select tenant and facility** →
   - Radiology → `RadiologyEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable; Back can return to scope)
-  - Lab → `LabEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable for tests and panels; Back can return to scope)
+  - Lab → `LabEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable for tests and panels; offered rows stay visible as Configured; Back can return to scope; Close returns whether any were enabled)
   - Diagnoses → `DiagnosisEnableFacilityOfferingDialog` (row enable; no nested price dialog)
 - Add / Create (no tenant) → **Select tenant and facility** → category mutation dialog
 - Add / Create (tenant present) → category mutation dialog

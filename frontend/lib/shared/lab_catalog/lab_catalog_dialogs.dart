@@ -1410,7 +1410,7 @@ class _LabEnableFacilityOfferingDialogState
     final String? specimen = _filterValue.option(_specimenFilterKey);
     final String? source = _filterValue.option(_sourceFilterKey);
     final String? type = _selectedType;
-    return _availableCatalogItems
+    return _catalogItems
         .where((LabCatalogItem item) {
           if (_showingAll && type != null && item.type.name != type) {
             return false;
@@ -1447,11 +1447,20 @@ class _LabEnableFacilityOfferingDialogState
     final List<LabCatalogItem> items = List<LabCatalogItem>.of(
       _filteredCatalogItems,
     );
-    items.sort(
-      (LabCatalogItem left, LabCatalogItem right) =>
-          appListTableCompareText(left.name, right.name),
-    );
+    items.sort((LabCatalogItem left, LabCatalogItem right) {
+      // Keep already-offered rows visible but below selectable ones.
+      if (left.isOfferedAtFacility != right.isOfferedAtFacility) {
+        return left.isOfferedAtFacility ? 1 : -1;
+      }
+      return appListTableCompareText(left.name, right.name);
+    });
     return items;
+  }
+
+  List<LabCatalogItem> get _selectableListedCatalogItems {
+    return _sortedFilteredCatalogItems
+        .where((LabCatalogItem item) => !item.isOfferedAtFacility)
+        .toList(growable: false);
   }
 
   List<LabCatalogItem> get _selectedAvailableItems {
@@ -1535,7 +1544,7 @@ class _LabEnableFacilityOfferingDialogState
   }
 
   void _selectAllListed() {
-    final Set<String> listed = _sortedFilteredCatalogItems
+    final Set<String> listed = _selectableListedCatalogItems
         .map(_labEnableCatalogItemKey)
         .toSet();
     if (listed.isEmpty) {
@@ -1545,7 +1554,7 @@ class _LabEnableFacilityOfferingDialogState
   }
 
   void _deselectAllListed() {
-    final Set<String> listed = _sortedFilteredCatalogItems
+    final Set<String> listed = _selectableListedCatalogItems
         .map(_labEnableCatalogItemKey)
         .toSet();
     if (listed.isEmpty || _selectedIds.value.isEmpty) {
@@ -1740,7 +1749,9 @@ class _LabEnableFacilityOfferingDialogState
   }
 
   Future<void> _submitAllSelected() async {
-    final List<LabCatalogItem> selected = _selectedAvailableItems;
+    final List<LabCatalogItem> selected = _selectedAvailableItems
+        .where((LabCatalogItem item) => !item.isOfferedAtFacility)
+        .toList(growable: false);
     if (selected.isEmpty || !_selectionHasValidPrices(selected)) {
       return;
     }
@@ -1750,6 +1761,9 @@ class _LabEnableFacilityOfferingDialogState
     });
     final List<LabCatalogItem> enabled = <LabCatalogItem>[];
     for (final LabCatalogItem item in selected) {
+      if (item.isOfferedAtFacility) {
+        continue;
+      }
       final String key = _labEnableCatalogItemKey(item);
       final String currency =
           _currencies[key] ?? item.currency ?? widget.defaultCurrency;
@@ -1769,11 +1783,17 @@ class _LabEnableFacilityOfferingDialogState
       if (failure != null) {
         if (enabled.isNotEmpty) {
           _markItemsOfferedLocally(enabled);
+          setState(() {
+            _step = _LabEnableWizardStep.catalog;
+            _failure = failure;
+            _isSaving = false;
+          });
+        } else {
+          setState(() {
+            _failure = failure;
+            _isSaving = false;
+          });
         }
-        setState(() {
-          _failure = failure;
-          _isSaving = false;
-        });
         return;
       }
       enabled.add(item.copyWith(unitPrice: unitPrice, currency: currency));
@@ -1782,7 +1802,13 @@ class _LabEnableFacilityOfferingDialogState
     if (!mounted) {
       return;
     }
-    Navigator.of(context).pop(true);
+    // Stay open so newly offered rows remain visible as Configured and
+    // cannot be selected again in the same session.
+    setState(() {
+      _step = _LabEnableWizardStep.catalog;
+      _failure = null;
+      _isSaving = false;
+    });
   }
 
   @override
@@ -1913,12 +1939,17 @@ class _LabEnableFacilityOfferingDialogState
     final List<LabCatalogItem> items = _sortedFilteredCatalogItems;
     final bool hasSearchOrFilter =
         _searchController.text.trim().isNotEmpty || _filterValue.isActive;
-    final bool catalogEmpty = !_isSearching && _availableCatalogItems.isEmpty;
+    final bool catalogEmpty = !_isSearching && _catalogItems.isEmpty;
+    final bool allAlreadyOffered =
+        !_isSearching &&
+        _catalogItems.isNotEmpty &&
+        _availableCatalogItems.isEmpty &&
+        !hasSearchOrFilter;
     final String emptyLabel = hasSearchOrFilter
         ? l10n.labEnableOfferingNoItemsLabel
-        : (catalogEmpty && _catalogItems.isNotEmpty
-              ? l10n.labEnableOfferingNoItemsLabel
-              : l10n.labEnableOfferingNoPlatformItemsLabel);
+        : (catalogEmpty
+              ? l10n.labEnableOfferingNoPlatformItemsLabel
+              : l10n.labEnableOfferingNoItemsLabel);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1937,11 +1968,23 @@ class _LabEnableFacilityOfferingDialogState
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        if (allAlreadyOffered)
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Text(
+              l10n.labEnableOfferingNoItemsLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
         ValueListenableBuilder<Set<String>>(
           valueListenable: _selectedIds,
           builder: (BuildContext context, Set<String> selectedIds, _) {
-            final int listedCount = items.length;
-            final int selectedListedCount = items
+            final List<LabCatalogItem> selectableListed =
+                _selectableListedCatalogItems;
+            final int listedCount = selectableListed.length;
+            final int selectedListedCount = selectableListed
                 .where(
                   (LabCatalogItem item) =>
                       selectedIds.contains(_labEnableCatalogItemKey(item)),
@@ -1982,6 +2025,9 @@ class _LabEnableFacilityOfferingDialogState
           itemKeyBuilder: (LabCatalogItem item) =>
               ValueKey<String>(_labEnableCatalogItemKey(item)),
           onRowSelected: (LabCatalogItem item) {
+            if (item.isOfferedAtFacility) {
+              return;
+            }
             final String key = _labEnableCatalogItemKey(item);
             _toggleSelection(
               item,
@@ -2024,9 +2070,7 @@ class _LabEnableFacilityOfferingDialogState
                 label: l10n.labCategoryLabel,
                 allLabel: l10n.labScopeAll,
                 choices: _enableOfferingFilterChoices(
-                  _availableCatalogItems.map(
-                    (LabCatalogItem item) => item.category,
-                  ),
+                  _catalogItems.map((LabCatalogItem item) => item.category),
                   iconForValue: labCatalogCategoryIcon,
                 ),
               ),
@@ -2037,7 +2081,7 @@ class _LabEnableFacilityOfferingDialogState
                   allLabel: l10n.labScopeAll,
                   choices: _enableOfferingResultKindChoices(
                     l10n,
-                    _availableCatalogItems
+                    _catalogItems
                         .where(
                           (LabCatalogItem item) =>
                               item.type == LabCatalogItemType.test,
@@ -2046,33 +2090,27 @@ class _LabEnableFacilityOfferingDialogState
                   ),
                 ),
               if (_enableOfferingFilterChoices(
-                _availableCatalogItems.map(
-                  (LabCatalogItem item) => item.specimenType,
-                ),
+                _catalogItems.map((LabCatalogItem item) => item.specimenType),
               ).isNotEmpty)
                 AppSearchBarFilterGroup(
                   key: _specimenFilterKey,
                   label: l10n.labSpecimenTypeLabel,
                   allLabel: l10n.labScopeAll,
                   choices: _enableOfferingFilterChoices(
-                    _availableCatalogItems.map(
+                    _catalogItems.map(
                       (LabCatalogItem item) => item.specimenType,
                     ),
                   ),
                 ),
               if (_enableOfferingFilterChoices(
-                _availableCatalogItems.map(
-                  (LabCatalogItem item) => item.source,
-                ),
+                _catalogItems.map((LabCatalogItem item) => item.source),
               ).isNotEmpty)
                 AppSearchBarFilterGroup(
                   key: _sourceFilterKey,
                   label: l10n.radiologySourceColumnLabel,
                   allLabel: l10n.labScopeAll,
                   choices: _enableOfferingFilterChoices(
-                    _availableCatalogItems.map(
-                      (LabCatalogItem item) => item.source,
-                    ),
+                    _catalogItems.map((LabCatalogItem item) => item.source),
                   ),
                 ),
             ],
@@ -2088,6 +2126,7 @@ class _LabEnableFacilityOfferingDialogState
           columns: _enableOfferingColumns(context),
           mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
             final String key = _labEnableCatalogItemKey(item);
+            final bool offered = item.isOfferedAtFacility;
             return AppListTableMobileItem(
               leading: Align(
                 alignment: Alignment.centerLeft,
@@ -2095,11 +2134,13 @@ class _LabEnableFacilityOfferingDialogState
                   valueListenable: _selectedIds,
                   builder: (BuildContext context, Set<String> selected, _) {
                     return Checkbox(
-                      value: selected.contains(key),
+                      value: offered ? false : selected.contains(key),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       visualDensity: VisualDensity.compact,
-                      onChanged: (bool? value) =>
-                          _toggleSelection(item, selected: value ?? false),
+                      onChanged: offered
+                          ? null
+                          : (bool? value) =>
+                                _toggleSelection(item, selected: value ?? false),
                     );
                   },
                 ),
@@ -2108,6 +2149,11 @@ class _LabEnableFacilityOfferingDialogState
               title: item.name ?? item.displayTitle,
               caption: item.code,
               meta: <AppListTableMobileMeta>[
+                if (offered)
+                  AppListTableMobileMeta(
+                    label: l10n.tenantFacilitySummaryConfigured,
+                    icon: Icons.check_circle_outline,
+                  ),
                 if (_showingAll)
                   AppListTableMobileMeta(
                     label: item.type == LabCatalogItemType.panel
@@ -2368,7 +2414,8 @@ class _LabEnableFacilityOfferingDialogState
           return ValueListenableBuilder<Set<String>>(
             valueListenable: _selectedIds,
             builder: (BuildContext context, Set<String> selected, _) {
-              final List<LabCatalogItem> listed = _sortedFilteredCatalogItems;
+              final List<LabCatalogItem> listed =
+                  _selectableListedCatalogItems;
               final bool allSelected =
                   listed.isNotEmpty &&
                   listed.every(
@@ -2427,17 +2474,20 @@ class _LabEnableFacilityOfferingDialogState
         },
         cellBuilder: (_, LabCatalogItem item) {
           final String key = _labEnableCatalogItemKey(item);
+          final bool offered = item.isOfferedAtFacility;
           return Align(
             alignment: Alignment.centerLeft,
             child: ValueListenableBuilder<Set<String>>(
               valueListenable: _selectedIds,
               builder: (BuildContext context, Set<String> selected, _) {
                 return Checkbox(
-                  value: selected.contains(key),
+                  value: offered ? false : selected.contains(key),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
-                  onChanged: (bool? value) =>
-                      _toggleSelection(item, selected: value ?? false),
+                  onChanged: offered
+                      ? null
+                      : (bool? value) =>
+                            _toggleSelection(item, selected: value ?? false),
                 );
               },
             ),
@@ -2455,6 +2505,39 @@ class _LabEnableFacilityOfferingDialogState
             appListTableCompareText(left.name, right.name),
         cellBuilder: (_, LabCatalogItem item) =>
             _catalogOfferingNameCell(item.name ?? item.displayTitle),
+      ),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'status',
+        label: l10n.accessAdminColumnStatus,
+        alwaysVisible: true,
+        cellBuilder: (BuildContext context, LabCatalogItem item) {
+          if (!item.isOfferedAtFacility) {
+            return const SizedBox.shrink();
+          }
+          final AppLocalizations cellL10n = context.l10n;
+          final ThemeData theme = Theme.of(context);
+          return Tooltip(
+            message: cellL10n.labEnableOfferingAlreadyOfferedLabel,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                SizedBox(width: theme.spacing.xs),
+                Text(
+                  cellL10n.tenantFacilitySummaryConfigured,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
       if (showTypeColumn)
         AppListTableColumn<LabCatalogItem>(
@@ -2534,7 +2617,16 @@ List<LabCatalogItem> _dedupeLabCatalogItems(List<LabCatalogItem> items) {
   }
   final Map<String, LabCatalogItem> byKey = <String, LabCatalogItem>{};
   for (final LabCatalogItem item in items) {
-    byKey.putIfAbsent(_labEnableCatalogItemKey(item), () => item);
+    final String key = _labEnableCatalogItemKey(item);
+    final LabCatalogItem? existing = byKey[key];
+    if (existing == null) {
+      byKey[key] = item;
+      continue;
+    }
+    // Prefer the offered row when duplicates share an identity key.
+    if (item.isOfferedAtFacility && !existing.isOfferedAtFacility) {
+      byKey[key] = item;
+    }
   }
   return byKey.values.toList(growable: false);
 }
