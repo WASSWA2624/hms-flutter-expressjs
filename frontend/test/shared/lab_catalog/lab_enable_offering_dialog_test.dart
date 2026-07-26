@@ -108,7 +108,7 @@ void main() {
       expect(find.text('ENABLE LAB TESTS AND PANELS'), findsOneWidget);
     });
 
-    testWidgets('select all and clear selection target listed rows', (
+    testWidgets('header checkbox selects and clears listed rows', (
       WidgetTester tester,
     ) async {
       await _pumpEnableDialog(
@@ -117,10 +117,11 @@ void main() {
         items: const <LabCatalogItem>[_availableTest, _availablePanel],
       );
 
-      expect(find.text('Select all'), findsOneWidget);
-      expect(find.text('Clear selection'), findsOneWidget);
+      expect(find.text('Select all'), findsNothing);
+      expect(find.text('Clear selection'), findsNothing);
 
-      await tester.tap(find.text('Select all'));
+      final Finder headerCheckbox = find.byType(Checkbox).first;
+      await tester.tap(headerCheckbox);
       await tester.pump();
 
       final AppButton nextAfterSelect = tester.widget<AppButton>(
@@ -128,7 +129,7 @@ void main() {
       );
       expect(nextAfterSelect.enabled, isTrue);
 
-      await tester.tap(find.text('Clear selection'));
+      await tester.tap(headerCheckbox);
       await tester.pump();
 
       final AppButton nextAfterClear = tester.widget<AppButton>(
@@ -153,7 +154,7 @@ void main() {
       expect(find.text('Duplicate glucan A'), findsWidgets);
       expect(find.text('Duplicate glucan B'), findsNothing);
 
-      await tester.tap(find.text('Select all'));
+      await tester.tap(find.byType(Checkbox).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Next').first);
       await tester.pumpAndSettle();
@@ -170,7 +171,7 @@ void main() {
         items: const <LabCatalogItem>[_availableTest, _availablePanel],
       );
 
-      await tester.tap(find.text('Select all'));
+      await tester.tap(find.byType(Checkbox).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Next').first);
       await tester.pumpAndSettle();
@@ -209,8 +210,8 @@ void main() {
         },
       );
 
-      await tester.tap(find.byType(Checkbox).at(0));
       await tester.tap(find.byType(Checkbox).at(1));
+      await tester.tap(find.byType(Checkbox).at(2));
       await tester.pump();
       await tester.tap(find.text('Next').first);
       await tester.pumpAndSettle();
@@ -256,8 +257,8 @@ void main() {
         items: const <LabCatalogItem>[_availableTest, _availablePanel],
       );
 
-      await tester.tap(find.byType(Checkbox).at(0));
       await tester.tap(find.byType(Checkbox).at(1));
+      await tester.tap(find.byType(Checkbox).at(2));
       await tester.pump();
       await tester.tap(find.text('Next').first);
       await tester.pumpAndSettle();

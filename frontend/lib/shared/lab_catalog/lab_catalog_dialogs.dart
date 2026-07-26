@@ -1554,6 +1554,14 @@ class _LabEnableFacilityOfferingDialogState
     _selectedIds.value = Set<String>.of(_selectedIds.value)..removeAll(listed);
   }
 
+  void _setListedSelection({required bool selected}) {
+    if (selected) {
+      _selectAllListed();
+    } else {
+      _deselectAllListed();
+    }
+  }
+
   void _ensurePriceFields(List<LabCatalogItem> items) {
     for (final LabCatalogItem item in items) {
       final String key = _labEnableCatalogItemKey(item);
@@ -2026,20 +2034,6 @@ class _LabEnableFacilityOfferingDialogState
             onFilterChanged: (AppSearchBarFilterValue value) {
               setState(() => _filterValue = value);
             },
-            trailingActions: <AppSearchBarAction>[
-              AppSearchBarAction(
-                icon: Icons.select_all_outlined,
-                label: l10n.labSelectAllTestsAction,
-                enabled: items.isNotEmpty,
-                onPressed: items.isEmpty ? null : _selectAllListed,
-              ),
-              AppSearchBarAction(
-                icon: Icons.deselect_outlined,
-                label: l10n.labClearSelectionAction,
-                enabled: items.isNotEmpty,
-                onPressed: items.isEmpty ? null : _deselectAllListed,
-              ),
-            ],
           ),
           emptyBuilder: (_) => Center(
             child: AppMutedText(emptyLabel, textAlign: TextAlign.center),
@@ -2291,6 +2285,37 @@ class _LabEnableFacilityOfferingDialogState
         id: 'select',
         label: l10n.commonSelectActionLabel,
         alwaysVisible: true,
+        headerBuilder: (BuildContext context) {
+          return ValueListenableBuilder<Set<String>>(
+            valueListenable: _selectedIds,
+            builder: (BuildContext context, Set<String> selected, _) {
+              final List<LabCatalogItem> listed = _sortedFilteredCatalogItems;
+              final bool allSelected =
+                  listed.isNotEmpty &&
+                  listed.every(
+                    (LabCatalogItem item) =>
+                        selected.contains(_labEnableCatalogItemKey(item)),
+                  );
+              final bool someSelected = listed.any(
+                (LabCatalogItem item) =>
+                    selected.contains(_labEnableCatalogItemKey(item)),
+              );
+              return Checkbox(
+                tristate: true,
+                value: allSelected
+                    ? true
+                    : someSelected
+                    ? null
+                    : false,
+                onChanged: listed.isEmpty
+                    ? null
+                    : (bool? checked) =>
+                          _setListedSelection(selected: checked ?? false),
+                visualDensity: VisualDensity.compact,
+              );
+            },
+          );
+        },
         cellBuilder: (_, LabCatalogItem item) {
           final String key = _labEnableCatalogItemKey(item);
           return ValueListenableBuilder<Set<String>>(
