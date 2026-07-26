@@ -14,14 +14,17 @@ picker, `panel_items` payload, similarity review (including 0%),
   (name/code/category/description, Next validates), step 2 **Panel tests** —
   `LabPanelTestSelectionTable`, a fixed-height virtualized multi-select list
   (`ListView.builder` + search); ≥1 member test required before Save.
-- Similarity review opens **only when** near/exact matches exist (empty
-  0% scans save directly). Match dialog uses a single status banner and a
+- Similarity review **always** opens (including empty 0% scans → Continue
+  save). Near/exact matches use Create/Save anyway and send
+  `confirm_similar: true`. Match dialog uses a single status banner and a
   bullet list for panel member tests.
 - Payload includes `panel_items` (`lab_test_id`, optional `test_code`,
   `sort_order`) and `confirm_similar: true` after proceed.
 - `_guardAgainstDuplicates` runs for panels: name/code/category + **composition
   overlap** (member-test identity match by id or code); always opens
   `showLabCatalogSimilarityDialog` (including 0%).
+- Panel details dialog shows description, selected-test count, and numbered
+  member tests (not only id/name/code/category).
 - Mobile-friendly picker layout (`AppBreakpoints.isMobile`).
 - Catalog mutate remains gated by `canMutateLabCatalog`.
 

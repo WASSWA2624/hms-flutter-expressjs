@@ -1236,9 +1236,11 @@ class _LabCatalogItemMutationDialogState
         result.similarMatches;
     final bool hasExactConflict = result.hasExactConflict;
 
-    // Already confirmed, or no similar entries — skip the review modal.
+    // Always open the similarity modal (including 0% / empty matches). Skip
+    // only after the user already confirmed that empty review, or after
+    // proceeding past matches with confirm_similar.
     if (_similarityAccepted ||
-        (reviewMatches.isEmpty && !hasExactConflict)) {
+        (_noSimilarConfirmed && reviewMatches.isEmpty && !hasExactConflict)) {
       return true;
     }
 

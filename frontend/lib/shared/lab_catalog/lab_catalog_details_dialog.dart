@@ -36,13 +36,23 @@ Future<void> showLabCatalogItemDetailsDialog(
           (l10n.labResultKindLabel, _displayValue(item.resultKind)),
           (l10n.labDefaultUnitLabel, _displayValue(item.unit)),
         ],
-        if ((item.description ?? '').trim().isNotEmpty)
+        if (isPanel)
           (
-            isPanel
-                ? l10n.labPanelDescriptionLabel
-                : l10n.labTestDescriptionLabel,
-            item.description!.trim(),
+            l10n.labPanelSelectedTestsTitle,
+            l10n.labPanelSelectedTestsCountLabel(
+              item.panelItems.isNotEmpty
+                  ? item.panelItems.length
+                  : item.testCount,
+            ),
           ),
+        (
+          isPanel
+              ? l10n.labPanelDescriptionLabel
+              : l10n.labTestDescriptionLabel,
+          _displayValue(item.description),
+        ),
+        if ((item.source ?? '').trim().isNotEmpty)
+          (l10n.radiologySourceColumnLabel, item.source!.trim()),
         if (item.isStandard)
           (l10n.labStandardCatalogBadge, l10n.labStandardCatalogBadge),
       ];
@@ -53,7 +63,7 @@ Future<void> showLabCatalogItemDetailsDialog(
           isPanel ? Icons.view_module_outlined : Icons.biotech_outlined,
         ),
         scrollable: true,
-        maxWidth: 640,
+        maxWidth: isPanel ? 720 : 640,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -112,6 +122,89 @@ Future<void> showLabCatalogItemDetailsDialog(
                     SizedBox(height: theme.spacing.xs),
                   ],
                 ],
+                if (isPanel) ...<Widget>[
+                  SizedBox(height: theme.spacing.md),
+                  Text(
+                    l10n.labPanelTestsLabel,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                  if (item.panelItems.isEmpty)
+                    AppMutedText(l10n.labPanelNoSelectedTests)
+                  else
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                        borderRadius: BorderRadius.circular(theme.radius.sm),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          for (
+                            int index = 0;
+                            index < item.panelItems.length;
+                            index += 1
+                          ) ...<Widget>[
+                            if (index > 0)
+                              Divider(
+                                height: 1,
+                                color: theme.colorScheme.outlineVariant,
+                              ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: theme.spacing.md,
+                                vertical: theme.spacing.sm,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    '${index + 1}.',
+                                    style: theme.textTheme.labelLarge
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  SizedBox(width: theme.spacing.sm),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Text(
+                                          item.panelItems[index].displayTitle,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                        if (_panelItemSubtitle(
+                                          item.panelItems[index],
+                                        ).isNotEmpty)
+                                          Text(
+                                            _panelItemSubtitle(
+                                              item.panelItems[index],
+                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                ],
               ],
             ),
           ],
@@ -125,6 +218,15 @@ Future<void> showLabCatalogItemDetailsDialog(
         ],
       );
     },
+  );
+}
+
+String _panelItemSubtitle(LabPanelItem item) {
+  return <String?>[
+    item.testCode,
+    item.unit,
+  ].whereType<String>().where((String value) => value.trim().isNotEmpty).join(
+    ' · ',
   );
 }
 
