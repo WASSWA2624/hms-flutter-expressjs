@@ -1837,14 +1837,18 @@ class _LabEnableFacilityOfferingDialogState
         ValueListenableBuilder<Set<String>>(
           valueListenable: _selectedIds,
           builder: (BuildContext context, Set<String> selectedIds, _) {
-            final bool catalogCanNext =
-                _selectedAvailableItemsFor(selectedIds).isNotEmpty;
+            final int selectedCount =
+                _selectedAvailableItemsFor(selectedIds).length;
+            final bool catalogCanNext = selectedCount > 0;
+            final String nextLabel = catalogCanNext
+                ? '${l10n.commonNextActionLabel} ($selectedCount)'
+                : l10n.commonNextActionLabel;
             return AppButton.primary(
-              label: l10n.commonNextActionLabel,
+              label: nextLabel,
               leadingIcon: Icons.arrow_forward_outlined,
               enabled: catalogCanNext,
               tooltip: catalogCanNext
-                  ? l10n.commonNextActionLabel
+                  ? nextLabel
                   : l10n.labSelectAtLeastOneItemMessage,
               onPressed: catalogCanNext ? _goToPriceStep : null,
             );
@@ -1929,8 +1933,34 @@ class _LabEnableFacilityOfferingDialogState
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        ValueListenableBuilder<Set<String>>(
+          valueListenable: _selectedIds,
+          builder: (BuildContext context, Set<String> selectedIds, _) {
+            final int listedCount = items.length;
+            final int selectedListedCount = items
+                .where(
+                  (LabCatalogItem item) =>
+                      selectedIds.contains(_labEnableCatalogItemKey(item)),
+                )
+                .length;
+            if (listedCount == 0 || selectedListedCount == 0) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: EdgeInsets.only(top: theme.spacing.xs),
+              child: Text(
+                l10n.labSelectedTestCount(selectedListedCount, listedCount),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            );
+          },
+        ),
         SizedBox(height: theme.spacing.md),
-        if (_isSearching) const LinearProgressIndicator(minHeight: 2),
+        if (_isSearching && items.isNotEmpty)
+          const LinearProgressIndicator(minHeight: 2),
         AppListTable<LabCatalogItem>(
           items: items,
           maxVisibleItems: _maxVisibleLabCatalogDialogItems,
@@ -1938,6 +1968,13 @@ class _LabEnableFacilityOfferingDialogState
           physics: const NeverScrollableScrollPhysics(),
           tableHorizontalMargin: 0,
           isLoading: _isSearching,
+          loadingBuilder: (BuildContext context) => Padding(
+            padding: EdgeInsets.symmetric(vertical: theme.spacing.xl),
+            child: AppLoadingIndicator(
+              title: l10n.commonLoadingTitle,
+              body: l10n.commonLoadingBody,
+            ),
+          ),
           itemKeyBuilder: (LabCatalogItem item) =>
               ValueKey<String>(_labEnableCatalogItemKey(item)),
           onRowSelected: (LabCatalogItem item) {
@@ -2048,16 +2085,20 @@ class _LabEnableFacilityOfferingDialogState
           mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
             final String key = _labEnableCatalogItemKey(item);
             return AppListTableMobileItem(
-              leading: ValueListenableBuilder<Set<String>>(
-                valueListenable: _selectedIds,
-                builder: (BuildContext context, Set<String> selected, _) {
-                  return Checkbox(
-                    value: selected.contains(key),
-                    onChanged: (bool? value) =>
-                        _toggleSelection(item, selected: value ?? false),
-                    visualDensity: VisualDensity.compact,
-                  );
-                },
+              leading: Align(
+                alignment: Alignment.centerLeft,
+                child: ValueListenableBuilder<Set<String>>(
+                  valueListenable: _selectedIds,
+                  builder: (BuildContext context, Set<String> selected, _) {
+                    return Checkbox(
+                      value: selected.contains(key),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      onChanged: (bool? value) =>
+                          _toggleSelection(item, selected: value ?? false),
+                    );
+                  },
+                ),
               ),
               showAvatar: false,
               title: item.name ?? item.displayTitle,
@@ -2292,6 +2333,7 @@ class _LabEnableFacilityOfferingDialogState
         label: l10n.commonSelectActionLabel,
         alwaysVisible: true,
         headerBuilder: (BuildContext context) {
+          final AppLocalizations headerL10n = context.l10n;
           return ValueListenableBuilder<Set<String>>(
             valueListenable: _selectedIds,
             builder: (BuildContext context, Set<String> selected, _) {
@@ -2306,34 +2348,68 @@ class _LabEnableFacilityOfferingDialogState
                 (LabCatalogItem item) =>
                     selected.contains(_labEnableCatalogItemKey(item)),
               );
-              return Checkbox(
-                tristate: true,
-                value: allSelected
-                    ? true
-                    : someSelected
-                    ? null
-                    : false,
-                onChanged: listed.isEmpty
-                    ? null
-                    : (bool? checked) =>
-                          _setListedSelection(selected: checked ?? false),
-                visualDensity: VisualDensity.compact,
+              final bool? checkboxValue = allSelected
+                  ? true
+                  : someSelected
+                  ? null
+                  : false;
+              final String tooltip = listed.isEmpty
+                  ? headerL10n.commonSelectActionLabel
+                  : allSelected
+                  ? headerL10n.labClearSelectionAction
+                  : someSelected
+                  ? headerL10n.labSelectedTestCount(
+                      listed
+                          .where(
+                            (LabCatalogItem item) => selected.contains(
+                              _labEnableCatalogItemKey(item),
+                            ),
+                          )
+                          .length,
+                      listed.length,
+                    )
+                  : headerL10n.labSelectAllTestsAction;
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Tooltip(
+                  message: tooltip,
+                  child: Semantics(
+                    label: tooltip,
+                    checked: allSelected,
+                    mixed: someSelected && !allSelected,
+                    child: Checkbox(
+                      tristate: true,
+                      value: checkboxValue,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      onChanged: listed.isEmpty
+                          ? null
+                          : (bool? checked) => _setListedSelection(
+                              selected: checked ?? false,
+                            ),
+                    ),
+                  ),
+                ),
               );
             },
           );
         },
         cellBuilder: (_, LabCatalogItem item) {
           final String key = _labEnableCatalogItemKey(item);
-          return ValueListenableBuilder<Set<String>>(
-            valueListenable: _selectedIds,
-            builder: (BuildContext context, Set<String> selected, _) {
-              return Checkbox(
-                value: selected.contains(key),
-                onChanged: (bool? value) =>
-                    _toggleSelection(item, selected: value ?? false),
-                visualDensity: VisualDensity.compact,
-              );
-            },
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: ValueListenableBuilder<Set<String>>(
+              valueListenable: _selectedIds,
+              builder: (BuildContext context, Set<String> selected, _) {
+                return Checkbox(
+                  value: selected.contains(key),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                  onChanged: (bool? value) =>
+                      _toggleSelection(item, selected: value ?? false),
+                );
+              },
+            ),
           );
         },
       ),
@@ -3099,7 +3175,6 @@ class _LabPanelTestSelectionTableState
             semanticLabel: l10n.labCatalogSearchLabel,
             hintText: l10n.labCatalogSearchLabel,
             enableDateFilter: false,
-            showAdvancedFilterButton: false,
             matcher: (LabCatalogItem item, String query) =>
                 item.matchesSearch(query),
           ),

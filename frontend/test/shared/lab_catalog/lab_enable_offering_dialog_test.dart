@@ -126,7 +126,7 @@ void main() {
       await tester.pump();
 
       final AppButton nextAfterSelect = tester.widget<AppButton>(
-        find.widgetWithText(AppButton, 'Next'),
+        find.widgetWithText(AppButton, 'Next (2)'),
       );
       expect(nextAfterSelect.enabled, isTrue);
 
@@ -137,6 +137,7 @@ void main() {
         find.widgetWithText(AppButton, 'Next'),
       );
       expect(nextAfterClear.enabled, isFalse);
+      expect(find.textContaining('of'), findsNothing);
     });
 
     testWidgets('dedupes catalog rows that share type and apiId', (
@@ -157,7 +158,7 @@ void main() {
 
       await tester.tap(find.byType(Checkbox).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Next').first);
+      await tester.tap(_nextButton());
       await tester.pumpAndSettle();
 
       expect(find.byType(AppCurrencyAmountField), findsNWidgets(2));
@@ -174,7 +175,7 @@ void main() {
 
       await tester.tap(find.byType(Checkbox).at(1));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Next').first);
+      await tester.tap(_nextButton());
       await tester.pumpAndSettle();
 
       expect(find.text('SET FACILITY PRICES'), findsOneWidget);
@@ -200,7 +201,7 @@ void main() {
 
       await tester.tap(find.byType(Checkbox).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Next').first);
+      await tester.tap(_nextButton());
       await tester.pumpAndSettle();
 
       final Finder amountFields = find.descendant(
@@ -240,7 +241,7 @@ void main() {
       await tester.tap(find.byType(Checkbox).at(1));
       await tester.tap(find.byType(Checkbox).at(2));
       await tester.pump();
-      await tester.tap(find.text('Next').first);
+      await tester.tap(_nextButton());
       await tester.pumpAndSettle();
 
       expect(find.text('SET FACILITY PRICES'), findsOneWidget);
@@ -255,7 +256,7 @@ void main() {
       await tester.enterText(amountFields.at(1), '2500');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Next').first);
+      await tester.tap(_nextButton());
       await tester.pumpAndSettle();
 
       expect(find.text('REVIEW SELECTION'), findsOneWidget);
@@ -287,7 +288,7 @@ void main() {
       await tester.tap(find.byType(Checkbox).at(1));
       await tester.tap(find.byType(Checkbox).at(2));
       await tester.pump();
-      await tester.tap(find.text('Next').first);
+      await tester.tap(_nextButton());
       await tester.pumpAndSettle();
 
       final Finder amountFields = find.descendant(
@@ -297,7 +298,7 @@ void main() {
       await tester.enterText(amountFields.at(0), '1000');
       await tester.enterText(amountFields.at(1), '2500');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Next').first);
+      await tester.tap(_nextButton());
       await tester.pumpAndSettle();
 
       expect(find.text('REVIEW SELECTION'), findsOneWidget);
@@ -312,6 +313,11 @@ void main() {
     });
   });
 }
+
+Finder _nextButton() => find.byWidgetPredicate(
+  (Widget widget) =>
+      widget is AppButton && widget.label.trim().startsWith('Next'),
+);
 
 Future<void> _pumpEnableDialog(
   WidgetTester tester, {
