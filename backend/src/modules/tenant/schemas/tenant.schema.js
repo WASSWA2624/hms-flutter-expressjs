@@ -29,11 +29,21 @@ const optionalEmailSchema = z.preprocess((value) => {
   return normalized === '' ? null : normalized.toLowerCase();
 }, z.string().email().max(255).optional().nullable());
 
+const requiredEmailSchema = z.preprocess((value) => {
+  if (value == null) return value;
+  return String(value).trim().toLowerCase();
+}, z.string().trim().min(1).email().max(255));
+
 const optionalPhoneSchema = z.preprocess((value) => {
   if (value == null) return value;
   const normalized = String(value).trim();
   return normalized === '' ? null : normalized;
 }, z.string().min(3).max(40).optional().nullable());
+
+const requiredPhoneSchema = z.preprocess((value) => {
+  if (value == null) return value;
+  return String(value).trim();
+}, z.string().trim().min(3).max(40));
 
 const optionalCurrencySchema = z.preprocess((value) => {
   if (value == null) return value;
@@ -60,7 +70,7 @@ const slugSchema = z
     'Slug must be lowercase letters, numbers, and hyphens'
   );
 
-const contactSchema = z
+const optionalContactSchema = z
   .object({
     name: z.string().trim().max(255).optional().nullable(),
     email: optionalEmailSchema,
@@ -70,6 +80,12 @@ const contactSchema = z
   .optional()
   .nullable();
 
+const requiredContactSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  email: requiredEmailSchema,
+  phone: requiredPhoneSchema
+});
+
 const billingSchema = z
   .object({
     standard_consultation_fee: optionalFeeSchema
@@ -78,11 +94,19 @@ const billingSchema = z
   .optional()
   .nullable();
 
-const extensionJsonSchema = z
+const createExtensionJsonSchema = z
   .object({
     currency: optionalCurrencySchema,
     billing: billingSchema,
-    contact: contactSchema
+    contact: requiredContactSchema
+  })
+  .passthrough();
+
+const updateExtensionJsonSchema = z
+  .object({
+    currency: optionalCurrencySchema,
+    billing: billingSchema,
+    contact: optionalContactSchema
   })
   .passthrough()
   .optional()
@@ -99,7 +123,7 @@ const createTenantSchema = z.object({
   slug: slugSchema.optional(),
   is_active: z.boolean().optional(),
   confirm_similar: optionalBooleanSchema,
-  extension_json: extensionJsonSchema
+  extension_json: createExtensionJsonSchema
 });
 
 /**
@@ -111,7 +135,7 @@ const updateTenantSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   slug: slugSchema.optional().nullable(),
   is_active: z.boolean().optional(),
-  extension_json: extensionJsonSchema
+  extension_json: updateExtensionJsonSchema
 });
 
 // ==================== URL Params ====================

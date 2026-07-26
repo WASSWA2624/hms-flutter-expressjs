@@ -12,34 +12,53 @@ const {
   listTenantsQuerySchema
 } = require('@validations/tenant/tenant.schema');
 
+const requiredContactExtension = {
+  contact: {
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+    phone: '+256700000000'
+  }
+};
+
 describe('Tenant Schema Validation', () => {
   describe('createTenantSchema', () => {
     it('should validate correct tenant data', () => {
       const validData = {
         name: 'Test Hospital',
         slug: 'test-hospital',
-        is_active: true
+        is_active: true,
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
-    it('should validate with minimal data (name only)', () => {
-      const validData = {
+    it('should require contact name, email, and phone', () => {
+      const missingContact = createTenantSchema.safeParse({
         name: 'Test Hospital'
-      };
-      const result = createTenantSchema.safeParse(validData);
-      expect(result.success).toBe(true);
+      });
+      const incompleteContact = createTenantSchema.safeParse({
+        name: 'Test Hospital',
+        extension_json: {
+          contact: {
+            name: 'Jane Doe'
+          }
+        }
+      });
+
+      expect(missingContact.success).toBe(false);
+      expect(incompleteContact.success).toBe(false);
     });
 
-    it('should accept extension_json branding metadata', () => {
+    it('should accept extension_json branding metadata with required contact', () => {
       const validData = {
         name: 'Test Hospital',
         extension_json: {
           logo_url: 'https://example.com/logo.png',
           website: 'https://example.com',
           timezone: 'Africa/Kampala',
-          currency: 'UGX'
+          currency: 'UGX',
+          ...requiredContactExtension
         }
       };
       const result = createTenantSchema.safeParse(validData);
@@ -51,7 +70,8 @@ describe('Tenant Schema Validation', () => {
 
     it('should trim name whitespace', () => {
       const validData = {
-        name: '  Test Hospital  '
+        name: '  Test Hospital  ',
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -63,7 +83,8 @@ describe('Tenant Schema Validation', () => {
     it('should trim slug whitespace', () => {
       const validData = {
         name: 'Test Hospital',
-        slug: '  test-hospital  '
+        slug: '  test-hospital  ',
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -73,14 +94,17 @@ describe('Tenant Schema Validation', () => {
     });
 
     it('should reject missing name', () => {
-      const invalidData = {};
+      const invalidData = {
+        extension_json: requiredContactExtension
+      };
       const result = createTenantSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
     });
 
     it('should reject empty name', () => {
       const invalidData = {
-        name: ''
+        name: '',
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -88,7 +112,8 @@ describe('Tenant Schema Validation', () => {
 
     it('should reject name exceeding 255 characters', () => {
       const invalidData = {
-        name: 'a'.repeat(256)
+        name: 'a'.repeat(256),
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -97,7 +122,8 @@ describe('Tenant Schema Validation', () => {
     it('should reject slug exceeding 191 characters', () => {
       const invalidData = {
         name: 'Test Hospital',
-        slug: 'a'.repeat(192)
+        slug: 'a'.repeat(192),
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -107,7 +133,8 @@ describe('Tenant Schema Validation', () => {
       const validData = {
         name: 'Test Hospital',
         slug: 'test-hospital',
-        confirm_similar: true
+        confirm_similar: true,
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -119,7 +146,8 @@ describe('Tenant Schema Validation', () => {
     it('should reject invalid slug format', () => {
       const invalidData = {
         name: 'Test Hospital',
-        slug: 'Invalid Slug!'
+        slug: 'Invalid Slug!',
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -128,7 +156,8 @@ describe('Tenant Schema Validation', () => {
     it('should reject invalid is_active type', () => {
       const invalidData = {
         name: 'Test Hospital',
-        is_active: 'yes'
+        is_active: 'yes',
+        extension_json: requiredContactExtension
       };
       const result = createTenantSchema.safeParse(invalidData);
       expect(result.success).toBe(false);

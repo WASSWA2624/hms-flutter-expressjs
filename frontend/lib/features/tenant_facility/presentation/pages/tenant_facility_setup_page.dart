@@ -873,7 +873,11 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
               controller: _contactNameController,
               enabled: fieldsEnabled,
               labelText: l10n.tenantFacilityTenantDetailsContactNameLabel,
+              isRequired: widget.isCreate,
               textCapitalization: TextCapitalization.words,
+              validator: widget.isCreate
+                  ? AppValidators.requiredText(l10n.validationRequired)
+                  : null,
               onChanged: (_) => _clearDuplicateState(),
             ),
             right: AppPhoneField(
@@ -887,6 +891,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
               numberHintText: l10n.appPhoneNumberHint,
               invalidPhoneMessage: l10n.appPhoneInvalidMessage,
               requiredMessage: l10n.validationRequired,
+              isRequired: widget.isCreate,
               onChanged: (_) => _clearDuplicateState(),
             ),
           ),
@@ -898,6 +903,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
               labelText: l10n.profileEmailLabel,
               requiredMessage: l10n.validationRequired,
               invalidEmailMessage: l10n.authEmailInvalidMessage,
+              isRequired: widget.isCreate,
               onChanged: (_) => _clearDuplicateState(),
             ),
             right: AppCurrencySelectField(
