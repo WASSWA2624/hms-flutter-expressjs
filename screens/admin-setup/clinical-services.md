@@ -1,47 +1,5 @@
 
 ## Clinical Services panel chrome (`FacilityCatalogConfigPanel`)
----
-
-## Lab nested tab
-
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Create test | Search trailing; empty-state primary (`labCreateTestAction`) | May open scope picker when `tenantId` missing; then `LabCatalogItemMutationDialog` for `LabCatalogItemType.test`. |
-| Create panel | Search trailing only (`labCreatePanelAction`) | Same create flow for `LabCatalogItemType.panel`. |
-| Row select | Table / mobile list row | Opens `showLabCatalogItemDetailsDialog` for that test or panel (does **not** open edit). |
-| Edit | Row actions only | `LabCatalogItemMutationDialog` for the row’s kind. |
-| Delete | Row actions (`tenantFacilityDeleteAction` → **Delete**) | `LabDeleteReasonDialog`; submit **Delete test** or **Delete panel**. |
-
-**Filter groups:** type (test / panel); category; result kind; specimen type; source (from loaded rows).
-
-### `showLabCatalogItemDetailsDialog` (details)
-
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Edit | Footer (when mutable) | Pops `LabCatalogItemDetailsAction.edit`; parent opens `LabCatalogItemMutationDialog` via existing edit path. Omitted for unauthorized or standard items. |
-| Delete | Footer (when mutable) | Pops `LabCatalogItemDetailsAction.delete`; parent opens `LabDeleteReasonDialog` via existing delete path. Omitted for unauthorized or standard items. |
-| Close | Footer | Dismisses details. |
-
-### `LabCatalogItemMutationDialog` (create / edit)
-
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Cancel | Footer (tests; panel details step) | Dismisses without save. Remains available during similarity scan; disabled only while saving. Dialog close (X) stays available except while saving. |
-| Next / Back | Footer (panels only) | Panels are a **three-step wizard** (`AppWizardStepper`): step 1 **Panel details**, step 2 **Panel tests**, step 3 **Similarity**. Next validates details (name required) before advancing; from tests, Next requires ≥1 member then opens similarity review. Back returns to the previous step. Stepper nodes are also tappable. |
-| Save | Footer (tests; panel similarity step) | For **tests**: runs similarity scan (button loading). Always opens `showLabCatalogSimilarityDialog`, including **0% / no matches** (Continue save). Near/exact matches use Create/Save anyway and send `confirm_similar: true`. For **panels**: Save appears on the **Similarity** step after review proceeds; panels also require ≥1 member test. Backend 409 name/code conflicts jump panels back to the details step with field errors. |
-| Similarity review | Modal after Save (tests) or Next from Panel tests (panels) | Opens for empty, near, and exact scans. Exact clashes and near matches send `confirm_similar: true` on proceed. Actions: Cancel / Use this test or **Use this panel** / Continue save or Create/Save anyway. Use this pops `LabCatalogItem` so the parent opens details. Panel review scores name, code/id, category, and member-test composition (including slight overlaps / shared members) with per-parameter scores and overall %. |
-| Details | After successful create/edit or Use this test/panel | Parent opens `showLabCatalogItemDetailsDialog` (with Edit/Delete when mutable) for the selected, created, or updated test/panel. Panel details include description, selected-test count, and a numbered member-test list (code · unit when present). |
-| Add reference range | Top of test form range list | Appends another age/gender reference-range row (tests only); blocks duplicate label+gender+age-band keys. |
-| Remove reference range | Per range row | Removes that reference-range row (tests only). |
-| Add unit / qualitative value | Test form option lists | Adds chip values for unit or qualitative options (by result kind). |
-| Remove unit / qualitative value | Option chips | Removes the selected option chip. |
-| Select / deselect test | Panel tests step (`LabPanelTestSelectionTable` → `AppListTable`) | Searchable multi-select via shrink-wrapped `AppListTable` (dialog-body scroll only; no nested scroll). Selected members sort to the top; row tap or checkbox toggles. Shows selected count + truncated name summary; create requires at least one. |
-
-Titles: create uses lab create dialog title keys; edit uses **Edit Lab Test** / **Edit Lab Panel** by kind.
-
-**Test form field order:** framed sections — **Test identity** (name → code → searchable category select) → **Result configuration** (specimen select → result kind → default unit select / options by kind → description) → **Reference ranges** (preset labels + age/gender rows; Add at top). Category, specimen, and unit options combine known catalogs with loaded rows. **Panel form:** three-step wizard — step 1 **Panel details** (name → code → searchable category select → description), step 2 **Panel tests** shrink-wrapped searchable `AppListTable` multi-select (tenant and standard catalog tests; single dialog scroll), step 3 **Similarity** (opens `showLabCatalogSimilarityDialog` with per-parameter + overall %; Save after proceed). Create/edit payloads include `panel_items`. Selecting a standard (`STD_LAB_TEST:…`) member adopts that test into the tenant catalog on save. Create/configure dialogs share `LabTestDefinitionForm` for tests. Catalog mutate actions require `canMutateLabCatalog` (lab:write or tenant/facility/system admin).
-
----
 
 ## Diagnoses nested tab
 
