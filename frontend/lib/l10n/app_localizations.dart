@@ -35875,6 +35875,18 @@ abstract class AppLocalizations {
   /// **'Existing lab panel'**
   String get labSimilarPanelExistingHeading;
 
+  /// Dialog title when no similar lab panels are found.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar lab panel found'**
+  String get labNoSimilarPanelDialogTitle;
+
+  /// Banner title when no similar lab panels are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get labNoSimilarPanelBannerTitle;
+
   /// Body when panel similarity review finds no matches.
   ///
   /// In en, this message translates to:

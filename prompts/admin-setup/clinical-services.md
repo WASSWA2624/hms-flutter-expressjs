@@ -12,10 +12,11 @@ picker, `panel_items` payload, similarity review (including 0%),
 
 - Two-step wizard (`AppWizardStepper`): step 1 **Panel details**
   (name/code/category/description, Next validates), step 2 **Panel tests** —
-  `LabPanelTestSelectionTable`, a searchable multi-select `AppListTable`
-  (checkbox + name/code/category columns); ≥1 member test required before Save.
-- Backend 409 name/code conflicts jump back to the details step with field
-  errors.
+  `LabPanelTestSelectionTable`, a fixed-height virtualized multi-select list
+  (`ListView.builder` + search); ≥1 member test required before Save.
+- Similarity review opens **only when** near/exact matches exist (empty
+  0% scans save directly). Match dialog uses a single status banner and a
+  bullet list for panel member tests.
 - Payload includes `panel_items` (`lab_test_id`, optional `test_code`,
   `sort_order`) and `confirm_similar: true` after proceed.
 - `_guardAgainstDuplicates` runs for panels: name/code/category + **composition

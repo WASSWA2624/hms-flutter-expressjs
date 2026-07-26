@@ -86,6 +86,13 @@ showLabCatalogSimilarityDialog(
     topMatch: topMatch,
     hasExactMatch: hasExactMatch,
   );
+  final String dialogTitle = hasExactMatch || hasMatches
+      ? (isPanel
+            ? l10n.labSimilarPanelDialogTitle
+            : l10n.labSimilarTestDialogTitle)
+      : (isPanel
+            ? l10n.labNoSimilarPanelDialogTitle
+            : l10n.labNoSimilarTestDialogTitle);
   final String proceedLabel = isEditing
       ? (isPanel
             ? l10n.labProceedUpdatePanelAction
@@ -112,11 +119,7 @@ showLabCatalogSimilarityDialog(
           : AppFormInformationVariant.success;
 
       return AppDialog(
-        title: Text(
-          isPanel
-              ? l10n.labSimilarPanelDialogTitle
-              : l10n.labSimilarTestDialogTitle,
-        ),
+        title: Text(dialogTitle),
         icon: Icon(
           hasExactMatch
               ? Icons.gpp_bad_outlined
@@ -129,6 +132,8 @@ showLabCatalogSimilarityDialog(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            // One status banner only — skip the duplicate empty-state banner
+            // that previously repeated the same 0% copy under "Closest matches".
             AppFormInformationBanner(
               title: banner.title,
               message: banner.message,
@@ -141,39 +146,30 @@ showLabCatalogSimilarityDialog(
             ),
             SizedBox(height: theme.spacing.md),
             _ProposedTestCard(proposed: proposed),
-            SizedBox(height: theme.spacing.lg),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    l10n.labSimilarTestMatchesHeading,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+            if (hasMatches) ...<Widget>[
+              SizedBox(height: theme.spacing.lg),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      l10n.labSimilarTestMatchesHeading,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                Text(
-                  l10n.labSimilarTestMatchCountLabel(
-                    visibleMatches.length,
+                  Text(
+                    l10n.labSimilarTestMatchCountLabel(
+                      visibleMatches.length,
+                    ),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            if (!hasMatches)
-              AppFormInformationBanner(
-                title: l10n.labSimilarTestScoreLabel(0),
-                message: isPanel
-                    ? l10n.labNoSimilarPanelDialogBody
-                    : l10n.labNoSimilarTestDialogBody,
-                variant: AppFormInformationVariant.success,
-                icon: Icons.percent_outlined,
-              )
-            else
+                ],
+              ),
+              SizedBox(height: theme.spacing.sm),
               for (int index = 0; index < visibleMatches.length; index += 1) ...<
                 Widget
               >[
@@ -191,6 +187,7 @@ showLabCatalogSimilarityDialog(
                   ),
                 ),
               ],
+            ],
           ],
         ),
         actions: <Widget>[
@@ -226,7 +223,13 @@ class _ProposedTestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final bool isPanel = proposed.isPanel;
+    final List<String> memberTests = (proposed.memberTestsSummary ?? '')
+        .split(',')
+        .map((String value) => value.trim())
+        .where((String value) => value.isNotEmpty)
+        .toList(growable: false);
 
     return AppSectionPanel(
       tone: AppWorkspaceStatusTone.info,
@@ -262,18 +265,55 @@ class _ProposedTestCard extends StatelessWidget {
                 l10n.labTestRangesSectionTitle,
                 _displayValue(proposed.referenceRangeSummary),
               ),
-            ] else ...<(String, String)>[
+            ] else
               (
                 l10n.labPanelDescriptionLabel,
                 _displayValue(proposed.description),
               ),
-              (
-                l10n.labPanelTestsLabel,
-                _displayValue(proposed.memberTestsSummary),
-              ),
-            ],
           ],
         ),
+        if (isPanel) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.labPanelTestsLabel,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs),
+          if (memberTests.isEmpty)
+            Text(
+              _displayValue(null),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          else
+            for (final String member in memberTests)
+              Padding(
+                padding: EdgeInsets.only(bottom: theme.spacing.xs / 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '• ',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        member,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        ],
       ],
     );
   }
@@ -991,7 +1031,9 @@ _SimilarityBannerCopy _similarityBannerCopy({
 
   if (topMatch == null) {
     return _SimilarityBannerCopy(
-      title: l10n.labSimilarTestReviewBannerTitle(0),
+      title: isPanel
+          ? l10n.labNoSimilarPanelBannerTitle
+          : l10n.labNoSimilarTestBannerTitle,
       message: isPanel
           ? l10n.labNoSimilarPanelDialogBody
           : l10n.labNoSimilarTestDialogBody,

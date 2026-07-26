@@ -77,7 +77,7 @@ void main() {
       expect(optionsField.labelText, 'Qualitative result options');
     });
 
-    testWidgets('save opens similarity review at 0% then submits full test payload', (
+    testWidgets('save with no similar matches submits without review modal', (
       WidgetTester tester,
     ) async {
       Map<String, Object?>? submitted;
@@ -96,15 +96,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Even 0% similarity goes through the dedicated similarity modal.
-      expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
-      expect(find.text('Match status: Similar (0%)'), findsOneWidget);
-      expect(find.text('0% match'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Continue save'), findsOneWidget);
-      await tester.tap(find.widgetWithText(AppButton, 'Continue save'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
+      // No matches → skip the similarity modal and save directly.
+      expect(find.text('SIMILAR LAB TEST FOUND'), findsNothing);
+      expect(find.text('NO SIMILAR LAB TEST FOUND'), findsNothing);
       expect(submitted, isNotNull);
       expect(submitted!['name'], 'Glucose');
       expect(submitted!['code'], 'GLU');
@@ -296,15 +290,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('SIMILAR LAB TEST FOUND'), findsOneWidget);
-      expect(find.text('Match status: Exact duplicate'), findsNothing);
-      expect(find.text('Match status: Similar (0%)'), findsOneWidget);
-      // Edit always uses the Save anyway proceed label.
-      expect(find.widgetWithText(AppButton, 'Save anyway'), findsOneWidget);
-      await tester.tap(find.widgetWithText(AppButton, 'Save anyway'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
+      expect(find.text('SIMILAR LAB TEST FOUND'), findsNothing);
       expect(submitted, isNotNull);
       expect(submitted!.containsKey('confirm_similar'), isFalse);
       expect(submitted!['name'], 'Hemoglobin');
@@ -390,7 +376,8 @@ void main() {
       expect(submissions, hasLength(1));
       expect(submissions.first['confirm_similar'], isTrue);
 
-      // Rename to a unique value — clears prior similarity acceptance.
+      // Rename to a unique value — clears prior similarity acceptance and
+      // saves directly when the scan finds no matches.
       await tester.enterText(
         find.byType(TextFormField).at(0),
         'Unique Serum Zinc Assay',
@@ -402,11 +389,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.widgetWithText(AppButton, 'Continue save'), findsOneWidget);
-      await tester.tap(find.widgetWithText(AppButton, 'Continue save'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
+      expect(find.widgetWithText(AppButton, 'Continue save'), findsNothing);
       expect(submissions, hasLength(2));
       expect(submissions.last.containsKey('confirm_similar'), isFalse);
       expect(submissions.last['name'], 'Unique Serum Zinc Assay');
@@ -539,8 +522,10 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      // Similarity / save must not proceed past the range error.
-      expect(submitCount, 0);
+      // Duplicate add was blocked, so the form still has one valid range and
+      // a unique name — save proceeds without opening a similarity modal.
+      expect(submitCount, 1);
+      expect(find.text('SIMILAR LAB TEST FOUND'), findsNothing);
     });
 
     testWidgets('create panel requires member tests and submits panel_items after similarity', (
@@ -622,7 +607,7 @@ void main() {
           );
       table.onToggle(table.tests.first);
       await tester.pump();
-      expect(find.text('Selected tests: 1 selected'), findsOneWidget);
+      expect(find.text('1 selected'), findsOneWidget);
 
       await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
       await tester.tap(find.widgetWithText(AppButton, 'Save'));
@@ -652,7 +637,7 @@ void main() {
       expect(first['sort_order'], 0);
     });
 
-    testWidgets('panel create with unique membership shows 0% continue save', (
+    testWidgets('panel create with unique membership saves without review modal', (
       WidgetTester tester,
     ) async {
       Map<String, Object?>? submitted;
@@ -691,13 +676,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('SIMILAR LAB PANEL FOUND'), findsOneWidget);
-      expect(find.text('Match status: Similar (0%)'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Continue save'), findsOneWidget);
-      await tester.tap(find.widgetWithText(AppButton, 'Continue save'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
+      expect(find.text('SIMILAR LAB PANEL FOUND'), findsNothing);
       expect(submitted, isNotNull);
       expect(submitted!.containsKey('confirm_similar'), isFalse);
       expect(submitted!['panel_items'], isA<List<Object?>>());
@@ -746,7 +725,7 @@ void main() {
           );
       table.onToggle(table.tests.first);
       await tester.pump();
-      expect(find.text('Selected tests: 1 selected'), findsOneWidget);
+      expect(find.text('1 selected'), findsOneWidget);
 
       await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
       await tester.tap(find.widgetWithText(AppButton, 'Save'));

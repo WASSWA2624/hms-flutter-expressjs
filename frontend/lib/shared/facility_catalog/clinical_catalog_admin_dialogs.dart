@@ -1236,10 +1236,9 @@ class _LabCatalogItemMutationDialogState
         result.similarMatches;
     final bool hasExactConflict = result.hasExactConflict;
 
-    // Create and edit use the same similarity modal (including 0%). The row
-    // being edited is excluded via exclude ids.
+    // Already confirmed, or no similar entries — skip the review modal.
     if (_similarityAccepted ||
-        (_noSimilarConfirmed && reviewMatches.isEmpty && !hasExactConflict)) {
+        (reviewMatches.isEmpty && !hasExactConflict)) {
       return true;
     }
 

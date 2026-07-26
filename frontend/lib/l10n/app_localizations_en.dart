@@ -19229,6 +19229,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labSimilarPanelExistingHeading => 'Existing lab panel';
 
   @override
+  String get labNoSimilarPanelDialogTitle => 'No similar lab panel found';
+
+  @override
+  String get labNoSimilarPanelBannerTitle => 'Match status: No similar found';
+
+  @override
   String get labNoSimilarPanelDialogBody =>
       'Review the lab panel details below. No similar panels were found in this catalog scope.';
 

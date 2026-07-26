@@ -24669,6 +24669,14 @@
   "@labSimilarPanelExistingHeading": {
     "description": "Heading for an existing panel match card."
   },
+  "labNoSimilarPanelDialogTitle": "No similar lab panel found",
+  "@labNoSimilarPanelDialogTitle": {
+    "description": "Dialog title when no similar lab panels are found."
+  },
+  "labNoSimilarPanelBannerTitle": "Match status: No similar found",
+  "@labNoSimilarPanelBannerTitle": {
+    "description": "Banner title when no similar lab panels are found."
+  },
   "labNoSimilarPanelDialogBody": "Review the lab panel details below. No similar panels were found in this catalog scope.",
   "@labNoSimilarPanelDialogBody": {
     "description": "Body when panel similarity review finds no matches."
