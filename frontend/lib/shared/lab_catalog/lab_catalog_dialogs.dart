@@ -1567,7 +1567,11 @@ class _LabEnableFacilityOfferingDialogState
       final String key = _labEnableCatalogItemKey(item);
       _priceControllers.putIfAbsent(
         key,
-        () => TextEditingController(text: item.unitPrice?.toString() ?? ''),
+        () => TextEditingController(
+          text: item.unitPrice == null
+              ? ''
+              : formatCurrencyAmountInput(item.unitPrice!),
+        ),
       );
       _currencies.putIfAbsent(
         key,
@@ -1581,7 +1585,9 @@ class _LabEnableFacilityOfferingDialogState
     final TextEditingController? controller = _priceControllers[key];
     final String amount = controller?.text.trim().isNotEmpty == true
         ? controller!.text.trim()
-        : (item.unitPrice?.toString() ?? '');
+        : (item.unitPrice == null
+              ? ''
+              : formatCurrencyAmountInput(item.unitPrice!));
     final String currency =
         _currencies[key] ?? item.currency ?? widget.defaultCurrency;
     if (amount.isEmpty) {

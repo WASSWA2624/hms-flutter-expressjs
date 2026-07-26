@@ -23,6 +23,7 @@ const LabCatalogItem _availablePanel = LabCatalogItem(
   name: 'Metabolic panel',
   code: 'CMP',
   category: 'Chemistry',
+  unitPrice: 102000,
 );
 
 const LabCatalogItem _alreadyOfferedTest = LabCatalogItem(
@@ -160,6 +161,32 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppCurrencyAmountField), findsNWidgets(2));
+    });
+
+    testWidgets('formats prefilled unit prices with thousand separators', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.panel,
+        items: const <LabCatalogItem>[_availablePanel],
+      );
+
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('SET FACILITY PRICES'), findsOneWidget);
+      final Finder amountFields = find.descendant(
+        of: find.byType(AppCurrencyAmountField),
+        matching: find.byType(EditableText),
+      );
+      expect(amountFields, findsOneWidget);
+      expect(
+        tester.widget<EditableText>(amountFields).controller?.text,
+        '102,000',
+      );
     });
 
     testWidgets('price fields stay independent across selected items', (

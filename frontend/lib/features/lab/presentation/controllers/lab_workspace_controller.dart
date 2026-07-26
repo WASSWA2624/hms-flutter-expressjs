@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.da
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/domain/repositories/lab_repository.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_offering_match.dart';
 
 final labWorkspaceControllerProvider =
     AsyncNotifierProvider<LabWorkspaceController, Result<LabWorkspaceState>>(
@@ -1048,13 +1049,13 @@ final class LabWorkspaceController
             tenantId: scope.tenantId,
             facilityId: scope.facilityId,
             offeredOnly: true,
-            limit: limit,
+            limit: labEnableOfferedMatchLimit,
           )
         : _repository.listFacilityLabPanels(
             tenantId: scope.tenantId,
             facilityId: scope.facilityId,
             offeredOnly: true,
-            limit: limit,
+            limit: labEnableOfferedMatchLimit,
           );
 
     final List<Result<List<LabCatalogItem>>> results = await Future.wait(
@@ -1069,34 +1070,15 @@ final class LabWorkspaceController
   ) {
     return platformResult.when(
       success: (List<LabCatalogItem> platformItems) {
-        final Set<String> offeredIds = <String>{};
-        final Set<String> offeredCodes = <String>{};
-        offeredResult.when(
-          success: (List<LabCatalogItem> offeredItems) {
-            for (final LabCatalogItem item in offeredItems) {
-              offeredIds.add(item.apiId);
-              final String? code = item.code?.trim();
-              if (code != null && code.isNotEmpty) {
-                offeredCodes.add(code.toUpperCase());
-              }
-            }
-          },
-          failure: (_) {},
+        final List<LabCatalogItem> offeredItems = offeredResult.when(
+          success: (List<LabCatalogItem> items) => items,
+          failure: (_) => const <LabCatalogItem>[],
         );
         return Result<List<LabCatalogItem>>.success(
-          platformItems
-              .map((LabCatalogItem item) {
-                final String? code = item.code?.trim();
-                final bool isOffered =
-                    offeredIds.contains(item.apiId) ||
-                    (code != null &&
-                        code.isNotEmpty &&
-                        offeredCodes.contains(code.toUpperCase()));
-                return isOffered
-                    ? item.copyWith(isOfferedAtFacility: true)
-                    : item;
-              })
-              .toList(growable: false),
+          markLabCatalogItemsOfferedAtFacility(
+            platformItems: platformItems,
+            offeredItems: offeredItems,
+          ),
         );
       },
       failure: (AppFailure failure) =>

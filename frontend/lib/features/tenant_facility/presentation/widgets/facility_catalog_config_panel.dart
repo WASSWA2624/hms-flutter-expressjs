@@ -32,6 +32,7 @@ import 'package:hosspi_hms/shared/facility_catalog/lab_catalog_mutate_visibility
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_details_dialog.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_fields.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_offering_match.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_details_dialog.dart';
@@ -2764,47 +2765,28 @@ class _FacilityCatalogConfigPanelState
             tenantId: scope.tenantId,
             facilityId: scope.facilityId,
             offeredOnly: true,
-            limit: limit,
+            limit: labEnableOfferedMatchLimit,
           )
         : repository.listFacilityLabPanels(
             tenantId: scope.tenantId,
             facilityId: scope.facilityId,
             offeredOnly: true,
-            limit: limit,
+            limit: labEnableOfferedMatchLimit,
           );
     final List<Result<List<LabCatalogItem>>> results = await Future.wait(
       <Future<Result<List<LabCatalogItem>>>>[platformFuture, offeredFuture],
     );
     return results[0].when(
       success: (List<LabCatalogItem> platformItems) {
-        final Set<String> offeredIds = <String>{};
-        final Set<String> offeredCodes = <String>{};
-        results[1].when(
-          success: (List<LabCatalogItem> offeredItems) {
-            for (final LabCatalogItem item in offeredItems) {
-              offeredIds.add(item.apiId);
-              final String? code = item.code?.trim();
-              if (code != null && code.isNotEmpty) {
-                offeredCodes.add(code.toUpperCase());
-              }
-            }
-          },
-          failure: (_) {},
+        final List<LabCatalogItem> offeredItems = results[1].when(
+          success: (List<LabCatalogItem> items) => items,
+          failure: (_) => const <LabCatalogItem>[],
         );
         return Result<List<LabCatalogItem>>.success(
-          platformItems
-              .map((LabCatalogItem item) {
-                final String? code = item.code?.trim();
-                final bool isOffered =
-                    offeredIds.contains(item.apiId) ||
-                    (code != null &&
-                        code.isNotEmpty &&
-                        offeredCodes.contains(code.toUpperCase()));
-                return isOffered
-                    ? item.copyWith(isOfferedAtFacility: true)
-                    : item;
-              })
-              .toList(growable: false),
+          markLabCatalogItemsOfferedAtFacility(
+            platformItems: platformItems,
+            offeredItems: offeredItems,
+          ),
         );
       },
       failure: (AppFailure failure) =>
