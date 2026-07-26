@@ -77,6 +77,20 @@ describe('Lab Panel Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should accept standard catalog lab_test_id values', () => {
+      const validData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Beta Glucan Panel',
+        panel_items: [{ lab_test_id: 'STD_LAB_TEST:LOINC_42176_8' }]
+      };
+
+      const result = createLabPanelSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      expect(result.data.panel_items[0].lab_test_id).toBe(
+        'STD_LAB_TEST:LOINC_42176_8'
+      );
+    });
+
     it('should fail validation when tenant_id is missing', () => {
       const invalidData = {
         name: 'Complete Metabolic Panel'

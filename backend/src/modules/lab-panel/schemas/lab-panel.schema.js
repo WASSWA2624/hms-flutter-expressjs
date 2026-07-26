@@ -29,8 +29,20 @@ const optionalBooleanSchema = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
+// Platform catalog rows use STD_LAB_TEST:<KEY> (keys may include underscores /
+// hyphens). Tenant UUID / friendly IDs remain accepted as before.
+const standardLabTestIdentifierSchema = z
+  .string()
+  .trim()
+  .regex(/^STD_LAB_TEST:[A-Za-z0-9_-]+$/i, 'Invalid standard lab test identifier')
+  .transform((value) => value.toUpperCase());
+const labPanelMemberTestIdentifierSchema = z.union([
+  uuidOrFriendlyIdentifierSchema,
+  standardLabTestIdentifierSchema
+]);
+
 const labPanelItemSchema = z.object({
-  lab_test_id: uuidOrFriendlyIdentifierSchema,
+  lab_test_id: labPanelMemberTestIdentifierSchema,
   is_required: z.boolean().optional(),
   instructions: optionalTrimmedString(255),
   sort_order: z.number().int().nonnegative().optional()

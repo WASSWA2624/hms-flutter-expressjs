@@ -6,6 +6,12 @@ jest.mock('@lib/audit', () => ({
 jest.mock('@lib/websocket/crud-realtime', () => ({
   publishCrudRealtimeEvent: jest.fn().mockResolvedValue(0)
 }));
+jest.mock('@prisma/client', () => ({
+  lab_test: {
+    findFirst: jest.fn(),
+    create: jest.fn()
+  }
+}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {
@@ -15,6 +21,7 @@ jest.mock('@services/lab-workspace/lab.shared', () => {
 });
 
 const labPanelRepository = require('@repositories/lab-panel/lab-panel.repository');
+const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
 const {
   resolveModelIdOrThrow,
@@ -57,6 +64,12 @@ describe('lab-panel.service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue(undefined);
+    prisma.lab_test.findFirst.mockResolvedValue(null);
+    prisma.lab_test.create.mockResolvedValue({
+      id: 'lab-test-internal-std',
+      human_friendly_id: 'LBT0000099',
+      code: '42176-8'
+    });
   });
 
   it('lists lab panels with resolved tenant filters and serialized identifiers', async () => {
@@ -161,13 +174,13 @@ describe('lab-panel.service', () => {
     };
     resolveModelIdOrThrow
       .mockResolvedValueOnce('tenant-internal-1')
-      .mockResolvedValueOnce('lab-test-internal-1')
-      .mockResolvedValueOnce('tenant-internal-1')
-      .mockResolvedValueOnce('lab-test-internal-2');
+      .mockResolvedValueOnce('tenant-internal-1');
     resolveModelRecordOrThrow
-      .mockResolvedValueOnce(labTest1)
-      .mockResolvedValueOnce(before)
-      .mockResolvedValueOnce(labTest2);
+      .mockResolvedValueOnce(labTest1) // create enrich
+      .mockResolvedValueOnce(labTest1) // create write resolve
+      .mockResolvedValueOnce(before) // update load panel
+      .mockResolvedValueOnce(labTest2) // update enrich
+      .mockResolvedValueOnce(labTest2); // update write resolve
     labPanelRepository.findMany.mockResolvedValue([]);
     labPanelRepository.create.mockResolvedValue({ id: 'panel-internal-1' });
     labPanelRepository.update.mockResolvedValue({ id: 'panel-internal-1' });
@@ -246,6 +259,58 @@ describe('lab-panel.service', () => {
       expect.objectContaining({
         id: 'LBP0000001',
         name: 'Updated Panel'})
+    );
+  });
+
+  it('materializes standard catalog member tests when creating a panel', async () => {
+    const createdRecord = buildPanelRecord({
+      name: 'Beta Glucan Panel',
+      code: 'BGP-1'
+    });
+    resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
+    prisma.lab_test.findFirst
+      .mockResolvedValueOnce(null) // enrich (virtual)
+      .mockResolvedValueOnce(null); // write materialize lookup
+    prisma.lab_test.create.mockResolvedValue({
+      id: 'lab-test-internal-std',
+      human_friendly_id: 'LBT0000099',
+      code: '42176-8'
+    });
+    labPanelRepository.findMany.mockResolvedValue([]);
+    labPanelRepository.create.mockResolvedValue({ id: 'panel-internal-1' });
+    labPanelRepository.findById.mockResolvedValue(createdRecord);
+
+    await labPanelService.createLabPanel(
+      {
+        tenant_id: 'TEN0000001',
+        name: 'Beta Glucan Panel',
+        code: 'BGP-1',
+        category: 'Chemistry',
+        panel_items: [{ lab_test_id: 'STD_LAB_TEST:LOINC_42176_8' }]
+      },
+      mockUserId,
+      mockIpAddress
+    );
+
+    expect(prisma.lab_test.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenant_id: 'tenant-internal-1',
+          code: '42176-8',
+          name: '1,3 beta glucan [Mass/volume] in Serum'
+        })
+      })
+    );
+    expect(labPanelRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        panel_items: {
+          create: [
+            expect.objectContaining({
+              lab_test_id: 'lab-test-internal-std'
+            })
+          ]
+        }
+      })
     );
   });
 
@@ -330,9 +395,7 @@ describe('lab-panel.service', () => {
       name: 'Zzyx Custom Chemistry Alpha',
       code: 'NEW-001'
     });
-    resolveModelIdOrThrow
-      .mockResolvedValueOnce('tenant-internal-1')
-      .mockResolvedValueOnce('lab-test-internal-1');
+    resolveModelIdOrThrow.mockResolvedValueOnce('tenant-internal-1');
     resolveModelRecordOrThrow.mockResolvedValue({
       id: 'lab-test-internal-1',
       human_friendly_id: 'LBT0000001',
@@ -384,12 +447,11 @@ describe('lab-panel.service', () => {
     });
     resolveModelRecordOrThrow
       .mockResolvedValueOnce(before)
-      .mockResolvedValueOnce({
+      .mockResolvedValue({
         id: 'lab-test-internal-1',
         human_friendly_id: 'LBT0000001',
         code: 'GLU'
       });
-    resolveModelIdOrThrow.mockResolvedValue('lab-test-internal-1');
     labPanelRepository.findMany.mockResolvedValue([
       {
         id: 'existing-1',

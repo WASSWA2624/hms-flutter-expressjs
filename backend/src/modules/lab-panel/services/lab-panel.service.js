@@ -1,4 +1,5 @@
 const labPanelRepository = require('@repositories/lab-panel/lab-panel.repository');
+const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
@@ -122,38 +123,198 @@ const mergeStandardLabPanels = ({ mappedRecords, filters, limit, sortBy, order }
   return [...sortedMapped, ...sortedStandards].sort(compare);
 };
 
-const resolvePanelItems = async (items, tenantId) => {
+const standardCatalogCodeFromIdentifier = (identifier, prefix) => {
+  const normalized = String(identifier || '').trim().toUpperCase();
+  const expected = `${String(prefix || '').trim().toUpperCase()}:`;
+  if (!normalized.startsWith(expected)) {
+    return null;
+  }
+  return normalized.slice(expected.length);
+};
+
+/**
+ * Adopt a platform-standard lab test into the tenant catalog so panel_items can
+ * store a real FK (standard IDs are virtual list-only rows).
+ */
+const resolveOrCreateStandardLabTest = async ({
+  identifier,
+  tenantId,
+  userId = null,
+  ipAddress = null
+} = {}) => {
+  const catalogCode = standardCatalogCodeFromIdentifier(identifier, 'STD_LAB_TEST');
+  if (!catalogCode) {
+    return null;
+  }
+  const definition = STANDARD_LAB_TESTS[catalogCode];
+  if (!definition) {
+    return null;
+  }
+
+  const existing = await prisma.lab_test.findFirst({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      code: definition.code
+    },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      code: true
+    }
+  });
+  if (existing) {
+    return existing;
+  }
+
+  const labTest = await prisma.lab_test.create({
+    data: {
+      tenant_id: tenantId,
+      name: definition.name,
+      code: definition.code,
+      category: definition.category,
+      specimen_type: definition.specimen_type,
+      result_kind: definition.result_kind,
+      unit: definition.unit,
+      description: definition.description,
+      ...(definition.unit
+        ? {
+            unit_options: {
+              create: [
+                {
+                  label: null,
+                  unit: definition.unit,
+                  ucum_code: null,
+                  is_default: true,
+                  sort_order: 0
+                }
+              ]
+            }
+          }
+        : {})
+    },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      code: true
+    }
+  });
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: userId,
+    action: 'CREATE',
+    entity: 'lab_test',
+    entity_id: labTest.id,
+    diff: {
+      after: { ...definition, id: labTest.id, source: 'STANDARD_LAB_CATALOG' }
+    },
+    ip_address: ipAddress
+  }).catch(() => {});
+
+  return labTest;
+};
+
+const resolvePanelMemberLabTest = async (
+  identifier,
+  tenantId,
+  { userId = null, ipAddress = null, materializeStandard = true } = {}
+) => {
+  const raw = String(identifier || '').trim();
+  if (raw.toUpperCase().startsWith('STD_LAB_TEST:')) {
+    const catalogCode = standardCatalogCodeFromIdentifier(raw, 'STD_LAB_TEST');
+    const definition = catalogCode ? STANDARD_LAB_TESTS[catalogCode] : null;
+    if (!definition) {
+      throw new HttpError('errors.lab_test.not_found', 404, [
+        { field: 'lab_test_id', identifier: raw }
+      ]);
+    }
+
+    if (!materializeStandard) {
+      const existing = await prisma.lab_test.findFirst({
+        where: {
+          tenant_id: tenantId,
+          deleted_at: null,
+          code: definition.code
+        },
+        select: {
+          id: true,
+          human_friendly_id: true,
+          code: true
+        }
+      });
+      if (existing) {
+        return existing;
+      }
+      const virtualId = String(raw).trim().toUpperCase();
+      return {
+        id: virtualId,
+        human_friendly_id: virtualId,
+        code: definition.code
+      };
+    }
+
+    const standard = await resolveOrCreateStandardLabTest({
+      identifier: raw,
+      tenantId,
+      userId,
+      ipAddress
+    });
+    if (!standard) {
+      throw new HttpError('errors.lab_test.not_found', 404, [
+        { field: 'lab_test_id', identifier: raw }
+      ]);
+    }
+    return standard;
+  }
+
+  return resolveModelRecordOrThrow({
+    identifier: raw,
+    model: 'lab_test',
+    where: {
+      deleted_at: null,
+      tenant_id: tenantId
+    },
+    errorKey: 'errors.lab_test.not_found'
+  });
+};
+
+const resolvePanelItems = async (items, tenantId, options = {}) => {
   const normalizedItems = normalizeLabPanelItems(items);
   return Promise.all(
-    normalizedItems.map(async (entry) => ({
-      ...entry,
-      lab_test_id: await resolveModelIdOrThrow({
-        identifier: entry.lab_test_id,
-        model: 'lab_test',
-        where: {
-          deleted_at: null,
-          tenant_id: tenantId},
-        errorKey: 'errors.lab_test.not_found'})}))
+    normalizedItems.map(async (entry) => {
+      const labTest = await resolvePanelMemberLabTest(
+        entry.lab_test_id,
+        tenantId,
+        { ...options, materializeStandard: true }
+      );
+      return {
+        ...entry,
+        lab_test_id: labTest.id
+      };
+    })
   );
 };
 
 /**
  * Resolve member tests to internal ids + codes so composition overlap works
- * when the client only sends lab_test_id (friendly or uuid).
+ * when the client only sends lab_test_id (friendly, uuid, or standard).
+ * Standard catalog ids are resolved virtually here; they are materialized only
+ * when the write payload is built after uniqueness checks pass.
  */
-const enrichPanelItemsForSimilarity = async (items = [], tenantId) => {
+const enrichPanelItemsForSimilarity = async (
+  items = [],
+  tenantId,
+  options = {}
+) => {
   const normalizedItems = normalizeLabPanelItems(items);
   return Promise.all(
     normalizedItems.map(async (entry) => {
-      const labTest = await resolveModelRecordOrThrow({
-        identifier: entry.lab_test_id,
-        model: 'lab_test',
-        where: {
-          deleted_at: null,
-          tenant_id: tenantId
-        },
-        errorKey: 'errors.lab_test.not_found'
-      });
+      const labTest = await resolvePanelMemberLabTest(
+        entry.lab_test_id,
+        tenantId,
+        { ...options, materializeStandard: false }
+      );
       return {
         lab_test_id: labTest.id,
         test_code: labTest.code || entry.test_code || null,
@@ -172,10 +333,15 @@ const buildPanelWritePayload = async (data = {}, tenantId, options = {}) => {
   const includeDeleteMany = options.includeDeleteMany === true;
 
   if (hasOwn(payload, 'panel_items')) {
-    const resolvedItems = await resolvePanelItems(payload.panel_items, tenantId);
+    const resolvedItems = await resolvePanelItems(
+      payload.panel_items,
+      tenantId,
+      options
+    );
     payload.panel_items = {
       ...(includeDeleteMany ? { deleteMany: {} } : {}),
-      create: resolvedItems};
+      create: resolvedItems
+    };
   } else {
     delete payload.panel_items;
   }
@@ -351,21 +517,29 @@ const createLabPanel = async (data, userId, ipAddress) => {
       errorKey: 'errors.tenant.not_found'});
     const writeData = { ...data };
     delete writeData.confirm_similar;
+    const actorOptions = { userId, ipAddress };
     const similarityPanelItems = Array.isArray(data.panel_items)
-      ? await enrichPanelItemsForSimilarity(data.panel_items, tenantId)
+      ? await enrichPanelItemsForSimilarity(
+        data.panel_items,
+        tenantId,
+        actorOptions
+      )
       : [];
-    const payload = await buildPanelWritePayload(writeData, tenantId, {
-      includeDeleteMany: false});
-    payload.tenant_id = tenantId;
 
     await assertLabPanelUniqueness({
-      name: payload.name ?? data.name,
-      code: payload.code ?? data.code,
-      category: payload.category ?? data.category,
+      name: data.name,
+      code: data.code,
+      category: data.category,
       panelItems: similarityPanelItems,
       tenantId,
       confirmSimilar
     });
+
+    const payload = await buildPanelWritePayload(writeData, tenantId, {
+      includeDeleteMany: false,
+      ...actorOptions
+    });
+    payload.tenant_id = tenantId;
 
     const labPanel = await labPanelRepository.create(payload);
     const created = await labPanelRepository.findById(labPanel.id, LAB_PANEL_WITH_RELATIONS_INCLUDE);
@@ -411,19 +585,18 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
     }
     const writeData = { ...data };
     delete writeData.confirm_similar;
-    const payload = await buildPanelWritePayload(writeData, tenantId, {
-      includeDeleteMany: true});
-    if (hasOwn(data, 'tenant_id') && data.tenant_id) {
-      payload.tenant_id = tenantId;
-    }
-
-    const nextName = hasOwn(payload, 'name') ? payload.name : before.name;
-    const nextCode = hasOwn(payload, 'code') ? payload.code : before.code;
-    const nextCategory = hasOwn(payload, 'category')
-      ? payload.category
+    const actorOptions = { userId, ipAddress };
+    const nextName = hasOwn(data, 'name') ? data.name : before.name;
+    const nextCode = hasOwn(data, 'code') ? data.code : before.code;
+    const nextCategory = hasOwn(data, 'category')
+      ? data.category
       : before.category;
     const nextPanelItems = hasOwn(data, 'panel_items')
-      ? await enrichPanelItemsForSimilarity(data.panel_items, tenantId)
+      ? await enrichPanelItemsForSimilarity(
+        data.panel_items,
+        tenantId,
+        actorOptions
+      )
       : (before.panel_items || []).map((item) => ({
         lab_test_id: item.lab_test_id,
         test_code: item.lab_test?.code || item.test_code || null,
@@ -439,11 +612,19 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
       excludePanelId: before.id,
       excludePanelIds: [
         before.id,
-        before.display_id,
-        before.human_friendly_id
+        before.human_friendly_id,
+        before.display_id
       ].filter(Boolean),
       confirmSimilar
     });
+
+    const payload = await buildPanelWritePayload(writeData, tenantId, {
+      includeDeleteMany: true,
+      ...actorOptions
+    });
+    if (hasOwn(data, 'tenant_id') && data.tenant_id) {
+      payload.tenant_id = tenantId;
+    }
 
     const updated = await labPanelRepository.update(before.id, payload);
     const labPanel = await labPanelRepository.findById(updated.id, LAB_PANEL_WITH_RELATIONS_INCLUDE);
