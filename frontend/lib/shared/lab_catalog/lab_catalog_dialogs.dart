@@ -2171,13 +2171,40 @@ class _LabEnableFacilityOfferingDialogState
                 padding: EdgeInsets.only(bottom: theme.spacing.lg),
                 child: AppFormSection(
                   children: <Widget>[
-                    Text(
-                      item.name ?? item.displayTitle,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              Text(
+                                item.name ?? item.displayTitle,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              AppMutedText(
+                                _joinEnableOfferingSubtitle(l10n, item),
+                              ),
+                            ],
+                          ),
+                        ),
+                        AppButton(
+                          iconOnly: true,
+                          leadingIcon: Icons.close,
+                          label: l10n.commonRemoveActionLabel,
+                          semanticLabel: l10n.commonRemoveActionLabel,
+                          tooltip: l10n.commonRemoveActionLabel,
+                          onPressed: _isSaving
+                              ? null
+                              : () => _toggleSelection(
+                                  item,
+                                  selected: false,
+                                ),
+                        ),
+                      ],
                     ),
-                    AppMutedText(_joinEnableOfferingSubtitle(l10n, item)),
                     AppCurrencyAmountField(
                       key: ValueKey<String>('lab-enable-amount-$key'),
                       amountController: controller,

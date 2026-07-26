@@ -224,6 +224,35 @@ void main() {
       );
     });
 
+    testWidgets('price step can remove an item from the batch', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[_availableTest, _availablePanel],
+      );
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pumpAndSettle();
+      await tester.tap(_nextButton());
+      await tester.pumpAndSettle();
+
+      expect(find.text('SET FACILITY PRICES'), findsOneWidget);
+      expect(find.byType(AppCurrencyAmountField), findsNWidgets(2));
+      expect(find.text('Complete blood count'), findsWidgets);
+      expect(find.text('Metabolic panel'), findsWidgets);
+
+      await tester.tap(find.byTooltip('Remove').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppCurrencyAmountField), findsOneWidget);
+      expect(find.text('2 items selected. Set a unit price for each item.'),
+          findsNothing);
+      expect(find.text('1 item selected. Set a unit price for each item.'),
+          findsOneWidget);
+    });
+
     testWidgets('price fields stay independent across selected items', (
       WidgetTester tester,
     ) async {

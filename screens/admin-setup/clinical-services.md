@@ -96,7 +96,7 @@ Opened after Configure → Next when the Lab nested tab is active. Wizard: **cat
 
 ### Batch price step
 
-Stacked fields for each selected test/panel: name/subtitle plus required `AppCurrencyAmountField` keyed per catalog identity (no shared controllers across items; no per-item nested price dialogs). Tests may suggest catalog unit prices (comma-grouped). **Panels always start blank** so facility panel price is independent of member-test pricing. Catalog rows are deduped by type + `apiId` (else code/id) before selection and pricing.
+Stacked fields for each selected test/panel: name/subtitle plus required `AppCurrencyAmountField` keyed per catalog identity (no shared controllers across items; no per-item nested price dialogs). Each row has a **Remove** icon action (`commonRemoveActionLabel`) to deselect that item from the batch without returning to catalog. Tests may suggest catalog unit prices (comma-grouped). **Panels always start blank** so facility panel price is independent of member-test pricing. Catalog rows are deduped by type + `apiId` (else code/id) before selection and pricing.
 
 ### Preview step
 
