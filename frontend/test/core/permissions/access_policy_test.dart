@@ -774,5 +774,45 @@ void main() {
 
       expect(policy.canMutateLabCatalog(), isFalse);
     });
+
+    test(
+      'canMutateClinicalCatalog grants clinical write and admin scopes',
+      () {
+        final doctor = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(roles: <String>['DOCTOR']),
+          ),
+        );
+        final facilityAdmin = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(roles: <String>['FACILITY_ADMIN']),
+          ),
+        );
+        final receptionist = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+          ),
+        );
+
+        expect(doctor.canMutateClinicalCatalog(), isTrue);
+        expect(facilityAdmin.canMutateClinicalCatalog(), isTrue);
+        expect(receptionist.canMutateClinicalCatalog(), isFalse);
+      },
+    );
+
+    test('canMutateClinicalCatalog respects explicit permission ceiling', () {
+      final policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['DOCTOR']),
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      expect(policy.canMutateClinicalCatalog(), isFalse);
+    });
   });
 }

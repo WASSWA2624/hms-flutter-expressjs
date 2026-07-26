@@ -27,6 +27,7 @@ import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/clinical_catalog_admin_dialogs.dart';
+import 'package:hosspi_hms/shared/facility_catalog/clinical_catalog_configure_visibility.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope.dart';
 import 'package:hosspi_hms/shared/facility_catalog/lab_catalog_mutate_visibility.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog_details_dialog.dart';
@@ -1039,6 +1040,10 @@ class _FacilityCatalogConfigPanelState
   }
 
   Widget _buildDiagnosisTable(AppLocalizations l10n) {
+    final bool canConfigureDiagnoses = clinicalCatalogConfigureVisible(
+      panelEnabled: widget.enabled,
+      canMutateClinicalCatalog: _canMutateClinicalCatalog,
+    );
     return AppListTable<ClinicalCatalogOption>(
       items: _diagnosisVisibleItems,
       maxVisibleItems: _pageSize,
@@ -1083,18 +1088,18 @@ class _FacilityCatalogConfigPanelState
           });
         },
         trailingActions: <AppSearchBarAction>[
-          if (widget.enabled) ...<AppSearchBarAction>[
+          if (canConfigureDiagnoses)
             AppSearchBarAction(
               icon: Icons.settings_suggest_outlined,
               label: l10n.tenantFacilityCatalogConfigureAction,
               onPressed: () => unawaited(_openConfigureFlow()),
             ),
+          if (widget.enabled)
             AppSearchBarAction(
               icon: Icons.add_circle_outline,
               label: l10n.clinicalCreateDiagnosisAction,
               onPressed: () => unawaited(_openDiagnosisAddDialog()),
             ),
-          ],
         ],
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
@@ -1456,6 +1461,13 @@ class _FacilityCatalogConfigPanelState
 
   Future<void> _openConfigureFlow() async {
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (_tab == _CatalogDeskTab.diagnoses &&
+        !clinicalCatalogConfigureVisible(
+          panelEnabled: widget.enabled,
+          canMutateClinicalCatalog: policy.canMutateClinicalCatalog(),
+        )) {
+      return;
+    }
     final CatalogConfigureScopeVisibility visibility =
         CatalogConfigureScopeVisibility.fromPolicy(policy);
     final TenantFacilityRepository tenantRepo = ref.read(
@@ -1739,6 +1751,9 @@ class _FacilityCatalogConfigPanelState
 
   bool get _canMutateLabCatalog =>
       ref.watch(appAccessPolicyProvider).canMutateLabCatalog();
+
+  bool get _canMutateClinicalCatalog =>
+      ref.watch(appAccessPolicyProvider).canMutateClinicalCatalog();
 
   Future<List<LabCatalogItem>> _loadLabSimilarityCandidates({
     String? tenantId,

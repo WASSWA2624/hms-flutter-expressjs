@@ -5,6 +5,7 @@
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
+| Configure | Search trailing (when `clinicalCatalogConfigureVisible`) | Scope picker (role-aware) → `DiagnosisEnableFacilityOfferingDialog`. Omitted when unauthorized. |
 | Create diagnosis | Search trailing; empty-state primary (`clinicalCreateDiagnosisAction`) | May open scope picker when `tenantId` missing; then `DiagnosisCatalogMutationDialog` (create). |
 | Edit | Row actions / row select | `DiagnosisCatalogMutationDialog` (edit). |
 | Delete | Row actions (**Delete**) | `LabDeleteReasonDialog` titled `clinicalDiagnosisFormTitle`; submit **Delete**; calls `deleteClinicalCatalogTerm`. |
@@ -98,14 +99,14 @@ Single-procedure price enable used by other callers (e.g. workspace nested flows
 
 ## Diagnosis enable offering dialog (`DiagnosisEnableFacilityOfferingDialog`)
 
-Opened after Configure → Next when the Diagnoses nested tab is active. Title: **Enable clinical diagnoses** (`tenantFacilityCatalogBrowseTitle`).
+Opened after Configure → Next when the Diagnoses nested tab is active. Title: **Enable clinical diagnoses** (`tenantFacilityCatalogBrowseTitle`). Diagnoses **Configure** renders only when the panel is enabled and `canMutateClinicalCatalog` (backend `clinical:write` / admin scopes).
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
 | Filter | Catalog search (when categories exist) | Category filters; **Apply filters** / **Clear filters**. |
 | Settings | Column visibility (`setup_catalog_diagnosis_enable`) | Column-settings dialog. |
-| Row select / Add diagnosis | Catalog row or row **Add diagnosis** (`clinicalAddDiagnosisAction`) | Upserts facility diagnosis offering (`upsertFacilityCatalogOffering`); on success pops `true`. Already-enabled rows show disabled **Configured**. |
-| Close | Footer | Dismisses picker. |
+| Row select / Add diagnosis | Catalog row or row **Add diagnosis** (`clinicalAddDiagnosisAction`) | Upserts facility diagnosis offering (`upsertFacilityCatalogOffering`); on success marks row **Configured** and stays open for more enables. Already-enabled rows show disabled **Configured**. |
+| Close | Footer | Pops `true` if any enable succeeded this session, else `false`; parent toast/refresh only after dismiss. |
 
 ---
 
@@ -144,7 +145,7 @@ Used for lab / diagnosis global catalog deletes from this panel. Call sites pass
 - **Configure** → **Select tenant and facility** →
   - Radiology → `RadiologyEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable; Back can return to scope)
   - Lab → `LabEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable for tests and panels; offered rows stay visible as Configured; Back can return to scope; Close returns whether any were enabled)
-  - Diagnoses → `DiagnosisEnableFacilityOfferingDialog` (row enable; no nested price dialog)
+  - Diagnoses → `DiagnosisEnableFacilityOfferingDialog` (row enable stay-open; Close returns whether any were enabled; no nested price dialog)
 - Add / Create (no tenant) → **Select tenant and facility** → category mutation dialog
 - Add / Create (tenant present) → category mutation dialog
 - Edit / row select → category mutation dialog (radiology skips soft-deleted / standard rows)

@@ -2173,6 +2173,7 @@ class _DiagnosisEnableFacilityOfferingDialogState
   AppFailure? _failure;
   bool _isSearching = true;
   bool _isEnabling = false;
+  bool _enabledAny = false;
   int _searchRequest = 0;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
 
@@ -2271,8 +2272,8 @@ class _DiagnosisEnableFacilityOfferingDialogState
     setState(() {
       _offeredIds.add(item.apiId);
       _isEnabling = false;
+      _enabledAny = true;
     });
-    Navigator.of(context).pop(true);
   }
 
   @override
@@ -2418,7 +2419,9 @@ class _DiagnosisEnableFacilityOfferingDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _isEnabling
+              ? null
+              : () => Navigator.of(context).pop(_enabledAny),
         ),
       ],
     );

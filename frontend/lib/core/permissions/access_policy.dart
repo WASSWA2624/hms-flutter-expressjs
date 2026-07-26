@@ -361,6 +361,21 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Who may enable facility clinical catalog offerings (e.g. diagnoses)
+  /// and mutate clinical catalog terms.
+  ///
+  /// Matches backend `PERMISSIONS.CLINICAL_WRITE` on
+  /// `/api/v1/clinical-catalog/offerings` and `/terms` mutations.
+  bool canMutateClinicalCatalog() {
+    return isElevated ||
+        grantsAny(const <AppPermission>[
+          AppPermissions.clinicalWrite,
+          AppPermissions.tenantAdmin,
+          AppPermissions.facilityAdmin,
+          AppPermissions.systemAdmin,
+        ]);
+  }
+
   /// Who may start/complete subscription upgrade or renewal flows.
   ///
   /// Super / tenant / facility admins always qualify (even when the
