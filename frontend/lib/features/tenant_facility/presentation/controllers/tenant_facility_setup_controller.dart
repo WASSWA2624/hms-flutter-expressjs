@@ -323,6 +323,7 @@ final class TenantFacilitySetupSubmissionController
     String? addressLine1,
     String? city,
     String? country,
+    bool confirmSimilar = false,
     bool refreshSetup = true,
   }) {
     return _submit(
@@ -344,6 +345,12 @@ final class TenantFacilitySetupSubmissionController
           logoUrl: resolvedLogoUrl,
           removeLogo: removeLogo,
           currency: resolvedCurrency,
+          phone: phone,
+          email: email,
+          addressLine1: addressLine1,
+          city: city,
+          country: country,
+          confirmSimilar: confirmSimilar,
         );
 
         if (facilityResult case ResultFailure<FacilityProfile>(

@@ -196,16 +196,21 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
       return;
     }
 
-    final TenantProfile? savedTenant = ref
+    final Object? savedEntity = ref
         .read(tenantFacilitySetupSubmissionProvider)
-        .lastSavedTenant;
-    if (savedTenant == null) {
-      return;
-    }
+        .lastSavedEntity;
     if (widget.managementSnapshot == null) {
       _showSaved(context);
     }
-    Navigator.of(context).pop<TenantProfile>(savedTenant);
+    if (savedEntity is TenantProfile) {
+      Navigator.of(context).pop<TenantProfile>(savedEntity);
+      return;
+    }
+    if (savedEntity is FacilityProfile) {
+      Navigator.of(context).pop<FacilityProfile>(savedEntity);
+      return;
+    }
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -365,7 +370,7 @@ Future<TenantProfile?> _openTenantProfileModal(
   );
 }
 
-Future<bool?> _openFacilityProfileModal(
+Future<FacilityProfile?> _openFacilityProfileModal(
   BuildContext context, {
   String? tenantId,
   FacilityProfile? facility,
@@ -379,7 +384,7 @@ Future<bool?> _openFacilityProfileModal(
     context,
   ).read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
 
-  return showAppDialog<bool>(
+  return showAppDialog<FacilityProfile>(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
@@ -1733,7 +1738,26 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
               },
             ),
           if (_similarMatches.isNotEmpty)
-            FacilitySimilarityWarningPanel(matches: _similarMatches),
+            AppFormInformationBanner(
+              title: context.l10n.tenantFacilitySimilarFacilityWarningTitle,
+              message: context.l10n.tenantFacilitySimilarFacilityWarningBody,
+              variant: AppFormInformationVariant.warning,
+              icon: Icons.content_copy_outlined,
+              children: <Widget>[
+                for (final FacilitySimilarityMatch match
+                    in _similarMatches.take(3))
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: Theme.of(context).spacing.xs,
+                    ),
+                    child: Text(
+                      context.l10n.tenantFacilitySimilarFacilityScoreLabel(
+                        match.score,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           AppTextField(
             controller: _nameController,
             enabled: fieldsEnabled,
@@ -1981,6 +2005,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     final bool canProceed = await _guardAgainstDuplicates(
       tenantId,
       name: resolvedName,
+      phone: resolvedPhone,
+      email: resolvedEmail,
+      addressLine1: resolvedAddress,
+      city: resolvedCity,
+      country: resolvedCountry,
     );
     if (!canProceed) {
       return false;
@@ -2007,21 +2036,82 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           addressLine1: resolvedAddress,
           city: resolvedCity,
           country: resolvedCountry,
+          confirmSimilar: _similarityAccepted,
           refreshSetup: widget.refreshSetupAfterSave,
         );
 
-    if (!saved && mounted) {
-      final AppFailure? failure = ref
-          .read(tenantFacilitySetupSubmissionProvider)
-          .failure;
-      if (failure?.messageKey == 'errors.facility.duplicate_name') {
-        setState(() {
-          _nameErrorText = context.l10n.tenantFacilityFacilityNameAlreadyInUse;
-        });
-      }
+    if (saved) {
+      return true;
     }
 
-    return saved;
+    if (!mounted) {
+      return false;
+    }
+
+    final AppFailure? failure = ref
+        .read(tenantFacilitySetupSubmissionProvider)
+        .failure;
+    if (failure?.messageKey == 'errors.facility.duplicate_name') {
+      setState(() {
+        _nameErrorText = context.l10n.tenantFacilityFacilityNameAlreadyInUse;
+      });
+      return false;
+    }
+    if (!_isFacilitySimilarityConflict(failure)) {
+      return false;
+    }
+
+    ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
+    setState(() {
+      _similarityAccepted = false;
+    });
+    final bool confirmed = await _guardAgainstDuplicates(
+      tenantId,
+      name: resolvedName,
+      phone: resolvedPhone,
+      email: resolvedEmail,
+      addressLine1: resolvedAddress,
+      city: resolvedCity,
+      country: resolvedCountry,
+      forceReviewMatches: true,
+    );
+    if (!confirmed || !mounted) {
+      return false;
+    }
+    return ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveFacility(
+          id: editingFacility?.mutationId ?? editingFacility?.id,
+          tenantId: resolvedTenantId,
+          name: resolvedName,
+          type: _type,
+          isActive: _isActive,
+          logoUrl: resolvedLogoUrl,
+          removeLogo: _logoCleared,
+          currency: _currency.trim().toUpperCase(),
+          logoBytes: _logoBytes,
+          logoFileName: _logoFileName,
+          logoMimeType: _logoMimeType,
+          phone: resolvedPhone,
+          email: resolvedEmail,
+          addressLine1: resolvedAddress,
+          city: resolvedCity,
+          country: resolvedCountry,
+          confirmSimilar: true,
+          refreshSetup: widget.refreshSetupAfterSave,
+        );
+  }
+
+  bool _isFacilitySimilarityConflict(AppFailure? failure) {
+    if (failure == null || failure.category != AppFailureCategory.conflict) {
+      return false;
+    }
+    if (failure.messageKey == 'errors.facility.similar_exists') {
+      return true;
+    }
+    final String detail = (failure.detailMessage ?? '').toLowerCase();
+    return detail.contains('similar facility') ||
+        detail.contains('confirm to create anyway');
   }
 
   List<_FacilityFieldChange> _buildFacilityChanges({
@@ -2208,16 +2298,35 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   Future<bool> _guardAgainstDuplicates(
     String tenantId, {
     required String name,
+    String? phone,
+    String? email,
+    String? addressLine1,
+    String? city,
+    String? country,
+    bool forceReviewMatches = false,
   }) async {
-    final AppLocalizations l10n = context.l10n;
     final FacilityProfile? editingFacility = widget.facility ?? _activeFacility;
 
-    // Editing with an unchanged name cannot be a duplicate of itself.
-    if (editingFacility != null &&
-        normalizeFacilityName(name) == normalizeFacilityName(_baselineName)) {
+    // Edit saves with an unchanged identity should skip empty review.
+    if (!_isCreate &&
+        !forceReviewMatches &&
+        editingFacility != null &&
+        normalizeFacilityName(name) == normalizeFacilityName(_baselineName) &&
+        _type == _baselineType &&
+        _isActive == _baselineIsActive &&
+        normalizeFacilityPhone(phone) == normalizeFacilityPhone(_baselinePhone) &&
+        normalizeFacilityEmail(email) ==
+            normalizeFacilityEmail(_baselineEmail) &&
+        normalizeFacilityAddress(addressLine1) ==
+            normalizeFacilityAddress(_baselineAddressLine1) &&
+        normalizeFacilityAddress(city) ==
+            normalizeFacilityAddress(_baselineCity) &&
+        normalizeFacilityAddress(country) ==
+            normalizeFacilityAddress(_baselineCountry)) {
       setState(() {
         _nameErrorText = null;
         _similarMatches = const <FacilitySimilarityMatch>[];
+        _similarityAccepted = false;
       });
       return true;
     }
@@ -2227,53 +2336,100 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     );
     final FacilityDuplicateCheckResult result = checkFacilityDuplicates(
       name: name,
+      type: _type,
+      isActive: _isActive,
       existing: existing,
       excludeFacility: editingFacility,
       excludeFacilityId: editingFacility?.mutationId ?? editingFacility?.id,
+      phone: phone,
+      email: email,
+      addressLine1: addressLine1,
+      city: city,
+      country: country,
     );
 
-    if (result.hasExactConflict) {
-      setState(() {
-        _nameErrorText = l10n.tenantFacilityFacilityNameAlreadyInUse;
-        _similarMatches = const <FacilitySimilarityMatch>[];
-      });
-      widget.onDialogStateChanged?.call();
+    final bool exactNameConflict = result.exactNameConflict;
+    final List<FacilitySimilarityMatch> reviewMatches = exactNameConflict
+        ? result.similarMatches
+              .where((FacilitySimilarityMatch match) => match.exactNameConflict)
+              .toList(growable: false)
+        : result.overridableMatches;
+
+    if (!mounted) {
       return false;
     }
 
-    final List<FacilitySimilarityMatch> similarMatches =
-        result.nonExactSimilarMatches;
-    if (similarMatches.isEmpty || _similarityAccepted) {
+    if (!_isCreate &&
+        !forceReviewMatches &&
+        !exactNameConflict &&
+        reviewMatches.isEmpty) {
       setState(() {
+        _nameErrorText = null;
         _similarMatches = const <FacilitySimilarityMatch>[];
+        _similarityAccepted = false;
       });
       return true;
     }
 
-    if (!mounted) {
-      return false;
-    }
-
-    final bool proceed = await showFacilitySimilarityDialog(
-      context,
-      matches: similarMatches,
-    );
-    if (!mounted) {
-      return false;
-    }
-    if (!proceed) {
-      setState(() {
-        _similarMatches = similarMatches;
-      });
-      widget.onDialogStateChanged?.call();
-      return false;
+    // Create always opens review (including zero matches). Edit only when
+    // forced by backend conflict or local matches exist.
+    if (!_isCreate && !forceReviewMatches && reviewMatches.isEmpty) {
+      return true;
     }
 
     setState(() {
-      _similarMatches = similarMatches;
-      _similarityAccepted = true;
+      _nameErrorText = exactNameConflict
+          ? context.l10n.tenantFacilityFacilityNameAlreadyInUse
+          : null;
+      _similarMatches = const <FacilitySimilarityMatch>[];
+      if (exactNameConflict) {
+        _similarityAccepted = false;
+      }
     });
-    return true;
+
+    final FacilitySimilarityDialogResult decision =
+        await showFacilitySimilarityDialog(
+          context,
+          proposed: FacilitySimilarityProposedValues(
+            name: name,
+            type: _type,
+            isActive: _isActive,
+            phone: phone,
+            email: email,
+            addressLine1: addressLine1,
+            city: city,
+            country: country,
+          ),
+          matches: reviewMatches,
+          allowProceed: !exactNameConflict,
+        );
+    if (!mounted) {
+      return false;
+    }
+
+    switch (decision.action) {
+      case FacilitySimilarityAction.cancel:
+        setState(() {
+          _similarityAccepted = false;
+          if (reviewMatches.isNotEmpty) {
+            _similarMatches = reviewMatches;
+          }
+        });
+        widget.onDialogStateChanged?.call();
+        return false;
+      case FacilitySimilarityAction.useExisting:
+        final FacilityProfile? existingFacility = decision.selectedFacility;
+        if (existingFacility != null) {
+          Navigator.of(context).pop<FacilityProfile>(existingFacility);
+        }
+        return false;
+      case FacilitySimilarityAction.proceed:
+        setState(() {
+          _similarityAccepted = reviewMatches.isNotEmpty || forceReviewMatches;
+          _nameErrorText = null;
+        });
+        return true;
+    }
   }
 
   Future<List<FacilityProfile>> _loadExistingFacilities(String tenantId) async {
@@ -4655,7 +4811,7 @@ Future<TenantProfile?> showTenantFacilityTenantFormDialog(
 }
 
 /// Opens the facility profile create/edit dialog from the home dashboard.
-Future<bool?> showTenantFacilityFacilityFormDialog(
+Future<FacilityProfile?> showTenantFacilityFacilityFormDialog(
   BuildContext context, {
   String? tenantId,
   FacilityProfile? facility,

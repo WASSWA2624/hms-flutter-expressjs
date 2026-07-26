@@ -64,6 +64,12 @@ abstract interface class TenantFacilityRepository {
     String? currency,
     String? standardConsultationFee,
     bool clearStandardConsultationFee = false,
+    String? phone,
+    String? email,
+    String? addressLine1,
+    String? city,
+    String? country,
+    bool confirmSimilar = false,
   });
 
   Future<Result<String>> uploadFacilityLogo({

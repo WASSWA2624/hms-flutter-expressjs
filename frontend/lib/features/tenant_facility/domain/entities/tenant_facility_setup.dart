@@ -124,6 +124,11 @@ final class FacilityProfile {
     this.logoUrl,
     this.currency,
     this.standardConsultationFee,
+    this.phone,
+    this.email,
+    this.addressLine1,
+    this.city,
+    this.country,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -137,6 +142,11 @@ final class FacilityProfile {
   final String? logoUrl;
   final String? currency;
   final String? standardConsultationFee;
+  final String? phone;
+  final String? email;
+  final String? addressLine1;
+  final String? city;
+  final String? country;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -155,6 +165,11 @@ final class FacilityProfile {
     String? logoUrl,
     String? currency,
     String? standardConsultationFee,
+    String? phone,
+    String? email,
+    String? addressLine1,
+    String? city,
+    String? country,
     String? resourceUuid,
     String? displayId,
     DateTime? deletedAt,
@@ -174,6 +189,11 @@ final class FacilityProfile {
       standardConsultationFee: clearStandardConsultationFee
           ? null
           : (standardConsultationFee ?? this.standardConsultationFee),
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      addressLine1: addressLine1 ?? this.addressLine1,
+      city: city ?? this.city,
+      country: country ?? this.country,
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),

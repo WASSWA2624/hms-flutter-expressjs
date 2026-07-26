@@ -378,6 +378,12 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? currency,
     String? standardConsultationFee,
     bool clearStandardConsultationFee = false,
+    String? phone,
+    String? email,
+    String? addressLine1,
+    String? city,
+    String? country,
+    bool confirmSimilar = false,
   }) {
     final String? normalizedLogoUrl = _normalizedOptional(logoUrl);
     final String? normalizedCurrency = _normalizedOptional(
@@ -410,6 +416,12 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       'facility_type': type.apiValue,
       'is_active': isActive,
       'extension_json': ?extensionJson,
+      if (id == null && confirmSimilar) 'confirm_similar': true,
+      if (id == null) 'phone': ?_normalizedOptional(phone),
+      if (id == null) 'email': ?_normalizedOptional(email),
+      if (id == null) 'address_line1': ?_normalizedOptional(addressLine1),
+      if (id == null) 'city': ?_normalizedOptional(city),
+      if (id == null) 'country': ?_normalizedOptional(country),
     };
     if (id == null) {
       return _apiClient.post<FacilityProfile>(

@@ -333,6 +333,17 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Create / soft-delete facility lifecycle (not facility-admin-only).
+  bool canCreateFacility() {
+    return isElevated ||
+        grantsAny(const <AppPermission>[
+          AppPermissions.tenantAdmin,
+          AppPermissions.systemAdmin,
+        ]);
+  }
+
+  bool canDeleteFacility() => canCreateFacility();
+
   /// Who may create, edit/update, or delete global radiology catalog procedures.
   ///
   /// Matches backend `RADIOLOGY_CATALOG_WRITE_SCOPES` on

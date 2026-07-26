@@ -32,11 +32,17 @@ describe('facility.service duplicate name validation', () => {
   });
 
   it('rejects create when facility name already exists for tenant', async () => {
-    facilityRepository.findByTenantAndName.mockResolvedValue({
-      id: 'FAC0001',
-      tenant_id: 'TEN0001',
-      name: 'DemoCare General Hospital'
-    });
+    facilityRepository.findMany.mockResolvedValue([
+      {
+        id: 'FAC0001',
+        tenant_id: 'TEN0001',
+        name: 'DemoCare General Hospital',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        contacts: [],
+        addresses: []
+      }
+    ]);
 
     await expect(
       facilityService.createFacility({
@@ -52,8 +58,72 @@ describe('facility.service duplicate name validation', () => {
     expect(facilityRepository.create).not.toHaveBeenCalled();
   });
 
+  it('rejects create when similar facility exists without confirm_similar', async () => {
+    facilityRepository.findMany.mockResolvedValue([
+      {
+        id: 'FAC0001',
+        tenant_id: 'TEN0001',
+        name: 'DemoCare General Hospital',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        contacts: [],
+        addresses: []
+      }
+    ]);
+
+    await expect(
+      facilityService.createFacility({
+        tenant_id: 'TEN0001',
+        name: 'Democare General Hospitl',
+        facility_type: 'HOSPITAL'
+      })
+    ).rejects.toMatchObject({
+      messageKey: 'errors.facility.similar_exists',
+      statusCode: 409
+    });
+
+    expect(facilityRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('allows create with confirm_similar when similar facility exists', async () => {
+    facilityRepository.findMany.mockResolvedValue([
+      {
+        id: 'FAC0001',
+        tenant_id: 'TEN0001',
+        name: 'DemoCare General Hospital',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        contacts: [],
+        addresses: []
+      }
+    ]);
+    facilityRepository.create.mockResolvedValue({
+      id: 'FAC0002',
+      tenant_id: 'TEN0001',
+      name: 'Democare General Hospitl',
+      facility_type: 'HOSPITAL',
+      is_active: true
+    });
+
+    const facility = await facilityService.createFacility({
+      tenant_id: 'TEN0001',
+      name: 'Democare General Hospitl',
+      facility_type: 'HOSPITAL',
+      confirm_similar: true,
+      phone: '+256700000000'
+    });
+
+    expect(facility.id).toBe('FAC0002');
+    expect(facilityRepository.create).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        confirm_similar: expect.anything(),
+        phone: expect.anything()
+      })
+    );
+  });
+
   it('allows create when no duplicate exists for tenant', async () => {
-    facilityRepository.findByTenantAndName.mockResolvedValue(null);
+    facilityRepository.findMany.mockResolvedValue([]);
     facilityRepository.create.mockResolvedValue({
       id: 'FAC0002',
       tenant_id: 'TEN0001',

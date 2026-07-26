@@ -33,6 +33,11 @@ const FACILITY_ADMIN_SCOPES = [
   PERMISSIONS.FACILITY_ADMIN,
   PERMISSIONS.SYSTEM_ADMIN,
 ];
+/** Create / soft-delete: tenant or platform admins only (not facility-admin-only). */
+const FACILITY_CREATE_DELETE_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 const PLATFORM_FACILITY_SCOPES = [PERMISSIONS.SYSTEM_ADMIN];
 
 /**
@@ -123,7 +128,7 @@ router.post(
   validateRequest({ body: createFacilitySchema }),
 
   authenticate(),
-  authorize(FACILITY_ADMIN_SCOPES, 'permission'),
+  authorize(FACILITY_CREATE_DELETE_SCOPES, 'permission'),
   facilityController.createFacility
 );
 
@@ -171,7 +176,7 @@ router.delete(
   validateRequest({ params: facilityIdParamsSchema }),
 
   authenticate(),
-  authorize(FACILITY_ADMIN_SCOPES, 'permission'),
+  authorize(FACILITY_CREATE_DELETE_SCOPES, 'permission'),
   facilityController.deleteFacility
 );
 

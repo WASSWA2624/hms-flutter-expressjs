@@ -15,6 +15,22 @@ const {
 
 const extensionJsonSchema = z.record(z.string(), z.unknown()).optional().nullable();
 
+const optionalBooleanSchema = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return value;
+}, z.boolean().optional());
+
+const optionalContactValueSchema = z.preprocess((value) => {
+  if (value == null) return value;
+  const normalized = String(value).trim();
+  return normalized === '' ? null : normalized;
+}, z.string().max(255).optional().nullable());
+
 // ==================== Enums ====================
 
 /**
@@ -34,6 +50,13 @@ const createFacilitySchema = z.object({
   name: z.string().trim().min(1).max(255),
   facility_type: facilityTypeEnum,
   is_active: z.boolean().optional(),
+  confirm_similar: optionalBooleanSchema,
+  // Optional contact fields used for similarity review on create (not persisted here).
+  phone: optionalContactValueSchema,
+  email: optionalContactValueSchema,
+  address_line1: optionalContactValueSchema,
+  city: optionalContactValueSchema,
+  country: optionalContactValueSchema,
   extension_json: extensionJsonSchema,
 });
 

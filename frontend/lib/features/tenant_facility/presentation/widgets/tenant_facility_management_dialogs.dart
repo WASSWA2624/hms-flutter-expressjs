@@ -1384,13 +1384,13 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
   }
 
   Future<void> _editFacility(FacilityProfile facility) async {
-    final bool? saved = await showTenantFacilityFacilityFormDialog(
+    final FacilityProfile? saved = await showTenantFacilityFacilityFormDialog(
       context,
       tenantId: _tenant.mutationId,
       facility: facility,
       managementMode: true,
     );
-    if (!mounted || saved != true) {
+    if (!mounted || saved == null) {
       return;
     }
 
@@ -1459,6 +1459,9 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
     final bool canMutateTenant = _canManageTenant && !_tenant.isDeleted;
     final bool canDeleteTenant = _canDeleteTenant && !_tenant.isDeleted;
     final bool canMutateFacility = _canManageFacility && !_tenant.isDeleted;
+    final bool canDeleteFacility =
+        ref.read(appAccessPolicyProvider).canDeleteFacility() &&
+        !_tenant.isDeleted;
     final List<FacilityProfile> visibleFacilities = _visibleFacilities;
     final bool hasActiveFilters = _filterValue.option(_statusFilterKey) != null;
 
@@ -1482,6 +1485,7 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
                   ? visibleFacilities.length
                   : _totalItemCount,
               canManage: canMutateFacility,
+              canDelete: canDeleteFacility,
               summaryVisible: _summaryVisible,
               filterValue: _filterValue,
               hasActiveFilters: hasActiveFilters,
@@ -2011,6 +2015,7 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
     required this.pageRequest,
     required this.totalItemCount,
     required this.canManage,
+    required this.canDelete,
     required this.summaryVisible,
     required this.filterValue,
     required this.hasActiveFilters,
@@ -2031,6 +2036,7 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
   final AppPageRequest pageRequest;
   final int totalItemCount;
   final bool canManage;
+  final bool canDelete;
   final bool summaryVisible;
   final AppSearchBarFilterValue filterValue;
   final bool hasActiveFilters;
@@ -2196,6 +2202,7 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                                 onTap: () {},
                                 child: _ManagementRowActions(
                                   enabled: !loading,
+                                  canDelete: canDelete,
                                   editLabel: l10n.tenantFacilityEditAction,
                                   deleteLabel: l10n.tenantFacilityDeleteAction,
                                   onEdit: () => onEdit(facility),
@@ -2238,9 +2245,11 @@ class _ManagementRowActions extends StatelessWidget {
     required this.deleteLabel,
     required this.onEdit,
     required this.onDelete,
+    this.canDelete = true,
   });
 
   final bool enabled;
+  final bool canDelete;
   final String editLabel;
   final String deleteLabel;
   final VoidCallback onEdit;
@@ -2264,15 +2273,16 @@ class _ManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
-        AppButton.tertiary(
-          leadingIcon: Icons.delete_outline,
-          label: deleteLabel,
-          semanticLabel: deleteLabel,
-          tooltip: deleteLabel,
-          color: colorScheme.error,
-          enabled: enabled,
-          onPressed: enabled ? onDelete : null,
-        ),
+        if (canDelete)
+          AppButton.tertiary(
+            leadingIcon: Icons.delete_outline,
+            label: deleteLabel,
+            semanticLabel: deleteLabel,
+            tooltip: deleteLabel,
+            color: colorScheme.error,
+            enabled: enabled,
+            onPressed: enabled ? onDelete : null,
+          ),
       ],
     );
   }
@@ -2360,10 +2370,15 @@ class _FacilityDetailsDialogState
   bool get _canManageFacility =>
       ref.read(appAccessPolicyProvider).canManageFacility();
 
+  bool get _canDeleteFacility =>
+      ref.read(appAccessPolicyProvider).canDeleteFacility();
+
   bool get _canEditStructure =>
       ref.read(appAccessPolicyProvider).canEditFacilitySetupStructure();
 
   bool get _canMutate => _canManageFacility && !_facility.isDeleted;
+
+  bool get _canDelete => _canDeleteFacility && !_facility.isDeleted;
 
   bool get _canMutateStructure => _canEditStructure && !_facility.isDeleted;
 
@@ -2817,13 +2832,13 @@ class _FacilityDetailsDialogState
   }
 
   Future<void> _editFacility() async {
-    final bool? saved = await showTenantFacilityFacilityFormDialog(
+    final FacilityProfile? saved = await showTenantFacilityFacilityFormDialog(
       context,
       tenantId: _facility.tenantId,
       facility: _facility,
       managementMode: true,
     );
-    if (!mounted || saved != true) {
+    if (!mounted || saved == null) {
       return;
     }
 
@@ -3245,19 +3260,19 @@ class _FacilityDetailsDialogState
               ),
       ),
       actions: <Widget>[
-        if (canMutate) ...<Widget>[
+        if (canMutate)
           AppButton.secondary(
             label: l10n.tenantFacilityEditFacilityDetailsAction,
             leadingIcon: Icons.edit_outlined,
             onPressed: () => unawaited(_editFacility()),
           ),
+        if (_canDelete)
           AppButton.primary(
             label: l10n.tenantFacilityDeleteFacilityDetailsAction,
             leadingIcon: Icons.delete_outline,
             color: colorScheme.error,
             onPressed: () => unawaited(_deleteFacility()),
           ),
-        ],
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
@@ -4281,29 +4296,32 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
     FacilityProfile? facility,
     bool forceCreate = false,
   }) async {
-    final bool? saved = await showTenantFacilityFacilityFormDialog(
-      context,
-      tenantId: facility?.tenantId ?? _tenantFilterId,
-      facility: facility,
-      requireTenantPicker: forceCreate || facility == null,
-      managementMode: true,
-    );
-    if (!mounted || saved != true) {
+    final bool isCreate = forceCreate || facility == null;
+    final FacilityProfile? savedFacility =
+        await showTenantFacilityFacilityFormDialog(
+          context,
+          tenantId: facility?.tenantId ?? _tenantFilterId,
+          facility: facility,
+          requireTenantPicker: isCreate,
+          managementMode: true,
+        );
+    if (!mounted || savedFacility == null) {
       return;
     }
 
     _markMutated();
     await _loadTenants();
-    await _reload(resetPage: forceCreate, silent: true);
+    await _reload(resetPage: isCreate, silent: true);
     if (!mounted) {
       return;
     }
 
-    if (forceCreate || facility == null) {
+    if (isCreate) {
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.facilityCreated(),
       );
+      await _openFacilityDetails(savedFacility);
     }
   }
 
@@ -4568,6 +4586,10 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
 
   bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();
 
+  bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateFacility();
+
+  bool get _canDelete => ref.read(appAccessPolicyProvider).canDeleteFacility();
+
   void _markMutated() {
     _mutated = true;
     widget.onMutated?.call(true);
@@ -4679,7 +4701,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         onFilterChanged: (AppSearchBarFilterValue value) {
           unawaited(_applyFacilityFilters(value));
         },
-        trailingActions: widget.showCreateAction && _canManage
+        trailingActions: widget.showCreateAction && _canCreate
             ? <AppSearchBarAction>[
                 AppSearchBarAction(
                   icon: Icons.add_business_outlined,
@@ -4733,6 +4755,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
                 child: _FacilityManagementRowActions(
                   enabled: !_loading,
                   facility: facility,
+                  canDelete: _canDelete,
                   editLabel: l10n.tenantFacilityEditAction,
                   deleteLabel: l10n.tenantFacilityDeleteAction,
                   restoreLabel: l10n.tenantFacilityRestoreTenantAction,
@@ -4760,7 +4783,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.tenantFacilityManageFacilitiesTitle,
         body: l10n.tenantFacilityNoFacilities,
-        action: widget.showCreateAction && _canManage
+        action: widget.showCreateAction && _canCreate
             ? AppButton.primary(
                 label: l10n.tenantFacilityAddFacilityAction,
                 leadingIcon: Icons.add_business_outlined,
@@ -4914,6 +4937,7 @@ class _FacilityManagementRowActions extends StatelessWidget {
   const _FacilityManagementRowActions({
     required this.enabled,
     required this.facility,
+    required this.canDelete,
     required this.editLabel,
     required this.deleteLabel,
     required this.restoreLabel,
@@ -4926,6 +4950,7 @@ class _FacilityManagementRowActions extends StatelessWidget {
 
   final bool enabled;
   final FacilityProfile facility;
+  final bool canDelete;
   final String editLabel;
   final String deleteLabel;
   final String restoreLabel;
@@ -4942,6 +4967,9 @@ class _FacilityManagementRowActions extends StatelessWidget {
     final double actionGap = theme.spacing.md;
 
     if (facility.isDeleted) {
+      if (!canDelete) {
+        return const SizedBox.shrink();
+      }
       return Wrap(
         spacing: actionGap,
         runSpacing: theme.spacing.xs,
@@ -4981,15 +5009,16 @@ class _FacilityManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
-        AppButton.tertiary(
-          leadingIcon: Icons.delete_outline,
-          label: deleteLabel,
-          semanticLabel: deleteLabel,
-          tooltip: deleteLabel,
-          color: colorScheme.error,
-          enabled: enabled,
-          onPressed: enabled ? onDelete : null,
-        ),
+        if (canDelete)
+          AppButton.tertiary(
+            leadingIcon: Icons.delete_outline,
+            label: deleteLabel,
+            semanticLabel: deleteLabel,
+            tooltip: deleteLabel,
+            color: colorScheme.error,
+            enabled: enabled,
+            onPressed: enabled ? onDelete : null,
+          ),
       ],
     );
   }

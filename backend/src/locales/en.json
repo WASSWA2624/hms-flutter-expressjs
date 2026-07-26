@@ -132,6 +132,7 @@
   "errors.equipment_work_order.not_found": "Equipment work order not found",
   "errors.facility.not_found": "Facility not found",
   "errors.facility.duplicate_name": "A facility with this name already exists for this tenant",
+  "errors.facility.similar_exists": "A similar facility already exists. Confirm to create anyway.",
   "errors.facility.restore_requires_active_tenant": "Cannot restore a facility while its tenant is deleted",
   "errors.facility.permanent_delete_requires_soft_delete": "Facility must be soft-deleted before permanent delete",
   "errors.facility_catalog_offering.not_found": "Facility catalog offering not found",

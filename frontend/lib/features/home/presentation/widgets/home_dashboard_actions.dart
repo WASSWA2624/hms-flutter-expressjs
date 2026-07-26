@@ -21,7 +21,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart'
-    show TenantProfile;
+    show FacilityProfile, TenantProfile;
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -1495,12 +1495,12 @@ void homeInvokeAction(
         context,
         requireTenantPicker: true,
         managementMode: true,
-      ).then((bool? saved) {
+      ).then((FacilityProfile? saved) {
         homeOnDashboardDialogClosed(
           ref,
           request,
-          saved,
-          patch: saved == true
+          saved != null,
+          patch: saved != null
               ? HomeDashboardOptimisticPatch.facilityCreated()
               : null,
         );

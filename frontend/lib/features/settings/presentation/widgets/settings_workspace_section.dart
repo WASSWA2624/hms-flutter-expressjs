@@ -944,12 +944,12 @@ Future<void> _handleQuickCreateAction(
       );
       if (saved != null) onRefresh();
     case 'facility':
-      final bool? saved = await showTenantFacilityFacilityFormDialog(
+      final FacilityProfile? saved = await showTenantFacilityFacilityFormDialog(
         context,
         requireTenantPicker: true,
         managementMode: true,
       );
-      if (saved == true) onRefresh();
+      if (saved != null) onRefresh();
     case 'department':
       await _openCreateWithSnapshot(
         context,

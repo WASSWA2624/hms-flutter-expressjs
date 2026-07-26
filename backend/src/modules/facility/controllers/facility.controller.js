@@ -10,6 +10,22 @@
 const facilityService = require('@services/facility/facility.service');
 const { asyncHandler } = require('@lib/async');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
+const { HttpError } = require('@lib/errors');
+const { PERMISSIONS } = require('@config/permissions');
+
+const buildRequestContext = (req) => ({
+  user_id: req.user?.id,
+  tenant_id: req.user?.tenant_id,
+  facility_id: req.user?.facility_id,
+  permissions: Array.isArray(req.user?.permissions) ? req.user.permissions : []
+});
+
+const hasPermission = (context, permission) =>
+  Array.isArray(context.permissions) && context.permissions.includes(permission);
+
+const isSystemAdmin = (context) => hasPermission(context, PERMISSIONS.SYSTEM_ADMIN);
+
+const isTenantAdmin = (context) => hasPermission(context, PERMISSIONS.TENANT_ADMIN);
 
 /**
  * List facilities with pagination
@@ -30,13 +46,31 @@ const listFacilities = asyncHandler(async (req, res) => {
     search,
     include_deleted
   } = req.query;
+  const context = buildRequestContext(req);
 
   const filters = {};
-  if (tenant_id) filters.tenant_id = tenant_id;
   if (facility_type) filters.facility_type = facility_type;
   if (is_active) filters.is_active = is_active;
   if (search) filters.search = search;
   if (include_deleted) filters.include_deleted = include_deleted;
+
+  if (isSystemAdmin(context)) {
+    if (tenant_id) filters.tenant_id = tenant_id;
+  } else if (
+    context.facility_id &&
+    !isTenantAdmin(context) &&
+    hasPermission(context, PERMISSIONS.FACILITY_ADMIN)
+  ) {
+    // Facility-admin-only actors see only their facility.
+    filters.id = context.facility_id;
+    if (context.tenant_id) {
+      filters.tenant_id = context.tenant_id;
+    }
+  } else if (context.tenant_id) {
+    filters.tenant_id = context.tenant_id;
+  } else {
+    throw new HttpError('errors.auth.forbidden', 403);
+  }
 
   const result = await facilityService.listFacilities(
     filters,

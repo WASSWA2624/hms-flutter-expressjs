@@ -27,11 +27,95 @@ const { createStorageService } = require('@lib/storage');
 const {
   deleteFacilityLogoFromStorage
 } = require('@lib/storage/facility-logo-storage');
+const {
+  checkFacilityDuplicates
+} = require('@lib/facility/facility-similarity');
 
 const FACILITY_REALTIME_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
   ROLES.TENANT_ADMIN
 ]);
+
+const FACILITY_SIMILARITY_LOOKUP_LIMIT = 100;
+
+const SIMILARITY_CONTACT_KEYS = Object.freeze([
+  'phone',
+  'email',
+  'address_line1',
+  'city',
+  'country',
+  'confirm_similar'
+]);
+
+const extractFacilitySimilarityInput = (data = {}) => ({
+  name: data.name,
+  facilityType: data.facility_type,
+  isActive: data.is_active,
+  phone: data.phone,
+  email: data.email,
+  addressLine1: data.address_line1,
+  city: data.city,
+  country: data.country
+});
+
+const stripSimilarityPayloadFields = (data = {}) => {
+  const payload = { ...data };
+  for (const key of SIMILARITY_CONTACT_KEYS) {
+    delete payload[key];
+  }
+  return payload;
+};
+
+const assertFacilityUniqueness = async ({
+  data,
+  tenantId,
+  confirmSimilar = false,
+  excludeFacilityId = null
+}) => {
+  const existing = await facilityRepository.findMany(
+    { tenant_id: tenantId },
+    0,
+    FACILITY_SIMILARITY_LOOKUP_LIMIT,
+    { name: 'asc' },
+    {
+      contacts: {
+        where: { deleted_at: null }
+      },
+      addresses: {
+        where: { deleted_at: null }
+      }
+    }
+  );
+  const input = extractFacilitySimilarityInput(data);
+  const duplicateCheck = checkFacilityDuplicates({
+    ...input,
+    existing,
+    excludeFacilityId
+  });
+
+  if (duplicateCheck.exactNameConflict) {
+    throw new HttpError('errors.facility.duplicate_name', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exactNameConflict)
+          .slice(0, 5)
+      }
+    ]);
+  }
+
+  const reviewMatches = duplicateCheck.overridableMatches.slice(0, 5);
+  if (reviewMatches.length > 0 && !confirmSimilar) {
+    throw new HttpError('errors.facility.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: reviewMatches
+      }
+    ]);
+  }
+
+  return duplicateCheck;
+};
 
 const publishFacilityRealtimeEvent = async (
   event,
@@ -142,6 +226,10 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
   // Build repository filters
   const repoFilters = {};
 
+  if (filters.id) {
+    repoFilters.id = filters.id;
+  }
+
   if (filters.tenant_id) {
     repoFilters.tenant_id = await resolveTenantId(filters.tenant_id);
   }
@@ -248,12 +336,23 @@ const assertUniqueFacilityName = async (tenantId, name, excludeFacilityId = null
 };
 
 const createFacility = async (data, context = {}) => {
+  const confirmSimilar = data?.confirm_similar === true;
+  const similarityInput = extractFacilitySimilarityInput(data);
   const payload = {
-    ...data,
+    ...stripSimilarityPayloadFields(data),
     tenant_id: await resolveTenantId(data.tenant_id)
   };
 
-  await assertUniqueFacilityName(payload.tenant_id, payload.name);
+  const duplicateCheck = await assertFacilityUniqueness({
+    data: {
+      ...similarityInput,
+      name: payload.name,
+      facility_type: payload.facility_type,
+      is_active: payload.is_active
+    },
+    tenantId: payload.tenant_id,
+    confirmSimilar
+  });
 
   // Create facility
   const facility = await facilityRepository.create(payload);
@@ -272,7 +371,14 @@ const createFacility = async (data, context = {}) => {
       tenant_id: facility.tenant_id,
       name: facility.name,
       facility_type: facility.facility_type,
-      is_active: facility.is_active
+      is_active: facility.is_active,
+      confirm_similar: confirmSimilar,
+      similar_match_ids: confirmSimilar
+        ? duplicateCheck.overridableMatches
+            .slice(0, 5)
+            .map((match) => match.id)
+            .filter(Boolean)
+        : []
     }
   });
 
