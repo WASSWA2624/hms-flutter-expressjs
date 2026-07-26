@@ -1,4 +1,4 @@
-# Action Inventory — Target Screen: `[target-screen]`
+# Action Inventory — Target Screen: `/admin/setup?section=tenants`
 
 ## Objective
 
