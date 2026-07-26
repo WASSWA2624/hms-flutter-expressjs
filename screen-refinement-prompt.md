@@ -1,4 +1,4 @@
-# Action Button Inventory — Target Screen: `/admin/setup?section=tenants`
+# Action Button Inventory — Target Screen: `[tartget-screen]`
 
 Produce an inventory that lists **only** the action buttons on the target screen and the dialogs those buttons open (including nested dialogs). Save the inventory under `screens/`.
 
