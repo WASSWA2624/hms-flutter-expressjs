@@ -1,1 +1,34 @@
-I'm still on the admin setup screen. There. There is a clinical services tab and an alert tab subtab. Like anesthesia, lab, and the clinical services, and it has a component which is actually used to configure lab panels and tests that are either specific to a given facility, tenets, or globally, depending on what the person who is setting up, is configuring these lab tests and panels, as because we have Super admins or platform admins, those ones have access to all tenants. So what you mean is they can configure tests and the panels for tenants and facilities. Then you have tenant admins, this one can configure for the tenants they belong to or for the facility, the facilities under the tenants. Then you have facility admins, this one can only configure for the facilities where they belong. So when you click this configure button depending on your Admin rights. If you are logged in as platform admin, then you're successful to select tenants and respective facilities. Then you actually, in this case, you can even select and maybe additional facilities, but if you are internet at me, then you don't need to select additional facilities. You are confirmed for the attendance. So Then you don't need to select the tenants, all the facilities. Automaticaly? Now, the next button Selecting the scope for the tests is the panels. So, d-d Instead of having you should have an easy button where you can see the tests you have selected and the panels you have selected go to attach prices for those tests and or those panels, then afterwards you can, you can save. So it means you're adding the tests and panels to your facility or your tenant or the entire group. Meaning that When you select, when you accept whatever you selected, then the tickets and plans are accessed by the users in the scope, in the scope you have set to them, so the prices will be restricted to the requests, but still the requester maybe has access, can still change prices manually, but this is used as a default.
+# Lab Configure: role-aware scope and batch enable
+
+Make Clinical Services → Lab **Configure** resolve scope by admin role, multi-select tests/panels, set default unit prices, then batch-enable facility offerings.
+
+## Context
+
+Lab Configure opens a role-aware scope picker then `LabEnableFacilityOfferingDialog` (one item via `_LabEnableOfferingPriceDialog`). Mirror Radiology’s catalog → batch prices → preview → batch enable. Offering prices stay facility defaults; order-time override remains allowed.
+
+## Requirements
+
+1. Keep Configure scope rules: elevated selects tenant + facility; tenant admin (no facility context) selects facility with tenant locked; facility-scoped actors skip the picker and use session scope.
+2. Replace Lab per-row enable with multi-select wizard: catalog (tests + panels) → batch prices → preview → one batch enable, matching `RadiologyEnableFacilityOfferingDialog` (Back to scope when picker ran).
+3. List only items not yet offered; Next needs ≥1 selection; prices required before preview; preview can deselect before save.
+4. On success upsert offerings, refresh Lab table, show saved snackbar; keep unauthorized Configure/mutate controls absent.
+5. Cover loading, empty, validation, save failure, and success with localized copy.
+
+## Constraints
+
+Reuse scope picker, offering upsert APIs, permissions, l10n, and design-system components. No multi-facility batch. Follow `.cursor/mandatories.mdc`.
+
+## Acceptance Criteria
+
+- Role matrix matches requirement 1.
+- Lab Configure matches Radiology select → price → preview → enable for mixed tests/panels.
+- Unauthorized users never see Configure/mutate; authorized users complete batch enable.
+- Tests cover scope visibility and wizard gating; manual check mobile/tablet/desktop light+dark.
+
+## Relevant Files
+
+- `frontend/lib/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart`
+- `frontend/lib/shared/facility_catalog/clinical_catalog_admin_dialogs.dart`
+- `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart`
+- `frontend/lib/shared/radiology_catalog/radiology_catalog_dialogs.dart`
+- `screens/admin-setup/clinical-services.md`

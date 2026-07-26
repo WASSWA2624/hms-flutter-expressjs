@@ -24343,9 +24343,9 @@
   "@labEnableOfferingDialogTitle": {
     "description": "Title for the dialog that enables platform lab tests and panels at the facility."
   },
-  "labEnableOfferingDialogBody": "Select a catalog item and set the facility price for ordering.",
+  "labEnableOfferingDialogBody": "Select catalog tests and panels to enable at this facility.",
   "@labEnableOfferingDialogBody": {
-    "description": "Body for the dialog that enables a platform lab test or panel at the facility."
+    "description": "Body for the dialog that enables platform lab tests or panels at the facility."
   },
   "labEnableOfferingCatalogLabel": "Platform catalog item",
   "@labEnableOfferingCatalogLabel": {
@@ -24362,6 +24362,39 @@
   "labEnableOfferingAlreadyOfferedLabel": "Already offered",
   "@labEnableOfferingAlreadyOfferedLabel": {
     "description": "Badge shown on platform catalog items that are already offered at the facility."
+  },
+  "labEnableSelectedItemsAction": "Enable selected",
+  "@labEnableSelectedItemsAction": {
+    "description": "Primary action to enable the selected lab tests and panels at the facility."
+  },
+  "labEnableSelectedItemsBody": "{count, plural, =1{1 item selected} other{{count} items selected}}. Set a unit price for each item.",
+  "@labEnableSelectedItemsBody": {
+    "description": "Body for the batch price step when enabling lab offerings.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "labEnableOfferingPreviewTitle": "Review selection",
+  "@labEnableOfferingPreviewTitle": {
+    "description": "Title for the lab enable offering preview step."
+  },
+  "labEnableOfferingPreviewBody": "Review the tests, panels, and prices. Deselect any you want to remove, then enable the selection.",
+  "@labEnableOfferingPreviewBody": {
+    "description": "Body for the lab enable offering preview step."
+  },
+  "labEnableOfferingSetPricesTitle": "Set facility prices",
+  "@labEnableOfferingSetPricesTitle": {
+    "description": "Title for the batch price step when enabling lab offerings."
+  },
+  "labEnableOfferingPreviewEmptyLabel": "No items selected. Go back to choose offerings.",
+  "@labEnableOfferingPreviewEmptyLabel": {
+    "description": "Empty state when the lab enable preview has no selected items."
+  },
+  "labSelectAtLeastOneItemMessage": "Select at least one test or panel.",
+  "@labSelectAtLeastOneItemMessage": {
+    "description": "Tooltip when Next is disabled because no lab catalog items are selected."
   },
   "labConfigurationsSelectScopeBody": "Select a tenant and facility to load and configure the lab catalog.",
   "@labConfigurationsSelectScopeBody": {
