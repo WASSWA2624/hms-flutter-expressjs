@@ -10,6 +10,26 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 enum TenantSimilarityAction { cancel, useExisting, proceed }
 
+final class TenantSimilarityProposedValues {
+  const TenantSimilarityProposedValues({
+    required this.name,
+    this.slug,
+    this.contactName,
+    this.contactPhone,
+    this.contactEmail,
+    this.currency,
+    this.standardConsultationFee,
+  });
+
+  final String name;
+  final String? slug;
+  final String? contactName;
+  final String? contactPhone;
+  final String? contactEmail;
+  final String? currency;
+  final String? standardConsultationFee;
+}
+
 final class TenantSimilarityDialogResult {
   const TenantSimilarityDialogResult._({
     required this.action,
@@ -23,7 +43,10 @@ final class TenantSimilarityDialogResult {
     : this._(action: TenantSimilarityAction.proceed);
 
   const TenantSimilarityDialogResult.useExisting(TenantProfile tenant)
-    : this._(action: TenantSimilarityAction.useExisting, selectedTenant: tenant);
+    : this._(
+        action: TenantSimilarityAction.useExisting,
+        selectedTenant: tenant,
+      );
 
   final TenantSimilarityAction action;
   final TenantProfile? selectedTenant;
@@ -31,6 +54,7 @@ final class TenantSimilarityDialogResult {
 
 Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
   BuildContext context, {
+  required TenantSimilarityProposedValues proposed,
   required List<TenantSimilarityMatch> matches,
   bool allowProceed = true,
 }) {
@@ -41,44 +65,77 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
   final bool hasExactSlugConflict = visibleMatches.any(
     (TenantSimilarityMatch match) => match.exactSlugConflict,
   );
+  final bool hasMatches = visibleMatches.isNotEmpty;
   final bool canProceed = allowProceed && !hasExactSlugConflict;
   final TenantSimilarityMatch? topMatch = visibleMatches.isEmpty
       ? null
       : visibleMatches.first;
 
+  final String dialogTitle = hasExactSlugConflict
+      ? l10n.tenantFacilitySimilarTenantDialogTitle
+      : hasMatches
+      ? l10n.tenantFacilitySimilarTenantDialogTitle
+      : l10n.tenantFacilityNoSimilarTenantDialogTitle;
+
+  final String proceedLabel = hasExactSlugConflict
+      ? l10n.tenantFacilityProceedCreateTenantAction
+      : hasMatches
+      ? l10n.tenantFacilityProceedCreateTenantAction
+      : l10n.tenantFacilityContinueCreateTenantAction;
+
   return showAppDialog<TenantSimilarityDialogResult>(
     context: context,
     builder: (BuildContext dialogContext) {
       final ThemeData theme = Theme.of(dialogContext);
+      final AppFormInformationVariant bannerVariant = hasExactSlugConflict
+          ? AppFormInformationVariant.error
+          : hasMatches
+          ? AppFormInformationVariant.warning
+          : AppFormInformationVariant.success;
+      final String bannerTitle = hasExactSlugConflict
+          ? l10n.tenantFacilityTenantSlugAlreadyInUse
+          : hasMatches
+          ? l10n.tenantFacilitySimilarTenantWarningTitle
+          : l10n.tenantFacilityNoSimilarTenantBannerTitle;
+      final String bannerMessage = hasExactSlugConflict
+          ? l10n.tenantFacilitySimilarTenantHardConflictBody
+          : hasMatches
+          ? l10n.tenantFacilitySimilarTenantDialogBody
+          : l10n.tenantFacilityNoSimilarTenantDialogBody;
+      final String? closestScore = topMatch == null
+          ? null
+          : l10n.tenantFacilitySimilarTenantScoreLabel(topMatch.score);
 
       return AppDialog(
-        title: Text(l10n.tenantFacilitySimilarTenantDialogTitle),
+        title: Text(dialogTitle),
         icon: Icon(
           hasExactSlugConflict
               ? Icons.gpp_bad_outlined
-              : Icons.warning_amber_outlined,
+              : hasMatches
+              ? Icons.warning_amber_outlined
+              : Icons.verified_outlined,
         ),
         scrollable: true,
-        maxWidth: 720,
+        maxWidth: 760,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AppFormInformationBanner(
-              title: hasExactSlugConflict
-                  ? l10n.tenantFacilityTenantSlugAlreadyInUse
-                  : l10n.tenantFacilitySimilarTenantWarningTitle,
-              message: hasExactSlugConflict
-                  ? l10n.tenantFacilitySimilarTenantHardConflictBody
-                  : l10n.tenantFacilitySimilarTenantDialogBody,
-              variant: hasExactSlugConflict
-                  ? AppFormInformationVariant.error
-                  : AppFormInformationVariant.warning,
+              title: bannerTitle,
+              message: closestScore == null
+                  ? bannerMessage
+                  : '$bannerMessage ${l10n.tenantFacilitySimilarTenantClosestScoreBody(topMatch!.score)}',
+              variant: bannerVariant,
               icon: hasExactSlugConflict
                   ? Icons.gpp_bad_outlined
-                  : Icons.manage_search_outlined,
+                  : hasMatches
+                  ? Icons.manage_search_outlined
+                  : Icons.verified_outlined,
             ),
-            if (topMatch != null) ...<Widget>[
-              SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.md),
+            _ProposedTenantCard(proposed: proposed),
+            if (hasMatches) ...<Widget>[
+              SizedBox(height: theme.spacing.lg),
               Text(
                 l10n.tenantFacilitySimilarTenantMatchesHeading,
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -112,8 +169,10 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
           ),
           if (canProceed)
             AppButton.primary(
-              label: l10n.tenantFacilityProceedCreateTenantAction,
-              leadingIcon: Icons.add_business_outlined,
+              label: proceedLabel,
+              leadingIcon: hasMatches
+                  ? Icons.add_business_outlined
+                  : Icons.check_circle_outline,
               onPressed: () => Navigator.of(dialogContext).pop(
                 const TenantSimilarityDialogResult.proceed(),
               ),
@@ -127,25 +186,79 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
   );
 }
 
-class TenantSimilarityWarningPanel extends StatelessWidget {
-  const TenantSimilarityWarningPanel({required this.matches, super.key});
+class _ProposedTenantCard extends StatelessWidget {
+  const _ProposedTenantCard({required this.proposed});
 
-  final List<TenantSimilarityMatch> matches;
+  final TenantSimilarityProposedValues proposed;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<(String, String)> facts = <(String, String)>[
+      (l10n.tenantFacilityTenantNameLabel, _display(proposed.name, l10n)),
+      (
+        l10n.tenantFacilityTenantSlugLabel,
+        _display(proposed.slug, l10n),
+      ),
+      (
+        l10n.tenantFacilityTenantDetailsContactNameLabel,
+        _display(proposed.contactName, l10n),
+      ),
+      (l10n.profilePhoneLabel, _display(proposed.contactPhone, l10n)),
+      (l10n.profileEmailLabel, _display(proposed.contactEmail, l10n)),
+      (
+        l10n.tenantFacilityDefaultCurrencyLabel,
+        _display(proposed.currency, l10n),
+      ),
+      (
+        l10n.settingsConfigurationConsultationFeeLabel,
+        _display(proposed.standardConsultationFee, l10n),
+      ),
+    ];
 
-    return AppFormInformationBanner(
-      title: l10n.tenantFacilitySimilarTenantWarningTitle,
-      message: l10n.tenantFacilitySimilarTenantWarningBody,
-      variant: AppFormInformationVariant.warning,
-      icon: Icons.content_copy_outlined,
+    return AppSectionPanel(
+      tone: AppWorkspaceStatusTone.info,
+      density: AppContentPanelDensity.compact,
+      leadingIcon: Icons.edit_note_outlined,
+      title: l10n.tenantFacilitySimilarTenantProposedHeading,
       children: <Widget>[
-        for (final TenantSimilarityMatch match in matches.take(3))
-          _TenantSimilarityLine(match: match),
+        Wrap(
+          spacing: theme.spacing.md,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            for (final (String label, String value) in facts)
+              SizedBox(
+                width: 220,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      label,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs / 2),
+                    Text(
+                      value,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ],
     );
+  }
+
+  String _display(String? value, AppLocalizations l10n) {
+    final String trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? l10n.clinicalOrderEmptyValueLabel : trimmed;
   }
 }
 
@@ -217,6 +330,9 @@ class _TenantFieldComparisonRow extends StatelessWidget {
       TenantFieldComparisonStatus.different => theme.colorScheme.error,
       TenantFieldComparisonStatus.missing => theme.colorScheme.onSurfaceVariant,
     };
+    final String scoreLabel = comparison.score == null
+        ? l10n.clinicalOrderEmptyValueLabel
+        : l10n.tenantFacilitySimilarTenantScoreLabel(comparison.score!);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,17 +347,25 @@ class _TenantFieldComparisonRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Text(
-            _valuePair(l10n),
-            style: theme.textTheme.bodySmall,
-          ),
+          child: Text(_valuePair(l10n), style: theme.textTheme.bodySmall),
         ),
-        Text(
-          _statusLabel(l10n, comparison.status),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: statusColor,
-            fontWeight: FontWeight.w800,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            Text(
+              _statusLabel(l10n, comparison.status),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: statusColor,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              scoreLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -251,48 +375,11 @@ class _TenantFieldComparisonRow extends StatelessWidget {
     final String input = comparison.inputValue?.trim().isNotEmpty == true
         ? comparison.inputValue!
         : l10n.clinicalOrderEmptyValueLabel;
-    final String candidate = comparison.candidateValue?.trim().isNotEmpty == true
+    final String candidate =
+        comparison.candidateValue?.trim().isNotEmpty == true
         ? comparison.candidateValue!
         : l10n.clinicalOrderEmptyValueLabel;
     return '$input → $candidate';
-  }
-}
-
-class _TenantSimilarityLine extends StatelessWidget {
-  const _TenantSimilarityLine({required this.match});
-
-  final TenantSimilarityMatch match;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(l10n.tenantFacilitySimilarTenantScoreLabel(match.score)),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Text(_lineText(l10n), style: theme.textTheme.bodyMedium),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _lineText(AppLocalizations l10n) {
-    final List<String> parts = <String>[
-      match.tenant.name,
-      if (match.tenant.slug != null && match.tenant.slug!.isNotEmpty)
-        match.tenant.slug!,
-      match.tenant.isActive ? l10n.commonYesLabel : l10n.commonNoLabel,
-      match.reasons.map(AppDisplay.apiLabel).join(', '),
-    ];
-
-    return parts.where((String part) => part.trim().isNotEmpty).join(' • ');
   }
 }
 

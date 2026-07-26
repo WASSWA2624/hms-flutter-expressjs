@@ -12028,6 +12028,24 @@ abstract class AppLocalizations {
   /// **'Similar tenant found'**
   String get tenantFacilitySimilarTenantDialogTitle;
 
+  /// Title when tenant similarity review finds no close matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar tenant found'**
+  String get tenantFacilityNoSimilarTenantDialogTitle;
+
+  /// Banner title when tenant similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get tenantFacilityNoSimilarTenantBannerTitle;
+
+  /// Body when tenant similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the proposed tenant details below. No similar organizations were found.'**
+  String get tenantFacilityNoSimilarTenantDialogBody;
+
   /// Body for similar tenant confirmation dialog.
   ///
   /// In en, this message translates to:
@@ -12039,6 +12057,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An existing tenant already uses this slug. Choose a different slug or open the existing tenant.'**
   String get tenantFacilitySimilarTenantHardConflictBody;
+
+  /// Appended closest-match score in the tenant similarity banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match is {score}%.'**
+  String tenantFacilitySimilarTenantClosestScoreBody(int score);
+
+  /// Heading for the proposed tenant summary in the similarity dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed tenant'**
+  String get tenantFacilitySimilarTenantProposedHeading;
 
   /// Heading above similar tenant match cards.
   ///
@@ -12093,6 +12123,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use existing'**
   String get tenantFacilityUseExistingTenantAction;
+
+  /// Continue creating a tenant after a clean similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Create tenant'**
+  String get tenantFacilityContinueCreateTenantAction;
 
   /// Confirm create tenant despite similar matches.
   ///

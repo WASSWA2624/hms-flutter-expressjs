@@ -8186,6 +8186,18 @@
   "@tenantFacilitySimilarTenantDialogTitle": {
     "description": "Title for similar tenant confirmation dialog."
   },
+  "tenantFacilityNoSimilarTenantDialogTitle": "No similar tenant found",
+  "@tenantFacilityNoSimilarTenantDialogTitle": {
+    "description": "Title when tenant similarity review finds no close matches."
+  },
+  "tenantFacilityNoSimilarTenantBannerTitle": "Match status: No similar found",
+  "@tenantFacilityNoSimilarTenantBannerTitle": {
+    "description": "Banner title when tenant similarity review finds no matches."
+  },
+  "tenantFacilityNoSimilarTenantDialogBody": "Review the proposed tenant details below. No similar organizations were found.",
+  "@tenantFacilityNoSimilarTenantDialogBody": {
+    "description": "Body when tenant similarity review finds no matches."
+  },
   "tenantFacilitySimilarTenantDialogBody": "Similar organizations exist. Review matches before continuing.",
   "@tenantFacilitySimilarTenantDialogBody": {
     "description": "Body for similar tenant confirmation dialog."
@@ -8193,6 +8205,19 @@
   "tenantFacilitySimilarTenantHardConflictBody": "An existing tenant already uses this slug. Choose a different slug or open the existing tenant.",
   "@tenantFacilitySimilarTenantHardConflictBody": {
     "description": "Body shown when tenant slug uniqueness blocks create-anyway."
+  },
+  "tenantFacilitySimilarTenantClosestScoreBody": "Closest match is {score}%.",
+  "@tenantFacilitySimilarTenantClosestScoreBody": {
+    "description": "Appended closest-match score in the tenant similarity banner.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilitySimilarTenantProposedHeading": "Proposed tenant",
+  "@tenantFacilitySimilarTenantProposedHeading": {
+    "description": "Heading for the proposed tenant summary in the similarity dialog."
   },
   "tenantFacilitySimilarTenantMatchesHeading": "Closest matches",
   "@tenantFacilitySimilarTenantMatchesHeading": {
@@ -8234,6 +8259,10 @@
   "tenantFacilityUseExistingTenantAction": "Use existing",
   "@tenantFacilityUseExistingTenantAction": {
     "description": "Action to open an existing similar tenant instead of creating."
+  },
+  "tenantFacilityContinueCreateTenantAction": "Create tenant",
+  "@tenantFacilityContinueCreateTenantAction": {
+    "description": "Continue creating a tenant after a clean similarity review."
   },
   "tenantFacilityProceedCreateTenantAction": "Create anyway",
   "@tenantFacilityProceedCreateTenantAction": {

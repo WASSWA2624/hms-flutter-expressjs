@@ -6469,12 +6469,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilitySimilarTenantDialogTitle => 'Similar tenant found';
 
   @override
+  String get tenantFacilityNoSimilarTenantDialogTitle =>
+      'No similar tenant found';
+
+  @override
+  String get tenantFacilityNoSimilarTenantBannerTitle =>
+      'Match status: No similar found';
+
+  @override
+  String get tenantFacilityNoSimilarTenantDialogBody =>
+      'Review the proposed tenant details below. No similar organizations were found.';
+
+  @override
   String get tenantFacilitySimilarTenantDialogBody =>
       'Similar organizations exist. Review matches before continuing.';
 
   @override
   String get tenantFacilitySimilarTenantHardConflictBody =>
       'An existing tenant already uses this slug. Choose a different slug or open the existing tenant.';
+
+  @override
+  String tenantFacilitySimilarTenantClosestScoreBody(int score) {
+    return 'Closest match is $score%.';
+  }
+
+  @override
+  String get tenantFacilitySimilarTenantProposedHeading => 'Proposed tenant';
 
   @override
   String get tenantFacilitySimilarTenantMatchesHeading => 'Closest matches';
@@ -6506,6 +6526,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityUseExistingTenantAction => 'Use existing';
+
+  @override
+  String get tenantFacilityContinueCreateTenantAction => 'Create tenant';
 
   @override
   String get tenantFacilityProceedCreateTenantAction => 'Create anyway';

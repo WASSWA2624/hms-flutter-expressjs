@@ -934,8 +934,6 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
             enabled: fieldsEnabled,
             onAmountChanged: (_) => _clearDuplicateState(),
           ),
-          if (_similarMatches.isNotEmpty)
-            TenantSimilarityWarningPanel(matches: _similarMatches),
           if (!widget.hideSubmitButton)
             _SubmitButton(
               enabled: widget.canSubmit,
@@ -949,7 +947,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           else
             _SubmissionFeedback(
               enabled: widget.canSubmit,
-              failure: submission.failure,
+              failure: _inlineSubmissionFailure(submission.failure),
               permissionDeniedMessage: widget.permissionDeniedMessage,
             ),
         ],
@@ -994,7 +992,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     }
 
     final String fee = _feeController.text.trim();
-    return ref
+    final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveTenant(
           id: widget.isCreate ? null : widget.tenant?.mutationId,
@@ -1011,10 +1009,94 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           refreshSetup: widget.refreshSetupAfterSave,
           updateSetupSnapshot: widget.updateSetupSnapshot,
         );
+    if (!mounted) {
+      return false;
+    }
+    if (saved || !widget.isCreate) {
+      return saved;
+    }
+
+    final AppFailure? failure = ref
+        .read(tenantFacilitySetupSubmissionProvider)
+        .failure;
+    if (!_isTenantSimilarityConflict(failure)) {
+      return false;
+    }
+
+    // Backend similarity is authoritative. Clear the inline conflict message and
+    // reopen the dedicated results dialog so the user can review and confirm.
+    ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
+    setState(() {
+      _similarityAccepted = false;
+    });
+    final bool confirmed = await _guardAgainstDuplicates(
+      forceReviewMatches: true,
+    );
+    if (!confirmed || !mounted) {
+      return false;
+    }
+    return ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveTenant(
+          name: _nameController.text,
+          slug: _slugController.text,
+          isActive: _isActive,
+          currency: resolveDefaultCurrency(tenantCurrency: _currency),
+          standardConsultationFee: fee.isEmpty ? null : fee,
+          clearStandardConsultationFee: fee.isEmpty,
+          contactName: _contactNameController.text,
+          contactEmail: _emailController.text,
+          contactPhone: _phoneController.text,
+          confirmSimilar: true,
+          refreshSetup: widget.refreshSetupAfterSave,
+          updateSetupSnapshot: widget.updateSetupSnapshot,
+        );
   }
 
-  Future<bool> _guardAgainstDuplicates() async {
-    final AppLocalizations l10n = context.l10n;
+  AppFailure? _inlineSubmissionFailure(AppFailure? failure) {
+    if (_isTenantSimilarityConflict(failure)) {
+      return null;
+    }
+    return failure;
+  }
+
+  bool _isTenantSimilarityConflict(AppFailure? failure) {
+    if (failure == null || failure.category != AppFailureCategory.conflict) {
+      return false;
+    }
+    final String detail = (failure.detailMessage ?? '').toLowerCase();
+    return detail.contains('similar tenant') ||
+        detail.contains('confirm to create anyway') ||
+        detail.contains('duplicate_slug') ||
+        failure.validationFields.contains('slug') ||
+        failure.validationFields.contains('name');
+  }
+
+  TenantSimilarityProposedValues _proposedValues() {
+    return TenantSimilarityProposedValues(
+      name: _nameController.text.trim(),
+      slug: _slugController.text.trim().isEmpty
+          ? null
+          : _slugController.text.trim(),
+      contactName: _contactNameController.text.trim().isEmpty
+          ? null
+          : _contactNameController.text.trim(),
+      contactPhone: _phoneController.text.trim().isEmpty
+          ? null
+          : _phoneController.text.trim(),
+      contactEmail: _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
+      currency: resolveDefaultCurrency(tenantCurrency: _currency),
+      standardConsultationFee: _feeController.text.trim().isEmpty
+          ? null
+          : _feeController.text.trim(),
+    );
+  }
+
+  Future<bool> _guardAgainstDuplicates({
+    bool forceReviewMatches = false,
+  }) async {
     final List<TenantProfile> existing = await _loadExistingTenants();
     final TenantDuplicateCheckResult result = checkTenantDuplicates(
       name: _nameController.text,
@@ -1028,44 +1110,34 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       standardConsultationFee: _feeController.text,
     );
 
-    if (result.exactSlugConflict) {
-      setState(() {
-        _slugErrorText = l10n.tenantFacilityTenantSlugAlreadyInUse;
-        _nameErrorText = null;
-        _similarMatches = result.similarMatches
-            .where((TenantSimilarityMatch match) => match.exactSlugConflict)
-            .toList(growable: false);
-        _similarityAccepted = false;
-      });
-      if (!mounted) {
-        return false;
-      }
-      await showTenantSimilarityDialog(
-        context,
-        matches: _similarMatches,
-        allowProceed: false,
-      );
-      return false;
-    }
-
-    final List<TenantSimilarityMatch> reviewMatches = result.overridableMatches;
-    if (reviewMatches.isEmpty || _similarityAccepted) {
-      setState(() {
-        _nameErrorText = null;
-        _slugErrorText = null;
-        _similarMatches = const <TenantSimilarityMatch>[];
-      });
-      return true;
-    }
+    final bool exactSlugConflict = result.exactSlugConflict;
+    final List<TenantSimilarityMatch> reviewMatches = exactSlugConflict
+        ? result.similarMatches
+              .where((TenantSimilarityMatch match) => match.exactSlugConflict)
+              .toList(growable: false)
+        : result.overridableMatches;
 
     if (!mounted) {
       return false;
     }
 
+    setState(() {
+      _nameErrorText = null;
+      _slugErrorText = exactSlugConflict
+          ? context.l10n.tenantFacilityTenantSlugAlreadyInUse
+          : null;
+      _similarMatches = const <TenantSimilarityMatch>[];
+      if (exactSlugConflict) {
+        _similarityAccepted = false;
+      }
+    });
+
     final TenantSimilarityDialogResult decision =
         await showTenantSimilarityDialog(
           context,
+          proposed: _proposedValues(),
           matches: reviewMatches,
+          allowProceed: !exactSlugConflict,
         );
     if (!mounted) {
       return false;
@@ -1074,7 +1146,6 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     switch (decision.action) {
       case TenantSimilarityAction.cancel:
         setState(() {
-          _similarMatches = reviewMatches;
           _similarityAccepted = false;
         });
         return false;
@@ -1086,8 +1157,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
         return false;
       case TenantSimilarityAction.proceed:
         setState(() {
-          _similarMatches = reviewMatches;
-          _similarityAccepted = true;
+          _similarityAccepted = reviewMatches.isNotEmpty || forceReviewMatches;
           _nameErrorText = null;
           _slugErrorText = null;
         });
@@ -1119,12 +1189,14 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       );
     }
 
-    await appendMatches(name.isEmpty ? null : name);
+    // Always include an unfiltered page so sparse name/slug searches do not
+    // miss candidates the backend similarity check would still catch.
+    await appendMatches(null);
+    if (name.isNotEmpty) {
+      await appendMatches(name);
+    }
     if (slug.isNotEmpty && slug != name) {
       await appendMatches(slug);
-    }
-    if (tenants.isEmpty) {
-      await appendMatches(null);
     }
 
     return tenants;
