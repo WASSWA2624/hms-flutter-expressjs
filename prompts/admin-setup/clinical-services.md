@@ -1,1 +1,34 @@
-In the admin setup screen. And clinical services and, and under lab. I want to implement the configure button as follows. So when I click the configure button, it should open The respective developer for selecting the tenant in the facility if applicable. That is for the platform admins or selecting the facility if it is a tenant admin. Or automatically selecting the facility and the tenant if it is a facility admin. So the next button should take me to At the bottom you can select lab tests and panels. I'm not sure that this table is very large and slow. And also even selecting a test or a panel the user interface is less responsive. So also there is no option for deselecting all and all selection. For example, if I selected like three things, I have to go and look for all those that I've selected and from that big list and select, deselect them manually. Once I have selected The panels, our tests, I should be taken to, when I click next, I should be taken to a screen where I can enter the, the faulty prices for these tests and panels that I've selected. I've noted that also clicking and going to the next screen. Doesn't take me there instantly, does it? Then, like for example, I've selected two options, but now I'm seeing that maybe internally there is a duplicate which needs to be sorted, and after confirming the prices. After entering the prices I should be able to click next. Because now, for example, this cardiac, this this test which is labeled one three beta glucan in serum and this cardiac test testing They seem to be connected. When I enter a value of price here, it updates the other, so that needs to be corrected, needs to be fixed, it's not the right way When I click next, I should the table, the review table should show me the tests And automatically there should be a column for viewing the price For viewing the price that I've selected for these various panels and the tests, and then after that I can click enable and then the enable is implemented so these tests and the panels are enabled for the facility or tenants where I am attaching them so users can use them. Interface when, when they are requesting for labs
+# Lab Configure: harden batch enable wizard
+
+Fix Clinical Services → Lab **Configure** so selection stays responsive, prices stay independent, and Review Selection shows unit prices before enable.
+
+## Context
+
+`LabEnableFacilityOfferingDialog` (catalog → prices → preview → enable) exists. Gaps: large-list select jank; no select/deselect-all; Next lag; duplicates; linked prices; preview missing Price.
+
+## Requirements
+
+1. Keep Configure scope rules and wizard steps; do not redesign the flow.
+2. Keep catalog multi-select responsive on large lists. Add **Select all** / **Deselect all** for listed available rows (reuse `labSelectAllTestsAction` or equivalent; add Deselect-all l10n if missing).
+3. Deduplicate catalog rows by stable identity (`apiId`, else type + code/id) before render, selection, and prices.
+4. Bind each price/currency field to one selected item (stable keys + per-item controllers). Editing one must not change another.
+5. Advance catalog → price → preview immediately; load only for network. Keep Next gating (≥1 selection; required positive unit prices).
+6. Preview always shows Unit price per remaining item. **Enable selected** batch-upserts offerings for the scoped facility and refreshes Lab.
+
+## Constraints
+
+Reuse `AppListTable`, `AppCurrencyAmountField`, offering APIs, permissions, l10n, Radiology patterns. Follow `.cursor/mandatories.mdc`. No multi-facility batch.
+
+## Acceptance Criteria
+
+- Select/deselect-all targets listed available items; toggles stay snappy on large catalogs.
+- No duplicate rows; each selected item has an independent price.
+- Preview always shows Price; Enable persists offerings for the scoped facility.
+- Tests cover select-all, price isolation, preview price, dedupe; check mobile/tablet/desktop light+dark.
+
+## Relevant Files
+
+- `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart`
+- `frontend/lib/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart`
+- `frontend/test/shared/lab_catalog/lab_enable_offering_dialog_test.dart`
+- `screens/admin-setup/clinical-services.md`

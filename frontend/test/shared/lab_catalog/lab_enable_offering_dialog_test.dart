@@ -34,6 +34,24 @@ const LabCatalogItem _alreadyOfferedTest = LabCatalogItem(
   isOfferedAtFacility: true,
 );
 
+const LabCatalogItem _duplicateTestA = LabCatalogItem(
+  id: 'LBT0000099',
+  displayId: 'DUP-001',
+  type: LabCatalogItemType.test,
+  name: 'Duplicate glucan A',
+  code: 'GLU-A',
+  category: 'CHEMISTRY',
+);
+
+const LabCatalogItem _duplicateTestB = LabCatalogItem(
+  id: 'LBT0000099-copy',
+  displayId: 'DUP-001',
+  type: LabCatalogItemType.test,
+  name: 'Duplicate glucan B',
+  code: 'GLU-B',
+  category: 'CHEMISTRY',
+);
+
 void main() {
   group('LabEnableFacilityOfferingDialog', () {
     testWidgets('catalog footer is Back, Next, Close with disabled Next', (
@@ -90,6 +108,93 @@ void main() {
       expect(find.text('ENABLE LAB TESTS AND PANELS'), findsOneWidget);
     });
 
+    testWidgets('select all and clear selection target listed rows', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[_availableTest, _availablePanel],
+      );
+
+      expect(find.text('Select all'), findsOneWidget);
+      expect(find.text('Clear selection'), findsOneWidget);
+
+      await tester.tap(find.text('Select all'));
+      await tester.pump();
+
+      final AppButton nextAfterSelect = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, 'Next'),
+      );
+      expect(nextAfterSelect.enabled, isTrue);
+
+      await tester.tap(find.text('Clear selection'));
+      await tester.pump();
+
+      final AppButton nextAfterClear = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, 'Next'),
+      );
+      expect(nextAfterClear.enabled, isFalse);
+    });
+
+    testWidgets('dedupes catalog rows that share type and apiId', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[
+          _duplicateTestA,
+          _duplicateTestB,
+          _availablePanel,
+        ],
+      );
+
+      expect(find.text('Duplicate glucan A'), findsWidgets);
+      expect(find.text('Duplicate glucan B'), findsNothing);
+
+      await tester.tap(find.text('Select all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppCurrencyAmountField), findsNWidgets(2));
+    });
+
+    testWidgets('price fields stay independent across selected items', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[_availableTest, _availablePanel],
+      );
+
+      await tester.tap(find.text('Select all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next').first);
+      await tester.pumpAndSettle();
+
+      final Finder amountFields = find.descendant(
+        of: find.byType(AppCurrencyAmountField),
+        matching: find.byType(EditableText),
+      );
+      expect(amountFields, findsNWidgets(2));
+      await tester.enterText(amountFields.at(0), '1000');
+      await tester.enterText(amountFields.at(1), '2500');
+      await tester.pump();
+
+      final String firstAmount =
+          tester.widget<EditableText>(amountFields.at(0)).controller?.text ??
+          '';
+      final String secondAmount =
+          tester.widget<EditableText>(amountFields.at(1)).controller?.text ??
+          '';
+      expect(firstAmount.replaceAll(',', ''), '1000');
+      expect(secondAmount.replaceAll(',', ''), '2500');
+      expect(firstAmount, isNot(equals(secondAmount)));
+    });
+
     testWidgets('selection goes to batch price then preview then enable', (
       WidgetTester tester,
     ) async {
@@ -106,7 +211,7 @@ void main() {
 
       await tester.tap(find.byType(Checkbox).at(0));
       await tester.tap(find.byType(Checkbox).at(1));
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Next').first);
       await tester.pumpAndSettle();
 
@@ -128,13 +233,18 @@ void main() {
       expect(find.text('REVIEW SELECTION'), findsOneWidget);
       expect(find.text('Complete blood count'), findsWidgets);
       expect(find.text('Metabolic panel'), findsWidgets);
+      expect(find.text('Unit price'), findsWidgets);
+      expect(find.textContaining('1,000'), findsWidgets);
+      expect(find.textContaining('2,500'), findsWidgets);
 
       await tester.tap(find.text('Enable selected').first);
       await tester.pumpAndSettle();
 
       expect(enables, hasLength(2));
-      expect(enables.map((Map<String, Object?> p) => p['unit_price']),
-          containsAll(<Object?>[1000, 2500]));
+      expect(
+        enables.map((Map<String, Object?> p) => p['unit_price']),
+        containsAll(<Object?>[1000, 2500]),
+      );
     });
 
     testWidgets('preview allows deselect and back to batch price', (
@@ -148,7 +258,7 @@ void main() {
 
       await tester.tap(find.byType(Checkbox).at(0));
       await tester.tap(find.byType(Checkbox).at(1));
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Next').first);
       await tester.pumpAndSettle();
 
