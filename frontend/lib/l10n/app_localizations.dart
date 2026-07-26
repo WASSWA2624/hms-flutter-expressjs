@@ -35401,10 +35401,10 @@ abstract class AppLocalizations {
   /// **'Enable lab tests and panels'**
   String get labEnableOfferingDialogTitle;
 
-  /// Body for the dialog that enables a platform lab test or panel at the facility.
+  /// Body for the dialog that enables platform lab tests or panels at the facility.
   ///
   /// In en, this message translates to:
-  /// **'Select a catalog item and set the facility price for ordering.'**
+  /// **'Select catalog tests and panels to enable at this facility.'**
   String get labEnableOfferingDialogBody;
 
   /// Label for selecting a platform lab catalog item to enable at the facility.
@@ -35430,6 +35430,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Already offered'**
   String get labEnableOfferingAlreadyOfferedLabel;
+
+  /// Primary action to enable the selected lab tests and panels at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable selected'**
+  String get labEnableSelectedItemsAction;
+
+  /// Body for the batch price step when enabling lab offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item selected} other{{count} items selected}}. Set a unit price for each item.'**
+  String labEnableSelectedItemsBody(int count);
+
+  /// Title for the lab enable offering preview step.
+  ///
+  /// In en, this message translates to:
+  /// **'Review selection'**
+  String get labEnableOfferingPreviewTitle;
+
+  /// Body for the lab enable offering preview step.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the tests, panels, and prices. Deselect any you want to remove, then enable the selection.'**
+  String get labEnableOfferingPreviewBody;
+
+  /// Title for the batch price step when enabling lab offerings.
+  ///
+  /// In en, this message translates to:
+  /// **'Set facility prices'**
+  String get labEnableOfferingSetPricesTitle;
+
+  /// Empty state when the lab enable preview has no selected items.
+  ///
+  /// In en, this message translates to:
+  /// **'No items selected. Go back to choose offerings.'**
+  String get labEnableOfferingPreviewEmptyLabel;
+
+  /// Tooltip when Next is disabled because no lab catalog items are selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one test or panel.'**
+  String get labSelectAtLeastOneItemMessage;
 
   /// Prompt shown before tenant and facility are selected in lab configurations.
   ///

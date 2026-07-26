@@ -1542,6 +1542,7 @@ class _FacilityCatalogConfigPanelState
         _CatalogDeskTab.lab => await _openLabConfigureDialog(
           resolved.scope,
           defaultCurrency: resolved.defaultCurrency,
+          showBackAction: showScopeStep,
         ),
         _CatalogDeskTab.diagnoses =>
           await _openDiagnosisConfigureDialog(resolved.scope),
@@ -1550,10 +1551,14 @@ class _FacilityCatalogConfigPanelState
       if (!mounted) {
         return;
       }
-      if (identical(
-            outcome,
-            RadiologyEnableFacilityOfferingDialog.backResult,
-          ) &&
+      if ((identical(
+                outcome,
+                RadiologyEnableFacilityOfferingDialog.backResult,
+              ) ||
+              identical(
+                outcome,
+                LabEnableFacilityOfferingDialog.backResult,
+              )) &&
           showScopeStep) {
         continue;
       }
@@ -1620,18 +1625,20 @@ class _FacilityCatalogConfigPanelState
     );
   }
 
-  Future<bool?> _openLabConfigureDialog(
+  Future<Object?> _openLabConfigureDialog(
     FacilityCatalogScope scope, {
     String? defaultCurrency,
+    bool showBackAction = false,
   }) async {
     final LabRepository repository = ref.read(labRepositoryProvider);
-    final bool? saved = await showAppDialog<bool>(
+    return showAppDialog<Object>(
       context: context,
       barrierDismissible: false,
       builder: (_) => LabEnableFacilityOfferingDialog(
         kind: LabEnableOfferingKind.all,
         scope: scope,
         defaultCurrency: defaultCurrency ?? _resolvedCurrency,
+        showBackAction: showBackAction,
         onSearchCatalog: ({
           required LabEnableOfferingKind kind,
           required LabCatalogScope scope,
@@ -1667,7 +1674,6 @@ class _FacilityCatalogConfigPanelState
         },
       ),
     );
-    return saved;
   }
 
   Future<bool?> _openDiagnosisConfigureDialog(FacilityCatalogScope scope) async {

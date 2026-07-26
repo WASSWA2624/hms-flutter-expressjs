@@ -18969,7 +18969,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labEnableOfferingDialogBody =>
-      'Select a catalog item and set the facility price for ordering.';
+      'Select catalog tests and panels to enable at this facility.';
 
   @override
   String get labEnableOfferingCatalogLabel => 'Platform catalog item';
@@ -18984,6 +18984,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labEnableOfferingAlreadyOfferedLabel => 'Already offered';
+
+  @override
+  String get labEnableSelectedItemsAction => 'Enable selected';
+
+  @override
+  String labEnableSelectedItemsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items selected',
+      one: '1 item selected',
+    );
+    return '$_temp0. Set a unit price for each item.';
+  }
+
+  @override
+  String get labEnableOfferingPreviewTitle => 'Review selection';
+
+  @override
+  String get labEnableOfferingPreviewBody =>
+      'Review the tests, panels, and prices. Deselect any you want to remove, then enable the selection.';
+
+  @override
+  String get labEnableOfferingSetPricesTitle => 'Set facility prices';
+
+  @override
+  String get labEnableOfferingPreviewEmptyLabel =>
+      'No items selected. Go back to choose offerings.';
+
+  @override
+  String get labSelectAtLeastOneItemMessage =>
+      'Select at least one test or panel.';
 
   @override
   String get labConfigurationsSelectScopeBody =>

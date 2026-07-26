@@ -70,23 +70,31 @@ Dialog title default: **Select tenant and facility**.
 
 ## Lab enable offering dialog (`LabEnableFacilityOfferingDialog`)
 
-Opened after Configure → Next when the Lab nested tab is active.
+Opened after Configure → Next when the Lab nested tab is active. Wizard: **catalog → batch prices → preview → one batch enable** (same pattern as Radiology).
 
-**Note from source:** `_openLabConfigureDialog` passes `kind: LabEnableOfferingKind.all` so both tests and panels are listed (type filter available). Row enable routes to test or panel upsert by item type.
+**Note from source:** `_openLabConfigureDialog` passes `kind: LabEnableOfferingKind.all` so both tests and panels are listed (type filter available). Catalog lists only items **not** already offered at the scoped facility.
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
 | Laboratory filters / Filter | Catalog search (`labFiltersLabel`) | Type (when all), category, result-kind, specimen type, and source filter groups; **Apply filters** / **Clear filters**. |
 | Settings | Column visibility (when >1 columns) | Column-settings dialog. |
-| Row select (not yet offered) | Catalog row | Opens nested `_LabEnableOfferingPriceDialog`. |
-| Close | Footer | Dismisses picker (`false`). |
+| Row select / checkbox | Catalog row (available only) | Toggles multi-select for batch enable. |
+| Back | Footer leftmost | Catalog: returns to scope picker when `showBackAction` (pops `backResult`); otherwise dismisses. Price → catalog; Preview → price. |
+| Next | Footer middle (`commonNextActionLabel`) | Always visible on catalog/price. Catalog: disabled with `labSelectAtLeastOneItemMessage` until ≥1 selected; then opens batch price. Price: validates required unit prices, then opens preview. |
+| Close | Footer rightmost | Aborts without enable (pops whether any were already enabled this session). |
+| Enable selected | Preview footer primary (`labEnableSelectedItemsAction`) | Enables all remaining selected via `onEnable`; shows failure banner; pops `true` on full success. Disabled with reason when selection empty or prices invalid. |
 
-### Nested `_LabEnableOfferingPriceDialog`
+### Batch price step
 
-| Action button / control | Location | Modal opened or function |
-| ----------------------- | -------- | ------------------------ |
-| Cancel | Footer (`_dialogActions`) | Aborts enable. |
-| Enable test | Footer primary (`labEnableTestAction`; would be **Enable panel** for panel kind) | Upserts facility lab offering with unit price; pops `true` (parent then pops `true`). |
+Stacked fields for each selected test/panel: name/subtitle plus required `AppCurrencyAmountField` (no per-item nested price dialogs).
+
+### Preview step
+
+Table of name / type (when all) / code / category / price; checkboxes remove items from the batch before submit.
+
+### Standalone `LabEnableOfferingPriceDialog`
+
+Single-item price enable used by other callers, not by this panel’s Configure wizard.
 
 ---
 
@@ -167,7 +175,7 @@ Used for lab / diagnosis global catalog deletes from this panel. Call sites pass
 - Clinical Services → nested Radiology / Lab / Diagnoses tables
 - **Configure** → **Select tenant and facility** →
   - Radiology → `RadiologyEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable; Back can return to scope)
-  - Lab → `LabEnableFacilityOfferingDialog` (tests and panels) → `_LabEnableOfferingPriceDialog`
+  - Lab → `LabEnableFacilityOfferingDialog` (catalog → batch prices → preview → batch enable for tests and panels; Back can return to scope)
   - Diagnoses → `DiagnosisEnableFacilityOfferingDialog` (row enable; no nested price dialog)
 - Add / Create (no tenant) → **Select tenant and facility** → category mutation dialog
 - Add / Create (tenant present) → category mutation dialog
@@ -183,6 +191,7 @@ Used for lab / diagnosis global catalog deletes from this panel. Call sites pass
 | Helper | Would open or do |
 | ------ | ---------------- |
 | `LabEnableFacilityOfferingDialog` with `LabEnableOfferingKind.test` / `panel` only | Lab workspace Configure still opens kind-specific dialogs; Clinical Services Configure uses `all` |
+| `LabEnableOfferingPriceDialog` | Standalone single-item enable; Clinical Services Lab Configure uses the batch wizard |
 | Procedures / Prescriptions / Budget catalog tabs | l10n keys exist; not mounted in `FacilityCatalogConfigPanel` nested strip |
 | Other `/admin/setup` desk tabs’ tenant/facility/structure/access dialogs | Reachable only after leaving Clinical Services |
 
