@@ -269,7 +269,7 @@
   "@commonFiltersActionLabel": {
     "description": "Label for opening a worklist table advanced filters dialog."
   },
-  "commonFilterActionLabel": "Filter",
+  "commonFilterActionLabel": "Filters",
   "@commonFilterActionLabel": {
     "description": "Short label for the table search-bar Filter button."
   },

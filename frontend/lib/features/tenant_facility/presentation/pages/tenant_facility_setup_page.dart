@@ -589,8 +589,9 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
 
   Widget _buildTabBody(TenantFacilitySetupDeskSection section) {
     final FacilitySetupSnapshot snapshot = widget.snapshot;
-    final bool canSubmitStructure =
-        widget.canEditStructure && snapshot.facility != null;
+    // Permission only — each section gates Add on its own prerequisites
+    // (e.g. departments require a facility) so the Add control stays visible.
+    final bool canSubmitStructure = widget.canEditStructure;
 
     return switch (section) {
       TenantFacilitySetupDeskSection.tenants => ManageTenantsPanel(
@@ -2506,6 +2507,7 @@ class _DepartmentSetupSection extends ConsumerWidget {
       isSubmitting: isSubmitting,
       blockedMessage: blockedMessage,
       onAdd: () => _openDepartmentDialog(context, snapshot),
+      columnVisibilityStorageKey: 'setup_structure_departments_v2',
       scopeLabel: l10n.tenantFacilityFacilitySelectLabel,
       scopeOptions: <_SearchableEntityGroupScopeOption>[
         for (final FacilityProfile facility
@@ -2523,9 +2525,34 @@ class _DepartmentSetupSection extends ConsumerWidget {
       itemScopeId: (DepartmentProfile department) =>
           department.facilityId ?? snapshot.facility?.id,
       titleBuilder: (DepartmentProfile department) => department.name,
-      subtitleBuilder: (DepartmentProfile department) => department.isDeleted
-          ? l10n.tenantFacilityStructureDeletedStatus
-          : _departmentSubtitle(l10n, snapshot, department),
+      subtitleBuilder: (DepartmentProfile department) =>
+          _departmentSubtitle(l10n, snapshot, department),
+      statusLabelBuilder: (DepartmentProfile department) {
+        if (department.isDeleted) {
+          return l10n.tenantFacilityStructureDeletedStatus;
+        }
+        return _activeStatusLabel(l10n, department.isActive);
+      },
+      extraColumns: <AppListTableColumn<DepartmentProfile>>[
+        AppListTableColumn<DepartmentProfile>(
+          id: 'type',
+          label: l10n.tenantFacilityDepartmentTypeLabel,
+          preferredWidth: 140,
+          cellBuilder: (_, DepartmentProfile department) => Text(
+            _departmentTypeLabel(l10n, department.type),
+          ),
+        ),
+        AppListTableColumn<DepartmentProfile>(
+          id: 'short_name',
+          label: l10n.tenantFacilityDepartmentShortNameLabel,
+          preferredWidth: 120,
+          cellBuilder: (_, DepartmentProfile department) => Text(
+            department.shortName?.trim().isNotEmpty == true
+                ? department.shortName!.trim()
+                : '—',
+          ),
+        ),
+      ],
       isDeletedBuilder: (DepartmentProfile department) => department.isDeleted,
       onEdit: (DepartmentProfile department) {
         if (department.isDeleted || isSubmitting) {
@@ -2952,6 +2979,9 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     this.itemScopeId,
     this.addIcon = Icons.add_circle_outline,
     this.blockedMessage,
+    this.extraColumns,
+    this.columnVisibilityStorageKey,
+    this.statusLabelBuilder,
   });
 
   final String title;
@@ -2977,6 +3007,9 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final List<_SearchableEntityGroupScopeOption> scopeOptions;
   final String? Function(T item)? itemScopeId;
   final String? blockedMessage;
+  final List<AppListTableColumn<T>>? extraColumns;
+  final String? columnVisibilityStorageKey;
+  final String Function(T item)? statusLabelBuilder;
 
   @override
   State<_SearchableEntityGroup<T>> createState() =>
@@ -3044,9 +3077,11 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         _filterValue.options.isNotEmpty ||
         (_hasScopeSelector && _scopeId != _allScopes);
 
+    final double actionGap = theme.spacing.xs;
     final AppListTableColumn<T> nameColumn = AppListTableColumn<T>(
       id: 'name',
       label: widget.title,
+      preferredWidth: 200,
       cellBuilder: (BuildContext context, T item) {
         final bool deleted = widget.isDeletedBuilder(item);
         return Text(
@@ -3059,24 +3094,30 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         );
       },
     );
+    final String Function(T item) statusLabel =
+        widget.statusLabelBuilder ?? widget.subtitleBuilder;
     final AppListTableColumn<T> statusColumn = AppListTableColumn<T>(
       id: 'status',
       label: l10n.tenantFacilityTenantStatusLabel,
-      cellBuilder: (_, T item) => Text(widget.subtitleBuilder(item)),
+      preferredWidth: 120,
+      cellBuilder: (_, T item) => Text(statusLabel(item)),
     );
+    final List<AppListTableColumn<T>> extraColumns =
+        widget.extraColumns ?? <AppListTableColumn<T>>[];
     final bool actionsEnabled = !widget.isSubmitting;
     final AppListTableColumn<T>? actionsColumn = widget.canManageRecords
         ? AppListTableColumn<T>(
             id: 'actions',
             label: l10n.accessAdminColumnActions,
             alwaysVisible: true,
+            preferredWidth: widget.onPermanentDelete != null ? 220 : 168,
             cellBuilder: (BuildContext context, T item) {
               final bool deleted = widget.isDeletedBuilder(item);
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   if (deleted) ...<Widget>[
-                    AppButton(
+                    AppButton.tertiary(
                       leadingIcon: Icons.restore_outlined,
                       label: l10n.tenantFacilityRestoreStructureAction,
                       semanticLabel: l10n.tenantFacilityRestoreStructureAction,
@@ -3086,8 +3127,9 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                           ? () => widget.onRestore(item)
                           : null,
                     ),
-                    if (widget.onPermanentDelete != null)
-                      AppButton(
+                    if (widget.onPermanentDelete != null) ...<Widget>[
+                      SizedBox(width: actionGap),
+                      AppButton.tertiary(
                         leadingIcon: Icons.delete_forever_outlined,
                         label: l10n.tenantFacilityPermanentDeleteAction,
                         semanticLabel: l10n.tenantFacilityPermanentDeleteAction,
@@ -3098,8 +3140,9 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                             ? () => widget.onPermanentDelete!(item)
                             : null,
                       ),
+                    ],
                   ] else ...<Widget>[
-                    AppButton(
+                    AppButton.tertiary(
                       leadingIcon: Icons.edit_outlined,
                       label: l10n.tenantFacilityEditAction,
                       semanticLabel: l10n.tenantFacilityEditAction,
@@ -3109,7 +3152,8 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                           ? () => widget.onEdit(item)
                           : null,
                     ),
-                    AppButton(
+                    SizedBox(width: actionGap),
+                    AppButton.tertiary(
                       leadingIcon: Icons.delete_outline,
                       label: l10n.tenantFacilityDeleteAction,
                       semanticLabel: l10n.tenantFacilityDeleteAction,
@@ -3129,10 +3173,13 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
 
     final Widget table = AppListTable<T>(
       items: items,
-      columnVisibilityStorageKey: 'setup_structure_${widget.title}',
+      columnVisibilityStorageKey:
+          widget.columnVisibilityStorageKey ??
+          'setup_structure_${widget.title}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columns: <AppListTableColumn<T>>[
         nameColumn,
+        ...extraColumns,
         statusColumn,
         if (actionsColumn != null) actionsColumn,
       ],
@@ -4626,10 +4673,13 @@ String _departmentSubtitle(
   FacilitySetupSnapshot snapshot,
   DepartmentProfile department,
 ) {
+  // Used for search matching; table shows type/short name/status as columns.
   return _joinParts(<String?>[
     _departmentTypeLabel(l10n, department.type),
     if (department.shortName != null) department.shortName!,
-    _activeStatusLabel(l10n, department.isActive),
+    department.isDeleted
+        ? l10n.tenantFacilityStructureDeletedStatus
+        : _activeStatusLabel(l10n, department.isActive),
   ]);
 }
 

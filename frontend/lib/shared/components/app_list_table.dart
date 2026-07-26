@@ -512,9 +512,10 @@ final class AppListTableSearch<T> {
       filterValue: filterValue,
       onFilterChanged: onFilterChanged,
       hasActiveFilters: hasActiveFilters,
+      // Prefer caller trailing actions (e.g. Add) ahead of table Settings.
       trailingActions: <AppSearchBarAction>[
-        ...trailingActions,
         ...this.trailingActions,
+        ...trailingActions,
       ],
       maxTrailingActions: maxTrailingActions ?? this.maxTrailingActions,
       trailingActionsOverflowLabel:
@@ -533,6 +534,7 @@ class AppListTableColumn<T> {
     this.tooltip,
     this.sortComparator,
     this.headerBuilder,
+    this.preferredWidth,
   });
 
   final String? id;
@@ -543,6 +545,9 @@ class AppListTableColumn<T> {
   final String? tooltip;
   final AppListTableSortComparator<T>? sortComparator;
   final AppListTableHeaderBuilder<T>? headerBuilder;
+
+  /// Optional default width before user resize; clamped like saved widths.
+  final double? preferredWidth;
 
   String get key => id ?? label;
 
@@ -1063,8 +1068,12 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (saved != null) {
       return saved.clamp(_minResizableColumnWidth, 640);
     }
+    final double? preferred = column.preferredWidth;
+    if (preferred != null) {
+      return preferred.clamp(_minResizableColumnWidth, 640);
+    }
     if (_isActionsColumn(column)) {
-      return compact ? 280.0 : 340.0;
+      return compact ? 168.0 : 200.0;
     }
     return compact ? _defaultCompactColumnWidth : _defaultColumnWidth;
   }

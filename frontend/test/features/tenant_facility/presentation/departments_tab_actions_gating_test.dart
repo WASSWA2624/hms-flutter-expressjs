@@ -93,5 +93,40 @@ void main() {
         isFalse,
       );
     });
+
+    test('department table splits type, short name, and status columns', () {
+      final int sectionStart = setupPageSource.indexOf(
+        'class _DepartmentSetupSection extends ConsumerWidget',
+      );
+      final int nextSectionStart = setupPageSource.indexOf(
+        'class _UnitSetupSection extends ConsumerWidget',
+      );
+      final String sectionSource = setupPageSource.substring(
+        sectionStart,
+        nextSectionStart,
+      );
+      expect(sectionSource.contains("id: 'type'"), isTrue);
+      expect(sectionSource.contains("id: 'short_name'"), isTrue);
+      expect(sectionSource.contains('statusLabelBuilder:'), isTrue);
+      expect(
+        sectionSource.contains('setup_structure_departments_v2'),
+        isTrue,
+      );
+    });
+
+    test('structure submit gating uses permission only', () {
+      expect(
+        setupPageSource.contains(
+          'final bool canSubmitStructure = widget.canEditStructure;',
+        ),
+        isTrue,
+      );
+      expect(
+        setupPageSource.contains(
+          'widget.canEditStructure && snapshot.facility != null',
+        ),
+        isFalse,
+      );
+    });
   });
 }

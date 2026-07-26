@@ -463,7 +463,7 @@ abstract class AppLocalizations {
   /// Short label for the table search-bar Filter button.
   ///
   /// In en, this message translates to:
-  /// **'Filter'**
+  /// **'Filters'**
   String get commonFilterActionLabel;
 
   /// Title for the emergency case detail dialog.
