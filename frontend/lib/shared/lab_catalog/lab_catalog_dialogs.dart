@@ -1170,13 +1170,27 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
                 prefixIcon: const Icon(Icons.tag_outlined),
               ),
             ),
-            LabSearchableTextField(
-              controller: _categoryController,
+            AppSelectField<String>.searchable(
+              value: () {
+                final String trimmed = _categoryController.text.trim();
+                return trimmed.isEmpty ? null : trimmed;
+              }(),
               labelText: l10n.labCategoryLabel,
               enabled: !_isSaving,
-              prefixIcon: const Icon(Icons.category_outlined),
-              options: _categoryOptions,
-              optionIcon: labCatalogCategoryIcon,
+              menuHeight: 320,
+              emptyResultsText: l10n.appSelectNoResults,
+              options: labCatalogStringSelectOptions(
+                _categoryOptions,
+                iconForValue: labCatalogCategoryIcon,
+                includeValue: _categoryController.text.trim().isEmpty
+                    ? null
+                    : _categoryController.text.trim(),
+              ),
+              onChanged: (String? value) {
+                setState(() {
+                  _categoryController.text = value?.trim() ?? '';
+                });
+              },
             ),
             AppTextField(
               controller: _descriptionController,

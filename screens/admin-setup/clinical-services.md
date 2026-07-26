@@ -30,7 +30,7 @@
 
 Titles: create uses lab create dialog title keys; edit uses **Edit Lab Test** / **Edit Lab Panel** by kind.
 
-**Test form field order:** framed sections — **Test identity** (name → code → searchable category select) → **Result configuration** (specimen select → result kind → default unit select / options by kind → description) → **Reference ranges** (preset labels + age/gender rows; Add at top). Category, specimen, and unit options combine known catalogs with loaded rows. **Panel form:** two-step wizard — step 1 **Panel details** (name → code → category → description), step 2 **Panel tests** searchable multi-select table; create/edit payloads include `panel_items`. Create/configure dialogs share `LabTestDefinitionForm` for tests. Catalog mutate actions require `canMutateLabCatalog` (lab:write or tenant/facility/system admin).
+**Test form field order:** framed sections — **Test identity** (name → code → searchable category select) → **Result configuration** (specimen select → result kind → default unit select / options by kind → description) → **Reference ranges** (preset labels + age/gender rows; Add at top). Category, specimen, and unit options combine known catalogs with loaded rows. **Panel form:** two-step wizard — step 1 **Panel details** (name → code → searchable category select → description), step 2 **Panel tests** searchable multi-select table; create/edit payloads include `panel_items`. Create/configure dialogs share `LabTestDefinitionForm` for tests. Catalog mutate actions require `canMutateLabCatalog` (lab:write or tenant/facility/system admin).
 
 ---
 

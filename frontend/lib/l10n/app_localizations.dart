@@ -35839,11 +35839,17 @@ abstract class AppLocalizations {
   /// **'Panel details'**
   String get labPanelIdentitySectionTitle;
 
-  /// Section description for lab panel create/edit fields.
+  /// Body copy for the panel details step in the create/edit panel wizard.
   ///
   /// In en, this message translates to:
-  /// **'Name the panel, add an optional code and category, select member tests, then describe it.'**
+  /// **'Name the panel and add an optional code, category, and description.'**
   String get labPanelIdentitySectionBody;
+
+  /// Body copy for the panel tests step in the create/edit panel wizard.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and select the lab tests that belong in this panel.'**
+  String get labPanelTestsSectionBody;
 
   /// Validation when creating a panel without member tests.
   ///

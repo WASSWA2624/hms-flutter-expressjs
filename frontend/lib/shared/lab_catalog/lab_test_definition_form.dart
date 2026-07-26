@@ -34,16 +34,11 @@ List<AppSelectOption<String>> _stringSelectOptions(
   IconData? icon,
   IconData Function(String value)? iconForValue,
 }) {
-  return <AppSelectOption<String>>[
-    for (final String value in values)
-      AppSelectOption<String>(
-        value: value,
-        label: value,
-        leadingIcon: iconForValue != null
-            ? Icon(iconForValue(value))
-            : (icon == null ? null : Icon(icon)),
-      ),
-  ];
+  return labCatalogStringSelectOptions(
+    values,
+    icon: icon,
+    iconForValue: iconForValue,
+  );
 }
 
 String? _selectValueOrNull(TextEditingController controller) {

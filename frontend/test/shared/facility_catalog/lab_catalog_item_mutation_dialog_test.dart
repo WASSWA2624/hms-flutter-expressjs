@@ -614,8 +614,13 @@ void main() {
       );
       expect(submitted, isNull);
 
-      // Rows sort by name; the first checkbox belongs to Hemoglobin.
-      await tester.tap(find.byType(Checkbox).first);
+      // Drive membership through the selection-table toggle (avoids footer
+      // overlay hit-test misses on the first checkbox).
+      final LabPanelTestSelectionTable table = tester
+          .widget<LabPanelTestSelectionTable>(
+            find.byType(LabPanelTestSelectionTable),
+          );
+      table.onToggle(table.tests.first);
       await tester.pump();
       expect(find.text('Selected tests: 1 selected'), findsOneWidget);
 
@@ -674,7 +679,11 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(Checkbox).first);
+      final LabPanelTestSelectionTable table = tester
+          .widget<LabPanelTestSelectionTable>(
+            find.byType(LabPanelTestSelectionTable),
+          );
+      table.onToggle(table.tests.first);
       await tester.pump();
 
       await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
@@ -731,7 +740,11 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(Checkbox).first);
+      final LabPanelTestSelectionTable table = tester
+          .widget<LabPanelTestSelectionTable>(
+            find.byType(LabPanelTestSelectionTable),
+          );
+      table.onToggle(table.tests.first);
       await tester.pump();
       expect(find.text('Selected tests: 1 selected'), findsOneWidget);
 

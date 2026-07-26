@@ -894,6 +894,11 @@ class _LabCatalogItemMutationDialogState
 
   bool get _isPanel => widget.kind == LabCatalogItemType.panel;
 
+  String? get _panelCategoryValue {
+    final String trimmed = _categoryController.text.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1611,11 +1616,14 @@ class _LabCatalogItemMutationDialogState
                   AppWizardStepItem(
                     id: 'details',
                     label: l10n.labPanelIdentitySectionTitle,
+                    shortLabel: l10n.labPanelIdentitySectionTitle,
                     completed: _panelStep > 0,
                   ),
                   AppWizardStepItem(
                     id: 'tests',
                     label: l10n.labPanelTestsLabel,
+                    shortLabel: l10n.labPanelTestsLabel,
+                    completed: _panelStep > 0 && _selectedTests.isNotEmpty,
                   ),
                 ],
                 currentIndex: _panelStep,
@@ -1633,6 +1641,7 @@ class _LabCatalogItemMutationDialogState
                         setState(() => _panelStep = index);
                       },
               ),
+              SizedBox(height: Theme.of(context).spacing.sm),
               // Details fields stay mounted (offstage) on the tests step so
               // Form.validate() keeps covering them from _submit().
               Visibility(
@@ -1641,6 +1650,7 @@ class _LabCatalogItemMutationDialogState
                 child: AppFormSection(
                   title: l10n.labPanelIdentitySectionTitle,
                   description: l10n.labPanelIdentitySectionBody,
+                  density: AppFormSectionDensity.compact,
                   children: <Widget>[
                     AppTextField(
                       controller: _nameController,
@@ -1668,19 +1678,29 @@ class _LabCatalogItemMutationDialogState
                         prefixIcon: const Icon(Icons.tag_outlined),
                         validator: (String? value) => _codeErrorText,
                       ),
-                      right: LabSearchableTextField(
-                        controller: _categoryController,
+                      right: AppSelectField<String>.searchable(
+                        value: _panelCategoryValue,
                         labelText: l10n.labCategoryLabel,
                         enabled: !formLocked,
-                        prefixIcon: const Icon(Icons.category_outlined),
-                        options: _cachedCategoryOptions,
+                        menuHeight: 320,
+                        emptyResultsText: l10n.appSelectNoResults,
+                        options: labCatalogStringSelectOptions(
+                          _cachedCategoryOptions,
+                          iconForValue: labCatalogCategoryIcon,
+                          includeValue: _panelCategoryValue,
+                        ),
+                        onChanged: (String? value) {
+                          setState(() {
+                            _categoryController.text = value?.trim() ?? '';
+                          });
+                        },
                       ),
                     ),
                     AppTextField(
                       controller: _descriptionController,
                       labelText: l10n.labPanelDescriptionLabel,
                       enabled: !formLocked,
-                      maxLines: 2,
+                      maxLines: 3,
                       prefixIcon: const Icon(Icons.notes_outlined),
                     ),
                   ],
@@ -1689,6 +1709,8 @@ class _LabCatalogItemMutationDialogState
               if (_panelStep == 1)
                 AppFormSection(
                   title: l10n.labPanelTestsLabel,
+                  description: l10n.labPanelTestsSectionBody,
+                  density: AppFormSectionDensity.compact,
                   children: <Widget>[
                     LabPanelTestSelectionTable(
                       tests: _catalogTests,

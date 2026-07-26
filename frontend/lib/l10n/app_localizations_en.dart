@@ -19209,7 +19209,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labPanelIdentitySectionBody =>
-      'Name the panel, add an optional code and category, select member tests, then describe it.';
+      'Name the panel and add an optional code, category, and description.';
+
+  @override
+  String get labPanelTestsSectionBody =>
+      'Search and select the lab tests that belong in this panel.';
 
   @override
   String get labPanelSelectAtLeastOneTestMessage =>

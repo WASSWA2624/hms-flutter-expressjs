@@ -258,35 +258,64 @@ class _LabSearchableTextFieldState extends State<LabSearchableTextField> {
             if (visibleOptions.isEmpty) {
               return const SizedBox.shrink();
             }
+            final RenderBox? fieldBox =
+                _focusNode.context?.findRenderObject() as RenderBox?;
+            final double fieldWidth = fieldBox != null && fieldBox.hasSize
+                ? fieldBox.size.width
+                : 320;
             return Align(
               alignment: AlignmentDirectional.topStart,
               child: Material(
                 elevation: 4,
                 color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(
-                  context.responsiveRadius(theme.radius.md),
+                shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.14),
+                surfaceTintColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(
+                    color: theme.colorScheme.outlineVariant,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    context.responsiveRadius(theme.radius.md),
+                  ),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 240,
-                    maxWidth: 420,
-                  ),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: visibleOptions.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final String option = visibleOptions[index];
-                      return ListTile(
-                        dense: true,
-                        leading: widget.optionIcon == null
-                            ? null
-                            : Icon(widget.optionIcon!(option)),
-                        title: Text(option),
-                        onTap: () => onSelected(option),
-                      );
-                    },
+                child: SizedBox(
+                  width: fieldWidth,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: ListView.separated(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: visibleOptions.length,
+                      separatorBuilder: (_, _) => Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                      itemBuilder: (BuildContext context, int index) {
+                        final String option = visibleOptions[index];
+                        return ListTile(
+                          dense: true,
+                          leading: widget.optionIcon == null
+                              ? null
+                              : Icon(
+                                  widget.optionIcon!(option),
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                          title: Text(
+                            option,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          onTap: () => onSelected(option),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -301,6 +330,31 @@ String labNormalizeCatalogToken(String? value) {
 }
 
 /// Icon for a lab catalog category name (known presets + sensible default).
+/// Builds searchable select options for free-text catalog values (category,
+/// specimen, unit, etc.), optionally including a current custom value.
+List<AppSelectOption<String>> labCatalogStringSelectOptions(
+  Iterable<String> values, {
+  IconData? icon,
+  IconData Function(String value)? iconForValue,
+  String? includeValue,
+}) {
+  final List<String> unique = labUniqueNonEmpty(<String?>[
+    ...values,
+    includeValue,
+  ]);
+  return <AppSelectOption<String>>[
+    for (final String value in unique)
+      AppSelectOption<String>(
+        value: value,
+        label: value,
+        leadingIcon: iconForValue != null
+            ? Icon(iconForValue(value))
+            : (icon == null ? null : Icon(icon)),
+        searchText: value,
+      ),
+  ];
+}
+
 IconData labCatalogCategoryIcon(String? category) {
   switch (labNormalizeCatalogToken(category)) {
     case 'blood gas':
