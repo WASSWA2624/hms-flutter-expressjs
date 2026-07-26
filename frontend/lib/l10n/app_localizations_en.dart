@@ -19387,6 +19387,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labPanelNoSelectedTests => 'No tests selected for this panel.';
 
   @override
+  String get labPanelTestSelectColumnLabel => 'Select';
+
+  @override
+  String labPanelSelectedTestsCountLabel(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get labPanelTestTableEmptyLabel => 'No lab tests match your search.';
+
+  @override
   String get labTestDescriptionLabel => 'Test description';
 
   @override

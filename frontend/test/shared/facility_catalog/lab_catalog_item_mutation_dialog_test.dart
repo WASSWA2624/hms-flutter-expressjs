@@ -582,12 +582,27 @@ void main() {
         ],
       );
 
+      // Step 1: panel details with Next (no Save yet).
       expect(find.text('CREATE LAB PANEL'), findsOneWidget);
-      expect(find.text('Panel tests'), findsOneWidget);
-      expect(find.text('Add test'), findsOneWidget);
+      expect(find.text('Panel details'), findsWidgets);
+      expect(find.widgetWithText(AppButton, 'Next'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Save'), findsNothing);
+
+      // Next without a name stays on the details step.
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(AppButton, 'Save'), findsNothing);
 
       await tester.enterText(find.byType(TextFormField).at(0), 'New CBC Panel');
       await tester.enterText(find.byType(TextFormField).at(1), 'CBC-NEW');
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
+      await tester.pumpAndSettle();
+
+      // Step 2: searchable multi-select member-test table.
+      expect(find.byType(LabPanelTestSelectionTable), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Back'), findsOneWidget);
+      expect(find.text('Hemoglobin'), findsWidgets);
+
       await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
       await tester.tap(find.widgetWithText(AppButton, 'Save'));
       await tester.pump();
@@ -599,26 +614,10 @@ void main() {
       );
       expect(submitted, isNull);
 
-      // Drive membership through the public picker callbacks.
-      final LabPanelTestPicker beforeAdd = tester.widget<LabPanelTestPicker>(
-        find.byType(LabPanelTestPicker),
-      );
-      beforeAdd.onPendingChanged('LBT1');
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
-            .pendingTestId,
-        'LBT1',
-      );
-      tester.widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker)).onAdd();
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
-            .selectedTests,
-        isNotEmpty,
-      );
+      // Rows sort by name; the first checkbox belongs to Hemoglobin.
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+      expect(find.text('Selected tests: 1 selected'), findsOneWidget);
 
       await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
       await tester.tap(find.widgetWithText(AppButton, 'Save'));
@@ -672,12 +671,11 @@ void main() {
 
       await tester.enterText(find.byType(TextFormField).at(0), 'Zinc Panel');
       await tester.enterText(find.byType(TextFormField).at(1), 'ZN-P');
-      tester
-          .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
-          .onPendingChanged('LBT9');
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pumpAndSettle();
-      tester.widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker)).onAdd();
-      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
 
       await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
       await tester.tap(find.widgetWithText(AppButton, 'Save'));
@@ -730,18 +728,12 @@ void main() {
 
       await tester.enterText(find.byType(TextFormField).at(0), 'CBC Panel');
       await tester.enterText(find.byType(TextFormField).at(1), 'CBC-NEW');
-      tester
-          .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
-          .onPendingChanged('LBT1');
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pumpAndSettle();
-      tester.widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker)).onAdd();
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
-            .selectedTests,
-        isNotEmpty,
-      );
+
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+      expect(find.text('Selected tests: 1 selected'), findsOneWidget);
 
       await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
       await tester.tap(find.widgetWithText(AppButton, 'Save'));

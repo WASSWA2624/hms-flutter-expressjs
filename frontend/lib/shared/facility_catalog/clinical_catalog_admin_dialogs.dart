@@ -873,7 +873,7 @@ class _LabCatalogItemMutationDialogState
   late List<EditableLabValue> _resultOptions;
   late List<EditableLabReferenceRange> _referenceRanges;
   late List<LabCatalogItem> _selectedTests;
-  String? _pendingTestId;
+  int _panelStep = 0;
   String? _resultKind;
   AppFailure? _failure;
   String? _nameErrorText;
@@ -1095,41 +1095,34 @@ class _LabCatalogItemMutationDialogState
     }
   }
 
-  void _addPendingTest() {
-    final String? testId = _pendingTestId;
-    if (testId == null) {
-      return;
-    }
-    final LabCatalogItem? test = _catalogTests
-        .where(
-          (LabCatalogItem item) =>
-              item.apiId == testId || item.id == testId,
-        )
-        .firstOrNull;
-    if (test == null ||
-        _selectedTests.any(
-          (LabCatalogItem selected) =>
-              selected.apiId == test.apiId || selected.id == test.id,
-        )) {
-      return;
-    }
+  void _toggleSelectedTest(LabCatalogItem item) {
+    final bool alreadySelected = _selectedTests.any(
+      (LabCatalogItem selected) =>
+          selected.apiId == item.apiId || selected.id == item.id,
+    );
     setState(() {
-      _selectedTests.add(test);
-      _pendingTestId = null;
-      _panelTestsErrorText = null;
+      if (alreadySelected) {
+        _selectedTests.removeWhere(
+          (LabCatalogItem selected) =>
+              selected.apiId == item.apiId || selected.id == item.id,
+        );
+      } else {
+        _selectedTests.add(item);
+        _panelTestsErrorText = null;
+      }
       _similarityAccepted = false;
       _noSimilarConfirmed = false;
     });
   }
 
-  void _removeSelectedTest(LabCatalogItem item) {
+  /// Validates the details step before advancing to the tests step.
+  void _goToPanelTestsStep() {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
     setState(() {
-      _selectedTests.removeWhere(
-        (LabCatalogItem selected) =>
-            selected.apiId == item.apiId || selected.id == item.id,
-      );
-      _similarityAccepted = false;
-      _noSimilarConfirmed = false;
+      _failure = null;
+      _panelStep = 1;
     });
   }
 
@@ -1404,6 +1397,11 @@ class _LabCatalogItemMutationDialogState
               ? l10n.labDuplicatePanelCodeMessage
               : l10n.labDuplicateTestCodeMessage;
         }
+        // Name/code fields live on the details step; jump back so the
+        // conflict is visible.
+        if (_isPanel && (nameConflict || codeConflict)) {
+          _panelStep = 0;
+        }
       }
     });
   }
@@ -1607,67 +1605,101 @@ class _LabCatalogItemMutationDialogState
                 context: context,
                 failure: _failure!,
               ),
-            if (_isPanel)
-              AppFormSection(
-                title: l10n.labPanelIdentitySectionTitle,
-                description: l10n.labPanelIdentitySectionBody,
-                children: <Widget>[
-                  AppTextField(
-                    controller: _nameController,
-                    labelText: l10n.labPanelNameLabel,
-                    enabled: !formLocked,
-                    isRequired: true,
-                    errorText: _nameErrorText,
-                    prefixIcon: const Icon(Icons.science_outlined),
-                    validator: (String? value) {
-                      if (_nameErrorText != null) {
-                        return _nameErrorText;
-                      }
-                      return AppValidators.requiredText(
-                        l10n.validationRequired,
-                      )(value);
-                    },
+            if (_isPanel) ...<Widget>[
+              AppWizardStepper(
+                steps: <AppWizardStepItem>[
+                  AppWizardStepItem(
+                    id: 'details',
+                    label: l10n.labPanelIdentitySectionTitle,
+                    completed: _panelStep > 0,
                   ),
-                  AppResponsiveFieldRow.two(
-                    gap: AppResponsiveFieldRowGap.form,
-                    left: AppTextField(
-                      controller: _codeController,
-                      labelText: l10n.labPanelCodeLabel,
-                      enabled: !formLocked,
-                      errorText: _codeErrorText,
-                      prefixIcon: const Icon(Icons.tag_outlined),
-                      validator: (String? value) => _codeErrorText,
-                    ),
-                    right: LabSearchableTextField(
-                      controller: _categoryController,
-                      labelText: l10n.labCategoryLabel,
-                      enabled: !formLocked,
-                      prefixIcon: const Icon(Icons.category_outlined),
-                      options: _cachedCategoryOptions,
-                    ),
-                  ),
-                  AppTextField(
-                    controller: _descriptionController,
-                    labelText: l10n.labPanelDescriptionLabel,
-                    enabled: !formLocked,
-                    maxLines: 2,
-                    prefixIcon: const Icon(Icons.notes_outlined),
-                  ),
-                  LabPanelTestPicker(
-                    tests: _catalogTests,
-                    selectedTests: _selectedTests,
-                    pendingTestId: _pendingTestId,
-                    enabled: !formLocked,
-                    errorText: _panelTestsErrorText,
-                    onPendingChanged: (String? value) {
-                      setState(() => _pendingTestId = value);
-                    },
-                    onAdd: _addPendingTest,
-                    onRemove: _removeSelectedTest,
+                  AppWizardStepItem(
+                    id: 'tests',
+                    label: l10n.labPanelTestsLabel,
                   ),
                 ],
-              )
-            else
+                currentIndex: _panelStep,
+                showCurrentTitle: false,
+                onStepSelected: formLocked
+                    ? null
+                    : (int index) {
+                        if (index == _panelStep) {
+                          return;
+                        }
+                        if (index == 1) {
+                          _goToPanelTestsStep();
+                          return;
+                        }
+                        setState(() => _panelStep = index);
+                      },
+              ),
+              // Details fields stay mounted (offstage) on the tests step so
+              // Form.validate() keeps covering them from _submit().
+              Visibility(
+                visible: _panelStep == 0,
+                maintainState: true,
+                child: AppFormSection(
+                  title: l10n.labPanelIdentitySectionTitle,
+                  description: l10n.labPanelIdentitySectionBody,
+                  children: <Widget>[
+                    AppTextField(
+                      controller: _nameController,
+                      labelText: l10n.labPanelNameLabel,
+                      enabled: !formLocked,
+                      isRequired: true,
+                      errorText: _nameErrorText,
+                      prefixIcon: const Icon(Icons.science_outlined),
+                      validator: (String? value) {
+                        if (_nameErrorText != null) {
+                          return _nameErrorText;
+                        }
+                        return AppValidators.requiredText(
+                          l10n.validationRequired,
+                        )(value);
+                      },
+                    ),
+                    AppResponsiveFieldRow.two(
+                      gap: AppResponsiveFieldRowGap.form,
+                      left: AppTextField(
+                        controller: _codeController,
+                        labelText: l10n.labPanelCodeLabel,
+                        enabled: !formLocked,
+                        errorText: _codeErrorText,
+                        prefixIcon: const Icon(Icons.tag_outlined),
+                        validator: (String? value) => _codeErrorText,
+                      ),
+                      right: LabSearchableTextField(
+                        controller: _categoryController,
+                        labelText: l10n.labCategoryLabel,
+                        enabled: !formLocked,
+                        prefixIcon: const Icon(Icons.category_outlined),
+                        options: _cachedCategoryOptions,
+                      ),
+                    ),
+                    AppTextField(
+                      controller: _descriptionController,
+                      labelText: l10n.labPanelDescriptionLabel,
+                      enabled: !formLocked,
+                      maxLines: 2,
+                      prefixIcon: const Icon(Icons.notes_outlined),
+                    ),
+                  ],
+                ),
+              ),
+              if (_panelStep == 1)
+                AppFormSection(
+                  title: l10n.labPanelTestsLabel,
+                  children: <Widget>[
+                    LabPanelTestSelectionTable(
+                      tests: _catalogTests,
+                      selectedTests: _selectedTests,
+                      enabled: !formLocked,
+                      errorText: _panelTestsErrorText,
+                      onToggle: _toggleSelectedTest,
+                    ),
+                  ],
+                ),
+            ] else
               LabTestDefinitionForm(
                 nameController: _nameController,
                 codeController: _codeController,
@@ -1754,18 +1786,53 @@ class _LabCatalogItemMutationDialogState
           ],
         ),
       ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: _isCheckingSimilarity
-            ? l10n.labSimilarityCheckLoadingTitle
-            : l10n.commonSaveActionLabel,
-        submitIcon: Icons.save_outlined,
-        isSubmitting: formLocked,
-        // Cancel stays available during similarity scan; only lock while saving.
-        cancelEnabled: !_isSaving,
-        onCancel: _isSaving ? null : () => Navigator.of(context).pop(),
-        onSubmit: formLocked ? null : _submit,
-      ),
+      actions: _isPanel && _panelStep == 0
+          ? <Widget>[
+              AppButton.tertiary(
+                label: l10n.commonCancelActionLabel,
+                enabled: !_isSaving,
+                onPressed: _isSaving
+                    ? null
+                    : () => Navigator.of(context).pop(),
+              ),
+              AppButton.primary(
+                label: l10n.commonNextActionLabel,
+                leadingIcon: Icons.arrow_forward,
+                onPressed: formLocked ? null : _goToPanelTestsStep,
+              ),
+            ]
+          : _isPanel
+          ? <Widget>[
+              AppButton.tertiary(
+                label: l10n.commonBackActionLabel,
+                leadingIcon: Icons.arrow_back,
+                enabled: !formLocked,
+                onPressed: formLocked
+                    ? null
+                    : () => setState(() => _panelStep = 0),
+              ),
+              AppButton.primary(
+                label: _isCheckingSimilarity
+                    ? l10n.labSimilarityCheckLoadingTitle
+                    : l10n.commonSaveActionLabel,
+                leadingIcon: Icons.save_outlined,
+                isLoading: formLocked,
+                onPressed: formLocked ? null : _submit,
+              ),
+            ]
+          : buildAppDialogFormActions(
+              cancelLabel: l10n.commonCancelActionLabel,
+              submitLabel: _isCheckingSimilarity
+                  ? l10n.labSimilarityCheckLoadingTitle
+                  : l10n.commonSaveActionLabel,
+              submitIcon: Icons.save_outlined,
+              isSubmitting: formLocked,
+              // Cancel stays available during similarity scan; only lock while
+              // saving.
+              cancelEnabled: !_isSaving,
+              onCancel: _isSaving ? null : () => Navigator.of(context).pop(),
+              onSubmit: formLocked ? null : _submit,
+            ),
     );
   }
 }

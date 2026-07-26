@@ -36157,6 +36157,24 @@ abstract class AppLocalizations {
   /// **'No tests selected for this panel.'**
   String get labPanelNoSelectedTests;
 
+  /// Column label for the checkbox column in the panel test selection table.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get labPanelTestSelectColumnLabel;
+
+  /// Count of member tests currently selected in the panel test selection table.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String labPanelSelectedTestsCountLabel(int count);
+
+  /// Empty state for the panel member-test selection table.
+  ///
+  /// In en, this message translates to:
+  /// **'No lab tests match your search.'**
+  String get labPanelTestTableEmptyLabel;
+
   /// Field label for lab test description.
   ///
   /// In en, this message translates to:

@@ -2300,6 +2300,167 @@ class _SelectedPanelTestRow extends StatelessWidget {
   }
 }
 
+/// Searchable multi-select member-test table for the panel wizard tests step.
+///
+/// Rows toggle selection on tap or via the checkbox column; selection state is
+/// owned by the caller through [selectedTests] + [onToggle].
+class LabPanelTestSelectionTable extends StatefulWidget {
+  const LabPanelTestSelectionTable({
+    required this.tests,
+    required this.selectedTests,
+    required this.enabled,
+    required this.onToggle,
+    this.errorText,
+    super.key,
+  });
+
+  final List<LabCatalogItem> tests;
+  final List<LabCatalogItem> selectedTests;
+  final bool enabled;
+  final ValueChanged<LabCatalogItem> onToggle;
+  final String? errorText;
+
+  @override
+  State<LabPanelTestSelectionTable> createState() =>
+      _LabPanelTestSelectionTableState();
+}
+
+class _LabPanelTestSelectionTableState
+    extends State<LabPanelTestSelectionTable> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool _isSelected(LabCatalogItem item) =>
+      _containsCatalogItem(widget.selectedTests, item);
+
+  Widget _checkboxFor(LabCatalogItem item) {
+    return Checkbox(
+      value: _isSelected(item),
+      onChanged: widget.enabled ? (_) => widget.onToggle(item) : null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String selectedSummary = widget.selectedTests
+        .map((LabCatalogItem test) => test.displayTitle)
+        .where((String value) => value.trim().isNotEmpty)
+        .join(', ');
+    // Keep already-selected members visible (and uncheckable) even when they
+    // are missing from the loaded catalog (e.g. stale edit-time list).
+    final List<LabCatalogItem> tableItems = <LabCatalogItem>[
+      ...widget.tests,
+      ...widget.selectedTests.where(
+        (LabCatalogItem test) => !_containsCatalogItem(widget.tests, test),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppListTable<LabCatalogItem>(
+          items: tableItems,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          tableHorizontalMargin: 0,
+          maxVisibleItems: _maxVisibleLabCatalogDialogItems,
+          initialSortColumnKey: 'name',
+          onRowSelected: widget.enabled ? widget.onToggle : null,
+          search: AppListTableSearch<LabCatalogItem>(
+            controller: _searchController,
+            semanticLabel: l10n.labCatalogSearchLabel,
+            hintText: l10n.labCatalogSearchLabel,
+            enabled: widget.enabled,
+            matcher: (LabCatalogItem item, String query) =>
+                item.matchesSearch(query),
+            enableDateFilter: false,
+          ),
+          emptyBuilder: (_) => Center(
+            child: AppMutedText(
+              l10n.labPanelTestTableEmptyLabel,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          columns: <AppListTableColumn<LabCatalogItem>>[
+            AppListTableColumn<LabCatalogItem>(
+              id: 'select',
+              label: l10n.labPanelTestSelectColumnLabel,
+              alwaysVisible: true,
+              cellBuilder: (_, LabCatalogItem item) => _checkboxFor(item),
+            ),
+            AppListTableColumn<LabCatalogItem>(
+              id: 'name',
+              label: l10n.labTestNameLabel,
+              alwaysVisible: true,
+              sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+                  appListTableCompareText(left.name, right.name),
+              cellBuilder: (_, LabCatalogItem item) =>
+                  Text(item.name ?? item.displayTitle),
+            ),
+            AppListTableColumn<LabCatalogItem>(
+              id: 'code',
+              label: l10n.labTestCodeLabel,
+              sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+                  appListTableCompareText(left.code, right.code),
+              cellBuilder: (_, LabCatalogItem item) =>
+                  Text(item.code ?? l10n.profileUnknownValue),
+            ),
+            AppListTableColumn<LabCatalogItem>(
+              id: 'category',
+              label: l10n.labCategoryLabel,
+              sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+                  appListTableCompareText(left.category, right.category),
+              cellBuilder: (_, LabCatalogItem item) =>
+                  Text(item.category ?? l10n.profileUnknownValue),
+            ),
+          ],
+          mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
+            return AppListTableMobileItem(
+              title: item.name ?? item.displayTitle,
+              caption: item.code,
+              showAvatar: false,
+              leading: _checkboxFor(item),
+              meta: <AppListTableMobileMeta>[
+                if ((item.category ?? '').trim().isNotEmpty)
+                  AppListTableMobileMeta(label: item.category!),
+              ],
+            );
+          },
+        ),
+        SizedBox(height: theme.spacing.sm),
+        Text(
+          '${l10n.labPanelSelectedTestsTitle}: '
+          '${l10n.labPanelSelectedTestsCountLabel(widget.selectedTests.length)}',
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (selectedSummary.isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          AppMutedText(selectedSummary),
+        ],
+        if (widget.errorText != null &&
+            widget.errorText!.trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            widget.errorText!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 String? _positiveUnitPriceValidator(AppLocalizations l10n, String? value) {
   final String? requiredFailure = AppValidators.requiredText(
     l10n.validationRequired,

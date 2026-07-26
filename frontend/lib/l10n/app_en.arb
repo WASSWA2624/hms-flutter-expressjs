@@ -24882,6 +24882,23 @@
   "@labPanelNoSelectedTests": {
     "description": "Empty state for the selected tests list in a lab panel form."
   },
+  "labPanelTestSelectColumnLabel": "Select",
+  "@labPanelTestSelectColumnLabel": {
+    "description": "Column label for the checkbox column in the panel test selection table."
+  },
+  "labPanelSelectedTestsCountLabel": "{count} selected",
+  "@labPanelSelectedTestsCountLabel": {
+    "description": "Count of member tests currently selected in the panel test selection table.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "labPanelTestTableEmptyLabel": "No lab tests match your search.",
+  "@labPanelTestTableEmptyLabel": {
+    "description": "Empty state for the panel member-test selection table."
+  },
   "labTestDescriptionLabel": "Test description",
   "@labTestDescriptionLabel": {
     "description": "Field label for lab test description."
