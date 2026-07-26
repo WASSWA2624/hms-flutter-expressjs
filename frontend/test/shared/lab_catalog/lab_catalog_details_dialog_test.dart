@@ -26,8 +26,8 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Lab test details'), findsOneWidget);
-      expect(find.text('Glucose'), findsWidgets);
+      expect(find.text('LAB TEST DETAILS'), findsOneWidget);
+      expect(find.textContaining('Glucose'), findsWidgets);
       expect(find.text('Edit'), findsNothing);
       expect(find.text('Delete'), findsNothing);
       expect(find.text('Close'), findsOneWidget);
@@ -48,8 +48,8 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Lab panel details'), findsOneWidget);
-      expect(find.text('Metabolic Panel'), findsWidgets);
+      expect(find.text('LAB PANEL DETAILS'), findsOneWidget);
+      expect(find.textContaining('Metabolic Panel'), findsWidgets);
     });
 
     testWidgets('shows Edit and Delete when mutate actions allowed', (
@@ -133,23 +133,23 @@ void main() {
     ) async {
       var detailsOpened = false;
       var editOpened = false;
+      const LabCatalogItem item = LabCatalogItem(
+        id: 'LBT1',
+        type: LabCatalogItemType.test,
+        name: 'Glucose',
+        code: 'GLU',
+      );
 
       await _pumpLabRowSurface(
         tester,
         canMutateLab: true,
-        items: const <LabCatalogItem>[
-          LabCatalogItem(
-            id: 'LBT1',
-            type: LabCatalogItemType.test,
-            name: 'Glucose',
-            code: 'GLU',
-          ),
-        ],
+        items: const <LabCatalogItem>[item],
         onRowSelected: (_) => detailsOpened = true,
         onEdit: () => editOpened = true,
       );
 
-      await tester.tap(find.text('Glucose'));
+      expect(find.text(item.displayTitle), findsOneWidget);
+      await tester.tap(find.text(item.displayTitle));
       await tester.pumpAndSettle();
       expect(detailsOpened, isTrue);
       expect(editOpened, isFalse);
