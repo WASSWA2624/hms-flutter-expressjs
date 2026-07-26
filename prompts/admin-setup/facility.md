@@ -1,1 +1,36 @@
-Within the admin setup, there is a facility tab. Which when you click, it shows you a list of facilities So the facilities you see depend on your account type and the rights or permissions. for example if you have tenant rights, then you'll see all the facilities under the tenants to which you have rights. If you are a platform admin, then you'll see all the facilities within the platform or within the app. If you are a facility admin, then you should only see the details of your facility. Only the details of your facility. So, and maybe you can edit, but you can't delete. Now, for all the other facility, all the other accounts or users who have, who can see about Fortinet They can add, who can see more facilities or who have, who, all the tenants and the platform admins, they can create more facilities within a tenant. So you, you can add a facility, you can create a facility, but when you create a facility, there must be a way to perform a similarity check for that facility. So meaning that the facility, when you're checking for similarity, you're checking against the tenants under which that facility is being created. So the similarity check checks for the facility parameters, the name It, it, the, the name, the tenant, the facility ID, status and so on, contacts, like phone, email address, address line, so all the details about the tenant, so you're actually checking whether this is a potential duplicate. And the, the flow is that even if there isn't a match you show the results, and you must attach values to these checks, to the similarities, is the tenant sixty percent similar, eighty percent, and appropriate color codes must be applied. Then now the user, the one who's creating this facility, can either decide to, can either decide to cancel or create a facility anyway, or can continue to use one of the existing facilities if they confirm that, oh, this actually was creating a facility that is already existing, then they can reuse the existing one. So in case of a successful creation or reuse of an existing facility, then you route the person to that, that existing or new facility. Details, but the, the goal is to ensure that we aren't creating duplicates.
+# Facility Create Similarity Review and Scoped Actions
+
+Align facility create duplicate prevention on `/admin/setup?section=facility`.
+
+## Context
+
+- Inventoried in `screens/admin-setup/facility.md`.
+- Create uses client name-only `checkFacilityDuplicates`; backend hard-blocks exact name with `assertUniqueFacilityName`.
+- Tenant create has multi-field similarity, `similar_exists` / `confirm_similar`, Cancel / Create anyway / Reuse.
+
+## Requirements
+
+1. Scope visibility: platform sees all; tenant actors see permitted tenants’ facilities; facility admins see only their facility, may edit, and must not see Add or delete-lifecycle actions.
+2. On create, compare peers under the selected tenant on name, type/status, contacts (phone, email, address), and identifiers; show percent scores with status colors.
+3. Always open similarity review on create, including zero matches; offer Cancel, Create anyway when no hard conflict, and Reuse existing.
+4. On successful create or reuse, open `_FacilityDetailsDialog`; refresh the list after create.
+5. Enforce backend `similar_exists` / `confirm_similar` on create; hard-block exact name conflicts.
+
+## Constraints
+
+- Reuse tenant similarity patterns, dialogs, permissions, and status colors; no new endpoints.
+- Do not change tenant-tab behavior.
+- No unrelated refactoring.
+
+## Acceptance Criteria
+
+- Facility admins see only their facility, can edit, and never see Add or delete-lifecycle actions (Req 1).
+- Similar peers show scored color-coded review; Create anyway saves with `confirm_similar`; Reuse opens details (Req 2–5).
+- Zero peers still shows review; exact name conflict blocks proceed (Req 2–3, 5).
+- Tests cover similarity, confirm override, review actions, and absent facility-admin actions; analyze passes (Req 1–5).
+
+## Relevant Files
+
+- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
+- `frontend/lib/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart`
+- `backend/src/modules/facility/services/facility.service.js`
