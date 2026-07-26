@@ -8142,6 +8142,14 @@
   "@tenantFacilityActiveLabel": {
     "description": "Active status switch label."
   },
+  "tenantFacilityActiveSubtitleActive": "This tenant is available for clinical and admin work.",
+  "@tenantFacilityActiveSubtitleActive": {
+    "description": "Active switch subtitle when the tenant is active."
+  },
+  "tenantFacilityActiveSubtitleInactive": "This tenant is inactive and hidden from routine workflows.",
+  "@tenantFacilityActiveSubtitleInactive": {
+    "description": "Active switch subtitle when the tenant is inactive."
+  },
   "tenantFacilitySaveTenantAction": "Edit tenant",
   "@tenantFacilitySaveTenantAction": {
     "description": "Edit tenant row action label in the manage tenants table."
@@ -8182,6 +8190,14 @@
   "@tenantFacilitySimilarTenantDialogBody": {
     "description": "Body for similar tenant confirmation dialog."
   },
+  "tenantFacilitySimilarTenantHardConflictBody": "An existing tenant already uses this slug. Choose a different slug or open the existing tenant.",
+  "@tenantFacilitySimilarTenantHardConflictBody": {
+    "description": "Body shown when tenant slug uniqueness blocks create-anyway."
+  },
+  "tenantFacilitySimilarTenantMatchesHeading": "Closest matches",
+  "@tenantFacilitySimilarTenantMatchesHeading": {
+    "description": "Heading above similar tenant match cards."
+  },
   "tenantFacilitySimilarTenantWarningTitle": "Potential duplicate tenant",
   "@tenantFacilitySimilarTenantWarningTitle": {
     "description": "Warning banner title for similar tenant matches."
@@ -8199,7 +8215,27 @@
       }
     }
   },
-  "tenantFacilityProceedCreateTenantAction": "Proceed anyway",
+  "tenantFacilitySimilarFieldStatusMatch": "Match",
+  "@tenantFacilitySimilarFieldStatusMatch": {
+    "description": "Field comparison status when values match."
+  },
+  "tenantFacilitySimilarFieldStatusSimilar": "Similar",
+  "@tenantFacilitySimilarFieldStatusSimilar": {
+    "description": "Field comparison status when values are similar."
+  },
+  "tenantFacilitySimilarFieldStatusDifferent": "Different",
+  "@tenantFacilitySimilarFieldStatusDifferent": {
+    "description": "Field comparison status when values differ."
+  },
+  "tenantFacilitySimilarFieldStatusMissing": "Missing",
+  "@tenantFacilitySimilarFieldStatusMissing": {
+    "description": "Field comparison status when a value is missing."
+  },
+  "tenantFacilityUseExistingTenantAction": "Use existing",
+  "@tenantFacilityUseExistingTenantAction": {
+    "description": "Action to open an existing similar tenant instead of creating."
+  },
+  "tenantFacilityProceedCreateTenantAction": "Create anyway",
   "@tenantFacilityProceedCreateTenantAction": {
     "description": "Confirm create tenant despite similar matches."
   },

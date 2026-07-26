@@ -103,6 +103,28 @@ describe('Tenant Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should accept confirm_similar for duplicate review overrides', () => {
+      const validData = {
+        name: 'Test Hospital',
+        slug: 'test-hospital',
+        confirm_similar: true
+      };
+      const result = createTenantSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.confirm_similar).toBe(true);
+      }
+    });
+
+    it('should reject invalid slug format', () => {
+      const invalidData = {
+        name: 'Test Hospital',
+        slug: 'Invalid Slug!'
+      };
+      const result = createTenantSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
     it('should reject invalid is_active type', () => {
       const invalidData = {
         name: 'Test Hospital',

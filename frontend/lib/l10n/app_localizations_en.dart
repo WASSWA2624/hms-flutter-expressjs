@@ -6430,6 +6430,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityActiveLabel => 'Active';
 
   @override
+  String get tenantFacilityActiveSubtitleActive =>
+      'This tenant is available for clinical and admin work.';
+
+  @override
+  String get tenantFacilityActiveSubtitleInactive =>
+      'This tenant is inactive and hidden from routine workflows.';
+
+  @override
   String get tenantFacilitySaveTenantAction => 'Edit tenant';
 
   @override
@@ -6465,6 +6473,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Similar organizations exist. Review matches before continuing.';
 
   @override
+  String get tenantFacilitySimilarTenantHardConflictBody =>
+      'An existing tenant already uses this slug. Choose a different slug or open the existing tenant.';
+
+  @override
+  String get tenantFacilitySimilarTenantMatchesHeading => 'Closest matches';
+
+  @override
   String get tenantFacilitySimilarTenantWarningTitle =>
       'Potential duplicate tenant';
 
@@ -6478,7 +6493,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tenantFacilityProceedCreateTenantAction => 'Proceed anyway';
+  String get tenantFacilitySimilarFieldStatusMatch => 'Match';
+
+  @override
+  String get tenantFacilitySimilarFieldStatusSimilar => 'Similar';
+
+  @override
+  String get tenantFacilitySimilarFieldStatusDifferent => 'Different';
+
+  @override
+  String get tenantFacilitySimilarFieldStatusMissing => 'Missing';
+
+  @override
+  String get tenantFacilityUseExistingTenantAction => 'Use existing';
+
+  @override
+  String get tenantFacilityProceedCreateTenantAction => 'Create anyway';
 
   @override
   String get tenantFacilityCreateFacilityTitle => 'Create facility';

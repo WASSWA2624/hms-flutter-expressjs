@@ -11962,6 +11962,18 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get tenantFacilityActiveLabel;
 
+  /// Active switch subtitle when the tenant is active.
+  ///
+  /// In en, this message translates to:
+  /// **'This tenant is available for clinical and admin work.'**
+  String get tenantFacilityActiveSubtitleActive;
+
+  /// Active switch subtitle when the tenant is inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'This tenant is inactive and hidden from routine workflows.'**
+  String get tenantFacilityActiveSubtitleInactive;
+
   /// Edit tenant row action label in the manage tenants table.
   ///
   /// In en, this message translates to:
@@ -12022,6 +12034,18 @@ abstract class AppLocalizations {
   /// **'Similar organizations exist. Review matches before continuing.'**
   String get tenantFacilitySimilarTenantDialogBody;
 
+  /// Body shown when tenant slug uniqueness blocks create-anyway.
+  ///
+  /// In en, this message translates to:
+  /// **'An existing tenant already uses this slug. Choose a different slug or open the existing tenant.'**
+  String get tenantFacilitySimilarTenantHardConflictBody;
+
+  /// Heading above similar tenant match cards.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest matches'**
+  String get tenantFacilitySimilarTenantMatchesHeading;
+
   /// Warning banner title for similar tenant matches.
   ///
   /// In en, this message translates to:
@@ -12040,10 +12064,40 @@ abstract class AppLocalizations {
   /// **'{score}% match'**
   String tenantFacilitySimilarTenantScoreLabel(int score);
 
+  /// Field comparison status when values match.
+  ///
+  /// In en, this message translates to:
+  /// **'Match'**
+  String get tenantFacilitySimilarFieldStatusMatch;
+
+  /// Field comparison status when values are similar.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar'**
+  String get tenantFacilitySimilarFieldStatusSimilar;
+
+  /// Field comparison status when values differ.
+  ///
+  /// In en, this message translates to:
+  /// **'Different'**
+  String get tenantFacilitySimilarFieldStatusDifferent;
+
+  /// Field comparison status when a value is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get tenantFacilitySimilarFieldStatusMissing;
+
+  /// Action to open an existing similar tenant instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing'**
+  String get tenantFacilityUseExistingTenantAction;
+
   /// Confirm create tenant despite similar matches.
   ///
   /// In en, this message translates to:
-  /// **'Proceed anyway'**
+  /// **'Create anyway'**
   String get tenantFacilityProceedCreateTenantAction;
 
   /// Facility create dialog title.

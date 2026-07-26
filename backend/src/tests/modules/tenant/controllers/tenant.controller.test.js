@@ -72,7 +72,7 @@ describe('Tenant Controller', () => {
       await listTenants(req, res);
 
       expect(tenantService.listTenants).toHaveBeenCalledWith(
-        {},
+        { id: 'tenant-123' },
         1,
         20,
         undefined,
@@ -113,7 +113,7 @@ describe('Tenant Controller', () => {
       await listTenants(req, res);
 
       expect(tenantService.listTenants).toHaveBeenCalledWith(
-        { is_active: 'true', search: 'hospital' },
+        { is_active: 'true', search: 'hospital', id: 'tenant-123' },
         1,
         20,
         undefined,
@@ -148,7 +148,7 @@ describe('Tenant Controller', () => {
       await listTenants(req, res);
 
       expect(tenantService.listTenants).toHaveBeenCalledWith(
-        {},
+        { id: 'tenant-123' },
         1,
         20,
         'name',
@@ -174,7 +174,15 @@ describe('Tenant Controller', () => {
 
       await getTenantById(req, res);
 
-      expect(tenantService.getTenantById).toHaveBeenCalledWith('tenant-123');
+      expect(tenantService.getTenantById).toHaveBeenCalledWith(
+        'tenant-123',
+        expect.objectContaining({
+          user_id: 'user-123',
+          tenant_id: 'tenant-123',
+          facility_id: 'facility-123',
+          permissions: []
+        })
+      );
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
         200,
@@ -214,6 +222,7 @@ describe('Tenant Controller', () => {
           user_id: 'user-123',
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
+          permissions: [],
           ip_address: '192.168.1.1',
           user_agent: 'Mozilla/5.0'
         }
@@ -256,6 +265,7 @@ describe('Tenant Controller', () => {
           user_id: undefined,
           tenant_id: undefined,
           facility_id: undefined,
+          permissions: [],
           ip_address: '192.168.1.1',
           user_agent: 'Mozilla/5.0'
         }
@@ -296,6 +306,7 @@ describe('Tenant Controller', () => {
           user_id: 'user-123',
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
+          permissions: [],
           ip_address: '192.168.1.1',
           user_agent: 'Mozilla/5.0'
         }
@@ -326,6 +337,7 @@ describe('Tenant Controller', () => {
           user_id: 'user-123',
           tenant_id: 'tenant-123',
           facility_id: 'facility-123',
+          permissions: [],
           ip_address: '192.168.1.1',
           user_agent: 'Mozilla/5.0'
         }

@@ -113,7 +113,7 @@ router.post(
   validateRequest({ body: createTenantSchema }),
 
   authenticate(),
-  authorize(TENANT_ADMIN_SCOPES, 'permission'),
+  authorize(PLATFORM_TENANT_SCOPES, 'permission'),
   tenantController.createTenant
 );
 
@@ -161,7 +161,7 @@ router.delete(
   validateRequest({ params: tenantIdParamsSchema }),
 
   authenticate(),
-  authorize(TENANT_ADMIN_SCOPES, 'permission'),
+  authorize(PLATFORM_TENANT_SCOPES, 'permission'),
   tenantController.deleteTenant
 );
 

@@ -825,20 +825,23 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       key: _formKey,
       child: AppFormSection(
         children: <Widget>[
-          AppTextField(
-            controller: _nameController,
-            enabled: fieldsEnabled,
-            labelText: l10n.tenantFacilityTenantNameLabel,
-            isRequired: true,
-            textCapitalization: TextCapitalization.words,
-            errorText: _nameErrorText,
-            validator: AppValidators.requiredText(l10n.validationRequired),
-          ),
-          AppTextField(
-            controller: _slugController,
-            enabled: fieldsEnabled,
-            labelText: l10n.tenantFacilityTenantSlugLabel,
-            errorText: _slugErrorText,
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _nameController,
+              enabled: fieldsEnabled,
+              labelText: l10n.tenantFacilityTenantNameLabel,
+              isRequired: true,
+              textCapitalization: TextCapitalization.words,
+              errorText: _nameErrorText,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            right: AppTextField(
+              controller: _slugController,
+              enabled: fieldsEnabled,
+              labelText: l10n.tenantFacilityTenantSlugLabel,
+              errorText: _slugErrorText,
+            ),
           ),
           if (!widget.isCreate &&
               displayId != null &&
@@ -851,52 +854,67 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
             ),
           AppSwitchField(
             title: l10n.tenantFacilityActiveLabel,
+            subtitle: _isActive
+                ? l10n.tenantFacilityActiveSubtitleActive
+                : l10n.tenantFacilityActiveSubtitleInactive,
+            semanticLabel: l10n.tenantFacilityActiveLabel,
             value: _isActive,
             enabled: fieldsEnabled,
             onChanged: (bool value) {
               setState(() {
                 _isActive = value;
               });
+              _clearDuplicateState();
             },
           ),
-          AppTextField(
-            controller: _contactNameController,
-            enabled: fieldsEnabled,
-            labelText: l10n.tenantFacilityTenantDetailsContactNameLabel,
-            textCapitalization: TextCapitalization.words,
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _contactNameController,
+              enabled: fieldsEnabled,
+              labelText: l10n.tenantFacilityTenantDetailsContactNameLabel,
+              textCapitalization: TextCapitalization.words,
+              onChanged: (_) => _clearDuplicateState(),
+            ),
+            right: AppPhoneField(
+              controller: _phoneController,
+              enabled: fieldsEnabled,
+              labelText: l10n.profilePhoneLabel,
+              countryLabelText: l10n.appPhoneCountryLabel,
+              countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+              countryNoResultsText: l10n.appPhoneCountryNoResults,
+              numberLabelText: l10n.appPhoneNumberLabel,
+              numberHintText: l10n.appPhoneNumberHint,
+              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+              requiredMessage: l10n.validationRequired,
+              onChanged: (_) => _clearDuplicateState(),
+            ),
           ),
-          AppPhoneField(
-            controller: _phoneController,
-            enabled: fieldsEnabled,
-            labelText: l10n.profilePhoneLabel,
-            countryLabelText: l10n.appPhoneCountryLabel,
-            countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-            countryNoResultsText: l10n.appPhoneCountryNoResults,
-            numberLabelText: l10n.appPhoneNumberLabel,
-            numberHintText: l10n.appPhoneNumberHint,
-            invalidPhoneMessage: l10n.appPhoneInvalidMessage,
-            requiredMessage: l10n.validationRequired,
-          ),
-          AppEmailField(
-            controller: _emailController,
-            enabled: fieldsEnabled,
-            labelText: l10n.profileEmailLabel,
-            requiredMessage: l10n.validationRequired,
-            invalidEmailMessage: l10n.authEmailInvalidMessage,
-          ),
-          AppCurrencySelectField(
-            value: _currency,
-            enabled: fieldsEnabled,
-            labelText: l10n.tenantFacilityDefaultCurrencyLabel,
-            helperText: l10n.tenantFacilityTenantDefaultCurrencyHelper,
-            onChanged: (String? value) {
-              if (value == null || value.trim().isEmpty) {
-                return;
-              }
-              setState(() {
-                _currency = value.trim().toUpperCase();
-              });
-            },
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppEmailField(
+              controller: _emailController,
+              enabled: fieldsEnabled,
+              labelText: l10n.profileEmailLabel,
+              requiredMessage: l10n.validationRequired,
+              invalidEmailMessage: l10n.authEmailInvalidMessage,
+              onChanged: (_) => _clearDuplicateState(),
+            ),
+            right: AppCurrencySelectField(
+              value: _currency,
+              enabled: fieldsEnabled,
+              labelText: l10n.tenantFacilityDefaultCurrencyLabel,
+              helperText: l10n.tenantFacilityTenantDefaultCurrencyHelper,
+              onChanged: (String? value) {
+                if (value == null || value.trim().isEmpty) {
+                  return;
+                }
+                setState(() {
+                  _currency = value.trim().toUpperCase();
+                });
+                _clearDuplicateState();
+              },
+            ),
           ),
           AppCurrencyAmountField(
             amountController: _feeController,
@@ -908,11 +926,13 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
               setState(() {
                 _currency = value.trim().toUpperCase();
               });
+              _clearDuplicateState();
             },
             amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
             currencyLabelText: l10n.tenantFacilityDefaultCurrencyLabel,
             helperText: l10n.settingsConfigurationConsultationFeeHelper,
             enabled: fieldsEnabled,
+            onAmountChanged: (_) => _clearDuplicateState(),
           ),
           if (_similarMatches.isNotEmpty)
             TenantSimilarityWarningPanel(matches: _similarMatches),
@@ -987,6 +1007,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           contactName: _contactNameController.text,
           contactEmail: _emailController.text,
           contactPhone: _phoneController.text,
+          confirmSimilar: widget.isCreate && _similarityAccepted,
           refreshSetup: widget.refreshSetupAfterSave,
           updateSetupSnapshot: widget.updateSetupSnapshot,
         );
@@ -1000,25 +1021,38 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       slug: _slugController.text,
       existing: existing,
       excludeTenantId: widget.tenant?.id,
+      contactName: _contactNameController.text,
+      contactEmail: _emailController.text,
+      contactPhone: _phoneController.text,
+      currency: resolveDefaultCurrency(tenantCurrency: _currency),
+      standardConsultationFee: _feeController.text,
     );
 
-    if (result.hasExactConflict) {
+    if (result.exactSlugConflict) {
       setState(() {
-        _nameErrorText = result.exactNameConflict
-            ? l10n.tenantFacilityTenantNameAlreadyInUse
-            : null;
-        _slugErrorText = result.exactSlugConflict
-            ? l10n.tenantFacilityTenantSlugAlreadyInUse
-            : null;
-        _similarMatches = const <TenantSimilarityMatch>[];
+        _slugErrorText = l10n.tenantFacilityTenantSlugAlreadyInUse;
+        _nameErrorText = null;
+        _similarMatches = result.similarMatches
+            .where((TenantSimilarityMatch match) => match.exactSlugConflict)
+            .toList(growable: false);
+        _similarityAccepted = false;
       });
+      if (!mounted) {
+        return false;
+      }
+      await showTenantSimilarityDialog(
+        context,
+        matches: _similarMatches,
+        allowProceed: false,
+      );
       return false;
     }
 
-    final List<TenantSimilarityMatch> similarMatches =
-        result.nonExactSimilarMatches;
-    if (similarMatches.isEmpty || _similarityAccepted) {
+    final List<TenantSimilarityMatch> reviewMatches = result.overridableMatches;
+    if (reviewMatches.isEmpty || _similarityAccepted) {
       setState(() {
+        _nameErrorText = null;
+        _slugErrorText = null;
         _similarMatches = const <TenantSimilarityMatch>[];
       });
       return true;
@@ -1028,25 +1062,37 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       return false;
     }
 
-    final bool proceed = await showTenantSimilarityDialog(
-      context,
-      matches: similarMatches,
-    );
+    final TenantSimilarityDialogResult decision =
+        await showTenantSimilarityDialog(
+          context,
+          matches: reviewMatches,
+        );
     if (!mounted) {
       return false;
     }
-    if (!proceed) {
-      setState(() {
-        _similarMatches = similarMatches;
-      });
-      return false;
-    }
 
-    setState(() {
-      _similarMatches = similarMatches;
-      _similarityAccepted = true;
-    });
-    return true;
+    switch (decision.action) {
+      case TenantSimilarityAction.cancel:
+        setState(() {
+          _similarMatches = reviewMatches;
+          _similarityAccepted = false;
+        });
+        return false;
+      case TenantSimilarityAction.useExisting:
+        final TenantProfile? existingTenant = decision.selectedTenant;
+        if (existingTenant != null) {
+          Navigator.of(context).pop<TenantProfile>(existingTenant);
+        }
+        return false;
+      case TenantSimilarityAction.proceed:
+        setState(() {
+          _similarMatches = reviewMatches;
+          _similarityAccepted = true;
+          _nameErrorText = null;
+          _slugErrorText = null;
+        });
+        return true;
+    }
   }
 
   Future<List<TenantProfile>> _loadExistingTenants() async {

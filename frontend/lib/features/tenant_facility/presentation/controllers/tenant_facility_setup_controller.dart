@@ -211,6 +211,7 @@ final class TenantFacilitySetupSubmissionController
     String? contactName,
     String? contactEmail,
     String? contactPhone,
+    bool confirmSimilar = false,
     bool refreshSetup = true,
     bool updateSetupSnapshot = true,
   }) {
@@ -226,6 +227,7 @@ final class TenantFacilitySetupSubmissionController
         contactName: contactName,
         contactEmail: contactEmail,
         contactPhone: contactPhone,
+        confirmSimilar: confirmSimilar,
       ),
       updateSnapshot: updateSetupSnapshot
           ? (FacilitySetupSnapshot snapshot, TenantProfile tenant) {

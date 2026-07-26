@@ -13,6 +13,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
+const { PERMISSIONS } = require('@config/permissions');
 const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
 const {
   publishPlatformRealtimeEvent,
@@ -20,6 +21,94 @@ const {
   buildFacilityDashboardDeltas
 } = require('@lib/realtime/platform-realtime');
 const { resolveModelIdByIdentifier, resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
+const {
+  checkTenantDuplicates
+} = require('@lib/tenant/tenant-similarity');
+
+const TENANT_SIMILARITY_LOOKUP_LIMIT = 7500;
+
+const isSystemAdminContext = (context = {}) =>
+  Array.isArray(context.permissions)
+  && context.permissions.includes(PERMISSIONS.SYSTEM_ADMIN);
+
+const assertCanAccessTenantRecord = (tenant, context = {}) => {
+  // Trusted internal callers omit permissions.
+  if (!Array.isArray(context.permissions)) {
+    return;
+  }
+  if (isSystemAdminContext(context)) {
+    return;
+  }
+  const actorTenantId = String(context.tenant_id || '').trim();
+  const targetTenantId = String(tenant?.id || '').trim();
+  if (!actorTenantId || !targetTenantId || actorTenantId !== targetTenantId) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403);
+  }
+};
+
+const extractTenantSimilarityInput = (data = {}) => {
+  const extension = data.extension_json && typeof data.extension_json === 'object'
+    ? data.extension_json
+    : {};
+  const contact = extension.contact && typeof extension.contact === 'object'
+    ? extension.contact
+    : {};
+  const billing = extension.billing && typeof extension.billing === 'object'
+    ? extension.billing
+    : {};
+
+  return {
+    name: data.name,
+    slug: data.slug,
+    contactName: contact.name,
+    contactEmail: contact.email,
+    contactPhone: contact.phone,
+    currency: extension.currency,
+    standardConsultationFee: billing.standard_consultation_fee
+  };
+};
+
+const assertTenantUniqueness = async ({
+  data,
+  confirmSimilar = false,
+  excludeTenantId = null
+}) => {
+  const existing = await tenantRepository.findMany(
+    {},
+    0,
+    TENANT_SIMILARITY_LOOKUP_LIMIT,
+    { name: 'asc' }
+  );
+  const input = extractTenantSimilarityInput(data);
+  const duplicateCheck = checkTenantDuplicates({
+    ...input,
+    existing,
+    excludeTenantId
+  });
+
+  if (duplicateCheck.exactSlugConflict) {
+    throw new HttpError('errors.tenant.duplicate_slug', 409, [
+      {
+        field: 'slug',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exactSlugConflict)
+          .slice(0, 5)
+      }
+    ]);
+  }
+
+  const reviewMatches = duplicateCheck.overridableMatches.slice(0, 5);
+  if (reviewMatches.length > 0 && !confirmSimilar) {
+    throw new HttpError('errors.tenant.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: reviewMatches
+      }
+    ]);
+  }
+
+  return duplicateCheck;
+};
 
 const publishTenantRealtimeEvent = async (
   event,
@@ -211,13 +300,15 @@ const listTenants = async (filters = {}, page = 1, limit = 20, sort_by = 'create
  * @param {string} id - Tenant ID
  * @returns {Promise<Object>} Tenant data
  */
-const getTenantById = async (id) => {
+const getTenantById = async (id, context = {}) => {
   const tenantId = await resolveTenantId(id);
   const tenant = await tenantRepository.findById(tenantId);
   
   if (!tenant) {
     throw new HttpError('errors.tenant.not_found', 404);
   }
+
+  assertCanAccessTenantRecord(tenant, context);
 
   return normalizeTenantRecord(tenant);
 };
@@ -238,14 +329,23 @@ const getTenantById = async (id) => {
  * @returns {Promise<Object>} Created tenant
  */
 const createTenant = async (data, context = {}) => {
-  if (data?.slug) {
-    await tenantRepository.releaseSlugFromSoftDeletedTenants(data.slug);
+  const confirmSimilar = data?.confirm_similar === true;
+  const payload = { ...data };
+  delete payload.confirm_similar;
+
+  const duplicateCheck = await assertTenantUniqueness({
+    data: payload,
+    confirmSimilar
+  });
+
+  if (payload?.slug) {
+    await tenantRepository.releaseSlugFromSoftDeletedTenants(payload.slug);
   }
 
   const { tenant, facility } = await tenantRepository.createWithDefaultFacility(
-    data,
+    payload,
     {
-      facilityName: buildDefaultFacilityName(data?.name)},
+      facilityName: buildDefaultFacilityName(payload?.name)},
   );
 
   // Create audit log
@@ -262,7 +362,14 @@ const createTenant = async (data, context = {}) => {
       name: tenant.name,
       slug: tenant.slug,
       is_active: tenant.is_active,
-      default_facility_id: facility.id}
+      default_facility_id: facility.id,
+      confirm_similar: confirmSimilar,
+      similar_match_ids: confirmSimilar
+        ? duplicateCheck.overridableMatches
+          .slice(0, 5)
+          .map((match) => match.id)
+          .filter(Boolean)
+        : []}
   });
 
   await createAuditLog({
@@ -330,6 +437,8 @@ const updateTenant = async (id, data, context = {}) => {
   if (!beforeTenant) {
     throw new HttpError('errors.tenant.not_found', 404);
   }
+
+  assertCanAccessTenantRecord(beforeTenant, context);
 
   if (data?.slug) {
     await tenantRepository.releaseSlugFromSoftDeletedTenants(data.slug, tenantId);

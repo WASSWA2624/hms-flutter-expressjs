@@ -372,6 +372,7 @@ describe('Tenant Service', () => {
         tenant: mockCreatedTenant,
         facility: mockCreatedFacility
       });
+      tenantRepository.findMany.mockResolvedValue([]);
       tenantRepository.releaseSlugFromSoftDeletedTenants.mockResolvedValue(undefined);
       createAuditLog.mockResolvedValue(undefined);
 
@@ -402,7 +403,9 @@ describe('Tenant Service', () => {
           name: mockCreatedTenant.name,
           slug: mockCreatedTenant.slug,
           is_active: mockCreatedTenant.is_active,
-          default_facility_id: mockCreatedFacility.id
+          default_facility_id: mockCreatedFacility.id,
+          confirm_similar: false,
+          similar_match_ids: []
         }
       });
       expect(createAuditLog).toHaveBeenCalledWith({
@@ -466,6 +469,7 @@ describe('Tenant Service', () => {
         tenant: mockCreatedTenant,
         facility: mockCreatedFacility
       });
+      tenantRepository.findMany.mockResolvedValue([]);
       createAuditLog.mockResolvedValue(undefined);
 
       const result = await createTenant(tenantData);
@@ -482,11 +486,139 @@ describe('Tenant Service', () => {
 
     it('should propagate repository errors', async () => {
       const error = new HttpError('errors.database.unique_field', 409);
+      tenantRepository.findMany.mockResolvedValue([]);
       tenantRepository.createWithDefaultFacility.mockRejectedValue(error);
 
       await expect(createTenant({ name: 'Test' }))
         .rejects
         .toThrow(HttpError);
+    });
+
+    it('should reject similar tenants unless confirm_similar is true', async () => {
+      tenantRepository.findMany.mockResolvedValue([
+        {
+          id: 'tenant-existing',
+          name: 'DemoCare General Hospital',
+          slug: 'democare-general-hospital',
+          is_active: true,
+          extension_json: {
+            currency: 'UGX',
+            contact: {
+              name: 'Jane Doe',
+              email: 'jane@example.com',
+              phone: '+256700000000'
+            },
+            billing: { standard_consultation_fee: 50000 }
+          }
+        }
+      ]);
+
+      await expect(
+        createTenant({
+          name: 'Democare General Hospitl',
+          slug: 'another-slug',
+          extension_json: {
+            currency: 'UGX',
+            contact: {
+              name: 'Jane Doe',
+              email: 'jane@example.com',
+              phone: '+256700000000'
+            },
+            billing: { standard_consultation_fee: 50000 }
+          }
+        })
+      ).rejects.toMatchObject({
+        message: 'errors.tenant.similar_exists',
+        statusCode: 409
+      });
+      expect(tenantRepository.createWithDefaultFacility).not.toHaveBeenCalled();
+    });
+
+    it('should create anyway when confirm_similar is true', async () => {
+      const tenantData = {
+        name: 'Democare General Hospitl',
+        slug: 'democare-general-hospitl',
+        confirm_similar: true,
+        extension_json: {
+          currency: 'UGX',
+          contact: {
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            phone: '+256700000000'
+          }
+        }
+      };
+      const mockCreatedTenant = {
+        id: 'tenant-new',
+        name: tenantData.name,
+        slug: tenantData.slug,
+        is_active: true
+      };
+      const mockCreatedFacility = {
+        id: 'facility-new',
+        tenant_id: mockCreatedTenant.id,
+        name: 'Democare General Hospitl Main Facility',
+        facility_type: 'HOSPITAL',
+        is_active: true
+      };
+
+      tenantRepository.findMany.mockResolvedValue([
+        {
+          id: 'tenant-existing',
+          name: 'DemoCare General Hospital',
+          slug: 'democare-general-hospital',
+          is_active: true,
+          extension_json: tenantData.extension_json
+        }
+      ]);
+      tenantRepository.createWithDefaultFacility.mockResolvedValue({
+        tenant: mockCreatedTenant,
+        facility: mockCreatedFacility
+      });
+      tenantRepository.releaseSlugFromSoftDeletedTenants.mockResolvedValue(undefined);
+      createAuditLog.mockResolvedValue(undefined);
+
+      const result = await createTenant(tenantData, {
+        user_id: 'user-123',
+        permissions: ['SYSTEM_ADMIN']
+      });
+
+      expect(result.id).toBe('tenant-new');
+      expect(tenantRepository.createWithDefaultFacility).toHaveBeenCalledWith(
+        expect.not.objectContaining({ confirm_similar: true }),
+        expect.any(Object)
+      );
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          details: expect.objectContaining({
+            confirm_similar: true,
+            similar_match_ids: ['tenant-existing']
+          })
+        })
+      );
+    });
+
+    it('should never override an exact slug conflict', async () => {
+      tenantRepository.findMany.mockResolvedValue([
+        {
+          id: 'tenant-existing',
+          name: 'Other Hospital',
+          slug: 'shared-slug',
+          is_active: true
+        }
+      ]);
+
+      await expect(
+        createTenant({
+          name: 'Brand New Hospital',
+          slug: 'shared-slug',
+          confirm_similar: true
+        })
+      ).rejects.toMatchObject({
+        message: 'errors.tenant.duplicate_slug',
+        statusCode: 409
+      });
+      expect(tenantRepository.createWithDefaultFacility).not.toHaveBeenCalled();
     });
   });
 
@@ -519,7 +651,16 @@ describe('Tenant Service', () => {
 
       const result = await updateTenant('tenant-123', updateData, context);
 
-      expect(result).toEqual(mockUpdatedTenant);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'tenant-123',
+          name: 'Updated Hospital',
+          slug: 'test-hospital',
+          is_active: false,
+          resource_uuid: 'tenant-123',
+          display_id: 'tenant-123'
+        })
+      );
       expect(tenantRepository.findById).toHaveBeenCalledWith('tenant-123');
       expect(tenantRepository.update).toHaveBeenCalledWith('tenant-123', updateData);
       expect(createAuditLog).toHaveBeenCalledWith({

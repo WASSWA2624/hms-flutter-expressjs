@@ -442,6 +442,11 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     }
 
     if (isCreate) {
+      final bool alreadyListed = _tenants.any(
+        (TenantProfile item) =>
+            item.id == savedTenant.id ||
+            item.mutationId == savedTenant.mutationId,
+      );
       _searchDebounce?.cancel();
       if (_searchController.text.isNotEmpty) {
         _searchController.removeListener(_onSearchChanged);
@@ -450,17 +455,30 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       }
       _filterValue = AppSearchBarFilterValue.empty;
       _pageRequest = PlatformAdminListConfig.initialPageRequest;
+
+      _upsertTenantLocally(savedTenant);
+      _markMutated();
+      if (!alreadyListed) {
+        _syncPlatformDashboard(
+          ref,
+          patch: HomeDashboardOptimisticPatch.tenantCreated(),
+        );
+      }
+      await _reload(resetPage: true, silent: true);
+      if (!mounted) {
+        return;
+      }
+      _upsertTenantLocally(savedTenant);
+      if (alreadyListed) {
+        await showTenantDetailsDialog(context, tenant: savedTenant);
+      }
+      return;
     }
 
     _upsertTenantLocally(savedTenant);
     _markMutated();
 
-    if (isCreate) {
-      _syncPlatformDashboard(
-        ref,
-        patch: HomeDashboardOptimisticPatch.tenantCreated(),
-      );
-    } else if (wasActive != null && savedTenant.isActive != wasActive) {
+    if (wasActive != null && savedTenant.isActive != wasActive) {
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantActiveChanged(
@@ -470,7 +488,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       );
     }
 
-    await _reload(resetPage: isCreate, silent: true);
+    await _reload(resetPage: false, silent: true);
     if (!mounted) {
       return;
     }

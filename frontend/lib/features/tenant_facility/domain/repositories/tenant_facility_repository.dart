@@ -50,6 +50,7 @@ abstract interface class TenantFacilityRepository {
     String? contactName,
     String? contactEmail,
     String? contactPhone,
+    bool confirmSimilar = false,
   });
 
   Future<Result<FacilityProfile>> saveFacility({

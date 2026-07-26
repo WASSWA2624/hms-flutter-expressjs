@@ -10,6 +10,11 @@ void main() {
         name: 'DemoCare General Hospital',
         slug: 'democare-general-hospital',
         isActive: true,
+        contactName: 'Jane Doe',
+        contactEmail: 'jane@example.com',
+        contactPhone: '+256700000000',
+        currency: 'UGX',
+        standardConsultationFee: '50000',
       ),
       TenantProfile(
         id: 'TEN0002',
@@ -29,6 +34,7 @@ void main() {
       expect(result.exactNameConflict, isTrue);
       expect(result.exactSlugConflict, isTrue);
       expect(result.similarMatches, isNotEmpty);
+      expect(result.overridableMatches, isEmpty);
     });
 
     test('detects similar tenant names above threshold', () {
@@ -38,11 +44,35 @@ void main() {
         existing: existing,
       );
 
-      expect(result.hasExactConflict, isFalse);
+      expect(result.exactSlugConflict, isFalse);
       expect(result.nonExactSimilarMatches, isNotEmpty);
       expect(
-        result.nonExactSimilarMatches.first.score,
+        result.nonExactSimilarMatches.first.nameScore,
         greaterThanOrEqualTo(80),
+      );
+    });
+
+    test('scores contact and config fields in the breakdown', () {
+      final TenantDuplicateCheckResult result = checkTenantDuplicates(
+        name: 'Democare General Hospitl',
+        slug: 'new-tenant',
+        contactName: 'Jane Doe',
+        contactEmail: 'jane@example.com',
+        contactPhone: '256700000000',
+        currency: 'UGX',
+        standardConsultationFee: '50000',
+        existing: existing,
+      );
+
+      final TenantSimilarityMatch match = result.overridableMatches.first;
+      expect(match.fieldComparisons, isNotEmpty);
+      expect(
+        match.fieldComparisons.any(
+          (TenantFieldComparison comparison) =>
+              comparison.field == 'contact_email' &&
+              comparison.status == TenantFieldComparisonStatus.match,
+        ),
+        isTrue,
       );
     });
 
@@ -62,6 +92,24 @@ void main() {
   group('nameSimilarityScore', () {
     test('returns 100 for identical normalized names', () {
       expect(nameSimilarityScore('acme health', 'acme health'), 100);
+    });
+  });
+
+  group('compositeTenantSimilarityScore', () {
+    test('weights identity fields more than configuration fields', () {
+      final int identityHeavy = compositeTenantSimilarityScore(
+        nameScore: 100,
+        slugScore: 100,
+        currencyScore: 0,
+        feeScore: 0,
+      );
+      final int configHeavy = compositeTenantSimilarityScore(
+        nameScore: 0,
+        slugScore: 0,
+        currencyScore: 100,
+        feeScore: 100,
+      );
+      expect(identityHeavy, greaterThan(configHeavy));
     });
   });
 }
