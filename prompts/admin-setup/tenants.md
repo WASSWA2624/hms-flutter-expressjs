@@ -1,1 +1,37 @@
-Now on the Admin setup screen and still under Tenants under the tenants tab. That is An edit button. So, edit button it should open. The Edit Tenant Dialog, whatever it is Wherever it is And the edit tenant workflow should also implement similarity check just how the create tenant works, but in this case the similarity should only be checked on the tenants that I only eat the other thing that's, apart from The tenant who is being currently edited. So the flow, the flow of the check, again, the flow of the check for the similarity should be done on tenants who I know it's a tenant that is being Edited. Then also there is a delete button which should perform a soft delete, and once soft delete is done, then we can have a permanent delete and then restore for the speci for the respective tenants within that given scope. Then I think we don't need the retry button if it exists within the tenant scope this tenant Tab, we should, we don't need it anywhere anymore, so we must get rid of it, so we don't need the retry button at all and functionality. So clean up, get rid of it.
+# Tenants Tab — Edit Similarity, Delete Lifecycle, Retry Removal
+
+Align tenant edit, delete, and failure-state behavior on `/admin/setup?section=tenants`.
+
+## Context
+
+- Current tenants-tab actions are inventoried in `screens/admin-setup/tenants.md`.
+- `updateTenant` skips the similarity check that create tenant enforces; `checkTenantDuplicates` accepts `excludeTenantId`.
+
+## Requirements
+
+1. Keep Edit opening `_SetupProfileDialog` in edit mode when `canManageTenant()`.
+2. Enforce the create-tenant similarity check on updates, excluding the edited tenant via `excludeTenantId`, reusing the 409 `similar_exists` review flow and `confirm_similar` override.
+3. Reuse the create-flow similarity review UI in the edit dialog, with matching validation, loading, error, and success feedback.
+4. Keep Delete performing a soft delete; expose Restore and Permanent delete only for soft-deleted tenants in scope, each confirmed and followed by list refresh.
+5. Remove the Retry button and handlers from tenant-list and scoped-tenant failure states; still render an error message.
+
+## Constraints
+
+- Reuse existing dialogs, endpoints, permissions, and similarity logic; add no endpoints.
+- Do not change create-tenant behavior.
+- No unrelated refactoring.
+
+## Acceptance Criteria
+
+- Editing a tenant into conflict triggers similarity review; confirming saves (Req 2–3).
+- Re-saving a tenant unchanged shows no similarity prompt (Req 2).
+- Restore and Permanent delete appear only after soft delete (Req 4).
+- No Retry button renders in any tenants-tab failure state (Req 5).
+- Backend tests cover update similarity and exclusion; widget tests prove Retry absent and edit similarity works; `flutter analyze` and backend tests pass (Req 1–5).
+
+## Relevant Files
+
+- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
+- `frontend/lib/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart`
+- `backend/src/modules/tenant/services/tenant.service.js`
+- `backend/src/lib/tenant/tenant-similarity.js`
