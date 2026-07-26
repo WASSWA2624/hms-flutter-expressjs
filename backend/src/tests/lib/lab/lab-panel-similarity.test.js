@@ -7,6 +7,7 @@ const {
   compositePanelSimilarityScore,
   compositionOverlapPercent,
   panelMembershipKeys,
+  panelMembershipUnits,
   SIMILARITY_THRESHOLD
 } = require('@lib/lab/lab-panel-similarity');
 
@@ -86,7 +87,7 @@ describe('lab-panel-similarity', () => {
     );
   });
 
-  it('computes membership keys preferring test codes', () => {
+  it('computes membership keys for both codes and ids', () => {
     const keys = panelMembershipKeys({
       panel_items: [
         { lab_test_id: 'uuid-1', test_code: 'HB' },
@@ -94,17 +95,82 @@ describe('lab-panel-similarity', () => {
       ]
     });
     expect(keys.has('CODE:HB')).toBe(true);
-    // Without a test code, the lab_test_id is used as a CODE:/ID-style key.
-    expect(keys.has('CODE:UUID2') || keys.has('ID:UUID-2')).toBe(true);
+    expect(keys.has('ID:UUID-1')).toBe(true);
+    expect(keys.has('ID:UUID-2')).toBe(true);
   });
 
-  it('computes Jaccard composition overlap', () => {
+  it('matches id-only proposed items against code-keyed existing rows after enrich shape', () => {
+    const result = checkLabPanelDuplicates({
+      name: 'Unrelated Panel Name',
+      code: 'OTHER-1',
+      category: 'Admission',
+      panelItems: [
+        {
+          lab_test_id: 'lab-test-internal-1',
+          test_code: 'HB',
+          lab_test: {
+            id: 'lab-test-internal-1',
+            human_friendly_id: 'LBT0000001',
+            code: 'HB'
+          }
+        }
+      ],
+      existing: [
+        {
+          id: 'panel-1',
+          name: 'CBC Panel',
+          code: 'CBC-P',
+          category: 'Hematology',
+          panel_items: [
+            {
+              lab_test_id: 'lab-test-internal-1',
+              lab_test: { id: 'lab-test-internal-1', code: 'HB' }
+            }
+          ]
+        }
+      ]
+    });
+
+    expect(result.hasExactConflict).toBe(false);
+    expect(result.similarMatches[0].compositionScore).toBe(100);
+    expect(result.similarMatches[0].reasons).toContain('composition');
+  });
+
+  it('computes Jaccard composition overlap over membership units', () => {
     expect(
       compositionOverlapPercent(
-        new Set(['CODE:HB', 'CODE:WBC']),
-        new Set(['CODE:HB', 'CODE:WBC', 'CODE:PLT'])
+        [new Set(['CODE:HB']), new Set(['CODE:WBC'])],
+        [new Set(['CODE:HB']), new Set(['CODE:WBC']), new Set(['CODE:PLT'])]
       )
     ).toBe(67);
+  });
+
+  it('scores identical membership 100 even when one side carries extra id tokens', () => {
+    expect(
+      compositionOverlapPercent(
+        panelMembershipUnits({
+          panel_items: [
+            {
+              lab_test_id: 'lab-test-internal-1',
+              test_code: 'HB',
+              lab_test: {
+                id: 'lab-test-internal-1',
+                human_friendly_id: 'LBT0000001',
+                code: 'HB'
+              }
+            }
+          ]
+        }),
+        panelMembershipUnits({
+          panel_items: [
+            {
+              lab_test_id: 'lab-test-internal-1',
+              lab_test: { id: 'lab-test-internal-1', code: 'HB' }
+            }
+          ]
+        })
+      )
+    ).toBe(100);
   });
 
   it('excludes the panel being edited', () => {

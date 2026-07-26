@@ -137,6 +137,36 @@ const resolvePanelItems = async (items, tenantId) => {
   );
 };
 
+/**
+ * Resolve member tests to internal ids + codes so composition overlap works
+ * when the client only sends lab_test_id (friendly or uuid).
+ */
+const enrichPanelItemsForSimilarity = async (items = [], tenantId) => {
+  const normalizedItems = normalizeLabPanelItems(items);
+  return Promise.all(
+    normalizedItems.map(async (entry) => {
+      const labTest = await resolveModelRecordOrThrow({
+        identifier: entry.lab_test_id,
+        model: 'lab_test',
+        where: {
+          deleted_at: null,
+          tenant_id: tenantId
+        },
+        errorKey: 'errors.lab_test.not_found'
+      });
+      return {
+        lab_test_id: labTest.id,
+        test_code: labTest.code || entry.test_code || null,
+        lab_test: {
+          id: labTest.id,
+          human_friendly_id: labTest.human_friendly_id,
+          code: labTest.code
+        }
+      };
+    })
+  );
+};
+
 const buildPanelWritePayload = async (data = {}, tenantId, options = {}) => {
   const payload = { ...data };
   const includeDeleteMany = options.includeDeleteMany === true;
@@ -321,6 +351,9 @@ const createLabPanel = async (data, userId, ipAddress) => {
       errorKey: 'errors.tenant.not_found'});
     const writeData = { ...data };
     delete writeData.confirm_similar;
+    const similarityPanelItems = Array.isArray(data.panel_items)
+      ? await enrichPanelItemsForSimilarity(data.panel_items, tenantId)
+      : [];
     const payload = await buildPanelWritePayload(writeData, tenantId, {
       includeDeleteMany: false});
     payload.tenant_id = tenantId;
@@ -329,7 +362,7 @@ const createLabPanel = async (data, userId, ipAddress) => {
       name: payload.name ?? data.name,
       code: payload.code ?? data.code,
       category: payload.category ?? data.category,
-      panelItems: Array.isArray(data.panel_items) ? data.panel_items : [],
+      panelItems: similarityPanelItems,
       tenantId,
       confirmSimilar
     });
@@ -390,10 +423,11 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
       ? payload.category
       : before.category;
     const nextPanelItems = hasOwn(data, 'panel_items')
-      ? data.panel_items
+      ? await enrichPanelItemsForSimilarity(data.panel_items, tenantId)
       : (before.panel_items || []).map((item) => ({
         lab_test_id: item.lab_test_id,
-        test_code: item.lab_test?.code || item.test_code || null
+        test_code: item.lab_test?.code || item.test_code || null,
+        lab_test: item.lab_test || null
       }));
 
     await assertLabPanelUniqueness({

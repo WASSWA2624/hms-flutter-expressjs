@@ -501,13 +501,41 @@ int labPanelCompositeSimilarityScore({
   return (weightedTotal / weightSum).round().clamp(0, 100);
 }
 
-String _normalizePanelTestKey(String? value) {
-  final String codeKey = normalizeLabCatalogCodeForSimilarity(value ?? '');
-  if (codeKey.isNotEmpty) {
-    return 'CODE:$codeKey';
+void _addPanelMembershipIdKey(Set<String> keys, String? value) {
+  final String raw = (value ?? '').trim().toUpperCase();
+  if (raw.isEmpty) {
+    return;
   }
-  final String idKey = (value ?? '').trim().toUpperCase();
-  return idKey.isEmpty ? '' : 'ID:$idKey';
+  keys.add('ID:$raw');
+  final String compact = raw.replaceAll(RegExp(r'[^A-Z0-9]'), '');
+  if (compact.isNotEmpty && compact != raw) {
+    keys.add('ID:$compact');
+  }
+}
+
+Set<String> _membershipTokensForPanelItem(LabPanelItem item) {
+  final Set<String> tokens = <String>{};
+  final String codeKey = normalizeLabCatalogCodeForSimilarity(
+    item.testCode ?? '',
+  );
+  if (codeKey.isNotEmpty) {
+    tokens.add('CODE:$codeKey');
+  }
+  // Panel-item row ids are not shared across panels — only lab_test ids.
+  _addPanelMembershipIdKey(tokens, item.labTestId);
+  return tokens;
+}
+
+Set<String> _membershipTokensForSelectedTest(LabCatalogItem test) {
+  final Set<String> tokens = <String>{};
+  final String codeKey = normalizeLabCatalogCodeForSimilarity(test.code ?? '');
+  if (codeKey.isNotEmpty) {
+    tokens.add('CODE:$codeKey');
+  }
+  _addPanelMembershipIdKey(tokens, test.apiId);
+  _addPanelMembershipIdKey(tokens, test.id);
+  _addPanelMembershipIdKey(tokens, test.displayId);
+  return tokens;
 }
 
 Set<String> labPanelMembershipKeys({
@@ -516,45 +544,73 @@ Set<String> labPanelMembershipKeys({
 }) {
   final Set<String> keys = <String>{};
   for (final LabPanelItem item in panelItems) {
-    final String codeKey = _normalizePanelTestKey(item.testCode);
-    if (codeKey.startsWith('CODE:')) {
-      keys.add(codeKey);
-      continue;
-    }
-    final String idKey = _normalizePanelTestKey(item.labTestId ?? item.id);
-    if (idKey.isNotEmpty) {
-      keys.add(idKey);
-    }
+    keys.addAll(_membershipTokensForPanelItem(item));
   }
   for (final LabCatalogItem test in selectedTests) {
-    final String codeKey = _normalizePanelTestKey(test.code);
-    if (codeKey.startsWith('CODE:')) {
-      keys.add(codeKey);
-      continue;
-    }
-    final String idKey = _normalizePanelTestKey(test.apiId);
-    if (idKey.isNotEmpty) {
-      keys.add(idKey);
-    }
+    keys.addAll(_membershipTokensForSelectedTest(test));
   }
   return keys;
 }
 
-int labPanelCompositionOverlapPercent(Set<String> left, Set<String> right) {
-  if (left.isEmpty || right.isEmpty) {
-    return 0;
-  }
-  var intersection = 0;
-  for (final String key in left) {
-    if (right.contains(key)) {
-      intersection += 1;
+List<Set<String>> labPanelMembershipUnits({
+  List<LabPanelItem> panelItems = const <LabPanelItem>[],
+  Iterable<LabCatalogItem> selectedTests = const <LabCatalogItem>[],
+}) {
+  final List<Set<String>> units = <Set<String>>[];
+  for (final LabPanelItem item in panelItems) {
+    final Set<String> tokens = _membershipTokensForPanelItem(item);
+    if (tokens.isNotEmpty) {
+      units.add(tokens);
     }
   }
-  final int union = left.length + right.length - intersection;
+  for (final LabCatalogItem test in selectedTests) {
+    final Set<String> tokens = _membershipTokensForSelectedTest(test);
+    if (tokens.isNotEmpty) {
+      units.add(tokens);
+    }
+  }
+  return units;
+}
+
+bool _setsIntersect(Set<String> left, Set<String> right) {
+  for (final String value in left) {
+    if (right.contains(value)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Jaccard overlap over member units. A proposed member matches an existing
+/// member when any identity token overlaps (same lab_test id and/or code).
+int labPanelCompositionOverlapPercent(
+  List<Set<String>> leftUnits,
+  List<Set<String>> rightUnits,
+) {
+  if (leftUnits.isEmpty || rightUnits.isEmpty) {
+    return 0;
+  }
+
+  final Set<int> usedRight = <int>{};
+  var matched = 0;
+  for (final Set<String> leftUnit in leftUnits) {
+    for (var index = 0; index < rightUnits.length; index++) {
+      if (usedRight.contains(index)) {
+        continue;
+      }
+      if (_setsIntersect(leftUnit, rightUnits[index])) {
+        usedRight.add(index);
+        matched += 1;
+        break;
+      }
+    }
+  }
+
+  final int union = leftUnits.length + rightUnits.length - matched;
   if (union == 0) {
     return 0;
   }
-  return ((intersection / union) * 100).round().clamp(0, 100);
+  return ((matched / union) * 100).round().clamp(0, 100);
 }
 
 LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
@@ -574,7 +630,7 @@ LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
     code ?? '',
   );
   final String normalizedCategory = normalizeLabCatalogCategory(category ?? '');
-  final Set<String> proposedKeys = labPanelMembershipKeys(
+  final List<Set<String>> proposedUnits = labPanelMembershipUnits(
     panelItems: panelItems,
     selectedTests: selectedTests,
   );
@@ -604,7 +660,7 @@ LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
     final String panelCategory = normalizeLabCatalogCategory(
       panel.category ?? '',
     );
-    final Set<String> existingKeys = labPanelMembershipKeys(
+    final List<Set<String>> existingUnits = labPanelMembershipUnits(
       panelItems: panel.panelItems,
     );
 
@@ -666,10 +722,10 @@ LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
       }
     }
 
-    if (proposedKeys.isNotEmpty && existingKeys.isNotEmpty) {
+    if (proposedUnits.isNotEmpty && existingUnits.isNotEmpty) {
       compositionScore = labPanelCompositionOverlapPercent(
-        proposedKeys,
-        existingKeys,
+        proposedUnits,
+        existingUnits,
       );
       if (compositionScore >= labCatalogSimilarityThreshold) {
         reasons.add('composition');

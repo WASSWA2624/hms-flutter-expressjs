@@ -1460,6 +1460,8 @@ class _LabCatalogItemMutationDialogState
           for (int index = 0; index < _selectedTests.length; index++)
             <String, Object?>{
               'lab_test_id': _selectedTests[index].apiId,
+              if ((_selectedTests[index].code ?? '').trim().isNotEmpty)
+                'test_code': _selectedTests[index].code!.trim(),
               'is_required': true,
               'sort_order': index,
             },

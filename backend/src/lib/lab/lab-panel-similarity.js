@@ -56,52 +56,115 @@ const normalizePanelTestKey = (value) => {
   return asId ? `ID:${asId}` : '';
 };
 
+const addIdMembershipKey = (keys, value) => {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw) return;
+  keys.add(`ID:${raw}`);
+  const compact = raw.replace(/[^A-Z0-9]/g, '');
+  if (compact && compact !== raw) {
+    keys.add(`ID:${compact}`);
+  }
+};
+
+const membershipTokensForItem = (item) => {
+  const tokens = new Set();
+  const codeCandidates = [
+    item?.test_code,
+    item?.testCode,
+    item?.code,
+    item?.lab_test?.code
+  ];
+  for (const candidate of codeCandidates) {
+    const code = normalizeCodeForSimilarity(candidate);
+    if (code) {
+      tokens.add(`CODE:${code}`);
+    }
+  }
+
+  // Prefer lab-test identifiers; do not use panel_item row ids — those are not
+  // shared across panels and would block identity matching.
+  addIdMembershipKey(tokens, item?.lab_test_id);
+  addIdMembershipKey(tokens, item?.labTestId);
+  addIdMembershipKey(tokens, item?.lab_test?.id);
+  addIdMembershipKey(tokens, item?.lab_test?.human_friendly_id);
+  addIdMembershipKey(tokens, item?.lab_test?.display_id);
+  return tokens;
+};
+
+const panelItemsFromPanel = (panel) => {
+  if (Array.isArray(panel?.panel_items)) return panel.panel_items;
+  if (Array.isArray(panel?.panelItems)) return panel.panelItems;
+  return [];
+};
+
 /**
- * Collect stable membership keys from panel_items (test id and/or code).
- * Prefers code when present so standard/tenant id formats still overlap.
+ * Collect flat membership keys (debug / key inspection). Prefer
+ * `panelMembershipUnits` + `compositionOverlapPercent` for scoring so that
+ * dual CODE/ID tokens on the same member do not inflate Jaccard unions.
  */
 const panelMembershipKeys = (panel) => {
   const keys = new Set();
-  const items = Array.isArray(panel?.panel_items)
-    ? panel.panel_items
-    : Array.isArray(panel?.panelItems)
-      ? panel.panelItems
-      : [];
-
-  for (const item of items) {
-    const codeKey = normalizePanelTestKey(
-      item?.test_code
-      || item?.testCode
-      || item?.code
-      || item?.lab_test?.code
-    );
-    const idKey = normalizePanelTestKey(
-      item?.lab_test_id
-      || item?.labTestId
-      || item?.lab_test?.human_friendly_id
-      || item?.lab_test?.id
-      || item?.id
-    );
-    if (codeKey.startsWith('CODE:')) {
-      keys.add(codeKey);
-      continue;
-    }
-    if (idKey) {
-      keys.add(idKey);
+  for (const item of panelItemsFromPanel(panel)) {
+    for (const token of membershipTokensForItem(item)) {
+      keys.add(token);
     }
   }
   return keys;
 };
 
-const compositionOverlapPercent = (leftKeys, rightKeys) => {
-  if (!leftKeys.size || !rightKeys.size) return 0;
-  let intersection = 0;
-  for (const key of leftKeys) {
-    if (rightKeys.has(key)) intersection += 1;
+/**
+ * One unit per panel member. A proposed member matches an existing member when
+ * any identity token overlaps (same lab_test_id and/or same test code).
+ */
+const panelMembershipUnits = (panel) => {
+  const units = [];
+  for (const item of panelItemsFromPanel(panel)) {
+    const tokens = membershipTokensForItem(item);
+    if (tokens.size) {
+      units.push(tokens);
+    }
   }
-  const union = leftKeys.size + rightKeys.size - intersection;
+  return units;
+};
+
+const setsIntersect = (left, right) => {
+  for (const value of left) {
+    if (right.has(value)) return true;
+  }
+  return false;
+};
+
+/**
+ * Jaccard overlap over member *units* (not raw token sets). Matching is by
+ * shared code or id so id-only payloads still score 100% against the same
+ * membership after enrich, without dual-key union inflation.
+ */
+const compositionOverlapPercent = (leftUnits, rightUnits) => {
+  const left = leftUnits instanceof Set
+    ? [...leftUnits].map((key) => new Set([key]))
+    : (leftUnits || []);
+  const right = rightUnits instanceof Set
+    ? [...rightUnits].map((key) => new Set([key]))
+    : (rightUnits || []);
+
+  if (!left.length || !right.length) return 0;
+
+  const usedRight = new Set();
+  let matched = 0;
+  for (const leftUnit of left) {
+    for (let index = 0; index < right.length; index += 1) {
+      if (usedRight.has(index)) continue;
+      if (setsIntersect(leftUnit, right[index])) {
+        usedRight.add(index);
+        matched += 1;
+        break;
+      }
+    }
+  }
+
+  const union = left.length + right.length - matched;
   if (!union) return 0;
-  return Math.round((intersection / union) * 100);
+  return Math.round((matched / union) * 100);
 };
 
 const matchesExcludeId = (panel, excludePanelId, excludePanelIds = []) => {
@@ -158,7 +221,7 @@ const checkLabPanelDuplicates = ({
   const normalizedCode = normalizeCode(code);
   const similarityCode = normalizeCodeForSimilarity(code);
   const normalizedCategory = normalizeCategory(category);
-  const proposedKeys = panelMembershipKeys({ panel_items: panelItems });
+  const proposedUnits = panelMembershipUnits({ panel_items: panelItems });
 
   let exactNameConflict = false;
   let exactCodeConflict = false;
@@ -173,7 +236,7 @@ const checkLabPanelDuplicates = ({
     const panelCode = normalizeCode(panel?.code);
     const panelSimilarityCode = normalizeCodeForSimilarity(panel?.code);
     const panelCategory = normalizeCategory(panel?.category);
-    const existingKeys = panelMembershipKeys(panel);
+    const existingUnits = panelMembershipUnits(panel);
 
     const nameExact = Boolean(normalizedName) && panelName === normalizedName;
     const codeExact = Boolean(normalizedCode)
@@ -223,8 +286,8 @@ const checkLabPanelDuplicates = ({
       }
     }
 
-    if (proposedKeys.size && existingKeys.size) {
-      compositionScore = compositionOverlapPercent(proposedKeys, existingKeys);
+    if (proposedUnits.length && existingUnits.length) {
+      compositionScore = compositionOverlapPercent(proposedUnits, existingUnits);
       if (compositionScore >= SIMILARITY_THRESHOLD) {
         reasons.push('composition');
       }
@@ -329,6 +392,7 @@ module.exports = {
   COMPOSITION_WEIGHT,
   compositePanelSimilarityScore,
   panelMembershipKeys,
+  panelMembershipUnits,
   compositionOverlapPercent,
   checkLabPanelDuplicates,
   mergePanelDuplicateChecks

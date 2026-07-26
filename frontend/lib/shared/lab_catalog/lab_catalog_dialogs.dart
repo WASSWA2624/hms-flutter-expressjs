@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -2129,6 +2130,7 @@ class LabPanelTestPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final bool compact = AppBreakpoints.of(context).isMobile;
     final List<AppSelectOption<String>> options = <AppSelectOption<String>>[
       for (final LabCatalogItem test in tests)
         AppSelectOption<String>(
@@ -2140,6 +2142,21 @@ class LabPanelTestPicker extends StatelessWidget {
         ),
     ];
 
+    final Widget selectField = AppSelectField<String>.searchable(
+      value: pendingTestId,
+      labelText: l10n.labPanelTestSelectLabel,
+      enabled: enabled,
+      menuHeight: 360,
+      options: options,
+      onChanged: onPendingChanged,
+    );
+    final Widget addButton = AppButton.secondary(
+      label: l10n.labPanelAddTestAction,
+      leadingIcon: Icons.add,
+      enabled: enabled && pendingTestId != null,
+      onPressed: onAdd,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -2150,31 +2167,25 @@ class LabPanelTestPicker extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.sm),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              child: AppSelectField<String>.searchable(
-                value: pendingTestId,
-                labelText: l10n.labPanelTestSelectLabel,
-                enabled: enabled,
-                menuHeight: 360,
-                options: options,
-                onChanged: onPendingChanged,
+        if (compact) ...<Widget>[
+          selectField,
+          SizedBox(height: theme.spacing.sm),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: addButton,
+          ),
+        ] else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: selectField),
+              SizedBox(width: theme.spacing.sm),
+              Padding(
+                padding: EdgeInsets.only(top: theme.spacing.xs),
+                child: addButton,
               ),
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Padding(
-              padding: EdgeInsets.only(top: theme.spacing.xs),
-              child: AppButton.secondary(
-                label: l10n.labPanelAddTestAction,
-                leadingIcon: Icons.add,
-                enabled: enabled && pendingTestId != null,
-                onPressed: onAdd,
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
         SizedBox(height: theme.spacing.sm),
         if (selectedTests.isEmpty)
           AppMutedText(l10n.labPanelNoSelectedTests)

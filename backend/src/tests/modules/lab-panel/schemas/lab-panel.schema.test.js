@@ -35,11 +35,46 @@ describe('Lab Panel Schema Validation', () => {
     it('should validate create data without optional fields', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
-        name: 'Complete Metabolic Panel'
+        name: 'Complete Metabolic Panel',
+        panel_items: [{ lab_test_id: 'LBT0000001' }]
       };
 
       const result = createLabPanelSchema.safeParse(validData);
       expect(result.success).toBe(true);
+    });
+
+    it('should accept confirm_similar on create', () => {
+      const validData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Complete Metabolic Panel',
+        confirm_similar: true,
+        panel_items: [{ lab_test_id: 'LBT0000001' }]
+      };
+
+      const result = createLabPanelSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      expect(result.data.confirm_similar).toBe(true);
+    });
+
+    it('should fail validation when panel_items is missing', () => {
+      const invalidData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Complete Metabolic Panel'
+      };
+
+      const result = createLabPanelSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    it('should fail validation when panel_items is empty', () => {
+      const invalidData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Complete Metabolic Panel',
+        panel_items: []
+      };
+
+      const result = createLabPanelSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
     });
 
     it('should fail validation when tenant_id is missing', () => {
@@ -94,7 +129,8 @@ describe('Lab Panel Schema Validation', () => {
       const dataWithWhitespace = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         name: '  Complete Metabolic Panel  ',
-        code: '  CMP  '
+        code: '  CMP  ',
+        panel_items: [{ lab_test_id: 'LBT0000001' }]
       };
 
       const result = createLabPanelSchema.safeParse(dataWithWhitespace);
@@ -109,7 +145,8 @@ describe('Lab Panel Schema Validation', () => {
       const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Complete Metabolic Panel',
-        code: 'A'.repeat(81)
+        code: 'A'.repeat(81),
+        panel_items: [{ lab_test_id: 'LBT0000001' }]
       };
 
       const result = createLabPanelSchema.safeParse(invalidData);

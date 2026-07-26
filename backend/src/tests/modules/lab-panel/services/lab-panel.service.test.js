@@ -145,12 +145,29 @@ describe('lab-panel.service', () => {
             name: 'Calcium',
             code: 'CA',
             unit: 'mg/dL'}}]});
+    const labTest1 = {
+      id: 'lab-test-internal-1',
+      human_friendly_id: 'LBT0000001',
+      code: 'GLU',
+      name: 'Glucose',
+      tenant_id: 'tenant-internal-1'
+    };
+    const labTest2 = {
+      id: 'lab-test-internal-2',
+      human_friendly_id: 'LBT0000002',
+      code: 'CA',
+      name: 'Calcium',
+      tenant_id: 'tenant-internal-1'
+    };
     resolveModelIdOrThrow
       .mockResolvedValueOnce('tenant-internal-1')
       .mockResolvedValueOnce('lab-test-internal-1')
       .mockResolvedValueOnce('tenant-internal-1')
       .mockResolvedValueOnce('lab-test-internal-2');
-    resolveModelRecordOrThrow.mockResolvedValue(before);
+    resolveModelRecordOrThrow
+      .mockResolvedValueOnce(labTest1)
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(labTest2);
     labPanelRepository.findMany.mockResolvedValue([]);
     labPanelRepository.create.mockResolvedValue({ id: 'panel-internal-1' });
     labPanelRepository.update.mockResolvedValue({ id: 'panel-internal-1' });
@@ -234,6 +251,11 @@ describe('lab-panel.service', () => {
 
   it('rejects similar panels without confirm_similar', async () => {
     resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
+    resolveModelRecordOrThrow.mockResolvedValue({
+      id: 'lab-test-internal-1',
+      human_friendly_id: 'LBT0000001',
+      code: 'GLU'
+    });
     labPanelRepository.findMany.mockResolvedValue([
       {
         id: 'existing-1',
@@ -263,6 +285,46 @@ describe('lab-panel.service', () => {
     expect(labPanelRepository.create).not.toHaveBeenCalled();
   });
 
+  it('rejects composition-overlapping panels when only lab_test_id is sent', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
+    resolveModelRecordOrThrow.mockResolvedValue({
+      id: 'lab-test-internal-1',
+      human_friendly_id: 'LBT0000001',
+      code: 'HB'
+    });
+    labPanelRepository.findMany.mockResolvedValue([
+      {
+        id: 'existing-panel',
+        name: 'Hematology Bundle',
+        code: 'HEM-B',
+        category: 'Chemistry',
+        panel_items: [
+          {
+            lab_test_id: 'lab-test-internal-1',
+            lab_test: { id: 'lab-test-internal-1', code: 'HB' }
+          }
+        ]
+      }
+    ]);
+
+    await expect(
+      labPanelService.createLabPanel(
+        {
+          tenant_id: 'TEN0000001',
+          name: 'Unrelated Panel Name',
+          code: 'OTHER-1',
+          category: 'Admission',
+          panel_items: [{ lab_test_id: 'LBT0000001' }]
+        },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_panel.similar_exists',
+      statusCode: 409
+    });
+  });
+
   it('creates when confirm_similar is true for near matches', async () => {
     const createdRecord = buildPanelRecord({
       name: 'Zzyx Custom Chemistry Alpha',
@@ -271,6 +333,11 @@ describe('lab-panel.service', () => {
     resolveModelIdOrThrow
       .mockResolvedValueOnce('tenant-internal-1')
       .mockResolvedValueOnce('lab-test-internal-1');
+    resolveModelRecordOrThrow.mockResolvedValue({
+      id: 'lab-test-internal-1',
+      human_friendly_id: 'LBT0000001',
+      code: 'GLU'
+    });
     labPanelRepository.findMany.mockResolvedValue([
       {
         id: 'existing-1',
@@ -306,8 +373,61 @@ describe('lab-panel.service', () => {
     expect(labPanelRepository.create.mock.calls[0][0].confirm_similar).toBeUndefined();
   });
 
+  it('updates when confirm_similar is true for near matches', async () => {
+    const before = buildPanelRecord({
+      name: 'Unique Source Panel',
+      code: 'USP-1'
+    });
+    const after = buildPanelRecord({
+      name: 'Zzyx Custom Chemistry Alpha',
+      code: 'USP-1'
+    });
+    resolveModelRecordOrThrow
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce({
+        id: 'lab-test-internal-1',
+        human_friendly_id: 'LBT0000001',
+        code: 'GLU'
+      });
+    resolveModelIdOrThrow.mockResolvedValue('lab-test-internal-1');
+    labPanelRepository.findMany.mockResolvedValue([
+      {
+        id: 'existing-1',
+        name: 'Zzyx Custom Chemistry Alph',
+        code: 'OTHER',
+        category: 'Chemistry',
+        panel_items: [{ lab_test_id: 't1', test_code: 'GLU' }]
+      }
+    ]);
+    labPanelRepository.update.mockResolvedValue({ id: 'panel-internal-1' });
+    labPanelRepository.findById.mockResolvedValue(after);
+
+    const result = await labPanelService.updateLabPanel(
+      'LBP0000001',
+      {
+        name: 'Zzyx Custom Chemistry Alpha',
+        confirm_similar: true,
+        panel_items: [{ lab_test_id: 'LBT0000001' }]
+      },
+      mockUserId,
+      mockIpAddress
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        name: 'Zzyx Custom Chemistry Alpha'
+      })
+    );
+    expect(labPanelRepository.update.mock.calls[0][1].confirm_similar).toBeUndefined();
+  });
+
   it('rejects exact duplicate panel names without confirm_similar', async () => {
     resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
+    resolveModelRecordOrThrow.mockResolvedValue({
+      id: 'lab-test-internal-1',
+      human_friendly_id: 'LBT0000001',
+      code: 'GLU'
+    });
     labPanelRepository.findMany.mockResolvedValue([
       buildPanelRecord({
         id: 'existing-panel',

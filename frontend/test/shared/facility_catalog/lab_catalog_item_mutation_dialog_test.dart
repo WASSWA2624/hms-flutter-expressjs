@@ -644,6 +644,7 @@ void main() {
       final Map<String, Object?> first =
           Map<String, Object?>.from(items.first! as Map<dynamic, dynamic>);
       expect(first['lab_test_id'], 'LBT1');
+      expect(first['test_code'], 'HB');
       expect(first['sort_order'], 0);
     });
 
