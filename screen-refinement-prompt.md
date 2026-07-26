@@ -1,4 +1,4 @@
-# Action Inventory — Target Screen: `admin/setup?section=facility`
+# Action Inventory — Target Screen: `/admin/setup?section=departments`
 
 ## Objective
 
