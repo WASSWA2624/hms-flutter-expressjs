@@ -44,6 +44,10 @@ const listFacilities = asyncHandler(async (req, res) => {
     facility_type,
     is_active,
     search,
+    phone,
+    email,
+    city,
+    country,
     include_deleted
   } = req.query;
   const context = buildRequestContext(req);
@@ -52,6 +56,10 @@ const listFacilities = asyncHandler(async (req, res) => {
   if (facility_type) filters.facility_type = facility_type;
   if (is_active) filters.is_active = is_active;
   if (search) filters.search = search;
+  if (phone) filters.phone = phone;
+  if (email) filters.email = email;
+  if (city) filters.city = city;
+  if (country) filters.country = country;
   if (include_deleted) filters.include_deleted = include_deleted;
 
   if (isSystemAdmin(context)) {

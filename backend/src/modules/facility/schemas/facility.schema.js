@@ -69,6 +69,13 @@ const updateFacilitySchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   facility_type: facilityTypeEnum.optional(),
   is_active: z.boolean().optional(),
+  confirm_similar: optionalBooleanSchema,
+  // Optional contact fields used for similarity review on update (not persisted here).
+  phone: optionalContactValueSchema,
+  email: optionalContactValueSchema,
+  address_line1: optionalContactValueSchema,
+  city: optionalContactValueSchema,
+  country: optionalContactValueSchema,
   extension_json: extensionJsonSchema,
 });
 
@@ -94,6 +101,10 @@ const listFacilitiesQuerySchema = listQuerySchema.extend({
   facility_type: facilityTypeEnum.optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),
+  phone: z.string().trim().optional(),
+  email: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  country: z.string().trim().optional(),
   include_deleted: z.enum(['true', 'false']).optional(),
 });
 

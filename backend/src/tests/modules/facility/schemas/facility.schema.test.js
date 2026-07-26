@@ -75,6 +75,24 @@ describe('Facility Schema Validation', () => {
         expect(result.data.extension_json).toBeNull();
       }
     });
+
+    it('accepts confirm_similar and contact fields for similarity review', () => {
+      const result = updateFacilitySchema.safeParse({
+        name: 'Updated Facility',
+        confirm_similar: true,
+        phone: '+256700000000',
+        email: 'ops@example.com',
+        city: 'Kampala',
+        country: 'UG'
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.confirm_similar).toBe(true);
+        expect(result.data.phone).toBe('+256700000000');
+        expect(result.data.city).toBe('Kampala');
+      }
+    });
   });
 
   describe('facilityIdParamsSchema', () => {
@@ -111,13 +129,19 @@ describe('Facility Schema Validation', () => {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         facility_type: 'LAB',
         is_active: 'true',
-        search: 'Main'});
+        search: 'Main',
+        phone: '700',
+        email: 'ops@example.com',
+        city: 'Kampala',
+        country: 'UG'});
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.page).toBe(2);
         expect(result.data.limit).toBe(25);
         expect(result.data.facility_type).toBe('LAB');
+        expect(result.data.phone).toBe('700');
+        expect(result.data.city).toBe('Kampala');
       }
     });
 

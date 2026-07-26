@@ -2376,6 +2376,14 @@ class _FacilityDetailsDialogState
   bool get _canEditStructure =>
       ref.read(appAccessPolicyProvider).canEditFacilitySetupStructure();
 
+  bool get _canRestoreFacility =>
+      ref.read(appAccessPolicyProvider).canManageFacility() &&
+      _facility.isDeleted;
+
+  bool get _canPermanentDeleteFacility =>
+      ref.read(appAccessPolicyProvider).canDeleteFacility() &&
+      _facility.isDeleted;
+
   bool get _canMutate => _canManageFacility && !_facility.isDeleted;
 
   bool get _canDelete => _canDeleteFacility && !_facility.isDeleted;
@@ -2995,6 +3003,124 @@ class _FacilityDetailsDialogState
     Navigator.of(context).pop(true);
   }
 
+  Future<void> _restoreFacility() async {
+    if (!_canRestoreFacility) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    FacilityProfile? restoredFacility;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityRestoreFacilityConfirmationTitle,
+        body: l10n.tenantFacilityRestoreFacilityConfirmationBody(_facility.name),
+        highlightedText: _facility.name,
+        submitLabel: l10n.tenantFacilityRestoreTenantAction,
+        icon: const Icon(Icons.restore_outlined),
+        onConfirm: () async {
+          final Result<FacilityProfile> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .restoreFacility(_facility.mutationId);
+          return result.when(
+            success: (FacilityProfile value) {
+              restoredFacility = value;
+              return null;
+            },
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    final FacilityProfile applied =
+        restoredFacility ?? _facility.copyWith(clearDeletedAt: true);
+    setState(() {
+      _facility = applied;
+      _mutated = true;
+      if (_snapshot != null) {
+        _snapshot = _snapshot!.copyWith(facility: applied);
+      }
+    });
+    _syncPlatformDashboard(
+      ref,
+      patch: HomeDashboardOptimisticPatch.facilityCreated(
+        isActive: applied.isActive,
+      ),
+    );
+  }
+
+  Future<void> _permanentDeleteFacility() async {
+    if (!_canPermanentDeleteFacility) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final String? typed = await showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppTextInputActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteFacilityConfirmationTitle,
+        description: l10n.tenantFacilityPermanentDeleteFacilityWarningBody(
+          _facility.name,
+        ),
+        fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
+          _facility.name,
+        ),
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        cancelLabel: l10n.commonCancelActionLabel,
+        requiredMessage: l10n.validationRequired,
+        destructive: true,
+        minLines: 1,
+        maxLines: 1,
+        icon: const Icon(Icons.delete_forever_outlined),
+      ),
+    );
+
+    if (!mounted || typed == null) {
+      return;
+    }
+    if (typed.trim() != _facility.name.trim()) {
+      return;
+    }
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteFacilityConfirmationTitle,
+        body: l10n.tenantFacilityPermanentDeleteFacilityConfirmationBody(
+          _facility.name,
+        ),
+        highlightedText: _facility.name,
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_forever_outlined),
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .permanentDeleteFacility(_facility.mutationId);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) {
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
+          );
+        },
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    _syncPlatformDashboard(ref);
+    Navigator.of(context).pop(true);
+  }
+
   Widget _buildRightPanel(AppLocalizations l10n) {
     final FacilitySetupSnapshot snapshot = _effectiveSnapshot;
     final bool canMutateStructure = _canMutateStructure;
@@ -3009,7 +3135,6 @@ class _FacilityDetailsDialogState
           pageRequest: _pageRequest,
           totalItemCount: _totalUserCount,
           canManage: _canMutate,
-          onRetry: () => unawaited(_loadUsers()),
           onPageChanged: _onUsersPageChanged,
           onAdd: () => unawaited(_createUser()),
           onEdit: (AccessAdminItem user) => unawaited(_editUser(user)),
@@ -3208,10 +3333,7 @@ class _FacilityDetailsDialogState
       content: SizedBox(
         height: 560,
         child: _overviewFailure != null && _snapshot == null
-            ? AppFailureStateView(
-                failure: _overviewFailure!,
-                onRetry: () => unawaited(_loadOverview()),
-              )
+            ? AppFailureStateView(failure: _overviewFailure!)
             : LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   final bool wide = constraints.maxWidth >= 720;
@@ -3272,6 +3394,19 @@ class _FacilityDetailsDialogState
             leadingIcon: Icons.delete_outline,
             color: colorScheme.error,
             onPressed: () => unawaited(_deleteFacility()),
+          ),
+        if (_canRestoreFacility)
+          AppButton.secondary(
+            label: l10n.tenantFacilityRestoreTenantAction,
+            leadingIcon: Icons.restore_outlined,
+            onPressed: () => unawaited(_restoreFacility()),
+          ),
+        if (_canPermanentDeleteFacility)
+          AppButton.primary(
+            label: l10n.tenantFacilityPermanentDeleteAction,
+            leadingIcon: Icons.delete_forever_outlined,
+            color: colorScheme.error,
+            onPressed: () => unawaited(_permanentDeleteFacility()),
           ),
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
@@ -3866,7 +4001,6 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
     required this.pageRequest,
     required this.totalItemCount,
     required this.canManage,
-    required this.onRetry,
     required this.onPageChanged,
     required this.onAdd,
     required this.onEdit,
@@ -3881,7 +4015,6 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
   final AppPageRequest pageRequest;
   final int totalItemCount;
   final bool canManage;
-  final VoidCallback onRetry;
   final Future<void> Function(AppPageRequest request) onPageChanged;
   final VoidCallback onAdd;
   final ValueChanged<AccessAdminItem> onEdit;
@@ -3945,8 +4078,8 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
             SizedBox(height: theme.spacing.sm),
             Expanded(
               child: failure != null
-                  ? AppFailureStateView(failure: failure!, onRetry: onRetry)
-                  : AppListTable<AccessAdminItem>(
+              ? AppFailureStateView(failure: failure!)
+              : AppListTable<AccessAdminItem>(
                       page: AppPage<AccessAdminItem>(
                         items: users,
                         request: pageRequest,
@@ -4102,9 +4235,13 @@ class ManageFacilitiesPanel extends ConsumerStatefulWidget {
 
 class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
   static const String _tenantFilterKey = 'tenant';
+  static const String _typeFilterKey = 'type';
   static const String _statusFilterKey = 'status';
+  static const String _activeFilterKey = 'active';
   static const String _statusActive = 'active';
   static const String _statusDeleted = 'deleted';
+  static const String _activeYes = 'yes';
+  static const String _activeNo = 'no';
 
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
@@ -4115,6 +4252,8 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
   List<FacilityProfile> _facilities = const <FacilityProfile>[];
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
   String? _tenantFilterId;
+  FacilitySetupType? _typeFilter;
+  bool? _isActiveFilter;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   bool _mutated = false;
   int _reloadGeneration = 0;
@@ -4201,12 +4340,33 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
 
   Future<void> _applyFacilityFilters(AppSearchBarFilterValue value) async {
     final String? nextTenant = value.option(_tenantFilterKey);
-    final bool tenantChanged = nextTenant != _tenantFilterId;
+    final String? nextType = value.option(_typeFilterKey);
+    final String? nextActive = value.option(_activeFilterKey);
+    FacilitySetupType? parsedType;
+    if (nextType != null) {
+      for (final FacilitySetupType type in FacilitySetupType.values) {
+        if (type.apiValue == nextType) {
+          parsedType = type;
+          break;
+        }
+      }
+    }
+    final bool? parsedActive = nextActive == _activeYes
+        ? true
+        : nextActive == _activeNo
+        ? false
+        : null;
+    final bool filtersChanged =
+        nextTenant != _tenantFilterId ||
+        parsedType != _typeFilter ||
+        parsedActive != _isActiveFilter;
     setState(() {
       _filterValue = value;
       _tenantFilterId = nextTenant;
+      _typeFilter = parsedType;
+      _isActiveFilter = parsedActive;
     });
-    if (tenantChanged) {
+    if (filtersChanged) {
       await _reload(resetPage: true, silent: _facilities.isNotEmpty);
     }
   }
@@ -4231,6 +4391,8 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           request: _pageRequest,
           tenantId: _tenantFilterId,
           search: _searchController.text.trim(),
+          type: _typeFilter,
+          isActive: _isActiveFilter,
           includeDeleted: true,
         );
 
@@ -4608,14 +4770,13 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
     final List<FacilityProfile> visibleFacilities = _visibleFacilities;
     final bool hasActiveFilters =
         _filterValue.option(_tenantFilterKey) != null ||
-        _filterValue.option(_statusFilterKey) != null;
+        _filterValue.option(_typeFilterKey) != null ||
+        _filterValue.option(_statusFilterKey) != null ||
+        _filterValue.option(_activeFilterKey) != null;
     final bool statusFiltered = _filterValue.option(_statusFilterKey) != null;
 
     if (_failure != null) {
-      return AppFailureStateView(
-        failure: _failure!,
-        onRetry: () => unawaited(_reload(resetPage: true)),
-      );
+      return AppFailureStateView(failure: _failure!);
     }
 
     return AppListTable<FacilityProfile>(
@@ -4629,9 +4790,6 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       isLoading: _loading,
       itemKeyBuilder: (FacilityProfile item) => ValueKey<String>(item.id),
       onRowSelected: (FacilityProfile facility) {
-        if (facility.isDeleted) {
-          return;
-        }
         unawaited(_openFacilityDetails(facility));
       },
       previousPageLabel: l10n.hrPreviousPageLabel,
@@ -4647,7 +4805,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         return '$start-$end / $total';
       },
       onPageChanged: _onPageChanged,
-      columnVisibilityStorageKey: 'setup_manage_facilities_v2',
+      columnVisibilityStorageKey: 'setup_manage_facilities_v3',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<FacilityProfile>(
         controller: _searchController,
@@ -4659,7 +4817,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         enableDateFilter: false,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFilterActionLabel,
-        advancedFilterTitle: l10n.tenantFacilityTenantStatusLabel,
+        advancedFilterTitle: l10n.commonFilterActionLabel,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         filterGroups: <AppSearchBarFilterGroup>[
@@ -4679,6 +4837,20 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
                   .toList(growable: false),
             ),
           AppSearchBarFilterGroup(
+            key: _typeFilterKey,
+            label: l10n.profileFacilityTypeLabel,
+            allLabel: l10n.commonAllLabel,
+            choices: FacilitySetupType.values
+                .map(
+                  (FacilitySetupType type) => AppSearchBarFilterChoice(
+                    value: type.apiValue,
+                    label: tenantFacilityFacilityTypeLabel(l10n, type),
+                    icon: tenantFacilityFacilityTypeIcon(type),
+                  ),
+                )
+                .toList(growable: false),
+          ),
+          AppSearchBarFilterGroup(
             key: _statusFilterKey,
             label: l10n.tenantFacilityTenantStatusLabel,
             allLabel: l10n.commonAllLabel,
@@ -4692,6 +4864,23 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
                 value: _statusDeleted,
                 label: l10n.tenantFacilityTenantStatusDeleted,
                 icon: Icons.delete_outline,
+              ),
+            ],
+          ),
+          AppSearchBarFilterGroup(
+            key: _activeFilterKey,
+            label: l10n.tenantFacilityActiveLabel,
+            allLabel: l10n.commonAllLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: _activeYes,
+                label: l10n.tenantFacilityTenantStatusActive,
+                icon: Icons.toggle_on_outlined,
+              ),
+              AppSearchBarFilterChoice(
+                value: _activeNo,
+                label: l10n.tenantFacilityStatusInactive,
+                icon: Icons.toggle_off_outlined,
               ),
             ],
           ),
@@ -4729,8 +4918,9 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         AppListTableColumn<FacilityProfile>(
           id: 'type',
           label: l10n.profileFacilityTypeLabel,
-          cellBuilder: (_, FacilityProfile facility) =>
-              Text(facility.type.name),
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            tenantFacilityFacilityTypeLabel(l10n, facility.type),
+          ),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'status',
@@ -4775,9 +4965,76 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       ],
       columnChoices: <AppListTableColumn<FacilityProfile>>[
         AppListTableColumn<FacilityProfile>(
-          id: 'details',
-          label: l10n.accessAdminColumnDetails,
-          cellBuilder: (_, FacilityProfile facility) => Text(facility.id),
+          id: 'id',
+          label: l10n.tenantFacilityTenantDetailsIdLabel,
+          cellBuilder: (_, FacilityProfile facility) =>
+              Text(facility.displayId ?? facility.id),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'phone',
+          label: l10n.profilePhoneLabel,
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            facility.phone?.trim().isNotEmpty == true ? facility.phone! : '—',
+          ),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'email',
+          label: l10n.profileEmailLabel,
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            facility.email?.trim().isNotEmpty == true ? facility.email! : '—',
+          ),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'address',
+          label: l10n.tenantFacilityAddressLineLabel,
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            facility.addressLine1?.trim().isNotEmpty == true
+                ? facility.addressLine1!
+                : '—',
+          ),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'city',
+          label: l10n.tenantFacilityCityLabel,
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            facility.city?.trim().isNotEmpty == true ? facility.city! : '—',
+          ),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'country',
+          label: l10n.tenantFacilityCountryLabel,
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            facility.country?.trim().isNotEmpty == true
+                ? facility.country!
+                : '—',
+          ),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'currency',
+          label: l10n.tenantFacilityDefaultCurrencyLabel,
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            facility.currency?.trim().isNotEmpty == true
+                ? facility.currency!
+                : '—',
+          ),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'consultation_fee',
+          label: l10n.settingsConfigurationConsultationFeeLabel,
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            facility.standardConsultationFee?.trim().isNotEmpty == true
+                ? facility.standardConsultationFee!
+                : '—',
+          ),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'logo',
+          label: l10n.tenantFacilityLogoLabel,
+          cellBuilder: (_, FacilityProfile facility) => Text(
+            facility.logoUrl?.trim().isNotEmpty == true
+                ? l10n.commonYesLabel
+                : '—',
+          ),
         ),
       ],
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(

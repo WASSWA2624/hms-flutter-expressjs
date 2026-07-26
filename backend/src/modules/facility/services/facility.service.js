@@ -28,6 +28,7 @@ const {
   deleteFacilityLogoFromStorage
 } = require('@lib/storage/facility-logo-storage');
 const {
+  buildCandidateSnapshot,
   checkFacilityDuplicates
 } = require('@lib/facility/facility-similarity');
 
@@ -206,7 +207,11 @@ const normalizeSortOrder = (value) => {
  * @param {string} [filters.tenant_id] - Filter by tenant ID
  * @param {string} [filters.facility_type] - Filter by facility type
  * @param {boolean} [filters.is_active] - Filter by active status
- * @param {string} [filters.search] - Search by name
+ * @param {string} [filters.search] - Search by name, contact, or location
+ * @param {string} [filters.phone] - Filter by contact phone
+ * @param {string} [filters.email] - Filter by contact email
+ * @param {string} [filters.city] - Filter by address city
+ * @param {string} [filters.country] - Filter by address country
  * @param {number} page - Page number
  * @param {number} limit - Items per page
  * @param {string} [sort_by] - Field to sort by
@@ -225,6 +230,7 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
 
   // Build repository filters
   const repoFilters = {};
+  const andConditions = [];
 
   if (filters.id) {
     repoFilters.id = filters.id;
@@ -242,9 +248,93 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
     repoFilters.is_active = filters.is_active === true || filters.is_active === 'true';
   }
 
-  // Handle search filter
-  if (filters.search) {
-    repoFilters.name = { contains: filters.search };
+  const searchTerm =
+    typeof filters.search === 'string' ? filters.search.trim() : '';
+  if (searchTerm) {
+    andConditions.push({
+      OR: [
+        { name: { contains: searchTerm } },
+        {
+          contacts: {
+            some: {
+              value: { contains: searchTerm },
+              deleted_at: null
+            }
+          }
+        },
+        {
+          addresses: {
+            some: {
+              deleted_at: null,
+              OR: [
+                { line1: { contains: searchTerm } },
+                { city: { contains: searchTerm } },
+                { country: { contains: searchTerm } }
+              ]
+            }
+          }
+        }
+      ]
+    });
+  }
+
+  const phoneTerm =
+    typeof filters.phone === 'string' ? filters.phone.trim() : '';
+  if (phoneTerm) {
+    andConditions.push({
+      contacts: {
+        some: {
+          contact_type: 'PHONE',
+          value: { contains: phoneTerm },
+          deleted_at: null
+        }
+      }
+    });
+  }
+
+  const emailTerm =
+    typeof filters.email === 'string' ? filters.email.trim() : '';
+  if (emailTerm) {
+    andConditions.push({
+      contacts: {
+        some: {
+          contact_type: 'EMAIL',
+          value: { contains: emailTerm },
+          deleted_at: null
+        }
+      }
+    });
+  }
+
+  const cityTerm = typeof filters.city === 'string' ? filters.city.trim() : '';
+  if (cityTerm) {
+    andConditions.push({
+      addresses: {
+        some: {
+          city: { contains: cityTerm },
+          deleted_at: null
+        }
+      }
+    });
+  }
+
+  const countryTerm =
+    typeof filters.country === 'string' ? filters.country.trim() : '';
+  if (countryTerm) {
+    andConditions.push({
+      addresses: {
+        some: {
+          country: { contains: countryTerm },
+          deleted_at: null
+        }
+      }
+    });
+  }
+
+  if (andConditions.length === 1) {
+    Object.assign(repoFilters, andConditions[0]);
+  } else if (andConditions.length > 1) {
+    repoFilters.AND = andConditions;
   }
 
   // Calculate pagination
@@ -324,17 +414,6 @@ const getFacilityById = async (id) => {
  * @param {string} [context.user_agent] - User agent
  * @returns {Promise<Object>} Created facility
  */
-const assertUniqueFacilityName = async (tenantId, name, excludeFacilityId = null) => {
-  const duplicate = await facilityRepository.findByTenantAndName(
-    tenantId,
-    name,
-    excludeFacilityId
-  );
-  if (duplicate) {
-    throw new HttpError('errors.facility.duplicate_name', 409);
-  }
-};
-
 const createFacility = async (data, context = {}) => {
   const confirmSimilar = data?.confirm_similar === true;
   const similarityInput = extractFacilitySimilarityInput(data);
@@ -411,42 +490,85 @@ const createFacility = async (data, context = {}) => {
 const updateFacility = async (id, data, context = {}) => {
   const facilityId = await resolveFacilityId(id);
   // Check if facility exists and get before state
-  const beforeFacility = await facilityRepository.findById(facilityId);
-  
+  const beforeFacility = await facilityRepository.findById(facilityId, {
+    contacts: {
+      where: { deleted_at: null }
+    },
+    addresses: {
+      where: { deleted_at: null }
+    }
+  });
+
   if (!beforeFacility) {
     throw new HttpError('errors.facility.not_found', 404);
   }
 
-  if (data.name !== undefined) {
-    await assertUniqueFacilityName(
-      beforeFacility.tenant_id,
-      data.name,
-      facilityId
-    );
-  }
+  const confirmSimilar = data?.confirm_similar === true;
+  const similarityInput = extractFacilitySimilarityInput(data);
+  let payload = stripSimilarityPayloadFields(data);
 
   // Update facility
-  if (data.extension_json && typeof data.extension_json === 'object') {
+  if (payload.extension_json && typeof payload.extension_json === 'object') {
     const previousExtension =
       beforeFacility.extension_json && typeof beforeFacility.extension_json === 'object'
         ? beforeFacility.extension_json
         : {};
     const mergedExtension = {
       ...previousExtension,
-      ...data.extension_json
+      ...payload.extension_json
     };
     for (const [key, value] of Object.entries(mergedExtension)) {
       if (value === null || value === undefined) {
         delete mergedExtension[key];
       }
     }
-    data = {
-      ...data,
+    payload = {
+      ...payload,
       extension_json: mergedExtension
     };
   }
 
-  const facility = await facilityRepository.update(facilityId, data);
+  const beforeSnapshot = buildCandidateSnapshot(beforeFacility);
+  const uniquenessData = {
+    name: Object.prototype.hasOwnProperty.call(payload, 'name')
+      ? payload.name
+      : beforeFacility.name,
+    facility_type: Object.prototype.hasOwnProperty.call(payload, 'facility_type')
+      ? payload.facility_type
+      : beforeFacility.facility_type,
+    is_active: Object.prototype.hasOwnProperty.call(payload, 'is_active')
+      ? payload.is_active
+      : beforeFacility.is_active,
+    phone:
+      similarityInput.phone !== undefined
+        ? similarityInput.phone
+        : beforeSnapshot.phone,
+    email:
+      similarityInput.email !== undefined
+        ? similarityInput.email
+        : beforeSnapshot.email,
+    address_line1:
+      similarityInput.addressLine1 !== undefined
+        ? similarityInput.addressLine1
+        : beforeSnapshot.address_line1,
+    city:
+      similarityInput.city !== undefined
+        ? similarityInput.city
+        : beforeSnapshot.city,
+    country:
+      similarityInput.country !== undefined
+        ? similarityInput.country
+        : beforeSnapshot.country
+  };
+
+  const duplicateCheck = await assertFacilityUniqueness({
+    data: uniquenessData,
+    tenantId: beforeFacility.tenant_id,
+    confirmSimilar,
+    excludeFacilityId: facilityId
+  });
+
+  const facility = await facilityRepository.update(facilityId, payload);
 
   // Create audit log
   await createAuditLog({
@@ -468,7 +590,14 @@ const updateFacility = async (id, data, context = {}) => {
         name: facility.name,
         facility_type: facility.facility_type,
         is_active: facility.is_active
-      }
+      },
+      confirm_similar: confirmSimilar,
+      similar_match_ids: confirmSimilar
+        ? duplicateCheck.overridableMatches
+            .slice(0, 5)
+            .map((match) => match.id)
+            .filter(Boolean)
+        : []
     }
   });
 
@@ -479,7 +608,7 @@ const updateFacility = async (id, data, context = {}) => {
     'update'
   );
 
-  return facility;
+  return normalizeFacilityRecord(facility);
 };
 
 /**

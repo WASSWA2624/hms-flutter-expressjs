@@ -148,17 +148,209 @@ describe('facility.service duplicate name validation', () => {
       tenant_id: 'TEN0001',
       name: 'Old Name',
       facility_type: 'HOSPITAL',
-      is_active: true
+      is_active: true,
+      contacts: [],
+      addresses: []
     });
-    facilityRepository.findByTenantAndName.mockResolvedValue({
-      id: 'FAC0001',
-      tenant_id: 'TEN0001',
-      name: 'DemoCare General Hospital'
-    });
+    facilityRepository.findMany.mockResolvedValue([
+      {
+        id: 'FAC0001',
+        tenant_id: 'TEN0001',
+        name: 'DemoCare General Hospital',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        contacts: [],
+        addresses: []
+      },
+      {
+        id: 'FAC0002',
+        tenant_id: 'TEN0001',
+        name: 'Old Name',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        contacts: [],
+        addresses: []
+      }
+    ]);
 
     await expect(
       facilityService.updateFacility('FAC0002', { name: 'DemoCare General Hospital' })
-    ).rejects.toBeInstanceOf(HttpError);
+    ).rejects.toMatchObject({
+      messageKey: 'errors.facility.duplicate_name',
+      statusCode: 409
+    });
+    expect(facilityRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects update when similar facility exists without confirm_similar', async () => {
+    facilityRepository.findById.mockResolvedValue({
+      id: 'FAC0002',
+      tenant_id: 'TEN0001',
+      name: 'Old Name',
+      facility_type: 'HOSPITAL',
+      is_active: true,
+      contacts: [],
+      addresses: []
+    });
+    facilityRepository.findMany.mockResolvedValue([
+      {
+        id: 'FAC0001',
+        tenant_id: 'TEN0001',
+        name: 'DemoCare General Hospital',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        contacts: [],
+        addresses: []
+      },
+      {
+        id: 'FAC0002',
+        tenant_id: 'TEN0001',
+        name: 'Old Name',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        contacts: [],
+        addresses: []
+      }
+    ]);
+
+    await expect(
+      facilityService.updateFacility('FAC0002', {
+        name: 'Democare General Hospitl',
+        facility_type: 'HOSPITAL'
+      })
+    ).rejects.toMatchObject({
+      messageKey: 'errors.facility.similar_exists',
+      statusCode: 409
+    });
+    expect(facilityRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('excludes the edited facility from similarity matches', async () => {
+    const before = {
+      id: 'FAC0002',
+      tenant_id: 'TEN0001',
+      name: 'DemoCare General Hospital',
+      facility_type: 'HOSPITAL',
+      is_active: true,
+      contacts: [],
+      addresses: []
+    };
+    facilityRepository.findById.mockResolvedValue(before);
+    facilityRepository.findMany.mockResolvedValue([before]);
+    facilityRepository.update.mockResolvedValue({
+      ...before,
+      name: 'DemoCare General Hospital'
+    });
+
+    const facility = await facilityService.updateFacility('FAC0002', {
+      name: 'DemoCare General Hospital'
+    });
+
+    expect(facility.id).toBe('FAC0002');
+    expect(facilityRepository.update).toHaveBeenCalled();
+  });
+
+  it('allows update with confirm_similar when similar facility exists', async () => {
+    facilityRepository.findById.mockResolvedValue({
+      id: 'FAC0002',
+      tenant_id: 'TEN0001',
+      name: 'Old Name',
+      facility_type: 'HOSPITAL',
+      is_active: true,
+      contacts: [],
+      addresses: []
+    });
+    facilityRepository.findMany.mockResolvedValue([
+      {
+        id: 'FAC0001',
+        tenant_id: 'TEN0001',
+        name: 'DemoCare General Hospital',
+        facility_type: 'HOSPITAL',
+        is_active: true,
+        contacts: [],
+        addresses: []
+      }
+    ]);
+    facilityRepository.update.mockResolvedValue({
+      id: 'FAC0002',
+      tenant_id: 'TEN0001',
+      name: 'Democare General Hospitl',
+      facility_type: 'HOSPITAL',
+      is_active: true
+    });
+
+    const facility = await facilityService.updateFacility('FAC0002', {
+      name: 'Democare General Hospitl',
+      facility_type: 'HOSPITAL',
+      confirm_similar: true,
+      phone: '+256700000000'
+    });
+
+    expect(facility.id).toBe('FAC0002');
+    expect(facilityRepository.update).toHaveBeenCalledWith(
+      'FAC0002',
+      expect.not.objectContaining({
+        confirm_similar: expect.anything(),
+        phone: expect.anything()
+      })
+    );
+  });
+});
+
+describe('facility.service list filters', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    facilityRepository.findMany.mockResolvedValue([]);
+    facilityRepository.count.mockResolvedValue(0);
+  });
+
+  it('builds contact and location search filters', async () => {
+    await facilityService.listFacilities({ search: 'Kampala' }, 1, 20);
+
+    expect(facilityRepository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        OR: expect.arrayContaining([
+          { name: { contains: 'Kampala' } },
+          expect.objectContaining({
+            contacts: expect.any(Object)
+          }),
+          expect.objectContaining({
+            addresses: expect.any(Object)
+          })
+        ])
+      }),
+      0,
+      20,
+      expect.anything(),
+      {},
+      { includeDeleted: false }
+    );
+  });
+
+  it('applies city and phone filters', async () => {
+    await facilityService.listFacilities(
+      { city: 'Kampala', phone: '700' },
+      1,
+      20
+    );
+
+    expect(facilityRepository.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        AND: expect.arrayContaining([
+          expect.objectContaining({
+            contacts: expect.any(Object)
+          }),
+          expect.objectContaining({
+            addresses: expect.any(Object)
+          })
+        ])
+      }),
+      0,
+      20,
+      expect.anything(),
+      {},
+      { includeDeleted: false }
+    );
   });
 });
 
