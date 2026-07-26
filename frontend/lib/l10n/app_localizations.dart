@@ -12052,6 +12052,12 @@ abstract class AppLocalizations {
   /// **'Similar organizations exist. Review matches before continuing.'**
   String get tenantFacilitySimilarTenantDialogBody;
 
+  /// Concise banner body for tenant similarity review with closest score.
+  ///
+  /// In en, this message translates to:
+  /// **'Review field matches below before continuing. Closest match is {score}%.'**
+  String tenantFacilitySimilarTenantReviewBannerBody(int score);
+
   /// Body shown when tenant slug uniqueness blocks create-anyway.
   ///
   /// In en, this message translates to:
@@ -12069,6 +12075,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Proposed tenant'**
   String get tenantFacilitySimilarTenantProposedHeading;
+
+  /// Heading above an existing tenant match card.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing tenant'**
+  String get tenantFacilitySimilarTenantExistingHeading;
+
+  /// Heading above the proposed vs existing field comparison table.
+  ///
+  /// In en, this message translates to:
+  /// **'Field comparison'**
+  String get tenantFacilitySimilarTenantComparisonHeading;
+
+  /// Column header for compared field names.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get tenantFacilitySimilarTenantFieldLabel;
+
+  /// Column header for proposed tenant field values.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get tenantFacilitySimilarTenantProposedValueLabel;
+
+  /// Column header for existing tenant field values.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing'**
+  String get tenantFacilitySimilarTenantExistingValueLabel;
+
+  /// Column header for field comparison status chips.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get tenantFacilitySimilarTenantStatusLabel;
+
+  /// Badge label for a near-duplicate tenant match.
+  ///
+  /// In en, this message translates to:
+  /// **'Near match'**
+  String get tenantFacilitySimilarTenantNearMatchLabel;
+
+  /// Badge label for a partial tenant match.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial match'**
+  String get tenantFacilitySimilarTenantPartialMatchLabel;
+
+  /// Badge label when an exact uniqueness conflict blocks create-anyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact conflict'**
+  String get tenantFacilitySimilarTenantExactConflictLabel;
+
+  /// Count label next to closest tenant matches heading.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} matches'**
+  String tenantFacilitySimilarTenantMatchCountLabel(int count);
 
   /// Heading above similar tenant match cards.
   ///

@@ -8202,6 +8202,15 @@
   "@tenantFacilitySimilarTenantDialogBody": {
     "description": "Body for similar tenant confirmation dialog."
   },
+  "tenantFacilitySimilarTenantReviewBannerBody": "Review field matches below before continuing. Closest match is {score}%.",
+  "@tenantFacilitySimilarTenantReviewBannerBody": {
+    "description": "Concise banner body for tenant similarity review with closest score.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
   "tenantFacilitySimilarTenantHardConflictBody": "An existing tenant already uses this slug. Choose a different slug or open the existing tenant.",
   "@tenantFacilitySimilarTenantHardConflictBody": {
     "description": "Body shown when tenant slug uniqueness blocks create-anyway."
@@ -8218,6 +8227,51 @@
   "tenantFacilitySimilarTenantProposedHeading": "Proposed tenant",
   "@tenantFacilitySimilarTenantProposedHeading": {
     "description": "Heading for the proposed tenant summary in the similarity dialog."
+  },
+  "tenantFacilitySimilarTenantExistingHeading": "Existing tenant",
+  "@tenantFacilitySimilarTenantExistingHeading": {
+    "description": "Heading above an existing tenant match card."
+  },
+  "tenantFacilitySimilarTenantComparisonHeading": "Field comparison",
+  "@tenantFacilitySimilarTenantComparisonHeading": {
+    "description": "Heading above the proposed vs existing field comparison table."
+  },
+  "tenantFacilitySimilarTenantFieldLabel": "Field",
+  "@tenantFacilitySimilarTenantFieldLabel": {
+    "description": "Column header for compared field names."
+  },
+  "tenantFacilitySimilarTenantProposedValueLabel": "Proposed",
+  "@tenantFacilitySimilarTenantProposedValueLabel": {
+    "description": "Column header for proposed tenant field values."
+  },
+  "tenantFacilitySimilarTenantExistingValueLabel": "Existing",
+  "@tenantFacilitySimilarTenantExistingValueLabel": {
+    "description": "Column header for existing tenant field values."
+  },
+  "tenantFacilitySimilarTenantStatusLabel": "Status",
+  "@tenantFacilitySimilarTenantStatusLabel": {
+    "description": "Column header for field comparison status chips."
+  },
+  "tenantFacilitySimilarTenantNearMatchLabel": "Near match",
+  "@tenantFacilitySimilarTenantNearMatchLabel": {
+    "description": "Badge label for a near-duplicate tenant match."
+  },
+  "tenantFacilitySimilarTenantPartialMatchLabel": "Partial match",
+  "@tenantFacilitySimilarTenantPartialMatchLabel": {
+    "description": "Badge label for a partial tenant match."
+  },
+  "tenantFacilitySimilarTenantExactConflictLabel": "Exact conflict",
+  "@tenantFacilitySimilarTenantExactConflictLabel": {
+    "description": "Badge label when an exact uniqueness conflict blocks create-anyway."
+  },
+  "tenantFacilitySimilarTenantMatchCountLabel": "{count} matches",
+  "@tenantFacilitySimilarTenantMatchCountLabel": {
+    "description": "Count label next to closest tenant matches heading.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "tenantFacilitySimilarTenantMatchesHeading": "Closest matches",
   "@tenantFacilitySimilarTenantMatchesHeading": {

@@ -71,15 +71,11 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
       ? null
       : visibleMatches.first;
 
-  final String dialogTitle = hasExactSlugConflict
-      ? l10n.tenantFacilitySimilarTenantDialogTitle
-      : hasMatches
+  final String dialogTitle = hasExactSlugConflict || hasMatches
       ? l10n.tenantFacilitySimilarTenantDialogTitle
       : l10n.tenantFacilityNoSimilarTenantDialogTitle;
 
-  final String proceedLabel = hasExactSlugConflict
-      ? l10n.tenantFacilityProceedCreateTenantAction
-      : hasMatches
+  final String proceedLabel = hasMatches
       ? l10n.tenantFacilityProceedCreateTenantAction
       : l10n.tenantFacilityContinueCreateTenantAction;
 
@@ -100,11 +96,10 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
       final String bannerMessage = hasExactSlugConflict
           ? l10n.tenantFacilitySimilarTenantHardConflictBody
           : hasMatches
-          ? l10n.tenantFacilitySimilarTenantDialogBody
+          ? l10n.tenantFacilitySimilarTenantReviewBannerBody(
+              topMatch?.score ?? 0,
+            )
           : l10n.tenantFacilityNoSimilarTenantDialogBody;
-      final String? closestScore = topMatch == null
-          ? null
-          : l10n.tenantFacilitySimilarTenantScoreLabel(topMatch.score);
 
       return AppDialog(
         title: Text(dialogTitle),
@@ -116,15 +111,13 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
               : Icons.verified_outlined,
         ),
         scrollable: true,
-        maxWidth: 760,
+        maxWidth: 820,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AppFormInformationBanner(
               title: bannerTitle,
-              message: closestScore == null
-                  ? bannerMessage
-                  : '$bannerMessage ${l10n.tenantFacilitySimilarTenantClosestScoreBody(topMatch!.score)}',
+              message: bannerMessage,
               variant: bannerVariant,
               icon: hasExactSlugConflict
                   ? Icons.gpp_bad_outlined
@@ -136,11 +129,26 @@ Future<TenantSimilarityDialogResult> showTenantSimilarityDialog(
             _ProposedTenantCard(proposed: proposed),
             if (hasMatches) ...<Widget>[
               SizedBox(height: theme.spacing.lg),
-              Text(
-                l10n.tenantFacilitySimilarTenantMatchesHeading,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      l10n.tenantFacilitySimilarTenantMatchesHeading,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    l10n.tenantFacilitySimilarTenantMatchCountLabel(
+                      visibleMatches.length,
+                    ),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: theme.spacing.sm),
               for (int index = 0; index < visibleMatches.length; index += 1) ...<
@@ -197,10 +205,7 @@ class _ProposedTenantCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final List<(String, String)> facts = <(String, String)>[
       (l10n.tenantFacilityTenantNameLabel, _display(proposed.name, l10n)),
-      (
-        l10n.tenantFacilityTenantSlugLabel,
-        _display(proposed.slug, l10n),
-      ),
+      (l10n.tenantFacilityTenantSlugLabel, _display(proposed.slug, l10n)),
       (
         l10n.tenantFacilityTenantDetailsContactNameLabel,
         _display(proposed.contactName, l10n),
@@ -275,39 +280,218 @@ class _TenantSimilarityMatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final AppStatusColors statusColors = theme.statusColors;
+    final bool hardConflict = match.exactSlugConflict;
+    final Color accent = hardConflict
+        ? statusColors.error
+        : statusColors.warning;
+    final Color badgeContainer = hardConflict
+        ? statusColors.errorContainer
+        : statusColors.warningContainer;
+    final Color badgeOnContainer = hardConflict
+        ? statusColors.onErrorContainer
+        : statusColors.onWarningContainer;
+    final List<TenantFieldComparison> comparisons = _sortedComparisons(
+      match.fieldComparisons,
+    );
 
-    return AppSectionPanel(
-      tone: match.exactSlugConflict
+    return AppContentPanel(
+      tone: hardConflict
           ? AppWorkspaceStatusTone.error
-          : AppWorkspaceStatusTone.warning,
+          : AppWorkspaceStatusTone.neutral,
       density: AppContentPanelDensity.compact,
-      leadingIcon: Icons.apartment_outlined,
-      title: match.tenant.name,
-      trailing: Text(
-        l10n.tenantFacilitySimilarTenantScoreLabel(match.score),
-        style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
-      ),
-      children: <Widget>[
-        if (match.tenant.slug != null && match.tenant.slug!.isNotEmpty)
-          Text(
-            match.tenant.slug!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                hardConflict
+                    ? Icons.gpp_bad_outlined
+                    : Icons.apartment_outlined,
+                color: accent,
+                size: theme.appTokens.listIconSize,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      l10n.tenantFacilitySimilarTenantExistingHeading,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: accent,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs / 2),
+                    Text(
+                      match.tenant.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (match.tenant.slug != null &&
+                        match.tenant.slug!.trim().isNotEmpty) ...<Widget>[
+                      SizedBox(height: theme.spacing.xs / 2),
+                      Text(
+                        match.tenant.slug!,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.sm,
+                  vertical: theme.spacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: badgeContainer,
+                  borderRadius: BorderRadius.circular(theme.radius.md),
+                  border: Border.all(color: accent.withValues(alpha: 0.55)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      '${match.score}%',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: badgeOnContainer,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      hardConflict
+                          ? l10n.tenantFacilitySimilarTenantExactConflictLabel
+                          : match.score >= tenantSimilarityThreshold
+                          ? l10n.tenantFacilitySimilarTenantNearMatchLabel
+                          : l10n.tenantFacilitySimilarTenantPartialMatchLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: badgeOnContainer,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(theme.radius.sm),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    l10n.tenantFacilitySimilarTenantComparisonHeading,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                  LayoutBuilder(
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          final bool compact = constraints.maxWidth < 620;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              if (!compact) ...<Widget>[
+                                _ComparisonTableHeader(),
+                                SizedBox(height: theme.spacing.xs),
+                              ],
+                              for (
+                                int index = 0;
+                                index < comparisons.length;
+                                index += 1
+                              ) ...<Widget>[
+                                if (index > 0 || !compact)
+                                  Divider(
+                                    height: theme.spacing.md,
+                                    color: theme.colorScheme.outlineVariant
+                                        .withValues(alpha: 0.55),
+                                  ),
+                                if (compact)
+                                  _FieldComparisonStacked(
+                                    comparison: comparisons[index],
+                                  )
+                                else
+                                  _FieldComparisonRow(
+                                    comparison: comparisons[index],
+                                  ),
+                              ],
+                            ],
+                          );
+                        },
+                  ),
+                ],
+              ),
             ),
           ),
-        SizedBox(height: theme.spacing.sm),
-        for (final TenantFieldComparison comparison in match.fieldComparisons)
-          Padding(
-            padding: EdgeInsets.only(bottom: theme.spacing.xs),
-            child: _TenantFieldComparisonRow(comparison: comparison),
+          SizedBox(height: theme.spacing.md),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton.secondary(
+              label: l10n.tenantFacilityUseExistingTenantAction,
+              leadingIcon: Icons.open_in_new,
+              onPressed: onUseExisting,
+            ),
           ),
-        SizedBox(height: theme.spacing.sm),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: AppButton.secondary(
-            label: l10n.tenantFacilityUseExistingTenantAction,
-            leadingIcon: Icons.open_in_new,
-            onPressed: onUseExisting,
+        ],
+      ),
+    );
+  }
+}
+
+class _ComparisonTableHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final TextStyle style = theme.textTheme.labelSmall!.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w800,
+    );
+
+    return Row(
+      children: <Widget>[
+        SizedBox(
+          width: 128,
+          child: Text(l10n.tenantFacilitySimilarTenantFieldLabel, style: style),
+        ),
+        Expanded(
+          child: Text(
+            l10n.tenantFacilitySimilarTenantProposedValueLabel,
+            style: style,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            l10n.tenantFacilitySimilarTenantExistingValueLabel,
+            style: style,
+          ),
+        ),
+        SizedBox(
+          width: 108,
+          child: Text(
+            l10n.tenantFacilitySimilarTenantStatusLabel,
+            style: style,
+            textAlign: TextAlign.end,
           ),
         ),
       ],
@@ -315,8 +499,8 @@ class _TenantSimilarityMatchCard extends StatelessWidget {
   }
 }
 
-class _TenantFieldComparisonRow extends StatelessWidget {
-  const _TenantFieldComparisonRow({required this.comparison});
+class _FieldComparisonRow extends StatelessWidget {
+  const _FieldComparisonRow({required this.comparison});
 
   final TenantFieldComparison comparison;
 
@@ -324,21 +508,12 @@ class _TenantFieldComparisonRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final Color statusColor = switch (comparison.status) {
-      TenantFieldComparisonStatus.match => theme.colorScheme.primary,
-      TenantFieldComparisonStatus.similar => theme.colorScheme.tertiary,
-      TenantFieldComparisonStatus.different => theme.colorScheme.error,
-      TenantFieldComparisonStatus.missing => theme.colorScheme.onSurfaceVariant,
-    };
-    final String scoreLabel = comparison.score == null
-        ? l10n.clinicalOrderEmptyValueLabel
-        : l10n.tenantFacilitySimilarTenantScoreLabel(comparison.score!);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SizedBox(
-          width: 120,
+          width: 128,
           child: Text(
             _fieldLabel(l10n, comparison.field),
             style: theme.textTheme.labelMedium?.copyWith(
@@ -347,40 +522,192 @@ class _TenantFieldComparisonRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Text(_valuePair(l10n), style: theme.textTheme.bodySmall),
+          child: Text(
+            _display(comparison.inputValue, l10n),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            Text(
-              _statusLabel(l10n, comparison.status),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: statusColor,
-                fontWeight: FontWeight.w800,
-              ),
+        Expanded(
+          child: Text(
+            _display(comparison.candidateValue, l10n),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-            Text(
-              scoreLabel,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+          ),
+        ),
+        SizedBox(
+          width: 108,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: _StatusChip(comparison: comparison),
+          ),
         ),
       ],
     );
   }
+}
 
-  String _valuePair(AppLocalizations l10n) {
-    final String input = comparison.inputValue?.trim().isNotEmpty == true
-        ? comparison.inputValue!
-        : l10n.clinicalOrderEmptyValueLabel;
-    final String candidate =
-        comparison.candidateValue?.trim().isNotEmpty == true
-        ? comparison.candidateValue!
-        : l10n.clinicalOrderEmptyValueLabel;
-    return '$input → $candidate';
+class _FieldComparisonStacked extends StatelessWidget {
+  const _FieldComparisonStacked({required this.comparison});
+
+  final TenantFieldComparison comparison;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                _fieldLabel(l10n, comparison.field),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            _StatusChip(comparison: comparison),
+          ],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        _StackedValue(
+          label: l10n.tenantFacilitySimilarTenantProposedValueLabel,
+          value: _display(comparison.inputValue, l10n),
+        ),
+        SizedBox(height: theme.spacing.xs / 2),
+        _StackedValue(
+          label: l10n.tenantFacilitySimilarTenantExistingValueLabel,
+          value: _display(comparison.candidateValue, l10n),
+        ),
+      ],
+    );
   }
+}
+
+class _StackedValue extends StatelessWidget {
+  const _StackedValue({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.comparison});
+
+  final TenantFieldComparison comparison;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final AppStatusColors statusColors = theme.statusColors;
+    final (Color bg, Color fg, Color border) = switch (comparison.status) {
+      TenantFieldComparisonStatus.match => (
+        statusColors.successContainer,
+        statusColors.onSuccessContainer,
+        statusColors.success.withValues(alpha: 0.45),
+      ),
+      TenantFieldComparisonStatus.similar => (
+        statusColors.warningContainer,
+        statusColors.onWarningContainer,
+        statusColors.warning.withValues(alpha: 0.45),
+      ),
+      TenantFieldComparisonStatus.different => (
+        statusColors.errorContainer,
+        statusColors.onErrorContainer,
+        statusColors.error.withValues(alpha: 0.4),
+      ),
+      TenantFieldComparisonStatus.missing => (
+        theme.colorScheme.surfaceContainerHighest,
+        theme.colorScheme.onSurfaceVariant,
+        theme.colorScheme.outlineVariant,
+      ),
+    };
+
+    final String label = _statusLabel(l10n, comparison.status);
+    final String? score = comparison.score == null
+        ? null
+        : '${comparison.score}%';
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs / 2,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: border),
+      ),
+      child: Text(
+        score == null ? label : '$label · $score',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+List<TenantFieldComparison> _sortedComparisons(
+  List<TenantFieldComparison> comparisons,
+) {
+  int rank(TenantFieldComparisonStatus status) {
+    return switch (status) {
+      TenantFieldComparisonStatus.match => 0,
+      TenantFieldComparisonStatus.similar => 1,
+      TenantFieldComparisonStatus.different => 2,
+      TenantFieldComparisonStatus.missing => 3,
+    };
+  }
+
+  final List<TenantFieldComparison> next = List<TenantFieldComparison>.of(
+    comparisons,
+  );
+  next.sort((TenantFieldComparison left, TenantFieldComparison right) {
+    final int byStatus = rank(left.status).compareTo(rank(right.status));
+    if (byStatus != 0) {
+      return byStatus;
+    }
+    return (right.score ?? -1).compareTo(left.score ?? -1);
+  });
+  return next;
+}
+
+String _display(String? value, AppLocalizations l10n) {
+  final String trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? l10n.clinicalOrderEmptyValueLabel : trimmed;
 }
 
 String _fieldLabel(AppLocalizations l10n, String field) {

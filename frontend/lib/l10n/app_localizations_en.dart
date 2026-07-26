@@ -6485,6 +6485,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Similar organizations exist. Review matches before continuing.';
 
   @override
+  String tenantFacilitySimilarTenantReviewBannerBody(int score) {
+    return 'Review field matches below before continuing. Closest match is $score%.';
+  }
+
+  @override
   String get tenantFacilitySimilarTenantHardConflictBody =>
       'An existing tenant already uses this slug. Choose a different slug or open the existing tenant.';
 
@@ -6495,6 +6500,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilitySimilarTenantProposedHeading => 'Proposed tenant';
+
+  @override
+  String get tenantFacilitySimilarTenantExistingHeading => 'Existing tenant';
+
+  @override
+  String get tenantFacilitySimilarTenantComparisonHeading => 'Field comparison';
+
+  @override
+  String get tenantFacilitySimilarTenantFieldLabel => 'Field';
+
+  @override
+  String get tenantFacilitySimilarTenantProposedValueLabel => 'Proposed';
+
+  @override
+  String get tenantFacilitySimilarTenantExistingValueLabel => 'Existing';
+
+  @override
+  String get tenantFacilitySimilarTenantStatusLabel => 'Status';
+
+  @override
+  String get tenantFacilitySimilarTenantNearMatchLabel => 'Near match';
+
+  @override
+  String get tenantFacilitySimilarTenantPartialMatchLabel => 'Partial match';
+
+  @override
+  String get tenantFacilitySimilarTenantExactConflictLabel => 'Exact conflict';
+
+  @override
+  String tenantFacilitySimilarTenantMatchCountLabel(int count) {
+    return '$count matches';
+  }
 
   @override
   String get tenantFacilitySimilarTenantMatchesHeading => 'Closest matches';
