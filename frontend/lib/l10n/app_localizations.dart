@@ -35851,6 +35851,36 @@ abstract class AppLocalizations {
   /// **'Search and select the lab tests that belong in this panel.'**
   String get labPanelTestsSectionBody;
 
+  /// Wizard step label for lab panel similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Similarity'**
+  String get labPanelSimilarityStepLabel;
+
+  /// Body copy for the panel similarity wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similar panels before creating. Per-parameter scores and overall similarity appear in the review.'**
+  String get labPanelSimilaritySectionBody;
+
+  /// Title shown after the panel similarity review is accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Similarity review complete'**
+  String get labPanelSimilarityReadyTitle;
+
+  /// Body shown after the panel similarity review is accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to create this panel, or go back to change details or member tests.'**
+  String get labPanelSimilarityReadyBody;
+
+  /// Action to reopen the lab panel similarity review dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Review similarity'**
+  String get labPanelSimilarityReviewAction;
+
   /// Validation when creating a panel without member tests.
   ///
   /// In en, this message translates to:

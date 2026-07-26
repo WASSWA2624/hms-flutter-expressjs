@@ -590,6 +590,7 @@ void main() {
       // Step 1: panel details with Next (no Save yet).
       expect(find.text('CREATE LAB PANEL'), findsOneWidget);
       expect(find.text('Panel details'), findsWidgets);
+      expect(find.text('Similarity'), findsWidgets);
       expect(find.widgetWithText(AppButton, 'Next'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Save'), findsNothing);
 
@@ -603,13 +604,16 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pumpAndSettle();
 
-      // Step 2: searchable multi-select member-test table.
+      // Step 2: searchable AppListTable multi-select (no nested scroll).
       expect(find.byType(LabPanelTestSelectionTable), findsOneWidget);
+      expect(find.byType(AppListTable<LabCatalogItem>), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Back'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Next'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Save'), findsNothing);
       expect(find.text('Hemoglobin'), findsWidgets);
 
-      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
-      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Next'));
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -629,8 +633,8 @@ void main() {
       await tester.pump();
       expect(find.text('1 selected'), findsOneWidget);
 
-      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
-      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Next'));
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -639,6 +643,12 @@ void main() {
       // a near match rather than a 0% empty review.
       expect(find.widgetWithText(AppButton, 'Create anyway'), findsOneWidget);
       await tester.tap(find.widgetWithText(AppButton, 'Create anyway'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Similarity review complete'), findsOneWidget);
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -691,14 +701,20 @@ void main() {
       table.onToggle(table.tests.first);
       await tester.pump();
 
-      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
-      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Next'));
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('NO SIMILAR LAB PANEL FOUND'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Continue save'), findsOneWidget);
       await tester.tap(find.widgetWithText(AppButton, 'Continue save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Similarity review complete'), findsOneWidget);
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -752,8 +768,8 @@ void main() {
       await tester.pump();
       expect(find.text('1 selected'), findsOneWidget);
 
-      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
-      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Next'));
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -763,8 +779,43 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
       expect(submitted, isNotNull);
       expect(submitted!['confirm_similar'], isTrue);
+    });
+
+    testWidgets('panel tests step uses shrink-wrapped AppListTable without nested scroll', (
+      WidgetTester tester,
+    ) async {
+      await _pumpMutationDialog(
+        tester,
+        kind: LabCatalogItemType.panel,
+        catalogItems: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 'LBT1',
+            type: LabCatalogItemType.test,
+            name: 'Hemoglobin',
+            code: 'HB',
+            category: 'Hematology',
+          ),
+        ],
+      );
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'Panel');
+      await tester.tap(find.widgetWithText(AppButton, 'Next'));
+      await tester.pumpAndSettle();
+
+      final AppListTable<LabCatalogItem> table = tester
+          .widget<AppListTable<LabCatalogItem>>(
+            find.byType(AppListTable<LabCatalogItem>),
+          );
+      expect(table.shrinkWrap, isTrue);
+      expect(table.physics, isA<NeverScrollableScrollPhysics>());
+      expect(table.search, isNotNull);
     });
 
     testWidgets('text kind hides unit and qualitative options', (

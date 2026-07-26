@@ -874,6 +874,7 @@ class _LabCatalogItemMutationDialogState
   late List<EditableLabReferenceRange> _referenceRanges;
   late List<LabCatalogItem> _selectedTests;
   int _panelStep = 0;
+  bool _panelSimilarityStepOpened = false;
   String? _resultKind;
   AppFailure? _failure;
   String? _nameErrorText;
@@ -1030,6 +1031,7 @@ class _LabCatalogItemMutationDialogState
   void _clearSimilarityState() {
     if (!_similarityAccepted &&
         !_noSimilarConfirmed &&
+        !_panelSimilarityStepOpened &&
         _nameErrorText == null &&
         _codeErrorText == null) {
       return;
@@ -1037,6 +1039,7 @@ class _LabCatalogItemMutationDialogState
     setState(() {
       _similarityAccepted = false;
       _noSimilarConfirmed = false;
+      _panelSimilarityStepOpened = false;
       _nameErrorText = null;
       _codeErrorText = null;
     });
@@ -1117,6 +1120,7 @@ class _LabCatalogItemMutationDialogState
       }
       _similarityAccepted = false;
       _noSimilarConfirmed = false;
+      _panelSimilarityStepOpened = false;
     });
   }
 
@@ -1128,6 +1132,65 @@ class _LabCatalogItemMutationDialogState
     setState(() {
       _failure = null;
       _panelStep = 1;
+      _panelSimilarityStepOpened = false;
+    });
+  }
+
+  /// Validates member tests, advances to the Similarity step, then opens review.
+  Future<void> _goToPanelSimilarityStep() async {
+    if (_selectedTests.isEmpty) {
+      setState(() {
+        _panelTestsErrorText =
+            context.l10n.labPanelSelectAtLeastOneTestMessage;
+        _failure = AppFailure.validation();
+      });
+      return;
+    }
+    setState(() {
+      _failure = null;
+      _panelTestsErrorText = null;
+      _panelStep = 2;
+      _panelSimilarityStepOpened = false;
+    });
+    await _openPanelSimilarityReview();
+  }
+
+  Future<void> _openPanelSimilarityReview() async {
+    if (!_isPanel || _panelStep != 2 || !mounted) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final bool maySave = await _guardAgainstDuplicates(l10n);
+    if (!mounted) {
+      return;
+    }
+    if (!maySave) {
+      // Cancelled similarity review — return to the tests step. Use-this pops
+      // this dialog and disposes the state before we reach here.
+      setState(() {
+        _panelStep = 1;
+        _panelSimilarityStepOpened = false;
+      });
+      return;
+    }
+    setState(() => _panelSimilarityStepOpened = true);
+  }
+
+  void _goToPanelStep(int index) {
+    if (index == _panelStep) {
+      return;
+    }
+    if (index == 1) {
+      _goToPanelTestsStep();
+      return;
+    }
+    if (index == 2) {
+      unawaited(_goToPanelSimilarityStep());
+      return;
+    }
+    setState(() {
+      _panelStep = 0;
+      _panelSimilarityStepOpened = false;
     });
   }
 
@@ -1624,26 +1687,25 @@ class _LabCatalogItemMutationDialogState
                     id: 'tests',
                     label: l10n.labPanelTestsLabel,
                     shortLabel: l10n.labPanelTestsLabel,
-                    completed: _panelStep > 0 && _selectedTests.isNotEmpty,
+                    completed: _panelStep > 1 ||
+                        (_panelStep == 1 && _selectedTests.isNotEmpty),
+                  ),
+                  AppWizardStepItem(
+                    id: 'similarity',
+                    label: l10n.labPanelSimilarityStepLabel,
+                    shortLabel: l10n.labPanelSimilarityStepLabel,
+                    completed: _panelSimilarityStepOpened &&
+                        (_similarityAccepted || _noSimilarConfirmed),
                   ),
                 ],
                 currentIndex: _panelStep,
                 showCurrentTitle: false,
                 onStepSelected: formLocked
                     ? null
-                    : (int index) {
-                        if (index == _panelStep) {
-                          return;
-                        }
-                        if (index == 1) {
-                          _goToPanelTestsStep();
-                          return;
-                        }
-                        setState(() => _panelStep = index);
-                      },
+                    : (int index) => _goToPanelStep(index),
               ),
               SizedBox(height: Theme.of(context).spacing.sm),
-              // Details fields stay mounted (offstage) on the tests step so
+              // Details fields stay mounted (offstage) on later steps so
               // Form.validate() keeps covering them from _submit().
               Visibility(
                 visible: _panelStep == 0,
@@ -1720,6 +1782,58 @@ class _LabCatalogItemMutationDialogState
                       errorText: _panelTestsErrorText,
                       onToggle: _toggleSelectedTest,
                     ),
+                  ],
+                ),
+              if (_panelStep == 2)
+                AppFormSection(
+                  title: l10n.labPanelSimilarityStepLabel,
+                  description: l10n.labPanelSimilaritySectionBody,
+                  density: AppFormSectionDensity.compact,
+                  children: <Widget>[
+                    if (_panelSimilarityStepOpened &&
+                        (_similarityAccepted || _noSimilarConfirmed))
+                      AppFormInformationBanner(
+                        title: l10n.labPanelSimilarityReadyTitle,
+                        message: l10n.labPanelSimilarityReadyBody,
+                        variant: AppFormInformationVariant.success,
+                        icon: Icons.verified_outlined,
+                      )
+                    else if (!_isCheckingSimilarity)
+                      AppFormInformationBanner(
+                        title: l10n.labSimilarityCheckLoadingTitle,
+                        message: l10n.labPanelSimilaritySectionBody,
+                        variant: AppFormInformationVariant.info,
+                        icon: Icons.manage_search_outlined,
+                      ),
+                    SizedBox(height: Theme.of(context).spacing.sm),
+                    AppMutedText(
+                      l10n.labPanelSelectedTestsCountLabel(
+                        _selectedTests.length,
+                      ),
+                    ),
+                    SizedBox(height: Theme.of(context).spacing.xs),
+                    AppMutedText(_proposedMemberTestsSummary()),
+                    if (!_isCheckingSimilarity) ...<Widget>[
+                      SizedBox(height: Theme.of(context).spacing.md),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: AppButton.tertiary(
+                          label: l10n.labPanelSimilarityReviewAction,
+                          leadingIcon: Icons.manage_search_outlined,
+                          enabled: !formLocked,
+                          onPressed: formLocked
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _similarityAccepted = false;
+                                    _noSimilarConfirmed = false;
+                                    _panelSimilarityStepOpened = false;
+                                  });
+                                  unawaited(_openPanelSimilarityReview());
+                                },
+                        ),
+                      ),
+                    ],
                   ],
                 ),
             ] else
@@ -1824,6 +1938,28 @@ class _LabCatalogItemMutationDialogState
                 onPressed: formLocked ? null : _goToPanelTestsStep,
               ),
             ]
+          : _isPanel && _panelStep == 1
+          ? <Widget>[
+              AppButton.tertiary(
+                label: l10n.commonBackActionLabel,
+                leadingIcon: Icons.arrow_back,
+                enabled: !formLocked,
+                onPressed: formLocked
+                    ? null
+                    : () => setState(() {
+                        _panelStep = 0;
+                        _panelSimilarityStepOpened = false;
+                      }),
+              ),
+              AppButton.primary(
+                label: l10n.commonNextActionLabel,
+                leadingIcon: Icons.arrow_forward,
+                isLoading: _isCheckingSimilarity,
+                onPressed: formLocked
+                    ? null
+                    : () => unawaited(_goToPanelSimilarityStep()),
+              ),
+            ]
           : _isPanel
           ? <Widget>[
               AppButton.tertiary(
@@ -1832,7 +1968,12 @@ class _LabCatalogItemMutationDialogState
                 enabled: !formLocked,
                 onPressed: formLocked
                     ? null
-                    : () => setState(() => _panelStep = 0),
+                    : () => setState(() {
+                        _panelStep = 1;
+                        _panelSimilarityStepOpened = false;
+                        _similarityAccepted = false;
+                        _noSimilarConfirmed = false;
+                      }),
               ),
               AppButton.primary(
                 label: _isCheckingSimilarity
@@ -1840,7 +1981,10 @@ class _LabCatalogItemMutationDialogState
                     : l10n.commonSaveActionLabel,
                 leadingIcon: Icons.save_outlined,
                 isLoading: formLocked,
-                onPressed: formLocked ? null : _submit,
+                onPressed: formLocked ||
+                        !(_similarityAccepted || _noSimilarConfirmed)
+                    ? null
+                    : _submit,
               ),
             ]
           : buildAppDialogFormActions(

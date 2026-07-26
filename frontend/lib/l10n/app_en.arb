@@ -24653,6 +24653,26 @@
   "@labPanelTestsSectionBody": {
     "description": "Body copy for the panel tests step in the create/edit panel wizard."
   },
+  "labPanelSimilarityStepLabel": "Similarity",
+  "@labPanelSimilarityStepLabel": {
+    "description": "Wizard step label for lab panel similarity review."
+  },
+  "labPanelSimilaritySectionBody": "Review similar panels before creating. Per-parameter scores and overall similarity appear in the review.",
+  "@labPanelSimilaritySectionBody": {
+    "description": "Body copy for the panel similarity wizard step."
+  },
+  "labPanelSimilarityReadyTitle": "Similarity review complete",
+  "@labPanelSimilarityReadyTitle": {
+    "description": "Title shown after the panel similarity review is accepted."
+  },
+  "labPanelSimilarityReadyBody": "Save to create this panel, or go back to change details or member tests.",
+  "@labPanelSimilarityReadyBody": {
+    "description": "Body shown after the panel similarity review is accepted."
+  },
+  "labPanelSimilarityReviewAction": "Review similarity",
+  "@labPanelSimilarityReviewAction": {
+    "description": "Action to reopen the lab panel similarity review dialog."
+  },
   "labPanelSelectAtLeastOneTestMessage": "Select at least one lab test for this panel.",
   "@labPanelSelectAtLeastOneTestMessage": {
     "description": "Validation when creating a panel without member tests."

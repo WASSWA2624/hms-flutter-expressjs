@@ -14,6 +14,11 @@ const {
   textSimilarityScore
 } = require('@lib/lab/lab-test-similarity');
 
+/** Lower bar for surfacing near-duplicate panels in review (slight overlaps). */
+const PANEL_SIMILARITY_REVIEW_THRESHOLD = 50;
+/** Composition overlap that still warrants a review signal (shared members). */
+const PANEL_COMPOSITION_REVIEW_THRESHOLD = 20;
+
 const NAME_WEIGHT = 40;
 const CODE_WEIGHT = 25;
 const CATEGORY_WEIGHT = 15;
@@ -259,7 +264,7 @@ const checkLabPanelDuplicates = ({
       nameScore = nameExact
         ? 100
         : textSimilarityScore(normalizedName, panelName, { includeTokenSimilarity });
-      if (nameExact || nameScore >= SIMILARITY_THRESHOLD) {
+      if (nameExact || nameScore >= PANEL_SIMILARITY_REVIEW_THRESHOLD) {
         reasons.push('name');
       }
     }
@@ -270,7 +275,7 @@ const checkLabPanelDuplicates = ({
         : textSimilarityScore(similarityCode, panelSimilarityCode, {
           includeTokenSimilarity: false
         });
-      if (codeExact || codeScore >= SIMILARITY_THRESHOLD) {
+      if (codeExact || codeScore >= PANEL_SIMILARITY_REVIEW_THRESHOLD) {
         reasons.push('code');
       }
     }
@@ -281,14 +286,14 @@ const checkLabPanelDuplicates = ({
         : textSimilarityScore(normalizedCategory, panelCategory, {
           includeTokenSimilarity
         });
-      if (categoryExact || categoryScore >= SIMILARITY_THRESHOLD) {
+      if (categoryExact || categoryScore >= PANEL_SIMILARITY_REVIEW_THRESHOLD) {
         reasons.push('category');
       }
     }
 
     if (proposedUnits.length && existingUnits.length) {
       compositionScore = compositionOverlapPercent(proposedUnits, existingUnits);
-      if (compositionScore >= SIMILARITY_THRESHOLD) {
+      if (compositionScore >= PANEL_COMPOSITION_REVIEW_THRESHOLD) {
         reasons.push('composition');
       }
     }
@@ -331,8 +336,15 @@ const checkLabPanelDuplicates = ({
       || (codeScore != null && codeScore >= SIMILARITY_THRESHOLD)
       || (compositionScore != null && compositionScore >= SIMILARITY_THRESHOLD)
     );
-    const compositeSignal = score >= SIMILARITY_THRESHOLD;
-    if (!strongFieldSignal && !compositeSignal) {
+    const reviewFieldSignal = (
+      (nameScore != null && nameScore >= PANEL_SIMILARITY_REVIEW_THRESHOLD)
+      || (codeScore != null && codeScore >= PANEL_SIMILARITY_REVIEW_THRESHOLD)
+      || (categoryScore != null && categoryScore >= PANEL_SIMILARITY_REVIEW_THRESHOLD)
+      || (compositionScore != null
+        && compositionScore >= PANEL_COMPOSITION_REVIEW_THRESHOLD)
+    );
+    const compositeSignal = score >= PANEL_SIMILARITY_REVIEW_THRESHOLD;
+    if (!strongFieldSignal && !reviewFieldSignal && !compositeSignal) {
       continue;
     }
 
@@ -386,6 +398,8 @@ const mergePanelDuplicateChecks = (...checks) => {
 
 module.exports = {
   SIMILARITY_THRESHOLD,
+  PANEL_SIMILARITY_REVIEW_THRESHOLD,
+  PANEL_COMPOSITION_REVIEW_THRESHOLD,
   NAME_WEIGHT,
   CODE_WEIGHT,
   CATEGORY_WEIGHT,

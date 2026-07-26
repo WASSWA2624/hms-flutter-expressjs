@@ -189,7 +189,32 @@ describe('lab-panel-similarity', () => {
     );
   });
 
-  it('does not surface unrelated panels below the threshold', () => {
+  it('surfaces slight member overlap and near-name panels for review', () => {
+    const result = checkLabPanelDuplicates({
+      name: 'Complete Blood Count Panels',
+      code: 'CBC-NEAR',
+      category: 'Chemistry',
+      panelItems: [
+        { lab_test_id: 't1', test_code: 'HB' },
+        { lab_test_id: 'unique-a', test_code: 'UA' },
+        { lab_test_id: 'unique-b', test_code: 'UB' }
+      ],
+      existing
+    });
+
+    expect(result.hasExactConflict).toBe(false);
+    const match = result.similarMatches.find((row) => row.id === 'panel-1');
+    expect(match).toBeDefined();
+    expect(match.compositionScore).toBeGreaterThanOrEqual(20);
+    expect(match.reasons).toEqual(expect.arrayContaining(['composition']));
+    expect(match.nameScore).toBeGreaterThanOrEqual(50);
+  });
+
+  it('does not surface unrelated panels below the review threshold', () => {
+    const {
+      PANEL_SIMILARITY_REVIEW_THRESHOLD,
+      PANEL_COMPOSITION_REVIEW_THRESHOLD
+    } = require('@lib/lab/lab-panel-similarity');
     const result = checkLabPanelDuplicates({
       name: 'Zzyx Unique Panel Alpha',
       code: 'ZZYX-001',
@@ -199,14 +224,14 @@ describe('lab-panel-similarity', () => {
     });
 
     expect(result.hasExactConflict).toBe(false);
+    expect(result.similarMatches).toHaveLength(0);
     expect(
       result.similarMatches.every(
-        (match) => match.score >= SIMILARITY_THRESHOLD
-          || (match.compositionScore ?? 0) >= SIMILARITY_THRESHOLD
-          || (match.nameScore ?? 0) >= SIMILARITY_THRESHOLD
-          || (match.codeScore ?? 0) >= SIMILARITY_THRESHOLD
+        (match) => match.score >= PANEL_SIMILARITY_REVIEW_THRESHOLD
+          || (match.compositionScore ?? 0) >= PANEL_COMPOSITION_REVIEW_THRESHOLD
+          || (match.nameScore ?? 0) >= PANEL_SIMILARITY_REVIEW_THRESHOLD
+          || (match.codeScore ?? 0) >= PANEL_SIMILARITY_REVIEW_THRESHOLD
       )
     ).toBe(true);
-    expect(result.similarMatches).toHaveLength(0);
   });
 });

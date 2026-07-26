@@ -2316,8 +2316,8 @@ class _SelectedPanelTestRow extends StatelessWidget {
 
 /// Searchable multi-select member-test picker for the panel wizard tests step.
 ///
-/// Uses a fixed-height [ListView.builder] so large catalogs stay responsive
-/// (unlike a shrink-wrapped data table that builds every row up front).
+/// Uses [AppListTable] with shrink-wrap + non-scrolling physics so the parent
+/// dialog owns the only scroll region (no nested scroll).
 class LabPanelTestSelectionTable extends StatefulWidget {
   const LabPanelTestSelectionTable({
     required this.tests,
@@ -2341,30 +2341,12 @@ class LabPanelTestSelectionTable extends StatefulWidget {
 
 class _LabPanelTestSelectionTableState
     extends State<LabPanelTestSelectionTable> {
-  static const double _listHeight = 360;
-
   final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_handleSearchChanged);
-  }
 
   @override
   void dispose() {
-    _searchController.removeListener(_handleSearchChanged);
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _handleSearchChanged() {
-    final String next = _searchController.text;
-    if (next == _query) {
-      return;
-    }
-    setState(() => _query = next);
   }
 
   Set<String> get _selectedIdentityKeys {
@@ -2389,22 +2371,17 @@ class _LabPanelTestSelectionTableState
         (id.isNotEmpty && selectedKeys.contains(id));
   }
 
-  List<LabCatalogItem> _visibleTests(Set<String> selectedKeys) {
-    final String query = _query.trim();
-    bool matches(LabCatalogItem item) =>
-        query.isEmpty || item.matchesSearch(query);
-
-    // Selected first (stable order), then remaining catalog matches in the
-    // already-loaded order — avoid re-sorting thousands of rows on each keystroke.
-    final List<LabCatalogItem> selectedVisible = <LabCatalogItem>[
-      for (final LabCatalogItem test in widget.selectedTests)
-        if (matches(test)) test,
-    ];
-    final List<LabCatalogItem> unselectedVisible = <LabCatalogItem>[
+  /// Selected members first (stable), then remaining catalog tests.
+  List<LabCatalogItem> get _orderedTests {
+    final Set<String> selectedKeys = _selectedIdentityKeys;
+    final List<LabCatalogItem> selected = List<LabCatalogItem>.of(
+      widget.selectedTests,
+    );
+    final List<LabCatalogItem> unselected = <LabCatalogItem>[
       for (final LabCatalogItem test in widget.tests)
-        if (!_isSelected(test, selectedKeys) && matches(test)) test,
+        if (!_isSelected(test, selectedKeys)) test,
     ];
-    return <LabCatalogItem>[...selectedVisible, ...unselectedVisible];
+    return <LabCatalogItem>[...selected, ...unselected];
   }
 
   String _selectedSummary(AppLocalizations l10n) {
@@ -2423,176 +2400,26 @@ class _LabPanelTestSelectionTableState
     return '${titles.take(previewLimit).join(', ')} (+$remaining)';
   }
 
+  LocalKey _itemKey(LabCatalogItem item) {
+    final String apiId = item.apiId.trim();
+    if (apiId.isNotEmpty) {
+      return ValueKey<String>(apiId);
+    }
+    return ValueKey<String>(item.id.trim());
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final Set<String> selectedKeys = _selectedIdentityKeys;
-    final List<LabCatalogItem> visible = _visibleTests(selectedKeys);
-    final bool compact = AppBreakpoints.of(context).isMobile;
+    final List<LabCatalogItem> ordered = _orderedTests;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.labCatalogSearchLabel,
-          hintText: l10n.labCatalogSearchLabel,
-          enabled: widget.enabled,
-          enableDateFilter: false,
-          showAdvancedFilterButton: false,
-        ),
-        SizedBox(height: theme.spacing.sm),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(
-              context.responsiveRadius(theme.radius.md),
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(
-              context.responsiveRadius(theme.radius.md),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                ColoredBox(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.45,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: theme.spacing.md,
-                      vertical: theme.spacing.sm,
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            l10n.labPanelSelectedTestsCountLabel(
-                              widget.selectedTests.length,
-                            ),
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        AppMutedText(
-                          visible.isEmpty
-                              ? l10n.labPanelTestTableEmptyLabel
-                              : '${visible.length}',
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Divider(height: 1, color: theme.colorScheme.outlineVariant),
-                SizedBox(
-                  height: compact ? 280 : _listHeight,
-                  child: visible.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(theme.spacing.md),
-                            child: AppMutedText(
-                              l10n.labPanelTestTableEmptyLabel,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        )
-                      : ListView.separated(
-                          itemCount: visible.length,
-                          separatorBuilder: (_, _) => Divider(
-                            height: 1,
-                            thickness: 0.5,
-                            color: theme.colorScheme.outlineVariant.withValues(
-                              alpha: 0.7,
-                            ),
-                          ),
-                          itemBuilder: (BuildContext context, int index) {
-                            final LabCatalogItem item = visible[index];
-                            final bool selected = _isSelected(
-                              item,
-                              selectedKeys,
-                            );
-                            final String subtitle = <String?>[
-                              item.code,
-                              item.category,
-                            ].whereType<String>().where((String value) {
-                              return value.trim().isNotEmpty;
-                            }).join(' · ');
-
-                            return Material(
-                              color: selected
-                                  ? theme.colorScheme.primaryContainer
-                                        .withValues(alpha: 0.35)
-                                  : theme.colorScheme.surface,
-                              child: InkWell(
-                                onTap: widget.enabled
-                                    ? () => widget.onToggle(item)
-                                    : null,
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: theme.spacing.sm,
-                                    vertical: theme.spacing.xs,
-                                  ),
-                                  child: Row(
-                                    children: <Widget>[
-                                      Checkbox(
-                                        value: selected,
-                                        onChanged: widget.enabled
-                                            ? (_) => widget.onToggle(item)
-                                            : null,
-                                      ),
-                                      SizedBox(width: theme.spacing.xs),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: <Widget>[
-                                            Text(
-                                              item.name ?? item.displayTitle,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: theme
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                            if (subtitle.isNotEmpty)
-                                              Text(
-                                                subtitle,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: theme
-                                                    .textTheme
-                                                    .bodySmall
-                                                    ?.copyWith(
-                                                      color: theme
-                                                          .colorScheme
-                                                          .onSurfaceVariant,
-                                                    ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(height: theme.spacing.sm),
         Text(
-          l10n.labPanelSelectedTestsTitle,
+          l10n.labPanelSelectedTestsCountLabel(widget.selectedTests.length),
           style: theme.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -2609,6 +2436,101 @@ class _LabPanelTestSelectionTableState
             ),
           ),
         ],
+        SizedBox(height: theme.spacing.sm),
+        AppListTable<LabCatalogItem>(
+          items: ordered,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          tableHorizontalMargin: 0,
+          maxVisibleItems: _maxVisibleLabCatalogDialogItems,
+          itemKeyBuilder: _itemKey,
+          onRowSelected: widget.enabled ? widget.onToggle : null,
+          search: AppListTableSearch<LabCatalogItem>(
+            controller: _searchController,
+            semanticLabel: l10n.labCatalogSearchLabel,
+            hintText: l10n.labCatalogSearchLabel,
+            enableDateFilter: false,
+            showAdvancedFilterButton: false,
+            matcher: (LabCatalogItem item, String query) =>
+                item.matchesSearch(query),
+          ),
+          emptyBuilder: (_) => Padding(
+            padding: EdgeInsets.symmetric(vertical: theme.spacing.md),
+            child: AppMutedText(
+              l10n.labPanelTestTableEmptyLabel,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          rowColorBuilder: (BuildContext context, LabCatalogItem item) {
+            if (!_isSelected(item, selectedKeys)) {
+              return null;
+            }
+            return Theme.of(context).colorScheme.primaryContainer.withValues(
+              alpha: 0.35,
+            );
+          },
+          columns: <AppListTableColumn<LabCatalogItem>>[
+            AppListTableColumn<LabCatalogItem>(
+              id: 'select',
+              label: l10n.labPanelTestSelectColumnLabel,
+              alwaysVisible: true,
+              cellBuilder: (_, LabCatalogItem item) {
+                final bool selected = _isSelected(item, selectedKeys);
+                return Checkbox(
+                  value: selected,
+                  onChanged: widget.enabled
+                      ? (_) => widget.onToggle(item)
+                      : null,
+                  visualDensity: VisualDensity.compact,
+                );
+              },
+            ),
+            AppListTableColumn<LabCatalogItem>(
+              id: 'name',
+              label: l10n.labTestNameLabel,
+              cellBuilder: (_, LabCatalogItem item) => Text(
+                item.name ?? item.displayTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            AppListTableColumn<LabCatalogItem>(
+              id: 'code',
+              label: l10n.labTestCodeLabel,
+              cellBuilder: (_, LabCatalogItem item) => Text(
+                (item.code ?? '').trim().isEmpty ? '—' : item.code!.trim(),
+              ),
+            ),
+            AppListTableColumn<LabCatalogItem>(
+              id: 'category',
+              label: l10n.labCategoryLabel,
+              cellBuilder: (_, LabCatalogItem item) => Text(
+                (item.category ?? '').trim().isEmpty
+                    ? '—'
+                    : item.category!.trim(),
+              ),
+            ),
+          ],
+          mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
+            final bool selected = _isSelected(item, selectedKeys);
+            return AppListTableMobileItem(
+              leading: Checkbox(
+                value: selected,
+                onChanged: widget.enabled
+                    ? (_) => widget.onToggle(item)
+                    : null,
+                visualDensity: VisualDensity.compact,
+              ),
+              showAvatar: false,
+              title: item.name ?? item.displayTitle,
+              caption: item.code,
+              meta: <AppListTableMobileMeta>[
+                if ((item.category ?? '').trim().isNotEmpty)
+                  AppListTableMobileMeta(label: item.category!.trim()),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

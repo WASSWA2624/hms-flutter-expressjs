@@ -1,6 +1,10 @@
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 
 const int labCatalogSimilarityThreshold = 80;
+/// Lower bar for surfacing near-duplicate panels in review (slight overlaps).
+const int labPanelSimilarityReviewThreshold = 50;
+/// Composition overlap that still warrants a review signal (shared members).
+const int labPanelCompositionReviewThreshold = 20;
 const int labCatalogTokenMatchThreshold = 85;
 const int labCatalogNameWeight = 50;
 const int labCatalogCodeWeight = 30;
@@ -691,7 +695,7 @@ LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
               panelName,
               includeTokenSimilarity: includeTokenSimilarity,
             );
-      if (nameExact || nameScore >= labCatalogSimilarityThreshold) {
+      if (nameExact || nameScore >= labPanelSimilarityReviewThreshold) {
         reasons.add('name');
       }
     }
@@ -704,7 +708,7 @@ LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
               panelSimilarityCode,
               includeTokenSimilarity: false,
             );
-      if (codeExact || codeScore >= labCatalogSimilarityThreshold) {
+      if (codeExact || codeScore >= labPanelSimilarityReviewThreshold) {
         reasons.add('code');
       }
     }
@@ -717,7 +721,8 @@ LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
               panelCategory,
               includeTokenSimilarity: includeTokenSimilarity,
             );
-      if (categoryExact || categoryScore >= labCatalogSimilarityThreshold) {
+      if (categoryExact ||
+          categoryScore >= labPanelSimilarityReviewThreshold) {
         reasons.add('category');
       }
     }
@@ -727,7 +732,7 @@ LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
         proposedUnits,
         existingUnits,
       );
-      if (compositionScore >= labCatalogSimilarityThreshold) {
+      if (compositionScore >= labPanelCompositionReviewThreshold) {
         reasons.add('composition');
       }
     }
@@ -775,10 +780,19 @@ LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
             codeScore >= labCatalogSimilarityThreshold) ||
         (compositionScore != null &&
             compositionScore >= labCatalogSimilarityThreshold);
+    final bool reviewFieldSignal =
+        (nameScore != null &&
+            nameScore >= labPanelSimilarityReviewThreshold) ||
+        (codeScore != null &&
+            codeScore >= labPanelSimilarityReviewThreshold) ||
+        (categoryScore != null &&
+            categoryScore >= labPanelSimilarityReviewThreshold) ||
+        (compositionScore != null &&
+            compositionScore >= labPanelCompositionReviewThreshold);
     final bool compositeSignal =
-        compositeScore >= labCatalogSimilarityThreshold;
+        compositeScore >= labPanelSimilarityReviewThreshold;
 
-    if (!strongFieldSignal && !compositeSignal) {
+    if (!strongFieldSignal && !reviewFieldSignal && !compositeSignal) {
       continue;
     }
 

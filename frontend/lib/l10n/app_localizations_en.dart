@@ -19216,6 +19216,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search and select the lab tests that belong in this panel.';
 
   @override
+  String get labPanelSimilarityStepLabel => 'Similarity';
+
+  @override
+  String get labPanelSimilaritySectionBody =>
+      'Review similar panels before creating. Per-parameter scores and overall similarity appear in the review.';
+
+  @override
+  String get labPanelSimilarityReadyTitle => 'Similarity review complete';
+
+  @override
+  String get labPanelSimilarityReadyBody =>
+      'Save to create this panel, or go back to change details or member tests.';
+
+  @override
+  String get labPanelSimilarityReviewAction => 'Review similarity';
+
+  @override
   String get labPanelSelectAtLeastOneTestMessage =>
       'Select at least one lab test for this panel.';
 
