@@ -1367,6 +1367,7 @@ class _LabEnableFacilityOfferingDialogState
   static const String _sourceFilterKey = 'source';
 
   late final TextEditingController _searchController;
+  late final ValueNotifier<Set<String>> _selectedIds;
   final GlobalKey<FormState> _priceFormKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _priceControllers =
       <String, TextEditingController>{};
@@ -1377,7 +1378,6 @@ class _LabEnableFacilityOfferingDialogState
   bool _isSearching = true;
   int _searchRequest = 0;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
-  final Set<String> _selectedIds = <String>{};
   bool _enabledAny = false;
   _LabEnableWizardStep _step = _LabEnableWizardStep.catalog;
   bool _isSaving = false;
@@ -1455,8 +1455,15 @@ class _LabEnableFacilityOfferingDialogState
   }
 
   List<LabCatalogItem> get _selectedAvailableItems {
+    return _selectedAvailableItemsFor(_selectedIds.value);
+  }
+
+  List<LabCatalogItem> _selectedAvailableItemsFor(Set<String> selectedIds) {
     return _availableCatalogItems
-        .where((LabCatalogItem item) => _selectedIds.contains(item.apiId))
+        .where(
+          (LabCatalogItem item) =>
+              selectedIds.contains(_labEnableCatalogItemKey(item)),
+        )
         .toList(growable: false)
       ..sort(
         (LabCatalogItem left, LabCatalogItem right) =>
@@ -1468,13 +1475,15 @@ class _LabEnableFacilityOfferingDialogState
     if (items.isEmpty) {
       return;
     }
-    final Map<String, LabCatalogItem> byId = <String, LabCatalogItem>{
-      for (final LabCatalogItem item in items) item.apiId: item,
+    final Map<String, LabCatalogItem> byKey = <String, LabCatalogItem>{
+      for (final LabCatalogItem item in items)
+        _labEnableCatalogItemKey(item): item,
     };
     setState(() {
       _catalogItems = _catalogItems
           .map((LabCatalogItem catalogItem) {
-            final LabCatalogItem? updated = byId[catalogItem.apiId];
+            final LabCatalogItem? updated =
+                byKey[_labEnableCatalogItemKey(catalogItem)];
             if (updated == null) {
               return catalogItem;
             }
@@ -1487,51 +1496,86 @@ class _LabEnableFacilityOfferingDialogState
             );
           })
           .toList(growable: false);
-      _selectedIds.removeAll(byId.keys);
+      _selectedIds.value = Set<String>.of(_selectedIds.value)
+        ..removeAll(byKey.keys);
       _enabledAny = true;
     });
   }
 
   void _pruneSelection() {
     final Set<String> valid = _availableCatalogItems
-        .map((LabCatalogItem item) => item.apiId)
+        .map(_labEnableCatalogItemKey)
         .toSet();
-    _selectedIds.removeWhere((String id) => !valid.contains(id));
+    final Set<String> next = _selectedIds.value
+        .where(valid.contains)
+        .toSet();
+    if (next.length != _selectedIds.value.length ||
+        !next.containsAll(_selectedIds.value)) {
+      _selectedIds.value = next;
+    }
   }
 
   void _toggleSelection(LabCatalogItem item, {required bool selected}) {
     if (item.isOfferedAtFacility) {
       return;
     }
-    setState(() {
-      if (selected) {
-        _selectedIds.add(item.apiId);
-      } else {
-        _selectedIds.remove(item.apiId);
-      }
-    });
+    final String key = _labEnableCatalogItemKey(item);
+    final Set<String> next = Set<String>.of(_selectedIds.value);
+    if (selected) {
+      next.add(key);
+    } else {
+      next.remove(key);
+    }
+    _selectedIds.value = next;
+    // Catalog checkboxes listen via ValueListenableBuilder; rebuild only when
+    // selection drives price/preview content.
+    if (_step != _LabEnableWizardStep.catalog) {
+      setState(() {});
+    }
+  }
+
+  void _selectAllListed() {
+    final Set<String> listed = _sortedFilteredCatalogItems
+        .map(_labEnableCatalogItemKey)
+        .toSet();
+    if (listed.isEmpty) {
+      return;
+    }
+    _selectedIds.value = Set<String>.of(_selectedIds.value)..addAll(listed);
+  }
+
+  void _deselectAllListed() {
+    final Set<String> listed = _sortedFilteredCatalogItems
+        .map(_labEnableCatalogItemKey)
+        .toSet();
+    if (listed.isEmpty || _selectedIds.value.isEmpty) {
+      return;
+    }
+    _selectedIds.value = Set<String>.of(_selectedIds.value)..removeAll(listed);
   }
 
   void _ensurePriceFields(List<LabCatalogItem> items) {
     for (final LabCatalogItem item in items) {
+      final String key = _labEnableCatalogItemKey(item);
       _priceControllers.putIfAbsent(
-        item.apiId,
+        key,
         () => TextEditingController(text: item.unitPrice?.toString() ?? ''),
       );
       _currencies.putIfAbsent(
-        item.apiId,
+        key,
         () => item.currency ?? widget.defaultCurrency,
       );
     }
   }
 
   String _priceDisplay(LabCatalogItem item) {
-    final TextEditingController? controller = _priceControllers[item.apiId];
+    final String key = _labEnableCatalogItemKey(item);
+    final TextEditingController? controller = _priceControllers[key];
     final String amount = controller?.text.trim().isNotEmpty == true
         ? controller!.text.trim()
         : (item.unitPrice?.toString() ?? '');
     final String currency =
-        _currencies[item.apiId] ?? item.currency ?? widget.defaultCurrency;
+        _currencies[key] ?? item.currency ?? widget.defaultCurrency;
     if (amount.isEmpty) {
       return currency;
     }
@@ -1540,7 +1584,8 @@ class _LabEnableFacilityOfferingDialogState
 
   bool _selectionHasValidPrices(List<LabCatalogItem> items) {
     for (final LabCatalogItem item in items) {
-      final String raw = _priceControllers[item.apiId]?.text ?? '';
+      final String raw =
+          _priceControllers[_labEnableCatalogItemKey(item)]?.text ?? '';
       final String normalized = normalizeCurrencyAmount(raw);
       final num? parsed = num.tryParse(normalized);
       if (parsed == null || parsed <= 0) {
@@ -1612,6 +1657,7 @@ class _LabEnableFacilityOfferingDialogState
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _selectedIds = ValueNotifier<Set<String>>(<String>{});
     _searchRequest += 1;
     unawaited(_loadCatalog(query: null, requestId: _searchRequest));
   }
@@ -1620,6 +1666,7 @@ class _LabEnableFacilityOfferingDialogState
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.dispose();
+    _selectedIds.dispose();
     for (final TextEditingController controller in _priceControllers.values) {
       controller.dispose();
     }
@@ -1646,7 +1693,7 @@ class _LabEnableFacilityOfferingDialogState
     result.when(
       success: (List<LabCatalogItem> items) {
         setState(() {
-          _catalogItems = items;
+          _catalogItems = _dedupeLabCatalogItems(items);
           _isSearching = false;
           _pruneSelection();
         });
@@ -1656,7 +1703,7 @@ class _LabEnableFacilityOfferingDialogState
           _catalogItems = const <LabCatalogItem>[];
           _isSearching = false;
           _failure = value;
-          _selectedIds.clear();
+          _selectedIds.value = <String>{};
         });
       },
     );
@@ -1685,11 +1732,12 @@ class _LabEnableFacilityOfferingDialogState
     });
     final List<LabCatalogItem> enabled = <LabCatalogItem>[];
     for (final LabCatalogItem item in selected) {
+      final String key = _labEnableCatalogItemKey(item);
       final String currency =
-          _currencies[item.apiId] ?? item.currency ?? widget.defaultCurrency;
+          _currencies[key] ?? item.currency ?? widget.defaultCurrency;
       final num unitPrice =
           num.tryParse(
-            normalizeCurrencyAmount(_priceControllers[item.apiId]?.text ?? ''),
+            normalizeCurrencyAmount(_priceControllers[key]?.text ?? ''),
           ) ??
           0;
       final AppFailure? failure = await widget.onEnable(item, <String, Object?>{
@@ -1764,11 +1812,6 @@ class _LabEnableFacilityOfferingDialogState
 
   List<Widget> _buildActions(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final int selectedCount = _selectedAvailableItems.length;
-    final bool catalogCanNext = selectedCount > 0;
-    final bool previewCanEnable =
-        selectedCount > 0 &&
-        _selectionHasValidPrices(_selectedAvailableItems);
 
     return <Widget>[
       AppButton.tertiary(
@@ -1777,37 +1820,60 @@ class _LabEnableFacilityOfferingDialogState
         onPressed: _backPressed,
       ),
       if (_step == _LabEnableWizardStep.catalog)
-        AppButton.primary(
-          label: l10n.commonNextActionLabel,
-          leadingIcon: Icons.arrow_forward_outlined,
-          enabled: catalogCanNext,
-          tooltip: catalogCanNext
-              ? l10n.commonNextActionLabel
-              : l10n.labSelectAtLeastOneItemMessage,
-          onPressed: catalogCanNext ? _goToPriceStep : null,
+        ValueListenableBuilder<Set<String>>(
+          valueListenable: _selectedIds,
+          builder: (BuildContext context, Set<String> selectedIds, _) {
+            final bool catalogCanNext =
+                _selectedAvailableItemsFor(selectedIds).isNotEmpty;
+            return AppButton.primary(
+              label: l10n.commonNextActionLabel,
+              leadingIcon: Icons.arrow_forward_outlined,
+              enabled: catalogCanNext,
+              tooltip: catalogCanNext
+                  ? l10n.commonNextActionLabel
+                  : l10n.labSelectAtLeastOneItemMessage,
+              onPressed: catalogCanNext ? _goToPriceStep : null,
+            );
+          },
         ),
       if (_step == _LabEnableWizardStep.price)
-        AppButton.primary(
-          label: l10n.commonNextActionLabel,
-          leadingIcon: Icons.arrow_forward_outlined,
-          enabled: selectedCount > 0,
-          tooltip: selectedCount > 0
-              ? l10n.commonNextActionLabel
-              : l10n.labSelectAtLeastOneItemMessage,
-          onPressed: selectedCount > 0 ? _goToPreview : null,
+        ValueListenableBuilder<Set<String>>(
+          valueListenable: _selectedIds,
+          builder: (BuildContext context, Set<String> selectedIds, _) {
+            final int selectedCount =
+                _selectedAvailableItemsFor(selectedIds).length;
+            return AppButton.primary(
+              label: l10n.commonNextActionLabel,
+              leadingIcon: Icons.arrow_forward_outlined,
+              enabled: selectedCount > 0,
+              tooltip: selectedCount > 0
+                  ? l10n.commonNextActionLabel
+                  : l10n.labSelectAtLeastOneItemMessage,
+              onPressed: selectedCount > 0 ? _goToPreview : null,
+            );
+          },
         ),
       if (_step == _LabEnableWizardStep.preview)
-        AppButton.primary(
-          label: l10n.labEnableSelectedItemsAction,
-          leadingIcon: Icons.check_circle_outline,
-          isLoading: _isSaving,
-          enabled: previewCanEnable && !_isSaving,
-          tooltip: previewCanEnable
-              ? l10n.labEnableSelectedItemsAction
-              : l10n.labSelectAtLeastOneItemMessage,
-          onPressed: previewCanEnable && !_isSaving
-              ? () => unawaited(_submitAllSelected())
-              : null,
+        ValueListenableBuilder<Set<String>>(
+          valueListenable: _selectedIds,
+          builder: (BuildContext context, Set<String> selectedIds, _) {
+            final List<LabCatalogItem> selected =
+                _selectedAvailableItemsFor(selectedIds);
+            final bool previewCanEnable =
+                selected.isNotEmpty && _selectionHasValidPrices(selected);
+            return AppButton.primary(
+              label: l10n.labEnableSelectedItemsAction,
+              leadingIcon: Icons.check_circle_outline,
+              isLoading: _isSaving,
+              enabled: previewCanEnable && !_isSaving,
+              tooltip: previewCanEnable
+                  ? l10n.labEnableSelectedItemsAction
+                  : l10n.labSelectAtLeastOneItemMessage,
+              onPressed: previewCanEnable && !_isSaving
+                  ? () => unawaited(_submitAllSelected())
+                  : null,
+            );
+          },
         ),
       AppButton.tertiary(
         label: l10n.commonCloseActionLabel,
@@ -1823,7 +1889,6 @@ class _LabEnableFacilityOfferingDialogState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final List<LabCatalogItem> items = _sortedFilteredCatalogItems;
-    final int selectedCount = _selectedAvailableItems.length;
     final bool hasSearchOrFilter =
         _searchController.text.trim().isNotEmpty || _filterValue.isActive;
     final bool catalogEmpty = !_isSearching && _availableCatalogItems.isEmpty;
@@ -1859,10 +1924,13 @@ class _LabEnableFacilityOfferingDialogState
           physics: const NeverScrollableScrollPhysics(),
           tableHorizontalMargin: 0,
           isLoading: _isSearching,
+          itemKeyBuilder: (LabCatalogItem item) =>
+              ValueKey<String>(_labEnableCatalogItemKey(item)),
           onRowSelected: (LabCatalogItem item) {
+            final String key = _labEnableCatalogItemKey(item);
             _toggleSelection(
               item,
-              selected: !_selectedIds.contains(item.apiId),
+              selected: !_selectedIds.value.contains(key),
             );
           },
           search: AppListTableSearch<LabCatalogItem>(
@@ -1959,12 +2027,18 @@ class _LabEnableFacilityOfferingDialogState
               setState(() => _filterValue = value);
             },
             trailingActions: <AppSearchBarAction>[
-              if (selectedCount > 0)
-                AppSearchBarAction(
-                  icon: Icons.arrow_forward_outlined,
-                  label: '${l10n.commonNextActionLabel} ($selectedCount)',
-                  onPressed: _goToPriceStep,
-                ),
+              AppSearchBarAction(
+                icon: Icons.select_all_outlined,
+                label: l10n.labSelectAllTestsAction,
+                enabled: items.isNotEmpty,
+                onPressed: items.isEmpty ? null : _selectAllListed,
+              ),
+              AppSearchBarAction(
+                icon: Icons.deselect_outlined,
+                label: l10n.labClearSelectionAction,
+                enabled: items.isNotEmpty,
+                onPressed: items.isEmpty ? null : _deselectAllListed,
+              ),
             ],
           ),
           emptyBuilder: (_) => Center(
@@ -1972,12 +2046,18 @@ class _LabEnableFacilityOfferingDialogState
           ),
           columns: _enableOfferingColumns(context),
           mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
+            final String key = _labEnableCatalogItemKey(item);
             return AppListTableMobileItem(
-              leading: Checkbox(
-                value: _selectedIds.contains(item.apiId),
-                onChanged: (bool? value) =>
-                    _toggleSelection(item, selected: value ?? false),
-                visualDensity: VisualDensity.compact,
+              leading: ValueListenableBuilder<Set<String>>(
+                valueListenable: _selectedIds,
+                builder: (BuildContext context, Set<String> selected, _) {
+                  return Checkbox(
+                    value: selected.contains(key),
+                    onChanged: (bool? value) =>
+                        _toggleSelection(item, selected: value ?? false),
+                    visualDensity: VisualDensity.compact,
+                  );
+                },
               ),
               showAvatar: false,
               title: item.name ?? item.displayTitle,
@@ -2034,14 +2114,15 @@ class _LabEnableFacilityOfferingDialogState
             AppMutedText(l10n.labEnableOfferingPreviewEmptyLabel)
           else
             ...selected.map((LabCatalogItem item) {
-              final TextEditingController? controller =
-                  _priceControllers[item.apiId];
+              final String key = _labEnableCatalogItemKey(item);
+              final TextEditingController? controller = _priceControllers[key];
               if (controller == null) {
                 return const SizedBox.shrink();
               }
               final String currency =
-                  _currencies[item.apiId] ?? widget.defaultCurrency;
+                  _currencies[key] ?? widget.defaultCurrency;
               return Padding(
+                key: ValueKey<String>('lab-enable-price-$key'),
                 padding: EdgeInsets.only(bottom: theme.spacing.lg),
                 child: AppFormSection(
                   children: <Widget>[
@@ -2053,6 +2134,7 @@ class _LabEnableFacilityOfferingDialogState
                     ),
                     AppMutedText(_joinEnableOfferingSubtitle(l10n, item)),
                     AppCurrencyAmountField(
+                      key: ValueKey<String>('lab-enable-amount-$key'),
                       amountController: controller,
                       currency: currency,
                       amountLabelText: l10n.clinicalRequestUnitPriceLabel,
@@ -2062,8 +2144,7 @@ class _LabEnableFacilityOfferingDialogState
                       allowZero: false,
                       onCurrencyChanged: (String? value) {
                         setState(() {
-                          _currencies[item.apiId] =
-                              value ?? appDefaultCurrencyCode;
+                          _currencies[key] = value ?? appDefaultCurrencyCode;
                         });
                       },
                       validator: (String? value) =>
@@ -2109,14 +2190,17 @@ class _LabEnableFacilityOfferingDialogState
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             tableHorizontalMargin: 0,
+            itemKeyBuilder: (LabCatalogItem item) =>
+                ValueKey<String>(_labEnableCatalogItemKey(item)),
             columns: <AppListTableColumn<LabCatalogItem>>[
               AppListTableColumn<LabCatalogItem>(
                 id: 'select',
                 label: l10n.commonSelectActionLabel,
                 alwaysVisible: true,
                 cellBuilder: (_, LabCatalogItem item) {
+                  final String key = _labEnableCatalogItemKey(item);
                   return Checkbox(
-                    value: _selectedIds.contains(item.apiId),
+                    value: _selectedIds.value.contains(key),
                     onChanged: _isSaving
                         ? null
                         : (bool? value) =>
@@ -2128,6 +2212,7 @@ class _LabEnableFacilityOfferingDialogState
               AppListTableColumn<LabCatalogItem>(
                 id: 'name',
                 label: l10n.accessAdminColumnName,
+                alwaysVisible: true,
                 cellBuilder: (_, LabCatalogItem item) =>
                     Text(item.name ?? item.displayTitle),
               ),
@@ -2156,14 +2241,16 @@ class _LabEnableFacilityOfferingDialogState
               AppListTableColumn<LabCatalogItem>(
                 id: 'price',
                 label: l10n.clinicalRequestUnitPriceLabel,
+                alwaysVisible: true,
                 cellBuilder: (_, LabCatalogItem item) =>
                     Text(_priceDisplay(item)),
               ),
             ],
             mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
+              final String key = _labEnableCatalogItemKey(item);
               return AppListTableMobileItem(
                 leading: Checkbox(
-                  value: _selectedIds.contains(item.apiId),
+                  value: _selectedIds.value.contains(key),
                   onChanged: _isSaving
                       ? null
                       : (bool? value) =>
@@ -2205,11 +2292,17 @@ class _LabEnableFacilityOfferingDialogState
         label: l10n.commonSelectActionLabel,
         alwaysVisible: true,
         cellBuilder: (_, LabCatalogItem item) {
-          return Checkbox(
-            value: _selectedIds.contains(item.apiId),
-            onChanged: (bool? value) =>
-                _toggleSelection(item, selected: value ?? false),
-            visualDensity: VisualDensity.compact,
+          final String key = _labEnableCatalogItemKey(item);
+          return ValueListenableBuilder<Set<String>>(
+            valueListenable: _selectedIds,
+            builder: (BuildContext context, Set<String> selected, _) {
+              return Checkbox(
+                value: selected.contains(key),
+                onChanged: (bool? value) =>
+                    _toggleSelection(item, selected: value ?? false),
+                visualDensity: VisualDensity.compact,
+              );
+            },
           );
         },
       ),
@@ -2283,6 +2376,29 @@ String _joinEnableOfferingSubtitle(AppLocalizations l10n, LabCatalogItem item) {
       .whereType<String>()
       .where((String value) => value.isNotEmpty)
       .join(' · ');
+}
+
+String _labEnableCatalogItemKey(LabCatalogItem item) {
+  final String apiId = item.apiId.trim();
+  if (apiId.isNotEmpty) {
+    return '${item.type.name}:$apiId';
+  }
+  final String code = (item.code ?? '').trim();
+  if (code.isNotEmpty) {
+    return '${item.type.name}:code:${code.toUpperCase()}';
+  }
+  return '${item.type.name}:id:${item.id.trim()}';
+}
+
+List<LabCatalogItem> _dedupeLabCatalogItems(List<LabCatalogItem> items) {
+  if (items.length < 2) {
+    return List<LabCatalogItem>.of(items, growable: false);
+  }
+  final Map<String, LabCatalogItem> byKey = <String, LabCatalogItem>{};
+  for (final LabCatalogItem item in items) {
+    byKey.putIfAbsent(_labEnableCatalogItemKey(item), () => item);
+  }
+  return byKey.values.toList(growable: false);
 }
 
 List<AppSearchBarFilterChoice> _enableOfferingFilterChoices(

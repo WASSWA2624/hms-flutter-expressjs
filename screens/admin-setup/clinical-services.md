@@ -86,8 +86,10 @@ Opened after Configure → Next when the Lab nested tab is active. Wizard: **cat
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
 | Laboratory filters / Filter | Catalog search (`labFiltersLabel`) | Type (when all), category, result-kind, specimen type, and source filter groups; **Apply filters** / **Clear filters**. |
+| Select all | Catalog search trailing (`labSelectAllTestsAction`) | Selects all currently listed available rows (respects search/filters). |
+| Clear selection | Catalog search trailing (`labClearSelectionAction`) | Deselects currently listed available rows only. |
 | Settings | Column visibility (when >1 columns) | Column-settings dialog. |
-| Row select / checkbox | Catalog row (available only) | Toggles multi-select for batch enable. |
+| Row select / checkbox | Catalog row (available only) | Toggles multi-select for batch enable (selection updates without rebuilding the full table). |
 | Back | Footer leftmost | Catalog: returns to scope picker when `showBackAction` (pops `backResult`); otherwise dismisses. Price → catalog; Preview → price. |
 | Next | Footer middle (`commonNextActionLabel`) | Always visible on catalog/price. Catalog: disabled with `labSelectAtLeastOneItemMessage` until ≥1 selected; then opens batch price. Price: validates required unit prices, then opens preview. |
 | Close | Footer rightmost | Aborts without enable (pops whether any were already enabled this session). |
@@ -95,11 +97,11 @@ Opened after Configure → Next when the Lab nested tab is active. Wizard: **cat
 
 ### Batch price step
 
-Stacked fields for each selected test/panel: name/subtitle plus required `AppCurrencyAmountField` (no per-item nested price dialogs).
+Stacked fields for each selected test/panel: name/subtitle plus required `AppCurrencyAmountField` keyed per catalog identity (no shared controllers across items; no per-item nested price dialogs). Catalog rows are deduped by type + `apiId` (else code/id) before selection and pricing.
 
 ### Preview step
 
-Table of name / type (when all) / code / category / price; checkboxes remove items from the batch before submit.
+Table of name / type (when all) / code / category / **Unit price** (`alwaysVisible`); checkboxes remove items from the batch before submit.
 
 ### Standalone `LabEnableOfferingPriceDialog`
 

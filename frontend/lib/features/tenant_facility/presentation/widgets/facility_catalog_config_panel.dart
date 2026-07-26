@@ -2732,7 +2732,17 @@ class _FacilityCatalogConfigPanelState
       if (items.isEmpty && failure != null) {
         return Result<List<LabCatalogItem>>.failure(failure!);
       }
-      return Result<List<LabCatalogItem>>.success(items);
+      final Map<String, LabCatalogItem> byKey = <String, LabCatalogItem>{};
+      for (final LabCatalogItem item in items) {
+        final String apiId = item.apiId.trim();
+        final String key = apiId.isNotEmpty
+            ? '${item.type.name}:$apiId'
+            : '${item.type.name}:id:${item.id.trim()}';
+        byKey.putIfAbsent(key, () => item);
+      }
+      return Result<List<LabCatalogItem>>.success(
+        byKey.values.toList(growable: false),
+      );
     }
     final Future<Result<List<LabCatalogItem>>> platformFuture =
         kind == LabEnableOfferingKind.test
