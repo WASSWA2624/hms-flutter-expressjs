@@ -1,1 +1,39 @@
-Right still on the admin setup page under the facilities, the facility tab They are For, there are other, there are other things like When you click on the facility list, on the list of facilities, in the table, you can see the facility details. So that facility details should have that facility details dialog should have an edit button, which actually, as usual, should open the edit facility dialog. it should have an editability button, which actually also implements the soft editability flow. Yeah, the soft delete dialog and so on and so forth. Then also the restore button for deleted, for those that are, those facilities that are soft deleted, and then the delete permanent if you want to delete and The facility permanently from the database, then things like previous page, those, all those actions next page for, for the flow that is being done. So what I want is that let's, there's also actually an edit button. So what I want is that the edit button should also Perform similarity check for that facility, but the check should only be done within the scope of that tenant to which the facility belongs. And then, we don't need the retry button anywhere within the facility tab and everything within it. So we don't need the, the retry. what we also have to do is that we should make sure that the settings button the settings, the, the settings dialog is contains all the possible all the possible columns. then the filter should also be comprehensive enough so that you can filter by any possible facility parameter. You could, you could do that, you could filter by tenant, you could filter by any other information that you need to to use. But let's make sure that everything is, is is done back in and front end, and the necessary the necessary permissions are also respected.
+# Facilities Tab — Edit Similarity, Details Lifecycle, Filters, Retry Removal
+
+Align facility edit, details lifecycle, filters, and failure states on `/admin/setup?section=facility`.
+
+## Context
+
+- Inventoried in `screens/admin-setup/facility.md`.
+- `updateFacility` skips create similarity; `checkFacilityDuplicates` accepts `excludeFacilityId` and is tenant-scoped.
+- Details lacks Restore/Permanent delete; filters/columns omit fields.
+
+## Requirements
+
+1. Keep Edit opening `_SetupProfileDialog` in edit mode when `canManageFacility()`.
+2. Enforce create-facility similarity on updates within that facility tenant, excluding via `excludeFacilityId`, reusing 409 `similar_exists`, `confirm_similar`, and create-flow similarity UI (validation, loading, error, success).
+3. Keep Delete soft-deleting; expose Edit/Delete for active and Restore/Permanent delete for soft-deleted from list and details, each confirmed then refreshed.
+4. Expand columns to all `FacilityProfile` fields and filters to tenant, type, active/deleted, and contact/location params.
+5. Remove Retry from facility-tab and details failure states; still render errors.
+
+## Constraints
+
+- Reuse existing dialogs, endpoints, permissions, and similarity logic; extend list filters only if needed.
+- Keep similarity tenant-scoped; do not change create-facility behavior.
+- No unrelated refactoring.
+
+## Acceptance Criteria
+
+- Editing into conflict triggers similarity review; confirming saves (Req 2).
+- Re-saving unchanged shows no similarity prompt (Req 2).
+- Edit/Delete for active and Restore/Permanent delete only after soft delete (Req 3).
+- Settings list every facility column; each supported filter narrows results (Req 4).
+- No Retry in facility-tab or details failure states (Req 5).
+- Tests cover update similarity, exclusion, filters, Retry absence, and columns; `flutter analyze` passes (Req 1-5).
+
+## Relevant Files
+
+- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
+- `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart`
+- `backend/src/modules/facility/services/facility.service.js`
+- `backend/src/lib/facility/facility-similarity.js`
