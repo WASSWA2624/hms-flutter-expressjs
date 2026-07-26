@@ -1183,7 +1183,7 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
               enabled: !_isSaving,
               maxLines: 3,
             ),
-            _PanelTestPicker(
+            LabPanelTestPicker(
               tests: widget.catalogTests,
               selectedTests: _selectedTests,
               pendingTestId: _pendingTestId,
@@ -2103,8 +2103,8 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
   }
 }
 
-class _PanelTestPicker extends StatelessWidget {
-  const _PanelTestPicker({
+class LabPanelTestPicker extends StatelessWidget {
+  const LabPanelTestPicker({
     required this.tests,
     required this.selectedTests,
     required this.pendingTestId,
@@ -2112,6 +2112,8 @@ class _PanelTestPicker extends StatelessWidget {
     required this.onPendingChanged,
     required this.onAdd,
     required this.onRemove,
+    this.errorText,
+    super.key,
   });
 
   final List<LabCatalogItem> tests;
@@ -2121,6 +2123,7 @@ class _PanelTestPicker extends StatelessWidget {
   final ValueChanged<String?> onPendingChanged;
   final VoidCallback onAdd;
   final ValueChanged<LabCatalogItem> onRemove;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -2200,6 +2203,15 @@ class _PanelTestPicker extends StatelessWidget {
               ],
             ),
           ),
+        if (errorText != null && errorText!.trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            errorText!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ],
       ],
     );
   }

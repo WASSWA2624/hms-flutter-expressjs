@@ -1740,41 +1740,51 @@ class _FacilityCatalogConfigPanelState
 
   Future<List<LabCatalogItem>> _loadLabSimilarityCandidates({
     String? tenantId,
+    LabCatalogItemType kind = LabCatalogItemType.test,
   }) async {
     final LabRepository repository = ref.read(labRepositoryProvider);
-    final Result<List<LabCatalogItem>> candidatesResult = await repository
-        .listTests(
-          tenantId: tenantId,
-          // Match backend lab catalog max page limit + uniqueness scan size.
-          limit: 7500,
-          includeStandardCatalog: true,
-          // Uniqueness includes pending-review rows; similarity must too.
-          includePendingReview: true,
-        );
+    final Result<List<LabCatalogItem>> candidatesResult =
+        kind == LabCatalogItemType.panel
+        ? await repository.listPanels(
+            tenantId: tenantId,
+            limit: 7500,
+            includeStandardCatalog: true,
+          )
+        : await repository.listTests(
+            tenantId: tenantId,
+            // Match backend lab catalog max page limit + uniqueness scan size.
+            limit: 7500,
+            includeStandardCatalog: true,
+            // Uniqueness includes pending-review rows; similarity must too.
+            includePendingReview: true,
+          );
     return candidatesResult.when(
       success: (List<LabCatalogItem> items) {
-        final List<LabCatalogItem> tests = items
-            .where(
-              (LabCatalogItem item) => item.type == LabCatalogItemType.test,
-            )
+        final List<LabCatalogItem> filtered = items
+            .where((LabCatalogItem item) => item.type == kind)
             .toList(growable: false);
         // Merge desk rows so a just-saved local upsert is never dropped if the
         // list response is momentarily stale.
-        return _mergeLabSimilarityCandidates(tests, _labItems);
+        return _mergeLabSimilarityCandidates(
+          filtered,
+          _labItems,
+          kind: kind,
+        );
       },
       failure: (_) => _labItems
-          .where((LabCatalogItem item) => item.type == LabCatalogItemType.test)
+          .where((LabCatalogItem item) => item.type == kind)
           .toList(growable: false),
     );
   }
 
   List<LabCatalogItem> _mergeLabSimilarityCandidates(
     List<LabCatalogItem> primary,
-    List<LabCatalogItem> fallback,
-  ) {
+    List<LabCatalogItem> fallback, {
+    LabCatalogItemType kind = LabCatalogItemType.test,
+  }) {
     final Map<String, LabCatalogItem> byKey = <String, LabCatalogItem>{};
     void put(LabCatalogItem item) {
-      if (item.type != LabCatalogItemType.test) {
+      if (item.type != kind) {
         return;
       }
       final String apiId = item.apiId.trim();
@@ -2378,9 +2388,10 @@ class _FacilityCatalogConfigPanelState
           kind: kind,
           tenantId: tenantId,
           catalogItems: _labItems,
-          loadExistingItems: kind == LabCatalogItemType.test
-              ? () => _loadLabSimilarityCandidates(tenantId: tenantId)
-              : null,
+          loadExistingItems: () => _loadLabSimilarityCandidates(
+            tenantId: tenantId,
+            kind: kind,
+          ),
           onSubmit: (Map<String, Object?> payload) async {
             final Result<LabCatalogItem> createResult =
                 kind == LabCatalogItemType.panel
@@ -2449,9 +2460,10 @@ class _FacilityCatalogConfigPanelState
           kind: item.type,
           item: item,
           catalogItems: _labItems,
-          loadExistingItems: item.type == LabCatalogItemType.test
-              ? () => _loadLabSimilarityCandidates(tenantId: tenantId)
-              : null,
+          loadExistingItems: () => _loadLabSimilarityCandidates(
+            tenantId: tenantId,
+            kind: item.type,
+          ),
           onSubmit: (Map<String, Object?> payload) async {
             final Result<LabCatalogItem> updateResult =
                 item.type == LabCatalogItemType.panel

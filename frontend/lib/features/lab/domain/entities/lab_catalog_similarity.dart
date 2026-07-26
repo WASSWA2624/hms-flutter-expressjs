@@ -5,8 +5,12 @@ const int labCatalogTokenMatchThreshold = 85;
 const int labCatalogNameWeight = 50;
 const int labCatalogCodeWeight = 30;
 const int labCatalogCategoryWeight = 20;
+const int labPanelNameWeight = 40;
+const int labPanelCodeWeight = 25;
+const int labPanelCategoryWeight = 15;
+const int labPanelCompositionWeight = 20;
 
-final class LabCatalogSimilarityMatch {
+  final class LabCatalogSimilarityMatch {
   const LabCatalogSimilarityMatch({
     required this.item,
     required this.score,
@@ -15,17 +19,20 @@ final class LabCatalogSimilarityMatch {
     this.nameScore,
     this.codeScore,
     this.categoryScore,
+    this.compositionScore,
   });
 
   final LabCatalogItem item;
 
-  /// Composite match score across available parameters (name/code/category).
+  /// Composite match score across available parameters
+  /// (name/code/category[/composition for panels]).
   final int score;
   final List<String> reasons;
   final bool isExact;
   final int? nameScore;
   final int? codeScore;
   final int? categoryScore;
+  final int? compositionScore;
 }
 
 final class LabCatalogDuplicateCheckResult {
@@ -445,6 +452,290 @@ LabCatalogDuplicateCheckResult checkLabCatalogDuplicates({
         nameScore: nameScore,
         codeScore: codeScore,
         categoryScore: categoryScore,
+      ),
+    );
+  }
+
+  matches.sort(
+    (LabCatalogSimilarityMatch left, LabCatalogSimilarityMatch right) =>
+        right.score.compareTo(left.score),
+  );
+
+  return LabCatalogDuplicateCheckResult(
+    exactNameConflict: exactNameConflict,
+    exactCodeConflict: exactCodeConflict,
+    similarMatches: matches,
+  );
+}
+
+/// Weighted composite for panels (name/code/category/composition).
+int labPanelCompositeSimilarityScore({
+  int? nameScore,
+  int? codeScore,
+  int? categoryScore,
+  int? compositionScore,
+}) {
+  var weightedTotal = 0;
+  var weightSum = 0;
+
+  if (nameScore != null) {
+    weightedTotal += nameScore * labPanelNameWeight;
+    weightSum += labPanelNameWeight;
+  }
+  if (codeScore != null) {
+    weightedTotal += codeScore * labPanelCodeWeight;
+    weightSum += labPanelCodeWeight;
+  }
+  if (categoryScore != null) {
+    weightedTotal += categoryScore * labPanelCategoryWeight;
+    weightSum += labPanelCategoryWeight;
+  }
+  if (compositionScore != null) {
+    weightedTotal += compositionScore * labPanelCompositionWeight;
+    weightSum += labPanelCompositionWeight;
+  }
+
+  if (weightSum == 0) {
+    return 0;
+  }
+  return (weightedTotal / weightSum).round().clamp(0, 100);
+}
+
+String _normalizePanelTestKey(String? value) {
+  final String codeKey = normalizeLabCatalogCodeForSimilarity(value ?? '');
+  if (codeKey.isNotEmpty) {
+    return 'CODE:$codeKey';
+  }
+  final String idKey = (value ?? '').trim().toUpperCase();
+  return idKey.isEmpty ? '' : 'ID:$idKey';
+}
+
+Set<String> labPanelMembershipKeys({
+  List<LabPanelItem> panelItems = const <LabPanelItem>[],
+  Iterable<LabCatalogItem> selectedTests = const <LabCatalogItem>[],
+}) {
+  final Set<String> keys = <String>{};
+  for (final LabPanelItem item in panelItems) {
+    final String codeKey = _normalizePanelTestKey(item.testCode);
+    if (codeKey.startsWith('CODE:')) {
+      keys.add(codeKey);
+      continue;
+    }
+    final String idKey = _normalizePanelTestKey(item.labTestId ?? item.id);
+    if (idKey.isNotEmpty) {
+      keys.add(idKey);
+    }
+  }
+  for (final LabCatalogItem test in selectedTests) {
+    final String codeKey = _normalizePanelTestKey(test.code);
+    if (codeKey.startsWith('CODE:')) {
+      keys.add(codeKey);
+      continue;
+    }
+    final String idKey = _normalizePanelTestKey(test.apiId);
+    if (idKey.isNotEmpty) {
+      keys.add(idKey);
+    }
+  }
+  return keys;
+}
+
+int labPanelCompositionOverlapPercent(Set<String> left, Set<String> right) {
+  if (left.isEmpty || right.isEmpty) {
+    return 0;
+  }
+  var intersection = 0;
+  for (final String key in left) {
+    if (right.contains(key)) {
+      intersection += 1;
+    }
+  }
+  final int union = left.length + right.length - intersection;
+  if (union == 0) {
+    return 0;
+  }
+  return ((intersection / union) * 100).round().clamp(0, 100);
+}
+
+LabCatalogDuplicateCheckResult checkLabPanelDuplicates({
+  required String name,
+  String? code,
+  String? category,
+  List<LabPanelItem> panelItems = const <LabPanelItem>[],
+  Iterable<LabCatalogItem> selectedTests = const <LabCatalogItem>[],
+  required List<LabCatalogItem> existing,
+  String? excludePanelId,
+  Iterable<String> excludePanelIds = const <String>[],
+  bool includeTokenSimilarity = true,
+}) {
+  final String normalizedName = normalizeLabCatalogName(name);
+  final String normalizedCode = normalizeLabCatalogCode(code ?? '');
+  final String similarityCode = normalizeLabCatalogCodeForSimilarity(
+    code ?? '',
+  );
+  final String normalizedCategory = normalizeLabCatalogCategory(category ?? '');
+  final Set<String> proposedKeys = labPanelMembershipKeys(
+    panelItems: panelItems,
+    selectedTests: selectedTests,
+  );
+
+  var exactNameConflict = false;
+  var exactCodeConflict = false;
+  final List<LabCatalogSimilarityMatch> matches =
+      <LabCatalogSimilarityMatch>[];
+
+  for (final LabCatalogItem panel in existing) {
+    if (panel.type != LabCatalogItemType.panel) {
+      continue;
+    }
+    if (labCatalogItemMatchesExcludeId(
+      panel,
+      excludePanelId,
+      excludeTestIds: excludePanelIds,
+    )) {
+      continue;
+    }
+
+    final String panelName = normalizeLabCatalogName(panel.name ?? '');
+    final String panelCode = normalizeLabCatalogCode(panel.code ?? '');
+    final String panelSimilarityCode = normalizeLabCatalogCodeForSimilarity(
+      panel.code ?? '',
+    );
+    final String panelCategory = normalizeLabCatalogCategory(
+      panel.category ?? '',
+    );
+    final Set<String> existingKeys = labPanelMembershipKeys(
+      panelItems: panel.panelItems,
+    );
+
+    final bool nameExact =
+        normalizedName.isNotEmpty && panelName == normalizedName;
+    final bool codeExact =
+        normalizedCode.isNotEmpty &&
+        panelCode.isNotEmpty &&
+        (panelCode == normalizedCode ||
+            (similarityCode.isNotEmpty &&
+                panelSimilarityCode == similarityCode));
+    final bool categoryExact =
+        normalizedCategory.isNotEmpty &&
+        panelCategory.isNotEmpty &&
+        normalizedCategory == panelCategory;
+
+    int? nameScore;
+    int? codeScore;
+    int? categoryScore;
+    int? compositionScore;
+    final List<String> reasons = <String>[];
+
+    if (normalizedName.isNotEmpty && panelName.isNotEmpty) {
+      nameScore = nameExact
+          ? 100
+          : labTextSimilarityScore(
+              normalizedName,
+              panelName,
+              includeTokenSimilarity: includeTokenSimilarity,
+            );
+      if (nameExact || nameScore >= labCatalogSimilarityThreshold) {
+        reasons.add('name');
+      }
+    }
+
+    if (similarityCode.isNotEmpty && panelSimilarityCode.isNotEmpty) {
+      codeScore = codeExact
+          ? 100
+          : labTextSimilarityScore(
+              similarityCode,
+              panelSimilarityCode,
+              includeTokenSimilarity: false,
+            );
+      if (codeExact || codeScore >= labCatalogSimilarityThreshold) {
+        reasons.add('code');
+      }
+    }
+
+    if (normalizedCategory.isNotEmpty && panelCategory.isNotEmpty) {
+      categoryScore = categoryExact
+          ? 100
+          : labTextSimilarityScore(
+              normalizedCategory,
+              panelCategory,
+              includeTokenSimilarity: includeTokenSimilarity,
+            );
+      if (categoryExact || categoryScore >= labCatalogSimilarityThreshold) {
+        reasons.add('category');
+      }
+    }
+
+    if (proposedKeys.isNotEmpty && existingKeys.isNotEmpty) {
+      compositionScore = labPanelCompositionOverlapPercent(
+        proposedKeys,
+        existingKeys,
+      );
+      if (compositionScore >= labCatalogSimilarityThreshold) {
+        reasons.add('composition');
+      }
+    }
+
+    final int compositeScore = labPanelCompositeSimilarityScore(
+      nameScore: nameScore,
+      codeScore: codeScore,
+      categoryScore: categoryScore,
+      compositionScore: compositionScore,
+    );
+
+    final bool hardNameConflict = nameExact;
+    final bool isExact = hardNameConflict || codeExact;
+    if (isExact) {
+      if (hardNameConflict) {
+        exactNameConflict = true;
+      }
+      if (codeExact) {
+        exactCodeConflict = true;
+      }
+      matches.add(
+        LabCatalogSimilarityMatch(
+          item: panel,
+          score: compositeScore,
+          reasons: reasons.isEmpty
+              ? <String>[
+                  if (hardNameConflict) 'name',
+                  if (codeExact) 'code',
+                ]
+              : reasons,
+          isExact: true,
+          nameScore: nameScore,
+          codeScore: codeScore,
+          categoryScore: categoryScore,
+          compositionScore: compositionScore,
+        ),
+      );
+      continue;
+    }
+
+    final bool strongFieldSignal =
+        (nameScore != null &&
+            nameScore >= labCatalogSimilarityThreshold) ||
+        (codeScore != null &&
+            codeScore >= labCatalogSimilarityThreshold) ||
+        (compositionScore != null &&
+            compositionScore >= labCatalogSimilarityThreshold);
+    final bool compositeSignal =
+        compositeScore >= labCatalogSimilarityThreshold;
+
+    if (!strongFieldSignal && !compositeSignal) {
+      continue;
+    }
+
+    matches.add(
+      LabCatalogSimilarityMatch(
+        item: panel,
+        score: compositeScore,
+        reasons: reasons.isEmpty ? const <String>['name'] : reasons,
+        isExact: false,
+        nameScore: nameScore,
+        codeScore: codeScore,
+        categoryScore: categoryScore,
+        compositionScore: compositionScore,
       ),
     );
   }

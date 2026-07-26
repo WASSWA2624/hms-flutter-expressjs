@@ -11,6 +11,36 @@ const {
   normalizeLabPanelItems} = require('@services/lab-workspace/lab.configuration');
 const { mapLabPanelRecord } = require('@services/lab-workspace/lab.serializer');
 const { STANDARD_LAB_PANELS, STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
+const {
+  checkLabPanelDuplicates,
+  mergePanelDuplicateChecks
+} = require('@lib/lab/lab-panel-similarity');
+const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
+const { DIAGNOSTIC_EVENTS } = require('@lib/websocket/events');
+
+const publishLabPanelCatalogRealtimeUpdate = async ({
+  resource,
+  actorUserId = null,
+  action = 'UPDATED'
+} = {}) => {
+  if (!resource?.tenant_id || !resource?.id) {
+    return;
+  }
+  publishCrudRealtimeEvent({
+    event: DIAGNOSTIC_EVENTS.LAB_CATALOG_UPDATED,
+    resource,
+    resource_type: 'lab_panel',
+    actor_user_id: actorUserId,
+    payload: {
+      action: String(action || 'UPDATED').trim().toUpperCase(),
+      deleted_at: resource.deleted_at || null,
+      name: resource.name || null,
+      code: resource.code || null,
+      category: resource.category || null,
+      human_friendly_id: resource.human_friendly_id || null
+    }
+  })?.catch?.(() => {});
+};
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 const standardLabPanelId = (key) => `STD_LAB_PANEL:${key}`;
@@ -123,6 +153,87 @@ const buildPanelWritePayload = async (data = {}, tenantId, options = {}) => {
   return payload;
 };
 
+const standardPanelCandidates = () => Object.entries(STANDARD_LAB_PANELS).map(
+  ([key, testCodes]) => ({
+    id: standardLabPanelId(key),
+    display_id: standardLabPanelId(key),
+    human_friendly_id: standardLabPanelId(key),
+    name: standardPanelName(key),
+    code: key,
+    category: 'STANDARD',
+    panel_items: testCodes.map((testCode) => {
+      const definition = STANDARD_LAB_TESTS[testCode] || {};
+      return {
+        lab_test_id: standardLabTestId(testCode),
+        test_code: definition.code || testCode
+      };
+    })
+  })
+);
+
+const assertLabPanelUniqueness = async ({
+  name,
+  code,
+  category,
+  panelItems = [],
+  tenantId,
+  excludePanelId = null,
+  excludePanelIds = [],
+  confirmSimilar = false
+}) => {
+  const existingDbPanels = await labPanelRepository.findMany(
+    { tenant_id: tenantId },
+    0,
+    7500,
+    { name: 'asc' },
+    LAB_PANEL_WITH_RELATIONS_INCLUDE
+  );
+  const duplicateCheck = mergePanelDuplicateChecks(
+    checkLabPanelDuplicates({
+      name,
+      code,
+      category,
+      panelItems,
+      existing: existingDbPanels,
+      excludePanelId,
+      excludePanelIds,
+      includeTokenSimilarity: true
+    }),
+    checkLabPanelDuplicates({
+      name,
+      code,
+      category,
+      panelItems,
+      existing: standardPanelCandidates(),
+      excludePanelId,
+      excludePanelIds,
+      includeTokenSimilarity: false
+    })
+  );
+
+  if (duplicateCheck.exactNameConflict && !confirmSimilar) {
+    throw new HttpError('errors.lab_panel.duplicate_name', 409, [
+      { field: 'name' }
+    ]);
+  }
+  if (duplicateCheck.exactCodeConflict && !confirmSimilar) {
+    throw new HttpError('errors.lab_panel.duplicate_code', 409, [
+      { field: 'code' }
+    ]);
+  }
+  if (
+    duplicateCheck.nonExactSimilarMatches.length > 0
+    && !confirmSimilar
+  ) {
+    throw new HttpError('errors.lab_panel.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.nonExactSimilarMatches.slice(0, 5)
+      }
+    ]);
+  }
+};
+
 const listLabPanels = async (filters, page, limit, sortBy, order, userId, ipAddress) => {
   try {
     const skip = (page - 1) * limit;
@@ -202,14 +313,26 @@ const getLabPanelById = async (id, userId, ipAddress) => {
 
 const createLabPanel = async (data, userId, ipAddress) => {
   try {
+    const confirmSimilar = data?.confirm_similar === true;
     const tenantId = await resolveModelIdOrThrow({
       identifier: data.tenant_id,
       model: 'tenant',
       where: { deleted_at: null },
       errorKey: 'errors.tenant.not_found'});
-    const payload = await buildPanelWritePayload(data, tenantId, {
+    const writeData = { ...data };
+    delete writeData.confirm_similar;
+    const payload = await buildPanelWritePayload(writeData, tenantId, {
       includeDeleteMany: false});
     payload.tenant_id = tenantId;
+
+    await assertLabPanelUniqueness({
+      name: payload.name ?? data.name,
+      code: payload.code ?? data.code,
+      category: payload.category ?? data.category,
+      panelItems: Array.isArray(data.panel_items) ? data.panel_items : [],
+      tenantId,
+      confirmSimilar
+    });
 
     const labPanel = await labPanelRepository.create(payload);
     const created = await labPanelRepository.findById(labPanel.id, LAB_PANEL_WITH_RELATIONS_INCLUDE);
@@ -222,6 +345,12 @@ const createLabPanel = async (data, userId, ipAddress) => {
       diff: { after: created || labPanel },
       ip_address: ipAddress}).catch(() => {});
 
+    publishLabPanelCatalogRealtimeUpdate({
+      resource: created || labPanel,
+      actorUserId: userId,
+      action: 'CREATED'
+    });
+
     return mapLabPanelRecord(created || labPanel);
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -231,6 +360,7 @@ const createLabPanel = async (data, userId, ipAddress) => {
 
 const updateLabPanel = async (id, data, userId, ipAddress) => {
   try {
+    const confirmSimilar = data?.confirm_similar === true;
     const before = await resolveModelRecordOrThrow({
       identifier: id,
       model: 'lab_panel',
@@ -246,11 +376,40 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
         where: { deleted_at: null },
         errorKey: 'errors.tenant.not_found'});
     }
-    const payload = await buildPanelWritePayload(data, tenantId, {
+    const writeData = { ...data };
+    delete writeData.confirm_similar;
+    const payload = await buildPanelWritePayload(writeData, tenantId, {
       includeDeleteMany: true});
     if (hasOwn(data, 'tenant_id') && data.tenant_id) {
       payload.tenant_id = tenantId;
     }
+
+    const nextName = hasOwn(payload, 'name') ? payload.name : before.name;
+    const nextCode = hasOwn(payload, 'code') ? payload.code : before.code;
+    const nextCategory = hasOwn(payload, 'category')
+      ? payload.category
+      : before.category;
+    const nextPanelItems = hasOwn(data, 'panel_items')
+      ? data.panel_items
+      : (before.panel_items || []).map((item) => ({
+        lab_test_id: item.lab_test_id,
+        test_code: item.lab_test?.code || item.test_code || null
+      }));
+
+    await assertLabPanelUniqueness({
+      name: nextName,
+      code: nextCode,
+      category: nextCategory,
+      panelItems: Array.isArray(nextPanelItems) ? nextPanelItems : [],
+      tenantId,
+      excludePanelId: before.id,
+      excludePanelIds: [
+        before.id,
+        before.display_id,
+        before.human_friendly_id
+      ].filter(Boolean),
+      confirmSimilar
+    });
 
     const updated = await labPanelRepository.update(before.id, payload);
     const labPanel = await labPanelRepository.findById(updated.id, LAB_PANEL_WITH_RELATIONS_INCLUDE);
@@ -262,6 +421,12 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
       entity_id: updated.id,
       diff: { before, after: labPanel },
       ip_address: ipAddress}).catch(() => {});
+
+    publishLabPanelCatalogRealtimeUpdate({
+      resource: labPanel || updated,
+      actorUserId: userId,
+      action: 'UPDATED'
+    });
 
     return mapLabPanelRecord(labPanel || updated);
   } catch (error) {
@@ -294,6 +459,12 @@ const deleteLabPanel = async (id, data = {}, userId, ipAddress) => {
       entity_id: labPanel.id,
       diff: { before, deletion_reason: deletionReason },
       ip_address: ipAddress}).catch(() => {});
+
+    publishLabPanelCatalogRealtimeUpdate({
+      resource: { ...before, deleted_at: labPanel?.deleted_at || new Date() },
+      actorUserId: userId,
+      action: 'SOFT_DELETED'
+    });
 
     return mapLabPanelRecord(before);
   } catch (error) {

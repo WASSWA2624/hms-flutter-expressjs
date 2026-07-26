@@ -35842,8 +35842,86 @@ abstract class AppLocalizations {
   /// Section description for lab panel create/edit fields.
   ///
   /// In en, this message translates to:
-  /// **'Name the panel, add an optional code and category, then describe it.'**
+  /// **'Name the panel, add an optional code and category, select member tests, then describe it.'**
   String get labPanelIdentitySectionBody;
+
+  /// Validation when creating a panel without member tests.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one lab test for this panel.'**
+  String get labPanelSelectAtLeastOneTestMessage;
+
+  /// Title for the lab panel similarity review dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar lab panel found'**
+  String get labSimilarPanelDialogTitle;
+
+  /// Heading for the proposed panel card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'New lab panel'**
+  String get labSimilarPanelProposedHeading;
+
+  /// Heading for an existing panel match card.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing lab panel'**
+  String get labSimilarPanelExistingHeading;
+
+  /// Body when panel similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the lab panel details below. No similar panels were found in this catalog scope.'**
+  String get labNoSimilarPanelDialogBody;
+
+  /// Exact-match banner body for panel similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'An identical name or code already exists ({score}% composite). Prefer Use this panel, or create/save anyway if you still need a separate entry.'**
+  String labSimilarPanelExactBannerBody(int score);
+
+  /// Near-match banner body for panel similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing panel, or create anyway.'**
+  String labSimilarPanelReviewBannerBody(int score, String fieldSummary);
+
+  /// Action to adopt an existing similar panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this panel'**
+  String get labUseThisPanelAction;
+
+  /// Proceed with panel create despite similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get labProceedCreatePanelAction;
+
+  /// Proceed with panel update despite similarity matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get labProceedUpdatePanelAction;
+
+  /// Continue panel save when similarity is 0%.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue save'**
+  String get labContinueSavePanelAction;
+
+  /// Loading body while scanning for similar lab panels.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparing name, code, category, and member tests against the catalog…'**
+  String get labSimilarityCheckPanelLoadingBody;
+
+  /// Loading body while fetching panels for similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing lab panels for similarity review…'**
+  String get labSimilarityCatalogLoadingPanelBody;
 
   /// Action label for creating a lab panel in the catalog.
   ///

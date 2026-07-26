@@ -70,7 +70,8 @@ const createLabPanelSchema = withUniquePanelItems(
     code: optionalTrimmedString(80),
     category: optionalTrimmedString(80),
     description: optionalTrimmedString(255),
-    panel_items: z.array(labPanelItemSchema).min(1).max(25).optional()
+    confirm_similar: z.boolean().optional(),
+    panel_items: z.array(labPanelItemSchema).min(1).max(25)
   })
 );
 
@@ -85,6 +86,7 @@ const updateLabPanelSchema = withUniquePanelItems(
     code: optionalTrimmedString(80),
     category: optionalTrimmedString(80),
     description: optionalTrimmedString(255),
+    confirm_similar: z.boolean().optional(),
     panel_items: z.array(labPanelItemSchema).min(1).max(25).optional()
   })
 );

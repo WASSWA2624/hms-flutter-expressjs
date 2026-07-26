@@ -19,6 +19,8 @@ final class LabCatalogProposedTest {
     this.unit,
     this.description,
     this.referenceRangeSummary,
+    this.memberTestsSummary,
+    this.isPanel = false,
   });
 
   final String name;
@@ -29,6 +31,8 @@ final class LabCatalogProposedTest {
   final String? unit;
   final String? description;
   final String? referenceRangeSummary;
+  final String? memberTestsSummary;
+  final bool isPanel;
 }
 
 final class LabCatalogSimilarityDialogResult {
@@ -63,6 +67,7 @@ showLabCatalogSimilarityDialog(
   bool isEditing = false,
 }) {
   final AppLocalizations l10n = context.l10n;
+  final bool isPanel = proposed.isPanel;
   final List<LabCatalogSimilarityMatch> visibleMatches = matches
       .take(5)
       .toList(growable: false);
@@ -82,10 +87,16 @@ showLabCatalogSimilarityDialog(
     hasExactMatch: hasExactMatch,
   );
   final String proceedLabel = isEditing
-      ? l10n.labProceedUpdateTestAction
+      ? (isPanel
+            ? l10n.labProceedUpdatePanelAction
+            : l10n.labProceedUpdateTestAction)
       : hasMatches || hasExactMatch
-      ? l10n.labProceedCreateTestAction
-      : l10n.labContinueSaveTestAction;
+      ? (isPanel
+            ? l10n.labProceedCreatePanelAction
+            : l10n.labProceedCreateTestAction)
+      : (isPanel
+            ? l10n.labContinueSavePanelAction
+            : l10n.labContinueSaveTestAction);
   final IconData proceedIcon = isEditing || !(hasMatches || hasExactMatch)
       ? Icons.save_outlined
       : Icons.add_circle_outline;
@@ -101,7 +112,11 @@ showLabCatalogSimilarityDialog(
           : AppFormInformationVariant.success;
 
       return AppDialog(
-        title: Text(l10n.labSimilarTestDialogTitle),
+        title: Text(
+          isPanel
+              ? l10n.labSimilarPanelDialogTitle
+              : l10n.labSimilarTestDialogTitle,
+        ),
         icon: Icon(
           hasExactMatch
               ? Icons.gpp_bad_outlined
@@ -152,7 +167,9 @@ showLabCatalogSimilarityDialog(
             if (!hasMatches)
               AppFormInformationBanner(
                 title: l10n.labSimilarTestScoreLabel(0),
-                message: l10n.labNoSimilarTestDialogBody,
+                message: isPanel
+                    ? l10n.labNoSimilarPanelDialogBody
+                    : l10n.labNoSimilarTestDialogBody,
                 variant: AppFormInformationVariant.success,
                 icon: Icons.percent_outlined,
               )
@@ -164,6 +181,9 @@ showLabCatalogSimilarityDialog(
                 _SimilarityMatchCard(
                   proposed: proposed,
                   match: visibleMatches[index],
+                  useExistingLabel: isPanel
+                      ? l10n.labUseThisPanelAction
+                      : l10n.labUseThisTestAction,
                   onUseThis: () => Navigator.of(dialogContext).pop(
                     LabCatalogSimilarityDialogResult.useExisting(
                       visibleMatches[index].item,
@@ -206,32 +226,52 @@ class _ProposedTestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool isPanel = proposed.isPanel;
 
     return AppSectionPanel(
       tone: AppWorkspaceStatusTone.info,
       density: AppContentPanelDensity.compact,
       leadingIcon: Icons.edit_note_outlined,
-      title: l10n.labSimilarTestProposedHeading,
+      title: isPanel
+          ? l10n.labSimilarPanelProposedHeading
+          : l10n.labSimilarTestProposedHeading,
       children: <Widget>[
         _ProposedFactGrid(
           facts: <(String, String)>[
-            (l10n.labTestNameLabel, proposed.name),
-            (l10n.labTestCodeLabel, _displayValue(proposed.code)),
+            (
+              isPanel ? l10n.labPanelNameLabel : l10n.labTestNameLabel,
+              proposed.name,
+            ),
+            (
+              isPanel ? l10n.labPanelCodeLabel : l10n.labTestCodeLabel,
+              _displayValue(proposed.code),
+            ),
             (l10n.labCategoryLabel, _displayValue(proposed.category)),
-            (
-              l10n.labSpecimenTypeLabel,
-              _displayValue(proposed.specimenType),
-            ),
-            (l10n.labResultKindLabel, _displayValue(proposed.resultKind)),
-            (l10n.labDefaultUnitLabel, _displayValue(proposed.unit)),
-            (
-              l10n.labTestDescriptionLabel,
-              _displayValue(proposed.description),
-            ),
-            (
-              l10n.labTestRangesSectionTitle,
-              _displayValue(proposed.referenceRangeSummary),
-            ),
+            if (!isPanel) ...<(String, String)>[
+              (
+                l10n.labSpecimenTypeLabel,
+                _displayValue(proposed.specimenType),
+              ),
+              (l10n.labResultKindLabel, _displayValue(proposed.resultKind)),
+              (l10n.labDefaultUnitLabel, _displayValue(proposed.unit)),
+              (
+                l10n.labTestDescriptionLabel,
+                _displayValue(proposed.description),
+              ),
+              (
+                l10n.labTestRangesSectionTitle,
+                _displayValue(proposed.referenceRangeSummary),
+              ),
+            ] else ...<(String, String)>[
+              (
+                l10n.labPanelDescriptionLabel,
+                _displayValue(proposed.description),
+              ),
+              (
+                l10n.labPanelTestsLabel,
+                _displayValue(proposed.memberTestsSummary),
+              ),
+            ],
           ],
         ),
       ],
@@ -285,11 +325,13 @@ class _SimilarityMatchCard extends StatelessWidget {
     required this.proposed,
     required this.match,
     required this.onUseThis,
+    required this.useExistingLabel,
   });
 
   final LabCatalogProposedTest proposed;
   final LabCatalogSimilarityMatch match;
   final VoidCallback onUseThis;
+  final String useExistingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +378,9 @@ class _SimilarityMatchCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      l10n.labSimilarTestExistingHeading,
+                      proposed.isPanel
+                          ? l10n.labSimilarPanelExistingHeading
+                          : l10n.labSimilarTestExistingHeading,
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: accent,
@@ -469,7 +513,7 @@ class _SimilarityMatchCard extends StatelessWidget {
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: AppButton.secondary(
-              label: l10n.labUseThisTestAction,
+              label: useExistingLabel,
               leadingIcon: Icons.check_circle_outline,
               onPressed: onUseThis,
             ),
@@ -546,6 +590,10 @@ List<_FieldComparison> _buildFieldComparisons({
 }) {
   final LabCatalogItem test = match.item;
   final String existingRanges = _existingReferenceRangeSummary(test);
+  final String existingMembership = test.panelItems
+      .map((LabPanelItem item) => item.displayTitle)
+      .where((String value) => value.trim().isNotEmpty)
+      .join(', ');
 
   return <_FieldComparison>[
     _compareScoredField(
@@ -580,46 +628,66 @@ List<_FieldComparison> _buildFieldComparisons({
       strongReason: match.reasons.contains('category'),
       normalize: normalizeLabCatalogCategory,
     ),
-    _compareScoredField(
-      label: 'specimen',
-      proposedValue: proposed.specimenType,
-      existingValue: test.specimenType,
-      scoredPercent: null,
-      strongReason: false,
-      normalize: normalizeLabCatalogName,
-    ),
-    _compareScoredField(
-      label: 'resultKind',
-      proposedValue: proposed.resultKind,
-      existingValue: test.resultKind,
-      scoredPercent: null,
-      strongReason: false,
-      normalize: (String value) => value.trim().toUpperCase(),
-    ),
-    _compareScoredField(
-      label: 'unit',
-      proposedValue: proposed.unit,
-      existingValue: test.unit,
-      scoredPercent: null,
-      strongReason: false,
-      normalize: normalizeLabCatalogName,
-    ),
-    _compareScoredField(
-      label: 'description',
-      proposedValue: proposed.description,
-      existingValue: test.description,
-      scoredPercent: null,
-      strongReason: false,
-      normalize: normalizeLabCatalogName,
-    ),
-    _compareScoredField(
-      label: 'ranges',
-      proposedValue: proposed.referenceRangeSummary,
-      existingValue: existingRanges,
-      scoredPercent: null,
-      strongReason: false,
-      normalize: normalizeLabCatalogName,
-    ),
+    if (proposed.isPanel)
+      _compareScoredField(
+        label: 'composition',
+        proposedValue: proposed.memberTestsSummary,
+        existingValue: existingMembership,
+        scoredPercent: match.compositionScore,
+        strongReason: match.reasons.contains('composition'),
+        normalize: normalizeLabCatalogName,
+      )
+    else ...<_FieldComparison>[
+      _compareScoredField(
+        label: 'specimen',
+        proposedValue: proposed.specimenType,
+        existingValue: test.specimenType,
+        scoredPercent: null,
+        strongReason: false,
+        normalize: normalizeLabCatalogName,
+      ),
+      _compareScoredField(
+        label: 'resultKind',
+        proposedValue: proposed.resultKind,
+        existingValue: test.resultKind,
+        scoredPercent: null,
+        strongReason: false,
+        normalize: (String value) => value.trim().toUpperCase(),
+      ),
+      _compareScoredField(
+        label: 'unit',
+        proposedValue: proposed.unit,
+        existingValue: test.unit,
+        scoredPercent: null,
+        strongReason: false,
+        normalize: normalizeLabCatalogName,
+      ),
+      _compareScoredField(
+        label: 'description',
+        proposedValue: proposed.description,
+        existingValue: test.description,
+        scoredPercent: null,
+        strongReason: false,
+        normalize: normalizeLabCatalogName,
+      ),
+      _compareScoredField(
+        label: 'ranges',
+        proposedValue: proposed.referenceRangeSummary,
+        existingValue: existingRanges,
+        scoredPercent: null,
+        strongReason: false,
+        normalize: normalizeLabCatalogName,
+      ),
+    ],
+    if (proposed.isPanel)
+      _compareScoredField(
+        label: 'description',
+        proposedValue: proposed.description,
+        existingValue: test.description,
+        scoredPercent: null,
+        strongReason: false,
+        normalize: normalizeLabCatalogName,
+      ),
     if (test.isStandard)
       _compareScoredField(
         label: 'source',
@@ -886,6 +954,7 @@ String _fieldLabel(AppLocalizations l10n, String label) {
     'unit' => l10n.labDefaultUnitLabel,
     'description' => l10n.labTestDescriptionLabel,
     'ranges' => l10n.labTestRangesSectionTitle,
+    'composition' => l10n.labPanelTestsLabel,
     'source' => l10n.labStandardCatalogBadge,
     _ => label,
   };
@@ -910,17 +979,22 @@ _SimilarityBannerCopy _similarityBannerCopy({
   required bool hasExactMatch,
 }) {
   final int score = topMatch?.score ?? 0;
+  final bool isPanel = proposed.isPanel;
   if (hasExactMatch) {
     return _SimilarityBannerCopy(
       title: l10n.labSimilarTestExactBannerTitle,
-      message: l10n.labSimilarTestExactBannerBody(score),
+      message: isPanel
+          ? l10n.labSimilarPanelExactBannerBody(score)
+          : l10n.labSimilarTestExactBannerBody(score),
     );
   }
 
   if (topMatch == null) {
     return _SimilarityBannerCopy(
       title: l10n.labSimilarTestReviewBannerTitle(0),
-      message: l10n.labNoSimilarTestDialogBody,
+      message: isPanel
+          ? l10n.labNoSimilarPanelDialogBody
+          : l10n.labNoSimilarTestDialogBody,
     );
   }
 
@@ -940,10 +1014,9 @@ _SimilarityBannerCopy _similarityBannerCopy({
 
   return _SimilarityBannerCopy(
     title: l10n.labSimilarTestReviewBannerTitle(score),
-    message: l10n.labSimilarTestReviewBannerBody(
-      score,
-      fieldSummary,
-    ),
+    message: isPanel
+        ? l10n.labSimilarPanelReviewBannerBody(score, fieldSummary)
+        : l10n.labSimilarTestReviewBannerBody(score, fieldSummary),
   );
 }
 

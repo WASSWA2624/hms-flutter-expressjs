@@ -24645,9 +24645,74 @@
   "@labPanelIdentitySectionTitle": {
     "description": "Section title for lab panel create/edit fields."
   },
-  "labPanelIdentitySectionBody": "Name the panel, add an optional code and category, then describe it.",
+  "labPanelIdentitySectionBody": "Name the panel, add an optional code and category, select member tests, then describe it.",
   "@labPanelIdentitySectionBody": {
     "description": "Section description for lab panel create/edit fields."
+  },
+  "labPanelSelectAtLeastOneTestMessage": "Select at least one lab test for this panel.",
+  "@labPanelSelectAtLeastOneTestMessage": {
+    "description": "Validation when creating a panel without member tests."
+  },
+  "labSimilarPanelDialogTitle": "Similar lab panel found",
+  "@labSimilarPanelDialogTitle": {
+    "description": "Title for the lab panel similarity review dialog."
+  },
+  "labSimilarPanelProposedHeading": "New lab panel",
+  "@labSimilarPanelProposedHeading": {
+    "description": "Heading for the proposed panel card in similarity review."
+  },
+  "labSimilarPanelExistingHeading": "Existing lab panel",
+  "@labSimilarPanelExistingHeading": {
+    "description": "Heading for an existing panel match card."
+  },
+  "labNoSimilarPanelDialogBody": "Review the lab panel details below. No similar panels were found in this catalog scope.",
+  "@labNoSimilarPanelDialogBody": {
+    "description": "Body when panel similarity review finds no matches."
+  },
+  "labSimilarPanelExactBannerBody": "An identical name or code already exists ({score}% composite). Prefer Use this panel, or create/save anyway if you still need a separate entry.",
+  "@labSimilarPanelExactBannerBody": {
+    "description": "Exact-match banner body for panel similarity review.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "labSimilarPanelReviewBannerBody": "Closest catalog match is {score}% overall. {fieldSummary} Review matches below, use an existing panel, or create anyway.",
+  "@labSimilarPanelReviewBannerBody": {
+    "description": "Near-match banner body for panel similarity review.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "fieldSummary": {
+        "type": "String"
+      }
+    }
+  },
+  "labUseThisPanelAction": "Use this panel",
+  "@labUseThisPanelAction": {
+    "description": "Action to adopt an existing similar panel."
+  },
+  "labProceedCreatePanelAction": "Create anyway",
+  "@labProceedCreatePanelAction": {
+    "description": "Proceed with panel create despite similarity matches."
+  },
+  "labProceedUpdatePanelAction": "Save anyway",
+  "@labProceedUpdatePanelAction": {
+    "description": "Proceed with panel update despite similarity matches."
+  },
+  "labContinueSavePanelAction": "Continue save",
+  "@labContinueSavePanelAction": {
+    "description": "Continue panel save when similarity is 0%."
+  },
+  "labSimilarityCheckPanelLoadingBody": "Comparing name, code, category, and member tests against the catalog…",
+  "@labSimilarityCheckPanelLoadingBody": {
+    "description": "Loading body while scanning for similar lab panels."
+  },
+  "labSimilarityCatalogLoadingPanelBody": "Preparing lab panels for similarity review…",
+  "@labSimilarityCatalogLoadingPanelBody": {
+    "description": "Loading body while fetching panels for similarity review."
   },
   "labCreatePanelAction": "Create panel",
   "@labCreatePanelAction": {

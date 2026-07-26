@@ -18,17 +18,18 @@
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
 | Cancel | Footer | Dismisses without save. Remains available during similarity scan; disabled only while saving. |
-| Save | Footer | For **tests**: runs similarity scan (button loading), then always opens `showLabCatalogSimilarityDialog` with percent score (including **0%** / empty matches); creates/updates; pops `true` on success. For **panels**: validates and saves directly. |
-| Similarity review | Modal after Save (tests) | Create and edit always open the similarity dialog with score (including 0%), excluding the test id being edited. Actions: Cancel / Use this test / Continue save or Create/Save anyway (including exact clashes). Proceed after matches sends `confirm_similar: true`. Use this test pops `LabCatalogItem` so the parent opens details. |
-| Details | After successful create/edit or Use this test | Parent opens `showLabCatalogItemDetailsDialog` for the selected, created, or updated test/panel. |
+| Save | Footer | For **tests** and **panels**: runs similarity scan (button loading), then always opens `showLabCatalogSimilarityDialog` with percent score (including **0%** / empty matches); creates/updates; pops `true` on success. Panels also require ≥1 member test. |
+| Similarity review | Modal after Save (tests and panels) | Create and edit always open the similarity dialog with score (including 0%), excluding the item id being edited. Panel matches also weigh **member-test composition** overlap. Actions: Cancel / Use this test or **Use this panel** / Continue save or Create/Save anyway (including exact clashes). Proceed after matches sends `confirm_similar: true`. Use this pops `LabCatalogItem` so the parent opens details. |
+| Details | After successful create/edit or Use this test/panel | Parent opens `showLabCatalogItemDetailsDialog` for the selected, created, or updated test/panel. |
 | Add reference range | Top of test form range list | Appends another age/gender reference-range row (tests only); blocks duplicate label+gender+age-band keys. |
 | Remove reference range | Per range row | Removes that reference-range row (tests only). |
 | Add unit / qualitative value | Test form option lists | Adds chip values for unit or qualitative options (by result kind). |
 | Remove unit / qualitative value | Option chips | Removes the selected option chip. |
+| Add test / Remove test | Panel form membership picker (`LabPanelTestPicker`) | Adds/removes member lab tests for panels; create requires at least one. |
 
 Titles: create uses lab create dialog title keys; edit uses **Edit Lab Test** / **Edit Lab Panel** by kind.
 
-**Test form field order:** framed sections — **Test identity** (name → code → searchable category select) → **Result configuration** (specimen select → result kind → default unit select / options by kind → description) → **Reference ranges** (preset labels + age/gender rows; Add at top). Category, specimen, and unit options combine known catalogs with loaded rows. Panel form uses a single **Panel details** section. Create/configure dialogs share `LabTestDefinitionForm`. Catalog mutate actions require `canMutateLabCatalog` (lab:write or tenant/facility/system admin).
+**Test form field order:** framed sections — **Test identity** (name → code → searchable category select) → **Result configuration** (specimen select → result kind → default unit select / options by kind → description) → **Reference ranges** (preset labels + age/gender rows; Add at top). Category, specimen, and unit options combine known catalogs with loaded rows. **Panel form:** **Panel details** (name → code → category → description) plus **Panel tests** membership picker; create/edit payloads include `panel_items`. Create/configure dialogs share `LabTestDefinitionForm` for tests. Catalog mutate actions require `canMutateLabCatalog` (lab:write or tenant/facility/system admin).
 
 ---
 

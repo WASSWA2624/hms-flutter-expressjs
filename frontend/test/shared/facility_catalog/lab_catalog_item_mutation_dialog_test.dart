@@ -543,6 +543,220 @@ void main() {
       expect(submitCount, 0);
     });
 
+    testWidgets('create panel requires member tests and submits panel_items after similarity', (
+      WidgetTester tester,
+    ) async {
+      Map<String, Object?>? submitted;
+      await _pumpMutationDialog(
+        tester,
+        kind: LabCatalogItemType.panel,
+        onSubmit: (Map<String, Object?> payload) async {
+          submitted = payload;
+          return null;
+        },
+        catalogItems: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 'LBT1',
+            type: LabCatalogItemType.test,
+            name: 'Hemoglobin',
+            code: 'HB',
+            category: 'Hematology',
+          ),
+          LabCatalogItem(
+            id: 'LBT2',
+            type: LabCatalogItemType.test,
+            name: 'White Blood Cell Count',
+            code: 'WBC',
+            category: 'Hematology',
+          ),
+          LabCatalogItem(
+            id: 'LBP1',
+            type: LabCatalogItemType.panel,
+            name: 'Existing Panel',
+            code: 'EP-1',
+            category: 'Hematology',
+            panelItems: <LabPanelItem>[
+              LabPanelItem(id: 'pi1', labTestId: 'LBT1', testCode: 'HB'),
+            ],
+          ),
+        ],
+      );
+
+      expect(find.text('CREATE LAB PANEL'), findsOneWidget);
+      expect(find.text('Panel tests'), findsOneWidget);
+      expect(find.text('Add test'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'New CBC Panel');
+      await tester.enterText(find.byType(TextFormField).at(1), 'CBC-NEW');
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.text('Select at least one lab test for this panel.'),
+        findsOneWidget,
+      );
+      expect(submitted, isNull);
+
+      // Drive membership through the public picker callbacks.
+      final LabPanelTestPicker beforeAdd = tester.widget<LabPanelTestPicker>(
+        find.byType(LabPanelTestPicker),
+      );
+      beforeAdd.onPendingChanged('LBT1');
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
+            .pendingTestId,
+        'LBT1',
+      );
+      tester.widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker)).onAdd();
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
+            .selectedTests,
+        isNotEmpty,
+      );
+
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('SIMILAR LAB PANEL FOUND'), findsOneWidget);
+      // Selected HB overlaps Existing Panel membership, so composition surfaces
+      // a near match rather than a 0% empty review.
+      expect(find.widgetWithText(AppButton, 'Create anyway'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Create anyway'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(submitted, isNotNull);
+      expect(submitted!['name'], 'New CBC Panel');
+      expect(submitted!['code'], 'CBC-NEW');
+      expect(submitted!['tenant_id'], 'tenant-1');
+      expect(submitted!['confirm_similar'], isTrue);
+      final List<Object?> items =
+          submitted!['panel_items']! as List<Object?>;
+      expect(items, hasLength(1));
+      final Map<String, Object?> first =
+          Map<String, Object?>.from(items.first! as Map<dynamic, dynamic>);
+      expect(first['lab_test_id'], 'LBT1');
+      expect(first['sort_order'], 0);
+    });
+
+    testWidgets('panel create with unique membership shows 0% continue save', (
+      WidgetTester tester,
+    ) async {
+      Map<String, Object?>? submitted;
+      await _pumpMutationDialog(
+        tester,
+        kind: LabCatalogItemType.panel,
+        onSubmit: (Map<String, Object?> payload) async {
+          submitted = payload;
+          return null;
+        },
+        catalogItems: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 'LBT9',
+            type: LabCatalogItemType.test,
+            name: 'Zinc',
+            code: 'ZN',
+            category: 'Chemistry',
+          ),
+        ],
+      );
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'Zinc Panel');
+      await tester.enterText(find.byType(TextFormField).at(1), 'ZN-P');
+      tester
+          .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
+          .onPendingChanged('LBT9');
+      await tester.pumpAndSettle();
+      tester.widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker)).onAdd();
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('SIMILAR LAB PANEL FOUND'), findsOneWidget);
+      expect(find.text('Match status: Similar (0%)'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Continue save'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Continue save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(submitted, isNotNull);
+      expect(submitted!.containsKey('confirm_similar'), isFalse);
+      expect(submitted!['panel_items'], isA<List<Object?>>());
+    });
+
+    testWidgets('panel exact duplicate opens similarity modal with create anyway', (
+      WidgetTester tester,
+    ) async {
+      Map<String, Object?>? submitted;
+      await _pumpMutationDialog(
+        tester,
+        kind: LabCatalogItemType.panel,
+        onSubmit: (Map<String, Object?> payload) async {
+          submitted = payload;
+          return null;
+        },
+        catalogItems: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 'LBT1',
+            type: LabCatalogItemType.test,
+            name: 'Hemoglobin',
+            code: 'HB',
+            category: 'Hematology',
+          ),
+          LabCatalogItem(
+            id: 'LBP1',
+            type: LabCatalogItemType.panel,
+            name: 'CBC Panel',
+            code: 'CBC-P',
+            category: 'Hematology',
+            panelItems: <LabPanelItem>[
+              LabPanelItem(id: 'pi1', labTestId: 'LBT1', testCode: 'HB'),
+            ],
+          ),
+        ],
+      );
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'CBC Panel');
+      await tester.enterText(find.byType(TextFormField).at(1), 'CBC-NEW');
+      tester
+          .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
+          .onPendingChanged('LBT1');
+      await tester.pumpAndSettle();
+      tester.widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker)).onAdd();
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<LabPanelTestPicker>(find.byType(LabPanelTestPicker))
+            .selectedTests,
+        isNotEmpty,
+      );
+
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Save'));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('SIMILAR LAB PANEL FOUND'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Create anyway'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Create anyway'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(submitted, isNotNull);
+      expect(submitted!['confirm_similar'], isTrue);
+    });
+
     testWidgets('text kind hides unit and qualitative options', (
       WidgetTester tester,
     ) async {
@@ -571,6 +785,7 @@ Future<void> _selectResultKind(WidgetTester tester, String value) async {
 Future<void> _pumpMutationDialog(
   WidgetTester tester, {
   Future<AppFailure?> Function(Map<String, Object?> payload)? onSubmit,
+  LabCatalogItemType kind = LabCatalogItemType.test,
   List<LabCatalogItem> catalogItems = const <LabCatalogItem>[
     LabCatalogItem(
       id: 'LBT1',
@@ -597,7 +812,7 @@ Future<void> _pumpMutationDialog(
                 showAppDialog<Object>(
                   context: context,
                   builder: (_) => LabCatalogItemMutationDialog(
-                    kind: LabCatalogItemType.test,
+                    kind: kind,
                     tenantId: 'tenant-1',
                     catalogItems: catalogItems,
                     onSubmit: onSubmit ?? (_) async => null,

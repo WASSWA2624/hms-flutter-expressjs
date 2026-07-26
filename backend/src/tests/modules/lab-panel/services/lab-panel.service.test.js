@@ -3,6 +3,9 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/lab-panel/lab-panel.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn()}));
+jest.mock('@lib/websocket/crud-realtime', () => ({
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(0)
+}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {
@@ -148,6 +151,7 @@ describe('lab-panel.service', () => {
       .mockResolvedValueOnce('tenant-internal-1')
       .mockResolvedValueOnce('lab-test-internal-2');
     resolveModelRecordOrThrow.mockResolvedValue(before);
+    labPanelRepository.findMany.mockResolvedValue([]);
     labPanelRepository.create.mockResolvedValue({ id: 'panel-internal-1' });
     labPanelRepository.update.mockResolvedValue({ id: 'panel-internal-1' });
     labPanelRepository.findById
@@ -226,6 +230,107 @@ describe('lab-panel.service', () => {
         id: 'LBP0000001',
         name: 'Updated Panel'})
     );
+  });
+
+  it('rejects similar panels without confirm_similar', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
+    labPanelRepository.findMany.mockResolvedValue([
+      {
+        id: 'existing-1',
+        name: 'Zzyx Custom Chemistry Alph',
+        code: 'OTHER',
+        category: 'Chemistry',
+        panel_items: [{ lab_test_id: 't1', test_code: 'GLU' }]
+      }
+    ]);
+
+    await expect(
+      labPanelService.createLabPanel(
+        {
+          tenant_id: 'TEN0000001',
+          name: 'Zzyx Custom Chemistry Alpha',
+          code: 'NEW-001',
+          category: 'Chemistry',
+          panel_items: [{ lab_test_id: 'LBT0000001' }]
+        },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_panel.similar_exists',
+      statusCode: 409
+    });
+    expect(labPanelRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('creates when confirm_similar is true for near matches', async () => {
+    const createdRecord = buildPanelRecord({
+      name: 'Zzyx Custom Chemistry Alpha',
+      code: 'NEW-001'
+    });
+    resolveModelIdOrThrow
+      .mockResolvedValueOnce('tenant-internal-1')
+      .mockResolvedValueOnce('lab-test-internal-1');
+    labPanelRepository.findMany.mockResolvedValue([
+      {
+        id: 'existing-1',
+        name: 'Zzyx Custom Chemistry Alph',
+        code: 'OTHER',
+        category: 'Chemistry',
+        panel_items: [{ lab_test_id: 't1', test_code: 'GLU' }]
+      }
+    ]);
+    labPanelRepository.create.mockResolvedValue({ id: 'panel-internal-1' });
+    labPanelRepository.findById.mockResolvedValue(createdRecord);
+
+    const result = await labPanelService.createLabPanel(
+      {
+        tenant_id: 'TEN0000001',
+        name: 'Zzyx Custom Chemistry Alpha',
+        code: 'NEW-001',
+        category: 'Chemistry',
+        confirm_similar: true,
+        panel_items: [{ lab_test_id: 'LBT0000001' }]
+      },
+      mockUserId,
+      mockIpAddress
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        name: 'Zzyx Custom Chemistry Alpha',
+        code: 'NEW-001'
+      })
+    );
+    expect(labPanelRepository.create).toHaveBeenCalled();
+    expect(labPanelRepository.create.mock.calls[0][0].confirm_similar).toBeUndefined();
+  });
+
+  it('rejects exact duplicate panel names without confirm_similar', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('tenant-internal-1');
+    labPanelRepository.findMany.mockResolvedValue([
+      buildPanelRecord({
+        id: 'existing-panel',
+        name: 'Complete Metabolic Panel',
+        code: 'OTHER'
+      })
+    ]);
+
+    await expect(
+      labPanelService.createLabPanel(
+        {
+          tenant_id: 'TEN0000001',
+          name: 'Complete Metabolic Panel',
+          code: 'NEW-CMP',
+          panel_items: [{ lab_test_id: 'LBT0000001' }]
+        },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_panel.duplicate_name',
+      statusCode: 409
+    });
   });
 
   it('deletes lab panels using the resolved internal identifier', async () => {

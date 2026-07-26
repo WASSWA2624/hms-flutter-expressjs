@@ -274,6 +274,7 @@ final class LabCatalogItem {
   bool get isStandard {
     final String sourceKey = (source ?? status ?? '').trim().toUpperCase();
     return id.startsWith('STD_LAB_TEST:') ||
+        id.startsWith('STD_LAB_PANEL:') ||
         sourceKey == 'STANDARD' ||
         sourceKey == 'STANDARD_LAB_CATALOG';
   }

@@ -872,10 +872,13 @@ class _LabCatalogItemMutationDialogState
   late List<EditableLabValue> _unitOptions;
   late List<EditableLabValue> _resultOptions;
   late List<EditableLabReferenceRange> _referenceRanges;
+  late List<LabCatalogItem> _selectedTests;
+  String? _pendingTestId;
   String? _resultKind;
   AppFailure? _failure;
   String? _nameErrorText;
   String? _codeErrorText;
+  String? _panelTestsErrorText;
   bool _isSaving = false;
   bool _isCheckingSimilarity = false;
   bool _isLoadingCatalog = false;
@@ -898,7 +901,15 @@ class _LabCatalogItemMutationDialogState
     _catalogTests = widget.catalogItems
         .where((LabCatalogItem entry) => entry.type == LabCatalogItemType.test)
         .toList(growable: false);
-    _existingItems = _catalogTests;
+    _existingItems = _isPanel
+        ? widget.catalogItems
+              .where(
+                (LabCatalogItem entry) =>
+                    entry.type == LabCatalogItemType.panel,
+              )
+              .toList(growable: false)
+        : _catalogTests;
+    _selectedTests = _initialSelectedTests(item);
     _nameController = TextEditingController(text: item?.name ?? '');
     _codeController = TextEditingController(text: item?.code ?? '');
     _categoryController = TextEditingController(text: item?.category ?? '');
@@ -942,10 +953,40 @@ class _LabCatalogItemMutationDialogState
     _codeController.addListener(_clearSimilarityState);
     _categoryController.addListener(_clearSimilarityState);
     final Future<List<LabCatalogItem>> Function()? loader = widget.loadExistingItems;
-    if (loader != null && !_isPanel) {
+    if (loader != null) {
       _isLoadingCatalog = true;
       unawaited(_loadSimilarityCatalog(loader));
     }
+  }
+
+  List<LabCatalogItem> _initialSelectedTests(LabCatalogItem? item) {
+    if (item == null || item.panelItems.isEmpty) {
+      return <LabCatalogItem>[];
+    }
+    return item.panelItems.map(_testForPanelItem).toList(growable: true);
+  }
+
+  LabCatalogItem _testForPanelItem(LabPanelItem panelItem) {
+    for (final LabCatalogItem test in _catalogTests) {
+      final String testId = labNormalizeCatalogToken(test.apiId);
+      final String panelTestId = labNormalizeCatalogToken(panelItem.labTestId);
+      if ((panelTestId.isNotEmpty &&
+              (testId == panelTestId ||
+                  labNormalizeCatalogToken(test.id) == panelTestId ||
+                  labNormalizeCatalogToken(test.displayId) == panelTestId)) ||
+          labNormalizeCatalogToken(test.code) ==
+              labNormalizeCatalogToken(panelItem.testCode)) {
+        return test;
+      }
+    }
+    return LabCatalogItem(
+      id: panelItem.labTestId ?? panelItem.id,
+      displayId: panelItem.labTestId,
+      type: LabCatalogItemType.test,
+      name: panelItem.testDisplayName,
+      code: panelItem.testCode,
+      unit: panelItem.unit,
+    );
   }
 
   @override
@@ -996,7 +1037,7 @@ class _LabCatalogItemMutationDialogState
     });
   }
 
-  List<String> get _excludeTestIds {
+  List<String> get _excludeCatalogIds {
     final LabCatalogItem? item = widget.item;
     if (item == null) {
       return const <String>[];
@@ -1019,6 +1060,13 @@ class _LabCatalogItemMutationDialogState
     return labels.join(', ');
   }
 
+  String _proposedMemberTestsSummary() {
+    return _selectedTests
+        .map((LabCatalogItem test) => test.displayTitle)
+        .where((String value) => value.trim().isNotEmpty)
+        .join(', ');
+  }
+
   Future<void> _loadSimilarityCatalog(
     Future<List<LabCatalogItem>> Function() loader,
   ) async {
@@ -1030,7 +1078,11 @@ class _LabCatalogItemMutationDialogState
       setState(() {
         _existingItems = items
             .where(
-              (LabCatalogItem e) => e.type == LabCatalogItemType.test,
+              (LabCatalogItem e) =>
+                  e.type ==
+                  (_isPanel
+                      ? LabCatalogItemType.panel
+                      : LabCatalogItemType.test),
             )
             .toList(growable: false);
         _isLoadingCatalog = false;
@@ -1043,11 +1095,49 @@ class _LabCatalogItemMutationDialogState
     }
   }
 
+  void _addPendingTest() {
+    final String? testId = _pendingTestId;
+    if (testId == null) {
+      return;
+    }
+    final LabCatalogItem? test = _catalogTests
+        .where(
+          (LabCatalogItem item) =>
+              item.apiId == testId || item.id == testId,
+        )
+        .firstOrNull;
+    if (test == null ||
+        _selectedTests.any(
+          (LabCatalogItem selected) =>
+              selected.apiId == test.apiId || selected.id == test.id,
+        )) {
+      return;
+    }
+    setState(() {
+      _selectedTests.add(test);
+      _pendingTestId = null;
+      _panelTestsErrorText = null;
+      _similarityAccepted = false;
+      _noSimilarConfirmed = false;
+    });
+  }
+
+  void _removeSelectedTest(LabCatalogItem item) {
+    setState(() {
+      _selectedTests.removeWhere(
+        (LabCatalogItem selected) =>
+            selected.apiId == item.apiId || selected.id == item.id,
+      );
+      _similarityAccepted = false;
+      _noSimilarConfirmed = false;
+    });
+  }
+
   Future<bool> _guardAgainstDuplicates(AppLocalizations l10n) async {
     final String proposedName = _nameController.text.trim();
     final String proposedCode = _codeController.text.trim();
     final String proposedCategory = _categoryController.text.trim();
-    final List<String> excludeTestIds = _excludeTestIds;
+    final List<String> excludeIds = _excludeCatalogIds;
 
     setState(() => _isCheckingSimilarity = true);
     // Let the loading indicator paint before the composite scan.
@@ -1068,7 +1158,11 @@ class _LabCatalogItemMutationDialogState
         }
         _existingItems = items
             .where(
-              (LabCatalogItem e) => e.type == LabCatalogItemType.test,
+              (LabCatalogItem e) =>
+                  e.type ==
+                  (_isPanel
+                      ? LabCatalogItemType.panel
+                      : LabCatalogItemType.test),
             )
             .toList(growable: false);
       } catch (_) {
@@ -1084,27 +1178,53 @@ class _LabCatalogItemMutationDialogState
       final List<LabCatalogItem> standardItems = _existingItems
           .where((LabCatalogItem item) => item.isStandard)
           .toList(growable: false);
-      result = await Future<LabCatalogDuplicateCheckResult>(
-        () => mergeLabCatalogDuplicateChecks(
-          <LabCatalogDuplicateCheckResult>[
-            checkLabCatalogDuplicates(
-              name: proposedName,
-              code: proposedCode,
-              category: proposedCategory,
-              existing: tenantItems,
-              excludeTestIds: excludeTestIds,
-            ),
-            checkLabCatalogDuplicates(
-              name: proposedName,
-              code: proposedCode,
-              category: proposedCategory,
-              existing: standardItems,
-              excludeTestIds: excludeTestIds,
-              includeTokenSimilarity: false,
-            ),
-          ],
-        ),
-      );
+      if (_isPanel) {
+        result = await Future<LabCatalogDuplicateCheckResult>(
+          () => mergeLabCatalogDuplicateChecks(
+            <LabCatalogDuplicateCheckResult>[
+              checkLabPanelDuplicates(
+                name: proposedName,
+                code: proposedCode,
+                category: proposedCategory,
+                selectedTests: _selectedTests,
+                existing: tenantItems,
+                excludePanelIds: excludeIds,
+              ),
+              checkLabPanelDuplicates(
+                name: proposedName,
+                code: proposedCode,
+                category: proposedCategory,
+                selectedTests: _selectedTests,
+                existing: standardItems,
+                excludePanelIds: excludeIds,
+                includeTokenSimilarity: false,
+              ),
+            ],
+          ),
+        );
+      } else {
+        result = await Future<LabCatalogDuplicateCheckResult>(
+          () => mergeLabCatalogDuplicateChecks(
+            <LabCatalogDuplicateCheckResult>[
+              checkLabCatalogDuplicates(
+                name: proposedName,
+                code: proposedCode,
+                category: proposedCategory,
+                existing: tenantItems,
+                excludeTestIds: excludeIds,
+              ),
+              checkLabCatalogDuplicates(
+                name: proposedName,
+                code: proposedCode,
+                category: proposedCategory,
+                existing: standardItems,
+                excludeTestIds: excludeIds,
+                includeTokenSimilarity: false,
+              ),
+            ],
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isCheckingSimilarity = false);
@@ -1118,8 +1238,8 @@ class _LabCatalogItemMutationDialogState
         result.similarMatches;
     final bool hasExactConflict = result.hasExactConflict;
 
-    // Create and edit use the same similarity modal (including 0%). The test
-    // being edited is excluded via excludeTestIds.
+    // Create and edit use the same similarity modal (including 0%). The row
+    // being edited is excluded via exclude ids.
     if (_similarityAccepted ||
         (_noSimilarConfirmed && reviewMatches.isEmpty && !hasExactConflict)) {
       return true;
@@ -1129,6 +1249,7 @@ class _LabCatalogItemMutationDialogState
     final String proposedUnit = _unitController.text.trim();
     final String proposedDescription = _descriptionController.text.trim();
     final String proposedRanges = _proposedReferenceRangeSummary();
+    final String proposedMembers = _proposedMemberTestsSummary();
     final LabCatalogSimilarityDialogResult dialogResult =
         await showLabCatalogSimilarityDialog(
           context,
@@ -1145,6 +1266,10 @@ class _LabCatalogItemMutationDialogState
             referenceRangeSummary: proposedRanges.isEmpty
                 ? null
                 : proposedRanges,
+            memberTestsSummary: proposedMembers.isEmpty
+                ? null
+                : proposedMembers,
+            isPanel: _isPanel,
           ),
           matches: reviewMatches,
           allowProceed: true,
@@ -1162,10 +1287,14 @@ class _LabCatalogItemMutationDialogState
           _noSimilarConfirmed = false;
           // Keep field errors after dismissing an exact-conflict review.
           _nameErrorText = result.exactNameConflict
-              ? l10n.labDuplicateTestNameMessage
+              ? (_isPanel
+                    ? l10n.labDuplicatePanelNameMessage
+                    : l10n.labDuplicateTestNameMessage)
               : null;
           _codeErrorText = result.exactCodeConflict
-              ? l10n.labDuplicateTestCodeMessage
+              ? (_isPanel
+                    ? l10n.labDuplicatePanelCodeMessage
+                    : l10n.labDuplicateTestCodeMessage)
               : null;
         });
         return false;
@@ -1179,7 +1308,7 @@ class _LabCatalogItemMutationDialogState
         if (labCatalogItemMatchesExcludeId(
           existing,
           null,
-          excludeTestIds: excludeTestIds,
+          excludeTestIds: excludeIds,
         )) {
           setState(() {
             _isSaving = false;
@@ -1212,6 +1341,14 @@ class _LabCatalogItemMutationDialogState
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    if (_isPanel && _selectedTests.isEmpty) {
+      setState(() {
+        _panelTestsErrorText =
+            context.l10n.labPanelSelectAtLeastOneTestMessage;
+        _failure = AppFailure.validation();
+      });
+      return;
+    }
     if (!_isPanel && !_rangesAreValid()) {
       setState(() {
         _failure = AppFailure.validation();
@@ -1223,14 +1360,13 @@ class _LabCatalogItemMutationDialogState
       _failure = null;
       _nameErrorText = null;
       _codeErrorText = null;
+      _panelTestsErrorText = null;
     });
 
-    if (!_isPanel) {
-      final AppLocalizations l10n = context.l10n;
-      final bool maySave = await _guardAgainstDuplicates(l10n);
-      if (!mounted || !maySave) {
-        return;
-      }
+    final AppLocalizations l10n = context.l10n;
+    final bool maySave = await _guardAgainstDuplicates(l10n);
+    if (!mounted || !maySave) {
+      return;
     }
 
     setState(() => _isSaving = true);
@@ -1242,7 +1378,6 @@ class _LabCatalogItemMutationDialogState
       Navigator.of(context).pop(true);
       return;
     }
-    final AppLocalizations l10n = context.l10n;
     setState(() {
       _failure = failure;
       _isSaving = false;
@@ -1260,10 +1395,14 @@ class _LabCatalogItemMutationDialogState
               'code already exists',
             );
         if (nameConflict) {
-          _nameErrorText = l10n.labDuplicateTestNameMessage;
+          _nameErrorText = _isPanel
+              ? l10n.labDuplicatePanelNameMessage
+              : l10n.labDuplicateTestNameMessage;
         }
         if (codeConflict) {
-          _codeErrorText = l10n.labDuplicateTestCodeMessage;
+          _codeErrorText = _isPanel
+              ? l10n.labDuplicatePanelCodeMessage
+              : l10n.labDuplicateTestCodeMessage;
         }
       }
     });
@@ -1308,14 +1447,24 @@ class _LabCatalogItemMutationDialogState
   Map<String, Object?> _payload() {
     final Map<String, Object?> payload = <String, Object?>{
       if (!widget.isEditing) 'tenant_id': widget.tenantId,
-      if (!_isPanel && _similarityAccepted) 'confirm_similar': true,
+      if (_similarityAccepted) 'confirm_similar': true,
       'name': _nameController.text.trim(),
       'code': _codeController.text.trim(),
       'category': _categoryController.text.trim(),
       'description': _descriptionController.text.trim(),
     };
     if (_isPanel) {
-      return payload;
+      return <String, Object?>{
+        ...payload,
+        'panel_items': <Map<String, Object?>>[
+          for (int index = 0; index < _selectedTests.length; index++)
+            <String, Object?>{
+              'lab_test_id': _selectedTests[index].apiId,
+              'is_required': true,
+              'sort_order': index,
+            },
+        ],
+      };
     }
 
     final String unit = _unitController.text.trim();
@@ -1391,42 +1540,6 @@ class _LabCatalogItemMutationDialogState
     ]);
   }
 
-  bool _hasDuplicateName(String? value) {
-    final String normalized = labNormalizeCatalogToken(value);
-    if (normalized.isEmpty) {
-      return false;
-    }
-    return widget.catalogItems.any(
-      (LabCatalogItem item) =>
-          !_isCurrentItem(item) &&
-          item.type == widget.kind &&
-          labNormalizeCatalogToken(item.name) == normalized,
-    );
-  }
-
-  bool _hasDuplicateCode(String? value) {
-    final String normalized = labNormalizeCatalogToken(value);
-    if (normalized.isEmpty) {
-      return false;
-    }
-    return widget.catalogItems.any(
-      (LabCatalogItem item) =>
-          !_isCurrentItem(item) &&
-          item.type == widget.kind &&
-          labNormalizeCatalogToken(item.code) == normalized,
-    );
-  }
-
-  bool _isCurrentItem(LabCatalogItem candidate) {
-    final LabCatalogItem? item = widget.item;
-    if (item == null) {
-      return false;
-    }
-    return candidate.id == item.id ||
-        candidate.apiId == item.apiId ||
-        candidate.displayId == item.displayId;
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -1440,17 +1553,19 @@ class _LabCatalogItemMutationDialogState
     final IconData iconData =
         widget.isEditing ? Icons.edit_outlined : Icons.add_circle_outline;
 
-    if (_isLoadingCatalog && !_isPanel) {
+    if (_isLoadingCatalog) {
       return AppDialog(
         title: Text(title),
         icon: Icon(iconData),
-        maxWidth: 860,
+        maxWidth: _isPanel ? 860 : 860,
         closeEnabled: true,
         content: SizedBox(
           height: 160,
           child: AppLoadingIndicator.compact(
             title: l10n.labSimilarityCatalogLoadingTitle,
-            body: l10n.labSimilarityCatalogLoadingBody,
+            body: _isPanel
+                ? l10n.labSimilarityCatalogLoadingPanelBody
+                : l10n.labSimilarityCatalogLoadingBody,
           ),
         ),
         actions: <Widget>[
@@ -1467,16 +1582,18 @@ class _LabCatalogItemMutationDialogState
       title: Text(title),
       icon: Icon(iconData),
       scrollable: true,
-      maxWidth: _isPanel ? 640 : 860,
+      maxWidth: _isPanel ? 860 : 860,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            if (_isCheckingSimilarity && !_isPanel)
+            if (_isCheckingSimilarity)
               AppFormInformationBanner(
                 title: l10n.labSimilarityCheckLoadingTitle,
-                message: l10n.labSimilarityCheckLoadingBody,
+                message: _isPanel
+                    ? l10n.labSimilarityCheckPanelLoadingBody
+                    : l10n.labSimilarityCheckLoadingBody,
                 variant: AppFormInformationVariant.info,
                 icon: Icons.manage_search_outlined,
                 children: const <Widget>[
@@ -1496,37 +1613,33 @@ class _LabCatalogItemMutationDialogState
                   AppTextField(
                     controller: _nameController,
                     labelText: l10n.labPanelNameLabel,
-                    enabled: !_isSaving,
+                    enabled: !formLocked,
                     isRequired: true,
+                    errorText: _nameErrorText,
                     prefixIcon: const Icon(Icons.science_outlined),
                     validator: (String? value) {
-                      final String? requiredFailure =
-                          AppValidators.requiredText(
-                            l10n.validationRequired,
-                          )(value);
-                      if (requiredFailure != null) {
-                        return requiredFailure;
+                      if (_nameErrorText != null) {
+                        return _nameErrorText;
                       }
-                      return _hasDuplicateName(value)
-                          ? l10n.labDuplicatePanelNameMessage
-                          : null;
+                      return AppValidators.requiredText(
+                        l10n.validationRequired,
+                      )(value);
                     },
                   ),
                   AppResponsiveFieldRow.two(
                     gap: AppResponsiveFieldRowGap.form,
                     left: AppTextField(
                       controller: _codeController,
-                      labelText: l10n.labTestCodeLabel,
-                      enabled: !_isSaving,
+                      labelText: l10n.labPanelCodeLabel,
+                      enabled: !formLocked,
+                      errorText: _codeErrorText,
                       prefixIcon: const Icon(Icons.tag_outlined),
-                      validator: (String? value) => _hasDuplicateCode(value)
-                          ? l10n.labDuplicatePanelCodeMessage
-                          : null,
+                      validator: (String? value) => _codeErrorText,
                     ),
                     right: LabSearchableTextField(
                       controller: _categoryController,
                       labelText: l10n.labCategoryLabel,
-                      enabled: !_isSaving,
+                      enabled: !formLocked,
                       prefixIcon: const Icon(Icons.category_outlined),
                       options: _cachedCategoryOptions,
                     ),
@@ -1534,9 +1647,21 @@ class _LabCatalogItemMutationDialogState
                   AppTextField(
                     controller: _descriptionController,
                     labelText: l10n.labPanelDescriptionLabel,
-                    enabled: !_isSaving,
+                    enabled: !formLocked,
                     maxLines: 2,
                     prefixIcon: const Icon(Icons.notes_outlined),
+                  ),
+                  LabPanelTestPicker(
+                    tests: _catalogTests,
+                    selectedTests: _selectedTests,
+                    pendingTestId: _pendingTestId,
+                    enabled: !formLocked,
+                    errorText: _panelTestsErrorText,
+                    onPendingChanged: (String? value) {
+                      setState(() => _pendingTestId = value);
+                    },
+                    onAdd: _addPendingTest,
+                    onRemove: _removeSelectedTest,
                   ),
                 ],
               )
@@ -1629,7 +1754,7 @@ class _LabCatalogItemMutationDialogState
       ),
       actions: buildAppDialogFormActions(
         cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: _isCheckingSimilarity && !_isPanel
+        submitLabel: _isCheckingSimilarity
             ? l10n.labSimilarityCheckLoadingTitle
             : l10n.commonSaveActionLabel,
         submitIcon: Icons.save_outlined,

@@ -19209,7 +19209,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labPanelIdentitySectionBody =>
-      'Name the panel, add an optional code and category, then describe it.';
+      'Name the panel, add an optional code and category, select member tests, then describe it.';
+
+  @override
+  String get labPanelSelectAtLeastOneTestMessage =>
+      'Select at least one lab test for this panel.';
+
+  @override
+  String get labSimilarPanelDialogTitle => 'Similar lab panel found';
+
+  @override
+  String get labSimilarPanelProposedHeading => 'New lab panel';
+
+  @override
+  String get labSimilarPanelExistingHeading => 'Existing lab panel';
+
+  @override
+  String get labNoSimilarPanelDialogBody =>
+      'Review the lab panel details below. No similar panels were found in this catalog scope.';
+
+  @override
+  String labSimilarPanelExactBannerBody(int score) {
+    return 'An identical name or code already exists ($score% composite). Prefer Use this panel, or create/save anyway if you still need a separate entry.';
+  }
+
+  @override
+  String labSimilarPanelReviewBannerBody(int score, String fieldSummary) {
+    return 'Closest catalog match is $score% overall. $fieldSummary Review matches below, use an existing panel, or create anyway.';
+  }
+
+  @override
+  String get labUseThisPanelAction => 'Use this panel';
+
+  @override
+  String get labProceedCreatePanelAction => 'Create anyway';
+
+  @override
+  String get labProceedUpdatePanelAction => 'Save anyway';
+
+  @override
+  String get labContinueSavePanelAction => 'Continue save';
+
+  @override
+  String get labSimilarityCheckPanelLoadingBody =>
+      'Comparing name, code, category, and member tests against the catalog…';
+
+  @override
+  String get labSimilarityCatalogLoadingPanelBody =>
+      'Preparing lab panels for similarity review…';
 
   @override
   String get labCreatePanelAction => 'Create panel';

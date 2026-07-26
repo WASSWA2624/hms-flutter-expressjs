@@ -208,4 +208,71 @@ void main() {
       expect(merged.exactCodeConflict, isTrue);
     });
   });
+
+  group('checkLabPanelDuplicates', () {
+    const List<LabCatalogItem> existingPanels = <LabCatalogItem>[
+      LabCatalogItem(
+        id: 'panel-1',
+        type: LabCatalogItemType.panel,
+        name: 'Complete Blood Count Panel',
+        code: 'CBC-PANEL',
+        category: 'Hematology',
+        panelItems: <LabPanelItem>[
+          LabPanelItem(id: 'pi1', labTestId: 't1', testCode: 'HB'),
+          LabPanelItem(id: 'pi2', labTestId: 't2', testCode: 'WBC'),
+          LabPanelItem(id: 'pi3', labTestId: 't3', testCode: 'PLT'),
+        ],
+      ),
+    ];
+
+    test('detects exact panel name conflict', () {
+      final LabCatalogDuplicateCheckResult result = checkLabPanelDuplicates(
+        name: 'Complete Blood Count Panel',
+        code: 'NEW',
+        category: 'Hematology',
+        selectedTests: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 't1',
+            type: LabCatalogItemType.test,
+            code: 'HB',
+          ),
+        ],
+        existing: existingPanels,
+      );
+
+      expect(result.exactNameConflict, isTrue);
+      expect(result.hasExactConflict, isTrue);
+    });
+
+    test('scores composition overlap for matching member tests', () {
+      final LabCatalogDuplicateCheckResult result = checkLabPanelDuplicates(
+        name: 'Hematology Bundle',
+        code: 'HEM-B',
+        category: 'Chemistry',
+        selectedTests: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 't1',
+            type: LabCatalogItemType.test,
+            code: 'HB',
+          ),
+          LabCatalogItem(
+            id: 't2',
+            type: LabCatalogItemType.test,
+            code: 'WBC',
+          ),
+          LabCatalogItem(
+            id: 't3',
+            type: LabCatalogItemType.test,
+            code: 'PLT',
+          ),
+        ],
+        existing: existingPanels,
+      );
+
+      expect(result.hasExactConflict, isFalse);
+      expect(result.similarMatches, isNotEmpty);
+      expect(result.similarMatches.first.compositionScore, 100);
+      expect(result.similarMatches.first.reasons, contains('composition'));
+    });
+  });
 }
