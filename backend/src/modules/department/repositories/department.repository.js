@@ -22,6 +22,23 @@ const buildWhereClause = (filters = {}, { includeDeleted = false } = {}) => {
   return where;
 };
 
+const listSchemaTablesWithColumn = async (tx, columnName, { excludeTables = [] } = {}) => {
+  const rows = await tx.$queryRaw`
+    SELECT DISTINCT TABLE_NAME AS table_name
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND COLUMN_NAME = ${columnName}
+  `;
+
+  const excluded = new Set(
+    excludeTables.map((name) => String(name || '').trim().toLowerCase()).filter(Boolean)
+  );
+
+  return rows
+    .map((row) => String(row.table_name || row.TABLE_NAME || '').replace(/`/g, '').trim())
+    .filter((tableName) => tableName && !excluded.has(tableName.toLowerCase()));
+};
+
 /**
  * Find department by ID
  *
@@ -180,6 +197,85 @@ const restore = async (id) => {
   }
 };
 
+/**
+ * Permanently delete a soft-deleted department and department-scoped data.
+ *
+ * @param {string} id - Department ID
+ * @returns {Promise<void>}
+ */
+const permanentDelete = async (id) => {
+  try {
+    const existing = await prisma.department.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        deleted_at: true,
+      },
+    });
+
+    if (!existing) {
+      return;
+    }
+    if (!existing.deleted_at) {
+      throw new HttpError('errors.department.permanent_delete_requires_soft_delete', 400);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+      try {
+        const unitRows = await tx.unit.findMany({
+          where: { department_id: id },
+          select: { id: true },
+        });
+        const unitIds = unitRows.map((row) => row.id);
+
+        if (unitIds.length > 0) {
+          const unitTables = await listSchemaTablesWithColumn(tx, 'unit_id', {
+            excludeTables: ['unit'],
+          });
+          const placeholders = unitIds.map(() => '?').join(', ');
+          for (const tableName of unitTables) {
+            await tx.$executeRawUnsafe(
+              `DELETE FROM \`${tableName}\` WHERE unit_id IN (${placeholders})`,
+              ...unitIds
+            );
+          }
+          await tx.unit.deleteMany({ where: { id: { in: unitIds } } });
+        }
+
+        const departmentTables = await listSchemaTablesWithColumn(tx, 'department_id', {
+          excludeTables: ['department'],
+        });
+        for (const tableName of departmentTables) {
+          await tx.$executeRawUnsafe(
+            `DELETE FROM \`${tableName}\` WHERE department_id = ?`,
+            id
+          );
+        }
+
+        for (const columnName of ['from_department_id', 'to_department_id']) {
+          const altTables = await listSchemaTablesWithColumn(tx, columnName);
+          for (const tableName of altTables) {
+            await tx.$executeRawUnsafe(
+              `UPDATE \`${tableName}\` SET \`${columnName}\` = NULL WHERE \`${columnName}\` = ?`,
+              id
+            );
+          }
+        }
+
+        await tx.department.delete({ where: { id } });
+      } finally {
+        await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+      }
+    }, { timeout: 120000 });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
@@ -188,4 +284,5 @@ module.exports = {
   update,
   softDelete,
   restore,
+  permanentDelete,
 };

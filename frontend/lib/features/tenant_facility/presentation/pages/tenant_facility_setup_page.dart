@@ -2485,9 +2485,10 @@ class _DepartmentSetupSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canManageRecords = canSubmit && !submission.isSubmitting;
+    final bool canManageRecords = canSubmit;
+    final bool isSubmitting = submission.isSubmitting;
     final bool prerequisitesMet = snapshot.facility?.id != null;
-    final bool canAdd = canManageRecords && prerequisitesMet;
+    final bool canAdd = canManageRecords && prerequisitesMet && !isSubmitting;
     final String? blockedMessage = canManageRecords && !prerequisitesMet
         ? l10n.tenantFacilityGateNeedFacility
         : null;
@@ -2502,6 +2503,7 @@ class _DepartmentSetupSection extends ConsumerWidget {
       addLabel: l10n.tenantFacilityAddDepartmentAction,
       canManageRecords: canManageRecords,
       canAdd: canAdd,
+      isSubmitting: isSubmitting,
       blockedMessage: blockedMessage,
       onAdd: () => _openDepartmentDialog(context, snapshot),
       scopeLabel: l10n.tenantFacilityFacilitySelectLabel,
@@ -2526,7 +2528,7 @@ class _DepartmentSetupSection extends ConsumerWidget {
           : _departmentSubtitle(l10n, snapshot, department),
       isDeletedBuilder: (DepartmentProfile department) => department.isDeleted,
       onEdit: (DepartmentProfile department) {
-        if (department.isDeleted) {
+        if (department.isDeleted || isSubmitting) {
           return;
         }
         _openDepartmentDialog(context, snapshot, department: department);
@@ -2547,6 +2549,15 @@ class _DepartmentSetupSection extends ConsumerWidget {
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .restoreDepartment(department.id),
       ),
+      onPermanentDelete: (DepartmentProfile department) =>
+          _permanentDeleteEntity(
+            context: context,
+            ref: ref,
+            name: department.name,
+            permanentDeleteAction: () => ref
+                .read(tenantFacilitySetupSubmissionProvider.notifier)
+                .permanentDeleteDepartment(department.id),
+          ),
     );
 
     if (framed) {
@@ -2934,6 +2945,8 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onRestore,
+    this.onPermanentDelete,
+    this.isSubmitting = false,
     this.scopeLabel,
     this.scopeOptions = const <_SearchableEntityGroupScopeOption>[],
     this.itemScopeId,
@@ -2951,6 +2964,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final IconData addIcon;
   final bool canManageRecords;
   final bool canAdd;
+  final bool isSubmitting;
   final VoidCallback onAdd;
   final String Function(T item) titleBuilder;
   final String Function(T item) subtitleBuilder;
@@ -2958,6 +2972,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final ValueChanged<T> onEdit;
   final ValueChanged<T> onDelete;
   final ValueChanged<T> onRestore;
+  final ValueChanged<T>? onPermanentDelete;
   final String? scopeLabel;
   final List<_SearchableEntityGroupScopeOption> scopeOptions;
   final String? Function(T item)? itemScopeId;
@@ -3049,6 +3064,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
       label: l10n.tenantFacilityTenantStatusLabel,
       cellBuilder: (_, T item) => Text(widget.subtitleBuilder(item)),
     );
+    final bool actionsEnabled = !widget.isSubmitting;
     final AppListTableColumn<T>? actionsColumn = widget.canManageRecords
         ? AppListTableColumn<T>(
             id: 'actions',
@@ -3059,21 +3075,39 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  if (deleted)
+                  if (deleted) ...<Widget>[
                     AppButton(
                       leadingIcon: Icons.restore_outlined,
                       label: l10n.tenantFacilityRestoreStructureAction,
                       semanticLabel: l10n.tenantFacilityRestoreStructureAction,
                       tooltip: l10n.tenantFacilityRestoreStructureAction,
-                      onPressed: () => widget.onRestore(item),
-                    )
-                  else ...<Widget>[
+                      enabled: actionsEnabled,
+                      onPressed: actionsEnabled
+                          ? () => widget.onRestore(item)
+                          : null,
+                    ),
+                    if (widget.onPermanentDelete != null)
+                      AppButton(
+                        leadingIcon: Icons.delete_forever_outlined,
+                        label: l10n.tenantFacilityPermanentDeleteAction,
+                        semanticLabel: l10n.tenantFacilityPermanentDeleteAction,
+                        tooltip: l10n.tenantFacilityPermanentDeleteAction,
+                        color: theme.statusColors.error,
+                        enabled: actionsEnabled,
+                        onPressed: actionsEnabled
+                            ? () => widget.onPermanentDelete!(item)
+                            : null,
+                      ),
+                  ] else ...<Widget>[
                     AppButton(
                       leadingIcon: Icons.edit_outlined,
                       label: l10n.tenantFacilityEditAction,
                       semanticLabel: l10n.tenantFacilityEditAction,
                       tooltip: l10n.tenantFacilityEditAction,
-                      onPressed: () => widget.onEdit(item),
+                      enabled: actionsEnabled,
+                      onPressed: actionsEnabled
+                          ? () => widget.onEdit(item)
+                          : null,
                     ),
                     AppButton(
                       leadingIcon: Icons.delete_outline,
@@ -3081,7 +3115,10 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                       semanticLabel: l10n.tenantFacilityDeleteAction,
                       tooltip: l10n.tenantFacilityDeleteAction,
                       color: theme.statusColors.error,
-                      onPressed: () => widget.onDelete(item),
+                      enabled: actionsEnabled,
+                      onPressed: actionsEnabled
+                          ? () => widget.onDelete(item)
+                          : null,
                     ),
                   ],
                 ],
@@ -3167,6 +3204,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                 : nextScope;
           });
         },
+        isLoading: widget.isSubmitting,
         trailingActions: widget.canManageRecords
             ? <AppSearchBarAction>[
                 AppSearchBarAction(
@@ -3193,6 +3231,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                   label: widget.addLabel,
                   leadingIcon: widget.addIcon,
                   enabled: widget.canAdd,
+                  isLoading: widget.isSubmitting,
                   tooltip: widget.canAdd
                       ? widget.addLabel
                       : (widget.blockedMessage ?? widget.addLabel),
@@ -4508,6 +4547,61 @@ Future<void> _restoreEntity({
         }
         return ref.read(tenantFacilitySetupSubmissionProvider).failure ??
             const AppFailure.unexpected();
+      },
+    ),
+  );
+}
+
+Future<void> _permanentDeleteEntity({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String name,
+  required Future<bool> Function() permanentDeleteAction,
+}) async {
+  final AppLocalizations l10n = context.l10n;
+  final String? typed = await showAppDialog<String>(
+    context: context,
+    builder: (BuildContext dialogContext) => AppTextInputActionDialog(
+      title: l10n.tenantFacilityPermanentDeleteDepartmentConfirmationTitle,
+      description: l10n.tenantFacilityPermanentDeleteDepartmentWarningBody(name),
+      fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(name),
+      submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+      cancelLabel: l10n.commonCancelActionLabel,
+      requiredMessage: l10n.validationRequired,
+      destructive: true,
+      minLines: 1,
+      maxLines: 1,
+      icon: const Icon(Icons.delete_forever_outlined),
+    ),
+  );
+
+  if (!context.mounted || typed == null) {
+    return;
+  }
+  if (typed.trim() != name.trim()) {
+    return;
+  }
+
+  await showAppDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+      title: l10n.tenantFacilityPermanentDeleteDepartmentConfirmationTitle,
+      body: l10n.tenantFacilityPermanentDeleteDepartmentConfirmationBody(name),
+      highlightedText: name,
+      submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+      destructive: true,
+      icon: const Icon(Icons.delete_forever_outlined),
+      onConfirm: () async {
+        final bool deleted = await permanentDeleteAction();
+        if (deleted) {
+          return null;
+        }
+        final AppFailure? failure =
+            ref.read(tenantFacilitySetupSubmissionProvider).failure;
+        if (failure?.category == AppFailureCategory.notFound) {
+          return null;
+        }
+        return failure ?? const AppFailure.unexpected();
       },
     ),
   );

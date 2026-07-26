@@ -105,6 +105,8 @@ abstract interface class TenantFacilityRepository {
 
   Future<Result<DepartmentProfile>> restoreDepartment(String id);
 
+  Future<Result<void>> permanentDeleteDepartment(String id);
+
   Future<Result<UnitProfile>> saveUnit({
     String? id,
     required String tenantId,

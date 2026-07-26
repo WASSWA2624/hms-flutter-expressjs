@@ -17,6 +17,7 @@ const {
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  permanentDeleteDepartment,
   getDepartmentUnits
 } = require('@controllers/department/department.controller');
 
@@ -347,6 +348,31 @@ describe('Department Controller', () => {
           facility_id: 'facility-123',
           ip_address: '192.168.1.1',
           user_agent: 'Mozilla/5.0'
+        }
+      );
+      expect(sendNoContent).toHaveBeenCalledWith(res);
+    });
+  });
+
+  describe('permanentDeleteDepartment', () => {
+    it('should permanently delete department successfully', async () => {
+      departmentService.permanentDeleteDepartment.mockResolvedValue(undefined);
+      sendNoContent.mockImplementation((res) => {
+        res.status(204).send();
+      });
+
+      req.params = { id: 'dept-123' };
+
+      await permanentDeleteDepartment(req, res);
+
+      expect(departmentService.permanentDeleteDepartment).toHaveBeenCalledWith(
+        'dept-123',
+        {
+          user_id: 'user-123',
+          tenant_id: 'tenant-123',
+          facility_id: 'facility-123',
+          ip_address: '192.168.1.1',
+          user_agent: 'Mozilla/5.0',
         }
       );
       expect(sendNoContent).toHaveBeenCalledWith(res);

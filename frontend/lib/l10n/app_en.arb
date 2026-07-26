@@ -8718,6 +8718,28 @@
       }
     }
   },
+  "tenantFacilityPermanentDeleteDepartmentConfirmationTitle": "Permanent delete department — irreversible",
+  "@tenantFacilityPermanentDeleteDepartmentConfirmationTitle": {
+    "description": "Permanent delete department confirmation dialog title."
+  },
+  "tenantFacilityPermanentDeleteDepartmentWarningBody": "WARNING: Permanently deleting \"{name}\" will erase this department, its units, and related data forever. This cannot be recovered.",
+  "@tenantFacilityPermanentDeleteDepartmentWarningBody": {
+    "description": "Strong irreversible warning before typing confirmation for permanent department delete.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityPermanentDeleteDepartmentConfirmationBody": "Final confirmation: permanently delete department \"{name}\" and all related data? This action is irreversible and the data can never be recovered.",
+  "@tenantFacilityPermanentDeleteDepartmentConfirmationBody": {
+    "description": "Final confirmation body for permanent department deletion.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tenantFacilityManageFacilitiesTitle": "Manage facilities",
   "@tenantFacilityManageFacilitiesTitle": {
     "description": "Platform admin dialog title for facility management."

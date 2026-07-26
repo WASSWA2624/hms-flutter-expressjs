@@ -12706,6 +12706,24 @@ abstract class AppLocalizations {
   /// **'Final confirmation: permanently delete facility \"{name}\" and all related data? This action is irreversible and the data can never be recovered.'**
   String tenantFacilityPermanentDeleteFacilityConfirmationBody(String name);
 
+  /// Permanent delete department confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent delete department — irreversible'**
+  String get tenantFacilityPermanentDeleteDepartmentConfirmationTitle;
+
+  /// Strong irreversible warning before typing confirmation for permanent department delete.
+  ///
+  /// In en, this message translates to:
+  /// **'WARNING: Permanently deleting \"{name}\" will erase this department, its units, and related data forever. This cannot be recovered.'**
+  String tenantFacilityPermanentDeleteDepartmentWarningBody(String name);
+
+  /// Final confirmation body for permanent department deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete department \"{name}\" and all related data? This action is irreversible and the data can never be recovered.'**
+  String tenantFacilityPermanentDeleteDepartmentConfirmationBody(String name);
+
   /// Platform admin dialog title for facility management.
   ///
   /// In en, this message translates to:

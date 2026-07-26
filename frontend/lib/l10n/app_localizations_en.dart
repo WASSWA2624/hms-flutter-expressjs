@@ -6863,6 +6863,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get tenantFacilityPermanentDeleteDepartmentConfirmationTitle =>
+      'Permanent delete department — irreversible';
+
+  @override
+  String tenantFacilityPermanentDeleteDepartmentWarningBody(String name) {
+    return 'WARNING: Permanently deleting \"$name\" will erase this department, its units, and related data forever. This cannot be recovered.';
+  }
+
+  @override
+  String tenantFacilityPermanentDeleteDepartmentConfirmationBody(String name) {
+    return 'Final confirmation: permanently delete department \"$name\" and all related data? This action is irreversible and the data can never be recovered.';
+  }
+
+  @override
   String get tenantFacilityManageFacilitiesTitle => 'Manage facilities';
 
   @override

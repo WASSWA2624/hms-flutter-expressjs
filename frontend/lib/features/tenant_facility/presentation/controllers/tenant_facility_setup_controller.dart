@@ -510,6 +510,24 @@ final class TenantFacilitySetupSubmissionController
     );
   }
 
+  Future<bool> permanentDeleteDepartment(String id) {
+    return _submit(
+      () => _repository.permanentDeleteDepartment(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        return snapshot.copyWith(
+          departments: <DepartmentProfile>[
+            for (final DepartmentProfile department in snapshot.departments)
+              if (department.id != id) department,
+          ],
+          units: <UnitProfile>[
+            for (final UnitProfile unit in snapshot.units)
+              if (unit.departmentId != id) unit,
+          ],
+        );
+      },
+    );
+  }
+
   Future<bool> saveUnit({
     String? id,
     required String tenantId,

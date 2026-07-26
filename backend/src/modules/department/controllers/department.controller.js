@@ -19,6 +19,18 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
  * @returns {Promise<void>}
  */
 const listDepartments = asyncHandler(async (req, res) => {
+  const {
+    page,
+    limit,
+    sort_by,
+    order,
+    tenant_id,
+    facility_id,
+    department_type,
+    is_active,
+    search,
+    include_deleted,
+  } = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
@@ -151,6 +163,24 @@ const restoreDepartment = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Permanently delete department
+ */
+const permanentDeleteDepartment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const context = {
+    user_id: req.user?.id,
+    tenant_id: req.user?.tenant_id,
+    facility_id: req.user?.facility_id,
+    ip_address: req.ip,
+    user_agent: req.get('user-agent'),
+  };
+
+  await departmentService.permanentDeleteDepartment(id, context);
+
+  return sendNoContent(res);
+});
+
+/**
  * Get department units (nested resource)
  *
  * @param {Object} req - Express request
@@ -178,5 +208,6 @@ module.exports = {
   updateDepartment,
   deleteDepartment,
   restoreDepartment,
+  permanentDeleteDepartment,
   getDepartmentUnits,
 };

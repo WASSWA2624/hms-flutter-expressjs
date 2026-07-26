@@ -591,6 +591,16 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
+  Future<Result<void>> permanentDeleteDepartment(String id) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.nested(HmsApiResource.departments, id, const <String>[
+        'permanent',
+      ]),
+      decoder: _decodeVoid,
+    );
+  }
+
+  @override
   Future<Result<UnitProfile>> saveUnit({
     String? id,
     required String tenantId,

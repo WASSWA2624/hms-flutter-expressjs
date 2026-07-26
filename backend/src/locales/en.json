@@ -103,6 +103,7 @@
   "errors.database.unique_field": "{{field}} is already in use",
   "errors.day_close.not_found": "Day close not found",
   "errors.department.not_found": "Department not found",
+  "errors.department.permanent_delete_requires_soft_delete": "Department must be soft-deleted before permanent delete",
   "errors.department.restore_requires_active_facility": "Cannot restore a department while its facility is deleted",
   "errors.diagnosis.not_found": "Diagnosis not found",
   "errors.discharge_summary.cannot_finalize_cancelled": "Cannot finalize a cancelled discharge summary",

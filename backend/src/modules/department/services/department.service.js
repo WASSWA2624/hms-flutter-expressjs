@@ -290,6 +290,51 @@ const restoreDepartment = async (id, context = {}) => {
 };
 
 /**
+ * Permanently delete a soft-deleted department and related department-scoped data.
+ */
+const permanentDeleteDepartment = async (id, context = {}) => {
+  const normalizedId = String(id ?? '').trim();
+  const departmentId = await resolveDepartmentId(normalizedId, { includeDeleted: true });
+  const department = await departmentRepository.findById(departmentId, {
+    includeDeleted: true,
+  });
+
+  if (!department) {
+    return;
+  }
+  if (!department.deleted_at) {
+    throw new HttpError('errors.department.permanent_delete_requires_soft_delete', 400);
+  }
+
+  await createAuditLog({
+    action: 'DEPARTMENT_PERMANENTLY_DELETED',
+    entity: 'department',
+    entity_id: departmentId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      tenant_id: department.tenant_id,
+      facility_id: department.facility_id,
+      name: department.name,
+      short_name: department.short_name,
+      department_type: department.department_type,
+      irreversible: true,
+    },
+  });
+
+  await departmentRepository.permanentDelete(departmentId);
+
+  await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
+    operation: 'permanently_deleted',
+    name: department.name,
+    permanent: true,
+  });
+};
+
+/**
  * Get department units (nested resource)
  */
 const getDepartmentUnits = async (departmentId, page = 1, limit = 20) => {
@@ -316,5 +361,6 @@ module.exports = {
   updateDepartment,
   deleteDepartment,
   restoreDepartment,
+  permanentDeleteDepartment,
   getDepartmentUnits,
 };

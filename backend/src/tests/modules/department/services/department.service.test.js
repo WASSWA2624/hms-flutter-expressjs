@@ -10,6 +10,17 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies
 jest.mock('@repositories/department/department.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/websocket', () => ({
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(undefined),
+  FACILITY_LAYOUT_EVENTS: { FACILITY_LAYOUT_UPDATED: 'facility.layout.updated' },
+}));
+jest.mock('@lib/billing/identifiers', () => ({
+  resolveEntityId: jest.fn(async ({ identifier }) => identifier),
+}));
+jest.mock('@lib/identifiers/resolve-entity-id', () => ({
+  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
+  resolveModelRecordByIdentifier: jest.fn(),
+}));
 jest.mock('@services/unit/unit.service', () => ({
   listUnits: jest.fn()
 }));
@@ -23,6 +34,7 @@ const {
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  permanentDeleteDepartment,
   getDepartmentUnits
 } = require('@services/department/department.service');
 
@@ -56,7 +68,8 @@ describe('Department Service', () => {
         {},
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -72,7 +85,8 @@ describe('Department Service', () => {
         { tenant_id: 'tenant-123' },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -88,11 +102,12 @@ describe('Department Service', () => {
         { facility_id: 'facility-123' },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
-    it('should filter by branch_id', async () => {
+    it('should ignore unsupported branch_id filter', async () => {
       const mockDepartments = [{ id: 'dept-1', name: 'Emergency' }];
       departmentRepository.findMany.mockResolvedValue(mockDepartments);
       departmentRepository.count.mockResolvedValue(1);
@@ -101,10 +116,11 @@ describe('Department Service', () => {
 
       expect(result.departments).toEqual(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
-        { branch_id: 'branch-123' },
+        {},
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -120,7 +136,8 @@ describe('Department Service', () => {
         { department_type: 'CLINICAL' },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -136,7 +153,8 @@ describe('Department Service', () => {
         { is_active: true },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -152,7 +170,8 @@ describe('Department Service', () => {
         { is_active: false },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -170,7 +189,8 @@ describe('Department Service', () => {
         }),
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -185,7 +205,8 @@ describe('Department Service', () => {
         {},
         0,
         20,
-        { name: 'asc' }
+        { name: 'asc' },
+        { includeDeleted: false }
       );
     });
 
@@ -452,6 +473,7 @@ describe('Department Service', () => {
           tenant_id: mockDepartment.tenant_id,
           facility_id: mockDepartment.facility_id,
           name: mockDepartment.name,
+          short_name: mockDepartment.short_name,
           department_type: mockDepartment.department_type
         }
       });
@@ -482,6 +504,57 @@ describe('Department Service', () => {
       await expect(deleteDepartment('dept-123'))
         .rejects
         .toThrow(HttpError);
+    });
+  });
+
+  describe('permanentDeleteDepartment', () => {
+    it('permanently deletes a soft-deleted department', async () => {
+      const mockDepartment = {
+        id: 'dept-123',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        name: 'Emergency Department',
+        short_name: 'ED',
+        department_type: 'CLINICAL',
+        deleted_at: new Date(),
+      };
+      departmentRepository.findById.mockResolvedValue(mockDepartment);
+      departmentRepository.permanentDelete.mockResolvedValue(undefined);
+      createAuditLog.mockResolvedValue(undefined);
+
+      await permanentDeleteDepartment('dept-123', { user_id: 'user-1' });
+
+      expect(departmentRepository.findById).toHaveBeenCalledWith('dept-123', {
+        includeDeleted: true,
+      });
+      expect(departmentRepository.permanentDelete).toHaveBeenCalledWith('dept-123');
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'DEPARTMENT_PERMANENTLY_DELETED',
+          entity_id: 'dept-123',
+          details: expect.objectContaining({ irreversible: true }),
+        })
+      );
+    });
+
+    it('rejects permanent delete for active department', async () => {
+      departmentRepository.findById.mockResolvedValue({
+        id: 'dept-123',
+        name: 'Emergency',
+        deleted_at: null,
+      });
+
+      await expect(permanentDeleteDepartment('dept-123')).rejects.toBeInstanceOf(
+        HttpError
+      );
+      expect(departmentRepository.permanentDelete).not.toHaveBeenCalled();
+    });
+
+    it('no-ops when department is already gone', async () => {
+      departmentRepository.findById.mockResolvedValue(null);
+
+      await expect(permanentDeleteDepartment('dept-123')).resolves.toBeUndefined();
+      expect(departmentRepository.permanentDelete).not.toHaveBeenCalled();
     });
   });
 
