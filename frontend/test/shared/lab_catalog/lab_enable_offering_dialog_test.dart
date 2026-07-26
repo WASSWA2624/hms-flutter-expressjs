@@ -164,7 +164,7 @@ void main() {
       expect(find.byType(AppCurrencyAmountField), findsNWidgets(2));
     });
 
-    testWidgets('formats prefilled unit prices with thousand separators', (
+    testWidgets('does not prefill panel prices from catalog defaults', (
       WidgetTester tester,
     ) async {
       await _pumpEnableDialog(
@@ -185,8 +185,42 @@ void main() {
       );
       expect(amountFields, findsOneWidget);
       expect(
+        tester.widget<EditableText>(amountFields).controller?.text ?? '',
+        isEmpty,
+      );
+    });
+
+    testWidgets('prefills test prices from catalog with thousand separators', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.test,
+        items: const <LabCatalogItem>[
+          LabCatalogItem(
+            id: 'LBT0000091',
+            type: LabCatalogItemType.test,
+            name: 'Glucose',
+            code: 'GLU',
+            category: 'CHEMISTRY',
+            unitPrice: 18000,
+          ),
+        ],
+      );
+
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(_nextButton());
+      await tester.pumpAndSettle();
+
+      final Finder amountFields = find.descendant(
+        of: find.byType(AppCurrencyAmountField),
+        matching: find.byType(EditableText),
+      );
+      expect(amountFields, findsOneWidget);
+      expect(
         tester.widget<EditableText>(amountFields).controller?.text,
-        '102,000',
+        '18,000',
       );
     });
 

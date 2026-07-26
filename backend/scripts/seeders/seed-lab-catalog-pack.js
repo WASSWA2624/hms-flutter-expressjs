@@ -25,9 +25,28 @@ const resolveLabTestUnitPrice = (testSpec) => {
   return priceByCategory[category] ?? 15000;
 };
 
-const resolveLabPanelUnitPrice = (panelSpec, testCount) => {
-  const base = resolveLabTestUnitPrice({ category: panelSpec.category });
-  return Math.round(base * Math.max(testCount, 1) * 0.85);
+const resolveLabPanelUnitPrice = (panelSpec) => {
+  // Independent panel list price by category — not derived from member tests.
+  const category = String(panelSpec.category || '').trim().toUpperCase();
+  const priceByCategory = {
+    CHEMISTRY: 55000,
+    HEMATOLOGY: 48000,
+    'CRITICAL CARE': 75000,
+    MICROBIOLOGY: 65000,
+    SEROLOGY: 60000,
+    IMMUNOLOGY: 70000,
+    MOLECULAR: 120000,
+    URINALYSIS: 35000,
+    COAGULATION: 60000,
+    ENDOCRINOLOGY: 80000,
+    PARASITOLOGY: 55000,
+    HISTOPATHOLOGY: 95000,
+    CARDIOVASCULAR: 70000,
+    RENAL: 65000,
+    EMERGENCY: 75000,
+    CARDIAC: 70000,
+  };
+  return priceByCategory[category] ?? 50000;
 };
 
 const buildNestedLabTestPayload = (testSpec, includeDeleteMany = false) => ({
@@ -138,8 +157,7 @@ const seedLabCatalogForTenant = async (
         category: panelSpec.category,
         description: panelSpec.description,
         unit_price:
-          panelSpec.unit_price ??
-          resolveLabPanelUnitPrice(panelSpec, panelItems.length),
+          panelSpec.unit_price ?? resolveLabPanelUnitPrice(panelSpec),
         currency: panelSpec.currency ?? LAB_CATALOG_CURRENCY,
         panel_items: {
           create: panelItems,
@@ -153,8 +171,7 @@ const seedLabCatalogForTenant = async (
           category: panelSpec.category,
           description: panelSpec.description,
           unit_price:
-            panelSpec.unit_price ??
-            resolveLabPanelUnitPrice(panelSpec, panelItems.length),
+            panelSpec.unit_price ?? resolveLabPanelUnitPrice(panelSpec),
           currency: panelSpec.currency ?? LAB_CATALOG_CURRENCY,
           panel_items: {
             deleteMany: {},

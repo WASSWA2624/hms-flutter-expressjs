@@ -1565,14 +1565,18 @@ class _LabEnableFacilityOfferingDialogState
   void _ensurePriceFields(List<LabCatalogItem> items) {
     for (final LabCatalogItem item in items) {
       final String key = _labEnableCatalogItemKey(item);
-      _priceControllers.putIfAbsent(
-        key,
-        () => TextEditingController(
+      _priceControllers.putIfAbsent(key, () {
+        // Panels use an independent facility price. Never suggest a catalog
+        // default that may have been derived from member-test pricing.
+        if (item.type == LabCatalogItemType.panel) {
+          return TextEditingController();
+        }
+        return TextEditingController(
           text: item.unitPrice == null
               ? ''
               : formatCurrencyAmountInput(item.unitPrice!),
-        ),
-      );
+        );
+      });
       _currencies.putIfAbsent(
         key,
         () => item.currency ?? widget.defaultCurrency,
@@ -1585,7 +1589,7 @@ class _LabEnableFacilityOfferingDialogState
     final TextEditingController? controller = _priceControllers[key];
     final String amount = controller?.text.trim().isNotEmpty == true
         ? controller!.text.trim()
-        : (item.unitPrice == null
+        : (item.type == LabCatalogItemType.panel || item.unitPrice == null
               ? ''
               : formatCurrencyAmountInput(item.unitPrice!));
     final String currency =
