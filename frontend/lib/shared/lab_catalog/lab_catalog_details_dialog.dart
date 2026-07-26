@@ -6,9 +6,14 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-Future<void> showLabCatalogItemDetailsDialog(
+/// Result from [showLabCatalogItemDetailsDialog] when the viewer chooses a
+/// mutate action. `null` means Close / dismiss.
+enum LabCatalogItemDetailsAction { edit, delete }
+
+Future<LabCatalogItemDetailsAction?> showLabCatalogItemDetailsDialog(
   BuildContext context, {
   required LabCatalogItem item,
+  bool showMutateActions = false,
 }) {
   final AppLocalizations l10n = context.l10n;
   final bool isPanel = item.isPanel;
@@ -16,7 +21,7 @@ Future<void> showLabCatalogItemDetailsDialog(
       ? l10n.labCatalogPanelDetailsDialogTitle
       : l10n.labCatalogTestDetailsDialogTitle;
 
-  return showAppDialog<void>(
+  return showAppDialog<LabCatalogItemDetailsAction>(
     context: context,
     builder: (BuildContext dialogContext) {
       final ThemeData theme = Theme.of(dialogContext);
@@ -210,6 +215,23 @@ Future<void> showLabCatalogItemDetailsDialog(
           ],
         ),
         actions: <Widget>[
+          if (showMutateActions) ...<Widget>[
+            AppButton.tertiary(
+              label: l10n.tenantFacilityDeleteAction,
+              leadingIcon: Icons.delete_outline,
+              color: theme.colorScheme.error,
+              onPressed: () => Navigator.of(
+                dialogContext,
+              ).pop(LabCatalogItemDetailsAction.delete),
+            ),
+            AppButton.secondary(
+              label: l10n.clinicalLabRequestEditSelectionAction,
+              leadingIcon: Icons.edit_outlined,
+              onPressed: () => Navigator.of(
+                dialogContext,
+              ).pop(LabCatalogItemDetailsAction.edit),
+            ),
+          ],
           AppButton.primary(
             label: l10n.commonCloseActionLabel,
             leadingIcon: Icons.check,

@@ -837,14 +837,9 @@ class _FacilityCatalogConfigPanelState
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_lab',
       columnChoices: _labColumnChoices(l10n),
-      onRowSelected: canMutateLab
-          ? (LabCatalogItem item) {
-              if (item.isStandard) {
-                return;
-              }
-              unawaited(_openLabEditDialog(item));
-            }
-          : null,
+      onRowSelected: (LabCatalogItem item) {
+        unawaited(_openLabDetailsDialog(item));
+      },
       search: AppListTableSearch<LabCatalogItem>(
         controller: _labSearchController,
         semanticLabel: l10n.tenantFacilityCatalogTabLab,
@@ -2376,6 +2371,35 @@ class _FacilityCatalogConfigPanelState
     });
   }
 
+  Future<void> _openLabDetailsDialog(LabCatalogItem item) async {
+    if (!mounted) {
+      return;
+    }
+    final bool canMutate = labCatalogMutateControlsVisible(
+      panelEnabled: widget.enabled,
+      canMutateLabCatalog: _canMutateLabCatalog,
+    );
+    final bool showMutateActions = labCatalogItemMutateActionsVisible(
+      canMutateLabCatalog: canMutate,
+      isStandard: item.isStandard,
+    );
+    final LabCatalogItemDetailsAction? action =
+        await showLabCatalogItemDetailsDialog(
+          context,
+          item: item,
+          showMutateActions: showMutateActions,
+        );
+    if (!mounted || action == null) {
+      return;
+    }
+    switch (action) {
+      case LabCatalogItemDetailsAction.edit:
+        await _openLabEditDialog(item);
+      case LabCatalogItemDetailsAction.delete:
+        await _openLabDeleteDialog(item);
+    }
+  }
+
   Future<void> _openLabAddDialog(LabCatalogItemType kind) async {
     if (!_canMutateLabCatalog) {
       return;
@@ -2418,7 +2442,7 @@ class _FacilityCatalogConfigPanelState
       }
       if (result is LabCatalogItem) {
         final LabCatalogItem existing = _resolveLabCatalogItem(result);
-        await showLabCatalogItemDetailsDialog(context, item: existing);
+        await _openLabDetailsDialog(existing);
         return;
       }
       if (result != true) {
@@ -2447,7 +2471,7 @@ class _FacilityCatalogConfigPanelState
       if (!mounted) {
         return;
       }
-      await showLabCatalogItemDetailsDialog(context, item: saved);
+      await _openLabDetailsDialog(saved);
     });
   }
 
@@ -2490,7 +2514,7 @@ class _FacilityCatalogConfigPanelState
       }
       if (result is LabCatalogItem) {
         final LabCatalogItem existing = _resolveLabCatalogItem(result);
-        await showLabCatalogItemDetailsDialog(context, item: existing);
+        await _openLabDetailsDialog(existing);
         return;
       }
       if (result != true) {
@@ -2505,7 +2529,7 @@ class _FacilityCatalogConfigPanelState
         return;
       }
       final LabCatalogItem detailsItem = saved ?? _resolveLabCatalogItem(item);
-      await showLabCatalogItemDetailsDialog(context, item: detailsItem);
+      await _openLabDetailsDialog(detailsItem);
     });
   }
 

@@ -8,10 +8,19 @@
 | ----------------------- | -------- | ------------------------ |
 | Create test | Search trailing; empty-state primary (`labCreateTestAction`) | May open scope picker when `tenantId` missing; then `LabCatalogItemMutationDialog` for `LabCatalogItemType.test`. |
 | Create panel | Search trailing only (`labCreatePanelAction`) | Same create flow for `LabCatalogItemType.panel`. |
-| Edit | Row actions / row select | `LabCatalogItemMutationDialog` for the row’s kind. |
+| Row select | Table / mobile list row | Opens `showLabCatalogItemDetailsDialog` for that test or panel (does **not** open edit). |
+| Edit | Row actions only | `LabCatalogItemMutationDialog` for the row’s kind. |
 | Delete | Row actions (`tenantFacilityDeleteAction` → **Delete**) | `LabDeleteReasonDialog`; submit **Delete test** or **Delete panel**. |
 
 **Filter groups:** type (test / panel); category; result kind; specimen type; source (from loaded rows).
+
+### `showLabCatalogItemDetailsDialog` (details)
+
+| Action button / control | Location | Modal opened or function |
+| ----------------------- | -------- | ------------------------ |
+| Edit | Footer (when mutable) | Pops `LabCatalogItemDetailsAction.edit`; parent opens `LabCatalogItemMutationDialog` via existing edit path. Omitted for unauthorized or standard items. |
+| Delete | Footer (when mutable) | Pops `LabCatalogItemDetailsAction.delete`; parent opens `LabDeleteReasonDialog` via existing delete path. Omitted for unauthorized or standard items. |
+| Close | Footer | Dismisses details. |
 
 ### `LabCatalogItemMutationDialog` (create / edit)
 
@@ -180,6 +189,7 @@ Used for lab / diagnosis global catalog deletes from this panel. Call sites pass
 - Add / Create (no tenant) → **Select tenant and facility** → category mutation dialog
 - Add / Create (tenant present) → category mutation dialog
 - Edit / row select → category mutation dialog (radiology skips soft-deleted / standard rows)
+- Lab row select → `showLabCatalogItemDetailsDialog` (Edit/Delete from details when mutable)
 - Radiology Delete (active) → soft-delete `AppConfirmActionDialog` (tenant catalog scope copy)
 - Radiology Restore / Permanent delete (soft-deleted) → restore confirm / type-name + permanent confirm
 - Lab / Diagnoses Delete → `LabDeleteReasonDialog`

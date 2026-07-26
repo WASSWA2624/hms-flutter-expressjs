@@ -8,3 +8,13 @@ bool labCatalogMutateControlsVisible({
 }) {
   return panelEnabled && canMutateLabCatalog;
 }
+
+/// Whether Edit/Delete may render for a specific lab catalog item.
+///
+/// Standard catalog rows are read-only; omit controls rather than disabling.
+bool labCatalogItemMutateActionsVisible({
+  required bool canMutateLabCatalog,
+  required bool isStandard,
+}) {
+  return canMutateLabCatalog && !isStandard;
+}

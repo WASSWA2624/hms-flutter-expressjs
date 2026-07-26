@@ -53,6 +53,32 @@ void main() {
     });
   });
 
+  group('labCatalogItemMutateActionsVisible', () {
+    test('requires mutate permission and non-standard item', () {
+      expect(
+        labCatalogItemMutateActionsVisible(
+          canMutateLabCatalog: true,
+          isStandard: false,
+        ),
+        isTrue,
+      );
+      expect(
+        labCatalogItemMutateActionsVisible(
+          canMutateLabCatalog: false,
+          isStandard: false,
+        ),
+        isFalse,
+      );
+      expect(
+        labCatalogItemMutateActionsVisible(
+          canMutateLabCatalog: true,
+          isStandard: true,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('Lab catalog mutate UI gating', () {
     testWidgets('unauthorized mutate controls do not render', (
       WidgetTester tester,
