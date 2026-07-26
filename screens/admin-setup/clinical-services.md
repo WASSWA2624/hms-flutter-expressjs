@@ -85,10 +85,10 @@ Opened after Configure → Next when the Lab nested tab is active. Wizard: **cat
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |
-| Laboratory filters / Filter | Catalog search (`labFiltersLabel`) | Type (when all), category, result-kind, specimen type, and source filter groups; **Apply filters** / **Clear filters**. |
+| Laboratory filters / Filter | Catalog search (`labFiltersLabel`) | Type (when all), **status** (Available / Configured), category, result-kind, specimen type, and source filter groups; **Apply filters** / **Clear filters**. |
 | Settings | Column visibility (when >1 columns) | Column-settings dialog. |
 | Select-all header checkbox | Select column header (tristate, left-aligned) | Checks all currently listed available rows; unchecks to clear those listed rows. Shows indeterminate when only some listed rows are selected. Tooltip reflects Select all / partial count / Clear selection. |
-| Row select / checkbox | Catalog row | Toggles multi-select for available rows only (selection updates without rebuilding the full table). Rows already offered at the scoped facility remain listed, show **Configured** (tooltip: Already offered), and have disabled checkboxes. Select-all ignores offered rows. Selection count appears under the dialog body; Next shows `(count)` when ≥1 available selected. Catalog load uses `AppLoadingIndicator`; in-place refresh uses a thin progress bar. |
+| Row select / checkbox | Catalog row | Toggles multi-select for available rows only (selection updates without rebuilding the full table). Every row shows Status **Available** or **Configured**. Configured rows have disabled checkboxes and are excluded from select-all. Selection count appears under the dialog body; Next shows `(count)` when ≥1 available selected. Catalog load uses `AppLoadingIndicator`; in-place refresh uses a thin progress bar. |
 | Back | Footer leftmost | Catalog: returns to scope picker when `showBackAction` (pops `backResult`); otherwise dismisses. Price → catalog; Preview → price. |
 | Next | Footer middle (`commonNextActionLabel`) | Always visible on catalog/price. Catalog: disabled with `labSelectAtLeastOneItemMessage` until ≥1 available selected; then opens batch price. Price: validates required unit prices, then opens preview. |
 | Close | Footer rightmost | Aborts without further enable (pops whether any were already enabled this session). |

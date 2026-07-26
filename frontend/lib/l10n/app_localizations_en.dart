@@ -18986,6 +18986,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEnableOfferingAlreadyOfferedLabel => 'Already offered';
 
   @override
+  String get labEnableOfferingAvailableLabel => 'Available';
+
+  @override
   String get labEnableSelectedItemsAction => 'Enable selected';
 
   @override

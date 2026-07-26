@@ -79,7 +79,7 @@ void main() {
       expect(next.onPressed, isNull);
     });
 
-    testWidgets('shows already offered items as Configured and non-selectable', (
+    testWidgets('shows Available and Configured status values', (
       WidgetTester tester,
     ) async {
       await _pumpEnableDialog(
@@ -95,6 +95,7 @@ void main() {
       expect(find.text('Complete blood count'), findsWidgets);
       expect(find.text('Metabolic panel'), findsWidgets);
       expect(find.text('Lipid panel'), findsWidgets);
+      expect(find.text('Available'), findsWidgets);
       expect(find.text('Configured'), findsWidgets);
 
       // Select-all only covers available rows.
@@ -114,6 +115,41 @@ void main() {
         checkboxes.where((Checkbox box) => box.onChanged == null),
         isNotEmpty,
       );
+    });
+
+    testWidgets('status advanced filter keeps only Configured rows', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[
+          _availableTest,
+          _alreadyOfferedTest,
+          _availablePanel,
+        ],
+      );
+
+      await tester.tap(find.text('Laboratory filters'));
+      await tester.pumpAndSettle();
+
+      final Finder statusField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppSelectField<String> && widget.labelText == 'Status',
+      );
+      expect(statusField, findsOneWidget);
+      tester
+          .widget<AppSelectField<String>>(statusField)
+          .onChanged
+          ?.call('configured');
+      await tester.pump();
+      await tester.tap(find.text('Apply filters'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lipid panel'), findsWidgets);
+      expect(find.text('Configured'), findsWidgets);
+      expect(find.text('Complete blood count'), findsNothing);
+      expect(find.text('Metabolic panel'), findsNothing);
     });
 
     testWidgets('select-all excludes already offered rows', (

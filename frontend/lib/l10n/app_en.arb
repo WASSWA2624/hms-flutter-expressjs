@@ -24363,6 +24363,10 @@
   "@labEnableOfferingAlreadyOfferedLabel": {
     "description": "Badge shown on platform catalog items that are already offered at the facility."
   },
+  "labEnableOfferingAvailableLabel": "Available",
+  "@labEnableOfferingAvailableLabel": {
+    "description": "Status shown on platform catalog items that can still be enabled at the facility."
+  },
   "labEnableSelectedItemsAction": "Enable selected",
   "@labEnableSelectedItemsAction": {
     "description": "Primary action to enable the selected lab tests and panels at the facility."

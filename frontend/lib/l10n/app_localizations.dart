@@ -35431,6 +35431,12 @@ abstract class AppLocalizations {
   /// **'Already offered'**
   String get labEnableOfferingAlreadyOfferedLabel;
 
+  /// Status shown on platform catalog items that can still be enabled at the facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get labEnableOfferingAvailableLabel;
+
   /// Primary action to enable the selected lab tests and panels at the facility.
   ///
   /// In en, this message translates to:

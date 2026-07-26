@@ -1361,6 +1361,9 @@ class _LabEnableFacilityOfferingDialogState
   static const Duration _searchDebounceDuration = Duration(milliseconds: 200);
   static const int _searchLimit = 100;
   static const String _typeFilterKey = 'type';
+  static const String _statusFilterKey = 'status';
+  static const String _statusAvailableValue = 'available';
+  static const String _statusConfiguredValue = 'configured';
   static const String _categoryFilterKey = 'category';
   static const String _resultKindFilterKey = 'result_kind';
   static const String _specimenFilterKey = 'specimen_type';
@@ -1409,11 +1412,20 @@ class _LabEnableFacilityOfferingDialogState
     final String? resultKind = _filterValue.option(_resultKindFilterKey);
     final String? specimen = _filterValue.option(_specimenFilterKey);
     final String? source = _filterValue.option(_sourceFilterKey);
+    final String? status = _filterValue.option(_statusFilterKey);
     final String? type = _selectedType;
     return _catalogItems
         .where((LabCatalogItem item) {
           if (_showingAll && type != null && item.type.name != type) {
             return false;
+          }
+          if (status != null && status.isNotEmpty) {
+            final String itemStatus = item.isOfferedAtFacility
+                ? _statusConfiguredValue
+                : _statusAvailableValue;
+            if (itemStatus != status) {
+              return false;
+            }
           }
           if (category != null &&
               category.isNotEmpty &&
@@ -2066,6 +2078,23 @@ class _LabEnableFacilityOfferingDialogState
                   ],
                 ),
               AppSearchBarFilterGroup(
+                key: _statusFilterKey,
+                label: l10n.accessAdminColumnStatus,
+                allLabel: l10n.labScopeAll,
+                choices: <AppSearchBarFilterChoice>[
+                  AppSearchBarFilterChoice(
+                    value: _statusAvailableValue,
+                    label: l10n.labEnableOfferingAvailableLabel,
+                    icon: Icons.radio_button_unchecked,
+                  ),
+                  AppSearchBarFilterChoice(
+                    value: _statusConfiguredValue,
+                    label: l10n.tenantFacilitySummaryConfigured,
+                    icon: Icons.check_circle_outline,
+                  ),
+                ],
+              ),
+              AppSearchBarFilterGroup(
                 key: _categoryFilterKey,
                 label: l10n.labCategoryLabel,
                 allLabel: l10n.labScopeAll,
@@ -2149,11 +2178,14 @@ class _LabEnableFacilityOfferingDialogState
               title: item.name ?? item.displayTitle,
               caption: item.code,
               meta: <AppListTableMobileMeta>[
-                if (offered)
-                  AppListTableMobileMeta(
-                    label: l10n.tenantFacilitySummaryConfigured,
-                    icon: Icons.check_circle_outline,
-                  ),
+                AppListTableMobileMeta(
+                  label: item.isOfferedAtFacility
+                      ? l10n.tenantFacilitySummaryConfigured
+                      : l10n.labEnableOfferingAvailableLabel,
+                  icon: item.isOfferedAtFacility
+                      ? Icons.check_circle_outline
+                      : Icons.radio_button_unchecked,
+                ),
                 if (_showingAll)
                   AppListTableMobileMeta(
                     label: item.type == LabCatalogItemType.panel
@@ -2510,33 +2542,14 @@ class _LabEnableFacilityOfferingDialogState
         id: 'status',
         label: l10n.accessAdminColumnStatus,
         alwaysVisible: true,
-        cellBuilder: (BuildContext context, LabCatalogItem item) {
-          if (!item.isOfferedAtFacility) {
-            return const SizedBox.shrink();
+        sortComparator: (LabCatalogItem left, LabCatalogItem right) {
+          if (left.isOfferedAtFacility == right.isOfferedAtFacility) {
+            return 0;
           }
-          final AppLocalizations cellL10n = context.l10n;
-          final ThemeData theme = Theme.of(context);
-          return Tooltip(
-            message: cellL10n.labEnableOfferingAlreadyOfferedLabel,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 16,
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: theme.spacing.xs),
-                Text(
-                  cellL10n.tenantFacilitySummaryConfigured,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          );
+          return left.isOfferedAtFacility ? 1 : -1;
+        },
+        cellBuilder: (BuildContext context, LabCatalogItem item) {
+          return _labEnableOfferingStatusCell(context, item);
         },
       ),
       if (showTypeColumn)
@@ -2669,6 +2682,45 @@ List<AppSearchBarFilterChoice> _enableOfferingResultKindChoices(
         ),
       )
       .toList(growable: false);
+}
+
+Widget _labEnableOfferingStatusCell(
+  BuildContext context,
+  LabCatalogItem item,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final ThemeData theme = Theme.of(context);
+  final bool offered = item.isOfferedAtFacility;
+  final String label = offered
+      ? l10n.tenantFacilitySummaryConfigured
+      : l10n.labEnableOfferingAvailableLabel;
+  final String tooltip = offered
+      ? l10n.labEnableOfferingAlreadyOfferedLabel
+      : l10n.labEnableOfferingAvailableLabel;
+  final Color color = offered
+      ? theme.colorScheme.primary
+      : theme.colorScheme.onSurfaceVariant;
+  return Tooltip(
+    message: tooltip,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(
+          offered ? Icons.check_circle_outline : Icons.radio_button_unchecked,
+          size: 16,
+          color: color,
+        ),
+        SizedBox(width: theme.spacing.xs),
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 Widget _catalogOfferingNameCell(String label, {double maxWidth = 280}) {
