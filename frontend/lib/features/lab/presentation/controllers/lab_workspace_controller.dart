@@ -1048,12 +1048,14 @@ final class LabWorkspaceController
         ? _repository.listFacilityLabTests(
             tenantId: scope.tenantId,
             facilityId: scope.facilityId,
+            search: query,
             offeredOnly: true,
             limit: labEnableOfferedMatchLimit,
           )
         : _repository.listFacilityLabPanels(
             tenantId: scope.tenantId,
             facilityId: scope.facilityId,
+            search: query,
             offeredOnly: true,
             limit: labEnableOfferedMatchLimit,
           );

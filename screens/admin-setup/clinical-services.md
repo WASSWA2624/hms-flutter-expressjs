@@ -81,7 +81,7 @@ Dialog title default: **Select tenant and facility**.
 
 Opened after Configure → Next when the Lab nested tab is active. Wizard: **catalog → batch prices → preview → one batch enable** (same pattern as Radiology).
 
-**Note from source:** `_openLabConfigureDialog` passes `kind: LabEnableOfferingKind.all` so both tests and panels are listed (type filter available). Already-offered rows stay visible, marked **Configured** (disabled select), and are excluded from select-all / batch enable. Catalog rows are deduped by type + identity before render and enable.
+**Note from source:** `_openLabConfigureDialog` passes `kind: LabEnableOfferingKind.all` so both tests and panels are listed (type filter available). Catalog merges platform/tenant rows with facility offerings (matched by id/code/name) so already-offered rows stay visible as **Configured** even when they fall outside the current platform page. Configured rows have disabled select and are excluded from select-all / batch enable. Catalog rows are deduped by type + identity before render and enable.
 
 | Action button / control | Location | Modal opened or function |
 | ----------------------- | -------- | ------------------------ |

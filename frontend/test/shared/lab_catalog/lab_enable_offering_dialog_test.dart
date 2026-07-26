@@ -152,6 +152,47 @@ void main() {
       expect(find.text('Metabolic panel'), findsNothing);
     });
 
+    testWidgets('configured filter shows offered items missing from platform page', (
+      WidgetTester tester,
+    ) async {
+      // Simulates merge result: platform page had no overlap, offered row appended.
+      await _pumpEnableDialog(
+        tester,
+        kind: LabEnableOfferingKind.all,
+        items: const <LabCatalogItem>[
+          _availableTest,
+          LabCatalogItem(
+            id: 'LBP0000099',
+            type: LabCatalogItemType.panel,
+            name: 'Facility only panel',
+            code: 'FOP',
+            category: 'Chemistry',
+            isOfferedAtFacility: true,
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('Laboratory filters'));
+      await tester.pumpAndSettle();
+      final Finder statusField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppSelectField<String> && widget.labelText == 'Status',
+      );
+      tester
+          .widget<AppSelectField<String>>(statusField)
+          .onChanged
+          ?.call('configured');
+      await tester.pump();
+      await tester.tap(find.text('Apply filters'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Facility only panel'), findsWidgets);
+      expect(find.text('Configured'), findsWidgets);
+      expect(find.text('Complete blood count'), findsNothing);
+      expect(find.text('All platform items are already offered at this facility.'), findsNothing);
+      expect(find.text('No matching lab catalog items'), findsNothing);
+    });
+
     testWidgets('select-all excludes already offered rows', (
       WidgetTester tester,
     ) async {

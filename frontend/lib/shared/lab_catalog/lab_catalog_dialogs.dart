@@ -1958,7 +1958,7 @@ class _LabEnableFacilityOfferingDialogState
         _availableCatalogItems.isEmpty &&
         !hasSearchOrFilter;
     final String emptyLabel = hasSearchOrFilter
-        ? l10n.labEnableOfferingNoItemsLabel
+        ? l10n.clinicalLabRequestNoCatalogOptions
         : (catalogEmpty
               ? l10n.labEnableOfferingNoPlatformItemsLabel
               : l10n.labEnableOfferingNoItemsLabel);
