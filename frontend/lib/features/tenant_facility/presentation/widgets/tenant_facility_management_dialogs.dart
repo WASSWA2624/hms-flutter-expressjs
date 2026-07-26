@@ -888,7 +888,6 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     if (_failure != null && _scopedTenant == null) {
       return AppFailureStateView(
         failure: _failure!,
-        onRetry: () => unawaited(_reloadScopedTenant()),
       );
     }
 
@@ -936,7 +935,6 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     if (_failure != null) {
       return AppFailureStateView(
         failure: _failure!,
-        onRetry: () => unawaited(_reload(resetPage: true)),
       );
     }
 

@@ -87,6 +87,32 @@ void main() {
       expect(result.hasExactConflict, isFalse);
       expect(result.similarMatches, isEmpty);
     });
+
+    test('ignores excluded tenant by mutation resource uuid', () {
+      final List<TenantProfile> withUuid = <TenantProfile>[
+        TenantProfile(
+          id: 'TEN0001',
+          name: 'DemoCare General Hospital',
+          slug: 'democare-general-hospital',
+          resourceUuid: 'uuid-tenant-1',
+          contactName: 'Jane Doe',
+          contactEmail: 'jane@example.com',
+          contactPhone: '+256700000000',
+          currency: 'UGX',
+          standardConsultationFee: '50000',
+        ),
+      ];
+
+      final TenantDuplicateCheckResult result = checkTenantDuplicates(
+        name: 'DemoCare General Hospital',
+        slug: 'democare-general-hospital',
+        existing: withUuid,
+        excludeTenantId: 'uuid-tenant-1',
+      );
+
+      expect(result.hasExactConflict, isFalse);
+      expect(result.similarMatches, isEmpty);
+    });
   });
 
   group('nameSimilarityScore', () {

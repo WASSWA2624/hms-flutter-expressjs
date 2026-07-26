@@ -990,11 +990,9 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       return false;
     }
 
-    if (widget.isCreate) {
-      final bool canProceed = await _guardAgainstDuplicates();
-      if (!canProceed) {
-        return false;
-      }
+    final bool canProceed = await _guardAgainstDuplicates();
+    if (!canProceed) {
+      return false;
     }
 
     final String fee = _feeController.text.trim();
@@ -1011,15 +1009,15 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           contactName: _contactNameController.text,
           contactEmail: _emailController.text,
           contactPhone: _phoneController.text,
-          confirmSimilar: widget.isCreate && _similarityAccepted,
+          confirmSimilar: _similarityAccepted,
           refreshSetup: widget.refreshSetupAfterSave,
           updateSetupSnapshot: widget.updateSetupSnapshot,
         );
     if (!mounted) {
       return false;
     }
-    if (saved || !widget.isCreate) {
-      return saved;
+    if (saved) {
+      return true;
     }
 
     final AppFailure? failure = ref
@@ -1044,6 +1042,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     return ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveTenant(
+          id: widget.isCreate ? null : widget.tenant?.mutationId,
           name: _nameController.text,
           slug: _slugController.text,
           isActive: _isActive,
@@ -1108,7 +1107,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       name: _nameController.text,
       slug: _slugController.text,
       existing: existing,
-      excludeTenantId: widget.tenant?.id,
+      excludeTenantId: widget.tenant?.mutationId ?? widget.tenant?.id,
       contactName: _contactNameController.text,
       contactEmail: _emailController.text,
       contactPhone: _phoneController.text,
@@ -1125,6 +1124,21 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
 
     if (!mounted) {
       return false;
+    }
+
+    // Edit saves with no conflicting peers should not open the empty review
+    // dialog; create still shows the no-similar confirmation path.
+    if (!widget.isCreate &&
+        !forceReviewMatches &&
+        !exactSlugConflict &&
+        reviewMatches.isEmpty) {
+      setState(() {
+        _nameErrorText = null;
+        _slugErrorText = null;
+        _similarMatches = const <TenantSimilarityMatch>[];
+        _similarityAccepted = false;
+      });
+      return true;
     }
 
     setState(() {

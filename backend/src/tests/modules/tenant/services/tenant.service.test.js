@@ -646,6 +646,7 @@ describe('Tenant Service', () => {
       };
 
       tenantRepository.findById.mockResolvedValue(mockBeforeTenant);
+      tenantRepository.findMany.mockResolvedValue([mockBeforeTenant]);
       tenantRepository.update.mockResolvedValue(mockUpdatedTenant);
       createAuditLog.mockResolvedValue(undefined);
 
@@ -682,9 +683,157 @@ describe('Tenant Service', () => {
             name: mockUpdatedTenant.name,
             slug: mockUpdatedTenant.slug,
             is_active: mockUpdatedTenant.is_active
-          }
+          },
+          confirm_similar: false,
+          similar_match_ids: []
         }
       });
+    });
+
+    it('should reject similar tenants on update unless confirm_similar is true', async () => {
+      const mockBeforeTenant = {
+        id: 'tenant-123',
+        name: 'Original Hospital',
+        slug: 'original-hospital',
+        is_active: true
+      };
+
+      tenantRepository.findById.mockResolvedValue(mockBeforeTenant);
+      tenantRepository.findMany.mockResolvedValue([
+        mockBeforeTenant,
+        {
+          id: 'tenant-existing',
+          name: 'DemoCare General Hospital',
+          slug: 'democare-general-hospital',
+          is_active: true,
+          extension_json: {
+            currency: 'UGX',
+            contact: {
+              name: 'Jane Doe',
+              email: 'jane@example.com',
+              phone: '+256700000000'
+            },
+            billing: { standard_consultation_fee: 50000 }
+          }
+        }
+      ]);
+
+      await expect(
+        updateTenant('tenant-123', {
+          name: 'Democare General Hospitl',
+          slug: 'another-slug',
+          extension_json: {
+            currency: 'UGX',
+            contact: {
+              name: 'Jane Doe',
+              email: 'jane@example.com',
+              phone: '+256700000000'
+            },
+            billing: { standard_consultation_fee: 50000 }
+          }
+        })
+      ).rejects.toMatchObject({
+        message: 'errors.tenant.similar_exists',
+        statusCode: 409
+      });
+      expect(tenantRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should exclude the edited tenant from similarity matches', async () => {
+      const mockBeforeTenant = {
+        id: 'tenant-123',
+        name: 'DemoCare General Hospital',
+        slug: 'democare-general-hospital',
+        is_active: true,
+        extension_json: {
+          currency: 'UGX',
+          contact: {
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            phone: '+256700000000'
+          }
+        }
+      };
+      const mockUpdatedTenant = {
+        ...mockBeforeTenant,
+        name: 'DemoCare General Hospital',
+        updated_at: new Date()
+      };
+
+      tenantRepository.findById.mockResolvedValue(mockBeforeTenant);
+      tenantRepository.findMany.mockResolvedValue([mockBeforeTenant]);
+      tenantRepository.update.mockResolvedValue(mockUpdatedTenant);
+      createAuditLog.mockResolvedValue(undefined);
+
+      const result = await updateTenant('tenant-123', {
+        name: 'DemoCare General Hospital',
+        slug: 'democare-general-hospital',
+        extension_json: mockBeforeTenant.extension_json
+      });
+
+      expect(result.id).toBe('tenant-123');
+      expect(tenantRepository.update).toHaveBeenCalled();
+    });
+
+    it('should update anyway when confirm_similar is true', async () => {
+      const mockBeforeTenant = {
+        id: 'tenant-123',
+        name: 'Original Hospital',
+        slug: 'original-hospital',
+        is_active: true
+      };
+      const updateData = {
+        name: 'Democare General Hospitl',
+        slug: 'democare-general-hospitl',
+        confirm_similar: true,
+        extension_json: {
+          currency: 'UGX',
+          contact: {
+            name: 'Jane Doe',
+            email: 'jane@example.com',
+            phone: '+256700000000'
+          }
+        }
+      };
+      const mockUpdatedTenant = {
+        ...mockBeforeTenant,
+        name: updateData.name,
+        slug: updateData.slug,
+        extension_json: updateData.extension_json,
+        updated_at: new Date()
+      };
+
+      tenantRepository.findById.mockResolvedValue(mockBeforeTenant);
+      tenantRepository.findMany.mockResolvedValue([
+        mockBeforeTenant,
+        {
+          id: 'tenant-existing',
+          name: 'DemoCare General Hospital',
+          slug: 'democare-general-hospital',
+          is_active: true,
+          extension_json: updateData.extension_json
+        }
+      ]);
+      tenantRepository.update.mockResolvedValue(mockUpdatedTenant);
+      createAuditLog.mockResolvedValue(undefined);
+
+      const result = await updateTenant('tenant-123', updateData, {
+        user_id: 'user-123'
+      });
+
+      expect(result.id).toBe('tenant-123');
+      expect(tenantRepository.update).toHaveBeenCalledWith(
+        'tenant-123',
+        expect.not.objectContaining({ confirm_similar: true })
+      );
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          details: expect.objectContaining({
+            confirm_similar: true,
+            similar_match_ids: ['tenant-existing']
+          })
+        })
+      );
     });
 
     it('should throw HttpError if tenant not found before update', async () => {
@@ -702,6 +851,7 @@ describe('Tenant Service', () => {
       const error = new HttpError('errors.database.unique_field', 409);
       
       tenantRepository.findById.mockResolvedValue(mockTenant);
+      tenantRepository.findMany.mockResolvedValue([]);
       tenantRepository.update.mockRejectedValue(error);
 
       await expect(updateTenant('tenant-123', { name: 'Updated' }))

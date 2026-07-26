@@ -177,5 +177,90 @@ void main() {
         isTrue,
       );
     });
+
+    test('tenants-tab failure states omit Retry', () {
+      final int tenantsStart = managementDialogsSource.indexOf(
+        'class ManageTenantsPanel extends ConsumerStatefulWidget',
+      );
+      final int facilitiesStart = managementDialogsSource.indexOf(
+        'class ManageFacilitiesPanel extends ConsumerStatefulWidget',
+      );
+      expect(tenantsStart, greaterThanOrEqualTo(0));
+      expect(facilitiesStart, greaterThan(tenantsStart));
+      final String tenantsPanelSource = managementDialogsSource.substring(
+        tenantsStart,
+        facilitiesStart,
+      );
+
+      expect(
+        tenantsPanelSource.contains(
+          'if (_failure != null && _scopedTenant == null) {\n'
+          '      return AppFailureStateView(\n'
+          '        failure: _failure!,\n'
+          '      );',
+        ),
+        isTrue,
+      );
+      expect(
+        tenantsPanelSource.contains(
+          'if (_failure != null) {\n'
+          '      return AppFailureStateView(\n'
+          '        failure: _failure!,\n'
+          '      );',
+        ),
+        isTrue,
+      );
+      expect(
+        tenantsPanelSource.contains(
+          'onRetry: () => unawaited(_reloadScopedTenant())',
+        ),
+        isFalse,
+      );
+      // Platform tenant-list failure must not wire Retry; nested facility panels
+      // may still use onRetry for their own loads.
+      expect(
+        RegExp(
+          r'Widget _buildTableBody\(AppLocalizations l10n\) \{[\s\S]*?'
+          r'if \(_failure != null\) \{\s*'
+          r'return AppFailureStateView\(\s*'
+          r'failure: _failure!,\s*'
+          r'\);\s*'
+          r'\}',
+        ).hasMatch(tenantsPanelSource),
+        isTrue,
+      );
+    });
+
+    test('edit tenant reuses create similarity confirm flow', () {
+      expect(
+        setupPageSource.contains('confirmSimilar: _similarityAccepted'),
+        isTrue,
+      );
+      expect(
+        setupPageSource.contains('confirmSimilar: widget.isCreate && _similarityAccepted'),
+        isFalse,
+      );
+      expect(
+        setupPageSource.contains(
+          'excludeTenantId: widget.tenant?.mutationId ?? widget.tenant?.id',
+        ),
+        isTrue,
+      );
+      expect(
+        setupPageSource.contains('!widget.isCreate &&\n'
+            '        !forceReviewMatches &&\n'
+            '        !exactSlugConflict &&\n'
+            '        reviewMatches.isEmpty'),
+        isTrue,
+        reason: 'unchanged edits with no peers skip the empty similarity dialog',
+      );
+      expect(
+        File(
+          'lib/features/tenant_facility/data/repositories/'
+          'tenant_facility_repository_impl.dart',
+        ).readAsStringSync().contains("if (confirmSimilar) 'confirm_similar': true"),
+        isTrue,
+      );
+    });
   });
 }

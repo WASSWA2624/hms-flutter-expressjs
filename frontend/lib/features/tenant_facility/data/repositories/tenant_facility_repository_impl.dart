@@ -349,7 +349,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       'slug': _normalizedOptional(slug),
       'is_active': isActive,
       'extension_json': ?extensionJson,
-      if (id == null && confirmSimilar) 'confirm_similar': true,
+      if (confirmSimilar) 'confirm_similar': true,
     };
     if (id == null) {
       return _apiClient.post<TenantProfile>(

@@ -135,6 +135,7 @@ const updateTenantSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   slug: slugSchema.optional().nullable(),
   is_active: z.boolean().optional(),
+  confirm_similar: optionalBooleanSchema,
   extension_json: updateExtensionJsonSchema
 });
 

@@ -211,7 +211,11 @@ TenantDuplicateCheckResult checkTenantDuplicates({
   final List<TenantSimilarityMatch> matches = <TenantSimilarityMatch>[];
 
   for (final TenantProfile tenant in existing) {
-    if (excludeTenantId != null && tenant.id == excludeTenantId) {
+    if (excludeTenantId != null &&
+        (tenant.id == excludeTenantId ||
+            tenant.mutationId == excludeTenantId ||
+            tenant.displayId == excludeTenantId ||
+            tenant.resourceUuid == excludeTenantId)) {
       continue;
     }
 

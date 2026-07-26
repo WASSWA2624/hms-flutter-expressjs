@@ -440,31 +440,53 @@ const updateTenant = async (id, data, context = {}) => {
 
   assertCanAccessTenantRecord(beforeTenant, context);
 
-  if (data?.slug) {
-    await tenantRepository.releaseSlugFromSoftDeletedTenants(data.slug, tenantId);
+  const confirmSimilar = data?.confirm_similar === true;
+  let payload = { ...data };
+  delete payload.confirm_similar;
+
+  if (payload?.slug) {
+    await tenantRepository.releaseSlugFromSoftDeletedTenants(payload.slug, tenantId);
   }
 
   // Merge extension_json so partial updates (e.g. currency) do not wipe other keys.
-  if (data.extension_json && typeof data.extension_json === 'object') {
+  if (payload.extension_json && typeof payload.extension_json === 'object') {
     const previousExtension =
       beforeTenant.extension_json && typeof beforeTenant.extension_json === 'object'
         ? beforeTenant.extension_json
         : {};
     const mergedExtension = {
       ...previousExtension,
-      ...data.extension_json};
+      ...payload.extension_json};
     for (const [key, value] of Object.entries(mergedExtension)) {
       if (value === null || value === undefined) {
         delete mergedExtension[key];
       }
     }
-    data = {
-      ...data,
+    payload = {
+      ...payload,
       extension_json: mergedExtension};
   }
 
+  const uniquenessData = {
+    name: Object.prototype.hasOwnProperty.call(payload, 'name')
+      ? payload.name
+      : beforeTenant.name,
+    slug: Object.prototype.hasOwnProperty.call(payload, 'slug')
+      ? payload.slug
+      : beforeTenant.slug,
+    extension_json: Object.prototype.hasOwnProperty.call(payload, 'extension_json')
+      ? payload.extension_json
+      : beforeTenant.extension_json
+  };
+
+  const duplicateCheck = await assertTenantUniqueness({
+    data: uniquenessData,
+    confirmSimilar,
+    excludeTenantId: tenantId
+  });
+
   // Update tenant
-  const tenant = await tenantRepository.update(tenantId, data);
+  const tenant = await tenantRepository.update(tenantId, payload);
 
   // Create audit log
   await createAuditLog({
@@ -486,7 +508,14 @@ const updateTenant = async (id, data, context = {}) => {
         name: tenant.name,
         slug: tenant.slug,
         is_active: tenant.is_active
-      }
+      },
+      confirm_similar: confirmSimilar,
+      similar_match_ids: confirmSimilar
+        ? duplicateCheck.overridableMatches
+          .slice(0, 5)
+          .map((match) => match.id)
+          .filter(Boolean)
+        : []
     }
   });
 

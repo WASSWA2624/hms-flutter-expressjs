@@ -237,6 +237,18 @@ describe('Tenant Schema Validation', () => {
       }
     });
 
+    it('should accept confirm_similar for duplicate review overrides', () => {
+      const result = updateTenantSchema.safeParse({
+        name: 'Updated Hospital',
+        confirm_similar: true
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.confirm_similar).toBe(true);
+      }
+    });
+
     it('should trim name whitespace', () => {
       const validData = {
         name: '  Updated Hospital  '
