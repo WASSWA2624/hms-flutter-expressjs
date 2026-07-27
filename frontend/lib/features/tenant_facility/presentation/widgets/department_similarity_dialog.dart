@@ -48,6 +48,11 @@ Future<DepartmentSimilarityDialogResult> showDepartmentSimilarityDialog(
   );
   final bool hasMatches = visibleMatches.isNotEmpty;
   final bool canProceed = allowProceed && !hasExactNameConflict;
+  final int overallScore = hasMatches
+      ? visibleMatches
+            .map((DepartmentSimilarityMatch match) => match.score)
+            .reduce((int a, int b) => a > b ? a : b)
+      : 0;
 
   final String dialogTitle = hasExactNameConflict || hasMatches
       ? l10n.tenantFacilitySimilarDepartmentDialogTitle
@@ -102,9 +107,14 @@ Future<DepartmentSimilarityDialogResult> showDepartmentSimilarityDialog(
                   : Icons.verified_outlined,
             ),
             SizedBox(height: theme.spacing.md),
-            _ProposedDepartmentCard(proposed: proposed),
+            _ProposedDepartmentCard(
+              proposed: proposed,
+              overallScore: overallScore,
+              hasMatches: hasMatches,
+              hasExactNameConflict: hasExactNameConflict,
+            ),
+            SizedBox(height: theme.spacing.lg),
             if (hasMatches) ...<Widget>[
-              SizedBox(height: theme.spacing.lg),
               Row(
                 children: <Widget>[
                   Expanded(
@@ -140,7 +150,8 @@ Future<DepartmentSimilarityDialogResult> showDepartmentSimilarityDialog(
                   ),
                 ),
               ],
-            ],
+            ] else
+              _NoMatchScorePanel(score: overallScore),
           ],
         ),
         actions: <Widget>[
@@ -171,14 +182,23 @@ Future<DepartmentSimilarityDialogResult> showDepartmentSimilarityDialog(
 }
 
 class _ProposedDepartmentCard extends StatelessWidget {
-  const _ProposedDepartmentCard({required this.proposed});
+  const _ProposedDepartmentCard({
+    required this.proposed,
+    required this.overallScore,
+    required this.hasMatches,
+    required this.hasExactNameConflict,
+  });
 
   final DepartmentSimilarityProposedValues proposed;
+  final int overallScore;
+  final bool hasMatches;
+  final bool hasExactNameConflict;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final AppStatusColors statusColors = theme.statusColors;
     final String typeLabel = tenantFacilityDepartmentTypeLabel(l10n, proposed.type);
     final String statusLabel = tenantFacilityActiveStatusLabel(
       l10n,
@@ -188,6 +208,22 @@ class _ProposedDepartmentCard extends StatelessWidget {
       proposed.name,
       proposed.shortName,
     );
+
+    final Color badgeContainer = hasExactNameConflict
+        ? statusColors.errorContainer
+        : hasMatches
+        ? statusColors.warningContainer
+        : statusColors.successContainer;
+    final Color badgeOnContainer = hasExactNameConflict
+        ? statusColors.onErrorContainer
+        : hasMatches
+        ? statusColors.onWarningContainer
+        : statusColors.onSuccessContainer;
+    final Color accent = hasExactNameConflict
+        ? statusColors.error
+        : hasMatches
+        ? statusColors.warning
+        : statusColors.success;
 
     final List<(String, String)> facts = <(String, String)>[
       (l10n.tenantFacilityDepartmentNameLabel, _display(proposed.name, l10n)),
@@ -203,7 +239,37 @@ class _ProposedDepartmentCard extends StatelessWidget {
       tone: AppWorkspaceStatusTone.info,
       density: AppContentPanelDensity.compact,
       leadingIcon: Icons.edit_note_outlined,
-      title: l10n.tenantFacilitySimilarTenantProposedHeading,
+      title: l10n.tenantFacilitySimilarDepartmentProposedHeading,
+      trailing: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: badgeContainer,
+          borderRadius: BorderRadius.circular(theme.radius.md),
+          border: Border.all(color: accent.withValues(alpha: 0.55)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            Text(
+              l10n.tenantFacilityDepartmentOverallSimilarityLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: badgeOnContainer,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              '$overallScore%',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: badgeOnContainer,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
       children: <Widget>[
         Wrap(
           spacing: theme.spacing.md,
@@ -241,6 +307,62 @@ class _ProposedDepartmentCard extends StatelessWidget {
   String _display(String? value, AppLocalizations l10n) {
     final String trimmed = value?.trim() ?? '';
     return trimmed.isEmpty ? l10n.clinicalOrderEmptyValueLabel : trimmed;
+  }
+}
+
+class _NoMatchScorePanel extends StatelessWidget {
+  const _NoMatchScorePanel({required this.score});
+
+  final int score;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final AppStatusColors statusColors = theme.statusColors;
+
+    return AppContentPanel(
+      tone: AppWorkspaceStatusTone.success,
+      density: AppContentPanelDensity.compact,
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.verified_outlined,
+            color: statusColors.success,
+            size: theme.appTokens.listIconSize,
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Text(
+              l10n.tenantFacilityDepartmentNoMatchScoreLabel(score),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.sm,
+              vertical: theme.spacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: statusColors.successContainer,
+              borderRadius: BorderRadius.circular(theme.radius.md),
+              border: Border.all(
+                color: statusColors.success.withValues(alpha: 0.55),
+              ),
+            ),
+            child: Text(
+              '$score%',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: statusColors.onSuccessContainer,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -296,7 +418,7 @@ class _DepartmentSimilarityMatchCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      l10n.tenantFacilitySimilarTenantExistingHeading,
+                      l10n.tenantFacilitySimilarDepartmentExistingHeading,
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: accent,
@@ -422,7 +544,7 @@ class _DepartmentSimilarityMatchCard extends StatelessWidget {
           ),
           SizedBox(height: theme.spacing.md),
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: Alignment.centerRight,
             child: AppButton.secondary(
               label: l10n.tenantFacilityUseThisDepartmentAction,
               leadingIcon: Icons.open_in_new,

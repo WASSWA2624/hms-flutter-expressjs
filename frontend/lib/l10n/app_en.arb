@@ -8989,6 +8989,31 @@
   "@tenantFacilityUseThisDepartmentAction": {
     "description": "Adopt an existing similar department instead of creating."
   },
+  "tenantFacilitySimilarDepartmentProposedHeading": "Proposed department",
+  "@tenantFacilitySimilarDepartmentProposedHeading": {
+    "description": "Heading for the proposed department card in similarity review."
+  },
+  "tenantFacilitySimilarDepartmentExistingHeading": "Existing department",
+  "@tenantFacilitySimilarDepartmentExistingHeading": {
+    "description": "Heading for an existing department match in similarity review."
+  },
+  "tenantFacilityDepartmentOverallSimilarityLabel": "Overall similarity",
+  "@tenantFacilityDepartmentOverallSimilarityLabel": {
+    "description": "Label for the overall department similarity score."
+  },
+  "tenantFacilityDepartmentNoMatchScoreLabel": "No matches · {score}% similarity",
+  "@tenantFacilityDepartmentNoMatchScoreLabel": {
+    "description": "Shown when department similarity review finds no matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilityDepartmentSimilarityCheckingMessage": "Checking for similar departments…",
+  "@tenantFacilityDepartmentSimilarityCheckingMessage": {
+    "description": "Loading message while department similarity is checked."
+  },
   "tenantFacilityUnitNameLabel": "Unit name",
   "@tenantFacilityUnitNameLabel": {
     "description": "Unit name field label."

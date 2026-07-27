@@ -3171,7 +3171,7 @@ class _FacilityDetailsDialogState
               name: item.name,
               deleteAction: () => ref
                   .read(tenantFacilitySetupSubmissionProvider.notifier)
-                  .deleteDepartment(item.id),
+                  .deleteDepartment(item.mutationId),
             ),
           ),
           onRestore: (DepartmentProfile item) => unawaited(
@@ -3179,7 +3179,7 @@ class _FacilityDetailsDialogState
               name: item.name,
               restoreAction: () => ref
                   .read(tenantFacilitySetupSubmissionProvider.notifier)
-                  .restoreDepartment(item.id),
+                  .restoreDepartment(item.mutationId),
             ),
           ),
         );

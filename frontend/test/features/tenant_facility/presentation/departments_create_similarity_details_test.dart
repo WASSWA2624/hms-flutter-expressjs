@@ -73,6 +73,7 @@ void main() {
       expect(formSource.contains('showDepartmentSimilarityDialog'), isTrue);
       expect(formSource.contains('confirmSimilar: _similarityAccepted'), isTrue);
       expect(formSource.contains('confirmSimilar: true'), isTrue);
+      expect(formSource.contains('_checkingSimilarity'), isTrue);
       expect(
         repositorySource.contains("if (confirmSimilar) 'confirm_similar': true"),
         isTrue,
@@ -83,6 +84,20 @@ void main() {
       );
       expect(
         similarityDialogSource.contains('tenantFacilityUseThisDepartmentAction'),
+        isTrue,
+      );
+      expect(
+        similarityDialogSource.contains('Alignment.centerRight'),
+        isTrue,
+      );
+      expect(
+        similarityDialogSource.contains(
+          'tenantFacilityDepartmentOverallSimilarityLabel',
+        ),
+        isTrue,
+      );
+      expect(
+        similarityDialogSource.contains('_NoMatchScorePanel'),
         isTrue,
       );
       expect(
@@ -100,6 +115,8 @@ void main() {
       expect(setupPageSource.contains('_openDepartmentDetails'), isTrue);
       expect(detailsSource.contains('showTenantFacilityDepartmentFormDialog'), isTrue);
       expect(detailsSource.contains('deleteDepartment(_department.mutationId)'), isTrue);
+      expect(detailsSource.contains('_DepartmentFactTile'), isTrue);
+      expect(detailsSource.contains('AppLoadingIndicator.compact'), isTrue);
       expect(
         detailsSource.contains('tenantFacilityEditDepartmentDetailsAction'),
         isTrue,

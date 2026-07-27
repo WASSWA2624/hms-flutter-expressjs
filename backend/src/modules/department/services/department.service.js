@@ -10,7 +10,7 @@
 const departmentRepository = require('@repositories/department/department.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { resolveEntityId, resolvePublicIdentifier } = require('@lib/billing/identifiers');
+const { resolveEntityId, resolvePublicIdentifier, resolveIdentifierForPayload, resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const {
   resolveModelIdByIdentifier,
   resolveModelRecordByIdentifier,
@@ -142,12 +142,48 @@ const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'cr
     filters.include_deleted === true || filters.include_deleted === 'true';
   const repoFilters = {};
 
-  if (filters.tenant_id) {
-    repoFilters.tenant_id = filters.tenant_id;
+  const tenantId = await resolveIdentifierForFilter({
+    value: filters.tenant_id,
+    model: 'tenant',
+    where: { deleted_at: null },
+  });
+  if (filters.tenant_id && tenantId === null) {
+    return {
+      departments: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+  if (tenantId) {
+    repoFilters.tenant_id = tenantId;
   }
 
-  if (filters.facility_id) {
-    repoFilters.facility_id = filters.facility_id;
+  const facilityId = await resolveIdentifierForFilter({
+    value: filters.facility_id,
+    model: 'facility',
+    where: { deleted_at: null },
+  });
+  if (filters.facility_id && facilityId === null) {
+    return {
+      departments: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+  if (facilityId) {
+    repoFilters.facility_id = facilityId;
   }
 
   if (filters.department_type) {
@@ -159,7 +195,8 @@ const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'cr
   }
 
   if (filters.search) {
-    repoFilters.name = { contains: filters.search, mode: 'insensitive' };
+    // MySQL collation is case-insensitive; Prisma `mode: 'insensitive'` is unsupported.
+    repoFilters.name = { contains: filters.search };
   }
 
   const skip = (page - 1) * limit;
@@ -218,6 +255,19 @@ const createDepartment = async (data, context = {}) => {
     ...payload,
     name,
     short_name: shortName,
+    tenant_id: await resolveIdentifierForPayload({
+      value: payload.tenant_id,
+      model: 'tenant',
+      field: 'tenant_id',
+      where: { deleted_at: null },
+    }),
+    facility_id: await resolveIdentifierForPayload({
+      value: payload.facility_id,
+      model: 'facility',
+      field: 'facility_id',
+      where: { deleted_at: null },
+      nullable: true,
+    }),
   };
 
   await assertDepartmentUniqueness({
@@ -283,6 +333,16 @@ const updateDepartment = async (id, data, context = {}) => {
       ? { short_name: nextShortName }
       : {}),
   };
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'facility_id')) {
+    updatePayload.facility_id = await resolveIdentifierForPayload({
+      value: payload.facility_id,
+      model: 'facility',
+      field: 'facility_id',
+      where: { deleted_at: null },
+      nullable: true,
+    });
+  }
 
   await assertDepartmentUniqueness({
     data: {

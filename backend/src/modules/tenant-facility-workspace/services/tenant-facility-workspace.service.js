@@ -206,6 +206,8 @@ const serializeFacility = (record, context = null) => {
 
 const serializeDepartment = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
+  resource_uuid: record.id,
+  display_id: safePublicId(record.human_friendly_id, record.id),
   tenant_id: context
     ? resolveFk(record.tenant_id, context, 'tenant_id')
     : safePublicId(record.tenant_id),
@@ -221,6 +223,8 @@ const serializeDepartment = (record, context = null) => ({
 
 const serializeUnit = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
+  resource_uuid: record.id,
+  display_id: safePublicId(record.human_friendly_id, record.id),
   tenant_id: context
     ? resolveFk(record.tenant_id, context, 'tenant_id')
     : safePublicId(record.tenant_id),
@@ -237,6 +241,8 @@ const serializeUnit = (record, context = null) => ({
 
 const serializeWard = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
+  resource_uuid: record.id,
+  display_id: safePublicId(record.human_friendly_id, record.id),
   tenant_id: context
     ? resolveFk(record.tenant_id, context, 'tenant_id')
     : safePublicId(record.tenant_id),
@@ -254,6 +260,8 @@ const serializeWard = (record, context = null) => ({
 
 const serializeRoom = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
+  resource_uuid: record.id,
+  display_id: safePublicId(record.human_friendly_id, record.id),
   tenant_id: context
     ? resolveFk(record.tenant_id, context, 'tenant_id')
     : safePublicId(record.tenant_id),
@@ -268,6 +276,8 @@ const serializeRoom = (record, context = null) => ({
 
 const serializeBed = (record, context = null) => ({
   id: safePublicId(record.human_friendly_id, record.id),
+  resource_uuid: record.id,
+  display_id: safePublicId(record.human_friendly_id, record.id),
   tenant_id: context
     ? resolveFk(record.tenant_id, context, 'tenant_id')
     : safePublicId(record.tenant_id),

@@ -4202,6 +4202,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
   List<FacilityProfile> _facilityOptions = const <FacilityProfile>[];
   bool _loadingOptions = false;
   bool _similarityAccepted = false;
+  bool _checkingSimilarity = false;
   String? _nameErrorText;
 
   bool get _isCreate => widget.department == null;
@@ -4373,11 +4374,12 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
         tenantFacilityDepartmentsListScope(policy);
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool isEditing = !_isCreate;
-    final bool canEdit = !submission.isSubmitting;
+    final bool canEdit = !submission.isSubmitting && !_checkingSimilarity;
     final bool showTenantPicker =
         _isCreate && tenantFacilityDepartmentsShowsTenantFilter(scope);
     final bool showFacilityPicker =
         _isCreate && tenantFacilityDepartmentsShowsFacilityFilter(scope);
+    final ThemeData theme = Theme.of(context);
 
     return AppDialog(
       title: Text(
@@ -4392,6 +4394,27 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
         child: AppFormSection(
           density: AppFormSectionDensity.compact,
           children: <Widget>[
+            if (_checkingSimilarity || _loadingOptions)
+              Padding(
+                padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                child: Row(
+                  children: <Widget>[
+                    const AppLoadingIndicator.compact(expand: false),
+                    SizedBox(width: theme.spacing.sm),
+                    Expanded(
+                      child: Text(
+                        _checkingSimilarity
+                            ? l10n
+                                  .tenantFacilityDepartmentSimilarityCheckingMessage
+                            : l10n.commonLoadingCompactTitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             if (showTenantPicker)
               AppSelectField<String>.searchable(
                 value: _selectedTenantId ?? _noneSelection,
@@ -4530,7 +4553,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
               ? l10n.tenantFacilitySaveAction
               : l10n.tenantFacilityCreateAction,
           leadingIcon: Icons.save_outlined,
-          isLoading: submission.isSubmitting,
+          isLoading: submission.isSubmitting || _checkingSimilarity,
           onPressed: _submit,
         ),
       ],
@@ -4542,10 +4565,10 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
     if (editing != null) {
       final String? tenantId = editing.tenantId.trim().isNotEmpty
           ? editing.tenantId.trim()
-          : widget.snapshot.tenant?.id.trim();
+          : widget.snapshot.tenant?.mutationId.trim();
       final String? facilityId = editing.facilityId?.trim().isNotEmpty == true
           ? editing.facilityId!.trim()
-          : widget.snapshot.facility?.id.trim();
+          : widget.snapshot.facility?.mutationId.trim();
       return (tenantId, facilityId);
     }
 
@@ -4556,20 +4579,20 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
       TenantFacilityDepartmentsListScope.platform => _selectedTenantId?.trim(),
       TenantFacilityDepartmentsListScope.tenant ||
       TenantFacilityDepartmentsListScope.facility =>
-        policy.tenantId ?? widget.snapshot.tenant?.id.trim(),
+        policy.tenantId ?? widget.snapshot.tenant?.mutationId.trim(),
     };
     final String? facilityId = switch (scope) {
       TenantFacilityDepartmentsListScope.platform ||
       TenantFacilityDepartmentsListScope.tenant =>
         _selectedFacilityId?.trim(),
       TenantFacilityDepartmentsListScope.facility =>
-        policy.facilityId ?? widget.snapshot.facility?.id.trim(),
+        policy.facilityId ?? widget.snapshot.facility?.mutationId.trim(),
     };
     return (tenantId, facilityId);
   }
 
   Future<void> _submit() async {
-    if (_formKey.currentState?.validate() != true) {
+    if (_formKey.currentState?.validate() != true || _checkingSimilarity) {
       return;
     }
 
@@ -4587,12 +4610,24 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
       _shortNameController.text,
     );
 
-    final bool canProceed = await _guardAgainstDuplicates(
-      facilityId: facilityId,
-      name: name,
-      shortName: shortName,
-    );
-    if (!canProceed) {
+    setState(() {
+      _checkingSimilarity = true;
+    });
+    final bool canProceed;
+    try {
+      canProceed = await _guardAgainstDuplicates(
+        facilityId: facilityId,
+        name: name,
+        shortName: shortName,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _checkingSimilarity = false;
+        });
+      }
+    }
+    if (!canProceed || !mounted) {
       return;
     }
 
@@ -4600,7 +4635,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
     final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveDepartment(
-          id: editing?.id,
+          id: editing?.mutationId,
           tenantId: tenantId,
           facilityId: facilityId,
           name: name,
@@ -4638,13 +4673,23 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
     ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
     setState(() {
       _similarityAccepted = false;
+      _checkingSimilarity = true;
     });
-    final bool confirmed = await _guardAgainstDuplicates(
-      facilityId: facilityId,
-      name: name,
-      shortName: shortName,
-      forceReviewMatches: true,
-    );
+    final bool confirmed;
+    try {
+      confirmed = await _guardAgainstDuplicates(
+        facilityId: facilityId,
+        name: name,
+        shortName: shortName,
+        forceReviewMatches: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _checkingSimilarity = false;
+        });
+      }
+    }
     if (!confirmed || !mounted) {
       return;
     }
@@ -4652,7 +4697,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
     final bool retried = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveDepartment(
-          id: editing?.id,
+          id: editing?.mutationId,
           tenantId: tenantId,
           facilityId: facilityId,
           name: name,

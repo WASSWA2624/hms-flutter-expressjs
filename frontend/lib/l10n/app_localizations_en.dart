@@ -7077,6 +7077,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityUseThisDepartmentAction => 'Use this department';
 
   @override
+  String get tenantFacilitySimilarDepartmentProposedHeading =>
+      'Proposed department';
+
+  @override
+  String get tenantFacilitySimilarDepartmentExistingHeading =>
+      'Existing department';
+
+  @override
+  String get tenantFacilityDepartmentOverallSimilarityLabel =>
+      'Overall similarity';
+
+  @override
+  String tenantFacilityDepartmentNoMatchScoreLabel(int score) {
+    return 'No matches · $score% similarity';
+  }
+
+  @override
+  String get tenantFacilityDepartmentSimilarityCheckingMessage =>
+      'Checking for similar departments…';
+
+  @override
   String get tenantFacilityUnitNameLabel => 'Unit name';
 
   @override

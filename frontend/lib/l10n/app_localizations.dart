@@ -13090,6 +13090,36 @@ abstract class AppLocalizations {
   /// **'Use this department'**
   String get tenantFacilityUseThisDepartmentAction;
 
+  /// Heading for the proposed department card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed department'**
+  String get tenantFacilitySimilarDepartmentProposedHeading;
+
+  /// Heading for an existing department match in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing department'**
+  String get tenantFacilitySimilarDepartmentExistingHeading;
+
+  /// Label for the overall department similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall similarity'**
+  String get tenantFacilityDepartmentOverallSimilarityLabel;
+
+  /// Shown when department similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches · {score}% similarity'**
+  String tenantFacilityDepartmentNoMatchScoreLabel(int score);
+
+  /// Loading message while department similarity is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for similar departments…'**
+  String get tenantFacilityDepartmentSimilarityCheckingMessage;
+
   /// Unit name field label.
   ///
   /// In en, this message translates to:

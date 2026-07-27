@@ -485,13 +485,13 @@ final class TenantFacilitySetupSubmissionController
         return snapshot.copyWith(
           departments: <DepartmentProfile>[
             for (final DepartmentProfile department in snapshot.departments)
-              department.id == id
+              _matchesDepartmentId(department, id)
                   ? department.copyWith(deletedAt: deletedAt)
                   : department,
           ],
           units: <UnitProfile>[
             for (final UnitProfile unit in snapshot.units)
-              unit.departmentId == id
+              _matchesRelatedId(unit.departmentId, id)
                   ? unit.copyWith(deletedAt: deletedAt)
                   : unit,
           ],
@@ -523,11 +523,11 @@ final class TenantFacilitySetupSubmissionController
         return snapshot.copyWith(
           departments: <DepartmentProfile>[
             for (final DepartmentProfile department in snapshot.departments)
-              if (department.id != id) department,
+              if (!_matchesDepartmentId(department, id)) department,
           ],
           units: <UnitProfile>[
             for (final UnitProfile unit in snapshot.units)
-              if (unit.departmentId != id) unit,
+              if (!_matchesRelatedId(unit.departmentId, id)) unit,
           ],
         );
       },
@@ -876,4 +876,16 @@ List<T> _upsertById<T>(List<T> items, T value, String Function(T item) idOf) {
   final next = List<T>.of(items);
   next[index] = value;
   return next;
+}
+
+bool _matchesDepartmentId(DepartmentProfile department, String id) {
+  return department.id == id || department.mutationId == id;
+}
+
+bool _matchesRelatedId(String? relatedId, String id) {
+  final String? normalized = relatedId?.trim();
+  if (normalized == null || normalized.isEmpty) {
+    return false;
+  }
+  return normalized == id;
 }

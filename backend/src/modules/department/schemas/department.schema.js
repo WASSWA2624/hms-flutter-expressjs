@@ -8,9 +8,9 @@
  */
 
 const { z } = require('zod');
-const { 
-  uuidSchema, 
-  listQuerySchema 
+const {
+  uuidOrFriendlyIdentifierSchema,
+  listQuerySchema,
 } = require('@lib/validation/zod');
 
 const optionalBooleanSchema = z.preprocess((value) => {
@@ -30,8 +30,8 @@ const optionalBooleanSchema = z.preprocess((value) => {
  * Used for POST /departments endpoint
  */
 const createDepartmentSchema = z.object({
-  tenant_id: uuidSchema,
-  facility_id: uuidSchema.optional().nullable(),
+  tenant_id: uuidOrFriendlyIdentifierSchema,
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255),
   short_name: z.string().trim().min(1).max(50).optional().nullable(),
   department_type: z.enum(['CLINICAL', 'ADMINISTRATIVE', 'SUPPORT', 'DIAGNOSTICS', 'OTHER']),
@@ -45,7 +45,7 @@ const createDepartmentSchema = z.object({
  * All fields optional for partial updates
  */
 const updateDepartmentSchema = z.object({
-  facility_id: uuidSchema.optional().nullable(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255).optional(),
   short_name: z.string().trim().min(1).max(50).optional().nullable(),
   department_type: z.enum(['CLINICAL', 'ADMINISTRATIVE', 'SUPPORT', 'DIAGNOSTICS', 'OTHER']).optional(),
@@ -60,7 +60,7 @@ const updateDepartmentSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const departmentIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================
@@ -71,8 +71,8 @@ const departmentIdParamsSchema = z.object({
  * Extends base listQuerySchema with department-specific filters
  */
 const listDepartmentsQuerySchema = listQuerySchema.extend({
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   department_type: z.enum(['CLINICAL', 'ADMINISTRATIVE', 'SUPPORT', 'DIAGNOSTICS', 'OTHER']).optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),

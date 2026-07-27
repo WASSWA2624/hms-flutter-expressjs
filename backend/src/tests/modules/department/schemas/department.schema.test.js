@@ -92,7 +92,7 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid tenant_id UUID', () => {
+    it('should reject invalid tenant_id', () => {
       const invalidData = {
         tenant_id: 'not-a-uuid',
         name: 'Emergency Department',
@@ -102,20 +102,21 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid facility_id UUID', () => {
-      const invalidData = {
-        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
-        facility_id: 'not-a-uuid',
+    it('should accept friendly tenant and facility identifiers', () => {
+      const validData = {
+        tenant_id: 'TEN0001',
+        facility_id: 'FAC0001',
         name: 'Emergency Department',
         department_type: 'CLINICAL'
       };
-      const result = createDepartmentSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
+      const result = createDepartmentSchema.safeParse(validData);
+      expect(result.success).toBe(true);
     });
 
-    it('should reject invalid branch_id UUID', () => {
+    it('should reject invalid facility_id', () => {
       const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        facility_id: 'not-a-uuid',
         name: 'Emergency Department',
         department_type: 'CLINICAL'
       };
@@ -284,17 +285,9 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid facility_id UUID', () => {
+    it('should reject invalid facility_id', () => {
       const invalidData = {
         facility_id: 'not-a-uuid'
-      };
-      const result = updateDepartmentSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject invalid branch_id UUID', () => {
-      const invalidData = {
-        branch_id: 'not-a-uuid'
       };
       const result = updateDepartmentSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -316,6 +309,17 @@ describe('Department Schema Validation', () => {
       };
       const result = departmentIdParamsSchema.safeParse(validData);
       expect(result.success).toBe(true);
+    });
+
+    it('should validate friendly department ID', () => {
+      const validData = {
+        id: 'DEP0000001'
+      };
+      const result = departmentIdParamsSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.id).toBe('DEP0000001');
+      }
     });
 
     it('should reject invalid UUID format', () => {
@@ -441,14 +445,6 @@ describe('Department Schema Validation', () => {
     it('should reject invalid facility_id UUID', () => {
       const invalidData = {
         facility_id: 'not-a-uuid'
-      };
-      const result = listDepartmentsQuerySchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject invalid branch_id UUID', () => {
-      const invalidData = {
-        branch_id: 'not-a-uuid'
       };
       const result = listDepartmentsQuerySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
