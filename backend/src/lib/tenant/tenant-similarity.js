@@ -132,6 +132,28 @@ const tokenSimilarityPercent = (left, right) => {
   return Math.max(averageDirectional, jaccard);
 };
 
+/**
+ * Boost near-duplicates where one normalized value embeds the other
+ * (e.g. "test" vs "testing", "lab" vs "laboratory").
+ */
+const containmentSimilarityPercent = (left, right) => {
+  if (!left || !right || left === right) {
+    return left && right && left === right ? 100 : 0;
+  }
+
+  const [shorter, longer] =
+    left.length <= right.length ? [left, right] : [right, left];
+  if (shorter.length < 3) {
+    return 0;
+  }
+  if (!longer.includes(shorter)) {
+    return 0;
+  }
+
+  const coverage = shorter.length / longer.length;
+  return Math.min(99, Math.round(72 + coverage * 28));
+};
+
 const textSimilarityScore = (
   left,
   right,
@@ -140,8 +162,15 @@ const textSimilarityScore = (
   if (left === right) return 100;
   if (!left || !right) return 0;
   const fullScore = levenshteinSimilarityPercent(left, right);
-  if (!includeTokenSimilarity) return fullScore;
-  return Math.max(fullScore, tokenSimilarityPercent(left, right));
+  const containmentScore = containmentSimilarityPercent(left, right);
+  if (!includeTokenSimilarity) {
+    return Math.max(fullScore, containmentScore);
+  }
+  return Math.max(
+    fullScore,
+    containmentScore,
+    tokenSimilarityPercent(left, right)
+  );
 };
 
 const compositeSimilarityScore = (scores = {}) => {
@@ -518,6 +547,7 @@ module.exports = {
   normalizeCurrency,
   normalizeFee,
   textSimilarityScore,
+  containmentSimilarityPercent,
   compositeSimilarityScore,
   checkTenantDuplicates,
   buildCandidateSnapshot,

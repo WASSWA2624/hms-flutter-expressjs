@@ -43,6 +43,36 @@ void main() {
       );
     });
 
+    test('flags stem or containment near-matches such as test vs Testing', () {
+      const DepartmentProfile testing = DepartmentProfile(
+        id: 'dept-2',
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+        name: 'Testing',
+        shortName: 'Testing',
+        type: DepartmentSetupType.clinical,
+      );
+
+      final DepartmentDuplicateCheckResult result = checkDepartmentDuplicates(
+        name: 'test',
+        shortName: 'test',
+        type: DepartmentSetupType.clinical,
+        isActive: true,
+        existing: const <DepartmentProfile>[testing],
+      );
+
+      expect(result.exactNameConflict, isFalse);
+      expect(result.overridableMatches, isNotEmpty);
+      expect(
+        result.overridableMatches.first.nameScore,
+        greaterThanOrEqualTo(departmentSimilarityThreshold),
+      );
+      expect(
+        result.overridableMatches.first.score,
+        greaterThanOrEqualTo(departmentSimilarityThreshold),
+      );
+    });
+
     test('defaults empty short name to department name', () {
       expect(resolveDepartmentShortName('Cardiology', null), 'Cardiology');
       expect(resolveDepartmentShortName('Cardiology', '  '), 'Cardiology');

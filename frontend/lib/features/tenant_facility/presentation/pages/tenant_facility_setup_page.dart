@@ -4856,7 +4856,10 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
       result.when(
         success: (AppPage<DepartmentProfile> page) {
           for (final DepartmentProfile department in page.items) {
-            if (seenIds.add(department.id)) {
+            final String key = department.mutationId.isNotEmpty
+                ? department.mutationId
+                : department.id;
+            if (seenIds.add(key)) {
               departments.add(department);
             }
           }
@@ -4865,9 +4868,13 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
       );
     }
 
-    await appendMatches(name.isEmpty ? null : name);
-    if (departments.isEmpty) {
-      await appendMatches(null);
+    // Always load the full facility peer set first. Search-only loading misses
+    // near-matches that do not contain the typed query as a literal substring
+    // (for example "Emergancy" vs "Emergency").
+    await appendMatches(null);
+    final String trimmedName = name.trim();
+    if (trimmedName.isNotEmpty) {
+      await appendMatches(trimmedName);
     }
 
     return departments;

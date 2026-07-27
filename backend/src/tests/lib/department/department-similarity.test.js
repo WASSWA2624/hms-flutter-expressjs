@@ -62,6 +62,32 @@ describe('department-similarity', () => {
     expect(result.overridableMatches[0].score).toBeGreaterThanOrEqual(80);
   });
 
+  it('flags stem/containment near-matches such as test vs Testing', () => {
+    const result = checkDepartmentDuplicates({
+      name: 'test',
+      shortName: 'test',
+      departmentType: 'CLINICAL',
+      isActive: true,
+      existing: [
+        {
+          id: 'dept-2',
+          human_friendly_id: 'DEP0002',
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          name: 'Testing',
+          short_name: 'Testing',
+          department_type: 'CLINICAL',
+          is_active: true
+        }
+      ]
+    });
+
+    expect(result.exactNameConflict).toBe(false);
+    expect(result.overridableMatches.length).toBeGreaterThan(0);
+    expect(result.overridableMatches[0].nameScore).toBeGreaterThanOrEqual(80);
+    expect(result.overridableMatches[0].score).toBeGreaterThanOrEqual(80);
+  });
+
   it('defaults short name to name when short name is empty', () => {
     const result = checkDepartmentDuplicates({
       name: 'Emergency Department',

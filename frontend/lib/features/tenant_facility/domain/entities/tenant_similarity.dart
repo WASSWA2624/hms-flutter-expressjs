@@ -463,7 +463,25 @@ int nameSimilarityScore(String left, String right) {
 
   final int distance = _levenshteinDistance(left, right);
   final int maxLength = left.length > right.length ? left.length : right.length;
-  return (((maxLength - distance) / maxLength) * 100).round().clamp(0, 100);
+  final int levenshtein = (((maxLength - distance) / maxLength) * 100)
+      .round()
+      .clamp(0, 100);
+  final int containment = _containmentSimilarityPercent(left, right);
+  return levenshtein > containment ? levenshtein : containment;
+}
+
+/// Boost near-duplicates where one normalized value embeds the other
+/// (e.g. "test" vs "testing", "lab" vs "laboratory").
+int _containmentSimilarityPercent(String left, String right) {
+  final String shorter = left.length <= right.length ? left : right;
+  final String longer = left.length <= right.length ? right : left;
+  if (shorter.length < 3 || !longer.contains(shorter)) {
+    return 0;
+  }
+
+  final double coverage = shorter.length / longer.length;
+  final int score = (72 + coverage * 28).round();
+  return score > 99 ? 99 : score;
 }
 
 int _levenshteinDistance(String left, String right) {
