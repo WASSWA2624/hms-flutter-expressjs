@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
@@ -1510,8 +1511,8 @@ void homeInvokeAction(
   }
   if (action.id == 'create_role') {
     unawaited(
-      showAccessAdminCreateRoleDialog(context, ref).then((bool? saved) {
-        homeOnDashboardDialogClosed(ref, request, saved);
+      showAccessAdminCreateRoleDialog(context, ref).then((AccessAdminItem? created) {
+        homeOnDashboardDialogClosed(ref, request, created != null);
       }),
     );
     return;

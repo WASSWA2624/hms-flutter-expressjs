@@ -978,8 +978,9 @@ Future<void> _handleQuickCreateAction(
       final bool? saved = await showAccessAdminCreateUserDialog(context, ref);
       if (saved == true) onRefresh();
     case 'role':
-      final bool? saved = await showAccessAdminCreateRoleDialog(context, ref);
-      if (saved == true) onRefresh();
+      final AccessAdminItem? created =
+          await showAccessAdminCreateRoleDialog(context, ref);
+      if (created != null) onRefresh();
     case 'permission':
       await showAccessAdminWorkspaceDialog(
         context,
