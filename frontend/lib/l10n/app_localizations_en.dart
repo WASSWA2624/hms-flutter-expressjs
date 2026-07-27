@@ -21522,12 +21522,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String accessAdminPermanentDeleteRoleWarningBody(String name) {
-    return 'WARNING: Permanently deleting \"$name\" will erase this role and its related permission links forever. This cannot be recovered.';
+    return 'WARNING: Permanently deleting \"$name\" will remove this role from every user it is attached to, erase related permission links, and delete the role forever. This cannot be recovered.';
   }
 
   @override
   String accessAdminPermanentDeleteRoleConfirmationBody(String name) {
-    return 'Final confirmation: permanently delete role \"$name\" and related permission links? This action is irreversible.';
+    return 'Final confirmation: permanently delete role \"$name\", remove it from all attached users, and erase related permission links? This action is irreversible.';
   }
 
   @override

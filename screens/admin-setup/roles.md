@@ -30,7 +30,7 @@
 - **Delete permanently**
   - Location: Role row actions (soft-deleted roles).
   - Condition: Shown when `canWrite` is true, the role is soft-deleted, and not system-critical.
-  - Immediate result: Type-name confirm then permanent hard-delete from the database.
+  - Immediate result: Type-name confirm then hard-delete: scan all user_role attachments (active or soft-deleted), remove the role from those users, erase role permissions, then delete the role row.
 
 - **Previous page**
   - Location: Role-list pagination controls.

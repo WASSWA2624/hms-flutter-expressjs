@@ -721,7 +721,7 @@ describe('Role Service', () => {
   });
 
   describe('permanentDeleteRole', () => {
-    it('should permanently delete a soft-deleted role', async () => {
+    it('should permanently delete a soft-deleted role and detach all users', async () => {
       const before = {
         id: 'role-123',
         name: 'Custom Clerk',
@@ -729,7 +729,11 @@ describe('Role Service', () => {
         deleted_at: new Date()
       };
       roleRepository.findById.mockResolvedValue(before);
-      roleRepository.permanentDelete.mockResolvedValue(undefined);
+      roleRepository.permanentDelete.mockResolvedValue({
+        removed_user_ids: ['user-a', 'user-b'],
+        removed_user_assignments: 2,
+        removed_permissions: 5
+      });
 
       await permanentDeleteRole('role-123', 'user-123', '127.0.0.1', {
         id: 'user-123',
@@ -741,7 +745,13 @@ describe('Role Service', () => {
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'ROLE_PERMANENTLY_DELETED',
-          entity_id: 'role-123'
+          entity_id: 'role-123',
+          diff: expect.objectContaining({
+            irreversible: true,
+            removed_user_ids: ['user-a', 'user-b'],
+            removed_user_assignments: 2,
+            removed_permissions: 5
+          })
         })
       );
     });

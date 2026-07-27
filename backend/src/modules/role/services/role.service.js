@@ -601,7 +601,7 @@ const restoreRole = async (id, userId, ipAddress, actor = null) => {
 };
 
 /**
- * Permanently delete a soft-deleted role.
+ * Permanently delete a soft-deleted role after removing it from every attached user.
  */
 const permanentDeleteRole = async (id, userId, ipAddress, actor = null) => {
   try {
@@ -621,6 +621,12 @@ const permanentDeleteRole = async (id, userId, ipAddress, actor = null) => {
     assertActorCanManageRoleRecord(before, actorUser);
     assertRoleNotSystemProtected(before, 'delete');
 
+    const {
+      removed_user_ids: removedUserIds,
+      removed_user_assignments: removedUserAssignments,
+      removed_permissions: removedPermissions
+    } = await roleRepository.permanentDelete(resolvedRoleId);
+
     createAuditLog({
       user_id: userId,
       action: 'ROLE_PERMANENTLY_DELETED',
@@ -628,12 +634,13 @@ const permanentDeleteRole = async (id, userId, ipAddress, actor = null) => {
       entity_id: resolvedRoleId,
       diff: {
         before,
-        irreversible: true
+        irreversible: true,
+        removed_user_ids: removedUserIds,
+        removed_user_assignments: removedUserAssignments,
+        removed_permissions: removedPermissions
       },
       ip_address: ipAddress
     }).catch(() => {});
-
-    await roleRepository.permanentDelete(resolvedRoleId);
 
     await publishRoleRealtimeEvent(
       PLATFORM_ADMIN_EVENTS.ROLE_PERMANENTLY_DELETED,

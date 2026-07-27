@@ -241,6 +241,10 @@ void main() {
       isTrue,
     );
     expect(
+      managementSource.contains('accessAdminPermanentDeleteRoleWarningBody'),
+      isTrue,
+    );
+    expect(
       managementSource.contains('spacing: actionGap'),
       isTrue,
       reason: 'Edit/Delete and Restore/permanent actions must not sit flush',

@@ -295,10 +295,11 @@ const restore = async (id) => {
 };
 
 /**
- * Permanently delete a soft-deleted role and related role_permission / user_role rows.
+ * Permanently delete a soft-deleted role after removing it from every user
+ * that still has (or previously had) this role attached.
  *
  * @param {string} id - Role ID
- * @returns {Promise<void>}
+ * @returns {Promise<{ removed_user_ids: string[], removed_user_assignments: number, removed_permissions: number }>}
  */
 const permanentDelete = async (id) => {
   try {
@@ -308,16 +309,43 @@ const permanentDelete = async (id) => {
     });
 
     if (!existing) {
-      return;
+      return {
+        removed_user_ids: [],
+        removed_user_assignments: 0,
+        removed_permissions: 0
+      };
     }
     if (!existing.deleted_at) {
       throw new HttpError('errors.role.permanent_delete_requires_soft_delete', 400);
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.role_permission.deleteMany({ where: { role_id: id } });
-      await tx.user_role.deleteMany({ where: { role_id: id } });
+    return await prisma.$transaction(async (tx) => {
+      // Scan all attachments (active or soft-deleted) so no user keeps this role.
+      const assignments = await tx.user_role.findMany({
+        where: { role_id: id },
+        select: { id: true, user_id: true }
+      });
+      const removedUserIds = [
+        ...new Set(
+          assignments
+            .map((row) => String(row.user_id || '').trim())
+            .filter(Boolean)
+        )
+      ];
+
+      const removedAssignments = await tx.user_role.deleteMany({
+        where: { role_id: id }
+      });
+      const removedPermissions = await tx.role_permission.deleteMany({
+        where: { role_id: id }
+      });
       await tx.role.delete({ where: { id } });
+
+      return {
+        removed_user_ids: removedUserIds,
+        removed_user_assignments: removedAssignments.count || 0,
+        removed_permissions: removedPermissions.count || 0
+      };
     });
   } catch (error) {
     if (error instanceof HttpError) {

@@ -39739,13 +39739,13 @@ abstract class AppLocalizations {
   /// Warning before permanently deleting a soft-deleted role.
   ///
   /// In en, this message translates to:
-  /// **'WARNING: Permanently deleting \"{name}\" will erase this role and its related permission links forever. This cannot be recovered.'**
+  /// **'WARNING: Permanently deleting \"{name}\" will remove this role from every user it is attached to, erase related permission links, and delete the role forever. This cannot be recovered.'**
   String accessAdminPermanentDeleteRoleWarningBody(String name);
 
   /// Final confirmation body for permanent role delete.
   ///
   /// In en, this message translates to:
-  /// **'Final confirmation: permanently delete role \"{name}\" and related permission links? This action is irreversible.'**
+  /// **'Final confirmation: permanently delete role \"{name}\", remove it from all attached users, and erase related permission links? This action is irreversible.'**
   String accessAdminPermanentDeleteRoleConfirmationBody(String name);
 
   /// Access admin tenant context required title.
