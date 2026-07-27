@@ -20,7 +20,7 @@ void main() {
       ).readAsStringSync();
     });
 
-    test('Add facility uses canCreateFacility', () {
+    test('Create facility uses canCreateFacility', () {
       expect(source.contains('canCreateFacility()'), isTrue);
       expect(
         source.contains('widget.showCreateAction && _canCreate'),

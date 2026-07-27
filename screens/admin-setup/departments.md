@@ -2,10 +2,10 @@
 
 ## Department list
 
-- **Add department**
+- **Create department**
   - Location: Search-bar trailing action and empty-state primary action.
   - Condition: Shown when `canEditFacilitySetupStructure()`; enabled when a facility id is present and no structure mutation is submitting; when authorized without a facility, shown disabled with the facility prerequisite message.
-  - Immediate result: Opens `_DepartmentFormDialog` in **Add department** mode.
+  - Immediate result: Opens `_DepartmentFormDialog` in **Create department** mode.
 
 - **Edit**
   - Location: Active department row actions.

@@ -8833,13 +8833,13 @@
   "@tenantFacilityNoFacilities": {
     "description": "Empty facility list label."
   },
-  "tenantFacilityAddTenantAction": "Add tenant",
+  "tenantFacilityAddTenantAction": "Create tenant",
   "@tenantFacilityAddTenantAction": {
-    "description": "Add tenant button label."
+    "description": "Create tenant button label on setup."
   },
-  "tenantFacilityAddFacilityAction": "Add facility",
+  "tenantFacilityAddFacilityAction": "Create facility",
   "@tenantFacilityAddFacilityAction": {
-    "description": "Add facility button label."
+    "description": "Create facility button label on setup."
   },
   "tenantFacilitySelectTenantLabel": "Select tenant",
   "@tenantFacilitySelectTenantLabel": {
@@ -8925,13 +8925,13 @@
   "@tenantFacilityDepartmentTypeOther": {
     "description": "Other department type label."
   },
-  "tenantFacilityAddDepartmentAction": "Add department",
+  "tenantFacilityAddDepartmentAction": "Create department",
   "@tenantFacilityAddDepartmentAction": {
-    "description": "Add department button label."
+    "description": "Create department button label on setup."
   },
-  "tenantFacilityAddDepartmentTitle": "Add department",
+  "tenantFacilityAddDepartmentTitle": "Create department",
   "@tenantFacilityAddDepartmentTitle": {
-    "description": "Add department modal title."
+    "description": "Create department modal title."
   },
   "tenantFacilityEditDepartmentTitle": "Edit department",
   "@tenantFacilityEditDepartmentTitle": {
@@ -8945,13 +8945,13 @@
   "@tenantFacilityUnitDepartmentLabel": {
     "description": "Unit department selection field label."
   },
-  "tenantFacilityAddUnitAction": "Add unit",
+  "tenantFacilityAddUnitAction": "Create unit",
   "@tenantFacilityAddUnitAction": {
-    "description": "Add unit button label."
+    "description": "Create unit button label on setup."
   },
-  "tenantFacilityAddUnitTitle": "Add unit",
+  "tenantFacilityAddUnitTitle": "Create unit",
   "@tenantFacilityAddUnitTitle": {
-    "description": "Add unit modal title."
+    "description": "Create unit modal title."
   },
   "tenantFacilityEditUnitTitle": "Edit unit",
   "@tenantFacilityEditUnitTitle": {
@@ -9013,13 +9013,13 @@
   "@tenantFacilityBedSearchHint": {
     "description": "Beds modal search field hint."
   },
-  "tenantFacilityAddWardAction": "Add ward",
+  "tenantFacilityAddWardAction": "Create ward",
   "@tenantFacilityAddWardAction": {
-    "description": "Add ward button label."
+    "description": "Create ward button label on setup."
   },
-  "tenantFacilityAddWardTitle": "Add ward",
+  "tenantFacilityAddWardTitle": "Create ward",
   "@tenantFacilityAddWardTitle": {
-    "description": "Add ward modal title."
+    "description": "Create ward modal title."
   },
   "tenantFacilityEditWardTitle": "Edit ward",
   "@tenantFacilityEditWardTitle": {
@@ -9061,13 +9061,13 @@
   "@tenantFacilityWardTypeOther": {
     "description": "Other ward type label."
   },
-  "tenantFacilityAddRoomAction": "Add room",
+  "tenantFacilityAddRoomAction": "Create room",
   "@tenantFacilityAddRoomAction": {
-    "description": "Add room button label."
+    "description": "Create room button label on setup."
   },
-  "tenantFacilityAddRoomTitle": "Add room",
+  "tenantFacilityAddRoomTitle": "Create room",
   "@tenantFacilityAddRoomTitle": {
-    "description": "Add room modal title."
+    "description": "Create room modal title."
   },
   "tenantFacilityEditRoomTitle": "Edit room",
   "@tenantFacilityEditRoomTitle": {
@@ -9085,13 +9085,13 @@
   "@tenantFacilityRoomFloorLabel": {
     "description": "Room floor field label."
   },
-  "tenantFacilityAddBedAction": "Add bed",
+  "tenantFacilityAddBedAction": "Create bed",
   "@tenantFacilityAddBedAction": {
-    "description": "Add bed button label."
+    "description": "Create bed button label on setup."
   },
-  "tenantFacilityAddBedTitle": "Add bed",
+  "tenantFacilityAddBedTitle": "Create bed",
   "@tenantFacilityAddBedTitle": {
-    "description": "Add bed modal title."
+    "description": "Create bed modal title."
   },
   "tenantFacilityEditBedTitle": "Edit bed",
   "@tenantFacilityEditBedTitle": {

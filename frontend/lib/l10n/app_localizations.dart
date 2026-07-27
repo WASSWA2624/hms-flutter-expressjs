@@ -12856,16 +12856,16 @@ abstract class AppLocalizations {
   /// **'No facilities have been added.'**
   String get tenantFacilityNoFacilities;
 
-  /// Add tenant button label.
+  /// Create tenant button label on setup.
   ///
   /// In en, this message translates to:
-  /// **'Add tenant'**
+  /// **'Create tenant'**
   String get tenantFacilityAddTenantAction;
 
-  /// Add facility button label.
+  /// Create facility button label on setup.
   ///
   /// In en, this message translates to:
-  /// **'Add facility'**
+  /// **'Create facility'**
   String get tenantFacilityAddFacilityAction;
 
   /// Tenant picker label for facility creation.
@@ -12994,16 +12994,16 @@ abstract class AppLocalizations {
   /// **'Other'**
   String get tenantFacilityDepartmentTypeOther;
 
-  /// Add department button label.
+  /// Create department button label on setup.
   ///
   /// In en, this message translates to:
-  /// **'Add department'**
+  /// **'Create department'**
   String get tenantFacilityAddDepartmentAction;
 
-  /// Add department modal title.
+  /// Create department modal title.
   ///
   /// In en, this message translates to:
-  /// **'Add department'**
+  /// **'Create department'**
   String get tenantFacilityAddDepartmentTitle;
 
   /// Edit department modal title.
@@ -13024,16 +13024,16 @@ abstract class AppLocalizations {
   /// **'Department'**
   String get tenantFacilityUnitDepartmentLabel;
 
-  /// Add unit button label.
+  /// Create unit button label on setup.
   ///
   /// In en, this message translates to:
-  /// **'Add unit'**
+  /// **'Create unit'**
   String get tenantFacilityAddUnitAction;
 
-  /// Add unit modal title.
+  /// Create unit modal title.
   ///
   /// In en, this message translates to:
-  /// **'Add unit'**
+  /// **'Create unit'**
   String get tenantFacilityAddUnitTitle;
 
   /// Edit unit modal title.
@@ -13126,16 +13126,16 @@ abstract class AppLocalizations {
   /// **'Search beds by label, ward, room, or status'**
   String get tenantFacilityBedSearchHint;
 
-  /// Add ward button label.
+  /// Create ward button label on setup.
   ///
   /// In en, this message translates to:
-  /// **'Add ward'**
+  /// **'Create ward'**
   String get tenantFacilityAddWardAction;
 
-  /// Add ward modal title.
+  /// Create ward modal title.
   ///
   /// In en, this message translates to:
-  /// **'Add ward'**
+  /// **'Create ward'**
   String get tenantFacilityAddWardTitle;
 
   /// Edit ward modal title.
@@ -13198,16 +13198,16 @@ abstract class AppLocalizations {
   /// **'Other'**
   String get tenantFacilityWardTypeOther;
 
-  /// Add room button label.
+  /// Create room button label on setup.
   ///
   /// In en, this message translates to:
-  /// **'Add room'**
+  /// **'Create room'**
   String get tenantFacilityAddRoomAction;
 
-  /// Add room modal title.
+  /// Create room modal title.
   ///
   /// In en, this message translates to:
-  /// **'Add room'**
+  /// **'Create room'**
   String get tenantFacilityAddRoomTitle;
 
   /// Edit room modal title.
@@ -13234,16 +13234,16 @@ abstract class AppLocalizations {
   /// **'Floor'**
   String get tenantFacilityRoomFloorLabel;
 
-  /// Add bed button label.
+  /// Create bed button label on setup.
   ///
   /// In en, this message translates to:
-  /// **'Add bed'**
+  /// **'Create bed'**
   String get tenantFacilityAddBedAction;
 
-  /// Add bed modal title.
+  /// Create bed modal title.
   ///
   /// In en, this message translates to:
-  /// **'Add bed'**
+  /// **'Create bed'**
   String get tenantFacilityAddBedTitle;
 
   /// Edit bed modal title.

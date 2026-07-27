@@ -2,7 +2,7 @@
 
 ## Platform tenant list
 
-- **Add tenant**
+- **Create tenant**
   - Location: Search-bar trailing action and empty-state primary action.
   - Condition: Shown when `canCreateTenant()`; disabled while the list is loading.
   - Immediate result: Opens `_SetupProfileDialog` in **Create tenant** mode.

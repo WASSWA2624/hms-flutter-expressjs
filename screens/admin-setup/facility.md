@@ -2,7 +2,7 @@
 
 ## Platform facility list
 
-- **Add facility**
+- **Create facility**
   - Location: Search-bar trailing action and empty-state primary action.
   - Condition: Shown when `canManageFacility()`; disabled while the list is loading.
   - Immediate result: Opens `_SetupProfileDialog` in **Create facility** mode.

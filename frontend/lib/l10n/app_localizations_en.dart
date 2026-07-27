@@ -6948,10 +6948,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityNoFacilities => 'No facilities have been added.';
 
   @override
-  String get tenantFacilityAddTenantAction => 'Add tenant';
+  String get tenantFacilityAddTenantAction => 'Create tenant';
 
   @override
-  String get tenantFacilityAddFacilityAction => 'Add facility';
+  String get tenantFacilityAddFacilityAction => 'Create facility';
 
   @override
   String get tenantFacilitySelectTenantLabel => 'Select tenant';
@@ -7022,10 +7022,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityDepartmentTypeOther => 'Other';
 
   @override
-  String get tenantFacilityAddDepartmentAction => 'Add department';
+  String get tenantFacilityAddDepartmentAction => 'Create department';
 
   @override
-  String get tenantFacilityAddDepartmentTitle => 'Add department';
+  String get tenantFacilityAddDepartmentTitle => 'Create department';
 
   @override
   String get tenantFacilityEditDepartmentTitle => 'Edit department';
@@ -7037,10 +7037,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityUnitDepartmentLabel => 'Department';
 
   @override
-  String get tenantFacilityAddUnitAction => 'Add unit';
+  String get tenantFacilityAddUnitAction => 'Create unit';
 
   @override
-  String get tenantFacilityAddUnitTitle => 'Add unit';
+  String get tenantFacilityAddUnitTitle => 'Create unit';
 
   @override
   String get tenantFacilityEditUnitTitle => 'Edit unit';
@@ -7095,10 +7095,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search beds by label, ward, room, or status';
 
   @override
-  String get tenantFacilityAddWardAction => 'Add ward';
+  String get tenantFacilityAddWardAction => 'Create ward';
 
   @override
-  String get tenantFacilityAddWardTitle => 'Add ward';
+  String get tenantFacilityAddWardTitle => 'Create ward';
 
   @override
   String get tenantFacilityEditWardTitle => 'Edit ward';
@@ -7131,10 +7131,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityWardTypeOther => 'Other';
 
   @override
-  String get tenantFacilityAddRoomAction => 'Add room';
+  String get tenantFacilityAddRoomAction => 'Create room';
 
   @override
-  String get tenantFacilityAddRoomTitle => 'Add room';
+  String get tenantFacilityAddRoomTitle => 'Create room';
 
   @override
   String get tenantFacilityEditRoomTitle => 'Edit room';
@@ -7149,10 +7149,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityRoomFloorLabel => 'Floor';
 
   @override
-  String get tenantFacilityAddBedAction => 'Add bed';
+  String get tenantFacilityAddBedAction => 'Create bed';
 
   @override
-  String get tenantFacilityAddBedTitle => 'Add bed';
+  String get tenantFacilityAddBedTitle => 'Create bed';
 
   @override
   String get tenantFacilityEditBedTitle => 'Edit bed';
