@@ -262,8 +262,6 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
 
   AccessAdminItem? createdRole;
   AccessAdminItem? existingRoleToOpen;
-  var similarityAccepted = false;
-
   final bool? saved = await showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.create,
@@ -293,8 +291,11 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
     allowTenantScope: allowTenantWideScope,
     onSubmit: (List<AccessAdminRoleDraft> drafts) async {
       for (final AccessAdminRoleDraft draft in drafts) {
+        // Acceptance belongs to this exact scoped draft. Do not carry it to a
+        // second tenant/facility target or a later Save after form edits.
+        var similarityAccepted = draft.confirmSimilar;
         var pending = draft.copyWith(
-          confirmSimilar: similarityAccepted || draft.confirmSimilar,
+          confirmSimilar: similarityAccepted,
         );
 
         if (!pending.confirmSimilar) {
@@ -477,7 +478,7 @@ Future<AppFailure?> _reviewRoleSimilarity(
   // Force-review after backend conflict must not reopen a false empty
   // "no similar" confirmation — that loops Continue create without creating.
   if (forceReviewMatches && reviewMatches.isEmpty) {
-    return const AppFailure.conflict(code: 'DUPLICATE_NAME');
+    return AppFailure.conflict(code: 'DUPLICATE_NAME');
   }
 
   // Create always opens review (including zero matches). Force-review is used
@@ -549,17 +550,21 @@ Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
   // in checkRoleDuplicates. Search-biased pages catch identity peers that sit
   // past the alphabetical ROLE_SIMILARITY_LOOKUP_LIMIT window.
   final bool allTenants = tenantId == null || tenantId.trim().isEmpty;
-  final Map<String, AccessAdminItem> peersByKey = <String, AccessAdminItem>{};
+  final Map<String, AccessAdminItem> alphabeticalPeers =
+      <String, AccessAdminItem>{};
+  final Map<String, AccessAdminItem> searchedPeers =
+      <String, AccessAdminItem>{};
 
   Future<AppFailure?> appendPeers({
     required bool requestAllTenants,
     String? scopedTenantId,
     String search = '',
+    required Map<String, AccessAdminItem> target,
   }) async {
     // Pages stay within the backend `limit` ceiling; a larger page size is
     // rejected by validation and would leave review with zero peers.
     var request = const AppPageRequest(pageSize: AppPageRequest.maxPageSize);
-    while (peersByKey.length < _roleSimilarityPeerLimit) {
+    while (target.length < _roleSimilarityPeerLimit) {
       final Result<AccessAdminWorkspaceData> result = await ref
           .read(accessAdminRepositoryProvider)
           .getWorkspace(
@@ -616,8 +621,8 @@ Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
           (String value) => value.trim().isNotEmpty,
           orElse: () => item.title,
         );
-        peersByKey.putIfAbsent(key, () => item);
-        if (peersByKey.length >= _roleSimilarityPeerLimit) {
+        target.putIfAbsent(key, () => item);
+        if (target.length >= _roleSimilarityPeerLimit) {
           break;
         }
       }
@@ -632,10 +637,11 @@ Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
   final AppFailure? baseFailure = await appendPeers(
     requestAllTenants: allTenants,
     scopedTenantId: allTenants ? null : tenantId,
+    target: alphabeticalPeers,
   );
   if (baseFailure != null) {
     return _RoleSimilarityPeers(
-      items: peersByKey.values.toList(growable: false),
+      items: alphabeticalPeers.values.toList(growable: false),
       failure: baseFailure,
     );
   }
@@ -645,35 +651,59 @@ Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
     if ((displayName ?? '').trim().isNotEmpty) displayName!.trim(),
   };
   for (final String term in searchTerms) {
+    final Map<String, AccessAdminItem> scopedSearchPeers =
+        <String, AccessAdminItem>{};
     final AppFailure? scopedSearchFailure = await appendPeers(
       requestAllTenants: allTenants,
       scopedTenantId: allTenants ? null : tenantId,
       search: term,
+      target: scopedSearchPeers,
     );
+    searchedPeers.addAll(scopedSearchPeers);
     if (scopedSearchFailure != null) {
       return _RoleSimilarityPeers(
-        items: peersByKey.values.toList(growable: false),
+        items: <AccessAdminItem>[
+          ...searchedPeers.values,
+          ...alphabeticalPeers.values,
+        ],
         failure: scopedSearchFailure,
       );
     }
     // Tenant/facility proposals: also search platform-wide so platform peers
     // matching the identity are not missed (BE uniqueness includes them).
     if (!allTenants) {
+      final Map<String, AccessAdminItem> platformSearchPeers =
+          <String, AccessAdminItem>{};
       final AppFailure? platformSearchFailure = await appendPeers(
         requestAllTenants: true,
         search: term,
+        target: platformSearchPeers,
       );
+      searchedPeers.addAll(platformSearchPeers);
       if (platformSearchFailure != null) {
         return _RoleSimilarityPeers(
-          items: peersByKey.values.toList(growable: false),
+          items: <AccessAdminItem>[
+            ...searchedPeers.values,
+            ...alphabeticalPeers.values,
+          ],
           failure: platformSearchFailure,
         );
       }
     }
   }
 
+  // Search hits must win the fixed peer budget. Previously the alphabetical
+  // page filled the shared map to 500, so these identity searches never ran.
+  final Map<String, AccessAdminItem> prioritizedPeers =
+      <String, AccessAdminItem>{...searchedPeers};
+  for (final MapEntry<String, AccessAdminItem> entry
+      in alphabeticalPeers.entries) {
+    prioritizedPeers.putIfAbsent(entry.key, () => entry.value);
+  }
   return _RoleSimilarityPeers(
-    items: peersByKey.values.take(_roleSimilarityPeerLimit).toList(growable: false),
+    items: prioritizedPeers.values
+        .take(_roleSimilarityPeerLimit)
+        .toList(growable: false),
   );
 }
 

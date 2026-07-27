@@ -76,6 +76,19 @@ const buildSearchFilter = (search = '') => {
   };
 };
 
+const buildRoleSearchFilter = (search = '') => {
+  const term = String(search || '').trim();
+  if (!term) return null;
+  return {
+    OR: [
+      { human_friendly_id: { contains: term } },
+      { name: { contains: term } },
+      { display_name: { contains: term } },
+      { description: { contains: term } },
+    ],
+  };
+};
+
 const countUsers = async (scope = {}, filters = {}) => {
   try {
     const where = {
@@ -100,11 +113,9 @@ const countRoles = async (scope = {}, filters = {}, roleOptions = {}) => {
         roleScope: roleOptions.roleScope || null,
       }),
     };
-    const searchFilter = buildSearchFilter(filters.search);
+    const searchFilter = buildRoleSearchFilter(filters.search);
     if (searchFilter) {
-      const searchOr = searchFilter.OR.filter(
-        (entry) => !entry.email && !entry.position_title
-      );
+      const searchOr = searchFilter.OR;
       if (where.OR) {
         where.AND = [{ OR: where.OR }, { OR: searchOr }];
         delete where.OR;
@@ -336,11 +347,9 @@ const findRoles = async ({
 }) => {
   try {
     const where = scopedRoleWhere(scope, { includeTenantWide, roleScope });
-    const searchFilter = buildSearchFilter(filters.search);
+    const searchFilter = buildRoleSearchFilter(filters.search);
     if (searchFilter) {
-      const searchOr = searchFilter.OR.filter(
-        (entry) => !entry.email && !entry.position_title
-      );
+      const searchOr = searchFilter.OR;
       if (where.OR) {
         where.AND = [{ OR: where.OR }, { OR: searchOr }];
         delete where.OR;

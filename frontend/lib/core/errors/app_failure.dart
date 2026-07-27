@@ -264,7 +264,16 @@ final class ConflictFailure extends AppFailure {
   @override
   int get hashCode => Object.hash(
     super.hashCode,
-    Object.hashAll(conflictEntries.map(Object.hashAll)),
+    Object.hashAll(
+      conflictEntries.map(
+        (Map<String, Object?> entry) => Object.hashAllUnordered(
+          entry.entries.map(
+            (MapEntry<String, Object?> value) =>
+                Object.hash(value.key, value.value),
+          ),
+        ),
+      ),
+    ),
   );
 
   static bool _listMapEquals(

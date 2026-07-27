@@ -1133,13 +1133,10 @@ class _ManageRolesPermissionsPanelState
                   borderRadius: BorderRadius.circular(theme.radius.md),
                   child: Padding(
                     padding: EdgeInsets.all(theme.spacing.lg),
-                    child: SizedBox(
+                    child: const SizedBox(
                       width: 36,
                       height: 36,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        color: theme.colorScheme.primary,
-                      ),
+                      child: AppLoadingIndicator.compact(expand: false),
                     ),
                   ),
                 ),

@@ -110,10 +110,25 @@ void main() {
   test('peer load is search-biased for proposed identity', () {
     expect(peerLoaderSource.contains('search: search'), isTrue);
     expect(peerLoaderSource.contains('searchTerms'), isTrue);
+    expect(peerLoaderSource.contains('alphabeticalPeers'), isTrue);
+    expect(peerLoaderSource.contains('searchedPeers'), isTrue);
+    expect(
+      peerLoaderSource.indexOf('...searchedPeers') <
+          peerLoaderSource.indexOf('...alphabeticalPeers'),
+      isTrue,
+      reason: 'Identity search hits must win the fixed 500-peer budget',
+    );
     expect(
       peerLoaderSource.contains('requestAllTenants: true'),
       isTrue,
       reason: 'Tenant proposals must also search platform peers',
+    );
+  });
+
+  test('similarity acceptance is scoped to each submitted draft', () {
+    expect(
+      dialogsSource.contains('var similarityAccepted = draft.confirmSimilar;'),
+      isTrue,
     );
   });
 
@@ -139,6 +154,16 @@ void main() {
     );
     expect(
       managementSource.contains('unawaited(reload(resetPage: true, silent: true))'),
+      isTrue,
+    );
+  });
+
+  test('create action remains gated by workspace write access', () {
+    expect(
+      RegExp(
+        r'trailingActions:\s*!isPermissions\s*&&\s*canWrite\s*&&\s*'
+        r'widget\.showCreateAction',
+      ).hasMatch(managementSource),
       isTrue,
     );
   });

@@ -264,6 +264,60 @@ describe('Role Service', () => {
       );
     });
 
+    it('should prioritize identity search matches beyond the alphabetical peer window', async () => {
+      const alphabetical = Array.from({ length: 500 }, (_, index) => ({
+        id: `role-${index}`,
+        human_friendly_id: `ROL${String(index).padStart(4, '0')}`,
+        tenant_id: `tenant-${index}`,
+        facility_id: null,
+        name: `ALPHA ROLE ${index}`,
+        display_name: `Alpha Role ${index}`,
+        description: null
+      }));
+      roleRepository.findMany
+        .mockResolvedValueOnce(alphabetical)
+        .mockResolvedValueOnce([
+          {
+            id: 'role-testing',
+            human_friendly_id: 'ROL9999',
+            tenant_id: 'tenant-1',
+            facility_id: null,
+            name: 'TESTING',
+            display_name: 'Testing',
+            description: null
+          }
+        ]);
+
+      await expect(
+        createRole(
+          {
+            name: 'Testing',
+            display_name: 'Testing',
+            scope: 'platform'
+          },
+          'user-123',
+          '127.0.0.1',
+          { id: 'user-123', roles: ['SUPER_ADMIN'] }
+        )
+      ).rejects.toMatchObject({
+        messageKey: 'errors.role.similar_exists',
+        statusCode: 409
+      });
+      expect(roleRepository.findMany).toHaveBeenNthCalledWith(
+        2,
+        {
+          OR: [
+            { name: { contains: 'Testing' } },
+            { display_name: { contains: 'Testing' } }
+          ]
+        },
+        0,
+        500,
+        { name: 'asc' }
+      );
+      expect(roleRepository.create).not.toHaveBeenCalled();
+    });
+
     it('should create anyway when confirm_similar is true', async () => {
       const mockRole = { id: 'role-123', name: 'WARD CLRCK' };
       roleRepository.findMany.mockResolvedValue([
