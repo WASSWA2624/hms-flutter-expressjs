@@ -3548,6 +3548,12 @@ class _UserDetailSummaryCard extends StatelessWidget {
                     spacing: theme.spacing.sm,
                     runSpacing: theme.spacing.xs,
                     children: <Widget>[
+                      _AccessAdminDetailMetaChip(
+                        icon: Icons.tag_outlined,
+                        label: l10n.accessAdminColumnId,
+                        value: item.effectiveDisplayId,
+                        copyable: true,
+                      ),
                       if (item.isDemo)
                         Chip(
                           avatar: Icon(
@@ -3667,8 +3673,9 @@ class _UserDetailAccountFields extends StatelessWidget {
               ? item.facilityName!.trim()
               : item.facilityId!.trim());
 
-    // Account owns contact/assignment/ID. Omit values already used as the
+    // Account owns contact/assignment. Omit values already used as the
     // summary primary so the dialog never repeats the same fact twice.
+    // User ID lives on the summary details card (copyable).
     final List<Widget> contactFields = <Widget>[
       if (email != null &&
           email.isNotEmpty &&
@@ -3707,14 +3714,6 @@ class _UserDetailAccountFields extends StatelessWidget {
           value: facility,
         ),
     ];
-    final List<Widget> idFields = <Widget>[
-      _UserDetailInfoTile(
-        icon: Icons.tag_outlined,
-        label: l10n.accessAdminColumnId,
-        value: item.effectiveDisplayId,
-        copyable: true,
-      ),
-    ];
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -3723,8 +3722,7 @@ class _UserDetailAccountFields extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             _UserDetailFieldGrid(fields: contactFields, wide: wide),
-            if (contactFields.isNotEmpty &&
-                (assignmentFields.isNotEmpty || idFields.isNotEmpty)) ...<Widget>[
+            if (contactFields.isNotEmpty && assignmentFields.isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.sm),
               Divider(
                 height: theme.spacing.md,
@@ -3732,14 +3730,6 @@ class _UserDetailAccountFields extends StatelessWidget {
               ),
             ],
             _UserDetailFieldGrid(fields: assignmentFields, wide: wide),
-            if (assignmentFields.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Divider(
-                height: theme.spacing.md,
-                color: theme.colorScheme.outlineVariant,
-              ),
-            ],
-            _UserDetailFieldGrid(fields: idFields, wide: wide),
           ],
         );
       },
