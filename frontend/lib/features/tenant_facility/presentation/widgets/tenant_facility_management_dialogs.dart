@@ -2399,7 +2399,7 @@ class _FacilityDetailsDialogState
     if (fromSnapshot != null && fromSnapshot.isNotEmpty) {
       return fromSnapshot;
     }
-    return _facility.tenantId;
+    return '—';
   }
 
   FacilitySetupSnapshot get _effectiveSnapshot {
@@ -3454,9 +3454,10 @@ class _FacilityDetailsSummary extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final String? displayId = facility.displayId?.trim().isNotEmpty == true
-        ? facility.displayId
-        : null;
+    final String? displayId = tenantFacilityHumanFriendlyDisplayId(
+      facility.displayId,
+      opaqueId: facility.resourceUuid ?? facility.id,
+    );
     final bool hasLogo =
         facility.logoUrl != null && facility.logoUrl!.trim().isNotEmpty;
     final FacilityContactAddress contact =
@@ -4218,6 +4219,8 @@ class ManageFacilitiesPanel extends ConsumerStatefulWidget {
   const ManageFacilitiesPanel({
     this.dialogMode = false,
     this.showCreateAction = true,
+    this.sessionFacility,
+    this.sessionTenantId,
     this.reloadListenable,
     this.onMutated,
     super.key,
@@ -4225,6 +4228,8 @@ class ManageFacilitiesPanel extends ConsumerStatefulWidget {
 
   final bool dialogMode;
   final bool showCreateAction;
+  final FacilityProfile? sessionFacility;
+  final String? sessionTenantId;
   final Listenable? reloadListenable;
   final ValueChanged<bool>? onMutated;
 
@@ -4251,6 +4256,8 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
   int _totalItemCount = 0;
   List<FacilityProfile> _facilities = const <FacilityProfile>[];
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
+  FacilityProfile? _scopedFacility;
+  FacilityContactAddress _scopedContact = const FacilityContactAddress();
   String? _tenantFilterId;
   FacilitySetupType? _typeFilter;
   bool? _isActiveFilter;
@@ -4259,27 +4266,83 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
   int _reloadGeneration = 0;
   PlatformManagementListSync? _realtimeSync;
 
+  bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();
+
+  bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateFacility();
+
+  bool get _canDelete => ref.read(appAccessPolicyProvider).canDeleteFacility();
+
+  TenantFacilityFacilitiesListScope get _listScope =>
+      tenantFacilityFacilitiesListScope(ref.read(appAccessPolicyProvider));
+
+  bool get _isScopedFacilityManager => tenantFacilityUsesScopedFacilityPanel(
+    canManageFacility: _canManage,
+    canCreateFacility: _canCreate,
+  );
+
+  String? get _sessionTenantId {
+    final String? fromWidget = widget.sessionTenantId?.trim();
+    if (fromWidget != null && fromWidget.isNotEmpty) {
+      return fromWidget;
+    }
+    final String? fromFacility = widget.sessionFacility?.tenantId.trim();
+    if (fromFacility != null && fromFacility.isNotEmpty) {
+      return fromFacility;
+    }
+    return ref.read(appAccessPolicyProvider).tenantId?.trim();
+  }
+
   @override
   void initState() {
     super.initState();
     widget.reloadListenable?.addListener(_onReloadListenable);
     _searchController.addListener(_onSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_loadTenants());
-    });
-    unawaited(_reload(resetPage: true));
+    if (_isScopedFacilityManager) {
+      _scopedFacility = widget.sessionFacility;
+      if (_scopedFacility != null) {
+        _loading = false;
+      } else {
+        unawaited(_reloadScopedFacility());
+      }
+    } else {
+      if (tenantFacilityFacilitiesShowsTenantFilter(_listScope)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          unawaited(_loadTenants());
+        });
+      }
+      unawaited(_reload(resetPage: true));
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ManageFacilitiesPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isScopedFacilityManager &&
+        widget.sessionFacility != null &&
+        widget.sessionFacility != oldWidget.sessionFacility) {
+      _scopedFacility = _mergeScopedFacilityProfile(
+        previous: _scopedFacility,
+        incoming: widget.sessionFacility!,
+        contact: _scopedContact,
+      );
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_isScopedFacilityManager) {
+      return;
+    }
     _realtimeSync ??= PlatformManagementListSync(
       ref: ref,
       events: _facilityManagementRealtimeEvents,
       onMutated: _markMutated,
       reload: ({bool silent = false, RealtimeMessage? message}) async {
         _applyFacilityRealtimeMessage(message);
-        await _loadTenants();
+        if (tenantFacilityFacilitiesShowsTenantFilter(_listScope)) {
+          await _loadTenants();
+        }
         await _reload(resetPage: false, silent: silent);
       },
     )..attach();
@@ -4295,6 +4358,10 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
   }
 
   void _onReloadListenable() {
+    if (_isScopedFacilityManager) {
+      unawaited(_reloadScopedFacility(silent: true));
+      return;
+    }
     unawaited(_reload(resetPage: false, silent: true));
   }
 
@@ -4305,7 +4372,130 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
     });
   }
 
+  Future<void> _reloadScopedFacility({bool silent = false}) async {
+    final int generation = ++_reloadGeneration;
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _failure = null;
+      });
+    }
+
+    final Result<FacilitySetupSnapshot> result = await ref
+        .read(tenantFacilityRepositoryProvider)
+        .loadSetup();
+
+    if (!mounted || generation != _reloadGeneration) {
+      return;
+    }
+
+    result.when(
+      success: (FacilitySetupSnapshot snapshot) {
+        setState(() {
+          _loading = false;
+          _failure = null;
+          _scopedContact = snapshot.contactAddress;
+          final FacilityProfile? loaded =
+              snapshot.facility ?? widget.sessionFacility;
+          _scopedFacility = loaded == null
+              ? _scopedFacility
+              : _mergeScopedFacilityProfile(
+                  previous: _scopedFacility,
+                  incoming: loaded,
+                  contact: snapshot.contactAddress,
+                );
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _loading = false;
+          _failure = failure;
+          if (!silent && _scopedFacility == null) {
+            _scopedFacility = widget.sessionFacility;
+          }
+        });
+      },
+    );
+  }
+
+  FacilityProfile _mergeScopedFacilityProfile({
+    required FacilityProfile? previous,
+    required FacilityProfile incoming,
+    FacilityContactAddress contact = const FacilityContactAddress(),
+  }) {
+    String? prefer(String? next, String? current) {
+      final String? trimmedNext = next?.trim();
+      if (trimmedNext != null && trimmedNext.isNotEmpty) {
+        return trimmedNext;
+      }
+      final String? trimmedCurrent = current?.trim();
+      if (trimmedCurrent != null && trimmedCurrent.isNotEmpty) {
+        return trimmedCurrent;
+      }
+      return next ?? current;
+    }
+
+    final FacilityProfile base = previous == null
+        ? incoming
+        : incoming.copyWith(
+            resourceUuid: incoming.resourceUuid ?? previous.resourceUuid,
+            displayId: incoming.displayId ?? previous.displayId,
+            logoUrl: prefer(incoming.logoUrl, previous.logoUrl),
+            currency: prefer(incoming.currency, previous.currency),
+            standardConsultationFee: prefer(
+              incoming.standardConsultationFee,
+              previous.standardConsultationFee,
+            ),
+            phone: prefer(incoming.phone, previous.phone),
+            email: prefer(incoming.email, previous.email),
+            addressLine1: prefer(incoming.addressLine1, previous.addressLine1),
+            city: prefer(incoming.city, previous.city),
+            country: prefer(incoming.country, previous.country),
+          );
+
+    return base.copyWith(
+      phone: prefer(contact.phone, base.phone),
+      email: prefer(contact.email, base.email),
+      addressLine1: prefer(contact.addressLine1, base.addressLine1),
+      city: prefer(contact.city, base.city),
+      country: prefer(contact.country, base.country),
+    );
+  }
+
+  Future<void> _editScopedFacility() async {
+    final FacilityProfile? facility = _scopedFacility;
+    if (facility == null || !mounted) {
+      return;
+    }
+
+    final FacilityProfile? saved = await showTenantFacilityFacilityFormDialog(
+      context,
+      tenantId: facility.tenantId,
+      facility: facility,
+      requireTenantPicker: false,
+      managementMode: true,
+    );
+    if (!mounted || saved == null) {
+      return;
+    }
+
+    setState(() {
+      _scopedFacility = _mergeScopedFacilityProfile(
+        previous: facility,
+        incoming: saved,
+        contact: _scopedContact,
+      );
+      _failure = null;
+    });
+
+    _markMutated();
+    unawaited(_reloadScopedFacility(silent: true));
+  }
+
   Future<void> _loadTenants() async {
+    if (!tenantFacilityFacilitiesShowsTenantFilter(_listScope)) {
+      return;
+    }
     final TenantFacilityRepository repository = ref.read(
       tenantFacilityRepositoryProvider,
     );
@@ -4386,10 +4576,14 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
     final TenantFacilityRepository repository = ref.read(
       tenantFacilityRepositoryProvider,
     );
+    final String? listTenantId =
+        _listScope == TenantFacilityFacilitiesListScope.tenant
+        ? _sessionTenantId
+        : _tenantFilterId;
     final Result<AppPage<FacilityProfile>> result = await repository
         .listFacilities(
           request: _pageRequest,
-          tenantId: _tenantFilterId,
+          tenantId: listTenantId,
           search: _searchController.text.trim(),
           type: _typeFilter,
           isActive: _isActiveFilter,
@@ -4440,10 +4634,11 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
   }
 
   Future<void> _openFacilityDetails(FacilityProfile facility) async {
+    final AppLocalizations l10n = context.l10n;
     final bool? mutated = await showFacilityDetailsDialog(
       context,
       facility: facility,
-      tenantName: _tenantLabel(facility.tenantId),
+      tenantName: _tenantLabel(facility.tenantId, l10n),
     );
     if (!mounted || mutated != true) {
       return;
@@ -4459,12 +4654,18 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
     bool forceCreate = false,
   }) async {
     final bool isCreate = forceCreate || facility == null;
+    final String? defaultTenantId =
+        _listScope == TenantFacilityFacilitiesListScope.tenant
+        ? _sessionTenantId
+        : _tenantFilterId;
     final FacilityProfile? savedFacility =
         await showTenantFacilityFacilityFormDialog(
           context,
-          tenantId: facility?.tenantId ?? _tenantFilterId,
+          tenantId: facility?.tenantId ?? defaultTenantId,
           facility: facility,
-          requireTenantPicker: isCreate,
+          requireTenantPicker:
+              isCreate &&
+              _listScope == TenantFacilityFacilitiesListScope.platform,
           managementMode: true,
         );
     if (!mounted || savedFacility == null) {
@@ -4746,30 +4947,103 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         : l10n.commonNoLabel;
   }
 
-  bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();
-
-  bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateFacility();
-
-  bool get _canDelete => ref.read(appAccessPolicyProvider).canDeleteFacility();
-
   void _markMutated() {
     _mutated = true;
     widget.onMutated?.call(true);
   }
 
-  String _tenantLabel(String tenantId) {
+  String _tenantLabel(String tenantId, AppLocalizations l10n) {
     for (final TenantProfile tenant in _tenantOptions) {
       if (tenant.id == tenantId) {
         return tenant.name;
       }
     }
-    return tenantId;
+    return l10n.profileUnknownValue;
+  }
+
+  String _facilityCodeLabel(FacilityProfile facility) {
+    return tenantFacilityHumanFriendlyDisplayId(
+          facility.displayId,
+          opaqueId: facility.resourceUuid ?? facility.id,
+        ) ??
+        '—';
+  }
+
+  String _optionalText(String? value) {
+    final String? trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return '—';
+    }
+    return trimmed;
+  }
+
+  Widget _buildScopedBody(AppLocalizations l10n) {
+    if (_loading && _scopedFacility == null) {
+      return AppWorkspaceStatePanel.loading(
+        title: l10n.tenantFacilityFacilityDetailsTitle,
+        body: l10n.commonLoadingBody,
+      );
+    }
+
+    if (_failure != null && _scopedFacility == null) {
+      return AppFailureStateView(
+        failure: _failure!,
+      );
+    }
+
+    final FacilityProfile? facility = _scopedFacility;
+    if (facility == null) {
+      return AppWorkspaceStatePanel.empty(
+        title: l10n.tenantFacilityManageFacilitiesTitle,
+        body: l10n.tenantFacilityNoFacilities,
+        icon: Icons.domain_outlined,
+      );
+    }
+
+    final ThemeData theme = Theme.of(context);
+    final String statusLabel = _facilityStatusLabel(l10n, facility);
+    final AppWorkspaceStatusTone statusTone = facility.isDeleted
+        ? AppWorkspaceStatusTone.error
+        : (facility.isActive
+              ? AppWorkspaceStatusTone.success
+              : AppWorkspaceStatusTone.neutral);
+    final bool canEditFacility = _canManage && !facility.isDeleted;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.md,
+        theme.spacing.sm,
+        theme.spacing.md,
+        theme.spacing.md,
+      ),
+      child: _FacilityScopedDetailsSummary(
+        facility: facility,
+        statusLabel: statusLabel,
+        statusTone: statusTone,
+        framed: true,
+        expandToFill: true,
+        onEdit: canEditFacility ? _editScopedFacility : null,
+        editLabel: l10n.tenantFacilityEditFacilityAction,
+      ),
+    );
   }
 
   Widget _buildTableBody(AppLocalizations l10n) {
     final List<FacilityProfile> visibleFacilities = _visibleFacilities;
+    final bool showTenantColumn = tenantFacilityFacilitiesShowsTenantColumn(
+      _listScope,
+    );
+    final bool showCodeColumn = tenantFacilityFacilitiesShowsCodeColumn(
+      _listScope,
+    );
+    final bool showContactColumns = tenantFacilityFacilitiesShowsContactColumns(
+      _listScope,
+    );
+    final bool showTenantFilter = tenantFacilityFacilitiesShowsTenantFilter(
+      _listScope,
+    );
     final bool hasActiveFilters =
-        _filterValue.option(_tenantFilterKey) != null ||
+        (showTenantFilter && _filterValue.option(_tenantFilterKey) != null) ||
         _filterValue.option(_typeFilterKey) != null ||
         _filterValue.option(_statusFilterKey) != null ||
         _filterValue.option(_activeFilterKey) != null;
@@ -4805,7 +5079,9 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         return '$start-$end / $total';
       },
       onPageChanged: _onPageChanged,
-      columnVisibilityStorageKey: 'setup_manage_facilities_v3',
+      columnVisibilityStorageKey: showTenantColumn
+          ? 'setup_manage_facilities_v3'
+          : 'setup_manage_facilities_tenant_v1',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<FacilityProfile>(
         controller: _searchController,
@@ -4821,7 +5097,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         filterGroups: <AppSearchBarFilterGroup>[
-          if (_tenantOptions.isNotEmpty)
+          if (showTenantFilter && _tenantOptions.isNotEmpty)
             AppSearchBarFilterGroup(
               key: _tenantFilterKey,
               label: l10n.profileTenantLabel,
@@ -4909,12 +5185,20 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           label: l10n.authFacilityNameLabel,
           cellBuilder: (_, FacilityProfile facility) => Text(facility.name),
         ),
-        AppListTableColumn<FacilityProfile>(
-          id: 'tenant',
-          label: l10n.profileTenantLabel,
-          cellBuilder: (_, FacilityProfile facility) =>
-              Text(_tenantLabel(facility.tenantId)),
-        ),
+        if (showTenantColumn)
+          AppListTableColumn<FacilityProfile>(
+            id: 'tenant',
+            label: l10n.profileTenantLabel,
+            cellBuilder: (_, FacilityProfile facility) =>
+                Text(_tenantLabel(facility.tenantId, l10n)),
+          ),
+        if (showCodeColumn)
+          AppListTableColumn<FacilityProfile>(
+            id: 'code',
+            label: l10n.tenantFacilityTenantDetailsIdLabel,
+            cellBuilder: (_, FacilityProfile facility) =>
+                Text(_facilityCodeLabel(facility)),
+          ),
         AppListTableColumn<FacilityProfile>(
           id: 'type',
           label: l10n.profileFacilityTypeLabel,
@@ -4922,6 +5206,20 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
             tenantFacilityFacilityTypeLabel(l10n, facility.type),
           ),
         ),
+        if (showContactColumns) ...<AppListTableColumn<FacilityProfile>>[
+          AppListTableColumn<FacilityProfile>(
+            id: 'phone',
+            label: l10n.profilePhoneLabel,
+            cellBuilder: (_, FacilityProfile facility) =>
+                Text(_optionalText(facility.phone)),
+          ),
+          AppListTableColumn<FacilityProfile>(
+            id: 'email',
+            label: l10n.profileEmailLabel,
+            cellBuilder: (_, FacilityProfile facility) =>
+                Text(_optionalText(facility.email)),
+          ),
+        ],
         AppListTableColumn<FacilityProfile>(
           id: 'status',
           label: l10n.tenantFacilityTenantStatusLabel,
@@ -4964,68 +5262,56 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           ),
       ],
       columnChoices: <AppListTableColumn<FacilityProfile>>[
-        AppListTableColumn<FacilityProfile>(
-          id: 'id',
-          label: l10n.tenantFacilityTenantDetailsIdLabel,
-          cellBuilder: (_, FacilityProfile facility) =>
-              Text(facility.displayId ?? facility.id),
-        ),
-        AppListTableColumn<FacilityProfile>(
-          id: 'phone',
-          label: l10n.profilePhoneLabel,
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            facility.phone?.trim().isNotEmpty == true ? facility.phone! : '—',
+        if (!showCodeColumn)
+          AppListTableColumn<FacilityProfile>(
+            id: 'code',
+            label: l10n.tenantFacilityTenantDetailsIdLabel,
+            cellBuilder: (_, FacilityProfile facility) =>
+                Text(_facilityCodeLabel(facility)),
           ),
-        ),
-        AppListTableColumn<FacilityProfile>(
-          id: 'email',
-          label: l10n.profileEmailLabel,
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            facility.email?.trim().isNotEmpty == true ? facility.email! : '—',
+        if (!showContactColumns) ...<AppListTableColumn<FacilityProfile>>[
+          AppListTableColumn<FacilityProfile>(
+            id: 'phone',
+            label: l10n.profilePhoneLabel,
+            cellBuilder: (_, FacilityProfile facility) =>
+                Text(_optionalText(facility.phone)),
           ),
-        ),
+          AppListTableColumn<FacilityProfile>(
+            id: 'email',
+            label: l10n.profileEmailLabel,
+            cellBuilder: (_, FacilityProfile facility) =>
+                Text(_optionalText(facility.email)),
+          ),
+        ],
         AppListTableColumn<FacilityProfile>(
           id: 'address',
           label: l10n.tenantFacilityAddressLineLabel,
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            facility.addressLine1?.trim().isNotEmpty == true
-                ? facility.addressLine1!
-                : '—',
-          ),
+          cellBuilder: (_, FacilityProfile facility) =>
+              Text(_optionalText(facility.addressLine1)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'city',
           label: l10n.tenantFacilityCityLabel,
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            facility.city?.trim().isNotEmpty == true ? facility.city! : '—',
-          ),
+          cellBuilder: (_, FacilityProfile facility) =>
+              Text(_optionalText(facility.city)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'country',
           label: l10n.tenantFacilityCountryLabel,
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            facility.country?.trim().isNotEmpty == true
-                ? facility.country!
-                : '—',
-          ),
+          cellBuilder: (_, FacilityProfile facility) =>
+              Text(_optionalText(facility.country)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'currency',
           label: l10n.tenantFacilityDefaultCurrencyLabel,
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            facility.currency?.trim().isNotEmpty == true
-                ? facility.currency!
-                : '—',
-          ),
+          cellBuilder: (_, FacilityProfile facility) =>
+              Text(_optionalText(facility.currency)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'consultation_fee',
           label: l10n.settingsConfigurationConsultationFeeLabel,
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            facility.standardConsultationFee?.trim().isNotEmpty == true
-                ? facility.standardConsultationFee!
-                : '—',
-          ),
+          cellBuilder: (_, FacilityProfile facility) =>
+              Text(_optionalText(facility.standardConsultationFee)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'logo',
@@ -5054,7 +5340,9 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       mobileItemBuilder: (BuildContext context, FacilityProfile facility) {
         return AppListTableMobileItem(
           title: facility.name,
-          caption: _tenantLabel(facility.tenantId),
+          caption: showTenantColumn
+              ? _tenantLabel(facility.tenantId, l10n)
+              : tenantFacilityFacilityTypeLabel(l10n, facility.type),
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
               label: _facilityStatusLabel(l10n, facility),
@@ -5068,10 +5356,12 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final Widget tableBody = _buildTableBody(l10n);
+    final Widget body = _isScopedFacilityManager
+        ? _buildScopedBody(l10n)
+        : _buildTableBody(l10n);
 
     if (!widget.dialogMode) {
-      return tableBody;
+      return body;
     }
 
     return AppDialog(
@@ -5079,9 +5369,11 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       icon: const Icon(Icons.domain_outlined),
       pinActionsToBottom: true,
       maxWidth: 1040,
-      content: SizedBox(height: 560, child: tableBody),
+      content: SizedBox(height: 560, child: body),
       actions: <Widget>[
-        if (widget.showCreateAction && _canManage)
+        if (!_isScopedFacilityManager &&
+            widget.showCreateAction &&
+            _canCreate)
           AppButton.primary(
             label: l10n.tenantFacilityAddFacilityAction,
             leadingIcon: Icons.add_business_outlined,
@@ -5096,6 +5388,304 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         ),
       ],
     );
+  }
+}
+
+class _FacilityScopedDetailsSummary extends StatelessWidget {
+  const _FacilityScopedDetailsSummary({
+    required this.facility,
+    required this.statusLabel,
+    required this.statusTone,
+    this.onEdit,
+    this.editLabel,
+    this.framed = false,
+    this.expandToFill = false,
+  });
+
+  final FacilityProfile facility;
+  final String statusLabel;
+  final AppWorkspaceStatusTone statusTone;
+  final Future<void> Function()? onEdit;
+  final String? editLabel;
+  final bool framed;
+  final bool expandToFill;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Future<void> Function()? editAction = onEdit;
+    final String? resolvedEditLabel = editLabel;
+    final String emptyValue = l10n.profileUnknownValue;
+    final Set<String> emptyPlaceholders = <String>{emptyValue, '—'};
+    final String? displayId = tenantFacilityHumanFriendlyDisplayId(
+      facility.displayId,
+      opaqueId: facility.resourceUuid ?? facility.id,
+    );
+
+    final Widget editButton =
+        editAction != null &&
+            resolvedEditLabel != null &&
+            resolvedEditLabel.isNotEmpty
+        ? AppButton.secondary(
+            label: resolvedEditLabel,
+            leadingIcon: Icons.edit_outlined,
+            onPressed: () {
+              unawaited(editAction());
+            },
+          )
+        : const SizedBox.shrink();
+
+    final Widget headerContent = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _FacilityLogoAvatar(logoUrl: facility.logoUrl),
+        SizedBox(width: theme.spacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                facility.name,
+                style: (framed
+                        ? theme.textTheme.headlineSmall
+                        : theme.textTheme.titleLarge)
+                    ?.copyWith(fontWeight: FontWeight.w800, height: 1.15),
+              ),
+              SizedBox(height: theme.spacing.xs),
+              Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  _TenantStatusBadge(label: statusLabel, tone: statusTone),
+                  if (displayId != null)
+                    Text(
+                      displayId,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    final Widget header = Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.lg,
+        theme.spacing.lg,
+        theme.spacing.md,
+        theme.spacing.md,
+      ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool stackEdit =
+              editAction != null && constraints.maxWidth < 560;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: headerContent),
+                  if (!stackEdit && editAction != null) ...<Widget>[
+                    SizedBox(width: theme.spacing.sm),
+                    editButton,
+                  ],
+                ],
+              ),
+              if (stackEdit) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                Align(alignment: Alignment.centerLeft, child: editButton),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+
+    Widget section({
+      required String title,
+      required IconData icon,
+      required List<AppInfoSheetItem> items,
+      int maxColumns = 3,
+    }) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                icon,
+                size: theme.appTokens.listIconSize,
+                color: colorScheme.primary,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppInfoSheetGrid(
+            emptyValue: emptyValue,
+            maxColumns: maxColumns,
+            minItemWidth: framed ? 180 : 120,
+            items: items,
+          ),
+        ],
+      );
+    }
+
+    final Widget sections = Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.lg,
+        theme.spacing.md,
+        theme.spacing.lg,
+        theme.spacing.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          section(
+            title: l10n.hrStaffOverviewSectionTitle,
+            icon: Icons.info_outline,
+            items: <AppInfoSheetItem>[
+              AppInfoSheetItem(
+                label: l10n.profileFacilityTypeLabel,
+                value: tenantFacilityFacilityTypeLabel(l10n, facility.type),
+              ),
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityTenantDetailsIdLabel,
+                value: displayId,
+                copyable: displayId != null,
+                copyTooltip: l10n.copyIdentifierAction,
+                copiedMessage: l10n.identifierCopiedMessage,
+                copyPlaceholderValues: emptyPlaceholders,
+              ),
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityTenantStatusLabel,
+                value: statusLabel,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.lg),
+          Divider(
+            height: 1,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+          ),
+          SizedBox(height: theme.spacing.lg),
+          section(
+            title: l10n.tenantFacilityFacilityDetailsContactHeading,
+            icon: Icons.contact_mail_outlined,
+            items: <AppInfoSheetItem>[
+              AppInfoSheetItem(
+                label: l10n.profilePhoneLabel,
+                value: facility.phone,
+              ),
+              AppInfoSheetItem(
+                label: l10n.profileEmailLabel,
+                value: facility.email,
+              ),
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityAddressLineLabel,
+                value: facility.addressLine1,
+              ),
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityCityLabel,
+                value: facility.city,
+              ),
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityCountryLabel,
+                value: facility.country,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.lg),
+          Divider(
+            height: 1,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+          ),
+          SizedBox(height: theme.spacing.lg),
+          section(
+            title: l10n.settingsConfigurationTenantTitle,
+            icon: Icons.tune_outlined,
+            maxColumns: 2,
+            items: <AppInfoSheetItem>[
+              AppInfoSheetItem(
+                label: l10n.tenantFacilityDefaultCurrencyLabel,
+                value: facility.currency,
+              ),
+              AppInfoSheetItem(
+                label: l10n.settingsConfigurationConsultationFeeLabel,
+                value: facility.standardConsultationFee,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final Widget framedBody = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[
+                colorScheme.primaryContainer.withValues(alpha: 0.72),
+                colorScheme.surface,
+              ],
+            ),
+          ),
+          child: header,
+        ),
+        Divider(height: 1, color: colorScheme.outlineVariant),
+        if (expandToFill)
+          Expanded(child: SingleChildScrollView(child: sections))
+        else
+          sections,
+      ],
+    );
+
+    if (!framed) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          header,
+          SizedBox(height: theme.spacing.md),
+          sections,
+        ],
+      );
+    }
+
+    final Widget card = Material(
+      color: colorScheme.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: framedBody,
+    );
+
+    return card;
   }
 }
 

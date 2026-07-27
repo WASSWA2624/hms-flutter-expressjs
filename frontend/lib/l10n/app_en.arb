@@ -1556,11 +1556,19 @@
   },
   "tenantFacilitySetupTabTenants": "Tenants",
   "@tenantFacilitySetupTabTenants": {
-    "description": "Setup workspace tab label for tenants."
+    "description": "Setup workspace tab label for tenants list."
+  },
+  "tenantFacilitySetupTabTenant": "Tenant",
+  "@tenantFacilitySetupTabTenant": {
+    "description": "Setup workspace tab label for scoped tenant details."
+  },
+  "tenantFacilitySetupTabFacilities": "Facilities",
+  "@tenantFacilitySetupTabFacilities": {
+    "description": "Setup workspace tab label for facilities list."
   },
   "tenantFacilitySetupTabFacility": "Facility",
   "@tenantFacilitySetupTabFacility": {
-    "description": "Setup workspace tab label for facility identity."
+    "description": "Setup workspace tab label for scoped facility details."
   },
   "tenantFacilitySetupTabRoles": "Roles",
   "@tenantFacilitySetupTabRoles": {

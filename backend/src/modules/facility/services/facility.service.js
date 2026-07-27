@@ -181,9 +181,7 @@ const normalizeFacilityRecord = (facility) => {
   return {
     ...facility,
     resource_uuid: facility.id,
-    display_id:
-      resolvePublicIdentifier(facility.human_friendly_id, facility.id) ||
-      facility.id
+    display_id: resolvePublicIdentifier(facility.human_friendly_id) || null
   };
 };
 
@@ -350,14 +348,21 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
 
   const listOptions = { includeDeleted };
 
-  // Fetch facilities and count
+  // Fetch facilities and count (include contacts/addresses for list columns)
   const [facilities, total] = await Promise.all([
     facilityRepository.findMany(
       repoFilters,
       skip,
       resolvedLimit,
       orderBy,
-      {},
+      {
+        contacts: {
+          where: { deleted_at: null }
+        },
+        addresses: {
+          where: { deleted_at: null }
+        }
+      },
       listOptions
     ),
     facilityRepository.count(repoFilters, listOptions)

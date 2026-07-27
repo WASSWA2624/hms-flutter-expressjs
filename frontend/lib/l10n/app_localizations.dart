@@ -2344,13 +2344,25 @@ abstract class AppLocalizations {
   /// **'Setup'**
   String get navigationSetupShortLabel;
 
-  /// Setup workspace tab label for tenants.
+  /// Setup workspace tab label for tenants list.
   ///
   /// In en, this message translates to:
   /// **'Tenants'**
   String get tenantFacilitySetupTabTenants;
 
-  /// Setup workspace tab label for facility identity.
+  /// Setup workspace tab label for scoped tenant details.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant'**
+  String get tenantFacilitySetupTabTenant;
+
+  /// Setup workspace tab label for facilities list.
+  ///
+  /// In en, this message translates to:
+  /// **'Facilities'**
+  String get tenantFacilitySetupTabFacilities;
+
+  /// Setup workspace tab label for scoped facility details.
   ///
   /// In en, this message translates to:
   /// **'Facility'**

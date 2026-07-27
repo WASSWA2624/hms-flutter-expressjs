@@ -551,6 +551,7 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     final ThemeData theme = Theme.of(context);
     final List<TenantFacilitySetupDeskSection> sections = _visibleSections;
     final TenantFacilitySetupDeskSection current = _currentSection;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
 
     if (sections.isEmpty) {
       return AppWorkspaceStatePanel.empty(
@@ -568,7 +569,11 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
               AppTabItem(
                 id: section.name,
                 icon: tenantFacilitySetupDeskSectionIcon(section),
-                label: tenantFacilitySetupDeskSectionLabel(l10n, section),
+                label: tenantFacilitySetupDeskSectionLabel(
+                  l10n,
+                  section,
+                  policy: accessPolicy,
+                ),
               ),
           ],
           selectedId: current.name,
@@ -599,6 +604,8 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
         onMutated: (_) => _refreshSetup(),
       ),
       TenantFacilitySetupDeskSection.facility => ManageFacilitiesPanel(
+        sessionFacility: snapshot.facility,
+        sessionTenantId: snapshot.tenant?.id ?? snapshot.facility?.tenantId,
         onMutated: (_) => _refreshSetup(),
       ),
       TenantFacilitySetupDeskSection.departments => _DepartmentSetupSection(

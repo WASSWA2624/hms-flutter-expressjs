@@ -1195,6 +1195,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilitySetupTabTenants => 'Tenants';
 
   @override
+  String get tenantFacilitySetupTabTenant => 'Tenant';
+
+  @override
+  String get tenantFacilitySetupTabFacilities => 'Facilities';
+
+  @override
   String get tenantFacilitySetupTabFacility => 'Facility';
 
   @override

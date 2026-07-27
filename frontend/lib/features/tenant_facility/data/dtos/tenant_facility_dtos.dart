@@ -91,6 +91,11 @@ final class FacilityProfileDto {
     this.logoUrl,
     this.currency,
     this.standardConsultationFee,
+    this.phone,
+    this.email,
+    this.addressLine1,
+    this.city,
+    this.country,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -99,6 +104,9 @@ final class FacilityProfileDto {
   factory FacilityProfileDto.fromJson(JsonMap json) {
     final JsonMap extensionJson = _map(json['extension_json']);
     final JsonMap billing = _map(extensionJson['billing']);
+    final String? phoneFromContacts = _primaryContactValue(json, 'PHONE');
+    final String? emailFromContacts = _primaryContactValue(json, 'EMAIL');
+    final JsonMap? primaryAddress = _primaryAddress(json);
 
     return FacilityProfileDto(
       id: _requiredString(json, 'id'),
@@ -114,9 +122,24 @@ final class FacilityProfileDto {
         billing,
         'standard_consultation_fee',
       ),
+      phone: _optionalString(json, 'phone') ?? phoneFromContacts,
+      email: _optionalString(json, 'email') ?? emailFromContacts,
+      addressLine1: _optionalString(json, 'address_line1') ??
+          (primaryAddress == null
+              ? null
+              : _optionalString(primaryAddress, 'line1')),
+      city: _optionalString(json, 'city') ??
+          (primaryAddress == null
+              ? null
+              : _optionalString(primaryAddress, 'city')),
+      country: _optionalString(json, 'country') ??
+          (primaryAddress == null
+              ? null
+              : _optionalString(primaryAddress, 'country')),
       resourceUuid:
           _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
-      displayId: _optionalString(json, 'display_id'),
+      displayId: _optionalString(json, 'display_id') ??
+          _optionalString(json, 'human_friendly_id'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
@@ -129,6 +152,11 @@ final class FacilityProfileDto {
   final String? logoUrl;
   final String? currency;
   final String? standardConsultationFee;
+  final String? phone;
+  final String? email;
+  final String? addressLine1;
+  final String? city;
+  final String? country;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -143,6 +171,11 @@ final class FacilityProfileDto {
       logoUrl: logoUrl,
       currency: currency,
       standardConsultationFee: standardConsultationFee,
+      phone: phone,
+      email: email,
+      addressLine1: addressLine1,
+      city: city,
+      country: country,
       resourceUuid: resourceUuid,
       displayId: displayId,
       deletedAt: deletedAt,
@@ -447,6 +480,41 @@ String? _optionalString(JsonMap json, String key) {
   }
 
   return value.trim();
+}
+
+String? _primaryContactValue(JsonMap json, String contactType) {
+  final Object? contacts = json['contacts'];
+  if (contacts is! Iterable<Object?>) {
+    return null;
+  }
+  final String normalizedType = contactType.trim().toUpperCase();
+  for (final Object? entry in contacts) {
+    if (entry is! JsonMap) {
+      continue;
+    }
+    final String? type = _optionalString(entry, 'contact_type')?.toUpperCase();
+    if (type != normalizedType) {
+      continue;
+    }
+    final String? value = _optionalString(entry, 'value');
+    if (value != null) {
+      return value;
+    }
+  }
+  return null;
+}
+
+JsonMap? _primaryAddress(JsonMap json) {
+  final Object? addresses = json['addresses'];
+  if (addresses is! Iterable<Object?>) {
+    return null;
+  }
+  for (final Object? entry in addresses) {
+    if (entry is JsonMap) {
+      return entry;
+    }
+  }
+  return null;
 }
 
 bool? _optionalBool(JsonMap json, String key) {

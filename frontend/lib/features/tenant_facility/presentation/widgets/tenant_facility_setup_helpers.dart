@@ -173,6 +173,85 @@ bool tenantFacilityUsesScopedTenantPanel({
   return canManageTenant && !canCreateTenant;
 }
 
+/// Facility admins edit their own facility; creators/managers use the list.
+bool tenantFacilityUsesScopedFacilityPanel({
+  required bool canManageFacility,
+  required bool canCreateFacility,
+}) {
+  return canManageFacility && !canCreateFacility;
+}
+
+/// Facilities tab list breadth by admin role.
+enum TenantFacilityFacilitiesListScope {
+  /// Super / platform admin — all facilities across tenants.
+  platform,
+
+  /// Tenant admin — facilities under the session tenant.
+  tenant,
+
+  /// Facility admin — session facility details only.
+  facility,
+}
+
+TenantFacilityFacilitiesListScope tenantFacilityFacilitiesListScope(
+  AppAccessPolicy policy,
+) {
+  if (policy.isElevated || policy.canCreateTenant()) {
+    return TenantFacilityFacilitiesListScope.platform;
+  }
+  if (policy.canManageTenant()) {
+    return TenantFacilityFacilitiesListScope.tenant;
+  }
+  return TenantFacilityFacilitiesListScope.facility;
+}
+
+bool tenantFacilityFacilitiesShowsTenantColumn(
+  TenantFacilityFacilitiesListScope scope,
+) {
+  return scope == TenantFacilityFacilitiesListScope.platform;
+}
+
+bool tenantFacilityFacilitiesShowsCodeColumn(
+  TenantFacilityFacilitiesListScope scope,
+) {
+  return scope == TenantFacilityFacilitiesListScope.tenant;
+}
+
+bool tenantFacilityFacilitiesShowsContactColumns(
+  TenantFacilityFacilitiesListScope scope,
+) {
+  return scope == TenantFacilityFacilitiesListScope.tenant;
+}
+
+bool tenantFacilityFacilitiesShowsTenantFilter(
+  TenantFacilityFacilitiesListScope scope,
+) {
+  return scope == TenantFacilityFacilitiesListScope.platform;
+}
+
+final RegExp _tenantFacilityOpaqueIdPattern = RegExp(
+  r'^(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{24})$',
+);
+
+/// Returns [candidate] only when it is a human-friendly public identifier.
+String? tenantFacilityHumanFriendlyDisplayId(
+  String? candidate, {
+  String? opaqueId,
+}) {
+  final String? trimmed = candidate?.trim();
+  if (trimmed == null || trimmed.isEmpty) {
+    return null;
+  }
+  final String? opaque = opaqueId?.trim();
+  if (opaque != null && opaque.isNotEmpty && trimmed == opaque) {
+    return null;
+  }
+  if (_tenantFacilityOpaqueIdPattern.hasMatch(trimmed)) {
+    return null;
+  }
+  return trimmed;
+}
+
 /// Departments tab list breadth and default columns by admin role.
 enum TenantFacilityDepartmentsListScope {
   /// Super / platform admin — all tenants and facilities.
@@ -242,13 +321,27 @@ bool tenantFacilityDepartmentsShowsFacilityFilter(
 
 String tenantFacilitySetupDeskSectionLabel(
   AppLocalizations l10n,
-  TenantFacilitySetupDeskSection section,
-) {
+  TenantFacilitySetupDeskSection section, {
+  AppAccessPolicy? policy,
+}) {
+  final bool scopedTenant = policy != null &&
+      tenantFacilityUsesScopedTenantPanel(
+        canManageTenant: policy.canManageTenant(),
+        canCreateTenant: policy.canCreateTenant(),
+      );
+  final bool scopedFacility = policy != null &&
+      tenantFacilityUsesScopedFacilityPanel(
+        canManageFacility: policy.canManageFacility(),
+        canCreateFacility: policy.canCreateFacility(),
+      );
+
   return switch (section) {
-    TenantFacilitySetupDeskSection.tenants =>
-      l10n.tenantFacilitySetupTabTenants,
-    TenantFacilitySetupDeskSection.facility =>
-      l10n.tenantFacilitySetupTabFacility,
+    TenantFacilitySetupDeskSection.tenants => scopedTenant
+        ? l10n.tenantFacilitySetupTabTenant
+        : l10n.tenantFacilitySetupTabTenants,
+    TenantFacilitySetupDeskSection.facility => scopedFacility
+        ? l10n.tenantFacilitySetupTabFacility
+        : l10n.tenantFacilitySetupTabFacilities,
     TenantFacilitySetupDeskSection.departments =>
       l10n.tenantFacilityWizardStepDepartments,
     TenantFacilitySetupDeskSection.units => l10n.tenantFacilityWizardStepUnits,
