@@ -19,11 +19,14 @@ import 'package:hosspi_hms/core/utils/app_slug.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/department_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/facility_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/department_details_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/department_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
@@ -2898,7 +2901,11 @@ class _DepartmentSetupSectionState
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canManageRecords = widget.canSubmit;
     final bool isSubmitting = submission.isSubmitting;
-    final bool prerequisitesMet = snapshot.facility?.id != null;
+    final TenantFacilityDepartmentsListScope createScope = scope;
+    final bool prerequisitesMet =
+        createScope == TenantFacilityDepartmentsListScope.facility
+        ? (policy.facilityId ?? snapshot.facility?.id) != null
+        : true;
     final bool canAdd = canManageRecords && prerequisitesMet && !isSubmitting;
     final String? blockedMessage = canManageRecords && !prerequisitesMet
         ? l10n.tenantFacilityGateNeedFacility
@@ -2983,9 +2990,27 @@ class _DepartmentSetupSectionState
             blockedMessage: blockedMessage,
             onAdd: () => unawaited(
               _afterMutation(
-                () => _openDepartmentDialog(context, snapshot),
+                () => _openDepartmentDialog(
+                  context,
+                  snapshot,
+                  tenantOptions: _tenantOptions,
+                  facilityOptions: _facilityOptions,
+                ),
               ),
             ),
+            onRowSelected: (DepartmentProfile department) {
+              unawaited(
+                _afterMutation(
+                  () => _openDepartmentDetails(
+                    context,
+                    department: department,
+                    snapshot: snapshot,
+                    tenantName: _tenantLabel(department),
+                    facilityName: _facilityLabel(department),
+                  ),
+                ),
+              );
+            },
             columnVisibilityStorageKey:
                 'setup_structure_departments_${scope.name}_v4',
             extraFilterGroups: _buildFilterGroups(l10n),
@@ -3014,6 +3039,8 @@ class _DepartmentSetupSectionState
                     context,
                     snapshot,
                     department: department,
+                    tenantOptions: _tenantOptions,
+                    facilityOptions: _facilityOptions,
                   ),
                 ),
               );
@@ -3446,6 +3473,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     required this.onDelete,
     required this.onRestore,
     this.onPermanentDelete,
+    this.onRowSelected,
     this.isSubmitting = false,
     this.scopeLabel,
     this.scopeOptions = const <_SearchableEntityGroupScopeOption>[],
@@ -3481,6 +3509,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final ValueChanged<T> onDelete;
   final ValueChanged<T> onRestore;
   final ValueChanged<T>? onPermanentDelete;
+  final ValueChanged<T>? onRowSelected;
   final String? scopeLabel;
   final List<_SearchableEntityGroupScopeOption> scopeOptions;
   final String? Function(T item)? itemScopeId;
@@ -3660,6 +3689,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           widget.columnVisibilityStorageKey ??
           'setup_structure_${widget.title}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      onRowSelected: widget.onRowSelected,
       columns: <AppListTableColumn<T>>[
         ...leadingColumns,
         nameColumn,
@@ -4139,10 +4169,17 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
 
 
 class _DepartmentFormDialog extends ConsumerStatefulWidget {
-  const _DepartmentFormDialog({required this.snapshot, this.department});
+  const _DepartmentFormDialog({
+    required this.snapshot,
+    this.department,
+    this.tenantOptions = const <TenantProfile>[],
+    this.facilityOptions = const <FacilityProfile>[],
+  });
 
   final FacilitySetupSnapshot snapshot;
   final DepartmentProfile? department;
+  final List<TenantProfile> tenantOptions;
+  final List<FacilityProfile> facilityOptions;
 
   @override
   ConsumerState<_DepartmentFormDialog> createState() =>
@@ -4150,11 +4187,24 @@ class _DepartmentFormDialog extends ConsumerStatefulWidget {
 }
 
 class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
+  static const AppPageRequest _lookupRequest = AppPageRequest(
+    pageSize: AppPageRequest.maxPageSize,
+  );
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _shortNameController;
   late DepartmentSetupType _type;
   late bool _isActive;
+  String? _selectedTenantId;
+  String? _selectedFacilityId;
+  List<TenantProfile> _tenantOptions = const <TenantProfile>[];
+  List<FacilityProfile> _facilityOptions = const <FacilityProfile>[];
+  bool _loadingOptions = false;
+  bool _similarityAccepted = false;
+  String? _nameErrorText;
+
+  bool get _isCreate => widget.department == null;
 
   @override
   void initState() {
@@ -4164,6 +4214,17 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
     _shortNameController = TextEditingController(text: department?.shortName);
     _type = department?.type ?? DepartmentSetupType.clinical;
     _isActive = department?.isActive ?? true;
+    _tenantOptions = widget.tenantOptions;
+    _facilityOptions = widget.facilityOptions;
+    _selectedTenantId =
+        department?.tenantId.trim().isNotEmpty == true
+        ? department!.tenantId.trim()
+        : widget.snapshot.tenant?.id.trim();
+    _selectedFacilityId =
+        department?.facilityId?.trim().isNotEmpty == true
+        ? department!.facilityId!.trim()
+        : widget.snapshot.facility?.id.trim();
+    unawaited(_ensureScopeOptions());
   }
 
   @override
@@ -4173,12 +4234,150 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
     super.dispose();
   }
 
+  Future<void> _ensureScopeOptions() async {
+    if (!_isCreate) {
+      return;
+    }
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityDepartmentsListScope scope =
+        tenantFacilityDepartmentsListScope(policy);
+    if (scope == TenantFacilityDepartmentsListScope.facility) {
+      return;
+    }
+
+    setState(() {
+      _loadingOptions = true;
+    });
+
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+
+    if (scope == TenantFacilityDepartmentsListScope.platform &&
+        _tenantOptions.isEmpty) {
+      final Result<AppPage<TenantProfile>> tenantsResult = await repository
+          .listTenants(request: _lookupRequest);
+      if (!mounted) {
+        return;
+      }
+      tenantsResult.when(
+        success: (AppPage<TenantProfile> page) {
+          _tenantOptions = page.items
+              .where((TenantProfile tenant) => !tenant.isDeleted)
+              .toList(growable: false);
+        },
+        failure: (_) {},
+      );
+    }
+
+    final String? tenantIdForFacilities = switch (scope) {
+      TenantFacilityDepartmentsListScope.platform => _selectedTenantId,
+      TenantFacilityDepartmentsListScope.tenant =>
+        policy.tenantId ?? widget.snapshot.tenant?.id,
+      TenantFacilityDepartmentsListScope.facility => null,
+    };
+
+    if (tenantFacilityDepartmentsShowsFacilityFilter(scope) &&
+        (scope != TenantFacilityDepartmentsListScope.platform ||
+            (tenantIdForFacilities != null &&
+                tenantIdForFacilities.isNotEmpty))) {
+      final Result<AppPage<FacilityProfile>> facilitiesResult = await repository
+          .listFacilities(
+            request: _lookupRequest,
+            tenantId: tenantIdForFacilities,
+          );
+      if (!mounted) {
+        return;
+      }
+      facilitiesResult.when(
+        success: (AppPage<FacilityProfile> page) {
+          _facilityOptions = page.items
+              .where((FacilityProfile facility) => !facility.isDeleted)
+              .toList(growable: false);
+        },
+        failure: (_) {},
+      );
+    }
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _loadingOptions = false;
+      _syncFacilitySelection();
+    });
+  }
+
+  void _syncFacilitySelection() {
+    final String? facilityId = _selectedFacilityId;
+    if (facilityId == null) {
+      return;
+    }
+    final bool allowed = _facilityOptions.any(
+      (FacilityProfile facility) =>
+          facility.id == facilityId && !facility.isDeleted,
+    );
+    if (!allowed) {
+      _selectedFacilityId = null;
+    }
+  }
+
+  Future<void> _onTenantChanged(String? tenantId) async {
+    setState(() {
+      _selectedTenantId = tenantId;
+      _selectedFacilityId = null;
+      _facilityOptions = const <FacilityProfile>[];
+      _loadingOptions = tenantId != null && tenantId.isNotEmpty;
+    });
+    if (tenantId == null || tenantId.isEmpty) {
+      return;
+    }
+    final Result<AppPage<FacilityProfile>> result = await ref
+        .read(tenantFacilityRepositoryProvider)
+        .listFacilities(request: _lookupRequest, tenantId: tenantId);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AppPage<FacilityProfile> page) {
+        setState(() {
+          _facilityOptions = page.items
+              .where((FacilityProfile facility) => !facility.isDeleted)
+              .toList(growable: false);
+          _loadingOptions = false;
+        });
+      },
+      failure: (_) {
+        setState(() {
+          _loadingOptions = false;
+        });
+      },
+    );
+  }
+
+  IconData _departmentTypeIcon(DepartmentSetupType type) {
+    return switch (type) {
+      DepartmentSetupType.clinical => Icons.medical_services_outlined,
+      DepartmentSetupType.administrative => Icons.apartment_outlined,
+      DepartmentSetupType.support => Icons.support_agent_outlined,
+      DepartmentSetupType.diagnostics => Icons.biotech_outlined,
+      DepartmentSetupType.other => Icons.category_outlined,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final TenantFacilityDepartmentsListScope scope =
+        tenantFacilityDepartmentsListScope(policy);
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool isEditing = widget.department != null;
+    final bool isEditing = !_isCreate;
     final bool canEdit = !submission.isSubmitting;
+    final bool showTenantPicker =
+        _isCreate && tenantFacilityDepartmentsShowsTenantFilter(scope);
+    final bool showFacilityPicker =
+        _isCreate && tenantFacilityDepartmentsShowsFacilityFilter(scope);
 
     return AppDialog(
       title: Text(
@@ -4193,13 +4392,91 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
         child: AppFormSection(
           density: AppFormSectionDensity.compact,
           children: <Widget>[
+            if (showTenantPicker)
+              AppSelectField<String>.searchable(
+                value: _selectedTenantId ?? _noneSelection,
+                enabled: canEdit && !_loadingOptions,
+                labelText: l10n.profileTenantLabel,
+                isRequired: true,
+                options: <AppSelectOption<String>>[
+                  AppSelectOption<String>(
+                    value: _noneSelection,
+                    label: l10n.tenantFacilityNoSelectionLabel,
+                  ),
+                  for (final TenantProfile tenant in _tenantOptions)
+                    AppSelectOption<String>(
+                      value: tenant.id,
+                      label: tenant.name,
+                      leadingIcon: const Icon(Icons.apartment_outlined),
+                    ),
+                ],
+                validator: (String? value) {
+                  if (value == null ||
+                      value.isEmpty ||
+                      value == _noneSelection) {
+                    return l10n.validationRequired;
+                  }
+                  return null;
+                },
+                onChanged: (String? value) {
+                  final String? next =
+                      value == null || value == _noneSelection ? null : value;
+                  unawaited(_onTenantChanged(next));
+                },
+              ),
+            if (showFacilityPicker)
+              AppSelectField<String>.searchable(
+                value: _selectedFacilityId ?? _noneSelection,
+                enabled:
+                    canEdit &&
+                    !_loadingOptions &&
+                    (!showTenantPicker ||
+                        (_selectedTenantId != null &&
+                            _selectedTenantId!.isNotEmpty)),
+                labelText: l10n.profileFacilityLabel,
+                isRequired: true,
+                options: <AppSelectOption<String>>[
+                  AppSelectOption<String>(
+                    value: _noneSelection,
+                    label: l10n.tenantFacilityNoSelectionLabel,
+                  ),
+                  for (final FacilityProfile facility in _facilityOptions)
+                    AppSelectOption<String>(
+                      value: facility.id,
+                      label: facility.name,
+                      leadingIcon: const Icon(Icons.local_hospital_outlined),
+                    ),
+                ],
+                validator: (String? value) {
+                  if (value == null ||
+                      value.isEmpty ||
+                      value == _noneSelection) {
+                    return l10n.validationRequired;
+                  }
+                  return null;
+                },
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedFacilityId =
+                        value == null || value == _noneSelection ? null : value;
+                  });
+                },
+              ),
             AppTextField(
               controller: _nameController,
               enabled: canEdit,
               labelText: l10n.tenantFacilityDepartmentNameLabel,
               isRequired: true,
               textCapitalization: TextCapitalization.words,
+              errorText: _nameErrorText,
               validator: AppValidators.requiredText(l10n.validationRequired),
+              onChanged: (_) {
+                if (_nameErrorText != null) {
+                  setState(() {
+                    _nameErrorText = null;
+                  });
+                }
+              },
             ),
             AppTextField(
               controller: _shortNameController,
@@ -4216,6 +4493,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
                   AppSelectOption<DepartmentSetupType>(
                     value: type,
                     label: _departmentTypeLabel(l10n, type),
+                    leadingIcon: Icon(_departmentTypeIcon(type)),
                   ),
               ],
               onChanged: (DepartmentSetupType? value) {
@@ -4259,20 +4537,43 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
     );
   }
 
+  (String?, String?) _resolveScopeIds() {
+    final DepartmentProfile? editing = widget.department;
+    if (editing != null) {
+      final String? tenantId = editing.tenantId.trim().isNotEmpty
+          ? editing.tenantId.trim()
+          : widget.snapshot.tenant?.id.trim();
+      final String? facilityId = editing.facilityId?.trim().isNotEmpty == true
+          ? editing.facilityId!.trim()
+          : widget.snapshot.facility?.id.trim();
+      return (tenantId, facilityId);
+    }
+
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityDepartmentsListScope scope =
+        tenantFacilityDepartmentsListScope(policy);
+    final String? tenantId = switch (scope) {
+      TenantFacilityDepartmentsListScope.platform => _selectedTenantId?.trim(),
+      TenantFacilityDepartmentsListScope.tenant ||
+      TenantFacilityDepartmentsListScope.facility =>
+        policy.tenantId ?? widget.snapshot.tenant?.id.trim(),
+    };
+    final String? facilityId = switch (scope) {
+      TenantFacilityDepartmentsListScope.platform ||
+      TenantFacilityDepartmentsListScope.tenant =>
+        _selectedFacilityId?.trim(),
+      TenantFacilityDepartmentsListScope.facility =>
+        policy.facilityId ?? widget.snapshot.facility?.id.trim(),
+    };
+    return (tenantId, facilityId);
+  }
+
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() != true) {
       return;
     }
 
-    final DepartmentProfile? editing = widget.department;
-    final String? tenantId =
-        editing?.tenantId.trim().isNotEmpty == true
-        ? editing!.tenantId.trim()
-        : widget.snapshot.tenant?.id.trim();
-    final String? facilityId =
-        editing?.facilityId?.trim().isNotEmpty == true
-        ? editing!.facilityId!.trim()
-        : widget.snapshot.facility?.id.trim();
+    final (String? tenantId, String? facilityId) = _resolveScopeIds();
     if (tenantId == null ||
         tenantId.isEmpty ||
         facilityId == null ||
@@ -4280,20 +4581,252 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
       return;
     }
 
+    final String name = _nameController.text.trim();
+    final String shortName = resolveDepartmentShortName(
+      name,
+      _shortNameController.text,
+    );
+
+    final bool canProceed = await _guardAgainstDuplicates(
+      facilityId: facilityId,
+      name: name,
+      shortName: shortName,
+    );
+    if (!canProceed) {
+      return;
+    }
+
+    final DepartmentProfile? editing = widget.department;
     final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveDepartment(
           id: editing?.id,
           tenantId: tenantId,
           facilityId: facilityId,
-          name: _nameController.text,
-          shortName: _shortNameController.text,
+          name: name,
+          shortName: shortName,
           type: _type,
           isActive: _isActive,
+          confirmSimilar: _similarityAccepted,
         );
+
     if (saved && mounted) {
-      Navigator.of(context).pop(true);
+      final DepartmentProfile? created = _isCreate
+          ? ref.read(tenantFacilitySetupSubmissionProvider).lastSavedDepartment
+          : null;
+      Navigator.of(context).pop<Object?>(created ?? true);
+      return;
     }
+
+    if (!mounted) {
+      return;
+    }
+
+    final AppFailure? failure = ref
+        .read(tenantFacilitySetupSubmissionProvider)
+        .failure;
+    if (failure?.messageKey == 'errors.department.duplicate_name') {
+      setState(() {
+        _nameErrorText = context.l10n.tenantFacilityDepartmentNameAlreadyInUse;
+      });
+      return;
+    }
+    if (!_isDepartmentSimilarityConflict(failure)) {
+      return;
+    }
+
+    ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
+    setState(() {
+      _similarityAccepted = false;
+    });
+    final bool confirmed = await _guardAgainstDuplicates(
+      facilityId: facilityId,
+      name: name,
+      shortName: shortName,
+      forceReviewMatches: true,
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    final bool retried = await ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveDepartment(
+          id: editing?.id,
+          tenantId: tenantId,
+          facilityId: facilityId,
+          name: name,
+          shortName: shortName,
+          type: _type,
+          isActive: _isActive,
+          confirmSimilar: true,
+        );
+    if (retried && mounted) {
+      final DepartmentProfile? created = _isCreate
+          ? ref.read(tenantFacilitySetupSubmissionProvider).lastSavedDepartment
+          : null;
+      Navigator.of(context).pop<Object?>(created ?? true);
+    }
+  }
+
+  bool _isDepartmentSimilarityConflict(AppFailure? failure) {
+    if (failure == null || failure.category != AppFailureCategory.conflict) {
+      return false;
+    }
+    if (failure.messageKey == 'errors.department.similar_exists') {
+      return true;
+    }
+    final String detail = (failure.detailMessage ?? '').toLowerCase();
+    return detail.contains('similar department') ||
+        detail.contains('confirm to create anyway');
+  }
+
+  Future<bool> _guardAgainstDuplicates({
+    required String facilityId,
+    required String name,
+    required String shortName,
+    bool forceReviewMatches = false,
+  }) async {
+    final DepartmentProfile? editing = widget.department;
+
+    if (!_isCreate &&
+        !forceReviewMatches &&
+        editing != null &&
+        normalizeDepartmentName(name) ==
+            normalizeDepartmentName(editing.name) &&
+        normalizeDepartmentName(shortName) ==
+            normalizeDepartmentName(
+              resolveDepartmentShortName(editing.name, editing.shortName),
+            ) &&
+        _type == editing.type &&
+        _isActive == editing.isActive) {
+      setState(() {
+        _nameErrorText = null;
+        _similarityAccepted = false;
+      });
+      return true;
+    }
+
+    final List<DepartmentProfile> existing = await _loadExistingDepartments(
+      facilityId,
+      name,
+    );
+    final DepartmentDuplicateCheckResult result = checkDepartmentDuplicates(
+      name: name,
+      shortName: shortName,
+      type: _type,
+      isActive: _isActive,
+      existing: existing,
+      excludeDepartment: editing,
+      excludeDepartmentId: editing?.mutationId ?? editing?.id,
+    );
+
+    final bool exactNameConflict = result.exactNameConflict;
+    final List<DepartmentSimilarityMatch> reviewMatches = exactNameConflict
+        ? result.similarMatches
+              .where(
+                (DepartmentSimilarityMatch match) => match.exactNameConflict,
+              )
+              .toList(growable: false)
+        : result.overridableMatches;
+
+    if (!mounted) {
+      return false;
+    }
+
+    if (!_isCreate &&
+        !forceReviewMatches &&
+        !exactNameConflict &&
+        reviewMatches.isEmpty) {
+      setState(() {
+        _nameErrorText = null;
+        _similarityAccepted = false;
+      });
+      return true;
+    }
+
+    setState(() {
+      _nameErrorText = exactNameConflict
+          ? context.l10n.tenantFacilityDepartmentNameAlreadyInUse
+          : null;
+      if (exactNameConflict) {
+        _similarityAccepted = false;
+      }
+    });
+
+    final DepartmentSimilarityDialogResult decision =
+        await showDepartmentSimilarityDialog(
+          context,
+          proposed: DepartmentSimilarityProposedValues(
+            name: name,
+            shortName: shortName,
+            type: _type,
+            isActive: _isActive,
+          ),
+          matches: reviewMatches,
+          allowProceed: !exactNameConflict,
+        );
+    if (!mounted) {
+      return false;
+    }
+
+    switch (decision.action) {
+      case DepartmentSimilarityAction.cancel:
+        setState(() {
+          _similarityAccepted = false;
+        });
+        return false;
+      case DepartmentSimilarityAction.useExisting:
+        final DepartmentProfile? existingDepartment =
+            decision.selectedDepartment;
+        if (existingDepartment != null) {
+          Navigator.of(context).pop<Object?>(existingDepartment);
+        }
+        return false;
+      case DepartmentSimilarityAction.proceed:
+        setState(() {
+          _similarityAccepted = reviewMatches.isNotEmpty || forceReviewMatches;
+          _nameErrorText = null;
+        });
+        return true;
+    }
+  }
+
+  Future<List<DepartmentProfile>> _loadExistingDepartments(
+    String facilityId,
+    String name,
+  ) async {
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+    final Set<String> seenIds = <String>{};
+    final List<DepartmentProfile> departments = <DepartmentProfile>[];
+
+    Future<void> appendMatches(String? search) async {
+      final Result<AppPage<DepartmentProfile>> result = await repository
+          .listDepartments(
+            request: _lookupRequest,
+            facilityId: facilityId,
+            search: search,
+          );
+      result.when(
+        success: (AppPage<DepartmentProfile> page) {
+          for (final DepartmentProfile department in page.items) {
+            if (seenIds.add(department.id)) {
+              departments.add(department);
+            }
+          }
+        },
+        failure: (_) {},
+      );
+    }
+
+    await appendMatches(name.isEmpty ? null : name);
+    if (departments.isEmpty) {
+      await appendMatches(null);
+    }
+
+    return departments;
   }
 }
 
@@ -4988,12 +5521,44 @@ Future<void> _openDepartmentDialog(
   BuildContext context,
   FacilitySetupSnapshot snapshot, {
   DepartmentProfile? department,
+  List<TenantProfile> tenantOptions = const <TenantProfile>[],
+  List<FacilityProfile> facilityOptions = const <FacilityProfile>[],
 }) async {
-  await showAppDialog<bool>(
+  final Object? result = await showAppDialog<Object?>(
     context: context,
     barrierDismissible: false,
-    builder: (_) =>
-        _DepartmentFormDialog(snapshot: snapshot, department: department),
+    builder: (_) => _DepartmentFormDialog(
+      snapshot: snapshot,
+      department: department,
+      tenantOptions: tenantOptions,
+      facilityOptions: facilityOptions,
+    ),
+  );
+  if (!context.mounted || result is! DepartmentProfile) {
+    return;
+  }
+  await _openDepartmentDetails(
+    context,
+    department: result,
+    snapshot: snapshot,
+    tenantName: snapshot.tenant?.name,
+    facilityName: snapshot.facility?.name,
+  );
+}
+
+Future<void> _openDepartmentDetails(
+  BuildContext context, {
+  required DepartmentProfile department,
+  FacilitySetupSnapshot? snapshot,
+  String? tenantName,
+  String? facilityName,
+}) async {
+  await showDepartmentDetailsDialog(
+    context,
+    department: department,
+    snapshot: snapshot,
+    tenantName: tenantName,
+    facilityName: facilityName == '—' ? null : facilityName,
   );
 }
 

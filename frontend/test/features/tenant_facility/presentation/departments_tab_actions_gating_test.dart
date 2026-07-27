@@ -40,12 +40,12 @@ void main() {
       return setupPageSource.substring(sectionStart, nextSectionStart);
     }
 
-    test('department section gates Add on structure edit + facility', () {
+    test('department section gates Add for facility admins only', () {
       final String sectionSource = departmentSectionSource();
 
       expect(
         sectionSource.contains(
-          'prerequisitesMet = snapshot.facility?.id != null',
+          'createScope == TenantFacilityDepartmentsListScope.facility',
         ),
         isTrue,
       );
@@ -60,6 +60,7 @@ void main() {
         isTrue,
       );
       expect(sectionSource.contains('onPermanentDelete:'), isTrue);
+      expect(sectionSource.contains('onRowSelected:'), isTrue);
     });
 
     test('soft-deleted rows expose restore and permanent delete', () {
@@ -126,11 +127,9 @@ void main() {
 
     test('department columns are role-scoped', () {
       final String sectionSource = departmentSectionSource();
-      expect(sectionSource.contains("id: 'id'"), isTrue);
       expect(sectionSource.contains("id: 'facility'"), isTrue);
       expect(sectionSource.contains("id: 'tenant'"), isTrue);
       expect(sectionSource.contains("id: 'type'"), isTrue);
-      expect(sectionSource.contains("id: 'short_name'"), isTrue);
       expect(sectionSource.contains('statusLabelBuilder:'), isTrue);
       expect(
         sectionSource.contains('tenantFacilityDepartmentsShowsTenantColumn'),
@@ -195,13 +194,11 @@ void main() {
 
     test('edit department keeps the department facility and tenant', () {
       expect(
-        setupPageSource.contains('editing?.tenantId.trim().isNotEmpty == true'),
+        setupPageSource.contains('editing.tenantId.trim().isNotEmpty'),
         isTrue,
       );
       expect(
-        setupPageSource.contains(
-          'editing?.facilityId?.trim().isNotEmpty == true',
-        ),
+        setupPageSource.contains('editing.facilityId?.trim().isNotEmpty == true'),
         isTrue,
       );
     });

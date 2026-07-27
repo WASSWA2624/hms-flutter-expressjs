@@ -169,6 +169,10 @@ final class TenantFacilitySetupSubmissionState {
   TenantProfile? get lastSavedTenant =>
       lastSavedEntity is TenantProfile ? lastSavedEntity as TenantProfile : null;
 
+  DepartmentProfile? get lastSavedDepartment => lastSavedEntity is DepartmentProfile
+      ? lastSavedEntity as DepartmentProfile
+      : null;
+
   TenantFacilitySetupSubmissionState copyWith({
     bool? isSubmitting,
     AppFailure? failure,
@@ -447,6 +451,7 @@ final class TenantFacilitySetupSubmissionController
     String? shortName,
     required DepartmentSetupType type,
     required bool isActive,
+    bool confirmSimilar = false,
   }) {
     return _submit(
       () => _repository.saveDepartment(
@@ -457,6 +462,7 @@ final class TenantFacilitySetupSubmissionController
         shortName: shortName,
         type: type,
         isActive: isActive,
+        confirmSimilar: confirmSimilar,
       ),
       updateSnapshot:
           (FacilitySetupSnapshot snapshot, DepartmentProfile department) {

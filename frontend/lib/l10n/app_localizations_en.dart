@@ -7031,6 +7031,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityEditDepartmentTitle => 'Edit department';
 
   @override
+  String get tenantFacilityDepartmentDetailsTitle => 'Department details';
+
+  @override
+  String get tenantFacilityEditDepartmentDetailsAction => 'Edit department';
+
+  @override
+  String get tenantFacilityDeleteDepartmentDetailsAction => 'Delete department';
+
+  @override
+  String get tenantFacilityDepartmentNameAlreadyInUse =>
+      'Department name already in use';
+
+  @override
+  String get tenantFacilitySimilarDepartmentDialogTitle =>
+      'Similar department found';
+
+  @override
+  String get tenantFacilitySimilarDepartmentWarningTitle =>
+      'Potential duplicate department';
+
+  @override
+  String get tenantFacilitySimilarDepartmentWarningBody =>
+      'Review the similar departments below before saving.';
+
+  @override
+  String get tenantFacilityNoSimilarDepartmentDialogTitle =>
+      'No similar department found';
+
+  @override
+  String get tenantFacilityNoSimilarDepartmentBannerTitle =>
+      'Match status: No similar found';
+
+  @override
+  String get tenantFacilityNoSimilarDepartmentDialogBody =>
+      'Review the proposed department details below. No similar departments were found in this facility.';
+
+  @override
+  String get tenantFacilityProceedCreateDepartmentAction => 'Create anyway';
+
+  @override
+  String get tenantFacilityContinueCreateDepartmentAction => 'Continue';
+
+  @override
+  String get tenantFacilityUseThisDepartmentAction => 'Use this department';
+
+  @override
   String get tenantFacilityUnitNameLabel => 'Unit name';
 
   @override

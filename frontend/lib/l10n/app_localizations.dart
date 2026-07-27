@@ -13012,6 +13012,84 @@ abstract class AppLocalizations {
   /// **'Edit department'**
   String get tenantFacilityEditDepartmentTitle;
 
+  /// Title for the focused department details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Department details'**
+  String get tenantFacilityDepartmentDetailsTitle;
+
+  /// Edit action label in the department details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit department'**
+  String get tenantFacilityEditDepartmentDetailsAction;
+
+  /// Soft delete action label in the department details dialog footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete department'**
+  String get tenantFacilityDeleteDepartmentDetailsAction;
+
+  /// Exact department name conflict message.
+  ///
+  /// In en, this message translates to:
+  /// **'Department name already in use'**
+  String get tenantFacilityDepartmentNameAlreadyInUse;
+
+  /// Title when similar departments are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar department found'**
+  String get tenantFacilitySimilarDepartmentDialogTitle;
+
+  /// Warning title for similar department matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate department'**
+  String get tenantFacilitySimilarDepartmentWarningTitle;
+
+  /// Warning body for similar department matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar departments below before saving.'**
+  String get tenantFacilitySimilarDepartmentWarningBody;
+
+  /// Title when no similar departments are found.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar department found'**
+  String get tenantFacilityNoSimilarDepartmentDialogTitle;
+
+  /// Banner title when no similar departments are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get tenantFacilityNoSimilarDepartmentBannerTitle;
+
+  /// Body when no similar departments are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the proposed department details below. No similar departments were found in this facility.'**
+  String get tenantFacilityNoSimilarDepartmentDialogBody;
+
+  /// Confirm creating a department despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get tenantFacilityProceedCreateDepartmentAction;
+
+  /// Continue creating a department when no similar matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get tenantFacilityContinueCreateDepartmentAction;
+
+  /// Adopt an existing similar department instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this department'**
+  String get tenantFacilityUseThisDepartmentAction;
+
   /// Unit name field label.
   ///
   /// In en, this message translates to:

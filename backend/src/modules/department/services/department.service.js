@@ -17,12 +17,77 @@ const {
 } = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
+const { checkDepartmentDuplicates } = require('@lib/department/department-similarity');
+
+const DEPARTMENT_SIMILARITY_LOOKUP_LIMIT = 200;
 
 const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.NURSE,
 ]);
+
+const resolveEffectiveShortName = (name, shortName) => {
+  const trimmedShort = String(shortName ?? '').trim();
+  if (trimmedShort) return trimmedShort;
+  return String(name ?? '').trim() || null;
+};
+
+const stripSimilarityPayloadFields = (data = {}) => {
+  const { confirm_similar: _confirmSimilar, ...payload } = data;
+  return payload;
+};
+
+const assertDepartmentUniqueness = async ({
+  data,
+  facilityId,
+  confirmSimilar = false,
+  excludeDepartmentId = null,
+}) => {
+  if (!facilityId) {
+    return null;
+  }
+
+  const existing = await departmentRepository.findMany(
+    { facility_id: facilityId },
+    0,
+    DEPARTMENT_SIMILARITY_LOOKUP_LIMIT,
+    { name: 'asc' },
+    { includeDeleted: false }
+  );
+
+  const duplicateCheck = checkDepartmentDuplicates({
+    name: data.name,
+    shortName: data.short_name,
+    departmentType: data.department_type,
+    isActive: data.is_active,
+    existing,
+    excludeDepartmentId,
+  });
+
+  if (duplicateCheck.exactNameConflict) {
+    throw new HttpError('errors.department.duplicate_name', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exactNameConflict)
+          .slice(0, 5),
+      },
+    ]);
+  }
+
+  const reviewMatches = duplicateCheck.overridableMatches.slice(0, 5);
+  if (reviewMatches.length > 0 && !confirmSimilar) {
+    throw new HttpError('errors.department.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: reviewMatches,
+      },
+    ]);
+  }
+
+  return duplicateCheck;
+};
 
 const normalizeDepartmentRecord = (department) => {
   if (!department || typeof department !== 'object') {
@@ -145,7 +210,23 @@ const getDepartmentById = async (id) => {
  * Create new department
  */
 const createDepartment = async (data, context = {}) => {
-  const department = await departmentRepository.create(data);
+  const confirmSimilar = data?.confirm_similar === true;
+  const payload = stripSimilarityPayloadFields(data);
+  const name = String(payload.name ?? '').trim();
+  const shortName = resolveEffectiveShortName(name, payload.short_name);
+  const createPayload = {
+    ...payload,
+    name,
+    short_name: shortName,
+  };
+
+  await assertDepartmentUniqueness({
+    data: createPayload,
+    facilityId: createPayload.facility_id,
+    confirmSimilar,
+  });
+
+  const department = await departmentRepository.create(createPayload);
 
   await createAuditLog({
     action: 'DEPARTMENT_CREATED',
@@ -185,7 +266,41 @@ const updateDepartment = async (id, data, context = {}) => {
     throw new HttpError('errors.department.not_found', 404);
   }
 
-  const department = await departmentRepository.update(departmentId, data);
+  const confirmSimilar = data?.confirm_similar === true;
+  const payload = stripSimilarityPayloadFields(data);
+  const nextName =
+    payload.name !== undefined
+      ? String(payload.name ?? '').trim()
+      : beforeDepartment.name;
+  const nextShortName =
+    payload.short_name !== undefined
+      ? resolveEffectiveShortName(nextName, payload.short_name)
+      : beforeDepartment.short_name;
+  const updatePayload = {
+    ...payload,
+    ...(payload.name !== undefined ? { name: nextName } : {}),
+    ...(payload.short_name !== undefined || payload.name !== undefined
+      ? { short_name: nextShortName }
+      : {}),
+  };
+
+  await assertDepartmentUniqueness({
+    data: {
+      name: nextName,
+      short_name: nextShortName,
+      department_type:
+        updatePayload.department_type ?? beforeDepartment.department_type,
+      is_active:
+        updatePayload.is_active !== undefined
+          ? updatePayload.is_active
+          : beforeDepartment.is_active,
+    },
+    facilityId: updatePayload.facility_id ?? beforeDepartment.facility_id,
+    confirmSimilar,
+    excludeDepartmentId: departmentId,
+  });
+
+  const department = await departmentRepository.update(departmentId, updatePayload);
 
   await createAuditLog({
     action: 'DEPARTMENT_UPDATED',

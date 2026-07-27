@@ -16,6 +16,7 @@ jest.mock('@lib/websocket', () => ({
 }));
 jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
+  resolvePublicIdentifier: jest.fn((value) => value || null),
 }));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
@@ -55,7 +56,7 @@ describe('Department Service', () => {
 
       const result = await listDepartments({}, 1, 20);
 
-      expect(result.departments).toEqual(mockDepartments);
+      expect(result.departments).toMatchObject(mockDepartments);
       expect(result.pagination).toEqual({
         page: 1,
         limit: 20,
@@ -80,7 +81,7 @@ describe('Department Service', () => {
 
       const result = await listDepartments({ tenant_id: 'tenant-123' }, 1, 20);
 
-      expect(result.departments).toEqual(mockDepartments);
+      expect(result.departments).toMatchObject(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
         { tenant_id: 'tenant-123' },
         0,
@@ -97,7 +98,7 @@ describe('Department Service', () => {
 
       const result = await listDepartments({ facility_id: 'facility-123' }, 1, 20);
 
-      expect(result.departments).toEqual(mockDepartments);
+      expect(result.departments).toMatchObject(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
         { facility_id: 'facility-123' },
         0,
@@ -114,7 +115,7 @@ describe('Department Service', () => {
 
       const result = await listDepartments({ branch_id: 'branch-123' }, 1, 20);
 
-      expect(result.departments).toEqual(mockDepartments);
+      expect(result.departments).toMatchObject(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
         {},
         0,
@@ -131,7 +132,7 @@ describe('Department Service', () => {
 
       const result = await listDepartments({ department_type: 'CLINICAL' }, 1, 20);
 
-      expect(result.departments).toEqual(mockDepartments);
+      expect(result.departments).toMatchObject(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
         { department_type: 'CLINICAL' },
         0,
@@ -148,7 +149,7 @@ describe('Department Service', () => {
 
       const result = await listDepartments({ is_active: 'true' }, 1, 20);
 
-      expect(result.departments).toEqual(mockDepartments);
+      expect(result.departments).toMatchObject(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
         { is_active: true },
         0,
@@ -165,7 +166,7 @@ describe('Department Service', () => {
 
       const result = await listDepartments({ is_active: 'false' }, 1, 20);
 
-      expect(result.departments).toEqual(mockDepartments);
+      expect(result.departments).toMatchObject(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
         { is_active: false },
         0,
@@ -182,7 +183,7 @@ describe('Department Service', () => {
 
       const result = await listDepartments({ search: 'emergency' }, 1, 20);
 
-      expect(result.departments).toEqual(mockDepartments);
+      expect(result.departments).toMatchObject(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           name: { contains: 'emergency', mode: 'insensitive' }
@@ -242,7 +243,7 @@ describe('Department Service', () => {
 
       const result = await getDepartmentById('dept-123');
 
-      expect(result).toEqual(mockDepartment);
+      expect(result).toMatchObject(mockDepartment);
       expect(departmentRepository.findById).toHaveBeenCalledWith('dept-123');
     });
 
@@ -256,6 +257,10 @@ describe('Department Service', () => {
   });
 
   describe('createDepartment', () => {
+    beforeEach(() => {
+      departmentRepository.findMany.mockResolvedValue([]);
+    });
+
     it('should create department successfully', async () => {
       const departmentData = {
         tenant_id: 'tenant-123',
@@ -264,9 +269,13 @@ describe('Department Service', () => {
         department_type: 'CLINICAL',
         is_active: true
       };
+      const expectedPayload = {
+        ...departmentData,
+        short_name: 'New Department',
+      };
       const mockCreatedDepartment = {
         id: 'dept-new',
-        ...departmentData,
+        ...expectedPayload,
         created_at: new Date(),
         updated_at: new Date(),
         deleted_at: null,
@@ -284,8 +293,8 @@ describe('Department Service', () => {
 
       const result = await createDepartment(departmentData, context);
 
-      expect(result).toEqual(mockCreatedDepartment);
-      expect(departmentRepository.create).toHaveBeenCalledWith(departmentData);
+      expect(result).toMatchObject(mockCreatedDepartment);
+      expect(departmentRepository.create).toHaveBeenCalledWith(expectedPayload);
       expect(createAuditLog).toHaveBeenCalledWith({
         action: 'DEPARTMENT_CREATED',
         entity: 'department',
@@ -299,6 +308,7 @@ describe('Department Service', () => {
           tenant_id: mockCreatedDepartment.tenant_id,
           facility_id: mockCreatedDepartment.facility_id,
           name: mockCreatedDepartment.name,
+          short_name: mockCreatedDepartment.short_name,
           department_type: mockCreatedDepartment.department_type,
           is_active: mockCreatedDepartment.is_active
         }
@@ -311,9 +321,13 @@ describe('Department Service', () => {
         name: 'New Department',
         department_type: 'CLINICAL'
       };
+      const expectedPayload = {
+        ...departmentData,
+        short_name: 'New Department',
+      };
       const mockCreatedDepartment = {
         id: 'dept-new',
-        ...departmentData,
+        ...expectedPayload,
         facility_id: null,
         is_active: true,
         created_at: new Date(),
@@ -327,8 +341,102 @@ describe('Department Service', () => {
 
       const result = await createDepartment(departmentData);
 
-      expect(result).toEqual(mockCreatedDepartment);
+      expect(result).toMatchObject(mockCreatedDepartment);
+      expect(departmentRepository.create).toHaveBeenCalledWith(expectedPayload);
       expect(createAuditLog).toHaveBeenCalled();
+    });
+
+    it('should reject similar departments unless confirm_similar is true', async () => {
+      departmentRepository.findMany.mockResolvedValue([
+        {
+          id: 'dept-1',
+          facility_id: 'facility-123',
+          name: 'Emergency Department',
+          short_name: 'ER',
+          department_type: 'CLINICAL',
+          is_active: true,
+        },
+      ]);
+
+      await expect(
+        createDepartment({
+          tenant_id: 'tenant-123',
+          facility_id: 'facility-123',
+          name: 'Emergancy Departmnt',
+          department_type: 'CLINICAL',
+        })
+      ).rejects.toMatchObject({
+        messageKey: 'errors.department.similar_exists',
+        statusCode: 409,
+      });
+      expect(departmentRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should create anyway when confirm_similar is true', async () => {
+      departmentRepository.findMany.mockResolvedValue([
+        {
+          id: 'dept-1',
+          facility_id: 'facility-123',
+          name: 'Emergency Department',
+          short_name: 'ER',
+          department_type: 'CLINICAL',
+          is_active: true,
+        },
+      ]);
+      const departmentData = {
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        name: 'Emergancy Departmnt',
+        department_type: 'CLINICAL',
+        confirm_similar: true,
+      };
+      const mockCreatedDepartment = {
+        id: 'dept-new',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        name: 'Emergancy Departmnt',
+        short_name: 'Emergancy Departmnt',
+        department_type: 'CLINICAL',
+      };
+      departmentRepository.create.mockResolvedValue(mockCreatedDepartment);
+
+      const result = await createDepartment(departmentData);
+
+      expect(result).toMatchObject(mockCreatedDepartment);
+      expect(departmentRepository.create).toHaveBeenCalledWith({
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        name: 'Emergancy Departmnt',
+        short_name: 'Emergancy Departmnt',
+        department_type: 'CLINICAL',
+      });
+    });
+
+    it('should never override an exact name conflict', async () => {
+      departmentRepository.findMany.mockResolvedValue([
+        {
+          id: 'dept-1',
+          facility_id: 'facility-123',
+          name: 'Emergency Department',
+          short_name: 'ER',
+          department_type: 'CLINICAL',
+          is_active: true,
+        },
+      ]);
+
+      await expect(
+        createDepartment({
+          tenant_id: 'tenant-123',
+          facility_id: 'facility-123',
+          name: 'Emergency Department',
+          department_type: 'CLINICAL',
+          confirm_similar: true,
+        })
+      ).rejects.toMatchObject({
+        messageKey: 'errors.department.duplicate_name',
+        statusCode: 409,
+      });
+      expect(departmentRepository.create).not.toHaveBeenCalled();
     });
 
     it('should propagate repository errors', async () => {
@@ -346,6 +454,10 @@ describe('Department Service', () => {
   });
 
   describe('updateDepartment', () => {
+    beforeEach(() => {
+      departmentRepository.findMany.mockResolvedValue([]);
+    });
+
     it('should update department successfully', async () => {
       const updateData = {
         name: 'Updated Department',
@@ -357,12 +469,14 @@ describe('Department Service', () => {
         tenant_id: 'tenant-123',
         facility_id: 'facility-123',
         name: 'Emergency Department',
+        short_name: 'ER',
         department_type: 'CLINICAL',
         is_active: true
       };
       const mockUpdatedDepartment = {
         ...mockBeforeDepartment,
         ...updateData,
+        short_name: 'ER',
         updated_at: new Date()
       };
       const context = {
@@ -378,9 +492,12 @@ describe('Department Service', () => {
 
       const result = await updateDepartment('dept-123', updateData, context);
 
-      expect(result).toEqual(mockUpdatedDepartment);
+      expect(result).toMatchObject(mockUpdatedDepartment);
       expect(departmentRepository.findById).toHaveBeenCalledWith('dept-123');
-      expect(departmentRepository.update).toHaveBeenCalledWith('dept-123', updateData);
+      expect(departmentRepository.update).toHaveBeenCalledWith('dept-123', {
+        ...updateData,
+        short_name: 'ER',
+      });
       expect(createAuditLog).toHaveBeenCalledWith({
         action: 'DEPARTMENT_UPDATED',
         entity: 'department',
@@ -394,12 +511,14 @@ describe('Department Service', () => {
           before: {
             facility_id: mockBeforeDepartment.facility_id,
             name: mockBeforeDepartment.name,
+            short_name: mockBeforeDepartment.short_name,
             department_type: mockBeforeDepartment.department_type,
             is_active: mockBeforeDepartment.is_active
           },
           after: {
             facility_id: mockUpdatedDepartment.facility_id,
             name: mockUpdatedDepartment.name,
+            short_name: mockUpdatedDepartment.short_name,
             department_type: mockUpdatedDepartment.department_type,
             is_active: mockUpdatedDepartment.is_active
           }
@@ -422,11 +541,13 @@ describe('Department Service', () => {
         id: 'dept-123', 
         name: 'Test', 
         tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
         department_type: 'CLINICAL'
       };
       const error = new HttpError('errors.database.unique_field', 409);
       
       departmentRepository.findById.mockResolvedValue(mockDepartment);
+      departmentRepository.findMany.mockResolvedValue([]);
       departmentRepository.update.mockRejectedValue(error);
 
       await expect(updateDepartment('dept-123', { name: 'Updated' }))

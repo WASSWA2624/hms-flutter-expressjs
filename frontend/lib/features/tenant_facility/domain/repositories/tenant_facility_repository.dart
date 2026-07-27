@@ -109,6 +109,7 @@ abstract interface class TenantFacilityRepository {
     String? shortName,
     required DepartmentSetupType type,
     required bool isActive,
+    bool confirmSimilar = false,
   });
 
   Future<Result<void>> deleteDepartment(String id);

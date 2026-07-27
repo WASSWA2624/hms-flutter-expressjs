@@ -580,15 +580,20 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? shortName,
     required DepartmentSetupType type,
     required bool isActive,
+    bool confirmSimilar = false,
   }) {
-    final String? normalizedShortName = _normalizedOptional(shortName);
+    final String trimmedName = name.trim();
+    final String? normalizedShortName =
+        _normalizedOptional(shortName) ??
+        (trimmedName.isEmpty ? null : trimmedName);
     final payload = <String, Object?>{
       if (id == null) 'tenant_id': tenantId,
       'facility_id': facilityId,
-      'name': name.trim(),
+      'name': trimmedName,
       'short_name': normalizedShortName,
       'department_type': type.apiValue,
       'is_active': isActive,
+      if (confirmSimilar) 'confirm_similar': true,
     };
 
     if (id == null) {

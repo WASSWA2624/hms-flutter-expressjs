@@ -8937,6 +8937,58 @@
   "@tenantFacilityEditDepartmentTitle": {
     "description": "Edit department modal title."
   },
+  "tenantFacilityDepartmentDetailsTitle": "Department details",
+  "@tenantFacilityDepartmentDetailsTitle": {
+    "description": "Title for the focused department details dialog."
+  },
+  "tenantFacilityEditDepartmentDetailsAction": "Edit department",
+  "@tenantFacilityEditDepartmentDetailsAction": {
+    "description": "Edit action label in the department details dialog footer."
+  },
+  "tenantFacilityDeleteDepartmentDetailsAction": "Delete department",
+  "@tenantFacilityDeleteDepartmentDetailsAction": {
+    "description": "Soft delete action label in the department details dialog footer."
+  },
+  "tenantFacilityDepartmentNameAlreadyInUse": "Department name already in use",
+  "@tenantFacilityDepartmentNameAlreadyInUse": {
+    "description": "Exact department name conflict message."
+  },
+  "tenantFacilitySimilarDepartmentDialogTitle": "Similar department found",
+  "@tenantFacilitySimilarDepartmentDialogTitle": {
+    "description": "Title when similar departments are found."
+  },
+  "tenantFacilitySimilarDepartmentWarningTitle": "Potential duplicate department",
+  "@tenantFacilitySimilarDepartmentWarningTitle": {
+    "description": "Warning title for similar department matches."
+  },
+  "tenantFacilitySimilarDepartmentWarningBody": "Review the similar departments below before saving.",
+  "@tenantFacilitySimilarDepartmentWarningBody": {
+    "description": "Warning body for similar department matches."
+  },
+  "tenantFacilityNoSimilarDepartmentDialogTitle": "No similar department found",
+  "@tenantFacilityNoSimilarDepartmentDialogTitle": {
+    "description": "Title when no similar departments are found."
+  },
+  "tenantFacilityNoSimilarDepartmentBannerTitle": "Match status: No similar found",
+  "@tenantFacilityNoSimilarDepartmentBannerTitle": {
+    "description": "Banner title when no similar departments are found."
+  },
+  "tenantFacilityNoSimilarDepartmentDialogBody": "Review the proposed department details below. No similar departments were found in this facility.",
+  "@tenantFacilityNoSimilarDepartmentDialogBody": {
+    "description": "Body when no similar departments are found."
+  },
+  "tenantFacilityProceedCreateDepartmentAction": "Create anyway",
+  "@tenantFacilityProceedCreateDepartmentAction": {
+    "description": "Confirm creating a department despite similar matches."
+  },
+  "tenantFacilityContinueCreateDepartmentAction": "Continue",
+  "@tenantFacilityContinueCreateDepartmentAction": {
+    "description": "Continue creating a department when no similar matches exist."
+  },
+  "tenantFacilityUseThisDepartmentAction": "Use this department",
+  "@tenantFacilityUseThisDepartmentAction": {
+    "description": "Adopt an existing similar department instead of creating."
+  },
   "tenantFacilityUnitNameLabel": "Unit name",
   "@tenantFacilityUnitNameLabel": {
     "description": "Unit name field label."
