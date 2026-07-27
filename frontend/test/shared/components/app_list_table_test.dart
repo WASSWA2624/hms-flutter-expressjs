@@ -942,6 +942,14 @@ void main() {
       expect(find.byType(AppLoadingIndicator), findsOneWidget);
       expect(find.text('Loading more...'), findsOneWidget);
       expect(find.text('Item 0'), findsOneWidget);
+      // Overlay sits on the table body, not as an extra footer row.
+      expect(
+        find.ancestor(
+          of: find.byType(AppLoadingIndicator),
+          matching: find.byType(Stack),
+        ),
+        findsWidgets,
+      );
     },
   );
 

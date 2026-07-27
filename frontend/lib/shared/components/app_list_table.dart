@@ -1254,7 +1254,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       query,
       usesExternalSearchListenable: usesExternalSearchListenable,
     );
-    final Widget content = _wrapIncrementalScroll(
+    Widget content = _wrapIncrementalScroll(
       context,
       totalSortedCount: data.totalSortedCount,
       child: _buildForItems(
@@ -1263,6 +1263,52 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         rowNumberOffset: data.rowNumberOffset,
       ),
     );
+    final ThemeData theme = Theme.of(context);
+    final bool loadingMore = _isLoadingMore(data.items.length);
+    if (loadingMore) {
+      final ColorScheme colorScheme = theme.colorScheme;
+      content = Stack(
+        fit: StackFit.passthrough,
+        children: <Widget>[
+          content,
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: theme.spacing.sm,
+            child: IgnorePointer(
+              child: Center(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(theme.radius.md),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                    ),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: colorScheme.shadow.withValues(alpha: 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: theme.spacing.md,
+                      vertical: theme.spacing.sm,
+                    ),
+                    child: AppLoadingIndicator.compact(
+                      title: widget.loadingMoreLabel,
+                      expand: false,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     final Widget? footer = _footerForPage(
       context,
       data.page,
@@ -1270,7 +1316,6 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       visibleItemCount: data.items.length,
     );
     final Widget? toolbar = _buildToolbar(context, searchBar);
-    final ThemeData theme = Theme.of(context);
 
     assert(() {
       if ((widget.title?.trim().isNotEmpty ?? false) ||
@@ -1306,6 +1351,12 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         );
       },
     );
+  }
+
+  bool _isLoadingMore(int visibleItemCount) {
+    return (widget.isLoading || _pendingLoadMore) &&
+        visibleItemCount > 0 &&
+        _usesInfinitePagination;
   }
 
   ({
@@ -1569,24 +1620,22 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return null;
     }
 
-    final bool loadingMore =
-        (widget.isLoading || _pendingLoadMore) &&
-        visibleItemCount > 0 &&
-        _usesInfinitePagination;
     final bool hasMore = widget.page?.hasNextPage ?? false;
     final String? statusLabel = pageLabelBuilder == null
         ? null
         : pageLabelBuilder(visiblePage);
+    final bool reachedEnd =
+        _usesInfinitePagination && !hasMore && visibleItemCount > 0;
 
-    if (!loadingMore && statusLabel == null && !hasMore) {
+    // Load-more chrome is overlaid on the table body; footer only shows
+    // status / end-of-list copy so it does not look like an extra row.
+    if (statusLabel == null && !reachedEnd) {
       return null;
     }
 
     return _AppInfiniteScrollFooter(
       statusLabel: statusLabel,
-      isLoadingMore: loadingMore,
-      reachedEnd: _usesInfinitePagination && !hasMore && visibleItemCount > 0,
-      loadingMoreLabel: widget.loadingMoreLabel,
+      reachedEnd: reachedEnd,
       allRowsLoadedLabel: widget.allRowsLoadedLabel,
     );
   }
@@ -2162,16 +2211,12 @@ class _AppPaginationControls extends StatelessWidget {
 class _AppInfiniteScrollFooter extends StatelessWidget {
   const _AppInfiniteScrollFooter({
     required this.statusLabel,
-    required this.isLoadingMore,
     required this.reachedEnd,
-    required this.loadingMoreLabel,
     required this.allRowsLoadedLabel,
   });
 
   final String? statusLabel;
-  final bool isLoadingMore;
   final bool reachedEnd;
-  final String loadingMoreLabel;
   final String allRowsLoadedLabel;
 
   @override
@@ -2180,40 +2225,31 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.sm, bottom: theme.spacing.sm),
-      child: isLoadingMore
-          ? Center(
-              child: AppLoadingIndicator.compact(
-                title: loadingMoreLabel,
-                expand: false,
+      padding: EdgeInsets.only(top: theme.spacing.xs, bottom: theme.spacing.sm),
+      child: Row(
+        children: <Widget>[
+          if (statusLabel != null)
+            Expanded(
+              child: Text(
+                statusLabel!,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             )
-          : Row(
-              children: <Widget>[
-                if (statusLabel != null)
-                  Expanded(
-                    child: Text(
-                      statusLabel!,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  )
-                else
-                  const Spacer(),
-                if (reachedEnd)
-                  Text(
-                    allRowsLoadedLabel,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.8,
-                      ),
-                    ),
-                  ),
-              ],
+          else
+            const Spacer(),
+          if (reachedEnd)
+            Text(
+              allRowsLoadedLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              ),
             ),
+        ],
+      ),
     );
   }
 }
