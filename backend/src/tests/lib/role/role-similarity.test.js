@@ -164,6 +164,12 @@ describe('role-similarity', () => {
     expect(result.similarMatches.length).toBeGreaterThan(0);
     expect(result.overridableMatches.length).toBeGreaterThan(0);
     expect(result.similarMatches[0].nameScore).toBe(100);
+    expect(result.similarMatches[0].scopeScore).toBe(0);
+    expect(
+      result.similarMatches[0].field_comparisons.some(
+        (entry) => entry.field === 'scope' && entry.status === 'DIFFERENT'
+      )
+    ).toBe(true);
   });
 
   it('surfaces tenant peers when creating a platform role (Testing repro)', () => {
@@ -184,6 +190,7 @@ describe('role-similarity', () => {
           id: 'role-fac',
           tenant_id: 'tenant-1',
           facility_id: 'facility-1',
+          facility_name: 'DemoCare',
           name: 'TESTING',
           display_name: 'Testing'
         }
@@ -194,6 +201,32 @@ describe('role-similarity', () => {
     expect(result.similarMatches).toHaveLength(2);
     expect(result.overridableMatches).toHaveLength(2);
     expect(result.similarMatches[0].score).toBeGreaterThan(0);
+    const scopeRow = result.similarMatches
+      .find((match) => match.facility_id === 'facility-1')
+      .field_comparisons.find((entry) => entry.field === 'scope');
+    expect(scopeRow.input_value).toBe('Platform');
+    expect(scopeRow.candidate_value).toBe('Facility · DemoCare');
+    expect(scopeRow.status).toBe('DIFFERENT');
+  });
+
+  it('includes matching scope in field comparisons for same-scope peers', () => {
+    const result = checkRoleDuplicates({
+      name: 'WARD CLERK',
+      displayName: 'Ward Clerk',
+      description: 'Front desk ward support',
+      tenantId: 'tenant-1',
+      facilityId: null,
+      existing
+    });
+
+    const scopeRow = result.similarMatches[0].field_comparisons.find(
+      (entry) => entry.field === 'scope'
+    );
+    expect(scopeRow).toBeTruthy();
+    expect(scopeRow.score).toBe(100);
+    expect(scopeRow.status).toBe('MATCH');
+    expect(scopeRow.input_value).toBe('Organization');
+    expect(scopeRow.candidate_value).toBe('Organization');
   });
 
   it('still hard-blocks exact conflicts in the same scope', () => {

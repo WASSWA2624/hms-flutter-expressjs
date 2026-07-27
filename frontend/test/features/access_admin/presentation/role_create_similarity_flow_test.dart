@@ -232,6 +232,23 @@ void main() {
     );
   });
 
+  test('similarity dialog and engine surface role scope', () {
+    final String similaritySource = File(
+      'lib/features/access_admin/domain/entities/role_similarity.dart',
+    ).readAsStringSync();
+    final String dialogSource = File(
+      'lib/features/access_admin/presentation/widgets/role_similarity_dialog.dart',
+    ).readAsStringSync();
+    expect(similaritySource.contains('formatRoleScopeLabel'), isTrue);
+    expect(similaritySource.contains('roleScopeWeight'), isTrue);
+    expect(similaritySource.contains("field: 'scope'"), isTrue);
+    expect(
+      dialogSource.contains("'scope' => l10n.accessAdminRoleScopeLabel"),
+      isTrue,
+    );
+    expect(dialogSource.contains('_proposedScopeLabel'), isTrue);
+  });
+
   test('roles soft-delete lifecycle exposes restore and permanent delete', () {
     expect(managementSource.contains('includeDeleted:'), isTrue);
     expect(managementSource.contains('_confirmRestoreRole'), isTrue);
@@ -255,9 +272,23 @@ void main() {
       reason: 'Permanent delete must remove by UUID, not display id',
     );
     expect(
-      managementSource.contains('_scheduleRoleListSync'),
+      managementSource.contains('_mergeRoleLifecycleItems'),
       isTrue,
-      reason: 'Lifecycle actions must not block on awaited list reload',
+      reason: 'Soft-delete must survive stale silent reloads',
+    );
+    expect(
+      managementSource.contains('_markRoleSoftDeletedLocally'),
+      isTrue,
+    );
+    expect(
+      managementSource.contains('_syncRoleListAfterLifecycle'),
+      isTrue,
+      reason: 'Lifecycle actions sync the list without session rehydrate storms',
+    );
+    expect(
+      managementSource.contains('rehydrateSession'),
+      isFalse,
+      reason: 'Soft-delete must not remount setup via session rehydrate',
     );
     expect(
       managementSource.contains('_runRoleLifecycleMutation'),

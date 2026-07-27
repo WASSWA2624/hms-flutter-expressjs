@@ -13,6 +13,8 @@ const int roleNameWeight = 45;
 const int roleDisplayNameWeight = 35;
 const int roleDescriptionWeight = 20;
 const int roleCrossIdentityWeight = 25;
+/// Soft weight so cross-scope near-duplicates score lower but still surface.
+const int roleScopeWeight = 15;
 
 /// Tokens ignored during role identity normalization (noise / filler).
 const Set<String> roleFillerTokens = <String>{
@@ -66,11 +68,23 @@ final class RoleSimilarityProposedValues {
     required this.name,
     required this.displayName,
     this.description,
+    this.tenantId,
+    this.facilityId,
+    this.tenantName,
+    this.facilityName,
+    this.scope,
   });
 
   final String name;
   final String displayName;
   final String? description;
+  final String? tenantId;
+  final String? facilityId;
+  final String? tenantName;
+  final String? facilityName;
+
+  /// Optional create scope hint: `platform`, `tenant`, or `facility`.
+  final String? scope;
 }
 
 final class RoleSimilarityMatch {
@@ -85,6 +99,7 @@ final class RoleSimilarityMatch {
     this.displayNameScore,
     this.descriptionScore,
     this.crossIdentityScore,
+    this.scopeScore,
     this.fieldComparisons = const <RoleFieldComparison>[],
   });
 
@@ -98,6 +113,7 @@ final class RoleSimilarityMatch {
   final int? displayNameScore;
   final int? descriptionScore;
   final int? crossIdentityScore;
+  final int? scopeScore;
   final List<RoleFieldComparison> fieldComparisons;
 }
 
@@ -194,6 +210,7 @@ List<RoleSimilarityMatch> roleSimilarityMatchesFromConflictEntries(
         displayNameScore: _conflictInt(entry['displayNameScore']),
         descriptionScore: _conflictInt(entry['descriptionScore']),
         crossIdentityScore: _conflictInt(entry['crossIdentityScore']),
+        scopeScore: _conflictInt(entry['scopeScore']),
         fieldComparisons: _conflictFieldComparisons(
           entry['field_comparisons'] ?? entry['fieldComparisons'],
         ),
@@ -311,6 +328,47 @@ bool roleScopesMatch({
   // Tenant-wide or platform (both facilities null): tenants must match,
   // including both-null platform scope.
   return leftTenant == rightTenant;
+}
+
+/// Canonical scope kind for a role proposal or peer.
+String deriveRoleScopeKind({String? tenantId, String? facilityId, String? scope}) {
+  final String? hint = _nullIfEmpty(scope)?.toLowerCase();
+  if (hint == 'platform' || hint == 'tenant' || hint == 'facility') {
+    return hint!;
+  }
+  if (_nullIfEmpty(facilityId) != null) {
+    return 'facility';
+  }
+  if (_nullIfEmpty(tenantId) != null) {
+    return 'tenant';
+  }
+  return 'platform';
+}
+
+/// Human-readable scope label for similarity review tables.
+/// English labels stay stable across BE conflict payloads (UI localizes the
+/// column header; values mirror list badges).
+String formatRoleScopeLabel({
+  String? tenantId,
+  String? facilityId,
+  String? tenantName,
+  String? facilityName,
+  String? scope,
+}) {
+  final String kind = deriveRoleScopeKind(
+    tenantId: tenantId,
+    facilityId: facilityId,
+    scope: scope,
+  );
+  if (kind == 'facility') {
+    final String? name = _nullIfEmpty(facilityName);
+    return name == null ? 'Facility' : 'Facility · $name';
+  }
+  if (kind == 'tenant') {
+    final String? name = _nullIfEmpty(tenantName);
+    return name == null ? 'Organization' : 'Organization · $name';
+  }
+  return 'Platform';
 }
 
 String normalizeRoleText(String? value) => normalizeTenantName(value ?? '');
@@ -556,6 +614,7 @@ int compositeRoleSimilarityScore({
   int? displayNameScore,
   int? descriptionScore,
   int? crossIdentityScore,
+  int? scopeScore,
 }) {
   var weightedTotal = 0;
   var weightSum = 0;
@@ -572,6 +631,7 @@ int compositeRoleSimilarityScore({
   include(displayNameScore, roleDisplayNameWeight);
   include(descriptionScore, roleDescriptionWeight);
   include(crossIdentityScore, roleCrossIdentityWeight);
+  include(scopeScore, roleScopeWeight);
 
   if (weightSum == 0) {
     return 0;
@@ -640,12 +700,22 @@ RoleDuplicateCheckResult checkRoleDuplicates({
   String? description,
   String? tenantId,
   String? facilityId,
+  String? tenantName,
+  String? facilityName,
+  String? scope,
   required List<AccessAdminItem> existing,
   String? excludeRoleId,
 }) {
   final String normalizedName = canonicalizeRoleText(name);
   final String normalizedDisplayName = canonicalizeRoleText(displayName);
   final String normalizedDescription = canonicalizeRoleText(description);
+  final String proposedScopeLabel = formatRoleScopeLabel(
+    tenantId: tenantId,
+    facilityId: facilityId,
+    tenantName: tenantName,
+    facilityName: facilityName,
+    scope: scope,
+  );
   var exactNameConflict = false;
   var exactDisplayNameConflict = false;
   final List<RoleSimilarityMatch> matches = <RoleSimilarityMatch>[];
@@ -665,6 +735,14 @@ RoleDuplicateCheckResult checkRoleDuplicates({
       rightTenantId: role.tenantId,
       rightFacilityId: role.facilityId,
     );
+    final String candidateScopeLabel = formatRoleScopeLabel(
+      tenantId: role.tenantId,
+      facilityId: role.facilityId,
+      tenantName: role.tenantName,
+      facilityName: role.facilityName,
+      scope: role.roleScope,
+    );
+    final int scopeScore = sameScope ? 100 : 0;
 
     final String roleKey = <String?>[
       role.id,
@@ -773,12 +851,14 @@ RoleDuplicateCheckResult checkRoleDuplicates({
         crossIdentityScore >= roleReviewFieldThreshold) {
       reasons.add('cross_identity');
     }
+    reasons.add('scope');
 
     final int score = compositeRoleSimilarityScore(
       nameScore: nameScore,
       displayNameScore: displayNameScore,
       descriptionScore: descriptionScore,
       crossIdentityScore: crossIdentityScore,
+      scopeScore: scopeScore,
     );
 
     final int? strongestIdentity = _maxScore(<int?>[
@@ -819,6 +899,13 @@ RoleDuplicateCheckResult checkRoleDuplicates({
         candidateValue: role.displayName ?? role.title,
         score: displayNameScore,
         exact: displayNameExact,
+      ),
+      _fieldComparison(
+        field: 'scope',
+        inputValue: proposedScopeLabel,
+        candidateValue: candidateScopeLabel,
+        score: scopeScore,
+        exact: sameScope,
       ),
       _fieldComparison(
         field: 'description',
@@ -912,6 +999,7 @@ RoleDuplicateCheckResult checkRoleDuplicates({
         displayNameScore: displayNameScore,
         descriptionScore: descriptionScore,
         crossIdentityScore: crossIdentityScore,
+        scopeScore: scopeScore,
         fieldComparisons: fieldComparisons,
       ),
     );

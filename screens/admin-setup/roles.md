@@ -20,7 +20,7 @@
 - **Delete**
   - Location: Role row actions (active roles only).
   - Condition: The actions column is shown when workspace `canWrite` is true; the delete control is shown only when the role is not system-critical and not already soft-deleted; enabled when the list is not loading and no mutation is in progress.
-  - Immediate result: Opens soft-delete confirm; on confirm soft-deletes the role (row stays listed as deleted).
+  - Immediate result: Opens soft-delete confirm; on confirm soft-deletes the role and marks the row deleted immediately (local mark is re-applied after silent refresh so stale reloads cannot resurrect Edit/Delete).
 
 - **Restore**
   - Location: Role row actions (soft-deleted roles).

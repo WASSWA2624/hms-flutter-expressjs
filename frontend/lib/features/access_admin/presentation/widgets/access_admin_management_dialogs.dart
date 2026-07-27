@@ -15,7 +15,6 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
-import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -977,6 +976,65 @@ bool _isSameAccessAdminRole(AccessAdminItem left, AccessAdminItem right) {
       left.tenantId == right.tenantId;
 }
 
+String _roleLifecycleKey(AccessAdminItem role) {
+  final String uuid = (role.resourceUuid ?? role.mutationId).trim();
+  if (uuid.isNotEmpty) {
+    return uuid;
+  }
+  return <String>[
+    role.id,
+    role.roleScope ?? '',
+    role.facilityId ?? '',
+    role.tenantId ?? '',
+  ].join('|');
+}
+
+/// Keep soft-delete / purge visible when a silent refresh is briefly stale or
+/// omits soft-deleted rows (include_deleted races).
+List<AccessAdminItem> _mergeRoleLifecycleItems({
+  required List<AccessAdminItem> serverItems,
+  required Map<String, AccessAdminItem> pendingSoftDeleted,
+  required Set<String> pendingPurgedKeys,
+}) {
+  final Map<String, AccessAdminItem> merged = <String, AccessAdminItem>{};
+  for (final AccessAdminItem item in serverItems) {
+    final String key = _roleLifecycleKey(item);
+    if (pendingPurgedKeys.contains(key)) {
+      continue;
+    }
+    final AccessAdminItem? pending = pendingSoftDeleted[key];
+    if (pending != null) {
+      if (item.isDeleted) {
+        pendingSoftDeleted.remove(key);
+        merged[key] = item;
+      } else {
+        merged[key] = item.copyWith(deletedAt: pending.deletedAt);
+      }
+      continue;
+    }
+    merged[key] = item;
+  }
+
+  for (final MapEntry<String, AccessAdminItem> entry
+      in pendingSoftDeleted.entries) {
+    if (pendingPurgedKeys.contains(entry.key)) {
+      continue;
+    }
+    merged.putIfAbsent(entry.key, () => entry.value);
+  }
+
+  for (final String key in pendingPurgedKeys.toList(growable: false)) {
+    final bool stillOnServer = serverItems.any(
+      (AccessAdminItem item) => _roleLifecycleKey(item) == key,
+    );
+    if (!stillOnServer) {
+      pendingPurgedKeys.remove(key);
+    }
+  }
+
+  return merged.values.toList(growable: false);
+}
+
 bool _rolePermanentDeleteNameMatches(
   AccessAdminItem role,
   String typed, {
@@ -1036,6 +1094,13 @@ class _ManageRolesPermissionsPanelState
   /// restored, or permanently deleted.
   String? _roleActionBusyKey;
 
+  /// Local soft-delete snapshots retained across silent reloads.
+  final Map<String, AccessAdminItem> _pendingSoftDeletedRoles =
+      <String, AccessAdminItem>{};
+
+  /// Permanently deleted keys suppressed until the server omits them.
+  final Set<String> _pendingPurgedRoleKeys = <String>{};
+
   /// Match Manage Users: widest list the actor is allowed to see.
   bool allTenants = true;
   bool allFacilities = true;
@@ -1062,16 +1127,109 @@ class _ManageRolesPermissionsPanelState
     });
   }
 
-  void _scheduleRoleListSync({bool resetPage = false}) {
-    unawaited(reload(resetPage: resetPage, silent: true));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      unawaited(
-        ref.read(accessAdminWorkspaceControllerProvider.notifier).rehydrateSession(),
+  void _markRoleSoftDeletedLocally(AccessAdminItem role) {
+    final AccessAdminItem softDeleted = role.isDeleted
+        ? role
+        : role.copyWith(deletedAt: DateTime.now().toUtc());
+    final String key = _roleLifecycleKey(softDeleted);
+    _pendingSoftDeletedRoles[key] = softDeleted;
+    _pendingPurgedRoleKeys.remove(key);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      final bool existed = items.any(
+        (AccessAdminItem entry) => _isSameAccessAdminRole(entry, softDeleted),
       );
+      items = <AccessAdminItem>[
+        for (final AccessAdminItem entry in items)
+          _isSameAccessAdminRole(entry, softDeleted)
+              ? entry.copyWith(deletedAt: softDeleted.deletedAt)
+              : entry,
+        if (!existed) softDeleted,
+      ];
+      _roleActionBusyKey = null;
+      mutating = false;
     });
+  }
+
+  void _markRoleRestoredLocally(AccessAdminItem role) {
+    final String key = _roleLifecycleKey(role);
+    _pendingSoftDeletedRoles.remove(key);
+    _pendingPurgedRoleKeys.remove(key);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      items = <AccessAdminItem>[
+        for (final AccessAdminItem entry in items)
+          _isSameAccessAdminRole(entry, role)
+              ? entry.copyWith(clearDeletedAt: true)
+              : entry,
+      ];
+      _roleActionBusyKey = null;
+      mutating = false;
+    });
+  }
+
+  void _markRolePurgedLocally(AccessAdminItem role) {
+    final String key = _roleLifecycleKey(role);
+    _pendingSoftDeletedRoles.remove(key);
+    _pendingPurgedRoleKeys.add(key);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      final int before = items.length;
+      items = items
+          .where(
+            (AccessAdminItem entry) => !_isSameAccessAdminRole(entry, role),
+          )
+          .toList(growable: false);
+      if (items.length < before) {
+        totalItemCount = math.max(0, totalItemCount - (before - items.length));
+      }
+      _roleActionBusyKey = null;
+      mutating = false;
+    });
+  }
+
+  void _applyPendingRoleLifecycleToItems() {
+    if (!mounted) {
+      return;
+    }
+    final List<AccessAdminItem> merged = _mergeRoleLifecycleItems(
+      serverItems: items,
+      pendingSoftDeleted: _pendingSoftDeletedRoles,
+      pendingPurgedKeys: _pendingPurgedRoleKeys,
+    );
+    setState(() {
+      totalItemCount = math.max(totalItemCount, merged.length);
+      items = merged;
+    });
+  }
+
+  @override
+  Future<void> reload({
+    required bool resetPage,
+    bool silent = false,
+    bool refreshLookups = false,
+  }) async {
+    await super.reload(
+      resetPage: resetPage,
+      silent: silent,
+      refreshLookups: refreshLookups,
+    );
+    if (!mounted) {
+      return;
+    }
+    // Keep soft-delete / purge visible locally if the refresh is briefly stale.
+    _applyPendingRoleLifecycleToItems();
+  }
+
+  Future<void> _syncRoleListAfterLifecycle({bool resetPage = false}) async {
+    await reload(resetPage: resetPage, silent: true);
+    widget.onMutated?.call(true);
   }
 
   Future<AppFailure?> _runRoleLifecycleMutation(
@@ -1349,25 +1507,19 @@ class _ManageRolesPermissionsPanelState
         ),
       ),
     );
-    if (!mounted) {
+    if (!mounted || confirmed != true) {
+      if (mounted && confirmed != true) {
+        _setRoleActionBusy(role, busy: false);
+      }
       return;
     }
-    if (confirmed == true) {
-      mutated = true;
-      setState(() {
-        items = <AccessAdminItem>[
-          for (final AccessAdminItem entry in items)
-            _isSameAccessAdminRole(entry, role)
-                ? entry.copyWith(deletedAt: DateTime.now().toUtc())
-                : entry,
-        ];
-        _roleActionBusyKey = null;
-        mutating = false;
-      });
-      _scheduleRoleListSync();
-      return;
+    mutated = true;
+    _markRoleSoftDeletedLocally(role);
+    await _syncRoleListAfterLifecycle();
+    if (mounted) {
+      // Keep soft-delete visible locally if the refresh is briefly stale.
+      _markRoleSoftDeletedLocally(role);
     }
-    _setRoleActionBusy(role, busy: false);
   }
 
   Future<void> _confirmRestoreRole(AccessAdminItem role) async {
@@ -1389,25 +1541,19 @@ class _ManageRolesPermissionsPanelState
         ),
       ),
     );
-    if (!mounted) {
+    if (!mounted || confirmed != true) {
+      if (mounted && confirmed != true) {
+        _setRoleActionBusy(role, busy: false);
+      }
       return;
     }
-    if (confirmed == true) {
-      mutated = true;
-      setState(() {
-        items = <AccessAdminItem>[
-          for (final AccessAdminItem entry in items)
-            _isSameAccessAdminRole(entry, role)
-                ? entry.copyWith(clearDeletedAt: true)
-                : entry,
-        ];
-        _roleActionBusyKey = null;
-        mutating = false;
-      });
-      _scheduleRoleListSync();
-      return;
+    mutated = true;
+    _markRoleRestoredLocally(role);
+    await _syncRoleListAfterLifecycle();
+    if (mounted) {
+      // Keep the restored row active if the refresh is briefly stale.
+      _markRoleRestoredLocally(role);
     }
-    _setRoleActionBusy(role, busy: false);
   }
 
   Future<void> _confirmPermanentDeleteRole(AccessAdminItem role) async {
@@ -1477,25 +1623,18 @@ class _ManageRolesPermissionsPanelState
       ),
     );
 
-    if (!mounted) {
+    if (!mounted || confirmed != true) {
+      if (mounted && confirmed != true) {
+        _setRoleActionBusy(role, busy: false);
+      }
       return;
     }
-    if (confirmed == true) {
-      mutated = true;
-      setState(() {
-        items = items
-            .where(
-              (AccessAdminItem entry) => !_isSameAccessAdminRole(entry, role),
-            )
-            .toList(growable: false);
-        totalItemCount = math.max(0, totalItemCount - 1);
-        _roleActionBusyKey = null;
-        mutating = false;
-      });
-      _scheduleRoleListSync(resetPage: items.isEmpty);
-      return;
+    mutated = true;
+    _markRolePurgedLocally(role);
+    await _syncRoleListAfterLifecycle(resetPage: items.isEmpty);
+    if (mounted) {
+      _markRolePurgedLocally(role);
     }
-    _setRoleActionBusy(role, busy: false);
   }
 
   @override

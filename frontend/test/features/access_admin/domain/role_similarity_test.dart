@@ -51,8 +51,15 @@ void main() {
     expect(match.nameScore, 100);
     expect(
       match.fieldComparisons.map((RoleFieldComparison c) => c.field),
-      containsAll(<String>['name', 'display_name']),
+      containsAll(<String>['name', 'display_name', 'scope']),
     );
+    expect(
+      match.fieldComparisons
+          .firstWhere((RoleFieldComparison c) => c.field == 'scope')
+          .status,
+      RoleFieldComparisonStatus.match,
+    );
+    expect(match.scopeScore, 100);
     expect(
       match.fieldComparisons
           .firstWhere((RoleFieldComparison c) => c.field == 'name')
@@ -172,6 +179,36 @@ void main() {
         (RoleSimilarityMatch match) => match.nameScore == 100,
       ),
       isTrue,
+    );
+    expect(
+      platformCreate.similarMatches.every(
+        (RoleSimilarityMatch match) => match.scopeScore == 0,
+      ),
+      isTrue,
+    );
+    expect(
+      platformCreate.similarMatches.first.fieldComparisons.any(
+        (RoleFieldComparison c) =>
+            c.field == 'scope' &&
+            c.status == RoleFieldComparisonStatus.different,
+      ),
+      isTrue,
+    );
+  });
+
+  test('formatRoleScopeLabel mirrors list scope badges', () {
+    expect(formatRoleScopeLabel(), 'Platform');
+    expect(
+      formatRoleScopeLabel(tenantId: 'tenant-1'),
+      'Organization',
+    );
+    expect(
+      formatRoleScopeLabel(
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+        facilityName: 'DemoCare',
+      ),
+      'Facility · DemoCare',
     );
   });
 

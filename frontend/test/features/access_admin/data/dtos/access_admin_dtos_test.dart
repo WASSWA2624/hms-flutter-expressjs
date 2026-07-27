@@ -46,6 +46,23 @@ void main() {
     expect(role.isTenantScopedRole, isTrue);
   });
 
+  test('maps role deleted_at into isDeleted', () {
+    final AccessAdminItem role = AccessAdminItemDto.fromJson(
+      <String, dynamic>{
+        'id': 'ROL0000044',
+        'resource_uuid': 'a84038ca-ed05-4a8b-9cde-a276de4e725f',
+        'name': 'TESTING',
+        'display_name': 'testing',
+        'tenant_id': 'tenant-uuid',
+        'deleted_at': '2026-07-27T17:16:47.327Z',
+      },
+      AccessAdminResource.roles,
+    ).toEntity();
+
+    expect(role.isDeleted, isTrue);
+    expect(role.deletedAt?.toUtc().toIso8601String(), '2026-07-27T17:16:47.327Z');
+  });
+
   test('maps permission lookup description into meta', () {
     final AccessAdminLookupOption option = AccessAdminLookupOptionDto.fromJson(
       <String, dynamic>{

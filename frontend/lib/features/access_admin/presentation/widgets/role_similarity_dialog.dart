@@ -215,6 +215,10 @@ class _ProposedRoleCard extends StatelessWidget {
         l10n.accessAdminRoleDisplayNameLabel,
         _display(proposed.displayName, l10n),
       ),
+      (
+        l10n.accessAdminRoleScopeLabel,
+        _display(_proposedScopeLabel(proposed, l10n), l10n),
+      ),
       if ((proposed.description ?? '').trim().isNotEmpty)
         (
           l10n.accessAdminRoleDescriptionLabel,
@@ -743,9 +747,36 @@ String _fieldLabel(AppLocalizations l10n, String field) {
     'name' => l10n.accessAdminRoleNameLabel,
     'display_name' => l10n.accessAdminRoleDisplayNameLabel,
     'description' => l10n.accessAdminRoleDescriptionLabel,
+    'scope' => l10n.accessAdminRoleScopeLabel,
     'cross_identity' => l10n.accessAdminSimilarRoleCrossIdentityLabel,
     _ => AppDisplay.apiLabel(field),
   };
+}
+
+String _proposedScopeLabel(
+  RoleSimilarityProposedValues proposed,
+  AppLocalizations l10n,
+) {
+  final String kind = deriveRoleScopeKind(
+    tenantId: proposed.tenantId,
+    facilityId: proposed.facilityId,
+    scope: proposed.scope,
+  );
+  if (kind == 'facility') {
+    final String? name = proposed.facilityName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return '${l10n.accessAdminRoleScopeFacilityBadge} · $name';
+    }
+    return l10n.accessAdminRoleScopeFacilityBadge;
+  }
+  if (kind == 'tenant') {
+    final String? name = proposed.tenantName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return '${l10n.accessAdminRoleScopeTenantBadge} · $name';
+    }
+    return l10n.accessAdminRoleScopeTenantBadge;
+  }
+  return l10n.accessAdminRoleScopePlatformLabel;
 }
 
 String _statusLabel(AppLocalizations l10n, RoleFieldComparisonStatus status) {

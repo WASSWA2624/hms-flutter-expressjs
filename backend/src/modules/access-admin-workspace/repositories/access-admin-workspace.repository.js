@@ -107,10 +107,13 @@ const countUsers = async (scope = {}, filters = {}) => {
 
 const countRoles = async (scope = {}, filters = {}, roleOptions = {}) => {
   try {
+    const includeDeleted =
+      filters.include_deleted === true || filters.include_deleted === 'true';
     const where = {
       ...scopedRoleWhere(scope, {
         includeTenantWide: roleOptions.includeTenantWide !== false,
         roleScope: roleOptions.roleScope || null,
+        includeDeleted,
       }),
     };
     const searchFilter = buildRoleSearchFilter(filters.search);

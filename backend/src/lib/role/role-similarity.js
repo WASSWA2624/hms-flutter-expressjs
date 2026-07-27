@@ -1,7 +1,7 @@
 /**
  * Role duplicate / similarity helpers.
  *
- * Multi-signal similarity across name, display name, and description —
+ * Multi-signal similarity across name, display name, description, and scope —
  * including cross-field identity, compact keys, sorted token bags, token
  * Jaccard, filler stripping, hospital-role aliases, and initials.
  * Same-scope exact identity hard-blocks; cross-scope peers are still scored
@@ -28,6 +28,8 @@ const NAME_WEIGHT = 45;
 const DISPLAY_NAME_WEIGHT = 35;
 const DESCRIPTION_WEIGHT = 20;
 const CROSS_IDENTITY_WEIGHT = 25;
+/** Soft weight so cross-scope near-duplicates score lower but still surface. */
+const SCOPE_WEIGHT = 15;
 
 const FILLER_TOKENS = new Set([
   'a',
@@ -86,6 +88,39 @@ const roleScopesMatch = ({
   return leftTenant === rightTenant;
 };
 
+/**
+ * Canonical scope kind for a role proposal or peer.
+ * @returns {'platform'|'tenant'|'facility'}
+ */
+const deriveRoleScopeKind = ({ tenantId = null, facilityId = null } = {}) => {
+  if (nullIfEmpty(facilityId)) return 'facility';
+  if (nullIfEmpty(tenantId)) return 'tenant';
+  return 'platform';
+};
+
+/**
+ * Human-readable scope label for similarity review tables.
+ * English labels stay stable across BE conflict payloads (FE localizes the
+ * column header; values mirror list badges).
+ */
+const formatRoleScopeLabel = ({
+  tenantId = null,
+  facilityId = null,
+  facilityName = null,
+  tenantName = null
+} = {}) => {
+  const kind = deriveRoleScopeKind({ tenantId, facilityId });
+  if (kind === 'facility') {
+    const name = nullIfEmpty(facilityName);
+    return name ? `Facility · ${name}` : 'Facility';
+  }
+  if (kind === 'tenant') {
+    const name = nullIfEmpty(tenantName);
+    return name ? `Organization · ${name}` : 'Organization';
+  }
+  return 'Platform';
+};
+
 const tokensOf = (value) => String(value || '')
   .split(/\s+/)
   .filter(Boolean);
@@ -126,6 +161,12 @@ const buildCandidateSnapshot = (role) => ({
     role?.display_id || role?.human_friendly_id || role?.id || null,
   tenant_id: role?.tenant_id || null,
   facility_id: role?.facility_id || null,
+  tenant_name: role?.tenant_name || null,
+  facility_name: role?.facility_name || null,
+  scope: deriveRoleScopeKind({
+    tenantId: role?.tenant_id,
+    facilityId: role?.facility_id
+  }),
   name: role?.name || null,
   display_name: role?.display_name || null,
   description: role?.description || null
@@ -309,7 +350,8 @@ const compositeSimilarityScore = (scores = {}) => {
     [scores.nameScore, NAME_WEIGHT],
     [scores.displayNameScore, DISPLAY_NAME_WEIGHT],
     [scores.descriptionScore, DESCRIPTION_WEIGHT],
-    [scores.crossIdentityScore, CROSS_IDENTITY_WEIGHT]
+    [scores.crossIdentityScore, CROSS_IDENTITY_WEIGHT],
+    [scores.scopeScore, SCOPE_WEIGHT]
   ];
 
   let weightedTotal = 0;
@@ -351,6 +393,8 @@ const maxScore = (...scores) => {
  * @param {string|null|undefined} params.description
  * @param {string|null|undefined} params.tenantId
  * @param {string|null|undefined} params.facilityId
+ * @param {string|null|undefined} [params.tenantName]
+ * @param {string|null|undefined} [params.facilityName]
  * @param {Array<Object>} params.existing
  * @param {string|null} [params.excludeRoleId]
  */
@@ -360,6 +404,8 @@ const checkRoleDuplicates = ({
   description,
   tenantId = null,
   facilityId = null,
+  tenantName = null,
+  facilityName = null,
   existing = [],
   excludeRoleId = null
 }) => {
@@ -367,6 +413,12 @@ const checkRoleDuplicates = ({
   const normalizedDisplayName = canonicalizeRoleText(displayName);
   const normalizedDescription = canonicalizeRoleText(description);
   const excludeId = String(excludeRoleId || '').trim();
+  const proposedScopeLabel = formatRoleScopeLabel({
+    tenantId,
+    facilityId,
+    tenantName,
+    facilityName
+  });
 
   let exactNameConflict = false;
   let exactDisplayNameConflict = false;
@@ -384,6 +436,13 @@ const checkRoleDuplicates = ({
       rightTenantId: snapshot.tenant_id,
       rightFacilityId: snapshot.facility_id
     });
+    const candidateScopeLabel = formatRoleScopeLabel({
+      tenantId: snapshot.tenant_id,
+      facilityId: snapshot.facility_id,
+      tenantName: snapshot.tenant_name,
+      facilityName: snapshot.facility_name
+    });
+    const scopeScore = sameScope ? 100 : 0;
 
     const roleId = String(snapshot.id || '').trim();
     const roleFriendly = String(snapshot.human_friendly_id || '').trim();
@@ -497,12 +556,14 @@ const checkRoleDuplicates = ({
     ) {
       reasons.push('cross_identity');
     }
+    reasons.push('scope');
 
     const score = compositeSimilarityScore({
       nameScore,
       displayNameScore,
       descriptionScore,
-      crossIdentityScore
+      crossIdentityScore,
+      scopeScore
     });
 
     const strongestIdentity = maxScore(
@@ -531,6 +592,13 @@ const checkRoleDuplicates = ({
         candidateValue: snapshot.display_name,
         score: displayNameScore,
         exact: displayNameExact
+      }),
+      buildFieldComparison({
+        field: 'scope',
+        inputValue: proposedScopeLabel,
+        candidateValue: candidateScopeLabel,
+        score: scopeScore,
+        exact: sameScope
       }),
       buildFieldComparison({
         field: 'description',
@@ -624,6 +692,7 @@ const checkRoleDuplicates = ({
       displayNameScore,
       descriptionScore,
       crossIdentityScore,
+      scopeScore,
       field_comparisons: fieldComparisons
     });
   }
@@ -663,6 +732,7 @@ module.exports = {
   DISPLAY_NAME_WEIGHT,
   DESCRIPTION_WEIGHT,
   CROSS_IDENTITY_WEIGHT,
+  SCOPE_WEIGHT,
   FILLER_TOKENS,
   ALIAS_EXPANSIONS,
   canonicalizeRoleText,
@@ -670,6 +740,8 @@ module.exports = {
   normalizeRoleSortedTokens,
   roleInitialsKey,
   roleScopesMatch,
+  deriveRoleScopeKind,
+  formatRoleScopeLabel,
   scoreTextPair,
   compositeSimilarityScore,
   checkRoleDuplicates,

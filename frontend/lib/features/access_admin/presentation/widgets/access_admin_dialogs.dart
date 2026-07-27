@@ -437,12 +437,32 @@ Future<AppFailure?> _reviewRoleSimilarity(
   }
   final List<AccessAdminItem> peers = peerLookup.items;
 
+  String? proposedFacilityName;
+  String? proposedTenantName;
+  for (final AccessAdminItem peer in peers) {
+    if (proposedFacilityName == null &&
+        pending.facilityId != null &&
+        peer.facilityId == pending.facilityId &&
+        (peer.facilityName ?? '').trim().isNotEmpty) {
+      proposedFacilityName = peer.facilityName;
+    }
+    if (proposedTenantName == null &&
+        pending.tenantId != null &&
+        peer.tenantId == pending.tenantId &&
+        (peer.tenantName ?? '').trim().isNotEmpty) {
+      proposedTenantName = peer.tenantName;
+    }
+  }
+
   final RoleDuplicateCheckResult check = checkRoleDuplicates(
     name: pending.name,
     displayName: pending.displayName ?? '',
     description: pending.description,
     tenantId: pending.tenantId,
     facilityId: pending.facilityId,
+    tenantName: proposedTenantName,
+    facilityName: proposedFacilityName,
+    scope: pending.scope,
     existing: peers,
     excludeRoleId: excludeRoleId,
   );
@@ -491,6 +511,11 @@ Future<AppFailure?> _reviewRoleSimilarity(
       name: pending.name,
       displayName: pending.displayName ?? '',
       description: pending.description,
+      tenantId: pending.tenantId,
+      facilityId: pending.facilityId,
+      tenantName: proposedTenantName,
+      facilityName: proposedFacilityName,
+      scope: pending.scope,
     ),
     matches: reviewMatches,
     allowProceed: !hasExactConflict,
