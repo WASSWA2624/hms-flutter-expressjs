@@ -3572,8 +3572,6 @@ class _UserDetailSummaryCard extends StatelessWidget {
                         label: l10n.accessAdminColumnId,
                         value: item.effectiveDisplayId,
                       ),
-                      if (item.status != null)
-                        _UserDetailStatusChip(status: item.status!),
                       if (item.isDemo)
                         Chip(
                           avatar: Icon(
@@ -3594,6 +3592,10 @@ class _UserDetailSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (item.status != null) ...<Widget>[
+              SizedBox(width: theme.spacing.sm),
+              _UserDetailStatusChip(status: item.status!),
+            ],
           ],
         ),
       ),
