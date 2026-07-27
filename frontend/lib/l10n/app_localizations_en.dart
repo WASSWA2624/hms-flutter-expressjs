@@ -21080,7 +21080,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminCreateUserScopeSectionDescription =>
-      'Select tenant and facility. Roles load from that org.';
+      'Select tenant and facility for the new account.';
+
+  @override
+  String get accessAdminCreateUserSelectTenantFirstTooltip =>
+      'Select a tenant first.';
+
+  @override
+  String get accessAdminCreateUserSelectScopeTooltip =>
+      'Select tenant and facility above to continue.';
 
   @override
   String get accessAdminCreateUserDetailsSectionTitle => 'User details';

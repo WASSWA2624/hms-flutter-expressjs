@@ -259,6 +259,74 @@ final class AccessAdminWorkspaceController
     }, refreshSession: true);
   }
 
+  /// Create a user and return the created (or refreshed) item so callers can
+  /// open User Details without a list flash. Mirrors [createRole].
+  Future<Result<AccessAdminItem>> createUserReviewed(
+    AccessAdminUserDraft draft,
+  ) async {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current != null) {
+      _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    }
+
+    final Result<String> createResult = await _repository.createUser(draft);
+    return createResult.when(
+      success: (String id) async {
+        _upsertCreatedUser(id, draft);
+        await _refreshWorkspace(preferredSelectedId: id);
+        final AccessAdminItem created = _createdUserItem(id, draft);
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, isRefreshing: false));
+        }
+        await _flushPendingRefresh();
+        _scheduleSessionRehydrate();
+        return Result<AccessAdminItem>.success(created);
+      },
+      failure: (AppFailure failure) async {
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              isSaving: false,
+              isRefreshing: false,
+              lastFailure: failure,
+            ),
+          );
+        }
+        return Result<AccessAdminItem>.failure(failure);
+      },
+    );
+  }
+
+  /// Resolve the created user from the refreshed page when present, else build
+  /// a minimal item from the draft (details view reloads from the id anyway).
+  AccessAdminItem _createdUserItem(String id, AccessAdminUserDraft draft) {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current != null &&
+        current.query.resource == AccessAdminResource.users) {
+      for (final AccessAdminItem item in current.data.page.items) {
+        if (item.id == id ||
+            item.mutationId == id ||
+            item.effectiveDisplayId == id) {
+          return item;
+        }
+      }
+    }
+    return AccessAdminItem(
+      id: id,
+      resource: AccessAdminResource.users,
+      displayId: id,
+      title: draft.email,
+      email: draft.email,
+      phone: draft.phone,
+      positionTitle: draft.positionTitle,
+      status: draft.status,
+      tenantId: draft.tenantId,
+      facilityId: draft.facilityId,
+    );
+  }
+
   Future<AppFailure?> updateUserWithRoles(
     String userId,
     AccessAdminUserDraft draft,

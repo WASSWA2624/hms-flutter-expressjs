@@ -39043,8 +39043,20 @@ abstract class AppLocalizations {
   /// Section description for tenant and facility selection in the user form.
   ///
   /// In en, this message translates to:
-  /// **'Select tenant and facility. Roles load from that org.'**
+  /// **'Select tenant and facility for the new account.'**
   String get accessAdminCreateUserScopeSectionDescription;
+
+  /// Tooltip when facility or dependent fields are disabled until a tenant is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant first.'**
+  String get accessAdminCreateUserSelectTenantFirstTooltip;
+
+  /// Tooltip when user detail fields are disabled until organization scope is ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Select tenant and facility above to continue.'**
+  String get accessAdminCreateUserSelectScopeTooltip;
 
   /// Section title for user profile fields.
   ///

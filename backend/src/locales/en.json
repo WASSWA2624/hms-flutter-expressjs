@@ -410,6 +410,7 @@
   "errors.user.email_exists_in_tenant": "A user with this email already exists in this tenant",
   "errors.user.phone_exists_in_tenant": "A user with this phone number already exists in this tenant",
   "errors.user.contact_exists_in_tenant": "Email and phone are already used by another user in this tenant",
+  "errors.user.similar_exists": "A similar user already exists. Confirm to create anyway.",
   "errors.user.restore_requires_active_facility": "Cannot restore a user while its facility is deleted",
   "errors.user.restore_requires_active_tenant": "Cannot restore a user while its tenant is deleted",
   "errors.user_mfa.already_disabled": "MFA is already disabled",

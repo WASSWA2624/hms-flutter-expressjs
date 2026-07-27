@@ -673,6 +673,7 @@ final class AccessAdminUserDraft {
     this.password,
     this.status = 'ACTIVE',
     this.permissionIds = const <String>[],
+    this.confirmSimilar = false,
   });
 
   final String tenantId;
@@ -683,6 +684,37 @@ final class AccessAdminUserDraft {
   final String? password;
   final String status;
   final List<String> permissionIds;
+
+  /// When true, the create payload sends `confirm_similar` so the backend
+  /// bypasses soft similarity review (exact contact conflicts still block).
+  final bool confirmSimilar;
+
+  AccessAdminUserDraft copyWith({
+    String? tenantId,
+    String? email,
+    String? positionTitle,
+    String? facilityId,
+    String? phone,
+    String? password,
+    String? status,
+    List<String>? permissionIds,
+    bool? confirmSimilar,
+    bool clearFacilityId = false,
+    bool clearPhone = false,
+    bool clearPassword = false,
+  }) {
+    return AccessAdminUserDraft(
+      tenantId: tenantId ?? this.tenantId,
+      email: email ?? this.email,
+      positionTitle: positionTitle ?? this.positionTitle,
+      facilityId: clearFacilityId ? null : (facilityId ?? this.facilityId),
+      phone: clearPhone ? null : (phone ?? this.phone),
+      password: clearPassword ? null : (password ?? this.password),
+      status: status ?? this.status,
+      permissionIds: permissionIds ?? this.permissionIds,
+      confirmSimilar: confirmSimilar ?? this.confirmSimilar,
+    );
+  }
 }
 
 @immutable

@@ -10,12 +10,14 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/role_similarity.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/user_similarity.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_similarity_dialog.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/user_mutation_dialog.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/user_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -54,8 +56,14 @@ Future<bool?> showAccessAdminCreateUserDialog(
     accessAdminWorkspaceControllerProvider.future,
   );
   return refreshed.when(
-    success: (AccessAdminWorkspaceState value) =>
-        openAccessAdminCreateUserDialog(context, ref, value),
+    success: (AccessAdminWorkspaceState value) async {
+      final AccessAdminItem? created = await openAccessAdminCreateUserDialog(
+        context,
+        ref,
+        value,
+      );
+      return created != null;
+    },
     failure: (AppFailure failure) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.failureMessage(failure))),

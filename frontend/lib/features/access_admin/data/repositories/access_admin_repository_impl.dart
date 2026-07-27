@@ -201,6 +201,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
           'password': draft.password,
           'status': draft.status,
           'permission_ids': draft.permissionIds,
+          if (draft.confirmSimilar) 'confirm_similar': true,
         }),
         decoder: (Object? responseData) => _extractRecordId(
           responseData is Map<String, dynamic>

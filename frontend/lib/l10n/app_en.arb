@@ -27073,10 +27073,19 @@
   "@accessAdminCreateUserIntro": {
     "description": "Introductory helper text at the top of the create user dialog."
   },
-  "accessAdminCreateUserScopeSectionDescription": "Select tenant and facility. Roles load from that org.",
+  "accessAdminCreateUserScopeSectionDescription": "Select tenant and facility for the new account.",
   "@accessAdminCreateUserScopeSectionDescription": {
     "description": "Section description for tenant and facility selection in the user form."
   },
+  "accessAdminCreateUserSelectTenantFirstTooltip": "Select a tenant first.",
+  "@accessAdminCreateUserSelectTenantFirstTooltip": {
+    "description": "Tooltip when facility or dependent fields are disabled until a tenant is chosen."
+  },
+  "accessAdminCreateUserSelectScopeTooltip": "Select tenant and facility above to continue.",
+  "@accessAdminCreateUserSelectScopeTooltip": {
+    "description": "Tooltip when user detail fields are disabled until organization scope is ready."
+  },
+
   "accessAdminCreateUserDetailsSectionTitle": "User details",
   "@accessAdminCreateUserDetailsSectionTitle": {
     "description": "Section title for user profile fields."
@@ -27487,6 +27496,87 @@
   "accessAdminUseExistingRoleAction": "Use existing role",
   "@accessAdminUseExistingRoleAction": {
     "description": "Open an existing similar role instead of creating."
+  },
+  "accessAdminSimilarUserDialogTitle": "Similar user found",
+  "@accessAdminSimilarUserDialogTitle": {
+    "description": "Title for user similarity review dialog when matches exist."
+  },
+  "accessAdminNoSimilarUserDialogTitle": "No similar user found",
+  "@accessAdminNoSimilarUserDialogTitle": {
+    "description": "Title for user similarity review dialog when no matches exist."
+  },
+  "accessAdminUserContactAlreadyInUse": "Contact already in use",
+  "@accessAdminUserContactAlreadyInUse": {
+    "description": "Banner title when an exact user email or phone conflict is found."
+  },
+  "accessAdminSimilarUserWarningTitle": "Potential duplicate user",
+  "@accessAdminSimilarUserWarningTitle": {
+    "description": "Banner title when similar users are found."
+  },
+  "accessAdminSimilarUserWarningBody": "Review the similar users below before saving.",
+  "@accessAdminSimilarUserWarningBody": {
+    "description": "Banner body when similar users are found."
+  },
+  "accessAdminSimilarUserReviewBannerBody": "Review field matches below before continuing. Closest match is {score}%.",
+  "@accessAdminSimilarUserReviewBannerBody": {
+    "description": "Banner body showing the closest user similarity score.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "accessAdminSimilarUserExistingHeading": "Existing user",
+  "@accessAdminSimilarUserExistingHeading": {
+    "description": "Heading for an existing user match card."
+  },
+  "accessAdminSimilarUserComparisonHeading": "Field comparison",
+  "@accessAdminSimilarUserComparisonHeading": {
+    "description": "Heading for user field comparison table."
+  },
+  "accessAdminSimilarUserOverallSimilarityLabel": "Overall similarity",
+  "@accessAdminSimilarUserOverallSimilarityLabel": {
+    "description": "Label for overall user similarity percentage."
+  },
+  "accessAdminSimilarUserScopeLabel": "Organization",
+  "@accessAdminSimilarUserScopeLabel": {
+    "description": "Label for the organization / facility scope of a user in similarity review."
+  },
+  "accessAdminSimilarUserExactConflictLabel": "Exact conflict",
+  "@accessAdminSimilarUserExactConflictLabel": {
+    "description": "Badge label when an exact user uniqueness conflict blocks create-anyway."
+  },
+  "accessAdminSimilarUserNearMatchLabel": "Near match",
+  "@accessAdminSimilarUserNearMatchLabel": {
+    "description": "Badge label when a user match is near the similarity threshold."
+  },
+  "accessAdminSimilarUserPartialMatchLabel": "Partial match",
+  "@accessAdminSimilarUserPartialMatchLabel": {
+    "description": "Badge label when a user match is only partially similar."
+  },
+  "accessAdminNoSimilarUserBannerTitle": "Match status: No similar found",
+  "@accessAdminNoSimilarUserBannerTitle": {
+    "description": "Banner title when no similar users are found."
+  },
+  "accessAdminNoSimilarUserDialogBody": "Review the proposed user details below. No similar users were found in this organization.",
+  "@accessAdminNoSimilarUserDialogBody": {
+    "description": "Banner body when no similar users are found."
+  },
+  "accessAdminSimilarUserProposedHeading": "Proposed user",
+  "@accessAdminSimilarUserProposedHeading": {
+    "description": "Heading for the proposed user card in similarity review."
+  },
+  "accessAdminProceedCreateUserAction": "Create anyway",
+  "@accessAdminProceedCreateUserAction": {
+    "description": "Confirm create despite similar users."
+  },
+  "accessAdminContinueCreateUserAction": "Continue create",
+  "@accessAdminContinueCreateUserAction": {
+    "description": "Continue create when no similar users are found."
+  },
+  "accessAdminUseExistingUserAction": "Use existing user",
+  "@accessAdminUseExistingUserAction": {
+    "description": "Open an existing similar user instead of creating."
   },
   "accessAdminAddRolePermissionsAction": "Add permissions",
   "@accessAdminAddRolePermissionsAction": {

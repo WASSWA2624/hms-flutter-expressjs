@@ -5,7 +5,7 @@
 - **Create user**
   - Location: Search-bar trailing action and empty-state primary action.
   - Condition: Shown when workspace `canWrite` is true and `showCreateAction` is enabled (default on this setup tab); enabled when the list is not loading and no mutation is in progress.
-  - Immediate result: Opens `openAccessAdminCreateUserDialog` / `showUserMutationDialog` in **Create** mode.
+  - Immediate result: Opens `openAccessAdminCreateUserDialog` / `showUserMutationDialog` in **Create** mode with Organization + User details only (no Assigned roles / Direct permissions; those are managed from User Details). Fields stay visible and disable with tooltips until tenant/facility scope is ready.
 
 - **Row select**
   - Location: User table or mobile-list row.
