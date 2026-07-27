@@ -174,7 +174,7 @@ Future<void> showAccessAdminUserFormDialog(
   return openAccessAdminCreateUserDialog(context, ref, state);
 }
 
-Future<bool?> openAccessAdminCreateUserDialog(
+Future<AccessAdminItem?> openAccessAdminCreateUserDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
@@ -183,13 +183,412 @@ Future<bool?> openAccessAdminCreateUserDialog(
     return null;
   }
 
-  return showUserMutationDialog(
+  AccessAdminItem? createdUser;
+  AccessAdminItem? existingUserToOpen;
+
+  final bool? saved = await showUserMutationDialog(
     context: context,
     ref: ref,
     mode: UserMutationMode.create,
     state: state,
-    onSubmit: (AccessAdminUserDraft draft, List<String> roleIds) =>
-        _submitAccessAdminUserCreate(ref, draft, roleIds),
+    onSubmit: (AccessAdminUserDraft draft, List<String> roleIds) async {
+      var similarityAccepted = draft.confirmSimilar;
+      var pending = draft.copyWith(confirmSimilar: similarityAccepted);
+
+      // Create always opens the review before persisting (including zero
+      // matches), mirroring the role create flow.
+      if (!pending.confirmSimilar) {
+        if (!context.mounted) {
+          return const AppFailure.cancelled();
+        }
+        final AppFailure? reviewFailure = await _reviewUserSimilarity(
+          context,
+          ref,
+          pending: pending,
+          onAccepted: () => similarityAccepted = true,
+          onUseExisting: (AccessAdminItem user) {
+            existingUserToOpen = user;
+          },
+        );
+        if (reviewFailure != null) {
+          return reviewFailure;
+        }
+        if (existingUserToOpen != null) {
+          return null;
+        }
+        pending = pending.copyWith(confirmSimilar: similarityAccepted);
+      }
+
+      final Result<AccessAdminItem> result = await ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .createUserReviewed(pending);
+      AppFailure? failure = result.when(
+        success: (AccessAdminItem created) {
+          createdUser ??= created;
+          return null;
+        },
+        failure: (AppFailure value) => value,
+      );
+
+      // Backend uniqueness is authoritative; never surface it as an inline
+      // create-dialog conflict banner — reopen the dedicated review dialog.
+      if (failure != null &&
+          failure.category == AppFailureCategory.conflict) {
+        if (!context.mounted) {
+          return const AppFailure.cancelled();
+        }
+
+        final bool isExactContactConflict =
+            _isUserDuplicateContactConflict(failure);
+        final bool alreadyConfirmed = pending.confirmSimilar;
+        // similar_exists after confirm_similar should not reopen an empty
+        // "no similar" dialog — create once was already attempted.
+        if (alreadyConfirmed && !isExactContactConflict) {
+          return failure;
+        }
+
+        similarityAccepted = false;
+        final AppFailure? reviewFailure = await _reviewUserSimilarity(
+          context,
+          ref,
+          pending: pending.copyWith(confirmSimilar: false),
+          forceReviewMatches: true,
+          conflictEntries: failure is ConflictFailure
+              ? failure.conflictEntries
+              : const <Map<String, Object?>>[],
+          onAccepted: () => similarityAccepted = true,
+          onUseExisting: (AccessAdminItem user) {
+            existingUserToOpen = user;
+          },
+        );
+        if (reviewFailure != null) {
+          return reviewFailure;
+        }
+        if (existingUserToOpen != null) {
+          return null;
+        }
+        if (!similarityAccepted || isExactContactConflict) {
+          return const AppFailure.cancelled();
+        }
+
+        final Result<AccessAdminItem> retry = await ref
+            .read(accessAdminWorkspaceControllerProvider.notifier)
+            .createUserReviewed(pending.copyWith(confirmSimilar: true));
+        final AppFailure? retryFailure = retry.when(
+          success: (AccessAdminItem created) {
+            createdUser ??= created;
+            return null;
+          },
+          failure: (AppFailure value) => value,
+        );
+        if (retryFailure != null &&
+            retryFailure.category == AppFailureCategory.conflict) {
+          // Exact contact conflicts cannot be bypassed with confirm_similar.
+          return const AppFailure.cancelled();
+        }
+        if (retryFailure != null) {
+          return retryFailure;
+        }
+        failure = null;
+      }
+
+      if (failure != null) {
+        return failure;
+      }
+      return null;
+    },
+  );
+
+  if (existingUserToOpen != null) {
+    return existingUserToOpen;
+  }
+  if (saved == true) {
+    return createdUser;
+  }
+  return null;
+}
+
+Future<AppFailure?> _reviewUserSimilarity(
+  BuildContext context,
+  WidgetRef ref, {
+  required AccessAdminUserDraft pending,
+  required VoidCallback onAccepted,
+  required ValueChanged<AccessAdminItem> onUseExisting,
+  String? excludeUserId,
+  bool forceReviewMatches = false,
+  List<Map<String, Object?>> conflictEntries = const <Map<String, Object?>>[],
+}) async {
+  final _UserSimilarityPeers peerLookup = await _loadUserSimilarityPeers(
+    ref,
+    tenantId: pending.tenantId,
+    email: pending.email,
+    phone: pending.phone,
+    positionTitle: pending.positionTitle,
+  );
+  if (!context.mounted) {
+    return const AppFailure.cancelled();
+  }
+  // A failed peer lookup must never be reported as "no similar user found".
+  if (peerLookup.failure != null) {
+    return peerLookup.failure;
+  }
+  final List<AccessAdminItem> peers = peerLookup.items;
+
+  String? proposedFacilityName;
+  String? proposedTenantName;
+  for (final AccessAdminItem peer in peers) {
+    if (proposedFacilityName == null &&
+        pending.facilityId != null &&
+        peer.facilityId == pending.facilityId &&
+        (peer.facilityName ?? '').trim().isNotEmpty) {
+      proposedFacilityName = peer.facilityName;
+    }
+    if (proposedTenantName == null &&
+        peer.tenantId == pending.tenantId &&
+        (peer.tenantName ?? '').trim().isNotEmpty) {
+      proposedTenantName = peer.tenantName;
+    }
+  }
+
+  final UserDuplicateCheckResult check = checkUserDuplicates(
+    email: pending.email,
+    phone: pending.phone,
+    positionTitle: pending.positionTitle,
+    tenantId: pending.tenantId,
+    existing: peers,
+    excludeUserId: excludeUserId,
+  );
+
+  List<UserSimilarityMatch> reviewMatches;
+  if (forceReviewMatches) {
+    reviewMatches = check.similarMatches;
+  } else if (check.hasExactConflict) {
+    reviewMatches = check.similarMatches
+        .where(
+          (UserSimilarityMatch match) =>
+              match.exactEmailConflict || match.exactPhoneConflict,
+        )
+        .toList(growable: false);
+    if (reviewMatches.isEmpty) {
+      reviewMatches = check.similarMatches;
+    }
+  } else {
+    reviewMatches = check.overridableMatches;
+  }
+
+  // When peer load missed identity rows, hydrate from the authoritative
+  // backend uniqueness payload so conflict reopen is never empty "no similar".
+  if (reviewMatches.isEmpty && conflictEntries.isNotEmpty) {
+    reviewMatches = userSimilarityMatchesFromConflictEntries(conflictEntries);
+  }
+
+  final bool hasExactConflict =
+      check.hasExactConflict ||
+      reviewMatches.any(
+        (UserSimilarityMatch match) =>
+            match.exactEmailConflict || match.exactPhoneConflict,
+      );
+
+  // Force-review after backend conflict must not reopen a false empty
+  // "no similar" confirmation — that loops Continue create without creating.
+  if (forceReviewMatches && reviewMatches.isEmpty) {
+    return AppFailure.conflict(code: 'EMAIL_EXISTS_IN_TENANT');
+  }
+
+  final UserSimilarityDialogResult review = await showUserSimilarityDialog(
+    context,
+    proposed: UserSimilarityProposedValues(
+      email: pending.email,
+      phone: pending.phone,
+      positionTitle: pending.positionTitle,
+      tenantId: pending.tenantId,
+      facilityId: pending.facilityId,
+      tenantName: proposedTenantName,
+      facilityName: proposedFacilityName,
+    ),
+    matches: reviewMatches,
+    allowProceed: !hasExactConflict,
+  );
+  if (!context.mounted) {
+    return const AppFailure.cancelled();
+  }
+
+  switch (review.action) {
+    case UserSimilarityAction.cancel:
+      return const AppFailure.cancelled();
+    case UserSimilarityAction.useExisting:
+      final AccessAdminItem? existing = review.selectedUser?.user;
+      if (existing != null) {
+        onUseExisting(existing);
+      }
+      return null;
+    case UserSimilarityAction.proceed:
+      onAccepted();
+      return null;
+  }
+}
+
+bool _isUserDuplicateContactConflict(AppFailure failure) {
+  final String code = failure.code.trim().toUpperCase();
+  if (code == 'EMAIL_EXISTS_IN_TENANT' ||
+      code == 'PHONE_EXISTS_IN_TENANT' ||
+      code == 'CONTACT_EXISTS_IN_TENANT' ||
+      code.endsWith('_EXISTS_IN_TENANT')) {
+    return true;
+  }
+  if (failure is ConflictFailure && failure.conflictEntries.isNotEmpty) {
+    return failure.conflictEntries.any(
+      (Map<String, Object?> entry) =>
+          entry['exactEmailConflict'] == true ||
+          entry['exactPhoneConflict'] == true ||
+          entry['isExact'] == true,
+    );
+  }
+  return false;
+}
+
+/// Matches backend `USER_SIMILARITY_LOOKUP_LIMIT`.
+const int _userSimilarityPeerLimit = 500;
+
+@immutable
+final class _UserSimilarityPeers {
+  const _UserSimilarityPeers({required this.items, this.failure});
+
+  final List<AccessAdminItem> items;
+  final AppFailure? failure;
+}
+
+Future<_UserSimilarityPeers> _loadUserSimilarityPeers(
+  WidgetRef ref, {
+  String? tenantId,
+  required String email,
+  String? phone,
+  String? positionTitle,
+}) async {
+  // Users are always tenant-scoped for uniqueness. Load the tenant workspace
+  // across all facilities, plus search-biased pages on email/phone/position so
+  // identity peers past the alphabetical window still surface.
+  final String? scopedTenantId =
+      (tenantId ?? '').trim().isEmpty ? null : tenantId!.trim();
+  final Map<String, AccessAdminItem> alphabeticalPeers =
+      <String, AccessAdminItem>{};
+  final Map<String, AccessAdminItem> searchedPeers =
+      <String, AccessAdminItem>{};
+
+  Future<AppFailure?> appendPeers({
+    String search = '',
+    required Map<String, AccessAdminItem> target,
+  }) async {
+    var request = const AppPageRequest(pageSize: AppPageRequest.maxPageSize);
+    while (target.length < _userSimilarityPeerLimit) {
+      final Result<AccessAdminWorkspaceData> result = await ref
+          .read(accessAdminRepositoryProvider)
+          .getWorkspace(
+            AccessAdminWorkspaceQuery(
+              panel: AccessAdminPanel.directory,
+              resource: AccessAdminResource.users,
+              tenantId: scopedTenantId,
+              allTenants: scopedTenantId == null,
+              allFacilities: true,
+              lean: true,
+              skipLookups: true,
+              search: search,
+              pageRequest: request,
+            ),
+          );
+
+      final AppFailure? failure = result.when(
+        success: (AccessAdminWorkspaceData data) =>
+            data.state == 'tenant_context_required'
+            ? const AppFailure.unexpectedResponse()
+            : null,
+        failure: (AppFailure value) => value,
+      );
+      if (failure != null) {
+        return failure;
+      }
+
+      final AppPage<AccessAdminItem> page = result.when(
+        success: (AccessAdminWorkspaceData data) => data.page,
+        failure: (_) => const AppPage<AccessAdminItem>(
+          items: <AccessAdminItem>[],
+          request: AppPageRequest(),
+        ),
+      );
+      for (final AccessAdminItem item in page.items) {
+        // Keep only same-tenant peers so the client set mirrors BE uniqueness.
+        if (scopedTenantId != null) {
+          final String? itemTenant = item.tenantId?.trim();
+          if (itemTenant != null &&
+              itemTenant.isNotEmpty &&
+              itemTenant != scopedTenantId) {
+            continue;
+          }
+        }
+        final String key = <String?>[
+          item.id,
+          item.mutationId,
+          item.resourceUuid,
+          item.effectiveDisplayId,
+        ].whereType<String>().firstWhere(
+          (String value) => value.trim().isNotEmpty,
+          orElse: () => item.email ?? item.title,
+        );
+        target.putIfAbsent(key, () => item);
+        if (target.length >= _userSimilarityPeerLimit) {
+          break;
+        }
+      }
+      if (!page.hasNextPage || page.items.isEmpty) {
+        break;
+      }
+      request = request.next();
+    }
+    return null;
+  }
+
+  final AppFailure? baseFailure = await appendPeers(target: alphabeticalPeers);
+  if (baseFailure != null) {
+    return _UserSimilarityPeers(
+      items: alphabeticalPeers.values.toList(growable: false),
+      failure: baseFailure,
+    );
+  }
+
+  final Set<String> searchTerms = <String>{
+    if (email.trim().isNotEmpty) email.trim(),
+    if ((phone ?? '').trim().isNotEmpty) phone!.trim(),
+    if ((positionTitle ?? '').trim().isNotEmpty) positionTitle!.trim(),
+  };
+  for (final String term in searchTerms) {
+    final Map<String, AccessAdminItem> scopedSearchPeers =
+        <String, AccessAdminItem>{};
+    final AppFailure? scopedSearchFailure = await appendPeers(
+      search: term,
+      target: scopedSearchPeers,
+    );
+    searchedPeers.addAll(scopedSearchPeers);
+    if (scopedSearchFailure != null) {
+      return _UserSimilarityPeers(
+        items: <AccessAdminItem>[
+          ...searchedPeers.values,
+          ...alphabeticalPeers.values,
+        ],
+        failure: scopedSearchFailure,
+      );
+    }
+  }
+
+  final Map<String, AccessAdminItem> prioritizedPeers =
+      <String, AccessAdminItem>{...searchedPeers};
+  for (final MapEntry<String, AccessAdminItem> entry
+      in alphabeticalPeers.entries) {
+    prioritizedPeers.putIfAbsent(entry.key, () => entry.value);
+  }
+  return _UserSimilarityPeers(
+    items: prioritizedPeers.values
+        .take(_userSimilarityPeerLimit)
+        .toList(growable: false),
   );
 }
 
@@ -964,16 +1363,6 @@ AccessAdminItem accessAdminRoleAfterEdit(
     deletedAt: role.deletedAt,
     updatedAt: DateTime.now(),
   );
-}
-
-Future<AppFailure?> _submitAccessAdminUserCreate(
-  WidgetRef ref,
-  AccessAdminUserDraft draft,
-  List<String> roleIds,
-) async {
-  return ref
-      .read(accessAdminWorkspaceControllerProvider.notifier)
-      .createUserWithRoles(draft, roleIds);
 }
 
 Future<AppFailure?> _submitAccessAdminUserUpdate(

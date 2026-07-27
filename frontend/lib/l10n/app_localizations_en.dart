@@ -21447,6 +21447,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminUseExistingRoleAction => 'Use existing role';
 
   @override
+  String get accessAdminSimilarUserDialogTitle => 'Similar user found';
+
+  @override
+  String get accessAdminNoSimilarUserDialogTitle => 'No similar user found';
+
+  @override
+  String get accessAdminUserContactAlreadyInUse => 'Contact already in use';
+
+  @override
+  String get accessAdminSimilarUserWarningTitle => 'Potential duplicate user';
+
+  @override
+  String get accessAdminSimilarUserWarningBody =>
+      'Review the similar users below before saving.';
+
+  @override
+  String accessAdminSimilarUserReviewBannerBody(int score) {
+    return 'Review field matches below before continuing. Closest match is $score%.';
+  }
+
+  @override
+  String get accessAdminSimilarUserExistingHeading => 'Existing user';
+
+  @override
+  String get accessAdminSimilarUserComparisonHeading => 'Field comparison';
+
+  @override
+  String get accessAdminSimilarUserOverallSimilarityLabel =>
+      'Overall similarity';
+
+  @override
+  String get accessAdminSimilarUserScopeLabel => 'Organization';
+
+  @override
+  String get accessAdminSimilarUserExactConflictLabel => 'Exact conflict';
+
+  @override
+  String get accessAdminSimilarUserNearMatchLabel => 'Near match';
+
+  @override
+  String get accessAdminSimilarUserPartialMatchLabel => 'Partial match';
+
+  @override
+  String get accessAdminNoSimilarUserBannerTitle =>
+      'Match status: No similar found';
+
+  @override
+  String get accessAdminNoSimilarUserDialogBody =>
+      'Review the proposed user details below. No similar users were found in this organization.';
+
+  @override
+  String get accessAdminSimilarUserProposedHeading => 'Proposed user';
+
+  @override
+  String get accessAdminProceedCreateUserAction => 'Create anyway';
+
+  @override
+  String get accessAdminContinueCreateUserAction => 'Continue create';
+
+  @override
+  String get accessAdminUseExistingUserAction => 'Use existing user';
+
+  @override
   String get accessAdminAddRolePermissionsAction => 'Add permissions';
 
   @override

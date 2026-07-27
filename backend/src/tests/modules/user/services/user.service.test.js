@@ -241,8 +241,8 @@ describe('User Service', () => {
     };
 
     beforeEach(() => {
-      userRepository.findActiveByTenantEmail.mockResolvedValue(null);
-      userRepository.findActiveByTenantPhone.mockResolvedValue(null);
+      // Uniqueness now scans tenant peers via findMany; default to no peers.
+      userRepository.findMany.mockResolvedValue([]);
     });
 
     it('should create new user', async () => {

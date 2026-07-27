@@ -2587,12 +2587,12 @@ class _FacilityDetailsDialogState
   }
 
   Future<void> _createUser() async {
-    final bool? saved = await openAccessAdminCreateUserDialog(
+    final AccessAdminItem? created = await openAccessAdminCreateUserDialog(
       context,
       ref,
       _usersWorkspaceState(),
     );
-    if (!mounted || saved != true) {
+    if (!mounted || created == null) {
       return;
     }
     _mutated = true;

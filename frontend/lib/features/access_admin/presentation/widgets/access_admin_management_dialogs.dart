@@ -450,12 +450,13 @@ class _ManageUsersPanelState
     if (state == null || !mounted) {
       return;
     }
-    final bool? saved = await openAccessAdminCreateUserDialog(
+    final AccessAdminItem? createdOrExisting =
+        await openAccessAdminCreateUserDialog(
       context,
       ref,
       state,
     );
-    if (saved == true && mounted) {
+    if (createdOrExisting != null && mounted) {
       mutated = true;
       // Restore widest allowed defaults so the new user is not hidden.
       setState(() {
@@ -470,8 +471,11 @@ class _ManageUsersPanelState
         roleFilter = null;
         statusFilter = null;
       });
-      await reload(resetPage: true, silent: true);
-      // createUserWithRoles already schedules a deferred session rehydrate.
+      // Open details immediately so the users list never flashes between create
+      // and detail. List reload runs silently in the background.
+      unawaited(reload(resetPage: true, silent: true));
+      await _openUserDetail(createdOrExisting, coverListImmediately: true);
+      // createUserReviewed already schedules a deferred session rehydrate.
     }
   }
 
@@ -604,13 +608,61 @@ class _ManageUsersPanelState
     }
   }
 
-  Future<void> _openUserDetail(AccessAdminItem item) async {
+  Future<void> _openUserDetail(
+    AccessAdminItem item, {
+    bool coverListImmediately = false,
+  }) async {
+    if (!mounted) {
+      return;
+    }
+
+    var coverOpen = false;
+    if (coverListImmediately) {
+      final Completer<void> coverReady = Completer<void>();
+      unawaited(
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          useRootNavigator: true,
+          builder: (BuildContext dialogContext) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!coverReady.isCompleted) {
+                coverReady.complete();
+              }
+            });
+            final ThemeData theme = Theme.of(dialogContext);
+            return PopScope(
+              canPop: false,
+              child: Center(
+                child: Material(
+                  color: theme.colorScheme.surface,
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(theme.radius.md),
+                  child: Padding(
+                    padding: EdgeInsets.all(theme.spacing.lg),
+                    child: const AppLoadingIndicator.compact(expand: false),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      await coverReady.future;
+      coverOpen = true;
+    }
+
     // Do not flip the table into a global busy state — keep rows interactive.
     final Result<AccessAdminUserDetail> detailResult = await repository
         .getUserDetail(
           item.mutationId,
           tenantId: item.tenantId ?? workspaceData?.query.tenantId,
         );
+
+    if (coverOpen && mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+      coverOpen = false;
+    }
     if (!mounted) return;
 
     final AccessAdminUserDetail? detail = detailResult.when(

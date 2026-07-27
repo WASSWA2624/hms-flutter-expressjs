@@ -39652,6 +39652,120 @@ abstract class AppLocalizations {
   /// **'Use existing role'**
   String get accessAdminUseExistingRoleAction;
 
+  /// Title for user similarity review dialog when matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar user found'**
+  String get accessAdminSimilarUserDialogTitle;
+
+  /// Title for user similarity review dialog when no matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar user found'**
+  String get accessAdminNoSimilarUserDialogTitle;
+
+  /// Banner title when an exact user email or phone conflict is found.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact already in use'**
+  String get accessAdminUserContactAlreadyInUse;
+
+  /// Banner title when similar users are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate user'**
+  String get accessAdminSimilarUserWarningTitle;
+
+  /// Banner body when similar users are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar users below before saving.'**
+  String get accessAdminSimilarUserWarningBody;
+
+  /// Banner body showing the closest user similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Review field matches below before continuing. Closest match is {score}%.'**
+  String accessAdminSimilarUserReviewBannerBody(int score);
+
+  /// Heading for an existing user match card.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing user'**
+  String get accessAdminSimilarUserExistingHeading;
+
+  /// Heading for user field comparison table.
+  ///
+  /// In en, this message translates to:
+  /// **'Field comparison'**
+  String get accessAdminSimilarUserComparisonHeading;
+
+  /// Label for overall user similarity percentage.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall similarity'**
+  String get accessAdminSimilarUserOverallSimilarityLabel;
+
+  /// Label for the organization / facility scope of a user in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get accessAdminSimilarUserScopeLabel;
+
+  /// Badge label when an exact user uniqueness conflict blocks create-anyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact conflict'**
+  String get accessAdminSimilarUserExactConflictLabel;
+
+  /// Badge label when a user match is near the similarity threshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Near match'**
+  String get accessAdminSimilarUserNearMatchLabel;
+
+  /// Badge label when a user match is only partially similar.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial match'**
+  String get accessAdminSimilarUserPartialMatchLabel;
+
+  /// Banner title when no similar users are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get accessAdminNoSimilarUserBannerTitle;
+
+  /// Banner body when no similar users are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the proposed user details below. No similar users were found in this organization.'**
+  String get accessAdminNoSimilarUserDialogBody;
+
+  /// Heading for the proposed user card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed user'**
+  String get accessAdminSimilarUserProposedHeading;
+
+  /// Confirm create despite similar users.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get accessAdminProceedCreateUserAction;
+
+  /// Continue create when no similar users are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue create'**
+  String get accessAdminContinueCreateUserAction;
+
+  /// Open an existing similar user instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing user'**
+  String get accessAdminUseExistingUserAction;
+
   /// Action to assign permissions to a role from details when none are assigned.
   ///
   /// In en, this message translates to:
