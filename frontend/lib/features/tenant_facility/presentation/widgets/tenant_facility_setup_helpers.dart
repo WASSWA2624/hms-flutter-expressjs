@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/utils/app_slug.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
@@ -250,6 +251,56 @@ String? tenantFacilityHumanFriendlyDisplayId(
     return null;
   }
   return trimmed;
+}
+
+/// Compact primary/secondary cell for dense tables (max 5 data columns).
+class TenantFacilityNestedTableCell extends StatelessWidget {
+  const TenantFacilityNestedTableCell({
+    required this.title,
+    this.details = const <String>[],
+    this.titleStyle,
+    this.deleted = false,
+    super.key,
+  });
+
+  final String title;
+  final List<String> details;
+  final TextStyle? titleStyle;
+  final bool deleted;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<String> resolvedDetails = details
+        .map((String value) => value.trim())
+        .where((String value) => value.isNotEmpty)
+        .toList(growable: false);
+    final TextStyle? resolvedTitleStyle =
+        titleStyle ??
+        theme.textTheme.bodyMedium?.copyWith(
+          color: deleted ? colorScheme.onSurfaceVariant : null,
+          fontWeight: FontWeight.w600,
+        );
+    final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      height: 1.25,
+    );
+
+    if (resolvedDetails.isEmpty) {
+      return Text(title, style: resolvedTitleStyle);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(title, style: resolvedTitleStyle),
+        SizedBox(height: theme.spacing.xs),
+        Text(resolvedDetails.join(' · '), style: detailStyle),
+      ],
+    );
+  }
 }
 
 /// Departments tab list breadth and default columns by admin role.

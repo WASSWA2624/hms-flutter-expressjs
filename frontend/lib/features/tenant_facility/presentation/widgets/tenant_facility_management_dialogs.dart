@@ -967,7 +967,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         return '$start-$end / $total';
       },
       onPageChanged: _onPageChanged,
-      columnVisibilityStorageKey: 'setup_manage_tenants_v2',
+      columnVisibilityStorageKey: 'setup_manage_tenants_v3',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<TenantProfile>(
         controller: _searchController,
@@ -1023,19 +1023,22 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         AppListTableColumn<TenantProfile>(
           id: 'name',
           label: l10n.tenantFacilityTenantNameLabel,
-          cellBuilder: (_, TenantProfile tenant) => Text(
-            tenant.name,
-            style: tenant.isDeleted
-                ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  )
-                : null,
-          ),
-        ),
-        AppListTableColumn<TenantProfile>(
-          id: 'slug',
-          label: l10n.tenantFacilityTenantSlugLabel,
-          cellBuilder: (_, TenantProfile tenant) => Text(tenant.slug ?? '—'),
+          preferredWidth: 220,
+          cellBuilder: (_, TenantProfile tenant) {
+            final String? slug = tenant.slug?.trim();
+            final String? displayId = tenantFacilityHumanFriendlyDisplayId(
+              tenant.displayId,
+              opaqueId: tenant.resourceUuid ?? tenant.id,
+            );
+            return TenantFacilityNestedTableCell(
+              title: tenant.name,
+              details: <String>[
+                if (displayId != null) displayId,
+                if (slug != null && slug.isNotEmpty) slug,
+              ],
+              deleted: tenant.isDeleted,
+            );
+          },
         ),
         AppListTableColumn<TenantProfile>(
           id: 'status',
@@ -1068,10 +1071,10 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       ],
       columnChoices: <AppListTableColumn<TenantProfile>>[
         AppListTableColumn<TenantProfile>(
-          id: 'details',
-          label: l10n.accessAdminColumnDetails,
+          id: 'slug',
+          label: l10n.tenantFacilityTenantSlugLabel,
           cellBuilder: (_, TenantProfile tenant) =>
-              Text(tenant.slug ?? tenant.id),
+              Text(tenant.slug?.trim().isNotEmpty == true ? tenant.slug! : '—'),
         ),
       ],
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
@@ -1089,9 +1092,15 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
             : null,
       ),
       mobileItemBuilder: (BuildContext context, TenantProfile tenant) {
+        final String? slug = tenant.slug?.trim();
+        final String? displayId = tenantFacilityHumanFriendlyDisplayId(
+          tenant.displayId,
+          opaqueId: tenant.resourceUuid ?? tenant.id,
+        );
         return AppListTableMobileItem(
           title: tenant.name,
-          caption: tenant.slug ?? tenant.id,
+          caption: displayId ??
+              (slug != null && slug.isNotEmpty ? slug : null),
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(label: _tenantStatusLabel(l10n, tenant)),
           ],
@@ -5080,8 +5089,8 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       },
       onPageChanged: _onPageChanged,
       columnVisibilityStorageKey: showTenantColumn
-          ? 'setup_manage_facilities_v3'
-          : 'setup_manage_facilities_tenant_v1',
+          ? 'setup_manage_facilities_v4'
+          : 'setup_manage_facilities_tenant_v2',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<FacilityProfile>(
         controller: _searchController,
@@ -5183,7 +5192,29 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         AppListTableColumn<FacilityProfile>(
           id: 'name',
           label: l10n.authFacilityNameLabel,
-          cellBuilder: (_, FacilityProfile facility) => Text(facility.name),
+          preferredWidth: 220,
+          cellBuilder: (_, FacilityProfile facility) {
+            final List<String> details = <String>[];
+            final String code = _facilityCodeLabel(facility);
+            if (code != '—') {
+              details.add(code);
+            }
+            if (showContactColumns) {
+              final String phone = _optionalText(facility.phone);
+              final String email = _optionalText(facility.email);
+              if (phone != '—') {
+                details.add(phone);
+              }
+              if (email != '—') {
+                details.add(email);
+              }
+            }
+            return TenantFacilityNestedTableCell(
+              title: facility.name,
+              details: details,
+              deleted: facility.isDeleted,
+            );
+          },
         ),
         if (showTenantColumn)
           AppListTableColumn<FacilityProfile>(
@@ -5192,13 +5223,6 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
             cellBuilder: (_, FacilityProfile facility) =>
                 Text(_tenantLabel(facility.tenantId, l10n)),
           ),
-        if (showCodeColumn)
-          AppListTableColumn<FacilityProfile>(
-            id: 'code',
-            label: l10n.tenantFacilityFacilityIdLabel,
-            cellBuilder: (_, FacilityProfile facility) =>
-                Text(_facilityCodeLabel(facility)),
-          ),
         AppListTableColumn<FacilityProfile>(
           id: 'type',
           label: l10n.profileFacilityTypeLabel,
@@ -5206,20 +5230,6 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
             tenantFacilityFacilityTypeLabel(l10n, facility.type),
           ),
         ),
-        if (showContactColumns) ...<AppListTableColumn<FacilityProfile>>[
-          AppListTableColumn<FacilityProfile>(
-            id: 'phone',
-            label: l10n.profilePhoneLabel,
-            cellBuilder: (_, FacilityProfile facility) =>
-                Text(_optionalText(facility.phone)),
-          ),
-          AppListTableColumn<FacilityProfile>(
-            id: 'email',
-            label: l10n.profileEmailLabel,
-            cellBuilder: (_, FacilityProfile facility) =>
-                Text(_optionalText(facility.email)),
-          ),
-        ],
         AppListTableColumn<FacilityProfile>(
           id: 'status',
           label: l10n.tenantFacilityTenantStatusLabel,

@@ -2912,22 +2912,6 @@ class _DepartmentSetupSectionState
       scope,
     );
 
-    final List<AppListTableColumn<DepartmentProfile>> leadingColumns =
-        <AppListTableColumn<DepartmentProfile>>[
-          AppListTableColumn<DepartmentProfile>(
-            id: 'id',
-            label: l10n.tenantFacilityDepartmentIdLabel,
-            preferredWidth: 140,
-            cellBuilder: (_, DepartmentProfile department) => Text(
-              tenantFacilityHumanFriendlyDisplayId(
-                    department.displayId,
-                    opaqueId: department.resourceUuid ?? department.id,
-                  ) ??
-                  '—',
-            ),
-          ),
-        ];
-
     final List<AppListTableColumn<DepartmentProfile>> extraColumns =
         <AppListTableColumn<DepartmentProfile>>[
           if (showFacilityColumn)
@@ -2946,7 +2930,7 @@ class _DepartmentSetupSectionState
               cellBuilder: (_, DepartmentProfile department) =>
                   Text(_tenantLabel(department)),
             ),
-          if (showDetailColumns) ...<AppListTableColumn<DepartmentProfile>>[
+          if (showDetailColumns)
             AppListTableColumn<DepartmentProfile>(
               id: 'type',
               label: l10n.tenantFacilityDepartmentTypeLabel,
@@ -2955,17 +2939,6 @@ class _DepartmentSetupSectionState
                 _departmentTypeLabel(l10n, department.type),
               ),
             ),
-            AppListTableColumn<DepartmentProfile>(
-              id: 'short_name',
-              label: l10n.tenantFacilityDepartmentShortNameLabel,
-              preferredWidth: 140,
-              cellBuilder: (_, DepartmentProfile department) => Text(
-                department.shortName?.trim().isNotEmpty == true
-                    ? department.shortName!.trim()
-                    : '—',
-              ),
-            ),
-          ],
         ];
 
     final Widget content = _loading
@@ -2980,6 +2953,24 @@ class _DepartmentSetupSectionState
         : _SearchableEntityGroup<DepartmentProfile>(
             title: l10n.tenantFacilityDepartmentsListTitle,
             nameColumnLabel: l10n.tenantFacilityDepartmentNameLabel,
+            nameDetailBuilder: (DepartmentProfile department) {
+              final List<String> details = <String>[];
+              final String? departmentId = tenantFacilityHumanFriendlyDisplayId(
+                department.displayId,
+                opaqueId: department.resourceUuid ?? department.id,
+              );
+              if (departmentId != null) {
+                details.add(departmentId);
+              }
+              final String? shortName = department.shortName?.trim();
+              if (shortName != null && shortName.isNotEmpty) {
+                details.add(shortName);
+              }
+              if (!showDetailColumns) {
+                details.add(_departmentTypeLabel(l10n, department.type));
+              }
+              return details;
+            },
             items: _departments,
             emptyLabel: l10n.tenantFacilityNoDepartments,
             noResultsLabel: l10n.tenantFacilitySearchNoResults,
@@ -2996,7 +2987,7 @@ class _DepartmentSetupSectionState
               ),
             ),
             columnVisibilityStorageKey:
-                'setup_structure_departments_${scope.name}_v3',
+                'setup_structure_departments_${scope.name}_v4',
             extraFilterGroups: _buildFilterGroups(l10n),
             onFiltersChanged: (AppSearchBarFilterValue value) {
               unawaited(_onFiltersChanged(value));
@@ -3010,7 +3001,6 @@ class _DepartmentSetupSectionState
               }
               return _activeStatusLabel(l10n, department.isActive);
             },
-            leadingColumns: leadingColumns,
             extraColumns: extraColumns,
             isDeletedBuilder: (DepartmentProfile department) =>
                 department.isDeleted,
@@ -3469,6 +3459,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     this.columnVisibilityStorageKey,
     this.statusLabelBuilder,
     this.nameColumnLabel,
+    this.nameDetailBuilder,
   });
 
   final String title;
@@ -3501,6 +3492,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final String? columnVisibilityStorageKey;
   final String Function(T item)? statusLabelBuilder;
   final String? nameColumnLabel;
+  final List<String> Function(T item)? nameDetailBuilder;
 
   @override
   State<_SearchableEntityGroup<T>> createState() =>
@@ -3562,7 +3554,6 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final ColorScheme colorScheme = theme.colorScheme;
     final List<T> items = _visibleItems;
     final bool hasActiveFilters =
         _filterValue.options.isNotEmpty ||
@@ -3572,16 +3563,15 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
     final AppListTableColumn<T> nameColumn = AppListTableColumn<T>(
       id: 'name',
       label: widget.nameColumnLabel ?? widget.title,
-      preferredWidth: 200,
+      preferredWidth: 220,
       cellBuilder: (BuildContext context, T item) {
         final bool deleted = widget.isDeletedBuilder(item);
-        return Text(
-          widget.titleBuilder(item),
-          style: deleted
-              ? theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                )
-              : null,
+        final List<String> details =
+            widget.nameDetailBuilder?.call(item) ?? const <String>[];
+        return TenantFacilityNestedTableCell(
+          title: widget.titleBuilder(item),
+          details: details,
+          deleted: deleted,
         );
       },
     );
