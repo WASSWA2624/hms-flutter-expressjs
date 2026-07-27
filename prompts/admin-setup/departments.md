@@ -1,4 +1,54 @@
-/admin/setup
+# Tenants & Facilities Tabs — Role-Scoped List vs Details
 
-Only above screen. I want you to implement the following to update so that we have the following. If I've logged in as a platform admin. I have access to see all the tenants within the app, all the tenants that have signed up, all that have created an, an account within the app. So the The The tenant tab will show a list of all the tenants. But then Also, the facility tab will show a list of all facilities but of course the facility name column, the tenant column to which the facility belongs, the facility type, the status so whether it is soft deleted or permanently deleted, actually permanently deleted are not visible. If I've logged in as Tenant at me. If I log in as a tenant admin, admin is that I have access to only information within my tenant. So now, in that case, on the tenant screen, I'll only be seeing the tenant's details, all the tenant's details. Instead of seeing a list of tenants or a table, so I'll see the tenant details, but under the facility. Now, in this case, I'll see the list of all the facilities under that tenant, not outside the tenant my scope, so I'll have, I'll have a list of facilities under that tenant. But so detailed screen or detailed screen, you have the edit button, but I can't delete of course. And for the facility, I'll see the facility. I think I'll see the facility name colon the facility ID. Because already I'm logged in under that tenant, so I don't need to see the tenants column, because already, already I belong to the tenant under which I have logged in. Then I can see the facility type, I can see maybe a contactee that is phone number, email, and then contact person if the columns allow me to do that. I'm in the status. Then if I log in as a facility admin, yeah, it means if I log in as a facility admin the tenant to which I belong is already known, so that doesn't need to be shown. Now on the facility tab, I will now have a, a facility details page or screen, not a table, so whereby I can see all the available details for my facility, and I can edit, but not delete, so it means that I'll, I'll have the edit button. It should be similar to how the tenant bill is, but now in this case specific for the facility.
-The above updates only apply to the tenant(s), and facility/facilities tabs. Use plural or singular tab labels as my be appropriately applicable.
+Scope tenant and facility desk tabs on `/admin/setup` by admin role: platform list, tenant-scoped list/details, and facility-scoped details. Tab labels use singular or plural to match the view.
+
+## Context
+
+- Current tenants-tab and facility-tab actions are inventoried in `screens/admin-setup/tenants.md` and `screens/admin-setup/facility.md`.
+- Scoped tenant summary already exists when `canManageTenant()` and not `canCreateTenant()` (`tenantFacilityUsesScopedTenantPanel`).
+- Facility tab still uses a list-oriented presentation; facility admins need a details panel analogous to the scoped tenant summary.
+- Permanently deleted records stay hidden; soft-deleted records remain visible with status.
+
+## Requirements
+
+1. **Platform admin** (`canCreateTenant()` / elevated platform scope):
+   - **Tenants** tab (plural): list all tenants that have signed up.
+   - **Facilities** tab (plural): list all facilities with columns facility name, tenant, facility type, and status (active / soft-deleted). Permanently deleted facilities are not shown.
+
+2. **Tenant admin** (`canManageTenant()` and not platform create scope):
+   - **Tenant** tab (singular): details for the session tenant only (not a tenant table). Show Edit; do not show Delete.
+   - **Facilities** tab (plural): list only facilities under that tenant. Columns: facility name, human-friendly facility code/slug (if available), facility type, phone, email, contact person (when column budget allows), and status. Omit the tenant column (session tenant is implied).
+
+3. **Facility admin** (facility manage without tenant-manage / platform create):
+   - Hide or omit the tenants tab (session tenant is already known).
+   - **Facility** tab (singular): details for the session facility only (not a facility table), modeled after the scoped tenant details pattern. Show Edit; do not show Delete.
+
+4. Use singular or plural tab labels to match the mode (list → plural; single details → singular).
+
+5. Changes apply only to the tenants and facility desk tabs; do not alter departments, units, wards, rooms, beds, roles, permissions, users, or clinical catalog behavior.
+
+## Constraints
+
+- Reuse existing details summaries, edit dialogs (`_SetupProfileDialog`), permissions (`canManageTenant`, `canCreateTenant`, `canManageFacility`), and list infrastructure.
+- Soft-deleted rows may appear with status; permanently deleted rows must not.
+- Tenant admins and facility admins may edit their scoped entity but must not delete it from these tabs.
+- Never display non-human-friendly IDs (UUIDs, Mongo/ObjectIds, opaque primary keys) in list columns, details, or labels; show only human-readable codes, slugs, or names. Omit the ID column when no friendly identifier exists.
+- No unrelated refactoring; no new endpoints unless list/details already require an existing fetch.
+
+## Acceptance Criteria
+
+- Platform admin sees plural Tenants and Facilities list tabs with the columns in Req 1.
+- Tenant admin sees singular Tenant details (Edit, no Delete) and a tenant-scoped Facilities list without a tenant column (Req 2).
+- Facility admin sees no Tenants tab and a singular Facility details view (Edit, no Delete) (Req 3).
+- Tab labels switch singular/plural with mode (Req 4).
+- Other setup tabs are unchanged (Req 5).
+- No list or details UI shows raw/internal IDs; only human-friendly identifiers or names appear.
+- Widget or integration coverage for the three role modes; `flutter analyze` passes.
+
+## Relevant Files
+
+- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
+- `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart`
+- `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart`
+- `screens/admin-setup/tenants.md`
+- `screens/admin-setup/facility.md`
