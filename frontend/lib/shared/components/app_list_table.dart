@@ -40,6 +40,8 @@ const double _rowNumberColumnWidth = 48;
 const double _mobileRowNumberColumnWidth = 28;
 const double _minResizableColumnWidth = 72;
 const String _defaultGoToTopLabel = 'Go to top';
+const String _defaultLoadingMoreLabel = 'Loading more...';
+const String _defaultAllRowsLoadedLabel = 'All rows loaded';
 const Duration _goToTopAnimationDuration = Duration(milliseconds: 280);
 const double _goToTopButtonExtent = 48;
 const double _defaultColumnWidth = 160;
@@ -808,6 +810,8 @@ class AppListTable<T> extends StatefulWidget {
     this.maxTrailingActions,
     this.trailingActionsOverflowLabel = 'More actions',
     this.goToTopLabel = _defaultGoToTopLabel,
+    this.loadingMoreLabel = _defaultLoadingMoreLabel,
+    this.allRowsLoadedLabel = _defaultAllRowsLoadedLabel,
     super.key,
   }) : assert(
          items != null || page != null,
@@ -861,6 +865,8 @@ class AppListTable<T> extends StatefulWidget {
   final int? maxTrailingActions;
   final String trailingActionsOverflowLabel;
   final String goToTopLabel;
+  final String loadingMoreLabel;
+  final String allRowsLoadedLabel;
 
   @override
   State<AppListTable<T>> createState() => _AppListTableState<T>();
@@ -1580,6 +1586,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       statusLabel: statusLabel,
       isLoadingMore: loadingMore,
       reachedEnd: _usesInfinitePagination && !hasMore && visibleItemCount > 0,
+      loadingMoreLabel: widget.loadingMoreLabel,
+      allRowsLoadedLabel: widget.allRowsLoadedLabel,
     );
   }
 
@@ -2156,11 +2164,15 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
     required this.statusLabel,
     required this.isLoadingMore,
     required this.reachedEnd,
+    required this.loadingMoreLabel,
+    required this.allRowsLoadedLabel,
   });
 
   final String? statusLabel;
   final bool isLoadingMore;
   final bool reachedEnd;
+  final String loadingMoreLabel;
+  final String allRowsLoadedLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -2168,35 +2180,40 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.xs, bottom: theme.spacing.sm),
-      child: Row(
-        children: <Widget>[
-          if (statusLabel != null)
-            Expanded(
-              child: Text(
-                statusLabel!,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
+      padding: EdgeInsets.only(top: theme.spacing.sm, bottom: theme.spacing.sm),
+      child: isLoadingMore
+          ? Center(
+              child: AppLoadingIndicator.compact(
+                title: loadingMoreLabel,
+                expand: false,
               ),
             )
-          else
-            const Spacer(),
-          if (isLoadingMore) ...<Widget>[
-            SizedBox(width: theme.spacing.sm),
-            // Mark-only in the footer row; expanded loaders show default copy.
-            const AppLoadingIndicator.compact(expand: false),
-          ] else if (reachedEnd)
-            Text(
-              'All rows loaded',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-              ),
+          : Row(
+              children: <Widget>[
+                if (statusLabel != null)
+                  Expanded(
+                    child: Text(
+                      statusLabel!,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                else
+                  const Spacer(),
+                if (reachedEnd)
+                  Text(
+                    allRowsLoadedLabel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.8,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-        ],
-      ),
     );
   }
 }

@@ -939,7 +939,8 @@ void main() {
         size: const Size(960, 600),
       );
 
-      expect(find.byType(AppLoadingIndicator), findsWidgets);
+      expect(find.byType(AppLoadingIndicator), findsOneWidget);
+      expect(find.text('Loading more...'), findsOneWidget);
       expect(find.text('Item 0'), findsOneWidget);
     },
   );
