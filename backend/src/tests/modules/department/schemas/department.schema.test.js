@@ -242,6 +242,18 @@ describe('Department Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should accept confirm_similar on update', () => {
+      const validData = {
+        name: 'Updated Department',
+        confirm_similar: true,
+      };
+      const result = updateDepartmentSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.confirm_similar).toBe(true);
+      }
+    });
+
     it('should validate with null facility_id', () => {
       const validData = {
         facility_id: null

@@ -127,6 +127,49 @@ void main() {
       );
     });
 
+    test('edit opens from table row and department details', () {
+      final String sectionSource = departmentSectionSource();
+      expect(sectionSource.contains('onEdit: (DepartmentProfile department)'), isTrue);
+      expect(
+        sectionSource.contains('_openDepartmentDialog('),
+        isTrue,
+      );
+      expect(sectionSource.contains('department: department,'), isTrue);
+      expect(
+        detailsSource.contains('showTenantFacilityDepartmentFormDialog'),
+        isTrue,
+      );
+      expect(detailsSource.contains('department: _department,'), isTrue);
+      expect(
+        detailsSource.contains('canEditFacilitySetupStructure()'),
+        isTrue,
+      );
+      expect(
+        setupPageSource.contains('showTenantFacilityDepartmentFormDialog'),
+        isTrue,
+      );
+    });
+
+    test('edit reuses create similarity with exclusion and unchanged skip', () {
+      final String formSource = departmentFormSource();
+      expect(
+        formSource.contains(
+          'excludeDepartmentId: editing?.mutationId ?? editing?.id',
+        ),
+        isTrue,
+      );
+      expect(formSource.contains('excludeDepartment: editing,'), isTrue);
+      expect(formSource.contains('normalizeDepartmentName(name)'), isTrue);
+      expect(formSource.contains('forceReviewMatches: true'), isTrue);
+      expect(formSource.contains('confirmSimilar: _similarityAccepted'), isTrue);
+      expect(formSource.contains('confirmSimilar: true'), isTrue);
+      expect(formSource.contains('showDepartmentSimilarityDialog'), isTrue);
+      expect(
+        formSource.contains("errors.department.similar_exists"),
+        isTrue,
+      );
+    });
+
     test('short name defaults to name when empty', () {
       final String formSource = departmentFormSource();
       expect(formSource.contains('resolveDepartmentShortName'), isTrue);

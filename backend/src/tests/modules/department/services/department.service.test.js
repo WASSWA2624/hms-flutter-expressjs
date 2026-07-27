@@ -17,6 +17,13 @@ jest.mock('@lib/websocket', () => ({
 jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolvePublicIdentifier: jest.fn((value) => value || null),
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value || undefined),
+  resolveIdentifierForPayload: jest.fn(async ({ value, nullable = false }) => {
+    if (value === undefined || value === null || value === '') {
+      return nullable ? null : value;
+    }
+    return value;
+  }),
 }));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
@@ -186,7 +193,7 @@ describe('Department Service', () => {
       expect(result.departments).toMatchObject(mockDepartments);
       expect(departmentRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: { contains: 'emergency', mode: 'insensitive' }
+          name: { contains: 'emergency' }
         }),
         0,
         20,
@@ -323,6 +330,7 @@ describe('Department Service', () => {
       };
       const expectedPayload = {
         ...departmentData,
+        facility_id: null,
         short_name: 'New Department',
       };
       const mockCreatedDepartment = {
@@ -534,6 +542,112 @@ describe('Department Service', () => {
         .toThrow(HttpError);
       
       expect(departmentRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should reject similar departments on update unless confirm_similar is true', async () => {
+      departmentRepository.findById.mockResolvedValue({
+        id: 'dept-123',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        name: 'Old Department',
+        short_name: 'OLD',
+        department_type: 'CLINICAL',
+        is_active: true,
+      });
+      departmentRepository.findMany.mockResolvedValue([
+        {
+          id: 'dept-1',
+          facility_id: 'facility-123',
+          name: 'Emergency Department',
+          short_name: 'ER',
+          department_type: 'CLINICAL',
+          is_active: true,
+        },
+        {
+          id: 'dept-123',
+          facility_id: 'facility-123',
+          name: 'Old Department',
+          short_name: 'OLD',
+          department_type: 'CLINICAL',
+          is_active: true,
+        },
+      ]);
+
+      await expect(
+        updateDepartment('dept-123', {
+          name: 'Emergancy Departmnt',
+          department_type: 'CLINICAL',
+        })
+      ).rejects.toMatchObject({
+        messageKey: 'errors.department.similar_exists',
+        statusCode: 409,
+      });
+      expect(departmentRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should update anyway when confirm_similar is true', async () => {
+      const mockBeforeDepartment = {
+        id: 'dept-123',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        name: 'Old Department',
+        short_name: 'OLD',
+        department_type: 'CLINICAL',
+        is_active: true,
+      };
+      const mockUpdatedDepartment = {
+        ...mockBeforeDepartment,
+        name: 'Emergancy Departmnt',
+        short_name: 'OLD',
+      };
+      departmentRepository.findById.mockResolvedValue(mockBeforeDepartment);
+      departmentRepository.findMany.mockResolvedValue([
+        {
+          id: 'dept-1',
+          facility_id: 'facility-123',
+          name: 'Emergency Department',
+          short_name: 'ER',
+          department_type: 'CLINICAL',
+          is_active: true,
+        },
+      ]);
+      departmentRepository.update.mockResolvedValue(mockUpdatedDepartment);
+
+      const result = await updateDepartment('dept-123', {
+        name: 'Emergancy Departmnt',
+        department_type: 'CLINICAL',
+        confirm_similar: true,
+      });
+
+      expect(result).toMatchObject(mockUpdatedDepartment);
+      expect(departmentRepository.update).toHaveBeenCalledWith(
+        'dept-123',
+        expect.not.objectContaining({
+          confirm_similar: expect.anything(),
+        })
+      );
+    });
+
+    it('should exclude the edited department from similarity matches', async () => {
+      const mockBeforeDepartment = {
+        id: 'dept-123',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        name: 'Emergency Department',
+        short_name: 'ER',
+        department_type: 'CLINICAL',
+        is_active: true,
+      };
+      departmentRepository.findById.mockResolvedValue(mockBeforeDepartment);
+      departmentRepository.findMany.mockResolvedValue([mockBeforeDepartment]);
+      departmentRepository.update.mockResolvedValue(mockBeforeDepartment);
+
+      const result = await updateDepartment('dept-123', {
+        name: 'Emergency Department',
+      });
+
+      expect(result).toMatchObject(mockBeforeDepartment);
+      expect(departmentRepository.update).toHaveBeenCalled();
     });
 
     it('should propagate repository errors', async () => {
