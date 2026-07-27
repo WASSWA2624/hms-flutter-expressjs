@@ -74,6 +74,12 @@ describe('Role-Permission Schema Validation', () => {
       const result = rolePermissionIdParamsSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
     });
+
+    it('should validate friendly role-permission identifiers', () => {
+      const validData = { id: 'RP0001' };
+      const result = rolePermissionIdParamsSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('listRolePermissionsQuerySchema', () => {

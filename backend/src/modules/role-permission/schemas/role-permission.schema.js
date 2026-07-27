@@ -9,7 +9,6 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema,
   uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
@@ -42,7 +41,7 @@ const updateRolePermissionSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const rolePermissionIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================

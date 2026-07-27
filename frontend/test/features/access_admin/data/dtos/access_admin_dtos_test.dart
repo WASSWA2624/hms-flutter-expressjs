@@ -24,4 +24,38 @@ void main() {
     expect(lookups.permissions.first.id, 'PERM-1');
     expect(lookups.permissions.first.label, 'clinical:read');
   });
+
+  test('maps create-role Prisma payload to friendly display id', () {
+    final AccessAdminItem role = AccessAdminItemDto.fromJson(
+      <String, dynamic>{
+        'id': 'a84038ca-ed05-4a8b-9cde-a276de4e725f',
+        'human_friendly_id': 'ROL0000009',
+        'name': 'TESTING',
+        'display_name': 'testing',
+        'description': 'TESTING',
+        'tenant_id': 'tenant-uuid',
+        'facility_id': null,
+      },
+      AccessAdminResource.roles,
+    ).toEntity();
+
+    expect(role.id, 'ROL0000009');
+    expect(role.effectiveDisplayId, 'ROL0000009');
+    expect(role.mutationId, 'a84038ca-ed05-4a8b-9cde-a276de4e725f');
+    expect(role.resourceUuid, 'a84038ca-ed05-4a8b-9cde-a276de4e725f');
+    expect(role.isTenantScopedRole, isTrue);
+  });
+
+  test('maps permission lookup description into meta', () {
+    final AccessAdminLookupOption option = AccessAdminLookupOptionDto.fromJson(
+      <String, dynamic>{
+        'id': 'PRM0001',
+        'label': 'clinical:read',
+        'description': 'Read clinical records',
+      },
+    ).toEntity();
+
+    expect(option.id, 'PRM0001');
+    expect(option.meta, 'Read clinical records');
+  });
 }

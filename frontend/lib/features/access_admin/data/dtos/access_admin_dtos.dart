@@ -13,7 +13,12 @@ final class AccessAdminLookupOptionDto {
     return AccessAdminLookupOptionDto(
       id: _string(json['id']),
       label: _string(json['label']),
-      meta: _nullableString(json['facility_type'] ?? json['meta']),
+      meta: _nullableString(
+        json['description'] ??
+            json['display_name'] ??
+            json['facility_type'] ??
+            json['meta'],
+      ),
       permissionCount: _int(json['permission_count']),
     );
   }
@@ -212,11 +217,19 @@ final class AccessAdminItemDto {
     );
 
     return AccessAdminItem(
-      id: _string(json['id']),
+      id: _publicId(json),
       resource: resource,
-      displayId: _string(json['display_id'] ?? json['id']),
+      displayId: _string(
+        json['display_id'] ??
+            json['human_friendly_id'] ??
+            json['id'],
+      ),
       title: _titleForResource(),
-      resourceUuid: _nullableString(json['resource_uuid']),
+      resourceUuid:
+          _nullableString(json['resource_uuid']) ??
+          (resource == AccessAdminResource.roles
+              ? _uuidFallback(json)
+              : null),
       name: _nullableString(json['name']),
       displayName: _nullableString(json['display_name']),
       subtitle: _subtitleForResource(),
@@ -603,6 +616,29 @@ String _string(Object? value, {String fallback = ''}) {
 String? _nullableString(Object? value) {
   final String normalized = (value ?? '').toString().trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+/// Prefer human-friendly / display IDs for UI; keep raw UUID only as fallback.
+String _publicId(Map<String, dynamic> json) {
+  return _string(
+    json['display_id'] ?? json['human_friendly_id'] ?? json['id'],
+  );
+}
+
+/// Raw UUID when create/update still returns Prisma `id` without resource_uuid.
+String? _uuidFallback(Map<String, dynamic> json) {
+  final String? resourceUuid = _nullableString(json['resource_uuid']);
+  if (resourceUuid != null) {
+    return resourceUuid;
+  }
+  final String? rawId = _nullableString(json['id']);
+  if (rawId == null) {
+    return null;
+  }
+  final bool looksLikeUuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  ).hasMatch(rawId);
+  return looksLikeUuid ? rawId : null;
 }
 
 int _int(Object? value, {int fallback = 0}) {

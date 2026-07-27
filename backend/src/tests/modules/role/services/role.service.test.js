@@ -110,12 +110,27 @@ describe('Role Service', () => {
 
   describe('getRoleById', () => {
     it('should get role by ID', async () => {
-      const mockRole = { id: 'role-123', name: 'Admin' };
+      const mockRole = {
+        id: 'role-123',
+        human_friendly_id: 'ROL0001',
+        name: 'Admin',
+        display_name: 'Admin',
+        tenant_id: 'tenant-1',
+        facility_id: null
+      };
       roleRepository.findById.mockResolvedValue(mockRole);
 
       const result = await getRoleById('role-123', 'user-123', '127.0.0.1');
 
-      expect(result).toEqual(mockRole);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'ROL0001',
+          resource_uuid: 'role-123',
+          display_id: 'ROL0001',
+          name: 'Admin',
+          scope: 'tenant'
+        })
+      );
     });
 
     it('should throw HttpError when role not found', async () => {
@@ -128,7 +143,14 @@ describe('Role Service', () => {
 
   describe('createRole', () => {
     it('should create role and audit log', async () => {
-      const mockRole = { id: 'role-123', name: 'New Role' };
+      const mockRole = {
+        id: 'role-123',
+        human_friendly_id: 'ROL0001',
+        name: 'New Role',
+        display_name: 'New Role',
+        tenant_id: 'tenant-1',
+        facility_id: null
+      };
       roleRepository.findMany.mockResolvedValue([]);
       roleRepository.create.mockResolvedValue(mockRole);
 
@@ -143,7 +165,15 @@ describe('Role Service', () => {
         { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
       );
 
-      expect(result).toEqual(mockRole);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'ROL0001',
+          resource_uuid: 'role-123',
+          display_id: 'ROL0001',
+          name: 'New Role',
+          scope: 'tenant'
+        })
+      );
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-123',
         action: 'CREATE',
@@ -155,7 +185,14 @@ describe('Role Service', () => {
     });
 
     it('should create role with batched permission_ids', async () => {
-      const mockRole = { id: 'role-123', name: 'New Role' };
+      const mockRole = {
+        id: 'role-123',
+        human_friendly_id: 'ROL0001',
+        name: 'New Role',
+        display_name: 'New Role',
+        tenant_id: 'tenant-1',
+        facility_id: null
+      };
       roleRepository.findMany.mockResolvedValue([]);
       roleRepository.create.mockResolvedValue(mockRole);
       assertPermissionIdsAssignable.mockResolvedValue(['perm-1', 'perm-2']);
@@ -171,7 +208,13 @@ describe('Role Service', () => {
         { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
       );
 
-      expect(result).toEqual(mockRole);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'ROL0001',
+          resource_uuid: 'role-123',
+          display_id: 'ROL0001'
+        })
+      );
       expect(assertPermissionIdsAssignable).toHaveBeenCalledWith(
         ['perm-1', 'perm-2'],
         expect.objectContaining({ id: 'user-123' }),
@@ -319,7 +362,14 @@ describe('Role Service', () => {
     });
 
     it('should create anyway when confirm_similar is true', async () => {
-      const mockRole = { id: 'role-123', name: 'WARD CLRCK' };
+      const mockRole = {
+        id: 'role-123',
+        human_friendly_id: 'ROL0123',
+        name: 'WARD CLRCK',
+        display_name: 'Ward Clerck',
+        tenant_id: 'tenant-1',
+        facility_id: null
+      };
       roleRepository.findMany.mockResolvedValue([
         {
           id: 'role-1',
@@ -346,7 +396,13 @@ describe('Role Service', () => {
         { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
       );
 
-      expect(result).toEqual(mockRole);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'ROL0123',
+          resource_uuid: 'role-123',
+          display_id: 'ROL0123'
+        })
+      );
       expect(roleRepository.create).toHaveBeenCalledWith(
         expect.not.objectContaining({ confirm_similar: true }),
         []
@@ -372,7 +428,9 @@ describe('Role Service', () => {
     it('should create platform-scoped role for super admin', async () => {
       const mockRole = {
         id: 'role-platform',
+        human_friendly_id: 'ROLPLAT',
         name: 'PLATFORM SUPPORT',
+        display_name: 'Platform Support',
         tenant_id: null,
         facility_id: null
       };
@@ -391,7 +449,13 @@ describe('Role Service', () => {
         { id: 'user-123', roles: ['SUPER_ADMIN'] }
       );
 
-      expect(result).toEqual(mockRole);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'ROLPLAT',
+          resource_uuid: 'role-platform',
+          scope: 'platform'
+        })
+      );
       expect(roleRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           tenant_id: null,
@@ -405,7 +469,9 @@ describe('Role Service', () => {
     it('should honor scope=platform even when tenant_id was injected', async () => {
       const mockRole = {
         id: 'role-platform',
+        human_friendly_id: 'ROLPLAT',
         name: 'PLATFORM SUPPORT',
+        display_name: 'Platform Support',
         tenant_id: null,
         facility_id: null
       };
@@ -429,7 +495,13 @@ describe('Role Service', () => {
         }
       );
 
-      expect(result).toEqual(mockRole);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'ROLPLAT',
+          resource_uuid: 'role-platform',
+          scope: 'platform'
+        })
+      );
       expect(roleRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           tenant_id: null,
@@ -469,6 +541,7 @@ describe('Role Service', () => {
         permissions: []};
       const after = {
         id: 'role-123',
+        human_friendly_id: 'ROL0001',
         name: 'New Name',
         display_name: 'Old Name',
         description: null,
@@ -487,7 +560,15 @@ describe('Role Service', () => {
         { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
       );
 
-      expect(result).toEqual(after);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'ROL0001',
+          resource_uuid: 'role-123',
+          display_id: 'ROL0001',
+          name: 'New Name',
+          scope: 'tenant'
+        })
+      );
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-123',
         action: 'UPDATE',

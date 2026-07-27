@@ -18,11 +18,15 @@ const { HttpError } = require('@lib/errors');
  */
 const findById = async (id) => {
   try {
+    const identifier = String(id || '').trim();
+    if (!identifier) {
+      return null;
+    }
     return await prisma.role_permission.findFirst({
       where: {
-        id,
-        deleted_at: null
-      }
+        deleted_at: null,
+        OR: [{ id: identifier }, { human_friendly_id: identifier }],
+      },
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);

@@ -446,54 +446,18 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
     required String roleId,
     required List<String> permissionIds,
   }) async {
-    final Result<List<AccessAdminRolePermissionAssignment>> currentResult =
-        await listRolePermissions(roleId);
-    final List<AccessAdminRolePermissionAssignment> current = currentResult
-        .when(
-          success: (List<AccessAdminRolePermissionAssignment> value) => value,
-          failure: (_) => const <AccessAdminRolePermissionAssignment>[],
-        );
-    final Set<String> desiredPermissionIds = permissionIds.toSet();
-    final Set<String> currentPermissionIds = current
-        .map(
-          (AccessAdminRolePermissionAssignment assignment) =>
-              assignment.permissionId,
-        )
-        .whereType<String>()
-        .toSet();
-
-    AppFailure? lastFailure;
-    for (final AccessAdminRolePermissionAssignment assignment in current) {
-      final String? permissionId = assignment.permissionId;
-      if (permissionId == null || desiredPermissionIds.contains(permissionId)) {
-        continue;
-      }
-      final Result<void> result = await revokeRolePermission(assignment.id);
-      if (result case ResultFailure<void>(:final failure)) {
-        lastFailure ??= failure;
-      }
-    }
-
-    for (final String permissionId in desiredPermissionIds) {
-      if (currentPermissionIds.contains(permissionId)) {
-        continue;
-      }
-      final Result<void> result = await assignRolePermission(
-        AccessAdminRolePermissionDraft(
-          roleId: roleId,
-          permissionId: permissionId,
-        ),
-      );
-      if (result case ResultFailure<void>(:final failure)) {
-        lastFailure ??= failure;
-      }
-    }
-
-    if (lastFailure != null) {
-      return Result<void>.failure(lastFailure);
-    }
-    invalidateReferenceDataCache();
-    return const Result<void>.success(null);
+    // One PUT replaces N sequential role-permission POSTs/DELETEs and keeps
+    // backend assignability + soft-delete sync authoritative.
+    final Result<void> result = await _afterAccessMutation(
+      () => _apiClient.put<void>(
+        ApiEndpoints.byId(HmsApiResource.roles, roleId),
+        data: <String, Object?>{
+          'permission_ids': permissionIds,
+        },
+        decoder: (_) {},
+      ),
+    );
+    return result;
   }
 
   @override

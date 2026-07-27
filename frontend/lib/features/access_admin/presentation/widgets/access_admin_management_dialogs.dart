@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
@@ -1181,6 +1182,10 @@ class _ManageRolesPermissionsPanelState
         permissions: permissions,
         canWrite: canWrite,
         repository: repository,
+        catalogTenantId:
+            role.tenantId ??
+            tenantFilter ??
+            ref.read(sessionStateProvider).session?.user?.tenantId,
         onEdit: () {
           Navigator.of(dialogContext).pop();
           unawaited(_openEditRoleDialog(role));
@@ -1712,6 +1717,7 @@ class _AccessAdminRoleDetailDialog extends StatefulWidget {
     required this.repository,
     required this.onEdit,
     required this.onDelete,
+    this.catalogTenantId,
     this.onPermissionsChanged,
   });
 
@@ -1721,6 +1727,9 @@ class _AccessAdminRoleDetailDialog extends StatefulWidget {
   final AccessAdminRepository repository;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  /// Tenant used to load the assignable permission catalog when the role is
+  /// platform-scoped (`tenant_id` null) or the create payload lacked tenant.
+  final String? catalogTenantId;
   final VoidCallback? onPermissionsChanged;
 
   @override
@@ -1764,7 +1773,8 @@ class _AccessAdminRoleDetailDialogState
 
   Future<void> _addPermissions() async {
     final AppLocalizations l10n = context.l10n;
-    final String? tenantId = widget.role.tenantId?.trim();
+    final String? tenantId =
+        (widget.role.tenantId ?? widget.catalogTenantId)?.trim();
     if (tenantId == null || tenantId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.accessAdminTenantContextRequiredBody)),
@@ -1773,12 +1783,13 @@ class _AccessAdminRoleDetailDialogState
     }
 
     setState(() => _saving = true);
+    // Prefer cached catalog; force-refresh made Add permissions feel hung on
+    // every open while ensureTenantPermissionCatalog ran.
     final Result<AccessAdminLookups> lookupResult = await widget.repository
         .getReferenceData(
           tenantId: tenantId,
           facilityId: widget.role.facilityId,
           include: const <String>['permissions'],
-          forceRefresh: true,
         );
     if (!mounted) {
       return;
@@ -1872,8 +1883,11 @@ class _AccessAdminRoleDetailDialogState
     }
 
     setState(() => _saving = true);
+    final String syncRoleId = widget.role.mutationId.trim().isNotEmpty
+        ? widget.role.mutationId
+        : widget.role.id;
     final Result<void> syncResult = await widget.repository.syncRolePermissions(
-      roleId: widget.role.mutationId,
+      roleId: syncRoleId,
       permissionIds: selectedIds.toList(growable: false),
     );
     if (!mounted) {
@@ -1892,7 +1906,7 @@ class _AccessAdminRoleDetailDialogState
     }
 
     final Result<List<AccessAdminRolePermissionAssignment>> reloadResult =
-        await widget.repository.listRolePermissions(widget.role.id);
+        await widget.repository.listRolePermissions(syncRoleId);
     if (!mounted) {
       return;
     }

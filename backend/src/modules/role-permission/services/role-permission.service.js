@@ -260,14 +260,14 @@ const deleteRolePermission = async (id, userId, ipAddress, actor = null) => {
       await assertRoleIdAssignable(before.role_id, actor);
     }
 
-    await rolePermissionRepository.softDelete(id);
+    await rolePermissionRepository.softDelete(before.id);
 
     // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
       entity: 'role_permission',
-      entity_id: id,
+      entity_id: before.id,
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});

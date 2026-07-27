@@ -125,6 +125,35 @@ void main() {
     );
   });
 
+  test('role details sync permissions through a single role update', () {
+    final String repositorySource = File(
+      'lib/features/access_admin/data/repositories/access_admin_repository_impl.dart',
+    ).readAsStringSync();
+    expect(repositorySource.contains("'permission_ids': permissionIds"), isTrue);
+    expect(
+      repositorySource.contains('ApiEndpoints.byId(HmsApiResource.roles, roleId)'),
+      isTrue,
+    );
+  });
+
+  test('role details avoid force-refreshing the permission catalog', () {
+    final String addPermissionsSource = managementSource.substring(
+      managementSource.indexOf('Future<void> _addPermissions() async {'),
+      managementSource.indexOf('Widget build(BuildContext context) {',
+          managementSource.indexOf('Future<void> _addPermissions() async {')),
+    );
+    expect(
+      addPermissionsSource.contains("include: const <String>['permissions']"),
+      isTrue,
+    );
+    expect(
+      addPermissionsSource.contains('forceRefresh: true'),
+      isFalse,
+      reason: 'Add permissions must not re-sync the catalog on every open',
+    );
+    expect(managementSource.contains('catalogTenantId'), isTrue);
+  });
+
   test('similarity acceptance is scoped to each submitted draft', () {
     expect(
       dialogsSource.contains('var similarityAccepted = draft.confirmSimilar;'),

@@ -296,7 +296,7 @@ const getRoleById = async (id, userId, ipAddress) => {
       throw new HttpError('errors.role.not_found', 404);
     }
 
-    return role;
+    return serializeAccessAdminRoleEntity(role);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -351,7 +351,7 @@ const createRole = async (data, userId, ipAddress, actor = null) => {
       userId
     );
 
-    return role;
+    return serializeAccessAdminRoleEntity(role);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -488,7 +488,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       userId
     );
 
-    return role;
+    return serializeAccessAdminRoleEntity(role);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

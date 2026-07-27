@@ -48,16 +48,26 @@ const serializeAccessAdminRoleEntity = (record) => {
       id: safePublicId(permission.human_friendly_id, permission.id),
       name: permission.name
     }));
+  const permissionCount =
+    typeof record._count?.permissions === 'number'
+      ? record._count.permissions
+      : permissions.length;
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
     display_id: safePublicId(record.human_friendly_id, record.id),
     name: record.name,
     display_name: record.display_name || record.name,
     description: record.description || null,
-    tenant_id: safePublicId(record.tenant_id),
-    facility_id: safePublicId(record.facility_id),
-    permission_count: permissions.length,
+    tenant_id: safePublicId(record.tenant_id) || record.tenant_id || null,
+    facility_id: safePublicId(record.facility_id) || record.facility_id || null,
+    scope: record.facility_id
+      ? 'facility'
+      : record.tenant_id
+        ? 'tenant'
+        : 'platform',
+    permission_count: permissionCount,
     permissions,
     user_count: record._count?.users || 0,
     updated_at: record.updated_at || null
