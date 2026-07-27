@@ -37,7 +37,8 @@ Future<RoleSimilarityDialogResult> showRoleSimilarityDialog(
       .take(5)
       .toList(growable: false);
   final bool hasExactNameConflict = visibleMatches.any(
-    (RoleSimilarityMatch match) => match.exactNameConflict,
+    (RoleSimilarityMatch match) =>
+        match.exactNameConflict || match.exactDisplayNameConflict,
   );
   final bool hasMatches = visibleMatches.isNotEmpty;
   final bool canProceed = allowProceed && !hasExactNameConflict;

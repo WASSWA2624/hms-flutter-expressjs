@@ -1,6 +1,9 @@
 const {
   checkRoleDuplicates,
-  compositeSimilarityScore
+  compositeSimilarityScore,
+  normalizeRoleCompactKey,
+  normalizeRoleSortedTokens,
+  scoreTextPair
 } = require('@lib/role/role-similarity');
 
 describe('role-similarity', () => {
@@ -28,6 +31,18 @@ describe('role-similarity', () => {
     expect(nameHeavy).toBeGreaterThan(descriptionHeavy);
   });
 
+  it('normalizes compact and sorted identity keys', () => {
+    expect(normalizeRoleCompactKey('WARD_CLERK')).toBe('wardclerk');
+    expect(normalizeRoleCompactKey('Ward Clerk')).toBe('wardclerk');
+    expect(normalizeRoleSortedTokens('Clerk Ward')).toBe('clerk ward');
+    expect(normalizeRoleSortedTokens('Ward Clerk')).toBe('clerk ward');
+  });
+
+  it('scores compact and reordered identity pairs highly', () => {
+    expect(scoreTextPair('ward clerk', 'wardclerk')).toBe(100);
+    expect(scoreTextPair('ward clerk', 'clerk ward')).toBe(100);
+  });
+
   it('detects exact name conflict within the same scope', () => {
     const result = checkRoleDuplicates({
       name: 'WARD CLERK',
@@ -42,18 +57,82 @@ describe('role-similarity', () => {
     expect(result.similarMatches[0].isExact).toBe(true);
   });
 
+  it('detects compact-key exact conflicts (WARDCLERK vs Ward Clerk)', () => {
+    const result = checkRoleDuplicates({
+      name: 'WARDCLERK',
+      displayName: 'Desk Aide',
+      description: 'Different description',
+      facilityId: null,
+      existing
+    });
+
+    expect(result.hasExactConflict).toBe(true);
+    expect(result.similarMatches[0].isExact).toBe(true);
+  });
+
+  it('detects reordered display-name conflicts', () => {
+    const result = checkRoleDuplicates({
+      name: 'FRONT DESK',
+      displayName: 'Clerk Ward',
+      description: 'Other duties',
+      facilityId: null,
+      existing
+    });
+
+    expect(result.hasExactConflict).toBe(true);
+    expect(result.similarMatches.some((match) => match.exactDisplayNameConflict || match.isExact)).toBe(true);
+  });
+
+  it('detects cross-field identity when name matches existing display name', () => {
+    const result = checkRoleDuplicates({
+      name: 'Ward Clerk',
+      displayName: 'Desk Support',
+      description: 'Other',
+      facilityId: null,
+      existing
+    });
+
+    expect(result.hasExactConflict).toBe(true);
+    expect(result.similarMatches[0].crossIdentityScore).toBe(100);
+  });
+
   it('returns overridable similar matches for near names', () => {
     const result = checkRoleDuplicates({
       name: 'WARD CLRCK',
-      displayName: 'Ward Clerk',
+      displayName: 'Ward Clerck',
+      description: 'Front desk ward suport',
+      facilityId: null,
+      existing
+    });
+
+    expect(result.hasExactConflict).toBe(false);
+    expect(result.overridableMatches.length).toBeGreaterThan(0);
+    expect(result.overridableMatches[0].score).toBeGreaterThanOrEqual(72);
+  });
+
+  it('flags description-led near matches with supporting identity', () => {
+    const result = checkRoleDuplicates({
+      name: 'WARD AID',
+      displayName: 'Ward Aide',
       description: 'Front desk ward support',
       facilityId: null,
       existing
     });
 
-    expect(result.exactNameConflict).toBe(false);
-    expect(result.overridableMatches.length).toBeGreaterThan(0);
-    expect(result.overridableMatches[0].score).toBeGreaterThanOrEqual(80);
+    expect(result.similarMatches.length).toBeGreaterThan(0);
+    expect(result.similarMatches[0].descriptionScore).toBeGreaterThanOrEqual(85);
+  });
+
+  it('flags soft composite near-matches below the hard 80 threshold', () => {
+    const result = checkRoleDuplicates({
+      name: 'WARD SUPPORT',
+      displayName: 'Ward Support Clerk',
+      description: 'Helps at front desk',
+      facilityId: null,
+      existing
+    });
+
+    expect(result.similarMatches.length).toBeGreaterThan(0);
   });
 
   it('ignores peers outside the facility scope', () => {

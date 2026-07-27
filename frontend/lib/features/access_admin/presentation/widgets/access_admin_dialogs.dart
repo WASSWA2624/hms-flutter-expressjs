@@ -301,12 +301,16 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
           facilityId: pending.facilityId,
           existing: peers,
         );
-        final List<RoleSimilarityMatch> reviewMatches = check.exactNameConflict
+        final List<RoleSimilarityMatch> reviewMatches = check.hasExactConflict
             ? check.similarMatches
-                  .where((RoleSimilarityMatch match) => match.exactNameConflict)
+                  .where(
+                    (RoleSimilarityMatch match) =>
+                        match.exactNameConflict ||
+                        match.exactDisplayNameConflict,
+                  )
                   .toList(growable: false)
             : check.overridableMatches;
-        if (reviewMatches.isNotEmpty || check.exactNameConflict) {
+        if (reviewMatches.isNotEmpty || check.hasExactConflict) {
           final RoleSimilarityDialogResult review =
               await showRoleSimilarityDialog(
                 context,
@@ -316,7 +320,7 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
                   description: pending.description,
                 ),
                 matches: reviewMatches,
-                allowProceed: !check.exactNameConflict,
+                allowProceed: !check.hasExactConflict,
               );
           if (!context.mounted) {
             return AppFailure.validation();

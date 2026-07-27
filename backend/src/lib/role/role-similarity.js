@@ -1,8 +1,9 @@
 /**
  * Role duplicate / similarity helpers.
  *
- * Scope-matched weighted similarity across name, display name, and description.
- * Reuses tenant-similarity text scoring primitives.
+ * Scope-matched, multi-signal similarity across name, display name, and
+ * description — including cross-field identity, compact keys, and sorted
+ * token bags. Reuses tenant-similarity text scoring primitives.
  */
 
 const {
@@ -11,9 +12,18 @@ const {
   textSimilarityScore
 } = require('@lib/tenant/tenant-similarity');
 
-const NAME_WEIGHT = 50;
-const DISPLAY_NAME_WEIGHT = 30;
+/** Soft floor for review when at least one field is strongly similar. */
+const REVIEW_COMPOSITE_THRESHOLD = 72;
+/** Field strength required to open a soft composite review. */
+const REVIEW_FIELD_THRESHOLD = 75;
+/** Description-led review when identity fields are only moderately close. */
+const DESCRIPTION_LED_THRESHOLD = 85;
+const IDENTITY_SUPPORT_THRESHOLD = 60;
+
+const NAME_WEIGHT = 45;
+const DISPLAY_NAME_WEIGHT = 35;
 const DESCRIPTION_WEIGHT = 20;
+const CROSS_IDENTITY_WEIGHT = 25;
 
 const comparisonStatus = (score, { exact = false } = {}) => {
   if (exact || score === 100) return 'MATCH';
@@ -34,11 +44,65 @@ const buildCandidateSnapshot = (role) => ({
   description: role?.description || null
 });
 
+/**
+ * Compact identity key: lowercase alphanumerics only (no spaces).
+ * Catches WARDCLERK vs "ward clerk" / "WARD_CLERK".
+ */
+const normalizeRoleCompactKey = (value) =>
+  normalizeText(value).replace(/\s+/g, '');
+
+/**
+ * Order-insensitive token bag for "Ward Clerk" vs "Clerk Ward".
+ */
+const normalizeRoleSortedTokens = (value) => {
+  const normalized = normalizeText(value);
+  if (!normalized) return '';
+  return normalized.split(/\s+/).filter(Boolean).sort().join(' ');
+};
+
+const scoreTextPair = (left, right) => {
+  if (!left || !right) return null;
+  if (left === right) return 100;
+
+  const direct = textSimilarityScore(left, right);
+  const compactLeft = normalizeRoleCompactKey(left);
+  const compactRight = normalizeRoleCompactKey(right);
+  const compact =
+    compactLeft && compactRight
+      ? compactLeft === compactRight
+        ? 100
+        : textSimilarityScore(compactLeft, compactRight)
+      : 0;
+
+  const sortedLeft = normalizeRoleSortedTokens(left);
+  const sortedRight = normalizeRoleSortedTokens(right);
+  const sorted =
+    sortedLeft && sortedRight
+      ? sortedLeft === sortedRight
+        ? 100
+        : textSimilarityScore(sortedLeft, sortedRight)
+      : 0;
+
+  return Math.max(direct, compact, sorted);
+};
+
+const isExactTextMatch = (left, right) => {
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (normalizeRoleCompactKey(left) === normalizeRoleCompactKey(right)) {
+    return true;
+  }
+  const sortedLeft = normalizeRoleSortedTokens(left);
+  const sortedRight = normalizeRoleSortedTokens(right);
+  return Boolean(sortedLeft) && sortedLeft === sortedRight;
+};
+
 const compositeSimilarityScore = (scores = {}) => {
   const weighted = [
     [scores.nameScore, NAME_WEIGHT],
     [scores.displayNameScore, DISPLAY_NAME_WEIGHT],
-    [scores.descriptionScore, DESCRIPTION_WEIGHT]
+    [scores.descriptionScore, DESCRIPTION_WEIGHT],
+    [scores.crossIdentityScore, CROSS_IDENTITY_WEIGHT]
   ];
 
   let weightedTotal = 0;
@@ -74,6 +138,12 @@ const sameScopeFacility = (left, right) => {
   return leftId === rightId;
 };
 
+const maxScore = (...scores) => {
+  const present = scores.filter((score) => score != null);
+  if (!present.length) return null;
+  return Math.max(...present);
+};
+
 /**
  * @param {Object} params
  * @param {string} params.name
@@ -97,6 +167,7 @@ const checkRoleDuplicates = ({
   const excludeId = String(excludeRoleId || '').trim();
 
   let exactNameConflict = false;
+  let exactDisplayNameConflict = false;
   const matches = [];
 
   for (const role of existing) {
@@ -121,26 +192,33 @@ const checkRoleDuplicates = ({
     const roleDisplayName = normalizeText(snapshot.display_name);
     const roleDescription = normalizeText(snapshot.description);
 
-    const nameExact = Boolean(normalizedName) && roleName === normalizedName;
-    const displayNameExact =
-      Boolean(normalizedDisplayName) &&
-      Boolean(roleDisplayName) &&
-      roleDisplayName === normalizedDisplayName;
-    const descriptionExact =
-      Boolean(normalizedDescription) &&
-      Boolean(roleDescription) &&
-      roleDescription === normalizedDescription;
+    const nameExact = isExactTextMatch(normalizedName, roleName);
+    const displayNameExact = isExactTextMatch(
+      normalizedDisplayName,
+      roleDisplayName
+    );
+    const descriptionExact = isExactTextMatch(
+      normalizedDescription,
+      roleDescription
+    );
+    const nameMatchesCandidateDisplay = isExactTextMatch(
+      normalizedName,
+      roleDisplayName
+    );
+    const displayMatchesCandidateName = isExactTextMatch(
+      normalizedDisplayName,
+      roleName
+    );
 
     let nameScore = null;
     let displayNameScore = null;
     let descriptionScore = null;
+    let crossIdentityScore = null;
     const reasons = [];
 
     if (normalizedName && roleName) {
-      nameScore = nameExact
-        ? 100
-        : textSimilarityScore(normalizedName, roleName);
-      if (nameExact || nameScore >= SIMILARITY_THRESHOLD) {
+      nameScore = nameExact ? 100 : scoreTextPair(normalizedName, roleName);
+      if (nameExact || (nameScore != null && nameScore >= REVIEW_FIELD_THRESHOLD)) {
         reasons.push('name');
       }
     }
@@ -148,8 +226,11 @@ const checkRoleDuplicates = ({
     if (normalizedDisplayName && roleDisplayName) {
       displayNameScore = displayNameExact
         ? 100
-        : textSimilarityScore(normalizedDisplayName, roleDisplayName);
-      if (displayNameExact || displayNameScore >= SIMILARITY_THRESHOLD) {
+        : scoreTextPair(normalizedDisplayName, roleDisplayName);
+      if (
+        displayNameExact ||
+        (displayNameScore != null && displayNameScore >= REVIEW_FIELD_THRESHOLD)
+      ) {
         reasons.push('display_name');
       }
     }
@@ -157,17 +238,68 @@ const checkRoleDuplicates = ({
     if (normalizedDescription && roleDescription) {
       descriptionScore = descriptionExact
         ? 100
-        : textSimilarityScore(normalizedDescription, roleDescription);
-      if (descriptionExact || descriptionScore >= SIMILARITY_THRESHOLD) {
+        : scoreTextPair(normalizedDescription, roleDescription);
+      if (
+        descriptionExact ||
+        (descriptionScore != null &&
+          descriptionScore >= REVIEW_FIELD_THRESHOLD)
+      ) {
         reasons.push('description');
       }
+    }
+
+    // Cross-field identity: machine name ↔ human display name.
+    const crossScores = [];
+    if (normalizedName && roleDisplayName) {
+      crossScores.push(
+        nameMatchesCandidateDisplay
+          ? 100
+          : scoreTextPair(normalizedName, roleDisplayName)
+      );
+    }
+    if (normalizedDisplayName && roleName) {
+      crossScores.push(
+        displayMatchesCandidateName
+          ? 100
+          : scoreTextPair(normalizedDisplayName, roleName)
+      );
+    }
+    if (normalizedName && normalizedDisplayName && roleName && roleDisplayName) {
+      // Combined identity strings (name+display) catch reordered labels.
+      const inputIdentity = normalizeText(
+        `${normalizedName} ${normalizedDisplayName}`
+      );
+      const candidateIdentity = normalizeText(
+        `${roleName} ${roleDisplayName}`
+      );
+      crossScores.push(scoreTextPair(inputIdentity, candidateIdentity));
+    }
+    crossIdentityScore = maxScore(...crossScores);
+    if (
+      crossIdentityScore != null &&
+      crossIdentityScore >= REVIEW_FIELD_THRESHOLD
+    ) {
+      reasons.push('cross_identity');
     }
 
     const score = compositeSimilarityScore({
       nameScore,
       displayNameScore,
-      descriptionScore
+      descriptionScore,
+      crossIdentityScore
     });
+
+    const strongestIdentity = maxScore(
+      nameScore,
+      displayNameScore,
+      crossIdentityScore
+    );
+    const strongestField = maxScore(
+      nameScore,
+      displayNameScore,
+      descriptionScore,
+      crossIdentityScore
+    );
 
     const fieldComparisons = [
       buildFieldComparison({
@@ -192,6 +324,21 @@ const checkRoleDuplicates = ({
         exact: descriptionExact
       }),
       buildFieldComparison({
+        field: 'cross_identity',
+        inputValue:
+          [name, displayName].filter((value) => String(value || '').trim())
+            .join(' / ') || null,
+        candidateValue:
+          [snapshot.name, snapshot.display_name]
+            .filter((value) => String(value || '').trim())
+            .join(' / ') || null,
+        score: crossIdentityScore,
+        exact:
+          nameMatchesCandidateDisplay ||
+          displayMatchesCandidateName ||
+          (crossIdentityScore === 100)
+      }),
+      buildFieldComparison({
         field: 'display_id',
         inputValue: null,
         candidateValue: snapshot.display_id,
@@ -203,46 +350,92 @@ const checkRoleDuplicates = ({
     if (nameExact) {
       exactNameConflict = true;
     }
+    if (displayNameExact || nameMatchesCandidateDisplay || displayMatchesCandidateName) {
+      // Treat swapped/exact display identity as a hard conflict too.
+      if (displayNameExact) {
+        exactDisplayNameConflict = true;
+      }
+      if (nameMatchesCandidateDisplay || displayMatchesCandidateName) {
+        exactNameConflict = true;
+      }
+    }
 
-    const isExact = nameExact;
+    const isExact =
+      nameExact ||
+      displayNameExact ||
+      nameMatchesCandidateDisplay ||
+      displayMatchesCandidateName;
+
     const strongIdentitySignal =
-      (nameScore != null && nameScore >= SIMILARITY_THRESHOLD) ||
-      (displayNameScore != null && displayNameScore >= SIMILARITY_THRESHOLD);
+      (strongestIdentity != null &&
+        strongestIdentity >= SIMILARITY_THRESHOLD);
+    const strongFieldSignal =
+      strongestField != null && strongestField >= SIMILARITY_THRESHOLD;
     const compositeSignal = score >= SIMILARITY_THRESHOLD;
+    const softCompositeSignal =
+      score >= REVIEW_COMPOSITE_THRESHOLD &&
+      strongestField != null &&
+      strongestField >= REVIEW_FIELD_THRESHOLD;
+    const descriptionLedSignal =
+      descriptionScore != null &&
+      descriptionScore >= DESCRIPTION_LED_THRESHOLD &&
+      strongestIdentity != null &&
+      strongestIdentity >= IDENTITY_SUPPORT_THRESHOLD;
 
-    if (!isExact && !strongIdentitySignal && !compositeSignal) {
+    if (
+      !isExact &&
+      !strongIdentitySignal &&
+      !strongFieldSignal &&
+      !compositeSignal &&
+      !softCompositeSignal &&
+      !descriptionLedSignal
+    ) {
       continue;
     }
 
     matches.push({
       ...snapshot,
       score,
-      reasons: reasons.length ? reasons : ['name'],
+      reasons: reasons.length ? [...new Set(reasons)] : ['name'],
       isExact,
-      exactNameConflict: nameExact,
+      exactNameConflict: nameExact || nameMatchesCandidateDisplay || displayMatchesCandidateName,
+      exactDisplayNameConflict: displayNameExact,
       nameScore,
       displayNameScore,
       descriptionScore,
+      crossIdentityScore,
       field_comparisons: fieldComparisons
     });
   }
 
   matches.sort((left, right) => right.score - left.score);
 
+  const hasExactConflict = exactNameConflict || exactDisplayNameConflict;
+
   return {
-    exactNameConflict,
-    hasExactConflict: exactNameConflict,
+    exactNameConflict: hasExactConflict,
+    exactDisplayNameConflict,
+    hasExactConflict,
     similarMatches: matches,
     nonExactSimilarMatches: matches.filter((match) => !match.isExact),
-    overridableMatches: matches.filter((match) => !match.exactNameConflict)
+    overridableMatches: matches.filter(
+      (match) => !match.exactNameConflict && !match.exactDisplayNameConflict
+    )
   };
 };
 
 module.exports = {
   SIMILARITY_THRESHOLD,
+  REVIEW_COMPOSITE_THRESHOLD,
+  REVIEW_FIELD_THRESHOLD,
+  DESCRIPTION_LED_THRESHOLD,
   NAME_WEIGHT,
   DISPLAY_NAME_WEIGHT,
   DESCRIPTION_WEIGHT,
+  CROSS_IDENTITY_WEIGHT,
+  normalizeRoleCompactKey,
+  normalizeRoleSortedTokens,
+  scoreTextPair,
   compositeSimilarityScore,
   checkRoleDuplicates,
   buildCandidateSnapshot

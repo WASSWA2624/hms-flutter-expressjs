@@ -28,7 +28,7 @@ const {
 const { checkRoleDuplicates } = require('@lib/role/role-similarity');
 
 const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
-const ROLE_SIMILARITY_LOOKUP_LIMIT = 200;
+const ROLE_SIMILARITY_LOOKUP_LIMIT = 500;
 
 const stripSimilarityPayloadFields = (data = {}) => {
   const { confirm_similar: _confirmSimilar, ...payload } = data;

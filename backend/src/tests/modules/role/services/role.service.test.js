@@ -200,7 +200,7 @@ describe('Role Service', () => {
         createRole(
           {
             name: 'WARD CLRCK',
-            display_name: 'Ward Clerk',
+            display_name: 'Ward Clerck',
             description: 'Front desk',
             tenant_id: 'tenant-1'
           },
@@ -233,7 +233,7 @@ describe('Role Service', () => {
       const result = await createRole(
         {
           name: 'WARD CLRCK',
-          display_name: 'Ward Clerk',
+          display_name: 'Ward Clerck',
           description: 'Front desk',
           tenant_id: 'tenant-1',
           confirm_similar: true
