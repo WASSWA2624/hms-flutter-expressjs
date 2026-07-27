@@ -27396,6 +27396,14 @@
   "@accessAdminEmailLabel": {
     "description": "Access admin email field label."
   },
+  "accessAdminFirstNameLabel": "First name",
+  "@accessAdminFirstNameLabel": {
+    "description": "Access admin first name field label."
+  },
+  "accessAdminLastNameLabel": "Last name",
+  "@accessAdminLastNameLabel": {
+    "description": "Access admin last name field label."
+  },
   "accessAdminPositionLabel": "Position title",
   "@accessAdminPositionLabel": {
     "description": "Access admin position field label."

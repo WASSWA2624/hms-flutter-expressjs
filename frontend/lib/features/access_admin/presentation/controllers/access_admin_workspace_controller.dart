@@ -317,10 +317,29 @@ final class AccessAdminWorkspaceController
       id: id,
       resource: AccessAdminResource.users,
       displayId: id,
-      title: draft.email,
+      title: <String?>[draft.firstName, draft.lastName]
+              .whereType<String>()
+              .map((String value) => value.trim())
+              .where((String value) => value.isNotEmpty)
+              .join(' ')
+              .trim()
+              .isEmpty
+          ? draft.email
+          : <String?>[draft.firstName, draft.lastName]
+                .whereType<String>()
+                .map((String value) => value.trim())
+                .where((String value) => value.isNotEmpty)
+                .join(' '),
       email: draft.email,
       phone: draft.phone,
       positionTitle: draft.positionTitle,
+      firstName: draft.firstName,
+      lastName: draft.lastName,
+      profileName: <String?>[draft.firstName, draft.lastName]
+          .whereType<String>()
+          .map((String value) => value.trim())
+          .where((String value) => value.isNotEmpty)
+          .join(' '),
       status: draft.status,
       tenantId: draft.tenantId,
       facilityId: draft.facilityId,
@@ -683,6 +702,13 @@ final class AccessAdminWorkspaceController
               'id': id,
               'display_id': id,
               'email': draft.email,
+              'first_name': draft.firstName,
+              'last_name': draft.lastName,
+              'profile_name': <String?>[draft.firstName, draft.lastName]
+                  .whereType<String>()
+                  .map((String value) => value.trim())
+                  .where((String value) => value.isNotEmpty)
+                  .join(' '),
               'position_title': draft.positionTitle,
               'status': draft.status,
               'tenant_id': draft.tenantId,

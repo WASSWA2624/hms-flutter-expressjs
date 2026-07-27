@@ -39508,6 +39508,18 @@ abstract class AppLocalizations {
   /// **'Email'**
   String get accessAdminEmailLabel;
 
+  /// Access admin first name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get accessAdminFirstNameLabel;
+
+  /// Access admin last name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get accessAdminLastNameLabel;
+
   /// Access admin position field label.
   ///
   /// In en, this message translates to:

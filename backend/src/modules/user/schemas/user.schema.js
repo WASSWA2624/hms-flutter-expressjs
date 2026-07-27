@@ -38,6 +38,8 @@ const permissionIdsSchema = z
 const createUserSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  first_name: z.string().trim().min(1).max(120),
+  last_name: z.string().trim().min(1).max(120).optional().nullable(),
   position_title: z.string().trim().min(1).max(120),
   email: z.string().trim().email().max(255),
   phone: z.string().trim().min(1).max(40).optional().nullable(),
@@ -54,6 +56,8 @@ const createUserSchema = z.object({
  */
 const updateUserSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  first_name: z.string().trim().min(1).max(120).optional(),
+  last_name: z.string().trim().min(1).max(120).optional().nullable(),
   position_title: z.string().trim().min(1).max(120).optional(),
   email: z.string().trim().email().max(255).optional(),
   phone: z.string().trim().min(1).max(40).optional().nullable(),

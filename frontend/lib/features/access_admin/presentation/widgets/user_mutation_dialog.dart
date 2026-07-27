@@ -60,6 +60,12 @@ Future<bool?> showUserMutationDialog({
   final TextEditingController emailController = TextEditingController(
     text: initialUser?.email,
   );
+  final TextEditingController firstNameController = TextEditingController(
+    text: initialUser?.firstName,
+  );
+  final TextEditingController lastNameController = TextEditingController(
+    text: initialUser?.lastName,
+  );
   final TextEditingController phoneController = TextEditingController(
     text: initialUser?.phone,
   );
@@ -269,6 +275,7 @@ Future<bool?> showUserMutationDialog({
     submitIcon: Icons.save_outlined,
     cancelIcon: Icons.close_outlined,
     maxWidth: 720,
+    scrollable: true,
     buildFields:
         (
           BuildContext context,
@@ -334,6 +341,7 @@ Future<bool?> showUserMutationDialog({
                 children: <Widget>[
                   AppFormSection(
                     density: AppFormSectionDensity.compact,
+                    framed: false,
                     title: l10n.accessAdminCreateRoleScopeSectionTitle,
                     children: <Widget>[
                       if (showTenantPicker &&
@@ -506,8 +514,32 @@ Future<bool?> showUserMutationDialog({
                   SizedBox(height: Theme.of(context).spacing.md),
                   AppFormSection(
                     density: AppFormSectionDensity.compact,
+                    framed: false,
                     title: l10n.accessAdminCreateUserDetailsSectionTitle,
                     children: <Widget>[
+                      _UserMutationReasonedField(
+                        reason: detailsDisabledReason,
+                        child: AppResponsiveFieldRow.two(
+                          gap: AppResponsiveFieldRowGap.form,
+                          breakpoint: 560,
+                          left: AppTextField(
+                            controller: firstNameController,
+                            enabled: fieldsEnabled,
+                            labelText: l10n.accessAdminFirstNameLabel,
+                            isRequired: true,
+                            textCapitalization: TextCapitalization.words,
+                            validator: AppValidators.requiredText(
+                              l10n.validationRequired,
+                            ),
+                          ),
+                          right: AppTextField(
+                            controller: lastNameController,
+                            enabled: fieldsEnabled,
+                            labelText: l10n.accessAdminLastNameLabel,
+                            textCapitalization: TextCapitalization.words,
+                          ),
+                        ),
+                      ),
                       _UserMutationReasonedField(
                         reason: detailsDisabledReason,
                         child: AppResponsiveFieldRow.two(
@@ -608,6 +640,7 @@ Future<bool?> showUserMutationDialog({
                     SizedBox(height: Theme.of(context).spacing.md),
                     AppFormSection(
                       density: AppFormSectionDensity.compact,
+                      framed: false,
                       title: l10n.hrAccessAssignedRolesLabel,
                       children: <Widget>[
                         if (roleOptions.isNotEmpty)
@@ -674,6 +707,7 @@ Future<bool?> showUserMutationDialog({
                     SizedBox(height: Theme.of(context).spacing.md),
                     AppFormSection(
                       density: AppFormSectionDensity.compact,
+                      framed: false,
                       title: l10n.hrAccessDirectPermissionsLabel,
                       children: <Widget>[
                         if (permissionOptions.isNotEmpty)
@@ -747,6 +781,10 @@ Future<bool?> showUserMutationDialog({
         AccessAdminUserDraft(
           tenantId: resolvedTenantId!,
           facilityId: resolvedFacilityId,
+          firstName: firstNameController.text.trim(),
+          lastName: lastNameController.text.trim().isEmpty
+              ? null
+              : lastNameController.text.trim(),
           email: emailController.text.trim(),
           phone: phoneController.text.trim().isEmpty
               ? null
@@ -762,6 +800,8 @@ Future<bool?> showUserMutationDialog({
   );
 
   emailController.dispose();
+  firstNameController.dispose();
+  lastNameController.dispose();
   phoneController.dispose();
   titleController.dispose();
   passwordController.dispose();

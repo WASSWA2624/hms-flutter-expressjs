@@ -72,6 +72,8 @@ describe('User Service', () => {
         }),
         expect.any(Number),
         expect.any(Number),
+        expect.any(Object),
+        expect.any(Object),
         expect.any(Object)
       );
     });
@@ -93,6 +95,8 @@ describe('User Service', () => {
         }),
         expect.any(Number),
         expect.any(Number),
+        expect.any(Object),
+        expect.any(Object),
         expect.any(Object)
       );
     });
@@ -115,6 +119,8 @@ describe('User Service', () => {
         expect.any(Object),
         10, // skip: (2-1) * 10
         10,
+        expect.any(Object),
+        expect.any(Object),
         expect.any(Object)
       );
     });
@@ -129,7 +135,9 @@ describe('User Service', () => {
         expect.any(Object),
         expect.any(Number),
         expect.any(Number),
-        { email: 'desc' }
+        { email: 'desc' },
+        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -143,7 +151,9 @@ describe('User Service', () => {
         expect.any(Object),
         expect.any(Number),
         expect.any(Number),
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -229,6 +239,8 @@ describe('User Service', () => {
       tenant_id: '550e8400-e29b-41d4-a716-446655440000',
       position_title: 'Charge Nurse',
       email: 'newuser@example.com',
+      first_name: 'New',
+      last_name: 'User',
       password_hash: '$2b$10$abcdefghijklmnopqrstuvwxyz',
       status: 'ACTIVE'
     };
@@ -252,7 +264,17 @@ describe('User Service', () => {
       const result = await userService.createUser(userData, 'creator-id', '127.0.0.1');
 
       expect(result).toEqual(createdUser);
-      expect(userRepository.create).toHaveBeenCalledWith(userData);
+      // first_name/last_name are folded into a nested profile on persistence.
+      expect(userRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: userData.tenant_id,
+          position_title: 'Charge Nurse',
+          email: 'newuser@example.com',
+          status: 'ACTIVE',
+          profile: { first_name: 'New', last_name: 'User' }
+        })
+      );
+      expect(userRepository.create.mock.calls[0][0].first_name).toBeUndefined();
     });
 
     it('should trim position_title before persistence', async () => {

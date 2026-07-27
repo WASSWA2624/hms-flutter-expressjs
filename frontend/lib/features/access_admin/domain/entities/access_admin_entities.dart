@@ -423,6 +423,8 @@ final class AccessAdminItem {
     this.phone,
     this.positionTitle,
     this.profileName,
+    this.firstName,
+    this.lastName,
     this.staffProfileId,
     this.roles = const <AccessAdminRoleRef>[],
     this.roleCount = 0,
@@ -463,6 +465,8 @@ final class AccessAdminItem {
   final String? phone;
   final String? positionTitle;
   final String? profileName;
+  final String? firstName;
+  final String? lastName;
   final String? staffProfileId;
   final List<AccessAdminRoleRef> roles;
   final int roleCount;
@@ -521,6 +525,8 @@ final class AccessAdminItem {
     String? phone,
     String? positionTitle,
     String? profileName,
+    String? firstName,
+    String? lastName,
     String? staffProfileId,
     List<AccessAdminRoleRef>? roles,
     int? roleCount,
@@ -562,6 +568,8 @@ final class AccessAdminItem {
       phone: phone ?? this.phone,
       positionTitle: positionTitle ?? this.positionTitle,
       profileName: profileName ?? this.profileName,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       staffProfileId: staffProfileId ?? this.staffProfileId,
       roles: roles ?? this.roles,
       roleCount: roleCount ?? this.roleCount,
@@ -668,6 +676,8 @@ final class AccessAdminUserDraft {
     required this.tenantId,
     required this.email,
     required this.positionTitle,
+    required this.firstName,
+    this.lastName,
     this.facilityId,
     this.phone,
     this.password,
@@ -679,6 +689,8 @@ final class AccessAdminUserDraft {
   final String tenantId;
   final String? facilityId;
   final String email;
+  final String firstName;
+  final String? lastName;
   final String? phone;
   final String positionTitle;
   final String? password;
@@ -692,6 +704,8 @@ final class AccessAdminUserDraft {
   AccessAdminUserDraft copyWith({
     String? tenantId,
     String? email,
+    String? firstName,
+    String? lastName,
     String? positionTitle,
     String? facilityId,
     String? phone,
@@ -700,12 +714,15 @@ final class AccessAdminUserDraft {
     List<String>? permissionIds,
     bool? confirmSimilar,
     bool clearFacilityId = false,
+    bool clearLastName = false,
     bool clearPhone = false,
     bool clearPassword = false,
   }) {
     return AccessAdminUserDraft(
       tenantId: tenantId ?? this.tenantId,
       email: email ?? this.email,
+      firstName: firstName ?? this.firstName,
+      lastName: clearLastName ? null : (lastName ?? this.lastName),
       positionTitle: positionTitle ?? this.positionTitle,
       facilityId: clearFacilityId ? null : (facilityId ?? this.facilityId),
       phone: clearPhone ? null : (phone ?? this.phone),

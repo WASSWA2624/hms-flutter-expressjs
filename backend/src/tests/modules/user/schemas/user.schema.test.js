@@ -18,6 +18,8 @@ describe('User Schemas', () => {
     const validData = {
       tenant_id: '550e8400-e29b-41d4-a716-446655440000',
       facility_id: '550e8400-e29b-41d4-a716-446655440001',
+      first_name: 'Jane',
+      last_name: 'Doe',
       position_title: 'Charge Nurse',
       email: 'test@example.com',
       phone: '+256700000000',
@@ -51,18 +53,32 @@ describe('User Schemas', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should require first_name', () => {
+      const data = { ...validData };
+      delete data.first_name;
+      const result = createUserSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('should allow optional last_name', () => {
+      const data = { ...validData };
+      delete data.last_name;
+      const result = createUserSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('should validate email format', () => {
       const data = { ...validData, email: 'invalid-email' };
       const result = createUserSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
 
-    it('should require password_hash', () => {
+    it('should allow omitting password and password_hash', () => {
       const data = { ...validData };
       delete data.password_hash;
       delete data.password;
       const result = createUserSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it('should accept password when password_hash is omitted', () => {

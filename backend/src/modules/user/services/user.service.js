@@ -126,6 +126,11 @@ const USER_DETAIL_INCLUDE = Object.freeze({
       id: true,
       human_friendly_id: true,
       name: true}},
+  profile: {
+    select: {
+      first_name: true,
+      middle_name: true,
+      last_name: true}},
   permissions: {
     where: { deleted_at: null },
     include: {
@@ -280,11 +285,25 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
     ? [...new Set(next.permission_ids.map((entry) => String(entry ?? '').trim()).filter(Boolean))]
     : undefined;
 
+  const hasFirstName = Object.prototype.hasOwnProperty.call(next, 'first_name');
+  const hasLastName = Object.prototype.hasOwnProperty.call(next, 'last_name');
+  const normalizedFirstName = hasFirstName
+    ? String(next.first_name || '').trim()
+    : undefined;
+  const normalizedLastName = hasLastName
+    ? (next.last_name == null || String(next.last_name).trim() === ''
+        ? null
+        : String(next.last_name).trim())
+    : undefined;
+
   if (!isUpdate) {
     if (!normalizedPositionTitle) {
       throw new HttpError('errors.validation.field.required', 400, [{ field: 'position_title' }]);
     }
     next.position_title = normalizedPositionTitle;
+    if (!normalizedFirstName) {
+      throw new HttpError('errors.validation.field.required', 400, [{ field: 'first_name' }]);
+    }
   } else if (next.position_title !== undefined) {
     next.position_title = normalizedPositionTitle;
   }
@@ -335,6 +354,16 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
   }
 
   delete next.password;
+  delete next.first_name;
+  delete next.last_name;
+
+  if (!isUpdate || hasFirstName || hasLastName) {
+    next.profile = {
+      ...(hasFirstName || !isUpdate ? { first_name: normalizedFirstName } : {}),
+      ...(hasLastName || !isUpdate ? { last_name: normalizedLastName ?? null } : {})
+    };
+  }
+
   return next;
 };
 

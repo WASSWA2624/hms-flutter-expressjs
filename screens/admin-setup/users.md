@@ -6,6 +6,8 @@
   - Location: Search-bar trailing action and empty-state primary action.
   - Condition: Shown when workspace `canWrite` is true and `showCreateAction` is enabled (default on this setup tab); enabled when the list is not loading and no mutation is in progress.
   - Immediate result: Opens `openAccessAdminCreateUserDialog` / `showUserMutationDialog` in **Create** mode with Organization + User details only (no Assigned roles / Direct permissions; those are managed from User Details). Fields stay visible and disable with tooltips until tenant/facility scope is ready.
+  - Similarity review: Before persisting, the flow always runs a scored duplicate/similarity review (`_reviewUserSimilarity` → `showUserSimilarityDialog`) against tenant-scoped peers on email, phone, and position title. Same-tenant exact email or phone digits hard-block create; softer near matches surface for review and can be overridden with **Create anyway** (`confirm_similar`). **Use existing** opens that user's details instead of creating; **Cancel** dismisses. Backend uniqueness (`errors.user.similar_exists` / `errors.user.*_exists_in_tenant`) is authoritative and reopens the review hydrated from the 409 match payload.
+  - Details handoff: On successful create (or **Use existing**), the users list is covered immediately and User Details opens for the resulting user (`_openUserDetail(item, coverListImmediately: true)`) with a silent background list refresh — no list flash. Roles and direct permissions are assigned afterward from User Details.
 
 - **Row select**
   - Location: User table or mobile-list row.

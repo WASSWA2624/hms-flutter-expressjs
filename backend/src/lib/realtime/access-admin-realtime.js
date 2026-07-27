@@ -31,6 +31,8 @@ const serializeAccessAdminUserEntity = (record) => {
     profile_name: profile
       ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || null
       : null,
+    first_name: profile?.first_name || null,
+    last_name: profile?.last_name || null,
     roles,
     role_count: roles.length,
     is_demo: record.is_demo === true,

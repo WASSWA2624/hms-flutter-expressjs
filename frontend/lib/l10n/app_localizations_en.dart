@@ -21368,6 +21368,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminEmailLabel => 'Email';
 
   @override
+  String get accessAdminFirstNameLabel => 'First name';
+
+  @override
+  String get accessAdminLastNameLabel => 'Last name';
+
+  @override
   String get accessAdminPositionLabel => 'Position title';
 
   @override

@@ -22,6 +22,12 @@ const USER_DETAIL_INCLUDE = Object.freeze({
       id: true,
       human_friendly_id: true,
       name: true}},
+  profile: {
+    select: {
+      id: true,
+      first_name: true,
+      middle_name: true,
+      last_name: true}},
   permissions: {
     where: { deleted_at: null },
     include: {
@@ -246,11 +252,24 @@ const count = async (filters = {}, { includeDeleted = false } = {}) => {
  */
 const create = async (data) => {
   try {
-    const { permission_ids, ...userData } = data || {};
+    const { permission_ids, profile, ...userData } = data || {};
     const permissionIds = normalizePermissionIds(permission_ids);
     return await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
-        data: userData
+        data: {
+          ...userData,
+          ...(profile
+            ? {
+                profile: {
+                  create: {
+                    first_name: profile.first_name,
+                    last_name: profile.last_name ?? null,
+                    facility_id: userData.facility_id ?? null
+                  }
+                }
+              }
+            : {})
+        }
       });
 
       if (permissionIds.length > 0) {
@@ -294,8 +313,9 @@ const create = async (data) => {
  */
 const update = async (id, data) => {
   try {
-    const { permission_ids, ...userData } = data || {};
+    const { permission_ids, profile, ...userData } = data || {};
     const shouldSyncPermissions = permission_ids !== undefined;
+    const shouldSyncProfile = profile !== undefined;
 
     return await prisma.$transaction(async (tx) => {
       if (Object.keys(userData).length > 0) {
@@ -313,6 +333,38 @@ const update = async (id, data) => {
           const notFoundError = new Error('User not found');
           notFoundError.code = 'P2025';
           throw notFoundError;
+        }
+      }
+
+      if (shouldSyncProfile) {
+        const existingProfile = await tx.user_profile.findFirst({
+          where: { user_id: id, deleted_at: null },
+          select: { id: true }
+        });
+        if (existingProfile) {
+          await tx.user_profile.update({
+            where: { id: existingProfile.id },
+            data: {
+              ...(profile.first_name !== undefined
+                ? { first_name: profile.first_name }
+                : {}),
+              ...(profile.last_name !== undefined
+                ? { last_name: profile.last_name }
+                : {}),
+              ...(userData.facility_id !== undefined
+                ? { facility_id: userData.facility_id }
+                : {})
+            }
+          });
+        } else if (profile.first_name) {
+          await tx.user_profile.create({
+            data: {
+              user_id: id,
+              first_name: profile.first_name,
+              last_name: profile.last_name ?? null,
+              facility_id: userData.facility_id ?? null
+            }
+          });
         }
       }
 

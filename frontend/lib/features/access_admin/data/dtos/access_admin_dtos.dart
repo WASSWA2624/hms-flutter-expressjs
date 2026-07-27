@@ -249,6 +249,8 @@ final class AccessAdminItemDto {
       phone: _nullableString(json['phone']),
       positionTitle: _nullableString(json['position_title']),
       profileName: _nullableString(json['profile_name']),
+      firstName: _nullableString(json['first_name']),
+      lastName: _nullableString(json['last_name']),
       staffProfileId: _nullableString(json['staff_profile_id']),
       roles: roles,
       roleCount: _int(json['role_count'], fallback: roles.length),

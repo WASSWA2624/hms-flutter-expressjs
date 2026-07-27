@@ -155,6 +155,8 @@ const serializeUser = (record) => {
     profile_name: profile
       ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || null
       : null,
+    first_name: profile?.first_name || null,
+    last_name: profile?.last_name || null,
     staff_profile_id: staffProfile
       ? safePublicId(staffProfile.human_friendly_id, staffProfile.id)
       : null,

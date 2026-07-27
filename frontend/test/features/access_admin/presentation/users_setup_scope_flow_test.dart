@@ -132,8 +132,10 @@ void main() {
 
   test('mutations silently sync the users list', () {
     final String source = usersPanelSource();
+    // Create hands off to details immediately, so the list reload runs silently
+    // in the background (mirrors the role create flow) rather than blocking.
     expect(
-      source.contains('await reload(resetPage: true, silent: true)'),
+      source.contains('unawaited(reload(resetPage: true, silent: true))'),
       isTrue,
     );
     expect(

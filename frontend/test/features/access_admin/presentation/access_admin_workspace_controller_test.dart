@@ -18,6 +18,7 @@ void main() {
       const AccessAdminUserDraft(
         tenantId: 'tenant-1',
         email: 'user@example.com',
+        firstName: 'Ada',
         positionTitle: 'Nurse',
         password: 'Password123',
       ),

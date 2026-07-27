@@ -425,6 +425,8 @@ class _AccessAdminWorkspaceContentState
   ) async {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController emailController = TextEditingController();
+    final TextEditingController firstNameController = TextEditingController();
+    final TextEditingController lastNameController = TextEditingController();
     final TextEditingController phoneController = TextEditingController();
     final TextEditingController titleController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
@@ -439,6 +441,20 @@ class _AccessAdminWorkspaceContentState
           key: formKey,
           child: Column(
             children: <Widget>[
+              AppTextField(
+                controller: firstNameController,
+                labelText: context.l10n.accessAdminFirstNameLabel,
+                isRequired: true,
+                validator: (String? value) => (value ?? '').trim().isEmpty
+                    ? context.l10n.validationRequired
+                    : null,
+              ),
+              SizedBox(height: Theme.of(context).spacing.md),
+              AppTextField(
+                controller: lastNameController,
+                labelText: context.l10n.accessAdminLastNameLabel,
+              ),
+              SizedBox(height: Theme.of(context).spacing.md),
               AppTextField(
                 controller: emailController,
                 labelText: context.l10n.accessAdminEmailLabel,
@@ -505,6 +521,10 @@ class _AccessAdminWorkspaceContentState
                     AccessAdminUserDraft(
                       tenantId: tenantId,
                       facilityId: state.query.facilityId,
+                      firstName: firstNameController.text.trim(),
+                      lastName: lastNameController.text.trim().isEmpty
+                          ? null
+                          : lastNameController.text.trim(),
                       email: emailController.text.trim(),
                       phone: phoneController.text.trim(),
                       positionTitle: titleController.text.trim(),
@@ -525,6 +545,8 @@ class _AccessAdminWorkspaceContentState
     );
 
     emailController.dispose();
+    firstNameController.dispose();
+    lastNameController.dispose();
     phoneController.dispose();
     titleController.dispose();
     passwordController.dispose();
