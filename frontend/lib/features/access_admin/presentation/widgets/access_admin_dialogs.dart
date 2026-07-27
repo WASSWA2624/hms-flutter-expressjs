@@ -409,7 +409,6 @@ Future<AppFailure?> _reviewRoleSimilarity(
   final List<AccessAdminItem> peers = await _loadRoleSimilarityPeers(
     ref,
     tenantId: pending.tenantId,
-    facilityId: pending.facilityId,
   );
   if (!context.mounted) {
     return const AppFailure.cancelled();
@@ -475,8 +474,10 @@ Future<AppFailure?> _reviewRoleSimilarity(
 Future<List<AccessAdminItem>> _loadRoleSimilarityPeers(
   WidgetRef ref, {
   String? tenantId,
-  String? facilityId,
 }) async {
+  // Load tenant-wide (all facilities) or all tenants for platform proposals so
+  // org/facility peers are visible. Same-scope hard conflicts remain enforced
+  // in checkRoleDuplicates.
   final bool allTenants = tenantId == null || tenantId.trim().isEmpty;
   final Result<AccessAdminWorkspaceData> result = await ref
       .read(accessAdminRepositoryProvider)
@@ -485,9 +486,9 @@ Future<List<AccessAdminItem>> _loadRoleSimilarityPeers(
           panel: AccessAdminPanel.roles,
           resource: AccessAdminResource.roles,
           tenantId: allTenants ? null : tenantId,
-          facilityId: facilityId,
+          facilityId: null,
           allTenants: allTenants,
-          allFacilities: facilityId == null || facilityId.trim().isEmpty,
+          allFacilities: true,
           lean: true,
           // Match backend ROLE_SIMILARITY_LOOKUP_LIMIT so client review is not
           // starved by a short first page.

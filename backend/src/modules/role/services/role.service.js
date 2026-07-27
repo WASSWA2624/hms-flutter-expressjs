@@ -51,11 +51,21 @@ const assertRoleUniqueness = async ({
       ? null
       : String(facilityId).trim();
 
+  // Broad peer set for similarity: platform proposals scan all roles; tenant
+  // proposals include every facility/org role in that tenant (not only the
+  // exact facility_id). Same-scope hard conflicts stay in checkRoleDuplicates.
+  const peerFilters =
+    scopeTenantId == null
+      ? {}
+      : {
+          OR: [
+            { tenant_id: scopeTenantId },
+            { tenant_id: null, facility_id: null }
+          ]
+        };
+
   const existing = await roleRepository.findMany(
-    {
-      tenant_id: scopeTenantId,
-      facility_id: scopeFacilityId
-    },
+    peerFilters,
     0,
     ROLE_SIMILARITY_LOOKUP_LIMIT,
     { name: 'asc' }

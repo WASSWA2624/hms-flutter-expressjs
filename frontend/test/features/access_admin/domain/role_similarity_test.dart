@@ -137,31 +137,80 @@ void main() {
     );
   });
 
-  test('ignores peers outside facility scope', () {
+  test('surfaces cross-scope Testing peers as overridable matches', () {
+    final List<AccessAdminItem> peers = <AccessAdminItem>[
+      role(
+        id: 'role-org',
+        name: 'TESTING',
+        displayName: 'Testing',
+        tenantId: 'tenant-1',
+        facilityId: null,
+      ),
+      role(
+        id: 'role-fac',
+        name: 'TESTING',
+        displayName: 'Testing',
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      ),
+    ];
+
+    final RoleDuplicateCheckResult platformCreate = checkRoleDuplicates(
+      name: 'Testing',
+      displayName: 'Testing',
+      tenantId: null,
+      facilityId: null,
+      existing: peers,
+    );
+
+    expect(platformCreate.hasExactConflict, isFalse);
+    expect(platformCreate.similarMatches.length, 2);
+    expect(platformCreate.overridableMatches.length, 2);
+    expect(platformCreate.similarMatches.first.score, greaterThan(0));
+    expect(
+      platformCreate.similarMatches.every(
+        (RoleSimilarityMatch match) => match.nameScore == 100,
+      ),
+      isTrue,
+    );
+  });
+
+  test('surfaces facility peers when creating tenant-wide role', () {
     final RoleDuplicateCheckResult result = checkRoleDuplicates(
       name: 'WARD CLERK',
       displayName: 'Ward Clerk',
       tenantId: 'tenant-1',
-      facilityId: 'facility-1',
-      existing: existing,
+      facilityId: null,
+      existing: <AccessAdminItem>[
+        role(
+          id: 'role-fac',
+          name: 'WARD CLERK',
+          displayName: 'Ward Clerk',
+          facilityId: 'facility-1',
+        ),
+      ],
     );
 
-    expect(result.similarMatches, isEmpty);
+    expect(result.hasExactConflict, isFalse);
+    expect(result.similarMatches, isNotEmpty);
+    expect(result.overridableMatches, isNotEmpty);
+    expect(result.similarMatches.first.nameScore, 100);
   });
 
-  test('isolates platform roles from tenant-scoped peers', () {
+  test('still hard-blocks exact conflicts in the same scope', () {
     final RoleDuplicateCheckResult result = checkRoleDuplicates(
       name: 'WARD CLERK',
       displayName: 'Ward Clerk',
-      tenantId: null,
+      tenantId: 'tenant-1',
       facilityId: null,
       existing: existing,
     );
 
-    expect(result.similarMatches, isEmpty);
+    expect(result.hasExactConflict, isTrue);
+    expect(result.similarMatches.first.exactNameConflict, isTrue);
   });
 
-  test('isolates tenant roles from other tenants', () {
+  test('surfaces other-tenant peers as overridable when present in peer set', () {
     final RoleDuplicateCheckResult result = checkRoleDuplicates(
       name: 'WARD CLERK',
       displayName: 'Ward Clerk',
@@ -170,7 +219,9 @@ void main() {
       existing: existing,
     );
 
-    expect(result.similarMatches, isEmpty);
+    expect(result.hasExactConflict, isFalse);
+    expect(result.similarMatches, isNotEmpty);
+    expect(result.overridableMatches, isNotEmpty);
   });
 
   test('expands hospital role aliases for exact conflicts', () {

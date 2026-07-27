@@ -213,6 +213,55 @@ describe('Role Service', () => {
         statusCode: 409
       });
       expect(roleRepository.create).not.toHaveBeenCalled();
+      expect(roleRepository.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          OR: expect.arrayContaining([
+            { tenant_id: 'tenant-1' },
+            { tenant_id: null, facility_id: null }
+          ])
+        }),
+        0,
+        500,
+        { name: 'asc' }
+      );
+    });
+
+    it('should require confirm_similar for platform create when tenant peers match', async () => {
+      roleRepository.findMany.mockResolvedValue([
+        {
+          id: 'role-org',
+          human_friendly_id: 'ROL0001',
+          tenant_id: 'tenant-1',
+          facility_id: null,
+          name: 'TESTING',
+          display_name: 'Testing',
+          description: null
+        }
+      ]);
+
+      await expect(
+        createRole(
+          {
+            name: 'Testing',
+            display_name: 'Testing',
+            tenant_id: null,
+            scope: 'platform'
+          },
+          'user-123',
+          '127.0.0.1',
+          { id: 'user-123', roles: ['SUPER_ADMIN'] }
+        )
+      ).rejects.toMatchObject({
+        messageKey: 'errors.role.similar_exists',
+        statusCode: 409
+      });
+      expect(roleRepository.create).not.toHaveBeenCalled();
+      expect(roleRepository.findMany).toHaveBeenCalledWith(
+        {},
+        0,
+        500,
+        { name: 'asc' }
+      );
     });
 
     it('should create anyway when confirm_similar is true', async () => {

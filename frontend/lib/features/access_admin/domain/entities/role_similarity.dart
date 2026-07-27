@@ -496,17 +496,19 @@ RoleDuplicateCheckResult checkRoleDuplicates({
   final Set<String> seenRoleKeys = <String>{};
 
   for (final AccessAdminItem role in existing) {
-    if (!roleScopesMatch(
+    if (roleMatchesExcludeId(role, excludeRoleId)) {
+      continue;
+    }
+
+    // Same-scope matches can hard-block create. Cross-scope peers are still
+    // scored and surfaced in review so names like "Testing" are not missed
+    // when they already exist at another Platform / Tenant / Facility level.
+    final bool sameScope = roleScopesMatch(
       leftTenantId: tenantId,
       leftFacilityId: facilityId,
       rightTenantId: role.tenantId,
       rightFacilityId: role.facilityId,
-    )) {
-      continue;
-    }
-    if (roleMatchesExcludeId(role, excludeRoleId)) {
-      continue;
-    }
+    );
 
     final String roleKey = <String?>[
       role.id,
@@ -689,20 +691,26 @@ RoleDuplicateCheckResult checkRoleDuplicates({
       return entry.inputValue != null || entry.candidateValue != null;
     }).toList(growable: false);
 
-    if (nameExact ||
-        nameMatchesCandidateDisplay ||
-        displayMatchesCandidateName) {
-      exactNameConflict = true;
-    }
-    if (displayNameExact) {
-      exactDisplayNameConflict = true;
-    }
-
-    final bool isExact =
+    final bool identityExact =
         nameExact ||
         displayNameExact ||
         nameMatchesCandidateDisplay ||
         displayMatchesCandidateName;
+    // Only same-scope exact identity blocks proceed / confirm_similar bypass.
+    final bool blockingNameConflict =
+        sameScope &&
+        (nameExact ||
+            nameMatchesCandidateDisplay ||
+            displayMatchesCandidateName);
+    final bool blockingDisplayNameConflict = sameScope && displayNameExact;
+    if (blockingNameConflict) {
+      exactNameConflict = true;
+    }
+    if (blockingDisplayNameConflict) {
+      exactDisplayNameConflict = true;
+    }
+
+    final bool isExact = sameScope && identityExact;
 
     final bool strongIdentitySignal =
         strongestIdentity != null &&
@@ -724,7 +732,7 @@ RoleDuplicateCheckResult checkRoleDuplicates({
         (displayNameScore != null &&
             displayNameScore >= roleTokenSubsetThreshold);
 
-    if (!isExact &&
+    if (!identityExact &&
         !strongIdentitySignal &&
         !strongFieldSignal &&
         !compositeSignal &&
@@ -742,11 +750,8 @@ RoleDuplicateCheckResult checkRoleDuplicates({
             ? const <String>['name']
             : reasons.toSet().toList(growable: false),
         isExact: isExact,
-        exactNameConflict:
-            nameExact ||
-            nameMatchesCandidateDisplay ||
-            displayMatchesCandidateName,
-        exactDisplayNameConflict: displayNameExact,
+        exactNameConflict: blockingNameConflict,
+        exactDisplayNameConflict: blockingDisplayNameConflict,
         nameScore: nameScore,
         displayNameScore: displayNameScore,
         descriptionScore: descriptionScore,
@@ -757,6 +762,15 @@ RoleDuplicateCheckResult checkRoleDuplicates({
   }
 
   matches.sort((RoleSimilarityMatch left, RoleSimilarityMatch right) {
+    // Prefer same-scope hard conflicts, then score.
+    final int leftBlocking =
+        (left.exactNameConflict || left.exactDisplayNameConflict) ? 1 : 0;
+    final int rightBlocking =
+        (right.exactNameConflict || right.exactDisplayNameConflict) ? 1 : 0;
+    final int byBlocking = rightBlocking.compareTo(leftBlocking);
+    if (byBlocking != 0) {
+      return byBlocking;
+    }
     final int byScore = right.score.compareTo(left.score);
     if (byScore != 0) {
       return byScore;

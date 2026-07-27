@@ -61,6 +61,23 @@ void main() {
     );
   });
 
+  test('similarity peer load is not facility-narrowed', () {
+    expect(dialogsSource.contains('allFacilities: true'), isTrue);
+    expect(
+      dialogsSource.contains(
+        'Load tenant-wide (all facilities) or all tenants for platform proposals',
+      ),
+      isTrue,
+    );
+    expect(
+      RegExp(
+        r'_loadRoleSimilarityPeers\([\s\S]*?facilityId:\s*null',
+        multiLine: true,
+      ).hasMatch(dialogsSource),
+      isTrue,
+    );
+  });
+
   test('create-to-detail transition covers the roles list immediately', () {
     expect(
       managementSource.contains('coverListImmediately: true'),

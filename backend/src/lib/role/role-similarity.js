@@ -1,10 +1,11 @@
 /**
  * Role duplicate / similarity helpers.
  *
- * Scope-matched, multi-signal similarity across name, display name, and
- * description — including cross-field identity, compact keys, sorted token
- * bags, token Jaccard, filler stripping, hospital-role aliases, and initials.
- * Reuses tenant-similarity text scoring primitives.
+ * Multi-signal similarity across name, display name, and description —
+ * including cross-field identity, compact keys, sorted token bags, token
+ * Jaccard, filler stripping, hospital-role aliases, and initials.
+ * Same-scope exact identity hard-blocks; cross-scope peers are still scored
+ * and surfaced for review. Reuses tenant-similarity text scoring primitives.
  */
 
 const {
@@ -374,16 +375,15 @@ const checkRoleDuplicates = ({
 
   for (const role of existing) {
     const snapshot = buildCandidateSnapshot(role);
-    if (
-      !roleScopesMatch({
-        leftTenantId: tenantId,
-        leftFacilityId: facilityId,
-        rightTenantId: snapshot.tenant_id,
-        rightFacilityId: snapshot.facility_id
-      })
-    ) {
-      continue;
-    }
+    // Same-scope matches can hard-block create. Cross-scope peers are still
+    // scored and surfaced in review so names like "Testing" are not missed
+    // when they already exist at another Platform / Tenant / Facility level.
+    const sameScope = roleScopesMatch({
+      leftTenantId: tenantId,
+      leftFacilityId: facilityId,
+      rightTenantId: snapshot.tenant_id,
+      rightFacilityId: snapshot.facility_id
+    });
 
     const roleId = String(snapshot.id || '').trim();
     const roleFriendly = String(snapshot.human_friendly_id || '').trim();
@@ -563,23 +563,24 @@ const checkRoleDuplicates = ({
       })
     ].filter((entry) => entry.input_value != null || entry.candidate_value != null);
 
-    if (nameExact) {
-      exactNameConflict = true;
-    }
-    if (displayNameExact || nameMatchesCandidateDisplay || displayMatchesCandidateName) {
-      if (displayNameExact) {
-        exactDisplayNameConflict = true;
-      }
-      if (nameMatchesCandidateDisplay || displayMatchesCandidateName) {
-        exactNameConflict = true;
-      }
-    }
-
-    const isExact =
+    const identityExact =
       nameExact ||
       displayNameExact ||
       nameMatchesCandidateDisplay ||
       displayMatchesCandidateName;
+    // Only same-scope exact identity blocks proceed / confirm_similar bypass.
+    const blockingNameConflict =
+      sameScope &&
+      (nameExact || nameMatchesCandidateDisplay || displayMatchesCandidateName);
+    const blockingDisplayNameConflict = sameScope && displayNameExact;
+    if (blockingNameConflict) {
+      exactNameConflict = true;
+    }
+    if (blockingDisplayNameConflict) {
+      exactDisplayNameConflict = true;
+    }
+
+    const isExact = sameScope && identityExact;
 
     const strongIdentitySignal =
       (strongestIdentity != null &&
@@ -601,7 +602,7 @@ const checkRoleDuplicates = ({
       (displayNameScore != null && displayNameScore >= TOKEN_SUBSET_THRESHOLD);
 
     if (
-      !isExact &&
+      !identityExact &&
       !strongIdentitySignal &&
       !strongFieldSignal &&
       !compositeSignal &&
@@ -617,8 +618,8 @@ const checkRoleDuplicates = ({
       score,
       reasons: reasons.length ? [...new Set(reasons)] : ['name'],
       isExact,
-      exactNameConflict: nameExact || nameMatchesCandidateDisplay || displayMatchesCandidateName,
-      exactDisplayNameConflict: displayNameExact,
+      exactNameConflict: blockingNameConflict,
+      exactDisplayNameConflict: blockingDisplayNameConflict,
       nameScore,
       displayNameScore,
       descriptionScore,
@@ -628,6 +629,12 @@ const checkRoleDuplicates = ({
   }
 
   matches.sort((left, right) => {
+    const leftBlocking =
+      left.exactNameConflict || left.exactDisplayNameConflict ? 1 : 0;
+    const rightBlocking =
+      right.exactNameConflict || right.exactDisplayNameConflict ? 1 : 0;
+    const byBlocking = rightBlocking - leftBlocking;
+    if (byBlocking !== 0) return byBlocking;
     const byScore = right.score - left.score;
     if (byScore !== 0) return byScore;
     return Number(right.isExact) - Number(left.isExact);

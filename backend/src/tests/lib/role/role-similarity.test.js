@@ -150,7 +150,7 @@ describe('role-similarity', () => {
     expect(result.similarMatches.length).toBeGreaterThan(0);
   });
 
-  it('ignores peers outside the facility scope', () => {
+  it('surfaces cross-scope peers as overridable matches', () => {
     const result = checkRoleDuplicates({
       name: 'WARD CLERK',
       displayName: 'Ward Clerk',
@@ -160,19 +160,53 @@ describe('role-similarity', () => {
       existing
     });
 
-    expect(result.similarMatches).toHaveLength(0);
+    expect(result.hasExactConflict).toBe(false);
+    expect(result.similarMatches.length).toBeGreaterThan(0);
+    expect(result.overridableMatches.length).toBeGreaterThan(0);
+    expect(result.similarMatches[0].nameScore).toBe(100);
   });
 
-  it('isolates platform roles from tenant-scoped peers', () => {
+  it('surfaces tenant peers when creating a platform role (Testing repro)', () => {
+    const result = checkRoleDuplicates({
+      name: 'Testing',
+      displayName: 'Testing',
+      tenantId: null,
+      facilityId: null,
+      existing: [
+        {
+          id: 'role-org',
+          tenant_id: 'tenant-1',
+          facility_id: null,
+          name: 'TESTING',
+          display_name: 'Testing'
+        },
+        {
+          id: 'role-fac',
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          name: 'TESTING',
+          display_name: 'Testing'
+        }
+      ]
+    });
+
+    expect(result.hasExactConflict).toBe(false);
+    expect(result.similarMatches).toHaveLength(2);
+    expect(result.overridableMatches).toHaveLength(2);
+    expect(result.similarMatches[0].score).toBeGreaterThan(0);
+  });
+
+  it('still hard-blocks exact conflicts in the same scope', () => {
     const result = checkRoleDuplicates({
       name: 'WARD CLERK',
       displayName: 'Ward Clerk',
-      tenantId: null,
+      tenantId: 'tenant-1',
       facilityId: null,
       existing
     });
 
-    expect(result.similarMatches).toHaveLength(0);
+    expect(result.hasExactConflict).toBe(true);
+    expect(result.similarMatches[0].exactNameConflict).toBe(true);
   });
 
   it('expands hospital role aliases for exact conflicts', () => {
