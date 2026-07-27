@@ -1,41 +1,41 @@
-# Fix create-role similarity false negatives
+# Fix create-role similarity, create commit, and details handoff
 
-Ensure **Create role** similarity review on `/admin/setup?section=roles` detects existing similar roles and never reports **No similar found** / **0%** when matching identity already exists among roles the actor can see.
+Make **Create role** on `/admin/setup?section=roles` run accurate scoped similarity review, create when allowed, and open role details afterward.
 
 ## Context
 
-- Platform admin opens **Create role**, chooses Scope (**Platform** / **Tenant(s)** / **Facility(ies)**), enters Role name, Display name, optional Description, then **Save**.
-- Create always opens the similarity dialog before the create API.
-- Bug: name/display `Testing` → **No similar found** and **0%**, while the Roles list already shows `Testing` (Organization and Facility · DemoCare).
-- Engines: FE `checkRoleDuplicates`, `_loadRoleSimilarityPeers`, `showRoleSimilarityDialog`; BE `assertRoleUniqueness`, `ROLE_SIMILARITY_LOOKUP_LIMIT`, `confirm_similar`. Scoring uses name, display name, description, cross-identity, and `roleScopesMatch`.
+- Inventory: `screens/admin-setup/roles.md`. Create uses Scope (**Platform** / **Tenant(s)** / **Facility(ies)**) plus Role name, Display name, optional Description, then **Save**.
+- Create always opens `showRoleSimilarityDialog` before the create API. Engines: FE `checkRoleDuplicates`, `_loadRoleSimilarityPeers`; BE `assertRoleUniqueness`, `confirm_similar`.
+- Repro: list has `Testing` (Organization and Facility · DemoCare); creating Platform `Testing`/`Testing`/`Testing` shows **No similar found** / **0%**. **Continue create** reopens the same empty review—role is not saved and details never open.
+- **Definitions:** Peer set = roles loaded for scoring. Exact same-scope name/display conflict blocks proceed. Near/cross-scope identity matches warn and stay overridable via confirm.
 
 ## Requirements
 
-1. Fix the false-negative path: when same or near-same name and/or display name (and description when set) already exists in roles the actor can load, Create must show those matches with a non-zero top overall score—not **No similar found** / **0%**.
-2. Review peer loading and filtering (FE lean page size vs BE lookup limit, tenant/facility filters, `roleScopesMatch`, lean DTO fields). Do not drop peers needed for scoring before compare.
-3. Score all defined identity signals (name, display_name, description, cross_identity, aliases, filler stripping, token variants). Keep FE and BE rules aligned.
-4. Same-scope exact name/display conflicts block proceed; near matches stay overridable via confirm / `confirm_similar`. Surface cross-scope identity matches in review when they exist; do not hide them as zero matches.
-5. Keep Create actions: **Cancel**, **Use existing**, **Continue create** when allowed; edit must exclude self.
-6. After successful create, refresh the Roles list; do not render unauthorized create.
+1. Fix false negatives: when same or near-same name and/or display name (description when set) exist among roles the actor can load, review must list them with a non-zero top overall score—not **No similar found** / **0%**.
+2. Peer load must be scope-correct: Platform → all roles; Tenant → all org/facility roles in that tenant (not facility-narrowed); Facility → peers BE already uses for scoring. Respect `ROLE_SIMILARITY_LOOKUP_LIMIT` / page ceiling; keep lean DTO scoring fields. Failed peer lookup must error—never empty “no similar.”
+3. Keep FE/BE scoring aligned (name, display_name, description, cross_identity). Surface cross-scope identity matches; do not hide them as zero matches.
+4. Allowed **Continue create** must create once with `confirm_similar` when required, persist, close review+create, and not reopen empty “no similar” for the same draft. Exact same-scope conflicts disable proceed (**Cancel** / **Use existing** only).
+5. After successful create or **Use existing**, open `_AccessAdminRoleDetailDialog` (edit, delete, attach permissions) without a roles-list flash; silently refresh the list.
+6. Preserve loading, empty, error, validation, success, and review states; keep unauthorized create unrendered when `canWrite` is false.
 
 ## Constraints
 
-- Reuse existing role similarity modules, dialogs, validation, RBAC/ABAC, and design-system components; no unrelated refactors.
-- Backend remains authoritative for uniqueness and `confirm_similar`.
-- Cover loading, empty, error, validation, success, and similarity review; stay responsive across viewports and themes.
+Reuse existing role similarity modules, dialogs, controllers, routes, l10n, and design-system components; no unrelated refactors. Backend RBAC/ABAC and uniqueness remain authoritative. Stay responsive on mobile/tablet/desktop; use theme tokens for light and dark.
 
 ## Acceptance Criteria
 
-- AC1: With visible `Testing` roles, creating `Testing`/`Testing` shows matches (not **No similar found** / **0%**). → 1–4
-- AC2: Exact same-scope conflict blocks proceed; near match proceeds only after confirm. → 4–5
-- AC3: FE/BE tests cover the repro, peer inclusion, field/cross-identity scoring, and create flow. → 1–5
-- AC4: Authorized create remains; unauthorized create UI is absent. → 6
+- AC1: With visible `Testing` roles, creating `Testing` shows matches (not **No similar found** / **0%**). → 1–3
+- AC2: Allowed **Continue create** creates once and does not loop empty review. → 4
+- AC3: Exact same-scope conflict blocks proceed; near match proceeds only after confirm. → 3–4
+- AC4: Create / Use existing opens role details without list flash; list syncs. → 5
+- AC5: Unauthorized create unrendered; authorized create available. → 6
 
 ## Relevant Files
 
-- `frontend/lib/features/access_admin/domain/entities/role_similarity.dart`
 - `frontend/lib/features/access_admin/presentation/widgets/access_admin_dialogs.dart`
 - `frontend/lib/features/access_admin/presentation/widgets/role_similarity_dialog.dart`
+- `frontend/lib/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart`
+- `frontend/lib/features/access_admin/domain/entities/role_similarity.dart`
 - `backend/src/lib/role/role-similarity.js`
 - `backend/src/modules/role/services/role.service.js`
 - `frontend/test/features/access_admin/domain/role_similarity_test.dart`
@@ -45,6 +45,6 @@ Ensure **Create role** similarity review on `/admin/setup?section=roles` detects
 
 ## Verification
 
-- Unit: FE/BE duplicates for exact, near, cross-identity, and the `Testing` false-empty repro (peer-load/scope).
-- Flow: create always opens review; uniqueness conflict reopens review; `confirm_similar`.
-- Manual: platform admin Create `Testing` while Organization/Facility `Testing` exist → matches shown; Cancel / Use existing / Continue create; list sync; dark/light; narrow viewport.
+- Unit: FE/BE duplicates for exact, near, cross-scope identity, and peer-load false-empty repro.
+- Flow: always-open review; failed peer lookup errors; **Continue create** creates once; conflict reopens review only with real matches; details handoff + silent reload.
+- Manual: Create `Testing` while Organization/Facility `Testing` exist → matches; unique name → create → details; Cancel preserves form; dark/light; narrow viewport.
