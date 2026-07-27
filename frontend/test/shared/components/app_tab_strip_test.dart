@@ -242,4 +242,71 @@ void main() {
     expect(find.byKey(const ValueKey<String>('tabOverflowMore')), findsNothing);
     expect(find.byIcon(Icons.more_vert), findsNothing);
   });
+
+  testWidgets('selected flared tab with icons does not overflow', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(980, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: AppTabStrip(
+            tabs: const <AppTabItem>[
+              AppTabItem(
+                id: 'tenants',
+                label: 'Tenants',
+                icon: Icons.corporate_fare_outlined,
+              ),
+              AppTabItem(
+                id: 'facilities',
+                label: 'Facilities',
+                icon: Icons.apartment_outlined,
+              ),
+              AppTabItem(
+                id: 'departments',
+                label: 'Departments',
+                icon: Icons.account_tree_outlined,
+              ),
+              AppTabItem(
+                id: 'units',
+                label: 'Units',
+                icon: Icons.hub_outlined,
+              ),
+              AppTabItem(
+                id: 'wards',
+                label: 'Wards',
+                icon: Icons.bed_outlined,
+              ),
+              AppTabItem(
+                id: 'rooms',
+                label: 'Rooms',
+                icon: Icons.meeting_room_outlined,
+              ),
+              AppTabItem(
+                id: 'beds',
+                label: 'Beds',
+                icon: Icons.hotel_outlined,
+              ),
+              AppTabItem(
+                id: 'users',
+                label: 'Users',
+                icon: Icons.people_outline,
+              ),
+            ],
+            selectedId: 'departments',
+            onTabTapped: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Departments'), findsOneWidget);
+  });
 }

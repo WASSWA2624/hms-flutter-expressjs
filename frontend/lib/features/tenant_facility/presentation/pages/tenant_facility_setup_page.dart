@@ -3622,11 +3622,13 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
             id: 'actions',
             label: l10n.accessAdminColumnActions,
             alwaysVisible: true,
-            preferredWidth: widget.onPermanentDelete != null ? 220 : 168,
+            preferredWidth: widget.onPermanentDelete != null ? 280 : 168,
             cellBuilder: (BuildContext context, T item) {
               final bool deleted = widget.isDeletedBuilder(item);
-              return Row(
-                mainAxisSize: MainAxisSize.min,
+              return Wrap(
+                spacing: actionGap,
+                runSpacing: theme.spacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
                   if (deleted) ...<Widget>[
                     AppButton.tertiary(
@@ -3639,8 +3641,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                           ? () => widget.onRestore(item)
                           : null,
                     ),
-                    if (widget.onPermanentDelete != null) ...<Widget>[
-                      SizedBox(width: actionGap),
+                    if (widget.onPermanentDelete != null)
                       AppButton.tertiary(
                         leadingIcon: Icons.delete_forever_outlined,
                         label: l10n.tenantFacilityPermanentDeleteAction,
@@ -3652,7 +3653,6 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                             ? () => widget.onPermanentDelete!(item)
                             : null,
                       ),
-                    ],
                   ] else ...<Widget>[
                     AppButton.tertiary(
                       leadingIcon: Icons.edit_outlined,
@@ -3664,7 +3664,6 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                           ? () => widget.onEdit(item)
                           : null,
                     ),
-                    SizedBox(width: actionGap),
                     AppButton.tertiary(
                       leadingIcon: Icons.delete_outline,
                       label: l10n.tenantFacilityDeleteAction,

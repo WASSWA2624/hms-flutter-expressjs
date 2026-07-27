@@ -145,7 +145,7 @@ class _AppTabOverflowRow extends StatelessWidget {
     required this.variant,
   });
 
-  static const double _moreButtonWidth = 40;
+  static const double _moreButtonWidth = 48;
   static const String _moreLabel = 'More tabs';
 
   final List<AppTabItem> tabs;
@@ -285,13 +285,15 @@ _TabPartition _partitionTabs({
   }
 
   final List<double> widths = <double>[
-    for (final AppTabItem tab in tabs)
+    for (int i = 0; i < tabs.length; i += 1)
       _estimateTabWidth(
-        tab: tab,
+        tab: tabs[i],
         theme: theme,
         textDirection: textDirection,
         textScaler: textScaler,
         nested: nested,
+        isSelected: tabs[i].id == selectedId,
+        isFirst: i == 0,
       ),
   ];
   final double totalWidth = widths.fold<double>(0, (double a, double b) => a + b);
@@ -324,9 +326,11 @@ _TabPartition _partitionTabs({
     while (visible.isNotEmpty && used + widths[selectedIndex] > budget) {
       used -= widths[visible.removeLast()];
     }
-    visible
-      ..add(selectedIndex)
-      ..sort();
+    if (used + widths[selectedIndex] <= budget || visible.isEmpty) {
+      visible
+        ..add(selectedIndex)
+        ..sort();
+    }
   }
 
   final Set<int> visibleSet = visible.toSet();
@@ -345,10 +349,18 @@ double _estimateTabWidth({
   required TextDirection textDirection,
   required TextScaler textScaler,
   bool nested = false,
+  bool isSelected = false,
+  bool isFirst = false,
 }) {
-  // Unselected chip padding (no flare insets). Selected flares may add a few
-  // pixels; estimates stay slightly conservative via the more-button reserve.
+  // Match _AppTabChip horizontal padding, including selected flare insets.
+  const double flareRadius = 8;
   double width = theme.spacing.sm * 2;
+  if (!nested && isSelected) {
+    if (!isFirst) {
+      width += flareRadius;
+    }
+    width += flareRadius;
+  }
   if (tab.icon != null) {
     width += (nested ? 16.0 : 18.0) + theme.spacing.xs;
   }
@@ -382,7 +394,8 @@ double _estimateTabWidth({
     width += 1 + countPainter.width;
   }
 
-  return width;
+  // Font metrics can be a couple of pixels wider than TextPainter estimates.
+  return width + 4;
 }
 
 /// Dense flat toolbar action (icon + label, no fill).
