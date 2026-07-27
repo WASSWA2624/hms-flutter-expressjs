@@ -292,15 +292,18 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
     return _afterAccessMutation(
       () => _apiClient.post<AccessAdminItem>(
         ApiEndpoints.collection(HmsApiResource.roles),
-        data: _withoutEmpty(<String, Object?>{
+        data: <String, Object?>{
+          ..._withoutEmpty(<String, Object?>{
+            'name': draft.name,
+            'display_name': draft.displayName,
+            'description': draft.description,
+            'permission_ids': draft.permissionIds,
+            if (draft.confirmSimilar) 'confirm_similar': true,
+          }),
+          // Explicit nulls required for platform-scoped creates.
           'tenant_id': draft.tenantId,
           'facility_id': draft.facilityId,
-          'name': draft.name,
-          'display_name': draft.displayName,
-          'description': draft.description,
-          'permission_ids': draft.permissionIds,
-          if (draft.confirmSimilar) 'confirm_similar': true,
-        }),
+        },
         decoder: (Object? data) {
           final Map<String, dynamic> payload = _asStringKeyedMap(
             _asStringKeyedMap(data)['data'] ?? data,

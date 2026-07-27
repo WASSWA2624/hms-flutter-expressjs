@@ -1617,7 +1617,8 @@ model verification_token {
 model role {
   id                String    @id @default(uuid()) @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
-  tenant_id         String    @db.VarChar(36)
+  /// Null tenant_id = platform-scoped role (super-admin / cross-tenant).
+  tenant_id         String?   @db.VarChar(36)
   facility_id       String?   @db.VarChar(36)
   name              String    @db.VarChar(120)
   display_name      String?   @db.VarChar(160)
@@ -1627,7 +1628,7 @@ model role {
   deleted_at        DateTime?
   version           Int       @default(1)
 
-  tenant      tenant            @relation(fields: [tenant_id], references: [id])
+  tenant      tenant?           @relation(fields: [tenant_id], references: [id])
   users       user_role[]
   permissions role_permission[]
 

@@ -34,15 +34,39 @@ const permissionIdsSchema = z
   .max(500)
   .optional();
 
-const createRoleSchema = z.object({
-  tenant_id: uuidOrFriendlyIdentifierSchema,
-  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  name: z.string().trim().min(1).max(120),
-  display_name: z.string().trim().min(1).max(160),
-  description: z.string().trim().min(1).max(255).optional().nullable(),
-  permission_ids: permissionIdsSchema,
-  confirm_similar: optionalBooleanSchema
-});
+const createRoleSchema = z
+  .object({
+    // Null/omitted tenant_id = platform-scoped role. Facility-only creates may
+    // omit tenant_id; service resolves it from the facility.
+    tenant_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    name: z.string().trim().min(1).max(120),
+    display_name: z.string().trim().min(1).max(160),
+    description: z.string().trim().min(1).max(255).optional().nullable(),
+    permission_ids: permissionIdsSchema,
+    confirm_similar: optionalBooleanSchema
+  })
+  .superRefine((data, ctx) => {
+    const hasTenant =
+      data.tenant_id != null && String(data.tenant_id).trim() !== '';
+    const hasFacility =
+      data.facility_id != null && String(data.facility_id).trim() !== '';
+    // Platform: neither tenant nor facility. Otherwise at least one scope target.
+    if (!hasTenant && !hasFacility) {
+      return;
+    }
+    if (!hasTenant && hasFacility) {
+      return;
+    }
+    if (hasTenant) {
+      return;
+    }
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['tenant_id'],
+      message: 'tenant_id or facility_id is required'
+    });
+  });
 
 /**
  * Update role body validation

@@ -690,8 +690,8 @@ final class AccessAdminUserRoleAssignment {
 @immutable
 final class AccessAdminRoleDraft {
   const AccessAdminRoleDraft({
-    required this.tenantId,
     required this.name,
+    this.tenantId,
     this.facilityId,
     this.displayName,
     this.description,
@@ -699,7 +699,8 @@ final class AccessAdminRoleDraft {
     this.confirmSimilar = false,
   });
 
-  final String tenantId;
+  /// Null for platform-scoped roles.
+  final String? tenantId;
   final String? facilityId;
   final String name;
   final String? displayName;
@@ -715,10 +716,12 @@ final class AccessAdminRoleDraft {
     String? description,
     List<String>? permissionIds,
     bool? confirmSimilar,
+    bool clearTenantId = false,
+    bool clearFacilityId = false,
   }) {
     return AccessAdminRoleDraft(
-      tenantId: tenantId ?? this.tenantId,
-      facilityId: facilityId ?? this.facilityId,
+      tenantId: clearTenantId ? null : (tenantId ?? this.tenantId),
+      facilityId: clearFacilityId ? null : (facilityId ?? this.facilityId),
       name: name ?? this.name,
       displayName: displayName ?? this.displayName,
       description: description ?? this.description,

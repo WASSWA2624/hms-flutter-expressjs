@@ -265,6 +265,56 @@ describe('Role Service', () => {
       ).rejects.toThrow(HttpError);
       expect(roleRepository.create).not.toHaveBeenCalled();
     });
+
+    it('should create platform-scoped role for super admin', async () => {
+      const mockRole = {
+        id: 'role-platform',
+        name: 'PLATFORM SUPPORT',
+        tenant_id: null,
+        facility_id: null
+      };
+      roleRepository.findMany.mockResolvedValue([]);
+      roleRepository.create.mockResolvedValue(mockRole);
+
+      const result = await createRole(
+        {
+          name: 'PLATFORM SUPPORT',
+          display_name: 'Platform Support',
+          tenant_id: null,
+          facility_id: null
+        },
+        'user-123',
+        '127.0.0.1',
+        { id: 'user-123', roles: ['SUPER_ADMIN'] }
+      );
+
+      expect(result).toEqual(mockRole);
+      expect(roleRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: null,
+          facility_id: null,
+          name: 'PLATFORM SUPPORT'
+        }),
+        []
+      );
+    });
+
+    it('should reject platform-scoped role create for tenant admins', async () => {
+      await expect(
+        createRole(
+          {
+            name: 'PLATFORM SUPPORT',
+            display_name: 'Platform Support',
+            tenant_id: null,
+            facility_id: null
+          },
+          'user-123',
+          '127.0.0.1',
+          { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
+        )
+      ).rejects.toThrow(HttpError);
+      expect(roleRepository.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateRole', () => {

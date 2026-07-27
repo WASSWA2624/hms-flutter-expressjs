@@ -21273,10 +21273,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminRoleScopeLabel => 'Scope';
 
   @override
+  String get accessAdminRoleScopePlatformLabel => 'Platform';
+
+  @override
+  String get accessAdminRoleScopeTenantsLabel => 'Tenant(s)';
+
+  @override
+  String get accessAdminRoleScopeFacilitiesLabel => 'Facility(ies)';
+
+  @override
   String get accessAdminRoleScopeTenantLabel => 'Entire organization';
 
   @override
   String get accessAdminRoleScopeFacilityLabel => 'One facility';
+
+  @override
+  String get accessAdminRoleSelectTenantsLabel => 'Tenants';
+
+  @override
+  String get accessAdminRoleSelectFacilitiesLabel => 'Facilities';
+
+  @override
+  String get accessAdminRoleIdentityBlockedSelectTenants =>
+      'Select at least one tenant before entering role details.';
+
+  @override
+  String get accessAdminRoleIdentityBlockedSelectFacilities =>
+      'Select at least one facility before entering role details.';
+
+  @override
+  String get accessAdminRoleIdentityBlockedSelectScope =>
+      'Choose a scope above before entering role details.';
+
+  @override
+  String get accessAdminRoleTargetsRequired =>
+      'Select at least one target for this scope.';
 
   @override
   String get accessAdminRoleFacilityRequiredTitle => 'Facility required';

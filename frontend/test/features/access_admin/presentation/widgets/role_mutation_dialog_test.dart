@@ -8,123 +8,195 @@ import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutat
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 void main() {
-  testWidgets('requests tenant options when tenant picker is required', (
-    WidgetTester tester,
-  ) async {
-    int tenantLoadCount = 0;
+  testWidgets(
+    'shows Platform / Tenant(s) / Facility(ies) radios for cross-tenant create',
+    (WidgetTester tester) async {
+      int tenantLoadCount = 0;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (BuildContext context) {
-            return ElevatedButton(
-              onPressed: () {
-                unawaited(
-                  showRoleMutationDialog(
-                    context: context,
-                    mode: RoleMutationMode.create,
-                    requireTenantPicker: true,
-                    loadTenantOptions: () async {
-                      tenantLoadCount += 1;
-                      return const <AccessAdminLookupOption>[
-                        AccessAdminLookupOption(
-                          id: 'tenant-1',
-                          label: 'DemoCare General Hospital',
-                        ),
-                      ];
-                    },
-                    loadPermissionsForTenant:
-                        ({
-                          required String tenantId,
-                          String? facilityId,
-                        }) async =>
-                            const Result<List<AccessAdminLookupOption>>.success(
-                              <AccessAdminLookupOption>[],
-                            ),
-                    onSubmit: (_) async => null,
-                  ),
-                );
-              },
-              child: const Text('Open'),
-            );
-          },
-        ),
-      ),
-    );
-
-    await tester.tap(find.text('Open'));
-    await tester.pump();
-    for (int attempt = 0; attempt < 20; attempt += 1) {
-      await tester.pump(const Duration(milliseconds: 50));
-      if (tenantLoadCount > 0) {
-        break;
-      }
-    }
-    await tester.pumpAndSettle();
-
-    expect(tenantLoadCount, 1);
-    expect(find.text('CREATE ROLE'), findsOneWidget);
-    expect(find.text('Entire organization'), findsOneWidget);
-    expect(find.text('One facility'), findsOneWidget);
-  });
-
-  testWidgets('forces facility scope when tenant-wide is not allowed', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (BuildContext context) {
-            return ElevatedButton(
-              onPressed: () {
-                unawaited(
-                  showRoleMutationDialog(
-                    context: context,
-                    mode: RoleMutationMode.create,
-                    tenantId: 'tenant-1',
-                    allowTenantWideScope: false,
-                    forceFacilityScope: true,
-                    loadFacilityOptions: (_) async =>
-                        const <AccessAdminLookupOption>[
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              return ElevatedButton(
+                onPressed: () {
+                  unawaited(
+                    showRoleMutationDialog(
+                      context: context,
+                      mode: RoleMutationMode.create,
+                      allowPlatformScope: true,
+                      allowTenantScope: true,
+                      allowFacilityScope: true,
+                      requireTenantPicker: true,
+                      loadTenantOptions: () async {
+                        tenantLoadCount += 1;
+                        return const <AccessAdminLookupOption>[
                           AccessAdminLookupOption(
-                            id: 'facility-1',
-                            label: 'Main Campus',
+                            id: 'tenant-1',
+                            label: 'DemoCare General Hospital',
                           ),
-                        ],
-                    loadPermissionsForTenant:
-                        ({
-                          required String tenantId,
-                          String? facilityId,
-                        }) async =>
-                            const Result<List<AccessAdminLookupOption>>.success(
-                              <AccessAdminLookupOption>[
-                                AccessAdminLookupOption(
-                                  id: 'perm-1',
-                                  label: 'patient:read',
-                                ),
-                              ],
-                            ),
-                    onSubmit: (_) async => null,
-                  ),
-                );
-              },
-              child: const Text('Open'),
-            );
-          },
+                        ];
+                      },
+                      loadPermissionsForTenant:
+                          ({
+                            required String tenantId,
+                            String? facilityId,
+                          }) async =>
+                              const Result<List<AccessAdminLookupOption>>.success(
+                                <AccessAdminLookupOption>[],
+                              ),
+                      onSubmit: (List<AccessAdminRoleDraft> drafts) async =>
+                          null,
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Open'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Open'));
+      await tester.pump();
+      for (int attempt = 0; attempt < 20; attempt += 1) {
+        await tester.pump(const Duration(milliseconds: 50));
+        if (find.text('Platform').evaluate().isNotEmpty) {
+          break;
+        }
+      }
+      await tester.pumpAndSettle();
 
-    expect(find.text('One facility'), findsOneWidget);
-    expect(find.text('Main Campus'), findsOneWidget);
-  });
+      expect(find.text('CREATE ROLE'), findsOneWidget);
+      expect(find.text('Platform'), findsOneWidget);
+      expect(find.text('Tenant(s)'), findsOneWidget);
+      expect(find.text('Facility(ies)'), findsOneWidget);
+      expect(find.text('Entire organization'), findsNothing);
+      expect(find.text('One facility'), findsNothing);
+      expect(tenantLoadCount, 0);
+
+      await tester.tap(find.text('Tenant(s)'));
+      await tester.pump();
+      for (int attempt = 0; attempt < 20; attempt += 1) {
+        await tester.pump(const Duration(milliseconds: 50));
+        if (tenantLoadCount > 0) {
+          break;
+        }
+      }
+      await tester.pumpAndSettle();
+      expect(tenantLoadCount, 1);
+    },
+  );
+
+  testWidgets(
+    'facility-only actor shows only Facility(ies) without Platform/Tenant radios',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              return ElevatedButton(
+                onPressed: () {
+                  unawaited(
+                    showRoleMutationDialog(
+                      context: context,
+                      mode: RoleMutationMode.create,
+                      tenantId: 'tenant-1',
+                      allowPlatformScope: false,
+                      allowTenantScope: false,
+                      allowFacilityScope: true,
+                      allowTenantWideScope: false,
+                      forceFacilityScope: true,
+                      loadFacilityOptions: (_) async =>
+                          const <AccessAdminLookupOption>[
+                            AccessAdminLookupOption(
+                              id: 'facility-1',
+                              label: 'Main Campus',
+                            ),
+                          ],
+                      onSubmit: (List<AccessAdminRoleDraft> drafts) async =>
+                          null,
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Facility(ies)'), findsOneWidget);
+      expect(find.text('Platform'), findsNothing);
+      expect(find.text('Tenant(s)'), findsNothing);
+      expect(find.text('Main Campus'), findsOneWidget);
+      expect(find.text('Entire organization'), findsNothing);
+      expect(find.text('One facility'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'shows tenant guidance when create identity is blocked',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              return ElevatedButton(
+                onPressed: () {
+                  unawaited(
+                    showRoleMutationDialog(
+                      context: context,
+                      mode: RoleMutationMode.create,
+                      allowPlatformScope: true,
+                      allowTenantScope: true,
+                      allowFacilityScope: true,
+                      requireTenantPicker: true,
+                      loadTenantOptions: () async =>
+                          const <AccessAdminLookupOption>[
+                            AccessAdminLookupOption(
+                              id: 'tenant-1',
+                              label: 'DemoCare General Hospital',
+                            ),
+                            AccessAdminLookupOption(
+                              id: 'tenant-2',
+                              label: 'Second Care',
+                            ),
+                          ],
+                      onSubmit: (List<AccessAdminRoleDraft> drafts) async =>
+                          null,
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Tenant(s)'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Select at least one tenant before entering role details.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets(
     'edit mode keeps attached permissions selected after lookup load',
@@ -162,7 +234,8 @@ void main() {
                           label: 'billing:read',
                         ),
                       ],
-                      onSubmit: (_) async => null,
+                      onSubmit: (List<AccessAdminRoleDraft> drafts) async =>
+                          null,
                     ),
                   );
                 },
@@ -198,7 +271,10 @@ void main() {
                     mode: RoleMutationMode.create,
                     tenantId: 'tenant-1',
                     includePermissions: false,
-                    onSubmit: (_) async => null,
+                    allowPlatformScope: false,
+                    allowTenantScope: true,
+                    allowFacilityScope: true,
+                    onSubmit: (List<AccessAdminRoleDraft> drafts) async => null,
                   ),
                 );
               },

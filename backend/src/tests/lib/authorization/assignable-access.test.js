@@ -3,6 +3,7 @@
  */
 
 const {
+  canActorCreatePlatformRole,
   canActorCreateTenantWideRole,
   filterPermissionRecordsByCeiling,
   isRoleWithinActorCeiling,
@@ -20,6 +21,14 @@ describe('assignable-access', () => {
 
     it('blocks facility admins', () => {
       expect(canActorCreateTenantWideRole({ roles: [ROLES.FACILITY_ADMIN] })).toBe(false);
+    });
+  });
+
+  describe('canActorCreatePlatformRole', () => {
+    it('allows super admins only', () => {
+      expect(canActorCreatePlatformRole({ roles: [ROLES.SUPER_ADMIN] })).toBe(true);
+      expect(canActorCreatePlatformRole({ roles: [ROLES.TENANT_ADMIN] })).toBe(false);
+      expect(canActorCreatePlatformRole({ roles: [ROLES.FACILITY_ADMIN] })).toBe(false);
     });
   });
 

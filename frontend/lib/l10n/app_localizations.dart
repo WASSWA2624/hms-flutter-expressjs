@@ -39346,6 +39346,24 @@ abstract class AppLocalizations {
   /// **'Scope'**
   String get accessAdminRoleScopeLabel;
 
+  /// Create-role scope radio for platform-scoped roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get accessAdminRoleScopePlatformLabel;
+
+  /// Create-role scope radio for one or more tenant-wide roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant(s)'**
+  String get accessAdminRoleScopeTenantsLabel;
+
+  /// Create-role scope radio for one or more facility-scoped roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility(ies)'**
+  String get accessAdminRoleScopeFacilitiesLabel;
+
   /// Role scope option for tenant-wide roles available to all facilities.
   ///
   /// In en, this message translates to:
@@ -39357,6 +39375,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One facility'**
   String get accessAdminRoleScopeFacilityLabel;
+
+  /// Label for multi-select tenant targets when creating a role.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenants'**
+  String get accessAdminRoleSelectTenantsLabel;
+
+  /// Label for multi-select facility targets when creating a role.
+  ///
+  /// In en, this message translates to:
+  /// **'Facilities'**
+  String get accessAdminRoleSelectFacilitiesLabel;
+
+  /// Guidance when create-role identity fields wait on tenant selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one tenant before entering role details.'**
+  String get accessAdminRoleIdentityBlockedSelectTenants;
+
+  /// Guidance when create-role identity fields wait on facility selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one facility before entering role details.'**
+  String get accessAdminRoleIdentityBlockedSelectFacilities;
+
+  /// Guidance when create-role identity fields wait on scope selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a scope above before entering role details.'**
+  String get accessAdminRoleIdentityBlockedSelectScope;
+
+  /// Validation when create-role multi-select has no targets.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one target for this scope.'**
+  String get accessAdminRoleTargetsRequired;
 
   /// Title when facility options cannot be loaded for a facility-scoped role.
   ///

@@ -86,6 +86,11 @@ const canActorCreateTenantWideRole = (user = {}) => {
   return false;
 };
 
+const canActorCreatePlatformRole = (user = {}) => {
+  const roles = new Set(resolveActorRoleNames(user));
+  return roles.has(ROLES.SUPER_ADMIN);
+};
+
 const isPermissionNameAssignable = (permissionName, assignableSet) => {
   const name = text(permissionName);
   if (!name) {
@@ -332,6 +337,22 @@ const assertRoleScopeAllowed = async (payload = {}, user = {}) => {
   const facilityId = payload.facility_id;
   const hasFacility =
     facilityId != null && String(facilityId).trim() !== '';
+  const hasTenant =
+    payload.tenant_id != null && String(payload.tenant_id).trim() !== '';
+
+  // Platform-scoped role: no tenant, no facility.
+  if (!hasFacility && !hasTenant) {
+    if (!canActorCreatePlatformRole(user)) {
+      throw new HttpError('errors.auth.insufficient_permissions', 403, [
+        { field: 'tenant_id', reason: 'platform_scope_forbidden' },
+      ]);
+    }
+    return {
+      ...payload,
+      tenant_id: null,
+      facility_id: null,
+    };
+  }
 
   if (!hasFacility && !canActorCreateTenantWideRole(user)) {
     throw new HttpError('errors.auth.insufficient_permissions', 403, [
@@ -555,6 +576,7 @@ module.exports = {
   assertRoleScopeAllowed,
   assertActorTenantMatches,
   buildRoleScopeWhere,
+  canActorCreatePlatformRole,
   canActorCreateTenantWideRole,
   collectRolePermissionNames,
   filterPermissionRecordsByCeiling,

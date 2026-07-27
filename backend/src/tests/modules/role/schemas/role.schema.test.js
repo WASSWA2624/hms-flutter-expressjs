@@ -102,13 +102,34 @@ describe('Role Schema Validation', () => {
       }
     });
 
-    it('should reject missing tenant_id', () => {
-      const invalidData = {
-        name: 'Test Role',
-        display_name: 'Test Role'
+    it('should accept platform create without tenant_id', () => {
+      const validData = {
+        name: 'Platform Role',
+        display_name: 'Platform Role',
+        tenant_id: null,
+        facility_id: null
       };
-      const result = createRoleSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
+      const result = createRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept platform create when tenant_id is omitted', () => {
+      const validData = {
+        name: 'Platform Role',
+        display_name: 'Platform Role'
+      };
+      const result = createRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept facility-scoped create without tenant_id', () => {
+      const validData = {
+        facility_id: '123e4567-e89b-12d3-a456-426614174001',
+        name: 'Facility Role',
+        display_name: 'Facility Role'
+      };
+      const result = createRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
     });
 
     it('should reject missing name', () => {

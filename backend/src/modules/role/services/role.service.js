@@ -42,10 +42,10 @@ const assertRoleUniqueness = async ({
   confirmSimilar = false,
   excludeRoleId = null
 }) => {
-  if (!tenantId) {
-    return null;
-  }
-
+  const scopeTenantId =
+    tenantId == null || String(tenantId).trim() === ''
+      ? null
+      : String(tenantId).trim();
   const scopeFacilityId =
     facilityId == null || String(facilityId).trim() === ''
       ? null
@@ -53,7 +53,7 @@ const assertRoleUniqueness = async ({
 
   const existing = await roleRepository.findMany(
     {
-      tenant_id: tenantId,
+      tenant_id: scopeTenantId,
       facility_id: scopeFacilityId
     },
     0,
@@ -143,10 +143,16 @@ const resolveRoleId = async (identifier) =>
 const normalizeCreateRolePayload = async (data = {}) => {
   const payload = { ...data };
 
-  payload.tenant_id = await resolveIdentifierForPayload({
-    value: data.tenant_id,
-    model: 'tenant',
-    field: 'tenant_id'});
+  if (data.tenant_id == null || String(data.tenant_id).trim() === '') {
+    payload.tenant_id = null;
+  } else {
+    payload.tenant_id = await resolveIdentifierForPayload({
+      value: data.tenant_id,
+      model: 'tenant',
+      field: 'tenant_id',
+      nullable: true
+    });
+  }
 
   if (data.facility_id != null && String(data.facility_id).trim() !== '') {
     payload.facility_id = await resolveIdentifierForPayload({
@@ -154,7 +160,7 @@ const normalizeCreateRolePayload = async (data = {}) => {
       model: 'facility',
       field: 'facility_id',
       nullable: true});
-  } else if (data.facility_id === null) {
+  } else {
     payload.facility_id = null;
   }
 

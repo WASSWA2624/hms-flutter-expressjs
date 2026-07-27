@@ -27287,6 +27287,18 @@
   "@accessAdminRoleScopeLabel": {
     "description": "Label for role scope (tenant-wide vs facility) control."
   },
+  "accessAdminRoleScopePlatformLabel": "Platform",
+  "@accessAdminRoleScopePlatformLabel": {
+    "description": "Create-role scope radio for platform-scoped roles."
+  },
+  "accessAdminRoleScopeTenantsLabel": "Tenant(s)",
+  "@accessAdminRoleScopeTenantsLabel": {
+    "description": "Create-role scope radio for one or more tenant-wide roles."
+  },
+  "accessAdminRoleScopeFacilitiesLabel": "Facility(ies)",
+  "@accessAdminRoleScopeFacilitiesLabel": {
+    "description": "Create-role scope radio for one or more facility-scoped roles."
+  },
   "accessAdminRoleScopeTenantLabel": "Entire organization",
   "@accessAdminRoleScopeTenantLabel": {
     "description": "Role scope option for tenant-wide roles available to all facilities."
@@ -27294,6 +27306,30 @@
   "accessAdminRoleScopeFacilityLabel": "One facility",
   "@accessAdminRoleScopeFacilityLabel": {
     "description": "Role scope option for facility-specific roles."
+  },
+  "accessAdminRoleSelectTenantsLabel": "Tenants",
+  "@accessAdminRoleSelectTenantsLabel": {
+    "description": "Label for multi-select tenant targets when creating a role."
+  },
+  "accessAdminRoleSelectFacilitiesLabel": "Facilities",
+  "@accessAdminRoleSelectFacilitiesLabel": {
+    "description": "Label for multi-select facility targets when creating a role."
+  },
+  "accessAdminRoleIdentityBlockedSelectTenants": "Select at least one tenant before entering role details.",
+  "@accessAdminRoleIdentityBlockedSelectTenants": {
+    "description": "Guidance when create-role identity fields wait on tenant selection."
+  },
+  "accessAdminRoleIdentityBlockedSelectFacilities": "Select at least one facility before entering role details.",
+  "@accessAdminRoleIdentityBlockedSelectFacilities": {
+    "description": "Guidance when create-role identity fields wait on facility selection."
+  },
+  "accessAdminRoleIdentityBlockedSelectScope": "Choose a scope above before entering role details.",
+  "@accessAdminRoleIdentityBlockedSelectScope": {
+    "description": "Guidance when create-role identity fields wait on scope selection."
+  },
+  "accessAdminRoleTargetsRequired": "Select at least one target for this scope.",
+  "@accessAdminRoleTargetsRequired": {
+    "description": "Validation when create-role multi-select has no targets."
   },
   "accessAdminRoleFacilityRequiredTitle": "Facility required",
   "@accessAdminRoleFacilityRequiredTitle": {
