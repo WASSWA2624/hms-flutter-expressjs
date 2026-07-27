@@ -15,7 +15,7 @@ String accessAdminColumnVisibilityStorageKey(AccessAdminResource resource) {
     AccessAdminResource.users => 'access_admin_workspace_users_v1',
     AccessAdminResource.demoUsers => 'access_admin_workspace_demo_users_v1',
     AccessAdminResource.roles => 'access_admin_workspace_roles_v1',
-    AccessAdminResource.permissions => 'access_admin_workspace_permissions_v1',
+    AccessAdminResource.permissions => 'access_admin_workspace_permissions_v2',
     AccessAdminResource.moduleEntitlements =>
       'access_admin_workspace_entitlements_v1',
     AccessAdminResource.registrationFollowUps =>
@@ -75,7 +75,6 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminDefaultColumns(
       'perm_name',
       'perm_description',
       'perm_code',
-      'perm_status',
     },
     AccessAdminResource.moduleEntitlements => const <String>{
       'ent_module',
@@ -569,37 +568,59 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminPermissionColumns(
       id: 'perm_description',
       label: l10n.accessAdminPermissionDescriptionColumnLabel,
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
-          appListTableCompareText(left.subtitle, right.subtitle),
-      cellBuilder: (_, AccessAdminItem item) => Text(item.subtitle ?? '—'),
+          appListTableCompareText(
+            accessAdminPermissionDescription(l10n, left),
+            accessAdminPermissionDescription(l10n, right),
+          ),
+      cellBuilder: (BuildContext context, AccessAdminItem item) =>
+          Text(accessAdminPermissionDescription(context.l10n, item)),
     ),
     AppListTableColumn<AccessAdminItem>(
       id: 'perm_code',
       label: l10n.accessAdminPermissionCodeColumnLabel,
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
-          appListTableCompareText(left.permissionName, right.permissionName),
-      cellBuilder: (BuildContext context, AccessAdminItem item) {
-        final String? code = item.permissionName ?? item.name;
-        if (code == null || code.trim().isEmpty) {
+          appListTableCompareText(
+            accessAdminPermissionMachineCode(left),
+            accessAdminPermissionMachineCode(right),
+          ),
+      cellBuilder: (_, AccessAdminItem item) {
+        final String? code = accessAdminPermissionMachineCode(item);
+        if (code == null) {
           return const Text('—');
         }
-        return Text(l10n.permissionCatalogLabelForCode(code));
-      },
-    ),
-    AppListTableColumn<AccessAdminItem>(
-      id: 'perm_status',
-      label: l10n.accessAdminColumnStatus,
-      sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
-          appListTableCompareText(left.status, right.status),
-      cellBuilder: (BuildContext context, AccessAdminItem item) {
-        if (item.status == null) {
-          return const Text('—');
-        }
-        return AppWorkspaceStatusBadge(
-          status: accessAdminItemStatus(context, item.status),
-        );
+        return Text(code);
       },
     ),
   ];
+}
+
+/// Machine permission code (`domain:action`), never the localized display name.
+String? accessAdminPermissionMachineCode(AccessAdminItem item) {
+  final String? code = (item.permissionName ?? item.name)?.trim();
+  if (code == null || code.isEmpty) {
+    return null;
+  }
+  return code;
+}
+
+/// Permission description from the API, falling back to catalog metadata.
+String accessAdminPermissionDescription(
+  AppLocalizations l10n,
+  AccessAdminItem item,
+) {
+  final String? subtitle = item.subtitle?.trim();
+  if (subtitle != null && subtitle.isNotEmpty) {
+    return subtitle;
+  }
+  final String? code = accessAdminPermissionMachineCode(item);
+  if (code == null) {
+    return '—';
+  }
+  final String catalog = l10n.permissionCatalogDescriptionForCode(code).trim();
+  if (catalog.isEmpty) {
+    return '—';
+  }
+  return catalog;
 }
 
 List<AppListTableColumn<AccessAdminItem>> _entitlementColumns(

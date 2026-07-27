@@ -1317,14 +1317,14 @@ class _ManageRolesPermissionsPanelState
         permissionColumns
             .where(
               (AppListTableColumn<AccessAdminItem> column) =>
-                  column.id == 'perm_code' || column.id == 'perm_status',
+                  column.id == 'perm_code',
             )
             .toList(growable: false);
     final Widget table = SizedBox.expand(
       child: buildTable(
           l10n: l10n,
           columnVisibilityStorageKey: isPermissions
-              ? 'access_admin_manage_permissions_v2'
+              ? 'access_admin_manage_permissions_v3'
               : 'access_admin_manage_roles_v2',
           onRowSelected: isPermissions
               ? (AccessAdminItem permission) =>
@@ -1491,9 +1491,11 @@ class _AccessAdminPermissionDetailDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final String? code = permission.permissionName ?? permission.name;
-    final String? description = permission.subtitle?.trim();
-    final String? status = permission.status?.trim();
+    final String? code = accessAdminPermissionMachineCode(permission);
+    final String description = accessAdminPermissionDescription(
+      l10n,
+      permission,
+    );
 
     return AppDialog(
       title: Text(l10n.accessAdminPermissionDetailsTitle),
@@ -1513,25 +1515,18 @@ class _AccessAdminPermissionDetailDialog extends StatelessWidget {
             label: l10n.accessAdminPermissionNameColumnLabel,
             value: permission.title,
           ),
-          if (code != null && code.isNotEmpty) ...<Widget>[
+          if (code != null) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             _PermissionDetailRow(
               label: l10n.accessAdminPermissionCodeColumnLabel,
-              value: l10n.permissionCatalogLabelForCode(code),
+              value: code,
             ),
           ],
-          if (description != null && description.isNotEmpty) ...<Widget>[
+          if (description != '—') ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             _PermissionDetailRow(
               label: l10n.accessAdminPermissionDescriptionColumnLabel,
               value: description,
-            ),
-          ],
-          if (status != null && status.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            _PermissionDetailRow(
-              label: l10n.accessAdminStatusLabel,
-              value: status,
             ),
           ],
         ],

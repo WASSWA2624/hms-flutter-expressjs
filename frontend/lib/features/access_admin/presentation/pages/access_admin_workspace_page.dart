@@ -801,6 +801,11 @@ class _DetailContent extends ConsumerWidget {
     final bool isUserLike =
         item.resource == AccessAdminResource.users ||
         item.resource == AccessAdminResource.demoUsers;
+    final String? permissionCode =
+        isPermission ? accessAdminPermissionMachineCode(item) : null;
+    final String? permissionDescription = isPermission
+        ? accessAdminPermissionDescription(l10n, item)
+        : null;
 
     final List<AppPermissionAssignmentOption> rolePermissionOptions =
         rolePermissions
@@ -865,20 +870,16 @@ class _DetailContent extends ConsumerWidget {
             label: l10n.accessAdminPermissionNameColumnLabel,
             value: item.title,
           ),
-          if ((item.subtitle ?? '').trim().isNotEmpty)
-            _DetailRow(
-              label: l10n.accessAdminPermissionDescriptionColumnLabel,
-              value: item.subtitle!,
-            ),
-          if (item.permissionName != null || item.name != null)
+          if (permissionCode != null)
             _DetailRow(
               label: l10n.accessAdminPermissionCodeColumnLabel,
-              value: l10n.permissionCatalogLabelForCode(
-                item.permissionName ?? item.name!,
-              ),
+              value: permissionCode,
             ),
-          if (item.status != null)
-            _DetailRow(label: l10n.accessAdminStatusLabel, value: item.status!),
+          if (permissionDescription != null && permissionDescription != '—')
+            _DetailRow(
+              label: l10n.accessAdminPermissionDescriptionColumnLabel,
+              value: permissionDescription,
+            ),
         ] else if (isEntitlement) ...<Widget>[
           if (item.moduleGroup != null)
             _DetailRow(
