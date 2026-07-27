@@ -13,6 +13,16 @@ const {
   listQuerySchema
 } = require('@lib/validation/zod');
 
+const optionalBooleanSchema = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return value;
+}, z.boolean().optional());
+
 // ==================== Body Schemas ====================
 
 /**
@@ -28,9 +38,11 @@ const createRoleSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(120),
-  display_name: z.string().trim().min(1).max(160).optional().nullable(),
+  display_name: z.string().trim().min(1).max(160),
   description: z.string().trim().min(1).max(255).optional().nullable(),
-  permission_ids: permissionIdsSchema});
+  permission_ids: permissionIdsSchema,
+  confirm_similar: optionalBooleanSchema
+});
 
 /**
  * Update role body validation
@@ -42,7 +54,9 @@ const updateRoleSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   display_name: z.string().trim().min(1).max(160).optional().nullable(),
   description: z.string().trim().min(1).max(255).optional().nullable(),
-  permission_ids: permissionIdsSchema});
+  permission_ids: permissionIdsSchema,
+  confirm_similar: optionalBooleanSchema
+});
 
 // ==================== URL Params ====================
 

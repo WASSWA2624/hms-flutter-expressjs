@@ -47,6 +47,9 @@ describe('Role Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue({});
+    assertPermissionIdsAssignable.mockImplementation(async (ids = []) =>
+      Array.isArray(ids) ? [...ids] : []
+    );
   });
 
   describe('listRoles', () => {
@@ -126,10 +129,15 @@ describe('Role Service', () => {
   describe('createRole', () => {
     it('should create role and audit log', async () => {
       const mockRole = { id: 'role-123', name: 'New Role' };
+      roleRepository.findMany.mockResolvedValue([]);
       roleRepository.create.mockResolvedValue(mockRole);
 
       const result = await createRole(
-        { name: 'New Role', tenant_id: 'tenant-1' },
+        {
+          name: 'New Role',
+          display_name: 'New Role',
+          tenant_id: 'tenant-1'
+        },
         'user-123',
         '127.0.0.1',
         { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
@@ -148,12 +156,14 @@ describe('Role Service', () => {
 
     it('should create role with batched permission_ids', async () => {
       const mockRole = { id: 'role-123', name: 'New Role' };
+      roleRepository.findMany.mockResolvedValue([]);
       roleRepository.create.mockResolvedValue(mockRole);
       assertPermissionIdsAssignable.mockResolvedValue(['perm-1', 'perm-2']);
 
       const result = await createRole(
         {
           name: 'New Role',
+          display_name: 'New Role',
           tenant_id: 'tenant-1',
           permission_ids: ['perm-1', 'perm-2']},
         'user-123',
@@ -173,10 +183,81 @@ describe('Role Service', () => {
       );
     });
 
+    it('should reject similar roles unless confirm_similar is true', async () => {
+      roleRepository.findMany.mockResolvedValue([
+        {
+          id: 'role-1',
+          human_friendly_id: 'ROL0001',
+          tenant_id: 'tenant-1',
+          facility_id: null,
+          name: 'WARD CLERK',
+          display_name: 'Ward Clerk',
+          description: 'Front desk'
+        }
+      ]);
+
+      await expect(
+        createRole(
+          {
+            name: 'WARD CLRCK',
+            display_name: 'Ward Clerk',
+            description: 'Front desk',
+            tenant_id: 'tenant-1'
+          },
+          'user-123',
+          '127.0.0.1',
+          { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
+        )
+      ).rejects.toMatchObject({
+        messageKey: 'errors.role.similar_exists',
+        statusCode: 409
+      });
+      expect(roleRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should create anyway when confirm_similar is true', async () => {
+      const mockRole = { id: 'role-123', name: 'WARD CLRCK' };
+      roleRepository.findMany.mockResolvedValue([
+        {
+          id: 'role-1',
+          human_friendly_id: 'ROL0001',
+          tenant_id: 'tenant-1',
+          facility_id: null,
+          name: 'WARD CLERK',
+          display_name: 'Ward Clerk',
+          description: 'Front desk'
+        }
+      ]);
+      roleRepository.create.mockResolvedValue(mockRole);
+
+      const result = await createRole(
+        {
+          name: 'WARD CLRCK',
+          display_name: 'Ward Clerk',
+          description: 'Front desk',
+          tenant_id: 'tenant-1',
+          confirm_similar: true
+        },
+        'user-123',
+        '127.0.0.1',
+        { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
+      );
+
+      expect(result).toEqual(mockRole);
+      expect(roleRepository.create).toHaveBeenCalledWith(
+        expect.not.objectContaining({ confirm_similar: true }),
+        []
+      );
+    });
+
     it('should reject tenant-wide role create for facility admins', async () => {
       await expect(
         createRole(
-          { name: 'Ward Clerk', tenant_id: 'tenant-1' },
+          {
+            name: 'Ward Clerk',
+            display_name: 'Ward Clerk',
+            tenant_id: 'tenant-1'
+          },
           'user-123',
           '127.0.0.1',
           { id: 'user-123', roles: ['FACILITY_ADMIN'], facility_id: 'facility-1' }
@@ -191,14 +272,21 @@ describe('Role Service', () => {
       const before = {
         id: 'role-123',
         name: 'Old Name',
+        display_name: 'Old Name',
+        description: null,
+        facility_id: null,
         tenant_id: 'tenant-1',
         permissions: []};
       const after = {
         id: 'role-123',
         name: 'New Name',
+        display_name: 'Old Name',
+        description: null,
+        facility_id: null,
         tenant_id: 'tenant-1',
         permissions: []};
       roleRepository.findById.mockResolvedValue(before);
+      roleRepository.findMany.mockResolvedValue([]);
       roleRepository.update.mockResolvedValue(after);
 
       const result = await updateRole(

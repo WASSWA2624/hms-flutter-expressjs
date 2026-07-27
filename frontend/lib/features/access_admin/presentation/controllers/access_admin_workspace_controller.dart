@@ -281,10 +281,37 @@ final class AccessAdminWorkspaceController
     }, refreshSession: true);
   }
 
-  Future<AppFailure?> createRole(AccessAdminRoleDraft draft) {
-    return _submitAction(
-      () => _repository.createRole(draft),
-      refreshSession: true,
+  Future<Result<AccessAdminItem>> createRole(AccessAdminRoleDraft draft) async {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current != null) {
+      _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    }
+
+    final Result<AccessAdminItem> result = await _repository.createRole(draft);
+    return result.when(
+      success: (AccessAdminItem created) async {
+        await _refreshWorkspace(preferredSelectedId: created.id);
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, isRefreshing: false));
+        }
+        await _flushPendingRefresh();
+        _scheduleSessionRehydrate();
+        return Result<AccessAdminItem>.success(created);
+      },
+      failure: (AppFailure failure) async {
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              isSaving: false,
+              isRefreshing: false,
+              lastFailure: failure,
+            ),
+          );
+        }
+        return Result<AccessAdminItem>.failure(failure);
+      },
     );
   }
 

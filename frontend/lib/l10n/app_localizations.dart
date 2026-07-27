@@ -39472,6 +39472,90 @@ abstract class AppLocalizations {
   /// **'Display name'**
   String get accessAdminRoleDisplayNameLabel;
 
+  /// Title for role similarity review dialog when matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar role found'**
+  String get accessAdminSimilarRoleDialogTitle;
+
+  /// Title for role similarity review dialog when no matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar role found'**
+  String get accessAdminNoSimilarRoleDialogTitle;
+
+  /// Banner title when an exact role name conflict is found.
+  ///
+  /// In en, this message translates to:
+  /// **'Role name already in use'**
+  String get accessAdminRoleNameAlreadyInUse;
+
+  /// Banner title when similar roles are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate role'**
+  String get accessAdminSimilarRoleWarningTitle;
+
+  /// Banner body when similar roles are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar roles below before saving.'**
+  String get accessAdminSimilarRoleWarningBody;
+
+  /// Banner title when no similar roles are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get accessAdminNoSimilarRoleBannerTitle;
+
+  /// Banner body when no similar roles are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the proposed role details below. No similar roles were found in this scope.'**
+  String get accessAdminNoSimilarRoleDialogBody;
+
+  /// Heading for the proposed role card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed role'**
+  String get accessAdminSimilarRoleProposedHeading;
+
+  /// Confirm create despite similar roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get accessAdminProceedCreateRoleAction;
+
+  /// Continue create when no similar roles are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue create'**
+  String get accessAdminContinueCreateRoleAction;
+
+  /// Open an existing similar role instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Use existing role'**
+  String get accessAdminUseExistingRoleAction;
+
+  /// Action to assign permissions to a role from details.
+  ///
+  /// In en, this message translates to:
+  /// **'Add permissions'**
+  String get accessAdminAddRolePermissionsAction;
+
+  /// Title for the role permissions assignment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add role permissions'**
+  String get accessAdminAddRolePermissionsDialogTitle;
+
+  /// Description for the role permissions assignment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the permissions this role should grant.'**
+  String get accessAdminAddRolePermissionsDialogDescription;
+
   /// Access admin role description field label.
   ///
   /// In en, this message translates to:

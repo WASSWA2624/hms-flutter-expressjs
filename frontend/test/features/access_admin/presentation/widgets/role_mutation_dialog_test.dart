@@ -180,4 +180,41 @@ void main() {
       expect(find.textContaining('2 of 3 selected'), findsWidgets);
     },
   );
+
+  testWidgets('create mode omits permissions and marks display name required', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (BuildContext context) {
+            return ElevatedButton(
+              onPressed: () {
+                unawaited(
+                  showRoleMutationDialog(
+                    context: context,
+                    mode: RoleMutationMode.create,
+                    tenantId: 'tenant-1',
+                    includePermissions: false,
+                    onSubmit: (_) async => null,
+                  ),
+                );
+              },
+              child: const Text('Open'),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CREATE ROLE'), findsOneWidget);
+    expect(find.text('Permissions'), findsNothing);
+    expect(find.textContaining('Display name'), findsWidgets);
+    expect(find.textContaining('Role name'), findsWidgets);
+  });
 }

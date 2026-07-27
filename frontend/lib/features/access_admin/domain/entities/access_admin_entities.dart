@@ -696,6 +696,7 @@ final class AccessAdminRoleDraft {
     this.displayName,
     this.description,
     this.permissionIds = const <String>[],
+    this.confirmSimilar = false,
   });
 
   final String tenantId;
@@ -704,6 +705,27 @@ final class AccessAdminRoleDraft {
   final String? displayName;
   final String? description;
   final List<String> permissionIds;
+  final bool confirmSimilar;
+
+  AccessAdminRoleDraft copyWith({
+    String? tenantId,
+    String? facilityId,
+    String? name,
+    String? displayName,
+    String? description,
+    List<String>? permissionIds,
+    bool? confirmSimilar,
+  }) {
+    return AccessAdminRoleDraft(
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
+      name: name ?? this.name,
+      displayName: displayName ?? this.displayName,
+      description: description ?? this.description,
+      permissionIds: permissionIds ?? this.permissionIds,
+      confirmSimilar: confirmSimilar ?? this.confirmSimilar,
+    );
+  }
 }
 
 @immutable

@@ -9,10 +9,12 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/role_similarity.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_similarity_dialog.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/user_mutation_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
@@ -63,7 +65,7 @@ Future<bool?> showAccessAdminCreateUserDialog(
   );
 }
 
-Future<bool?> showAccessAdminCreateRoleDialog(
+Future<AccessAdminItem?> showAccessAdminCreateRoleDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
@@ -206,7 +208,7 @@ Future<bool?> openAccessAdminEditUserDialog(
   );
 }
 
-Future<bool?> openAccessAdminCreateRoleDialog(
+Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
@@ -239,35 +241,28 @@ Future<bool?> openAccessAdminCreateRoleDialog(
   }
 
   final bool needsFacilityScope = !allowTenantWideScope;
-  final bool hasCachedPermissions = state.data.lookups.permissions.isNotEmpty;
   AccessAdminLookups? prefetched;
   if ((initialTenantId ?? '').isNotEmpty) {
-    if (hasCachedPermissions) {
-      unawaited(
-        _prefetchRoleDialogLookups(
-          ref,
-          tenantId: initialTenantId!,
-          facilityId: needsFacilityScope ? initialFacilityId : null,
-          includeFacilities: needsFacilityScope || initialFacilityId != null,
-        ),
-      );
-    } else {
-      prefetched = await _prefetchRoleDialogLookups(
-        ref,
-        tenantId: initialTenantId!,
-        facilityId: needsFacilityScope ? initialFacilityId : null,
-        includeFacilities: needsFacilityScope || initialFacilityId != null,
-      );
-    }
+    prefetched = await _prefetchRoleDialogLookups(
+      ref,
+      tenantId: initialTenantId!,
+      facilityId: needsFacilityScope ? initialFacilityId : null,
+      includeFacilities: needsFacilityScope || initialFacilityId != null,
+    );
   }
 
   if (!context.mounted) {
     return null;
   }
 
-  return showRoleMutationDialog(
+  AccessAdminItem? createdRole;
+  AccessAdminItem? existingRoleToOpen;
+  var similarityAccepted = false;
+
+  final bool? saved = await showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.create,
+    includePermissions: false,
     permissionLookups:
         prefetched?.permissions ?? state.data.lookups.permissions,
     initialFacilityOptions:
@@ -281,21 +276,108 @@ Future<bool?> openAccessAdminCreateRoleDialog(
         : null,
     loadFacilityOptions: (String tenantId) =>
         loadAccessAdminFacilityOptions(ref, tenantId),
-    loadPermissionsForTenant:
-        ({required String tenantId, String? facilityId}) =>
-            _loadAccessAdminPermissionLookups(
-              ref,
-              state,
-              tenantId: tenantId,
-              facilityId: facilityId,
-            ),
     tenantId: initialTenantId,
     facilityId: initialFacilityId,
     requireTenantPicker: requireTenantPicker,
     allowTenantWideScope: allowTenantWideScope,
     forceFacilityScope: !allowTenantWideScope,
-    onSubmit: (AccessAdminRoleDraft draft) =>
-        _submitAccessAdminRoleCreate(ref, draft),
+    onSubmit: (AccessAdminRoleDraft draft) async {
+      final AccessAdminRoleDraft pending = draft.copyWith(
+        confirmSimilar: similarityAccepted || draft.confirmSimilar,
+      );
+      if (!pending.confirmSimilar) {
+        final List<AccessAdminItem> peers = await _loadRoleSimilarityPeers(
+          ref,
+          tenantId: pending.tenantId,
+          facilityId: pending.facilityId,
+        );
+        if (!context.mounted) {
+          return AppFailure.validation();
+        }
+        final RoleDuplicateCheckResult check = checkRoleDuplicates(
+          name: pending.name,
+          displayName: pending.displayName ?? '',
+          description: pending.description,
+          facilityId: pending.facilityId,
+          existing: peers,
+        );
+        final List<RoleSimilarityMatch> reviewMatches = check.exactNameConflict
+            ? check.similarMatches
+                  .where((RoleSimilarityMatch match) => match.exactNameConflict)
+                  .toList(growable: false)
+            : check.overridableMatches;
+        if (reviewMatches.isNotEmpty || check.exactNameConflict) {
+          final RoleSimilarityDialogResult review =
+              await showRoleSimilarityDialog(
+                context,
+                proposed: RoleSimilarityProposedValues(
+                  name: pending.name,
+                  displayName: pending.displayName ?? '',
+                  description: pending.description,
+                ),
+                matches: reviewMatches,
+                allowProceed: !check.exactNameConflict,
+              );
+          if (!context.mounted) {
+            return AppFailure.validation();
+          }
+          switch (review.action) {
+            case RoleSimilarityAction.cancel:
+              return AppFailure.validation();
+            case RoleSimilarityAction.useExisting:
+              existingRoleToOpen = review.selectedRole?.role;
+              return null;
+            case RoleSimilarityAction.proceed:
+              similarityAccepted = true;
+          }
+        }
+      }
+
+      final Result<AccessAdminItem> result = await ref
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .createRole(
+            pending.copyWith(confirmSimilar: similarityAccepted),
+          );
+      return result.when(
+        success: (AccessAdminItem created) {
+          createdRole = created;
+          return null;
+        },
+        failure: (AppFailure failure) => failure,
+      );
+    },
+  );
+
+  if (existingRoleToOpen != null) {
+    return existingRoleToOpen;
+  }
+  if (saved == true) {
+    return createdRole;
+  }
+  return null;
+}
+
+Future<List<AccessAdminItem>> _loadRoleSimilarityPeers(
+  WidgetRef ref, {
+  required String tenantId,
+  String? facilityId,
+}) async {
+  final Result<AccessAdminWorkspaceData> result = await ref
+      .read(accessAdminRepositoryProvider)
+      .getWorkspace(
+        AccessAdminWorkspaceQuery(
+          panel: AccessAdminPanel.roles,
+          resource: AccessAdminResource.roles,
+          tenantId: tenantId,
+          facilityId: facilityId,
+          allFacilities: facilityId == null || facilityId.trim().isEmpty,
+          lean: true,
+          pageRequest: const AppPageRequest(pageSize: 100),
+        ),
+      );
+  return result.when(
+    success: (AccessAdminWorkspaceData data) => data.items,
+    failure: (_) => const <AccessAdminItem>[],
   );
 }
 
@@ -465,16 +547,6 @@ Future<AppFailure?> _submitAccessAdminUserUpdate(
   return ref
       .read(accessAdminWorkspaceControllerProvider.notifier)
       .updateUserWithRoles(userId, draft, roleIds);
-}
-
-Future<AppFailure?> _submitAccessAdminRoleCreate(
-  WidgetRef ref,
-  AccessAdminRoleDraft draft,
-) async {
-  final AppFailure? failure = await ref
-      .read(accessAdminWorkspaceControllerProvider.notifier)
-      .createRole(draft);
-  return failure;
 }
 
 Future<AppFailure?> _submitAccessAdminRoleUpdate(

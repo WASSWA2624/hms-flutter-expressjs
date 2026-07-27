@@ -54,7 +54,7 @@ abstract interface class AccessAdminRepository {
     String? facilityId,
   });
 
-  Future<Result<void>> createRole(AccessAdminRoleDraft draft);
+  Future<Result<AccessAdminItem>> createRole(AccessAdminRoleDraft draft);
 
   Future<Result<void>> updateRole(String roleId, AccessAdminRoleDraft draft);
 

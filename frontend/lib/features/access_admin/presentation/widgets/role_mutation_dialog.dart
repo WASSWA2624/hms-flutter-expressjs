@@ -48,6 +48,7 @@ Future<bool?> showRoleMutationDialog({
   bool requireTenantPicker = false,
   bool allowTenantWideScope = true,
   bool forceFacilityScope = false,
+  bool? includePermissions,
   String? initialName,
   String? initialDisplayName,
   String? initialDescription,
@@ -55,6 +56,8 @@ Future<bool?> showRoleMutationDialog({
   required RoleMutationSubmitHandler onSubmit,
 }) async {
   final AppLocalizations l10n = context.l10n;
+  final bool showPermissions =
+      includePermissions ?? mode == RoleMutationMode.edit;
   final TextEditingController nameController = TextEditingController(
     text: initialName,
   );
@@ -293,6 +296,7 @@ Future<bool?> showRoleMutationDialog({
                   !isLoadingFacilities &&
                   !scheduledInitialFacilityLoad;
               final bool shouldLoadPermissions =
+                  showPermissions &&
                   loadPermissionsForTenant != null &&
                   scopeReady &&
                   !permissionLoadAttempted &&
@@ -525,7 +529,11 @@ Future<bool?> showRoleMutationDialog({
                           controller: displayNameController,
                           enabled: fieldsEnabled,
                           labelText: l10n.accessAdminRoleDisplayNameLabel,
+                          isRequired: true,
                           textCapitalization: TextCapitalization.words,
+                          validator: AppValidators.requiredText(
+                            l10n.validationRequired,
+                          ),
                         ),
                       ),
                       SizedBox(height: theme.spacing.sm),
@@ -537,8 +545,9 @@ Future<bool?> showRoleMutationDialog({
                       ),
                     ],
                   ),
-                  SizedBox(height: theme.spacing.md),
-                  AppFormSection(
+                  if (showPermissions) ...<Widget>[
+                    SizedBox(height: theme.spacing.md),
+                    AppFormSection(
                     density: AppFormSectionDensity.compact,
                     title: l10n.accessAdminRolePermissionsLabel,
                     children: <Widget>[
@@ -642,6 +651,7 @@ Future<bool?> showRoleMutationDialog({
                       ],
                     ],
                   ),
+                  ],
                 ],
               );
             },
@@ -656,7 +666,13 @@ Future<bool?> showRoleMutationDialog({
           (selectedFacilityId == null || selectedFacilityId!.trim().isEmpty)) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
-      if (currentPermissionLookups.isEmpty || selectedPermissionIds.isEmpty) {
+      final String displayName = displayNameController.text.trim();
+      if (displayName.isEmpty) {
+        return Future<AppFailure?>.value(AppFailure.validation());
+      }
+      if (showPermissions &&
+          (currentPermissionLookups.isEmpty ||
+              selectedPermissionIds.isEmpty)) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
       return onSubmit(
@@ -666,11 +682,13 @@ Future<bool?> showRoleMutationDialog({
               ? selectedFacilityId
               : null,
           name: nameController.text.trim().toUpperCase(),
-          displayName: displayNameController.text.trim().isEmpty
+          displayName: displayName,
+          description: descriptionController.text.trim().isEmpty
               ? null
-              : displayNameController.text.trim(),
-          description: descriptionController.text.trim(),
-          permissionIds: selectedPermissionIds.toList(growable: false),
+              : descriptionController.text.trim(),
+          permissionIds: showPermissions
+              ? selectedPermissionIds.toList(growable: false)
+              : const <String>[],
         ),
       );
     },

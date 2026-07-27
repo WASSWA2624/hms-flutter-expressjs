@@ -25,8 +25,74 @@ const {
   assertRoleNotSystemProtected,
   assertRoleScopeAllowed,
   assertPermissionIdsAssignable} = require('@lib/authorization/assignable-access');
+const { checkRoleDuplicates } = require('@lib/role/role-similarity');
 
 const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
+const ROLE_SIMILARITY_LOOKUP_LIMIT = 200;
+
+const stripSimilarityPayloadFields = (data = {}) => {
+  const { confirm_similar: _confirmSimilar, ...payload } = data;
+  return payload;
+};
+
+const assertRoleUniqueness = async ({
+  data,
+  tenantId,
+  facilityId = null,
+  confirmSimilar = false,
+  excludeRoleId = null
+}) => {
+  if (!tenantId) {
+    return null;
+  }
+
+  const scopeFacilityId =
+    facilityId == null || String(facilityId).trim() === ''
+      ? null
+      : String(facilityId).trim();
+
+  const existing = await roleRepository.findMany(
+    {
+      tenant_id: tenantId,
+      facility_id: scopeFacilityId
+    },
+    0,
+    ROLE_SIMILARITY_LOOKUP_LIMIT,
+    { name: 'asc' }
+  );
+
+  const duplicateCheck = checkRoleDuplicates({
+    name: data.name,
+    displayName: data.display_name,
+    description: data.description,
+    facilityId: scopeFacilityId,
+    existing,
+    excludeRoleId
+  });
+
+  if (duplicateCheck.exactNameConflict) {
+    throw new HttpError('errors.role.duplicate_name', 409, [
+      {
+        field: 'name',
+        matches: duplicateCheck.similarMatches
+          .filter((match) => match.exactNameConflict)
+          .slice(0, 5)
+      }
+    ]);
+  }
+
+  const reviewMatches = duplicateCheck.overridableMatches.slice(0, 5);
+  if (reviewMatches.length > 0 && !confirmSimilar) {
+    throw new HttpError('errors.role.similar_exists', 409, [
+      {
+        field: 'name',
+        matches: reviewMatches
+      }
+    ]);
+  }
+
+  return duplicateCheck;
+};
 
 const resolveRoleRealtimeAction = (event) => {
   if (String(event || '').includes('deleted')) {
@@ -185,9 +251,20 @@ const getRoleById = async (id, userId, ipAddress) => {
  */
 const createRole = async (data, userId, ipAddress, actor = null) => {
   try {
-    const { permission_ids: permissionIdsInput, ...roleFields } = data || {};
+    const confirmSimilar = data?.confirm_similar === true;
+    const {
+      permission_ids: permissionIdsInput,
+      ...roleFieldsWithConfirm
+    } = data || {};
+    const roleFields = stripSimilarityPayloadFields(roleFieldsWithConfirm);
     const payload = await normalizeCreateRolePayload(roleFields);
     const scopedPayload = await assertRoleScopeAllowed(payload, actor || { id: userId });
+    await assertRoleUniqueness({
+      data: scopedPayload,
+      tenantId: scopedPayload.tenant_id,
+      facilityId: scopedPayload.facility_id,
+      confirmSimilar
+    });
     const permissionIds = await assertPermissionIdsAssignable(
       permissionIdsInput,
       actor || { id: userId },
@@ -242,7 +319,10 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
     assertActorCanManageRoleRecord(before, actorUser);
     assertRoleNotSystemProtected(before, 'update');
 
-    const { permission_ids: permissionIdsInput, ...roleFields } = data || {};
+    const confirmSimilar = data?.confirm_similar === true;
+    const { permission_ids: permissionIdsInput, ...roleFieldsWithConfirm } =
+      data || {};
+    const roleFields = stripSimilarityPayloadFields(roleFieldsWithConfirm);
     const payload = { ...roleFields };
     if (Object.prototype.hasOwnProperty.call(roleFields, 'facility_id')) {
       if (roleFields.facility_id != null && String(roleFields.facility_id).trim() !== '') {
@@ -261,6 +341,48 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
           facility_id: payload.facility_id},
         actorUser
       );
+    }
+
+    const nextName = Object.prototype.hasOwnProperty.call(payload, 'name')
+      ? payload.name
+      : before.name;
+    const nextDisplayName = Object.prototype.hasOwnProperty.call(
+      payload,
+      'display_name'
+    )
+      ? payload.display_name
+      : before.display_name;
+    const nextDescription = Object.prototype.hasOwnProperty.call(
+      payload,
+      'description'
+    )
+      ? payload.description
+      : before.description;
+    const nextFacilityId = Object.prototype.hasOwnProperty.call(
+      payload,
+      'facility_id'
+    )
+      ? payload.facility_id
+      : before.facility_id;
+
+    const identityChanged =
+      String(nextName || '') !== String(before.name || '') ||
+      String(nextDisplayName || '') !== String(before.display_name || '') ||
+      String(nextDescription || '') !== String(before.description || '') ||
+      String(nextFacilityId || '') !== String(before.facility_id || '');
+
+    if (identityChanged) {
+      await assertRoleUniqueness({
+        data: {
+          name: nextName,
+          display_name: nextDisplayName,
+          description: nextDescription
+        },
+        tenantId: before.tenant_id,
+        facilityId: nextFacilityId,
+        confirmSimilar,
+        excludeRoleId: resolvedRoleId
+      });
     }
 
     const shouldSyncPermissions = Object.prototype.hasOwnProperty.call(

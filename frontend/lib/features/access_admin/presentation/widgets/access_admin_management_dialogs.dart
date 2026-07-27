@@ -1082,15 +1082,19 @@ class _ManageRolesPermissionsPanelState
     if (state == null || !mounted) {
       return;
     }
-    final bool? saved = await openAccessAdminCreateRoleDialog(
+    final AccessAdminItem? createdOrExisting =
+        await openAccessAdminCreateRoleDialog(
       context,
       ref,
       state,
     );
-    if (saved == true && mounted) {
+    if (createdOrExisting != null && mounted) {
       mutated = true;
       await reload(resetPage: true, silent: true);
-      // createRole already schedules a deferred session rehydrate.
+      if (!mounted) {
+        return;
+      }
+      await _openRoleDetail(createdOrExisting);
     }
   }
 
@@ -1125,6 +1129,7 @@ class _ManageRolesPermissionsPanelState
         role: role,
         permissions: permissions,
         canWrite: canWrite,
+        repository: repository,
         onEdit: () {
           Navigator.of(dialogContext).pop();
           unawaited(_openEditRoleDialog(role));
@@ -1132,6 +1137,9 @@ class _ManageRolesPermissionsPanelState
         onDelete: () {
           Navigator.of(dialogContext).pop();
           unawaited(_confirmDeleteRole(role));
+        },
+        onPermissionsChanged: () {
+          mutated = true;
         },
       ),
     );
@@ -1645,25 +1653,47 @@ class _PermissionDetailSummaryCard extends StatelessWidget {
   }
 }
 
-class _AccessAdminRoleDetailDialog extends StatelessWidget {
+class _AccessAdminRoleDetailDialog extends StatefulWidget {
   const _AccessAdminRoleDetailDialog({
     required this.role,
     required this.permissions,
     required this.canWrite,
+    required this.repository,
     required this.onEdit,
     required this.onDelete,
+    this.onPermissionsChanged,
   });
 
   final AccessAdminItem role;
   final List<AccessAdminRolePermissionAssignment> permissions;
   final bool canWrite;
+  final AccessAdminRepository repository;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback? onPermissionsChanged;
+
+  @override
+  State<_AccessAdminRoleDetailDialog> createState() =>
+      _AccessAdminRoleDetailDialogState();
+}
+
+class _AccessAdminRoleDetailDialogState
+    extends State<_AccessAdminRoleDetailDialog> {
+  late List<AccessAdminRolePermissionAssignment> _permissions;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _permissions = List<AccessAdminRolePermissionAssignment>.from(
+      widget.permissions,
+    );
+  }
 
   List<AppPermissionAssignmentOption> _permissionOptions(
     AppLocalizations l10n,
   ) {
-    return permissions
+    return _permissions
         .map((AccessAdminRolePermissionAssignment assignment) {
           final String code =
               assignment.permissionName ?? assignment.permissionId ?? '';
@@ -1679,6 +1709,157 @@ class _AccessAdminRoleDetailDialog extends StatelessWidget {
         })
         .whereType<AppPermissionAssignmentOption>()
         .toList(growable: false);
+  }
+
+  Future<void> _addPermissions() async {
+    final AppLocalizations l10n = context.l10n;
+    final String? tenantId = widget.role.tenantId?.trim();
+    if (tenantId == null || tenantId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.accessAdminTenantContextRequiredBody)),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    final Result<AccessAdminLookups> lookupResult = await widget.repository
+        .getReferenceData(
+          tenantId: tenantId,
+          facilityId: widget.role.facilityId,
+          include: const <String>['permissions'],
+          forceRefresh: true,
+        );
+    if (!mounted) {
+      return;
+    }
+    final AccessAdminLookups? resolved = lookupResult.when(
+      success: (AccessAdminLookups value) => value,
+      failure: (_) => null,
+    );
+    setState(() => _saving = false);
+    if (resolved == null || resolved.permissions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            lookupResult.when(
+              success: (_) =>
+                  l10n.accessAdminPermissionCatalogUnavailableMessage,
+              failure: (AppFailure failure) =>
+                  context.l10n.failureMessage(failure),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final Set<String> selectedIds = <String>{
+      for (final AccessAdminRolePermissionAssignment assignment in _permissions)
+        if ((assignment.permissionId ?? '').isNotEmpty) assignment.permissionId!,
+    };
+    final List<AppPermissionAssignmentOption> options = resolved.permissions
+        .map(
+          (AccessAdminLookupOption permission) => AppPermissionAssignmentOption(
+            id: permission.id,
+            code: permission.label,
+            label: l10n.permissionCatalogLabelForCode(permission.label),
+            description: permission.meta,
+          ),
+        )
+        .toList(growable: false);
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setDialogState) {
+            return AppDialog(
+              title: Text(l10n.accessAdminAddRolePermissionsDialogTitle),
+              icon: const Icon(Icons.key_outlined),
+              maxWidth: 720,
+              scrollable: true,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    l10n.accessAdminAddRolePermissionsDialogDescription,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  SizedBox(height: Theme.of(context).spacing.md),
+                  AppPermissionAssignmentPicker(
+                    permissions: options,
+                    selectedPermissionIds: selectedIds,
+                    onSelectionChanged: (Set<String> next) {
+                      setDialogState(() {
+                        selectedIds
+                          ..clear()
+                          ..addAll(next);
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                AppButton.secondary(
+                  label: l10n.commonCancelActionLabel,
+                  leadingIcon: Icons.close,
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                ),
+                AppButton.primary(
+                  label: l10n.commonSaveActionLabel,
+                  leadingIcon: Icons.save_outlined,
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() => _saving = true);
+    final Result<void> syncResult = await widget.repository.syncRolePermissions(
+      roleId: widget.role.mutationId,
+      permissionIds: selectedIds.toList(growable: false),
+    );
+    if (!mounted) {
+      return;
+    }
+    final AppFailure? syncFailure = syncResult.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+    if (syncFailure != null) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.failureMessage(syncFailure))),
+      );
+      return;
+    }
+
+    final Result<List<AccessAdminRolePermissionAssignment>> reloadResult =
+        await widget.repository.listRolePermissions(widget.role.id);
+    if (!mounted) {
+      return;
+    }
+    reloadResult.when(
+      success: (List<AccessAdminRolePermissionAssignment> value) {
+        setState(() {
+          _permissions = value;
+          _saving = false;
+        });
+        widget.onPermissionsChanged?.call();
+      },
+      failure: (AppFailure failure) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.failureMessage(failure))),
+        );
+      },
+    );
   }
 
   @override
@@ -1698,8 +1879,12 @@ class _AccessAdminRoleDetailDialog extends StatelessWidget {
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          if (_saving)
+            const LinearProgressIndicator(minHeight: 2)
+          else
+            const SizedBox(height: 2),
           _RoleDetailSummaryCard(
-            role: role,
+            role: widget.role,
             permissionCount: permissionOptions.length,
           ),
           SizedBox(height: theme.spacing.md),
@@ -1724,18 +1909,26 @@ class _AccessAdminRoleDetailDialog extends StatelessWidget {
         ],
       ),
       actions: <Widget>[
-        if (canWrite) ...<Widget>[
+        if (widget.canWrite) ...<Widget>[
+          AppButton.secondary(
+            label: l10n.accessAdminAddRolePermissionsAction,
+            leadingIcon: Icons.key_outlined,
+            enabled: !_saving,
+            onPressed: _saving ? null : () => unawaited(_addPermissions()),
+          ),
           AppButton.secondary(
             label: l10n.accessAdminEditRoleAction,
             leadingIcon: Icons.edit_outlined,
-            onPressed: onEdit,
+            enabled: !_saving,
+            onPressed: widget.onEdit,
           ),
-          if (!role.isSystemCritical)
+          if (!widget.role.isSystemCritical)
             AppButton.secondary(
               label: l10n.accessAdminDeleteRoleAction,
               leadingIcon: Icons.delete_outline,
               color: colors.error,
-              onPressed: onDelete,
+              enabled: !_saving,
+              onPressed: widget.onDelete,
             ),
         ],
         AppButton.secondary(

@@ -21345,6 +21345,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminRoleDisplayNameLabel => 'Display name';
 
   @override
+  String get accessAdminSimilarRoleDialogTitle => 'Similar role found';
+
+  @override
+  String get accessAdminNoSimilarRoleDialogTitle => 'No similar role found';
+
+  @override
+  String get accessAdminRoleNameAlreadyInUse => 'Role name already in use';
+
+  @override
+  String get accessAdminSimilarRoleWarningTitle => 'Potential duplicate role';
+
+  @override
+  String get accessAdminSimilarRoleWarningBody =>
+      'Review the similar roles below before saving.';
+
+  @override
+  String get accessAdminNoSimilarRoleBannerTitle =>
+      'Match status: No similar found';
+
+  @override
+  String get accessAdminNoSimilarRoleDialogBody =>
+      'Review the proposed role details below. No similar roles were found in this scope.';
+
+  @override
+  String get accessAdminSimilarRoleProposedHeading => 'Proposed role';
+
+  @override
+  String get accessAdminProceedCreateRoleAction => 'Create anyway';
+
+  @override
+  String get accessAdminContinueCreateRoleAction => 'Continue create';
+
+  @override
+  String get accessAdminUseExistingRoleAction => 'Use existing role';
+
+  @override
+  String get accessAdminAddRolePermissionsAction => 'Add permissions';
+
+  @override
+  String get accessAdminAddRolePermissionsDialogTitle => 'Add role permissions';
+
+  @override
+  String get accessAdminAddRolePermissionsDialogDescription =>
+      'Choose the permissions this role should grant.';
+
+  @override
   String get accessAdminRoleDescriptionLabel => 'Description';
 
   @override

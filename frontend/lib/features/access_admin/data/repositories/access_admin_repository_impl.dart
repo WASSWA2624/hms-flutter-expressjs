@@ -288,9 +288,9 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<void>> createRole(AccessAdminRoleDraft draft) {
+  Future<Result<AccessAdminItem>> createRole(AccessAdminRoleDraft draft) {
     return _afterAccessMutation(
-      () => _apiClient.post<void>(
+      () => _apiClient.post<AccessAdminItem>(
         ApiEndpoints.collection(HmsApiResource.roles),
         data: _withoutEmpty(<String, Object?>{
           'tenant_id': draft.tenantId,
@@ -299,8 +299,17 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
           'display_name': draft.displayName,
           'description': draft.description,
           'permission_ids': draft.permissionIds,
+          if (draft.confirmSimilar) 'confirm_similar': true,
         }),
-        decoder: (_) {},
+        decoder: (Object? data) {
+          final Map<String, dynamic> payload = _asStringKeyedMap(
+            _asStringKeyedMap(data)['data'] ?? data,
+          );
+          return AccessAdminItemDto.fromJson(
+            payload,
+            AccessAdminResource.roles,
+          ).toEntity();
+        },
       ),
     );
   }
@@ -315,6 +324,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
       'display_name': draft.displayName,
       'facility_id': draft.facilityId,
       'permission_ids': draft.permissionIds,
+      if (draft.confirmSimilar) 'confirm_similar': true,
     };
     return _afterAccessMutation(
       () => _apiClient.put<void>(

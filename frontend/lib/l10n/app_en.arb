@@ -27371,6 +27371,62 @@
   "@accessAdminRoleDisplayNameLabel": {
     "description": "Access admin role display name field label."
   },
+  "accessAdminSimilarRoleDialogTitle": "Similar role found",
+  "@accessAdminSimilarRoleDialogTitle": {
+    "description": "Title for role similarity review dialog when matches exist."
+  },
+  "accessAdminNoSimilarRoleDialogTitle": "No similar role found",
+  "@accessAdminNoSimilarRoleDialogTitle": {
+    "description": "Title for role similarity review dialog when no matches exist."
+  },
+  "accessAdminRoleNameAlreadyInUse": "Role name already in use",
+  "@accessAdminRoleNameAlreadyInUse": {
+    "description": "Banner title when an exact role name conflict is found."
+  },
+  "accessAdminSimilarRoleWarningTitle": "Potential duplicate role",
+  "@accessAdminSimilarRoleWarningTitle": {
+    "description": "Banner title when similar roles are found."
+  },
+  "accessAdminSimilarRoleWarningBody": "Review the similar roles below before saving.",
+  "@accessAdminSimilarRoleWarningBody": {
+    "description": "Banner body when similar roles are found."
+  },
+  "accessAdminNoSimilarRoleBannerTitle": "Match status: No similar found",
+  "@accessAdminNoSimilarRoleBannerTitle": {
+    "description": "Banner title when no similar roles are found."
+  },
+  "accessAdminNoSimilarRoleDialogBody": "Review the proposed role details below. No similar roles were found in this scope.",
+  "@accessAdminNoSimilarRoleDialogBody": {
+    "description": "Banner body when no similar roles are found."
+  },
+  "accessAdminSimilarRoleProposedHeading": "Proposed role",
+  "@accessAdminSimilarRoleProposedHeading": {
+    "description": "Heading for the proposed role card in similarity review."
+  },
+  "accessAdminProceedCreateRoleAction": "Create anyway",
+  "@accessAdminProceedCreateRoleAction": {
+    "description": "Confirm create despite similar roles."
+  },
+  "accessAdminContinueCreateRoleAction": "Continue create",
+  "@accessAdminContinueCreateRoleAction": {
+    "description": "Continue create when no similar roles are found."
+  },
+  "accessAdminUseExistingRoleAction": "Use existing role",
+  "@accessAdminUseExistingRoleAction": {
+    "description": "Open an existing similar role instead of creating."
+  },
+  "accessAdminAddRolePermissionsAction": "Add permissions",
+  "@accessAdminAddRolePermissionsAction": {
+    "description": "Action to assign permissions to a role from details."
+  },
+  "accessAdminAddRolePermissionsDialogTitle": "Add role permissions",
+  "@accessAdminAddRolePermissionsDialogTitle": {
+    "description": "Title for the role permissions assignment dialog."
+  },
+  "accessAdminAddRolePermissionsDialogDescription": "Choose the permissions this role should grant.",
+  "@accessAdminAddRolePermissionsDialogDescription": {
+    "description": "Description for the role permissions assignment dialog."
+  },
   "accessAdminRoleDescriptionLabel": "Description",
   "@accessAdminRoleDescriptionLabel": {
     "description": "Access admin role description field label."

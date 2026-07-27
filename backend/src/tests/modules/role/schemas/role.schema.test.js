@@ -26,14 +26,14 @@ describe('Role Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with null display_name', () => {
-      const validData = {
+    it('should reject null display_name on create', () => {
+      const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Role',
         display_name: null
       };
-      const result = createRoleSchema.safeParse(validData);
-      expect(result.success).toBe(true);
+      const result = createRoleSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
     });
 
     it('should reject display_name exceeding max length', () => {
@@ -46,39 +46,54 @@ describe('Role Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should validate with minimal data (tenant_id and name only)', () => {
+    it('should reject missing display_name', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Basic Role'
       };
       const result = createRoleSchema.safeParse(validData);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('should validate friendly tenant identifiers', () => {
       const validData = {
         tenant_id: 'TEN0001',
-        name: 'Basic Role'
+        name: 'Basic Role',
+        display_name: 'Basic Role'
       };
       const result = createRoleSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
-    it('should validate with null optional fields', () => {
+    it('should validate with null optional description', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         facility_id: null,
         name: 'Test Role',
+        display_name: 'Test Role',
         description: null
       };
       const result = createRoleSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
+    it('should accept confirm_similar on create', () => {
+      const validData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Role',
+        display_name: 'Test Role',
+        confirm_similar: true
+      };
+      const result = createRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      expect(result.data.confirm_similar).toBe(true);
+    });
+
     it('should trim name whitespace', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
-        name: '  Admin Role  '
+        name: '  Admin Role  ',
+        display_name: 'Administrator'
       };
       const result = createRoleSchema.safeParse(validData);
       expect(result.success).toBe(true);
@@ -89,7 +104,8 @@ describe('Role Schema Validation', () => {
 
     it('should reject missing tenant_id', () => {
       const invalidData = {
-        name: 'Test Role'
+        name: 'Test Role',
+        display_name: 'Test Role'
       };
       const result = createRoleSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -97,7 +113,8 @@ describe('Role Schema Validation', () => {
 
     it('should reject missing name', () => {
       const invalidData = {
-        tenant_id: '123e4567-e89b-12d3-a456-426614174000'
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        display_name: 'Test Role'
       };
       const result = createRoleSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -106,7 +123,8 @@ describe('Role Schema Validation', () => {
     it('should reject invalid tenant_id format', () => {
       const invalidData = {
         tenant_id: 'invalid-uuid',
-        name: 'Test Role'
+        name: 'Test Role',
+        display_name: 'Test Role'
       };
       const result = createRoleSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -115,7 +133,8 @@ describe('Role Schema Validation', () => {
     it('should reject name exceeding max length', () => {
       const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
-        name: 'a'.repeat(121)
+        name: 'a'.repeat(121),
+        display_name: 'Test Role'
       };
       const result = createRoleSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -125,6 +144,7 @@ describe('Role Schema Validation', () => {
       const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Role',
+        display_name: 'Test Role',
         description: 'a'.repeat(256)
       };
       const result = createRoleSchema.safeParse(invalidData);
@@ -134,7 +154,8 @@ describe('Role Schema Validation', () => {
     it('should reject empty name', () => {
       const invalidData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
-        name: ''
+        name: '',
+        display_name: 'Test Role'
       };
       const result = createRoleSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
