@@ -229,7 +229,9 @@ final class AccessAdminItemDto {
           _nullableString(json['scope']) ??
           (_nullableString(json['facility_id']) != null
               ? 'facility'
-              : 'tenant'),
+              : _nullableString(json['tenant_id']) != null
+              ? 'tenant'
+              : 'platform'),
       email: _nullableString(json['email']),
       phone: _nullableString(json['phone']),
       positionTitle: _nullableString(json['position_title']),

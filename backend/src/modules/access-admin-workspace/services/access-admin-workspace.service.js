@@ -194,7 +194,11 @@ const serializeRole = (record) => {
     tenant_id: record.tenant_id || null,
     facility_id: record.facility_id || null,
     facility_name: record.facility_name || null,
-    scope: record.facility_id ? 'facility' : 'tenant',
+    scope: record.facility_id
+      ? 'facility'
+      : record.tenant_id
+        ? 'tenant'
+        : 'platform',
     permission_count: permissionCount,
     // List payloads stay lean; load permission rows on edit via role-permissions.
     permissions,

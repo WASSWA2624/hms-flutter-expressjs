@@ -124,6 +124,162 @@ final class RoleDuplicateCheckResult {
   }
 }
 
+/// Hydrates review rows from backend uniqueness conflict `errors[].matches`.
+List<RoleSimilarityMatch> roleSimilarityMatchesFromConflictEntries(
+  List<Map<String, Object?>> entries,
+) {
+  final List<RoleSimilarityMatch> matches = <RoleSimilarityMatch>[];
+  final Set<String> seen = <String>{};
+
+  for (final Map<String, Object?> entry in entries) {
+    final String id = _conflictString(
+      entry['display_id'] ??
+          entry['human_friendly_id'] ??
+          entry['id'] ??
+          entry['resource_uuid'],
+    );
+    if (id.isEmpty || !seen.add(id)) {
+      continue;
+    }
+
+    final String name = _conflictString(entry['name']);
+    final String displayName = _conflictString(
+      entry['display_name'] ?? entry['displayName'] ?? name,
+    );
+    final String? description = _nullIfEmpty(
+      _conflictString(entry['description']),
+    );
+    final String? tenantId = _nullIfEmpty(
+      _conflictString(entry['tenant_id'] ?? entry['tenantId']),
+    );
+    final String? facilityId = _nullIfEmpty(
+      _conflictString(entry['facility_id'] ?? entry['facilityId']),
+    );
+    final String scope = facilityId != null
+        ? 'facility'
+        : tenantId != null
+        ? 'tenant'
+        : 'platform';
+
+    final int score = _conflictInt(entry['score']) ?? 0;
+    final bool exactNameConflict = entry['exactNameConflict'] == true;
+    final bool exactDisplayNameConflict =
+        entry['exactDisplayNameConflict'] == true;
+    final bool isExact =
+        entry['isExact'] == true ||
+        exactNameConflict ||
+        exactDisplayNameConflict;
+
+    matches.add(
+      RoleSimilarityMatch(
+        role: AccessAdminItem(
+          id: id,
+          resource: AccessAdminResource.roles,
+          displayId: id,
+          title: displayName.isNotEmpty ? displayName : name,
+          resourceUuid: _nullIfEmpty(_conflictString(entry['id'])),
+          name: name.isEmpty ? null : name,
+          displayName: displayName.isEmpty ? null : displayName,
+          subtitle: description,
+          tenantId: tenantId,
+          facilityId: facilityId,
+          roleScope: scope,
+        ),
+        score: score,
+        reasons: _conflictStringList(entry['reasons']),
+        isExact: isExact,
+        exactNameConflict: exactNameConflict,
+        exactDisplayNameConflict: exactDisplayNameConflict,
+        nameScore: _conflictInt(entry['nameScore']),
+        displayNameScore: _conflictInt(entry['displayNameScore']),
+        descriptionScore: _conflictInt(entry['descriptionScore']),
+        crossIdentityScore: _conflictInt(entry['crossIdentityScore']),
+        fieldComparisons: _conflictFieldComparisons(
+          entry['field_comparisons'] ?? entry['fieldComparisons'],
+        ),
+      ),
+    );
+  }
+
+  return matches;
+}
+
+String _conflictString(Object? value) {
+  if (value == null) {
+    return '';
+  }
+  return value.toString().trim();
+}
+
+int? _conflictInt(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.round();
+  }
+  return int.tryParse(_conflictString(value));
+}
+
+List<String> _conflictStringList(Object? value) {
+  if (value is! List<Object?>) {
+    return const <String>['name'];
+  }
+  final List<String> values = value
+      .map(_conflictString)
+      .where((String entry) => entry.isNotEmpty)
+      .toList(growable: false);
+  return values.isEmpty ? const <String>['name'] : values;
+}
+
+List<RoleFieldComparison> _conflictFieldComparisons(Object? value) {
+  if (value is! List<Object?>) {
+    return const <RoleFieldComparison>[];
+  }
+  final List<RoleFieldComparison> comparisons = <RoleFieldComparison>[];
+  for (final Object? entry in value) {
+    if (entry is! Map<Object?, Object?> && entry is! Map<String, Object?>) {
+      continue;
+    }
+    final Map<String, Object?> map = entry is Map<String, Object?>
+        ? entry
+        : <String, Object?>{
+            for (final MapEntry<Object?, Object?> item
+                in (entry as Map<Object?, Object?>).entries)
+              if (item.key != null) item.key.toString(): item.value,
+          };
+    final String field = _conflictString(map['field']);
+    if (field.isEmpty) {
+      continue;
+    }
+    comparisons.add(
+      RoleFieldComparison(
+        field: field,
+        inputValue: _nullIfEmpty(_conflictString(map['input_value'] ?? map['inputValue'])),
+        candidateValue: _nullIfEmpty(
+          _conflictString(map['candidate_value'] ?? map['candidateValue']),
+        ),
+        score: _conflictInt(map['score']),
+        status: _conflictFieldStatus(map['status']),
+      ),
+    );
+  }
+  return comparisons;
+}
+
+RoleFieldComparisonStatus _conflictFieldStatus(Object? value) {
+  switch (_conflictString(value).toUpperCase()) {
+    case 'MATCH':
+      return RoleFieldComparisonStatus.match;
+    case 'SIMILAR':
+      return RoleFieldComparisonStatus.similar;
+    case 'MISSING':
+      return RoleFieldComparisonStatus.missing;
+    default:
+      return RoleFieldComparisonStatus.different;
+  }
+}
+
 String? _nullIfEmpty(String? value) {
   final String trimmed = (value ?? '').trim();
   return trimmed.isEmpty ? null : trimmed;

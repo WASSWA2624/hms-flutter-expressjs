@@ -29,7 +29,7 @@ void main() {
     );
   });
 
-  test('backend uniqueness conflict reopens similarity review', () {
+  test('backend uniqueness conflict reopens similarity review with hydration', () {
     expect(
       dialogsSource.contains('forceReviewMatches: true'),
       isTrue,
@@ -37,6 +37,17 @@ void main() {
     expect(
       dialogsSource.contains(
         'failure.category == AppFailureCategory.conflict',
+      ),
+      isTrue,
+    );
+    expect(
+      dialogsSource.contains('roleSimilarityMatchesFromConflictEntries'),
+      isTrue,
+      reason: '409 match payloads must hydrate empty peer reviews',
+    );
+    expect(
+      dialogsSource.contains(
+        'Force-review after backend conflict must not reopen a false empty',
       ),
       isTrue,
     );
@@ -96,6 +107,16 @@ void main() {
     );
   });
 
+  test('peer load is search-biased for proposed identity', () {
+    expect(peerLoaderSource.contains('search: search'), isTrue);
+    expect(peerLoaderSource.contains('searchTerms'), isTrue);
+    expect(
+      peerLoaderSource.contains('requestAllTenants: true'),
+      isTrue,
+      reason: 'Tenant proposals must also search platform peers',
+    );
+  });
+
   test('failed peer lookup surfaces an error instead of no-similar', () {
     expect(
       dialogsSource.contains(
@@ -127,6 +148,14 @@ void main() {
       mutationDialogSource.contains(
         'failure.category == AppFailureCategory.cancelled',
       ),
+      isTrue,
+    );
+  });
+
+  test('exact duplicate conflict does not retry create after empty confirm', () {
+    expect(dialogsSource.contains('_isRoleDuplicateNameConflict'), isTrue);
+    expect(
+      dialogsSource.contains('!similarityAccepted || isExactNameConflict'),
       isTrue,
     );
   });

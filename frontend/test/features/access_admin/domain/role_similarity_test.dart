@@ -321,4 +321,73 @@ void main() {
       isTrue,
     );
   });
+
+  test('platform Testing conflicts hard-block same-scope recreate', () {
+    final RoleDuplicateCheckResult result = checkRoleDuplicates(
+      name: 'Testing',
+      displayName: 'Testing',
+      description: 'Testing',
+      tenantId: null,
+      facilityId: null,
+      existing: <AccessAdminItem>[
+        role(
+          id: 'ROL0000001',
+          name: 'TESTING',
+          displayName: 'Testing',
+          tenantId: null,
+          facilityId: null,
+        ),
+        role(
+          id: 'role-fac',
+          name: 'TESTING',
+          displayName: 'Testing',
+          facilityId: 'facility-1',
+        ),
+      ],
+    );
+
+    expect(result.hasExactConflict, isTrue);
+    expect(result.similarMatches, isNotEmpty);
+    expect(result.similarMatches.first.score, greaterThan(0));
+    expect(result.similarMatches.first.exactNameConflict, isTrue);
+  });
+
+  test('hydrates similarity matches from backend conflict entries', () {
+    final List<RoleSimilarityMatch> matches =
+        roleSimilarityMatchesFromConflictEntries(<Map<String, Object?>>[
+          <String, Object?>{
+            'id': 'f3d0-role',
+            'human_friendly_id': 'ROL0000001',
+            'display_id': 'ROL0000001',
+            'tenant_id': null,
+            'facility_id': null,
+            'name': 'TESTING',
+            'display_name': 'Testing',
+            'description': null,
+            'score': 100,
+            'reasons': <String>['name', 'display_name'],
+            'isExact': true,
+            'exactNameConflict': true,
+            'exactDisplayNameConflict': true,
+            'nameScore': 100,
+            'displayNameScore': 100,
+            'field_comparisons': <Map<String, Object?>>[
+              <String, Object?>{
+                'field': 'name',
+                'input_value': 'TESTING',
+                'candidate_value': 'TESTING',
+                'score': 100,
+                'status': 'MATCH',
+              },
+            ],
+          },
+        ]);
+
+    expect(matches, hasLength(1));
+    expect(matches.first.role.effectiveDisplayId, 'ROL0000001');
+    expect(matches.first.score, 100);
+    expect(matches.first.exactNameConflict, isTrue);
+    expect(matches.first.role.isPlatformScopedRole, isTrue);
+    expect(matches.first.fieldComparisons, isNotEmpty);
+  });
 }

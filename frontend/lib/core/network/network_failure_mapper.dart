@@ -67,10 +67,12 @@ final class NetworkFailureMapper {
 
     if (statusCode == 409) {
       return AppFailure.conflict(
+        code: _conflictFailureCode(response?.data),
         statusCode: statusCode,
         validationFields: _validationFields(response?.data),
         detailMessage: _responseDetail(response?.data),
         fieldMessages: _validationFieldMessages(response?.data),
+        conflictEntries: _conflictEntries(response?.data),
       );
     }
 
@@ -211,6 +213,46 @@ final class NetworkFailureMapper {
     }
 
     return code.toString().trim().toUpperCase();
+  }
+
+  String _conflictFailureCode(Object? data) {
+    final String? code = _responseCode(data);
+    if (code == null || code.isEmpty || code == 'CONFLICT') {
+      return 'network.conflict';
+    }
+    return code;
+  }
+
+  List<Map<String, Object?>> _conflictEntries(Object? data) {
+    if (data is! Map<Object?, Object?>) {
+      return const <Map<String, Object?>>[];
+    }
+
+    final Object? errors = data['errors'];
+    if (errors is! List<Object?>) {
+      return const <Map<String, Object?>>[];
+    }
+
+    final List<Map<String, Object?>> matches = <Map<String, Object?>>[];
+    for (final Object? entry in errors) {
+      if (entry is! Map<Object?, Object?>) {
+        continue;
+      }
+      final Object? nested = entry['matches'];
+      if (nested is! List<Object?>) {
+        continue;
+      }
+      for (final Object? match in nested) {
+        if (match is! Map<Object?, Object?>) {
+          continue;
+        }
+        matches.add(<String, Object?>{
+          for (final MapEntry<Object?, Object?> item in match.entries)
+            if (item.key != null) item.key.toString(): item.value,
+        });
+      }
+    }
+    return matches;
   }
 
   String _unauthorizedFailureCode(Object? data) {

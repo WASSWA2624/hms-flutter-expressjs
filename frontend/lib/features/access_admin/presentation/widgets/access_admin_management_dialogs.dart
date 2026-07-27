@@ -273,9 +273,13 @@ abstract class _ScopedAccessAdminListDialogState<
                     ? (item.facilityName?.trim().isNotEmpty == true
                           ? '${context.l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
                           : context.l10n.accessAdminRoleScopeFacilityBadge)
+                    : item.isPlatformScopedRole
+                    ? context.l10n.accessAdminRoleScopePlatformLabel
                     : context.l10n.accessAdminRoleScopeTenantBadge,
                 icon: item.isFacilityScopedRole
                     ? Icons.local_hospital_outlined
+                    : item.isPlatformScopedRole
+                    ? Icons.public_outlined
                     : Icons.domain_outlined,
               )
             else if ((item.status ?? '').isNotEmpty)
@@ -2133,27 +2137,43 @@ class _RoleScopeBadge extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     final bool isFacility = item.isFacilityScopedRole;
+    final bool isPlatform = item.isPlatformScopedRole;
     final String label = isFacility
         ? (item.facilityName?.trim().isNotEmpty == true
               ? '${l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
               : l10n.accessAdminRoleScopeFacilityBadge)
+        : isPlatform
+        ? l10n.accessAdminRoleScopePlatformLabel
         : l10n.accessAdminRoleScopeTenantBadge;
 
     return Chip(
       avatar: Icon(
-        isFacility ? Icons.local_hospital_outlined : Icons.domain_outlined,
+        isFacility
+            ? Icons.local_hospital_outlined
+            : isPlatform
+            ? Icons.public_outlined
+            : Icons.domain_outlined,
         size: 16,
-        color: isFacility ? colors.tertiary : colors.primary,
+        color: isFacility
+            ? colors.tertiary
+            : isPlatform
+            ? colors.secondary
+            : colors.primary,
       ),
       label: Text(label, style: theme.textTheme.labelSmall),
       visualDensity: VisualDensity.compact,
       backgroundColor: isFacility
           ? colors.tertiaryContainer
+          : isPlatform
+          ? colors.secondaryContainer
           : colors.primaryContainer,
       side: BorderSide(
-        color: (isFacility ? colors.tertiary : colors.primary).withValues(
-          alpha: 0.28,
-        ),
+        color: (isFacility
+                ? colors.tertiary
+                : isPlatform
+                ? colors.secondary
+                : colors.primary)
+            .withValues(alpha: 0.28),
       ),
       padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
     );

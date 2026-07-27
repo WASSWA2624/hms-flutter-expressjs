@@ -64,12 +64,49 @@ const assertRoleUniqueness = async ({
           ]
         };
 
-  const existing = await roleRepository.findMany(
+  const alphabetical = await roleRepository.findMany(
     peerFilters,
     0,
     ROLE_SIMILARITY_LOOKUP_LIMIT,
     { name: 'asc' }
   );
+
+  // Search-biased peers catch identity matches that sit past the alphabetical
+  // lookup window (e.g. TESTING when many earlier names fill the limit).
+  const nameTerm = String(data?.name || '').trim();
+  const displayTerm = String(data?.display_name || data?.displayName || '').trim();
+  const searchTerms = [...new Set(
+    [nameTerm, displayTerm].filter((term) => term.length > 0)
+  )];
+  const searched = [];
+  for (const term of searchTerms) {
+    const searchOr = [
+      { name: { contains: term } },
+      { display_name: { contains: term } }
+    ];
+    const searchFilters = peerFilters.OR
+      ? {
+          AND: [{ OR: peerFilters.OR }, { OR: searchOr }]
+        }
+      : { OR: searchOr };
+    const page = await roleRepository.findMany(
+      searchFilters,
+      0,
+      ROLE_SIMILARITY_LOOKUP_LIMIT,
+      { name: 'asc' }
+    );
+    searched.push(...page);
+  }
+
+  const seen = new Set();
+  const existing = [];
+  for (const role of [...searched, ...alphabetical]) {
+    const key = String(role?.id || role?.human_friendly_id || '').trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    existing.push(role);
+    if (existing.length >= ROLE_SIMILARITY_LOOKUP_LIMIT) break;
+  }
 
   const duplicateCheck = checkRoleDuplicates({
     name: data.name,

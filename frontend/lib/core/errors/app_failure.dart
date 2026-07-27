@@ -51,6 +51,7 @@ sealed class AppFailure {
     Set<String> validationFields,
     String? detailMessage,
     Map<String, String> fieldMessages,
+    List<Map<String, Object?>> conflictEntries,
     bool isRetryable,
   }) = ConflictFailure;
 
@@ -231,8 +232,12 @@ final class ConflictFailure extends AppFailure {
     Set<String> validationFields = const <String>{},
     String? detailMessage,
     Map<String, String> fieldMessages = const <String, String>{},
+    List<Map<String, Object?>> conflictEntries = const <Map<String, Object?>>[],
     super.isRetryable = true,
-  }) : super._(
+  }) : conflictEntries = List<Map<String, Object?>>.unmodifiable(
+         conflictEntries,
+       ),
+       super._(
          category: AppFailureCategory.conflict,
          messageKey: 'errors.conflict',
          validationFields: AppFailure._normalizedFields(validationFields),
@@ -245,6 +250,52 @@ final class ConflictFailure extends AppFailure {
          }(),
          fieldMessages: AppFailure._normalizedFieldMessages(fieldMessages),
        );
+
+  /// Nested `errors[].matches` payloads from uniqueness / similarity conflicts.
+  final List<Map<String, Object?>> conflictEntries;
+
+  @override
+  bool operator ==(Object other) {
+    return other is ConflictFailure &&
+        super == other &&
+        _listMapEquals(conflictEntries, other.conflictEntries);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    super.hashCode,
+    Object.hashAll(conflictEntries.map(Object.hashAll)),
+  );
+
+  static bool _listMapEquals(
+    List<Map<String, Object?>> left,
+    List<Map<String, Object?>> right,
+  ) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var i = 0; i < left.length; i++) {
+      if (!_shallowMapEquals(left[i], right[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static bool _shallowMapEquals(
+    Map<String, Object?> left,
+    Map<String, Object?> right,
+  ) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (final MapEntry<String, Object?> entry in left.entries) {
+      if (right[entry.key] != entry.value) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
 
 final class ValidationFailure extends AppFailure {

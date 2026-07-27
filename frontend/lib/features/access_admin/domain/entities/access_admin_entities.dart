@@ -494,7 +494,13 @@ final class AccessAdminItem {
   bool get isFacilityScopedRole =>
       roleScope == 'facility' || (facilityId != null && facilityId!.isNotEmpty);
 
-  bool get isTenantScopedRole => !isFacilityScopedRole;
+  bool get isPlatformScopedRole =>
+      roleScope == 'platform' ||
+      ((tenantId == null || tenantId!.trim().isEmpty) &&
+          (facilityId == null || facilityId!.trim().isEmpty) &&
+          !isFacilityScopedRole);
+
+  bool get isTenantScopedRole => !isFacilityScopedRole && !isPlatformScopedRole;
 
   AccessAdminItem copyWith({
     String? id,

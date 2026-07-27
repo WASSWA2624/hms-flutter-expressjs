@@ -864,6 +864,9 @@ String accessAdminRoleScopeLabel(BuildContext context, AccessAdminItem item) {
         ? '${l10n.accessAdminRoleScopeFacilityBadge} · $facility'
         : l10n.accessAdminRoleScopeFacilityBadge;
   }
+  if (item.isPlatformScopedRole) {
+    return l10n.accessAdminRoleScopePlatformLabel;
+  }
   return l10n.accessAdminRoleScopeTenantBadge;
 }
 
@@ -877,24 +880,33 @@ class AccessAdminRoleScopeBadge extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     final bool isFacility = item.isFacilityScopedRole;
+    final bool isPlatform = item.isPlatformScopedRole;
     final String label = accessAdminRoleScopeLabel(context, item);
+    final Color accent = isFacility
+        ? colors.tertiary
+        : isPlatform
+        ? colors.secondary
+        : colors.primary;
+    final Color container = isFacility
+        ? colors.tertiaryContainer
+        : isPlatform
+        ? colors.secondaryContainer
+        : colors.primaryContainer;
 
     return Chip(
       avatar: Icon(
-        isFacility ? Icons.local_hospital_outlined : Icons.domain_outlined,
+        isFacility
+            ? Icons.local_hospital_outlined
+            : isPlatform
+            ? Icons.public_outlined
+            : Icons.domain_outlined,
         size: 16,
-        color: isFacility ? colors.tertiary : colors.primary,
+        color: accent,
       ),
       label: Text(label, style: theme.textTheme.labelSmall),
       visualDensity: VisualDensity.compact,
-      backgroundColor: isFacility
-          ? colors.tertiaryContainer
-          : colors.primaryContainer,
-      side: BorderSide(
-        color: (isFacility ? colors.tertiary : colors.primary).withValues(
-          alpha: 0.28,
-        ),
-      ),
+      backgroundColor: container,
+      side: BorderSide(color: accent.withValues(alpha: 0.28)),
       padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
     );
   }

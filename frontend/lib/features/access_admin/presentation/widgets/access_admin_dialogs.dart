@@ -337,12 +337,24 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
           if (!context.mounted) {
             return const AppFailure.cancelled();
           }
+
+          final bool isExactNameConflict = _isRoleDuplicateNameConflict(failure);
+          final bool alreadyConfirmed = pending.confirmSimilar;
+          // similar_exists after confirm_similar should not reopen an empty
+          // "no similar" dialog — create once was already attempted.
+          if (alreadyConfirmed && !isExactNameConflict) {
+            return failure;
+          }
+
           similarityAccepted = false;
           final AppFailure? reviewFailure = await _reviewRoleSimilarity(
             context,
             ref,
             pending: pending.copyWith(confirmSimilar: false),
             forceReviewMatches: true,
+            conflictEntries: failure is ConflictFailure
+                ? failure.conflictEntries
+                : const <Map<String, Object?>>[],
             onAccepted: () => similarityAccepted = true,
             onUseExisting: (AccessAdminItem role) {
               existingRoleToOpen = role;
@@ -354,7 +366,7 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
           if (existingRoleToOpen != null) {
             return null;
           }
-          if (!similarityAccepted) {
+          if (!similarityAccepted || isExactNameConflict) {
             return const AppFailure.cancelled();
           }
 
@@ -370,6 +382,7 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
           );
           if (retryFailure != null &&
               retryFailure.category == AppFailureCategory.conflict) {
+            // Exact conflicts cannot be bypassed with confirm_similar.
             return const AppFailure.cancelled();
           }
           if (retryFailure != null) {
@@ -405,10 +418,13 @@ Future<AppFailure?> _reviewRoleSimilarity(
   required VoidCallback onAccepted,
   required ValueChanged<AccessAdminItem> onUseExisting,
   bool forceReviewMatches = false,
+  List<Map<String, Object?>> conflictEntries = const <Map<String, Object?>>[],
 }) async {
   final _RoleSimilarityPeers peerLookup = await _loadRoleSimilarityPeers(
     ref,
     tenantId: pending.tenantId,
+    name: pending.name,
+    displayName: pending.displayName,
   );
   if (!context.mounted) {
     return const AppFailure.cancelled();
@@ -445,6 +461,25 @@ Future<AppFailure?> _reviewRoleSimilarity(
     reviewMatches = check.overridableMatches;
   }
 
+  // When peer load missed identity rows, hydrate from the authoritative
+  // backend uniqueness payload so conflict reopen is never empty "no similar".
+  if (reviewMatches.isEmpty && conflictEntries.isNotEmpty) {
+    reviewMatches = roleSimilarityMatchesFromConflictEntries(conflictEntries);
+  }
+
+  final bool hasExactConflict =
+      check.hasExactConflict ||
+      reviewMatches.any(
+        (RoleSimilarityMatch match) =>
+            match.exactNameConflict || match.exactDisplayNameConflict,
+      );
+
+  // Force-review after backend conflict must not reopen a false empty
+  // "no similar" confirmation — that loops Continue create without creating.
+  if (forceReviewMatches && reviewMatches.isEmpty) {
+    return const AppFailure.conflict(code: 'DUPLICATE_NAME');
+  }
+
   // Create always opens review (including zero matches). Force-review is used
   // when the backend returns a uniqueness conflict after the client scan.
   final RoleSimilarityDialogResult review = await showRoleSimilarityDialog(
@@ -455,7 +490,7 @@ Future<AppFailure?> _reviewRoleSimilarity(
       description: pending.description,
     ),
     matches: reviewMatches,
-    allowProceed: !check.hasExactConflict,
+    allowProceed: !hasExactConflict,
   );
   if (!context.mounted) {
     return const AppFailure.cancelled();
@@ -476,6 +511,22 @@ Future<AppFailure?> _reviewRoleSimilarity(
   }
 }
 
+bool _isRoleDuplicateNameConflict(AppFailure failure) {
+  final String code = failure.code.trim().toUpperCase();
+  if (code == 'DUPLICATE_NAME' || code.endsWith('_DUPLICATE_NAME')) {
+    return true;
+  }
+  if (failure is ConflictFailure && failure.conflictEntries.isNotEmpty) {
+    return failure.conflictEntries.any(
+      (Map<String, Object?> entry) =>
+          entry['exactNameConflict'] == true ||
+          entry['exactDisplayNameConflict'] == true ||
+          entry['isExact'] == true,
+    );
+  }
+  return false;
+}
+
 /// Matches backend `ROLE_SIMILARITY_LOOKUP_LIMIT`.
 const int _roleSimilarityPeerLimit = 500;
 
@@ -490,64 +541,139 @@ final class _RoleSimilarityPeers {
 Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
   WidgetRef ref, {
   String? tenantId,
+  String? name,
+  String? displayName,
 }) async {
   // Load tenant-wide (all facilities) or all tenants for platform proposals so
   // org/facility peers are visible. Same-scope hard conflicts remain enforced
-  // in checkRoleDuplicates.
+  // in checkRoleDuplicates. Search-biased pages catch identity peers that sit
+  // past the alphabetical ROLE_SIMILARITY_LOOKUP_LIMIT window.
   final bool allTenants = tenantId == null || tenantId.trim().isEmpty;
-  final List<AccessAdminItem> peers = <AccessAdminItem>[];
-  // Pages stay within the backend `limit` ceiling; a larger page size is
-  // rejected by validation and would leave review with zero peers.
-  var request = const AppPageRequest(pageSize: AppPageRequest.maxPageSize);
+  final Map<String, AccessAdminItem> peersByKey = <String, AccessAdminItem>{};
 
-  while (peers.length < _roleSimilarityPeerLimit) {
-    final Result<AccessAdminWorkspaceData> result = await ref
-        .read(accessAdminRepositoryProvider)
-        .getWorkspace(
-          AccessAdminWorkspaceQuery(
-            panel: AccessAdminPanel.roles,
-            resource: AccessAdminResource.roles,
-            tenantId: allTenants ? null : tenantId,
-            allTenants: allTenants,
-            allFacilities: true,
-            lean: true,
-            skipLookups: true,
-            pageRequest: request,
-          ),
+  Future<AppFailure?> appendPeers({
+    required bool requestAllTenants,
+    String? scopedTenantId,
+    String search = '',
+  }) async {
+    // Pages stay within the backend `limit` ceiling; a larger page size is
+    // rejected by validation and would leave review with zero peers.
+    var request = const AppPageRequest(pageSize: AppPageRequest.maxPageSize);
+    while (peersByKey.length < _roleSimilarityPeerLimit) {
+      final Result<AccessAdminWorkspaceData> result = await ref
+          .read(accessAdminRepositoryProvider)
+          .getWorkspace(
+            AccessAdminWorkspaceQuery(
+              panel: AccessAdminPanel.roles,
+              resource: AccessAdminResource.roles,
+              tenantId: requestAllTenants ? null : scopedTenantId,
+              allTenants: requestAllTenants,
+              allFacilities: true,
+              lean: true,
+              skipLookups: true,
+              search: search,
+              pageRequest: request,
+            ),
+          );
+
+      // A tenant-context-required response carries zero items on success; scoring
+      // against it would look like "no similar found".
+      final AppFailure? failure = result.when(
+        success: (AccessAdminWorkspaceData data) =>
+            data.state == 'tenant_context_required'
+            ? const AppFailure.unexpectedResponse()
+            : null,
+        failure: (AppFailure value) => value,
+      );
+      if (failure != null) {
+        return failure;
+      }
+
+      final AppPage<AccessAdminItem> page = result.when(
+        success: (AccessAdminWorkspaceData data) => data.page,
+        failure: (_) => const AppPage<AccessAdminItem>(
+          items: <AccessAdminItem>[],
+          request: AppPageRequest(),
+        ),
+      );
+      for (final AccessAdminItem item in page.items) {
+        // Tenant proposals keep same-tenant and platform peers only so the
+        // client peer set mirrors BE uniqueness filters.
+        if (!allTenants && requestAllTenants) {
+          final String? itemTenant = item.tenantId?.trim();
+          if (itemTenant != null &&
+              itemTenant.isNotEmpty &&
+              itemTenant != tenantId) {
+            continue;
+          }
+        }
+        final String key = <String?>[
+          item.id,
+          item.mutationId,
+          item.resourceUuid,
+          item.effectiveDisplayId,
+        ].whereType<String>().firstWhere(
+          (String value) => value.trim().isNotEmpty,
+          orElse: () => item.title,
         );
+        peersByKey.putIfAbsent(key, () => item);
+        if (peersByKey.length >= _roleSimilarityPeerLimit) {
+          break;
+        }
+      }
+      if (!page.hasNextPage || page.items.isEmpty) {
+        break;
+      }
+      request = request.next();
+    }
+    return null;
+  }
 
-    // A tenant-context-required response carries zero items on success; scoring
-    // against it would look like "no similar found".
-    final AppFailure? failure = result.when(
-      success: (AccessAdminWorkspaceData data) =>
-          data.state == 'tenant_context_required'
-          ? const AppFailure.unexpectedResponse()
-          : null,
-      failure: (AppFailure value) => value,
+  final AppFailure? baseFailure = await appendPeers(
+    requestAllTenants: allTenants,
+    scopedTenantId: allTenants ? null : tenantId,
+  );
+  if (baseFailure != null) {
+    return _RoleSimilarityPeers(
+      items: peersByKey.values.toList(growable: false),
+      failure: baseFailure,
     );
-    if (failure != null) {
+  }
+
+  final Set<String> searchTerms = <String>{
+    if ((name ?? '').trim().isNotEmpty) name!.trim(),
+    if ((displayName ?? '').trim().isNotEmpty) displayName!.trim(),
+  };
+  for (final String term in searchTerms) {
+    final AppFailure? scopedSearchFailure = await appendPeers(
+      requestAllTenants: allTenants,
+      scopedTenantId: allTenants ? null : tenantId,
+      search: term,
+    );
+    if (scopedSearchFailure != null) {
       return _RoleSimilarityPeers(
-        items: peers.toList(growable: false),
-        failure: failure,
+        items: peersByKey.values.toList(growable: false),
+        failure: scopedSearchFailure,
       );
     }
-
-    final AppPage<AccessAdminItem> page = result.when(
-      success: (AccessAdminWorkspaceData data) => data.page,
-      failure: (_) => const AppPage<AccessAdminItem>(
-        items: <AccessAdminItem>[],
-        request: AppPageRequest(),
-      ),
-    );
-    peers.addAll(page.items);
-    if (!page.hasNextPage || page.items.isEmpty) {
-      break;
+    // Tenant/facility proposals: also search platform-wide so platform peers
+    // matching the identity are not missed (BE uniqueness includes them).
+    if (!allTenants) {
+      final AppFailure? platformSearchFailure = await appendPeers(
+        requestAllTenants: true,
+        search: term,
+      );
+      if (platformSearchFailure != null) {
+        return _RoleSimilarityPeers(
+          items: peersByKey.values.toList(growable: false),
+          failure: platformSearchFailure,
+        );
+      }
     }
-    request = request.next();
   }
 
   return _RoleSimilarityPeers(
-    items: peers.take(_roleSimilarityPeerLimit).toList(growable: false),
+    items: peersByKey.values.take(_roleSimilarityPeerLimit).toList(growable: false),
   );
 }
 
