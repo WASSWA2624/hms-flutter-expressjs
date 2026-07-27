@@ -18,9 +18,9 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_mutation_dialog.dart';
 
 enum UserMutationMode { create, edit }
@@ -268,7 +268,7 @@ Future<bool?> showUserMutationDialog({
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     cancelIcon: Icons.close_outlined,
-    maxWidth: 1080,
+    maxWidth: 720,
     buildFields:
         (
           BuildContext context,
@@ -332,115 +332,154 @@ Future<bool?> showUserMutationDialog({
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  AppSectionPanel(
+                  AppFormSection(
+                    density: AppFormSectionDensity.compact,
                     title: l10n.accessAdminCreateRoleScopeSectionTitle,
-                    description:
-                        l10n.accessAdminCreateUserScopeSectionDescription,
-                    leadingIcon: Icons.apartment_outlined,
-                    tone: AppWorkspaceStatusTone.info,
                     children: <Widget>[
-                      if (showTenantPicker) ...<Widget>[
-                        if (isLoadingTenants)
-                          _UserMutationLoadingIndicator(
-                            label: l10n.accessAdminCreateRoleLoadingTenants,
-                          )
-                        else if (tenantOptions.isEmpty)
-                          AppFormInformationBanner(
-                            title: l10n.accessAdminTenantContextRequiredTitle,
-                            message: l10n.tenantFacilitySelectTenantLoadError,
-                            variant: AppFormInformationVariant.warning,
-                            icon: Icons.apartment_outlined,
-                            children: <Widget>[
-                              AppButton.secondary(
-                                label: l10n.commonRetryActionLabel,
-                                leadingIcon: Icons.refresh,
-                                enabled: !isSubmitting,
-                                onPressed: () {
-                                  setState(() {
-                                    tenantLoadAttempted = false;
-                                    scheduledInitialTenantLoad = false;
-                                  });
-                                  unawaited(reloadTenantOptions(setState));
-                                },
-                              ),
-                            ],
-                          )
-                        else
-                          AppSelectField<String>.searchable(
-                            value: selectedTenantId,
-                            enabled: !isSubmitting,
-                            labelText: l10n.tenantFacilitySelectTenantLabel,
+                      if (showTenantPicker &&
+                          !isLoadingTenants &&
+                          tenantOptions.isEmpty)
+                        AppFormInformationBanner(
+                          title: l10n.accessAdminTenantContextRequiredTitle,
+                          message: l10n.tenantFacilitySelectTenantLoadError,
+                          variant: AppFormInformationVariant.warning,
+                          icon: Icons.apartment_outlined,
+                          children: <Widget>[
+                            AppButton.secondary(
+                              label: l10n.commonRetryActionLabel,
+                              leadingIcon: Icons.refresh,
+                              enabled: !isSubmitting,
+                              onPressed: () {
+                                setState(() {
+                                  tenantLoadAttempted = false;
+                                  scheduledInitialTenantLoad = false;
+                                });
+                                unawaited(reloadTenantOptions(setState));
+                              },
+                            ),
+                          ],
+                        )
+                      else if (showTenantPicker)
+                        AppResponsiveFieldRow.two(
+                          gap: AppResponsiveFieldRowGap.form,
+                          breakpoint: 560,
+                          left: isLoadingTenants
+                              ? _UserMutationLoadingIndicator(
+                                  label: l10n
+                                      .accessAdminCreateRoleLoadingTenants,
+                                )
+                              : AppSelectField<String>.searchable(
+                                  value: selectedTenantId,
+                                  enabled: !isSubmitting,
+                                  labelText:
+                                      l10n.tenantFacilitySelectTenantLabel,
+                                  isRequired: true,
+                                  menuHeight: 320,
+                                  options: tenantOptions
+                                      .map(
+                                        (AccessAdminLookupOption tenant) =>
+                                            AppSelectOption<String>(
+                                              value: tenant.id,
+                                              label: tenant.label,
+                                            ),
+                                      )
+                                      .toList(growable: false),
+                                  onChanged: (String? value) {
+                                    setState(() {
+                                      selectedTenantId = value;
+                                      selectedFacilityId = null;
+                                      facilityLoadAttempted = false;
+                                      scheduledInitialFacilityLoad = false;
+                                      referenceLoadAttempted = false;
+                                      scheduledInitialReferenceLoad = false;
+                                      selectedRoleIds.clear();
+                                      selectedPermissionIds.clear();
+                                    });
+                                  },
+                                  validator: (String? value) =>
+                                      (value ?? '').trim().isEmpty
+                                      ? l10n.validationRequired
+                                      : null,
+                                ),
+                          right: _UserMutationReasonedField(
+                            reason: facilityDisabledReason,
+                            child: AppSelectField<String>.searchable(
+                              value: selectedFacilityId,
+                              enabled: facilityEnabled &&
+                                  facilityOptions.isNotEmpty,
+                              isLoading: isLoadingFacilities,
+                              labelText:
+                                  l10n.tenantFacilityFacilitySelectLabel,
+                              isRequired: true,
+                              menuHeight: 320,
+                              options: facilityOptions
+                                  .map(
+                                    (AccessAdminLookupOption facility) =>
+                                        AppSelectOption<String>(
+                                          value: facility.id,
+                                          label: facility.label,
+                                        ),
+                                  )
+                                  .toList(growable: false),
+                              onChanged: facilityEnabled
+                                  ? (String? value) {
+                                      setState(() {
+                                        selectedFacilityId = value;
+                                        referenceLoadAttempted = false;
+                                        scheduledInitialReferenceLoad = false;
+                                        selectedRoleIds.clear();
+                                        selectedPermissionIds.clear();
+                                      });
+                                    }
+                                  : null,
+                              validator: (String? value) =>
+                                  (value ?? '').trim().isEmpty
+                                  ? l10n.validationRequired
+                                  : null,
+                            ),
+                          ),
+                        )
+                      else
+                        _UserMutationReasonedField(
+                          reason: facilityDisabledReason,
+                          child: AppSelectField<String>.searchable(
+                            value: selectedFacilityId,
+                            enabled:
+                                facilityEnabled && facilityOptions.isNotEmpty,
+                            isLoading: isLoadingFacilities,
+                            labelText: l10n.tenantFacilityFacilitySelectLabel,
                             isRequired: true,
                             menuHeight: 320,
-                            options: tenantOptions
+                            options: facilityOptions
                                 .map(
-                                  (AccessAdminLookupOption tenant) =>
+                                  (AccessAdminLookupOption facility) =>
                                       AppSelectOption<String>(
-                                        value: tenant.id,
-                                        label: tenant.label,
+                                        value: facility.id,
+                                        label: facility.label,
                                       ),
                                 )
                                 .toList(growable: false),
-                            onChanged: (String? value) {
-                              setState(() {
-                                selectedTenantId = value;
-                                selectedFacilityId = null;
-                                facilityLoadAttempted = false;
-                                scheduledInitialFacilityLoad = false;
-                                referenceLoadAttempted = false;
-                                scheduledInitialReferenceLoad = false;
-                                selectedRoleIds.clear();
-                                selectedPermissionIds.clear();
-                              });
-                            },
+                            onChanged: facilityEnabled
+                                ? (String? value) {
+                                    setState(() {
+                                      selectedFacilityId = value;
+                                      referenceLoadAttempted = false;
+                                      scheduledInitialReferenceLoad = false;
+                                      selectedRoleIds.clear();
+                                      selectedPermissionIds.clear();
+                                    });
+                                  }
+                                : null,
                             validator: (String? value) =>
                                 (value ?? '').trim().isEmpty
                                 ? l10n.validationRequired
                                 : null,
                           ),
-                        SizedBox(height: Theme.of(context).spacing.md),
-                      ],
-                      _UserMutationReasonedField(
-                        reason: facilityDisabledReason,
-                        child: AppSelectField<String>.searchable(
-                          value: selectedFacilityId,
-                          enabled:
-                              facilityEnabled && facilityOptions.isNotEmpty,
-                          isLoading: isLoadingFacilities,
-                          labelText: l10n.tenantFacilityFacilitySelectLabel,
-                          isRequired: true,
-                          menuHeight: 320,
-                          options: facilityOptions
-                              .map(
-                                (AccessAdminLookupOption facility) =>
-                                    AppSelectOption<String>(
-                                      value: facility.id,
-                                      label: facility.label,
-                                    ),
-                              )
-                              .toList(growable: false),
-                          onChanged: facilityEnabled
-                              ? (String? value) {
-                                  setState(() {
-                                    selectedFacilityId = value;
-                                    referenceLoadAttempted = false;
-                                    scheduledInitialReferenceLoad = false;
-                                    selectedRoleIds.clear();
-                                    selectedPermissionIds.clear();
-                                  });
-                                }
-                              : null,
-                          validator: (String? value) =>
-                              (value ?? '').trim().isEmpty
-                              ? l10n.validationRequired
-                              : null,
                         ),
-                      ),
                       if (tenantSelected &&
                           facilityLoadAttempted &&
                           !isLoadingFacilities &&
-                          facilityOptions.isEmpty) ...<Widget>[
-                        SizedBox(height: Theme.of(context).spacing.md),
+                          facilityOptions.isEmpty)
                         AppFormInformationBanner(
                           title: l10n.accessAdminCreateUserNoFacilitiesTitle,
                           message:
@@ -462,236 +501,220 @@ Future<bool?> showUserMutationDialog({
                             ),
                           ],
                         ),
-                      ],
                     ],
                   ),
                   SizedBox(height: Theme.of(context).spacing.md),
-                  AppSectionPanel(
+                  AppFormSection(
+                    density: AppFormSectionDensity.compact,
                     title: l10n.accessAdminCreateUserDetailsSectionTitle,
-                    description:
-                        l10n.accessAdminCreateUserDetailsSectionDescription,
-                    leadingIcon: Icons.badge_outlined,
                     children: <Widget>[
                       _UserMutationReasonedField(
                         reason: detailsDisabledReason,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            AppEmailField(
-                              controller: emailController,
-                              enabled: fieldsEnabled,
-                              labelText: l10n.accessAdminEmailLabel,
-                              isRequired: true,
-                              requiredMessage: l10n.validationRequired,
-                              invalidEmailMessage: l10n.authEmailInvalidMessage,
+                        child: AppResponsiveFieldRow.two(
+                          gap: AppResponsiveFieldRowGap.form,
+                          breakpoint: 560,
+                          left: AppEmailField(
+                            controller: emailController,
+                            enabled: fieldsEnabled,
+                            labelText: l10n.accessAdminEmailLabel,
+                            isRequired: true,
+                            requiredMessage: l10n.validationRequired,
+                            invalidEmailMessage: l10n.authEmailInvalidMessage,
+                          ),
+                          right: AppPhoneField(
+                            controller: phoneController,
+                            enabled: fieldsEnabled,
+                            labelText: l10n.accessAdminPhoneLabel,
+                            countryLabelText: l10n.appPhoneCountryLabel,
+                            countrySearchLabelText:
+                                l10n.appPhoneCountrySearchLabel,
+                            countryNoResultsText: l10n.appPhoneCountryNoResults,
+                            numberLabelText: l10n.appPhoneNumberLabel,
+                            numberHintText: l10n.appPhoneNumberHint,
+                            invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+                          ),
+                        ),
+                      ),
+                      _UserMutationReasonedField(
+                        reason: detailsDisabledReason,
+                        child: AppResponsiveFieldRow.two(
+                          gap: AppResponsiveFieldRowGap.form,
+                          breakpoint: 560,
+                          left: AppTextField(
+                            controller: titleController,
+                            enabled: fieldsEnabled,
+                            labelText: l10n.accessAdminPositionLabel,
+                            isRequired: true,
+                            validator: AppValidators.requiredText(
+                              l10n.validationRequired,
                             ),
-                            SizedBox(height: Theme.of(context).spacing.md),
-                            AppPhoneField(
-                              controller: phoneController,
-                              enabled: fieldsEnabled,
-                              labelText: l10n.accessAdminPhoneLabel,
-                              countryLabelText: l10n.appPhoneCountryLabel,
-                              countrySearchLabelText:
-                                  l10n.appPhoneCountrySearchLabel,
-                              countryNoResultsText:
-                                  l10n.appPhoneCountryNoResults,
-                              numberLabelText: l10n.appPhoneNumberLabel,
-                              numberHintText: l10n.appPhoneNumberHint,
-                              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
-                            ),
-                            SizedBox(height: Theme.of(context).spacing.md),
-                            AppResponsiveFieldRow.two(
-                              gap: AppResponsiveFieldRowGap.form,
-                              breakpoint: 720,
-                              left: AppTextField(
-                                controller: titleController,
-                                enabled: fieldsEnabled,
-                                labelText: l10n.accessAdminPositionLabel,
-                                isRequired: true,
-                                validator: AppValidators.requiredText(
-                                  l10n.validationRequired,
-                                ),
-                              ),
-                              right: AppSelectField<String>(
-                                labelText: l10n.accessAdminStatusLabel,
-                                value: status,
-                                enabled: fieldsEnabled,
-                                options: state.data.lookups.userStatuses
-                                    .map(
-                                      (String value) =>
-                                          AppSelectOption<String>(
-                                            value: value,
-                                            label: value,
-                                          ),
-                                    )
-                                    .toList(growable: false),
-                                onChanged: fieldsEnabled
-                                    ? (String? value) {
-                                        if (value != null) {
-                                          setState(() => status = value);
-                                        }
-                                      }
-                                    : null,
-                              ),
-                            ),
-                            SizedBox(height: Theme.of(context).spacing.md),
-                            AppTextField(
-                              controller: passwordController,
-                              enabled: fieldsEnabled,
-                              labelText: mode == UserMutationMode.create
-                                  ? l10n.accessAdminPasswordLabel
-                                  : l10n.accessAdminPasswordOptionalLabel,
-                              obscureText: true,
-                              enableObscureTextToggle: true,
-                              showObscuredTextLabel: l10n.authShowPasswordLabel,
-                              hideObscuredTextLabel: l10n.authHidePasswordLabel,
-                              helperText: mode == UserMutationMode.create
-                                  ? l10n.accessAdminPasswordHint
-                                  : l10n.accessAdminPasswordOptionalHint,
-                              validator: mode == UserMutationMode.create
-                                  ? (String? value) =>
-                                        (value ?? '').length >= 8
-                                        ? null
-                                        : l10n.accessAdminPasswordHint
-                                  : (String? value) {
-                                      final String normalized = (value ?? '')
-                                          .trim();
-                                      if (normalized.isEmpty) {
-                                        return null;
-                                      }
-                                      return normalized.length >= 8
-                                          ? null
-                                          : l10n.accessAdminPasswordHint;
-                                    },
-                            ),
-                          ],
+                          ),
+                          right: AppSelectField<String>(
+                            labelText: l10n.accessAdminStatusLabel,
+                            value: status,
+                            enabled: fieldsEnabled,
+                            options: state.data.lookups.userStatuses
+                                .map(
+                                  (String value) => AppSelectOption<String>(
+                                    value: value,
+                                    label: value,
+                                  ),
+                                )
+                                .toList(growable: false),
+                            onChanged: fieldsEnabled
+                                ? (String? value) {
+                                    if (value != null) {
+                                      setState(() => status = value);
+                                    }
+                                  }
+                                : null,
+                          ),
+                        ),
+                      ),
+                      _UserMutationReasonedField(
+                        reason: detailsDisabledReason,
+                        child: AppTextField(
+                          controller: passwordController,
+                          enabled: fieldsEnabled,
+                          labelText: mode == UserMutationMode.create
+                              ? l10n.accessAdminPasswordLabel
+                              : l10n.accessAdminPasswordOptionalLabel,
+                          obscureText: true,
+                          enableObscureTextToggle: true,
+                          showObscuredTextLabel: l10n.authShowPasswordLabel,
+                          hideObscuredTextLabel: l10n.authHidePasswordLabel,
+                          tooltip: mode == UserMutationMode.create
+                              ? l10n.accessAdminPasswordHint
+                              : l10n.accessAdminPasswordOptionalHint,
+                          validator: mode == UserMutationMode.create
+                              ? (String? value) => (value ?? '').length >= 8
+                                    ? null
+                                    : l10n.accessAdminPasswordHint
+                              : (String? value) {
+                                  final String normalized = (value ?? '')
+                                      .trim();
+                                  if (normalized.isEmpty) {
+                                    return null;
+                                  }
+                                  return normalized.length >= 8
+                                      ? null
+                                      : l10n.accessAdminPasswordHint;
+                                },
                         ),
                       ),
                     ],
                   ),
                   if (mode == UserMutationMode.edit) ...<Widget>[
-                  SizedBox(height: Theme.of(context).spacing.md),
-                  AppSectionPanel(
-                    title: l10n.hrAccessAssignedRolesLabel,
-                    description:
-                        l10n.accessAdminCreateUserRolesSectionDescription,
-                    leadingIcon: Icons.groups_outlined,
-                    trailing: roleOptions.isNotEmpty
-                        ? _UserMutationSelectionChip(
-                            selectedCount: selectedRoleIds.length,
-                            totalCount: roleOptions.length,
-                          )
-                        : null,
-                    children: <Widget>[
-                      if (!scopeReady)
-                        AppMessagePanel(
-                          icon: Icons.touch_app_outlined,
-                          title: l10n.accessAdminCreateUserSelectScopeTitle,
-                          message: l10n.accessAdminCreateUserSelectScopeMessage,
-                          density: AppContentPanelDensity.compact,
-                        )
-                      else if (isLoadingReferenceData)
-                        _UserMutationLoadingIndicator(
-                          label: l10n.accessAdminCreateRoleLoadingPermissions,
-                        )
-                      else if (referenceLoadFailure != null)
-                        AppFormInformationBanner.failure(
-                          context: context,
-                          failure: referenceLoadFailure!,
-                          children: <Widget>[
-                            AppButton.secondary(
-                              label: l10n.commonRetryActionLabel,
-                              leadingIcon: Icons.refresh,
-                              enabled: !isSubmitting,
-                              onPressed: () {
-                                setState(() {
-                                  referenceLoadAttempted = false;
-                                  scheduledInitialReferenceLoad = false;
-                                  referenceLoadFailure = null;
-                                });
-                                unawaited(reloadReferenceData(setState));
-                              },
-                            ),
-                          ],
-                        )
-                      else if (roleOptions.isEmpty)
-                        AppFormInformationBanner(
-                          title: l10n.accessAdminCreateUserNoRolesTitle,
-                          message: l10n.accessAdminCreateUserNoRolesMessage,
-                          variant: AppFormInformationVariant.warning,
-                          icon: Icons.groups_outlined,
-                        )
-                      else
-                        IgnorePointer(
-                          ignoring: !fieldsEnabled,
-                          child: Opacity(
-                            opacity: fieldsEnabled ? 1 : 0.55,
-                            child: AppRoleAssignmentPicker(
-                              roles: roleOptions,
-                              selectedRoleIds: selectedRoleIds,
-                              loadRolePermissions: loadRolePermissions,
-                              onSelectionChanged: (Set<String> next) {
-                                setState(() {
-                                  selectedRoleIds
-                                    ..clear()
-                                    ..addAll(next);
-                                });
-                              },
+                    SizedBox(height: Theme.of(context).spacing.md),
+                    AppFormSection(
+                      density: AppFormSectionDensity.compact,
+                      title: l10n.hrAccessAssignedRolesLabel,
+                      children: <Widget>[
+                        if (roleOptions.isNotEmpty)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _UserMutationSelectionChip(
+                              selectedCount: selectedRoleIds.length,
+                              totalCount: roleOptions.length,
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                  SizedBox(height: Theme.of(context).spacing.md),
-                  AppSectionPanel(
-                    title: l10n.hrAccessDirectPermissionsLabel,
-                    description:
-                        l10n.accessAdminCreateUserPermissionsSectionDescription,
-                    leadingIcon: Icons.security_outlined,
-                    trailing: permissionOptions.isNotEmpty
-                        ? _UserMutationSelectionChip(
-                            selectedCount: selectedPermissionIds.length,
-                            totalCount: permissionOptions.length,
+                        if (isLoadingReferenceData)
+                          _UserMutationLoadingIndicator(
+                            label:
+                                l10n.accessAdminCreateRoleLoadingPermissions,
                           )
-                        : null,
-                    children: <Widget>[
-                      if (!scopeReady)
-                        AppMessagePanel(
-                          icon: Icons.touch_app_outlined,
-                          title: l10n.accessAdminCreateUserSelectScopeTitle,
-                          message: l10n.accessAdminCreateUserSelectScopeMessage,
-                          density: AppContentPanelDensity.compact,
-                        )
-                      else if (isLoadingReferenceData)
-                        _UserMutationLoadingIndicator(
-                          label: l10n.accessAdminCreateRoleLoadingPermissions,
-                        )
-                      else if (permissionOptions.isEmpty)
-                        AppFormInformationBanner(
-                          title:
-                              l10n.accessAdminPermissionCatalogUnavailableTitle,
-                          message: l10n
-                              .accessAdminPermissionCatalogUnavailableMessage,
-                          variant: AppFormInformationVariant.warning,
-                          icon: Icons.security_outlined,
-                        )
-                      else
-                        AppPermissionAssignmentPicker(
-                          permissions: permissionOptions,
-                          selectedPermissionIds: selectedPermissionIds,
-                          enabled: fieldsEnabled,
-                          onSelectionChanged: fieldsEnabled
-                              ? (Set<String> next) {
+                        else if (referenceLoadFailure != null)
+                          AppFormInformationBanner.failure(
+                            context: context,
+                            failure: referenceLoadFailure!,
+                            children: <Widget>[
+                              AppButton.secondary(
+                                label: l10n.commonRetryActionLabel,
+                                leadingIcon: Icons.refresh,
+                                enabled: !isSubmitting,
+                                onPressed: () {
                                   setState(() {
-                                    selectedPermissionIds
+                                    referenceLoadAttempted = false;
+                                    scheduledInitialReferenceLoad = false;
+                                    referenceLoadFailure = null;
+                                  });
+                                  unawaited(reloadReferenceData(setState));
+                                },
+                              ),
+                            ],
+                          )
+                        else if (roleOptions.isEmpty)
+                          AppFormInformationBanner(
+                            title: l10n.accessAdminCreateUserNoRolesTitle,
+                            message: l10n.accessAdminCreateUserNoRolesMessage,
+                            variant: AppFormInformationVariant.warning,
+                            icon: Icons.groups_outlined,
+                          )
+                        else
+                          IgnorePointer(
+                            ignoring: !fieldsEnabled,
+                            child: Opacity(
+                              opacity: fieldsEnabled ? 1 : 0.55,
+                              child: AppRoleAssignmentPicker(
+                                roles: roleOptions,
+                                selectedRoleIds: selectedRoleIds,
+                                loadRolePermissions: loadRolePermissions,
+                                onSelectionChanged: (Set<String> next) {
+                                  setState(() {
+                                    selectedRoleIds
                                       ..clear()
                                       ..addAll(next);
                                   });
-                                }
-                              : (_) {},
-                        ),
-                    ],
-                  ),
+                                },
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: Theme.of(context).spacing.md),
+                    AppFormSection(
+                      density: AppFormSectionDensity.compact,
+                      title: l10n.hrAccessDirectPermissionsLabel,
+                      children: <Widget>[
+                        if (permissionOptions.isNotEmpty)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _UserMutationSelectionChip(
+                              selectedCount: selectedPermissionIds.length,
+                              totalCount: permissionOptions.length,
+                            ),
+                          ),
+                        if (isLoadingReferenceData)
+                          _UserMutationLoadingIndicator(
+                            label:
+                                l10n.accessAdminCreateRoleLoadingPermissions,
+                          )
+                        else if (permissionOptions.isEmpty)
+                          AppFormInformationBanner(
+                            title: l10n
+                                .accessAdminPermissionCatalogUnavailableTitle,
+                            message: l10n
+                                .accessAdminPermissionCatalogUnavailableMessage,
+                            variant: AppFormInformationVariant.warning,
+                            icon: Icons.security_outlined,
+                          )
+                        else
+                          AppPermissionAssignmentPicker(
+                            permissions: permissionOptions,
+                            selectedPermissionIds: selectedPermissionIds,
+                            enabled: fieldsEnabled,
+                            onSelectionChanged: fieldsEnabled
+                                ? (Set<String> next) {
+                                    setState(() {
+                                      selectedPermissionIds
+                                        ..clear()
+                                        ..addAll(next);
+                                    });
+                                  }
+                                : (_) {},
+                          ),
+                      ],
+                    ),
                   ],
                 ],
               );
@@ -761,11 +784,10 @@ class _UserMutationReasonedField extends StatelessWidget {
       return child;
     }
 
-    // Hover (desktop), long-press (mobile), and tap all surface the reason.
+    // Hover (desktop) and long-press (touch) surface the disable reason.
     return Tooltip(
       message: message,
-      waitDuration: const Duration(milliseconds: 250),
-      triggerMode: TooltipTriggerMode.tap,
+      waitDuration: const Duration(milliseconds: 300),
       child: child,
     );
   }

@@ -365,8 +365,16 @@ describe('User Service', () => {
     });
 
     it('should reject duplicate email within the same tenant', async () => {
-      userRepository.findActiveByTenantEmail.mockResolvedValue({ id: 'existing-user' });
-      userRepository.findActiveByTenantPhone.mockResolvedValue(null);
+      userRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-user',
+          human_friendly_id: 'USR9001',
+          tenant_id: userData.tenant_id,
+          email: 'existing@example.com',
+          phone: null,
+          position_title: 'Nurse'
+        }
+      ]);
 
       await expect(
         userService.createUser(
@@ -382,8 +390,16 @@ describe('User Service', () => {
     });
 
     it('should reject duplicate phone within the same tenant', async () => {
-      userRepository.findActiveByTenantEmail.mockResolvedValue(null);
-      userRepository.findActiveByTenantPhone.mockResolvedValue({ id: 'existing-user' });
+      userRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-user',
+          human_friendly_id: 'USR9002',
+          tenant_id: userData.tenant_id,
+          email: 'someoneelse@example.com',
+          phone: '256783230321',
+          position_title: 'Nurse'
+        }
+      ]);
 
       await expect(
         userService.createUser(
@@ -395,6 +411,116 @@ describe('User Service', () => {
         messageKey: 'errors.user.phone_exists_in_tenant',
         statusCode: 409,
         errors: [expect.objectContaining({ field: 'phone' })]});
+      expect(userRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should include the conflicting match payload on exact contact conflicts', async () => {
+      userRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-user',
+          human_friendly_id: 'USR9003',
+          tenant_id: userData.tenant_id,
+          email: 'newuser@example.com',
+          phone: null,
+          position_title: 'Nurse'
+        }
+      ]);
+
+      await expect(
+        userService.createUser(userData, 'creator-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        messageKey: 'errors.user.email_exists_in_tenant',
+        statusCode: 409,
+        errors: [
+          expect.objectContaining({
+            field: 'email',
+            matches: expect.arrayContaining([
+              expect.objectContaining({ exactEmailConflict: true })
+            ])
+          })
+        ]
+      });
+    });
+
+    it('should reject a near-duplicate user with similar_exists when not confirmed', async () => {
+      userRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-user',
+          human_friendly_id: 'USR9004',
+          tenant_id: userData.tenant_id,
+          email: 'someoneelse@example.com',
+          phone: '256999888777',
+          position_title: 'Charge Nurses'
+        }
+      ]);
+
+      await expect(
+        userService.createUser(
+          { ...userData, phone: '256111222333', position_title: 'Charge Nurse' },
+          'creator-id',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({
+        messageKey: 'errors.user.similar_exists',
+        statusCode: 409,
+        errors: [expect.objectContaining({ field: 'email' })]});
+      expect(userRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should create a near-duplicate user when confirm_similar is set', async () => {
+      userRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-user',
+          human_friendly_id: 'USR9005',
+          tenant_id: userData.tenant_id,
+          email: 'someoneelse@example.com',
+          phone: '256999888777',
+          position_title: 'Charge Nurses'
+        }
+      ]);
+      userRepository.create.mockResolvedValue(createdUser);
+      createAuditLog.mockResolvedValue(true);
+
+      const result = await userService.createUser(
+        {
+          ...userData,
+          phone: '256111222333',
+          position_title: 'Charge Nurse',
+          confirm_similar: true
+        },
+        'creator-id',
+        '127.0.0.1'
+      );
+
+      expect(result).toEqual(createdUser);
+      // confirm_similar must be stripped before persistence.
+      expect(userRepository.create).toHaveBeenCalledWith(
+        expect.not.objectContaining({ confirm_similar: expect.anything() })
+      );
+    });
+
+    it('should still block an exact contact conflict even with confirm_similar', async () => {
+      userRepository.findMany.mockResolvedValue([
+        {
+          id: 'existing-user',
+          human_friendly_id: 'USR9006',
+          tenant_id: userData.tenant_id,
+          email: 'newuser@example.com',
+          phone: null,
+          position_title: 'Nurse'
+        }
+      ]);
+
+      await expect(
+        userService.createUser(
+          { ...userData, confirm_similar: true },
+          'creator-id',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({
+        messageKey: 'errors.user.email_exists_in_tenant',
+        statusCode: 409
+      });
       expect(userRepository.create).not.toHaveBeenCalled();
     });
   });
