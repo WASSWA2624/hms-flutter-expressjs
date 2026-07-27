@@ -1468,16 +1468,17 @@ class _ManageRolesPermissionsPanelState
     if (state == null || !mounted) {
       return;
     }
-    final bool? saved = await openAccessAdminEditRoleDialog(
+    final AccessAdminItem? updated = await openAccessAdminEditRoleDialog(
       context,
       ref,
       state,
       role,
     );
-    if (saved == true && mounted) {
+    if (updated != null && mounted) {
       mutated = true;
-      await reload(resetPage: true, silent: true);
-      // updateRole already schedules a deferred session rehydrate.
+      // Mirror create: open details immediately; refresh list in the background.
+      unawaited(reload(resetPage: true, silent: true));
+      await _openRoleDetail(updated, coverListImmediately: true);
     }
   }
 

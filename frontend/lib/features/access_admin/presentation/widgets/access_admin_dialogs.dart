@@ -730,7 +730,7 @@ Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
   );
 }
 
-Future<bool?> openAccessAdminEditRoleDialog(
+Future<AccessAdminItem?> openAccessAdminEditRoleDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
@@ -782,7 +782,8 @@ Future<bool?> openAccessAdminEditRoleDialog(
       ? 'platform'
       : (role.isFacilityScopedRole ? 'facility' : 'tenant');
 
-  return showRoleMutationDialog(
+  AccessAdminItem? updatedRole;
+  final bool? saved = await showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.edit,
     includePermissions: false,
@@ -894,10 +895,66 @@ Future<bool?> openAccessAdminEditRoleDialog(
             failure.category == AppFailureCategory.conflict) {
           return const AppFailure.cancelled();
         }
+        if (failure == null) {
+          updatedRole = accessAdminRoleAfterEdit(
+            role,
+            pending.copyWith(confirmSimilar: true),
+          );
+        }
+        return failure;
       }
 
+      if (failure == null) {
+        updatedRole = accessAdminRoleAfterEdit(role, pending);
+      }
       return failure;
     },
+  );
+
+  if (saved == true) {
+    return updatedRole ?? role;
+  }
+  return null;
+}
+
+/// Local projection of [role] after a successful identity/scope edit.
+@visibleForTesting
+AccessAdminItem accessAdminRoleAfterEdit(
+  AccessAdminItem role,
+  AccessAdminRoleDraft draft,
+) {
+  final String displayName = (draft.displayName ?? draft.name).trim();
+  final String scope = (draft.scope ?? '').trim().toLowerCase();
+  final bool isPlatform =
+      scope == 'platform' ||
+      ((draft.tenantId ?? '').trim().isEmpty &&
+          (draft.facilityId ?? '').trim().isEmpty);
+  final bool isFacility =
+      scope == 'facility' || (draft.facilityId ?? '').trim().isNotEmpty;
+
+  return AccessAdminItem(
+    id: role.id,
+    resource: role.resource,
+    displayId: role.displayId,
+    title: displayName.isNotEmpty ? displayName : role.title,
+    resourceUuid: role.resourceUuid,
+    name: draft.name.trim().isNotEmpty ? draft.name.trim() : role.name,
+    displayName: displayName.isNotEmpty ? displayName : role.displayName,
+    subtitle: draft.description,
+    tenantId: isPlatform ? null : draft.tenantId ?? role.tenantId,
+    tenantName: isPlatform ? null : role.tenantName,
+    facilityId: isFacility ? draft.facilityId : null,
+    facilityName: isFacility ? role.facilityName : null,
+    roleScope: isPlatform
+        ? 'platform'
+        : (isFacility ? 'facility' : 'tenant'),
+    permissionCount: role.permissionCount,
+    permissions: role.permissions,
+    userCount: role.userCount,
+    isClinicalFlowRole: role.isClinicalFlowRole,
+    isSystemCritical: role.isSystemCritical,
+    deletedAt: role.deletedAt,
+    updatedAt: DateTime.now(),
   );
 }
 

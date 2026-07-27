@@ -214,9 +214,18 @@ class _AccessAdminWorkspaceContentState
                   unawaited(_openDetailDialog(context, item, canWrite));
                 },
                 onRoleEdit: (AccessAdminItem role) {
-                  unawaited(
-                    openAccessAdminEditRoleDialog(context, ref, state, role),
-                  );
+                  unawaited(() async {
+                    final AccessAdminItem? updated =
+                        await openAccessAdminEditRoleDialog(
+                      context,
+                      ref,
+                      state,
+                      role,
+                    );
+                    if (updated != null && context.mounted) {
+                      await _openDetailDialog(context, updated, canWrite);
+                    }
+                  }());
                 },
                 onShowFailure: (AppFailure failure) {
                   _showSnack(context, context.l10n.failureMessage(failure));
@@ -343,14 +352,18 @@ class _AccessAdminWorkspaceContentState
                   leadingIcon: Icons.edit_outlined,
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
-                    unawaited(
-                      openAccessAdminEditRoleDialog(
+                    unawaited(() async {
+                      final AccessAdminItem? updated =
+                          await openAccessAdminEditRoleDialog(
                         context,
                         ref,
                         current ?? widget.state,
                         selected,
-                      ),
-                    );
+                      );
+                      if (updated != null && context.mounted) {
+                        await _openDetailDialog(context, updated, canWrite);
+                      }
+                    }());
                   },
                 ),
                 if (!selected.isSystemCritical)

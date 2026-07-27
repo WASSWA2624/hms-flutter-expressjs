@@ -74,7 +74,7 @@ void main() {
 
   final String peerLoaderSource = dialogsSource.substring(
     dialogsSource.indexOf('Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers('),
-    dialogsSource.indexOf('Future<bool?> openAccessAdminEditRoleDialog('),
+    dialogsSource.indexOf('Future<AccessAdminItem?> openAccessAdminEditRoleDialog('),
   );
 
   test('similarity peer load is not facility-narrowed', () {
@@ -265,7 +265,7 @@ void main() {
 
   test('edit reuses create similarity with self exclusion', () {
     final String editSource = dialogsSource.substring(
-      dialogsSource.indexOf('Future<bool?> openAccessAdminEditRoleDialog('),
+      dialogsSource.indexOf('Future<AccessAdminItem?> openAccessAdminEditRoleDialog('),
     );
     expect(editSource.contains('excludeRoleId: excludeRoleId'), isTrue);
     expect(editSource.contains('_reviewRoleSimilarity'), isTrue);
@@ -274,6 +274,11 @@ void main() {
       editSource.contains('includePermissions: false'),
       isTrue,
       reason: 'Edit role form must match create (no permissions section)',
+    );
+    expect(
+      editSource.contains('accessAdminRoleAfterEdit'),
+      isTrue,
+      reason: 'Successful edit must return an updated role for details handoff',
     );
     expect(
       dialogsSource.contains('excludeRoleId: excludeRoleId,'),
@@ -323,15 +328,32 @@ void main() {
       reason:
           'Duplicate human_friendly_id must not resolve another role\'s permissions',
     );
-    final String dialogs = File(
-      'lib/features/access_admin/presentation/widgets/access_admin_dialogs.dart',
-    ).readAsStringSync();
-    expect(dialogs.contains('listRolePermissions(role.mutationId)'), isTrue);
+    expect(
+      managementSource.contains('listRolePermissions(syncRoleId)'),
+      isTrue,
+    );
     final String workspacePage = File(
       'lib/features/access_admin/presentation/pages/access_admin_workspace_page.dart',
     ).readAsStringSync();
     expect(
       workspacePage.contains('listRolePermissions(item.mutationId)'),
+      isTrue,
+    );
+  });
+
+  test('successful edit opens role details like create', () {
+    expect(
+      managementSource.contains(
+        'await _openRoleDetail(updated, coverListImmediately: true)',
+      ),
+      isTrue,
+      reason: 'Edit success must hand off to role details',
+    );
+    final String workspacePage = File(
+      'lib/features/access_admin/presentation/pages/access_admin_workspace_page.dart',
+    ).readAsStringSync();
+    expect(
+      workspacePage.contains('_openDetailDialog(context, updated, canWrite)'),
       isTrue,
     );
   });

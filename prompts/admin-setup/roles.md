@@ -12,7 +12,7 @@ On `/admin/setup?section=roles`, make **Edit** reuse the create-role form and si
 
 ## Requirements
 
-1. Keep **Edit** opening `showRoleMutationDialog` in Edit mode with the same RBAC/ABAC scope radios as Create (Platform / Tenant(s) / Facility(ies) + role details; no Permissions section); Save updates the role (including `scope` / `tenant_id` / `facility_id`) without syncing `permission_ids`. Permissions are managed from role details.
+1. Keep **Edit** opening `showRoleMutationDialog` in Edit mode with the same RBAC/ABAC scope radios as Create (Platform / Tenant(s) / Facility(ies) + role details; no Permissions section); Save updates the role (including `scope` / `tenant_id` / `facility_id`) without syncing `permission_ids`. On success, open role details for the edited role (same handoff as Create). Permissions are managed from role details.
 2. On Edit Save, run the Create similarity flow: open `showRoleSimilarityDialog` before update; peer scoring excludes the edited role; exact same-scope conflicts block proceed; near matches require `confirm_similar`. Reuse FE `_reviewRoleSimilarity` / BE `excludeRoleId`.
 3. **Delete** on an active role confirms then soft-deletes only. Soft-deleted roles stay visible when include-deleted listing is on, marked deleted, with **Restore** and **Delete permanently** instead of Edit/Delete.
 4. **Restore** recovers the role and attached permissions/related soft-deleted links. **Delete permanently** confirms then hard-deletes the role from the database.
@@ -25,7 +25,7 @@ Reuse access-admin dialogs, controllers, repositories, role similarity modules, 
 
 ## Acceptance Criteria
 
-- AC1: Edit dialog matches Create form layout (Platform/Tenant/Facility scope + role details) and omits permissions. → 1
+- AC1: Edit dialog matches Create form layout (Platform/Tenant/Facility scope + role details) and omits permissions; successful save opens role details. → 1
 - AC2: Edit Save opens similarity review excluding self; exact conflict blocks; near match needs confirm; successful update syncs list. → 2
 - AC3: Delete soft-deletes; row shows Restore + Delete permanently; Restore recovers role+permissions; permanent delete removes DB row. → 3–4
 - AC4: Adjacent action buttons have visible spacing. → 5
