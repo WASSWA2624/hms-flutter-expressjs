@@ -18314,6 +18314,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAccessClearRolesAction => 'Clear roles';
 
   @override
+  String get hrRoleAssignmentSelectAllMatchingAction =>
+      'Select all matching roles';
+
+  @override
+  String get hrRoleAssignmentClearMatchingAction => 'Clear matching roles';
+
+  @override
   String get hrAccessSelectAllPermissionsAction => 'Select all permissions';
 
   @override
@@ -21520,7 +21527,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminProceedCreateUserAction => 'Create anyway';
 
   @override
+  String get accessAdminProceedEditUserAction => 'Edit anyway';
+
+  @override
   String get accessAdminContinueCreateUserAction => 'Continue create';
+
+  @override
+  String get accessAdminContinueEditUserAction => 'Continue edit';
 
   @override
   String get accessAdminUseExistingUserAction => 'Use existing user';

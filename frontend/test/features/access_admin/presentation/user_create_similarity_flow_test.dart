@@ -216,10 +216,17 @@ void main() {
       ),
     );
     expect(editSource.contains('excludeUserId: excludeUserId'), isTrue);
+    expect(editSource.contains('isEdit: true'), isTrue);
     expect(editSource.contains('_reviewUserSimilarity'), isTrue);
     expect(editSource.contains('updateUserReviewed'), isTrue);
     expect(
       editSource.contains('always open review before persisting'),
+      isTrue,
+    );
+    expect(
+      File(
+        'lib/features/access_admin/presentation/widgets/user_similarity_dialog.dart',
+      ).readAsStringSync().contains('accessAdminProceedEditUserAction'),
       isTrue,
     );
   });

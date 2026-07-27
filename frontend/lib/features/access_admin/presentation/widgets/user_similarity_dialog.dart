@@ -33,6 +33,7 @@ Future<UserSimilarityDialogResult> showUserSimilarityDialog(
   required UserSimilarityProposedValues proposed,
   required List<UserSimilarityMatch> matches,
   bool allowProceed = true,
+  bool isEdit = false,
 }) {
   final AppLocalizations l10n = context.l10n;
   final List<UserSimilarityMatch> visibleMatches = matches
@@ -157,10 +158,16 @@ Future<UserSimilarityDialogResult> showUserSimilarityDialog(
           if (canProceed)
             AppButton.primary(
               label: hasMatches
-                  ? l10n.accessAdminProceedCreateUserAction
-                  : l10n.accessAdminContinueCreateUserAction,
+                  ? (isEdit
+                        ? l10n.accessAdminProceedEditUserAction
+                        : l10n.accessAdminProceedCreateUserAction)
+                  : (isEdit
+                        ? l10n.accessAdminContinueEditUserAction
+                        : l10n.accessAdminContinueCreateUserAction),
               leadingIcon: hasMatches
-                  ? Icons.person_add_alt_1_outlined
+                  ? (isEdit
+                        ? Icons.edit_outlined
+                        : Icons.person_add_alt_1_outlined)
                   : Icons.check_circle_outline,
               onPressed: () => Navigator.of(dialogContext).pop(
                 const UserSimilarityDialogResult.proceed(),

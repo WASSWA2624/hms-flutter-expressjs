@@ -23495,6 +23495,14 @@
   "@hrAccessClearRolesAction": {
     "description": "Clear selected roles in a multi-select list."
   },
+  "hrRoleAssignmentSelectAllMatchingAction": "Select all matching roles",
+  "@hrRoleAssignmentSelectAllMatchingAction": {
+    "description": "Select all roles that match the current search filter."
+  },
+  "hrRoleAssignmentClearMatchingAction": "Clear matching roles",
+  "@hrRoleAssignmentClearMatchingAction": {
+    "description": "Clear selected roles that match the current search filter."
+  },
   "hrAccessSelectAllPermissionsAction": "Select all permissions",
   "@hrAccessSelectAllPermissionsAction": {
     "description": "Select all permissions in a multi-select list."
@@ -27590,9 +27598,17 @@
   "@accessAdminProceedCreateUserAction": {
     "description": "Confirm create despite similar users."
   },
+  "accessAdminProceedEditUserAction": "Edit anyway",
+  "@accessAdminProceedEditUserAction": {
+    "description": "Confirm edit despite similar users."
+  },
   "accessAdminContinueCreateUserAction": "Continue create",
   "@accessAdminContinueCreateUserAction": {
     "description": "Continue create when no similar users are found."
+  },
+  "accessAdminContinueEditUserAction": "Continue edit",
+  "@accessAdminContinueEditUserAction": {
+    "description": "Continue edit when no similar users are found."
   },
   "accessAdminUseExistingUserAction": "Use existing user",
   "@accessAdminUseExistingUserAction": {

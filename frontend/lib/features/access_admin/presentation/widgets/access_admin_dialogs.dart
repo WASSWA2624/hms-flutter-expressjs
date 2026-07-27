@@ -315,6 +315,7 @@ Future<AppFailure?> _reviewUserSimilarity(
   required VoidCallback onAccepted,
   required ValueChanged<AccessAdminItem> onUseExisting,
   String? excludeUserId,
+  bool isEdit = false,
   bool forceReviewMatches = false,
   List<Map<String, Object?>> conflictEntries = const <Map<String, Object?>>[],
 }) async {
@@ -420,6 +421,7 @@ Future<AppFailure?> _reviewUserSimilarity(
     ),
     matches: reviewMatches,
     allowProceed: !hasExactConflict,
+    isEdit: isEdit,
   );
   if (!context.mounted) {
     return const AppFailure.cancelled();
@@ -655,6 +657,7 @@ Future<AccessAdminItem?> openAccessAdminEditUserDialog(
           ref,
           pending: pending,
           excludeUserId: excludeUserId,
+          isEdit: true,
           onAccepted: () => similarityAccepted = true,
           onUseExisting: (AccessAdminItem existing) {
             existingUserToOpen = existing;
@@ -699,6 +702,7 @@ Future<AccessAdminItem?> openAccessAdminEditUserDialog(
           ref,
           pending: pending.copyWith(confirmSimilar: false),
           excludeUserId: excludeUserId,
+          isEdit: true,
           forceReviewMatches: true,
           conflictEntries: failure is ConflictFailure
               ? failure.conflictEntries

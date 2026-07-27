@@ -3139,7 +3139,7 @@ class _AccessAdminUserDetailDialogState
             return AppDialog(
               title: Text(l10n.accessAdminUserAccessAddRoleDialogTitle),
               icon: const Icon(Icons.person_add_alt_1_outlined),
-              maxWidth: 960,
+              maxWidth: 720,
               scrollable: true,
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

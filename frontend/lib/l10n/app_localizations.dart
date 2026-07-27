@@ -34129,6 +34129,18 @@ abstract class AppLocalizations {
   /// **'Clear roles'**
   String get hrAccessClearRolesAction;
 
+  /// Select all roles that match the current search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all matching roles'**
+  String get hrRoleAssignmentSelectAllMatchingAction;
+
+  /// Clear selected roles that match the current search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear matching roles'**
+  String get hrRoleAssignmentClearMatchingAction;
+
   /// Select all permissions in a multi-select list.
   ///
   /// In en, this message translates to:
@@ -39784,11 +39796,23 @@ abstract class AppLocalizations {
   /// **'Create anyway'**
   String get accessAdminProceedCreateUserAction;
 
+  /// Confirm edit despite similar users.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit anyway'**
+  String get accessAdminProceedEditUserAction;
+
   /// Continue create when no similar users are found.
   ///
   /// In en, this message translates to:
   /// **'Continue create'**
   String get accessAdminContinueCreateUserAction;
+
+  /// Continue edit when no similar users are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue edit'**
+  String get accessAdminContinueEditUserAction;
 
   /// Open an existing similar user instead of creating.
   ///

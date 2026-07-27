@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
+import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 
 @immutable
 final class AppRoleAssignmentOption {
@@ -37,10 +37,10 @@ enum _RoleLogicalGroup {
   custom,
 }
 
-/// Role picker: searchable checkbox grid with expandable permission packs.
+/// Role picker: searchable single-column list with expandable permission packs.
 ///
 /// Roles expand with the parent page by default (no nested list scroll).
-/// Layout is 1 column on mobile, 2 on tablet, and 3 on desktop widths.
+/// Expanded permissions wrap across rows as space allows.
 class AppRoleAssignmentPicker extends StatefulWidget {
   const AppRoleAssignmentPicker({
     required this.roles,
@@ -153,6 +153,25 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
     unawaited(_refreshPermissionPreview());
   }
 
+  void _selectInScope(List<AppRoleAssignmentOption> scopedRoles) {
+    final Set<String> next = Set<String>.from(widget.selectedRoleIds);
+    for (final AppRoleAssignmentOption role in scopedRoles) {
+      next.add(role.id);
+    }
+    widget.onSelectionChanged(Set<String>.unmodifiable(next));
+    unawaited(_refreshPermissionPreview());
+  }
+
+  void _clearInScope(List<AppRoleAssignmentOption> scopedRoles) {
+    final Set<String> scopedIds = scopedRoles
+        .map((AppRoleAssignmentOption role) => role.id)
+        .toSet();
+    final Set<String> next = Set<String>.from(widget.selectedRoleIds)
+      ..removeWhere(scopedIds.contains);
+    widget.onSelectionChanged(Set<String>.unmodifiable(next));
+    unawaited(_refreshPermissionPreview());
+  }
+
   Future<void> _ensureRolePermissionsLoaded(String roleId) async {
     final AppRolePermissionsLoader? loader = widget.loadRolePermissions;
     if (loader == null ||
@@ -222,6 +241,73 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     final List<AppRoleAssignmentOption> filtered = _filteredRoles;
+    final bool isFiltering = _searchQuery.isNotEmpty;
+    final int scopeTotal = filtered.length;
+    final int selectedInScope = filtered
+        .where(
+          (AppRoleAssignmentOption role) =>
+              widget.selectedRoleIds.contains(role.id),
+        )
+        .length;
+    final bool allInScopeSelected =
+        scopeTotal > 0 && selectedInScope == scopeTotal;
+    final bool noneInScopeSelected = selectedInScope == 0;
+
+    final Widget selectAllTile = CheckboxListTile(
+      key: const ValueKey<String>('role-select-all'),
+      value: allInScopeSelected
+          ? true
+          : noneInScopeSelected
+          ? false
+          : null,
+      tristate: true,
+      enabled: scopeTotal > 0,
+      onChanged: scopeTotal > 0
+          ? (bool? value) {
+              if (value == false) {
+                _clearInScope(filtered);
+              } else {
+                _selectInScope(filtered);
+              }
+            }
+          : null,
+      title: Text(
+        isFiltering
+            ? l10n.hrRoleAssignmentSelectAllMatchingAction
+            : l10n.hrAccessSelectAllRolesAction,
+      ),
+      subtitle: Text(
+        isFiltering
+            ? l10n.hrPermissionAssignmentSelectedCount(
+                selectedInScope,
+                scopeTotal,
+              )
+            : l10n.hrPermissionAssignmentSelectedCount(
+                widget.selectedRoleIds.length,
+                widget.roles.length,
+              ),
+      ),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      controlAffinity: ListTileControlAffinity.leading,
+      contentPadding: EdgeInsets.zero,
+    );
+
+    final Widget clearAllTile = CheckboxListTile(
+      key: const ValueKey<String>('role-clear-all'),
+      value: noneInScopeSelected,
+      enabled: !noneInScopeSelected,
+      onChanged: !noneInScopeSelected ? (_) => _clearInScope(filtered) : null,
+      title: Text(
+        isFiltering
+            ? l10n.hrRoleAssignmentClearMatchingAction
+            : l10n.hrAccessClearRolesAction,
+      ),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      controlAffinity: ListTileControlAffinity.leading,
+      contentPadding: EdgeInsets.zero,
+    );
 
     return AppFormSection(
       children: <Widget>[
@@ -247,16 +333,11 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           prefixIcon: const Icon(Icons.search),
           textInputAction: TextInputAction.search,
         ),
-        SizedBox(height: theme.spacing.sm),
-        Text(
-          l10n.hrPermissionAssignmentSelectedCount(
-            widget.selectedRoleIds.length,
-            widget.roles.length,
+        if (widget.roles.isNotEmpty)
+          AppResponsiveFieldRow.two(
+            left: selectAllTile,
+            right: clearAllTile,
           ),
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: colors.onSurfaceVariant,
-          ),
-        ),
         SizedBox(height: theme.spacing.sm),
         if (widget.roles.isEmpty)
           Text(
@@ -316,54 +397,40 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
     final Map<_RoleLogicalGroup, List<AppRoleAssignmentOption>> grouped =
         _groupedRoles(filtered);
 
-    final Widget content = LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns = _columnCount(constraints.maxWidth);
-        final double gap = theme.spacing.sm;
-        final double itemWidth = columns == 1
-            ? constraints.maxWidth
-            : (constraints.maxWidth - gap * (columns - 1)) / columns;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            for (final _RoleLogicalGroup group in _RoleLogicalGroup.values)
-              if ((grouped[group] ?? const <AppRoleAssignmentOption>[])
-                  .isNotEmpty) ...<Widget>[
+    final Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (final _RoleLogicalGroup group in _RoleLogicalGroup.values)
+          if ((grouped[group] ?? const <AppRoleAssignmentOption>[]).isNotEmpty)
+            ...<Widget>[
+              Padding(
+                padding: EdgeInsets.only(
+                  top: theme.spacing.md,
+                  bottom: theme.spacing.sm,
+                ),
+                child: _buildGroupHeader(
+                  theme: theme,
+                  colors: colors,
+                  title: _groupLabel(l10n, group),
+                  count: grouped[group]!.length,
+                ),
+              ),
+              for (int index = 0; index < grouped[group]!.length; index++)
                 Padding(
                   padding: EdgeInsets.only(
-                    top: theme.spacing.sm,
-                    bottom: theme.spacing.xs,
+                    bottom: index == grouped[group]!.length - 1
+                        ? 0
+                        : theme.spacing.sm,
                   ),
-                  child: Text(
-                    _groupLabel(l10n, group),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colors.onSurface,
-                    ),
+                  child: _buildRoleTile(
+                    l10n: l10n,
+                    theme: theme,
+                    colors: colors,
+                    role: grouped[group]![index],
                   ),
                 ),
-                Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: grouped[group]!
-                      .map(
-                        (AppRoleAssignmentOption role) => SizedBox(
-                          width: itemWidth,
-                          child: _buildRoleTile(
-                            l10n: l10n,
-                            theme: theme,
-                            colors: colors,
-                            role: role,
-                          ),
-                        ),
-                      )
-                      .toList(growable: false),
-                ),
-              ],
-          ],
-        );
-      },
+            ],
+      ],
     );
 
     final double? maxHeight = widget.maxListHeight;
@@ -374,6 +441,43 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: SingleChildScrollView(child: content),
+    );
+  }
+
+  Widget _buildGroupHeader({
+    required ThemeData theme,
+    required ColorScheme colors,
+    required String title,
+    required int count,
+  }) {
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 3,
+          height: 18,
+          decoration: BoxDecoration(
+            color: colors.primary,
+            borderRadius: BorderRadius.circular(theme.radius.sm),
+          ),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colors.onSurface,
+            ),
+          ),
+        ),
+        Text(
+          '$count',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: colors.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 
@@ -391,14 +495,13 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
 
     return Material(
       color: selected
-          ? colors.primaryContainer.withValues(alpha: 0.35)
-          : colors.surfaceContainerHighest.withValues(alpha: 0.35),
+          ? colors.primaryContainer.withValues(alpha: 0.45)
+          : colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(theme.radius.md),
         side: BorderSide(
-          color: selected
-              ? colors.primary.withValues(alpha: 0.45)
-              : colors.outlineVariant,
+          color: selected ? colors.primary : colors.outlineVariant,
+          width: selected ? 1.5 : 1,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -425,7 +528,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           ),
           title: Text(
             role.label,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
@@ -450,52 +553,76 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
                   child: Chip(
                     label: Text(l10n.hrAccessSystemCriticalRoleBadge),
                     visualDensity: VisualDensity.compact,
+                    labelStyle: theme.textTheme.labelSmall,
+                    padding: EdgeInsets.zero,
                   ),
                 ),
-              Icon(expanded ? Icons.expand_less : Icons.expand_more),
+              Icon(
+                expanded ? Icons.expand_less : Icons.expand_more,
+                color: colors.onSurfaceVariant,
+              ),
             ],
           ),
           children: <Widget>[
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                theme.spacing.md,
-                0,
-                theme.spacing.md,
-                theme.spacing.md,
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerLowest,
+                border: Border(
+                  top: BorderSide(color: colors.outlineVariant),
+                ),
               ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: loadingPermissions
-                    ? const LinearProgressIndicator(minHeight: 2)
-                    : permissions.isEmpty
-                    ? Text(
-                        l10n.hrStaffOnboardingPermissionsPreviewEmpty,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      )
-                    : Wrap(
-                        spacing: theme.spacing.xs,
-                        runSpacing: theme.spacing.xs,
-                        children: permissions
-                            .map(
-                              (String permission) => Chip(
-                                avatar: Icon(
-                                  Icons.verified_user_outlined,
-                                  size: 16,
-                                  color: colors.onSurfaceVariant,
-                                ),
-                                label: Text(
-                                  l10n.permissionCatalogLabelForCode(
-                                    permission,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  theme.spacing.md,
+                  theme.spacing.sm,
+                  theme.spacing.md,
+                  theme.spacing.md,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: loadingPermissions
+                      ? const LinearProgressIndicator(minHeight: 2)
+                      : permissions.isEmpty
+                      ? Text(
+                          l10n.hrStaffOnboardingPermissionsPreviewEmpty,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        )
+                      : Wrap(
+                          spacing: theme.spacing.xs,
+                          runSpacing: theme.spacing.xs,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: permissions
+                              .map(
+                                (String permission) => Chip(
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  visualDensity: const VisualDensity(
+                                    horizontal: -4,
+                                    vertical: -4,
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: theme.spacing.xs,
+                                  ),
+                                  labelPadding: EdgeInsets.symmetric(
+                                    horizontal: theme.spacing.xs / 2,
+                                  ),
+                                  side: BorderSide(
+                                    color: colors.outlineVariant,
+                                  ),
+                                  backgroundColor: colors.surface,
+                                  label: Text(
+                                    l10n.permissionCatalogLabelForCode(
+                                      permission,
+                                    ),
+                                    style: theme.textTheme.labelSmall,
                                   ),
                                 ),
-                                visualDensity: VisualDensity.compact,
-                                labelStyle: theme.textTheme.labelSmall,
-                              ),
-                            )
-                            .toList(growable: false),
-                      ),
+                              )
+                              .toList(growable: false),
+                        ),
+                ),
               ),
             ),
           ],
@@ -503,16 +630,6 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
       ),
     );
   }
-}
-
-int _columnCount(double maxWidth) {
-  if (maxWidth >= AppBreakpoints.lg) {
-    return 3;
-  }
-  if (maxWidth >= AppBreakpoints.md) {
-    return 2;
-  }
-  return 1;
 }
 
 _RoleLogicalGroup _classifyRole(AppRoleAssignmentOption role) {
