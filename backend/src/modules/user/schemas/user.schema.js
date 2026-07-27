@@ -43,7 +43,7 @@ const createUserSchema = z.object({
   position_title: z.string().trim().min(1).max(120),
   email: z.string().trim().email().max(255),
   phone: z.string().trim().min(1).max(40).optional().nullable(),
-  password: z.string().trim().min(8).max(255).optional(),
+  password: z.string().trim().min(8).max(255),
   password_hash: z.string().trim().min(1).max(255).optional(),
   status: userStatusSchema,
   permission_ids: permissionIdsSchema,

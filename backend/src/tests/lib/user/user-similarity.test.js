@@ -216,6 +216,7 @@ describe('user-similarity', () => {
       firstName: 'Alice',
       lastName: 'Smith',
       facilityId: 'facility-1',
+      facilityName: 'Main Facility',
       tenantId: 'tenant-1',
       existing
     });
@@ -237,5 +238,53 @@ describe('user-similarity', () => {
       (entry) => entry.field === 'email'
     );
     expect(emailComparison.status).toBe('MATCH');
+    const facilityComparison = match.field_comparisons.find(
+      (entry) => entry.field === 'facility'
+    );
+    expect(facilityComparison.input_value).toBe('Main Facility');
+    expect(facilityComparison.candidate_value).toBe('Main Facility');
+    expect(facilityComparison.input_value).not.toMatch(
+      /^[0-9a-f-]{36}$/i
+    );
+  });
+
+  it('never surfaces raw UUIDs in facility or display_id comparisons', () => {
+    const result = checkUserDuplicates({
+      email: 'alice.smith@example.com',
+      phone: '+256700111222',
+      positionTitle: 'Registered Nurse',
+      firstName: 'Alice',
+      lastName: 'Smith',
+      facilityId: 'fbb67a68-8fea-4eed-a072-4869585d8466',
+      facilityName: null,
+      tenantId: 'tenant-1',
+      existing: [
+        {
+          id: 'fbb67a68-8fea-4eed-a072-4869585d8467',
+          human_friendly_id: 'USR0001',
+          tenant_id: 'tenant-1',
+          facility_id: 'fbb67a68-8fea-4eed-a072-4869585d8466',
+          email: 'alice.smith@example.com',
+          phone: '+256700111222',
+          position_title: 'Registered Nurse',
+          profile: { first_name: 'Alice', last_name: 'Smith' },
+          facility: {
+            id: 'fbb67a68-8fea-4eed-a072-4869585d8466',
+            name: 'DemoCare General Hospital'
+          }
+        }
+      ]
+    });
+
+    const match = result.similarMatches[0];
+    const facilityComparison = match.field_comparisons.find(
+      (entry) => entry.field === 'facility'
+    );
+    expect(facilityComparison.candidate_value).toBe('DemoCare General Hospital');
+    expect(facilityComparison.input_value).toBeNull();
+    const displayComparison = match.field_comparisons.find(
+      (entry) => entry.field === 'display_id'
+    );
+    expect(displayComparison.candidate_value).toBe('USR0001');
   });
 });

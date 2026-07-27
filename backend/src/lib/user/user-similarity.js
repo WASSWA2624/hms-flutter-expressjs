@@ -75,6 +75,17 @@ const nullIfEmpty = (value) => {
   return trimmed ? trimmed : null;
 };
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Public UI label — never surface raw UUIDs. */
+const publicLabel = (value) => {
+  const trimmed = nullIfEmpty(value);
+  if (!trimmed) return null;
+  if (UUID_PATTERN.test(trimmed)) return null;
+  return trimmed;
+};
+
 const tokensOf = (value) =>
   String(value || '')
     .split(/\s+/)
@@ -162,7 +173,9 @@ const buildCandidateSnapshot = (user) => {
   return {
     id: user?.id || null,
     human_friendly_id: user?.human_friendly_id || null,
-    display_id: user?.display_id || user?.human_friendly_id || user?.id || null,
+    display_id: publicLabel(
+      user?.human_friendly_id || user?.display_id || null
+    ),
     tenant_id: user?.tenant_id || user?.tenant?.id || null,
     facility_id: user?.facility_id || user?.facility?.id || null,
     tenant_name: user?.tenant_name || user?.tenant?.name || null,
@@ -384,6 +397,7 @@ const maxScore = (...scores) => {
  * @param {string|null|undefined} [params.middleName]
  * @param {string|null|undefined} [params.lastName]
  * @param {string|null|undefined} [params.facilityId]
+ * @param {string|null|undefined} [params.facilityName]
  * @param {string|null|undefined} [params.tenantId]
  * @param {Array<Object>} params.existing
  * @param {string|null} [params.excludeUserId]
@@ -396,6 +410,7 @@ const checkUserDuplicates = ({
   middleName = null,
   lastName = null,
   facilityId = null,
+  facilityName = null,
   tenantId = null,
   existing = [],
   excludeUserId = null
@@ -639,15 +654,17 @@ const checkUserDuplicates = ({
       }),
       buildFieldComparison({
         field: 'facility',
-        inputValue: facilityId,
-        candidateValue: snapshot.facility_id,
+        inputValue: publicLabel(facilityName),
+        candidateValue: publicLabel(snapshot.facility_name),
         score: facilityScore,
         exact: facilityScore === 100
       }),
       buildFieldComparison({
         field: 'display_id',
         inputValue: null,
-        candidateValue: snapshot.display_id,
+        candidateValue: publicLabel(
+          snapshot.human_friendly_id || snapshot.display_id
+        ),
         score: null,
         exact: false
       })
@@ -748,6 +765,7 @@ module.exports = {
   canonicalizePersonName,
   scorePhonePair,
   scorePersonTextPair,
+  publicLabel,
   compositeUserSimilarityScore,
   buildCandidateSnapshot,
   checkUserDuplicates

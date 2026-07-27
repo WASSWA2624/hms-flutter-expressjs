@@ -758,8 +758,8 @@ List<UserFieldComparison> _sortedComparisons(
 }
 
 String _display(String? value, AppLocalizations l10n) {
-  final String trimmed = value?.trim() ?? '';
-  return trimmed.isEmpty ? l10n.clinicalOrderEmptyValueLabel : trimmed;
+  final String? publicValue = publicUserLabel(value);
+  return publicValue ?? l10n.clinicalOrderEmptyValueLabel;
 }
 
 String _fieldLabel(AppLocalizations l10n, String field) {

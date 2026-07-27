@@ -477,20 +477,17 @@ Future<bool?> showUserMutationDialog({
                         child: AppTextField(
                           controller: passwordController,
                           enabled: fieldsEnabled,
-                          labelText: mode == UserMutationMode.create
-                              ? l10n.accessAdminCreatePasswordOptionalLabel
-                              : l10n.accessAdminPasswordOptionalLabel,
+                          labelText: l10n.accessAdminPasswordLabel,
+                          isRequired: true,
                           obscureText: true,
                           enableObscureTextToggle: true,
                           showObscuredTextLabel: l10n.authShowPasswordLabel,
                           hideObscuredTextLabel: l10n.authHidePasswordLabel,
-                          tooltip: mode == UserMutationMode.create
-                              ? l10n.accessAdminCreatePasswordOptionalHint
-                              : l10n.accessAdminPasswordOptionalHint,
+                          tooltip: l10n.accessAdminPasswordHint,
                           validator: (String? value) {
                             final String normalized = (value ?? '').trim();
                             if (normalized.isEmpty) {
-                              return null;
+                              return l10n.validationRequired;
                             }
                             return normalized.length >= 8
                                 ? null
@@ -538,7 +535,7 @@ Future<bool?> showUserMutationDialog({
       }
 
       final String passwordValue = passwordController.text.trim();
-      if (passwordValue.isNotEmpty && passwordValue.length < 8) {
+      if (passwordValue.isEmpty || passwordValue.length < 8) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
       // Create/edit capture Organization + User details only; roles/permissions
@@ -568,7 +565,7 @@ Future<bool?> showUserMutationDialog({
               ? null
               : phoneController.text.trim(),
           positionTitle: titleController.text.trim(),
-          password: passwordValue.isEmpty ? null : passwordValue,
+          password: passwordValue,
           status: status,
           permissionIds: const <String>[],
         ),

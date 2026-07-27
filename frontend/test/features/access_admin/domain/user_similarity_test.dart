@@ -11,11 +11,12 @@ AccessAdminItem _user({
   String? lastName,
   String tenantId = 'tenant-1',
   String? facilityId = 'facility-1',
+  String? facilityName = 'Main Facility',
 }) {
   return AccessAdminItem(
     id: id,
     resource: AccessAdminResource.users,
-    displayId: id,
+    displayId: id.startsWith('USR') ? id : 'USR-$id',
     title: email,
     email: email,
     phone: phone,
@@ -28,6 +29,7 @@ AccessAdminItem _user({
         .trim(),
     tenantId: tenantId,
     facilityId: facilityId,
+    facilityName: facilityName,
   );
 }
 
@@ -204,6 +206,7 @@ void main() {
       firstName: 'Alice',
       lastName: 'Smith',
       facilityId: 'facility-1',
+      facilityName: 'Main Facility',
       tenantId: 'tenant-1',
       existing: existing,
     );
@@ -224,5 +227,44 @@ void main() {
         'facility',
       ]),
     );
+    final UserFieldComparison facilityComparison = match.fieldComparisons
+        .firstWhere((UserFieldComparison entry) => entry.field == 'facility');
+    expect(facilityComparison.inputValue, 'Main Facility');
+    expect(facilityComparison.candidateValue, 'Main Facility');
+  });
+
+  test('never surfaces raw UUIDs in facility comparisons', () {
+    const String facilityUuid = 'fbb67a68-8fea-4eed-a072-4869585d8466';
+    final UserDuplicateCheckResult result = checkUserDuplicates(
+      email: 'alice.smith@example.com',
+      phone: '+256700111222',
+      positionTitle: 'Registered Nurse',
+      firstName: 'Alice',
+      lastName: 'Smith',
+      facilityId: facilityUuid,
+      facilityName: 'DemoCare General Hospital',
+      tenantId: 'tenant-1',
+      existing: <AccessAdminItem>[
+        _user(
+          id: 'USR0001',
+          email: 'alice.smith@example.com',
+          phone: '+256700111222',
+          positionTitle: 'Registered Nurse',
+          firstName: 'Alice',
+          lastName: 'Smith',
+          facilityId: facilityUuid,
+          facilityName: 'DemoCare General Hospital',
+        ),
+      ],
+    );
+
+    final UserFieldComparison facilityComparison = result
+        .similarMatches
+        .first
+        .fieldComparisons
+        .firstWhere((UserFieldComparison entry) => entry.field == 'facility');
+    expect(facilityComparison.inputValue, 'DemoCare General Hospital');
+    expect(facilityComparison.candidateValue, 'DemoCare General Hospital');
+    expect(publicUserLabel(facilityUuid), isNull);
   });
 }

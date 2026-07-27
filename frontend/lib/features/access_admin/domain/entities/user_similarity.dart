@@ -312,10 +312,10 @@ List<UserFieldComparison> _conflictFieldComparisons(Object? value) {
     comparisons.add(
       UserFieldComparison(
         field: field,
-        inputValue: _nullIfEmpty(
+        inputValue: publicUserLabel(
           _conflictString(map['input_value'] ?? map['inputValue']),
         ),
-        candidateValue: _nullIfEmpty(
+        candidateValue: publicUserLabel(
           _conflictString(map['candidate_value'] ?? map['candidateValue']),
         ),
         score: _conflictInt(map['score']),
@@ -342,6 +342,22 @@ UserFieldComparisonStatus _conflictFieldStatus(Object? value) {
 String? _nullIfEmpty(String? value) {
   final String trimmed = (value ?? '').trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+final RegExp _uuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+);
+
+/// Public UI label — never surface raw UUIDs.
+String? publicUserLabel(String? value) {
+  final String? trimmed = _nullIfEmpty(value);
+  if (trimmed == null) {
+    return null;
+  }
+  if (_uuidPattern.hasMatch(trimmed)) {
+    return null;
+  }
+  return trimmed;
 }
 
 String normalizeUserEmail(String? value) => normalizeTenantEmail(value);
@@ -723,6 +739,7 @@ UserDuplicateCheckResult checkUserDuplicates({
   String? middleName,
   String? lastName,
   String? facilityId,
+  String? facilityName,
   String? tenantId,
   required List<AccessAdminItem> existing,
   String? excludeUserId,
@@ -959,14 +976,14 @@ UserDuplicateCheckResult checkUserDuplicates({
       ),
       _fieldComparison(
         field: 'facility',
-        inputValue: facilityId,
-        candidateValue: user.facilityId,
+        inputValue: publicUserLabel(facilityName),
+        candidateValue: publicUserLabel(user.facilityName),
         score: facilityScore,
         exact: facilityScore == 100,
       ),
       _fieldComparison(
         field: 'display_id',
-        candidateValue: user.effectiveDisplayId,
+        candidateValue: publicUserLabel(user.effectiveDisplayId),
       ),
     ].where((UserFieldComparison entry) {
       return entry.inputValue != null || entry.candidateValue != null;

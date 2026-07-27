@@ -363,6 +363,7 @@ Future<AppFailure?> _reviewUserSimilarity(
     firstName: pending.firstName,
     lastName: pending.lastName,
     facilityId: pending.facilityId,
+    facilityName: proposedFacilityName ?? pending.facilityName,
     tenantId: pending.tenantId,
     existing: peers,
     excludeUserId: excludeUserId,

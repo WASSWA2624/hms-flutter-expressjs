@@ -23,7 +23,7 @@ describe('User Schemas', () => {
       position_title: 'Charge Nurse',
       email: 'test@example.com',
       phone: '+256700000000',
-      password_hash: '$2b$10$abcdefghijklmnopqrstuvwxyz',
+      password: 'StrongPass123!',
       status: 'ACTIVE'
     };
 
@@ -73,12 +73,11 @@ describe('User Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should allow omitting password and password_hash', () => {
+    it('should require password', () => {
       const data = { ...validData };
-      delete data.password_hash;
       delete data.password;
       const result = createUserSchema.safeParse(data);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('should accept password when password_hash is omitted', () => {
@@ -200,10 +199,8 @@ describe('User Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should enforce password min length when provided', () => {
-      const data = { ...validData };
-      delete data.password_hash;
-      data.password = 'short';
+    it('should enforce password min length', () => {
+      const data = { ...validData, password: 'short' };
       const result = createUserSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
