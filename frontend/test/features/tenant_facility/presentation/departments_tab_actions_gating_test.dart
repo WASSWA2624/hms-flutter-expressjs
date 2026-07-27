@@ -51,7 +51,7 @@ void main() {
       );
       expect(
         sectionSource.contains(
-          'canAdd = canManageRecords && prerequisitesMet && !isSubmitting',
+          'canManageRecords && prerequisitesMet && !isSubmitting && _busyDepartmentId == null',
         ),
         isTrue,
       );
@@ -102,6 +102,37 @@ void main() {
         ),
         isFalse,
       );
+    });
+
+    test('department list uses branded loader and row-scoped mutation busy', () {
+      final String sectionSource = departmentSectionSource();
+      expect(
+        sectionSource.contains('AppLoadingIndicator.compact()'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('CircularProgressIndicator()'),
+        isFalse,
+      );
+      expect(sectionSource.contains('busyItemId: _busyDepartmentId'), isTrue);
+      expect(sectionSource.contains('itemIdBuilder:'), isTrue);
+      expect(sectionSource.contains('_runBusyDepartmentAction'), isTrue);
+      expect(
+        sectionSource.contains('_loading = _departments.isEmpty'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('_loading && _departments.isEmpty'),
+        isTrue,
+      );
+      expect(
+        setupPageSource.contains(
+          'AppLoadingIndicator.compact(expand: false)',
+        ),
+        isTrue,
+      );
+      expect(setupPageSource.contains('rowScopedBusy'), isTrue);
+      expect(setupPageSource.contains('searchLoading'), isTrue);
     });
 
     test('department list loads through scoped listDepartments API', () {

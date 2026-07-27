@@ -2514,6 +2514,7 @@ class _DepartmentSetupSectionState
   String? _facilityFilterId;
   DepartmentSetupType? _typeFilter;
   bool? _isActiveFilter;
+  String? _busyDepartmentId;
   int _reloadGeneration = 0;
 
   FacilitySetupSnapshot get snapshot => widget.snapshot;
@@ -2681,7 +2682,8 @@ class _DepartmentSetupSectionState
 
     if (!silent) {
       setState(() {
-        _loading = true;
+        // Keep populated rows visible; only empty lists show the full loader.
+        _loading = _departments.isEmpty;
         _failure = null;
       });
     }
@@ -2819,6 +2821,20 @@ class _DepartmentSetupSectionState
     await _reload(silent: true);
   }
 
+  Future<bool> _runBusyDepartmentAction(
+    DepartmentProfile department,
+    Future<bool> Function() action,
+  ) async {
+    if (mounted) {
+      setState(() => _busyDepartmentId = department.mutationId);
+    }
+    final bool succeeded = await action();
+    if (!succeeded && mounted && _busyDepartmentId == department.mutationId) {
+      setState(() => _busyDepartmentId = null);
+    }
+    return succeeded;
+  }
+
   List<AppSearchBarFilterGroup> _buildFilterGroups(AppLocalizations l10n) {
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     final TenantFacilityDepartmentsListScope scope =
@@ -2906,7 +2922,8 @@ class _DepartmentSetupSectionState
         createScope == TenantFacilityDepartmentsListScope.facility
         ? (policy.facilityId ?? snapshot.facility?.id) != null
         : true;
-    final bool canAdd = canManageRecords && prerequisitesMet && !isSubmitting;
+    final bool canAdd =
+        canManageRecords && prerequisitesMet && !isSubmitting && _busyDepartmentId == null;
     final String? blockedMessage = canManageRecords && !prerequisitesMet
         ? l10n.tenantFacilityGateNeedFacility
         : null;
@@ -2948,9 +2965,9 @@ class _DepartmentSetupSectionState
             ),
         ];
 
-    final Widget content = _loading
-        ? const Center(child: CircularProgressIndicator())
-        : _failure != null
+    final Widget content = _loading && _departments.isEmpty
+        ? const AppLoadingIndicator.compact()
+        : _failure != null && _departments.isEmpty
         ? Center(
             child: Text(
               l10n.failureMessage(_failure!),
@@ -2987,6 +3004,9 @@ class _DepartmentSetupSectionState
             canManageRecords: canManageRecords,
             canAdd: canAdd,
             isSubmitting: isSubmitting,
+            busyItemId: _busyDepartmentId,
+            itemIdBuilder: (DepartmentProfile department) =>
+                department.mutationId,
             blockedMessage: blockedMessage,
             onAdd: () => unawaited(
               _afterMutation(
@@ -3030,57 +3050,120 @@ class _DepartmentSetupSectionState
             isDeletedBuilder: (DepartmentProfile department) =>
                 department.isDeleted,
             onEdit: (DepartmentProfile department) {
-              if (department.isDeleted || isSubmitting) {
+              if (department.isDeleted ||
+                  isSubmitting ||
+                  _busyDepartmentId != null) {
                 return;
               }
-              unawaited(
-                _afterMutation(
-                  () => _openDepartmentDialog(
-                    context,
-                    snapshot,
-                    department: department,
-                    tenantOptions: _tenantOptions,
-                    facilityOptions: _facilityOptions,
-                  ),
-                ),
-              );
+              unawaited(() async {
+                await _openDepartmentDialog(
+                  context,
+                  snapshot,
+                  department: department,
+                  tenantOptions: _tenantOptions,
+                  facilityOptions: _facilityOptions,
+                );
+                if (!mounted) {
+                  return;
+                }
+                setState(() => _busyDepartmentId = department.mutationId);
+                try {
+                  await _reload(silent: true);
+                } finally {
+                  if (mounted &&
+                      _busyDepartmentId == department.mutationId) {
+                    setState(() => _busyDepartmentId = null);
+                  }
+                }
+              }());
             },
-            onDelete: (DepartmentProfile department) => unawaited(
-              _afterMutation(
-                () => _deleteEntity(
+            onDelete: (DepartmentProfile department) {
+              if (_busyDepartmentId != null) {
+                return;
+              }
+              unawaited(() async {
+                await _deleteEntity(
                   context: context,
                   ref: ref,
                   name: department.name,
-                  deleteAction: () => ref
-                      .read(tenantFacilitySetupSubmissionProvider.notifier)
-                      .deleteDepartment(department.mutationId),
-                ),
-              ),
-            ),
-            onRestore: (DepartmentProfile department) => unawaited(
-              _afterMutation(
-                () => _restoreEntity(
+                  deleteAction: () => _runBusyDepartmentAction(
+                    department,
+                    () => ref
+                        .read(tenantFacilitySetupSubmissionProvider.notifier)
+                        .deleteDepartment(department.mutationId),
+                  ),
+                );
+                if (!mounted) {
+                  return;
+                }
+                try {
+                  await _reload(silent: true);
+                } finally {
+                  if (mounted &&
+                      _busyDepartmentId == department.mutationId) {
+                    setState(() => _busyDepartmentId = null);
+                  }
+                }
+              }());
+            },
+            onRestore: (DepartmentProfile department) {
+              if (_busyDepartmentId != null) {
+                return;
+              }
+              unawaited(() async {
+                await _restoreEntity(
                   context: context,
                   ref: ref,
                   name: department.name,
-                  restoreAction: () => ref
-                      .read(tenantFacilitySetupSubmissionProvider.notifier)
-                      .restoreDepartment(department.mutationId),
-                ),
-              ),
-            ),
-            onPermanentDelete: (DepartmentProfile department) => unawaited(
-              _afterMutation(
-                () => _permanentDeleteEntity(
+                  restoreAction: () => _runBusyDepartmentAction(
+                    department,
+                    () => ref
+                        .read(tenantFacilitySetupSubmissionProvider.notifier)
+                        .restoreDepartment(department.mutationId),
+                  ),
+                );
+                if (!mounted) {
+                  return;
+                }
+                try {
+                  await _reload(silent: true);
+                } finally {
+                  if (mounted &&
+                      _busyDepartmentId == department.mutationId) {
+                    setState(() => _busyDepartmentId = null);
+                  }
+                }
+              }());
+            },
+            onPermanentDelete: (DepartmentProfile department) {
+              if (_busyDepartmentId != null) {
+                return;
+              }
+              unawaited(() async {
+                await _permanentDeleteEntity(
                   context: context,
                   ref: ref,
                   name: department.name,
-                  permanentDeleteAction: () => ref
-                      .read(tenantFacilitySetupSubmissionProvider.notifier)
-                      .permanentDeleteDepartment(department.mutationId),
-                ),
-              ),
-            ),
+                  permanentDeleteAction: () => _runBusyDepartmentAction(
+                    department,
+                    () => ref
+                        .read(tenantFacilitySetupSubmissionProvider.notifier)
+                        .permanentDeleteDepartment(department.mutationId),
+                  ),
+                );
+                if (!mounted) {
+                  return;
+                }
+                try {
+                  await _reload(silent: true);
+                } finally {
+                  if (mounted &&
+                      _busyDepartmentId == department.mutationId) {
+                    setState(() => _busyDepartmentId = null);
+                  }
+                }
+              }());
+            },
           );
 
     if (widget.framed) {
@@ -3475,6 +3558,8 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     this.onPermanentDelete,
     this.onRowSelected,
     this.isSubmitting = false,
+    this.busyItemId,
+    this.itemIdBuilder,
     this.scopeLabel,
     this.scopeOptions = const <_SearchableEntityGroupScopeOption>[],
     this.itemScopeId,
@@ -3501,6 +3586,8 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final bool canManageRecords;
   final bool canAdd;
   final bool isSubmitting;
+  final String? busyItemId;
+  final String Function(T item)? itemIdBuilder;
   final VoidCallback onAdd;
   final String Function(T item) titleBuilder;
   final String Function(T item) subtitleBuilder;
@@ -3616,7 +3703,8 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         widget.leadingColumns ?? <AppListTableColumn<T>>[];
     final List<AppListTableColumn<T>> extraColumns =
         widget.extraColumns ?? <AppListTableColumn<T>>[];
-    final bool actionsEnabled = !widget.isSubmitting;
+    final bool rowScopedBusy = widget.itemIdBuilder != null;
+    final bool searchLoading = !rowScopedBusy && widget.isSubmitting;
     final AppListTableColumn<T>? actionsColumn = widget.canManageRecords
         ? AppListTableColumn<T>(
             id: 'actions',
@@ -3625,6 +3713,20 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
             preferredWidth: widget.onPermanentDelete != null ? 280 : 168,
             cellBuilder: (BuildContext context, T item) {
               final bool deleted = widget.isDeletedBuilder(item);
+              final String? itemId = widget.itemIdBuilder?.call(item);
+              final bool itemBusy =
+                  rowScopedBusy &&
+                  widget.busyItemId != null &&
+                  itemId == widget.busyItemId;
+              final bool actionsEnabled = rowScopedBusy
+                  ? widget.busyItemId == null
+                  : !widget.isSubmitting;
+              if (itemBusy) {
+                return const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: AppLoadingIndicator.compact(expand: false),
+                );
+              }
               return Wrap(
                 spacing: actionGap,
                 runSpacing: theme.spacing.xs,
@@ -3771,7 +3873,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           });
           widget.onFiltersChanged?.call(value);
         },
-        isLoading: widget.isSubmitting,
+        isLoading: searchLoading,
         trailingActions: widget.canManageRecords
             ? <AppSearchBarAction>[
                 AppSearchBarAction(
@@ -3798,7 +3900,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                   label: widget.addLabel,
                   leadingIcon: widget.addIcon,
                   enabled: widget.canAdd,
-                  isLoading: widget.isSubmitting,
+                  isLoading: searchLoading,
                   tooltip: widget.canAdd
                       ? widget.addLabel
                       : (widget.blockedMessage ?? widget.addLabel),

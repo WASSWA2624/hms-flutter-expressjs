@@ -1,35 +1,37 @@
-# Departments Tab — Role-Aware Create, Similarity, Details
+# Departments Tab — Branded Load and Row-Scoped Mutation Feedback
 
-Implement scoped create, similarity, and details on `/admin/setup?section=departments`.
+Fix departments loading on `/admin/setup?section=departments`: branded indicator and row-only mutation busy.
 
 ## Context
 
 - Inventoried in `screens/admin-setup/departments.md`.
-- Create uses `_DepartmentFormDialog` against session facility only; no role-aware pickers, similarity, or details.
-- Mirror tenant/facility similarity (`confirm_similar`, scores, near matches).
+- Initial load uses `CircularProgressIndicator`; post-mutation `_afterMutation` feels like a full-table reload.
+- Use `AppLoadingIndicator`; prefer `.compact` for table loads.
 
 ## Requirements
 
-1. Role-aware create: platform admin picks tenant then facility; tenant admin picks a facility in their tenants; facility admin uses known tenant/facility. Block create without facility.
-2. Fields: required name; optional short name defaulting to name when empty; `DepartmentSetupType` with type-specific icons.
-3. On Create, always show facility-scoped similarity (including zero matches) with submitted fields, per-parameter/overall scores, and near matches; offer **Use this department** (adopt match) and **Create anyway** (`confirm_similar`).
-4. After create and on row select, open department details with Edit (reuse form) and soft Delete (reuse confirm). Keep list Restore / Permanent delete for soft-deleted rows.
-5. Cover permission, loading, empty, error, success, validation; refresh after mutations.
+1. On initial list load (and non-silent reload with no rows), show `AppLoadingIndicator` instead of `CircularProgressIndicator`; keep error/empty meaning.
+2. After Edit save, Delete, Restore, or Permanent delete confirms, show busy only on the affected row; keep other rows visible—no full-list loader.
+3. Disable that row’s actions while mutating; clear busy on success or failure; sync the row without a full-table loading flash when rows exist.
+4. Create may refresh after success; do not blank a populated table behind a full-list loader.
+5. Preserve inventory permissions, dialogs, confirms, and success/validation/failure feedback.
 
 ## Constraints
 
-- Reuse dialogs, selects, `canEditFacilitySetupStructure`, and similarity contracts; add department similarity only as needed.
-- Facility-scoped; no unrelated work.
+- Reuse `AppLoadingIndicator` and department submission/dialog APIs; extend list/row UI only as needed.
+- Do not change form fields, similarity, filters, or other setup tabs.
+- No unrelated refactoring.
 
 ## Acceptance Criteria
 
-- Correct pickers by role; create blocked without facility (Req 1).
-- Short name defaults to name; type icons shown (Req 2).
-- Similarity always appears; Use this / Create anyway work (Req 3).
-- Details open after create and row select; Edit/soft Delete work (Req 4).
-- Unauthorized mutate UI absent; tests cover scoping, similarity, details; analyze and backend tests pass (Req 1-5).
+- First load shows branded `AppLoadingIndicator`, not `CircularProgressIndicator` (Req 1).
+- Mutation busy is limited to the target row; other rows stay visible (Req 2–3).
+- Successful mutation updates/removes that row without a full-table loading flash when rows exist (Req 3–4).
+- Create refresh does not full-load a populated table (Req 4).
+- Widget tests cover branded initial load and row-scoped busy; `flutter analyze` passes (Req 1–5).
 
 ## Relevant Files
 
 - `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
-- `backend/src/modules/department/services/department.service.js`
+- `frontend/lib/shared/components/app_loading_indicator.dart`
+- `frontend/lib/shared/components/app_list_table.dart`
