@@ -3360,6 +3360,7 @@ class _AccessAdminUserDetailDialogState
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AccessAdminItem item = _item;
+    final bool canMutate = widget.canWrite && !item.isDeleted;
 
     return AppDialog(
       title: Text(l10n.accessAdminCreateUserDetailsSectionTitle),
@@ -3376,97 +3377,18 @@ class _AccessAdminUserDetailDialogState
             title: l10n.accessAdminUserDetailProfileSectionTitle,
             description: l10n.accessAdminUserDetailProfileSectionDescription,
             leadingIcon: Icons.badge_outlined,
-            children: <Widget>[
-              LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  final bool wide = constraints.maxWidth >= 560;
-                  final List<Widget> fields = <Widget>[
-                    _UserDetailInfoTile(
-                      icon: Icons.tag_outlined,
-                      label: l10n.accessAdminColumnId,
-                      value: item.effectiveDisplayId,
-                    ),
-                    if (item.email != null)
-                      _UserDetailInfoTile(
-                        icon: Icons.mail_outline,
-                        label: l10n.accessAdminEmailLabel,
-                        value: item.email!,
-                      ),
-                    if (item.phone != null)
-                      _UserDetailInfoTile(
-                        icon: Icons.phone_outlined,
-                        label: l10n.accessAdminPhoneLabel,
-                        value: item.phone!,
-                      ),
-                    if (item.positionTitle != null)
-                      _UserDetailInfoTile(
-                        icon: Icons.work_outline,
-                        label: l10n.accessAdminPositionLabel,
-                        value: item.positionTitle!,
-                      ),
-                    if (item.tenantId != null)
-                      _UserDetailInfoTile(
-                        icon: Icons.apartment_outlined,
-                        label: l10n.settingsWorkspaceTenantLabel,
-                        value: (item.tenantName?.trim().isNotEmpty == true
-                            ? item.tenantName!
-                            : item.tenantId!),
-                      ),
-                    if (item.facilityId != null)
-                      _UserDetailInfoTile(
-                        icon: Icons.local_hospital_outlined,
-                        label: l10n.settingsWorkspaceFacilityLabel,
-                        value: (item.facilityName?.trim().isNotEmpty == true
-                            ? item.facilityName!
-                            : item.facilityId!),
-                      ),
-                  ];
-
-                  if (!wide) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: fields,
-                    );
-                  }
-
-                  final List<Widget> rows = <Widget>[];
-                  for (var index = 0; index < fields.length; index += 2) {
-                    rows.add(
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(child: fields[index]),
-                          if (index + 1 < fields.length) ...<Widget>[
-                            SizedBox(width: theme.spacing.md),
-                            Expanded(child: fields[index + 1]),
-                          ],
-                        ],
-                      ),
-                    );
-                    if (index + 2 < fields.length) {
-                      rows.add(SizedBox(height: theme.spacing.sm));
-                    }
-                  }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: rows,
-                  );
-                },
-              ),
-            ],
+            children: <Widget>[_UserDetailAccountFields(item: item)],
           ),
           SizedBox(height: theme.spacing.md),
           AppUserAccessPanel(
             roleGroups: _roleGroups,
             directPermissions: _directPermissions,
-            canWrite: widget.canWrite,
+            canWrite: canMutate,
             isBusy: _saving,
-            onAddRole: widget.canWrite ? _addRole : null,
-            onRemoveRole: widget.canWrite ? _removeRole : null,
-            onAddDirectPermission: widget.canWrite
-                ? _addDirectPermission
-                : null,
-            onRemoveDirectPermission: widget.canWrite
+            onAddRole: canMutate ? _addRole : null,
+            onRemoveRole: canMutate ? _removeRole : null,
+            onAddDirectPermission: canMutate ? _addDirectPermission : null,
+            onRemoveDirectPermission: canMutate
                 ? _removeDirectPermission
                 : null,
           ),
@@ -3488,7 +3410,7 @@ class _AccessAdminUserDetailDialogState
         ],
       ),
       actions: <Widget>[
-        if (widget.canWrite) ...<Widget>[
+        if (canMutate) ...<Widget>[
           AppButton.primary(
             leadingIcon: Icons.edit_outlined,
             label: l10n.accessAdminEditUserAction,
@@ -3575,6 +3497,7 @@ class _UserDetailSummaryCard extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final _UserDetailIdentity identity = _resolveUserDetailIdentity(item);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -3592,7 +3515,7 @@ class _UserDetailSummaryCard extends StatelessWidget {
               backgroundColor: colorScheme.primaryContainer,
               foregroundColor: colorScheme.onPrimaryContainer,
               child: Text(
-                _userInitials(item.title),
+                _userInitials(identity.primary),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -3604,21 +3527,21 @@ class _UserDetailSummaryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    item.title,
+                    identity.primary,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  if ((item.positionTitle ?? '').isNotEmpty) ...<Widget>[
+                  if (identity.subtitle != null) ...<Widget>[
                     SizedBox(height: theme.spacing.xs),
                     Text(
-                      item.positionTitle!,
+                      identity.subtitle!,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
-                  if ((item.email ?? '').isNotEmpty) ...<Widget>[
+                  if (identity.email != null) ...<Widget>[
                     SizedBox(height: theme.spacing.xs),
                     Row(
                       children: <Widget>[
@@ -3630,7 +3553,7 @@ class _UserDetailSummaryCard extends StatelessWidget {
                         SizedBox(width: theme.spacing.xs),
                         Expanded(
                           child: Text(
-                            item.email!,
+                            identity.email!,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -3687,11 +3610,207 @@ class _UserDetailSummaryCard extends StatelessWidget {
       return '?';
     }
     if (parts.length == 1) {
-      return parts.first
-          .substring(0, parts.first.length < 2 ? 1 : 2)
-          .toUpperCase();
+      final String token = parts.first;
+      if (token.contains('@')) {
+        final String local = token.split('@').first;
+        return local
+            .substring(0, local.length < 2 ? 1 : 2)
+            .toUpperCase();
+      }
+      return token.substring(0, token.length < 2 ? 1 : 2).toUpperCase();
     }
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+}
+
+@immutable
+final class _UserDetailIdentity {
+  const _UserDetailIdentity({
+    required this.primary,
+    this.subtitle,
+    this.email,
+  });
+
+  final String primary;
+  final String? subtitle;
+  final String? email;
+}
+
+_UserDetailIdentity _resolveUserDetailIdentity(AccessAdminItem item) {
+  final String email = (item.email ?? '').trim();
+  final String displayName = (item.displayName ?? item.profileName ?? item.name ?? '')
+      .trim();
+  final String position = (item.positionTitle ?? '').trim();
+  final String title = item.title.trim();
+
+  bool matchesEmail(String value) =>
+      value.isNotEmpty &&
+      email.isNotEmpty &&
+      value.toLowerCase() == email.toLowerCase();
+
+  String primary;
+  if (displayName.isNotEmpty && !matchesEmail(displayName)) {
+    primary = displayName;
+  } else if (title.isNotEmpty && !matchesEmail(title)) {
+    primary = title;
+  } else if (position.isNotEmpty && !matchesEmail(position)) {
+    primary = position;
+  } else if (email.isNotEmpty) {
+    primary = email;
+  } else {
+    primary = title.isNotEmpty ? title : '?';
+  }
+
+  String? subtitle;
+  if (position.isNotEmpty &&
+      primary.toLowerCase() != position.toLowerCase() &&
+      !matchesEmail(position)) {
+    subtitle = position;
+  }
+
+  final String? emailLine =
+      email.isNotEmpty && !matchesEmail(primary) ? email : null;
+
+  return _UserDetailIdentity(
+    primary: primary,
+    subtitle: subtitle,
+    email: emailLine,
+  );
+}
+
+class _UserDetailAccountFields extends StatelessWidget {
+  const _UserDetailAccountFields({required this.item});
+
+  final AccessAdminItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    final String? email = item.email?.trim();
+    final String? phone = item.phone?.trim();
+    final String? position = item.positionTitle?.trim();
+    final String? tenant = item.tenantId == null
+        ? null
+        : (item.tenantName?.trim().isNotEmpty == true
+              ? item.tenantName!.trim()
+              : item.tenantId!.trim());
+    final String? facility = item.facilityId == null
+        ? null
+        : (item.facilityName?.trim().isNotEmpty == true
+              ? item.facilityName!.trim()
+              : item.facilityId!.trim());
+
+    final List<Widget> contactFields = <Widget>[
+      if (email != null && email.isNotEmpty)
+        _UserDetailInfoTile(
+          icon: Icons.mail_outline,
+          label: l10n.accessAdminEmailLabel,
+          value: email,
+        ),
+      if (phone != null && phone.isNotEmpty)
+        _UserDetailInfoTile(
+          icon: Icons.phone_outlined,
+          label: l10n.accessAdminPhoneLabel,
+          value: phone,
+        ),
+    ];
+    final List<Widget> assignmentFields = <Widget>[
+      if (position != null && position.isNotEmpty)
+        _UserDetailInfoTile(
+          icon: Icons.work_outline,
+          label: l10n.accessAdminPositionLabel,
+          value: position,
+        ),
+      if (tenant != null && tenant.isNotEmpty)
+        _UserDetailInfoTile(
+          icon: Icons.apartment_outlined,
+          label: l10n.settingsWorkspaceTenantLabel,
+          value: tenant,
+        ),
+      if (facility != null && facility.isNotEmpty)
+        _UserDetailInfoTile(
+          icon: Icons.local_hospital_outlined,
+          label: l10n.settingsWorkspaceFacilityLabel,
+          value: facility,
+        ),
+    ];
+    final List<Widget> idFields = <Widget>[
+      _UserDetailInfoTile(
+        icon: Icons.tag_outlined,
+        label: l10n.accessAdminColumnId,
+        value: item.effectiveDisplayId,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool wide = constraints.maxWidth >= 560;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _UserDetailFieldGrid(fields: contactFields, wide: wide),
+            if (contactFields.isNotEmpty &&
+                (assignmentFields.isNotEmpty || idFields.isNotEmpty)) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Divider(height: theme.spacing.md, color: theme.colorScheme.outlineVariant),
+            ],
+            _UserDetailFieldGrid(fields: assignmentFields, wide: wide),
+            if (assignmentFields.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Divider(height: theme.spacing.md, color: theme.colorScheme.outlineVariant),
+            ],
+            _UserDetailFieldGrid(fields: idFields, wide: wide),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _UserDetailFieldGrid extends StatelessWidget {
+  const _UserDetailFieldGrid({required this.fields, required this.wide});
+
+  final List<Widget> fields;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    if (fields.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final ThemeData theme = Theme.of(context);
+    if (!wide) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: fields,
+      );
+    }
+
+    final List<Widget> rows = <Widget>[];
+    for (var index = 0; index < fields.length; index += 2) {
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(child: fields[index]),
+            if (index + 1 < fields.length) ...<Widget>[
+              SizedBox(width: theme.spacing.md),
+              Expanded(child: fields[index + 1]),
+            ] else
+              const Expanded(child: SizedBox.shrink()),
+          ],
+        ),
+      );
+      if (index + 2 < fields.length) {
+        rows.add(SizedBox(height: theme.spacing.sm));
+      }
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: rows,
+    );
   }
 }
 

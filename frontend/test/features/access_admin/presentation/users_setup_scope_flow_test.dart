@@ -145,4 +145,29 @@ void main() {
       isTrue,
     );
   });
+
+  test('user detail clarifies identity and collapses role permissions', () {
+    expect(
+      managementSource.contains('_resolveUserDetailIdentity'),
+      isTrue,
+      reason: 'Summary must resolve a non-duplicative primary identity',
+    );
+    expect(
+      managementSource.contains('_UserDetailAccountFields'),
+      isTrue,
+      reason: 'Account fields stay grouped and complete',
+    );
+    expect(
+      managementSource.contains('canMutate = widget.canWrite && !item.isDeleted'),
+      isTrue,
+      reason: 'Soft-deleted users must not expose write actions',
+    );
+    expect(
+      File('lib/shared/components/app_user_access_panel.dart')
+          .readAsStringSync()
+          .contains('_expanded = false'),
+      isTrue,
+      reason: 'Role-inherited permissions start collapsed',
+    );
+  });
 }

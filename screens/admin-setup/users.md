@@ -44,10 +44,35 @@
   - Condition: Shown when `canWrite` is true and the user is not soft-deleted.
   - Immediate result: Closes details and opens the edit-user mutation dialog.
 
+- **Activate / Deactivate user**
+  - Location: Dialog footer / detail actions.
+  - Condition: Shown when `canWrite` is true and the user is not soft-deleted; label is **Deactivate user** when status is `ACTIVE`, otherwise **Activate user**.
+  - Immediate result: Toggles status via `setUserStatus`, then closes the details dialog on success.
+
 - **Delete user**
   - Location: Dialog footer / detail actions.
   - Condition: Shown when `canWrite` is true, the user is not soft-deleted, and not demo/system-critical.
   - Immediate result: Soft-delete confirm flow (same as list Delete).
+
+- **Add role**
+  - Location: Assigned roles section header in `AppUserAccessPanel`.
+  - Condition: Shown when `canWrite` is true and the user is not soft-deleted; disabled while a role/permission mutation is in progress.
+  - Immediate result: Opens role assignment picker; on confirm assigns selected roles and reloads user detail (list silently refreshes).
+
+- **Remove role**
+  - Location: Each removable assigned-role card.
+  - Condition: Shown when `canWrite` is true, the user is not soft-deleted, and the role assignment has a `userRoleId` and is not system-critical; disabled while busy.
+  - Immediate result: Confirms then revokes the user-role link and reloads detail. Inherited permissions are display-only (collapsed by default; expand to view chips) and cannot be removed individually.
+
+- **Add permission**
+  - Location: Direct permissions section header.
+  - Condition: Shown when `canWrite` is true and the user is not soft-deleted; disabled while busy.
+  - Immediate result: Opens direct-permission picker; save syncs the direct grant set and reloads detail.
+
+- **Remove permission**
+  - Location: Each direct-permission row.
+  - Condition: Shown when `canWrite` is true and the user is not soft-deleted; disabled while busy.
+  - Immediate result: Syncs the remaining direct permission ids (role grants unaffected) and reloads detail.
 
 - **Close**
   - Location: Dialog footer.

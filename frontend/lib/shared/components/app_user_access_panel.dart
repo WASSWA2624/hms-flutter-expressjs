@@ -198,7 +198,7 @@ class _HeaderActions extends StatelessWidget {
   }
 }
 
-class _RoleGroupCard extends StatelessWidget {
+class _RoleGroupCard extends StatefulWidget {
   const _RoleGroupCard({
     required this.group,
     required this.canWrite,
@@ -212,10 +212,21 @@ class _RoleGroupCard extends StatelessWidget {
   final VoidCallback? onRemove;
 
   @override
+  State<_RoleGroupCard> createState() => _RoleGroupCardState();
+}
+
+class _RoleGroupCardState extends State<_RoleGroupCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final AppUserAccessRoleGroup group = widget.group;
+    final bool canRemove =
+        widget.canWrite && group.canRemove && widget.onRemove != null;
+    final bool hasPermissions = group.permissions.isNotEmpty;
 
     return AppContentPanel(
       tone: AppWorkspaceStatusTone.info,
@@ -242,38 +253,60 @@ class _RoleGroupCard extends StatelessWidget {
               ),
               SizedBox(width: theme.spacing.sm),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      group.roleName,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                child: InkWell(
+                  onTap: hasPermissions
+                      ? () => setState(() => _expanded = !_expanded)
+                      : null,
+                  borderRadius: BorderRadius.circular(theme.radius.sm),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        group.roleName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: theme.spacing.xs),
-                    Text(
-                      l10n.accessAdminUserAccessPermissionCountLabel(
-                        group.permissions.length,
+                      SizedBox(height: theme.spacing.xs),
+                      Row(
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              l10n.accessAdminUserAccessPermissionCountLabel(
+                                group.permissions.length,
+                              ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          if (hasPermissions) ...<Widget>[
+                            SizedBox(width: theme.spacing.xs),
+                            Icon(
+                              _expanded
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              size: 20,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ],
+                        ],
                       ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              if (canWrite && group.canRemove && onRemove != null)
+              if (canRemove)
                 AppButton.tertiary(
                   leadingIcon: Icons.remove_circle_outline,
                   label: l10n.accessAdminUserAccessRemoveRoleAction,
                   color: colorScheme.error,
                   tooltip: l10n.accessAdminUserAccessRemoveRoleAction,
-                  onPressed: isBusy ? null : onRemove,
+                  onPressed: widget.isBusy ? null : widget.onRemove,
                 ),
             ],
           ),
-          if (group.permissions.isNotEmpty) ...<Widget>[
+          if (hasPermissions && _expanded) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
             Text(
               l10n.accessAdminUserAccessRolePermissionsHint,
