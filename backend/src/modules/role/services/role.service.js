@@ -141,7 +141,16 @@ const resolveRoleId = async (identifier) =>
   resolveEntityId({ model: 'role', identifier });
 
 const normalizeCreateRolePayload = async (data = {}) => {
-  const payload = { ...data };
+  const { scope, ...fields } = data || {};
+  const payload = { ...fields };
+  const normalizedScope = String(scope || '').trim().toLowerCase();
+
+  // Explicit platform scope wins over any tenant_id injected by middleware.
+  if (normalizedScope === 'platform') {
+    payload.tenant_id = null;
+    payload.facility_id = null;
+    return payload;
+  }
 
   if (data.tenant_id == null || String(data.tenant_id).trim() === '') {
     payload.tenant_id = null;

@@ -208,21 +208,19 @@ class AppRadioGroup<T> extends StatelessWidget {
     required double maxWidth,
     required double gap,
   }) {
-    if (wrapColumns != null) {
-      final int fixed = wrapColumns!.clamp(1, 4);
-      if (fixed == 1) {
-        return 1;
-      }
-      final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-      if (breakpoint.isMobile || maxWidth < itemMinWidth * 2 + gap) {
-        return 1;
-      }
-      return fixed;
-    }
-    if (maxWidth < itemMinWidth * 2 + gap) {
+    final int requested = (wrapColumns ?? 2).clamp(1, 4);
+    if (requested == 1) {
       return 1;
     }
-    return 2;
+
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    if (breakpoint.isMobile || maxWidth < itemMinWidth * 2 + gap) {
+      return 1;
+    }
+    if (requested >= 3 && maxWidth >= itemMinWidth * 3 + gap * 2) {
+      return 3.clamp(1, requested);
+    }
+    return 2.clamp(1, requested);
   }
 }
 

@@ -25,10 +25,19 @@ describe('assignable-access', () => {
   });
 
   describe('canActorCreatePlatformRole', () => {
-    it('allows super admins only', () => {
+    it('allows super admins only by role', () => {
       expect(canActorCreatePlatformRole({ roles: [ROLES.SUPER_ADMIN] })).toBe(true);
       expect(canActorCreatePlatformRole({ roles: [ROLES.TENANT_ADMIN] })).toBe(false);
       expect(canActorCreatePlatformRole({ roles: [ROLES.FACILITY_ADMIN] })).toBe(false);
+    });
+
+    it('allows system:admin permission holders', () => {
+      expect(
+        canActorCreatePlatformRole({
+          roles: [],
+          permissions: [PERMISSIONS.SYSTEM_ADMIN]
+        })
+      ).toBe(true);
     });
   });
 

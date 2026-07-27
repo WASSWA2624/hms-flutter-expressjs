@@ -7,9 +7,13 @@
 
 const prisma = require('@prisma/client');
 const { ROLES } = require('@config/roles');
-const { ROLE_PERMISSIONS } = require('@config/permissions');
+const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 const { HttpError } = require('@lib/errors');
 const { getUserPermissions } = require('@middlewares/auth.middleware');
+const {
+  getRoleNames,
+  userHasSuperAdminRole,
+} = require('@lib/authorization/effective-access');
 const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
@@ -87,8 +91,29 @@ const canActorCreateTenantWideRole = (user = {}) => {
 };
 
 const canActorCreatePlatformRole = (user = {}) => {
-  const roles = new Set(resolveActorRoleNames(user));
-  return roles.has(ROLES.SUPER_ADMIN);
+  // Match FE canCreateTenant / Platform radio: elevated role or system:admin.
+  if (userHasSuperAdminRole(user)) {
+    return true;
+  }
+  if (getRoleNames(user).includes(ROLES.SUPER_ADMIN)) {
+    return true;
+  }
+
+  const tokenPermissions = new Set(
+    (Array.isArray(user.permissions) ? user.permissions : [])
+      .map((entry) =>
+        typeof entry === 'string'
+          ? text(entry)
+          : text(entry?.name || entry?.permission?.name || entry?.code)
+      )
+      .filter(Boolean)
+  );
+  if (tokenPermissions.has(PERMISSIONS.SYSTEM_ADMIN)) {
+    return true;
+  }
+
+  const permissions = new Set(getUserPermissions(user));
+  return permissions.has(PERMISSIONS.SYSTEM_ADMIN);
 };
 
 const isPermissionNameAssignable = (permissionName, assignableSet) => {

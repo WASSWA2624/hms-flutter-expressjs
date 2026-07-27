@@ -298,6 +298,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
             'display_name': draft.displayName,
             'description': draft.description,
             'permission_ids': draft.permissionIds,
+            'scope': draft.scope,
             if (draft.confirmSimilar) 'confirm_similar': true,
           }),
           // Explicit nulls required for platform-scoped creates.

@@ -122,6 +122,17 @@ describe('Role Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should accept explicit scope=platform even with tenant_id present', () => {
+      const validData = {
+        scope: 'platform',
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Platform Role',
+        display_name: 'Platform Role'
+      };
+      const result = createRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
     it('should accept facility-scoped create without tenant_id', () => {
       const validData = {
         facility_id: '123e4567-e89b-12d3-a456-426614174001',

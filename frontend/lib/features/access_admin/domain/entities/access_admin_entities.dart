@@ -697,6 +697,7 @@ final class AccessAdminRoleDraft {
     this.description,
     this.permissionIds = const <String>[],
     this.confirmSimilar = false,
+    this.scope,
   });
 
   /// Null for platform-scoped roles.
@@ -708,6 +709,9 @@ final class AccessAdminRoleDraft {
   final List<String> permissionIds;
   final bool confirmSimilar;
 
+  /// Optional create scope hint: `platform`, `tenant`, or `facility`.
+  final String? scope;
+
   AccessAdminRoleDraft copyWith({
     String? tenantId,
     String? facilityId,
@@ -716,8 +720,10 @@ final class AccessAdminRoleDraft {
     String? description,
     List<String>? permissionIds,
     bool? confirmSimilar,
+    String? scope,
     bool clearTenantId = false,
     bool clearFacilityId = false,
+    bool clearScope = false,
   }) {
     return AccessAdminRoleDraft(
       tenantId: clearTenantId ? null : (tenantId ?? this.tenantId),
@@ -727,6 +733,7 @@ final class AccessAdminRoleDraft {
       description: description ?? this.description,
       permissionIds: permissionIds ?? this.permissionIds,
       confirmSimilar: confirmSimilar ?? this.confirmSimilar,
+      scope: clearScope ? null : (scope ?? this.scope),
     );
   }
 }

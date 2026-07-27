@@ -299,6 +299,43 @@ describe('Role Service', () => {
       );
     });
 
+    it('should honor scope=platform even when tenant_id was injected', async () => {
+      const mockRole = {
+        id: 'role-platform',
+        name: 'PLATFORM SUPPORT',
+        tenant_id: null,
+        facility_id: null
+      };
+      roleRepository.findMany.mockResolvedValue([]);
+      roleRepository.create.mockResolvedValue(mockRole);
+
+      const result = await createRole(
+        {
+          scope: 'platform',
+          name: 'PLATFORM SUPPORT',
+          display_name: 'Platform Support',
+          tenant_id: 'tenant-injected',
+          facility_id: null
+        },
+        'user-123',
+        '127.0.0.1',
+        {
+          id: 'user-123',
+          roles: [],
+          permissions: ['system:admin']
+        }
+      );
+
+      expect(result).toEqual(mockRole);
+      expect(roleRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: null,
+          facility_id: null
+        }),
+        []
+      );
+    });
+
     it('should reject platform-scoped role create for tenant admins', async () => {
       await expect(
         createRole(

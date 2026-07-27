@@ -36,6 +36,9 @@ const permissionIdsSchema = z
 
 const createRoleSchema = z
   .object({
+    // Explicit platform scope survives tenant-scope middleware rewriting null
+    // tenant_id from the actor session.
+    scope: z.enum(['platform', 'tenant', 'facility']).optional(),
     // Null/omitted tenant_id = platform-scoped role. Facility-only creates may
     // omit tenant_id; service resolves it from the facility.
     tenant_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
@@ -47,6 +50,9 @@ const createRoleSchema = z
     confirm_similar: optionalBooleanSchema
   })
   .superRefine((data, ctx) => {
+    if (data.scope === 'platform') {
+      return;
+    }
     const hasTenant =
       data.tenant_id != null && String(data.tenant_id).trim() !== '';
     const hasFacility =

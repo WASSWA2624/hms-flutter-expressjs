@@ -514,6 +514,8 @@ Future<bool?> showRoleMutationDialog({
                             value: createScopeKind,
                             enabled: !isSubmitting,
                             layout: AppRadioGroupLayout.wrap,
+                            wrapColumns: 3,
+                            itemMinWidth: 160,
                             options: createScopeOptions,
                             onChanged: isSubmitting
                                 ? null
@@ -1028,6 +1030,7 @@ Future<bool?> showRoleMutationDialog({
                 displayName: displayName,
                 description: description,
                 permissionIds: permissionIds,
+                scope: 'platform',
               ),
             ]);
           case RoleCreateScopeKind.tenants:
@@ -1042,6 +1045,7 @@ Future<bool?> showRoleMutationDialog({
                   displayName: displayName,
                   description: description,
                   permissionIds: permissionIds,
+                  scope: 'tenant',
                 ),
             ]);
           case RoleCreateScopeKind.facilities:
@@ -1067,6 +1071,7 @@ Future<bool?> showRoleMutationDialog({
                   displayName: displayName,
                   description: description,
                   permissionIds: permissionIds,
+                  scope: 'facility',
                 ),
             ]);
         }
