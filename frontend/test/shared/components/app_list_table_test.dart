@@ -831,7 +831,7 @@ void main() {
     expect(find.text('1-12 of 24'), findsOneWidget);
 
     final ScrollableState scrollable = tester.state<ScrollableState>(
-      find.byType(Scrollable).first,
+      find.byWidgetPredicate(_isVerticalScrollable).first,
     );
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
@@ -893,7 +893,7 @@ void main() {
       expect(find.text('Beta 0'), findsNothing);
 
       final ScrollableState scrollable = tester.state<ScrollableState>(
-        find.byType(Scrollable).first,
+        find.byWidgetPredicate(_isVerticalScrollable).first,
       );
       scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
       await tester.pump();
@@ -902,6 +902,81 @@ void main() {
       expect(find.text('Beta 0'), findsOneWidget);
       expect(find.text('9'), findsOneWidget);
       expect(find.text('12'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AppListTable infinite scroll shows load-more indicator while loading',
+    (WidgetTester tester) async {
+      final List<_RowItem> pageItems = List<_RowItem>.generate(12, (int index) {
+        return _RowItem(id: '$index', title: 'Item $index', status: 'Active');
+      });
+      final AppPage<_RowItem> page = AppPage<_RowItem>(
+        items: pageItems,
+        request: const AppPageRequest(pageSize: 12),
+        totalItemCount: 24,
+      );
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 220,
+          width: 960,
+          child: AppListTable<_RowItem>(
+            page: page,
+            isLoading: true,
+            columns: _columns,
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+            pageLabelBuilder: (AppPage<_RowItem> value) {
+              return '${value.firstItemNumber}-${value.lastItemNumber} '
+                  'of ${value.totalItemCount}';
+            },
+            onPageChanged: (_) {},
+          ),
+        ),
+        size: const Size(960, 600),
+      );
+
+      expect(find.byType(AppLoadingIndicator), findsWidgets);
+      expect(find.text('Item 0'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AppListTable infinite scroll does not pad blank numbered spacer rows',
+    (WidgetTester tester) async {
+      final List<_RowItem> pageItems = List<_RowItem>.generate(3, (int index) {
+        return _RowItem(id: '$index', title: 'Item $index', status: 'Active');
+      });
+      final AppPage<_RowItem> page = AppPage<_RowItem>(
+        items: pageItems,
+        request: const AppPageRequest(pageSize: 12),
+        totalItemCount: 24,
+      );
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 360,
+          width: 960,
+          child: AppListTable<_RowItem>(
+            page: page,
+            columns: _columns,
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+            onPageChanged: (_) {},
+          ),
+        ),
+        size: const Size(960, 600),
+      );
+
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('4'), findsNothing);
+      expect(find.text('50'), findsNothing);
     },
   );
 
@@ -1135,4 +1210,10 @@ final class _RowItem {
   final String id;
   final String title;
   final String status;
+}
+
+bool _isVerticalScrollable(Widget widget) {
+  return widget is Scrollable &&
+      (widget.axisDirection == AxisDirection.down ||
+          widget.axisDirection == AxisDirection.up);
 }

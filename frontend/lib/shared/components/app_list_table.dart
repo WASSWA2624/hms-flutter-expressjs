@@ -1187,6 +1187,11 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return;
     }
     _pendingLoadMore = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
     widget.onPageChanged!(page.request.next());
   }
 
@@ -1498,6 +1503,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           rowNumberOffset: rowNumberOffset,
           enableColumnResize: widget.enableColumnResize,
           scrollVertically: hasBoundedHeight,
+          padEmptyRows: !_usesInfinitePagination,
           goToTopLabel: widget.goToTopLabel,
           columnWidthFor: (AppListTableColumn<T> column) {
             return _columnWidthFor(column, compact: compact);
@@ -1558,7 +1564,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     }
 
     final bool loadingMore =
-        widget.isLoading && visibleItemCount > 0 && _usesInfinitePagination;
+        (widget.isLoading || _pendingLoadMore) &&
+        visibleItemCount > 0 &&
+        _usesInfinitePagination;
     final bool hasMore = widget.page?.hasNextPage ?? false;
     final String? statusLabel = pageLabelBuilder == null
         ? null
@@ -2381,6 +2389,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     this.rowNumberOffset = 0,
     this.enableColumnResize = true,
     this.scrollVertically = false,
+    this.padEmptyRows = true,
     this.goToTopLabel = _defaultGoToTopLabel,
     required this.columnWidthFor,
     this.onColumnWidthChanged,
@@ -2402,6 +2411,8 @@ class _DesktopListTable<T> extends StatefulWidget {
   /// When true, vertical scroll is nested inside horizontal scroll so the
   /// bottom horizontal scrollbar stays fixed above the table footer.
   final bool scrollVertically;
+  /// When false, do not pad the table with blank numbered spacer rows.
+  final bool padEmptyRows;
   final String goToTopLabel;
   final double Function(AppListTableColumn<T> column) columnWidthFor;
   final void Function(String columnKey, double width)? onColumnWidthChanged;
@@ -2440,9 +2451,12 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final double columnSpacing = widget.compact
         ? theme.spacing.sm
         : theme.spacing.lg;
-    final double rowMinHeight = widget.compact ? 40 : 48;
-    // Allow multi-line wrapped cell text without clipping actions or labels.
+    // Content-tight single-line rows; max height still allows wrapped cells.
+    final double rowMinHeight = widget.compact ? 32 : 36;
     final double rowMaxHeight = widget.compact ? 96 : 112;
+    final int minRowCount = widget.padEmptyRows
+        ? _minTableRowCount
+        : widget.items.length;
 
     _resolveTableStyles(theme);
 
@@ -2512,7 +2526,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
                   _dataRow(context, index),
                 for (
                   var index = widget.items.length;
-                  index < _minTableRowCount;
+                  index < minRowCount;
                   index += 1
                 )
                   _emptyRow(context, index),

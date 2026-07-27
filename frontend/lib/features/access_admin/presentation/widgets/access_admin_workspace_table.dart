@@ -139,7 +139,7 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminAllColumnsForResource(
       canWrite: canWrite,
       onRoleEdit: onRoleEdit,
     ),
-    AccessAdminResource.permissions => _permissionColumns(context),
+    AccessAdminResource.permissions => accessAdminPermissionColumns(context),
     AccessAdminResource.moduleEntitlements => _entitlementColumns(context),
     AccessAdminResource.registrationFollowUps => _registrationColumns(
       context,
@@ -543,14 +543,14 @@ List<AppListTableColumn<AccessAdminItem>> _roleColumns(
   ];
 }
 
-List<AppListTableColumn<AccessAdminItem>> _permissionColumns(
+List<AppListTableColumn<AccessAdminItem>> accessAdminPermissionColumns(
   BuildContext context,
 ) {
   final AppLocalizations l10n = context.l10n;
   return <AppListTableColumn<AccessAdminItem>>[
     AppListTableColumn<AccessAdminItem>(
       id: 'perm_id',
-      label: l10n.accessAdminColumnId,
+      label: l10n.accessAdminPermissionIdColumnLabel,
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
           appListTableCompareText(
             left.effectiveDisplayId,
@@ -560,14 +560,14 @@ List<AppListTableColumn<AccessAdminItem>> _permissionColumns(
     ),
     AppListTableColumn<AccessAdminItem>(
       id: 'perm_name',
-      label: l10n.accessAdminColumnName,
+      label: l10n.accessAdminPermissionNameColumnLabel,
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
           appListTableCompareText(left.title, right.title),
       cellBuilder: (_, AccessAdminItem item) => Text(item.title),
     ),
     AppListTableColumn<AccessAdminItem>(
       id: 'perm_description',
-      label: l10n.accessAdminColumnDetails,
+      label: l10n.accessAdminPermissionDescriptionColumnLabel,
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
           appListTableCompareText(left.subtitle, right.subtitle),
       cellBuilder: (_, AccessAdminItem item) => Text(item.subtitle ?? '—'),

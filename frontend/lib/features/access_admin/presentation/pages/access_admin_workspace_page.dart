@@ -824,7 +824,9 @@ class _DetailContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _DetailRow(
-          label: l10n.accessAdminColumnId,
+          label: isPermission
+              ? l10n.accessAdminPermissionIdColumnLabel
+              : l10n.accessAdminColumnId,
           value: item.effectiveDisplayId,
         ),
         if (isRole) ...<Widget>[
@@ -859,9 +861,13 @@ class _DetailContent extends ConsumerWidget {
             emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
           ),
         ] else if (isPermission) ...<Widget>[
+          _DetailRow(
+            label: l10n.accessAdminPermissionNameColumnLabel,
+            value: item.title,
+          ),
           if ((item.subtitle ?? '').trim().isNotEmpty)
             _DetailRow(
-              label: l10n.accessAdminColumnDetails,
+              label: l10n.accessAdminPermissionDescriptionColumnLabel,
               value: item.subtitle!,
             ),
           if (item.permissionName != null || item.name != null)

@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -46,6 +47,16 @@ Future<bool?> showManageRolesPermissionsDialog(
   );
 }
 
+Future<void> showAccessAdminPermissionDetailDialog(
+  BuildContext context, {
+  required AccessAdminItem permission,
+}) {
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => _AccessAdminPermissionDetailDialog(permission: permission),
+  );
+}
+
 abstract class _ScopedAccessAdminListDialogState<
   T extends ConsumerStatefulWidget
 >
@@ -53,6 +64,7 @@ abstract class _ScopedAccessAdminListDialogState<
   final TextEditingController searchController = TextEditingController();
   Timer? searchDebounce;
   bool loading = true;
+  bool loadingMore = false;
   bool mutating = false;
   bool mutated = false;
   AppFailure? failure;
@@ -114,6 +126,7 @@ abstract class _ScopedAccessAdminListDialogState<
     if (!silent) {
       setState(() {
         loading = true;
+        loadingMore = false;
         failure = null;
       });
     }
@@ -147,6 +160,8 @@ abstract class _ScopedAccessAdminListDialogState<
             : data.lookups;
         setState(() {
           loading = false;
+          loadingMore = false;
+          failure = null;
           workspaceData = data.copyWith(lookups: preservedLookups);
           items = data.page.items;
           totalItemCount = data.page.totalItemCount ?? data.page.items.length;
@@ -155,6 +170,7 @@ abstract class _ScopedAccessAdminListDialogState<
       failure: (AppFailure loadFailure) {
         setState(() {
           loading = false;
+          loadingMore = false;
           failure = loadFailure;
           if (!silent) {
             items = const <AccessAdminItem>[];
@@ -165,8 +181,25 @@ abstract class _ScopedAccessAdminListDialogState<
   }
 
   Future<void> onPageChanged(AppPageRequest request) async {
+    final AppPageRequest previousRequest = pageRequest;
     pageRequest = request;
-    await reload(resetPage: false, silent: items.isNotEmpty);
+    final bool silent = items.isNotEmpty;
+    if (silent && mounted) {
+      setState(() {
+        loadingMore = true;
+        failure = null;
+      });
+    }
+    await reload(resetPage: false, silent: silent);
+    if (!mounted) {
+      return;
+    }
+    if (failure != null && silent) {
+      setState(() {
+        pageRequest = previousRequest;
+        loadingMore = false;
+      });
+    }
   }
 
   AccessAdminWorkspaceState? buildWorkspaceState() {
@@ -203,7 +236,7 @@ abstract class _ScopedAccessAdminListDialogState<
 
     return AppListTable<AccessAdminItem>(
       page: currentPage,
-      isLoading: loading,
+      isLoading: loading || loadingMore,
       onRowSelected: onRowSelected,
       onPageChanged: onPageChanged,
       previousPageLabel: l10n.hrPreviousPageLabel,
@@ -1104,6 +1137,16 @@ class _ManageRolesPermissionsPanelState
     );
   }
 
+  Future<void> _openPermissionDetail(AccessAdminItem permission) async {
+    if (!mounted) {
+      return;
+    }
+    await showAccessAdminPermissionDetailDialog(
+      context,
+      permission: permission,
+    );
+  }
+
   Future<void> _openEditRoleDialog(AccessAdminItem role) async {
     final AccessAdminWorkspaceState? state = buildWorkspaceState();
     if (state == null || !mounted) {
@@ -1259,14 +1302,33 @@ class _ManageRolesPermissionsPanelState
         ? Icons.key_outlined
         : Icons.admin_panel_settings_outlined;
     final bool isPermissions = widget.panel == AccessAdminPanel.permissions;
+    final List<AppListTableColumn<AccessAdminItem>> permissionColumns =
+        accessAdminPermissionColumns(context);
+    final List<AppListTableColumn<AccessAdminItem>> permissionDefaults =
+        permissionColumns
+            .where(
+              (AppListTableColumn<AccessAdminItem> column) =>
+                  column.id == 'perm_id' ||
+                  column.id == 'perm_name' ||
+                  column.id == 'perm_description',
+            )
+            .toList(growable: false);
+    final List<AppListTableColumn<AccessAdminItem>> permissionChoices =
+        permissionColumns
+            .where(
+              (AppListTableColumn<AccessAdminItem> column) =>
+                  column.id == 'perm_code' || column.id == 'perm_status',
+            )
+            .toList(growable: false);
     final Widget table = SizedBox.expand(
       child: buildTable(
           l10n: l10n,
           columnVisibilityStorageKey: isPermissions
-              ? 'access_admin_manage_permissions_v1'
+              ? 'access_admin_manage_permissions_v2'
               : 'access_admin_manage_roles_v2',
           onRowSelected: isPermissions
-              ? null
+              ? (AccessAdminItem permission) =>
+                    unawaited(_openPermissionDetail(permission))
               : (AccessAdminItem role) => unawaited(_openRoleDetail(role)),
           emptyAction: !isPermissions && canWrite && widget.showCreateAction
               ? AppButton.primary(
@@ -1307,73 +1369,81 @@ class _ManageRolesPermissionsPanelState
                   ]
                 : const <AppSearchBarAction>[],
           ),
-          columns: <AppListTableColumn<AccessAdminItem>>[
-            AppListTableColumn<AccessAdminItem>(
-              id: 'id',
-              label: l10n.accessAdminColumnId,
-              cellBuilder: (_, AccessAdminItem item) =>
-                  Text(item.effectiveDisplayId),
-            ),
-            AppListTableColumn<AccessAdminItem>(
-              id: 'name',
-              label: l10n.accessAdminColumnName,
-              cellBuilder: (_, AccessAdminItem item) => Text(item.title),
-            ),
-            if (!isPermissions)
-              AppListTableColumn<AccessAdminItem>(
-                id: 'scope',
-                label: l10n.accessAdminColumnScope,
-                cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                    _RoleScopeBadge(item: item),
-              ),
-            if (canWrite && !isPermissions)
-              AppListTableColumn<AccessAdminItem>(
-                id: 'actions',
-                label: l10n.accessAdminColumnActions,
-                alwaysVisible: true,
-                cellBuilder: (BuildContext context, AccessAdminItem role) {
-                  final ThemeData theme = Theme.of(context);
-                  return Padding(
-                    padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        AppButton.tertiary(
-                          leadingIcon: Icons.edit_outlined,
-                          label: l10n.tenantFacilityEditAction,
-                          semanticLabel: l10n.tenantFacilityEditAction,
-                          tooltip: l10n.tenantFacilityEditAction,
-                          enabled: !loading && !mutating,
-                          onPressed: !loading && !mutating
-                              ? () => unawaited(_openEditRoleDialog(role))
-                              : null,
-                        ),
-                        if (!role.isSystemCritical)
-                          AppButton.tertiary(
-                            leadingIcon: Icons.delete_outline,
-                            label: l10n.tenantFacilityDeleteAction,
-                            semanticLabel: l10n.tenantFacilityDeleteAction,
-                            tooltip: l10n.tenantFacilityDeleteAction,
-                            color: colorScheme.error,
-                            enabled: !loading && !mutating,
-                            onPressed: !loading && !mutating
-                                ? () => unawaited(_confirmDeleteRole(role))
-                                : null,
+          columns: isPermissions
+              ? permissionDefaults
+              : <AppListTableColumn<AccessAdminItem>>[
+                  AppListTableColumn<AccessAdminItem>(
+                    id: 'id',
+                    label: l10n.accessAdminColumnId,
+                    cellBuilder: (_, AccessAdminItem item) =>
+                        Text(item.effectiveDisplayId),
+                  ),
+                  AppListTableColumn<AccessAdminItem>(
+                    id: 'name',
+                    label: l10n.accessAdminColumnName,
+                    cellBuilder: (_, AccessAdminItem item) => Text(item.title),
+                  ),
+                  AppListTableColumn<AccessAdminItem>(
+                    id: 'scope',
+                    label: l10n.accessAdminColumnScope,
+                    cellBuilder: (BuildContext context, AccessAdminItem item) =>
+                        _RoleScopeBadge(item: item),
+                  ),
+                  if (canWrite)
+                    AppListTableColumn<AccessAdminItem>(
+                      id: 'actions',
+                      label: l10n.accessAdminColumnActions,
+                      alwaysVisible: true,
+                      cellBuilder: (BuildContext context, AccessAdminItem role) {
+                        final ThemeData theme = Theme.of(context);
+                        return Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            end: theme.spacing.sm,
                           ),
-                      ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              AppButton.tertiary(
+                                leadingIcon: Icons.edit_outlined,
+                                label: l10n.tenantFacilityEditAction,
+                                semanticLabel: l10n.tenantFacilityEditAction,
+                                tooltip: l10n.tenantFacilityEditAction,
+                                enabled: !loading && !mutating,
+                                onPressed: !loading && !mutating
+                                    ? () =>
+                                          unawaited(_openEditRoleDialog(role))
+                                    : null,
+                              ),
+                              if (!role.isSystemCritical)
+                                AppButton.tertiary(
+                                  leadingIcon: Icons.delete_outline,
+                                  label: l10n.tenantFacilityDeleteAction,
+                                  semanticLabel:
+                                      l10n.tenantFacilityDeleteAction,
+                                  tooltip: l10n.tenantFacilityDeleteAction,
+                                  color: colorScheme.error,
+                                  enabled: !loading && !mutating,
+                                  onPressed: !loading && !mutating
+                                      ? () =>
+                                            unawaited(_confirmDeleteRole(role))
+                                      : null,
+                                ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-          ],
-          columnChoices: <AppListTableColumn<AccessAdminItem>>[
-            AppListTableColumn<AccessAdminItem>(
-              id: 'details',
-              label: l10n.accessAdminColumnDetails,
-              cellBuilder: (_, AccessAdminItem item) =>
-                  Text(item.subtitle ?? '—'),
-            ),
-          ],
+                ],
+          columnChoices: isPermissions
+              ? permissionChoices
+              : <AppListTableColumn<AccessAdminItem>>[
+                  AppListTableColumn<AccessAdminItem>(
+                    id: 'details',
+                    label: l10n.accessAdminColumnDetails,
+                    cellBuilder: (_, AccessAdminItem item) =>
+                        Text(item.subtitle ?? '—'),
+                  ),
+                ],
         ),
     );
 
@@ -1411,6 +1481,96 @@ class _ManageRolesPermissionsPanelState
 }
 
 const String _roleScopeFilterKey = 'role_scope';
+
+class _AccessAdminPermissionDetailDialog extends StatelessWidget {
+  const _AccessAdminPermissionDetailDialog({required this.permission});
+
+  final AccessAdminItem permission;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String? code = permission.permissionName ?? permission.name;
+    final String? description = permission.subtitle?.trim();
+    final String? status = permission.status?.trim();
+
+    return AppDialog(
+      title: Text(l10n.accessAdminPermissionDetailsTitle),
+      icon: const Icon(Icons.key_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
+      maxWidth: 720,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _PermissionDetailRow(
+            label: l10n.accessAdminPermissionIdColumnLabel,
+            value: permission.effectiveDisplayId,
+          ),
+          SizedBox(height: theme.spacing.sm),
+          _PermissionDetailRow(
+            label: l10n.accessAdminPermissionNameColumnLabel,
+            value: permission.title,
+          ),
+          if (code != null && code.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            _PermissionDetailRow(
+              label: l10n.accessAdminPermissionCodeColumnLabel,
+              value: l10n.permissionCatalogLabelForCode(code),
+            ),
+          ],
+          if (description != null && description.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            _PermissionDetailRow(
+              label: l10n.accessAdminPermissionDescriptionColumnLabel,
+              value: description,
+            ),
+          ],
+          if (status != null && status.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            _PermissionDetailRow(
+              label: l10n.accessAdminStatusLabel,
+              value: status,
+            ),
+          ],
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+}
+
+class _PermissionDetailRow extends StatelessWidget {
+  const _PermissionDetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(value, style: theme.textTheme.bodyLarge),
+      ],
+    );
+  }
+}
 
 class _AccessAdminRoleDetailDialog extends StatelessWidget {
   const _AccessAdminRoleDetailDialog({

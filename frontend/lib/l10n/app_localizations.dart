@@ -38938,6 +38938,30 @@ abstract class AppLocalizations {
   /// **'Denial'**
   String get accessAdminEntitlementDenialColumnLabel;
 
+  /// Permission ID column header on the permissions table.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission ID'**
+  String get accessAdminPermissionIdColumnLabel;
+
+  /// Permission name column header on the permissions table.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission Name'**
+  String get accessAdminPermissionNameColumnLabel;
+
+  /// Permission description column header on the permissions table.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get accessAdminPermissionDescriptionColumnLabel;
+
+  /// Title for the read-only permission details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission details'**
+  String get accessAdminPermissionDetailsTitle;
+
   /// Permission code column header on the permissions workspace table.
   ///
   /// In en, this message translates to:

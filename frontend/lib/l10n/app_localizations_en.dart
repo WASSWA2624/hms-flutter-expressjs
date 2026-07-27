@@ -21027,6 +21027,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminEntitlementDenialColumnLabel => 'Denial';
 
   @override
+  String get accessAdminPermissionIdColumnLabel => 'Permission ID';
+
+  @override
+  String get accessAdminPermissionNameColumnLabel => 'Permission Name';
+
+  @override
+  String get accessAdminPermissionDescriptionColumnLabel => 'Description';
+
+  @override
+  String get accessAdminPermissionDetailsTitle => 'Permission details';
+
+  @override
   String get accessAdminPermissionCodeColumnLabel => 'Permission code';
 
   @override

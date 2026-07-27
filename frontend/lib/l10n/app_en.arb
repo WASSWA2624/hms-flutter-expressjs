@@ -27005,6 +27005,22 @@
   "@accessAdminEntitlementDenialColumnLabel": {
     "description": "Denial reason column header for module entitlement rows."
   },
+  "accessAdminPermissionIdColumnLabel": "Permission ID",
+  "@accessAdminPermissionIdColumnLabel": {
+    "description": "Permission ID column header on the permissions table."
+  },
+  "accessAdminPermissionNameColumnLabel": "Permission Name",
+  "@accessAdminPermissionNameColumnLabel": {
+    "description": "Permission name column header on the permissions table."
+  },
+  "accessAdminPermissionDescriptionColumnLabel": "Description",
+  "@accessAdminPermissionDescriptionColumnLabel": {
+    "description": "Permission description column header on the permissions table."
+  },
+  "accessAdminPermissionDetailsTitle": "Permission details",
+  "@accessAdminPermissionDetailsTitle": {
+    "description": "Title for the read-only permission details dialog."
+  },
   "accessAdminPermissionCodeColumnLabel": "Permission code",
   "@accessAdminPermissionCodeColumnLabel": {
     "description": "Permission code column header on the permissions workspace table."

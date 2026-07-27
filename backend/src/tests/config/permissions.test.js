@@ -64,4 +64,13 @@ describe('permissions config', () => {
     expect(normalizeRoleName('superadmin')).toBe(ROLES.SUPER_ADMIN);
     expect(normalizeRoleName('Administrator')).toBe(ROLES.TENANT_ADMIN);
   });
+
+  it('exposes atomic domain:action permission keys only', () => {
+    const values = Object.values(PERMISSIONS);
+    expect(values).toHaveLength(64);
+    for (const value of values) {
+      expect(value).toMatch(/^[a-z0-9_]+:[a-z0-9_]+$/);
+      expect(value.split(':')).toHaveLength(2);
+    }
+  });
 });
