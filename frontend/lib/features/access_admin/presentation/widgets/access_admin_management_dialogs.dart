@@ -2766,16 +2766,19 @@ class _AccessAdminDetailMetaChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.copyable = false,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  final bool copyable;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final AppLocalizations l10n = context.l10n;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -2798,7 +2801,15 @@ class _AccessAdminDetailMetaChip extends StatelessWidget {
               color: colors.onSurfaceVariant,
             ),
           ),
-          Text(value, style: theme.textTheme.labelMedium),
+          if (copyable)
+            AppCopyableIdentifier(
+              value: value,
+              tooltip: l10n.copyIdentifierAction,
+              copiedMessage: l10n.identifierCopiedMessage,
+              textStyle: theme.textTheme.labelMedium,
+            )
+          else
+            Text(value, style: theme.textTheme.labelMedium),
         ],
       ),
     );
@@ -3532,46 +3543,11 @@ class _UserDetailSummaryCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  if (identity.subtitle != null) ...<Widget>[
-                    SizedBox(height: theme.spacing.xs),
-                    Text(
-                      identity.subtitle!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  if (identity.email != null) ...<Widget>[
-                    SizedBox(height: theme.spacing.xs),
-                    Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.mail_outline,
-                          size: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        SizedBox(width: theme.spacing.xs),
-                        Expanded(
-                          child: Text(
-                            identity.email!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                   SizedBox(height: theme.spacing.sm),
                   Wrap(
                     spacing: theme.spacing.sm,
                     runSpacing: theme.spacing.xs,
                     children: <Widget>[
-                      _AccessAdminDetailMetaChip(
-                        icon: Icons.tag_outlined,
-                        label: l10n.accessAdminColumnId,
-                        value: item.effectiveDisplayId,
-                      ),
                       if (item.isDemo)
                         Chip(
                           avatar: Icon(
@@ -3627,30 +3603,30 @@ class _UserDetailSummaryCard extends StatelessWidget {
 
 @immutable
 final class _UserDetailIdentity {
-  const _UserDetailIdentity({
-    required this.primary,
-    this.subtitle,
-    this.email,
-  });
+  const _UserDetailIdentity({required this.primary});
 
   final String primary;
-  final String? subtitle;
-  final String? email;
+}
+
+bool _sameUserDetailValue(String? left, String? right) {
+  final String a = (left ?? '').trim();
+  final String b = (right ?? '').trim();
+  if (a.isEmpty || b.isEmpty) {
+    return false;
+  }
+  return a.toLowerCase() == b.toLowerCase();
 }
 
 _UserDetailIdentity _resolveUserDetailIdentity(AccessAdminItem item) {
   final String email = (item.email ?? '').trim();
-  final String displayName = (item.displayName ?? item.profileName ?? item.name ?? '')
-      .trim();
+  final String displayName =
+      (item.displayName ?? item.profileName ?? item.name ?? '').trim();
   final String position = (item.positionTitle ?? '').trim();
   final String title = item.title.trim();
 
-  bool matchesEmail(String value) =>
-      value.isNotEmpty &&
-      email.isNotEmpty &&
-      value.toLowerCase() == email.toLowerCase();
+  bool matchesEmail(String value) => _sameUserDetailValue(value, email);
 
-  String primary;
+  final String primary;
   if (displayName.isNotEmpty && !matchesEmail(displayName)) {
     primary = displayName;
   } else if (title.isNotEmpty && !matchesEmail(title)) {
@@ -3663,21 +3639,7 @@ _UserDetailIdentity _resolveUserDetailIdentity(AccessAdminItem item) {
     primary = title.isNotEmpty ? title : '?';
   }
 
-  String? subtitle;
-  if (position.isNotEmpty &&
-      primary.toLowerCase() != position.toLowerCase() &&
-      !matchesEmail(position)) {
-    subtitle = position;
-  }
-
-  final String? emailLine =
-      email.isNotEmpty && !matchesEmail(primary) ? email : null;
-
-  return _UserDetailIdentity(
-    primary: primary,
-    subtitle: subtitle,
-    email: emailLine,
-  );
+  return _UserDetailIdentity(primary: primary);
 }
 
 class _UserDetailAccountFields extends StatelessWidget {
@@ -3689,6 +3651,7 @@ class _UserDetailAccountFields extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final String primary = _resolveUserDetailIdentity(item).primary;
 
     final String? email = item.email?.trim();
     final String? phone = item.phone?.trim();
@@ -3704,8 +3667,12 @@ class _UserDetailAccountFields extends StatelessWidget {
               ? item.facilityName!.trim()
               : item.facilityId!.trim());
 
+    // Account owns contact/assignment/ID. Omit values already used as the
+    // summary primary so the dialog never repeats the same fact twice.
     final List<Widget> contactFields = <Widget>[
-      if (email != null && email.isNotEmpty)
+      if (email != null &&
+          email.isNotEmpty &&
+          !_sameUserDetailValue(email, primary))
         _UserDetailInfoTile(
           icon: Icons.mail_outline,
           label: l10n.accessAdminEmailLabel,
@@ -3719,7 +3686,9 @@ class _UserDetailAccountFields extends StatelessWidget {
         ),
     ];
     final List<Widget> assignmentFields = <Widget>[
-      if (position != null && position.isNotEmpty)
+      if (position != null &&
+          position.isNotEmpty &&
+          !_sameUserDetailValue(position, primary))
         _UserDetailInfoTile(
           icon: Icons.work_outline,
           label: l10n.accessAdminPositionLabel,
@@ -3743,6 +3712,7 @@ class _UserDetailAccountFields extends StatelessWidget {
         icon: Icons.tag_outlined,
         label: l10n.accessAdminColumnId,
         value: item.effectiveDisplayId,
+        copyable: true,
       ),
     ];
 
@@ -3756,12 +3726,18 @@ class _UserDetailAccountFields extends StatelessWidget {
             if (contactFields.isNotEmpty &&
                 (assignmentFields.isNotEmpty || idFields.isNotEmpty)) ...<Widget>[
               SizedBox(height: theme.spacing.sm),
-              Divider(height: theme.spacing.md, color: theme.colorScheme.outlineVariant),
+              Divider(
+                height: theme.spacing.md,
+                color: theme.colorScheme.outlineVariant,
+              ),
             ],
             _UserDetailFieldGrid(fields: assignmentFields, wide: wide),
             if (assignmentFields.isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.sm),
-              Divider(height: theme.spacing.md, color: theme.colorScheme.outlineVariant),
+              Divider(
+                height: theme.spacing.md,
+                color: theme.colorScheme.outlineVariant,
+              ),
             ],
             _UserDetailFieldGrid(fields: idFields, wide: wide),
           ],
@@ -3873,16 +3849,22 @@ class _UserDetailInfoTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.copyable = false,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  final bool copyable;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final AppLocalizations l10n = context.l10n;
+    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
@@ -3902,12 +3884,15 @@ class _UserDetailInfoTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: theme.spacing.xs),
-                Text(
-                  value,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                if (copyable)
+                  AppCopyableIdentifier(
+                    value: value,
+                    tooltip: l10n.copyIdentifierAction,
+                    copiedMessage: l10n.identifierCopiedMessage,
+                    textStyle: valueStyle,
+                  )
+                else
+                  Text(value, style: valueStyle),
               ],
             ),
           ),
