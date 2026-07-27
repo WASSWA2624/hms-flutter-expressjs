@@ -2916,10 +2916,15 @@ class _DepartmentSetupSectionState
         <AppListTableColumn<DepartmentProfile>>[
           AppListTableColumn<DepartmentProfile>(
             id: 'id',
-            label: l10n.tenantFacilityTenantDetailsIdLabel,
-            preferredWidth: 120,
-            cellBuilder: (_, DepartmentProfile department) =>
-                Text(department.id),
+            label: l10n.tenantFacilityDepartmentIdLabel,
+            preferredWidth: 140,
+            cellBuilder: (_, DepartmentProfile department) => Text(
+              tenantFacilityHumanFriendlyDisplayId(
+                    department.displayId,
+                    opaqueId: department.resourceUuid ?? department.id,
+                  ) ??
+                  '—',
+            ),
           ),
         ];
 
@@ -2953,7 +2958,7 @@ class _DepartmentSetupSectionState
             AppListTableColumn<DepartmentProfile>(
               id: 'short_name',
               label: l10n.tenantFacilityDepartmentShortNameLabel,
-              preferredWidth: 120,
+              preferredWidth: 140,
               cellBuilder: (_, DepartmentProfile department) => Text(
                 department.shortName?.trim().isNotEmpty == true
                     ? department.shortName!.trim()
@@ -2974,6 +2979,7 @@ class _DepartmentSetupSectionState
           )
         : _SearchableEntityGroup<DepartmentProfile>(
             title: l10n.tenantFacilityDepartmentsListTitle,
+            nameColumnLabel: l10n.tenantFacilityDepartmentNameLabel,
             items: _departments,
             emptyLabel: l10n.tenantFacilityNoDepartments,
             noResultsLabel: l10n.tenantFacilitySearchNoResults,
@@ -2990,7 +2996,7 @@ class _DepartmentSetupSectionState
               ),
             ),
             columnVisibilityStorageKey:
-                'setup_structure_departments_${scope.name}_v2',
+                'setup_structure_departments_${scope.name}_v3',
             extraFilterGroups: _buildFilterGroups(l10n),
             onFiltersChanged: (AppSearchBarFilterValue value) {
               unawaited(_onFiltersChanged(value));
@@ -3030,7 +3036,7 @@ class _DepartmentSetupSectionState
                   name: department.name,
                   deleteAction: () => ref
                       .read(tenantFacilitySetupSubmissionProvider.notifier)
-                      .deleteDepartment(department.id),
+                      .deleteDepartment(department.mutationId),
                 ),
               ),
             ),
@@ -3042,7 +3048,7 @@ class _DepartmentSetupSectionState
                   name: department.name,
                   restoreAction: () => ref
                       .read(tenantFacilitySetupSubmissionProvider.notifier)
-                      .restoreDepartment(department.id),
+                      .restoreDepartment(department.mutationId),
                 ),
               ),
             ),
@@ -3054,7 +3060,7 @@ class _DepartmentSetupSectionState
                   name: department.name,
                   permanentDeleteAction: () => ref
                       .read(tenantFacilitySetupSubmissionProvider.notifier)
-                      .permanentDeleteDepartment(department.id),
+                      .permanentDeleteDepartment(department.mutationId),
                 ),
               ),
             ),
@@ -3096,6 +3102,7 @@ class _UnitSetupSection extends ConsumerWidget {
 
     final Widget content = _SearchableEntityGroup<UnitProfile>(
       title: l10n.tenantFacilityUnitsListTitle,
+      nameColumnLabel: l10n.tenantFacilityUnitNameLabel,
       items: snapshot.units,
       emptyLabel: l10n.tenantFacilityNoUnits,
       noResultsLabel: l10n.tenantFacilitySearchNoResults,
@@ -3179,6 +3186,7 @@ class _WardSetupSection extends ConsumerWidget {
 
     final Widget content = _SearchableEntityGroup<WardProfile>(
       title: l10n.tenantFacilityWardsLabel,
+      nameColumnLabel: l10n.tenantFacilityWardNameLabel,
       items: snapshot.wards,
       emptyLabel: l10n.tenantFacilityNoWards,
       noResultsLabel: l10n.tenantFacilitySearchNoResults,
@@ -3255,6 +3263,7 @@ class _RoomSetupSection extends ConsumerWidget {
 
     final Widget content = _SearchableEntityGroup<RoomProfile>(
       title: l10n.tenantFacilityRoomsLabel,
+      nameColumnLabel: l10n.tenantFacilityRoomNameLabel,
       items: snapshot.rooms,
       emptyLabel: l10n.tenantFacilityNoRooms,
       noResultsLabel: l10n.tenantFacilitySearchNoResults,
@@ -3327,6 +3336,7 @@ class _BedSetupSection extends ConsumerWidget {
 
     final Widget content = _SearchableEntityGroup<BedProfile>(
       title: l10n.tenantFacilityBedsLabel,
+      nameColumnLabel: l10n.tenantFacilityBedLabelLabel,
       items: snapshot.beds,
       emptyLabel: l10n.tenantFacilityNoBeds,
       noResultsLabel: l10n.tenantFacilitySearchNoResults,

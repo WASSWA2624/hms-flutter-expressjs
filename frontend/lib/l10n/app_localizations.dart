@@ -12520,11 +12520,23 @@ abstract class AppLocalizations {
   /// **'Delete tenant'**
   String get tenantFacilityDeleteTenantAction;
 
-  /// Display ID label in tenant details summary.
+  /// Tenant public identifier label in tenant details and lists.
   ///
   /// In en, this message translates to:
-  /// **'ID'**
+  /// **'Tenant ID'**
   String get tenantFacilityTenantDetailsIdLabel;
+
+  /// Facility public identifier label in facility details and lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility ID'**
+  String get tenantFacilityFacilityIdLabel;
+
+  /// Department public identifier label in department lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Department ID'**
+  String get tenantFacilityDepartmentIdLabel;
 
   /// Primary tenant admin contact name label in tenant details.
   ///
@@ -12943,7 +12955,7 @@ abstract class AppLocalizations {
   /// Department short name field label.
   ///
   /// In en, this message translates to:
-  /// **'Short name'**
+  /// **'Department short name'**
   String get tenantFacilityDepartmentShortNameLabel;
 
   /// Department type field label.

@@ -6745,7 +6745,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityDeleteTenantAction => 'Delete tenant';
 
   @override
-  String get tenantFacilityTenantDetailsIdLabel => 'ID';
+  String get tenantFacilityTenantDetailsIdLabel => 'Tenant ID';
+
+  @override
+  String get tenantFacilityFacilityIdLabel => 'Facility ID';
+
+  @override
+  String get tenantFacilityDepartmentIdLabel => 'Department ID';
 
   @override
   String get tenantFacilityTenantDetailsContactNameLabel => 'Contact name';
@@ -6995,7 +7001,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityDepartmentNameLabel => 'Department name';
 
   @override
-  String get tenantFacilityDepartmentShortNameLabel => 'Short name';
+  String get tenantFacilityDepartmentShortNameLabel => 'Department short name';
 
   @override
   String get tenantFacilityDepartmentTypeLabel => 'Department type';

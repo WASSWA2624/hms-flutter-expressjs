@@ -3543,7 +3543,7 @@ class _FacilityDetailsSummary extends StatelessWidget {
             ),
             if (displayId != null)
               _TenantMetaRow(
-                label: l10n.tenantFacilityTenantDetailsIdLabel,
+                label: l10n.tenantFacilityFacilityIdLabel,
                 value: displayId,
               ),
             _TenantMetaRow(
@@ -5195,7 +5195,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         if (showCodeColumn)
           AppListTableColumn<FacilityProfile>(
             id: 'code',
-            label: l10n.tenantFacilityTenantDetailsIdLabel,
+            label: l10n.tenantFacilityFacilityIdLabel,
             cellBuilder: (_, FacilityProfile facility) =>
                 Text(_facilityCodeLabel(facility)),
           ),
@@ -5265,7 +5265,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         if (!showCodeColumn)
           AppListTableColumn<FacilityProfile>(
             id: 'code',
-            label: l10n.tenantFacilityTenantDetailsIdLabel,
+            label: l10n.tenantFacilityFacilityIdLabel,
             cellBuilder: (_, FacilityProfile facility) =>
                 Text(_facilityCodeLabel(facility)),
           ),
@@ -5568,7 +5568,7 @@ class _FacilityScopedDetailsSummary extends StatelessWidget {
                 value: tenantFacilityFacilityTypeLabel(l10n, facility.type),
               ),
               AppInfoSheetItem(
-                label: l10n.tenantFacilityTenantDetailsIdLabel,
+                label: l10n.tenantFacilityFacilityIdLabel,
                 value: displayId,
                 copyable: displayId != null,
                 copyTooltip: l10n.copyIdentifierAction,
