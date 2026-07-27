@@ -50,7 +50,7 @@
 ## Role details dialog
 
 - **Add permissions / Edit permissions**
-  - Location: Top-right of the Permissions section header (not the dialog footer).
+  - Location: When the role has permissions, top-right of the Permissions section header. When the role has none, centered in the Permissions empty state (with centered empty copy).
   - Condition: Shown when `canWrite` is true and the role is not soft-deleted; labeled **Add permissions** when the role has none, otherwise **Edit permissions**; disabled while a permission sync is in progress.
   - Immediate result: Opens the permission assignment dialog; save syncs the role’s permission set and refreshes the grouped list (duplicates collapsed by permission id/code).
 

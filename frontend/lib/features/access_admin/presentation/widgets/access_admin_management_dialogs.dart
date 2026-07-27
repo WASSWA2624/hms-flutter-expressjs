@@ -2403,36 +2403,45 @@ class _AccessAdminRoleDetailDialogState
             title: l10n.accessAdminRolePermissionsLabel,
             description: l10n.accessAdminRoleDetailPermissionsDescription,
             leadingIcon: Icons.lock_outline,
-            trailing: canManagePermissions
-                ? Flexible(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: AppButton.secondary(
-                        label: hasPermissions
-                            ? l10n.accessAdminEditRolePermissionsAction
-                            : l10n.accessAdminAddRolePermissionsAction,
-                        leadingIcon: hasPermissions
-                            ? Icons.tune_outlined
-                            : Icons.key_outlined,
-                        enabled: !_saving,
-                        onPressed: _saving
-                            ? null
-                            : () => unawaited(_addPermissions()),
-                      ),
-                    ),
-                  )
-                : Text(
-                    l10n.hrAccessPermissionCountLabel(permissionOptions.length),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
+            trailing: hasPermissions
+                ? (canManagePermissions
+                      ? Flexible(
+                          child: Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: AppButton.secondary(
+                              label: l10n.accessAdminEditRolePermissionsAction,
+                              leadingIcon: Icons.tune_outlined,
+                              enabled: !_saving,
+                              onPressed: _saving
+                                  ? null
+                                  : () => unawaited(_addPermissions()),
+                            ),
+                          ),
+                        )
+                      : Text(
+                          l10n.hrAccessPermissionCountLabel(
+                            permissionOptions.length,
+                          ),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ))
+                : null,
             children: <Widget>[
-              AppPermissionGroupedView(
-                permissions: permissionOptions,
-                initiallyExpandAll: permissionOptions.length <= 24,
-                emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
-              ),
+              if (hasPermissions)
+                AppPermissionGroupedView(
+                  permissions: permissionOptions,
+                  initiallyExpandAll: permissionOptions.length <= 24,
+                  emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
+                )
+              else
+                _RolePermissionsEmptyState(
+                  message: l10n.accessAdminRoleDetailNoPermissionsMessage,
+                  actionLabel: l10n.accessAdminAddRolePermissionsAction,
+                  showAction: canManagePermissions,
+                  actionEnabled: !_saving,
+                  onAdd: () => unawaited(_addPermissions()),
+                ),
             ],
           ),
         ],
@@ -2588,6 +2597,75 @@ class _RoleDetailSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RolePermissionsEmptyState extends StatelessWidget {
+  const _RolePermissionsEmptyState({
+    required this.message,
+    required this.actionLabel,
+    required this.showAction,
+    required this.actionEnabled,
+    required this.onAdd,
+  });
+
+  final String message;
+  final String actionLabel;
+  final bool showAction;
+  final bool actionEnabled;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: theme.spacing.lg,
+          horizontal: theme.spacing.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colors.primaryContainer.withValues(alpha: 0.55),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.key_off_outlined,
+                color: colors.onPrimaryContainer,
+                size: 28,
+              ),
+            ),
+            SizedBox(height: theme.spacing.md),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: colors.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+            if (showAction) ...<Widget>[
+              SizedBox(height: theme.spacing.md),
+              AppButton.primary(
+                label: actionLabel,
+                leadingIcon: Icons.key_outlined,
+                enabled: actionEnabled,
+                onPressed: actionEnabled ? onAdd : null,
+              ),
+            ],
           ],
         ),
       ),

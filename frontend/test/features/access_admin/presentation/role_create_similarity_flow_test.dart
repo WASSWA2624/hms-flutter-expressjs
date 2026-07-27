@@ -164,6 +164,11 @@ void main() {
       isTrue,
       reason: 'Role summary must not repeat title/name/description',
     );
+    expect(
+      managementSource.contains('_RolePermissionsEmptyState'),
+      isTrue,
+      reason: 'Empty permissions use a centered empty state with Add action',
+    );
     final String detailBuild = managementSource.substring(
       managementSource.indexOf(
         'final bool canManagePermissions =',
@@ -171,15 +176,11 @@ void main() {
       managementSource.indexOf('class _RoleDetailSummaryCard'),
     );
     expect(
-      detailBuild.contains('trailing: canManagePermissions'),
-      isTrue,
-    );
-    expect(
       detailBuild.contains('accessAdminEditRolePermissionsAction'),
       isTrue,
     );
     expect(
-      detailBuild.contains('accessAdminAddRolePermissionsAction'),
+      detailBuild.contains('_RolePermissionsEmptyState'),
       isTrue,
     );
     final String footer = detailBuild.substring(

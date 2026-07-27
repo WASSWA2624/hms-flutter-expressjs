@@ -135,12 +135,21 @@ class _AppPermissionGroupedViewState extends State<AppPermissionGroupedView> {
     final ThemeData theme = Theme.of(context);
 
     if (widget.permissions.isEmpty) {
-      return Padding(
-        padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-        child: Text(
-          widget.emptyMessage ?? l10n.accessAdminRoleDetailNoPermissionsMessage,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+      return SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: theme.spacing.md,
+            horizontal: theme.spacing.sm,
+          ),
+          child: Text(
+            widget.emptyMessage ??
+                l10n.accessAdminRoleDetailNoPermissionsMessage,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
           ),
         ),
       );
