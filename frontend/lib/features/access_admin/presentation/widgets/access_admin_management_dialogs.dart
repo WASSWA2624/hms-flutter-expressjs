@@ -2180,22 +2180,34 @@ class _AccessAdminRoleDetailDialogState
   List<AppPermissionAssignmentOption> _permissionOptions(
     AppLocalizations l10n,
   ) {
-    return _permissions
-        .map((AccessAdminRolePermissionAssignment assignment) {
-          final String code =
-              assignment.permissionName ?? assignment.permissionId ?? '';
-          if (code.isEmpty) {
-            return null;
-          }
-          return AppPermissionAssignmentOption(
-            id: assignment.permissionId ?? assignment.id,
-            code: code,
-            label: l10n.permissionCatalogLabelForCode(code),
-            description: code,
-          );
-        })
-        .whereType<AppPermissionAssignmentOption>()
-        .toList(growable: false);
+    final Set<String> seenKeys = <String>{};
+    final List<AppPermissionAssignmentOption> options =
+        <AppPermissionAssignmentOption>[];
+    for (final AccessAdminRolePermissionAssignment assignment in _permissions) {
+      final String code =
+          (assignment.permissionName ?? assignment.permissionId ?? '').trim();
+      if (code.isEmpty) {
+        continue;
+      }
+      final String codeKey = 'code:${code.toLowerCase()}';
+      final String permissionId = (assignment.permissionId ?? '').trim();
+      if (permissionId.isNotEmpty &&
+          !seenKeys.add('id:${permissionId.toLowerCase()}')) {
+        continue;
+      }
+      if (!seenKeys.add(codeKey)) {
+        continue;
+      }
+      options.add(
+        AppPermissionAssignmentOption(
+          id: permissionId.isNotEmpty ? permissionId : assignment.id,
+          code: code,
+          label: l10n.permissionCatalogLabelForCode(code),
+          description: code,
+        ),
+      );
+    }
+    return options;
   }
 
   Future<void> _addPermissions() async {
@@ -2263,7 +2275,11 @@ class _AccessAdminRoleDetailDialogState
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setDialogState) {
             return AppDialog(
-              title: Text(l10n.accessAdminAddRolePermissionsDialogTitle),
+              title: Text(
+                _permissions.isEmpty
+                    ? l10n.accessAdminAddRolePermissionsDialogTitle
+                    : l10n.accessAdminEditRolePermissionsDialogTitle,
+              ),
               icon: const Icon(Icons.key_outlined),
               maxWidth: 720,
               scrollable: true,
@@ -2361,6 +2377,9 @@ class _AccessAdminRoleDetailDialogState
     final ColorScheme colors = theme.colorScheme;
     final List<AppPermissionAssignmentOption> permissionOptions =
         _permissionOptions(l10n);
+    final bool canManagePermissions =
+        widget.canWrite && !widget.role.isDeleted;
+    final bool hasPermissions = permissionOptions.isNotEmpty;
 
     return AppDialog(
       title: Text(l10n.accessAdminCreateRoleDetailsSectionTitle),
@@ -2384,12 +2403,30 @@ class _AccessAdminRoleDetailDialogState
             title: l10n.accessAdminRolePermissionsLabel,
             description: l10n.accessAdminRoleDetailPermissionsDescription,
             leadingIcon: Icons.lock_outline,
-            trailing: Text(
-              l10n.hrAccessPermissionCountLabel(permissionOptions.length),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
+            trailing: canManagePermissions
+                ? Flexible(
+                    child: Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: AppButton.secondary(
+                        label: hasPermissions
+                            ? l10n.accessAdminEditRolePermissionsAction
+                            : l10n.accessAdminAddRolePermissionsAction,
+                        leadingIcon: hasPermissions
+                            ? Icons.tune_outlined
+                            : Icons.key_outlined,
+                        enabled: !_saving,
+                        onPressed: _saving
+                            ? null
+                            : () => unawaited(_addPermissions()),
+                      ),
+                    ),
+                  )
+                : Text(
+                    l10n.hrAccessPermissionCountLabel(permissionOptions.length),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
             children: <Widget>[
               AppPermissionGroupedView(
                 permissions: permissionOptions,
@@ -2402,12 +2439,6 @@ class _AccessAdminRoleDetailDialogState
       ),
       actions: <Widget>[
         if (widget.canWrite && !widget.role.isDeleted) ...<Widget>[
-          AppButton.secondary(
-            label: l10n.accessAdminAddRolePermissionsAction,
-            leadingIcon: Icons.key_outlined,
-            enabled: !_saving,
-            onPressed: _saving ? null : () => unawaited(_addPermissions()),
-          ),
           AppButton.secondary(
             label: l10n.accessAdminEditRoleAction,
             leadingIcon: Icons.edit_outlined,
@@ -2442,11 +2473,32 @@ class _RoleDetailSummaryCard extends StatelessWidget {
   final AccessAdminItem role;
   final int permissionCount;
 
+  static bool _isDistinctLabel(String? value, List<String> existing) {
+    final String needle = (value ?? '').trim();
+    if (needle.isEmpty) {
+      return false;
+    }
+    final String normalized = needle.toLowerCase();
+    return existing.every(
+      (String other) => other.trim().toLowerCase() != normalized,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final String title = role.title.trim();
+    final String? technicalName = _isDistinctLabel(role.name, <String>[title])
+        ? role.name!.trim()
+        : null;
+    final String? description = _isDistinctLabel(
+          role.subtitle,
+          <String>[title, if (technicalName != null) technicalName],
+        )
+        ? role.subtitle!.trim()
+        : null;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -2460,37 +2512,60 @@ class _RoleDetailSummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Expanded(
-                  child: Text(
-                    role.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.badge_outlined,
+                    color: colors.onPrimaryContainer,
                   ),
                 ),
+                SizedBox(width: theme.spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title.isEmpty ? '—' : title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (technicalName != null) ...<Widget>[
+                        SizedBox(height: theme.spacing.xs),
+                        SelectableText(
+                          technicalName,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontFamily: 'monospace',
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                      if (description != null) ...<Widget>[
+                        SizedBox(height: theme.spacing.xs),
+                        Text(
+                          description,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
                 _RoleScopeBadge(item: role),
               ],
             ),
-            if ((role.name ?? '').trim().isNotEmpty &&
-                role.name != role.title) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                role.name!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
-            ],
-            if ((role.subtitle ?? '').trim().isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                role.subtitle!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
-            ],
             SizedBox(height: theme.spacing.md),
             Wrap(
               spacing: theme.spacing.md,

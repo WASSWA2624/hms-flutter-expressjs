@@ -27490,11 +27490,19 @@
   },
   "accessAdminAddRolePermissionsAction": "Add permissions",
   "@accessAdminAddRolePermissionsAction": {
-    "description": "Action to assign permissions to a role from details."
+    "description": "Action to assign permissions to a role from details when none are assigned."
+  },
+  "accessAdminEditRolePermissionsAction": "Edit permissions",
+  "@accessAdminEditRolePermissionsAction": {
+    "description": "Action to change permissions on a role that already has assignments."
   },
   "accessAdminAddRolePermissionsDialogTitle": "Add role permissions",
   "@accessAdminAddRolePermissionsDialogTitle": {
     "description": "Title for the role permissions assignment dialog."
+  },
+  "accessAdminEditRolePermissionsDialogTitle": "Edit role permissions",
+  "@accessAdminEditRolePermissionsDialogTitle": {
+    "description": "Title for editing an existing role permission set."
   },
   "accessAdminAddRolePermissionsDialogDescription": "Choose the permissions this role should grant.",
   "@accessAdminAddRolePermissionsDialogDescription": {

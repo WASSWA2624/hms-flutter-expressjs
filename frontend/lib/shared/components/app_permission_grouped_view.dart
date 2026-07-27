@@ -251,6 +251,48 @@ class _PermissionGroupCard extends StatelessWidget {
   final bool expanded;
   final VoidCallback onToggle;
 
+  static List<AppPermissionAssignmentOption> _uniquePermissions(
+    List<AppPermissionAssignmentOption> permissions,
+  ) {
+    final Set<String> seen = <String>{};
+    final List<AppPermissionAssignmentOption> unique =
+        <AppPermissionAssignmentOption>[];
+    for (final AppPermissionAssignmentOption permission in permissions) {
+      final String code = permission.code.trim().toLowerCase();
+      final String id = permission.id.trim().toLowerCase();
+      final String key = code.isNotEmpty
+          ? 'code:$code'
+          : (id.isNotEmpty ? 'id:$id' : permission.label.toLowerCase());
+      if (!seen.add(key)) {
+        continue;
+      }
+      unique.add(permission);
+    }
+    return unique;
+  }
+
+  static String _chipLabel(
+    AppPermissionAssignmentOption permission, {
+    required List<AppPermissionAssignmentOption> permissions,
+  }) {
+    final String action = permission.actionLabel.trim();
+    final int sameActionCount = permissions
+        .where(
+          (AppPermissionAssignmentOption other) =>
+              other.actionLabel.trim().toLowerCase() == action.toLowerCase(),
+        )
+        .length;
+    if (sameActionCount <= 1 || action.isEmpty) {
+      return action.isEmpty ? permission.label : action;
+    }
+    // Disambiguate colliding action labels (e.g. two "Read" codes).
+    final int separator = permission.code.indexOf(':');
+    if (separator > 0 && separator + 1 < permission.code.length) {
+      return permission.code.substring(separator + 1);
+    }
+    return permission.label;
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -261,6 +303,8 @@ class _PermissionGroupCard extends StatelessWidget {
     }
 
     final String groupLabel = permissions.first.groupLabel;
+    final List<AppPermissionAssignmentOption> uniquePermissions =
+        _uniquePermissions(permissions);
 
     return Card(
       margin: EdgeInsets.only(bottom: theme.spacing.sm),
@@ -298,7 +342,9 @@ class _PermissionGroupCard extends StatelessWidget {
                       children: <Widget>[
                         Text(groupLabel, style: theme.textTheme.titleSmall),
                         Text(
-                          l10n.hrAccessPermissionCountLabel(permissions.length),
+                          l10n.hrAccessPermissionCountLabel(
+                            uniquePermissions.length,
+                          ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colors.onSurfaceVariant,
                           ),
@@ -327,8 +373,14 @@ class _PermissionGroupCard extends StatelessWidget {
                 runSpacing: theme.spacing.sm,
                 children: <Widget>[
                   for (final AppPermissionAssignmentOption permission
-                      in permissions)
-                    _PermissionActionChip(permission: permission),
+                      in uniquePermissions)
+                    _PermissionActionChip(
+                      permission: permission,
+                      label: _chipLabel(
+                        permission,
+                        permissions: uniquePermissions,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -339,9 +391,13 @@ class _PermissionGroupCard extends StatelessWidget {
 }
 
 class _PermissionActionChip extends StatelessWidget {
-  const _PermissionActionChip({required this.permission});
+  const _PermissionActionChip({
+    required this.permission,
+    required this.label,
+  });
 
   final AppPermissionAssignmentOption permission;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +421,7 @@ class _PermissionActionChip extends StatelessWidget {
           children: <Widget>[
             Icon(Icons.check_circle, size: 16, color: colors.primary),
             SizedBox(width: theme.spacing.xs),
-            Text(permission.actionLabel, style: theme.textTheme.labelLarge),
+            Text(label, style: theme.textTheme.labelLarge),
           ],
         ),
       ),

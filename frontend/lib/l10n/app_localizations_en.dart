@@ -21442,7 +21442,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminAddRolePermissionsAction => 'Add permissions';
 
   @override
+  String get accessAdminEditRolePermissionsAction => 'Edit permissions';
+
+  @override
   String get accessAdminAddRolePermissionsDialogTitle => 'Add role permissions';
+
+  @override
+  String get accessAdminEditRolePermissionsDialogTitle =>
+      'Edit role permissions';
 
   @override
   String get accessAdminAddRolePermissionsDialogDescription =>

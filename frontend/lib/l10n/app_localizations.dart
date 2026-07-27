@@ -39640,17 +39640,29 @@ abstract class AppLocalizations {
   /// **'Use existing role'**
   String get accessAdminUseExistingRoleAction;
 
-  /// Action to assign permissions to a role from details.
+  /// Action to assign permissions to a role from details when none are assigned.
   ///
   /// In en, this message translates to:
   /// **'Add permissions'**
   String get accessAdminAddRolePermissionsAction;
+
+  /// Action to change permissions on a role that already has assignments.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit permissions'**
+  String get accessAdminEditRolePermissionsAction;
 
   /// Title for the role permissions assignment dialog.
   ///
   /// In en, this message translates to:
   /// **'Add role permissions'**
   String get accessAdminAddRolePermissionsDialogTitle;
+
+  /// Title for editing an existing role permission set.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit role permissions'**
+  String get accessAdminEditRolePermissionsDialogTitle;
 
   /// Description for the role permissions assignment dialog.
   ///

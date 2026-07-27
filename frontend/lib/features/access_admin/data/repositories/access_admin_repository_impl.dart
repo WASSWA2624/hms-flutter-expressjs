@@ -410,7 +410,34 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
       pageIndex += 1;
     }
 
-    return Result<List<AccessAdminRolePermissionAssignment>>.success(all);
+    final Set<String> seen = <String>{};
+    final List<AccessAdminRolePermissionAssignment> unique =
+        <AccessAdminRolePermissionAssignment>[];
+    for (final AccessAdminRolePermissionAssignment item in all) {
+      final String permissionId = (item.permissionId ?? '').trim().toLowerCase();
+      final String code = (item.permissionName ?? '').trim().toLowerCase();
+      if (permissionId.isNotEmpty && seen.contains('id:$permissionId')) {
+        continue;
+      }
+      if (code.isNotEmpty && seen.contains('code:$code')) {
+        continue;
+      }
+      if (permissionId.isEmpty && code.isEmpty) {
+        if (!seen.add('row:${item.id}')) {
+          continue;
+        }
+      } else {
+        if (permissionId.isNotEmpty) {
+          seen.add('id:$permissionId');
+        }
+        if (code.isNotEmpty) {
+          seen.add('code:$code');
+        }
+      }
+      unique.add(item);
+    }
+
+    return Result<List<AccessAdminRolePermissionAssignment>>.success(unique);
   }
 
   Future<Result<List<AccessAdminRolePermissionAssignment>>>
@@ -439,15 +466,16 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
                 row['permission'],
               );
               final String assignmentId =
+                  _string(row['id']) ??
                   _string(row['human_friendly_id']) ??
                   _string(row['display_id']) ??
-                  _string(row['id']) ??
                   '';
+              // Prefer UUID so HFID collisions cannot duplicate or mis-sync.
               final String? permissionId =
-                  _string(permission['human_friendly_id']) ??
-                  _string(permission['display_id']) ??
                   _string(permission['id']) ??
-                  _string(row['permission_id']);
+                  _string(row['permission_id']) ??
+                  _string(permission['human_friendly_id']) ??
+                  _string(permission['display_id']);
               final String? permissionName =
                   _string(permission['name']) ??
                   _string(row['permission_name']);

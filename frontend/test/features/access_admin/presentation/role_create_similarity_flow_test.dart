@@ -154,6 +154,49 @@ void main() {
     expect(managementSource.contains('catalogTenantId'), isTrue);
   });
 
+  test('role details place Add/Edit permissions in the Permissions header', () {
+    expect(
+      managementSource.contains('accessAdminEditRolePermissionsAction'),
+      isTrue,
+    );
+    expect(
+      managementSource.contains('_isDistinctLabel'),
+      isTrue,
+      reason: 'Role summary must not repeat title/name/description',
+    );
+    final String detailBuild = managementSource.substring(
+      managementSource.indexOf(
+        'final bool canManagePermissions =',
+      ),
+      managementSource.indexOf('class _RoleDetailSummaryCard'),
+    );
+    expect(
+      detailBuild.contains('trailing: canManagePermissions'),
+      isTrue,
+    );
+    expect(
+      detailBuild.contains('accessAdminEditRolePermissionsAction'),
+      isTrue,
+    );
+    expect(
+      detailBuild.contains('accessAdminAddRolePermissionsAction'),
+      isTrue,
+    );
+    final String footer = detailBuild.substring(
+      detailBuild.indexOf('actions: <Widget>['),
+    );
+    expect(
+      footer.contains('accessAdminAddRolePermissionsAction'),
+      isFalse,
+      reason: 'Add/Edit permissions must not remain in the dialog footer',
+    );
+    expect(
+      footer.contains('accessAdminEditRolePermissionsAction'),
+      isFalse,
+      reason: 'Add/Edit permissions must not remain in the dialog footer',
+    );
+  });
+
   test('similarity acceptance is scoped to each submitted draft', () {
     expect(
       dialogsSource.contains('var similarityAccepted = draft.confirmSimilar;'),

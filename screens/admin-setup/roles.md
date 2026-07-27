@@ -46,3 +46,25 @@
   - Location: Role-list failure state.
   - Condition: Shown when loading the role list fails.
   - Immediate result: Reloads the first role page.
+
+## Role details dialog
+
+- **Add permissions / Edit permissions**
+  - Location: Top-right of the Permissions section header (not the dialog footer).
+  - Condition: Shown when `canWrite` is true and the role is not soft-deleted; labeled **Add permissions** when the role has none, otherwise **Edit permissions**; disabled while a permission sync is in progress.
+  - Immediate result: Opens the permission assignment dialog; save syncs the role’s permission set and refreshes the grouped list (duplicates collapsed by permission id/code).
+
+- **Edit role**
+  - Location: Dialog footer.
+  - Condition: Shown when `canWrite` is true and the role is not soft-deleted.
+  - Immediate result: Closes details and opens the role edit mutation dialog.
+
+- **Delete role**
+  - Location: Dialog footer.
+  - Condition: Shown when `canWrite` is true, the role is not soft-deleted, and not system-critical.
+  - Immediate result: Soft-delete confirm flow (same as list Delete).
+
+- **Close**
+  - Location: Dialog footer.
+  - Condition: Always available.
+  - Immediate result: Closes the details dialog.
