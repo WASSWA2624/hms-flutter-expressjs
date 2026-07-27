@@ -287,6 +287,12 @@ void main() {
       reason: 'Type-to-confirm must accept title and Deleted label variants',
     );
     expect(
+      managementSource.contains('confirmMatches:'),
+      isTrue,
+      reason:
+          'Wrong/empty confirm text must disable Permanent delete in the dialog',
+    );
+    expect(
       managementSource.contains('_isSameAccessAdminRole'),
       isTrue,
       reason: 'Permanent delete must remove by UUID, not display id',

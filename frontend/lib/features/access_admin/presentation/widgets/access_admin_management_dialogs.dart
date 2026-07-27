@@ -1386,11 +1386,8 @@ class _ManageRolesPermissionsPanelState
                   borderRadius: BorderRadius.circular(theme.radius.md),
                   child: Padding(
                     padding: EdgeInsets.all(theme.spacing.lg),
-                    child: const SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: AppLoadingIndicator.compact(expand: false),
-                    ),
+                    // Compact mark is ~72px; do not clamp to 36×36 (overflows).
+                    child: const AppLoadingIndicator.compact(expand: false),
                   ),
                 ),
               ),
@@ -1573,6 +1570,10 @@ class _ManageRolesPermissionsPanelState
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         cancelLabel: l10n.commonCancelActionLabel,
         requiredMessage: l10n.validationRequired,
+        confirmMismatchMessage:
+            l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
+        confirmMatches: (String value) =>
+            _rolePermanentDeleteNameMatches(role, value, l10n: l10n),
         destructive: true,
         minLines: 1,
         maxLines: 1,
@@ -1583,14 +1584,8 @@ class _ManageRolesPermissionsPanelState
     if (!mounted || typed == null) {
       return;
     }
+    // Dialog already validates the typed name; keep a hard guard.
     if (!_rolePermanentDeleteNameMatches(role, typed, l10n: l10n)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
-          ),
-        ),
-      );
       return;
     }
 

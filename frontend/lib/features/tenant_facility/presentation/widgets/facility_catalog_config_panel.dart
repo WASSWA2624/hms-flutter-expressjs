@@ -2338,6 +2338,9 @@ class _FacilityCatalogConfigPanelState
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         cancelLabel: l10n.commonCancelActionLabel,
         requiredMessage: l10n.validationRequired,
+        confirmExactValue: item.name,
+        confirmMismatchMessage:
+            l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(item.name),
         destructive: true,
         minLines: 1,
         maxLines: 1,
@@ -2347,7 +2350,7 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || typed == null) {
       return;
     }
-    if (typed.trim() != item.name.trim()) {
+    if (typed.trim().toLowerCase() != item.name.trim().toLowerCase()) {
       return;
     }
 

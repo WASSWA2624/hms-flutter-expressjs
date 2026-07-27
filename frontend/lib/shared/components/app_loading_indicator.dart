@@ -151,6 +151,11 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
       spacing: theme.spacing,
     );
     final _LoadingCopy copy = _resolveCopy(context);
+    // Intrinsic inline marks stay logo-only (no title/body/dots).
+    final bool markOnly = !widget.expand &&
+        copy.title == null &&
+        copy.body == null &&
+        !widget.showBrandName;
 
     return Semantics(
       label: widget.semanticLabel ?? copy.title ?? 'Loading',
@@ -201,11 +206,13 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
                   ),
                 ),
               ],
-              SizedBox(height: theme.spacing.md),
-              _SoftProgressDots(
-                progress: _controller.value,
-                color: theme.colorScheme.primary,
-              ),
+              if (!markOnly) ...<Widget>[
+                SizedBox(height: theme.spacing.md),
+                _SoftProgressDots(
+                  progress: _controller.value,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
             ],
           );
         },

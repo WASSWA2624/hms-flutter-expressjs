@@ -5834,6 +5834,9 @@ Future<void> _permanentDeleteEntity({
       submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
       cancelLabel: l10n.commonCancelActionLabel,
       requiredMessage: l10n.validationRequired,
+      confirmExactValue: name,
+      confirmMismatchMessage:
+          l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(name),
       destructive: true,
       minLines: 1,
       maxLines: 1,
@@ -5844,7 +5847,7 @@ Future<void> _permanentDeleteEntity({
   if (!context.mounted || typed == null) {
     return;
   }
-  if (typed.trim() != name.trim()) {
+  if (typed.trim().toLowerCase() != name.trim().toLowerCase()) {
     return;
   }
 

@@ -146,4 +146,24 @@ void main() {
     );
     expect(find.byType(AppLogo), findsOneWidget);
   });
+
+  testWidgets('inline mark-only compact fits without overflow in a tight slot', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const SizedBox(
+        width: 80,
+        height: 80,
+        child: Center(
+          child: AppLoadingIndicator.compact(expand: false),
+        ),
+      ),
+      size: const Size(120, 120),
+      padding: EdgeInsets.zero,
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(AppLogo), findsOneWidget);
+  });
 }

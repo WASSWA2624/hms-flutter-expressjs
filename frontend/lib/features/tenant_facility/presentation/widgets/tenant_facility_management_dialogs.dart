@@ -605,6 +605,9 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         cancelLabel: l10n.commonCancelActionLabel,
         requiredMessage: l10n.validationRequired,
+        confirmExactValue: tenant.name,
+        confirmMismatchMessage:
+            l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(tenant.name),
         destructive: true,
         minLines: 1,
         maxLines: 1,
@@ -615,7 +618,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     if (!mounted || typed == null) {
       return;
     }
-    if (typed.trim() != tenant.name.trim()) {
+    if (typed.trim().toLowerCase() != tenant.name.trim().toLowerCase()) {
       return;
     }
 
@@ -3080,6 +3083,9 @@ class _FacilityDetailsDialogState
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         cancelLabel: l10n.commonCancelActionLabel,
         requiredMessage: l10n.validationRequired,
+        confirmExactValue: _facility.name,
+        confirmMismatchMessage:
+            l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(_facility.name),
         destructive: true,
         minLines: 1,
         maxLines: 1,
@@ -3090,7 +3096,7 @@ class _FacilityDetailsDialogState
     if (!mounted || typed == null) {
       return;
     }
-    if (typed.trim() != _facility.name.trim()) {
+    if (typed.trim().toLowerCase() != _facility.name.trim().toLowerCase()) {
       return;
     }
 
@@ -4805,6 +4811,9 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         cancelLabel: l10n.commonCancelActionLabel,
         requiredMessage: l10n.validationRequired,
+        confirmExactValue: facility.name,
+        confirmMismatchMessage:
+            l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(facility.name),
         destructive: true,
         minLines: 1,
         maxLines: 1,
@@ -4815,7 +4824,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
     if (!mounted || typed == null) {
       return;
     }
-    if (typed.trim() != facility.name.trim()) {
+    if (typed.trim().toLowerCase() != facility.name.trim().toLowerCase()) {
       return;
     }
 

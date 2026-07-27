@@ -463,8 +463,14 @@ class AppTextInputActionDialog extends StatefulWidget {
     this.isRequired = true,
     this.scrollable = false,
     this.destructive = false,
+    this.confirmExactValue,
+    this.confirmMatches,
+    this.confirmMismatchMessage,
     super.key,
-  });
+  }) : assert(
+         confirmExactValue == null || confirmMatches == null,
+         'Provide confirmExactValue or confirmMatches, not both.',
+       );
 
   final String title;
   final String fieldLabel;
@@ -482,6 +488,18 @@ class AppTextInputActionDialog extends StatefulWidget {
   final bool scrollable;
   final bool destructive;
 
+  /// When set, typed text must equal this value (trim, case-insensitive).
+  final String? confirmExactValue;
+
+  /// Custom matcher for type-to-confirm flows with multiple accepted values.
+  final bool Function(String value)? confirmMatches;
+
+  /// Validation message when [confirmExactValue] / [confirmMatches] fails.
+  final String? confirmMismatchMessage;
+
+  bool get _requiresConfirmMatch =>
+      confirmExactValue != null || confirmMatches != null;
+
   @override
   State<AppTextInputActionDialog> createState() =>
       _AppTextInputActionDialogState();
@@ -495,18 +513,48 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
+    if (widget._requiresConfirmMatch) {
+      _controller.addListener(_onConfirmTextChanged);
+    }
   }
 
   @override
   void dispose() {
+    if (widget._requiresConfirmMatch) {
+      _controller.removeListener(_onConfirmTextChanged);
+    }
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onConfirmTextChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  bool _matchesConfirmValue(String value) {
+    final String typed = value.trim();
+    if (typed.isEmpty) {
+      return false;
+    }
+    final bool Function(String value)? matches = widget.confirmMatches;
+    if (matches != null) {
+      return matches(typed);
+    }
+    final String? expected = widget.confirmExactValue?.trim();
+    if (expected == null || expected.isEmpty) {
+      return true;
+    }
+    return typed.toLowerCase() == expected.toLowerCase();
   }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final bool canSubmit = !widget._requiresConfirmMatch ||
+        _matchesConfirmValue(_controller.text);
 
     return AppDialog(
       title: Text(widget.title),
@@ -546,7 +594,7 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
             minLines: widget.minLines,
             maxLines: widget.maxLines,
             textCapitalization: TextCapitalization.sentences,
-            validator: widget.isRequired ? _requiredText : null,
+            validator: _validate,
           ),
         ],
       ),
@@ -561,14 +609,22 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
               ? Icons.delete_forever_outlined
               : Icons.check_circle_outline,
           color: widget.destructive ? colorScheme.error : null,
-          onPressed: _submit,
+          enabled: canSubmit,
+          onPressed: canSubmit ? _submit : null,
         ),
       ],
     );
   }
 
-  String? _requiredText(String? value) {
-    return (value ?? '').trim().isEmpty ? widget.requiredMessage : null;
+  String? _validate(String? value) {
+    final String typed = (value ?? '').trim();
+    if (widget.isRequired && typed.isEmpty) {
+      return widget.requiredMessage;
+    }
+    if (widget._requiresConfirmMatch && !_matchesConfirmValue(typed)) {
+      return widget.confirmMismatchMessage ?? widget.fieldLabel;
+    }
+    return null;
   }
 
   void _submit() {
