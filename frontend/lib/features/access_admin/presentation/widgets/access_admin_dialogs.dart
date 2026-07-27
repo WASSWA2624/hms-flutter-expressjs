@@ -406,13 +406,18 @@ Future<AppFailure?> _reviewRoleSimilarity(
   required ValueChanged<AccessAdminItem> onUseExisting,
   bool forceReviewMatches = false,
 }) async {
-  final List<AccessAdminItem> peers = await _loadRoleSimilarityPeers(
+  final _RoleSimilarityPeers peerLookup = await _loadRoleSimilarityPeers(
     ref,
     tenantId: pending.tenantId,
   );
   if (!context.mounted) {
     return const AppFailure.cancelled();
   }
+  // A failed peer lookup must never be reported as "no similar role found".
+  if (peerLookup.failure != null) {
+    return peerLookup.failure;
+  }
+  final List<AccessAdminItem> peers = peerLookup.items;
 
   final RoleDuplicateCheckResult check = checkRoleDuplicates(
     name: pending.name,
@@ -471,7 +476,18 @@ Future<AppFailure?> _reviewRoleSimilarity(
   }
 }
 
-Future<List<AccessAdminItem>> _loadRoleSimilarityPeers(
+/// Matches backend `ROLE_SIMILARITY_LOOKUP_LIMIT`.
+const int _roleSimilarityPeerLimit = 500;
+
+@immutable
+final class _RoleSimilarityPeers {
+  const _RoleSimilarityPeers({required this.items, this.failure});
+
+  final List<AccessAdminItem> items;
+  final AppFailure? failure;
+}
+
+Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers(
   WidgetRef ref, {
   String? tenantId,
 }) async {
@@ -479,25 +495,59 @@ Future<List<AccessAdminItem>> _loadRoleSimilarityPeers(
   // org/facility peers are visible. Same-scope hard conflicts remain enforced
   // in checkRoleDuplicates.
   final bool allTenants = tenantId == null || tenantId.trim().isEmpty;
-  final Result<AccessAdminWorkspaceData> result = await ref
-      .read(accessAdminRepositoryProvider)
-      .getWorkspace(
-        AccessAdminWorkspaceQuery(
-          panel: AccessAdminPanel.roles,
-          resource: AccessAdminResource.roles,
-          tenantId: allTenants ? null : tenantId,
-          facilityId: null,
-          allTenants: allTenants,
-          allFacilities: true,
-          lean: true,
-          // Match backend ROLE_SIMILARITY_LOOKUP_LIMIT so client review is not
-          // starved by a short first page.
-          pageRequest: const AppPageRequest(pageSize: 500),
-        ),
+  final List<AccessAdminItem> peers = <AccessAdminItem>[];
+  // Pages stay within the backend `limit` ceiling; a larger page size is
+  // rejected by validation and would leave review with zero peers.
+  var request = const AppPageRequest(pageSize: AppPageRequest.maxPageSize);
+
+  while (peers.length < _roleSimilarityPeerLimit) {
+    final Result<AccessAdminWorkspaceData> result = await ref
+        .read(accessAdminRepositoryProvider)
+        .getWorkspace(
+          AccessAdminWorkspaceQuery(
+            panel: AccessAdminPanel.roles,
+            resource: AccessAdminResource.roles,
+            tenantId: allTenants ? null : tenantId,
+            allTenants: allTenants,
+            allFacilities: true,
+            lean: true,
+            skipLookups: true,
+            pageRequest: request,
+          ),
+        );
+
+    // A tenant-context-required response carries zero items on success; scoring
+    // against it would look like "no similar found".
+    final AppFailure? failure = result.when(
+      success: (AccessAdminWorkspaceData data) =>
+          data.state == 'tenant_context_required'
+          ? const AppFailure.unexpectedResponse()
+          : null,
+      failure: (AppFailure value) => value,
+    );
+    if (failure != null) {
+      return _RoleSimilarityPeers(
+        items: peers.toList(growable: false),
+        failure: failure,
       );
-  return result.when(
-    success: (AccessAdminWorkspaceData data) => data.items,
-    failure: (_) => const <AccessAdminItem>[],
+    }
+
+    final AppPage<AccessAdminItem> page = result.when(
+      success: (AccessAdminWorkspaceData data) => data.page,
+      failure: (_) => const AppPage<AccessAdminItem>(
+        items: <AccessAdminItem>[],
+        request: AppPageRequest(),
+      ),
+    );
+    peers.addAll(page.items);
+    if (!page.hasNextPage || page.items.isEmpty) {
+      break;
+    }
+    request = request.next();
+  }
+
+  return _RoleSimilarityPeers(
+    items: peers.take(_roleSimilarityPeerLimit).toList(growable: false),
   );
 }
 

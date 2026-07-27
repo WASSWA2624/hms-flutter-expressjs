@@ -61,20 +61,53 @@ void main() {
     );
   });
 
+  final String peerLoaderSource = dialogsSource.substring(
+    dialogsSource.indexOf('Future<_RoleSimilarityPeers> _loadRoleSimilarityPeers('),
+    dialogsSource.indexOf('Future<bool?> openAccessAdminEditRoleDialog('),
+  );
+
   test('similarity peer load is not facility-narrowed', () {
-    expect(dialogsSource.contains('allFacilities: true'), isTrue);
+    expect(peerLoaderSource.contains('allFacilities: true'), isTrue);
+    expect(
+      peerLoaderSource.contains('facilityId:'),
+      isFalse,
+      reason: 'Peer query must not narrow to the draft facility',
+    );
+  });
+
+  test('peer pages stay within the backend limit ceiling', () {
+    expect(
+      peerLoaderSource.contains(
+        'AppPageRequest(pageSize: AppPageRequest.maxPageSize)',
+      ),
+      isTrue,
+      reason: 'A larger limit is rejected by workspace query validation',
+    );
+    expect(
+      RegExp(r'pageSize:\s*[0-9]+').hasMatch(peerLoaderSource),
+      isFalse,
+      reason: 'Peer paging must derive its page size from the shared ceiling',
+    );
+    expect(peerLoaderSource.contains('request = request.next()'), isTrue);
+    expect(
+      dialogsSource.contains('_roleSimilarityPeerLimit = 500'),
+      isTrue,
+      reason: 'Client peer budget must match ROLE_SIMILARITY_LOOKUP_LIMIT',
+    );
+  });
+
+  test('failed peer lookup surfaces an error instead of no-similar', () {
     expect(
       dialogsSource.contains(
-        'Load tenant-wide (all facilities) or all tenants for platform proposals',
+        'A failed peer lookup must never be reported as "no similar role found".',
       ),
       isTrue,
     );
+    expect(dialogsSource.contains('return peerLookup.failure;'), isTrue);
     expect(
-      RegExp(
-        r'_loadRoleSimilarityPeers\([\s\S]*?facilityId:\s*null',
-        multiLine: true,
-      ).hasMatch(dialogsSource),
+      dialogsSource.contains("data.state == 'tenant_context_required'"),
       isTrue,
+      reason: 'Scope-required responses return zero items on success',
     );
   });
 
