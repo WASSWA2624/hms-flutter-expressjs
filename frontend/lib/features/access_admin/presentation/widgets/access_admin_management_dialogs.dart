@@ -1090,21 +1090,71 @@ class _ManageRolesPermissionsPanelState
     );
     if (createdOrExisting != null && mounted) {
       mutated = true;
-      await reload(resetPage: true, silent: true);
-      if (!mounted) {
-        return;
-      }
-      await _openRoleDetail(createdOrExisting);
+      // Open details immediately so the roles list never flashes between create
+      // and detail. List reload runs silently in the background.
+      unawaited(reload(resetPage: true, silent: true));
+      await _openRoleDetail(createdOrExisting, coverListImmediately: true);
     }
   }
 
-  Future<void> _openRoleDetail(AccessAdminItem role) async {
+  Future<void> _openRoleDetail(
+    AccessAdminItem role, {
+    bool coverListImmediately = false,
+  }) async {
     if (!mounted) {
       return;
     }
 
+    var coverOpen = false;
+    if (coverListImmediately) {
+      final Completer<void> coverReady = Completer<void>();
+      unawaited(
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          useRootNavigator: true,
+          builder: (BuildContext dialogContext) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!coverReady.isCompleted) {
+                coverReady.complete();
+              }
+            });
+            final ThemeData theme = Theme.of(dialogContext);
+            return PopScope(
+              canPop: false,
+              child: Center(
+                child: Material(
+                  color: theme.colorScheme.surface,
+                  elevation: 2,
+                  borderRadius: BorderRadius.circular(theme.radius.md),
+                  child: Padding(
+                    padding: EdgeInsets.all(theme.spacing.lg),
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      await coverReady.future;
+      coverOpen = true;
+    }
+
     final Result<List<AccessAdminRolePermissionAssignment>> permissionsResult =
         await repository.listRolePermissions(role.id);
+
+    if (coverOpen && mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+      coverOpen = false;
+    }
     if (!mounted) {
       return;
     }

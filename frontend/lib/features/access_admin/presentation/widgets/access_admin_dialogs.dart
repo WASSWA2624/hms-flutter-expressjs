@@ -293,73 +293,91 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
     allowTenantScope: allowTenantWideScope,
     onSubmit: (List<AccessAdminRoleDraft> drafts) async {
       for (final AccessAdminRoleDraft draft in drafts) {
-        final AccessAdminRoleDraft pending = draft.copyWith(
+        var pending = draft.copyWith(
           confirmSimilar: similarityAccepted || draft.confirmSimilar,
         );
+
         if (!pending.confirmSimilar) {
-          final List<AccessAdminItem> peers = await _loadRoleSimilarityPeers(
-            ref,
-            tenantId: pending.tenantId,
-            facilityId: pending.facilityId,
-          );
           if (!context.mounted) {
-            return AppFailure.validation();
+            return const AppFailure.cancelled();
           }
-          final RoleDuplicateCheckResult check = checkRoleDuplicates(
-            name: pending.name,
-            displayName: pending.displayName ?? '',
-            description: pending.description,
-            facilityId: pending.facilityId,
-            existing: peers,
+          final AppFailure? reviewFailure = await _reviewRoleSimilarity(
+            context,
+            ref,
+            pending: pending,
+            onAccepted: () => similarityAccepted = true,
+            onUseExisting: (AccessAdminItem role) {
+              existingRoleToOpen = role;
+            },
           );
-          final List<RoleSimilarityMatch> reviewMatches = check.hasExactConflict
-              ? check.similarMatches
-                    .where(
-                      (RoleSimilarityMatch match) =>
-                          match.exactNameConflict ||
-                          match.exactDisplayNameConflict,
-                    )
-                    .toList(growable: false)
-              : check.overridableMatches;
-          if (reviewMatches.isNotEmpty || check.hasExactConflict) {
-            final RoleSimilarityDialogResult review =
-                await showRoleSimilarityDialog(
-                  context,
-                  proposed: RoleSimilarityProposedValues(
-                    name: pending.name,
-                    displayName: pending.displayName ?? '',
-                    description: pending.description,
-                  ),
-                  matches: reviewMatches,
-                  allowProceed: !check.hasExactConflict,
-                );
-            if (!context.mounted) {
-              return AppFailure.validation();
-            }
-            switch (review.action) {
-              case RoleSimilarityAction.cancel:
-                return AppFailure.validation();
-              case RoleSimilarityAction.useExisting:
-                existingRoleToOpen = review.selectedRole?.role;
-                return null;
-              case RoleSimilarityAction.proceed:
-                similarityAccepted = true;
-            }
+          if (reviewFailure != null) {
+            return reviewFailure;
           }
+          if (existingRoleToOpen != null) {
+            return null;
+          }
+          pending = pending.copyWith(confirmSimilar: similarityAccepted);
         }
 
         final Result<AccessAdminItem> result = await ref
             .read(accessAdminWorkspaceControllerProvider.notifier)
-            .createRole(
-              pending.copyWith(confirmSimilar: similarityAccepted),
-            );
-        final AppFailure? failure = result.when(
+            .createRole(pending);
+        AppFailure? failure = result.when(
           success: (AccessAdminItem created) {
             createdRole ??= created;
             return null;
           },
           failure: (AppFailure value) => value,
         );
+
+        // Backend uniqueness is authoritative; never surface it as an inline
+        // create-dialog conflict banner — reopen the dedicated review dialog.
+        if (failure != null &&
+            failure.category == AppFailureCategory.conflict) {
+          if (!context.mounted) {
+            return const AppFailure.cancelled();
+          }
+          similarityAccepted = false;
+          final AppFailure? reviewFailure = await _reviewRoleSimilarity(
+            context,
+            ref,
+            pending: pending.copyWith(confirmSimilar: false),
+            forceReviewMatches: true,
+            onAccepted: () => similarityAccepted = true,
+            onUseExisting: (AccessAdminItem role) {
+              existingRoleToOpen = role;
+            },
+          );
+          if (reviewFailure != null) {
+            return reviewFailure;
+          }
+          if (existingRoleToOpen != null) {
+            return null;
+          }
+          if (!similarityAccepted) {
+            return const AppFailure.cancelled();
+          }
+
+          final Result<AccessAdminItem> retry = await ref
+              .read(accessAdminWorkspaceControllerProvider.notifier)
+              .createRole(pending.copyWith(confirmSimilar: true));
+          final AppFailure? retryFailure = retry.when(
+            success: (AccessAdminItem created) {
+              createdRole ??= created;
+              return null;
+            },
+            failure: (AppFailure value) => value,
+          );
+          if (retryFailure != null &&
+              retryFailure.category == AppFailureCategory.conflict) {
+            return const AppFailure.cancelled();
+          }
+          if (retryFailure != null) {
+            return retryFailure;
+          }
+          failure = null;
+        }
+
         if (failure != null) {
           return failure;
         }
@@ -378,6 +396,79 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
     return createdRole;
   }
   return null;
+}
+
+Future<AppFailure?> _reviewRoleSimilarity(
+  BuildContext context,
+  WidgetRef ref, {
+  required AccessAdminRoleDraft pending,
+  required VoidCallback onAccepted,
+  required ValueChanged<AccessAdminItem> onUseExisting,
+  bool forceReviewMatches = false,
+}) async {
+  final List<AccessAdminItem> peers = await _loadRoleSimilarityPeers(
+    ref,
+    tenantId: pending.tenantId,
+    facilityId: pending.facilityId,
+  );
+  if (!context.mounted) {
+    return const AppFailure.cancelled();
+  }
+
+  final RoleDuplicateCheckResult check = checkRoleDuplicates(
+    name: pending.name,
+    displayName: pending.displayName ?? '',
+    description: pending.description,
+    facilityId: pending.facilityId,
+    existing: peers,
+  );
+
+  List<RoleSimilarityMatch> reviewMatches;
+  if (forceReviewMatches) {
+    reviewMatches = check.similarMatches;
+  } else if (check.hasExactConflict) {
+    reviewMatches = check.similarMatches
+        .where(
+          (RoleSimilarityMatch match) =>
+              match.exactNameConflict || match.exactDisplayNameConflict,
+        )
+        .toList(growable: false);
+    if (reviewMatches.isEmpty) {
+      reviewMatches = check.similarMatches;
+    }
+  } else {
+    reviewMatches = check.overridableMatches;
+  }
+
+  // Create always opens review (including zero matches). Force-review is used
+  // when the backend returns a uniqueness conflict after the client scan.
+  final RoleSimilarityDialogResult review = await showRoleSimilarityDialog(
+    context,
+    proposed: RoleSimilarityProposedValues(
+      name: pending.name,
+      displayName: pending.displayName ?? '',
+      description: pending.description,
+    ),
+    matches: reviewMatches,
+    allowProceed: !check.hasExactConflict,
+  );
+  if (!context.mounted) {
+    return const AppFailure.cancelled();
+  }
+
+  switch (review.action) {
+    case RoleSimilarityAction.cancel:
+      return const AppFailure.cancelled();
+    case RoleSimilarityAction.useExisting:
+      final AccessAdminItem? existing = review.selectedRole?.role;
+      if (existing != null) {
+        onUseExisting(existing);
+      }
+      return null;
+    case RoleSimilarityAction.proceed:
+      onAccepted();
+      return null;
+  }
 }
 
 Future<List<AccessAdminItem>> _loadRoleSimilarityPeers(

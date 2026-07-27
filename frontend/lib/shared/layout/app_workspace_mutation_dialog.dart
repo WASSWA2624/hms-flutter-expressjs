@@ -139,6 +139,16 @@ class _AppWorkspaceMutationDialogState
       return;
     }
 
+    // Soft cancel (e.g. dismiss similarity review) keeps the form open without
+    // treating the dismissal as a validation/conflict failure banner.
+    if (failure.category == AppFailureCategory.cancelled) {
+      setState(() {
+        _failure = null;
+        _isSubmitting = false;
+      });
+      return;
+    }
+
     setState(() {
       _failure = failure;
       _isSubmitting = false;

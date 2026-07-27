@@ -39556,6 +39556,54 @@ abstract class AppLocalizations {
   /// **'Review the similar roles below before saving.'**
   String get accessAdminSimilarRoleWarningBody;
 
+  /// Banner body showing the closest role similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Review field matches below before continuing. Closest match is {score}%.'**
+  String accessAdminSimilarRoleReviewBannerBody(int score);
+
+  /// Heading for an existing role match card.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing role'**
+  String get accessAdminSimilarRoleExistingHeading;
+
+  /// Heading for role field comparison table.
+  ///
+  /// In en, this message translates to:
+  /// **'Field comparison'**
+  String get accessAdminSimilarRoleComparisonHeading;
+
+  /// Label for overall role similarity percentage.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall similarity'**
+  String get accessAdminSimilarRoleOverallSimilarityLabel;
+
+  /// Label for cross-identity role field comparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Name ↔ display name'**
+  String get accessAdminSimilarRoleCrossIdentityLabel;
+
+  /// Badge label when an exact role uniqueness conflict blocks create-anyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact conflict'**
+  String get accessAdminSimilarRoleExactConflictLabel;
+
+  /// Badge label when a role match is near the similarity threshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Near match'**
+  String get accessAdminSimilarRoleNearMatchLabel;
+
+  /// Badge label when a role match is only partially similar.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial match'**
+  String get accessAdminSimilarRolePartialMatchLabel;
+
   /// Banner title when no similar roles are found.
   ///
   /// In en, this message translates to:

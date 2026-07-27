@@ -27427,6 +27427,43 @@
   "@accessAdminSimilarRoleWarningBody": {
     "description": "Banner body when similar roles are found."
   },
+  "accessAdminSimilarRoleReviewBannerBody": "Review field matches below before continuing. Closest match is {score}%.",
+  "@accessAdminSimilarRoleReviewBannerBody": {
+    "description": "Banner body showing the closest role similarity score.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "accessAdminSimilarRoleExistingHeading": "Existing role",
+  "@accessAdminSimilarRoleExistingHeading": {
+    "description": "Heading for an existing role match card."
+  },
+  "accessAdminSimilarRoleComparisonHeading": "Field comparison",
+  "@accessAdminSimilarRoleComparisonHeading": {
+    "description": "Heading for role field comparison table."
+  },
+  "accessAdminSimilarRoleOverallSimilarityLabel": "Overall similarity",
+  "@accessAdminSimilarRoleOverallSimilarityLabel": {
+    "description": "Label for overall role similarity percentage."
+  },
+  "accessAdminSimilarRoleCrossIdentityLabel": "Name ↔ display name",
+  "@accessAdminSimilarRoleCrossIdentityLabel": {
+    "description": "Label for cross-identity role field comparison."
+  },
+  "accessAdminSimilarRoleExactConflictLabel": "Exact conflict",
+  "@accessAdminSimilarRoleExactConflictLabel": {
+    "description": "Badge label when an exact role uniqueness conflict blocks create-anyway."
+  },
+  "accessAdminSimilarRoleNearMatchLabel": "Near match",
+  "@accessAdminSimilarRoleNearMatchLabel": {
+    "description": "Badge label when a role match is near the similarity threshold."
+  },
+  "accessAdminSimilarRolePartialMatchLabel": "Partial match",
+  "@accessAdminSimilarRolePartialMatchLabel": {
+    "description": "Badge label when a role match is only partially similar."
+  },
   "accessAdminNoSimilarRoleBannerTitle": "Match status: No similar found",
   "@accessAdminNoSimilarRoleBannerTitle": {
     "description": "Banner title when no similar roles are found."

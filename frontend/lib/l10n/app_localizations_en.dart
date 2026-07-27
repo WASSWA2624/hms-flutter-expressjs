@@ -21392,6 +21392,33 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review the similar roles below before saving.';
 
   @override
+  String accessAdminSimilarRoleReviewBannerBody(int score) {
+    return 'Review field matches below before continuing. Closest match is $score%.';
+  }
+
+  @override
+  String get accessAdminSimilarRoleExistingHeading => 'Existing role';
+
+  @override
+  String get accessAdminSimilarRoleComparisonHeading => 'Field comparison';
+
+  @override
+  String get accessAdminSimilarRoleOverallSimilarityLabel =>
+      'Overall similarity';
+
+  @override
+  String get accessAdminSimilarRoleCrossIdentityLabel => 'Name ↔ display name';
+
+  @override
+  String get accessAdminSimilarRoleExactConflictLabel => 'Exact conflict';
+
+  @override
+  String get accessAdminSimilarRoleNearMatchLabel => 'Near match';
+
+  @override
+  String get accessAdminSimilarRolePartialMatchLabel => 'Partial match';
+
+  @override
   String get accessAdminNoSimilarRoleBannerTitle =>
       'Match status: No similar found';
 

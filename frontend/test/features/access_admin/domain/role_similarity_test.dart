@@ -44,6 +44,19 @@ void main() {
     expect(result.exactNameConflict, isTrue);
     expect(result.hasExactConflict, isTrue);
     expect(result.similarMatches, isNotEmpty);
+    final RoleSimilarityMatch match = result.similarMatches.first;
+    expect(match.exactNameConflict, isTrue);
+    expect(match.nameScore, 100);
+    expect(
+      match.fieldComparisons.map((RoleFieldComparison c) => c.field),
+      containsAll(<String>['name', 'display_name']),
+    );
+    expect(
+      match.fieldComparisons
+          .firstWhere((RoleFieldComparison c) => c.field == 'name')
+          .status,
+      RoleFieldComparisonStatus.match,
+    );
   });
 
   test('detects compact-key and reordered identity conflicts', () {
@@ -88,6 +101,17 @@ void main() {
     expect(result.hasExactConflict, isFalse);
     expect(result.overridableMatches, isNotEmpty);
     expect(result.overridableMatches.first.score, greaterThanOrEqualTo(72));
+    final RoleSimilarityMatch match = result.overridableMatches.first;
+    expect(match.fieldComparisons, isNotEmpty);
+    expect(
+      match.fieldComparisons.any(
+        (RoleFieldComparison c) =>
+            c.field == 'name' &&
+            c.score != null &&
+            c.score! >= roleReviewFieldThreshold,
+      ),
+      isTrue,
+    );
   });
 
   test('flags description-led near matches with supporting identity', () {
