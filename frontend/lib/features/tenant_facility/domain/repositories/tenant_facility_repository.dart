@@ -32,6 +32,7 @@ abstract interface class TenantFacilityRepository {
     String? tenantId,
     String? facilityId,
     String? search,
+    DepartmentSetupType? type,
     bool? isActive,
     bool includeDeleted = false,
   });

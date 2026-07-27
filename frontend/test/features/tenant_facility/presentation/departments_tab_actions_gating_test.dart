@@ -152,6 +152,47 @@ void main() {
       expect(helpersSource.contains('enum TenantFacilityDepartmentsListScope'), isTrue);
     });
 
+    test('department filters are comprehensive and admin-scoped', () {
+      final String sectionSource = departmentSectionSource();
+      expect(sectionSource.contains('_buildFilterGroups'), isTrue);
+      expect(sectionSource.contains('extraFilterGroups:'), isTrue);
+      expect(sectionSource.contains('onFiltersChanged:'), isTrue);
+      expect(sectionSource.contains('type: _typeFilter'), isTrue);
+      expect(sectionSource.contains('isActive: _isActiveFilter'), isTrue);
+      expect(
+        sectionSource.contains('tenantFacilityDepartmentsShowsTenantFilter'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityDepartmentsShowsFacilityFilter'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityDepartmentsFilterKeys.tenant'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityDepartmentsFilterKeys.facility'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityDepartmentsFilterKeys.type'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityDepartmentsFilterKeys.active'),
+        isTrue,
+      );
+      expect(
+        helpersSource.contains('class TenantFacilityDepartmentsFilterKeys'),
+        isTrue,
+      );
+      expect(
+        repositorySource.contains("'department_type': type?.apiValue"),
+        isTrue,
+      );
+    });
+
     test('edit department keeps the department facility and tenant', () {
       expect(
         setupPageSource.contains('editing?.tenantId.trim().isNotEmpty == true'),

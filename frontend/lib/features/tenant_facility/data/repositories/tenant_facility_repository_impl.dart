@@ -128,6 +128,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? tenantId,
     String? facilityId,
     String? search,
+    DepartmentSetupType? type,
     bool? isActive,
     bool includeDeleted = false,
   }) {
@@ -140,6 +141,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
           'tenant_id': tenantId,
           'facility_id': facilityId,
           'search': search,
+          'department_type': type?.apiValue,
           'is_active': isActive?.toString(),
           'include_deleted': includeDeleted ? 'true' : null,
           'sort_by': 'name',

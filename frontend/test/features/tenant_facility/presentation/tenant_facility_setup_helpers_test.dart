@@ -561,6 +561,30 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        tenantFacilityDepartmentsShowsTenantFilter(
+          TenantFacilityDepartmentsListScope.platform,
+        ),
+        isTrue,
+      );
+      expect(
+        tenantFacilityDepartmentsShowsTenantFilter(
+          TenantFacilityDepartmentsListScope.tenant,
+        ),
+        isFalse,
+      );
+      expect(
+        tenantFacilityDepartmentsShowsFacilityFilter(
+          TenantFacilityDepartmentsListScope.tenant,
+        ),
+        isTrue,
+      );
+      expect(
+        tenantFacilityDepartmentsShowsFacilityFilter(
+          TenantFacilityDepartmentsListScope.facility,
+        ),
+        isFalse,
+      );
     });
   });
 

@@ -216,6 +216,30 @@ bool tenantFacilityDepartmentsShowsDetailColumns(
   return scope == TenantFacilityDepartmentsListScope.facility;
 }
 
+/// Advanced-filter keys for the departments tab.
+abstract final class TenantFacilityDepartmentsFilterKeys {
+  static const String tenant = 'tenant';
+  static const String facility = 'facility';
+  static const String type = 'type';
+  static const String active = 'active';
+  static const String status = 'status';
+  static const String activeYes = 'yes';
+  static const String activeNo = 'no';
+}
+
+bool tenantFacilityDepartmentsShowsTenantFilter(
+  TenantFacilityDepartmentsListScope scope,
+) {
+  return scope == TenantFacilityDepartmentsListScope.platform;
+}
+
+bool tenantFacilityDepartmentsShowsFacilityFilter(
+  TenantFacilityDepartmentsListScope scope,
+) {
+  return scope == TenantFacilityDepartmentsListScope.platform ||
+      scope == TenantFacilityDepartmentsListScope.tenant;
+}
+
 String tenantFacilitySetupDeskSectionLabel(
   AppLocalizations l10n,
   TenantFacilitySetupDeskSection section,

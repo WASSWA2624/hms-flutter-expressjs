@@ -2496,9 +2496,14 @@ class _DepartmentSetupSectionState
   bool _loading = true;
   AppFailure? _failure;
   List<DepartmentProfile> _departments = const <DepartmentProfile>[];
+  List<TenantProfile> _tenantOptions = const <TenantProfile>[];
+  List<FacilityProfile> _facilityOptions = const <FacilityProfile>[];
   Map<String, String> _tenantNamesById = const <String, String>{};
   Map<String, String> _facilityNamesById = const <String, String>{};
-  List<FacilityProfile> _scopeFacilities = const <FacilityProfile>[];
+  String? _tenantFilterId;
+  String? _facilityFilterId;
+  DepartmentSetupType? _typeFilter;
+  bool? _isActiveFilter;
   int _reloadGeneration = 0;
 
   FacilitySetupSnapshot get snapshot => widget.snapshot;
@@ -2521,21 +2526,148 @@ class _DepartmentSetupSectionState
     }
   }
 
+  List<FacilityProfile> get _facilitiesForFilter {
+    final String? tenantFilterId = _tenantFilterId?.trim();
+    if (tenantFilterId == null || tenantFilterId.isEmpty) {
+      return _facilityOptions
+          .where((FacilityProfile facility) => !facility.isDeleted)
+          .toList(growable: false);
+    }
+    return _facilityOptions
+        .where(
+          (FacilityProfile facility) =>
+              !facility.isDeleted && facility.tenantId == tenantFilterId,
+        )
+        .toList(growable: false);
+  }
+
+  void _applyServerFilters(AppSearchBarFilterValue value) {
+    final String? nextTenant = value.option(
+      TenantFacilityDepartmentsFilterKeys.tenant,
+    );
+    final String? nextFacility = value.option(
+      TenantFacilityDepartmentsFilterKeys.facility,
+    );
+    final String? nextType = value.option(
+      TenantFacilityDepartmentsFilterKeys.type,
+    );
+    final String? nextActive = value.option(
+      TenantFacilityDepartmentsFilterKeys.active,
+    );
+
+    DepartmentSetupType? parsedType;
+    if (nextType != null) {
+      for (final DepartmentSetupType type in DepartmentSetupType.values) {
+        if (type.apiValue == nextType) {
+          parsedType = type;
+          break;
+        }
+      }
+    }
+
+    final bool? parsedActive =
+        nextActive == TenantFacilityDepartmentsFilterKeys.activeYes
+        ? true
+        : nextActive == TenantFacilityDepartmentsFilterKeys.activeNo
+        ? false
+        : null;
+
+    _tenantFilterId = nextTenant;
+    _facilityFilterId = nextFacility;
+    _typeFilter = parsedType;
+    _isActiveFilter = parsedActive;
+    _syncFacilityFilterToOptions();
+  }
+
+  void _syncFacilityFilterToOptions() {
+    final String? facilityId = _facilityFilterId;
+    if (facilityId == null) {
+      return;
+    }
+    final String? tenantFilterId = _tenantFilterId?.trim();
+    final bool facilityAllowed = _facilityOptions.any((FacilityProfile facility) {
+      if (facility.id != facilityId || facility.isDeleted) {
+        return false;
+      }
+      if (tenantFilterId == null || tenantFilterId.isEmpty) {
+        return true;
+      }
+      return facility.tenantId == tenantFilterId;
+    });
+    if (!facilityAllowed) {
+      _facilityFilterId = null;
+    }
+  }
+
+  Future<void> _onFiltersChanged(AppSearchBarFilterValue value) async {
+    final String? previousTenant = _tenantFilterId;
+    _applyServerFilters(value);
+    final bool tenantChanged = previousTenant != _tenantFilterId;
+    if (tenantChanged) {
+      await _reloadFacilityOptions();
+      _syncFacilityFilterToOptions();
+    }
+    await _reload(silent: true);
+  }
+
+  Future<void> _reloadFacilityOptions() async {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityDepartmentsListScope scope =
+        tenantFacilityDepartmentsListScope(policy);
+    if (!tenantFacilityDepartmentsShowsFacilityFilter(scope)) {
+      return;
+    }
+
+    final String? tenantId = switch (scope) {
+      TenantFacilityDepartmentsListScope.platform => _tenantFilterId,
+      TenantFacilityDepartmentsListScope.tenant ||
+      TenantFacilityDepartmentsListScope.facility =>
+        policy.tenantId ?? snapshot.tenant?.id,
+    };
+
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+    final Result<AppPage<FacilityProfile>> result = await repository
+        .listFacilities(request: _listRequest, tenantId: tenantId);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AppPage<FacilityProfile> page) {
+        setState(() {
+          _facilityOptions = page.items;
+          _facilityNamesById = <String, String>{
+            for (final FacilityProfile facility in page.items)
+              facility.id: facility.name,
+          };
+          if (_facilityFilterId != null &&
+              !_facilitiesForFilter.any(
+                (FacilityProfile facility) => facility.id == _facilityFilterId,
+              )) {
+            _facilityFilterId = null;
+          }
+        });
+      },
+      failure: (_) {},
+    );
+  }
+
   Future<void> _reload({bool silent = false}) async {
     final int generation = ++_reloadGeneration;
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
     final TenantFacilityDepartmentsListScope scope =
         tenantFacilityDepartmentsListScope(policy);
-    final String? tenantId = switch (scope) {
-      TenantFacilityDepartmentsListScope.platform => null,
+    final String? scopedTenantId = switch (scope) {
+      TenantFacilityDepartmentsListScope.platform => _tenantFilterId,
       TenantFacilityDepartmentsListScope.tenant ||
       TenantFacilityDepartmentsListScope.facility =>
         policy.tenantId ?? snapshot.tenant?.id,
     };
-    final String? facilityId =
+    final String? scopedFacilityId =
         scope == TenantFacilityDepartmentsListScope.facility
         ? (policy.facilityId ?? snapshot.facility?.id)
-        : null;
+        : _facilityFilterId;
 
     if (!silent) {
       setState(() {
@@ -2545,14 +2677,15 @@ class _DepartmentSetupSectionState
     }
 
     if (scope == TenantFacilityDepartmentsListScope.facility &&
-        (facilityId == null || facilityId.trim().isEmpty)) {
+        (scopedFacilityId == null || scopedFacilityId.trim().isEmpty)) {
       if (!mounted || generation != _reloadGeneration) {
         return;
       }
       setState(() {
         _loading = false;
         _departments = const <DepartmentProfile>[];
-        _scopeFacilities = const <FacilityProfile>[];
+        _facilityOptions = const <FacilityProfile>[];
+        _tenantOptions = const <TenantProfile>[];
         _tenantNamesById = const <String, String>{};
         _facilityNamesById = const <String, String>{};
       });
@@ -2564,18 +2697,25 @@ class _DepartmentSetupSectionState
     );
 
     final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
-        tenantFacilityDepartmentsShowsTenantColumn(scope)
+        tenantFacilityDepartmentsShowsTenantFilter(scope)
         ? repository.listTenants(request: _listRequest)
         : null;
     final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
-        tenantFacilityDepartmentsShowsFacilityColumn(scope)
-        ? repository.listFacilities(request: _listRequest, tenantId: tenantId)
+        tenantFacilityDepartmentsShowsFacilityFilter(scope)
+        ? repository.listFacilities(
+            request: _listRequest,
+            tenantId: scope == TenantFacilityDepartmentsListScope.platform
+                ? _tenantFilterId
+                : scopedTenantId,
+          )
         : null;
     final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
         repository.listDepartments(
           request: _listRequest,
-          tenantId: tenantId,
-          facilityId: facilityId,
+          tenantId: scopedTenantId,
+          facilityId: scopedFacilityId,
+          type: _typeFilter,
+          isActive: _isActiveFilter,
           includeDeleted: true,
         );
 
@@ -2597,9 +2737,11 @@ class _DepartmentSetupSectionState
           if (snapshot.tenant case final TenantProfile tenant)
             tenant.id: tenant.name,
         };
+        List<TenantProfile> tenants = const <TenantProfile>[];
         tenantsResult?.when(
-          success: (AppPage<TenantProfile> tenants) {
-            for (final TenantProfile tenant in tenants.items) {
+          success: (AppPage<TenantProfile> tenantsPage) {
+            tenants = tenantsPage.items;
+            for (final TenantProfile tenant in tenantsPage.items) {
               tenantNames[tenant.id] = tenant.name;
             }
           },
@@ -2625,11 +2767,10 @@ class _DepartmentSetupSectionState
           _loading = false;
           _failure = null;
           _departments = page.items;
+          _tenantOptions = tenants;
+          _facilityOptions = facilities;
           _tenantNamesById = tenantNames;
           _facilityNamesById = facilityNames;
-          _scopeFacilities = facilities
-              .where((FacilityProfile facility) => !facility.isDeleted)
-              .toList(growable: false);
         });
       },
       failure: (AppFailure failure) {
@@ -2666,6 +2807,79 @@ class _DepartmentSetupSectionState
       return;
     }
     await _reload(silent: true);
+  }
+
+  List<AppSearchBarFilterGroup> _buildFilterGroups(AppLocalizations l10n) {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityDepartmentsListScope scope =
+        tenantFacilityDepartmentsListScope(policy);
+    final List<FacilityProfile> facilities = _facilitiesForFilter;
+
+    return <AppSearchBarFilterGroup>[
+      if (tenantFacilityDepartmentsShowsTenantFilter(scope) &&
+          _tenantOptions.isNotEmpty)
+        AppSearchBarFilterGroup(
+          key: TenantFacilityDepartmentsFilterKeys.tenant,
+          label: l10n.profileTenantLabel,
+          allLabel: l10n.commonAllLabel,
+          choices: _tenantOptions
+              .map(
+                (TenantProfile tenant) => AppSearchBarFilterChoice(
+                  value: tenant.id,
+                  label: tenant.name,
+                  icon: Icons.apartment_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      if (tenantFacilityDepartmentsShowsFacilityFilter(scope) &&
+          facilities.isNotEmpty)
+        AppSearchBarFilterGroup(
+          key: TenantFacilityDepartmentsFilterKeys.facility,
+          label: l10n.profileFacilityLabel,
+          allLabel: l10n.commonAllLabel,
+          choices: facilities
+              .map(
+                (FacilityProfile facility) => AppSearchBarFilterChoice(
+                  value: facility.id,
+                  label: facility.name,
+                  icon: Icons.local_hospital_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      AppSearchBarFilterGroup(
+        key: TenantFacilityDepartmentsFilterKeys.type,
+        label: l10n.tenantFacilityDepartmentTypeLabel,
+        allLabel: l10n.commonAllLabel,
+        choices: DepartmentSetupType.values
+            .map(
+              (DepartmentSetupType type) => AppSearchBarFilterChoice(
+                value: type.apiValue,
+                label: _departmentTypeLabel(l10n, type),
+                icon: Icons.category_outlined,
+              ),
+            )
+            .toList(growable: false),
+      ),
+      AppSearchBarFilterGroup(
+        key: TenantFacilityDepartmentsFilterKeys.active,
+        label: l10n.tenantFacilityActiveLabel,
+        allLabel: l10n.commonAllLabel,
+        choices: <AppSearchBarFilterChoice>[
+          AppSearchBarFilterChoice(
+            value: TenantFacilityDepartmentsFilterKeys.activeYes,
+            label: l10n.tenantFacilityTenantStatusActive,
+            icon: Icons.toggle_on_outlined,
+          ),
+          AppSearchBarFilterChoice(
+            value: TenantFacilityDepartmentsFilterKeys.activeNo,
+            label: l10n.tenantFacilityStatusInactive,
+            icon: Icons.toggle_off_outlined,
+          ),
+        ],
+      ),
+    ];
   }
 
   @override
@@ -2769,23 +2983,11 @@ class _DepartmentSetupSectionState
               ),
             ),
             columnVisibilityStorageKey:
-                'setup_structure_departments_${scope.name}_v1',
-            scopeLabel: showFacilityColumn
-                ? l10n.tenantFacilityFacilitySelectLabel
-                : null,
-            scopeOptions: showFacilityColumn
-                ? <_SearchableEntityGroupScopeOption>[
-                    for (final FacilityProfile facility in _scopeFacilities)
-                      _SearchableEntityGroupScopeOption(
-                        id: facility.id,
-                        label: facility.name,
-                      ),
-                  ]
-                : const <_SearchableEntityGroupScopeOption>[],
-            itemScopeId: showFacilityColumn
-                ? (DepartmentProfile department) =>
-                      department.facilityId ?? snapshot.facility?.id
-                : null,
+                'setup_structure_departments_${scope.name}_v2',
+            extraFilterGroups: _buildFilterGroups(l10n),
+            onFiltersChanged: (AppSearchBarFilterValue value) {
+              unawaited(_onFiltersChanged(value));
+            },
             titleBuilder: (DepartmentProfile department) => department.name,
             subtitleBuilder: (DepartmentProfile department) =>
                 _departmentSubtitle(l10n, snapshot, department),
@@ -3245,6 +3447,8 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     this.blockedMessage,
     this.leadingColumns,
     this.extraColumns,
+    this.extraFilterGroups = const <AppSearchBarFilterGroup>[],
+    this.onFiltersChanged,
     this.columnVisibilityStorageKey,
     this.statusLabelBuilder,
   });
@@ -3274,6 +3478,8 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final String? blockedMessage;
   final List<AppListTableColumn<T>>? leadingColumns;
   final List<AppListTableColumn<T>>? extraColumns;
+  final List<AppSearchBarFilterGroup> extraFilterGroups;
+  final ValueChanged<AppSearchBarFilterValue>? onFiltersChanged;
   final String? columnVisibilityStorageKey;
   final String Function(T item)? statusLabelBuilder;
 
@@ -3470,6 +3676,8 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         showAdvancedFilterButton: true,
         advancedFilterTitle: l10n.commonFilterActionLabel,
         advancedFilterButtonLabel: l10n.commonFilterActionLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
         filterGroups: <AppSearchBarFilterGroup>[
           if (_hasScopeSelector)
             AppSearchBarFilterGroup(
@@ -3486,9 +3694,11 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                   ),
               ],
             ),
+          ...widget.extraFilterGroups,
           AppSearchBarFilterGroup(
             key: _statusFilterKey,
             label: l10n.tenantFacilityTenantStatusLabel,
+            allLabel: l10n.commonAllLabel,
             choices: <AppSearchBarFilterChoice>[
               AppSearchBarFilterChoice(
                 value: _statusActive,
@@ -3515,10 +3725,13 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           setState(() {
             _filterValue = value;
             final String? nextScope = value.options[_scopeFilterKey];
-            _scopeId = (nextScope == null || nextScope.isEmpty)
-                ? _allScopes
-                : nextScope;
+            if (_hasScopeSelector) {
+              _scopeId = (nextScope == null || nextScope.isEmpty)
+                  ? _allScopes
+                  : nextScope;
+            }
           });
+          widget.onFiltersChanged?.call(value);
         },
         isLoading: widget.isSubmitting,
         trailingActions: widget.canManageRecords
