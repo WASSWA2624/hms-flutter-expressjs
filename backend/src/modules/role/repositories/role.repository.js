@@ -14,14 +14,16 @@ const { HttpError } = require('@lib/errors');
  * Find role by ID
  *
  * @param {string} id - Role ID
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeleted=false]
  * @returns {Promise<Object|null>} Role object or null
  */
-const findById = async (id) => {
+const findById = async (id, { includeDeleted = false } = {}) => {
   try {
     return await prisma.role.findFirst({
       where: {
         id,
-        deleted_at: null
+        ...(includeDeleted ? {} : { deleted_at: null })
       }
     });
   } catch (error) {
@@ -241,6 +243,93 @@ const softDelete = async (id) => {
   }
 };
 
+/**
+ * Restore a soft-deleted role and matching soft-deleted role_permission /
+ * user_role rows (same deleted_at timestamp as the role soft-delete).
+ *
+ * @param {string} id - Role ID
+ * @returns {Promise<{ role: Object, restored_permissions: number, restored_user_assignments: number }>}
+ */
+const restore = async (id) => {
+  try {
+    const existing = await prisma.role.findUnique({
+      where: { id },
+      select: { id: true, deleted_at: true }
+    });
+
+    if (!existing || !existing.deleted_at) {
+      throw Object.assign(new Error('Record not found'), { code: 'P2025' });
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const restoredPermissions = await tx.role_permission.updateMany({
+        where: {
+          role_id: id,
+          deleted_at: existing.deleted_at
+        },
+        data: { deleted_at: null }
+      });
+      const restoredAssignments = await tx.user_role.updateMany({
+        where: {
+          role_id: id,
+          deleted_at: existing.deleted_at
+        },
+        data: { deleted_at: null }
+      });
+      const role = await tx.role.update({
+        where: { id },
+        data: { deleted_at: null }
+      });
+      return {
+        role,
+        restored_permissions: restoredPermissions.count || 0,
+        restored_user_assignments: restoredAssignments.count || 0
+      };
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      throw new HttpError('errors.role.not_found', 404);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Permanently delete a soft-deleted role and related role_permission / user_role rows.
+ *
+ * @param {string} id - Role ID
+ * @returns {Promise<void>}
+ */
+const permanentDelete = async (id) => {
+  try {
+    const existing = await prisma.role.findUnique({
+      where: { id },
+      select: { id: true, deleted_at: true }
+    });
+
+    if (!existing) {
+      return;
+    }
+    if (!existing.deleted_at) {
+      throw new HttpError('errors.role.permanent_delete_requires_soft_delete', 400);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.role_permission.deleteMany({ where: { role_id: id } });
+      await tx.user_role.deleteMany({ where: { role_id: id } });
+      await tx.role.delete({ where: { id } });
+    });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    if (error.code === 'P2025') {
+      throw new HttpError('errors.role.not_found', 404);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
@@ -248,5 +337,7 @@ module.exports = {
   create,
   syncPermissions,
   update,
-  softDelete
+  softDelete,
+  restore,
+  permanentDelete
 };

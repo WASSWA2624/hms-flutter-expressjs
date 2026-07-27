@@ -60,6 +60,10 @@ abstract interface class AccessAdminRepository {
 
   Future<Result<void>> deleteRole(String roleId);
 
+  Future<Result<void>> restoreRole(String roleId);
+
+  Future<Result<void>> permanentDeleteRole(String roleId);
+
   Future<Result<List<AccessAdminRolePermissionAssignment>>> listRolePermissions(
     String roleId,
   );

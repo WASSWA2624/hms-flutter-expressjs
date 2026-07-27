@@ -185,8 +185,12 @@ const publishRoleRealtimeEvent = async (event, role, actorUserId) => {
   ]);
 };
 
-const resolveRoleId = async (identifier) =>
-  resolveEntityId({ model: 'role', identifier });
+const resolveRoleId = async (identifier, { includeDeleted = false } = {}) =>
+  resolveEntityId({
+    model: 'role',
+    identifier,
+    where: includeDeleted ? {} : { deleted_at: null }
+  });
 
 const normalizeCreateRolePayload = async (data = {}) => {
   const { scope, ...fields } = data || {};
@@ -545,10 +549,109 @@ const deleteRole = async (id, userId, ipAddress, actor = null) => {
   }
 };
 
+/**
+ * Restore soft-deleted role and matching permission / user-role links.
+ */
+const restoreRole = async (id, userId, ipAddress, actor = null) => {
+  try {
+    const resolvedRoleId = await resolveRoleId(id, { includeDeleted: true });
+    const before = await roleRepository.findById(resolvedRoleId, {
+      includeDeleted: true
+    });
+
+    if (!before || !before.deleted_at) {
+      throw new HttpError('errors.role.not_found', 404);
+    }
+
+    const actorUser = actor || { id: userId };
+    assertActorCanManageRoleRecord(before, actorUser);
+    assertRoleNotSystemProtected(before, 'restore');
+
+    const {
+      role,
+      restored_permissions: restoredPermissions,
+      restored_user_assignments: restoredUserAssignments
+    } = await roleRepository.restore(resolvedRoleId);
+
+    createAuditLog({
+      user_id: userId,
+      action: 'ROLE_RESTORED',
+      entity: 'role',
+      entity_id: resolvedRoleId,
+      diff: {
+        before,
+        after: role,
+        restored_permissions: restoredPermissions,
+        restored_user_assignments: restoredUserAssignments
+      },
+      ip_address: ipAddress
+    }).catch(() => {});
+
+    await publishRoleRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.ROLE_RESTORED,
+      role,
+      userId
+    );
+
+    return serializeAccessAdminRoleEntity(role);
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Permanently delete a soft-deleted role.
+ */
+const permanentDeleteRole = async (id, userId, ipAddress, actor = null) => {
+  try {
+    const resolvedRoleId = await resolveRoleId(id, { includeDeleted: true });
+    const before = await roleRepository.findById(resolvedRoleId, {
+      includeDeleted: true
+    });
+
+    if (!before) {
+      return;
+    }
+    if (!before.deleted_at) {
+      throw new HttpError('errors.role.permanent_delete_requires_soft_delete', 400);
+    }
+
+    const actorUser = actor || { id: userId };
+    assertActorCanManageRoleRecord(before, actorUser);
+    assertRoleNotSystemProtected(before, 'delete');
+
+    createAuditLog({
+      user_id: userId,
+      action: 'ROLE_PERMANENTLY_DELETED',
+      entity: 'role',
+      entity_id: resolvedRoleId,
+      diff: {
+        before,
+        irreversible: true
+      },
+      ip_address: ipAddress
+    }).catch(() => {});
+
+    await roleRepository.permanentDelete(resolvedRoleId);
+
+    await publishRoleRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.ROLE_PERMANENTLY_DELETED,
+      before,
+      userId
+    );
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   listRoles,
   getRoleById,
   createRole,
   updateRole,
-  deleteRole
+  deleteRole,
+  restoreRole,
+  permanentDeleteRole
 };

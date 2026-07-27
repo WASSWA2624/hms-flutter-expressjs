@@ -248,6 +248,8 @@ const PLATFORM_ADMIN_EVENTS = {
   ROLE_CREATED: 'role.created',
   ROLE_UPDATED: 'role.updated',
   ROLE_DELETED: 'role.deleted',
+  ROLE_RESTORED: 'role.restored',
+  ROLE_PERMANENTLY_DELETED: 'role.permanently_deleted',
   USER_CREATED: 'user.created',
   USER_UPDATED: 'user.updated',
   USER_DELETED: 'user.deleted',

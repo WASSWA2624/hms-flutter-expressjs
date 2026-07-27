@@ -70,6 +70,7 @@ const serializeAccessAdminRoleEntity = (record) => {
     permission_count: permissionCount,
     permissions,
     user_count: record._count?.users || 0,
+    deleted_at: record.deleted_at || null,
     updated_at: record.updated_at || null
   };
 };

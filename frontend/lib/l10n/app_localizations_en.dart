@@ -21478,7 +21478,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String accessAdminDeleteRoleBody(String name) {
-    return 'Delete role \"$name\"? Related permissions on this role will also be removed.';
+    return 'Soft-delete role \"$name\"? Related permissions are detached; the role stays listed so you can restore it.';
   }
 
   @override
@@ -21495,7 +21495,39 @@ class AppLocalizationsEn extends AppLocalizations {
       other: 'those users',
       one: 'that user',
     );
-    return 'Role \"$name\" is assigned to $_temp0. Deleting removes it from $_temp1.';
+    return 'Role \"$name\" is assigned to $_temp0. Soft-delete detaches it from $_temp1; the role stays listed so you can restore it.';
+  }
+
+  @override
+  String accessAdminSoftDeleteRoleBody(String name) {
+    return 'Soft-delete role \"$name\"? Related permissions are detached; the role stays listed so you can restore it.';
+  }
+
+  @override
+  String accessAdminSoftDeleteRoleAssignedBody(String name, int userCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      userCount,
+      locale: localeName,
+      other: '$userCount users',
+      one: '1 user',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      userCount,
+      locale: localeName,
+      other: 'those users',
+      one: 'that user',
+    );
+    return 'Role \"$name\" is assigned to $_temp0. Soft-delete detaches it from $_temp1; the role stays listed so you can restore it.';
+  }
+
+  @override
+  String accessAdminPermanentDeleteRoleWarningBody(String name) {
+    return 'WARNING: Permanently deleting \"$name\" will erase this role and its related permission links forever. This cannot be recovered.';
+  }
+
+  @override
+  String accessAdminPermanentDeleteRoleConfirmationBody(String name) {
+    return 'Final confirmation: permanently delete role \"$name\" and related permission links? This action is irreversible.';
   }
 
   @override

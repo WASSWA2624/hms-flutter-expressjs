@@ -344,9 +344,14 @@ const findRoles = async ({
   orderBy = { name: 'asc' },
   includeTenantWide = true,
   roleScope = null,
+  includeDeleted = false,
 }) => {
   try {
-    const where = scopedRoleWhere(scope, { includeTenantWide, roleScope });
+    const where = scopedRoleWhere(scope, {
+      includeTenantWide,
+      roleScope,
+      includeDeleted,
+    });
     const searchFilter = buildRoleSearchFilter(filters.search);
     if (searchFilter) {
       const searchOr = searchFilter.OR;
@@ -358,12 +363,16 @@ const findRoles = async ({
       }
     }
 
+    const resolvedOrderBy = includeDeleted
+      ? [{ deleted_at: 'asc' }, orderBy]
+      : orderBy;
+
     const [items, total] = await Promise.all([
       prisma.role.findMany({
         where,
         skip,
         take,
-        orderBy,
+        orderBy: resolvedOrderBy,
         include: {
           _count: {
             select: {

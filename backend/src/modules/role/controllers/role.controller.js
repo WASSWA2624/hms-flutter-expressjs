@@ -121,10 +121,40 @@ const deleteRole = asyncHandler(async (req, res) => {
   sendNoContent(res);
 });
 
+/**
+ * Restore soft-deleted role
+ * POST /api/v1/roles/:id/restore
+ */
+const restoreRole = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  const role = await roleService.restoreRole(id, userId, ipAddress, req.user);
+
+  sendSuccess(res, 200, 'messages.role.restore.success', role);
+});
+
+/**
+ * Permanently delete soft-deleted role
+ * DELETE /api/v1/roles/:id/permanent
+ */
+const permanentDeleteRole = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  await roleService.permanentDeleteRole(id, userId, ipAddress, req.user);
+
+  sendNoContent(res);
+});
+
 module.exports = {
   listRoles,
   getRoleById,
   createRole,
   updateRole,
-  deleteRole
+  deleteRole,
+  restoreRole,
+  permanentDeleteRole
 };

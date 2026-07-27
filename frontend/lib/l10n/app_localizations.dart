@@ -39712,17 +39712,41 @@ abstract class AppLocalizations {
   /// **'Delete role'**
   String get accessAdminDeleteRoleAction;
 
-  /// Confirmation body when deleting a role with no user assignments.
+  /// Confirmation body when soft-deleting a role with no user assignments.
   ///
   /// In en, this message translates to:
-  /// **'Delete role \"{name}\"? Related permissions on this role will also be removed.'**
+  /// **'Soft-delete role \"{name}\"? Related permissions are detached; the role stays listed so you can restore it.'**
   String accessAdminDeleteRoleBody(String name);
 
-  /// Confirmation body when deleting a role that is assigned to users.
+  /// Confirmation body when soft-deleting a role that is assigned to users.
   ///
   /// In en, this message translates to:
-  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Deleting removes it from {userCount, plural, =1{that user} other{those users}}.'**
+  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Soft-delete detaches it from {userCount, plural, =1{that user} other{those users}}; the role stays listed so you can restore it.'**
   String accessAdminDeleteRoleAssignedBody(String name, int userCount);
+
+  /// Soft-delete confirmation body for a role with no user assignments.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete role \"{name}\"? Related permissions are detached; the role stays listed so you can restore it.'**
+  String accessAdminSoftDeleteRoleBody(String name);
+
+  /// Soft-delete confirmation body for a role assigned to users.
+  ///
+  /// In en, this message translates to:
+  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Soft-delete detaches it from {userCount, plural, =1{that user} other{those users}}; the role stays listed so you can restore it.'**
+  String accessAdminSoftDeleteRoleAssignedBody(String name, int userCount);
+
+  /// Warning before permanently deleting a soft-deleted role.
+  ///
+  /// In en, this message translates to:
+  /// **'WARNING: Permanently deleting \"{name}\" will erase this role and its related permission links forever. This cannot be recovered.'**
+  String accessAdminPermanentDeleteRoleWarningBody(String name);
+
+  /// Final confirmation body for permanent role delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete role \"{name}\" and related permission links? This action is irreversible.'**
+  String accessAdminPermanentDeleteRoleConfirmationBody(String name);
 
   /// Access admin tenant context required title.
   ///

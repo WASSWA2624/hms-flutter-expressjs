@@ -40,7 +40,9 @@ const {
   getRoleById,
   createRole,
   updateRole,
-  deleteRole
+  deleteRole,
+  restoreRole,
+  permanentDeleteRole
 } = require('@services/role/role.service');
 
 describe('Role Service', () => {
@@ -585,6 +587,46 @@ describe('Role Service', () => {
       await expect(updateRole('role-123', {}, 'user-123', '127.0.0.1'))
         .rejects.toThrow(HttpError);
     });
+
+    it('should exclude the edited role from uniqueness peers', async () => {
+      const before = {
+        id: 'role-123',
+        name: 'Accountant',
+        display_name: 'Accountant',
+        description: null,
+        facility_id: null,
+        tenant_id: 'tenant-1',
+        permissions: []
+      };
+      const after = {
+        ...before,
+        human_friendly_id: 'ROL0001',
+        description: 'Updated'
+      };
+      roleRepository.findById.mockResolvedValue(before);
+      roleRepository.findMany.mockResolvedValue([
+        before,
+        {
+          id: 'role-other',
+          name: 'Billing Clerk',
+          display_name: 'Billing Clerk',
+          description: null,
+          facility_id: null,
+          tenant_id: 'tenant-1'
+        }
+      ]);
+      roleRepository.update.mockResolvedValue(after);
+
+      await updateRole(
+        'role-123',
+        { description: 'Updated' },
+        'user-123',
+        '127.0.0.1',
+        { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
+      );
+
+      expect(roleRepository.update).toHaveBeenCalled();
+    });
   });
 
   describe('deleteRole', () => {
@@ -628,6 +670,98 @@ describe('Role Service', () => {
 
       await expect(deleteRole('role-123', 'user-123', '127.0.0.1'))
         .rejects.toThrow(HttpError);
+    });
+  });
+
+  describe('restoreRole', () => {
+    it('should restore soft-deleted role and permission links', async () => {
+      const deletedAt = new Date('2026-07-27T10:00:00.000Z');
+      const before = {
+        id: 'role-123',
+        human_friendly_id: 'ROL0001',
+        name: 'Custom Clerk',
+        display_name: 'Custom Clerk',
+        tenant_id: 'tenant-1',
+        facility_id: null,
+        deleted_at: deletedAt
+      };
+      const restored = { ...before, deleted_at: null };
+      roleRepository.findById.mockResolvedValue(before);
+      roleRepository.restore.mockResolvedValue({
+        role: restored,
+        restored_permissions: 4,
+        restored_user_assignments: 2
+      });
+
+      const result = await restoreRole('role-123', 'user-123', '127.0.0.1', {
+        id: 'user-123',
+        roles: ['TENANT_ADMIN'],
+        tenant_id: 'tenant-1'
+      });
+
+      expect(roleRepository.restore).toHaveBeenCalledWith('role-123');
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'ROL0001',
+          resource_uuid: 'role-123',
+          name: 'Custom Clerk'
+        })
+      );
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'ROLE_RESTORED',
+          entity_id: 'role-123',
+          diff: expect.objectContaining({
+            restored_permissions: 4,
+            restored_user_assignments: 2
+          })
+        })
+      );
+    });
+  });
+
+  describe('permanentDeleteRole', () => {
+    it('should permanently delete a soft-deleted role', async () => {
+      const before = {
+        id: 'role-123',
+        name: 'Custom Clerk',
+        tenant_id: 'tenant-1',
+        deleted_at: new Date()
+      };
+      roleRepository.findById.mockResolvedValue(before);
+      roleRepository.permanentDelete.mockResolvedValue(undefined);
+
+      await permanentDeleteRole('role-123', 'user-123', '127.0.0.1', {
+        id: 'user-123',
+        roles: ['TENANT_ADMIN'],
+        tenant_id: 'tenant-1'
+      });
+
+      expect(roleRepository.permanentDelete).toHaveBeenCalledWith('role-123');
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'ROLE_PERMANENTLY_DELETED',
+          entity_id: 'role-123'
+        })
+      );
+    });
+
+    it('should require soft-delete before permanent delete', async () => {
+      roleRepository.findById.mockResolvedValue({
+        id: 'role-123',
+        name: 'Custom Clerk',
+        tenant_id: 'tenant-1',
+        deleted_at: null
+      });
+
+      await expect(
+        permanentDeleteRole('role-123', 'user-123', '127.0.0.1', {
+          id: 'user-123',
+          roles: ['TENANT_ADMIN'],
+          tenant_id: 'tenant-1'
+        })
+      ).rejects.toThrow(HttpError);
+      expect(roleRepository.permanentDelete).not.toHaveBeenCalled();
     });
   });
 });

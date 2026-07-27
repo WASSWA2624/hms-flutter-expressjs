@@ -27536,19 +27536,48 @@
   "@accessAdminDeleteRoleAction": {
     "description": "Access admin delete role action."
   },
-  "accessAdminDeleteRoleBody": "Delete role \"{name}\"? Related permissions on this role will also be removed.",
+  "accessAdminDeleteRoleBody": "Soft-delete role \"{name}\"? Related permissions are detached; the role stays listed so you can restore it.",
   "@accessAdminDeleteRoleBody": {
-    "description": "Confirmation body when deleting a role with no user assignments.",
+    "description": "Confirmation body when soft-deleting a role with no user assignments.",
     "placeholders": {
       "name": { "type": "String" }
     }
   },
-  "accessAdminDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Deleting removes it from {userCount, plural, =1{that user} other{those users}}.",
+  "accessAdminDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Soft-delete detaches it from {userCount, plural, =1{that user} other{those users}}; the role stays listed so you can restore it.",
   "@accessAdminDeleteRoleAssignedBody": {
-    "description": "Confirmation body when deleting a role that is assigned to users.",
+    "description": "Confirmation body when soft-deleting a role that is assigned to users.",
     "placeholders": {
       "name": { "type": "String" },
       "userCount": { "type": "int" }
+    }
+  },
+  "accessAdminSoftDeleteRoleBody": "Soft-delete role \"{name}\"? Related permissions are detached; the role stays listed so you can restore it.",
+  "@accessAdminSoftDeleteRoleBody": {
+    "description": "Soft-delete confirmation body for a role with no user assignments.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "accessAdminSoftDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Soft-delete detaches it from {userCount, plural, =1{that user} other{those users}}; the role stays listed so you can restore it.",
+  "@accessAdminSoftDeleteRoleAssignedBody": {
+    "description": "Soft-delete confirmation body for a role assigned to users.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "userCount": { "type": "int" }
+    }
+  },
+  "accessAdminPermanentDeleteRoleWarningBody": "WARNING: Permanently deleting \"{name}\" will erase this role and its related permission links forever. This cannot be recovered.",
+  "@accessAdminPermanentDeleteRoleWarningBody": {
+    "description": "Warning before permanently deleting a soft-deleted role.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "accessAdminPermanentDeleteRoleConfirmationBody": "Final confirmation: permanently delete role \"{name}\" and related permission links? This action is irreversible.",
+  "@accessAdminPermanentDeleteRoleConfirmationBody": {
+    "description": "Final confirmation body for permanent role delete.",
+    "placeholders": {
+      "name": { "type": "String" }
     }
   },
   "accessAdminTenantContextRequiredTitle": "Tenant context required",

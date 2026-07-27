@@ -1037,6 +1037,7 @@ class _ManageRolesPermissionsPanelState
       resource: resource,
       roleScope: roleScopeFilter,
       lean: true,
+      includeDeleted: panel != AccessAdminPanel.permissions,
       tenantId: crossTenant ? null : tenantFilter,
       facilityId: tenantWide ? null : facilityFilter,
       allTenants: crossTenant,
@@ -1212,6 +1213,9 @@ class _ManageRolesPermissionsPanelState
   }
 
   Future<void> _openEditRoleDialog(AccessAdminItem role) async {
+    if (role.isDeleted) {
+      return;
+    }
     final AccessAdminWorkspaceState? state = buildWorkspaceState();
     if (state == null || !mounted) {
       return;
@@ -1230,18 +1234,19 @@ class _ManageRolesPermissionsPanelState
   }
 
   Future<void> _confirmDeleteRole(AccessAdminItem role) async {
-    if (role.isSystemCritical) {
+    if (role.isSystemCritical || role.isDeleted) {
       return;
     }
     final AppLocalizations l10n = context.l10n;
     final String body = role.userCount > 0
-        ? l10n.accessAdminDeleteRoleAssignedBody(role.title, role.userCount)
-        : l10n.accessAdminDeleteRoleBody(role.title);
+        ? l10n.accessAdminSoftDeleteRoleAssignedBody(role.title, role.userCount)
+        : l10n.accessAdminSoftDeleteRoleBody(role.title);
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.accessAdminDeleteRoleAction,
         body: body,
+        highlightedText: role.title,
         submitLabel: l10n.tenantFacilityDeleteConfirmAction,
         destructive: true,
         icon: const Icon(Icons.delete_outline),
@@ -1259,6 +1264,134 @@ class _ManageRolesPermissionsPanelState
     if (confirmed == true && mounted) {
       mutated = true;
       setState(() {
+        items = <AccessAdminItem>[
+          for (final AccessAdminItem entry in items)
+            entry.id == role.id || entry.mutationId == role.mutationId
+                ? entry.copyWith(deletedAt: DateTime.now().toUtc())
+                : entry,
+        ];
+      });
+      await reload(resetPage: false, silent: true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(
+          ref
+              .read(accessAdminWorkspaceControllerProvider.notifier)
+              .rehydrateSession(),
+        );
+      });
+    }
+  }
+
+  Future<void> _confirmRestoreRole(AccessAdminItem role) async {
+    if (!role.isDeleted) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityRestoreStructureTitle,
+        body: l10n.tenantFacilityRestoreStructureBody(role.title),
+        highlightedText: role.title,
+        submitLabel: l10n.tenantFacilityRestoreStructureAction,
+        icon: const Icon(Icons.restore_outlined),
+        onConfirm: () async {
+          final Result<void> result = await repository.restoreRole(
+            role.mutationId,
+          );
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (confirmed == true && mounted) {
+      mutated = true;
+      setState(() {
+        items = <AccessAdminItem>[
+          for (final AccessAdminItem entry in items)
+            entry.id == role.id || entry.mutationId == role.mutationId
+                ? entry.copyWith(clearDeletedAt: true)
+                : entry,
+        ];
+      });
+      await reload(resetPage: false, silent: true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(
+          ref
+              .read(accessAdminWorkspaceControllerProvider.notifier)
+              .rehydrateSession(),
+        );
+      });
+    }
+  }
+
+  Future<void> _confirmPermanentDeleteRole(AccessAdminItem role) async {
+    if (!role.isDeleted || role.isSystemCritical) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final String? typed = await showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppTextInputActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
+        description: l10n.accessAdminPermanentDeleteRoleWarningBody(role.title),
+        fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
+          role.title,
+        ),
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        cancelLabel: l10n.commonCancelActionLabel,
+        requiredMessage: l10n.validationRequired,
+        destructive: true,
+        minLines: 1,
+        maxLines: 1,
+        icon: const Icon(Icons.delete_forever_outlined),
+      ),
+    );
+
+    if (!mounted || typed == null) {
+      return;
+    }
+    if (typed.trim() != role.title.trim()) {
+      return;
+    }
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
+        body: l10n.accessAdminPermanentDeleteRoleConfirmationBody(role.title),
+        highlightedText: role.title,
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_forever_outlined),
+        onConfirm: () async {
+          final Result<void> result = await repository.permanentDeleteRole(
+            role.mutationId,
+          );
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) {
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
+          );
+        },
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      mutated = true;
+      setState(() {
         items = items
             .where(
               (AccessAdminItem entry) =>
@@ -1268,8 +1401,6 @@ class _ManageRolesPermissionsPanelState
         totalItemCount = math.max(0, totalItemCount - 1);
       });
       await reload(resetPage: items.isEmpty, silent: true);
-      // Delete goes through the repository (not controller refreshSession), so
-      // rehydrate after the confirm dialog has fully closed.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
           return;
@@ -1445,7 +1576,14 @@ class _ManageRolesPermissionsPanelState
                   AppListTableColumn<AccessAdminItem>(
                     id: 'name',
                     label: l10n.accessAdminColumnName,
-                    cellBuilder: (_, AccessAdminItem item) => Text(item.title),
+                    cellBuilder: (_, AccessAdminItem item) {
+                      if (!item.isDeleted) {
+                        return Text(item.title);
+                      }
+                      return Text(
+                        '${item.title} · ${l10n.tenantFacilityStructureDeletedStatus}',
+                      );
+                    },
                   ),
                   AppListTableColumn<AccessAdminItem>(
                     id: 'scope',
@@ -1460,12 +1598,61 @@ class _ManageRolesPermissionsPanelState
                       alwaysVisible: true,
                       cellBuilder: (BuildContext context, AccessAdminItem role) {
                         final ThemeData theme = Theme.of(context);
+                        final double actionGap = theme.spacing.md;
+                        if (role.isDeleted) {
+                          return Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              end: theme.spacing.sm,
+                            ),
+                            child: Wrap(
+                              spacing: actionGap,
+                              runSpacing: theme.spacing.xs,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: <Widget>[
+                                AppButton.tertiary(
+                                  leadingIcon: Icons.restore_outlined,
+                                  label:
+                                      l10n.tenantFacilityRestoreStructureAction,
+                                  semanticLabel:
+                                      l10n.tenantFacilityRestoreStructureAction,
+                                  tooltip:
+                                      l10n.tenantFacilityRestoreStructureAction,
+                                  enabled: !loading && !mutating,
+                                  onPressed: !loading && !mutating
+                                      ? () => unawaited(
+                                            _confirmRestoreRole(role),
+                                          )
+                                      : null,
+                                ),
+                                if (!role.isSystemCritical)
+                                  AppButton.tertiary(
+                                    leadingIcon: Icons.delete_forever_outlined,
+                                    label:
+                                        l10n.tenantFacilityPermanentDeleteAction,
+                                    semanticLabel:
+                                        l10n.tenantFacilityPermanentDeleteAction,
+                                    tooltip:
+                                        l10n.tenantFacilityPermanentDeleteAction,
+                                    color: colorScheme.error,
+                                    enabled: !loading && !mutating,
+                                    onPressed: !loading && !mutating
+                                        ? () => unawaited(
+                                              _confirmPermanentDeleteRole(role),
+                                            )
+                                        : null,
+                                  ),
+                              ],
+                            ),
+                          );
+                        }
                         return Padding(
                           padding: EdgeInsetsDirectional.only(
                             end: theme.spacing.sm,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Wrap(
+                            spacing: actionGap,
+                            runSpacing: theme.spacing.xs,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: <Widget>[
                               AppButton.tertiary(
                                 leadingIcon: Icons.edit_outlined,
@@ -1974,7 +2161,7 @@ class _AccessAdminRoleDetailDialogState
         ],
       ),
       actions: <Widget>[
-        if (widget.canWrite) ...<Widget>[
+        if (widget.canWrite && !widget.role.isDeleted) ...<Widget>[
           AppButton.secondary(
             label: l10n.accessAdminAddRolePermissionsAction,
             leadingIcon: Icons.key_outlined,

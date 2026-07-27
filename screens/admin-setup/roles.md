@@ -10,17 +10,27 @@
 - **Row select**
   - Location: Role table or mobile-list row.
   - Condition: Always available for listed roles.
-  - Immediate result: Loads the role’s permissions, then opens `_AccessAdminRoleDetailDialog`.
+  - Immediate result: Loads the role’s permissions, then opens `_AccessAdminRoleDetailDialog` (edit/delete hidden when the role is soft-deleted).
 
 - **Edit**
-  - Location: Role row actions.
-  - Condition: The actions column is shown when workspace `canWrite` is true; enabled when the list is not loading and no mutation is in progress.
-  - Immediate result: Opens `showRoleMutationDialog` in **Edit** mode.
+  - Location: Role row actions (active roles only).
+  - Condition: The actions column is shown when workspace `canWrite` is true; hidden for soft-deleted roles; enabled when the list is not loading and no mutation is in progress.
+  - Immediate result: Opens `showRoleMutationDialog` in **Edit** mode (same form as create, plus permissions). Save runs similarity review excluding the edited role when identity fields change.
 
 - **Delete**
-  - Location: Role row actions.
-  - Condition: The actions column is shown when workspace `canWrite` is true; the delete control is shown only when the role is not system-critical; enabled when the list is not loading and no mutation is in progress.
-  - Immediate result: Opens the delete role `AppConfirmActionDialog`.
+  - Location: Role row actions (active roles only).
+  - Condition: The actions column is shown when workspace `canWrite` is true; the delete control is shown only when the role is not system-critical and not already soft-deleted; enabled when the list is not loading and no mutation is in progress.
+  - Immediate result: Opens soft-delete confirm; on confirm soft-deletes the role (row stays listed as deleted).
+
+- **Restore**
+  - Location: Role row actions (soft-deleted roles).
+  - Condition: Shown when `canWrite` is true and the role is soft-deleted.
+  - Immediate result: Confirms then restores the role plus matching soft-deleted permission and user-role links.
+
+- **Delete permanently**
+  - Location: Role row actions (soft-deleted roles).
+  - Condition: Shown when `canWrite` is true, the role is soft-deleted, and not system-critical.
+  - Immediate result: Type-name confirm then permanent hard-delete from the database.
 
 - **Previous page**
   - Location: Role-list pagination controls.

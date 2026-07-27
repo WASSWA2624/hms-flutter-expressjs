@@ -350,6 +350,30 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
+  Future<Result<void>> restoreRole(String roleId) {
+    return _afterAccessMutation(
+      () => _apiClient.post<void>(
+        ApiEndpoints.nested(HmsApiResource.roles, roleId, const <String>[
+          'restore',
+        ]),
+        decoder: (_) {},
+      ),
+    );
+  }
+
+  @override
+  Future<Result<void>> permanentDeleteRole(String roleId) {
+    return _afterAccessMutation(
+      () => _apiClient.delete<void>(
+        ApiEndpoints.nested(HmsApiResource.roles, roleId, const <String>[
+          'permanent',
+        ]),
+        decoder: (_) {},
+      ),
+    );
+  }
+
+  @override
   Future<Result<List<AccessAdminRolePermissionAssignment>>> listRolePermissions(
     String roleId,
   ) async {

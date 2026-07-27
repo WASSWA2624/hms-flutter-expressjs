@@ -418,6 +418,7 @@ Future<AppFailure?> _reviewRoleSimilarity(
   required AccessAdminRoleDraft pending,
   required VoidCallback onAccepted,
   required ValueChanged<AccessAdminItem> onUseExisting,
+  String? excludeRoleId,
   bool forceReviewMatches = false,
   List<Map<String, Object?>> conflictEntries = const <Map<String, Object?>>[],
 }) async {
@@ -443,6 +444,7 @@ Future<AppFailure?> _reviewRoleSimilarity(
     tenantId: pending.tenantId,
     facilityId: pending.facilityId,
     existing: peers,
+    excludeRoleId: excludeRoleId,
   );
 
   List<RoleSimilarityMatch> reviewMatches;
@@ -765,6 +767,13 @@ Future<bool?> openAccessAdminEditRoleDialog(
     permissionLookups: permissionLookups,
   );
 
+  final String excludeRoleId =
+      role.mutationId.trim().isNotEmpty ? role.mutationId : role.id;
+  final String baselineName = (role.name ?? role.title).trim();
+  final String baselineDisplayName = (role.displayName ?? role.title).trim();
+  final String baselineDescription = (role.subtitle ?? '').trim();
+  final String? baselineFacilityId = role.facilityId;
+
   return showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.edit,
@@ -792,8 +801,92 @@ Future<bool?> openAccessAdminEditRoleDialog(
                 tenantId: tenantId,
                 facilityId: facilityId,
               ),
-    onSubmit: (List<AccessAdminRoleDraft> drafts) =>
-        _submitAccessAdminRoleUpdate(ref, role.id, drafts.first),
+    onSubmit: (List<AccessAdminRoleDraft> drafts) async {
+      final AccessAdminRoleDraft draft = drafts.first;
+      final bool identityChanged =
+          draft.name.trim() != baselineName ||
+          (draft.displayName ?? '').trim() != baselineDisplayName ||
+          (draft.description ?? '').trim() != baselineDescription ||
+          (draft.facilityId ?? '') != (baselineFacilityId ?? '');
+
+      var similarityAccepted = draft.confirmSimilar;
+      var pending = draft.copyWith(confirmSimilar: similarityAccepted);
+
+      // Edit skips empty review when identity is unchanged; create always opens.
+      if (identityChanged && !pending.confirmSimilar) {
+        if (!context.mounted) {
+          return const AppFailure.cancelled();
+        }
+        final AppFailure? reviewFailure = await _reviewRoleSimilarity(
+          context,
+          ref,
+          pending: pending,
+          excludeRoleId: excludeRoleId,
+          onAccepted: () => similarityAccepted = true,
+          onUseExisting: (_) {
+            // Edit has no "use existing" handoff — treat as cancel.
+          },
+        );
+        if (reviewFailure != null) {
+          return reviewFailure;
+        }
+        if (!similarityAccepted) {
+          return const AppFailure.cancelled();
+        }
+        pending = pending.copyWith(confirmSimilar: true);
+      }
+
+      AppFailure? failure = await _submitAccessAdminRoleUpdate(
+        ref,
+        role.id,
+        pending,
+      );
+
+      if (failure != null &&
+          failure.category == AppFailureCategory.conflict) {
+        if (!context.mounted) {
+          return const AppFailure.cancelled();
+        }
+
+        final bool isExactNameConflict = _isRoleDuplicateNameConflict(failure);
+        final bool alreadyConfirmed = pending.confirmSimilar;
+        if (alreadyConfirmed && !isExactNameConflict) {
+          return failure;
+        }
+
+        similarityAccepted = false;
+        final AppFailure? reviewFailure = await _reviewRoleSimilarity(
+          context,
+          ref,
+          pending: pending.copyWith(confirmSimilar: false),
+          excludeRoleId: excludeRoleId,
+          forceReviewMatches: true,
+          conflictEntries: failure is ConflictFailure
+              ? failure.conflictEntries
+              : const <Map<String, Object?>>[],
+          onAccepted: () => similarityAccepted = true,
+          onUseExisting: (_) {},
+        );
+        if (reviewFailure != null) {
+          return reviewFailure;
+        }
+        if (!similarityAccepted || isExactNameConflict) {
+          return const AppFailure.cancelled();
+        }
+
+        failure = await _submitAccessAdminRoleUpdate(
+          ref,
+          role.id,
+          pending.copyWith(confirmSimilar: true),
+        );
+        if (failure != null &&
+            failure.category == AppFailureCategory.conflict) {
+          return const AppFailure.cancelled();
+        }
+      }
+
+      return failure;
+    },
   );
 }
 

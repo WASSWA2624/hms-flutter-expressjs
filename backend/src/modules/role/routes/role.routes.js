@@ -124,6 +124,32 @@ router.put(
 );
 
 /**
+ * @description Restore soft-deleted role
+ * @method POST
+ * @route /api/v1/roles/:id/restore
+ */
+router.post(
+  '/:id/restore',
+  validateRequest({ params: roleIdParamsSchema }),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
+  roleController.restoreRole
+);
+
+/**
+ * @description Permanently delete soft-deleted role
+ * @method DELETE
+ * @route /api/v1/roles/:id/permanent
+ */
+router.delete(
+  '/:id/permanent',
+  validateRequest({ params: roleIdParamsSchema }),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
+  roleController.permanentDeleteRole
+);
+
+/**
  * @description Delete role (soft delete)
  * @method DELETE
  * @route /api/v1/roles/:id

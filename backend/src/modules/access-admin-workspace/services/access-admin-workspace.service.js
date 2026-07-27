@@ -205,6 +205,7 @@ const serializeRole = (record) => {
     user_count: record._count?.users || 0,
     is_clinical_flow_role: CLINICAL_FLOW_ROLES.has(roleName),
     is_system_critical: SYSTEM_CRITICAL_ROLES.has(roleName),
+    deleted_at: record.deleted_at || null,
     updated_at: record.updated_at,
   };
 };
@@ -533,6 +534,8 @@ const findItemsForResource = async (
       take,
       includeTenantWide: options.includeTenantWide !== false,
       roleScope: options.roleScope || null,
+      includeDeleted:
+        filters.include_deleted === true || filters.include_deleted === 'true',
     });
   }
 

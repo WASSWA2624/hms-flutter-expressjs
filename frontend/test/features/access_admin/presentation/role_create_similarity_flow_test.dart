@@ -213,4 +213,51 @@ void main() {
       isTrue,
     );
   });
+
+  test('edit reuses create similarity with self exclusion', () {
+    final String editSource = dialogsSource.substring(
+      dialogsSource.indexOf('Future<bool?> openAccessAdminEditRoleDialog('),
+    );
+    expect(editSource.contains('excludeRoleId: excludeRoleId'), isTrue);
+    expect(editSource.contains('_reviewRoleSimilarity'), isTrue);
+    expect(editSource.contains('identityChanged'), isTrue);
+    expect(
+      dialogsSource.contains('excludeRoleId: excludeRoleId,'),
+      isTrue,
+    );
+    expect(
+      dialogsSource.contains('excludeRoleId: excludeRoleId'),
+      isTrue,
+      reason: 'Edit peer scoring must exclude the role being edited',
+    );
+  });
+
+  test('roles soft-delete lifecycle exposes restore and permanent delete', () {
+    expect(managementSource.contains('includeDeleted:'), isTrue);
+    expect(managementSource.contains('_confirmRestoreRole'), isTrue);
+    expect(managementSource.contains('_confirmPermanentDeleteRole'), isTrue);
+    expect(
+      managementSource.contains('tenantFacilityPermanentDeleteAction'),
+      isTrue,
+    );
+    expect(
+      managementSource.contains('spacing: actionGap'),
+      isTrue,
+      reason: 'Edit/Delete and Restore/permanent actions must not sit flush',
+    );
+    final String repositorySource = File(
+      'lib/features/access_admin/data/repositories/access_admin_repository_impl.dart',
+    ).readAsStringSync();
+    expect(repositorySource.contains('restoreRole'), isTrue);
+    expect(repositorySource.contains('permanentDeleteRole'), isTrue);
+  });
+
+  test('unauthorized role row actions stay gated by canWrite', () {
+    expect(
+      RegExp(
+        r'if\s*\(canWrite\)\s*AppListTableColumn<AccessAdminItem>\(',
+      ).hasMatch(managementSource),
+      isTrue,
+    );
+  });
 }
