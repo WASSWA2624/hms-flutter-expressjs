@@ -2668,7 +2668,7 @@ class _RolePermissionsEditorDialog extends StatefulWidget {
 
 class _RolePermissionsEditorDialogState
     extends State<_RolePermissionsEditorDialog> {
-  late final Set<String> _selectedIds;
+  late Set<String> _selectedIds;
   bool _saving = false;
   String? _errorMessage;
 
@@ -2714,7 +2714,7 @@ class _RolePermissionsEditorDialogState
       maxWidth: 720,
       scrollable: true,
       pinActionsToBottom: true,
-      initialMaximized: false,
+      initialMaximized: true,
       closeEnabled: !_saving,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2734,9 +2734,9 @@ class _RolePermissionsEditorDialogState
             enabled: !_saving,
             onSelectionChanged: (Set<String> next) {
               setState(() {
-                _selectedIds
-                  ..clear()
-                  ..addAll(next);
+                // Replace the set so dependents see a new identity (avoid
+                // in-place mutation that can skip didUpdateWidget).
+                _selectedIds = Set<String>.from(next);
               });
             },
           ),

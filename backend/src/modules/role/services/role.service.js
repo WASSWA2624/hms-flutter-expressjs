@@ -395,8 +395,11 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
 
     const hasScopeHint =
       Object.prototype.hasOwnProperty.call(roleFields, 'scope') ||
-      Object.prototype.hasOwnProperty.call(roleFields, 'tenant_id') ||
-      Object.prototype.hasOwnProperty.call(roleFields, 'facility_id');
+      Object.prototype.hasOwnProperty.call(roleFields, 'facility_id') ||
+      // tenant_id alone is often injected by tenant-scope middleware on
+      // permission-only PUTs — require explicit `scope` to treat as ABAC change.
+      (Object.prototype.hasOwnProperty.call(roleFields, 'tenant_id') &&
+        Object.prototype.hasOwnProperty.call(roleFields, 'scope'));
 
     if (hasScopeHint) {
       const scoped = await normalizeCreateRolePayload({

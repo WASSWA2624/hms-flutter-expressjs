@@ -64,6 +64,16 @@ final class HttpResponseCacheInterceptor extends Interceptor {
     ResponseInterceptorHandler handler,
   ) {
     final RequestOptions options = response.requestOptions;
+    final String method = options.method.toUpperCase();
+
+    // Mutations must drop cached GETs so follow-up reads (e.g. role permissions
+    // after clearing grants) cannot resurrect stale rows for up to [maxAge].
+    if (method != 'GET' && _isSuccessStatus(response.statusCode)) {
+      clearCache();
+      handler.next(response);
+      return;
+    }
+
     if (_isCacheable(options) && _isSuccessStatus(response.statusCode)) {
       final String key = _cacheKey(options);
       _cache[key] = _CacheEntry(

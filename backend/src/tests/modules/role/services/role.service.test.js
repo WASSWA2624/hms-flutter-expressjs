@@ -588,6 +588,37 @@ describe('Role Service', () => {
         .rejects.toThrow(HttpError);
     });
 
+    it('should sync empty permission_ids to clear all grants', async () => {
+      const before = {
+        id: 'role-123',
+        name: 'Clerk',
+        display_name: 'Clerk',
+        description: null,
+        facility_id: null,
+        tenant_id: 'tenant-1',
+        permissions: [{ permission_id: 'perm-1' }]
+      };
+      roleRepository.findById.mockResolvedValue(before);
+      roleRepository.findMany.mockResolvedValue([]);
+      roleRepository.syncPermissions = jest.fn().mockResolvedValue(undefined);
+      roleRepository.update.mockResolvedValue(before);
+
+      await updateRole(
+        'role-123',
+        { permission_ids: [] },
+        'user-123',
+        '127.0.0.1',
+        { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
+      );
+
+      expect(assertPermissionIdsAssignable).toHaveBeenCalledWith(
+        [],
+        expect.any(Object),
+        expect.objectContaining({ tenantId: 'tenant-1' })
+      );
+      expect(roleRepository.syncPermissions).toHaveBeenCalledWith('role-123', []);
+    });
+
     it('should exclude the edited role from uniqueness peers', async () => {
       const before = {
         id: 'role-123',
