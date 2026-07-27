@@ -847,6 +847,8 @@ class _ManageUsersPanelState
                 alwaysVisible: true,
                 cellBuilder: (BuildContext context, AccessAdminItem user) {
                   final ThemeData theme = Theme.of(context);
+                  final double actionGap = theme.spacing.md;
+                  final bool actionsEnabled = !loading && !mutating;
                   if (user.isDeleted) {
                     return Padding(
                       padding: EdgeInsetsDirectional.only(
@@ -857,8 +859,8 @@ class _ManageUsersPanelState
                         label: l10n.accessAdminRestoreUserAction,
                         semanticLabel: l10n.accessAdminRestoreUserAction,
                         tooltip: l10n.accessAdminRestoreUserAction,
-                        enabled: !loading && !mutating,
-                        onPressed: !loading && !mutating
+                        enabled: actionsEnabled,
+                        onPressed: actionsEnabled
                             ? () => unawaited(_confirmRestoreUser(user))
                             : null,
                       ),
@@ -866,38 +868,33 @@ class _ManageUsersPanelState
                   }
                   return Padding(
                     padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Wrap(
+                      spacing: actionGap,
+                      runSpacing: theme.spacing.xs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
                         AppButton.tertiary(
                           leadingIcon: Icons.edit_outlined,
                           label: l10n.tenantFacilityEditAction,
                           semanticLabel: l10n.tenantFacilityEditAction,
                           tooltip: l10n.tenantFacilityEditAction,
-                          enabled: !loading && !mutating,
-                          onPressed: !loading && !mutating
+                          enabled: actionsEnabled,
+                          onPressed: actionsEnabled
                               ? () => unawaited(_openEditUserDialog(user))
                               : null,
                         ),
-                        AppButton.tertiary(
-                          leadingIcon: Icons.delete_outline,
-                          label: l10n.tenantFacilityDeleteAction,
-                          semanticLabel: l10n.tenantFacilityDeleteAction,
-                          tooltip: l10n.tenantFacilityDeleteAction,
-                          color: colorScheme.error,
-                          enabled:
-                              !loading &&
-                              !mutating &&
-                              !user.isDemo &&
-                              !user.isSystemCritical,
-                          onPressed:
-                              !loading &&
-                                  !mutating &&
-                                  !user.isDemo &&
-                                  !user.isSystemCritical
-                              ? () => unawaited(_confirmDeleteUser(user))
-                              : null,
-                        ),
+                        if (!user.isDemo && !user.isSystemCritical)
+                          AppButton.tertiary(
+                            leadingIcon: Icons.delete_outline,
+                            label: l10n.tenantFacilityDeleteAction,
+                            semanticLabel: l10n.tenantFacilityDeleteAction,
+                            tooltip: l10n.tenantFacilityDeleteAction,
+                            color: colorScheme.error,
+                            enabled: actionsEnabled,
+                            onPressed: actionsEnabled
+                                ? () => unawaited(_confirmDeleteUser(user))
+                                : null,
+                          ),
                       ],
                     ),
                   );
