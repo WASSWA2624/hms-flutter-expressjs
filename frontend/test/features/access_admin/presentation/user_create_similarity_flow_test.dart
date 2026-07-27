@@ -118,7 +118,7 @@ void main() {
 
   final String peerLoaderSource = dialogsSource.substring(
     dialogsSource.indexOf('Future<_UserSimilarityPeers> _loadUserSimilarityPeers('),
-    dialogsSource.indexOf('Future<bool?> openAccessAdminEditUserDialog('),
+    dialogsSource.indexOf('Future<AccessAdminItem?> openAccessAdminEditUserDialog('),
   );
 
   test('similarity peer load is not facility-narrowed', () {
@@ -181,27 +181,46 @@ void main() {
     );
   });
 
-  test('create form omits roles and permissions sections on create', () {
+  test('create and edit forms omit roles and permissions sections', () {
     expect(
       mutationDialogSource.contains('if (mode == UserMutationMode.edit) ...<Widget>['),
-      isTrue,
-      reason: 'Assigned roles / Direct permissions render for edit only',
+      isFalse,
+      reason: 'Assigned roles / Direct permissions are deferred to User Details',
     );
     expect(
       mutationDialogSource.contains(
-        'never loads the roles/permissions catalog.',
+        'never loads the roles/permissions catalog in this dialog.',
       ),
       isTrue,
-      reason: 'Reference catalog must only load in edit mode',
+      reason: 'Reference catalog must not load in create/edit mutation dialog',
     );
     expect(
-      mutationDialogSource.contains('final bool isCreate = mode == UserMutationMode.create;'),
+      mutationDialogSource.contains('permissionIds: const <String>[]'),
       isTrue,
+      reason: 'Create/edit submit empty permissionIds',
     );
     expect(
-      mutationDialogSource.contains('? const <String>[]'),
+      mutationDialogSource.contains('const <String>[],'),
       isTrue,
-      reason: 'Create submits empty roleIds and permissionIds',
+      reason: 'Create/edit submit empty roleIds',
+    );
+  });
+
+  test('edit user mirrors create similarity flow excluding self', () {
+    final String editSource = dialogsSource.substring(
+      dialogsSource.indexOf(
+        'Future<AccessAdminItem?> openAccessAdminEditUserDialog(',
+      ),
+      dialogsSource.indexOf(
+        'Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(',
+      ),
+    );
+    expect(editSource.contains('excludeUserId: excludeUserId'), isTrue);
+    expect(editSource.contains('_reviewUserSimilarity'), isTrue);
+    expect(editSource.contains('updateUserReviewed'), isTrue);
+    expect(
+      editSource.contains('always open review before persisting'),
+      isTrue,
     );
   });
 

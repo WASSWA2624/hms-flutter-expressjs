@@ -21380,6 +21380,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminPasswordLabel => 'Password';
 
   @override
+  String get accessAdminCreatePasswordOptionalLabel => 'Password (optional)';
+
+  @override
+  String get accessAdminCreatePasswordOptionalHint =>
+      'Leave blank to auto-generate a secure password.';
+
+  @override
   String get accessAdminPasswordHint =>
       'Password must be at least 8 characters.';
 
@@ -21485,6 +21492,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminSimilarUserScopeLabel => 'Organization';
+
+  @override
+  String get accessAdminSimilarUserNameLabel => 'Name';
 
   @override
   String get accessAdminSimilarUserExactConflictLabel => 'Exact conflict';

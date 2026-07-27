@@ -154,7 +154,14 @@ const normalizePhoneDigits = (value) => {
  * Combines an alphabetical window with search-biased pages on email / phone /
  * position so strong identity matches past the alphabetical limit still surface.
  */
-const loadUserSimilarityPeers = async ({ tenantId, email, phone, positionTitle }) => {
+const loadUserSimilarityPeers = async ({
+  tenantId,
+  email,
+  phone,
+  positionTitle,
+  firstName = null,
+  lastName = null
+}) => {
   const peerFilters = { tenant_id: tenantId };
 
   const alphabetical = await userRepository.findMany(
@@ -168,8 +175,15 @@ const loadUserSimilarityPeers = async ({ tenantId, email, phone, positionTitle }
   const emailTerm = String(email || '').trim();
   const phoneTerm = normalizePhoneDigits(phone) || '';
   const positionTerm = String(positionTitle || '').trim();
+  const firstNameTerm = String(firstName || '').trim();
+  const lastNameTerm = String(lastName || '').trim();
+  const fullNameTerm = [firstNameTerm, lastNameTerm].filter(Boolean).join(' ').trim();
   const searchTerms = [
-    ...new Set([emailTerm, phoneTerm, positionTerm].filter((term) => term.length > 0))
+    ...new Set(
+      [emailTerm, phoneTerm, positionTerm, firstNameTerm, lastNameTerm, fullNameTerm].filter(
+        (term) => term.length > 0
+      )
+    )
   ];
 
   const searched = [];
@@ -180,7 +194,9 @@ const loadUserSimilarityPeers = async ({ tenantId, email, phone, positionTitle }
         OR: [
           { email: { contains: term } },
           { phone: { contains: term } },
-          { position_title: { contains: term } }
+          { position_title: { contains: term } },
+          { profile: { is: { first_name: { contains: term } } } },
+          { profile: { is: { last_name: { contains: term } } } }
         ]
       },
       0,
@@ -215,6 +231,10 @@ const assertUserUniqueness = async ({
   email,
   phone,
   positionTitle,
+  firstName = null,
+  middleName = null,
+  lastName = null,
+  facilityId = null,
   confirmSimilar = false,
   excludeUserId = null
 }) => {
@@ -227,13 +247,19 @@ const assertUserUniqueness = async ({
     tenantId: resolvedTenantId,
     email,
     phone,
-    positionTitle
+    positionTitle,
+    firstName,
+    lastName
   });
 
   const duplicateCheck = checkUserDuplicates({
     email,
     phone,
     positionTitle,
+    firstName,
+    middleName,
+    lastName,
+    facilityId,
     tenantId: resolvedTenantId,
     existing,
     excludeUserId
@@ -492,6 +518,10 @@ const createUser = async (data, userId, ipAddress) => {
       email: normalizedPayload.email,
       phone: normalizedPayload.phone,
       positionTitle: normalizedPayload.position_title,
+      firstName: normalizedPayload.profile?.first_name,
+      middleName: normalizedPayload.profile?.middle_name,
+      lastName: normalizedPayload.profile?.last_name,
+      facilityId: normalizedPayload.facility_id,
       confirmSimilar});
     const user = await userRepository.create(normalizedPayload);
 
@@ -546,6 +576,12 @@ const updateUser = async (id, data, userId, ipAddress) => {
       email: normalizedPayload.email ?? before.email,
       phone: normalizedPayload.phone ?? before.phone,
       positionTitle: normalizedPayload.position_title ?? before.position_title,
+      firstName:
+        normalizedPayload.profile?.first_name ?? before.profile?.first_name,
+      middleName:
+        normalizedPayload.profile?.middle_name ?? before.profile?.middle_name,
+      lastName: normalizedPayload.profile?.last_name ?? before.profile?.last_name,
+      facilityId: normalizedPayload.facility_id ?? before.facility_id,
       confirmSimilar,
       excludeUserId: resolvedUserId});
     const user = await userRepository.update(resolvedUserId, normalizedPayload);

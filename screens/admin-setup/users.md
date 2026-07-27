@@ -6,7 +6,7 @@
   - Location: Search-bar trailing action and empty-state primary action.
   - Condition: Shown when workspace `canWrite` is true and `showCreateAction` is enabled (default on this setup tab); enabled when the list is not loading and no mutation is in progress.
   - Immediate result: Opens `openAccessAdminCreateUserDialog` / `showUserMutationDialog` in **Create** mode with Organization + User details only (no Assigned roles / Direct permissions; those are managed from User Details). Fields stay visible and disable with tooltips until tenant/facility scope is ready.
-  - Similarity review: Before persisting, the flow always runs a scored duplicate/similarity review (`_reviewUserSimilarity` → `showUserSimilarityDialog`) against tenant-scoped peers on email, phone, and position title. Same-tenant exact email or phone digits hard-block create; softer near matches surface for review and can be overridden with **Create anyway** (`confirm_similar`). **Use existing** opens that user's details instead of creating; **Cancel** dismisses. Backend uniqueness (`errors.user.similar_exists` / `errors.user.*_exists_in_tenant`) is authoritative and reopens the review hydrated from the 409 match payload.
+  - Similarity review: Before persisting, the flow always runs a scored duplicate/similarity review (`_reviewUserSimilarity` → `showUserSimilarityDialog`) against tenant-scoped peers on first/last/full name (including swapped order, initials, and email-local vs name), email, phone (national-number / suffix aware), position title (hospital-role aliases), and facility affinity. Same-tenant exact email or phone digits hard-block create; softer near matches surface for review and can be overridden with **Create anyway** (`confirm_similar`). **Use existing** opens that user's details instead of creating; **Cancel** dismisses. Backend uniqueness (`errors.user.similar_exists` / `errors.user.*_exists_in_tenant`) is authoritative and reopens the review hydrated from the 409 match payload.
   - Details handoff: On successful create (or **Use existing**), the users list is covered immediately and User Details opens for the resulting user (`_openUserDetail(item, coverListImmediately: true)`) with a silent background list refresh — no list flash. Roles and direct permissions are assigned afterward from User Details.
 
 - **Row select**
@@ -15,9 +15,9 @@
   - Immediate result: Loads user detail by UUID (`mutationId`), then opens `_AccessAdminUserDetailDialog` (edit/delete hidden when the user is soft-deleted).
 
 - **Edit**
-  - Location: User row actions (active users only).
+  - Location: User row actions (active users only) and User Details edit action.
   - Condition: The actions column is shown when workspace `canWrite` is true; hidden for soft-deleted users; enabled when the list is not loading and no mutation is in progress.
-  - Immediate result: Opens `openAccessAdminEditUserDialog` / `showUserMutationDialog` in **Edit** mode with the user’s detail preloaded.
+  - Immediate result: Opens `openAccessAdminEditUserDialog` / `showUserMutationDialog` in **Edit** mode with the same Organization + User details form as create (no Assigned roles / Direct permissions; those stay on User Details). Before persisting, the flow always runs the same scored similarity review as create against tenant-scoped peers, excluding the user being edited (`excludeUserId`). Exact contact conflicts hard-block; soft matches can be overridden with **Create anyway** / continue (`confirm_similar`); **Use existing** opens that other user's details; **Cancel** dismisses. On success (or Use existing), details open with `coverListImmediately: true` and a silent list refresh.
 
 - **Delete**
   - Location: User row actions (active users only).

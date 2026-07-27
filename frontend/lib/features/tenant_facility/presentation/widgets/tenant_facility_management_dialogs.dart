@@ -2622,14 +2622,14 @@ class _FacilityDetailsDialogState
     if (detail == null) {
       return;
     }
-    await openAccessAdminEditUserDialog(
+    final AccessAdminItem? updated = await openAccessAdminEditUserDialog(
       context,
       ref,
       _usersWorkspaceState(),
       user: detail.item,
       detail: detail,
     );
-    if (!mounted) {
+    if (!mounted || updated == null) {
       return;
     }
     _mutated = true;

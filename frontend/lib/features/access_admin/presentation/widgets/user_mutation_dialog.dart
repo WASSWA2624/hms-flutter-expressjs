@@ -6,12 +6,10 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
-import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -41,9 +39,6 @@ Future<bool?> showUserMutationDialog({
   required UserMutationSubmitHandler onSubmit,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final AccessAdminRepository repository = ref.read(
-    accessAdminRepositoryProvider,
-  );
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
   final bool isCrossTenantAdmin = accessPolicy.canCreateTenant();
   final String? sessionTenantId = ref
@@ -84,27 +79,12 @@ Future<bool?> showUserMutationDialog({
       state.query.facilityId ??
       (isCrossTenantAdmin ? null : sessionFacilityId);
 
-  final Set<String> selectedRoleIds =
-      initialUser?.roles.map((AccessAdminRoleRef role) => role.id).toSet() ??
-      <String>{};
-  final Set<String> selectedPermissionIds =
-      initialDetail?.directPermissions
-          .map((AccessAdminPermissionRef permission) => permission.id)
-          .toSet() ??
-      initialUser?.permissions
-          .map((AccessAdminPermissionRef permission) => permission.id)
-          .toSet() ??
-      <String>{};
-
   final bool showTenantPicker =
       isCrossTenantAdmin || (selectedTenantId ?? '').isEmpty;
 
   List<AccessAdminLookupOption> tenantOptions =
       const <AccessAdminLookupOption>[];
   List<AccessAdminLookupOption> facilityOptions =
-      const <AccessAdminLookupOption>[];
-  List<AccessAdminLookupOption> roleLookups = const <AccessAdminLookupOption>[];
-  List<AccessAdminLookupOption> permissionLookups =
       const <AccessAdminLookupOption>[];
 
   bool isLoadingTenants = false;
@@ -114,11 +94,6 @@ Future<bool?> showUserMutationDialog({
   bool isLoadingFacilities = false;
   bool facilityLoadAttempted = (selectedTenantId ?? '').isEmpty;
   bool scheduledInitialFacilityLoad = false;
-
-  bool isLoadingReferenceData = false;
-  bool referenceLoadAttempted = (selectedTenantId ?? '').isEmpty;
-  bool scheduledInitialReferenceLoad = false;
-  AppFailure? referenceLoadFailure;
 
   Future<void> reloadTenantOptions(StateSetter setState) async {
     setState(() {
@@ -178,86 +153,6 @@ Future<bool?> showUserMutationDialog({
     });
   }
 
-  Future<void> reloadReferenceData(StateSetter setState) async {
-    final String? tenantId = selectedTenantId;
-    if ((tenantId ?? '').isEmpty) {
-      return;
-    }
-
-    setState(() {
-      isLoadingReferenceData = true;
-      roleLookups = const <AccessAdminLookupOption>[];
-      permissionLookups = const <AccessAdminLookupOption>[];
-      referenceLoadFailure = null;
-    });
-
-    final Result<AccessAdminLookups> result = await repository.getReferenceData(
-      tenantId: tenantId,
-      facilityId: selectedFacilityId,
-      include: const <String>['roles', 'permissions', 'facilities'],
-    );
-
-    setState(() {
-      isLoadingReferenceData = false;
-      referenceLoadAttempted = true;
-      result.when(
-        success: (AccessAdminLookups lookups) {
-          roleLookups = lookups.roles;
-          permissionLookups = lookups.permissions;
-          referenceLoadFailure = null;
-        },
-        failure: (AppFailure failure) {
-          roleLookups = const <AccessAdminLookupOption>[];
-          permissionLookups = const <AccessAdminLookupOption>[];
-          referenceLoadFailure = failure;
-        },
-      );
-    });
-  }
-
-  List<AppRoleAssignmentOption> buildRoleOptions() {
-    return roleLookups
-        .map(
-          (AccessAdminLookupOption option) => AppRoleAssignmentOption(
-            id: option.id,
-            label: option.label,
-            description: option.meta,
-            permissionCount: option.permissionCount,
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  Future<Set<String>> loadRolePermissions(String roleId) async {
-    final Result<List<AccessAdminRolePermissionAssignment>> result =
-        await repository.listRolePermissions(roleId);
-    return result.when(
-      success: (List<AccessAdminRolePermissionAssignment> assignments) {
-        return assignments
-            .map(
-              (AccessAdminRolePermissionAssignment assignment) =>
-                  (assignment.permissionName ?? '').trim(),
-            )
-            .where((String name) => name.isNotEmpty)
-            .toSet();
-      },
-      failure: (_) => <String>{},
-    );
-  }
-
-  List<AppPermissionAssignmentOption> buildPermissionOptions() {
-    return permissionLookups
-        .map(
-          (AccessAdminLookupOption option) => AppPermissionAssignmentOption(
-            id: option.id,
-            code: option.label,
-            label: l10n.permissionCatalogLabelForCode(option.label),
-            description: option.label,
-          ),
-        )
-        .toList(growable: false);
-  }
-
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(
@@ -275,7 +170,6 @@ Future<bool?> showUserMutationDialog({
     submitIcon: Icons.save_outlined,
     cancelIcon: Icons.close_outlined,
     maxWidth: 720,
-    scrollable: true,
     buildFields:
         (
           BuildContext context,
@@ -304,10 +198,6 @@ Future<bool?> showUserMutationDialog({
                   : (isSubmitting
                         ? null
                         : l10n.accessAdminCreateUserSelectScopeTooltip);
-              final List<AppRoleAssignmentOption> roleOptions =
-                  buildRoleOptions();
-              final List<AppPermissionAssignmentOption> permissionOptions =
-                  buildPermissionOptions();
 
               if (showTenantPicker &&
                   !tenantLoadAttempted &&
@@ -325,17 +215,8 @@ Future<bool?> showUserMutationDialog({
                 unawaited(reloadFacilityOptions(setState));
               }
 
-              // Roles/permissions are managed from User Details, so create mode
-              // never loads the roles/permissions catalog.
-              if (mode == UserMutationMode.edit &&
-                  scopeReady &&
-                  !referenceLoadAttempted &&
-                  !isLoadingReferenceData &&
-                  !scheduledInitialReferenceLoad) {
-                scheduledInitialReferenceLoad = true;
-                unawaited(reloadReferenceData(setState));
-              }
-
+              // Roles/permissions are managed from User Details, so create/edit
+              // never loads the roles/permissions catalog in this dialog.
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
@@ -398,10 +279,6 @@ Future<bool?> showUserMutationDialog({
                                       selectedFacilityId = null;
                                       facilityLoadAttempted = false;
                                       scheduledInitialFacilityLoad = false;
-                                      referenceLoadAttempted = false;
-                                      scheduledInitialReferenceLoad = false;
-                                      selectedRoleIds.clear();
-                                      selectedPermissionIds.clear();
                                     });
                                   },
                                   validator: (String? value) =>
@@ -433,10 +310,6 @@ Future<bool?> showUserMutationDialog({
                                   ? (String? value) {
                                       setState(() {
                                         selectedFacilityId = value;
-                                        referenceLoadAttempted = false;
-                                        scheduledInitialReferenceLoad = false;
-                                        selectedRoleIds.clear();
-                                        selectedPermissionIds.clear();
                                       });
                                     }
                                   : null,
@@ -471,10 +344,6 @@ Future<bool?> showUserMutationDialog({
                                 ? (String? value) {
                                     setState(() {
                                       selectedFacilityId = value;
-                                      referenceLoadAttempted = false;
-                                      scheduledInitialReferenceLoad = false;
-                                      selectedRoleIds.clear();
-                                      selectedPermissionIds.clear();
                                     });
                                   }
                                 : null,
@@ -609,147 +478,28 @@ Future<bool?> showUserMutationDialog({
                           controller: passwordController,
                           enabled: fieldsEnabled,
                           labelText: mode == UserMutationMode.create
-                              ? l10n.accessAdminPasswordLabel
+                              ? l10n.accessAdminCreatePasswordOptionalLabel
                               : l10n.accessAdminPasswordOptionalLabel,
                           obscureText: true,
                           enableObscureTextToggle: true,
                           showObscuredTextLabel: l10n.authShowPasswordLabel,
                           hideObscuredTextLabel: l10n.authHidePasswordLabel,
                           tooltip: mode == UserMutationMode.create
-                              ? l10n.accessAdminPasswordHint
+                              ? l10n.accessAdminCreatePasswordOptionalHint
                               : l10n.accessAdminPasswordOptionalHint,
-                          validator: mode == UserMutationMode.create
-                              ? (String? value) => (value ?? '').length >= 8
-                                    ? null
-                                    : l10n.accessAdminPasswordHint
-                              : (String? value) {
-                                  final String normalized = (value ?? '')
-                                      .trim();
-                                  if (normalized.isEmpty) {
-                                    return null;
-                                  }
-                                  return normalized.length >= 8
-                                      ? null
-                                      : l10n.accessAdminPasswordHint;
-                                },
+                          validator: (String? value) {
+                            final String normalized = (value ?? '').trim();
+                            if (normalized.isEmpty) {
+                              return null;
+                            }
+                            return normalized.length >= 8
+                                ? null
+                                : l10n.accessAdminPasswordHint;
+                          },
                         ),
                       ),
                     ],
                   ),
-                  if (mode == UserMutationMode.edit) ...<Widget>[
-                    SizedBox(height: Theme.of(context).spacing.md),
-                    AppFormSection(
-                      density: AppFormSectionDensity.compact,
-                      framed: false,
-                      title: l10n.hrAccessAssignedRolesLabel,
-                      children: <Widget>[
-                        if (roleOptions.isNotEmpty)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: _UserMutationSelectionChip(
-                              selectedCount: selectedRoleIds.length,
-                              totalCount: roleOptions.length,
-                            ),
-                          ),
-                        if (isLoadingReferenceData)
-                          _UserMutationLoadingIndicator(
-                            label:
-                                l10n.accessAdminCreateRoleLoadingPermissions,
-                          )
-                        else if (referenceLoadFailure != null)
-                          AppFormInformationBanner.failure(
-                            context: context,
-                            failure: referenceLoadFailure!,
-                            children: <Widget>[
-                              AppButton.secondary(
-                                label: l10n.commonRetryActionLabel,
-                                leadingIcon: Icons.refresh,
-                                enabled: !isSubmitting,
-                                onPressed: () {
-                                  setState(() {
-                                    referenceLoadAttempted = false;
-                                    scheduledInitialReferenceLoad = false;
-                                    referenceLoadFailure = null;
-                                  });
-                                  unawaited(reloadReferenceData(setState));
-                                },
-                              ),
-                            ],
-                          )
-                        else if (roleOptions.isEmpty)
-                          AppFormInformationBanner(
-                            title: l10n.accessAdminCreateUserNoRolesTitle,
-                            message: l10n.accessAdminCreateUserNoRolesMessage,
-                            variant: AppFormInformationVariant.warning,
-                            icon: Icons.groups_outlined,
-                          )
-                        else
-                          IgnorePointer(
-                            ignoring: !fieldsEnabled,
-                            child: Opacity(
-                              opacity: fieldsEnabled ? 1 : 0.55,
-                              child: AppRoleAssignmentPicker(
-                                roles: roleOptions,
-                                selectedRoleIds: selectedRoleIds,
-                                loadRolePermissions: loadRolePermissions,
-                                onSelectionChanged: (Set<String> next) {
-                                  setState(() {
-                                    selectedRoleIds
-                                      ..clear()
-                                      ..addAll(next);
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: Theme.of(context).spacing.md),
-                    AppFormSection(
-                      density: AppFormSectionDensity.compact,
-                      framed: false,
-                      title: l10n.hrAccessDirectPermissionsLabel,
-                      children: <Widget>[
-                        if (permissionOptions.isNotEmpty)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: _UserMutationSelectionChip(
-                              selectedCount: selectedPermissionIds.length,
-                              totalCount: permissionOptions.length,
-                            ),
-                          ),
-                        if (isLoadingReferenceData)
-                          _UserMutationLoadingIndicator(
-                            label:
-                                l10n.accessAdminCreateRoleLoadingPermissions,
-                          )
-                        else if (permissionOptions.isEmpty)
-                          AppFormInformationBanner(
-                            title: l10n
-                                .accessAdminPermissionCatalogUnavailableTitle,
-                            message: l10n
-                                .accessAdminPermissionCatalogUnavailableMessage,
-                            variant: AppFormInformationVariant.warning,
-                            icon: Icons.security_outlined,
-                          )
-                        else
-                          AppPermissionAssignmentPicker(
-                            permissions: permissionOptions,
-                            selectedPermissionIds: selectedPermissionIds,
-                            enabled: fieldsEnabled,
-                            onSelectionChanged: fieldsEnabled
-                                ? (Set<String> next) {
-                                    setState(() {
-                                      selectedPermissionIds
-                                        ..clear()
-                                        ..addAll(next);
-                                    });
-                                  }
-                                : (_) {},
-                          ),
-                      ],
-                    ),
-                  ],
                 ],
               );
             },
@@ -762,25 +512,53 @@ Future<bool?> showUserMutationDialog({
           (resolvedFacilityId ?? '').isEmpty) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
-      if (mode == UserMutationMode.create &&
-          passwordController.text.trim().length < 8) {
-        return Future<AppFailure?>.value(AppFailure.validation());
+
+      String? labelFor(
+        List<AccessAdminLookupOption> options,
+        String? id, {
+        List<AccessAdminLookupOption> workspaceOptions =
+            const <AccessAdminLookupOption>[],
+        String? fallback,
+      }) {
+        if ((id ?? '').isEmpty) {
+          return fallback;
+        }
+        for (final AccessAdminLookupOption option in <AccessAdminLookupOption>[
+          ...options,
+          ...workspaceOptions,
+        ]) {
+          if (option.id == id) {
+            final String label = option.label.trim();
+            if (label.isNotEmpty) {
+              return label;
+            }
+          }
+        }
+        return fallback;
       }
 
       final String passwordValue = passwordController.text.trim();
-      final bool isCreate = mode == UserMutationMode.create;
-      // Create captures Organization + User details only; roles/permissions are
-      // managed from User Details after creation.
-      final List<String> submittedPermissionIds = isCreate
-          ? const <String>[]
-          : selectedPermissionIds.toList(growable: false);
-      final List<String> submittedRoleIds = isCreate
-          ? const <String>[]
-          : selectedRoleIds.toList(growable: false);
+      if (passwordValue.isNotEmpty && passwordValue.length < 8) {
+        return Future<AppFailure?>.value(AppFailure.validation());
+      }
+      // Create/edit capture Organization + User details only; roles/permissions
+      // are managed from User Details after save.
       return onSubmit(
         AccessAdminUserDraft(
           tenantId: resolvedTenantId!,
           facilityId: resolvedFacilityId,
+          tenantName: labelFor(
+            tenantOptions,
+            resolvedTenantId,
+            workspaceOptions: state.data.lookups.tenants,
+            fallback: initialUser?.tenantName,
+          ),
+          facilityName: labelFor(
+            facilityOptions,
+            resolvedFacilityId,
+            workspaceOptions: state.data.lookups.facilities,
+            fallback: initialUser?.facilityName,
+          ),
           firstName: firstNameController.text.trim(),
           lastName: lastNameController.text.trim().isEmpty
               ? null
@@ -792,9 +570,9 @@ Future<bool?> showUserMutationDialog({
           positionTitle: titleController.text.trim(),
           password: passwordValue.isEmpty ? null : passwordValue,
           status: status,
-          permissionIds: submittedPermissionIds,
+          permissionIds: const <String>[],
         ),
-        submittedRoleIds,
+        const <String>[],
       );
     },
   );
@@ -866,50 +644,6 @@ class _UserMutationLoadingIndicator extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _UserMutationSelectionChip extends StatelessWidget {
-  const _UserMutationSelectionChip({
-    required this.selectedCount,
-    required this.totalCount,
-  });
-
-  final int selectedCount;
-  final int totalCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
-    final bool hasSelection = selectedCount > 0;
-
-    return Chip(
-      avatar: Icon(
-        hasSelection
-            ? Icons.check_circle_outline
-            : Icons.radio_button_unchecked,
-        size: 16,
-        color: hasSelection ? colors.primary : colors.onSurfaceVariant,
-      ),
-      label: Text(
-        context.l10n.hrPermissionAssignmentSelectedCount(
-          selectedCount,
-          totalCount,
-        ),
-        style: theme.textTheme.labelSmall,
-      ),
-      backgroundColor: hasSelection
-          ? colors.primaryContainer
-          : colors.surfaceContainerHighest,
-      side: BorderSide(
-        color: hasSelection
-            ? colors.primary.withValues(alpha: 0.24)
-            : colors.outlineVariant,
-      ),
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
     );
   }
 }

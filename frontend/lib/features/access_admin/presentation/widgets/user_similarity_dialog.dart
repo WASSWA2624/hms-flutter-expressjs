@@ -210,14 +210,40 @@ class _ProposedUserCard extends StatelessWidget {
         : statusColors.success;
 
     final List<(String, String)> facts = <(String, String)>[
+      if ((proposed.firstName ?? '').trim().isNotEmpty ||
+          (proposed.lastName ?? '').trim().isNotEmpty)
+        (
+          l10n.accessAdminSimilarUserNameLabel,
+          _display(
+            <String?>[proposed.firstName, proposed.lastName]
+                .whereType<String>()
+                .map((String value) => value.trim())
+                .where((String value) => value.isNotEmpty)
+                .join(' '),
+            l10n,
+          ),
+        ),
       (l10n.accessAdminEmailLabel, _display(proposed.email, l10n)),
       if ((proposed.phone ?? '').trim().isNotEmpty)
         (l10n.accessAdminPhoneLabel, _display(proposed.phone, l10n)),
       (l10n.accessAdminPositionLabel, _display(proposed.positionTitle, l10n)),
-      (
-        l10n.accessAdminSimilarUserScopeLabel,
-        _display(_proposedScopeLabel(proposed, l10n), l10n),
-      ),
+      if ((proposed.tenantName ?? '').trim().isNotEmpty)
+        (
+          l10n.tenantFacilitySelectTenantLabel,
+          _display(proposed.tenantName, l10n),
+        ),
+      if ((proposed.facilityName ?? '').trim().isNotEmpty)
+        (
+          l10n.accessAdminColumnFacility,
+          _display(proposed.facilityName, l10n),
+        ),
+      if ((proposed.tenantName ?? '').trim().isEmpty &&
+          (proposed.facilityName ?? '').trim().isEmpty &&
+          _proposedScopeLabel(proposed, l10n).trim().isNotEmpty)
+        (
+          l10n.accessAdminCreateRoleScopeSectionTitle,
+          _display(_proposedScopeLabel(proposed, l10n), l10n),
+        ),
     ];
 
     return AppSectionPanel(
@@ -741,6 +767,11 @@ String _fieldLabel(AppLocalizations l10n, String field) {
     'email' => l10n.accessAdminEmailLabel,
     'phone' => l10n.accessAdminPhoneLabel,
     'position_title' => l10n.accessAdminPositionLabel,
+    'first_name' => l10n.accessAdminFirstNameLabel,
+    'last_name' => l10n.accessAdminLastNameLabel,
+    'full_name' => l10n.accessAdminSimilarUserNameLabel,
+    'facility' => l10n.accessAdminColumnFacility,
+    'display_id' => l10n.hrUserIdLabel,
     _ => AppDisplay.apiLabel(field),
   };
 }

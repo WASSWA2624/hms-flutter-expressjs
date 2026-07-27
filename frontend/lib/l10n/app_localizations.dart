@@ -39532,6 +39532,18 @@ abstract class AppLocalizations {
   /// **'Password'**
   String get accessAdminPasswordLabel;
 
+  /// Access admin create-user password field label when password may be auto-generated.
+  ///
+  /// In en, this message translates to:
+  /// **'Password (optional)'**
+  String get accessAdminCreatePasswordOptionalLabel;
+
+  /// Tooltip for optional create-user password; blank triggers backend auto-generation.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to auto-generate a secure password.'**
+  String get accessAdminCreatePasswordOptionalHint;
+
   /// Access admin password validation hint.
   ///
   /// In en, this message translates to:
@@ -39723,6 +39735,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Organization'**
   String get accessAdminSimilarUserScopeLabel;
+
+  /// Label for the proposed or compared person name in user similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get accessAdminSimilarUserNameLabel;
 
   /// Badge label when an exact user uniqueness conflict blocks create-anyway.
   ///

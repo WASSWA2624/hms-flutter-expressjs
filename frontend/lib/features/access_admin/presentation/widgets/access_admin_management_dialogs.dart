@@ -517,17 +517,20 @@ class _ManageUsersPanelState
     }
 
     if (!mounted) return;
-    final bool? saved = await openAccessAdminEditUserDialog(
+    final AccessAdminItem? updatedOrExisting =
+        await openAccessAdminEditUserDialog(
       context,
       ref,
       state,
       user: resolvedDetail.item,
       detail: resolvedDetail,
     );
-    if (saved == true && mounted) {
+    if (updatedOrExisting != null && mounted) {
       mutated = true;
-      await reload(resetPage: false, silent: true);
-      // updateUserWithRoles already schedules a deferred session rehydrate.
+      // Mirror create: open details immediately; refresh list in the background.
+      unawaited(reload(resetPage: true, silent: true));
+      await _openUserDetail(updatedOrExisting, coverListImmediately: true);
+      // updateUserReviewed already schedules a deferred session rehydrate.
     }
   }
 

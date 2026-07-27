@@ -27412,6 +27412,14 @@
   "@accessAdminPasswordLabel": {
     "description": "Access admin password field label."
   },
+  "accessAdminCreatePasswordOptionalLabel": "Password (optional)",
+  "@accessAdminCreatePasswordOptionalLabel": {
+    "description": "Access admin create-user password field label when password may be auto-generated."
+  },
+  "accessAdminCreatePasswordOptionalHint": "Leave blank to auto-generate a secure password.",
+  "@accessAdminCreatePasswordOptionalHint": {
+    "description": "Tooltip for optional create-user password; blank triggers backend auto-generation."
+  },
   "accessAdminPasswordHint": "Password must be at least 8 characters.",
   "@accessAdminPasswordHint": {
     "description": "Access admin password validation hint."
@@ -27549,6 +27557,10 @@
   "accessAdminSimilarUserScopeLabel": "Organization",
   "@accessAdminSimilarUserScopeLabel": {
     "description": "Label for the organization / facility scope of a user in similarity review."
+  },
+  "accessAdminSimilarUserNameLabel": "Name",
+  "@accessAdminSimilarUserNameLabel": {
+    "description": "Label for the proposed or compared person name in user similarity review."
   },
   "accessAdminSimilarUserExactConflictLabel": "Exact conflict",
   "@accessAdminSimilarUserExactConflictLabel": {

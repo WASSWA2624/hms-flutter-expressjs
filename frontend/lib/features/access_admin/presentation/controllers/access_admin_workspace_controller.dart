@@ -346,6 +346,78 @@ final class AccessAdminWorkspaceController
     );
   }
 
+  Future<Result<AccessAdminItem>> updateUserReviewed(
+    String userId,
+    AccessAdminUserDraft draft,
+  ) async {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current != null) {
+      _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    }
+
+    final Result<void> updateResult = await _repository.updateUser(
+      userId,
+      draft,
+    );
+    return updateResult.when(
+      success: (_) async {
+        await _refreshWorkspace(preferredSelectedId: userId);
+        final AccessAdminItem updated = _updatedUserItem(userId, draft);
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, isRefreshing: false));
+        }
+        await _flushPendingRefresh();
+        _scheduleSessionRehydrate();
+        return Result<AccessAdminItem>.success(updated);
+      },
+      failure: (AppFailure failure) async {
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              isSaving: false,
+              isRefreshing: false,
+              lastFailure: failure,
+            ),
+          );
+        }
+        return Result<AccessAdminItem>.failure(failure);
+      },
+    );
+  }
+
+  AccessAdminItem _updatedUserItem(String userId, AccessAdminUserDraft draft) {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current != null &&
+        current.query.resource == AccessAdminResource.users) {
+      for (final AccessAdminItem item in current.data.page.items) {
+        if (item.id == userId ||
+            item.mutationId == userId ||
+            item.effectiveDisplayId == userId) {
+          return item.copyWith(
+            email: draft.email,
+            phone: draft.phone,
+            positionTitle: draft.positionTitle,
+            firstName: draft.firstName,
+            lastName: draft.lastName,
+            profileName: <String?>[draft.firstName, draft.lastName]
+                .whereType<String>()
+                .map((String value) => value.trim())
+                .where((String value) => value.isNotEmpty)
+                .join(' '),
+            status: draft.status,
+            tenantId: draft.tenantId,
+            facilityId: draft.facilityId,
+            tenantName: draft.tenantName ?? item.tenantName,
+            facilityName: draft.facilityName ?? item.facilityName,
+          );
+        }
+      }
+    }
+    return _createdUserItem(userId, draft);
+  }
+
   Future<AppFailure?> updateUserWithRoles(
     String userId,
     AccessAdminUserDraft draft,

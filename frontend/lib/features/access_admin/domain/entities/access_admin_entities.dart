@@ -679,6 +679,8 @@ final class AccessAdminUserDraft {
     required this.firstName,
     this.lastName,
     this.facilityId,
+    this.tenantName,
+    this.facilityName,
     this.phone,
     this.password,
     this.status = 'ACTIVE',
@@ -688,6 +690,10 @@ final class AccessAdminUserDraft {
 
   final String tenantId;
   final String? facilityId;
+
+  /// Display-only labels for similarity review; not sent to the API.
+  final String? tenantName;
+  final String? facilityName;
   final String email;
   final String firstName;
   final String? lastName;
@@ -708,12 +714,16 @@ final class AccessAdminUserDraft {
     String? lastName,
     String? positionTitle,
     String? facilityId,
+    String? tenantName,
+    String? facilityName,
     String? phone,
     String? password,
     String? status,
     List<String>? permissionIds,
     bool? confirmSimilar,
     bool clearFacilityId = false,
+    bool clearTenantName = false,
+    bool clearFacilityName = false,
     bool clearLastName = false,
     bool clearPhone = false,
     bool clearPassword = false,
@@ -725,6 +735,10 @@ final class AccessAdminUserDraft {
       lastName: clearLastName ? null : (lastName ?? this.lastName),
       positionTitle: positionTitle ?? this.positionTitle,
       facilityId: clearFacilityId ? null : (facilityId ?? this.facilityId),
+      tenantName: clearTenantName ? null : (tenantName ?? this.tenantName),
+      facilityName: clearFacilityName
+          ? null
+          : (facilityName ?? this.facilityName),
       phone: clearPhone ? null : (phone ?? this.phone),
       password: clearPassword ? null : (password ?? this.password),
       status: status ?? this.status,
