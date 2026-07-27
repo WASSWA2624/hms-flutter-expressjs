@@ -245,6 +245,35 @@ void main() {
       isTrue,
     );
     expect(
+      managementSource.contains('_rolePermanentDeleteNameMatches'),
+      isTrue,
+      reason: 'Type-to-confirm must accept title and Deleted label variants',
+    );
+    expect(
+      managementSource.contains('_isSameAccessAdminRole'),
+      isTrue,
+      reason: 'Permanent delete must remove by UUID, not display id',
+    );
+    expect(
+      managementSource.contains('_scheduleRoleListSync'),
+      isTrue,
+      reason: 'Lifecycle actions must not block on awaited list reload',
+    );
+    expect(
+      managementSource.contains('_runRoleLifecycleMutation'),
+      isTrue,
+    );
+    expect(
+      managementSource.contains('LinearProgressIndicator'),
+      isTrue,
+      reason: 'Role lifecycle mutations must show a list progress indicator',
+    );
+    expect(
+      managementSource.contains('isLoading: rowBusy'),
+      isTrue,
+      reason: 'Row actions must surface loading while the mutation runs',
+    );
+    expect(
       managementSource.contains('spacing: actionGap'),
       isTrue,
       reason: 'Edit/Delete and Restore/permanent actions must not sit flush',

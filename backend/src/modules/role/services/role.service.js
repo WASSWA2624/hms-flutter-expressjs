@@ -189,7 +189,8 @@ const resolveRoleId = async (identifier, { includeDeleted = false } = {}) =>
   resolveEntityId({
     model: 'role',
     identifier,
-    where: includeDeleted ? {} : { deleted_at: null }
+    where: includeDeleted ? {} : { deleted_at: null },
+    includeDeleted
   });
 
 const normalizeCreateRolePayload = async (data = {}) => {

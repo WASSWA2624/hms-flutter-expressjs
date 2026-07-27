@@ -60,7 +60,12 @@ const resolveIdentifierForPayload = async ({
   throw new HttpError('errors.validation.invalid', 400, [{ field }]);
 };
 
-const resolveEntityId = async ({ model, identifier, where = {} }) => {
+const resolveEntityId = async ({
+  model,
+  identifier,
+  where = {},
+  includeDeleted = false,
+}) => {
   const normalized = sanitizeIdentifier(identifier);
   if (!normalized) return normalized;
 
@@ -68,6 +73,7 @@ const resolveEntityId = async ({ model, identifier, where = {} }) => {
     model,
     identifier: normalized,
     where,
+    includeDeleted,
   });
 
   return resolved || normalized;
