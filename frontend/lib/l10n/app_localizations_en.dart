@@ -21039,6 +21039,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminPermissionDetailsTitle => 'Permission details';
 
   @override
+  String get accessAdminPermissionReadOnlyBadge => 'Read-only';
+
+  @override
   String get accessAdminPermissionCodeColumnLabel => 'Permission code';
 
   @override

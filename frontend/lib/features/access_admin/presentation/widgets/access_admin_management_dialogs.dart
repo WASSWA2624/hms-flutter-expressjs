@@ -1506,27 +1506,21 @@ class _AccessAdminPermissionDetailDialog extends StatelessWidget {
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _PermissionDetailRow(
-            label: l10n.accessAdminPermissionIdColumnLabel,
-            value: permission.effectiveDisplayId,
+          _PermissionDetailSummaryCard(
+            permission: permission,
+            code: code,
           ),
-          SizedBox(height: theme.spacing.sm),
-          _PermissionDetailRow(
-            label: l10n.accessAdminPermissionNameColumnLabel,
-            value: permission.title,
-          ),
-          if (code != null) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            _PermissionDetailRow(
-              label: l10n.accessAdminPermissionCodeColumnLabel,
-              value: code,
-            ),
-          ],
           if (description != '—') ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            _PermissionDetailRow(
-              label: l10n.accessAdminPermissionDescriptionColumnLabel,
-              value: description,
+            SizedBox(height: theme.spacing.md),
+            AppSectionPanel(
+              title: l10n.accessAdminPermissionDescriptionColumnLabel,
+              leadingIcon: Icons.notes_outlined,
+              children: <Widget>[
+                Text(
+                  description,
+                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
+                ),
+              ],
             ),
           ],
         ],
@@ -1542,27 +1536,111 @@ class _AccessAdminPermissionDetailDialog extends StatelessWidget {
   }
 }
 
-class _PermissionDetailRow extends StatelessWidget {
-  const _PermissionDetailRow({required this.label, required this.value});
+class _PermissionDetailSummaryCard extends StatelessWidget {
+  const _PermissionDetailSummaryCard({
+    required this.permission,
+    required this.code,
+  });
 
-  final String label;
-  final String value;
+  final AccessAdminItem permission;
+  final String? code;
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+    final ColorScheme colors = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.key_outlined,
+                    color: colors.onPrimaryContainer,
+                  ),
+                ),
+                SizedBox(width: theme.spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        permission.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (code != null) ...<Widget>[
+                        SizedBox(height: theme.spacing.xs),
+                        SelectableText(
+                          code!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontFamily: 'monospace',
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Chip(
+                  avatar: Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    l10n.accessAdminPermissionReadOnlyBadge,
+                    style: theme.textTheme.labelSmall,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: colors.surface,
+                  side: BorderSide(color: colors.outlineVariant),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.md),
+            Wrap(
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.sm,
+              children: <Widget>[
+                _AccessAdminDetailMetaChip(
+                  icon: Icons.tag_outlined,
+                  label: l10n.accessAdminPermissionIdColumnLabel,
+                  value: permission.effectiveDisplayId,
+                ),
+                if (code != null)
+                  _AccessAdminDetailMetaChip(
+                    icon: Icons.code_outlined,
+                    label: l10n.accessAdminPermissionCodeColumnLabel,
+                    value: code!,
+                  ),
+              ],
+            ),
+          ],
         ),
-        SizedBox(height: theme.spacing.xs),
-        Text(value, style: theme.textTheme.bodyLarge),
-      ],
+      ),
     );
   }
 }

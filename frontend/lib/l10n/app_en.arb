@@ -27021,6 +27021,10 @@
   "@accessAdminPermissionDetailsTitle": {
     "description": "Title for the read-only permission details dialog."
   },
+  "accessAdminPermissionReadOnlyBadge": "Read-only",
+  "@accessAdminPermissionReadOnlyBadge": {
+    "description": "Badge on permission details indicating the catalog entry cannot be edited."
+  },
   "accessAdminPermissionCodeColumnLabel": "Permission code",
   "@accessAdminPermissionCodeColumnLabel": {
     "description": "Permission code column header on the permissions workspace table."

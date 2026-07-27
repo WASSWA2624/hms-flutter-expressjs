@@ -43,8 +43,9 @@ void main() {
     expect(find.text('PERMISSION DETAILS'), findsOneWidget);
     expect(find.text('PERM-001'), findsOneWidget);
     expect(find.text('Patient — Read'), findsOneWidget);
-    expect(find.text('patient:read'), findsOneWidget);
+    expect(find.text('patient:read'), findsAtLeastNWidgets(1));
     expect(find.text('Allows read access within patient.'), findsOneWidget);
+    expect(find.text('Read-only'), findsOneWidget);
 
     final AppLocalizations l10n = AppLocalizations.of(
       tester.element(find.text('PERMISSION DETAILS')),
@@ -89,6 +90,6 @@ void main() {
 
     expect(find.text('View patient records from the registry.'), findsOneWidget);
     expect(find.text('Allows read access within patient.'), findsNothing);
-    expect(find.text('patient:read'), findsOneWidget);
+    expect(find.text('patient:read'), findsAtLeastNWidgets(1));
   });
 }

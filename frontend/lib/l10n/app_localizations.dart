@@ -38962,6 +38962,12 @@ abstract class AppLocalizations {
   /// **'Permission details'**
   String get accessAdminPermissionDetailsTitle;
 
+  /// Badge on permission details indicating the catalog entry cannot be edited.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get accessAdminPermissionReadOnlyBadge;
+
   /// Permission code column header on the permissions workspace table.
   ///
   /// In en, this message translates to:
