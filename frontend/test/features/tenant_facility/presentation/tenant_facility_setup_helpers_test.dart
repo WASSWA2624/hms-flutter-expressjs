@@ -484,6 +484,86 @@ void main() {
     });
   });
 
+  group('tenantFacilityDepartmentsListScope', () {
+    test('maps elevated, tenant, and facility admins to list scopes', () {
+      final AppAccessPolicy platform = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 't'),
+          user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+        ),
+      );
+      final AppAccessPolicy tenant = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 't'),
+          user: const AuthUserProfile(
+            roles: <String>['TENANT_ADMIN'],
+            tenantId: 'TEN0001',
+          ),
+        ),
+      );
+      final AppAccessPolicy facility = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 't'),
+          user: const AuthUserProfile(
+            roles: <String>['FACILITY_ADMIN'],
+            tenantId: 'TEN0001',
+            facilityId: 'FAC0001',
+          ),
+        ),
+      );
+
+      expect(
+        tenantFacilityDepartmentsListScope(platform),
+        TenantFacilityDepartmentsListScope.platform,
+      );
+      expect(
+        tenantFacilityDepartmentsListScope(tenant),
+        TenantFacilityDepartmentsListScope.tenant,
+      );
+      expect(
+        tenantFacilityDepartmentsListScope(facility),
+        TenantFacilityDepartmentsListScope.facility,
+      );
+
+      expect(
+        tenantFacilityDepartmentsShowsTenantColumn(
+          TenantFacilityDepartmentsListScope.platform,
+        ),
+        isTrue,
+      );
+      expect(
+        tenantFacilityDepartmentsShowsTenantColumn(
+          TenantFacilityDepartmentsListScope.tenant,
+        ),
+        isFalse,
+      );
+      expect(
+        tenantFacilityDepartmentsShowsFacilityColumn(
+          TenantFacilityDepartmentsListScope.tenant,
+        ),
+        isTrue,
+      );
+      expect(
+        tenantFacilityDepartmentsShowsFacilityColumn(
+          TenantFacilityDepartmentsListScope.facility,
+        ),
+        isFalse,
+      );
+      expect(
+        tenantFacilityDepartmentsShowsDetailColumns(
+          TenantFacilityDepartmentsListScope.facility,
+        ),
+        isTrue,
+      );
+      expect(
+        tenantFacilityDepartmentsShowsDetailColumns(
+          TenantFacilityDepartmentsListScope.platform,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('tenantFacilityFacilityTypeLabel', () {
     test('returns localized labels', () {
       final AppLocalizations l10n = AppLocalizationsEn();

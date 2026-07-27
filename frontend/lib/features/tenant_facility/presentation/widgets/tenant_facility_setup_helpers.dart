@@ -173,6 +173,49 @@ bool tenantFacilityUsesScopedTenantPanel({
   return canManageTenant && !canCreateTenant;
 }
 
+/// Departments tab list breadth and default columns by admin role.
+enum TenantFacilityDepartmentsListScope {
+  /// Super / platform admin — all tenants and facilities.
+  platform,
+
+  /// Tenant admin — all facilities under the session tenant.
+  tenant,
+
+  /// Facility admin — active facility only.
+  facility,
+}
+
+TenantFacilityDepartmentsListScope tenantFacilityDepartmentsListScope(
+  AppAccessPolicy policy,
+) {
+  if (policy.isElevated) {
+    return TenantFacilityDepartmentsListScope.platform;
+  }
+  if (policy.canManageTenant()) {
+    return TenantFacilityDepartmentsListScope.tenant;
+  }
+  return TenantFacilityDepartmentsListScope.facility;
+}
+
+bool tenantFacilityDepartmentsShowsTenantColumn(
+  TenantFacilityDepartmentsListScope scope,
+) {
+  return scope == TenantFacilityDepartmentsListScope.platform;
+}
+
+bool tenantFacilityDepartmentsShowsFacilityColumn(
+  TenantFacilityDepartmentsListScope scope,
+) {
+  return scope == TenantFacilityDepartmentsListScope.platform ||
+      scope == TenantFacilityDepartmentsListScope.tenant;
+}
+
+bool tenantFacilityDepartmentsShowsDetailColumns(
+  TenantFacilityDepartmentsListScope scope,
+) {
+  return scope == TenantFacilityDepartmentsListScope.facility;
+}
+
 String tenantFacilitySetupDeskSectionLabel(
   AppLocalizations l10n,
   TenantFacilitySetupDeskSection section,

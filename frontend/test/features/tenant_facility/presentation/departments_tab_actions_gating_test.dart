@@ -5,12 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('Departments tab prompt behaviors', () {
     late String setupPageSource;
+    late String helpersSource;
     late String controllerSource;
     late String repositorySource;
+    late String repositoryInterfaceSource;
 
     setUpAll(() {
       setupPageSource = File(
         'lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart',
+      ).readAsStringSync();
+      helpersSource = File(
+        'lib/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart',
       ).readAsStringSync();
       controllerSource = File(
         'lib/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart',
@@ -18,25 +23,36 @@ void main() {
       repositorySource = File(
         'lib/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart',
       ).readAsStringSync();
+      repositoryInterfaceSource = File(
+        'lib/features/tenant_facility/domain/repositories/tenant_facility_repository.dart',
+      ).readAsStringSync();
     });
 
-    test('department section gates Add on structure edit + facility', () {
+    String departmentSectionSource() {
       final int sectionStart = setupPageSource.indexOf(
-        'class _DepartmentSetupSection extends ConsumerWidget',
+        'class _DepartmentSetupSection extends ConsumerStatefulWidget',
       );
       final int nextSectionStart = setupPageSource.indexOf(
         'class _UnitSetupSection extends ConsumerWidget',
       );
       expect(sectionStart, greaterThanOrEqualTo(0));
       expect(nextSectionStart, greaterThan(sectionStart));
-      final String sectionSource = setupPageSource.substring(
-        sectionStart,
-        nextSectionStart,
-      );
+      return setupPageSource.substring(sectionStart, nextSectionStart);
+    }
 
-      expect(sectionSource.contains('prerequisitesMet = snapshot.facility?.id != null'), isTrue);
+    test('department section gates Add on structure edit + facility', () {
+      final String sectionSource = departmentSectionSource();
+
       expect(
-        sectionSource.contains('canAdd = canManageRecords && prerequisitesMet && !isSubmitting'),
+        sectionSource.contains(
+          'prerequisitesMet = snapshot.facility?.id != null',
+        ),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains(
+          'canAdd = canManageRecords && prerequisitesMet && !isSubmitting',
+        ),
         isTrue,
       );
       expect(
@@ -77,39 +93,74 @@ void main() {
     });
 
     test('department mutations keep Add visible with loading while submitting', () {
-      final int sectionStart = setupPageSource.indexOf(
-        'class _DepartmentSetupSection extends ConsumerWidget',
-      );
-      final int nextSectionStart = setupPageSource.indexOf(
-        'class _UnitSetupSection extends ConsumerWidget',
-      );
-      final String sectionSource = setupPageSource.substring(
-        sectionStart,
-        nextSectionStart,
-      );
+      final String sectionSource = departmentSectionSource();
       expect(sectionSource.contains('isSubmitting: isSubmitting'), isTrue);
       expect(
-        sectionSource.contains('canManageRecords = canSubmit && !submission.isSubmitting'),
+        sectionSource.contains(
+          'canManageRecords = canSubmit && !submission.isSubmitting',
+        ),
         isFalse,
       );
     });
 
-    test('department table splits type, short name, and status columns', () {
-      final int sectionStart = setupPageSource.indexOf(
-        'class _DepartmentSetupSection extends ConsumerWidget',
+    test('department list loads through scoped listDepartments API', () {
+      final String sectionSource = departmentSectionSource();
+      expect(sectionSource.contains('repository.listDepartments('), isTrue);
+      expect(
+        sectionSource.contains('tenantFacilityDepartmentsListScope(policy)'),
+        isTrue,
       );
-      final int nextSectionStart = setupPageSource.indexOf(
-        'class _UnitSetupSection extends ConsumerWidget',
+      expect(
+        repositoryInterfaceSource.contains(
+          'Future<Result<AppPage<DepartmentProfile>>> listDepartments({',
+        ),
+        isTrue,
       );
-      final String sectionSource = setupPageSource.substring(
-        sectionStart,
-        nextSectionStart,
+      expect(
+        repositorySource.contains(
+          'Future<Result<AppPage<DepartmentProfile>>> listDepartments({',
+        ),
+        isTrue,
       );
+    });
+
+    test('department columns are role-scoped', () {
+      final String sectionSource = departmentSectionSource();
+      expect(sectionSource.contains("id: 'id'"), isTrue);
+      expect(sectionSource.contains("id: 'facility'"), isTrue);
+      expect(sectionSource.contains("id: 'tenant'"), isTrue);
       expect(sectionSource.contains("id: 'type'"), isTrue);
       expect(sectionSource.contains("id: 'short_name'"), isTrue);
       expect(sectionSource.contains('statusLabelBuilder:'), isTrue);
       expect(
-        sectionSource.contains('setup_structure_departments_v2'),
+        sectionSource.contains('tenantFacilityDepartmentsShowsTenantColumn'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityDepartmentsShowsFacilityColumn'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityDepartmentsShowsDetailColumns'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('setup_structure_departments_'),
+        isTrue,
+      );
+      expect(sectionSource.contains('scope.name'), isTrue);
+      expect(helpersSource.contains('enum TenantFacilityDepartmentsListScope'), isTrue);
+    });
+
+    test('edit department keeps the department facility and tenant', () {
+      expect(
+        setupPageSource.contains('editing?.tenantId.trim().isNotEmpty == true'),
+        isTrue,
+      );
+      expect(
+        setupPageSource.contains(
+          'editing?.facilityId?.trim().isNotEmpty == true',
+        ),
         isTrue,
       );
     });

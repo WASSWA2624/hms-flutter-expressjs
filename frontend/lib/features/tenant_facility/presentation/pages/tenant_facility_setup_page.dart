@@ -2471,7 +2471,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
 
 const String _noneSelection = tenantFacilityNoneSelection;
 
-class _DepartmentSetupSection extends ConsumerWidget {
+class _DepartmentSetupSection extends ConsumerStatefulWidget {
   const _DepartmentSetupSection({
     required this.snapshot,
     required this.canSubmit,
@@ -2483,111 +2483,375 @@ class _DepartmentSetupSection extends ConsumerWidget {
   final bool framed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DepartmentSetupSection> createState() =>
+      _DepartmentSetupSectionState();
+}
+
+class _DepartmentSetupSectionState
+    extends ConsumerState<_DepartmentSetupSection> {
+  static const AppPageRequest _listRequest = AppPageRequest(
+    pageSize: AppPageRequest.maxPageSize,
+  );
+
+  bool _loading = true;
+  AppFailure? _failure;
+  List<DepartmentProfile> _departments = const <DepartmentProfile>[];
+  Map<String, String> _tenantNamesById = const <String, String>{};
+  Map<String, String> _facilityNamesById = const <String, String>{};
+  List<FacilityProfile> _scopeFacilities = const <FacilityProfile>[];
+  int _reloadGeneration = 0;
+
+  FacilitySetupSnapshot get snapshot => widget.snapshot;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_reload());
+  }
+
+  @override
+  void didUpdateWidget(covariant _DepartmentSetupSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final String? oldFacilityId = oldWidget.snapshot.facility?.id;
+    final String? nextFacilityId = widget.snapshot.facility?.id;
+    final String? oldTenantId = oldWidget.snapshot.tenant?.id;
+    final String? nextTenantId = widget.snapshot.tenant?.id;
+    if (oldFacilityId != nextFacilityId || oldTenantId != nextTenantId) {
+      unawaited(_reload());
+    }
+  }
+
+  Future<void> _reload({bool silent = false}) async {
+    final int generation = ++_reloadGeneration;
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final TenantFacilityDepartmentsListScope scope =
+        tenantFacilityDepartmentsListScope(policy);
+    final String? tenantId = switch (scope) {
+      TenantFacilityDepartmentsListScope.platform => null,
+      TenantFacilityDepartmentsListScope.tenant ||
+      TenantFacilityDepartmentsListScope.facility =>
+        policy.tenantId ?? snapshot.tenant?.id,
+    };
+    final String? facilityId =
+        scope == TenantFacilityDepartmentsListScope.facility
+        ? (policy.facilityId ?? snapshot.facility?.id)
+        : null;
+
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _failure = null;
+      });
+    }
+
+    if (scope == TenantFacilityDepartmentsListScope.facility &&
+        (facilityId == null || facilityId.trim().isEmpty)) {
+      if (!mounted || generation != _reloadGeneration) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _departments = const <DepartmentProfile>[];
+        _scopeFacilities = const <FacilityProfile>[];
+        _tenantNamesById = const <String, String>{};
+        _facilityNamesById = const <String, String>{};
+      });
+      return;
+    }
+
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+
+    final Future<Result<AppPage<TenantProfile>>>? tenantsFuture =
+        tenantFacilityDepartmentsShowsTenantColumn(scope)
+        ? repository.listTenants(request: _listRequest)
+        : null;
+    final Future<Result<AppPage<FacilityProfile>>>? facilitiesFuture =
+        tenantFacilityDepartmentsShowsFacilityColumn(scope)
+        ? repository.listFacilities(request: _listRequest, tenantId: tenantId)
+        : null;
+    final Future<Result<AppPage<DepartmentProfile>>> departmentsFuture =
+        repository.listDepartments(
+          request: _listRequest,
+          tenantId: tenantId,
+          facilityId: facilityId,
+          includeDeleted: true,
+        );
+
+    final Result<AppPage<TenantProfile>>? tenantsResult = tenantsFuture == null
+        ? null
+        : await tenantsFuture;
+    final Result<AppPage<FacilityProfile>>? facilitiesResult =
+        facilitiesFuture == null ? null : await facilitiesFuture;
+    final Result<AppPage<DepartmentProfile>> departmentsResult =
+        await departmentsFuture;
+
+    if (!mounted || generation != _reloadGeneration) {
+      return;
+    }
+
+    departmentsResult.when(
+      success: (AppPage<DepartmentProfile> page) {
+        final Map<String, String> tenantNames = <String, String>{
+          if (snapshot.tenant case final TenantProfile tenant)
+            tenant.id: tenant.name,
+        };
+        tenantsResult?.when(
+          success: (AppPage<TenantProfile> tenants) {
+            for (final TenantProfile tenant in tenants.items) {
+              tenantNames[tenant.id] = tenant.name;
+            }
+          },
+          failure: (_) {},
+        );
+
+        List<FacilityProfile> facilities = <FacilityProfile>[
+          ...snapshot.facilities,
+          if (snapshot.facility != null) snapshot.facility!,
+        ];
+        facilitiesResult?.when(
+          success: (AppPage<FacilityProfile> facilitiesPage) {
+            facilities = facilitiesPage.items;
+          },
+          failure: (_) {},
+        );
+        final Map<String, String> facilityNames = <String, String>{
+          for (final FacilityProfile facility in facilities)
+            facility.id: facility.name,
+        };
+
+        setState(() {
+          _loading = false;
+          _failure = null;
+          _departments = page.items;
+          _tenantNamesById = tenantNames;
+          _facilityNamesById = facilityNames;
+          _scopeFacilities = facilities
+              .where((FacilityProfile facility) => !facility.isDeleted)
+              .toList(growable: false);
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _loading = false;
+          _failure = failure;
+          if (!silent) {
+            _departments = const <DepartmentProfile>[];
+          }
+        });
+      },
+    );
+  }
+
+  String _facilityLabel(DepartmentProfile department) {
+    final String? facilityId = department.facilityId?.trim();
+    if (facilityId == null || facilityId.isEmpty) {
+      return '—';
+    }
+    return _facilityNamesById[facilityId] ?? facilityId;
+  }
+
+  String _tenantLabel(DepartmentProfile department) {
+    final String tenantId = department.tenantId.trim();
+    if (tenantId.isEmpty) {
+      return '—';
+    }
+    return _tenantNamesById[tenantId] ?? tenantId;
+  }
+
+  Future<void> _afterMutation(Future<void> Function() action) async {
+    await action();
+    if (!mounted) {
+      return;
+    }
+    await _reload(silent: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final TenantFacilityDepartmentsListScope scope =
+        tenantFacilityDepartmentsListScope(policy);
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canManageRecords = canSubmit;
+    final bool canManageRecords = widget.canSubmit;
     final bool isSubmitting = submission.isSubmitting;
     final bool prerequisitesMet = snapshot.facility?.id != null;
     final bool canAdd = canManageRecords && prerequisitesMet && !isSubmitting;
     final String? blockedMessage = canManageRecords && !prerequisitesMet
         ? l10n.tenantFacilityGateNeedFacility
         : null;
-
-    final Widget content = _SearchableEntityGroup<DepartmentProfile>(
-      title: l10n.tenantFacilityDepartmentsListTitle,
-      items: snapshot.departments,
-      emptyLabel: l10n.tenantFacilityNoDepartments,
-      noResultsLabel: l10n.tenantFacilitySearchNoResults,
-      searchLabel: l10n.tenantFacilitySearchLabel,
-      searchHint: l10n.tenantFacilityDepartmentSearchHint,
-      addLabel: l10n.tenantFacilityAddDepartmentAction,
-      canManageRecords: canManageRecords,
-      canAdd: canAdd,
-      isSubmitting: isSubmitting,
-      blockedMessage: blockedMessage,
-      onAdd: () => _openDepartmentDialog(context, snapshot),
-      columnVisibilityStorageKey: 'setup_structure_departments_v2',
-      scopeLabel: l10n.tenantFacilityFacilitySelectLabel,
-      scopeOptions: <_SearchableEntityGroupScopeOption>[
-        for (final FacilityProfile facility
-            in snapshot.facilities.isNotEmpty
-            ? snapshot.facilities
-            : <FacilityProfile>[
-                if (snapshot.facility != null) snapshot.facility!,
-              ])
-          if (!facility.isDeleted)
-            _SearchableEntityGroupScopeOption(
-              id: facility.id,
-              label: facility.name,
-            ),
-      ],
-      itemScopeId: (DepartmentProfile department) =>
-          department.facilityId ?? snapshot.facility?.id,
-      titleBuilder: (DepartmentProfile department) => department.name,
-      subtitleBuilder: (DepartmentProfile department) =>
-          _departmentSubtitle(l10n, snapshot, department),
-      statusLabelBuilder: (DepartmentProfile department) {
-        if (department.isDeleted) {
-          return l10n.tenantFacilityStructureDeletedStatus;
-        }
-        return _activeStatusLabel(l10n, department.isActive);
-      },
-      extraColumns: <AppListTableColumn<DepartmentProfile>>[
-        AppListTableColumn<DepartmentProfile>(
-          id: 'type',
-          label: l10n.tenantFacilityDepartmentTypeLabel,
-          preferredWidth: 140,
-          cellBuilder: (_, DepartmentProfile department) => Text(
-            _departmentTypeLabel(l10n, department.type),
-          ),
-        ),
-        AppListTableColumn<DepartmentProfile>(
-          id: 'short_name',
-          label: l10n.tenantFacilityDepartmentShortNameLabel,
-          preferredWidth: 120,
-          cellBuilder: (_, DepartmentProfile department) => Text(
-            department.shortName?.trim().isNotEmpty == true
-                ? department.shortName!.trim()
-                : '—',
-          ),
-        ),
-      ],
-      isDeletedBuilder: (DepartmentProfile department) => department.isDeleted,
-      onEdit: (DepartmentProfile department) {
-        if (department.isDeleted || isSubmitting) {
-          return;
-        }
-        _openDepartmentDialog(context, snapshot, department: department);
-      },
-      onDelete: (DepartmentProfile department) => _deleteEntity(
-        context: context,
-        ref: ref,
-        name: department.name,
-        deleteAction: () => ref
-            .read(tenantFacilitySetupSubmissionProvider.notifier)
-            .deleteDepartment(department.id),
-      ),
-      onRestore: (DepartmentProfile department) => _restoreEntity(
-        context: context,
-        ref: ref,
-        name: department.name,
-        restoreAction: () => ref
-            .read(tenantFacilitySetupSubmissionProvider.notifier)
-            .restoreDepartment(department.id),
-      ),
-      onPermanentDelete: (DepartmentProfile department) =>
-          _permanentDeleteEntity(
-            context: context,
-            ref: ref,
-            name: department.name,
-            permanentDeleteAction: () => ref
-                .read(tenantFacilitySetupSubmissionProvider.notifier)
-                .permanentDeleteDepartment(department.id),
-          ),
+    final bool showTenantColumn = tenantFacilityDepartmentsShowsTenantColumn(
+      scope,
+    );
+    final bool showFacilityColumn =
+        tenantFacilityDepartmentsShowsFacilityColumn(scope);
+    final bool showDetailColumns = tenantFacilityDepartmentsShowsDetailColumns(
+      scope,
     );
 
-    if (framed) {
+    final List<AppListTableColumn<DepartmentProfile>> leadingColumns =
+        <AppListTableColumn<DepartmentProfile>>[
+          AppListTableColumn<DepartmentProfile>(
+            id: 'id',
+            label: l10n.tenantFacilityTenantDetailsIdLabel,
+            preferredWidth: 120,
+            cellBuilder: (_, DepartmentProfile department) =>
+                Text(department.id),
+          ),
+        ];
+
+    final List<AppListTableColumn<DepartmentProfile>> extraColumns =
+        <AppListTableColumn<DepartmentProfile>>[
+          if (showFacilityColumn)
+            AppListTableColumn<DepartmentProfile>(
+              id: 'facility',
+              label: l10n.profileFacilityLabel,
+              preferredWidth: 160,
+              cellBuilder: (_, DepartmentProfile department) =>
+                  Text(_facilityLabel(department)),
+            ),
+          if (showTenantColumn)
+            AppListTableColumn<DepartmentProfile>(
+              id: 'tenant',
+              label: l10n.profileTenantLabel,
+              preferredWidth: 160,
+              cellBuilder: (_, DepartmentProfile department) =>
+                  Text(_tenantLabel(department)),
+            ),
+          if (showDetailColumns) ...<AppListTableColumn<DepartmentProfile>>[
+            AppListTableColumn<DepartmentProfile>(
+              id: 'type',
+              label: l10n.tenantFacilityDepartmentTypeLabel,
+              preferredWidth: 140,
+              cellBuilder: (_, DepartmentProfile department) => Text(
+                _departmentTypeLabel(l10n, department.type),
+              ),
+            ),
+            AppListTableColumn<DepartmentProfile>(
+              id: 'short_name',
+              label: l10n.tenantFacilityDepartmentShortNameLabel,
+              preferredWidth: 120,
+              cellBuilder: (_, DepartmentProfile department) => Text(
+                department.shortName?.trim().isNotEmpty == true
+                    ? department.shortName!.trim()
+                    : '—',
+              ),
+            ),
+          ],
+        ];
+
+    final Widget content = _loading
+        ? const Center(child: CircularProgressIndicator())
+        : _failure != null
+        ? Center(
+            child: Text(
+              l10n.failureMessage(_failure!),
+              textAlign: TextAlign.center,
+            ),
+          )
+        : _SearchableEntityGroup<DepartmentProfile>(
+            title: l10n.tenantFacilityDepartmentsListTitle,
+            items: _departments,
+            emptyLabel: l10n.tenantFacilityNoDepartments,
+            noResultsLabel: l10n.tenantFacilitySearchNoResults,
+            searchLabel: l10n.tenantFacilitySearchLabel,
+            searchHint: l10n.tenantFacilityDepartmentSearchHint,
+            addLabel: l10n.tenantFacilityAddDepartmentAction,
+            canManageRecords: canManageRecords,
+            canAdd: canAdd,
+            isSubmitting: isSubmitting,
+            blockedMessage: blockedMessage,
+            onAdd: () => unawaited(
+              _afterMutation(
+                () => _openDepartmentDialog(context, snapshot),
+              ),
+            ),
+            columnVisibilityStorageKey:
+                'setup_structure_departments_${scope.name}_v1',
+            scopeLabel: showFacilityColumn
+                ? l10n.tenantFacilityFacilitySelectLabel
+                : null,
+            scopeOptions: showFacilityColumn
+                ? <_SearchableEntityGroupScopeOption>[
+                    for (final FacilityProfile facility in _scopeFacilities)
+                      _SearchableEntityGroupScopeOption(
+                        id: facility.id,
+                        label: facility.name,
+                      ),
+                  ]
+                : const <_SearchableEntityGroupScopeOption>[],
+            itemScopeId: showFacilityColumn
+                ? (DepartmentProfile department) =>
+                      department.facilityId ?? snapshot.facility?.id
+                : null,
+            titleBuilder: (DepartmentProfile department) => department.name,
+            subtitleBuilder: (DepartmentProfile department) =>
+                _departmentSubtitle(l10n, snapshot, department),
+            statusLabelBuilder: (DepartmentProfile department) {
+              if (department.isDeleted) {
+                return l10n.tenantFacilityStructureDeletedStatus;
+              }
+              return _activeStatusLabel(l10n, department.isActive);
+            },
+            leadingColumns: leadingColumns,
+            extraColumns: extraColumns,
+            isDeletedBuilder: (DepartmentProfile department) =>
+                department.isDeleted,
+            onEdit: (DepartmentProfile department) {
+              if (department.isDeleted || isSubmitting) {
+                return;
+              }
+              unawaited(
+                _afterMutation(
+                  () => _openDepartmentDialog(
+                    context,
+                    snapshot,
+                    department: department,
+                  ),
+                ),
+              );
+            },
+            onDelete: (DepartmentProfile department) => unawaited(
+              _afterMutation(
+                () => _deleteEntity(
+                  context: context,
+                  ref: ref,
+                  name: department.name,
+                  deleteAction: () => ref
+                      .read(tenantFacilitySetupSubmissionProvider.notifier)
+                      .deleteDepartment(department.id),
+                ),
+              ),
+            ),
+            onRestore: (DepartmentProfile department) => unawaited(
+              _afterMutation(
+                () => _restoreEntity(
+                  context: context,
+                  ref: ref,
+                  name: department.name,
+                  restoreAction: () => ref
+                      .read(tenantFacilitySetupSubmissionProvider.notifier)
+                      .restoreDepartment(department.id),
+                ),
+              ),
+            ),
+            onPermanentDelete: (DepartmentProfile department) => unawaited(
+              _afterMutation(
+                () => _permanentDeleteEntity(
+                  context: context,
+                  ref: ref,
+                  name: department.name,
+                  permanentDeleteAction: () => ref
+                      .read(tenantFacilitySetupSubmissionProvider.notifier)
+                      .permanentDeleteDepartment(department.id),
+                ),
+              ),
+            ),
+          );
+
+    if (widget.framed) {
       return content;
     }
 
@@ -2979,6 +3243,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     this.itemScopeId,
     this.addIcon = Icons.add_circle_outline,
     this.blockedMessage,
+    this.leadingColumns,
     this.extraColumns,
     this.columnVisibilityStorageKey,
     this.statusLabelBuilder,
@@ -3007,6 +3272,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final List<_SearchableEntityGroupScopeOption> scopeOptions;
   final String? Function(T item)? itemScopeId;
   final String? blockedMessage;
+  final List<AppListTableColumn<T>>? leadingColumns;
   final List<AppListTableColumn<T>>? extraColumns;
   final String? columnVisibilityStorageKey;
   final String Function(T item)? statusLabelBuilder;
@@ -3102,6 +3368,8 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
       preferredWidth: 120,
       cellBuilder: (_, T item) => Text(statusLabel(item)),
     );
+    final List<AppListTableColumn<T>> leadingColumns =
+        widget.leadingColumns ?? <AppListTableColumn<T>>[];
     final List<AppListTableColumn<T>> extraColumns =
         widget.extraColumns ?? <AppListTableColumn<T>>[];
     final bool actionsEnabled = !widget.isSubmitting;
@@ -3178,6 +3446,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           'setup_structure_${widget.title}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columns: <AppListTableColumn<T>>[
+        ...leadingColumns,
         nameColumn,
         ...extraColumns,
         statusColumn,
@@ -3773,18 +4042,28 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
       return;
     }
 
-    final TenantProfile? tenant = widget.snapshot.tenant;
-    final FacilityProfile? facility = widget.snapshot.facility;
-    if (tenant == null || facility == null) {
+    final DepartmentProfile? editing = widget.department;
+    final String? tenantId =
+        editing?.tenantId.trim().isNotEmpty == true
+        ? editing!.tenantId.trim()
+        : widget.snapshot.tenant?.id.trim();
+    final String? facilityId =
+        editing?.facilityId?.trim().isNotEmpty == true
+        ? editing!.facilityId!.trim()
+        : widget.snapshot.facility?.id.trim();
+    if (tenantId == null ||
+        tenantId.isEmpty ||
+        facilityId == null ||
+        facilityId.isEmpty) {
       return;
     }
 
     final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveDepartment(
-          id: widget.department?.id,
-          tenantId: tenant.id,
-          facilityId: facility.id,
+          id: editing?.id,
+          tenantId: tenantId,
+          facilityId: facilityId,
           name: _nameController.text,
           shortName: _shortNameController.text,
           type: _type,
