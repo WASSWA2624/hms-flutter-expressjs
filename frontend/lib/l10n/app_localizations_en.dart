@@ -21186,6 +21186,45 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get accessAdminUserAccessRemoveAllRolesAction => 'Remove all roles';
+
+  @override
+  String get accessAdminUserAccessRemoveAllRolesConfirmTitle =>
+      'Remove all roles?';
+
+  @override
+  String accessAdminUserAccessRemoveAllRolesConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count assigned roles',
+      one: '1 assigned role',
+    );
+    return 'This removes $_temp0 and their inherited permissions. System-critical roles stay. Direct grants stay.';
+  }
+
+  @override
+  String get accessAdminUserAccessRemoveAllDirectPermissionsAction =>
+      'Remove all permissions';
+
+  @override
+  String get accessAdminUserAccessRemoveAllDirectPermissionsConfirmTitle =>
+      'Remove all permissions?';
+
+  @override
+  String accessAdminUserAccessRemoveAllDirectPermissionsConfirmMessage(
+    int count,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count direct permissions',
+      one: '1 direct permission',
+    );
+    return 'This removes $_temp0. Permissions granted by roles are unchanged.';
+  }
+
+  @override
   String get accessAdminUserAccessAddRoleDialogTitle => 'Assign role';
 
   @override

@@ -66,6 +66,11 @@
   - Condition: Shown when `canWrite` is true, the user is not soft-deleted, and the role assignment has a `userRoleId` and is not system-critical; disabled while busy.
   - Immediate result: Confirms then revokes the user-role link and reloads detail. Inherited permissions are display-only (collapsed by default; expand to view chips) and cannot be removed individually.
 
+- **Remove all roles**
+  - Location: Assigned roles section header (next to Add role).
+  - Condition: Shown when `canWrite` is true, the user is not soft-deleted, and at least one assigned role is removable; disabled while busy.
+  - Immediate result: Confirms then revokes every removable role assignment in parallel (system-critical roles stay) and reloads detail. Direct grants are unchanged.
+
 - **Add permission**
   - Location: Direct permissions section header.
   - Condition: Shown when `canWrite` is true and the user is not soft-deleted; disabled while busy.
@@ -75,6 +80,21 @@
   - Location: Each direct-permission row.
   - Condition: Shown when `canWrite` is true and the user is not soft-deleted; disabled while busy.
   - Immediate result: Syncs the remaining direct permission ids (role grants unaffected) and reloads detail.
+
+- **Remove all permissions**
+  - Location: Direct permissions section header (next to Add permission).
+  - Condition: Shown when `canWrite` is true, the user is not soft-deleted, and at least one direct permission exists; disabled while busy.
+  - Immediate result: Confirms then syncs an empty direct-permission set (role grants unaffected) and reloads detail.
+
+- **Collapse / expand access sections**
+  - Location: Assigned roles, Direct permissions, and Effective permissions section headers in `AppUserAccessPanel`.
+  - Condition: Always available.
+  - Immediate result: Toggles visibility of that section's body; header actions (count / add / remove all) stay visible.
+
+- **Effective permissions**
+  - Location: Read-only Effective permissions section in `AppUserAccessPanel` (below direct permissions).
+  - Condition: Always shown on User Details.
+  - Immediate result: Displays the merged grant set (API `effective_permissions`, falling back to role + direct union) grouped by module via `AppPermissionGroupedView`, with search and per-group expand/collapse.
 
 - **Close**
   - Location: Dialog footer.

@@ -998,6 +998,7 @@ class _DetailContent extends ConsumerWidget {
                           ),
                     )
                     .toList(growable: false),
+            effectivePermissions: detail?.effectivePermissions,
           ),
         ],
         if (item.staffProfileId != null) ...<Widget>[

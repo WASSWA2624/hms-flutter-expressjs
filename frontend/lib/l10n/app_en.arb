@@ -27195,6 +27195,40 @@
       }
     }
   },
+  "accessAdminUserAccessRemoveAllRolesAction": "Remove all roles",
+  "@accessAdminUserAccessRemoveAllRolesAction": {
+    "description": "Action to revoke every removable role assignment from a user."
+  },
+  "accessAdminUserAccessRemoveAllRolesConfirmTitle": "Remove all roles?",
+  "@accessAdminUserAccessRemoveAllRolesConfirmTitle": {
+    "description": "Confirmation title when removing every removable role from a user."
+  },
+  "accessAdminUserAccessRemoveAllRolesConfirmMessage": "This removes {count, plural, =1{1 assigned role} other{{count} assigned roles}} and their inherited permissions. System-critical roles stay. Direct grants stay.",
+  "@accessAdminUserAccessRemoveAllRolesConfirmMessage": {
+    "description": "Confirmation body when removing every removable role from a user.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accessAdminUserAccessRemoveAllDirectPermissionsAction": "Remove all permissions",
+  "@accessAdminUserAccessRemoveAllDirectPermissionsAction": {
+    "description": "Action to clear every direct permission grant for a user."
+  },
+  "accessAdminUserAccessRemoveAllDirectPermissionsConfirmTitle": "Remove all permissions?",
+  "@accessAdminUserAccessRemoveAllDirectPermissionsConfirmTitle": {
+    "description": "Confirmation title when clearing every direct permission for a user."
+  },
+  "accessAdminUserAccessRemoveAllDirectPermissionsConfirmMessage": "This removes {count, plural, =1{1 direct permission} other{{count} direct permissions}}. Permissions granted by roles are unchanged.",
+  "@accessAdminUserAccessRemoveAllDirectPermissionsConfirmMessage": {
+    "description": "Confirmation body when clearing every direct permission for a user.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "accessAdminUserAccessAddRoleDialogTitle": "Assign role",
   "@accessAdminUserAccessAddRoleDialogTitle": {
     "description": "Title for the dialog that assigns a role to a user."

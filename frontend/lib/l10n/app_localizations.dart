@@ -39214,6 +39214,44 @@ abstract class AppLocalizations {
   /// **'Removing {roleName} also removes its permissions. Direct grants stay.'**
   String accessAdminUserAccessRemoveRoleConfirmMessage(String roleName);
 
+  /// Action to revoke every removable role assignment from a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all roles'**
+  String get accessAdminUserAccessRemoveAllRolesAction;
+
+  /// Confirmation title when removing every removable role from a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all roles?'**
+  String get accessAdminUserAccessRemoveAllRolesConfirmTitle;
+
+  /// Confirmation body when removing every removable role from a user.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes {count, plural, =1{1 assigned role} other{{count} assigned roles}} and their inherited permissions. System-critical roles stay. Direct grants stay.'**
+  String accessAdminUserAccessRemoveAllRolesConfirmMessage(int count);
+
+  /// Action to clear every direct permission grant for a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all permissions'**
+  String get accessAdminUserAccessRemoveAllDirectPermissionsAction;
+
+  /// Confirmation title when clearing every direct permission for a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all permissions?'**
+  String get accessAdminUserAccessRemoveAllDirectPermissionsConfirmTitle;
+
+  /// Confirmation body when clearing every direct permission for a user.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes {count, plural, =1{1 direct permission} other{{count} direct permissions}}. Permissions granted by roles are unchanged.'**
+  String accessAdminUserAccessRemoveAllDirectPermissionsConfirmMessage(
+    int count,
+  );
+
   /// Title for the dialog that assigns a role to a user.
   ///
   /// In en, this message translates to:

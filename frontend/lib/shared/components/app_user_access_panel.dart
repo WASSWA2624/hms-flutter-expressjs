@@ -5,6 +5,8 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
+import 'package:hosspi_hms/shared/components/app_permission_assignment_picker.dart';
+import 'package:hosspi_hms/shared/components/app_permission_grouped_view.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Role assignment shown in [AppUserAccessPanel], including inherited permissions.
@@ -42,40 +44,126 @@ final class AppUserAccessDirectPermission {
 /// Role-inherited permissions are display-only. Removing access for those
 /// requires removing the parent role. Direct permissions may be removed
 /// individually when [canWrite] is true.
+///
+/// [effectivePermissions] is the merged grant set (roles + directs). When null,
+/// the panel derives it from [roleGroups] and [directPermissions].
 class AppUserAccessPanel extends StatelessWidget {
   const AppUserAccessPanel({
     required this.roleGroups,
     required this.directPermissions,
+    this.effectivePermissions,
     this.canWrite = false,
     this.isBusy = false,
     this.onAddRole,
     this.onRemoveRole,
+    this.onRemoveAllRoles,
     this.onAddDirectPermission,
     this.onRemoveDirectPermission,
+    this.onRemoveAllDirectPermissions,
+    this.rolesInitiallyExpanded = true,
+    this.permissionsInitiallyExpanded = true,
+    this.effectiveInitiallyExpanded = true,
     super.key,
   });
 
   final List<AppUserAccessRoleGroup> roleGroups;
   final List<AppUserAccessDirectPermission> directPermissions;
+
+  /// Optional authoritative effective permission codes from the API.
+  final List<String>? effectivePermissions;
   final bool canWrite;
   final bool isBusy;
   final VoidCallback? onAddRole;
   final ValueChanged<AppUserAccessRoleGroup>? onRemoveRole;
+  final VoidCallback? onRemoveAllRoles;
   final VoidCallback? onAddDirectPermission;
   final ValueChanged<AppUserAccessDirectPermission>? onRemoveDirectPermission;
+  final VoidCallback? onRemoveAllDirectPermissions;
+  final bool rolesInitiallyExpanded;
+  final bool permissionsInitiallyExpanded;
+  final bool effectiveInitiallyExpanded;
+
+  List<String> get _resolvedEffectivePermissionCodes {
+    final List<String>? provided = effectivePermissions;
+    if (provided != null && provided.isNotEmpty) {
+      return _uniqueSortedCodes(provided);
+    }
+
+    final Set<String> codes = <String>{};
+    for (final AppUserAccessRoleGroup group in roleGroups) {
+      for (final String permission in group.permissions) {
+        final String code = permission.trim();
+        if (code.isNotEmpty) {
+          codes.add(code);
+        }
+      }
+    }
+    for (final AppUserAccessDirectPermission permission in directPermissions) {
+      final String code = permission.name.trim();
+      if (code.isNotEmpty) {
+        codes.add(code);
+      }
+    }
+
+    if (provided != null && provided.isEmpty && codes.isEmpty) {
+      return const <String>[];
+    }
+    if (provided != null && provided.isEmpty && codes.isNotEmpty) {
+      // Prefer derived grants when the API list is empty but local sources exist.
+      return _uniqueSortedCodes(codes);
+    }
+    return _uniqueSortedCodes(codes);
+  }
+
+  static List<String> _uniqueSortedCodes(Iterable<String> raw) {
+    final Set<String> seen = <String>{};
+    final List<String> codes = <String>[];
+    for (final String entry in raw) {
+      final String code = entry.trim();
+      if (code.isEmpty || !seen.add(code.toLowerCase())) {
+        continue;
+      }
+      codes.add(code);
+    }
+    codes.sort(
+      (String a, String b) => a.toLowerCase().compareTo(b.toLowerCase()),
+    );
+    return codes;
+  }
+
+  List<AppPermissionAssignmentOption> _effectivePermissionOptions(
+    AppLocalizations l10n,
+  ) {
+    return _resolvedEffectivePermissionCodes
+        .map(
+          (String code) => AppPermissionAssignmentOption(
+            id: code,
+            code: code,
+            label: l10n.permissionCatalogLabelForCode(code),
+            description: code,
+          ),
+        )
+        .toList(growable: false);
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final int removableRoleCount = roleGroups
+        .where((AppUserAccessRoleGroup group) => group.canRemove)
+        .length;
+    final List<AppPermissionAssignmentOption> effectiveOptions =
+        _effectivePermissionOptions(l10n);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppSectionPanel(
+        _CollapsibleAccessSection(
           title: l10n.accessAdminAssignedRolesLabel,
           description: l10n.accessAdminUserDetailRolesSectionDescription,
           leadingIcon: Icons.groups_outlined,
+          initiallyExpanded: rolesInitiallyExpanded,
           trailing: _HeaderActions(
             count: roleGroups.length,
             canWrite: canWrite,
@@ -83,6 +171,8 @@ class AppUserAccessPanel extends StatelessWidget {
             addLabel: l10n.accessAdminUserAccessAddRoleAction,
             addIcon: Icons.person_add_alt_1_outlined,
             onAdd: onAddRole,
+            removeAllLabel: l10n.accessAdminUserAccessRemoveAllRolesAction,
+            onRemoveAll: removableRoleCount > 0 ? onRemoveAllRoles : null,
           ),
           children: <Widget>[
             if (roleGroups.isEmpty)
@@ -109,10 +199,11 @@ class AppUserAccessPanel extends StatelessWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        AppSectionPanel(
+        _CollapsibleAccessSection(
           title: l10n.hrAccessDirectPermissionsLabel,
           description: l10n.accessAdminUserAccessDirectPermissionsDescription,
           leadingIcon: Icons.key_outlined,
+          initiallyExpanded: permissionsInitiallyExpanded,
           trailing: _HeaderActions(
             count: directPermissions.length,
             canWrite: canWrite,
@@ -120,6 +211,11 @@ class AppUserAccessPanel extends StatelessWidget {
             addLabel: l10n.accessAdminUserAccessAddDirectPermissionAction,
             addIcon: Icons.add_outlined,
             onAdd: onAddDirectPermission,
+            removeAllLabel:
+                l10n.accessAdminUserAccessRemoveAllDirectPermissionsAction,
+            onRemoveAll: directPermissions.isNotEmpty
+                ? onRemoveAllDirectPermissions
+                : null,
           ),
           children: <Widget>[
             if (directPermissions.isEmpty)
@@ -145,7 +241,132 @@ class AppUserAccessPanel extends StatelessWidget {
               ),
           ],
         ),
+        SizedBox(height: theme.spacing.md),
+        _CollapsibleAccessSection(
+          title: l10n.accessAdminEffectivePermissionsLabel,
+          description: l10n.accessAdminUserDetailPermissionsSectionDescription,
+          leadingIcon: Icons.verified_user_outlined,
+          initiallyExpanded: effectiveInitiallyExpanded,
+          trailing: _HeaderActions(
+            count: effectiveOptions.length,
+            canWrite: false,
+            isBusy: isBusy,
+            addLabel: '',
+            addIcon: Icons.add_outlined,
+          ),
+          children: <Widget>[
+            AppPermissionGroupedView(
+              permissions: effectiveOptions,
+              initiallyExpandAll: effectiveOptions.length <= 24,
+              emptyMessage: l10n.accessAdminUserDetailNoPermissionsMessage,
+            ),
+          ],
+        ),
       ],
+    );
+  }
+}
+
+class _CollapsibleAccessSection extends StatefulWidget {
+  const _CollapsibleAccessSection({
+    required this.title,
+    required this.description,
+    required this.leadingIcon,
+    required this.trailing,
+    required this.children,
+    this.initiallyExpanded = true,
+  });
+
+  final String title;
+  final String description;
+  final IconData leadingIcon;
+  final Widget trailing;
+  final List<Widget> children;
+  final bool initiallyExpanded;
+
+  @override
+  State<_CollapsibleAccessSection> createState() =>
+      _CollapsibleAccessSectionState();
+}
+
+class _CollapsibleAccessSectionState extends State<_CollapsibleAccessSection> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    return AppContentPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: InkWell(
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  borderRadius: BorderRadius.circular(theme.radius.sm),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Icon(
+                          widget.leadingIcon,
+                          color: colors.primary,
+                          size: theme.appTokens.listIconSize,
+                        ),
+                        SizedBox(width: theme.spacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(
+                                widget.title,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: colors.onSurface,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              SizedBox(height: theme.spacing.xs),
+                              Text(
+                                widget.description,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: theme.spacing.xs),
+                        Icon(
+                          _expanded ? Icons.expand_less : Icons.expand_more,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              widget.trailing,
+            ],
+          ),
+          if (_expanded) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            for (var index = 0; index < widget.children.length; index += 1)
+              ...<Widget>[
+                widget.children[index],
+                if (index < widget.children.length - 1)
+                  SizedBox(height: theme.spacing.md),
+              ],
+          ],
+        ],
+      ),
     );
   }
 }
@@ -158,6 +379,8 @@ class _HeaderActions extends StatelessWidget {
     required this.addLabel,
     required this.addIcon,
     this.onAdd,
+    this.removeAllLabel,
+    this.onRemoveAll,
   });
 
   final int count;
@@ -166,6 +389,8 @@ class _HeaderActions extends StatelessWidget {
   final String addLabel;
   final IconData addIcon;
   final VoidCallback? onAdd;
+  final String? removeAllLabel;
+  final VoidCallback? onRemoveAll;
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +399,7 @@ class _HeaderActions extends StatelessWidget {
 
     return Wrap(
       spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         Chip(
@@ -187,6 +413,14 @@ class _HeaderActions extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           labelStyle: theme.textTheme.labelSmall,
         ),
+        if (canWrite && onRemoveAll != null && removeAllLabel != null)
+          AppButton.tertiary(
+            leadingIcon: Icons.delete_sweep_outlined,
+            label: removeAllLabel!,
+            color: colorScheme.error,
+            tooltip: removeAllLabel,
+            onPressed: isBusy ? null : onRemoveAll,
+          ),
         if (canWrite && onAdd != null)
           AppButton.secondary(
             leadingIcon: addIcon,

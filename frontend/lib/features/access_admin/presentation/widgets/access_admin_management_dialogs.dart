@@ -3257,6 +3257,47 @@ class _AccessAdminUserDetailDialogState
     }
   }
 
+  Future<void> _removeAllRoles() async {
+    final List<AppUserAccessRoleGroup> removable = _roleGroups
+        .where((AppUserAccessRoleGroup group) => group.canRemove)
+        .toList(growable: false);
+    if (removable.isEmpty) {
+      return;
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.accessAdminUserAccessRemoveAllRolesConfirmTitle,
+        body: l10n.accessAdminUserAccessRemoveAllRolesConfirmMessage(
+          removable.length,
+        ),
+        submitLabel: l10n.accessAdminUserAccessRemoveAllRolesAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_sweep_outlined),
+        onConfirm: () async {
+          AppFailure? lastFailure;
+          final List<Result<void>> results = await Future.wait(
+            removable.map((AppUserAccessRoleGroup group) {
+              return widget.repository.revokeUserRole(group.userRoleId!.trim());
+            }),
+          );
+          for (final Result<void> result in results) {
+            if (result case ResultFailure<void>(:final failure)) {
+              lastFailure ??= failure;
+            }
+          }
+          return lastFailure;
+        },
+      ),
+    );
+    if (confirmed == true && mounted) {
+      setState(() => _saving = true);
+      await _reloadDetail();
+    }
+  }
+
   Future<void> _addDirectPermission() async {
     final AppLocalizations l10n = context.l10n;
     final String? tenantId = (widget.tenantId ?? _item.tenantId)?.trim();
@@ -3420,6 +3461,42 @@ class _AccessAdminUserDetailDialogState
     await _reloadDetail();
   }
 
+  Future<void> _removeAllDirectPermissions() async {
+    final int count = _detail.directPermissions.length;
+    if (count == 0) {
+      return;
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.accessAdminUserAccessRemoveAllDirectPermissionsConfirmTitle,
+        body: l10n.accessAdminUserAccessRemoveAllDirectPermissionsConfirmMessage(
+          count,
+        ),
+        submitLabel: l10n.accessAdminUserAccessRemoveAllDirectPermissionsAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_sweep_outlined),
+        onConfirm: () async {
+          final Result<void> result = await widget.repository
+              .syncUserDirectPermissions(
+                userId: _item.mutationId,
+                permissionIds: const <String>[],
+              );
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (confirmed == true && mounted) {
+      setState(() => _saving = true);
+      await _reloadDetail();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -3449,13 +3526,18 @@ class _AccessAdminUserDetailDialogState
           AppUserAccessPanel(
             roleGroups: _roleGroups,
             directPermissions: _directPermissions,
+            effectivePermissions: _detail.effectivePermissions,
             canWrite: canMutate,
             isBusy: _saving,
             onAddRole: canMutate ? _addRole : null,
             onRemoveRole: canMutate ? _removeRole : null,
+            onRemoveAllRoles: canMutate ? _removeAllRoles : null,
             onAddDirectPermission: canMutate ? _addDirectPermission : null,
             onRemoveDirectPermission: canMutate
                 ? _removeDirectPermission
+                : null,
+            onRemoveAllDirectPermissions: canMutate
+                ? _removeAllDirectPermissions
                 : null,
           ),
           if (item.isDemo || item.isSystemCritical) ...<Widget>[
