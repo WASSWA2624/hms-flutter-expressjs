@@ -702,6 +702,7 @@ final class AccessAdminRoleDraft {
     this.displayName,
     this.description,
     this.permissionIds = const <String>[],
+    this.syncPermissions = true,
     this.confirmSimilar = false,
     this.scope,
   });
@@ -713,9 +714,13 @@ final class AccessAdminRoleDraft {
   final String? displayName;
   final String? description;
   final List<String> permissionIds;
+
+  /// When false, role update payloads omit `permission_ids` so existing grants
+  /// stay unchanged (identity/scope edits).
+  final bool syncPermissions;
   final bool confirmSimilar;
 
-  /// Optional create scope hint: `platform`, `tenant`, or `facility`.
+  /// Optional scope hint: `platform`, `tenant`, or `facility`.
   final String? scope;
 
   AccessAdminRoleDraft copyWith({
@@ -725,6 +730,7 @@ final class AccessAdminRoleDraft {
     String? displayName,
     String? description,
     List<String>? permissionIds,
+    bool? syncPermissions,
     bool? confirmSimilar,
     String? scope,
     bool clearTenantId = false,
@@ -738,6 +744,7 @@ final class AccessAdminRoleDraft {
       displayName: displayName ?? this.displayName,
       description: description ?? this.description,
       permissionIds: permissionIds ?? this.permissionIds,
+      syncPermissions: syncPermissions ?? this.syncPermissions,
       confirmSimilar: confirmSimilar ?? this.confirmSimilar,
       scope: clearScope ? null : (scope ?? this.scope),
     );

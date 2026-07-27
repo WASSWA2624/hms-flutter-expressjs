@@ -51,18 +51,16 @@ const serializeRolePermission = (record) => {
   }
 
   const permission = record.permission || null;
-  const publicPermissionId =
-    resolvePublicIdentifier(permission?.human_friendly_id, record.permission_id) ||
-    record.permission_id;
 
   return {
     id: resolvePublicIdentifier(record.human_friendly_id, record.id) || record.id,
     human_friendly_id: record.human_friendly_id || null,
     role_id: record.role_id,
-    permission_id: publicPermissionId,
+    // Keep the raw UUID for assignment/sync; friendly ids can collide.
+    permission_id: record.permission_id,
     permission: permission
       ? {
-          id: publicPermissionId,
+          id: permission.id,
           human_friendly_id: permission.human_friendly_id || null,
           name: permission.name || null}
       : undefined,

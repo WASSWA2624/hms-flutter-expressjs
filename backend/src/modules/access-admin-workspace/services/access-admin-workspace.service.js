@@ -408,10 +408,12 @@ const buildLookups = (records = {}, user = null, enabledModules = null) => {
         (Array.isArray(entry.permissions) ? entry.permissions.length : 0),
     })),
     permissions: permissions.map((entry) => ({
-      id: safePublicId(entry.human_friendly_id, entry.id),
+      // Prefer UUID for assignment/sync. Friendly ids can collide and break PUT.
+      id: entry.id,
       label: entry.name,
       display_name: entry.display_name || entry.name,
       description: entry.description || null,
+      human_friendly_id: safePublicId(entry.human_friendly_id, entry.id),
     })),
     user_statuses: ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'],
     clinical_flow_roles: [...CLINICAL_FLOW_ROLES],

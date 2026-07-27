@@ -324,10 +324,13 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
       ..._withoutEmpty(<String, Object?>{
         'name': draft.name,
         'description': draft.description,
+        'scope': draft.scope,
       }),
       'display_name': draft.displayName,
+      // Explicit nulls required when moving a role to platform scope.
+      'tenant_id': draft.tenantId,
       'facility_id': draft.facilityId,
-      'permission_ids': draft.permissionIds,
+      if (draft.syncPermissions) 'permission_ids': draft.permissionIds,
       if (draft.confirmSimilar) 'confirm_similar': true,
     };
     return _afterAccessMutation(

@@ -233,19 +233,16 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
   final String? initialFacilityId =
       state.query.facilityId ??
       (allowTenantWideScope ? null : sessionFacilityId);
-  final bool requireTenantPicker = isCrossTenantAdmin
-      ? workspaceTenantId == null
-      : initialTenantId == null;
-  if (!context.mounted) {
-    return null;
-  }
-
   final bool needsFacilityScope = !allowTenantWideScope;
   final bool provideAllFacilitiesLoader = isCrossTenantAdmin;
   final bool provideTenantLoader =
       allowTenantWideScope ||
-      requireTenantPicker ||
+      (initialTenantId == null) ||
       !provideAllFacilitiesLoader;
+  if (!context.mounted) {
+    return null;
+  }
+
   AccessAdminLookups? prefetched;
   if ((initialTenantId ?? '').isNotEmpty) {
     prefetched = await _prefetchRoleDialogLookups(
@@ -284,7 +281,6 @@ Future<AccessAdminItem?> openAccessAdminCreateRoleDialog(
         : null,
     tenantId: initialTenantId,
     facilityId: initialFacilityId,
-    requireTenantPicker: requireTenantPicker,
     allowTenantWideScope: allowTenantWideScope,
     forceFacilityScope: !allowTenantWideScope,
     allowPlatformScope: isCrossTenantAdmin,
@@ -745,94 +741,84 @@ Future<bool?> openAccessAdminEditRoleDialog(
   }
 
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  final bool isCrossTenantAdmin = accessPolicy.canCreateTenant();
   final bool allowTenantWideScope = accessPolicy.canCreateTenantWideRole();
-  final String? tenantId =
-      state.query.tenantId ??
-      ref.read(sessionStateProvider).session?.user?.tenantId;
-  final String? facilityId = role.facilityId ?? state.query.facilityId;
+  // Prefill from the role's actual ABAC scope — never session/workspace tenant
+  // for platform roles (null tenant_id).
+  final String? roleTenantId = role.tenantId;
+  final String? roleFacilityId = role.facilityId;
+  final bool needsFacilityScope = !allowTenantWideScope && !role.isPlatformScopedRole;
+  final bool provideAllFacilitiesLoader = isCrossTenantAdmin;
+  final bool provideTenantLoader =
+      allowTenantWideScope ||
+      role.isTenantScopedRole ||
+      ((roleTenantId ?? '').isEmpty && !role.isPlatformScopedRole) ||
+      !provideAllFacilitiesLoader;
 
-  final AccessAdminRepository repository = ref.read(
-    accessAdminRepositoryProvider,
-  );
-
-  final Future<Result<List<AccessAdminRolePermissionAssignment>>>
-  assignmentsFuture = repository.listRolePermissions(role.mutationId);
-  final Future<AccessAdminLookups?> lookupsFuture = (tenantId ?? '').isEmpty
-      ? Future<AccessAdminLookups?>.value()
-      : _prefetchRoleDialogLookups(
-          ref,
-          tenantId: tenantId!,
-          facilityId: facilityId,
-          includeFacilities: true,
-        );
-
-  final Result<List<AccessAdminRolePermissionAssignment>> assignmentsResult =
-      await assignmentsFuture;
-  final AccessAdminLookups? prefetched = await lookupsFuture;
+  // Permissions are managed from role details — edit only identity/scope.
+  AccessAdminLookups? prefetched;
+  if ((roleTenantId ?? '').isNotEmpty) {
+    prefetched = await _prefetchRoleDialogLookups(
+      ref,
+      tenantId: roleTenantId!,
+      facilityId: roleFacilityId,
+      includeFacilities: needsFacilityScope || roleFacilityId != null,
+      includePermissions: false,
+    );
+  }
 
   if (!context.mounted) {
     return null;
   }
-
-  final List<AccessAdminLookupOption> permissionLookups =
-      prefetched?.permissions ??
-      (state.data.lookups.permissions.isNotEmpty
-          ? state.data.lookups.permissions
-          : const <AccessAdminLookupOption>[]);
-
-  final List<AccessAdminRolePermissionAssignment> assignments =
-      assignmentsResult.when(
-        success: (List<AccessAdminRolePermissionAssignment> value) => value,
-        failure: (_) => const <AccessAdminRolePermissionAssignment>[],
-      );
-
-  final Set<String> initialPermissionIds = _resolveAttachedPermissionIds(
-    assignments: assignments,
-    embeddedPermissions: role.permissions,
-    permissionLookups: permissionLookups,
-  );
 
   final String excludeRoleId =
       role.mutationId.trim().isNotEmpty ? role.mutationId : role.id;
   final String baselineName = (role.name ?? role.title).trim();
   final String baselineDisplayName = (role.displayName ?? role.title).trim();
   final String baselineDescription = (role.subtitle ?? '').trim();
+  final String? baselineTenantId = role.tenantId;
   final String? baselineFacilityId = role.facilityId;
+  final String? baselineScope = role.isPlatformScopedRole
+      ? 'platform'
+      : (role.isFacilityScopedRole ? 'facility' : 'tenant');
 
   return showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.edit,
-    permissionLookups: permissionLookups,
+    includePermissions: false,
     initialFacilityOptions:
         prefetched?.facilities ?? state.data.lookups.facilities,
     initialName: role.name ?? role.title,
     initialDisplayName: role.displayName,
     initialDescription: role.subtitle,
-    initialPermissionIds: initialPermissionIds,
-    tenantId: tenantId,
-    facilityId: facilityId,
+    tenantId: roleTenantId,
+    facilityId: roleFacilityId,
     allowTenantWideScope: allowTenantWideScope,
-    forceFacilityScope: !allowTenantWideScope,
-    loadFacilityOptions: tenantId == null
-        ? null
-        : (String resolvedTenantId) =>
-              loadAccessAdminFacilityOptions(ref, resolvedTenantId),
-    loadPermissionsForTenant: tenantId == null
-        ? null
-        : ({required String tenantId, String? facilityId}) =>
-              _loadAccessAdminPermissionLookups(
-                ref,
-                state,
-                tenantId: tenantId,
-                facilityId: facilityId,
-              ),
+    forceFacilityScope: needsFacilityScope,
+    allowPlatformScope: isCrossTenantAdmin,
+    allowTenantScope: allowTenantWideScope,
+    allowFacilityScope: true,
+    loadTenantOptions: provideTenantLoader
+        ? () => loadAccessAdminTenantOptions(
+            ref,
+            state,
+            preferTenantFacilityApi: isCrossTenantAdmin,
+          )
+        : null,
+    loadFacilityOptions: (String resolvedTenantId) =>
+        loadAccessAdminFacilityOptions(ref, resolvedTenantId),
+    loadAllFacilityOptions: provideAllFacilitiesLoader
+        ? () => loadAccessAdminAllFacilityOptions(ref, state)
+        : null,
     onSubmit: (List<AccessAdminRoleDraft> drafts) async {
       final AccessAdminRoleDraft draft = drafts.first;
       final bool identityChanged =
           draft.name.trim() != baselineName ||
           (draft.displayName ?? '').trim() != baselineDisplayName ||
           (draft.description ?? '').trim() != baselineDescription ||
-          (draft.facilityId ?? '') != (baselineFacilityId ?? '');
+          (draft.tenantId ?? '') != (baselineTenantId ?? '') ||
+          (draft.facilityId ?? '') != (baselineFacilityId ?? '') ||
+          (draft.scope ?? '') != (baselineScope ?? '');
 
       var similarityAccepted = draft.confirmSimilar;
       var pending = draft.copyWith(confirmSimilar: similarityAccepted);
@@ -915,63 +901,6 @@ Future<bool?> openAccessAdminEditRoleDialog(
   );
 }
 
-/// Maps role permission assignments onto catalog lookup option ids.
-Set<String> _resolveAttachedPermissionIds({
-  required List<AccessAdminRolePermissionAssignment> assignments,
-  required List<AccessAdminPermissionRef> embeddedPermissions,
-  required List<AccessAdminLookupOption> permissionLookups,
-}) {
-  final Map<String, String> idByLookupId = <String, String>{
-    for (final AccessAdminLookupOption option in permissionLookups)
-      option.id: option.id,
-  };
-  final Map<String, String> idByName = <String, String>{
-    for (final AccessAdminLookupOption option in permissionLookups)
-      option.label: option.id,
-  };
-  final Set<String> resolved = <String>{};
-
-  String? resolveOne({String? id, String? name}) {
-    if (id != null && idByLookupId.containsKey(id)) {
-      return idByLookupId[id];
-    }
-    if (name != null && idByName.containsKey(name)) {
-      return idByName[name];
-    }
-    if (id != null && idByName.containsKey(id)) {
-      return idByName[id];
-    }
-    return null;
-  }
-
-  void addCandidate({String? id, String? name}) {
-    final String? matched = resolveOne(id: id, name: name);
-    if (matched != null) {
-      resolved.add(matched);
-      return;
-    }
-    // Prefer permission code/name so a later catalog load can remap by label.
-    if (name != null && name.trim().isNotEmpty) {
-      resolved.add(name.trim());
-    }
-    if (id != null && id.trim().isNotEmpty) {
-      resolved.add(id.trim());
-    }
-  }
-
-  for (final AccessAdminRolePermissionAssignment assignment in assignments) {
-    addCandidate(id: assignment.permissionId, name: assignment.permissionName);
-  }
-
-  if (resolved.isEmpty) {
-    for (final AccessAdminPermissionRef permission in embeddedPermissions) {
-      addCandidate(id: permission.id, name: permission.name);
-    }
-  }
-
-  return resolved;
-}
-
 Future<AppFailure?> _submitAccessAdminUserCreate(
   WidgetRef ref,
   AccessAdminUserDraft draft,
@@ -1008,11 +937,15 @@ Future<AccessAdminLookups?> _prefetchRoleDialogLookups(
   required String tenantId,
   String? facilityId,
   bool includeFacilities = false,
+  bool includePermissions = true,
 }) async {
   final List<String> include = <String>[
-    'permissions',
+    if (includePermissions) 'permissions',
     if (includeFacilities) 'facilities',
   ];
+  if (include.isEmpty) {
+    return null;
+  }
   final Result<AccessAdminLookups> result = await ref
       .read(accessAdminRepositoryProvider)
       .getReferenceData(

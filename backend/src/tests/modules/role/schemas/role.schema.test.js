@@ -228,6 +228,27 @@ describe('Role Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should validate scope and tenant_id updates', () => {
+      const validData = {
+        scope: 'tenant',
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        facility_id: null,
+        name: 'Updated Role'
+      };
+      const result = updateRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate platform scope update', () => {
+      const validData = {
+        scope: 'platform',
+        tenant_id: null,
+        facility_id: null
+      };
+      const result = updateRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
     it('should reject invalid facility_id format', () => {
       const invalidData = {
         facility_id: 'invalid-uuid'

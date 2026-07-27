@@ -80,6 +80,9 @@ const createRoleSchema = z
  * All fields optional for partial updates
  */
 const updateRoleSchema = z.object({
+  // Same RBAC/ABAC scope model as create: platform | tenant | facility.
+  scope: z.enum(['platform', 'tenant', 'facility']).optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(120).optional(),
   display_name: z.string().trim().min(1).max(160).optional().nullable(),

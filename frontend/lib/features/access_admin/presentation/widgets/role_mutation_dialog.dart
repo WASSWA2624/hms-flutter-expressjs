@@ -17,10 +17,7 @@ import 'package:hosspi_hms/shared/layout/app_workspace_mutation_dialog.dart';
 
 enum RoleMutationMode { create, edit }
 
-/// Edit-mode scope (single target).
-enum RoleScopeKind { tenant, facility }
-
-/// Create-mode scope radios.
+/// Shared create/edit scope radios (RBAC/ABAC: platform | tenant | facility).
 enum RoleCreateScopeKind { platform, tenants, facilities }
 
 typedef RoleMutationSubmitHandler =
@@ -54,7 +51,6 @@ Future<bool?> showRoleMutationDialog({
   RoleAllFacilityOptionsLoader? loadAllFacilityOptions,
   String? tenantId,
   String? facilityId,
-  bool requireTenantPicker = false,
   bool allowTenantWideScope = true,
   bool forceFacilityScope = false,
   bool allowPlatformScope = false,
@@ -68,8 +64,7 @@ Future<bool?> showRoleMutationDialog({
   required RoleMutationSubmitHandler onSubmit,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final bool showPermissions =
-      includePermissions ?? mode == RoleMutationMode.edit;
+  final bool showPermissions = includePermissions ?? false;
   final TextEditingController nameController = TextEditingController(
     text: initialName,
   );
@@ -84,36 +79,45 @@ Future<bool?> showRoleMutationDialog({
   );
   String? selectedTenantId = tenantId;
   String? selectedFacilityId = facilityId;
-  final bool showTenantPicker =
-      requireTenantPicker ||
-      (mode == RoleMutationMode.create && tenantId == null);
   final bool lockedFacilityScope = forceFacilityScope || !allowTenantWideScope;
-  RoleScopeKind scopeKind = lockedFacilityScope || (facilityId ?? '').isNotEmpty
-      ? RoleScopeKind.facility
-      : RoleScopeKind.tenant;
 
-  final bool canPlatform =
-      mode == RoleMutationMode.create &&
-      allowPlatformScope &&
-      !lockedFacilityScope;
-  final bool canTenants =
-      mode == RoleMutationMode.create &&
-      allowTenantScope &&
-      !lockedFacilityScope;
-  final bool canFacilities =
-      mode == RoleMutationMode.create && allowFacilityScope;
+  final bool canPlatform = allowPlatformScope && !lockedFacilityScope;
+  final bool canTenants = allowTenantScope && !lockedFacilityScope;
+  final bool canFacilities = allowFacilityScope;
 
-  RoleCreateScopeKind createScopeKind = canPlatform
-      ? RoleCreateScopeKind.platform
-      : (canTenants
-            ? RoleCreateScopeKind.tenants
-            : RoleCreateScopeKind.facilities);
+  // Edit prefills from the role's actual ABAC scope; create defaults to the
+  // broadest allowed option (platform → tenants → facilities).
+  final RoleCreateScopeKind createScopeKindInitial;
+  if (mode == RoleMutationMode.edit) {
+    if ((facilityId ?? '').trim().isNotEmpty) {
+      createScopeKindInitial = RoleCreateScopeKind.facilities;
+    } else if ((tenantId ?? '').trim().isNotEmpty) {
+      createScopeKindInitial = RoleCreateScopeKind.tenants;
+    } else if (canPlatform) {
+      createScopeKindInitial = RoleCreateScopeKind.platform;
+    } else if (canTenants) {
+      createScopeKindInitial = RoleCreateScopeKind.tenants;
+    } else {
+      createScopeKindInitial = RoleCreateScopeKind.facilities;
+    }
+  } else {
+    createScopeKindInitial = canPlatform
+        ? RoleCreateScopeKind.platform
+        : (canTenants
+              ? RoleCreateScopeKind.tenants
+              : RoleCreateScopeKind.facilities);
+  }
+  RoleCreateScopeKind createScopeKind = createScopeKindInitial;
 
   final Set<String> selectedTenantIds = <String>{
-    if ((tenantId ?? '').isNotEmpty && canTenants) tenantId!,
+    if ((tenantId ?? '').isNotEmpty &&
+        createScopeKind == RoleCreateScopeKind.tenants)
+      tenantId!,
   };
   final Set<String> selectedFacilityIds = <String>{
-    if ((facilityId ?? '').isNotEmpty && canFacilities) facilityId!,
+    if ((facilityId ?? '').isNotEmpty &&
+        createScopeKind == RoleCreateScopeKind.facilities)
+      facilityId!,
   };
   bool reinforceIdentityGuidance = false;
 
@@ -187,6 +191,12 @@ Future<bool?> showRoleMutationDialog({
           loaded.length == 1) {
         selectedTenantIds.add(loaded.first.id);
       }
+      if (mode == RoleMutationMode.edit &&
+          createScopeKind == RoleCreateScopeKind.tenants &&
+          selectedTenantIds.isEmpty &&
+          loaded.length == 1) {
+        selectedTenantIds.add(loaded.first.id);
+      }
     });
   }
 
@@ -194,8 +204,7 @@ Future<bool?> showRoleMutationDialog({
     final RoleAllFacilityOptionsLoader? allLoader = loadAllFacilityOptions;
     final RoleFacilityOptionsLoader? loader = loadFacilityOptions;
 
-    if (mode == RoleMutationMode.create &&
-        createScopeKind == RoleCreateScopeKind.facilities &&
+    if (createScopeKind == RoleCreateScopeKind.facilities &&
         allLoader != null) {
       setState(() {
         isLoadingFacilities = true;
@@ -217,11 +226,9 @@ Future<bool?> showRoleMutationDialog({
       return;
     }
 
-    final String? resolvedTenantId = mode == RoleMutationMode.create
-        ? (selectedTenantIds.length == 1
-              ? selectedTenantIds.first
-              : selectedTenantId ?? tenantId)
-        : selectedTenantId;
+    final String? resolvedTenantId = selectedTenantIds.length == 1
+        ? selectedTenantIds.first
+        : selectedTenantId ?? tenantId;
     if (loader == null || (resolvedTenantId ?? '').isEmpty) {
       setState(() {
         facilityOptions = const <AccessAdminLookupOption>[];
@@ -244,38 +251,44 @@ Future<bool?> showRoleMutationDialog({
       isLoadingFacilities = false;
       facilityLoadAttempted = true;
       facilityOptions = loaded;
-      if (mode == RoleMutationMode.create) {
-        selectedFacilityIds.removeWhere(
-          (String id) =>
-              loaded.every((AccessAdminLookupOption o) => o.id != id),
-        );
-        if (selectedFacilityIds.isEmpty && loaded.length == 1) {
-          selectedFacilityIds.add(loaded.first.id);
-        }
-      } else {
-        if ((selectedFacilityId ?? '').isNotEmpty &&
-            loaded.every(
-              (AccessAdminLookupOption option) =>
-                  option.id != selectedFacilityId,
-            )) {
-          selectedFacilityId = null;
-        }
-        if ((selectedFacilityId ?? '').isEmpty && loaded.length == 1) {
-          selectedFacilityId = loaded.first.id;
-        }
+      selectedFacilityIds.removeWhere(
+        (String id) =>
+            loaded.every((AccessAdminLookupOption o) => o.id != id),
+      );
+      if (selectedFacilityIds.isEmpty && loaded.length == 1) {
+        selectedFacilityIds.add(loaded.first.id);
+      }
+      if ((selectedFacilityId ?? '').isNotEmpty &&
+          loaded.every(
+            (AccessAdminLookupOption option) =>
+                option.id != selectedFacilityId,
+          )) {
+        selectedFacilityId = null;
+      }
+      if ((selectedFacilityId ?? '').isEmpty &&
+          selectedFacilityIds.length == 1) {
+        selectedFacilityId = selectedFacilityIds.first;
+      } else if ((selectedFacilityId ?? '').isEmpty && loaded.length == 1) {
+        selectedFacilityId = loaded.first.id;
       }
     });
   }
 
   Future<void> loadPermissionsForScope(StateSetter setState) async {
-    final String? resolvedTenantId = selectedTenantId;
+    final String? resolvedTenantId =
+        selectedTenantIds.length == 1
+        ? selectedTenantIds.first
+        : selectedTenantId ?? tenantId;
     final RolePermissionLookupsLoader? loader = loadPermissionsForTenant;
     if (loader == null || (resolvedTenantId ?? '').isEmpty) {
       return;
     }
 
-    final String? scopeFacilityId = scopeKind == RoleScopeKind.facility
-        ? selectedFacilityId
+    final String? scopeFacilityId =
+        createScopeKind == RoleCreateScopeKind.facilities
+        ? (selectedFacilityIds.length == 1
+              ? selectedFacilityIds.first
+              : selectedFacilityId)
         : null;
     final bool preserveSelection =
         mode == RoleMutationMode.edit && !permissionLoadAttempted;
@@ -363,20 +376,12 @@ Future<bool?> showRoleMutationDialog({
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               final bool isCreate = mode == RoleMutationMode.create;
-              final bool tenantSelected = (selectedTenantId ?? '').isNotEmpty;
-              final bool facilitySelected =
-                  (selectedFacilityId ?? '').isNotEmpty;
-              final bool scopeReady = isCreate
-                  ? switch (createScopeKind) {
-                      RoleCreateScopeKind.platform => true,
-                      RoleCreateScopeKind.tenants =>
-                        selectedTenantIds.isNotEmpty,
-                      RoleCreateScopeKind.facilities =>
-                        selectedFacilityIds.isNotEmpty,
-                    }
-                  : tenantSelected &&
-                        (scopeKind == RoleScopeKind.tenant ||
-                            facilitySelected);
+              final bool scopeReady = switch (createScopeKind) {
+                RoleCreateScopeKind.platform => true,
+                RoleCreateScopeKind.tenants => selectedTenantIds.isNotEmpty,
+                RoleCreateScopeKind.facilities =>
+                  selectedFacilityIds.isNotEmpty,
+              };
               final bool fieldsEnabled = !isSubmitting && scopeReady;
               final List<AppPermissionAssignmentOption> permissionOptions =
                   buildPermissionOptions();
@@ -387,12 +392,9 @@ Future<bool?> showRoleMutationDialog({
                   !tenantLoadAttempted &&
                   !isLoadingTenants &&
                   !scheduledInitialTenantLoad &&
-                  (isCreate
-                      ? (createScopeKind == RoleCreateScopeKind.tenants ||
-                            (createScopeKind ==
-                                    RoleCreateScopeKind.facilities &&
-                                loadAllFacilityOptions == null))
-                      : showTenantPicker);
+                  (createScopeKind == RoleCreateScopeKind.tenants ||
+                      (createScopeKind == RoleCreateScopeKind.facilities &&
+                          loadAllFacilityOptions == null));
               if (shouldLoadTenants) {
                 scheduledInitialTenantLoad = true;
                 unawaited(reloadTenantOptions(setState));
@@ -402,20 +404,14 @@ Future<bool?> showRoleMutationDialog({
                   selectedTenantIds.length == 1
                   ? selectedTenantIds.first
                   : (selectedTenantId ?? tenantId);
-              final bool shouldLoadFacilities = isCreate
-                  ? (createScopeKind == RoleCreateScopeKind.facilities &&
-                        !facilityLoadAttempted &&
-                        !isLoadingFacilities &&
-                        !scheduledInitialFacilityLoad &&
-                        (loadAllFacilityOptions != null ||
-                            (loadFacilityOptions != null &&
-                                (createFacilityTenantId ?? '').isNotEmpty)))
-                  : (scopeKind == RoleScopeKind.facility &&
-                        loadFacilityOptions != null &&
-                        tenantSelected &&
-                        !facilityLoadAttempted &&
-                        !isLoadingFacilities &&
-                        !scheduledInitialFacilityLoad);
+              final bool shouldLoadFacilities =
+                  createScopeKind == RoleCreateScopeKind.facilities &&
+                  !facilityLoadAttempted &&
+                  !isLoadingFacilities &&
+                  !scheduledInitialFacilityLoad &&
+                  (loadAllFacilityOptions != null ||
+                      (loadFacilityOptions != null &&
+                          (createFacilityTenantId ?? '').isNotEmpty));
               final bool shouldLoadPermissions =
                   showPermissions &&
                   loadPermissionsForTenant != null &&
@@ -499,319 +495,152 @@ Future<bool?> showRoleMutationDialog({
                     density: AppFormSectionDensity.compact,
                     title: l10n.accessAdminRoleScopeLabel,
                     children: <Widget>[
-                      if (isCreate) ...<Widget>[
-                        if (createScopeOptions.length <= 1)
-                          Text(
-                            createScopeOptions.isEmpty
-                                ? l10n.accessAdminRoleScopeLabel
-                                : createScopeOptions.first.label,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          )
-                        else
-                          AppRadioGroup<RoleCreateScopeKind>(
-                            value: createScopeKind,
-                            enabled: !isSubmitting,
-                            layout: AppRadioGroupLayout.wrap,
-                            wrapColumns: 3,
-                            itemMinWidth: 160,
-                            options: createScopeOptions,
-                            onChanged: isSubmitting
-                                ? null
-                                : (RoleCreateScopeKind? value) {
-                                    if (value == null) {
-                                      return;
-                                    }
-                                    onCreateScopeChanged(value);
-                                  },
+                      if (createScopeOptions.length <= 1)
+                        Text(
+                          createScopeOptions.isEmpty
+                              ? l10n.accessAdminRoleScopeLabel
+                              : createScopeOptions.first.label,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
-                        if (createScopeKind ==
-                            RoleCreateScopeKind.tenants) ...<Widget>[
-                          SizedBox(height: theme.spacing.sm),
-                          if (isLoadingTenants)
-                            _RoleMutationLoadingIndicator(
-                              label: l10n.accessAdminCreateRoleLoadingTenants,
-                            )
-                          else if (tenantOptions.isEmpty)
-                            AppFormInformationBanner(
-                              title: l10n.accessAdminTenantContextRequiredTitle,
-                              message: l10n.tenantFacilitySelectTenantLoadError,
-                              variant: AppFormInformationVariant.warning,
-                              icon: Icons.apartment_outlined,
-                              children: loadTenantOptions != null
-                                  ? <Widget>[
-                                      AppButton.secondary(
-                                        label: l10n.commonRetryActionLabel,
-                                        enabled: !isSubmitting,
-                                        onPressed: () {
-                                          setState(() {
-                                            tenantLoadAttempted = false;
-                                            scheduledInitialTenantLoad = false;
-                                          });
-                                          unawaited(
-                                            reloadTenantOptions(setState),
-                                          );
-                                        },
-                                      ),
-                                    ]
-                                  : const <Widget>[],
-                            )
-                          else
-                            _RoleTargetMultiSelect(
-                              label: l10n.accessAdminRoleSelectTenantsLabel,
-                              options: tenantOptions,
-                              selectedIds: selectedTenantIds,
-                              enabled: !isSubmitting,
-                              emptySelectionError: selectedTenantIds.isEmpty
-                                  ? l10n.accessAdminRoleTargetsRequired
-                                  : null,
-                              onChanged: (Set<String> next) {
-                                setState(() {
-                                  selectedTenantIds
-                                    ..clear()
-                                    ..addAll(next);
-                                  reinforceIdentityGuidance = false;
-                                });
-                              },
-                            ),
-                        ],
-                        if (createScopeKind ==
-                            RoleCreateScopeKind.facilities) ...<Widget>[
-                          SizedBox(height: theme.spacing.sm),
-                          if (isLoadingFacilities)
-                            _RoleMutationLoadingIndicator(
-                              label:
-                                  l10n.accessAdminCreateRoleLoadingFacilities,
-                            )
-                          else if (facilityOptions.isEmpty)
-                            AppFormInformationBanner(
-                              title: l10n.accessAdminRoleFacilityRequiredTitle,
-                              message:
-                                  l10n.accessAdminRoleFacilityRequiredMessage,
-                              variant: AppFormInformationVariant.warning,
-                              icon: Icons.local_hospital_outlined,
-                              children:
-                                  loadAllFacilityOptions != null ||
-                                      loadFacilityOptions != null
-                                  ? <Widget>[
-                                      AppButton.secondary(
-                                        label: l10n.commonRetryActionLabel,
-                                        enabled: !isSubmitting,
-                                        onPressed: () {
-                                          setState(() {
-                                            facilityLoadAttempted = false;
-                                            scheduledInitialFacilityLoad =
-                                                false;
-                                          });
-                                          unawaited(
-                                            reloadFacilityOptions(setState),
-                                          );
-                                        },
-                                      ),
-                                    ]
-                                  : const <Widget>[],
-                            )
-                          else
-                            _RoleTargetMultiSelect(
-                              label: l10n.accessAdminRoleSelectFacilitiesLabel,
-                              options: facilityOptions,
-                              selectedIds: selectedFacilityIds,
-                              enabled: !isSubmitting,
-                              emptySelectionError: selectedFacilityIds.isEmpty
-                                  ? l10n.accessAdminRoleTargetsRequired
-                                  : null,
-                              onChanged: (Set<String> next) {
-                                setState(() {
-                                  selectedFacilityIds
-                                    ..clear()
-                                    ..addAll(next);
-                                  reinforceIdentityGuidance = false;
-                                });
-                              },
-                            ),
-                        ],
-                      ] else ...<Widget>[
-                        if (showTenantPicker) ...<Widget>[
-                          if (isLoadingTenants)
-                            _RoleMutationLoadingIndicator(
-                              label: l10n.accessAdminCreateRoleLoadingTenants,
-                            )
-                          else if (tenantOptions.isEmpty)
-                            AppFormInformationBanner(
-                              title: l10n.accessAdminTenantContextRequiredTitle,
-                              message: l10n.tenantFacilitySelectTenantLoadError,
-                              variant: AppFormInformationVariant.warning,
-                              icon: Icons.apartment_outlined,
-                              children: loadTenantOptions != null
-                                  ? <Widget>[
-                                      AppButton.secondary(
-                                        label: l10n.commonRetryActionLabel,
-                                        enabled: !isSubmitting,
-                                        onPressed: () {
-                                          setState(() {
-                                            tenantLoadAttempted = false;
-                                            scheduledInitialTenantLoad = false;
-                                          });
-                                          unawaited(
-                                            reloadTenantOptions(setState),
-                                          );
-                                        },
-                                      ),
-                                    ]
-                                  : const <Widget>[],
-                            )
-                          else
-                            AppSelectField<String>.searchable(
-                              value: selectedTenantId,
-                              enabled: !isSubmitting,
-                              labelText: l10n.tenantFacilitySelectTenantLabel,
-                              isRequired: true,
-                              menuHeight: 280,
-                              options: tenantOptions
-                                  .map(
-                                    (AccessAdminLookupOption tenant) =>
-                                        AppSelectOption<String>(
-                                          value: tenant.id,
-                                          label: tenant.label,
-                                        ),
-                                  )
-                                  .toList(growable: false),
-                              onChanged: (String? value) {
-                                setState(() {
-                                  selectedTenantId = value;
-                                  selectedFacilityId = null;
-                                  facilityLoadAttempted = false;
-                                  scheduledInitialFacilityLoad = false;
-                                  permissionLoadAttempted = false;
-                                  scheduledInitialPermissionLoad = false;
-                                  currentPermissionLookups =
-                                      <AccessAdminLookupOption>[];
-                                  selectedPermissionIds.clear();
-                                });
-                              },
-                              validator: (String? value) =>
-                                  (value ?? '').trim().isEmpty
-                                  ? l10n.validationRequired
-                                  : null,
-                            ),
-                          SizedBox(height: theme.spacing.sm),
-                        ],
-                        SegmentedButton<RoleScopeKind>(
-                          segments: <ButtonSegment<RoleScopeKind>>[
-                            ButtonSegment<RoleScopeKind>(
-                              value: RoleScopeKind.tenant,
-                              enabled: !lockedFacilityScope && !isSubmitting,
-                              label: Text(l10n.accessAdminRoleScopeTenantLabel),
-                              icon: const Icon(Icons.domain_outlined, size: 18),
-                            ),
-                            ButtonSegment<RoleScopeKind>(
-                              value: RoleScopeKind.facility,
-                              enabled: !isSubmitting,
-                              label: Text(
-                                l10n.accessAdminRoleScopeFacilityLabel,
-                              ),
-                              icon: const Icon(
-                                Icons.local_hospital_outlined,
-                                size: 18,
-                              ),
-                            ),
-                          ],
-                          selected: <RoleScopeKind>{scopeKind},
-                          onSelectionChanged:
-                              lockedFacilityScope || isSubmitting
+                        )
+                      else
+                        AppRadioGroup<RoleCreateScopeKind>(
+                          value: createScopeKind,
+                          enabled: !isSubmitting,
+                          layout: AppRadioGroupLayout.wrap,
+                          wrapColumns: 3,
+                          itemMinWidth: 160,
+                          options: createScopeOptions,
+                          onChanged: isSubmitting
                               ? null
-                              : (Set<RoleScopeKind> next) {
-                                  if (next.isEmpty) {
+                              : (RoleCreateScopeKind? value) {
+                                  if (value == null) {
                                     return;
                                   }
-                                  setState(() {
-                                    scopeKind = next.first;
-                                    if (scopeKind == RoleScopeKind.tenant) {
-                                      selectedFacilityId = null;
-                                    }
-                                    facilityLoadAttempted = false;
-                                    scheduledInitialFacilityLoad = false;
-                                    permissionLoadAttempted = false;
-                                    scheduledInitialPermissionLoad = false;
-                                    currentPermissionLookups =
-                                        <AccessAdminLookupOption>[];
-                                    selectedPermissionIds.clear();
-                                  });
+                                  onCreateScopeChanged(value);
                                 },
                         ),
-                        if (scopeKind == RoleScopeKind.facility) ...<Widget>[
-                          SizedBox(height: theme.spacing.sm),
-                          if (!tenantSelected)
-                            AppMessagePanel(
-                              icon: Icons.touch_app_outlined,
-                              message: l10n
-                                  .accessAdminPermissionCatalogSelectTenantMessage,
-                              density: AppContentPanelDensity.compact,
-                            )
-                          else if (isLoadingFacilities)
-                            _RoleMutationLoadingIndicator(
-                              label:
-                                  l10n.accessAdminCreateRoleLoadingFacilities,
-                            )
-                          else if (facilityOptions.isEmpty)
-                            AppFormInformationBanner(
-                              title: l10n.accessAdminRoleFacilityRequiredTitle,
-                              message:
-                                  l10n.accessAdminRoleFacilityRequiredMessage,
-                              variant: AppFormInformationVariant.warning,
-                              icon: Icons.local_hospital_outlined,
-                              children: loadFacilityOptions != null
-                                  ? <Widget>[
-                                      AppButton.secondary(
-                                        label: l10n.commonRetryActionLabel,
-                                        enabled: !isSubmitting,
-                                        onPressed: () {
-                                          setState(() {
-                                            facilityLoadAttempted = false;
-                                            scheduledInitialFacilityLoad =
-                                                false;
-                                          });
-                                          unawaited(
-                                            reloadFacilityOptions(setState),
-                                          );
-                                        },
-                                      ),
-                                    ]
-                                  : const <Widget>[],
-                            )
-                          else
-                            AppSelectField<String>.searchable(
-                              value: selectedFacilityId,
-                              enabled: !isSubmitting,
-                              labelText: l10n.tenantFacilityFacilitySelectLabel,
-                              isRequired: true,
-                              menuHeight: 280,
-                              options: facilityOptions
-                                  .map(
-                                    (AccessAdminLookupOption facility) =>
-                                        AppSelectOption<String>(
-                                          value: facility.id,
-                                          label: facility.label,
-                                        ),
-                                  )
-                                  .toList(growable: false),
-                              onChanged: (String? value) {
-                                setState(() {
-                                  selectedFacilityId = value;
-                                  permissionLoadAttempted = false;
-                                  scheduledInitialPermissionLoad = false;
-                                  currentPermissionLookups =
-                                      <AccessAdminLookupOption>[];
-                                  selectedPermissionIds.clear();
-                                });
-                              },
-                              validator: (String? value) =>
-                                  (value ?? '').trim().isEmpty
-                                  ? l10n.validationRequired
-                                  : null,
-                            ),
-                        ],
+                      if (createScopeKind ==
+                          RoleCreateScopeKind.tenants) ...<Widget>[
+                        SizedBox(height: theme.spacing.sm),
+                        if (isLoadingTenants)
+                          _RoleMutationLoadingIndicator(
+                            label: l10n.accessAdminCreateRoleLoadingTenants,
+                          )
+                        else if (tenantOptions.isEmpty)
+                          AppFormInformationBanner(
+                            title: l10n.accessAdminTenantContextRequiredTitle,
+                            message: l10n.tenantFacilitySelectTenantLoadError,
+                            variant: AppFormInformationVariant.warning,
+                            icon: Icons.apartment_outlined,
+                            children: loadTenantOptions != null
+                                ? <Widget>[
+                                    AppButton.secondary(
+                                      label: l10n.commonRetryActionLabel,
+                                      enabled: !isSubmitting,
+                                      onPressed: () {
+                                        setState(() {
+                                          tenantLoadAttempted = false;
+                                          scheduledInitialTenantLoad = false;
+                                        });
+                                        unawaited(
+                                          reloadTenantOptions(setState),
+                                        );
+                                      },
+                                    ),
+                                  ]
+                                : const <Widget>[],
+                          )
+                        else
+                          _RoleTargetMultiSelect(
+                            label: l10n.accessAdminRoleSelectTenantsLabel,
+                            options: tenantOptions,
+                            selectedIds: selectedTenantIds,
+                            enabled: !isSubmitting,
+                            emptySelectionError: selectedTenantIds.isEmpty
+                                ? l10n.accessAdminRoleTargetsRequired
+                                : null,
+                            onChanged: (Set<String> next) {
+                              setState(() {
+                                final Set<String> resolved =
+                                    !isCreate && next.length > 1
+                                    ? <String>{next.last}
+                                    : next;
+                                selectedTenantIds
+                                  ..clear()
+                                  ..addAll(resolved);
+                                selectedTenantId =
+                                    selectedTenantIds.length == 1
+                                    ? selectedTenantIds.first
+                                    : null;
+                                reinforceIdentityGuidance = false;
+                              });
+                            },
+                          ),
+                      ],
+                      if (createScopeKind ==
+                          RoleCreateScopeKind.facilities) ...<Widget>[
+                        SizedBox(height: theme.spacing.sm),
+                        if (isLoadingFacilities)
+                          _RoleMutationLoadingIndicator(
+                            label:
+                                l10n.accessAdminCreateRoleLoadingFacilities,
+                          )
+                        else if (facilityOptions.isEmpty)
+                          AppFormInformationBanner(
+                            title: l10n.accessAdminRoleFacilityRequiredTitle,
+                            message:
+                                l10n.accessAdminRoleFacilityRequiredMessage,
+                            variant: AppFormInformationVariant.warning,
+                            icon: Icons.local_hospital_outlined,
+                            children:
+                                loadAllFacilityOptions != null ||
+                                    loadFacilityOptions != null
+                                ? <Widget>[
+                                    AppButton.secondary(
+                                      label: l10n.commonRetryActionLabel,
+                                      enabled: !isSubmitting,
+                                      onPressed: () {
+                                        setState(() {
+                                          facilityLoadAttempted = false;
+                                          scheduledInitialFacilityLoad =
+                                              false;
+                                        });
+                                        unawaited(
+                                          reloadFacilityOptions(setState),
+                                        );
+                                      },
+                                    ),
+                                  ]
+                                : const <Widget>[],
+                          )
+                        else
+                          _RoleTargetMultiSelect(
+                            label: l10n.accessAdminRoleSelectFacilitiesLabel,
+                            options: facilityOptions,
+                            selectedIds: selectedFacilityIds,
+                            enabled: !isSubmitting,
+                            emptySelectionError: selectedFacilityIds.isEmpty
+                                ? l10n.accessAdminRoleTargetsRequired
+                                : null,
+                            onChanged: (Set<String> next) {
+                              setState(() {
+                                final Set<String> resolved =
+                                    !isCreate && next.length > 1
+                                    ? <String>{next.last}
+                                    : next;
+                                selectedFacilityIds
+                                  ..clear()
+                                  ..addAll(resolved);
+                                selectedFacilityId =
+                                    selectedFacilityIds.length == 1
+                                    ? selectedFacilityIds.first
+                                    : null;
+                                reinforceIdentityGuidance = false;
+                              });
+                            },
+                          ),
                       ],
                     ],
                   ),
@@ -820,8 +649,7 @@ Future<bool?> showRoleMutationDialog({
                     density: AppFormSectionDensity.compact,
                     title: l10n.accessAdminCreateRoleDetailsSectionTitle,
                     children: <Widget>[
-                      if (isCreate &&
-                          (!scopeReady || reinforceIdentityGuidance)) ...<Widget>[
+                      if (!scopeReady || reinforceIdentityGuidance) ...<Widget>[
                         AppMessagePanel(
                           icon: reinforceIdentityGuidance && !scopeReady
                               ? Icons.warning_amber_outlined
@@ -896,7 +724,7 @@ Future<bool?> showRoleMutationDialog({
                         if (!scopeReady && !isLoadingPermissions)
                           AppMessagePanel(
                             icon: Icons.touch_app_outlined,
-                            message: scopeKind == RoleScopeKind.facility
+                            message: createScopeKind == RoleCreateScopeKind.facilities
                                 ? l10n.accessAdminRoleSelectFacilityMessage
                                 : l10n
                                       .accessAdminPermissionCatalogSelectTenantMessage,
@@ -1020,40 +848,52 @@ Future<bool?> showRoleMutationDialog({
       final List<String> permissionIds = showPermissions
           ? selectedPermissionIds.toList(growable: false)
           : const <String>[];
+      // Create may send an empty permission set; edit without the permissions
+      // UI must not sync (would wipe existing grants).
+      final bool syncPermissions =
+          showPermissions || mode == RoleMutationMode.create;
 
-      if (mode == RoleMutationMode.create) {
+      List<AccessAdminRoleDraft> draftsForScope() {
         switch (createScopeKind) {
           case RoleCreateScopeKind.platform:
-            return onSubmit(<AccessAdminRoleDraft>[
+            return <AccessAdminRoleDraft>[
               AccessAdminRoleDraft(
                 name: name,
                 displayName: displayName,
                 description: description,
                 permissionIds: permissionIds,
+                syncPermissions: syncPermissions,
                 scope: 'platform',
               ),
-            ]);
+            ];
           case RoleCreateScopeKind.tenants:
             if (selectedTenantIds.isEmpty) {
-              return Future<AppFailure?>.value(AppFailure.validation());
+              return const <AccessAdminRoleDraft>[];
             }
-            return onSubmit(<AccessAdminRoleDraft>[
-              for (final String id in selectedTenantIds)
+            final Iterable<String> targets = mode == RoleMutationMode.edit
+                ? <String>[selectedTenantIds.first]
+                : selectedTenantIds;
+            return <AccessAdminRoleDraft>[
+              for (final String id in targets)
                 AccessAdminRoleDraft(
                   tenantId: id,
                   name: name,
                   displayName: displayName,
                   description: description,
                   permissionIds: permissionIds,
+                  syncPermissions: syncPermissions,
                   scope: 'tenant',
                 ),
-            ]);
+            ];
           case RoleCreateScopeKind.facilities:
             if (selectedFacilityIds.isEmpty) {
-              return Future<AppFailure?>.value(AppFailure.validation());
+              return const <AccessAdminRoleDraft>[];
             }
-            return onSubmit(<AccessAdminRoleDraft>[
-              for (final String id in selectedFacilityIds)
+            final Iterable<String> targets = mode == RoleMutationMode.edit
+                ? <String>[selectedFacilityIds.first]
+                : selectedFacilityIds;
+            return <AccessAdminRoleDraft>[
+              for (final String id in targets)
                 AccessAdminRoleDraft(
                   tenantId:
                       facilityOptions
@@ -1071,32 +911,18 @@ Future<bool?> showRoleMutationDialog({
                   displayName: displayName,
                   description: description,
                   permissionIds: permissionIds,
+                  syncPermissions: syncPermissions,
                   scope: 'facility',
                 ),
-            ]);
+            ];
         }
       }
 
-      final String? resolvedTenantId = selectedTenantId ?? tenantId;
-      if (resolvedTenantId == null || resolvedTenantId.trim().isEmpty) {
+      final List<AccessAdminRoleDraft> drafts = draftsForScope();
+      if (drafts.isEmpty) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
-      if (scopeKind == RoleScopeKind.facility &&
-          (selectedFacilityId == null || selectedFacilityId!.trim().isEmpty)) {
-        return Future<AppFailure?>.value(AppFailure.validation());
-      }
-      return onSubmit(<AccessAdminRoleDraft>[
-        AccessAdminRoleDraft(
-          tenantId: resolvedTenantId,
-          facilityId: scopeKind == RoleScopeKind.facility
-              ? selectedFacilityId
-              : null,
-          name: name,
-          displayName: displayName,
-          description: description,
-          permissionIds: permissionIds,
-        ),
-      ]);
+      return onSubmit(drafts);
     },
   );
 

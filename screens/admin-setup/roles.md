@@ -15,7 +15,7 @@
 - **Edit**
   - Location: Role row actions (active roles only).
   - Condition: The actions column is shown when workspace `canWrite` is true; hidden for soft-deleted roles; enabled when the list is not loading and no mutation is in progress.
-  - Immediate result: Opens `showRoleMutationDialog` in **Edit** mode (same form as create, plus permissions). Save runs similarity review excluding the edited role when identity fields change.
+  - Immediate result: Opens `showRoleMutationDialog` in **Edit** mode with the same RBAC/ABAC Scope radios as Create (**Platform** / **Tenant(s)** / **Facility(ies)**) plus Role details (no Permissions section), pre-filled from the role’s actual `tenant_id` / `facility_id`. Save runs similarity review excluding the edited role when identity or scope change. Permissions stay managed from role details.
 
 - **Delete**
   - Location: Role row actions (active roles only).

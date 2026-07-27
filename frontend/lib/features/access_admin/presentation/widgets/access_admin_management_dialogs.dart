@@ -2229,6 +2229,7 @@ class _AccessAdminRoleDetailDialogState
           tenantId: tenantId,
           facilityId: widget.role.facilityId,
           include: const <String>['permissions'],
+          forceRefresh: true,
         );
     if (!mounted) {
       return;
@@ -2254,10 +2255,26 @@ class _AccessAdminRoleDetailDialogState
       return;
     }
 
-    final Set<String> selectedIds = <String>{
-      for (final AccessAdminRolePermissionAssignment assignment in _permissions)
-        if ((assignment.permissionId ?? '').isNotEmpty) assignment.permissionId!,
+    final Set<String> catalogIds = <String>{
+      for (final AccessAdminLookupOption permission in resolved.permissions)
+        permission.id,
     };
+    final Map<String, String> idByCode = <String, String>{
+      for (final AccessAdminLookupOption permission in resolved.permissions)
+        permission.label: permission.id,
+    };
+    final Set<String> selectedIds = <String>{};
+    for (final AccessAdminRolePermissionAssignment assignment in _permissions) {
+      final String permissionId = (assignment.permissionId ?? '').trim();
+      final String code = (assignment.permissionName ?? '').trim();
+      if (permissionId.isNotEmpty && catalogIds.contains(permissionId)) {
+        selectedIds.add(permissionId);
+        continue;
+      }
+      if (code.isNotEmpty && idByCode.containsKey(code)) {
+        selectedIds.add(idByCode[code]!);
+      }
+    }
     final List<AppPermissionAssignmentOption> options = resolved.permissions
         .map(
           (AccessAdminLookupOption permission) => AppPermissionAssignmentOption(
@@ -2269,85 +2286,41 @@ class _AccessAdminRoleDetailDialogState
         )
         .toList(growable: false);
 
-    final bool? confirmed = await showAppDialog<bool>(
+    final String syncRoleId = widget.role.mutationId.trim().isNotEmpty
+        ? widget.role.mutationId
+        : widget.role.id;
+
+    final bool? saved = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
       builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setDialogState) {
-            return AppDialog(
-              title: Text(
-                _permissions.isEmpty
-                    ? l10n.accessAdminAddRolePermissionsDialogTitle
-                    : l10n.accessAdminEditRolePermissionsDialogTitle,
-              ),
-              icon: const Icon(Icons.key_outlined),
-              maxWidth: 720,
-              scrollable: true,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    l10n.accessAdminAddRolePermissionsDialogDescription,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: Theme.of(context).spacing.md),
-                  AppPermissionAssignmentPicker(
-                    permissions: options,
-                    selectedPermissionIds: selectedIds,
-                    onSelectionChanged: (Set<String> next) {
-                      setDialogState(() {
-                        selectedIds
-                          ..clear()
-                          ..addAll(next);
-                      });
-                    },
-                  ),
-                ],
-              ),
-              actions: <Widget>[
-                AppButton.secondary(
-                  label: l10n.commonCancelActionLabel,
-                  leadingIcon: Icons.close,
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                ),
-                AppButton.primary(
-                  label: l10n.commonSaveActionLabel,
-                  leadingIcon: Icons.save_outlined,
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
-                ),
-              ],
+        return _RolePermissionsEditorDialog(
+          title: _permissions.isEmpty
+              ? l10n.accessAdminAddRolePermissionsDialogTitle
+              : l10n.accessAdminEditRolePermissionsDialogTitle,
+          description: l10n.accessAdminAddRolePermissionsDialogDescription,
+          options: options,
+          initialSelectedIds: selectedIds,
+          onSave: (Set<String> nextIds) async {
+            final Result<void> syncResult = await widget.repository
+                .syncRolePermissions(
+                  roleId: syncRoleId,
+                  permissionIds: nextIds.toList(growable: false),
+                );
+            return syncResult.when(
+              success: (_) => null,
+              failure: (AppFailure failure) => failure,
             );
           },
         );
       },
     );
-    if (confirmed != true || !mounted) {
+    if (saved != true || !mounted) {
       return;
     }
 
     setState(() => _saving = true);
-    final String syncRoleId = widget.role.mutationId.trim().isNotEmpty
-        ? widget.role.mutationId
-        : widget.role.id;
-    final Result<void> syncResult = await widget.repository.syncRolePermissions(
-      roleId: syncRoleId,
-      permissionIds: selectedIds.toList(growable: false),
-    );
-    if (!mounted) {
-      return;
-    }
-    final AppFailure? syncFailure = syncResult.when(
-      success: (_) => null,
-      failure: (AppFailure failure) => failure,
-    );
-    if (syncFailure != null) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.failureMessage(syncFailure))),
-      );
-      return;
-    }
-
     final Result<List<AccessAdminRolePermissionAssignment>> reloadResult =
         await widget.repository.listRolePermissions(syncRoleId);
     if (!mounted) {
@@ -2669,6 +2642,123 @@ class _RolePermissionsEmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RolePermissionsEditorDialog extends StatefulWidget {
+  const _RolePermissionsEditorDialog({
+    required this.title,
+    required this.description,
+    required this.options,
+    required this.initialSelectedIds,
+    required this.onSave,
+  });
+
+  final String title;
+  final String description;
+  final List<AppPermissionAssignmentOption> options;
+  final Set<String> initialSelectedIds;
+  final Future<AppFailure?> Function(Set<String> selectedIds) onSave;
+
+  @override
+  State<_RolePermissionsEditorDialog> createState() =>
+      _RolePermissionsEditorDialogState();
+}
+
+class _RolePermissionsEditorDialogState
+    extends State<_RolePermissionsEditorDialog> {
+  late final Set<String> _selectedIds;
+  bool _saving = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = Set<String>.from(widget.initialSelectedIds);
+  }
+
+  Future<void> _submit() async {
+    if (_saving) {
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _errorMessage = null;
+    });
+    final AppFailure? failure = await widget.onSave(
+      Set<String>.from(_selectedIds),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (failure != null) {
+      setState(() {
+        _saving = false;
+        _errorMessage = context.l10n.failureMessage(failure);
+      });
+      return;
+    }
+    Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    return AppDialog(
+      title: Text(widget.title),
+      icon: const Icon(Icons.key_outlined),
+      maxWidth: 720,
+      scrollable: true,
+      pinActionsToBottom: true,
+      initialMaximized: false,
+      closeEnabled: !_saving,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(widget.description, style: theme.textTheme.bodyMedium),
+          SizedBox(height: theme.spacing.md),
+          if (_errorMessage != null) ...<Widget>[
+            Text(
+              _errorMessage!,
+              style: theme.textTheme.bodyMedium?.copyWith(color: colors.error),
+            ),
+            SizedBox(height: theme.spacing.sm),
+          ],
+          AppPermissionAssignmentPicker(
+            permissions: widget.options,
+            selectedPermissionIds: _selectedIds,
+            enabled: !_saving,
+            onSelectionChanged: (Set<String> next) {
+              setState(() {
+                _selectedIds
+                  ..clear()
+                  ..addAll(next);
+              });
+            },
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: Icons.close,
+          enabled: !_saving,
+          onPressed: _saving
+              ? null
+              : () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.commonSaveActionLabel,
+          leadingIcon: Icons.save_outlined,
+          enabled: !_saving,
+          isLoading: _saving,
+          onPressed: _saving ? null : () => unawaited(_submit()),
+        ),
+      ],
     );
   }
 }

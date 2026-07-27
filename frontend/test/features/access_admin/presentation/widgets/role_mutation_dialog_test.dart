@@ -28,7 +28,6 @@ void main() {
                       allowPlatformScope: true,
                       allowTenantScope: true,
                       allowFacilityScope: true,
-                      requireTenantPicker: true,
                       loadTenantOptions: () async {
                         tenantLoadCount += 1;
                         return const <AccessAdminLookupOption>[
@@ -159,7 +158,6 @@ void main() {
                       allowPlatformScope: true,
                       allowTenantScope: true,
                       allowFacilityScope: true,
-                      requireTenantPicker: true,
                       loadTenantOptions: () async =>
                           const <AccessAdminLookupOption>[
                             AccessAdminLookupOption(
@@ -199,7 +197,7 @@ void main() {
   );
 
   testWidgets(
-    'edit mode keeps attached permissions selected after lookup load',
+    'edit mode uses Platform/Tenant/Facility scope radios and omits permissions',
     (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -213,27 +211,21 @@ void main() {
                     showRoleMutationDialog(
                       context: context,
                       mode: RoleMutationMode.edit,
+                      allowPlatformScope: true,
+                      allowTenantScope: true,
+                      allowFacilityScope: true,
                       tenantId: 'tenant-1',
-                      initialName: 'All rights',
-                      initialDescription: 'Full access',
-                      initialPermissionIds: const <String>{
-                        'PRM0001',
-                        'PRM0002',
+                      initialName: 'JOKING',
+                      initialDisplayName: 'Joking',
+                      initialDescription: 'Joking',
+                      loadTenantOptions: () async {
+                        return const <AccessAdminLookupOption>[
+                          AccessAdminLookupOption(
+                            id: 'tenant-1',
+                            label: 'DemoCare General Hospital',
+                          ),
+                        ];
                       },
-                      permissionLookups: const <AccessAdminLookupOption>[
-                        AccessAdminLookupOption(
-                          id: 'PRM0001',
-                          label: 'patient:read',
-                        ),
-                        AccessAdminLookupOption(
-                          id: 'PRM0002',
-                          label: 'patient:write',
-                        ),
-                        AccessAdminLookupOption(
-                          id: 'PRM0003',
-                          label: 'billing:read',
-                        ),
-                      ],
                       onSubmit: (List<AccessAdminRoleDraft> drafts) async =>
                           null,
                     ),
@@ -250,7 +242,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.textContaining('2 of 3 selected'), findsWidgets);
+      expect(find.text('EDIT ROLE'), findsOneWidget);
+      expect(find.text('Permissions'), findsNothing);
+      expect(find.text('Entire organization'), findsNothing);
+      expect(find.text('One facility'), findsNothing);
+      expect(find.text('Platform'), findsOneWidget);
+      expect(find.text('Tenant(s)'), findsOneWidget);
+      expect(find.text('Facility(ies)'), findsOneWidget);
+      expect(find.text('JOKING'), findsWidgets);
+      expect(find.text('Joking'), findsWidgets);
+      expect(find.textContaining('Role name'), findsWidgets);
+      expect(find.textContaining('Display name'), findsWidgets);
     },
   );
 

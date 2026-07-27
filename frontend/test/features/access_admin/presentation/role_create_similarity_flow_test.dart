@@ -147,9 +147,14 @@ void main() {
       isTrue,
     );
     expect(
+      addPermissionsSource.contains('_RolePermissionsEditorDialog'),
+      isTrue,
+      reason: 'Save must run inside the dialog so failures stay visible',
+    );
+    expect(
       addPermissionsSource.contains('forceRefresh: true'),
-      isFalse,
-      reason: 'Add permissions must not re-sync the catalog on every open',
+      isTrue,
+      reason: 'Permission editor must load fresh UUID catalog ids before sync',
     );
     expect(managementSource.contains('catalogTenantId'), isTrue);
   });
@@ -266,6 +271,11 @@ void main() {
     expect(editSource.contains('_reviewRoleSimilarity'), isTrue);
     expect(editSource.contains('identityChanged'), isTrue);
     expect(
+      editSource.contains('includePermissions: false'),
+      isTrue,
+      reason: 'Edit role form must match create (no permissions section)',
+    );
+    expect(
       dialogsSource.contains('excludeRoleId: excludeRoleId,'),
       isTrue,
     );
@@ -273,6 +283,19 @@ void main() {
       dialogsSource.contains('excludeRoleId: excludeRoleId'),
       isTrue,
       reason: 'Edit peer scoring must exclude the role being edited',
+    );
+  });
+
+  test('edit role updates omit permission_ids unless syncing permissions', () {
+    final String repositorySource = File(
+      'lib/features/access_admin/data/repositories/access_admin_repository_impl.dart',
+    ).readAsStringSync();
+    expect(repositorySource.contains('if (draft.syncPermissions)'), isTrue);
+    expect(
+      File(
+        'lib/features/access_admin/domain/entities/access_admin_entities.dart',
+      ).readAsStringSync().contains('syncPermissions'),
+      isTrue,
     );
   });
 

@@ -473,6 +473,23 @@ const assertActorCanManageRoleRecord = (role = {}, user = {}) => {
     return role;
   }
 
+  const isPlatformRole =
+    (role.tenant_id == null || String(role.tenant_id).trim() === '') &&
+    (role.facility_id == null || String(role.facility_id).trim() === '');
+  if (isPlatformRole) {
+    if (!canActorCreatePlatformRole(user)) {
+      throw new HttpError('errors.auth.insufficient_permissions', 403, [
+        { field: 'tenant_id', reason: 'platform_scope_forbidden' },
+      ]);
+    }
+    if (!isRoleWithinActorCeiling(role, user)) {
+      throw new HttpError('errors.auth.insufficient_permissions', 403, [
+        { field: 'role_id', reason: 'above_actor_ceiling' },
+      ]);
+    }
+    return role;
+  }
+
   const actorTenantId = user.tenant_id || user.tenantId || null;
   if (!actorTenantId || role.tenant_id !== actorTenantId) {
     throw new HttpError('errors.auth.scope_mismatch', 403, [

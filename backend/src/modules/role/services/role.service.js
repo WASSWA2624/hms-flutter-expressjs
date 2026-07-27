@@ -392,21 +392,32 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       data || {};
     const roleFields = stripSimilarityPayloadFields(roleFieldsWithConfirm);
     const payload = { ...roleFields };
-    if (Object.prototype.hasOwnProperty.call(roleFields, 'facility_id')) {
-      if (roleFields.facility_id != null && String(roleFields.facility_id).trim() !== '') {
-        payload.facility_id = await resolveIdentifierForPayload({
-          value: roleFields.facility_id,
-          model: 'facility',
-          field: 'facility_id',
-          nullable: true});
-      } else {
-        payload.facility_id = null;
-      }
+
+    const hasScopeHint =
+      Object.prototype.hasOwnProperty.call(roleFields, 'scope') ||
+      Object.prototype.hasOwnProperty.call(roleFields, 'tenant_id') ||
+      Object.prototype.hasOwnProperty.call(roleFields, 'facility_id');
+
+    if (hasScopeHint) {
+      const scoped = await normalizeCreateRolePayload({
+        scope: roleFields.scope,
+        tenant_id: Object.prototype.hasOwnProperty.call(roleFields, 'tenant_id')
+          ? roleFields.tenant_id
+          : before.tenant_id,
+        facility_id: Object.prototype.hasOwnProperty.call(roleFields, 'facility_id')
+          ? roleFields.facility_id
+          : before.facility_id,
+      });
+      // Scope updates always set both keys so platform clears tenant/facility.
+      payload.tenant_id = scoped.tenant_id;
+      payload.facility_id = scoped.facility_id;
+      delete payload.scope;
 
       await assertRoleScopeAllowed(
         {
-          tenant_id: before.tenant_id,
-          facility_id: payload.facility_id},
+          tenant_id: payload.tenant_id,
+          facility_id: payload.facility_id,
+        },
         actorUser
       );
     }
@@ -426,6 +437,9 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
     )
       ? payload.description
       : before.description;
+    const nextTenantId = Object.prototype.hasOwnProperty.call(payload, 'tenant_id')
+      ? payload.tenant_id
+      : before.tenant_id;
     const nextFacilityId = Object.prototype.hasOwnProperty.call(
       payload,
       'facility_id'
@@ -437,6 +451,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       String(nextName || '') !== String(before.name || '') ||
       String(nextDisplayName || '') !== String(before.display_name || '') ||
       String(nextDescription || '') !== String(before.description || '') ||
+      String(nextTenantId || '') !== String(before.tenant_id || '') ||
       String(nextFacilityId || '') !== String(before.facility_id || '');
 
     if (identityChanged) {
@@ -446,7 +461,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
           display_name: nextDisplayName,
           description: nextDescription
         },
-        tenantId: before.tenant_id,
+        tenantId: nextTenantId,
         facilityId: nextFacilityId,
         confirmSimilar,
         excludeRoleId: resolvedRoleId
@@ -461,7 +476,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       ? await assertPermissionIdsAssignable(
           permissionIdsInput,
           actorUser,
-          { tenantId: before.tenant_id || null }
+          { tenantId: nextTenantId || null }
         )
       : null;
 
