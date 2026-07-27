@@ -10,7 +10,7 @@
 const departmentRepository = require('@repositories/department/department.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { resolveEntityId } = require('@lib/billing/identifiers');
+const { resolveEntityId, resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const {
   resolveModelIdByIdentifier,
   resolveModelRecordByIdentifier,
@@ -23,6 +23,18 @@ const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
   ROLES.TENANT_ADMIN,
   ROLES.NURSE,
 ]);
+
+const normalizeDepartmentRecord = (department) => {
+  if (!department || typeof department !== 'object') {
+    return department;
+  }
+
+  return {
+    ...department,
+    resource_uuid: department.id,
+    display_id: resolvePublicIdentifier(department.human_friendly_id) || null,
+  };
+};
 
 const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorUserId, payload = {}) => {
   await publishCrudRealtimeEvent({
@@ -101,7 +113,9 @@ const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'cr
   const hasPreviousPage = page > 1;
 
   return {
-    departments,
+    departments: departments.map((department) =>
+      normalizeDepartmentRecord(department)
+    ),
     pagination: {
       page,
       limit,
@@ -124,7 +138,7 @@ const getDepartmentById = async (id) => {
     throw new HttpError('errors.department.not_found', 404);
   }
 
-  return department;
+  return normalizeDepartmentRecord(department);
 };
 
 /**
@@ -157,7 +171,7 @@ const createDepartment = async (data, context = {}) => {
     name: department.name,
   });
 
-  return department;
+  return normalizeDepartmentRecord(department);
 };
 
 /**
@@ -205,7 +219,7 @@ const updateDepartment = async (id, data, context = {}) => {
     name: department.name,
   });
 
-  return department;
+  return normalizeDepartmentRecord(department);
 };
 
 /**
@@ -286,7 +300,7 @@ const restoreDepartment = async (id, context = {}) => {
     name: department.name,
   });
 
-  return department;
+  return normalizeDepartmentRecord(department);
 };
 
 /**

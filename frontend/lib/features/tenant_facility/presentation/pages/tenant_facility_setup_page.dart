@@ -3458,6 +3458,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     this.onFiltersChanged,
     this.columnVisibilityStorageKey,
     this.statusLabelBuilder,
+    this.nameColumnLabel,
   });
 
   final String title;
@@ -3489,6 +3490,7 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final ValueChanged<AppSearchBarFilterValue>? onFiltersChanged;
   final String? columnVisibilityStorageKey;
   final String Function(T item)? statusLabelBuilder;
+  final String? nameColumnLabel;
 
   @override
   State<_SearchableEntityGroup<T>> createState() =>
@@ -3559,7 +3561,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
     final double actionGap = theme.spacing.xs;
     final AppListTableColumn<T> nameColumn = AppListTableColumn<T>(
       id: 'name',
-      label: widget.title,
+      label: widget.nameColumnLabel ?? widget.title,
       preferredWidth: 200,
       cellBuilder: (BuildContext context, T item) {
         final bool deleted = widget.isDeletedBuilder(item);

@@ -210,6 +210,8 @@ final class DepartmentProfile {
     this.shortName,
     this.facilityId,
     this.isActive = true,
+    this.resourceUuid,
+    this.displayId,
     this.deletedAt,
   });
 
@@ -220,9 +222,14 @@ final class DepartmentProfile {
   final String? shortName;
   final String? facilityId;
   final bool isActive;
+  final String? resourceUuid;
+  final String? displayId;
   final DateTime? deletedAt;
 
   bool get isDeleted => deletedAt != null;
+
+  String get mutationId =>
+      resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
 
   DepartmentProfile copyWith({
     String? id,
@@ -232,6 +239,8 @@ final class DepartmentProfile {
     String? shortName,
     String? facilityId,
     bool? isActive,
+    String? resourceUuid,
+    String? displayId,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
   }) {
@@ -243,6 +252,8 @@ final class DepartmentProfile {
       shortName: shortName ?? this.shortName,
       facilityId: facilityId ?? this.facilityId,
       isActive: isActive ?? this.isActive,
+      resourceUuid: resourceUuid ?? this.resourceUuid,
+      displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }

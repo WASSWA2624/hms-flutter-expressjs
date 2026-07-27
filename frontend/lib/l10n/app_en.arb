@@ -8539,9 +8539,17 @@
   "@tenantFacilityDeleteTenantAction": {
     "description": "Delete tenant action label in tenant details modal."
   },
-  "tenantFacilityTenantDetailsIdLabel": "ID",
+  "tenantFacilityTenantDetailsIdLabel": "Tenant ID",
   "@tenantFacilityTenantDetailsIdLabel": {
-    "description": "Display ID label in tenant details summary."
+    "description": "Tenant public identifier label in tenant details and lists."
+  },
+  "tenantFacilityFacilityIdLabel": "Facility ID",
+  "@tenantFacilityFacilityIdLabel": {
+    "description": "Facility public identifier label in facility details and lists."
+  },
+  "tenantFacilityDepartmentIdLabel": "Department ID",
+  "@tenantFacilityDepartmentIdLabel": {
+    "description": "Department public identifier label in department lists."
   },
   "tenantFacilityTenantDetailsContactNameLabel": "Contact name",
   "@tenantFacilityTenantDetailsContactNameLabel": {
@@ -8889,7 +8897,7 @@
   "@tenantFacilityDepartmentNameLabel": {
     "description": "Department name field label."
   },
-  "tenantFacilityDepartmentShortNameLabel": "Short name",
+  "tenantFacilityDepartmentShortNameLabel": "Department short name",
   "@tenantFacilityDepartmentShortNameLabel": {
     "description": "Department short name field label."
   },

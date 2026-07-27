@@ -192,6 +192,8 @@ final class DepartmentProfileDto {
     this.shortName,
     this.facilityId,
     required this.isActive,
+    this.resourceUuid,
+    this.displayId,
     this.deletedAt,
   });
 
@@ -206,6 +208,10 @@ final class DepartmentProfileDto {
       shortName: _optionalString(json, 'short_name'),
       facilityId: _optionalString(json, 'facility_id'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      resourceUuid:
+          _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
+      displayId: _optionalString(json, 'display_id') ??
+          _optionalString(json, 'human_friendly_id'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
@@ -217,6 +223,8 @@ final class DepartmentProfileDto {
   final String? shortName;
   final String? facilityId;
   final bool isActive;
+  final String? resourceUuid;
+  final String? displayId;
   final DateTime? deletedAt;
 
   DepartmentProfile toEntity() {
@@ -228,6 +236,8 @@ final class DepartmentProfileDto {
       shortName: shortName,
       facilityId: facilityId,
       isActive: isActive,
+      resourceUuid: resourceUuid,
+      displayId: displayId,
       deletedAt: deletedAt,
     );
   }
