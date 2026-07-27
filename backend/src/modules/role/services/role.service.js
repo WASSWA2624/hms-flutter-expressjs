@@ -65,6 +65,7 @@ const assertRoleUniqueness = async ({
     name: data.name,
     displayName: data.display_name,
     description: data.description,
+    tenantId: scopeTenantId,
     facilityId: scopeFacilityId,
     existing,
     excludeRoleId

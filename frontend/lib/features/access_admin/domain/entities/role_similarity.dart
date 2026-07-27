@@ -6,11 +6,42 @@ const int roleReviewCompositeThreshold = 72;
 const int roleReviewFieldThreshold = 75;
 const int roleDescriptionLedThreshold = 85;
 const int roleIdentitySupportThreshold = 60;
+const int roleTokenMatchThreshold = 85;
+const int roleTokenSubsetThreshold = 78;
 
 const int roleNameWeight = 45;
 const int roleDisplayNameWeight = 35;
 const int roleDescriptionWeight = 20;
 const int roleCrossIdentityWeight = 25;
+
+/// Tokens ignored during role identity normalization (noise / filler).
+const Set<String> roleFillerTokens = <String>{
+  'a',
+  'an',
+  'and',
+  'for',
+  'of',
+  'role',
+  'roles',
+  'the',
+  'to',
+};
+
+/// Common hospital-role abbreviations expanded before scoring.
+const Map<String, String> roleAliasExpansions = <String, String>{
+  'cna': 'certified nursing assistant',
+  'dr': 'doctor',
+  'hca': 'health care assistant',
+  'hcw': 'health care worker',
+  'lpn': 'licensed practical nurse',
+  'md': 'medical doctor',
+  'mo': 'medical officer',
+  'np': 'nurse practitioner',
+  'pa': 'physician assistant',
+  'rn': 'registered nurse',
+  'rns': 'registered nurse',
+  'sho': 'senior house officer',
+};
 
 typedef RoleFieldComparisonStatus = TenantFieldComparisonStatus;
 
@@ -93,22 +124,179 @@ final class RoleDuplicateCheckResult {
   }
 }
 
+String? _nullIfEmpty(String? value) {
+  final String trimmed = (value ?? '').trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+/// Platform / tenant / facility scope equality for duplicate checks.
+bool roleScopesMatch({
+  String? leftTenantId,
+  String? leftFacilityId,
+  String? rightTenantId,
+  String? rightFacilityId,
+}) {
+  final String? leftTenant = _nullIfEmpty(leftTenantId);
+  final String? leftFacility = _nullIfEmpty(leftFacilityId);
+  final String? rightTenant = _nullIfEmpty(rightTenantId);
+  final String? rightFacility = _nullIfEmpty(rightFacilityId);
+
+  if (leftFacility != null || rightFacility != null) {
+    if (leftFacility != rightFacility) {
+      return false;
+    }
+    // Facility peers must share tenant when both tenant ids are known.
+    if (leftTenant != null && rightTenant != null && leftTenant != rightTenant) {
+      return false;
+    }
+    return true;
+  }
+
+  // Tenant-wide or platform (both facilities null): tenants must match,
+  // including both-null platform scope.
+  return leftTenant == rightTenant;
+}
+
 String normalizeRoleText(String? value) => normalizeTenantName(value ?? '');
 
-String normalizeRoleCompactKey(String? value) =>
-    normalizeRoleText(value).replaceAll(RegExp(r'\s+'), '');
+List<String> roleTokensOf(String value) {
+  return value
+      .split(RegExp(r'\s+'))
+      .where((String token) => token.isNotEmpty)
+      .toList(growable: false);
+}
 
-String normalizeRoleSortedTokens(String? value) {
+List<String> roleSignificantTokens(String value) {
+  return roleTokensOf(value)
+      .where((String token) => !roleFillerTokens.contains(token))
+      .toList(growable: false);
+}
+
+/// Expands known abbreviations and drops filler tokens for identity compare.
+String canonicalizeRoleText(String? value) {
   final String normalized = normalizeRoleText(value);
   if (normalized.isEmpty) {
     return '';
   }
-  final List<String> tokens = normalized
-      .split(RegExp(r'\s+'))
-      .where((String token) => token.isNotEmpty)
-      .toList(growable: false)
+
+  final List<String> expanded = <String>[];
+  for (final String token in roleTokensOf(normalized)) {
+    final String? alias = roleAliasExpansions[token];
+    if (alias != null) {
+      expanded.addAll(roleTokensOf(alias));
+    } else if (!roleFillerTokens.contains(token)) {
+      expanded.add(token);
+    }
+  }
+  return expanded.join(' ');
+}
+
+String normalizeRoleCompactKey(String? value) =>
+    canonicalizeRoleText(value).replaceAll(RegExp(r'\s+'), '');
+
+String normalizeRoleSortedTokens(String? value) {
+  final List<String> tokens = roleSignificantTokens(canonicalizeRoleText(value))
     ..sort();
   return tokens.join(' ');
+}
+
+String roleInitialsKey(String? value) {
+  final List<String> tokens = roleSignificantTokens(canonicalizeRoleText(value));
+  if (tokens.length < 2) {
+    return '';
+  }
+  return tokens.map((String token) => token[0]).join();
+}
+
+int _levenshteinSimilarityPercent(String left, String right) {
+  return nameSimilarityScore(left, right);
+}
+
+int _averageBestTokenScore(List<String> source, List<String> target) {
+  if (source.isEmpty || target.isEmpty) {
+    return 0;
+  }
+  var total = 0;
+  for (final String token in source) {
+    var best = 0;
+    for (final String candidate in target) {
+      final int score = _levenshteinSimilarityPercent(token, candidate);
+      if (score > best) {
+        best = score;
+      }
+    }
+    total += best;
+  }
+  return (total / source.length).round();
+}
+
+int roleTokenSimilarityPercent(String left, String right) {
+  final List<String> leftTokens = roleSignificantTokens(left);
+  final List<String> rightTokens = roleSignificantTokens(right);
+  if (leftTokens.isEmpty || rightTokens.isEmpty) {
+    return 0;
+  }
+  if (leftTokens.length == 1 && rightTokens.length == 1) {
+    return _levenshteinSimilarityPercent(leftTokens.first, rightTokens.first);
+  }
+
+  final int forward = _averageBestTokenScore(leftTokens, rightTokens);
+  final int reverse = _averageBestTokenScore(rightTokens, leftTokens);
+  final int averageDirectional = ((forward + reverse) / 2).round();
+
+  final List<bool> used = List<bool>.filled(rightTokens.length, false);
+  var fuzzyIntersection = 0;
+  for (final String leftToken in leftTokens) {
+    var bestIndex = -1;
+    var bestScore = -1;
+    for (int i = 0; i < rightTokens.length; i += 1) {
+      if (used[i]) {
+        continue;
+      }
+      final int score = _levenshteinSimilarityPercent(leftToken, rightTokens[i]);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    }
+    if (bestIndex >= 0 && bestScore >= roleTokenMatchThreshold) {
+      used[bestIndex] = true;
+      fuzzyIntersection += 1;
+    }
+  }
+
+  final int union = leftTokens.length + rightTokens.length - fuzzyIntersection;
+  final int jaccard = union == 0
+      ? 0
+      : ((fuzzyIntersection / union) * 100).round();
+  return averageDirectional > jaccard ? averageDirectional : jaccard;
+}
+
+/// True when the shorter significant-token set is covered by the longer one.
+int? roleTokenSubsetScore(String left, String right) {
+  final List<String> leftTokens = roleSignificantTokens(left);
+  final List<String> rightTokens = roleSignificantTokens(right);
+  if (leftTokens.isEmpty || rightTokens.isEmpty) {
+    return null;
+  }
+  final List<String> shorter =
+      leftTokens.length <= rightTokens.length ? leftTokens : rightTokens;
+  final List<String> longer =
+      leftTokens.length <= rightTokens.length ? rightTokens : leftTokens;
+  if (shorter.length < 2) {
+    return null;
+  }
+
+  final Set<String> longerSet = longer.toSet();
+  final int covered = shorter
+      .where((String token) => longerSet.contains(token))
+      .length;
+  if (covered != shorter.length) {
+    return null;
+  }
+  final double coverage = shorter.length / longer.length;
+  final int score = (roleTokenSubsetThreshold + coverage * 20).round();
+  return score > 99 ? 99 : score;
 }
 
 int? scoreRoleTextPair(String left, String right) {
@@ -119,41 +307,92 @@ int? scoreRoleTextPair(String left, String right) {
     return 100;
   }
 
-  final int direct = nameSimilarityScore(left, right);
-  final String compactLeft = normalizeRoleCompactKey(left);
-  final String compactRight = normalizeRoleCompactKey(right);
+  final String canonicalLeft = canonicalizeRoleText(left);
+  final String canonicalRight = canonicalizeRoleText(right);
+  if (canonicalLeft.isEmpty || canonicalRight.isEmpty) {
+    return null;
+  }
+  if (canonicalLeft == canonicalRight) {
+    return 100;
+  }
+
+  final int direct = nameSimilarityScore(canonicalLeft, canonicalRight);
+
+  final String compactLeft = normalizeRoleCompactKey(canonicalLeft);
+  final String compactRight = normalizeRoleCompactKey(canonicalRight);
   final int compact = compactLeft.isEmpty || compactRight.isEmpty
       ? 0
       : compactLeft == compactRight
       ? 100
       : nameSimilarityScore(compactLeft, compactRight);
 
-  final String sortedLeft = normalizeRoleSortedTokens(left);
-  final String sortedRight = normalizeRoleSortedTokens(right);
+  final String sortedLeft = normalizeRoleSortedTokens(canonicalLeft);
+  final String sortedRight = normalizeRoleSortedTokens(canonicalRight);
   final int sorted = sortedLeft.isEmpty || sortedRight.isEmpty
       ? 0
       : sortedLeft == sortedRight
       ? 100
       : nameSimilarityScore(sortedLeft, sortedRight);
 
-  return <int>[direct, compact, sorted].reduce(
-    (int a, int b) => a > b ? a : b,
+  final int tokenScore = roleTokenSimilarityPercent(
+    canonicalLeft,
+    canonicalRight,
   );
+  final int subsetScore = roleTokenSubsetScore(canonicalLeft, canonicalRight) ?? 0;
+
+  final String leftInitials = roleInitialsKey(canonicalLeft);
+  final String rightInitials = roleInitialsKey(canonicalRight);
+  var initialsScore = 0;
+  if (leftInitials.isNotEmpty &&
+      (leftInitials == compactRight || leftInitials == rightInitials)) {
+    initialsScore = 100;
+  } else if (rightInitials.isNotEmpty && rightInitials == compactLeft) {
+    initialsScore = 100;
+  }
+
+  return <int>[
+    direct,
+    compact,
+    sorted,
+    tokenScore,
+    subsetScore,
+    initialsScore,
+  ].reduce((int a, int b) => a > b ? a : b);
 }
 
 bool isExactRoleTextMatch(String left, String right) {
   if (left.isEmpty || right.isEmpty) {
     return false;
   }
-  if (left == right) {
+  final String canonicalLeft = canonicalizeRoleText(left);
+  final String canonicalRight = canonicalizeRoleText(right);
+  if (canonicalLeft.isEmpty || canonicalRight.isEmpty) {
+    return false;
+  }
+  if (canonicalLeft == canonicalRight) {
     return true;
   }
-  if (normalizeRoleCompactKey(left) == normalizeRoleCompactKey(right)) {
+  if (normalizeRoleCompactKey(canonicalLeft) ==
+      normalizeRoleCompactKey(canonicalRight)) {
     return true;
   }
-  final String sortedLeft = normalizeRoleSortedTokens(left);
-  final String sortedRight = normalizeRoleSortedTokens(right);
-  return sortedLeft.isNotEmpty && sortedLeft == sortedRight;
+  final String sortedLeft = normalizeRoleSortedTokens(canonicalLeft);
+  final String sortedRight = normalizeRoleSortedTokens(canonicalRight);
+  if (sortedLeft.isNotEmpty && sortedLeft == sortedRight) {
+    return true;
+  }
+
+  final String leftInitials = roleInitialsKey(canonicalLeft);
+  final String rightCompact = normalizeRoleCompactKey(canonicalRight);
+  final String rightInitials = roleInitialsKey(canonicalRight);
+  final String leftCompact = normalizeRoleCompactKey(canonicalLeft);
+  if (leftInitials.isNotEmpty && leftInitials == rightCompact) {
+    return true;
+  }
+  if (rightInitials.isNotEmpty && rightInitials == leftCompact) {
+    return true;
+  }
+  return false;
 }
 
 int compositeRoleSimilarityScore({
@@ -215,12 +454,6 @@ RoleFieldComparison _fieldComparison({
   );
 }
 
-bool _sameScopeFacility(String? left, String? right) {
-  final String? leftId = (left ?? '').trim().isEmpty ? null : left!.trim();
-  final String? rightId = (right ?? '').trim().isEmpty ? null : right!.trim();
-  return leftId == rightId;
-}
-
 bool roleMatchesExcludeId(AccessAdminItem role, String? excludeId) {
   if (excludeId == null || excludeId.trim().isEmpty) {
     return false;
@@ -249,30 +482,50 @@ RoleDuplicateCheckResult checkRoleDuplicates({
   required String name,
   required String displayName,
   String? description,
+  String? tenantId,
   String? facilityId,
   required List<AccessAdminItem> existing,
   String? excludeRoleId,
 }) {
-  final String normalizedName = normalizeRoleText(name);
-  final String normalizedDisplayName = normalizeRoleText(displayName);
-  final String normalizedDescription = normalizeRoleText(description);
+  final String normalizedName = canonicalizeRoleText(name);
+  final String normalizedDisplayName = canonicalizeRoleText(displayName);
+  final String normalizedDescription = canonicalizeRoleText(description);
   var exactNameConflict = false;
   var exactDisplayNameConflict = false;
   final List<RoleSimilarityMatch> matches = <RoleSimilarityMatch>[];
+  final Set<String> seenRoleKeys = <String>{};
 
   for (final AccessAdminItem role in existing) {
-    if (!_sameScopeFacility(facilityId, role.facilityId)) {
+    if (!roleScopesMatch(
+      leftTenantId: tenantId,
+      leftFacilityId: facilityId,
+      rightTenantId: role.tenantId,
+      rightFacilityId: role.facilityId,
+    )) {
       continue;
     }
     if (roleMatchesExcludeId(role, excludeRoleId)) {
       continue;
     }
 
-    final String roleName = normalizeRoleText(role.name ?? role.title);
-    final String roleDisplayName = normalizeRoleText(
+    final String roleKey = <String?>[
+      role.id,
+      role.mutationId,
+      role.resourceUuid,
+      role.effectiveDisplayId,
+    ].whereType<String>().firstWhere(
+      (String value) => value.trim().isNotEmpty,
+      orElse: () => role.title,
+    );
+    if (!seenRoleKeys.add(roleKey)) {
+      continue;
+    }
+
+    final String roleName = canonicalizeRoleText(role.name ?? role.title);
+    final String roleDisplayName = canonicalizeRoleText(
       role.displayName ?? role.title,
     );
-    final String roleDescription = normalizeRoleText(role.subtitle);
+    final String roleDescription = canonicalizeRoleText(role.subtitle);
 
     final bool nameExact = isExactRoleTextMatch(normalizedName, roleName);
     final bool displayNameExact = isExactRoleTextMatch(
@@ -349,10 +602,10 @@ RoleDuplicateCheckResult checkRoleDuplicates({
         normalizedDisplayName.isNotEmpty &&
         roleName.isNotEmpty &&
         roleDisplayName.isNotEmpty) {
-      final String inputIdentity = normalizeRoleText(
+      final String inputIdentity = canonicalizeRoleText(
         '$normalizedName $normalizedDisplayName',
       );
-      final String candidateIdentity = normalizeRoleText(
+      final String candidateIdentity = canonicalizeRoleText(
         '$roleName $roleDisplayName',
       );
       crossScores.add(scoreRoleTextPair(inputIdentity, candidateIdentity));
@@ -466,13 +719,18 @@ RoleDuplicateCheckResult checkRoleDuplicates({
         descriptionScore >= roleDescriptionLedThreshold &&
         strongestIdentity != null &&
         strongestIdentity >= roleIdentitySupportThreshold;
+    final bool tokenSubsetSignal =
+        (nameScore != null && nameScore >= roleTokenSubsetThreshold) ||
+        (displayNameScore != null &&
+            displayNameScore >= roleTokenSubsetThreshold);
 
     if (!isExact &&
         !strongIdentitySignal &&
         !strongFieldSignal &&
         !compositeSignal &&
         !softCompositeSignal &&
-        !descriptionLedSignal) {
+        !descriptionLedSignal &&
+        !tokenSubsetSignal) {
       continue;
     }
 
@@ -498,10 +756,15 @@ RoleDuplicateCheckResult checkRoleDuplicates({
     );
   }
 
-  matches.sort(
-    (RoleSimilarityMatch left, RoleSimilarityMatch right) =>
-        right.score.compareTo(left.score),
-  );
+  matches.sort((RoleSimilarityMatch left, RoleSimilarityMatch right) {
+    final int byScore = right.score.compareTo(left.score);
+    if (byScore != 0) {
+      return byScore;
+    }
+    final int leftExact = left.isExact ? 1 : 0;
+    final int rightExact = right.isExact ? 1 : 0;
+    return rightExact.compareTo(leftExact);
+  });
 
   return RoleDuplicateCheckResult(
     exactNameConflict: exactNameConflict || exactDisplayNameConflict,

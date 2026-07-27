@@ -419,6 +419,7 @@ Future<AppFailure?> _reviewRoleSimilarity(
     name: pending.name,
     displayName: pending.displayName ?? '',
     description: pending.description,
+    tenantId: pending.tenantId,
     facilityId: pending.facilityId,
     existing: peers,
   );
@@ -488,7 +489,9 @@ Future<List<AccessAdminItem>> _loadRoleSimilarityPeers(
           allTenants: allTenants,
           allFacilities: facilityId == null || facilityId.trim().isEmpty,
           lean: true,
-          pageRequest: const AppPageRequest(pageSize: 100),
+          // Match backend ROLE_SIMILARITY_LOOKUP_LIMIT so client review is not
+          // starved by a short first page.
+          pageRequest: const AppPageRequest(pageSize: 500),
         ),
       );
   return result.when(

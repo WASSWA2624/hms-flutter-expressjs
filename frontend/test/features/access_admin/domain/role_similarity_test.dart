@@ -8,6 +8,7 @@ void main() {
     required String name,
     String? displayName,
     String? description,
+    String? tenantId = 'tenant-1',
     String? facilityId,
   }) {
     return AccessAdminItem(
@@ -19,7 +20,7 @@ void main() {
       displayName: displayName,
       subtitle: description,
       facilityId: facilityId,
-      tenantId: 'tenant-1',
+      tenantId: tenantId,
     );
   }
 
@@ -37,6 +38,7 @@ void main() {
       name: 'WARD CLERK',
       displayName: 'Ward Clerk',
       description: 'Front desk',
+      tenantId: 'tenant-1',
       facilityId: null,
       existing: existing,
     );
@@ -63,12 +65,14 @@ void main() {
     final RoleDuplicateCheckResult compact = checkRoleDuplicates(
       name: 'WARDCLERK',
       displayName: 'Desk Aide',
+      tenantId: 'tenant-1',
       facilityId: null,
       existing: existing,
     );
     final RoleDuplicateCheckResult reordered = checkRoleDuplicates(
       name: 'FRONT DESK',
       displayName: 'Clerk Ward',
+      tenantId: 'tenant-1',
       facilityId: null,
       existing: existing,
     );
@@ -81,6 +85,7 @@ void main() {
     final RoleDuplicateCheckResult result = checkRoleDuplicates(
       name: 'Ward Clerk',
       displayName: 'Desk Support',
+      tenantId: 'tenant-1',
       facilityId: null,
       existing: existing,
     );
@@ -94,6 +99,7 @@ void main() {
       name: 'WARD CLRCK',
       displayName: 'Ward Clerck',
       description: 'Front desk ward suport',
+      tenantId: 'tenant-1',
       facilityId: null,
       existing: existing,
     );
@@ -119,6 +125,7 @@ void main() {
       name: 'WARD AID',
       displayName: 'Ward Aide',
       description: 'Front desk ward support',
+      tenantId: 'tenant-1',
       facilityId: null,
       existing: existing,
     );
@@ -134,10 +141,133 @@ void main() {
     final RoleDuplicateCheckResult result = checkRoleDuplicates(
       name: 'WARD CLERK',
       displayName: 'Ward Clerk',
+      tenantId: 'tenant-1',
       facilityId: 'facility-1',
       existing: existing,
     );
 
     expect(result.similarMatches, isEmpty);
+  });
+
+  test('isolates platform roles from tenant-scoped peers', () {
+    final RoleDuplicateCheckResult result = checkRoleDuplicates(
+      name: 'WARD CLERK',
+      displayName: 'Ward Clerk',
+      tenantId: null,
+      facilityId: null,
+      existing: existing,
+    );
+
+    expect(result.similarMatches, isEmpty);
+  });
+
+  test('isolates tenant roles from other tenants', () {
+    final RoleDuplicateCheckResult result = checkRoleDuplicates(
+      name: 'WARD CLERK',
+      displayName: 'Ward Clerk',
+      tenantId: 'tenant-2',
+      facilityId: null,
+      existing: existing,
+    );
+
+    expect(result.similarMatches, isEmpty);
+  });
+
+  test('expands hospital role aliases for exact conflicts', () {
+    final List<AccessAdminItem> peers = <AccessAdminItem>[
+      role(
+        id: 'role-rn',
+        name: 'REGISTERED NURSE',
+        displayName: 'Registered Nurse',
+      ),
+    ];
+
+    final RoleDuplicateCheckResult result = checkRoleDuplicates(
+      name: 'RN',
+      displayName: 'RN',
+      tenantId: 'tenant-1',
+      facilityId: null,
+      existing: peers,
+    );
+
+    expect(result.hasExactConflict, isTrue);
+    expect(result.similarMatches.first.nameScore, 100);
+  });
+
+  test('treats initials as exact identity conflicts', () {
+    final RoleDuplicateCheckResult result = checkRoleDuplicates(
+      name: 'WC',
+      displayName: 'WC',
+      tenantId: 'tenant-1',
+      facilityId: null,
+      existing: existing,
+    );
+
+    expect(result.hasExactConflict, isTrue);
+  });
+
+  test('strips filler tokens before comparing identity', () {
+    final RoleDuplicateCheckResult result = checkRoleDuplicates(
+      name: 'THE WARD CLERK ROLE',
+      displayName: 'The Ward Clerk Role',
+      tenantId: 'tenant-1',
+      facilityId: null,
+      existing: existing,
+    );
+
+    expect(result.hasExactConflict, isTrue);
+  });
+
+  test('flags token-subset near matches like Senior Ward Clerk', () {
+    final RoleDuplicateCheckResult result = checkRoleDuplicates(
+      name: 'SENIOR WARD CLERK',
+      displayName: 'Senior Ward Clerk',
+      description: 'Supervises ward desk',
+      tenantId: 'tenant-1',
+      facilityId: null,
+      existing: existing,
+    );
+
+    expect(result.similarMatches, isNotEmpty);
+    expect(
+      result.similarMatches.first.nameScore,
+      greaterThanOrEqualTo(roleTokenSubsetThreshold),
+    );
+  });
+
+  test('canonicalizes aliases and filler tokens', () {
+    expect(canonicalizeRoleText('The RN Role'), 'registered nurse');
+    expect(normalizeRoleCompactKey('Ward Clerk'), 'wardclerk');
+    expect(roleInitialsKey('Ward Clerk'), 'wc');
+  });
+
+  test('roleScopesMatch distinguishes platform tenant and facility', () {
+    expect(
+      roleScopesMatch(
+        leftTenantId: null,
+        leftFacilityId: null,
+        rightTenantId: null,
+        rightFacilityId: null,
+      ),
+      isTrue,
+    );
+    expect(
+      roleScopesMatch(
+        leftTenantId: null,
+        leftFacilityId: null,
+        rightTenantId: 'tenant-1',
+        rightFacilityId: null,
+      ),
+      isFalse,
+    );
+    expect(
+      roleScopesMatch(
+        leftTenantId: 'tenant-1',
+        leftFacilityId: 'facility-1',
+        rightTenantId: 'tenant-1',
+        rightFacilityId: 'facility-1',
+      ),
+      isTrue,
+    );
   });
 }
