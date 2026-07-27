@@ -10,7 +10,7 @@
 - **Row select**
   - Location: Role table or mobile-list row.
   - Condition: Always available for listed roles.
-  - Immediate result: Loads the role’s permissions, then opens `_AccessAdminRoleDetailDialog` (edit/delete hidden when the role is soft-deleted).
+  - Immediate result: Loads the role’s permissions by UUID (`mutationId`), then opens `_AccessAdminRoleDetailDialog` (edit/delete hidden when the role is soft-deleted).
 
 - **Edit**
   - Location: Role row actions (active roles only).

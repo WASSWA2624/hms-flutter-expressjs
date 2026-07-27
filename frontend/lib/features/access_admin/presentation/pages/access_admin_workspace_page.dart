@@ -285,7 +285,7 @@ class _AccessAdminWorkspaceContentState
         accessAdminRepositoryProvider,
       );
       final Result<List<AccessAdminRolePermissionAssignment>>
-      permissionsResult = await repository.listRolePermissions(item.id);
+      permissionsResult = await repository.listRolePermissions(item.mutationId);
       if (!context.mounted) {
         return;
       }

@@ -249,6 +249,26 @@ void main() {
     expect(dialogSource.contains('_proposedScopeLabel'), isTrue);
   });
 
+  test('role permission lookups prefer mutation UUID over display id', () {
+    expect(
+      managementSource.contains('listRolePermissions(role.mutationId)'),
+      isTrue,
+      reason:
+          'Duplicate human_friendly_id must not resolve another role\'s permissions',
+    );
+    final String dialogs = File(
+      'lib/features/access_admin/presentation/widgets/access_admin_dialogs.dart',
+    ).readAsStringSync();
+    expect(dialogs.contains('listRolePermissions(role.mutationId)'), isTrue);
+    final String workspacePage = File(
+      'lib/features/access_admin/presentation/pages/access_admin_workspace_page.dart',
+    ).readAsStringSync();
+    expect(
+      workspacePage.contains('listRolePermissions(item.mutationId)'),
+      isTrue,
+    );
+  });
+
   test('roles soft-delete lifecycle exposes restore and permanent delete', () {
     expect(managementSource.contains('includeDeleted:'), isTrue);
     expect(managementSource.contains('_confirmRestoreRole'), isTrue);

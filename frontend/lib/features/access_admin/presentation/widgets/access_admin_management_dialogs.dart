@@ -1403,7 +1403,7 @@ class _ManageRolesPermissionsPanelState
     }
 
     final Result<List<AccessAdminRolePermissionAssignment>> permissionsResult =
-        await repository.listRolePermissions(role.id);
+        await repository.listRolePermissions(role.mutationId);
 
     if (coverOpen && mounted) {
       Navigator.of(context, rootNavigator: true).pop();

@@ -756,7 +756,7 @@ Future<bool?> openAccessAdminEditRoleDialog(
   );
 
   final Future<Result<List<AccessAdminRolePermissionAssignment>>>
-  assignmentsFuture = repository.listRolePermissions(role.id);
+  assignmentsFuture = repository.listRolePermissions(role.mutationId);
   final Future<AccessAdminLookups?> lookupsFuture = (tenantId ?? '').isEmpty
       ? Future<AccessAdminLookups?>.value()
       : _prefetchRoleDialogLookups(
