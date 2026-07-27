@@ -13,6 +13,16 @@ const {
   listQuerySchema
 } = require('@lib/validation/zod');
 
+const optionalBooleanSchema = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return value;
+}, z.boolean().optional());
+
 const userStatusSchema = z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING']);
 const permissionIdsSchema = z
   .array(uuidOrFriendlyIdentifierSchema)
@@ -34,7 +44,8 @@ const createUserSchema = z.object({
   password: z.string().trim().min(8).max(255).optional(),
   password_hash: z.string().trim().min(1).max(255).optional(),
   status: userStatusSchema,
-  permission_ids: permissionIdsSchema});
+  permission_ids: permissionIdsSchema,
+  confirm_similar: optionalBooleanSchema});
 
 /**
  * Update user body validation
@@ -49,7 +60,8 @@ const updateUserSchema = z.object({
   password: z.string().trim().min(8).max(255).optional(),
   password_hash: z.string().trim().min(1).max(255).optional(),
   status: userStatusSchema.optional(),
-  permission_ids: permissionIdsSchema});
+  permission_ids: permissionIdsSchema,
+  confirm_similar: optionalBooleanSchema});
 
 // ==================== URL Params ====================
 

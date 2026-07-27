@@ -23,6 +23,14 @@ const {
 const { serializeAccessAdminUserEntity } = require('@lib/realtime/access-admin-realtime');
 const { resolveEntityId, resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
+const { checkUserDuplicates } = require('@lib/user/user-similarity');
+
+const USER_SIMILARITY_LOOKUP_LIMIT = 500;
+
+const stripSimilarityPayloadFields = (data = {}) => {
+  const { confirm_similar: _confirmSimilar, ...payload } = data;
+  return payload;
+};
 
 const resolveUserId = async (identifier, { includeDeleted = false } = {}) => {
   const normalized = String(identifier ?? '').trim();
@@ -135,57 +143,132 @@ const normalizePhoneDigits = (value) => {
   return digits || null;
 };
 
-const assertTenantUserContactAvailable = async ({
+/**
+ * Load a broad, tenant-scoped peer set for user similarity review.
+ *
+ * Combines an alphabetical window with search-biased pages on email / phone /
+ * position so strong identity matches past the alphabetical limit still surface.
+ */
+const loadUserSimilarityPeers = async ({ tenantId, email, phone, positionTitle }) => {
+  const peerFilters = { tenant_id: tenantId };
+
+  const alphabetical = await userRepository.findMany(
+    peerFilters,
+    0,
+    USER_SIMILARITY_LOOKUP_LIMIT,
+    { email: 'asc' },
+    USER_LIST_INCLUDE
+  );
+
+  const emailTerm = String(email || '').trim();
+  const phoneTerm = normalizePhoneDigits(phone) || '';
+  const positionTerm = String(positionTitle || '').trim();
+  const searchTerms = [
+    ...new Set([emailTerm, phoneTerm, positionTerm].filter((term) => term.length > 0))
+  ];
+
+  const searched = [];
+  for (const term of searchTerms) {
+    const page = await userRepository.findMany(
+      {
+        ...peerFilters,
+        OR: [
+          { email: { contains: term } },
+          { phone: { contains: term } },
+          { position_title: { contains: term } }
+        ]
+      },
+      0,
+      USER_SIMILARITY_LOOKUP_LIMIT,
+      { email: 'asc' },
+      USER_LIST_INCLUDE
+    );
+    if (Array.isArray(page)) {
+      searched.push(...page);
+    }
+  }
+
+  const seen = new Set();
+  const existing = [];
+  const combined = [
+    ...searched,
+    ...(Array.isArray(alphabetical) ? alphabetical : [])
+  ];
+  for (const user of combined) {
+    const key = String(user?.id || user?.human_friendly_id || '').trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    existing.push(user);
+    if (existing.length >= USER_SIMILARITY_LOOKUP_LIMIT) break;
+  }
+
+  return existing;
+};
+
+const assertUserUniqueness = async ({
   tenantId,
   email,
   phone,
-  excludeUserId = null}) => {
+  positionTitle,
+  confirmSimilar = false,
+  excludeUserId = null
+}) => {
   const resolvedTenantId = String(tenantId || '').trim();
   if (!resolvedTenantId) {
-    return;
+    return null;
   }
 
-  const normalizedEmail = email ? normalizeEmail(email) : null;
-  const normalizedPhone = phone ? normalizePhoneDigits(phone) : null;
-  const conflicts = [];
+  const existing = await loadUserSimilarityPeers({
+    tenantId: resolvedTenantId,
+    email,
+    phone,
+    positionTitle
+  });
 
-  if (normalizedEmail) {
-    const existingEmail = await userRepository.findActiveByTenantEmail(
-      resolvedTenantId,
-      normalizedEmail,
-      excludeUserId
-    );
-    if (existingEmail) {
-      conflicts.push({
-        field: 'email',
-        message: 'errors.user.email_exists_in_tenant'});
-    }
-  }
+  const duplicateCheck = checkUserDuplicates({
+    email,
+    phone,
+    positionTitle,
+    tenantId: resolvedTenantId,
+    existing,
+    excludeUserId
+  });
 
-  if (normalizedPhone) {
-    const existingPhone = await userRepository.findActiveByTenantPhone(
-      resolvedTenantId,
-      normalizedPhone,
-      excludeUserId
-    );
-    if (existingPhone) {
-      conflicts.push({
-        field: 'phone',
-        message: 'errors.user.phone_exists_in_tenant'});
-    }
-  }
-
-  if (!conflicts.length) {
-    return;
-  }
-
-  throw new HttpError(
-    conflicts.length > 1
+  // Same-tenant exact email/phone is a hard uniqueness conflict that cannot be
+  // overridden with confirm_similar. Keep the existing contact message keys but
+  // attach the conflicting match payload so the client can hydrate the dialog.
+  if (duplicateCheck.exactEmailConflict || duplicateCheck.exactPhoneConflict) {
+    const exactMatches = duplicateCheck.similarMatches
+      .filter((match) => match.exactEmailConflict || match.exactPhoneConflict)
+      .slice(0, 5);
+    const bothConflict =
+      duplicateCheck.exactEmailConflict && duplicateCheck.exactPhoneConflict;
+    const messageKey = bothConflict
       ? 'errors.user.contact_exists_in_tenant'
-      : conflicts[0].message,
-    409,
-    conflicts
-  );
+      : duplicateCheck.exactEmailConflict
+        ? 'errors.user.email_exists_in_tenant'
+        : 'errors.user.phone_exists_in_tenant';
+    const field = duplicateCheck.exactEmailConflict ? 'email' : 'phone';
+    throw new HttpError(messageKey, 409, [
+      {
+        field,
+        message: messageKey,
+        matches: exactMatches
+      }
+    ]);
+  }
+
+  const reviewMatches = duplicateCheck.overridableMatches.slice(0, 5);
+  if (reviewMatches.length > 0 && !confirmSimilar) {
+    throw new HttpError('errors.user.similar_exists', 409, [
+      {
+        field: 'email',
+        matches: reviewMatches
+      }
+    ]);
+  }
+
+  return duplicateCheck;
 };
 
 const normalizeUserPayload = async (data, isUpdate = false) => {
@@ -372,11 +455,15 @@ const getUserById = async (id, userId, ipAddress) => {
  */
 const createUser = async (data, userId, ipAddress) => {
   try {
-    const normalizedPayload = await normalizeUserPayload(data, false);
-    await assertTenantUserContactAvailable({
+    const confirmSimilar = data?.confirm_similar === true;
+    const strippedData = stripSimilarityPayloadFields(data || {});
+    const normalizedPayload = await normalizeUserPayload(strippedData, false);
+    await assertUserUniqueness({
       tenantId: normalizedPayload.tenant_id,
       email: normalizedPayload.email,
-      phone: normalizedPayload.phone});
+      phone: normalizedPayload.phone,
+      positionTitle: normalizedPayload.position_title,
+      confirmSimilar});
     const user = await userRepository.create(normalizedPayload);
 
     // Create audit log (non-blocking)
@@ -422,11 +509,15 @@ const updateUser = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.user.not_found', 404);
     }
 
-    const normalizedPayload = await normalizeUserPayload(data, true);
-    await assertTenantUserContactAvailable({
+    const confirmSimilar = data?.confirm_similar === true;
+    const strippedData = stripSimilarityPayloadFields(data || {});
+    const normalizedPayload = await normalizeUserPayload(strippedData, true);
+    await assertUserUniqueness({
       tenantId: normalizedPayload.tenant_id ?? before.tenant_id,
       email: normalizedPayload.email ?? before.email,
       phone: normalizedPayload.phone ?? before.phone,
+      positionTitle: normalizedPayload.position_title ?? before.position_title,
+      confirmSimilar,
       excludeUserId: resolvedUserId});
     const user = await userRepository.update(resolvedUserId, normalizedPayload);
 
