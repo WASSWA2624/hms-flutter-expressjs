@@ -1,46 +1,41 @@
-# Permissions Tab — Read-Only Catalog, Columns, Table Density, Completeness
+# Permissions Tab — Code Accuracy, Description Fallback, Dead Status Cleanup
 
-Improve the permissions list on `/admin/setup?section=permissions` and harden the shared table plus permission catalog.
+Polish permission presentation on `/admin/setup?section=permissions` (and matching workspace permission surfaces) after the read-only catalog work.
 
 ## Context
 
-- Permissions panel is `ManageRolesPermissionsPanel` with `AccessAdminPanel.permissions` from `tenant_facility_setup_page.dart`.
-- Setup permissions table currently shows generic **ID** / **Name** only; `onRowSelected` is null (no details). Create/edit must stay unavailable.
-- Workspace permissions already define fuller columns (`perm_id`, `perm_name`, `perm_description`, …) and a read-only detail path; reuse those patterns where they fit the setup tab.
-- Shared table is `AppListTable`; single-line rows still reserve large `dataRowMinHeight`, and infinite-scroll load-more must not leave blank filler rows without a loading cue.
-- Canonical catalogs: `backend/src/config/permissions.js`, `AppPermissions` in `access_policy.dart`, plus role/module mappings (`PermissionModuleMap`, role permission seeds).
+- Setup panel already shows Permission ID / Permission Name / Description, opens read-only details via `showAccessAdminPermissionDetailDialog`, and has no permission CRUD.
+- Shared columns live in `accessAdminPermissionColumns`; table density and infinite-scroll load-more are already done in `AppListTable`.
+- Gaps: **Permission code** cells and details render `permissionCatalogLabelForCode` (friendly label) instead of the machine code (`domain:action`). **Status** is offered as a column choice but `serializePermission` never sends `status`, so it is always empty. Description falls back to `—` / omitted when `subtitle` is blank, while `permissionCatalogDescriptionForCode` currently stubs to the label.
 
 ## Requirements
 
-1. On the setup permissions table, label columns **Permission ID** and **Permission Name**, and show a **Description** column (permission description/subtitle). Reuse or add l10n keys; do not rely on generic ID/Name/Details for this panel.
-2. On row select, open a read-only permission details view showing at least ID, name, code, description, and status when present. Do not offer create, edit, delete, or other mutations for permissions.
-3. Keep permissions assignable only via existing role, user, and module entitlement flows; do not add permission CRUD.
-4. In `AppListTable`, size row height to single-line content by default (no excess vertical padding when cells are one line); still allow growth for wrapped multi-line cells without clipping. Apply at the shared component so all consumers benefit.
-5. When infinite scroll fetches the next page, show a clear load-more indicator (reuse existing footer/`AppLoadingIndicator` patterns). Do not present empty spacer rows as if they were unloaded data.
-6. Audit the permission catalog for completeness and atomicity: each permission must grant exactly one access capability. Align backend catalog, frontend `AppPermissions`, seeds, role defaults, and `PermissionModuleMap` so every module has accurate, attachable rights. Add only missing atomic permissions; split any bundled multi-capability keys.
+1. Keep setup defaults Permission ID, Permission Name, Description; keep row select opening read-only details with Close only (no create/edit/delete).
+2. Show the machine permission code (`permissionName` / `name`, e.g. `patient:read`) under **Permission code** in the optional column, setup details, and workspace permission details. Keep the localized display name on Permission Name only.
+3. When description/subtitle is blank, fall back to a real catalog description (extend `permissionCatalogDescriptionForCode` / backend metadata), not the display-name label; show `—` only if no description exists.
+4. Remove the dead **Status** column from permission column choices (and omit status from permission details) unless the API starts returning a meaningful permission status.
+5. Align setup and workspace permission detail fields: ID, name, machine code, description (when present); no mutation actions.
 
 ## Constraints
 
-- Reuse existing access-admin entities, dialogs, endpoints, RBAC/ABAC, and table APIs; add endpoints only if catalog/seed sync requires them.
-- Unauthorized UI must not render; permissions remain read-only in this tab.
-- Cover loading, empty, error, and success/feedback states for list and details.
+- Reuse existing access-admin entities, dialogs, catalogs, and table APIs; add no permission CRUD endpoints.
+- Do not reopen AppListTable density/load-more or FE↔BE key-parity work unless a regression appears.
+- Cover loading, empty, error, and visible feedback for list and details; theme tokens; mobile/tablet/desktop.
 - No unrelated refactoring.
 
 ## Acceptance Criteria
 
-- Setup permissions columns read Permission ID, Permission Name, Description (Req 1).
-- Row select opens read-only details; no create/edit/delete controls (Req 2–3).
-- Single-line `AppListTable` rows are content-tight; multi-line cells still expand safely (Req 4).
-- Loading the next infinite-scroll page shows a load-more indicator, not blank filler-only chrome (Req 5).
-- Catalog is atomic and complete across backend, frontend, seeds, role defaults, and module maps; tests cover column labels, details read-only, row density, load-more, and catalog/module alignment; `flutter analyze` and backend permission tests pass (Req 1–6).
+- Permission code column/details show machine codes, not friendly labels (Req 2, 5).
+- Blank descriptions use catalog description fallback before `—` (Req 3).
+- Status is not offered for permissions unless API-backed (Req 4).
+- Details remain read-only; defaults and Close-only behavior unchanged (Req 1).
+- Widget tests cover code vs name, description fallback, and Status absence; `flutter analyze` passes (Req 1–5).
 
 ## Relevant Files
 
-- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
 - `frontend/lib/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart`
 - `frontend/lib/features/access_admin/presentation/widgets/access_admin_workspace_table.dart`
 - `frontend/lib/features/access_admin/presentation/pages/access_admin_workspace_page.dart`
-- `frontend/lib/shared/components/app_list_table.dart`
-- `frontend/lib/core/permissions/access_policy.dart`
-- `frontend/lib/core/permissions/permission_module_map.dart`
-- `backend/src/config/permissions.js`
+- `frontend/lib/core/permissions/app_permission_catalog_localizations.dart`
+- `backend/src/modules/access-admin-workspace/services/access-admin-workspace.service.js`
+- `backend/src/lib/authorization/permission-catalog-metadata.js`
