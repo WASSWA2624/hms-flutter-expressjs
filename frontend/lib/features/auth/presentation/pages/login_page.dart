@@ -28,6 +28,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _identifierFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
+  bool _showPasswordResetCompletedBanner = false;
 
   @override
   void initState() {
@@ -37,10 +38,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         return;
       }
       // Fresh visit: drop sibling-route failure / reset shells from shared auth state.
+      // Keep password-reset success as a one-shot local banner (from /reset-password).
       final AuthController auth = ref.read(authControllerProvider.notifier);
+      final bool showResetCompleted = ref
+          .read(authControllerProvider)
+          .passwordResetCompleted;
       auth.clearFailure();
       auth.clearIdentifyTenants();
       auth.clearPasswordResetSubmitted();
+      if (showResetCompleted) {
+        auth.clearPasswordResetCompleted();
+        setState(() {
+          _showPasswordResetCompletedBanner = true;
+        });
+      }
     });
   }
 
@@ -70,6 +81,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
+              if (_showPasswordResetCompletedBanner) ...<Widget>[
+                AppFormInformationBanner.message(
+                  title: l10n.authResetPasswordCompletedTitle,
+                  message: l10n.authResetPasswordCompletedBody,
+                  variant: AppFormInformationVariant.success,
+                ),
+                SizedBox(height: theme.spacing.md),
+              ],
               if (state.failure != null) ...<Widget>[
                 AppFormInformationBanner.failure(
                   context: context,

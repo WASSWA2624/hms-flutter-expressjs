@@ -47,6 +47,19 @@ const OperationsWorkItem _inProgressRequest = OperationsWorkItem(
   ),
 );
 
+const OperationsWorkItem _inProgressWithAsset = OperationsWorkItem(
+  id: 'MR-WIP-ASSET',
+  displayId: 'MR-WIP-ASSET',
+  status: 'IN_PROGRESS',
+  assetId: 'AS-001',
+  assetLabel: 'Backup Generator',
+  metadata: OperationsRequestMetadata(
+    issue: 'Oil pressure fault',
+    priority: 'HIGH',
+    category: 'POWER_BACKUP',
+  ),
+);
+
 const OperationsWorkItem _completedRequest = OperationsWorkItem(
   id: 'MR-DONE',
   displayId: 'MR-DONE',
@@ -76,6 +89,22 @@ AppAccessPolicy _operationsWritePolicy() {
         AppPermissions.operationsRead,
         AppPermissions.operationsWrite,
       },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'facilities-maintenance',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
+AppAccessPolicy _operationsReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['OPERATIONS']),
+      permissions: <AppPermission>{AppPermissions.operationsRead},
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(
           code: 'facilities-maintenance',
@@ -161,6 +190,7 @@ Future<GoRouter> _pumpOperationsWorkspace(
   required _MockOperationsRepository repository,
   OperationsWorkspaceQuery? initialQuery,
   String initialLocation = '/operations',
+  AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -195,7 +225,9 @@ Future<GoRouter> _pumpOperationsWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_operationsWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _operationsWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -239,6 +271,15 @@ void main() {
         issue: 'Test',
       ),
     );
+    registerFallbackValue(
+      const OperationsTriageDraft(assignedEngineer: 'Tech'),
+    );
+    registerFallbackValue(
+      const OperationsStatusUpdateDraft(status: 'IN_PROGRESS'),
+    );
+    registerFallbackValue(
+      const OperationsRequestNoteDraft(kind: 'CLOSEOUT', note: 'Done'),
+    );
   });
 
   setUp(() {
@@ -262,7 +303,7 @@ void main() {
     expect(find.text('Filter replaced'), findsOneWidget);
     expect(find.textContaining('Create request'), findsOneWidget);
     expect(find.text('Report'), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Refresh'), findsNothing);
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
     expect(_queueTable(tester).columnVisibilityTitle, 'Table Settings');
@@ -371,18 +412,19 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
   });
 
-  testWidgets('Completed tab shows Report as primary toolbar action', (
-    WidgetTester tester,
-  ) async {
-    await _pumpOperationsWorkspace(tester, repository: repository);
+  testWidgets(
+    'Completed tab keeps Create request primary and Report secondary',
+    (WidgetTester tester) async {
+      await _pumpOperationsWorkspace(tester, repository: repository);
 
-    await tester.tap(find.textContaining('Completed').first);
-    await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Completed').first);
+      await tester.pumpAndSettle();
 
-    expect(find.text('Report'), findsOneWidget);
-    expect(find.textContaining('Create request'), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
-  });
+      expect(find.textContaining('Create request'), findsOneWidget);
+      expect(find.text('Report'), findsOneWidget);
+      expect(find.text('Refresh'), findsNothing);
+    },
+  );
 
   testWidgets('requestId deep link opens request detail dialog', (
     WidgetTester tester,
@@ -420,5 +462,165 @@ void main() {
     expect(find.text('Backup Generator (GEN-01)'), findsWidgets);
     expect(find.text('GEN-01'), findsWidgets);
     expect(find.text('Main Campus'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('next action opens assign dialog for open request', (
+    WidgetTester tester,
+  ) async {
+    when(() => repository.triageRequest(any(), any())).thenAnswer(
+      (_) async => const Result<OperationsWorkItem>.success(_openRequest),
+    );
+
+    await _pumpOperationsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Assign technician or team'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Assign'), findsWidgets);
+    expect(find.text('Request detail'), findsNothing);
+  });
+
+  testWidgets('detail omits assign when it is the row next action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOperationsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Generator alarm'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    // Assign is the next-action primary — not duplicated in detail.
+    expect(
+      find.descendant(of: find.byType(AppDialog), matching: find.text('Assign')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Update status'),
+      ),
+      findsOneWidget,
+    );
+    // Detail report shortcut removed — workspace Report is the sole entry.
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Report'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'detail omits update status when it is the row next action',
+    (WidgetTester tester) async {
+      await _pumpOperationsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.textContaining('In progress').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pump seal leak'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Update status'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Assign'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'detail omits service log when it is the row next action',
+    (WidgetTester tester) async {
+      _stubRepository(
+        repository,
+        requests: const <OperationsWorkItem>[_inProgressWithAsset],
+      );
+
+      await _pumpOperationsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.text('Oil pressure fault'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Add service log'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Update status'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'detail omits closeout note when it is the row next action',
+    (WidgetTester tester) async {
+      await _pumpOperationsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.textContaining('Completed').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Filter replaced'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Closeout note'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Update status'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('report summary has metrics only without preview shell', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOperationsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Report'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('All requests'), findsWidgets);
+    expect(find.text('Preview'), findsNothing);
+  });
+
+  testWidgets('unauthorized create and write next-actions are absent', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOperationsWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _operationsReadOnlyPolicy(),
+    );
+
+    expect(find.textContaining('Create request'), findsNothing);
+    expect(find.text('Assign technician or team'), findsNothing);
+    expect(find.text('Review request'), findsWidgets);
+    expect(find.text('Report'), findsOneWidget);
   });
 }

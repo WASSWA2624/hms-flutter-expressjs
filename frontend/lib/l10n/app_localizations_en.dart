@@ -7645,11 +7645,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authCreateAccountActionLabel => 'Create account';
 
   @override
-  String get authRegisterTitle => 'Create facility account';
+  String get authRegisterTitle => 'Set up your facility';
 
   @override
   String get authRegisterBody =>
-      'Register the first administrator for a facility workspace.';
+      'Create the first administrator for a facility workspace.';
 
   @override
   String get authRegisterActionLabel => 'Create account';

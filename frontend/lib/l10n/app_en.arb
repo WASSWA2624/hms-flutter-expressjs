@@ -9698,11 +9698,11 @@
   "@authCreateAccountActionLabel": {
     "description": "Navigate to self-registration action label."
   },
-  "authRegisterTitle": "Create facility account",
+  "authRegisterTitle": "Set up your facility",
   "@authRegisterTitle": {
     "description": "Self-registration page title."
   },
-  "authRegisterBody": "Register the first administrator for a facility workspace.",
+  "authRegisterBody": "Create the first administrator for a facility workspace.",
   "@authRegisterBody": {
     "description": "Self-registration page supporting text."
   },

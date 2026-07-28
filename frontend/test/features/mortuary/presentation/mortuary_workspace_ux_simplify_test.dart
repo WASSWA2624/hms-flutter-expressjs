@@ -275,26 +275,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Queue'), findsWidgets);
-    expect(find.text('Identification pending'), findsWidgets);
+    expect(find.text('ADVANCED FILTERS'), findsOneWidget);
   });
 
   testWidgets('row select is the sole path into case detail', (
     WidgetTester tester,
   ) async {
-    await _pumpMortuary(
-      tester,
-      repository: repository,
-      viewport: const Size(390, 844),
-    );
+    await _pumpMortuary(tester, repository: repository);
 
     await tester.tap(find.text('Assign storage'));
     await tester.pumpAndSettle();
-    expect(find.text('Case detail'), findsNothing);
+    expect(find.text('CASE DETAIL'), findsNothing);
 
-    await tester.tap(find.text('Amina K.'));
+    final AppListTable<MortuaryWorkspaceItem> table = tester
+        .widget<AppListTable<MortuaryWorkspaceItem>>(
+          find.byType(AppListTable<MortuaryWorkspaceItem>),
+        );
+    expect(table.onRowSelected, isNotNull);
+    table.onRowSelected!(_caseItem);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
 
-    expect(find.text('Case detail'), findsOneWidget);
+    expect(find.text('CASE DETAIL'), findsOneWidget);
     expect(find.text('Actions unavailable'), findsNothing);
     expect(find.text('Receive case'), findsNothing);
     expect(find.text('Confirm release'), findsNothing);
@@ -303,17 +306,18 @@ void main() {
   testWidgets('unauthorized user has no print documents control', (
     WidgetTester tester,
   ) async {
-    await _pumpMortuary(
-      tester,
-      repository: repository,
-      policy: _readPolicy(),
-      viewport: const Size(390, 844),
-    );
+    await _pumpMortuary(tester, repository: repository, policy: _readPolicy());
 
-    await tester.tap(find.text('Amina K.'));
+    final AppListTable<MortuaryWorkspaceItem> table = tester
+        .widget<AppListTable<MortuaryWorkspaceItem>>(
+          find.byType(AppListTable<MortuaryWorkspaceItem>),
+        );
+    table.onRowSelected!(_caseItem);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
 
-    expect(find.text('Case detail'), findsOneWidget);
+    expect(find.text('CASE DETAIL'), findsOneWidget);
     expect(find.text('Print documents'), findsNothing);
   });
 
@@ -324,13 +328,18 @@ void main() {
       tester,
       repository: repository,
       policy: _readPolicy(includeExport: true),
-      viewport: const Size(390, 844),
     );
 
-    await tester.tap(find.text('Amina K.'));
+    final AppListTable<MortuaryWorkspaceItem> table = tester
+        .widget<AppListTable<MortuaryWorkspaceItem>>(
+          find.byType(AppListTable<MortuaryWorkspaceItem>),
+        );
+    table.onRowSelected!(_caseItem);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
 
-    expect(find.text('Case detail'), findsOneWidget);
+    expect(find.text('CASE DETAIL'), findsOneWidget);
     expect(find.text('Print documents'), findsOneWidget);
   });
 

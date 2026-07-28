@@ -86,6 +86,14 @@ final class AuthController extends Notifier<AuthControllerState> {
     state = state.copyWith(passwordResetSubmitted: false);
   }
 
+  void clearPasswordResetCompleted() {
+    if (!state.passwordResetCompleted) {
+      return;
+    }
+
+    state = state.copyWith(passwordResetCompleted: false);
+  }
+
   Future<bool> login({
     required String identifier,
     required String password,
@@ -124,11 +132,11 @@ final class AuthController extends Notifier<AuthControllerState> {
   Future<bool> register({
     required String email,
     required String password,
-    required String tenantName,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    String? tenantName,
     String? location,
     String? interests,
   }) async {
@@ -146,11 +154,11 @@ final class AuthController extends Notifier<AuthControllerState> {
         .register(
           email: email,
           password: password,
-          tenantName: tenantName,
           facilityName: facilityName,
           adminName: adminName,
           facilityType: facilityType,
           phone: phone,
+          tenantName: tenantName,
           location: location,
           interests: interests,
         );

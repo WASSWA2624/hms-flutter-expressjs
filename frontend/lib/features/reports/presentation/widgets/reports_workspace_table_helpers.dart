@@ -140,37 +140,63 @@ bool matchesComplianceLogSearch(
   });
 }
 
-String? reportNextActionLabel(
-  AppLocalizations l10n,
+/// Stable next-action keys for report rows. `null` means no mutation next-action
+/// (row select opens detail; do not render a duplicate preview button).
+const String reportNextActionRun = 'run';
+const String reportNextActionSchedule = 'schedule';
+const String reportNextActionRetry = 'retry';
+const String reportNextActionCancel = 'cancel';
+const String reportNextActionDownload = 'download';
+const String complianceNextActionExport = 'export';
+
+String? reportPrimaryNextActionKey(
   ReportsWorkspaceItem item, {
   required bool canWrite,
   required bool canExport,
 }) {
   if (item.kind == ReportItemKind.definition) {
     if (canWrite && item.canRun) {
-      return l10n.reportsRunAction;
+      return reportNextActionRun;
     }
     if (canWrite && item.canSchedule) {
-      return l10n.reportsScheduleAction;
+      return reportNextActionSchedule;
     }
   }
   if (item.kind == ReportItemKind.run) {
     if (canWrite && item.canRetry) {
-      return l10n.reportsRetryAction;
+      return reportNextActionRetry;
     }
     if (canWrite && item.canCancel) {
-      return l10n.reportsCancelRunAction;
+      return reportNextActionCancel;
     }
     if (canExport && item.downloadAvailable) {
-      return l10n.reportsDownloadAction;
+      return reportNextActionDownload;
     }
   }
-  if (item.kind == ReportItemKind.schedule) {
-    if (canWrite) {
-      return l10n.reportsScheduleAction;
-    }
+  if (item.isSchedule && canWrite) {
+    return reportNextActionSchedule;
   }
-  return l10n.reportsPreviewTitle;
+  return null;
+}
+
+String? reportNextActionLabel(
+  AppLocalizations l10n,
+  ReportsWorkspaceItem item, {
+  required bool canWrite,
+  required bool canExport,
+}) {
+  return switch (reportPrimaryNextActionKey(
+    item,
+    canWrite: canWrite,
+    canExport: canExport,
+  )) {
+    reportNextActionRun => l10n.reportsRunAction,
+    reportNextActionSchedule => l10n.reportsScheduleAction,
+    reportNextActionRetry => l10n.reportsRetryAction,
+    reportNextActionCancel => l10n.reportsCancelRunAction,
+    reportNextActionDownload => l10n.reportsDownloadAction,
+    _ => null,
+  };
 }
 
 String? complianceNextActionLabel(
@@ -181,6 +207,10 @@ String? complianceNextActionLabel(
     return null;
   }
   return l10n.reportsExportEvidenceAction;
+}
+
+String? compliancePrimaryNextActionKey({required bool canExport}) {
+  return canExport ? complianceNextActionExport : null;
 }
 
 List<AppListTableColumn<ReportsWorkspaceItem>> reportItemColumns(

@@ -200,12 +200,14 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       OpdWorkspaceSection.active => AppAccessActionGate(
         requirement: opdEncounterPermissionRequirement,
         builder: (BuildContext context, bool isAllowed) {
+          if (!isAllowed) {
+            return const SizedBox.shrink();
+          }
           return AppTabToolbarPrimary(
             label: l10n.opdStartWalkInAction,
             icon: opdEncounterIcon,
             semanticLabel: l10n.opdStartWalkInAction,
             tooltip: l10n.opdStartEncounterTooltip,
-            enabled: isAllowed,
             onPressed: () {
               unawaited(openOpdWorkspaceEncounterFlow(context, ref, state));
             },

@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
@@ -467,7 +468,7 @@ void main() {
     expect(find.textContaining('Vitals'), findsWidgets);
   });
 
-  testWidgets('flow row omit keeps Pay consultation out of hub', (
+  testWidgets('flow row omit keeps stage next-action out of hub', (
     WidgetTester tester,
   ) async {
     when(() => repository.getOpdFlow(any())).thenAnswer(
@@ -483,7 +484,13 @@ void main() {
 
     expect(find.text('FLOW ACTIONS'), findsOneWidget);
     expect(find.text('Next · Record vitals'), findsNothing);
-    expect(find.text('Record vitals'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AppQuickActions),
+        matching: find.text('Record vitals'),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('unauthorized user has no Start walk-in or next-action writes', (

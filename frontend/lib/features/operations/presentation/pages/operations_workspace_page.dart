@@ -8,7 +8,6 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -2432,52 +2431,6 @@ String _locationLabel(AppLocalizations l10n, OperationsWorkItem item) {
     _display(item.metadata.location, ''),
     _display(item.facilityLabel, item.facilityId ?? ''),
   ]).ifEmpty(l10n.operationsUnknownValue);
-}
-
-String _reportText(
-  BuildContext context,
-  OperationsWorkspaceState state,
-  OperationsWorkItem? item,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final Locale locale = Localizations.localeOf(context);
-  final StringBuffer buffer = StringBuffer()
-    ..writeln(l10n.operationsReportTitle)
-    ..writeln(
-      l10n.operationsGeneratedAtLabel(
-        AppFormatters.dateTime(DateTime.now(), locale),
-      ),
-    )
-    ..writeln()
-    ..writeln(
-      l10n.operationsReportSummaryLine(
-        state.workItems.totalItemCount ?? state.workItems.items.length,
-        state.openCount,
-        state.inProgressCount,
-        state.completedCount,
-      ),
-    );
-
-  if (item != null) {
-    buffer
-      ..writeln()
-      ..writeln(l10n.operationsRequestColumnLabel)
-      ..writeln('${item.effectiveDisplayId} - ${_issueLabel(l10n, item)}')
-      ..writeln(
-        '${l10n.operationsStatusColumnLabel}: ${_statusLabel(l10n, item.status)}',
-      )
-      ..writeln(
-        '${l10n.operationsLocationColumnLabel}: ${_locationLabel(l10n, item)}',
-      )
-      ..writeln(
-        '${l10n.operationsPriorityColumnLabel}: ${_priorityLabel(l10n, item.metadata.priority)}',
-      )
-      ..writeln(
-        '${l10n.operationsNextActionColumnLabel}: ${_nextActionLabel(l10n, item)}',
-      );
-  }
-
-  return buffer.toString();
 }
 
 String _formatDateTimeOrFallback(

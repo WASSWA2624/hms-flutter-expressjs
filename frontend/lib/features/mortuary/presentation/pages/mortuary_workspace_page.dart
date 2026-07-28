@@ -717,10 +717,14 @@ AppListTableColumn<MortuaryWorkspaceItem> _mortuaryDataColumn(
             tone: _statusTone(_mortuaryPanelStatus(item, panel)),
           ),
         ),
-        _MortuaryTableColumnId.nextAction => Text(
-          _nextActionLabel(l10n, item),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        _MortuaryTableColumnId.nextAction => GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {},
+          child: Text(
+            _nextActionLabel(l10n, item),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         _MortuaryTableColumnId.date => Text(
           _formatDateTime(context, _mortuaryPanelDate(item, panel)),
@@ -1342,9 +1346,12 @@ Future<void> _applyFilterValue(
 }
 
 AppSearchBarFilterValue _filterValueForQuery(MortuaryWorkspaceQuery query) {
+  final String defaultResource =
+      mortuaryDefaultResourceByPanel[query.panel] ?? mortuaryResourceCases;
   return AppSearchBarFilterValue(
     options: <String, String>{
-      'resource': query.resource,
+      if (query.resource.isNotEmpty && query.resource != defaultResource)
+        'resource': query.resource,
       if (query.queue != null) 'queue': query.queue!,
       if (query.status != null) 'status': query.status!,
       if (query.identificationStatus != null)

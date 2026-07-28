@@ -73,19 +73,6 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     final state = ref.watch(authControllerProvider);
     final theme = Theme.of(context);
 
-    if (state.passwordResetCompleted) {
-      return AuthPageFrame(
-        title: l10n.authResetPasswordCompletedTitle,
-        subtitle: l10n.authResetPasswordCompletedBody,
-        maxWidth: 460,
-        child: AuthPrimaryButton(
-          label: l10n.authLoginActionLabel,
-          leadingIcon: Icons.login_rounded,
-          onPressed: () => context.go(AppRoutes.login.location()),
-        ),
-      );
-    }
-
     return AuthPageFrame(
       title: l10n.authResetPasswordTitle,
       subtitle: _usesLinkToken
@@ -242,7 +229,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
         ? _emailController.text.trim().toLowerCase()
         : null;
 
-    await ref
+    final bool completed = await ref
         .read(authControllerProvider.notifier)
         .resetPassword(
           token: token,
@@ -251,6 +238,13 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           newPassword: _passwordController.text,
           confirmPassword: _confirmPasswordController.text,
         );
+    if (!mounted || !completed) {
+      return;
+    }
+
+    // Skip the intermediate "password updated" hub: next step is sign-in.
+    // Success copy is shown on /login.
+    context.go(AppRoutes.login.location());
   }
 
   void _handleFieldFocusChanged(bool hasFocus) {

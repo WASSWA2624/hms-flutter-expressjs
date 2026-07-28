@@ -1401,13 +1401,25 @@ class _ReceptionWorkspaceContentState
         if (appointment == null) {
           return const SizedBox.shrink();
         }
-        final String? label = row.appointmentNextActionLabel(l10n);
+        final OpdAppointmentPrimaryAction primary =
+            resolveOpdAppointmentPrimaryAction(
+              appointment: appointment,
+              linkedFlow: row.flow,
+            );
+        final String? label = opdAppointmentPrimaryActionLabel(l10n, primary);
         if (label == null) {
           return const SizedBox.shrink();
         }
-        return AppButton.secondary(
-          label: label,
-          onPressed: () => unawaited(_openRowDetail(row)),
+        // Check in / Reschedule open the mutation directly (no empty hub shell).
+        // Row select opens the hub with that primary omitted.
+        final OpdBoardNextActionKind kind =
+            primary == OpdAppointmentPrimaryAction.continueEncounter
+            ? OpdBoardNextActionKind.continueAppointmentEncounter
+            : OpdBoardNextActionKind.checkInAppointment;
+        return OpdBoardNextActionCell(
+          kind: kind,
+          labelOverride: label,
+          onPressed: () => unawaited(_runAppointmentNextAction(row, primary)),
         );
       },
     );
@@ -1804,6 +1816,69 @@ class _ReceptionWorkspaceContentState
     ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
   }
 
+  Future<void> _runAppointmentNextAction(
+    _ReceptionDeskRow row,
+    OpdAppointmentPrimaryAction primary,
+  ) async {
+    final OpdAppointment? appointment = row.appointment;
+    if (appointment == null) {
+      return;
+    }
+
+    final bool? changed = switch (primary) {
+      OpdAppointmentPrimaryAction.startEncounter =>
+        await _checkInAppointment(appointment),
+      OpdAppointmentPrimaryAction.reschedule =>
+        await showOpdRescheduleAppointmentDialog(
+          context: context,
+          appointment: appointment,
+        ),
+      OpdAppointmentPrimaryAction.continueEncounter =>
+        await _openFlowActions(
+          row.flow ??
+              findActiveOpdFlowForAppointment(
+                appointment: appointment,
+                flows: widget.state.flows.items,
+              ),
+        ),
+      OpdAppointmentPrimaryAction.none => null,
+    };
+    if (changed == true && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      await _refreshWorkspace();
+    }
+  }
+
+  /// Check-in without the appointment hub shell (matches reception hub path).
+  Future<bool?> _checkInAppointment(OpdAppointment appointment) async {
+    final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
+      context: context,
+      dialog: buildOpdWorkspaceEncounterDialog(
+        ref: ref,
+        state: widget.state,
+        initialAppointment: appointment,
+        initialAppointmentId: appointment.apiId,
+        defaultArrivalMode: 'ONLINE_APPOINTMENT',
+        defaultProviderId: appointment.providerUserId,
+        includeEncounterLifecycleCallbacks: false,
+      ),
+    );
+    if (!mounted || dialogResult == null) {
+      return null;
+    }
+    if (dialogResult.action == OpdEncounterDialogAction.submit) {
+      ref
+          .read(opdWorkspaceControllerProvider.notifier)
+          .markAppointmentInProgress(appointment);
+    }
+    return dialogResult.action == OpdEncounterDialogAction.submit ||
+        dialogResult.action == OpdEncounterDialogAction.cancelled ||
+        dialogResult.action == OpdEncounterDialogAction.closed ||
+        dialogResult.action == OpdEncounterDialogAction.continueWorkflow;
+  }
+
   Future<void> _openRowDetail(_ReceptionDeskRow row) async {
     if (row.followUpEntry != null) {
       final bool? changed = await showReceptionFollowUpDetailDialog(
@@ -1827,6 +1902,7 @@ class _ReceptionWorkspaceContentState
         context: context,
         appointment: row.appointment!,
         workspaceState: widget.state,
+        omitPrimaryAction: true,
       );
       if (!mounted) {
         return;

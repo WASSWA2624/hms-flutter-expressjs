@@ -18,6 +18,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Toolbar queue chips (identification pending, storage exceptions, release ready, unsettled billing, post-mortem pending) | Same as Filters → Queue | **Removed** — Filters → Queue is the sole queue entry; deep link `?queue=` kept |
 | Toolbar **In storage** chip | Same as Storage tab (no-op on Storage panel) | **Removed** — Storage tab is the sole panel entry |
 | Row **Next action** button opening detail | Same as row select | **Replaced** — next-action is guidance text only; row select opens detail |
+| Filters chip counting default panel resource as active | False “Filters (1)” | **Fixed** — default panel resource omitted from active filter value |
 
 ---
 
@@ -67,9 +68,9 @@ Tab-strip mutation primaries, queue/summary shortcuts, and **Refresh** were remo
 
 - **Next action** (stage guidance label)
   - Location: `next_action` column (always visible).
-  - Opens modal: No — plain text only (Verify identity / Assign storage / … / Released).
-  - Immediate result: Shows suggested next step; does not open detail.
-  - Condition: Always when rows exist.
+  - Opens modal: No — plain text only (Verify identity / Assign storage / … / Released); taps on this cell do not open detail.
+  - Immediate result: Shows suggested next step; row select remains the sole open path.
+  - Condition: Always when rows exist (desktop table; mobile list shows status in meta instead).
 
 ### Detail dialog
 

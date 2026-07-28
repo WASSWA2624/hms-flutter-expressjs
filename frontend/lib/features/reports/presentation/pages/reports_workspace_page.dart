@@ -113,22 +113,6 @@ class _ReportsWorkspaceContentState
     return AppWorkspace(
       title: l10n.reportsTitle,
       leadingIcon: AppRouteIcons.reports,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: _summaryNotifications(context, state),
-        secondary: <Widget>[
-          if (canWriteReports(policy) && state.selectedItem?.canRun == true)
-            AppButton.secondary(
-              label: l10n.reportsRunAction,
-              leadingIcon: Icons.play_arrow_outlined,
-              enabled: !state.isSaving,
-              onPressed: () => _openRunDialog(context, ref, state),
-            ),
-        ],
-        onRefresh: controller.refresh,
-        isRefreshing: state.isRefreshing,
-      ),
-
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -150,69 +134,14 @@ class _ReportsWorkspaceContentState
             SizedBox(height: Theme.of(context).spacing.lg),
             _ReportSchedulesPanel(
               state: state,
-              searchController: _searchController,
               columnVisibilityController: _scheduleTableColumns,
               policy: policy,
             ),
           ],
         ],
       ),
-      detail: _ReportsDetailPanel(state: state, policy: policy),
       activity: _ReportsTimelinePanel(state: state),
     );
-  }
-
-  List<AppWorkspaceSummaryNotification> _summaryNotifications(
-    BuildContext context,
-    ReportsWorkspaceState state,
-  ) {
-    final ReportsWorkspaceController controller = ref.read(
-      reportsWorkspaceControllerProvider.notifier,
-    );
-    final List<ReportsSummaryCard> summary = state.overview.summary;
-    final List<AppWorkspaceSummaryNotification> notifications =
-        <AppWorkspaceSummaryNotification>[
-          for (final ReportsSummaryCard card in summary)
-            if (card.value > 0)
-              AppWorkspaceSummaryNotification(
-                label: card.label,
-                count: card.value,
-                icon: _summaryIcon(card.id),
-                tone: _summaryTone(card.id),
-                onSelected: () {
-                  final ReportsQueueSummary? queue = state
-                      .overview
-                      .queueSummaries
-                      .where((ReportsQueueSummary item) => item.count > 0)
-                      .firstOrNull;
-                  if (queue != null &&
-                      (card.id.contains('run') ||
-                          card.id.contains('schedule') ||
-                          card.id.contains('kpi'))) {
-                    controller.applyPanel(queue.panel);
-                  }
-                },
-              ),
-        ];
-
-    if (notifications.isNotEmpty) {
-      return notifications;
-    }
-
-    return <AppWorkspaceSummaryNotification>[
-      AppWorkspaceSummaryNotification(
-        label: context.l10n.reportsPanelCatalog,
-        count: 0,
-        icon: Icons.article_outlined,
-        onSelected: () => controller.applyPanel(ReportsWorkspacePanel.catalog),
-      ),
-      AppWorkspaceSummaryNotification(
-        label: context.l10n.reportsPanelAudit,
-        count: 0,
-        icon: Icons.manage_search_outlined,
-        onSelected: () => controller.applyPanel(ReportsWorkspacePanel.audit),
-      ),
-    ];
   }
 }
 
@@ -566,13 +495,11 @@ class _ComplianceLogPanel extends ConsumerWidget {
 class _ReportSchedulesPanel extends ConsumerWidget {
   const _ReportSchedulesPanel({
     required this.state,
-    required this.searchController,
     required this.columnVisibilityController,
     required this.policy,
   });
 
   final ReportsWorkspaceState state;
-  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
   columnVisibilityController;
   final AppAccessPolicy policy;
@@ -599,17 +526,6 @@ class _ReportSchedulesPanel extends ConsumerWidget {
         columnWidthStorageKey: 'reports_schedules_cw',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         columnVisibilityTitle: l10n.commonTableSettingsTitle,
-        search: AppListTableSearch<ReportsWorkspaceItem>(
-          controller: searchController,
-          semanticLabel: l10n.reportsSearchLabel,
-          hintText: l10n.reportsSearchHint,
-          clearLabel: l10n.reportsClearSearchLabel,
-          matcher: (ReportsWorkspaceItem item, String query) {
-            return matchesReportItemSearch(context, item, query);
-          },
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-        ),
         itemKeyBuilder: (ReportsWorkspaceItem item) =>
             ValueKey<String>(item.id),
         onRowSelected: (ReportsWorkspaceItem item) {
@@ -666,44 +582,6 @@ class _ReportSchedulesPanel extends ConsumerWidget {
   }
 }
 
-class _ReportsDetailPanel extends ConsumerWidget {
-  const _ReportsDetailPanel({required this.state, required this.policy});
-
-  final ReportsWorkspaceState state;
-  final AppAccessPolicy policy;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (state.query.panel.isCompliance) {
-      final ComplianceLogItem? item = state.selectedComplianceLog;
-      if (item == null) {
-        return _NoSelectionPanel(
-          title: context.l10n.reportsComplianceDetailTitle,
-          body: context.l10n.reportsNoComplianceSelectionBody,
-        );
-      }
-      return _ComplianceDetailPanel(
-        item: item,
-        canExport: canExportEvidence(policy),
-      );
-    }
-
-    final ReportsWorkspaceItem? item = state.selectedItem;
-    if (item == null) {
-      return _NoSelectionPanel(
-        title: context.l10n.reportsPreviewTitle,
-        body: context.l10n.reportsNoSelectionBody,
-      );
-    }
-
-    return _ReportDetailPanel(
-      item: item,
-      canWrite: canWriteReports(policy),
-      canExport: canExportEvidence(policy),
-    );
-  }
-}
-
 class _ReportDetailPanel extends ConsumerWidget {
   const _ReportDetailPanel({
     required this.item,
@@ -722,29 +600,42 @@ class _ReportDetailPanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ReportsWorkspaceState? state = _currentState(ref);
     final bool isSaving = state?.isSaving ?? false;
+    final String? omitNextAction = reportPrimaryNextActionKey(
+      item,
+      canWrite: canWrite,
+      canExport: canExport,
+    );
 
     final List<Widget> actions = <Widget>[
-      if (canWrite && item.canRun)
+      if (canWrite &&
+          item.canRun &&
+          omitNextAction != reportNextActionRun)
         AppReportActionButton.preview(
           label: l10n.reportsRunAction,
           enabled: !isSaving,
           onPressed: () => _openRunDialog(context, ref, state),
         ),
-      if (canWrite && item.canSchedule)
+      if (canWrite &&
+          item.canSchedule &&
+          omitNextAction != reportNextActionSchedule)
         AppReportActionButton.export(
           label: l10n.reportsScheduleAction,
           enabled: !isSaving,
           icon: Icons.schedule_outlined,
           onPressed: () => _openScheduleDialog(context, ref, item, state),
         ),
-      if (canWrite && item.canRetry)
+      if (canWrite &&
+          item.canRetry &&
+          omitNextAction != reportNextActionRetry)
         AppReportActionButton.preview(
           label: l10n.reportsRetryAction,
           enabled: !isSaving,
           icon: Icons.replay_outlined,
           onPressed: () => _openRetryDialog(context, ref, state),
         ),
-      if (canWrite && item.canCancel)
+      if (canWrite &&
+          item.canCancel &&
+          omitNextAction != reportNextActionCancel)
         AppReportActionButton(
           label: l10n.reportsCancelRunAction,
           kind: AppReportActionKind.preview,
@@ -752,7 +643,9 @@ class _ReportDetailPanel extends ConsumerWidget {
           enabled: !isSaving,
           onPressed: () => _confirmCancelRun(context, ref, isDialog: isDialog),
         ),
-      if (canExport && item.downloadAvailable)
+      if (canExport &&
+          item.downloadAvailable &&
+          omitNextAction != reportNextActionDownload)
         AppReportActionButton.download(
           label: l10n.reportsDownloadAction,
           enabled: !isSaving,
@@ -811,13 +704,16 @@ class _ComplianceDetailPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final String? omitNextAction = compliancePrimaryNextActionKey(
+      canExport: canExport,
+    );
     final List<Widget> actions = <Widget>[
       if (canExport)
         AppReportActionButton.print(
           label: l10n.reportsPrintAction,
           onPressed: () => _printComplianceItem(context, ref, item),
         ),
-      if (canExport)
+      if (canExport && omitNextAction != complianceNextActionExport)
         AppReportActionButton.export(
           label: l10n.reportsExportEvidenceAction,
           onPressed: () => _confirmExportEvidence(context, ref, item),
@@ -851,26 +747,6 @@ class _ComplianceDetailPanel extends ConsumerWidget {
       title: l10n.reportsComplianceDetailTitle,
       actions: actions,
       child: preview,
-    );
-  }
-}
-
-class _NoSelectionPanel extends StatelessWidget {
-  const _NoSelectionPanel({required this.title, required this.body});
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
-      title: title,
-      child: AppWorkspaceStatePanel.empty(
-        title: context.l10n.reportsNoSelectionTitle,
-        body: body,
-        icon: Icons.preview_outlined,
-        minHeight: 260,
-      ),
     );
   }
 }

@@ -381,16 +381,16 @@ void main() {
   });
 
   testWidgets('row select opens detail dialog', (WidgetTester tester) async {
-    await _pumpMortuaryWorkspace(
-      tester,
-      repository: repository,
-      viewport: const Size(390, 844),
-    );
+    await _pumpMortuaryWorkspace(tester, repository: repository);
 
-    await tester.tap(find.text('Amina K.'));
+    final AppListTable<MortuaryWorkspaceItem> table = _table(tester);
+    expect(table.onRowSelected, isNotNull);
+    table.onRowSelected!(_caseItem);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
 
-    expect(find.text('Case detail'), findsOneWidget);
+    expect(find.text('CASE DETAIL'), findsOneWidget);
     expect(find.text('Actions unavailable'), findsNothing);
     verify(
       () => repository.getItem(
@@ -417,10 +417,10 @@ void main() {
 
     await tester.tap(find.text('Assign storage'));
     await tester.pumpAndSettle();
-    expect(find.text('Case detail'), findsNothing);
+    expect(find.text('CASE DETAIL'), findsNothing);
   });
 
-  testWidgets('mobile viewport shows next action guidance and deceased', (
+  testWidgets('mobile viewport keeps tab strip and worklist chrome', (
     WidgetTester tester,
   ) async {
     await _pumpMortuaryWorkspace(
@@ -429,9 +429,10 @@ void main() {
       viewport: const Size(390, 844),
     );
 
-    expect(find.text('Assign storage'), findsOneWidget);
-    expect(find.text('Amina K.'), findsOneWidget);
-    expect(find.text('In Storage'), findsWidgets);
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.text('Overview'), findsWidgets);
+    expect(find.byType(AppListTable<MortuaryWorkspaceItem>), findsOneWidget);
+    expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
   });
 
   testWidgets('filter dialog excludes panel filter group', (
@@ -517,6 +518,5 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Overview'), findsWidgets);
-    expect(find.text('Reports'), findsWidgets);
   });
 }

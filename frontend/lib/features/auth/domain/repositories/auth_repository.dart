@@ -16,11 +16,11 @@ abstract interface class AuthRepository {
   Future<Result<void>> register({
     required String email,
     required String password,
-    required String tenantName,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    String? tenantName,
     String? location,
     String? interests,
   });
