@@ -507,7 +507,7 @@ void main() {
     expect(find.text('Panel body'), findsOneWidget);
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.expand_less));
+    await tester.tap(find.text('Orders'));
     await tester.pumpAndSettle();
 
     expect(find.text('Orders'), findsOneWidget);

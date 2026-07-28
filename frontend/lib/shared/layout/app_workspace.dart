@@ -515,6 +515,11 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
     final bool hasTitle =
         widget.title != null && widget.title!.trim().isNotEmpty;
     final bool showBody = !widget.collapsible || _expanded;
+    final String? description =
+        widget.description != null && widget.description!.trim().isNotEmpty
+        ? widget.description
+        : null;
+    final bool hasActions = widget.actions.isNotEmpty;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -525,85 +530,46 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (hasTitle) ...<Widget>[
-            Padding(
-              padding: EdgeInsets.all(theme.spacing.lg),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: widget.collapsible ? _toggleExpanded : null,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Row(
-                              children: <Widget>[
-                                if (widget.titleIcon != null) ...<Widget>[
-                                  Icon(
-                                    widget.titleIcon,
-                                    size: theme.appTokens.listIconSize,
-                                    color: colorScheme.primary,
-                                  ),
-                                  SizedBox(width: theme.spacing.sm),
-                                ],
-                                Expanded(
-                                  child: Text(
-                                    widget.title!,
-                                    style: theme.textTheme.titleMedium,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (showBody &&
-                                widget.description != null &&
-                                widget.description!.isNotEmpty) ...<Widget>[
-                              SizedBox(height: theme.spacing.xs),
-                              Text(
-                                widget.description!,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ],
+            Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: widget.collapsible ? _toggleExpanded : null,
+                child: Padding(
+                  // Minimal header: just enough inset so title/icon miss the border.
+                  padding: EdgeInsets.symmetric(
+                    horizontal: theme.spacing.sm,
+                    vertical: theme.spacing.xs,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      if (widget.titleIcon != null) ...<Widget>[
+                        Icon(
+                          widget.titleIcon,
+                          size: theme.appTokens.listIconSize,
+                          color: colorScheme.primary,
+                        ),
+                        SizedBox(width: theme.spacing.sm),
+                      ],
+                      Expanded(
+                        child: Text(
+                          widget.title!,
+                          style: theme.textTheme.titleMedium,
                         ),
                       ),
-                    ),
+                      if (widget.collapsible)
+                        Icon(
+                          _expanded
+                              ? Icons.expand_less
+                              : Icons.expand_more,
+                          size: theme.appTokens.listIconSize,
+                          color: colorScheme.onSurfaceVariant,
+                          semanticLabel: _expanded
+                              ? context.l10n.commonShowLessActionLabel
+                              : context.l10n.commonShowMoreActionLabel,
+                        ),
+                    ],
                   ),
-                  if (widget.actions.isNotEmpty) ...<Widget>[
-                    SizedBox(width: theme.spacing.sm),
-                    Flexible(
-                      child: Wrap(
-                        alignment: WrapAlignment.end,
-                        spacing: theme.spacing.xs,
-                        runSpacing: theme.spacing.xs,
-                        children: widget.actions,
-                      ),
-                    ),
-                  ],
-                  if (widget.collapsible) ...<Widget>[
-                    SizedBox(width: theme.spacing.xs),
-                    AppButton(
-                      iconOnly: true,
-                      dense: true,
-                      leadingIcon: _expanded
-                          ? Icons.expand_less
-                          : Icons.expand_more,
-                      label: _expanded
-                          ? context.l10n.commonShowLessActionLabel
-                          : context.l10n.commonShowMoreActionLabel,
-                      semanticLabel: _expanded
-                          ? context.l10n.commonShowLessActionLabel
-                          : context.l10n.commonShowMoreActionLabel,
-                      tooltip: _expanded
-                          ? context.l10n.commonShowLessActionLabel
-                          : context.l10n.commonShowMoreActionLabel,
-                      onPressed: _toggleExpanded,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
             if (showBody) const Divider(height: 1),
@@ -611,10 +577,55 @@ class _AppWorkspaceDetailPanelState extends State<AppWorkspaceDetailPanel> {
           if (showBody)
             Padding(
               padding: EdgeInsets.all(theme.spacing.lg),
-              child: widget.child,
+              child: _buildBody(
+                theme: theme,
+                colorScheme: colorScheme,
+                description: description,
+                hasActions: hasActions,
+              ),
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody({
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+    required String? description,
+    required bool hasActions,
+  }) {
+    if (!hasActions && description == null) {
+      return widget.child;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (hasActions)
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: widget.actions,
+            ),
+          ),
+        if (description != null) ...<Widget>[
+          if (hasActions) SizedBox(height: theme.spacing.sm),
+          Text(
+            description,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (hasActions || description != null)
+          SizedBox(height: theme.spacing.md),
+        widget.child,
+      ],
     );
   }
 }
