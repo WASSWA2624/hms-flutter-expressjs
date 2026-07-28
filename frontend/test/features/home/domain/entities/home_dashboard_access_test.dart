@@ -513,5 +513,82 @@ void main() {
         expect(ids, isNot(contains('fleet_out')));
       },
     );
+
+    test(
+      'guided queues/alerts use catalog permissions (tenant setup not profile:read)',
+      () {
+        final AppAccessPolicy clinicalOnly = _policy(
+          roles: <String>['CUSTOM'],
+          permissions: <AppPermission>[
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+            AppPermissions.profileRead,
+          ],
+        );
+        final HomeDashboard dashboard = HomeDashboard(
+          state: HomeDashboardLoadState.ready,
+          profile: homeProfileForRole(AppRole.doctor),
+          context: const HomeDashboardContext(),
+          statusCards: const <HomeStatusCard>[],
+          trend: HomeDashboardTrend.empty,
+          distribution: HomeDashboardDistribution.empty,
+          quickActionIds: const <String>[],
+          shortcutIds: const <String>[],
+          queuePreview: const <HomeQueueItem>[
+            HomeQueueItem(
+              id: 'guided_clinical_queue',
+              label: 'Clinical',
+              moduleSlug: 'clinical',
+              status: 'OPEN',
+              severity: 'high',
+            ),
+            HomeQueueItem(
+              id: 'guided_tenant_setup',
+              label: 'Tenant setup',
+              moduleSlug: 'settings',
+              status: 'OPEN',
+              severity: 'info',
+            ),
+            HomeQueueItem(
+              id: 'guided_billing_follow_up',
+              label: 'Billing',
+              moduleSlug: 'billing',
+              status: 'OVERDUE',
+              severity: 'high',
+            ),
+          ],
+          alerts: const <HomeAlertItem>[
+            HomeAlertItem(
+              id: 'guided_billing_exceptions',
+              label: 'Billing',
+              severity: 'WARNING',
+              count: 1,
+            ),
+            HomeAlertItem(
+              id: 'guided_critical_labs',
+              label: 'Labs',
+              severity: 'HIGH',
+              count: 1,
+            ),
+          ],
+          activity: const <HomeActivityItem>[],
+          tenantOptions: const <HomeTenantOption>[],
+        );
+
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          dashboard,
+          clinicalOnly,
+        );
+
+        expect(
+          filtered.queuePreview.map((HomeQueueItem item) => item.id),
+          <String>['guided_clinical_queue'],
+        );
+        expect(
+          filtered.alerts.map((HomeAlertItem alert) => alert.id),
+          <String>['guided_critical_labs'],
+        );
+      },
+    );
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
@@ -244,6 +245,59 @@ void main() {
 
       expect(homeHrMetricAccessAllowed(allowed), isTrue);
       expect(homeHrMetricAccessAllowed(denied), isFalse);
+    });
+
+    test('never navigates from a card missing required permissions', () {
+      final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['CUSTOM'],
+          ),
+          permissions: const <AppPermission>[AppPermissions.clinicalRead],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'results_pending_review',
+            label: 'Results',
+            value: 2,
+            requiredPermissions: <AppPermission>[AppPermissions.labRead],
+          ),
+          policy: policy,
+        ),
+        isNull,
+      );
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'assigned',
+            label: 'Assigned',
+            value: 3,
+            requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+          ),
+          policy: policy,
+        )?.route,
+        AppRoutes.clinical,
+      );
     });
   });
 }
