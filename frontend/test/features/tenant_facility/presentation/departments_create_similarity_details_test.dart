@@ -33,7 +33,7 @@ void main() {
         'class _DepartmentSetupSection extends ConsumerStatefulWidget',
       );
       final int nextSectionStart = setupPageSource.indexOf(
-        'class _UnitSetupSection extends ConsumerWidget',
+        'class _UnitSetupSection extends ConsumerStatefulWidget',
       );
       expect(sectionStart, greaterThanOrEqualTo(0));
       expect(nextSectionStart, greaterThan(sectionStart));

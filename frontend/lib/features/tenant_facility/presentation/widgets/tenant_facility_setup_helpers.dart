@@ -370,6 +370,37 @@ bool tenantFacilityDepartmentsShowsFacilityFilter(
       scope == TenantFacilityDepartmentsListScope.tenant;
 }
 
+/// Units tab reuses the same list-scope rules as departments.
+typedef TenantFacilityUnitsListScope = TenantFacilityDepartmentsListScope;
+
+TenantFacilityUnitsListScope tenantFacilityUnitsListScope(
+  AppAccessPolicy policy,
+) => tenantFacilityDepartmentsListScope(policy);
+
+bool tenantFacilityUnitsShowsTenantColumn(TenantFacilityUnitsListScope scope) =>
+    tenantFacilityDepartmentsShowsTenantColumn(scope);
+
+bool tenantFacilityUnitsShowsFacilityColumn(
+  TenantFacilityUnitsListScope scope,
+) => tenantFacilityDepartmentsShowsFacilityColumn(scope);
+
+bool tenantFacilityUnitsShowsTenantFilter(TenantFacilityUnitsListScope scope) =>
+    tenantFacilityDepartmentsShowsTenantFilter(scope);
+
+bool tenantFacilityUnitsShowsFacilityFilter(
+  TenantFacilityUnitsListScope scope,
+) => tenantFacilityDepartmentsShowsFacilityFilter(scope);
+
+/// Advanced-filter keys for the units tab.
+abstract final class TenantFacilityUnitsFilterKeys {
+  static const String tenant = 'tenant';
+  static const String facility = 'facility';
+  static const String department = 'department';
+  static const String active = 'active';
+  static const String activeYes = 'yes';
+  static const String activeNo = 'no';
+}
+
 String tenantFacilitySetupDeskSectionLabel(
   AppLocalizations l10n,
   TenantFacilitySetupDeskSection section, {

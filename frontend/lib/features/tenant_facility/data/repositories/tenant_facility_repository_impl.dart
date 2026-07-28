@@ -154,6 +154,36 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
+  Future<Result<AppPage<UnitProfile>>> listUnits({
+    required AppPageRequest request,
+    String? tenantId,
+    String? facilityId,
+    String? departmentId,
+    String? search,
+    bool? isActive,
+    bool includeDeleted = false,
+  }) {
+    return _apiClient.get<AppPage<UnitProfile>>(
+      ApiEndpoints.collection(
+        HmsApiResource.units,
+        queryParameters: _withoutEmpty(<String, String?>{
+          'page': '${request.pageIndex + 1}',
+          'limit': '${request.pageSize}',
+          'tenant_id': tenantId,
+          'facility_id': facilityId,
+          'department_id': departmentId,
+          'search': search,
+          'is_active': isActive?.toString(),
+          'include_deleted': includeDeleted ? 'true' : null,
+          'sort_by': 'name',
+          'order': 'asc',
+        }),
+      ),
+      decoder: (Object? data) => _decodeUnitPage(data, request: request).page,
+    );
+  }
+
+  @override
   Future<Result<void>> deleteTenant(String id) {
     return _deleteResource(HmsApiResource.tenants, id);
   }
@@ -1417,6 +1447,31 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     );
   }
 
+  static _UnitPageDto _decodeUnitPage(
+    Object? data, {
+    required AppPageRequest request,
+  }) {
+    final JsonMap envelope = _requireMap(data);
+    final List<UnitProfile> items = decodeList<UnitProfileDto>(
+      envelope['data'],
+      UnitProfileDto.fromJson,
+    ).map((UnitProfileDto dto) => dto.toEntity()).toList(growable: false);
+    final Object? paginationValue = envelope['pagination'];
+    final JsonMap? pagination = paginationValue is JsonMap
+        ? paginationValue
+        : null;
+    final int? total = pagination != null
+        ? _optionalInt(pagination['total'])
+        : null;
+    return _UnitPageDto(
+      page: AppPage<UnitProfile>(
+        items: items,
+        request: request,
+        totalItemCount: total,
+      ),
+    );
+  }
+
   static int? _optionalInt(Object? value) {
     if (value == null) return null;
     if (value is int) return value;
@@ -1440,4 +1495,10 @@ final class _DepartmentPageDto {
   const _DepartmentPageDto({required this.page});
 
   final AppPage<DepartmentProfile> page;
+}
+
+final class _UnitPageDto {
+  const _UnitPageDto({required this.page});
+
+  final AppPage<UnitProfile> page;
 }

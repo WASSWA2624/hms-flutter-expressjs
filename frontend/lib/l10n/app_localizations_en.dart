@@ -7098,6 +7098,59 @@ class AppLocalizationsEn extends AppLocalizations {
       'Checking for similar departments…';
 
   @override
+  String get tenantFacilitySimilarUnitDialogTitle => 'Similar unit found';
+
+  @override
+  String get tenantFacilitySimilarUnitWarningTitle =>
+      'Potential duplicate unit';
+
+  @override
+  String get tenantFacilitySimilarUnitWarningBody =>
+      'Review the similar units below before saving.';
+
+  @override
+  String get tenantFacilityNoSimilarUnitDialogTitle => 'No similar unit found';
+
+  @override
+  String get tenantFacilityNoSimilarUnitBannerTitle =>
+      'Match status: No similar found';
+
+  @override
+  String get tenantFacilityNoSimilarUnitDialogBody =>
+      'Review the proposed unit details below. No similar units were found in this scope.';
+
+  @override
+  String get tenantFacilityProceedCreateUnitAction => 'Create anyway';
+
+  @override
+  String get tenantFacilityContinueCreateUnitAction => 'Continue';
+
+  @override
+  String get tenantFacilityUseThisUnitAction => 'Use this unit';
+
+  @override
+  String get tenantFacilitySimilarUnitProposedHeading => 'Proposed unit';
+
+  @override
+  String get tenantFacilitySimilarUnitExistingHeading => 'Existing unit';
+
+  @override
+  String get tenantFacilityUnitOverallSimilarityLabel => 'Overall similarity';
+
+  @override
+  String tenantFacilityUnitNoMatchScoreLabel(int score) {
+    return 'No matches · $score% similarity';
+  }
+
+  @override
+  String get tenantFacilityUnitSimilarityCheckingMessage =>
+      'Checking for similar units…';
+
+  @override
+  String get tenantFacilityUnitNameAlreadyInUse =>
+      'This unit name is already in use';
+
+  @override
   String get tenantFacilityUnitNameLabel => 'Unit name';
 
   @override

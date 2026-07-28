@@ -13120,6 +13120,96 @@ abstract class AppLocalizations {
   /// **'Checking for similar departments…'**
   String get tenantFacilityDepartmentSimilarityCheckingMessage;
 
+  /// Title when unit similarity review finds matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar unit found'**
+  String get tenantFacilitySimilarUnitDialogTitle;
+
+  /// Warning banner title for similar units.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate unit'**
+  String get tenantFacilitySimilarUnitWarningTitle;
+
+  /// Warning banner body for similar units.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar units below before saving.'**
+  String get tenantFacilitySimilarUnitWarningBody;
+
+  /// Title when unit similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar unit found'**
+  String get tenantFacilityNoSimilarUnitDialogTitle;
+
+  /// Banner title when no similar units are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get tenantFacilityNoSimilarUnitBannerTitle;
+
+  /// Body when no similar units are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the proposed unit details below. No similar units were found in this scope.'**
+  String get tenantFacilityNoSimilarUnitDialogBody;
+
+  /// Confirm creating a unit despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get tenantFacilityProceedCreateUnitAction;
+
+  /// Continue creating a unit when no similar matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get tenantFacilityContinueCreateUnitAction;
+
+  /// Adopt an existing similar unit instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this unit'**
+  String get tenantFacilityUseThisUnitAction;
+
+  /// Heading for the proposed unit card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed unit'**
+  String get tenantFacilitySimilarUnitProposedHeading;
+
+  /// Heading for an existing unit match in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing unit'**
+  String get tenantFacilitySimilarUnitExistingHeading;
+
+  /// Label for the overall unit similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall similarity'**
+  String get tenantFacilityUnitOverallSimilarityLabel;
+
+  /// Shown when unit similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches · {score}% similarity'**
+  String tenantFacilityUnitNoMatchScoreLabel(int score);
+
+  /// Loading message while unit similarity is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for similar units…'**
+  String get tenantFacilityUnitSimilarityCheckingMessage;
+
+  /// Error when an exact unit name conflict is found.
+  ///
+  /// In en, this message translates to:
+  /// **'This unit name is already in use'**
+  String get tenantFacilityUnitNameAlreadyInUse;
+
   /// Unit name field label.
   ///
   /// In en, this message translates to:

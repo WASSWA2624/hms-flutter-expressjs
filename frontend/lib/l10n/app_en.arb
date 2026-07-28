@@ -9014,6 +9014,71 @@
   "@tenantFacilityDepartmentSimilarityCheckingMessage": {
     "description": "Loading message while department similarity is checked."
   },
+  "tenantFacilitySimilarUnitDialogTitle": "Similar unit found",
+  "@tenantFacilitySimilarUnitDialogTitle": {
+    "description": "Title when unit similarity review finds matches."
+  },
+  "tenantFacilitySimilarUnitWarningTitle": "Potential duplicate unit",
+  "@tenantFacilitySimilarUnitWarningTitle": {
+    "description": "Warning banner title for similar units."
+  },
+  "tenantFacilitySimilarUnitWarningBody": "Review the similar units below before saving.",
+  "@tenantFacilitySimilarUnitWarningBody": {
+    "description": "Warning banner body for similar units."
+  },
+  "tenantFacilityNoSimilarUnitDialogTitle": "No similar unit found",
+  "@tenantFacilityNoSimilarUnitDialogTitle": {
+    "description": "Title when unit similarity review finds no matches."
+  },
+  "tenantFacilityNoSimilarUnitBannerTitle": "Match status: No similar found",
+  "@tenantFacilityNoSimilarUnitBannerTitle": {
+    "description": "Banner title when no similar units are found."
+  },
+  "tenantFacilityNoSimilarUnitDialogBody": "Review the proposed unit details below. No similar units were found in this scope.",
+  "@tenantFacilityNoSimilarUnitDialogBody": {
+    "description": "Body when no similar units are found."
+  },
+  "tenantFacilityProceedCreateUnitAction": "Create anyway",
+  "@tenantFacilityProceedCreateUnitAction": {
+    "description": "Confirm creating a unit despite similar matches."
+  },
+  "tenantFacilityContinueCreateUnitAction": "Continue",
+  "@tenantFacilityContinueCreateUnitAction": {
+    "description": "Continue creating a unit when no similar matches exist."
+  },
+  "tenantFacilityUseThisUnitAction": "Use this unit",
+  "@tenantFacilityUseThisUnitAction": {
+    "description": "Adopt an existing similar unit instead of creating."
+  },
+  "tenantFacilitySimilarUnitProposedHeading": "Proposed unit",
+  "@tenantFacilitySimilarUnitProposedHeading": {
+    "description": "Heading for the proposed unit card in similarity review."
+  },
+  "tenantFacilitySimilarUnitExistingHeading": "Existing unit",
+  "@tenantFacilitySimilarUnitExistingHeading": {
+    "description": "Heading for an existing unit match in similarity review."
+  },
+  "tenantFacilityUnitOverallSimilarityLabel": "Overall similarity",
+  "@tenantFacilityUnitOverallSimilarityLabel": {
+    "description": "Label for the overall unit similarity score."
+  },
+  "tenantFacilityUnitNoMatchScoreLabel": "No matches · {score}% similarity",
+  "@tenantFacilityUnitNoMatchScoreLabel": {
+    "description": "Shown when unit similarity review finds no matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilityUnitSimilarityCheckingMessage": "Checking for similar units…",
+  "@tenantFacilityUnitSimilarityCheckingMessage": {
+    "description": "Loading message while unit similarity is checked."
+  },
+  "tenantFacilityUnitNameAlreadyInUse": "This unit name is already in use",
+  "@tenantFacilityUnitNameAlreadyInUse": {
+    "description": "Error when an exact unit name conflict is found."
+  },
   "tenantFacilityUnitNameLabel": "Unit name",
   "@tenantFacilityUnitNameLabel": {
     "description": "Unit name field label."
