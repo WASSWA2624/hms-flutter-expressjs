@@ -427,7 +427,7 @@ void main() {
     ).called(greaterThanOrEqualTo(1));
     // Doctor policy: Manage beds denied → Start admission remains primary.
     expect(find.byTooltip('Start admission'), findsOneWidget);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.text('Live ward bed occupancy and operations.'), findsNothing);
   });
 
@@ -471,7 +471,7 @@ void main() {
 
       expect(find.byType(IpdBedBoardPanel), findsOneWidget);
       expect(find.byTooltip('Manage beds'), findsOneWidget);
-      expect(find.byTooltip('Refresh'), findsOneWidget);
+      expect(find.byTooltip('Refresh'), findsNothing);
       expect(find.byTooltip('Start admission'), findsOneWidget);
       expect(
         find.text('Live ward bed occupancy and operations.'),
