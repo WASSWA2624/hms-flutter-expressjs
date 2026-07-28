@@ -1,45 +1,40 @@
-# Simplify Add Diagnosis Transfer UX
+# Finish Add Diagnosis Density Polish
 
-Polish `ClinicalDiagnosisActionDialog` for simpler transfer UX: matched toolbar heights, searchable selected pane, clearer action labels, row-click toggle, no name-column sort chrome, and a more compact diagnosis-type row. Inventory: `screens/clinical.md`. Follow `prompts/.cursor/prompt.mdc`.
+Final polish on `ClinicalDiagnosisActionDialog`: match transfer-action height to search fields, drop the Diagnosis type label text, and minimize transfer-table row height. Inventory: `screens/clinical.md`. Follow `prompts/.cursor/prompt.mdc`.
 
 ## Context
 
-Opened from `/clinical` encounter **Add diagnosis**. Density improved, but: transfer action height does not match the search field; selected pane shows **N selected** without search and places **Deselect** outside search chrome; Name column still shows sort affordance; checking a diagnosis requires the checkbox only; action labels (**Add selections** / **Deselect**) are unclear; diagnosis-type radios still consume excess vertical space. Keep the two-pane transfer model and submit flow.
+Opened from `/clinical` encounter **Add diagnosis**. Transfer UX is largely complete. Remaining polish: **Add selected diagnosis** and **Remove selected diagnosis** still do not match search-field height; the **Diagnosis type** label text adds vertical chrome above Primary / Secondary / Differential; transfer-table rows still have excess vertical padding relative to title + subtitle content.
 
-**Row-click toggle:** clicking the diagnosis name/row (not only the checkbox) toggles that row’s checked state on the same pane.
+**Matched toolbar height:** search input and adjacent transfer action share the same rendered height in each pane toolbar.
 
 ## Requirements
 
-1. Match available-pane transfer action height to the dense search field so search and action share one compact toolbar row.
-2. Relabel available transfer action to **Add selected diagnosis** (keep `+` / add icon).
-3. On the selected pane, replace the **N selected** count chrome with a dense search field that filters the selected list client-side; place **Remove selected diagnosis** as the search-row trailing action (same pattern as available).
-4. Relabel the selected transfer action from **Deselect** to **Remove selected diagnosis** (keep remove icon).
-5. Remove Name-column sort affordance/chrome on both panes (no sort arrow or sort underline); keep name + subtitle display.
-6. Enable row-click toggle on both panes: clicking the diagnosis content toggles the row checkbox; checkbox clicks keep working; multi-check then transfer unchanged.
-7. Compact the diagnosis-type block (Primary / Secondary / Differential): reduce vertical gap/padding so it is a single tight control row while staying borderless and readable.
-8. Keep overall chrome simple: no new panels, titles, or match-count banners; preserve Cancel / **Add diagnosis**, default Primary, catalog search/load/retry, transfer rules, caller write gate, loading/empty/error/success, theme tokens, and responsive stacking.
+1. Make **Add selected diagnosis** and **Remove selected diagnosis** the same height as their adjacent dense search fields on both panes.
+2. Remove the visible **Diagnosis type** label text; keep Primary / Secondary / Differential borderless radios selectable, with an accessible semantic label only (no on-screen title).
+3. Minimize transfer-table row and header vertical padding/density on both panes so row height is content-tight around the diagnosis title and subtitle while remaining tappable and readable.
+4. Preserve Cancel / **Add diagnosis**, default Primary, dual-pane search, row-click toggle, Add/Remove transfer rules, catalog search/load/retry, caller write gate, loading/empty/error/success, theme tokens, and responsive stacking.
 
 ## Constraints
 
-- Reuse `ClinicalDiagnosisActionDialog`, `AppListTable`, `AppTextField`, and theme tokens; extend shared pieces only if required for equal toolbar height, disabling name sort, or row-click toggle.
+- Reuse `ClinicalDiagnosisActionDialog`, `AppListTable`, `AppButton`, `AppTextField`, and `AppRadioGroup`; extend shared dense metrics only if required for equal toolbar height or tighter rows.
 - No diagnosis-type semantics, catalog source, or submit-contract changes; no unrelated clinical refactors.
 - Unauthorized UI remains absent via the existing caller write gate.
 
 ## Acceptance Criteria
 
-- Available search and **Add selected diagnosis** share equal toolbar height (1–2).
-- Selected pane has dense search + **Remove selected diagnosis**; **N selected** is gone (3–4).
-- Name columns show no sort affordance (5).
-- Clicking diagnosis text/row toggles check on both panes; transfer still multi-select (6).
-- Diagnosis-type row uses less vertical space and stays borderless (7).
-- Dialog remains simple; submit/empty/error/retry/success still work (8).
-- Update dialog tests for new labels, selected search, row-click toggle, and absent sort chrome; manually verify light/dark on mobile, tablet, and desktop.
+- Both pane transfer actions match search-field height (1).
+- No on-screen **Diagnosis type** label; radios remain usable with semantics (2).
+- Transfer rows/headers are visually shorter and content-tight on both panes (3).
+- Submit, transfer, empty, error, retry, and success behavior still work (4).
+- Update dialog tests for absent Diagnosis type label and preserved radio/actions; manually verify light/dark on mobile, tablet, and desktop.
 
 ## Relevant Files
 
 - `frontend/lib/shared/clinical_actions/dialogs/clinical_diagnosis_action_dialog.dart`
 - `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/shared/components/app_button.dart`
 - `frontend/lib/shared/components/app_text_field.dart`
-- `frontend/lib/l10n/app_en.arb`
+- `frontend/lib/shared/components/app_radio_group.dart`
 - `screens/clinical.md`
 - `frontend/test/shared/clinical_actions/clinical_diagnosis_action_dialog_test.dart`
