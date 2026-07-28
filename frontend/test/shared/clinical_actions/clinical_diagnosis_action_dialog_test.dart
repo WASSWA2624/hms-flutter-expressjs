@@ -100,6 +100,7 @@ void main() {
     expect(find.text('Selected diagnoses'), findsNothing);
     expect(find.text('0 selected'), findsOneWidget);
     expect(find.text('Deselect'), findsOneWidget);
+    expect(find.text('Add selections'), findsOneWidget);
     expect(find.text('#'), findsNothing);
 
     final Finder tables = find.byType(AppListTable<ClinicalActionCatalogOption>);
@@ -107,10 +108,8 @@ void main() {
     final AppListTable<ClinicalActionCatalogOption> availableTable = tester
         .widget(tables.first);
     expect(availableTable.showRowNumbers, isFalse);
-    expect(
-      availableTable.columns.first.fixedWidth,
-      isNotNull,
-    );
+    expect(availableTable.forceCompact, isTrue);
+    expect(availableTable.columns.first.fixedWidth, 32);
   });
 
   testWidgets('transfers checked diagnoses and submits selected type', (
@@ -144,7 +143,7 @@ void main() {
     await tester.tap(availableCheckboxes.at(1));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(AppButton, 'Add'));
+    await tester.tap(find.widgetWithText(AppButton, 'Add selections'));
     await tester.pumpAndSettle();
 
     expect(find.text('1 selected'), findsOneWidget);
@@ -173,7 +172,7 @@ void main() {
       find.descendant(of: availableTable, matching: find.byType(Checkbox)).at(1),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(AppButton, 'Add'));
+    await tester.tap(find.widgetWithText(AppButton, 'Add selections'));
     await tester.pumpAndSettle();
 
     expect(find.text('1 selected'), findsOneWidget);

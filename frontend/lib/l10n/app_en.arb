@@ -10354,6 +10354,10 @@
   "@clinicalDiagnosisDeselectAction": {
     "description": "Clinical diagnosis action that moves checked selected diagnoses back to available."
   },
+  "clinicalDiagnosisAddSelectionsAction": "Add selections",
+  "@clinicalDiagnosisAddSelectionsAction": {
+    "description": "Clinical diagnosis action that moves checked available diagnoses into the selected list."
+  },
   "clinicalDiagnosisAvailableTitle": "Available diagnoses",
   "@clinicalDiagnosisAvailableTitle": {
     "description": "Clinical diagnosis available facility catalog pane title."

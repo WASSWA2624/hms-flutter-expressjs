@@ -42,6 +42,7 @@ class AppTextField extends StatefulWidget {
     this.autocorrect = true,
     this.enableSuggestions = true,
     this.useFloatingLabel = true,
+    this.isDense = false,
     this.tooltip,
     super.key,
   }) : assert(
@@ -94,6 +95,10 @@ class AppTextField extends StatefulWidget {
   final bool autocorrect;
   final bool enableSuggestions;
   final bool useFloatingLabel;
+
+  /// When true, uses dense input padding so the field can align with compact
+  /// toolbar actions.
+  final bool isDense;
   final String? tooltip;
 
   @override
@@ -210,7 +215,13 @@ class _AppTextFieldState extends State<AppTextField> {
         height: 1.5,
       ),
       decoration: InputDecoration(
-        isDense: false,
+        isDense: widget.isDense,
+        contentPadding: widget.isDense
+            ? EdgeInsets.symmetric(
+                horizontal: theme.spacing.sm,
+                vertical: theme.spacing.sm,
+              )
+            : null,
         label: floatingLabel,
         labelText: floatingLabel == null ? resolvedLabelText : null,
         floatingLabelBehavior: widget.useFloatingLabel

@@ -382,7 +382,7 @@ Used for lab / radiology / pharmacy cancel & delete from encounter detail.
 
 ### Add diagnosis (`ClinicalDiagnosisActionDialog`)
 
-Dialog opens maximized by default. Diagnosis type uses borderless radios (Primary / Secondary / Differential). Catalog is facility offerings only (no source chips). Transfer panes use `AppListTable` as the primary surface (no outer title/match-count chrome on available; selected keeps count + Deselect).
+Dialog opens maximized by default. Diagnosis type uses borderless radios (Primary / Secondary / Differential). Catalog is facility offerings only (no source chips). Transfer panes use dense `AppListTable` surfaces (compact search, checkbox-tight select column, expanded Name column, no outer title/match-count chrome on available; selected keeps count + Deselect).
 
 - **Diagnosis type** (Primary / Secondary / Differential borderless radios)
   - Location: Dialog body.
@@ -391,12 +391,12 @@ Dialog opens maximized by default. Diagnosis type uses borderless radios (Primar
   - Condition: Enabled when not saving.
 
 - **Search diagnosis**
-  - Location: Available pane table surface header.
+  - Location: Available pane table surface header (dense field, hint-only).
   - Opens modal: No.
   - Immediate result: Filters / reloads facility diagnosis catalog.
   - Condition: Enabled when not saving.
 
-- **Add** (available pane)
+- **Add selections** (available pane)
   - Location: Available pane table surface header (with search).
   - Opens modal: No.
   - Immediate result: Moves checked available rows to selected (skips duplicates).

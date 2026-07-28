@@ -8147,6 +8147,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalDiagnosisDeselectAction => 'Deselect';
 
   @override
+  String get clinicalDiagnosisAddSelectionsAction => 'Add selections';
+
+  @override
   String get clinicalDiagnosisAvailableTitle => 'Available diagnoses';
 
   @override

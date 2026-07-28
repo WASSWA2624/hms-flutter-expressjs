@@ -15022,6 +15022,12 @@ abstract class AppLocalizations {
   /// **'Deselect'**
   String get clinicalDiagnosisDeselectAction;
 
+  /// Clinical diagnosis action that moves checked available diagnoses into the selected list.
+  ///
+  /// In en, this message translates to:
+  /// **'Add selections'**
+  String get clinicalDiagnosisAddSelectionsAction;
+
   /// Clinical diagnosis available facility catalog pane title.
   ///
   /// In en, this message translates to:

@@ -814,6 +814,7 @@ class AppListTable<T> extends StatefulWidget {
     this.showRowNumbers = true,
     this.padEmptyRows,
     this.surfaceHeader,
+    this.forceCompact = false,
     this.maxTrailingActions,
     this.trailingActionsOverflowLabel = 'More actions',
     this.goToTopLabel = _defaultGoToTopLabel,
@@ -880,6 +881,9 @@ class AppListTable<T> extends StatefulWidget {
   /// Optional chrome rendered inside the table surface above the rows; scrolls
   /// with table content when the table scrolls vertically.
   final Widget? surfaceHeader;
+
+  /// When true, uses compact row/header metrics regardless of breakpoint.
+  final bool forceCompact;
   final int? maxTrailingActions;
   final String trailingActionsOverflowLabel;
   final String goToTopLabel;
@@ -1608,7 +1612,13 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
             ? widget.physics
             : widget.physics ?? const NeverScrollableScrollPhysics();
         final List<AppListTableColumn<T>> visibleColumns = _visibleColumns;
-        final bool compact = _usesCompactTableLayout(constraints);
+        final bool compact =
+            widget.forceCompact || _usesCompactTableLayout(constraints);
+        final Map<String, double> resolvedWidths = _resolvedColumnWidths(
+          constraints: constraints,
+          visibleColumns: visibleColumns,
+          compact: compact,
+        );
 
         if (_usesListLayout(constraints)) {
           return _MobileListTable<T>(
@@ -1637,9 +1647,15 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           columns: visibleColumns,
           itemKeyBuilder: widget.itemKeyBuilder,
           onRowSelected: widget.onRowSelected,
-          minWidth: _tableMinWidth(constraints, visibleColumns, compact),
+          minWidth: constraints.hasBoundedWidth
+              ? math.max(
+                  constraints.maxWidth,
+                  _columnsWidthTotal(resolvedWidths),
+                )
+              : _columnsWidthTotal(resolvedWidths),
           rowColorBuilder: widget.rowColorBuilder,
           compact: compact,
+          dense: widget.forceCompact,
           horizontalMargin: widget.tableHorizontalMargin,
           sortColumnKey: _sortColumnKey,
           sortAscending: _sortAscending,
@@ -1652,7 +1668,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           surfaceHeader: widget.surfaceHeader,
           goToTopLabel: widget.goToTopLabel,
           columnWidthFor: (AppListTableColumn<T> column) {
-            return _columnWidthFor(column, compact: compact);
+            return resolvedWidths[column.key] ??
+                _columnWidthFor(column, compact: compact);
           },
           onColumnWidthChanged: widget.enableColumnResize
               ? _updateColumnWidth
@@ -1745,23 +1762,63 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     return AppBreakpoints.fromConstraints(constraints) == AppBreakpoint.md;
   }
 
-  double _tableMinWidth(
-    BoxConstraints constraints,
-    List<AppListTableColumn<T>> visibleColumns,
-    bool compact,
-  ) {
-    if (visibleColumns.isEmpty) {
-      return constraints.maxWidth;
+  double _columnsWidthTotal(Map<String, double> widths) {
+    double total = widget.showRowNumbers ? _rowNumberColumnWidth : 0;
+    for (final double width in widths.values) {
+      total += width;
+    }
+    return total;
+  }
+
+  Map<String, double> _resolvedColumnWidths({
+    required BoxConstraints constraints,
+    required List<AppListTableColumn<T>> visibleColumns,
+    required bool compact,
+  }) {
+    final Map<String, double> widths = <String, double>{
+      for (final AppListTableColumn<T> column in visibleColumns)
+        column.key: _columnWidthFor(column, compact: compact),
+    };
+    if (!constraints.hasBoundedWidth || visibleColumns.isEmpty) {
+      return widths;
     }
 
-    double columnsWidth = 0;
-    for (final AppListTableColumn<T> column in visibleColumns) {
-      columnsWidth += _columnWidthFor(column, compact: compact);
+    final ThemeData theme = Theme.of(context);
+    final double horizontalMargin =
+        widget.tableHorizontalMargin ??
+        (widget.forceCompact
+            ? theme.spacing.xs
+            : compact
+            ? theme.spacing.sm
+            : theme.spacing.md);
+    final double columnSpacing = widget.forceCompact
+        ? theme.spacing.xs
+        : compact
+        ? theme.spacing.sm
+        : theme.spacing.lg;
+    final int columnCount =
+        visibleColumns.length + (widget.showRowNumbers ? 1 : 0);
+    final double chrome =
+        (horizontalMargin * 2) +
+        (columnCount > 1 ? columnSpacing * (columnCount - 1) : 0);
+    final double baseTotal = _columnsWidthTotal(widths);
+    final double extra = constraints.maxWidth - chrome - baseTotal;
+    if (extra <= 0) {
+      return widths;
     }
-    final double rowNumberWidth = widget.showRowNumbers
-        ? _rowNumberColumnWidth
-        : 0;
-    return math.max(constraints.maxWidth, rowNumberWidth + columnsWidth);
+
+    AppListTableColumn<T>? expandable;
+    for (final AppListTableColumn<T> column in visibleColumns.reversed) {
+      if (column.fixedWidth == null) {
+        expandable = column;
+        break;
+      }
+    }
+    if (expandable == null) {
+      return widths;
+    }
+    widths[expandable.key] = widths[expandable.key]! + extra;
+    return widths;
   }
 
   List<T> _filteredItems(
@@ -2543,6 +2600,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     required this.minWidth,
     required this.rowColorBuilder,
     required this.compact,
+    this.dense = false,
     this.horizontalMargin,
     required this.sortColumnKey,
     required this.sortAscending,
@@ -2565,6 +2623,7 @@ class _DesktopListTable<T> extends StatefulWidget {
   final double minWidth;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final bool compact;
+  final bool dense;
   final double? horizontalMargin;
   final String? sortColumnKey;
   final bool sortAscending;
@@ -2590,7 +2649,12 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   late final ScrollController _horizontalController;
   late final ScrollController _verticalController;
 
-  double get _headingRowHeight => widget.compact ? 44 : 48;
+  double get _headingRowHeight {
+    if (widget.dense) {
+      return 36;
+    }
+    return widget.compact ? 44 : 48;
+  }
 
   @override
   void initState() {
@@ -2612,13 +2676,27 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final ColorScheme colorScheme = theme.colorScheme;
     final double horizontalMargin =
         widget.horizontalMargin ??
-        (widget.compact ? theme.spacing.sm : theme.spacing.md);
-    final double columnSpacing = widget.compact
+        (widget.dense
+            ? theme.spacing.xs
+            : widget.compact
+            ? theme.spacing.sm
+            : theme.spacing.md);
+    final double columnSpacing = widget.dense
+        ? theme.spacing.xs
+        : widget.compact
         ? theme.spacing.sm
         : theme.spacing.lg;
     // Content-tight single-line rows; max height still allows wrapped cells.
-    final double rowMinHeight = widget.compact ? 32 : 36;
-    final double rowMaxHeight = widget.compact ? 96 : 112;
+    final double rowMinHeight = widget.dense
+        ? 28
+        : widget.compact
+        ? 32
+        : 36;
+    final double rowMaxHeight = widget.dense
+        ? 88
+        : widget.compact
+        ? 96
+        : 112;
     final int minRowCount = widget.padEmptyRows
         ? _minTableRowCount
         : widget.items.length;

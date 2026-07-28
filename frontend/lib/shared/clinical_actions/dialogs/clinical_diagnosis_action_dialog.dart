@@ -140,7 +140,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                   items: visibleAvailable,
                   checkedIds: _checkedAvailableIds,
                   showSearch: true,
-                  actionLabel: l10n.clinicalLabRequestAddSelectionAction,
+                  actionLabel: l10n.clinicalDiagnosisAddSelectionsAction,
                   actionIcon: Icons.add,
                   onAction: _addCheckedDiagnoses,
                   actionEnabled:
@@ -256,8 +256,10 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
             Expanded(
               child: AppTextField(
                 controller: _searchController,
-                labelText: l10n.clinicalDiagnosisSearchLabel,
-                hintText: l10n.clinicalDiagnosisSearchHint,
+                hintText: l10n.clinicalDiagnosisSearchLabel,
+                semanticLabel: l10n.clinicalDiagnosisSearchLabel,
+                useFloatingLabel: false,
+                isDense: true,
                 enabled: !_isSaving,
                 onChanged: _scheduleSearch,
               ),
@@ -288,10 +290,11 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     return AppListTable<ClinicalActionCatalogOption>(
       items: items,
       displayMode: AppListTableDisplayMode.table,
-      tableHorizontalMargin: theme.spacing.sm,
+      tableHorizontalMargin: theme.spacing.xs,
       showRowNumbers: false,
       padEmptyRows: false,
       enableColumnResize: false,
+      forceCompact: true,
       isLoading: isLoading,
       surfaceHeader: toolbar,
       itemKeyBuilder: (ClinicalActionCatalogOption item) =>
@@ -367,7 +370,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
         id: _selectColumnKey,
         label: '',
         alwaysVisible: true,
-        fixedWidth: 44,
+        fixedWidth: 32,
         headerBuilder: (BuildContext context) {
           return Center(
             child: Checkbox(
@@ -435,19 +438,19 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
             children: <Widget>[
               Text(
                 _diagnosisTitle(item),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                softWrap: true,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
+                  height: 1.25,
                 ),
               ),
               if (subtitle.isNotEmpty)
                 Text(
                   subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
+                    height: 1.25,
                   ),
                 ),
             ],
