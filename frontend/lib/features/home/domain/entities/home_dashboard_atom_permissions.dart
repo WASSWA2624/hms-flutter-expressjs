@@ -232,11 +232,15 @@ abstract final class HomeDashboardAtomPermissions {
   static const Map<String, List<AppPermission>> queueItems =
       <String, List<AppPermission>>{
         'guided_appointments_queue': <AppPermission>[AppPermissions.patientRead],
+        'guided_appointments': <AppPermission>[AppPermissions.patientRead],
         'guided_walk_in_queue': <AppPermission>[AppPermissions.patientRead],
         'guided_waiting_patients': <AppPermission>[AppPermissions.patientRead],
+        'guided_opd_front_desk': <AppPermission>[AppPermissions.patientRead],
+        'guided_doctor_assignment': <AppPermission>[AppPermissions.patientRead],
         'guided_emergency_arrivals': <AppPermission>[
           AppPermissions.emergencyRead,
         ],
+        'guided_emergency_intake': <AppPermission>[AppPermissions.emergencyRead],
         'guided_clinical_queue': <AppPermission>[AppPermissions.clinicalRead],
         'guided_nursing_tasks': <AppPermission>[AppPermissions.clinicalRead],
         'guided_transfer_queue': <AppPermission>[AppPermissions.patientRead],
@@ -254,15 +258,22 @@ abstract final class HomeDashboardAtomPermissions {
   static const Map<String, List<AppPermission>> alerts =
       <String, List<AppPermission>>{
         'guided_critical_labs': <AppPermission>[AppPermissions.labRead],
+        'guided_critical_results': <AppPermission>[AppPermissions.labRead],
         'guided_bed_pressure': <AppPermission>[AppPermissions.clinicalRead],
         'guided_bed_occupancy': <AppPermission>[AppPermissions.patientRead],
         'guided_billing_exceptions': <AppPermission>[AppPermissions.billingRead],
         'guided_no_show_pressure': <AppPermission>[AppPermissions.patientRead],
+        'guided_no_show_follow_up': <AppPermission>[AppPermissions.patientRead],
+        'guided_opd_notifications': <AppPermission>[AppPermissions.patientRead],
         'guided_desk_follow_up': <AppPermission>[AppPermissions.patientRead],
         'guided_overdue_invoices': <AppPermission>[AppPermissions.billingRead],
         'guided_lab_critical': <AppPermission>[AppPermissions.labRead],
         'guided_pharmacy_stock': <AppPermission>[AppPermissions.pharmacyRead],
+        'guided_pharmacy_orders': <AppPermission>[AppPermissions.pharmacyRead],
         'guided_patient_messages': <AppPermission>[
+          AppPermissions.communicationsRead,
+        ],
+        'guided_my_messages': <AppPermission>[
           AppPermissions.communicationsRead,
         ],
         'overdue_invoices': <AppPermission>[AppPermissions.billingRead],

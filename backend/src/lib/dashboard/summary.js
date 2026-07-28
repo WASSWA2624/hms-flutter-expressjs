@@ -539,14 +539,21 @@ const withSummaryMetadata = (packId, cards = []) => {
   const metadata =
     SUMMARY_METADATA_BY_PACK[packId] ||
     SUMMARY_METADATA_BY_PACK[ROLE_PACKS.LIMITED];
-  return cards.map((card) => ({
-    ...card,
-    required_permissions: card.required_permissions || metadata.required_permissions,
-    required_modules: card.required_modules || metadata.required_modules,
-    allowed_roles: card.allowed_roles || metadata.allowed_roles,
-    scope: card.scope || metadata.scope,
-    route_target: card.route_target || null,
-  }));
+  return cards.map((card) => {
+    // Prefer explicit per-card permissions (Dashboard.md). Do not stamp pack-level
+    // required_permissions when omitted — clients resolve via their atom catalog.
+    const requiredPermissions = Array.isArray(card.required_permissions)
+      ? card.required_permissions
+      : undefined;
+    return {
+      ...card,
+      ...(requiredPermissions ? { required_permissions: requiredPermissions } : {}),
+      required_modules: card.required_modules || metadata.required_modules,
+      allowed_roles: card.allowed_roles || metadata.allowed_roles,
+      scope: card.scope || metadata.scope,
+      route_target: card.route_target || null,
+    };
+  });
 };
 
 const rawMetricsToRoleSummary = (packId, metrics = {}) => {
@@ -735,147 +742,149 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.OPERATIONS) {
     return [
-      { id: 'occupied_beds', label: 'Occupied beds', value: metrics.occupiedBeds || 0 },
-      { id: 'total_beds', label: 'Total beds', value: metrics.totalBeds || 0 },
-      { id: 'maintenance_open', label: 'Open maintenance requests', value: metrics.openMaintenance || 0 },
-      { id: 'low_stock_pressure', label: 'Low stock pressure', value: metrics.lowStockPressure || 0 },
-      { id: 'housekeeping_backlog', label: 'Housekeeping backlog', value: metrics.housekeepingBacklog || 0 },
-      { id: 'facility_readiness', label: 'Facility readiness', value: metrics.facilityReadiness || 0, format: 'percent' },
+      { id: 'occupied_beds', label: 'Occupied beds', value: metrics.occupiedBeds || 0, required_permissions: ['operations:read'] },
+      { id: 'total_beds', label: 'Total beds', value: metrics.totalBeds || 0, required_permissions: ['operations:read'] },
+      { id: 'maintenance_open', label: 'Open maintenance requests', value: metrics.openMaintenance || 0, required_permissions: ['operations:read'] },
+      { id: 'low_stock_pressure', label: 'Low stock pressure', value: metrics.lowStockPressure || 0, required_permissions: ['operations:read'] },
+      { id: 'housekeeping_backlog', label: 'Housekeeping backlog', value: metrics.housekeepingBacklog || 0, required_permissions: ['operations:read'] },
+      { id: 'facility_readiness', label: 'Facility readiness', value: metrics.facilityReadiness || 0, format: 'percent', required_permissions: ['operations:read'] },
+      // Gap: security_incidents / utilities_status — no live KPI source yet (Dashboard.md §10).
     ];
   }
 
   if (packId === ROLE_PACKS.HR) {
     return [
-      { id: 'active_staff', label: 'Active staff profiles', value: metrics.activeStaff || 0 },
-      { id: 'shifts_today', label: 'Shifts today', value: metrics.shiftsToday || 0 },
-      { id: 'pending_leaves', label: 'Pending leave approvals', value: metrics.pendingLeaves || 0 },
-      { id: 'on_leave_today', label: 'On leave today', value: metrics.onLeaveToday || 0 },
-      { id: 'unassigned_shifts', label: 'Unassigned shifts', value: metrics.unassignedShifts || 0 },
-      { id: 'attended_today', label: 'Attended today', value: metrics.attendedToday || 0 },
-      { id: 'missed_shifts_today', label: 'Missed shifts today', value: metrics.missedShiftsToday || 0 },
-      { id: 'payroll_pending', label: 'Payroll pending', value: metrics.payrollPending || 0 },
-      { id: 'payroll_processed', label: 'Payroll processed', value: metrics.payrollProcessed || 0 },
-      { id: 'staffing_backlog', label: 'Staffing backlog', value: metrics.staffingBacklog || 0 },
-      { id: 'attendance_rate', label: 'Attendance rate', value: metrics.attendanceRate || 0, format: 'percent' },
+      { id: 'active_staff', label: 'Active staff profiles', value: metrics.activeStaff || 0, required_permissions: ['hr:read'] },
+      { id: 'shifts_today', label: 'Shifts today', value: metrics.shiftsToday || 0, required_permissions: ['roster:read'] },
+      { id: 'pending_leaves', label: 'Pending leave approvals', value: metrics.pendingLeaves || 0, required_permissions: ['hr:read'] },
+      { id: 'on_leave_today', label: 'On leave today', value: metrics.onLeaveToday || 0, required_permissions: ['hr:read'] },
+      { id: 'unassigned_shifts', label: 'Unassigned shifts', value: metrics.unassignedShifts || 0, required_permissions: ['roster:read'] },
+      { id: 'attended_today', label: 'Attended today', value: metrics.attendedToday || 0, required_permissions: ['hr:read'] },
+      { id: 'missed_shifts_today', label: 'Missed shifts today', value: metrics.missedShiftsToday || 0, required_permissions: ['roster:read'] },
+      { id: 'payroll_pending', label: 'Payroll pending', value: metrics.payrollPending || 0, required_permissions: ['hr:read'] },
+      { id: 'payroll_processed', label: 'Payroll processed', value: metrics.payrollProcessed || 0, required_permissions: ['hr:read'] },
+      { id: 'staffing_backlog', label: 'Staffing backlog', value: metrics.staffingBacklog || 0, required_permissions: ['hr:read'] },
+      { id: 'attendance_rate', label: 'Attendance rate', value: metrics.attendanceRate || 0, format: 'percent', required_permissions: ['hr:read'] },
+      // Gap: roster_approvals (roster:approve) / department_staffing (unit:read) — no live KPI source yet.
     ];
   }
 
   if (packId === ROLE_PACKS.BIOMED) {
     return [
-      { id: 'open_work_orders', label: 'Open work orders', value: metrics.openWorkOrders || 0 },
-      { id: 'open_incidents', label: 'Open incidents', value: metrics.openIncidents || 0 },
-      { id: 'active_downtime', label: 'Active downtime events', value: metrics.activeDowntime || 0 },
-      { id: 'critical_service_risk', label: 'Critical service-risk indicators', value: metrics.criticalServiceRisk || 0 },
-      { id: 'high_priority', label: 'High-priority work orders', value: metrics.highPriority || 0 },
-      { id: 'assets_operational', label: 'Assets operational', value: metrics.assetsOperational || 0, format: 'percent' },
+      { id: 'open_work_orders', label: 'Open work orders', value: metrics.openWorkOrders || 0, required_permissions: ['biomed:write'] },
+      { id: 'open_incidents', label: 'Open incidents', value: metrics.openIncidents || 0, required_permissions: ['biomed:read'] },
+      { id: 'active_downtime', label: 'Active downtime events', value: metrics.activeDowntime || 0, required_permissions: ['biomed:read'] },
+      { id: 'critical_service_risk', label: 'Critical service-risk indicators', value: metrics.criticalServiceRisk || 0, required_permissions: ['biomed:read'] },
+      { id: 'high_priority', label: 'High-priority work orders', value: metrics.highPriority || 0, required_permissions: ['biomed:read'] },
+      { id: 'assets_operational', label: 'Assets operational', value: metrics.assetsOperational || 0, format: 'percent', required_permissions: ['biomed:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.HOUSE_KEEPER) {
     return [
-      { id: 'pending_tasks', label: 'Pending tasks', value: metrics.pendingTasks || 0 },
-      { id: 'in_progress_tasks', label: 'Tasks in progress', value: metrics.inProgressTasks || 0 },
-      { id: 'overdue_tasks', label: 'Overdue tasks', value: metrics.overdueTasks || 0 },
-      { id: 'completed_today', label: 'Tasks completed today', value: metrics.completedToday || 0 },
-      { id: 'throughput', label: 'Completion throughput', value: metrics.throughput || 0 },
+      { id: 'pending_tasks', label: 'Pending tasks', value: metrics.pendingTasks || 0, required_permissions: ['operations:read'] },
+      { id: 'in_progress_tasks', label: 'Tasks in progress', value: metrics.inProgressTasks || 0, required_permissions: ['operations:read'] },
+      { id: 'overdue_tasks', label: 'Overdue tasks', value: metrics.overdueTasks || 0, required_permissions: ['operations:read'] },
+      { id: 'completed_today', label: 'Tasks completed today', value: metrics.completedToday || 0, required_permissions: ['operations:read'] },
+      { id: 'throughput', label: 'Completion throughput', value: metrics.throughput || 0, required_permissions: ['operations:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.AMBULANCE_OPERATOR) {
     return [
-      { id: 'dispatches_today', label: 'Dispatches today', value: metrics.dispatchesToday || 0 },
-      { id: 'active_trips', label: 'Active trips', value: metrics.activeTrips || 0 },
-      { id: 'critical_cases', label: 'Critical emergencies', value: metrics.criticalCases || 0 },
-      { id: 'fleet_available', label: 'Fleet available', value: metrics.fleetAvailable || 0 },
-      { id: 'fleet_out', label: 'Fleet out of service', value: metrics.fleetOut || 0 },
+      { id: 'dispatches_today', label: 'Dispatches today', value: metrics.dispatchesToday || 0, required_permissions: ['emergency:read'] },
+      { id: 'active_trips', label: 'Active trips', value: metrics.activeTrips || 0, required_permissions: ['emergency:read'] },
+      { id: 'critical_cases', label: 'Critical emergencies', value: metrics.criticalCases || 0, required_permissions: ['emergency:read'] },
+      { id: 'fleet_available', label: 'Fleet available', value: metrics.fleetAvailable || 0, required_permissions: ['emergency:read'] },
+      { id: 'fleet_out', label: 'Fleet out of service', value: metrics.fleetOut || 0, required_permissions: ['operations:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.UNIT_MANAGER) {
     return [
-      { id: 'unit_census', label: 'Unit census', value: metrics.unitCensus || metrics.activeAdmissions || 0 },
-      { id: 'staff_on_shift', label: 'Staff on shift', value: metrics.staffOnShift || metrics.shiftsToday || 0 },
-      { id: 'open_roster_gaps', label: 'Open roster gaps', value: metrics.openRosterGaps || metrics.unassignedShifts || 0 },
-      { id: 'pending_leave_requests', label: 'Pending leave requests', value: metrics.pendingLeaves || 0 },
-      { id: 'coverage_risk', label: 'Coverage risk', value: metrics.coverageRisk || 0 },
-      { id: 'unit_blockers', label: 'Unit blockers', value: metrics.unitBlockers || 0 },
+      { id: 'unit_census', label: 'Unit census', value: metrics.unitCensus || metrics.activeAdmissions || 0, required_permissions: ['unit:read'] },
+      { id: 'staff_on_shift', label: 'Staff on shift', value: metrics.staffOnShift || metrics.shiftsToday || 0, required_permissions: ['hr:read'] },
+      { id: 'open_roster_gaps', label: 'Open roster gaps', value: metrics.openRosterGaps || metrics.unassignedShifts || 0, required_permissions: ['roster:read'] },
+      { id: 'pending_leave_requests', label: 'Pending leave requests', value: metrics.pendingLeaves || 0, required_permissions: ['hr:read'] },
+      { id: 'coverage_risk', label: 'Coverage risk', value: metrics.coverageRisk || 0, required_permissions: ['roster:read'] },
+      { id: 'unit_blockers', label: 'Unit blockers', value: metrics.unitBlockers || 0, required_permissions: ['unit:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.WARD_MANAGER) {
     return [
-      { id: 'ward_census', label: 'Ward census', value: metrics.wardCensus || metrics.activeAdmissions || 0 },
-      { id: 'occupied_beds', label: 'Occupied beds', value: metrics.occupiedBeds || 0 },
-      { id: 'pending_nursing_tasks', label: 'Pending nursing tasks', value: metrics.pendingNursingTasks || metrics.transferQueue || 0 },
-      { id: 'handover_risks', label: 'Handover risks', value: metrics.handoverRisks || 0 },
-      { id: 'staff_on_shift', label: 'Staff on shift', value: metrics.staffOnShift || metrics.shiftsToday || 0 },
-      { id: 'discharge_delays', label: 'Discharge delays', value: metrics.dischargeDelays || 0 },
+      { id: 'ward_census', label: 'Ward census', value: metrics.wardCensus || metrics.activeAdmissions || 0, required_permissions: ['clinical:read'] },
+      { id: 'occupied_beds', label: 'Occupied beds', value: metrics.occupiedBeds || 0, required_permissions: ['operations:read'] },
+      { id: 'pending_nursing_tasks', label: 'Pending nursing tasks', value: metrics.pendingNursingTasks || metrics.transferQueue || 0, required_permissions: ['clinical:read'] },
+      { id: 'handover_risks', label: 'Handover risks', value: metrics.handoverRisks || 0, required_permissions: ['clinical:read'] },
+      { id: 'staff_on_shift', label: 'Staff on shift', value: metrics.staffOnShift || metrics.shiftsToday || 0, required_permissions: ['hr:read'] },
+      { id: 'discharge_delays', label: 'Discharge delays', value: metrics.dischargeDelays || 0, required_permissions: ['clinical:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.ICU_MANAGER) {
     return [
-      { id: 'icu_census', label: 'ICU census', value: metrics.icuCensus || metrics.activeAdmissions || 0 },
-      { id: 'critical_patient_alerts', label: 'Critical patient alerts', value: metrics.criticalPatientAlerts || metrics.criticalLabs || 0 },
-      { id: 'icu_beds_occupied', label: 'ICU beds occupied', value: metrics.icuBedsOccupied || metrics.occupiedBeds || 0 },
-      { id: 'transfer_readiness', label: 'Transfer readiness', value: metrics.transferReadiness || metrics.transferQueue || 0 },
-      { id: 'staff_coverage', label: 'Staff coverage', value: metrics.staffCoverage || metrics.shiftsToday || 0 },
-      { id: 'open_escalations', label: 'Open escalations', value: metrics.openEscalations || 0 },
+      { id: 'icu_census', label: 'ICU census', value: metrics.icuCensus || metrics.activeAdmissions || 0, required_permissions: ['clinical:read'] },
+      { id: 'critical_patient_alerts', label: 'Critical patient alerts', value: metrics.criticalPatientAlerts || metrics.criticalLabs || 0, required_permissions: ['clinical:read'] },
+      { id: 'icu_beds_occupied', label: 'ICU beds occupied', value: metrics.icuBedsOccupied || metrics.occupiedBeds || 0, required_permissions: ['clinical:read'] },
+      { id: 'transfer_readiness', label: 'Transfer readiness', value: metrics.transferReadiness || metrics.transferQueue || 0, required_permissions: ['patient:read'] },
+      { id: 'staff_coverage', label: 'Staff coverage', value: metrics.staffCoverage || metrics.shiftsToday || 0, required_permissions: ['hr:read'] },
+      { id: 'open_escalations', label: 'Open escalations', value: metrics.openEscalations || 0, required_permissions: ['clinical:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.THEATRE_MANAGER) {
     return [
-      { id: 'procedures_today', label: 'Procedures today', value: metrics.proceduresToday || 0 },
-      { id: 'ready_for_theatre', label: 'Ready for theatre', value: metrics.readyForTheatre || 0 },
-      { id: 'in_theatre', label: 'In theatre', value: metrics.inTheatre || 0 },
-      { id: 'post_op_handovers_pending', label: 'Post-op handovers pending', value: metrics.postOpHandoversPending || 0 },
-      { id: 'cancellations_or_delays', label: 'Cancellations or delays', value: metrics.cancellationsOrDelays || 0 },
-      { id: 'theatre_staff_coverage', label: 'Theatre staff coverage', value: metrics.theatreStaffCoverage || metrics.shiftsToday || 0 },
+      { id: 'procedures_today', label: 'Procedures today', value: metrics.proceduresToday || 0, required_permissions: ['clinical:read'] },
+      { id: 'ready_for_theatre', label: 'Ready for theatre', value: metrics.readyForTheatre || 0, required_permissions: ['clinical:read'] },
+      { id: 'in_theatre', label: 'In theatre', value: metrics.inTheatre || 0, required_permissions: ['clinical:read'] },
+      { id: 'post_op_handovers_pending', label: 'Post-op handovers pending', value: metrics.postOpHandoversPending || 0, required_permissions: ['clinical:read'] },
+      { id: 'cancellations_or_delays', label: 'Cancellations or delays', value: metrics.cancellationsOrDelays || 0, required_permissions: ['clinical:read'] },
+      { id: 'theatre_staff_coverage', label: 'Theatre staff coverage', value: metrics.theatreStaffCoverage || metrics.shiftsToday || 0, required_permissions: ['hr:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.HOUSEKEEPING_MANAGER) {
     return [
-      { id: 'pending_cleaning_tasks', label: 'Pending cleaning tasks', value: metrics.pendingCleaningTasks || metrics.pendingTasks || 0 },
-      { id: 'unassigned_cleaning_tasks', label: 'Unassigned cleaning tasks', value: metrics.unassignedCleaningTasks || 0 },
-      { id: 'in_progress_cleaning_tasks', label: 'In-progress cleaning tasks', value: metrics.inProgressCleaningTasks || metrics.inProgressTasks || 0 },
-      { id: 'overdue_cleaning_tasks', label: 'Overdue cleaning tasks', value: metrics.overdueCleaningTasks || metrics.overdueTasks || 0 },
-      { id: 'rooms_ready', label: 'Rooms ready', value: metrics.roomsReady || 0 },
-      { id: 'housekeeping_staff_on_shift', label: 'Housekeeping staff on shift', value: metrics.housekeepingStaffOnShift || metrics.shiftsToday || 0 },
+      { id: 'pending_cleaning_tasks', label: 'Pending cleaning tasks', value: metrics.pendingCleaningTasks || metrics.pendingTasks || 0, required_permissions: ['operations:read'] },
+      { id: 'unassigned_cleaning_tasks', label: 'Unassigned cleaning tasks', value: metrics.unassignedCleaningTasks || 0, required_permissions: ['operations:read'] },
+      { id: 'in_progress_cleaning_tasks', label: 'In-progress cleaning tasks', value: metrics.inProgressCleaningTasks || metrics.inProgressTasks || 0, required_permissions: ['operations:read'] },
+      { id: 'overdue_cleaning_tasks', label: 'Overdue cleaning tasks', value: metrics.overdueCleaningTasks || metrics.overdueTasks || 0, required_permissions: ['operations:read'] },
+      { id: 'rooms_ready', label: 'Rooms ready', value: metrics.roomsReady || 0, required_permissions: ['operations:read'] },
+      { id: 'housekeeping_staff_on_shift', label: 'Housekeeping staff on shift', value: metrics.housekeepingStaffOnShift || metrics.shiftsToday || 0, required_permissions: ['hr:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.BIOMED_MANAGER) {
     return [
-      { id: 'open_work_orders', label: 'Open work orders', value: metrics.openWorkOrders || 0 },
-      { id: 'high_priority_work_orders', label: 'High-priority work orders', value: metrics.highPriorityWorkOrders || metrics.highPriority || 0 },
-      { id: 'active_downtime', label: 'Active downtime', value: metrics.activeDowntime || 0 },
-      { id: 'open_incidents', label: 'Open incidents', value: metrics.openIncidents || 0 },
-      { id: 'overdue_maintenance', label: 'Overdue maintenance', value: metrics.overdueMaintenance || 0 },
-      { id: 'technician_load', label: 'Technician load', value: metrics.technicianLoad || 0 },
+      { id: 'open_work_orders', label: 'Open work orders', value: metrics.openWorkOrders || 0, required_permissions: ['biomed:write'] },
+      { id: 'high_priority_work_orders', label: 'High-priority work orders', value: metrics.highPriorityWorkOrders || metrics.highPriority || 0, required_permissions: ['biomed:write'] },
+      { id: 'active_downtime', label: 'Active downtime', value: metrics.activeDowntime || 0, required_permissions: ['biomed:read'] },
+      { id: 'open_incidents', label: 'Open incidents', value: metrics.openIncidents || 0, required_permissions: ['biomed:read'] },
+      { id: 'overdue_maintenance', label: 'Overdue maintenance', value: metrics.overdueMaintenance || 0, required_permissions: ['biomed:read'] },
+      { id: 'technician_load', label: 'Technician load', value: metrics.technicianLoad || 0, required_permissions: ['biomed:read'] },
     ];
   }
 
   if (packId === ROLE_PACKS.MORTUARY_STAFF) {
     return [
-      { id: 'active_mortuary_cases', label: 'Active mortuary cases', value: metrics.activeMortuaryCases || 0 },
-      { id: 'storage_assignments', label: 'Storage assignments', value: metrics.storageAssignments || 0 },
-      { id: 'custody_events_due', label: 'Custody events due', value: metrics.custodyEventsDue || 0 },
-      { id: 'viewings_today', label: 'Viewings today', value: metrics.viewingsToday || 0 },
-      { id: 'post_mortem_requests', label: 'Post-mortem requests', value: metrics.postMortemRequests || 0 },
-      { id: 'billable_events_to_capture', label: 'Billable events to capture', value: metrics.billableEventsToCapture || 0 },
+      { id: 'active_mortuary_cases', label: 'Active mortuary cases', value: metrics.activeMortuaryCases || 0, required_permissions: ['mortuary:read'] },
+      { id: 'storage_assignments', label: 'Storage assignments', value: metrics.storageAssignments || 0, required_permissions: ['mortuary:read'] },
+      { id: 'custody_events_due', label: 'Custody events due', value: metrics.custodyEventsDue || 0, required_permissions: ['mortuary:read'] },
+      { id: 'viewings_today', label: 'Viewings today', value: metrics.viewingsToday || 0, required_permissions: ['mortuary:read'] },
+      { id: 'post_mortem_requests', label: 'Post-mortem requests', value: metrics.postMortemRequests || 0, required_permissions: ['mortuary:read'] },
+      { id: 'billable_events_to_capture', label: 'Billable events to capture', value: metrics.billableEventsToCapture || 0, required_permissions: ['mortuary:billing_event'] },
     ];
   }
 
   if (packId === ROLE_PACKS.MORTUARY_MANAGER) {
     return [
-      { id: 'active_mortuary_cases', label: 'Active mortuary cases', value: metrics.activeMortuaryCases || 0 },
-      { id: 'storage_occupancy', label: 'Storage occupancy', value: metrics.storageOccupancy || 0, format: 'percent' },
-      { id: 'releases_awaiting_approval', label: 'Releases awaiting approval', value: metrics.releasesAwaitingApproval || 0 },
-      { id: 'custody_exceptions', label: 'Custody exceptions', value: metrics.custodyExceptions || 0 },
-      { id: 'pending_post_mortem_requests', label: 'Pending post-mortem requests', value: metrics.pendingPostMortemRequests || 0 },
-      { id: 'audit_exports_due', label: 'Audit exports due', value: metrics.auditExportsDue || 0 },
+      { id: 'active_mortuary_cases', label: 'Active mortuary cases', value: metrics.activeMortuaryCases || 0, required_permissions: ['mortuary:read'] },
+      { id: 'storage_occupancy', label: 'Storage occupancy', value: metrics.storageOccupancy || 0, format: 'percent', required_permissions: ['mortuary:read'] },
+      { id: 'releases_awaiting_approval', label: 'Releases awaiting approval', value: metrics.releasesAwaitingApproval || 0, required_permissions: ['mortuary:approve'] },
+      { id: 'custody_exceptions', label: 'Custody exceptions', value: metrics.custodyExceptions || 0, required_permissions: ['mortuary:read'] },
+      { id: 'pending_post_mortem_requests', label: 'Pending post-mortem requests', value: metrics.pendingPostMortemRequests || 0, required_permissions: ['mortuary:read'] },
+      { id: 'audit_exports_due', label: 'Audit exports due', value: metrics.auditExportsDue || 0, required_permissions: ['mortuary:audit'] },
     ];
   }
 
@@ -892,19 +901,19 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.LIMITED) {
     return [
-      { id: 'profile_status', label: 'Profile status', value: metrics.profileStatus || 0 },
-      { id: 'assigned_links', label: 'Assigned links', value: metrics.assignedLinks || 0 },
-      { id: 'unread_messages', label: 'Unread messages', value: metrics.unreadMessages || 0 },
-      { id: 'facility_notices', label: 'Facility notices', value: metrics.facilityNotices || 0 },
+      { id: 'profile_status', label: 'Profile status', value: metrics.profileStatus || 0, required_permissions: ['profile:read'] },
+      { id: 'assigned_links', label: 'Assigned links', value: metrics.assignedLinks || 0, required_permissions: ['profile:read'] },
+      { id: 'unread_messages', label: 'Unread messages', value: metrics.unreadMessages || 0, required_permissions: ['communications:read'] },
+      { id: 'facility_notices', label: 'Facility notices', value: metrics.facilityNotices || 0, required_permissions: ['profile:read'] },
     ];
   }
 
   return [
-    { id: 'patients_today', label: 'Patients added today', value: metrics.patientsToday || 0 },
-    { id: 'appointments_today', label: 'Appointments today', value: metrics.appointmentsToday || 0 },
-    { id: 'active_admissions', label: 'Active admissions', value: metrics.activeAdmissions || 0 },
-    { id: 'open_invoices', label: 'Open invoices', value: metrics.openInvoices || 0 },
-    { id: 'payments_today', label: 'Payments received today', value: metrics.paymentsToday || 0, format: 'currency' },
+    { id: 'patients_today', label: 'Patients added today', value: metrics.patientsToday || 0, required_permissions: ['patient:read'] },
+    { id: 'appointments_today', label: 'Appointments today', value: metrics.appointmentsToday || 0, required_permissions: ['patient:read'] },
+    { id: 'active_admissions', label: 'Active admissions', value: metrics.activeAdmissions || 0, required_permissions: ['patient:read'] },
+    { id: 'open_invoices', label: 'Open invoices', value: metrics.openInvoices || 0, required_permissions: ['billing:read'] },
+    { id: 'payments_today', label: 'Payments received today', value: metrics.paymentsToday || 0, format: 'currency', required_permissions: ['billing:read'] },
   ];
 };
 

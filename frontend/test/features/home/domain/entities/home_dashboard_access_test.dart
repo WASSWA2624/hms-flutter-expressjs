@@ -437,5 +437,81 @@ void main() {
       );
       expect(_cardIds(filtered), <String>{'assigned'});
     });
+
+    test(
+      'hr:read without roster:read keeps staff KPIs, hides shift KPIs',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['HR'],
+          permissions: <AppPermission>[AppPermissions.hrRead],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(AppRole.hr);
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(
+          ids,
+          containsAll(<String>[
+            'active_staff',
+            'pending_leaves',
+            'attended_today',
+          ]),
+        );
+        expect(ids, isNot(contains('shifts_today')));
+        expect(ids, isNot(contains('unassigned_shifts')));
+        expect(ids, isNot(contains('missed_shifts_today')));
+      },
+    );
+
+    test(
+      'biomed:read without biomed:write hides work-order KPIs',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['BIOMED'],
+          permissions: <AppPermission>[AppPermissions.biomedRead],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(AppRole.biomed);
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(ids, contains('open_incidents'));
+        expect(ids, contains('active_downtime'));
+        expect(ids, isNot(contains('open_work_orders')));
+      },
+    );
+
+    test(
+      'ambulance emergency:read hides vehicle-maintenance fleet_out KPI',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['AMBULANCE_OPERATOR'],
+          permissions: <AppPermission>[AppPermissions.emergencyRead],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(
+          AppRole.ambulanceOperator,
+        );
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(
+          ids,
+          containsAll(<String>[
+            'dispatches_today',
+            'active_trips',
+            'fleet_available',
+          ]),
+        );
+        expect(ids, isNot(contains('fleet_out')));
+      },
+    );
   });
 }

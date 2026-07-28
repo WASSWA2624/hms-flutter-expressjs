@@ -95,3 +95,70 @@ describe('tenant admin dashboard summary cards', () => {
     expect(cards).toHaveLength(4);
   });
 });
+
+describe('per-card required_permissions (Dashboard.md)', () => {
+  it('emits distinct HR and roster permissions on HR pack cards', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.HR, {
+      activeStaff: 10,
+      shiftsToday: 4,
+      pendingLeaves: 2,
+      unassignedShifts: 1,
+      attendedToday: 8,
+      missedShiftsToday: 0,
+      payrollPending: 1,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'active_staff',
+          required_permissions: ['hr:read'],
+        }),
+        expect.objectContaining({
+          id: 'shifts_today',
+          required_permissions: ['roster:read'],
+        }),
+        expect.objectContaining({
+          id: 'unassigned_shifts',
+          required_permissions: ['roster:read'],
+        }),
+      ])
+    );
+  });
+
+  it('gates biomed work orders on biomed:write and ambulance fleet_out on operations:read', () => {
+    const biomed = metricsToRoleSummary(ROLE_PACKS.BIOMED, {
+      openWorkOrders: 3,
+      openIncidents: 1,
+    });
+    const ambulance = metricsToRoleSummary(ROLE_PACKS.AMBULANCE_OPERATOR, {
+      dispatchesToday: 2,
+      fleetOut: 1,
+    });
+
+    expect(biomed).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'open_work_orders',
+          required_permissions: ['biomed:write'],
+        }),
+        expect.objectContaining({
+          id: 'open_incidents',
+          required_permissions: ['biomed:read'],
+        }),
+      ])
+    );
+    expect(ambulance).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'dispatches_today',
+          required_permissions: ['emergency:read'],
+        }),
+        expect.objectContaining({
+          id: 'fleet_out',
+          required_permissions: ['operations:read'],
+        }),
+      ])
+    );
+  });
+});
