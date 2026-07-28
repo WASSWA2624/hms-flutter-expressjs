@@ -8,14 +8,11 @@ import 'package:hosspi_hms/features/patients/presentation/widgets/patient_active
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_disposition_actions.dart';
 import 'package:hosspi_hms/shared/components/opd_encounter_dialog.dart';
 import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 enum PatientQuickAction {
   appointment,
-  triage,
-  billing,
   opdCheckIn,
   opdActions,
   admission,
@@ -46,17 +43,17 @@ class PatientDetailQuickActions extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final Patient patient = detail.patient;
     final PatientVisitContext? visit = patient.currentVisit;
-    final List<PatientActiveWorkItem> activeWorkItems =
-        collectPatientActiveWorkItems(detail);
     final bool hasActiveOpdEncounter = isActiveOpdPatientVisit(visit);
-    final bool hasActiveOpdWorkItem = activeWorkItems.any(
+    final List<PatientActiveWorkItem> activeWork = collectPatientActiveWorkItems(
+      detail,
+    );
+    final bool hasActiveOpdWorkItem = activeWork.any(
       (PatientActiveWorkItem item) =>
           item.kind == PatientActiveWorkKind.encounter ||
           item.kind == PatientActiveWorkKind.queue,
     );
-    final bool hasActiveWorkAdmission = activeWorkItems.any(
-      (PatientActiveWorkItem item) =>
-          item.kind == PatientActiveWorkKind.admission,
+    final bool hasAdmissionWorkItem = activeWork.any(
+      (PatientActiveWorkItem item) => item.kind == PatientActiveWorkKind.admission,
     );
     final PatientSummaryRecord? activeAdmission = activePatientAdmissionRecord(
       detail.workspace.admissions,
@@ -66,14 +63,8 @@ class PatientDetailQuickActions extends ConsumerWidget {
     final bool hasActiveAdmission =
         activeAdmission != null || activeAdmissionVisit != null;
     final bool hasOpenAppointment = patientHasOpenAppointment(detail);
-    final String dischargeActionLabel = clinicalDispositionActionLabel(
-      l10n,
-      sourceQueue: 'IPD',
-      status: activeAdmission?.status ?? activeAdmissionVisit?.status,
-      stage: activeAdmission?.status ?? activeAdmissionVisit?.status,
-      location: activeAdmission?.subtitle ?? activeAdmissionVisit?.title,
-      hasAdmission: hasActiveAdmission,
-    );
+    final bool canStartPhysiotherapy =
+        hasActiveAdmission || hasActiveOpdEncounter || hasActiveOpdWorkItem;
 
     final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[
       if (!hasOpenAppointment)
@@ -85,22 +76,6 @@ class PatientDetailQuickActions extends ConsumerWidget {
           requirement: const AccessRequirement(
             allPermissions: <AppPermission>[AppPermissions.patientWrite],
           ),
-        ),
-      if (!hasActiveOpdEncounter && !hasActiveOpdWorkItem)
-        AppPermissionActionItem(
-          label: l10n.patientsQuickTriageAction,
-          icon: Icons.monitor_heart_outlined,
-          tooltip: l10n.patientsTriageDialogTitle,
-          onPressed: () => onAction(PatientQuickAction.triage),
-          requirement: opdEncounterPermissionRequirement,
-        ),
-      if (!hasActiveOpdEncounter && !hasActiveOpdWorkItem)
-        AppPermissionActionItem(
-          label: l10n.patientsQuickBillingAction,
-          icon: AppActionIcons.payment,
-          tooltip: l10n.patientsBillingDialogTitle,
-          onPressed: () => onAction(PatientQuickAction.billing),
-          requirement: opdEncounterPermissionRequirement,
         ),
       if (hasActiveOpdEncounter && !hasActiveOpdWorkItem)
         AppPermissionActionItem(
@@ -138,11 +113,11 @@ class PatientDetailQuickActions extends ConsumerWidget {
             activeModules: <String>['inpatient-bed-management'],
           ),
         ),
-      // Active work Continue is the sole discharge entry when an admission
-      // work item is already listed; keep the chip only for visit-only cases.
-      if (hasActiveAdmission && !hasActiveWorkAdmission)
+      // Discharge / admission handoff continue solely via Active Work when that
+      // panel already lists the in-flight admission.
+      if (hasActiveAdmission && !hasAdmissionWorkItem)
         AppPermissionActionItem(
-          label: dischargeActionLabel,
+          label: l10n.navigationDischargeLabel,
           icon: Icons.logout_outlined,
           tooltip: l10n.patientsQuickDischargeTooltip,
           onPressed: () => onAction(PatientQuickAction.discharge),
@@ -184,7 +159,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
             activeModules: <String>['theater'],
           ),
         ),
-      if (!patientHasPendingTherapyRequest(detail))
+      if (canStartPhysiotherapy && !patientHasPendingTherapyRequest(detail))
         AppPermissionActionItem(
           label: l10n.patientsQuickPhysiotherapyAction,
           icon: Icons.self_improvement_outlined,

@@ -459,22 +459,10 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         currentDate: DateTime.now(),
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
-            key: _pharmacyStatusFilterKey,
-            label: l10n.pharmacyStatusFilterLabel,
-            allLabel: l10n.opdAllFieldsFilterLabel,
-            choices: _pharmacyStatusFilterChoices(l10n),
-          ),
-          AppSearchBarFilterGroup(
             key: _pharmacyLocationFilterKey,
             label: l10n.pharmacyLocationFieldLabel,
             allLabel: l10n.opdAllFieldsFilterLabel,
             choices: _pharmacyLocationFilterChoices(l10n),
-          ),
-          AppSearchBarFilterGroup(
-            key: _pharmacyPaymentFilterKey,
-            label: l10n.pharmacyPaymentColumnLabel,
-            allLabel: l10n.opdAllFieldsFilterLabel,
-            choices: _pharmacyPaymentFilterChoices(l10n),
           ),
           AppSearchBarFilterGroup(
             key: _pharmacyPriorityFilterKey,
@@ -496,7 +484,7 @@ class _PharmacyQueuePanel extends ConsumerWidget {
           ),
         ],
         filterValue: _pharmacyFilterValue(state.query),
-        hasActiveFilters: !state.query.isDefaultFilters,
+        hasActiveFilters: _pharmacyHasActiveAdvancedFilters(state.query),
         onFilterChanged: (AppSearchBarFilterValue value) {
           unawaited(
             controller.applyAdvancedFilters(
@@ -621,8 +609,6 @@ class _PharmacyDetailPanel extends ConsumerWidget {
           workflow: workflow,
           writeRequirement: writeRequirement,
         ),
-        SizedBox(height: theme.spacing.md),
-        _PharmacyWorkflowReadinessPanel(workflow: workflow),
         SizedBox(height: theme.spacing.md),
         _TimelinePanel(workflow: workflow),
       ],
@@ -755,9 +741,9 @@ class _PharmacyActionPanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final PharmacyOrder order = workflow.order;
-    final bool canBill = ref
-        .watch(appAccessPolicyProvider)
-        .grants(AppPermissions.billingWrite);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = writeRequirement.isAllowed(policy);
+    final bool canBill = policy.grants(AppPermissions.billingWrite);
     final bool canPrepare =
         workflow.nextActions.canPrepareDispense || order.canPrepareDispense;
     final bool canAttest =
@@ -767,89 +753,74 @@ class _PharmacyActionPanel extends ConsumerWidget {
     final bool paymentBlocksDispense =
         order.requiresPaymentBeforeDispense && canPrepare;
 
+    // Only eligible, authorized writes — no disabled no-op chrome.
+    // Print stays outside the write gate so browse/print remains available.
     final List<AppActionItem> actions = <AppActionItem>[
-      if (order.requiresPaymentBeforeDispense)
+      if (order.requiresPaymentBeforeDispense && canBill)
         AppActionItem(
           label: l10n.pharmacyRecordPaymentAction,
           leadingIcon: Icons.payments_outlined,
-          enabled: canBill,
           onPressed: () => _openRecordPaymentDialog(context, ref, order),
         ),
-      AppActionItem(
-        label: l10n.pharmacyDispenseAction,
-        leadingIcon: Icons.medication_liquid_outlined,
-        enabled: canPrepare && !paymentBlocksDispense,
-        tooltip: paymentBlocksDispense
-            ? l10n.pharmacyDispenseBlockedPaymentBody
-            : null,
-        onPressed: () => _openDispenseDialog(context, workflow),
-      ),
-      AppActionItem(
-        label: l10n.pharmacyAttestAction,
-        leadingIcon: Icons.verified_outlined,
-        enabled: canAttest,
-        onPressed: () => _openAttestDialog(context, workflow),
-      ),
-      AppActionItem(
-        label: l10n.pharmacyReturnAction,
-        leadingIcon: Icons.keyboard_return_outlined,
-        enabled: canReturn,
-        onPressed: () => _openReturnDialog(context, workflow),
-      ),
-      AppActionItem(
-        label: l10n.pharmacyCancelOrderAction,
-        leadingIcon: Icons.cancel_outlined,
-        enabled: canCancel,
-        onPressed: () => _openCancelDialog(context),
-      ),
+      if (canWrite && canPrepare && !paymentBlocksDispense)
+        AppActionItem(
+          label: l10n.pharmacyDispenseAction,
+          leadingIcon: Icons.medication_liquid_outlined,
+          onPressed: () => _openDispenseDialog(context, workflow),
+        ),
+      if (canWrite && canAttest)
+        AppActionItem(
+          label: l10n.pharmacyAttestAction,
+          leadingIcon: Icons.verified_outlined,
+          onPressed: () => _openAttestDialog(context, workflow),
+        ),
+      if (canWrite && canReturn)
+        AppActionItem(
+          label: l10n.pharmacyReturnAction,
+          leadingIcon: Icons.keyboard_return_outlined,
+          onPressed: () => _openReturnDialog(context, workflow),
+        ),
+      if (canWrite && canCancel)
+        AppActionItem(
+          label: l10n.pharmacyCancelOrderAction,
+          leadingIcon: Icons.cancel_outlined,
+          onPressed: () => _openCancelDialog(context),
+        ),
     ];
 
-    return AppAccessActionGate(
-      requirement: writeRequirement,
-      builder: (BuildContext context, bool isAllowed) => AppQuickActions(
-        title: l10n.pharmacyActionsPanelTitle,
-        presentation: AppQuickActionsPresentation.detailPanel,
-        leadingIcon: Icons.touch_app_outlined,
-        spacing: theme.spacing.xs,
-        runSpacing: theme.spacing.xs,
-        actions: actions
-            .map(
-              (AppActionItem action) => AppActionItem(
-                label: action.label,
-                leadingIcon: action.leadingIcon,
-                enabled: isAllowed && action.enabled,
-                tooltip: action.tooltip,
-                onPressed: action.onPressed,
+    return AppQuickActions(
+      title: l10n.pharmacyActionsPanelTitle,
+      presentation: AppQuickActionsPresentation.detailPanel,
+      leadingIcon: Icons.touch_app_outlined,
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      actions: actions,
+      extraActions: <Widget>[
+        AppReportActionButton.print(
+          label: l10n.pharmacyPrintInstructionsAction,
+          variant: AppButtonVariant.secondary,
+          onPressed: () async {
+            await printFormTemplateDocument(
+              ref: ref,
+              context: context,
+              title: l10n.pharmacyReportTitle,
+              patientContext: buildPrintFormPatientContext(
+                l10n,
+                patientName: workflow.order.displayTitle,
+                patientId: workflow.order.patientId,
+                encounterId: workflow.order.encounterId,
               ),
-            )
-            .toList(growable: false),
-        extraActions: <Widget>[
-          AppReportActionButton.print(
-            label: l10n.pharmacyPrintInstructionsAction,
-            variant: AppButtonVariant.secondary,
-            onPressed: () async {
-              await printFormTemplateDocument(
-                ref: ref,
-                context: context,
-                title: l10n.pharmacyReportTitle,
-                patientContext: buildPrintFormPatientContext(
-                  l10n,
-                  patientName: workflow.order.displayTitle,
-                  patientId: workflow.order.patientId,
-                  encounterId: workflow.order.encounterId,
-                ),
-                contextReference: PrintFormContextReference(
-                  label: l10n.pharmacyReportOrderLabel,
-                  value: workflow.order.displayId ?? l10n.profileUnknownValue,
-                ),
-                bodyHtml: pharmacyInstructionsHtml(context, workflow),
-                footerNote: l10n.pharmacyReportFooter,
-                includeSignatures: true,
-              );
-            },
-          ),
-        ],
-      ),
+              contextReference: PrintFormContextReference(
+                label: l10n.pharmacyReportOrderLabel,
+                value: workflow.order.displayId ?? l10n.profileUnknownValue,
+              ),
+              bodyHtml: pharmacyInstructionsHtml(context, workflow),
+              footerNote: l10n.pharmacyReportFooter,
+              includeSignatures: true,
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -1003,7 +974,7 @@ class _MedicationItemsPanelState extends ConsumerState<_MedicationItemsPanel> {
                   children: <Widget>[
                     _MedicationPriceCell(order: order, item: item),
                     SizedBox(height: theme.spacing.xs),
-                    _MedicationLineActions(
+                    _MedicationPrimaryLineAction(
                       workflow: workflow,
                       item: item,
                       writeRequirement: widget.writeRequirement,
@@ -1193,13 +1164,13 @@ class _MedicationPrimaryLineAction extends ConsumerWidget {
     }
 
     if (pharmacyItemNeedsStockMapping(item)) {
+      if (!canWrite) {
+        return const SizedBox.shrink();
+      }
       return AppButton.tertiary(
         label: l10n.pharmacyMapStockAction,
         leadingIcon: Icons.inventory_2_outlined,
-        enabled: canWrite,
-        onPressed: canWrite
-            ? () => openPharmacyCatalogDialog(context, ref)
-            : null,
+        onPressed: () => openPharmacyCatalogDialog(context, ref),
       );
     }
 
@@ -1207,229 +1178,36 @@ class _MedicationPrimaryLineAction extends ConsumerWidget {
       order: order,
       item: item,
     );
-    if (pharmacyItemHasSelectablePrices(item)) {
+    if (pharmacyItemHasSelectablePrices(item) && canWrite) {
       if (activeSource != PharmacyItemPriceSource.pharmacy) {
         return AppButton.tertiary(
           label: l10n.pharmacyUsePharmacyPriceAction,
           leadingIcon: Icons.local_pharmacy_outlined,
-          enabled: canWrite,
-          onPressed: canWrite
-              ? () => _switchItemPriceSource(
-                  context,
-                  ref,
-                  order,
-                  item,
-                  PharmacyItemPriceSource.pharmacy,
-                )
-              : null,
+          onPressed: () => _switchItemPriceSource(
+            context,
+            ref,
+            order,
+            item,
+            PharmacyItemPriceSource.pharmacy,
+          ),
         );
       }
       if (activeSource != PharmacyItemPriceSource.facility) {
         return AppButton.tertiary(
           label: l10n.pharmacyUseFacilityPriceAction,
           leadingIcon: Icons.account_balance_outlined,
-          enabled: canWrite,
-          onPressed: canWrite
-              ? () => _switchItemPriceSource(
-                  context,
-                  ref,
-                  order,
-                  item,
-                  PharmacyItemPriceSource.facility,
-                )
-              : null,
+          onPressed: () => _switchItemPriceSource(
+            context,
+            ref,
+            order,
+            item,
+            PharmacyItemPriceSource.facility,
+          ),
         );
       }
     }
 
     return const SizedBox.shrink();
-  }
-}
-
-class _MedicationLineActions extends ConsumerWidget {
-  const _MedicationLineActions({
-    required this.workflow,
-    required this.item,
-    required this.writeRequirement,
-  });
-
-  final PharmacyOrderWorkflow workflow;
-  final PharmacyOrderItem item;
-  final AccessRequirement writeRequirement;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final PharmacyOrder order = workflow.order;
-    final PharmacyItemPriceSource activeSource = resolvePharmacyItemPriceSource(
-      order: order,
-      item: item,
-    );
-    final bool canWrite = writeRequirement.isAllowed(
-      ref.watch(appAccessPolicyProvider),
-    );
-    final List<Widget> actions = <Widget>[];
-
-    if (pharmacyItemIsCancelled(item)) {
-      return Text(
-        l10n.pharmacyItemCancelledLabel,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.error,
-          fontWeight: FontWeight.w700,
-        ),
-      );
-    }
-
-    if (pharmacyItemNeedsStockMapping(item)) {
-      actions.add(
-        AppButton.tertiary(
-          label: l10n.pharmacyMapStockAction,
-          leadingIcon: Icons.inventory_2_outlined,
-          enabled: canWrite,
-          onPressed: canWrite
-              ? () => openPharmacyCatalogDialog(context, ref)
-              : null,
-        ),
-      );
-    }
-
-    if (pharmacyItemHasSelectablePrices(item)) {
-      if (activeSource != PharmacyItemPriceSource.pharmacy) {
-        actions.add(
-          AppButton.tertiary(
-            label: l10n.pharmacyUsePharmacyPriceAction,
-            leadingIcon: Icons.local_pharmacy_outlined,
-            enabled: canWrite,
-            onPressed: canWrite
-                ? () => _switchItemPriceSource(
-                    context,
-                    ref,
-                    order,
-                    item,
-                    PharmacyItemPriceSource.pharmacy,
-                  )
-                : null,
-          ),
-        );
-      }
-      if (activeSource != PharmacyItemPriceSource.facility) {
-        actions.add(
-          AppButton.tertiary(
-            label: l10n.pharmacyUseFacilityPriceAction,
-            leadingIcon: Icons.account_balance_outlined,
-            enabled: canWrite,
-            onPressed: canWrite
-                ? () => _switchItemPriceSource(
-                    context,
-                    ref,
-                    order,
-                    item,
-                    PharmacyItemPriceSource.facility,
-                  )
-                : null,
-          ),
-        );
-      }
-    }
-
-    if (actions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Wrap(
-      spacing: theme.spacing.xs,
-      runSpacing: theme.spacing.xs,
-      children: actions,
-    );
-  }
-}
-
-class _PharmacyWorkflowReadinessPanel extends StatelessWidget {
-  const _PharmacyWorkflowReadinessPanel({required this.workflow});
-
-  final PharmacyOrderWorkflow workflow;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final List<PharmacyOrderItem> items = workflow.items.isEmpty
-        ? workflow.order.items
-        : workflow.items;
-    final bool hasStockMapping =
-        items.isNotEmpty &&
-        items.every(
-          (PharmacyOrderItem item) =>
-              item.defaultStockMapping != null || item.stockMappings.isNotEmpty,
-        );
-    final bool hasPendingBatch = workflow.order.hasPendingAttestation;
-    final bool canDispense =
-        workflow.nextActions.canPrepareDispense ||
-        workflow.order.canPrepareDispense;
-
-    return AppWorkspaceDetailPanel(
-      title: l10n.pharmacyWorkflowReadinessTitle,
-      description: l10n.pharmacyWorkflowReadinessBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _ReadinessLine(
-            icon: canDispense ? Icons.check_circle_outline : Icons.info_outline,
-            text: canDispense
-                ? l10n.pharmacyReadinessDispenseAvailable
-                : l10n.pharmacyReadinessDispenseBlocked,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          _ReadinessLine(
-            icon: hasStockMapping
-                ? Icons.inventory_2_outlined
-                : Icons.warning_amber_outlined,
-            text: hasStockMapping
-                ? l10n.pharmacyReadinessStockMapped
-                : l10n.pharmacyReadinessStockMissing,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          _ReadinessLine(
-            icon: hasPendingBatch
-                ? Icons.verified_outlined
-                : Icons.fact_check_outlined,
-            text: hasPendingBatch
-                ? l10n.pharmacyReadinessAttestationRequired
-                : l10n.pharmacyReadinessAttestationClear,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          _ReadinessLine(
-            icon: Icons.print_outlined,
-            text: l10n.pharmacyReadinessPrintReady,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReadinessLine extends StatelessWidget {
-  const _ReadinessLine({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(
-          icon,
-          size: theme.appTokens.listIconSize,
-          color: theme.colorScheme.primary,
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
-      ],
-    );
   }
 }
 
@@ -1456,194 +1234,6 @@ class _TimelinePanel extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-class _DrugStockPanel extends ConsumerStatefulWidget {
-  const _DrugStockPanel({required this.state});
-
-  final PharmacyWorkspaceState state;
-
-  @override
-  ConsumerState<_DrugStockPanel> createState() => _DrugStockPanelState();
-}
-
-class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
-  late final TextEditingController _searchController;
-  late final AppListTableColumnVisibilityController<PharmacyDrug>
-  _columnVisibilityController;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController(
-      text: widget.state.drugQuery.search,
-    );
-    _columnVisibilityController =
-        AppListTableColumnVisibilityController<PharmacyDrug>();
-  }
-
-  @override
-  void didUpdateWidget(covariant _DrugStockPanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.state.drugQuery.search != widget.state.drugQuery.search &&
-        _searchController.text != widget.state.drugQuery.search) {
-      _searchController.text = widget.state.drugQuery.search;
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final PharmacyWorkspaceController controller = ref.read(
-      pharmacyWorkspaceControllerProvider.notifier,
-    );
-    final PharmacyWorkspaceState state = widget.state;
-
-    return AppWorkspaceDetailPanel(
-      title: l10n.pharmacyDrugPanelTitle,
-      description: l10n.pharmacyDrugPanelDescription,
-      child: AppListTable<PharmacyDrug>(
-        page: state.drugs,
-        isLoading: state.isRefreshingDrugs,
-        columnVisibilityController: _columnVisibilityController,
-        columnVisibilityStorageKey: 'pharmacy_drug_stock',
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        columnVisibilityTitle: l10n.commonTableSettingsTitle,
-        search: AppListTableSearch<PharmacyDrug>(
-          controller: _searchController,
-          semanticLabel: l10n.pharmacyDrugSearchLabel,
-          hintText: l10n.pharmacyDrugSearchHint,
-          matcher: (PharmacyDrug item, String query) =>
-              _pharmacyDrugSearchMatcher(context, item, query),
-          onSubmitted: controller.applyDrugSearch,
-          onClear: () {
-            unawaited(controller.applyDrugSearch(''));
-          },
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          enableDateFilter: false,
-          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _pharmacyDrugStockStatusFilterKey,
-              label: l10n.pharmacyStockStatusFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _stockStatusFilterChoices(l10n),
-            ),
-          ],
-          filterValue: _pharmacyDrugFilterValue(state.drugQuery),
-          hasActiveFilters: state.drugQuery.stockStatus != null,
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            unawaited(
-              controller.applyDrugStockStatus(
-                value.option(_pharmacyDrugStockStatusFilterKey),
-              ),
-            );
-          },
-        ),
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        pageLabelBuilder: (AppPage<PharmacyDrug> page) {
-          return _pageLabel(context, page);
-        },
-        onPageChanged: controller.changeDrugPage,
-        onRowSelected: (_) {
-          unawaited(openPharmacyCatalogDialog(context, ref));
-        },
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.empty,
-          title: l10n.pharmacyNoDrugsTitle,
-          body: l10n.pharmacyNoDrugsBody,
-          icon: Icons.inventory_2_outlined,
-          minHeight: 180,
-        ),
-        columns: <AppListTableColumn<PharmacyDrug>>[
-          AppListTableColumn<PharmacyDrug>(
-            id: 'drug',
-            label: l10n.pharmacyDrugColumnLabel,
-            cellBuilder: (BuildContext context, PharmacyDrug item) {
-              return _DrugCell(drug: item);
-            },
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            id: 'available',
-            label: l10n.pharmacyAvailableColumnLabel,
-            numeric: true,
-            cellBuilder: (BuildContext context, PharmacyDrug item) {
-              return Text(_numberLabel(item.availableQuantity));
-            },
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            id: 'stock_status',
-            label: l10n.pharmacyStockStatusColumnLabel,
-            cellBuilder: (BuildContext context, PharmacyDrug item) {
-              return AppWorkspaceStatusBadge(
-                status: _stockStatus(context, item.stockStatus),
-              );
-            },
-          ),
-        ],
-        columnChoices: _optionalPharmacyDrugColumns(context),
-        mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
-          final AppWorkspaceStatus status = _stockStatus(context, item.stockStatus);
-          return AppListTableMobileItem(
-            title: item.displayTitle,
-            caption: _joinDisplay(<String?>[item.code, item.displayId]),
-            meta: <AppListTableMobileMeta>[
-              AppListTableMobileMeta(label: status.label, icon: status.icon),
-              AppListTableMobileMeta(
-                label: l10n.pharmacyAvailableQuantityLabel(
-                  _numberLabel(item.availableQuantity),
-                ),
-                icon: Icons.inventory_2_outlined,
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _DrugCell extends StatelessWidget {
-  const _DrugCell({required this.drug});
-
-  final PharmacyDrug drug;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          drug.displayTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        Text(
-          _joinDisplay(<String?>[drug.code, drug.displayId]),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -2655,9 +2245,7 @@ Future<void> _showActionResult(
   }
 }
 
-const String _pharmacyStatusFilterKey = 'status';
 const String _pharmacyLocationFilterKey = 'location';
-const String _pharmacyPaymentFilterKey = 'pending_payment';
 const String _pharmacyPriorityFilterKey = 'priority';
 const String _pharmacyStockFilterKey = 'partial_stock';
 const String _pharmacyUrgentFilterKey = 'urgent';
@@ -2919,15 +2507,16 @@ class _PharmacyOrderNextActionButton extends ConsumerWidget {
 
     return AppAccessActionGate(
       requirement: writeRequirement,
+      hideWhenDenied: requiresWrite,
       builder: (BuildContext context, bool isAllowed) {
         final bool enabled =
             (!requiresWrite || isAllowed) && (!requiresBillingWrite || canBill);
+        if (!enabled) {
+          return const SizedBox.shrink();
+        }
         return AppButton.tertiary(
           label: label,
-          enabled: enabled,
-          onPressed: enabled
-              ? () => unawaited(_handlePressed(context, ref, action))
-              : null,
+          onPressed: () => unawaited(_handlePressed(context, ref, action)),
         );
       },
     );
@@ -3089,82 +2678,6 @@ bool _medicationItemSearchMatcher(
   );
 }
 
-bool _pharmacyDrugSearchMatcher(
-  BuildContext context,
-  PharmacyDrug item,
-  String query,
-) {
-  final String needle = query.trim().toLowerCase();
-  if (needle.isEmpty) {
-    return true;
-  }
-
-  return <String?>[
-    item.displayTitle,
-    item.code,
-    item.displayId,
-    item.stockStatus,
-    item.storageLocationLabel,
-    _stockStatus(context, item.stockStatus).label,
-    _numberLabel(item.availableQuantity),
-  ].whereType<String>().any(
-    (String value) => value.toLowerCase().contains(needle),
-  );
-}
-
-List<AppListTableColumn<PharmacyDrug>> _optionalPharmacyDrugColumns(
-  BuildContext context,
-) {
-  final AppLocalizations l10n = context.l10n;
-  return <AppListTableColumn<PharmacyDrug>>[
-    AppListTableColumn<PharmacyDrug>(
-      id: 'code',
-      label: l10n.pharmacyDrugColumnLabel,
-      cellBuilder: (BuildContext context, PharmacyDrug item) {
-        return Text(item.code ?? '');
-      },
-    ),
-    AppListTableColumn<PharmacyDrug>(
-      id: 'form',
-      label: l10n.pharmacyDrugFormLabel,
-      cellBuilder: (BuildContext context, PharmacyDrug item) {
-        return Text(item.form ?? '');
-      },
-    ),
-    AppListTableColumn<PharmacyDrug>(
-      id: 'strength',
-      label: l10n.pharmacyDrugStrengthLabel,
-      cellBuilder: (BuildContext context, PharmacyDrug item) {
-        return Text(item.strength ?? '');
-      },
-    ),
-    AppListTableColumn<PharmacyDrug>(
-      id: 'unit_price',
-      label: l10n.pharmacyLinePriceColumnLabel,
-      cellBuilder: (BuildContext context, PharmacyDrug item) {
-        final num? price = item.unitPrice ?? item.pharmacyUnitPrice;
-        if (price == null) {
-          return Text(l10n.pharmacyPriceUnavailableLabel);
-        }
-        return Text(
-          clinicalRequestPriceLabel(
-            context,
-            price,
-            item.currency ?? item.pharmacyCurrency,
-          ),
-        );
-      },
-    ),
-    AppListTableColumn<PharmacyDrug>(
-      id: 'storage_location',
-      label: l10n.pharmacyStorageLocationColumnLabel,
-      cellBuilder: (BuildContext context, PharmacyDrug item) {
-        return Text(item.storageLocationLabel ?? '');
-      },
-    ),
-  ];
-}
-
 List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
   BuildContext context,
 ) {
@@ -3294,15 +2807,11 @@ String _orderSourceLabel(BuildContext context, PharmacyOrder order) {
 }
 
 AppSearchBarFilterValue _pharmacyFilterValue(PharmacyWorkbenchQuery query) {
+  // Queue status / pending payment stay with the tab strip — advanced filters
+  // must not restate them.
   final Map<String, String> options = <String, String>{};
-  if (query.status != null) {
-    options[_pharmacyStatusFilterKey] = query.status!;
-  }
   if (query.location != null) {
     options[_pharmacyLocationFilterKey] = query.location!;
-  }
-  if (query.pendingPayment == true) {
-    options[_pharmacyPaymentFilterKey] = 'true';
   }
   if (query.priority != null) {
     options[_pharmacyPriorityFilterKey] = query.priority!;
@@ -3320,63 +2829,39 @@ AppSearchBarFilterValue _pharmacyFilterValue(PharmacyWorkbenchQuery query) {
   );
 }
 
+bool _pharmacyHasActiveAdvancedFilters(PharmacyWorkbenchQuery query) {
+  return query.location != null ||
+      query.partialStock == true ||
+      query.urgent == true ||
+      query.priority != null ||
+      query.from != null ||
+      query.to != null;
+}
+
 PharmacyWorkbenchQuery _pharmacyQueryFromFilterValue(
   PharmacyWorkbenchQuery current,
   AppSearchBarFilterValue value,
 ) {
-  final String? status = value.option(_pharmacyStatusFilterKey);
   final String? location = value.option(_pharmacyLocationFilterKey);
-  final String? pendingPayment = value.option(_pharmacyPaymentFilterKey);
   final String? priority = value.option(_pharmacyPriorityFilterKey);
   final String? partialStock = value.option(_pharmacyStockFilterKey);
   final String? urgent = value.option(_pharmacyUrgentFilterKey);
 
   return current.copyWith(
-    status: status,
     location: location,
-    pendingPayment: pendingPayment == 'true' ? true : null,
     partialStock: partialStock == 'true' ? true : null,
     urgent: urgent == 'true' ? true : null,
     priority: priority,
     from: value.dateFrom,
     to: value.dateTo,
     pageRequest: current.pageRequest.first(),
-    clearStatus: status == null,
     clearLocation: location == null,
-    clearPendingPayment: pendingPayment != 'true',
     clearPartialStock: partialStock != 'true',
     clearUrgent: urgent != 'true',
     clearPriority: priority == null,
     clearFrom: value.dateFrom == null,
     clearTo: value.dateTo == null,
   );
-}
-
-List<AppSearchBarFilterChoice> _pharmacyStatusFilterChoices(
-  AppLocalizations l10n,
-) {
-  return <AppSearchBarFilterChoice>[
-    AppSearchBarFilterChoice(
-      value: 'ORDERED',
-      label: l10n.pharmacyFilterReady,
-      icon: Icons.medication_liquid_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'PARTIALLY_DISPENSED',
-      label: l10n.pharmacyFilterPartial,
-      icon: Icons.pending_actions_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'DISPENSED',
-      label: l10n.pharmacyFilterCompleted,
-      icon: Icons.done_all_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'CANCELLED',
-      label: l10n.pharmacyFilterCancelled,
-      icon: Icons.cancel_outlined,
-    ),
-  ];
 }
 
 List<AppSearchBarFilterChoice> _pharmacyLocationFilterChoices(
@@ -3397,18 +2882,6 @@ List<AppSearchBarFilterChoice> _pharmacyLocationFilterChoices(
       value: 'DISCHARGE',
       label: l10n.pharmacyFilterDischarge,
       icon: Icons.local_hospital_outlined,
-    ),
-  ];
-}
-
-List<AppSearchBarFilterChoice> _pharmacyPaymentFilterChoices(
-  AppLocalizations l10n,
-) {
-  return <AppSearchBarFilterChoice>[
-    AppSearchBarFilterChoice(
-      value: 'true',
-      label: l10n.pharmacyFilterPendingPayment,
-      icon: Icons.payments_outlined,
     ),
   ];
 }
@@ -3450,45 +2923,6 @@ List<AppSearchBarFilterChoice> _pharmacyUrgentFilterChoices(
       value: 'true',
       label: l10n.pharmacyFilterUrgent,
       icon: Icons.emergency_outlined,
-    ),
-  ];
-}
-
-const String _pharmacyDrugStockStatusFilterKey = 'stock_status';
-
-AppSearchBarFilterValue _pharmacyDrugFilterValue(PharmacyDrugQuery query) {
-  final String? stockStatus = query.stockStatus;
-  if (stockStatus == null) {
-    return AppSearchBarFilterValue.empty;
-  }
-  return AppSearchBarFilterValue(
-    options: <String, String>{_pharmacyDrugStockStatusFilterKey: stockStatus},
-  );
-}
-
-List<AppSearchBarFilterChoice> _stockStatusFilterChoices(
-  AppLocalizations l10n,
-) {
-  return <AppSearchBarFilterChoice>[
-    AppSearchBarFilterChoice(
-      value: 'IN_STOCK',
-      label: l10n.pharmacyStockInStock,
-      icon: Icons.check_circle_outline,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'ALMOST_OUT_OF_STOCK',
-      label: l10n.pharmacyStockAlmostOut,
-      icon: Icons.inventory_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'LOW_STOCK',
-      label: l10n.pharmacyStockLow,
-      icon: Icons.warning_amber_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: 'OUT_OF_STOCK',
-      label: l10n.pharmacyStockOut,
-      icon: Icons.remove_circle_outline,
     ),
   ];
 }
@@ -3614,31 +3048,12 @@ AppWorkspaceStatus _orderStatus(BuildContext context, PharmacyOrder order) {
   );
 }
 
-AppWorkspaceStatus _stockStatus(BuildContext context, String? value) {
-  final String normalized = value ?? '';
-  return AppWorkspaceStatus(
-    label: _apiLabel(normalized).isEmpty
-        ? context.l10n.pharmacyStockUnknown
-        : _apiLabel(normalized),
-    tone: _stockStatusTone(normalized),
-  );
-}
-
 AppWorkspaceStatusTone _orderStatusTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
     'ORDERED' => AppWorkspaceStatusTone.info,
     'PARTIALLY_DISPENSED' => AppWorkspaceStatusTone.warning,
     'DISPENSED' => AppWorkspaceStatusTone.success,
     'CANCELLED' => AppWorkspaceStatusTone.error,
-    _ => AppWorkspaceStatusTone.neutral,
-  };
-}
-
-AppWorkspaceStatusTone _stockStatusTone(String? value) {
-  return switch ((value ?? '').toUpperCase()) {
-    'IN_STOCK' => AppWorkspaceStatusTone.success,
-    'ALMOST_OUT_OF_STOCK' => AppWorkspaceStatusTone.warning,
-    'LOW_STOCK' || 'OUT_OF_STOCK' => AppWorkspaceStatusTone.error,
     _ => AppWorkspaceStatusTone.neutral,
   };
 }

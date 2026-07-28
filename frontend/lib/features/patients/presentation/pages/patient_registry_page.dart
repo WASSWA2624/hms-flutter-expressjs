@@ -1656,18 +1656,6 @@ Future<void> _openPatientQuickAction(
       if (detail == null) {
         return;
       }
-      final bool hasAdmission =
-          activePatientAdmissionRecord(detail.workspace.admissions) != null ||
-          isActiveAdmissionPatientVisit(patient.currentVisit);
-      if (!hasAdmission) {
-        await _openPatientQuickAction(
-          context,
-          ref,
-          patient,
-          PatientQuickAction.opdCheckIn,
-        );
-        return;
-      }
       await refreshIfChanged(
         await openPatientPhysiotherapyRequestDialog(context, ref, detail),
       );
@@ -1724,22 +1712,6 @@ Future<void> _openPatientQuickAction(
           referenceData: referenceData,
         ),
       );
-    case PatientQuickAction.triage:
-      await refreshIfChanged(
-        await showPatientTriageQuickDialog(
-          context: context,
-          patient: patient,
-          referenceData: referenceData,
-        ),
-      );
-    case PatientQuickAction.billing:
-      await refreshIfChanged(
-        await _openPatientFlowQuickDialog(
-          context,
-          patient: patient,
-          referenceData: referenceData,
-        ),
-      );
     case PatientQuickAction.admission:
       await refreshIfChanged(
         await showPatientAdmissionQuickDialog(
@@ -1786,12 +1758,7 @@ Future<void> _continuePatientActiveWork(
   final Patient patient = detail.patient;
   switch (item.kind) {
     case PatientActiveWorkKind.appointment:
-      await _openPatientQuickAction(
-        context,
-        ref,
-        patient,
-        PatientQuickAction.appointment,
-      );
+      await _continuePatientAppointment(context, ref, detail, item);
     case PatientActiveWorkKind.encounter:
     case PatientActiveWorkKind.queue:
       if (isActiveOpdPatientVisit(patient.currentVisit)) {
@@ -1814,34 +1781,67 @@ Future<void> _continuePatientActiveWork(
             : PatientQuickAction.discharge,
       );
     case PatientActiveWorkKind.labOrder:
-      await _openPatientQuickAction(
-        context,
-        ref,
-        patient,
-        PatientQuickAction.labOrder,
-      );
     case PatientActiveWorkKind.radiologyOrder:
-      await _openPatientQuickAction(
-        context,
-        ref,
-        patient,
-        PatientQuickAction.radiologyOrder,
-      );
     case PatientActiveWorkKind.theater:
-      await _openPatientQuickAction(
-        context,
-        ref,
-        patient,
-        PatientQuickAction.theaterSchedule,
-      );
     case PatientActiveWorkKind.therapy:
-      await _openPatientQuickAction(
-        context,
-        ref,
-        patient,
-        PatientQuickAction.physiotherapy,
-      );
+      _navigateToPatientDepartmentWork(context, patient, item);
   }
+}
+
+Future<void> _continuePatientAppointment(
+  BuildContext context,
+  WidgetRef ref,
+  PatientDetail detail,
+  PatientActiveWorkItem item,
+) async {
+  final Patient patient = detail.patient;
+  final OpdAppointment appointment = OpdAppointment(
+    id: item.id,
+    status: item.status,
+    scheduledStart: item.occurredAt,
+    reason: item.title,
+    patientId: patient.publicId ?? patient.id,
+    patientDisplayName: patient.effectiveDisplayName,
+    patientIdentifier: patient.effectiveIdentifier,
+    patientPhone: patient.primaryPhone,
+    patientDateOfBirth: patient.dateOfBirth,
+    patientGender: patient.gender,
+    facilityId: patient.facilityId,
+    tenantId: patient.tenantId,
+  );
+  final bool? changed = await showOpdAppointmentActionsDialog(
+    context: context,
+    appointment: appointment,
+  );
+  if (changed == true && context.mounted) {
+    await _refreshPatientAfterQuickAction(context, ref, patient.id);
+  }
+}
+
+void _navigateToPatientDepartmentWork(
+  BuildContext context,
+  Patient patient,
+  PatientActiveWorkItem item,
+) {
+  final String encounterId = (patient.currentVisit?.publicId ?? '').trim();
+  final String workId = item.id.trim();
+  final Map<String, String> queryParameters = <String, String>{
+    if (encounterId.isNotEmpty) 'encounterId': encounterId,
+    if (workId.isNotEmpty) 'id': workId,
+  };
+  final String location = switch (item.kind) {
+    PatientActiveWorkKind.radiologyOrder => AppRoutes.radiology.location(
+      queryParameters: queryParameters,
+    ),
+    PatientActiveWorkKind.theater => AppRoutes.theater.location(
+      queryParameters: queryParameters,
+    ),
+    PatientActiveWorkKind.therapy => AppRoutes.physiotherapy.location(
+      queryParameters: queryParameters,
+    ),
+    _ => AppRoutes.lab.location(queryParameters: queryParameters),
+  };
+  context.go(location);
 }
 
 String _patientDischargeActionLabel(
@@ -1925,10 +1925,28 @@ Future<void> _openActiveOpdActions(
   if (detail == null || !context.mounted) {
     return;
   }
-  final bool? changed = await showFlowActionsDialog(
-    context: context,
-    flow: detail.summary,
+
+  // Skip the empty Flow Actions shell — run the stage mutation (or handoff)
+  // directly, matching OPD / reception next-action.
+  final OpdBoardNextActionKind kind = opdBoardNextActionKindForFlow(
+    detail.summary,
+    detail: detail,
   );
+  bool? changed;
+  if (kind != OpdBoardNextActionKind.none) {
+    changed = await runOpdBoardNextAction(
+      context: context,
+      ref: ref,
+      flow: detail.summary,
+      kind: kind,
+      detail: detail,
+    );
+  } else {
+    changed = await showFlowActionsDialog(
+      context: context,
+      flow: detail.summary,
+    );
+  }
   if (changed == true && context.mounted) {
     await ref
         .read(patientRegistryControllerProvider.notifier)
@@ -2260,18 +2278,6 @@ class _PatientTriageQuickDialogState
         : parsed;
     return formatAppVitalNumber(mmHg, decimals: 2);
   }
-}
-
-Future<bool?> _openPatientFlowQuickDialog(
-  BuildContext context, {
-  required Patient patient,
-  required PatientReferenceData referenceData,
-}) {
-  return showPatientBillingQuickDialog(
-    context: context,
-    patient: patient,
-    referenceData: referenceData,
-  );
 }
 
 class _PatientReportPrintPreviewDialog extends ConsumerStatefulWidget {

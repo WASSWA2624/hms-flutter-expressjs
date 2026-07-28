@@ -262,6 +262,7 @@ void main() {
     registerFallbackValue(const OperationsWorkItemQuery());
     registerFallbackValue(const OperationsAssetQuery());
     registerFallbackValue(const OperationsServiceLogQuery());
+    registerFallbackValue(_openRequest);
     registerFallbackValue(
       const OperationsServiceLogDraft(assetId: 'AS-001', notes: 'Done'),
     );
@@ -439,7 +440,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Request detail'), findsOneWidget);
+    expect(find.text('REQUEST DETAIL'), findsOneWidget);
     expect(find.text('Generator alarm'), findsWidgets);
   });
 
@@ -473,33 +474,12 @@ void main() {
     );
 
     await _pumpOperationsWorkspace(tester, repository: repository);
-    clearInteractions(repository);
-    when(() => repository.getRequest(any())).thenAnswer((
-      Invocation invocation,
-    ) async {
-      return const Result<OperationsWorkItem>.success(_openRequest);
-    });
-    when(() => repository.listServiceLogs(any())).thenAnswer(
-      (_) async => const Result<AppPage<OperationsServiceLog>>.success(
-        AppPage<OperationsServiceLog>(
-          items: <OperationsServiceLog>[],
-          request: AppPageRequest(),
-        ),
-      ),
-    );
 
-    final Finder action = find.byTooltip('Assign technician or team');
-    expect(action, findsOneWidget);
-    await tester.ensureVisible(action);
-    await tester.tap(action, warnIfMissed: true);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.byTooltip('Assign technician or team'));
     await tester.pumpAndSettle();
 
-    verify(() => repository.getRequest(any())).called(1);
-
-    expect(find.text('Assign'), findsWidgets);
-    expect(find.text('Request detail'), findsNothing);
+    expect(find.text('Save assignment'), findsOneWidget);
+    expect(find.text('REQUEST DETAIL'), findsNothing);
   });
 
   testWidgets(
@@ -515,11 +495,11 @@ void main() {
       await tester.tap(find.textContaining('In progress').first);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Update repair status'));
+      await tester.tap(find.byTooltip('Update repair status'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Update status'), findsWidgets);
-      expect(find.text('Request detail'), findsNothing);
+      expect(find.text('Save status'), findsOneWidget);
+      expect(find.text('REQUEST DETAIL'), findsNothing);
     },
   );
 
@@ -542,11 +522,11 @@ void main() {
 
       await _pumpOperationsWorkspace(tester, repository: repository);
 
-      await tester.tap(find.text('Record service work'));
+      await tester.tap(find.byTooltip('Record service work'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Add service log'), findsWidgets);
-      expect(find.text('Request detail'), findsNothing);
+      expect(find.text('Save service log'), findsOneWidget);
+      expect(find.text('REQUEST DETAIL'), findsNothing);
     },
   );
 
@@ -562,11 +542,11 @@ void main() {
     await tester.tap(find.textContaining('Completed').first);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Add closeout note if needed'));
+    await tester.tap(find.byTooltip('Add closeout note if needed'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Closeout note'), findsWidgets);
-    expect(find.text('Request detail'), findsNothing);
+    expect(find.text('Save note'), findsOneWidget);
+    expect(find.text('REQUEST DETAIL'), findsNothing);
   });
 
   testWidgets('detail omits assign when it is the row next action', (
@@ -714,7 +694,7 @@ void main() {
 
     await tester.tap(find.text('Generator alarm'));
     await tester.pumpAndSettle();
-    expect(find.text('Request detail'), findsOneWidget);
+    expect(find.text('REQUEST DETAIL'), findsOneWidget);
   });
 
   testWidgets(
@@ -774,7 +754,7 @@ void main() {
     await tester.tap(find.byTooltip('Assign technician or team'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Assign'), findsWidgets);
-    expect(find.text('Request detail'), findsNothing);
+    expect(find.text('Save assignment'), findsOneWidget);
+    expect(find.text('REQUEST DETAIL'), findsNothing);
   });
 }

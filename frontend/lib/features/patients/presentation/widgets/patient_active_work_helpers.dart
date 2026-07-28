@@ -217,6 +217,22 @@ List<PatientActiveWorkItem> collectPatientActiveWorkItems(
     );
   }
 
+  final PatientVisitContext? admissionVisit = detail.patient.currentVisit;
+  if (admissionVisit != null && isActiveAdmissionPatientVisit(admissionVisit)) {
+    final String visitId = (admissionVisit.publicId ?? '').trim();
+    if (visitId.isNotEmpty) {
+      addItem(
+        PatientActiveWorkItem(
+          id: visitId,
+          kind: PatientActiveWorkKind.admission,
+          status: admissionVisit.status ?? '',
+          title: admissionVisit.title ?? 'Admission',
+          occurredAt: admissionVisit.occurredAt,
+        ),
+      );
+    }
+  }
+
   for (final PatientTimelineItem timelineItem in detail.timeline) {
     if (!_isActiveTimelineResource(timelineItem.resource) ||
         _isTerminalTimelineStatus(timelineItem.subtitle)) {
@@ -564,6 +580,7 @@ String _admissionActionLabel(AppLocalizations l10n, String status) {
     'TRANSFER_REQUESTED' ||
     'TRANSFER_IN_PROGRESS' => l10n.ipdNextApproveTransfer,
     'DISCHARGE_PLANNED' => l10n.opdDischargeAction,
-    _ => l10n.patientsActiveWorkManageAdmissionAction,
+    // Active Work is the sole continue path for in-flight admissions.
+    _ => l10n.navigationDischargeLabel,
   };
 }

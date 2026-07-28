@@ -954,6 +954,7 @@ void main() {
     expect(find.text('Start OPD encounter'), findsOneWidget);
     expect(find.text('Continue OPD flow'), findsNothing);
     expect(find.text('Triage'), findsNothing);
+    expect(find.text('Billing'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);
     expect(find.text('Clinical notes'), findsNothing);
@@ -987,6 +988,20 @@ void main() {
 
     _stubPatientRegistry(patientRepository, patient);
     _stubProviderLookup(opdRepository);
+    when(() => opdRepository.getOpdFlow('OPD-1')).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.success(
+        OpdFlowDetail(
+          summary: OpdFlowSummary(
+            id: 'OPD-1',
+            publicId: 'OPD-1',
+            patientId: 'patient-1',
+            status: 'OPEN',
+            stage: 'WAITING_VITALS',
+            displayCode: 'VITALS_NEEDED',
+          ),
+        ),
+      ),
+    );
 
     await _pumpPatientRegistry(
       tester,
@@ -1002,10 +1017,18 @@ void main() {
     expect(find.text('Continue OPD flow'), findsOneWidget);
     expect(find.text('Start OPD encounter'), findsNothing);
     expect(find.text('Triage'), findsNothing);
+    expect(find.text('Billing'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);
     expect(find.text('Clinical notes'), findsNothing);
     expect(find.text('Manage consultation billing'), findsNothing);
+
+    await tester.tap(find.text('Continue OPD flow'));
+    await tester.pumpAndSettle();
+
+    // Stage next-action opens vitals directly — no empty Flow Actions hub.
+    expect(find.text('Record vitals'), findsWidgets);
+    expect(find.text('Flow actions'), findsNothing);
   });
 
   testWidgets('request admission quick action opens maximized dialog', (
@@ -1192,10 +1215,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Active work Continue is the sole discharge entry — no duplicate chip.
-    expect(find.text('Discharge planning'), findsNothing);
-    expect(find.text('Manage admission'), findsOneWidget);
+    expect(find.text('Manage admission'), findsNothing);
+    expect(find.text('Discharge planning'), findsOneWidget);
 
-    await tester.tap(find.text('Manage admission'));
+    await tester.tap(find.text('Discharge planning'));
     await tester.pumpAndSettle();
 
     expect(find.text('Clearance checklist'), findsOneWidget);
@@ -1391,6 +1414,8 @@ void main() {
       expect(_patientTabLabel('Admitted'), findsOneWidget);
       expect(_patientTabLabel('Balance due'), findsOneWidget);
       expect(find.byTooltip('Register patient'), findsOneWidget);
+      expect(find.byTooltip('Refresh'), findsNothing);
+      expect(find.text('Refresh'), findsNothing);
       expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.text('Advanced filters'), findsNothing);
       expect(find.byTooltip('Settings'), findsOneWidget);

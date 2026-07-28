@@ -167,8 +167,14 @@ class _OperationsWorkspaceContentState
     if (!query.hasRouteTargeting) {
       return;
     }
-    // Apply section filters first, then search, so clearFilters cannot wipe q=.
-    _applySectionFilter(_section);
+    // Apply section filters only when the URL targets a tab (avoid a redundant
+    // clearFilters race on requestId-only deep links).
+    if (query.section.trim().isNotEmpty) {
+      await _awaitSectionFilter(_section);
+      if (!mounted) {
+        return;
+      }
+    }
     final OperationsWorkspaceController controller = ref.read(
       operationsWorkspaceControllerProvider.notifier,
     );
@@ -231,25 +237,28 @@ class _OperationsWorkspaceContentState
   void _onTabChanged(OperationsDeskSection section) {
     setState(() => _section = section);
     _updateUrlForSection(section);
-    _applySectionFilter(section);
+    unawaited(_awaitSectionFilter(section));
   }
 
-  void _applySectionFilter(OperationsDeskSection section) {
+  Future<void> _awaitSectionFilter(OperationsDeskSection section) {
     final OperationsWorkspaceController controller = ref.read(
       operationsWorkspaceControllerProvider.notifier,
     );
-    switch (section) {
-      case OperationsDeskSection.allRequests:
-        unawaited(controller.clearFilters());
-      case OperationsDeskSection.open:
-        unawaited(controller.applyStatus('OPEN'));
-      case OperationsDeskSection.inProgress:
-        unawaited(controller.applyStatus('IN_PROGRESS'));
-      case OperationsDeskSection.completed:
-        unawaited(controller.applyStatus('COMPLETED'));
-      case OperationsDeskSection.assets:
-        break;
-    }
+    return switch (section) {
+      OperationsDeskSection.allRequests =>
+        controller.clearFilters().then((_) {}),
+      OperationsDeskSection.open =>
+        controller.applyStatus('OPEN').then((_) {}),
+      OperationsDeskSection.inProgress =>
+        controller.applyStatus('IN_PROGRESS').then((_) {}),
+      OperationsDeskSection.completed =>
+        controller.applyStatus('COMPLETED').then((_) {}),
+      OperationsDeskSection.assets => Future<void>.value(),
+    };
+  }
+
+  void _applySectionFilter(OperationsDeskSection section) {
+    unawaited(_awaitSectionFilter(section));
   }
 
   static IconData _sectionIcon(OperationsDeskSection section) {
@@ -1265,28 +1274,28 @@ class _OperationsNextActionButton extends ConsumerWidget {
     final OperationsWorkspaceController controller = ref.read(
       operationsWorkspaceControllerProvider.notifier,
     );
+    // Stage writes only need a selected item — skip the detail fetch shell.
+    controller.focusItem(item);
+    if (!context.mounted) {
+      return;
+    }
+
     final OperationsWorkspaceState workspaceState =
         _operationsStateFromAsync(
           ref.read(operationsWorkspaceControllerProvider),
         ) ??
         state;
 
-    final AppFailure? selectFailure = await controller.selectItem(item);
-    if (!context.mounted) {
-      return;
-    }
-    if (selectFailure != null) {
-      _showFailureIfNeeded(context, selectFailure);
-      return;
-    }
-
     switch (kind) {
       case _OperationsNextActionKind.assign:
         await _showAssignDialog(context, ref);
+        return;
       case _OperationsNextActionKind.serviceLog:
         await _showServiceLogDialog(context, ref, workspaceState);
+        return;
       case _OperationsNextActionKind.updateStatus:
         await _showStatusDialog(context, ref, item);
+        return;
       case _OperationsNextActionKind.closeout:
         await _showNoteDialog(
           context,
@@ -1296,9 +1305,10 @@ class _OperationsNextActionButton extends ConsumerWidget {
           kind: _noteKindCloseout,
           controller: controller,
         );
+        return;
       case _OperationsNextActionKind.review:
       case _OperationsNextActionKind.none:
-        break;
+        return;
     }
   }
 }

@@ -21,6 +21,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Advanced **Status** filter on Open / In progress / Completed tabs | Same status filter as tab | **Removed** on status-scoped tabs — tabs own status; All requests keeps status filter |
 | Unauthorized create / write next-actions shown disabled | No access | **Omitted** — create and write next-actions absent |
 | Next-action **Review request** (read-only / unknown status) | Same as row select → detail | **Removed** — row select is the sole open-detail path |
+| Next-action **detail fetch** before Assign / status / service log / closeout | Intermediate shell | **Removed** — `focusItem` selects locally; form opens immediately; `selectItem` remains for detail |
 | Mobile list without next-action trailing (detail omitted matching write) | Primary write unreachable on phone | **Fixed** — same next-action control as desktop column, trailing on mobile rows (icon-only + tooltip under 600px) |
 
 ---
@@ -81,7 +82,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 - **Next action** (status/capability-aware label)
   - Location: `next_action` column (always visible on desktop); mobile list item **trailing** (same control; icon-only with tooltip under 600px).
   - Opens modal: Assign / service log / status / closeout form when that is next; absent when read-only / unauthorized / unknown; cancelled shows non-button copy.
-  - Immediate result: Sole primary write for the row when a stage write applies.
+  - Immediate result: Sole primary write for the row when a stage write applies (no detail-fetch shell).
   - Condition: Write next-actions require `_mutationRequirement`; unauthorized and review-only rows show no next-action control (use row select).
 
 ### Detail dialog (request)

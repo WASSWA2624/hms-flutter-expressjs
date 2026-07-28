@@ -120,6 +120,22 @@ AppAccessPolicy _pharmacyWritePolicy() {
   );
 }
 
+AppAccessPolicy _pharmacyReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['VIEWER']),
+      permissions: <AppPermission>{AppPermissions.pharmacyRead},
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'pharmacy-dispensing',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
 void _stubPharmacyRepository(_MockPharmacyRepository repository) {
   when(() => repository.loadWorkbench(any())).thenAnswer((
     Invocation invocation,
@@ -171,6 +187,18 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
       ),
     );
   });
+  when(() => repository.loadOrderWorkflow(any())).thenAnswer((
+    Invocation invocation,
+  ) async {
+    final String orderId = invocation.positionalArguments.single as String;
+    final PharmacyOrder order = _allOrders.firstWhere(
+      (PharmacyOrder item) => item.id == orderId || item.displayId == orderId,
+      orElse: () => _readyOrder,
+    );
+    return Result<PharmacyOrderWorkflow>.success(
+      PharmacyOrderWorkflow(order: order),
+    );
+  });
   when(() => repository.searchDrugs(any())).thenAnswer(
     (_) async => const Result<AppPage<PharmacyDrug>>.success(
       AppPage<PharmacyDrug>(items: <PharmacyDrug>[], request: AppPageRequest()),
@@ -209,6 +237,7 @@ Future<_Harness> _pumpPharmacyWorkspace(
   PharmacyWorkspaceQuery? initialQuery,
   String initialLocation = '/pharmacy',
   Size physicalSize = const Size(1440, 900),
+  AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -250,7 +279,9 @@ Future<_Harness> _pumpPharmacyWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_pharmacyWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _pharmacyWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -279,7 +310,7 @@ void main() {
     registerFallbackValue(const PharmacyInventoryStockQuery());
   });
 
-  testWidgets('renders tab strip with section counts and ready queue', (
+  testWidgets('renders tab strip with stable catalog primary and no refresh', (
     WidgetTester tester,
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
@@ -294,13 +325,15 @@ void main() {
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsNothing);
     expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
-    expect(_toolbarAction('Low stock'), findsOneWidget);
-    expect(_toolbarAction('Almost out'), findsOneWidget);
-    expect(_toolbarAction('Expiring soon'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsNothing);
+    expect(_toolbarAction('Low stock'), findsNothing);
+    expect(_toolbarAction('Almost out'), findsNothing);
+    expect(_toolbarAction('Expiring soon'), findsNothing);
+    expect(_toolbarPrimary('Billing'), findsNothing);
+    expect(_toolbarAction('Billing'), findsNothing);
   });
 
-  testWidgets('switching tabs updates URL and applies filter', (
+  testWidgets('switching tabs keeps catalog primary and omits refresh', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpPharmacyWorkspace(
@@ -315,7 +348,7 @@ void main() {
     expect(find.text('Amina Partial'), findsOneWidget);
     expect(find.text('Noah Ready'), findsNothing);
     expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsNothing);
 
     await tester.tap(_tab('Completed'));
     await tester.pumpAndSettle();
@@ -323,8 +356,7 @@ void main() {
     expect(harness.router.state.uri.queryParameters['section'], 'completed');
     expect(find.text('Brian Done'), findsOneWidget);
     expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
-    expect(_toolbarAction('Low stock'), findsNothing);
+    expect(_toolbarAction('Refresh'), findsNothing);
   });
 
   testWidgets('deep link section=in-progress selects Partial tab', (
@@ -356,24 +388,25 @@ void main() {
     );
   });
 
-  testWidgets('deep link section=pending-payment selects Billing primary', (
-    WidgetTester tester,
-  ) async {
-    await _pumpPharmacyWorkspace(
-      tester,
-      repository: repository,
-      initialLocation: '/pharmacy?section=pending-payment',
-      initialQuery: PharmacyWorkspaceQuery.fromUri(
-        Uri.parse('/pharmacy?section=pending-payment'),
-      ),
-    );
+  testWidgets(
+    'deep link section=pending-payment keeps catalog primary (not Billing)',
+    (WidgetTester tester) async {
+      await _pumpPharmacyWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/pharmacy?section=pending-payment',
+        initialQuery: PharmacyWorkspaceQuery.fromUri(
+          Uri.parse('/pharmacy?section=pending-payment'),
+        ),
+      );
 
-    expect(find.text('Cathy Payment'), findsOneWidget);
-    expect(_toolbarPrimary('Billing'), findsOneWidget);
-    expect(_toolbarAction('Catalog and stock'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
-    expect(_toolbarAction('Low stock'), findsNothing);
-  });
+      expect(find.text('Cathy Payment'), findsOneWidget);
+      expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+      expect(_toolbarPrimary('Billing'), findsNothing);
+      expect(_toolbarAction('Catalog and stock'), findsNothing);
+      expect(_toolbarAction('Refresh'), findsNothing);
+    },
+  );
 
   testWidgets('deep link section=inventory opens catalog dialog', (
     WidgetTester tester,
@@ -394,6 +427,27 @@ void main() {
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(AppDialog), findsNothing);
+  });
+
+  testWidgets('deep link orderId opens prescription detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/pharmacy?orderId=order-ready',
+      initialQuery: PharmacyWorkspaceQuery.fromUri(
+        Uri.parse('/pharmacy?orderId=order-ready'),
+      ),
+    );
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('PRESCRIPTION DETAIL'), findsOneWidget);
+    verify(() => repository.loadOrderWorkflow('order-ready')).called(1);
+
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
     expect(find.byType(AppDialog), findsNothing);
   });
 
@@ -454,8 +508,7 @@ void main() {
       harness.router.state.uri.queryParameters['section'],
       'pending-payment',
     );
-    expect(_toolbarPrimary('Billing'), findsOneWidget);
-    expect(_toolbarAction('Catalog and stock'), findsOneWidget);
+    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
     final Finder table = find.byType(DataTable);
     expect(
       find.descendant(of: table, matching: find.text('Ordered at')),
@@ -495,6 +548,47 @@ void main() {
     );
   });
 
+  testWidgets('row next action opens cancel dialog without detail shell', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(tester, repository: repository);
+
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(DataTable),
+            matching: find.text('Cancel order'),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('PRESCRIPTION DETAIL'), findsNothing);
+    expect(find.text('CANCEL PHARMACY ORDER'), findsOneWidget);
+    verify(() => repository.loadOrderWorkflow('order-ready')).called(1);
+  });
+
+  testWidgets('read-only users keep catalog; write next-action absent', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _pharmacyReadOnlyPolicy(),
+    );
+
+    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Cancel order'),
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('mobile breakpoint uses list tiles with status and next action', (
     WidgetTester tester,
   ) async {
@@ -504,11 +598,12 @@ void main() {
       physicalSize: const Size(390, 844),
     );
 
-    expect(find.byType(DataTable), findsNothing);
-    expect(find.text('Noah Ready'), findsOneWidget);
-    expect(find.text('Ordered'), findsAtLeastNWidgets(1));
-    expect(find.text('Cancel order'), findsAtLeastNWidgets(1));
+    expect(tester.takeException(), isNull);
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(DataTable), findsNothing);
+    expect(_toolbarAction('Refresh'), findsNothing);
+    expect(find.text('Noah Ready'), findsOneWidget);
+    expect(find.text('Cancel order'), findsAtLeastNWidgets(1));
   });
 
   testWidgets('All orders tab shows every order and catalog primary action', (
@@ -527,6 +622,92 @@ void main() {
     expect(find.text('Amina Partial'), findsOneWidget);
     expect(find.text('Brian Done'), findsOneWidget);
     expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsNothing);
+  });
+
+  testWidgets('advanced filters omit queue status and pending payment groups', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(tester, repository: repository);
+
+    final AppListTable<PharmacyOrder> table = tester
+        .widget<AppListTable<PharmacyOrder>>(
+          find.byType(AppListTable<PharmacyOrder>),
+        );
+    expect(table.search?.advancedFilterTitle, 'Advanced filters');
+    expect(
+      table.search?.filterGroups.any(
+        (AppSearchBarFilterGroup group) => group.key == 'status',
+      ),
+      isFalse,
+    );
+    expect(
+      table.search?.filterGroups.any(
+        (AppSearchBarFilterGroup group) => group.key == 'pending_payment',
+      ),
+      isFalse,
+    );
+    expect(
+      table.search?.filterGroups.any(
+        (AppSearchBarFilterGroup group) => group.key == 'location',
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets(
+    'detail shows only eligible writes and print; omits readiness chrome',
+    (WidgetTester tester) async {
+      await _pumpPharmacyWorkspace(tester, repository: repository);
+
+      await tester.tap(find.text('Noah Ready'));
+      await tester.pumpAndSettle();
+
+      final Finder dialog = find.byType(AppDialog);
+      expect(dialog, findsOneWidget);
+      expect(find.text('PRESCRIPTION DETAIL'), findsOneWidget);
+      expect(find.text('Pharmacy workflow readiness'), findsNothing);
+      expect(
+        find.descendant(of: dialog, matching: find.text('Cancel order')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.text('Attest')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.text('Return')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: dialog, matching: find.text('Print instructions')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('read-only detail keeps print and hides write actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _pharmacyReadOnlyPolicy(),
+    );
+
+    await tester.tap(find.text('Noah Ready'));
+    await tester.pumpAndSettle();
+
+    final Finder dialog = find.byType(AppDialog);
+    expect(dialog, findsOneWidget);
+    expect(find.text('PRESCRIPTION DETAIL'), findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('Cancel order')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: dialog, matching: find.text('Print instructions')),
+      findsOneWidget,
+    );
   });
 }

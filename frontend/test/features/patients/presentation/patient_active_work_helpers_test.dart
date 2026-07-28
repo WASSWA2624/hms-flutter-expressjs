@@ -104,6 +104,41 @@ void main() {
     expect(patientActiveWorkStatusTone(item), AppWorkspaceStatusTone.warning);
   });
 
+  test('active admission continue label is discharge planning', () {
+    const PatientActiveWorkItem item = PatientActiveWorkItem(
+      id: 'adm-1',
+      kind: PatientActiveWorkKind.admission,
+      status: 'ADMITTED',
+      title: 'Medical ward',
+    );
+
+    expect(
+      patientActiveWorkActionLabel(l10n, item),
+      l10n.navigationDischargeLabel,
+    );
+  });
+
+  test('collectPatientActiveWorkItems includes visit-only admissions', () {
+    const PatientDetail detail = PatientDetail(
+      patient: Patient(
+        id: 'patient-1',
+        currentVisit: PatientVisitContext(
+          kind: 'admission',
+          publicId: 'admission-visit-1',
+          status: 'ADMITTED',
+          title: 'Admission',
+        ),
+      ),
+      workspace: PatientWorkspaceSnapshot(),
+    );
+
+    final List<PatientActiveWorkItem> items = collectPatientActiveWorkItems(
+      detail,
+    );
+    expect(items.single.kind, PatientActiveWorkKind.admission);
+    expect(items.single.id, 'admission-visit-1');
+  });
+
   test('context label prefers subtitle and falls back to public id', () {
     const PatientActiveWorkItem withSubtitle = PatientActiveWorkItem(
       id: 'enc-1',

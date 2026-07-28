@@ -194,7 +194,9 @@ final class OperationsWorkspaceController
       item.effectiveDisplayId,
     );
     switch (result) {
-      case ResultSuccess<OperationsWorkItem>(value: final OperationsWorkItem detail):
+      case ResultSuccess<OperationsWorkItem>(
+        value: final OperationsWorkItem detail,
+      ):
         final AppPage<OperationsServiceLog> logs = await _serviceLogsFor(
           detail,
         );
@@ -219,6 +221,18 @@ final class OperationsWorkspaceController
         }
         return failure;
     }
+  }
+
+  /// Sets the active request for stage writes without a detail fetch.
+  ///
+  /// Next-action forms only need a selected id/payload; service logs load when
+  /// the detail dialog opens via [selectItem].
+  void focusItem(OperationsWorkItem item) {
+    final OperationsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    _emit(current.copyWith(selectedItem: item, clearLastFailure: true));
   }
 
   Future<AppFailure?> createRequest(OperationsRequestDraft draft) async {
