@@ -27,6 +27,39 @@ class RoomsBedsNextActionCallbacks {
   final RoomsBedsNextActionCallback onOpenDetail;
 }
 
+bool roomsBedsNextActionIsNavigation(RoomsBedsNextActionKind kind) {
+  return kind == RoomsBedsNextActionKind.openHousekeeping ||
+      kind == RoomsBedsNextActionKind.openOperations;
+}
+
+bool roomsBedsNextActionIsWrite(RoomsBedsNextActionKind kind) {
+  return switch (kind) {
+    RoomsBedsNextActionKind.assign ||
+    RoomsBedsNextActionKind.release ||
+    RoomsBedsNextActionKind.completeTransfer ||
+    RoomsBedsNextActionKind.markAvailable => true,
+    RoomsBedsNextActionKind.openHousekeeping ||
+    RoomsBedsNextActionKind.openOperations ||
+    RoomsBedsNextActionKind.viewDetail => false,
+  };
+}
+
+bool roomsBedsNextActionIsAuthorized({
+  required RoomsBedsNextActionKind kind,
+  required bool canAdminBeds,
+  required bool canIpdWrite,
+}) {
+  return switch (kind) {
+    RoomsBedsNextActionKind.assign ||
+    RoomsBedsNextActionKind.release ||
+    RoomsBedsNextActionKind.completeTransfer => canIpdWrite,
+    RoomsBedsNextActionKind.markAvailable => canAdminBeds,
+    RoomsBedsNextActionKind.openHousekeeping ||
+    RoomsBedsNextActionKind.openOperations ||
+    RoomsBedsNextActionKind.viewDetail => true,
+  };
+}
+
 bool roomsBedsNextActionIsEnabled({
   required RoomsBedsNextActionKind kind,
   required BedBoardItem item,
@@ -34,45 +67,44 @@ bool roomsBedsNextActionIsEnabled({
   required bool canIpdWrite,
   required bool isSaving,
 }) {
+  if (!roomsBedsNextActionIsAuthorized(
+    kind: kind,
+    canAdminBeds: canAdminBeds,
+    canIpdWrite: canIpdWrite,
+  )) {
+    return false;
+  }
   return switch (kind) {
-    RoomsBedsNextActionKind.assign =>
-      canIpdWrite && !isSaving && item.isAvailable,
+    RoomsBedsNextActionKind.assign => !isSaving && item.isAvailable,
     RoomsBedsNextActionKind.release =>
-      canIpdWrite &&
-          !isSaving &&
+      !isSaving &&
           item.isOccupied &&
           item.currentAdmissionId != null &&
           !item.hasOpenTransfer,
     RoomsBedsNextActionKind.completeTransfer =>
-      canIpdWrite &&
-          !isSaving &&
-          item.hasOpenTransfer &&
-          item.currentAdmissionId != null,
-    RoomsBedsNextActionKind.markAvailable =>
-      canAdminBeds && !isSaving && !item.isOccupied,
-    RoomsBedsNextActionKind.openHousekeeping => canAdminBeds,
-    RoomsBedsNextActionKind.openOperations => canAdminBeds,
+      !isSaving && item.hasOpenTransfer && item.currentAdmissionId != null,
+    RoomsBedsNextActionKind.markAvailable => !isSaving && !item.isOccupied,
+    RoomsBedsNextActionKind.openHousekeeping ||
+    RoomsBedsNextActionKind.openOperations => true,
     RoomsBedsNextActionKind.viewDetail => true,
   };
 }
 
-String? roomsBedsNextActionDisabledReason(
-  AppLocalizations l10n,
-  RoomsBedsNextActionKind kind, {
+/// Whether the next-action control should render. Unauthorized writes and
+/// review-only [viewDetail] are omitted — row select opens detail.
+bool roomsBedsNextActionShouldRender({
+  required RoomsBedsNextActionKind kind,
   required bool canAdminBeds,
   required bool canIpdWrite,
 }) {
-  return switch (kind) {
-    RoomsBedsNextActionKind.assign ||
-    RoomsBedsNextActionKind.release ||
-    RoomsBedsNextActionKind.completeTransfer =>
-      canIpdWrite ? null : l10n.accessDeniedPermissionRequired,
-    RoomsBedsNextActionKind.markAvailable ||
-    RoomsBedsNextActionKind.openHousekeeping ||
-    RoomsBedsNextActionKind.openOperations =>
-      canAdminBeds ? null : l10n.accessDeniedPermissionRequired,
-    RoomsBedsNextActionKind.viewDetail => null,
-  };
+  if (kind == RoomsBedsNextActionKind.viewDetail) {
+    return false;
+  }
+  return roomsBedsNextActionIsAuthorized(
+    kind: kind,
+    canAdminBeds: canAdminBeds,
+    canIpdWrite: canIpdWrite,
+  );
 }
 
 class RoomsBedsNextActionButton extends ConsumerWidget {
@@ -82,6 +114,7 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
     required this.canAdminBeds,
     required this.canIpdWrite,
     required this.callbacks,
+    this.compact = false,
     super.key,
   });
 
@@ -90,12 +123,22 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
   final bool canAdminBeds;
   final bool canIpdWrite;
   final RoomsBedsNextActionCallbacks callbacks;
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final RoomsBedsNextActionKind kind = roomsBedsPrimaryNextActionKind(item);
+
+    if (!roomsBedsNextActionShouldRender(
+      kind: kind,
+      canAdminBeds: canAdminBeds,
+      canIpdWrite: canIpdWrite,
+    )) {
+      return const SizedBox.shrink();
+    }
+
     final String label = roomsBedsPrimaryNextActionLabel(l10n, item);
     final bool enabled = roomsBedsNextActionIsEnabled(
       kind: kind,
@@ -104,22 +147,27 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
       canIpdWrite: canIpdWrite,
       isSaving: state.isSaving,
     );
-    final String? disabledReason = enabled
-        ? null
-        : roomsBedsNextActionDisabledReason(
-            l10n,
-            kind,
-            canAdminBeds: canAdminBeds,
-            canIpdWrite: canIpdWrite,
-          );
+    final bool isNarrow =
+        compact || MediaQuery.sizeOf(context).width < 600;
+
+    if (isNarrow) {
+      return AppButton.secondary(
+        label: label,
+        icon: _iconForKind(kind),
+        iconOnly: true,
+        tooltip: label,
+        semanticLabel: label,
+        enabled: enabled,
+        onPressed: enabled ? () => _handleAction(context, kind) : null,
+      );
+    }
 
     return Semantics(
       button: true,
       enabled: enabled,
       label: label,
-      hint: disabledReason,
       child: Tooltip(
-        message: disabledReason ?? label,
+        message: label,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: enabled ? () => _handleAction(context, kind) : null,
@@ -158,16 +206,6 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  if (!enabled) ...<Widget>[
-                    SizedBox(width: theme.spacing.xs),
-                    Icon(
-                      Icons.lock_outlined,
-                      size: 12,
-                      color: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.38,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -216,5 +254,3 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
     };
   }
 }
-
-

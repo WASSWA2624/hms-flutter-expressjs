@@ -265,6 +265,7 @@ class _RoomsBedsWorkspaceContentState
                 canAdminBeds: canAdminBeds,
               ),
             ),
+            // Tab-strip Refresh removed — board syncs after mutations / Try again.
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
               AppFailureStateView(
