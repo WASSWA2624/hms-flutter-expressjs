@@ -330,7 +330,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-    expect(find.text('Report preview'), findsWidgets);
+    expect(find.text('REPORT PREVIEW'), findsWidgets);
   });
 
   testWidgets('matchesReportItemSearch matches hidden column fields', (

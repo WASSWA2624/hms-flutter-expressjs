@@ -882,8 +882,9 @@ class AppListTable<T> extends StatefulWidget {
   /// When false, hides the leading `#` index column (desktop and mobile).
   final bool showRowNumbers;
 
-  /// When set, overrides empty spacer-row padding. Defaults to padding only for
-  /// non-infinite, non-shrink-wrapped tables without a [surfaceHeader].
+  /// When set, overrides empty spacer-row padding. Defaults to padding when the
+  /// table has a bounded height and is not shrink-wrapped, filling the
+  /// remaining viewport with blank rows.
   final bool? padEmptyRows;
 
   /// Optional chrome rendered inside the table surface above the rows; scrolls
@@ -1652,10 +1653,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         }
 
         final bool padEmptyRows =
-            widget.padEmptyRows ??
-            (!_usesInfinitePagination &&
-                !effectiveShrinkWrap &&
-                widget.surfaceHeader == null);
+            widget.padEmptyRows ?? (hasBoundedHeight && !effectiveShrinkWrap);
 
         return _DesktopListTable<T>(
           items: visibleItems,
@@ -2711,9 +2709,6 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         ? 48
         : 52;
     const double rowMaxHeight = double.infinity;
-    final int minRowCount = widget.padEmptyRows
-        ? _minTableRowCount
-        : widget.items.length;
     final bool showRowNumbers = widget.showRowNumbers;
 
     _resolveTableStyles(theme);
@@ -2729,69 +2724,72 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         label: widget.goToTopLabel,
         headerExtent: _headingRowHeight,
         builder: (BuildContext context, Key headerKey) {
-          final Widget table = DataTable(
-            showCheckboxColumn: false,
-            horizontalMargin: horizontalMargin,
-            columnSpacing: columnSpacing,
-            headingRowHeight: _headingRowHeight,
-            dataRowMinHeight: rowMinHeight,
-            dataRowMaxHeight: rowMaxHeight,
-            headingRowColor: _cachedHeadingRowColor,
-            dividerThickness: theme.appTokens.dividerThickness,
-            headingTextStyle: _cachedHeadingTextStyle,
-            dataTextStyle: _cachedDataTextStyle,
-            border: TableBorder(
-              verticalInside: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.38),
-                width: theme.appTokens.dividerThickness,
+          Widget buildTable(int minRowCount) {
+            return DataTable(
+              showCheckboxColumn: false,
+              horizontalMargin: horizontalMargin,
+              columnSpacing: columnSpacing,
+              headingRowHeight: _headingRowHeight,
+              dataRowMinHeight: rowMinHeight,
+              dataRowMaxHeight: rowMaxHeight,
+              headingRowColor: _cachedHeadingRowColor,
+              dividerThickness: theme.appTokens.dividerThickness,
+              headingTextStyle: _cachedHeadingTextStyle,
+              dataTextStyle: _cachedDataTextStyle,
+              border: TableBorder(
+                verticalInside: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.38),
+                  width: theme.appTokens.dividerThickness,
+                ),
               ),
-            ),
-            columns: <DataColumn>[
-              if (showRowNumbers)
-                DataColumn(
-                  numeric: true,
-                  label: SizedBox(
-                    width: _rowNumberColumnWidth,
-                    child: Text(
-                      '#',
-                      textAlign: TextAlign.center,
-                      style: _cachedNumberColumnStyle,
+              columns: <DataColumn>[
+                if (showRowNumbers)
+                  DataColumn(
+                    numeric: true,
+                    label: SizedBox(
+                      width: _rowNumberColumnWidth,
+                      child: Text(
+                        '#',
+                        textAlign: TextAlign.center,
+                        style: _cachedNumberColumnStyle,
+                      ),
                     ),
                   ),
-                ),
-              for (final AppListTableColumn<T> column in widget.columns)
-                DataColumn(
-                  numeric: column.numeric,
-                  tooltip: column.tooltip,
-                  label: _DataColumnHeader<T>(
-                    column: column,
-                    isSorted: widget.sortColumnKey == column.key,
-                    sortAscending: widget.sortAscending,
-                    onSort: widget.onSort,
-                    width: widget.columnWidthFor(column),
-                    enableResize:
-                        widget.enableColumnResize && column.fixedWidth == null,
-                    onWidthChanged:
-                        widget.onColumnWidthChanged == null ||
-                            column.fixedWidth != null
-                        ? null
-                        : (double width) {
-                            widget.onColumnWidthChanged!(column.key, width);
-                          },
+                for (final AppListTableColumn<T> column in widget.columns)
+                  DataColumn(
+                    numeric: column.numeric,
+                    tooltip: column.tooltip,
+                    label: _DataColumnHeader<T>(
+                      column: column,
+                      isSorted: widget.sortColumnKey == column.key,
+                      sortAscending: widget.sortAscending,
+                      onSort: widget.onSort,
+                      width: widget.columnWidthFor(column),
+                      enableResize:
+                          widget.enableColumnResize &&
+                          column.fixedWidth == null,
+                      onWidthChanged:
+                          widget.onColumnWidthChanged == null ||
+                              column.fixedWidth != null
+                          ? null
+                          : (double width) {
+                              widget.onColumnWidthChanged!(column.key, width);
+                            },
+                    ),
                   ),
-                ),
-            ],
-            rows: <DataRow>[
-              for (var index = 0; index < widget.items.length; index += 1)
-                _dataRow(context, index),
-              for (
-                var index = widget.items.length;
-                index < minRowCount;
-                index += 1
-              )
-                _emptyRow(context, index),
-            ],
-          );
+              ],
+              rows: <DataRow>[
+                for (var index = 0; index < widget.items.length; index += 1)
+                  _dataRow(context, index),
+                for (
+                  var index = widget.items.length;
+                  index < minRowCount;
+                  index += 1
+                )
+                  _emptyRow(context, index),
+              ],
+            );
+          }
 
           final Widget? surfaceHeader = widget.surfaceHeader;
           final bool scrollWithHeader = surfaceHeader != null;
@@ -2799,6 +2797,15 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
           if (widget.scrollVertically) {
             return LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
+                final int minRowCount = widget.padEmptyRows
+                    ? _rowCountToFillHeight(
+                        availableHeight: constraints.maxHeight,
+                        headingHeight: _headingRowHeight,
+                        rowMinHeight: rowMinHeight,
+                        itemCount: widget.items.length,
+                      )
+                    : widget.items.length;
+                final Widget table = buildTable(minRowCount);
                 final double tableWidth = math.max(
                   widget.minWidth,
                   constraints.maxWidth,
@@ -2865,6 +2872,11 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             );
           }
 
+          final int minRowCount = widget.padEmptyRows
+              ? math.max(_minTableRowCount, widget.items.length)
+              : widget.items.length;
+          final Widget table = buildTable(minRowCount);
+
           final Widget horizontalTable = Scrollbar(
             controller: _horizontalController,
             thumbVisibility: true,
@@ -2896,6 +2908,24 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         },
       ),
     );
+  }
+
+  /// Enough blank rows (at [rowMinHeight]) to fill [availableHeight] under the
+  /// heading, without forcing a tall scrollable pad beyond the viewport.
+  static int _rowCountToFillHeight({
+    required double availableHeight,
+    required double headingHeight,
+    required double rowMinHeight,
+    required int itemCount,
+  }) {
+    if (!availableHeight.isFinite ||
+        availableHeight <= 0 ||
+        rowMinHeight <= 0) {
+      return math.max(itemCount, _minTableRowCount);
+    }
+    final double bodyHeight = math.max(0.0, availableHeight - headingHeight);
+    final int viewportRows = math.max(1, (bodyHeight / rowMinHeight).ceil());
+    return math.max(itemCount, viewportRows);
   }
 
   ColorScheme? _cachedTableStyleScheme;

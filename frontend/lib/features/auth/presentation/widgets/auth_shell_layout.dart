@@ -49,36 +49,39 @@ class AuthShellLayout extends StatelessWidget {
                 },
               );
 
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: maxFormWidth),
-                      child: Padding(
-                        padding: pagePadding,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            _AuthBrandHeader(
-                              isLarge: isLarge,
-                              displayName: displayName,
-                            ),
-                            SizedBox(
-                              height: switch (breakpoint) {
-                                AppBreakpoint.xs ||
-                                AppBreakpoint.sm => theme.spacing.lg,
-                                _ => theme.spacing.xl,
-                              },
-                            ),
-                            child,
-                          ],
+              return CustomScrollView(
+                slivers: <Widget>[
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxFormWidth),
+                        child: Padding(
+                          padding: pagePadding,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              _AuthBrandHeader(
+                                isLarge: isLarge,
+                                displayName: displayName,
+                              ),
+                              SizedBox(
+                                height: switch (breakpoint) {
+                                  AppBreakpoint.xs ||
+                                  AppBreakpoint.sm => theme.spacing.lg,
+                                  _ => theme.spacing.xl,
+                                },
+                              ),
+                              child,
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               );
             },
           ),

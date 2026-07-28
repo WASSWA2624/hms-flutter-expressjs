@@ -1010,7 +1010,7 @@ void main() {
   );
 
   testWidgets(
-    'AppListTable infinite scroll does not pad blank numbered spacer rows',
+    'AppListTable pads blank rows to fill the available viewport height',
     (WidgetTester tester) async {
       final List<_RowItem> pageItems = List<_RowItem>.generate(3, (int index) {
         return _RowItem(id: '$index', title: 'Item $index', status: 'Active');
@@ -1040,7 +1040,9 @@ void main() {
 
       expect(find.text('1'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
-      expect(find.text('4'), findsNothing);
+      // Viewport-fill spacer rows continue numbering past the loaded items.
+      expect(find.text('4'), findsOneWidget);
+      // Does not force the old fixed 50-row pad when the viewport is shorter.
       expect(find.text('50'), findsNothing);
     },
   );

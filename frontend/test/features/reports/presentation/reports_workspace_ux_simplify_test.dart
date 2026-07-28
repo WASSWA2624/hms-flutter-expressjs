@@ -231,7 +231,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
 
-    expect(find.text('Report preview'), findsWidgets);
+    expect(find.text('REPORT PREVIEW'), findsWidgets);
     // Detail omits Run (next-action primary); Schedule remains complementary.
     expect(
       find.descendant(
@@ -274,7 +274,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
 
-    expect(find.text('Report preview'), findsWidgets);
+    expect(find.text('REPORT PREVIEW'), findsWidgets);
   });
 
   testWidgets('schedules panel has no duplicate search field', (
@@ -297,7 +297,7 @@ void main() {
     await _pumpReports(
       tester,
       repository: repository,
-      policy: _reportsPolicy(write: false),
+      policy: _reportsPolicy(),
     );
 
     expect(

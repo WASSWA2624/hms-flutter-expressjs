@@ -58,7 +58,7 @@ void main() {
   );
 
   testWidgets(
-    'successful reset opens login with success banner and no hub',
+    'successful reset opens login with success feedback and no hub',
     (WidgetTester tester) async {
       final repository = _ResetPasswordRepository();
 
@@ -174,7 +174,9 @@ void main() {
     await _pumpResetPassword(tester, _ResetPasswordRepository());
     final l10n = tester.element(find.byType(ResetPasswordPage)).l10n;
 
-    await tester.tap(find.text(l10n.authForgotPasswordActionLabel));
+    final Finder forgotLink = find.text(l10n.authForgotPasswordActionLabel);
+    await tester.ensureVisible(forgotLink);
+    await tester.tap(forgotLink);
     await tester.pumpAndSettle();
     expect(find.text('forgot'), findsOneWidget);
 
@@ -182,7 +184,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ResetPasswordPage), findsOneWidget);
 
-    await tester.tap(find.text(l10n.authBackToLoginActionLabel));
+    final Finder backLink = find.text(l10n.authBackToLoginActionLabel);
+    await tester.ensureVisible(backLink);
+    await tester.tap(backLink);
     await tester.pumpAndSettle();
     expect(find.byType(LoginPage), findsOneWidget);
   });
