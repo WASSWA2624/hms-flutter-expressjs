@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 import 'component_test_app.dart';
 
@@ -67,8 +68,14 @@ void main() {
       ),
     );
 
+    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
     expect(find.text('Preview'), findsOneWidget);
     expect(find.text('Generated report body'), findsOneWidget);
     expect(find.byType(SelectionArea), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.expand_less));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Generated report body'), findsNothing);
   });
 }

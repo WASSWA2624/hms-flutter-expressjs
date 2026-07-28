@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 
 @immutable
@@ -53,8 +53,6 @@ class OpdConsultationBillingBreakdownPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final OpdConsultationBillingBreakdown breakdown =
         opdConsultationBillingBreakdown(flow, detail: detail);
     final String? requiredLabel = opdMoneyLabel(
@@ -74,56 +72,29 @@ class OpdConsultationBillingBreakdownPanel extends StatelessWidget {
       allowZero: true,
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(
-                  Icons.receipt_long_outlined,
-                  color: colorScheme.primary,
-                  size: theme.appTokens.listIconSize,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Text(
-                  l10n.opdBillingSectionTitle,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            AppInfoTileGrid(
-              minItemWidth: 140,
-              emptyValue: l10n.profileUnknownValue,
-              items: <AppInfoTileData>[
-                AppInfoTileData(
-                  label: l10n.opdBillingRequiredAmountLabel,
-                  value: requiredLabel,
-                  icon: Icons.payments_outlined,
-                ),
-                AppInfoTileData(
-                  label: l10n.opdBillingAmountPaidLabel,
-                  value: paidLabel,
-                  icon: Icons.check_circle_outline,
-                ),
-                AppInfoTileData(
-                  label: l10n.opdBillingRemainingBalanceLabel,
-                  value: remainingLabel,
-                  icon: Icons.account_balance_wallet_outlined,
-                ),
-              ],
-            ),
-          ],
-        ),
+    return AppWorkspaceDetailPanel(
+      title: l10n.opdBillingSectionTitle,
+      titleIcon: Icons.receipt_long_outlined,
+      child: AppInfoTileGrid(
+        minItemWidth: 140,
+        emptyValue: l10n.profileUnknownValue,
+        items: <AppInfoTileData>[
+          AppInfoTileData(
+            label: l10n.opdBillingRequiredAmountLabel,
+            value: requiredLabel,
+            icon: Icons.payments_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.opdBillingAmountPaidLabel,
+            value: paidLabel,
+            icon: Icons.check_circle_outline,
+          ),
+          AppInfoTileData(
+            label: l10n.opdBillingRemainingBalanceLabel,
+            value: remainingLabel,
+            icon: Icons.account_balance_wallet_outlined,
+          ),
+        ],
       ),
     );
   }

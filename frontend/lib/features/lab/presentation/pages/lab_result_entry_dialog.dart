@@ -1654,7 +1654,7 @@ class _LabResultEntryTable extends StatelessWidget {
   }
 }
 
-class _LabPanelResultBlock extends StatelessWidget {
+class _LabPanelResultBlock extends ConsumerWidget {
   const _LabPanelResultBlock({
     required this.title,
     required this.child,
@@ -1670,24 +1670,52 @@ class _LabPanelResultBlock extends StatelessWidget {
   final bool canDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        color: theme.colorScheme.surfaceContainerLowest,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _PanelGroupHeader(
-            title: title,
-            canDelete: canDelete,
-            orderId: orderId,
-            itemIds: itemIds,
-          ),
-          child,
-        ],
+    final AppLocalizations l10n = context.l10n;
+    final bool showDelete =
+        canDelete &&
+        itemIds.isNotEmpty &&
+        orderId != null &&
+        orderId!.trim().isNotEmpty;
+
+    return AppWorkspaceDetailPanel(
+      title: title,
+      titleIcon: Icons.inventory_2_outlined,
+      actions: showDelete
+          ? <Widget>[
+              AppButton(
+                leadingIcon: Icons.delete_outline,
+                label: l10n.labDeletePanelAction,
+                semanticLabel: l10n.labDeletePanelAction,
+                tooltip: l10n.labDeletePanelAction,
+                color: theme.statusColors.danger,
+                onPressed: () => _deletePanel(context, ref),
+              ),
+            ]
+          : const <Widget>[],
+      child: child,
+    );
+  }
+
+  Future<void> _deletePanel(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = context.l10n;
+    final String? targetOrderId = orderId;
+    if (targetOrderId == null || itemIds.isEmpty) {
+      return;
+    }
+    await showAppDialog<bool>(
+      context: context,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.labDeletePanelDialogTitle,
+        body: l10n.labDeletePanelDialogBody(title),
+        submitLabel: l10n.labDeletePanelAction,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () =>
+            ref.read(labWorkspaceControllerProvider.notifier).deleteOrderItems(
+              targetOrderId,
+              <String, Object?>{'order_item_ids': itemIds},
+            ),
       ),
     );
   }
@@ -2211,93 +2239,6 @@ class _LabResultActionsCell extends ConsumerWidget {
     await showAppDialog<bool>(
       context: context,
       builder: (_) => _DeleteOrderItemDialog(item: item),
-    );
-  }
-}
-
-class _PanelGroupHeader extends ConsumerWidget {
-  const _PanelGroupHeader({
-    required this.title,
-    this.orderId,
-    this.itemIds = const <String>[],
-    this.canDelete = false,
-  });
-
-  final String title;
-  final String? orderId;
-  final List<String> itemIds;
-  final bool canDelete;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
-    final bool showDelete =
-        canDelete &&
-        itemIds.isNotEmpty &&
-        orderId != null &&
-        orderId!.trim().isNotEmpty;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.32),
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(
-              Icons.inventory_2_outlined,
-              size: theme.appTokens.listIconSize * 0.82,
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            if (showDelete)
-              AppButton(
-                leadingIcon: Icons.delete_outline,
-                label: l10n.labDeletePanelAction,
-                semanticLabel: l10n.labDeletePanelAction,
-                tooltip: l10n.labDeletePanelAction,
-                color: theme.statusColors.danger,
-                onPressed: () => _deletePanel(context, ref),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _deletePanel(BuildContext context, WidgetRef ref) async {
-    final AppLocalizations l10n = context.l10n;
-    final String? targetOrderId = orderId;
-    if (targetOrderId == null || itemIds.isEmpty) {
-      return;
-    }
-    await showAppDialog<bool>(
-      context: context,
-      builder: (_) => AppConfirmActionDialog(
-        title: l10n.labDeletePanelDialogTitle,
-        body: l10n.labDeletePanelDialogBody(title),
-        submitLabel: l10n.labDeletePanelAction,
-        icon: const Icon(Icons.delete_outline),
-        onConfirm: () =>
-            ref.read(labWorkspaceControllerProvider.notifier).deleteOrderItems(
-              targetOrderId,
-              <String, Object?>{'order_item_ids': itemIds},
-            ),
-      ),
     );
   }
 }

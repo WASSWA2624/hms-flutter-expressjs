@@ -228,202 +228,180 @@ class _ClinicalRequestBillingPanelState
       total: total,
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(theme.spacing.xs),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(
-                  Icons.receipt_long_outlined,
-                  color: colorScheme.primary,
-                  size: theme.appTokens.listIconSize,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Text(
-                    l10n.clinicalRequestBillingSectionTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (widget.initialPaymentStatus != null)
-                  AppWorkspaceStatusBadge(
-                    status: AppWorkspaceStatus(
-                      label: clinicalRequestPaymentStatusLabel(
-                        l10n,
-                        widget.initialPaymentStatus!,
-                      ),
-                      tone: _paymentStatusTone(widget.initialPaymentStatus!),
-                      icon: Icons.payments_outlined,
-                    ),
-                  ),
-              ],
-            ),
-            if (hasMissingPrices) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
+    return AppWorkspaceDetailPanel(
+      title: l10n.clinicalRequestBillingSectionTitle,
+      titleIcon: Icons.receipt_long_outlined,
+      actions: widget.initialPaymentStatus == null
+          ? const <Widget>[]
+          : <Widget>[
               AppWorkspaceStatusBadge(
                 status: AppWorkspaceStatus(
-                  label: l10n.clinicalRequestPriceWarningLabel,
-                  tone: AppWorkspaceStatusTone.warning,
-                  icon: Icons.warning_amber_outlined,
+                  label: clinicalRequestPaymentStatusLabel(
+                    l10n,
+                    widget.initialPaymentStatus!,
+                  ),
+                  tone: _paymentStatusTone(widget.initialPaymentStatus!),
+                  icon: Icons.payments_outlined,
                 ),
               ),
             ],
-            SizedBox(height: theme.spacing.sm),
-            if (_lines.isEmpty)
-              Text(
-                l10n.clinicalRequestBillingNoItemsLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              )
-            else if (canEditPrices) ...<Widget>[
-              Text(
-                l10n.clinicalRequestEditPricesHint,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              SizedBox(height: theme.spacing.sm),
-              Column(
-                children: <Widget>[
-                  for (final _EditableBillingLine line in _lines)
-                    _EditableBillingLineRow(
-                      key: ValueKey<String>('billing-line-${line.id}'),
-                      line: line,
-                      currency: _currency,
-                      enabled: widget.enabled,
-                    ),
-                ],
-              ),
-            ] else
-              Column(
-                children: <Widget>[
-                  for (final _EditableBillingLine line in _lines)
-                    _BillingLineRow(
-                      item: line.toLineItem(_currency),
-                      currency: _currency,
-                    ),
-                ],
-              ),
-            Divider(
-              height: theme.spacing.lg,
-              color: colorScheme.outlineVariant,
-            ),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    l10n.clinicalRequestBillingTotalLabel,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                Text(
-                  clinicalRequestPriceLabel(
-                    context,
-                    total > 0 ? total : null,
-                    _currency,
-                  ),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-            if (widget.payerContext?.insured == true) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Builder(
-                builder: (BuildContext context) {
-                  final shares = clinicalRequestCoverageShares(
-                    lineTotal: total,
-                    payerContext: widget.payerContext,
-                  );
-                  return _PayerShareSummary(
-                    currency: _currency,
-                    patientShare: shares.patientShare,
-                    insurerShare: shares.insurerShare,
-                    copayAmount: shares.copayAmount,
-                    planLabel: widget.payerContext?.payerLabel,
-                  );
-                },
-              ),
-            ],
-            SizedBox(height: theme.spacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (hasMissingPrices) ...<Widget>[
             AppWorkspaceStatusBadge(
               status: AppWorkspaceStatus(
-                label: clinicalRequestPaymentStatusLabel(l10n, paymentStatus),
-                tone: _paymentStatusTone(paymentStatus),
-                icon: Icons.account_balance_wallet_outlined,
+                label: l10n.clinicalRequestPriceWarningLabel,
+                tone: AppWorkspaceStatusTone.warning,
+                icon: Icons.warning_amber_outlined,
               ),
             ),
-            if (canRecordPayment) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+          ],
+          if (_lines.isEmpty)
+            Text(
+              l10n.clinicalRequestBillingNoItemsLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            )
+          else if (canEditPrices) ...<Widget>[
+            Text(
+              l10n.clinicalRequestEditPricesHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Column(
+              children: <Widget>[
+                for (final _EditableBillingLine line in _lines)
+                  _EditableBillingLineRow(
+                    key: ValueKey<String>('billing-line-${line.id}'),
+                    line: line,
+                    currency: _currency,
+                    enabled: widget.enabled,
+                  ),
+              ],
+            ),
+          ] else
+            Column(
+              children: <Widget>[
+                for (final _EditableBillingLine line in _lines)
+                  _BillingLineRow(
+                    item: line.toLineItem(_currency),
+                    currency: _currency,
+                  ),
+              ],
+            ),
+          Divider(
+            height: theme.spacing.lg,
+            color: colorScheme.outlineVariant,
+          ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  l10n.clinicalRequestBillingTotalLabel,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                clinicalRequestPriceLabel(
+                  context,
+                  total > 0 ? total : null,
+                  _currency,
+                ),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          if (widget.payerContext?.insured == true) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Builder(
+              builder: (BuildContext context) {
+                final shares = clinicalRequestCoverageShares(
+                  lineTotal: total,
+                  payerContext: widget.payerContext,
+                );
+                return _PayerShareSummary(
+                  currency: _currency,
+                  patientShare: shares.patientShare,
+                  insurerShare: shares.insurerShare,
+                  copayAmount: shares.copayAmount,
+                  planLabel: widget.payerContext?.payerLabel,
+                );
+              },
+            ),
+          ],
+          SizedBox(height: theme.spacing.sm),
+          AppWorkspaceStatusBadge(
+            status: AppWorkspaceStatus(
+              label: clinicalRequestPaymentStatusLabel(l10n, paymentStatus),
+              tone: _paymentStatusTone(paymentStatus),
+              icon: Icons.account_balance_wallet_outlined,
+            ),
+          ),
+          if (canRecordPayment) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            _PaymentModeRadioGroup(
+              value: _mode,
+              enabled: widget.enabled,
+              billLaterLabel: l10n.clinicalRequestBillLaterAction,
+              payNowLabel: l10n.clinicalRequestPayNowAction,
+              onChanged: (ClinicalRequestPaymentMode value) {
+                setState(() => _mode = value);
+                _maybeSyncAmountToTotal();
+                _notifyChanged();
+              },
+            ),
+            if (_mode == ClinicalRequestPaymentMode.payNow) ...<Widget>[
               SizedBox(height: theme.spacing.md),
-              _PaymentModeRadioGroup(
-                value: _mode,
+              AppCurrencyAmountField(
+                amountController: _amountController,
+                currency: _currency,
+                amountLabelText: l10n.opdAmountLabel,
+                currencyLabelText: l10n.opdCurrencyLabel,
                 enabled: widget.enabled,
-                billLaterLabel: l10n.clinicalRequestBillLaterAction,
-                payNowLabel: l10n.clinicalRequestPayNowAction,
-                onChanged: (ClinicalRequestPaymentMode value) {
-                  setState(() => _mode = value);
-                  _maybeSyncAmountToTotal();
+                onAmountChanged: (_) {
+                  _amountTouched = true;
+                  _notifyChanged();
+                },
+                onCurrencyChanged: (String? value) {
+                  setState(() {
+                    _currency = value ?? appDefaultCurrencyCode;
+                  });
                   _notifyChanged();
                 },
               ),
-              if (_mode == ClinicalRequestPaymentMode.payNow) ...<Widget>[
-                SizedBox(height: theme.spacing.md),
-                AppCurrencyAmountField(
-                  amountController: _amountController,
-                  currency: _currency,
-                  amountLabelText: l10n.opdAmountLabel,
-                  currencyLabelText: l10n.opdCurrencyLabel,
-                  enabled: widget.enabled,
-                  onAmountChanged: (_) {
-                    _amountTouched = true;
-                    _notifyChanged();
-                  },
-                  onCurrencyChanged: (String? value) {
-                    setState(() {
-                      _currency = value ?? appDefaultCurrencyCode;
-                    });
-                    _notifyChanged();
-                  },
-                ),
-                SizedBox(height: theme.spacing.sm),
-                AppSelectField<String>(
-                  value: _paymentMethod,
-                  labelText: l10n.opdPaymentMethodLabel,
-                  enabled: widget.enabled,
-                  onChanged: (String? value) {
-                    setState(() {
-                      _paymentMethod = value ?? _paymentMethod;
-                    });
-                    _notifyChanged();
-                  },
-                  options: clinicalRequestPaymentMethodOptions(),
-                ),
-                SizedBox(height: theme.spacing.sm),
-                AppTextField(
-                  controller: _referenceController,
-                  labelText: l10n.opdTransactionReferenceLabel,
-                  enabled: widget.enabled,
-                  onChanged: (_) => _notifyChanged(),
-                ),
-              ],
+              SizedBox(height: theme.spacing.sm),
+              AppSelectField<String>(
+                value: _paymentMethod,
+                labelText: l10n.opdPaymentMethodLabel,
+                enabled: widget.enabled,
+                onChanged: (String? value) {
+                  setState(() {
+                    _paymentMethod = value ?? _paymentMethod;
+                  });
+                  _notifyChanged();
+                },
+                options: clinicalRequestPaymentMethodOptions(),
+              ),
+              SizedBox(height: theme.spacing.sm),
+              AppTextField(
+                controller: _referenceController,
+                labelText: l10n.opdTransactionReferenceLabel,
+                enabled: widget.enabled,
+                onChanged: (_) => _notifyChanged(),
+              ),
             ],
           ],
-        ),
+        ],
       ),
     );
   }

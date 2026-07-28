@@ -29,7 +29,7 @@ Must import from `shared/layout`, `shared/components`, and `shared/actions` befo
 ## Section unification rules
 
 - **One titled section component:** `AppWorkspaceDetailPanel` (collapsible by default).
-- Adapters that must build `AppWorkspaceDetailPanel` when titled: `AppSectionPanel`, `AppFormSection` (framed), `AppScreenSection`, `AppExpandableRecordSection`, and `AppQuickActions` (`section` / `detailPanel`).
+- Adapters that must build `AppWorkspaceDetailPanel` when titled: `AppSectionPanel`, `AppFormSection` (framed), `AppScreenSection`, `AppExpandableRecordSection`, `AppReportPreviewPanel`, titled `AppTriageSummaryPanel` / `AppVitalsSummaryPanel`, and `AppQuickActions` (`section` / `detailPanel`).
 - Do not invent a third section chrome or feature-local collapsible section widgets.
 - Opt out of collapse only when hiding the body would break the task (`collapsible: false`), e.g. active result-entry editors.
 - Untitled `AppContentPanel` / untitled `AppSectionPanel` remain for compact toned content chrome (not section headers).

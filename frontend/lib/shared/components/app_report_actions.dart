@@ -3,6 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 enum AppReportActionKind { print, export, download, copy, preview }
 
@@ -172,6 +173,8 @@ class AppReportPreviewPanel extends StatelessWidget {
     this.title,
     this.semanticLabel,
     this.selectable = false,
+    this.collapsible = true,
+    this.initiallyExpanded = true,
     super.key,
   });
 
@@ -179,30 +182,38 @@ class AppReportPreviewPanel extends StatelessWidget {
   final String? title;
   final String? semanticLabel;
   final bool selectable;
+  final bool collapsible;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    Widget content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        if (title != null && title!.isNotEmpty) ...<Widget>[
-          Text(title!, style: theme.textTheme.titleSmall),
-          SizedBox(height: theme.spacing.sm),
-        ],
-        child,
-      ],
-    );
+    final String? resolvedTitle = title?.trim().isNotEmpty == true
+        ? title
+        : null;
+    Widget content = child;
 
     if (selectable) {
       content = SelectionArea(child: content);
     }
 
+    if (resolvedTitle != null) {
+      return Semantics(
+        container: true,
+        label: semanticLabel ?? resolvedTitle,
+        child: AppWorkspaceDetailPanel(
+          title: resolvedTitle,
+          collapsible: collapsible,
+          initiallyExpanded: initiallyExpanded,
+          child: content,
+        ),
+      );
+    }
+
     return Semantics(
       container: true,
-      label: semanticLabel ?? title,
+      label: semanticLabel,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerLowest,
