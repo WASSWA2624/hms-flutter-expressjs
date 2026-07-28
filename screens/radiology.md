@@ -22,6 +22,8 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Empty studies **Upload images** disabled CTA | Dead chrome | **Removed** — upload lives on study blocks after perform |
 | Doctor review **Acknowledge** that only scrolled | Fake attest | **Removed** — attest stays on Report section; **Open report** scrolls for progressive disclosure |
 | Order metadata **Payment** restating patient-context payment | Same info | **Removed** from metadata panel |
+| Report panel **Draft** + empty-state **Draft** / inline save | Same draft write | **Merged** — empty CTA when no report; inline save when editing draft; panel Draft only when neither applies |
+| Mobile list without next-action trailing | Same stage open as desktop column | **Fixed** — compact `RadiologyNextActionCell` on `AppListTableMobileItem.trailing` |
 
 ---
 
@@ -87,7 +89,7 @@ Tab-strip **Refresh** was removed.
   - Condition: Always when rows exist.
 
 - **Next action** (status-aware label)
-  - Location: `next_action` column (always visible).
+  - Location: `next_action` column (always visible) and mobile list `trailing`.
   - Opens modal: Same detail dialog (no empty intermediate shell / no route-only loop).
   - Immediate result: Sole labeled row path into assign / start / study / report work.
   - Condition: Activatable except **Cancelled** (text only).
@@ -130,7 +132,7 @@ Tab-strip **Refresh** was removed.
   - Condition: Write + capabilities.
 
 - **Draft / release / request finalize / attest / addendum / print**
-  - Location: Report section actions (+ inline draft save when editing).
+  - Location: Report section — empty CTA (first draft), inline save (editing draft), or panel Draft when neither; other actions on the panel.
   - Opens modal: Report / finalize / note dialogs as required.
   - Immediate result: Persists report workflow; validation banners; sync after mutations.
   - Condition: Write + capabilities; view mode may hide report CTAs on imaging floor.
@@ -148,9 +150,10 @@ Tab-strip **Refresh** was removed.
 
 ### Manual checks (Req 7)
 
-- [ ] Unauthorized user: Request imaging, Configurations, and dialog write actions absent; view toggle remains; no Refresh.
-- [ ] Every worklist tab: one **Request imaging** primary and one **Configurations** secondary; no Refresh.
-- [ ] Ordered row **Next action** opens detail; Start imaging runs without a notes shell.
-- [ ] Deep link `/radiology?orderId=…` opens detail without hunting the row.
-- [ ] Single-order detail: Assign/Start once (stepper); study/report CTAs once in their sections; Cancel once in header.
+- [x] Unauthorized user: Request imaging, Configurations absent; view toggle remains; no Refresh. *(widget)*
+- [x] Every worklist tab: one **Request imaging** primary and one **Configurations** secondary; no Refresh. *(widget)*
+- [x] Ordered row **Next action** opens detail (no WorkflowActionButton route loop). *(widget)*
+- [x] Deep link `/radiology?orderId=…` opens detail without hunting the row. *(widget)*
+- [ ] Single-order detail: Assign/Start once (stepper); study/report CTAs once in their sections; Cancel once in header; Start imaging has no notes shell.
 - [ ] Loading / empty / validation / error snackbars still surface on simplified paths.
+- [ ] Mobile list shows trailing next-action and opens the same detail dialog.

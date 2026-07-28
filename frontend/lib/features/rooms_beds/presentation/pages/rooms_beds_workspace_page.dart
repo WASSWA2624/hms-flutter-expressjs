@@ -265,7 +265,6 @@ class _RoomsBedsWorkspaceContentState
                 canAdminBeds: canAdminBeds,
               ),
             ),
-            // Tab-strip Refresh removed — board syncs after mutations / Try again.
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
               AppFailureStateView(
@@ -311,42 +310,19 @@ class _RoomsBedsWorkspaceContentState
                 advancedFilterResetLabel: l10n.opdClearFiltersAction,
                 enableDateFilter: false,
                 allFieldsLabel: l10n.roomsBedsAllFilterLabel,
-                filterGroups: <AppSearchBarFilterGroup>[
-                  AppSearchBarFilterGroup(
-                    key: _facilityFilterKey,
-                    label: l10n.roomsBedsFacilityFilterLabel,
-                    allLabel: l10n.roomsBedsAllFacilitiesLabel,
-                    choices: _facilityChoices(state.referenceData.facilities),
-                  ),
-                  AppSearchBarFilterGroup(
-                    key: _wardFilterKey,
-                    label: l10n.roomsBedsWardFilterLabel,
-                    allLabel: l10n.roomsBedsAllWardsLabel,
-                    choices: _wardChoices(state.referenceData.wards),
-                  ),
-                  AppSearchBarFilterGroup(
-                    key: _roomFilterKey,
-                    label: l10n.roomsBedsRoomFilterLabel,
-                    allLabel: l10n.roomsBedsAllRoomsLabel,
-                    choices: _roomChoices(state.referenceData.rooms),
-                  ),
-                  AppSearchBarFilterGroup(
-                    key: _statusFilterKey,
-                    label: l10n.roomsBedsStatusFilterLabel,
-                    allLabel: l10n.roomsBedsAllStatusesLabel,
-                    choices: roomsBedsStatusFilterChoices(l10n),
-                  ),
-                ],
-                filterValue: _filterValue(state.query),
-                hasActiveFilters: state.query.hasFilters,
+                filterGroups: _filterGroups(l10n, state),
+                filterValue: _filterValue(state.query, section: _section),
+                hasActiveFilters: state.query.hasFiltersForSection(_section),
                 onFilterChanged: (AppSearchBarFilterValue value) async {
                   AppFailure? failure;
                   final String? facilityId = value.option(_facilityFilterKey);
                   final String? wardId = value.option(_wardFilterKey);
                   final String? roomId = value.option(_roomFilterKey);
-                  final BedSetupStatus? status = roomsBedsStatusFromFilter(
-                    value.option(_statusFilterKey),
-                  );
+                  final BedSetupStatus? status = _section == RoomsBedsSection.all
+                      ? roomsBedsStatusFromFilter(
+                          value.option(_statusFilterKey),
+                        )
+                      : state.query.status;
                   if (facilityId != state.query.facilityId) {
                     failure = await controller.applyFacility(facilityId);
                   }
@@ -356,7 +332,8 @@ class _RoomsBedsWorkspaceContentState
                   if (roomId != state.query.roomId) {
                     failure ??= await controller.applyRoom(roomId);
                   }
-                  if (status != state.query.status) {
+                  if (_section == RoomsBedsSection.all &&
+                      status != state.query.status) {
                     failure ??= await controller.applyStatus(status);
                   }
                   if (context.mounted) {
@@ -424,6 +401,14 @@ class _RoomsBedsWorkspaceContentState
                         icon: Icons.person_outline,
                       ),
                   ],
+                  trailing: RoomsBedsNextActionButton(
+                    item: item,
+                    state: state,
+                    canAdminBeds: canAdminBeds,
+                    canIpdWrite: canIpdWrite,
+                    callbacks: nextActionCallbacks,
+                    compact: true,
+                  ),
                 );
               },
             ),
