@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -703,64 +702,26 @@ class _ReceptionWorkspaceContentState
   }
 
   List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
-    final AppTabToolbarAction refreshAction = AppTabToolbarAction(
-      label: l10n.commonRefreshActionLabel,
-      icon: Icons.refresh,
-      enabled: !_refreshRequested,
-      isLoading: _refreshRequested,
-      tooltip: _refreshRequested
-          ? l10n.receptionRefreshInProgressTooltip
-          : l10n.commonRefreshActionLabel,
-      semanticLabel: _refreshRequested
-          ? l10n.receptionRefreshInProgressTooltip
-          : l10n.commonRefreshActionLabel,
-      onPressed: _refreshRequested
-          ? null
-          : () => unawaited(_refreshWorkspace()),
-    );
-
-    final Widget scheduleAppointmentAction = AppAccessActionGate(
-      requirement: receptionPatientWriteRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        if (!isAllowed) {
-          return const SizedBox.shrink();
-        }
-        return AppTabToolbarAction(
-          label: l10n.receptionScheduleAppointmentAction,
-          icon: Icons.calendar_month_outlined,
-          enabled: isAllowed,
-          onPressed: isAllowed ? () => unawaited(_scheduleAppointment()) : null,
-        );
-      },
-    );
-
+    // Cross-module nav (Patient registry / OPD) and Refresh were removed as
+    // redundant shortcuts — those destinations stay in app navigation; desk
+    // data refreshes after mutations via [_refreshWorkspace].
     return <Widget>[
-      scheduleAppointmentAction,
       AppAccessActionGate(
-        requirement: receptionPatientRegistryRequirement,
+        requirement: receptionPatientWriteRequirement,
         builder: (BuildContext context, bool isAllowed) {
+          if (!isAllowed) {
+            return const SizedBox.shrink();
+          }
           return AppTabToolbarAction(
-            label: l10n.receptionOpenRegistryAction,
-            icon: AppRouteIcons.patients,
+            label: l10n.receptionScheduleAppointmentAction,
+            icon: Icons.calendar_month_outlined,
+            enabled: isAllowed,
             onPressed: isAllowed
-                ? () => context.go(AppRoutes.patients.location())
+                ? () => unawaited(_scheduleAppointment())
                 : null,
           );
         },
       ),
-      AppAccessActionGate(
-        requirement: receptionOpdWorkspaceRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppTabToolbarAction(
-            label: l10n.receptionOpenOpdAction,
-            icon: AppRouteIcons.opd,
-            onPressed: isAllowed
-                ? () => context.go(AppRoutes.opd.location())
-                : null,
-          );
-        },
-      ),
-      refreshAction,
     ];
   }
 

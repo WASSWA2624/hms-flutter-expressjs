@@ -51,22 +51,6 @@ const AccessRequirement receptionPaymentGateRequirement = AccessRequirement(
   activeModules: <String>['billing-payments'],
 );
 
-/// Patient registry navigation uses the route's authoritative access policy.
-final AccessRequirement receptionPatientRegistryRequirement =
-    AppRoutes.patients.accessRequirement;
-
-/// Outpatient navigation must mirror the readable OPD route domains.
-const AccessRequirement receptionOpdWorkspaceRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.patientRead,
-    AppPermissions.clinicalRead,
-    AppPermissions.billingRead,
-    AppPermissions.operationsRead,
-    AppPermissions.emergencyRead,
-  ],
-  activeModules: <String>['scheduling-queue'],
-);
-
 AccessRequirement receptionDeskSectionRequirement(
   ReceptionDeskSection section,
 ) {
