@@ -1,9 +1,13 @@
 """Run each prompt file in prompts/ as a separate Cursor agent chat.
 
 Discovers all .md prompts under prompts/ recursively (excluding prompts/.cursor).
-After each prompt finishes successfully, commits and pushes any resulting changes.
+Runs them sequentially with model=auto. After each prompt finishes successfully,
+commits and pushes any resulting changes to GitHub.
 """
 
+from __future__ import annotations
+
+import argparse
 import asyncio
 import json
 import os
@@ -27,11 +31,18 @@ MAX_CONCURRENCY = 1
 MAX_ATTEMPTS = 3
 # Agent runs can take much longer than the SDK defaults (60s unary / 600s stream).
 BRIDGE_TIMEOUT_SECONDS = None
+# Let Cursor pick the best available model for each run.
+MODEL = "auto"
 SKIP_DIR_NAMES = {".cursor"}
+# Never commit runner bookkeeping into prompt-driven commits.
+GIT_EXCLUDES = (".run_prompts_state.json",)
 
 
 def _list_prompt_files() -> list[Path]:
     """All .md files under prompts/, excluding anything under prompts/.cursor."""
+    if not PROMPTS_DIR.is_dir():
+        return []
+
     files: list[Path] = []
     for path in sorted(PROMPTS_DIR.rglob("*.md")):
         try:
@@ -39,6 +50,8 @@ def _list_prompt_files() -> list[Path]:
         except ValueError:
             continue
         if any(part in SKIP_DIR_NAMES for part in relative.parts):
+            continue
+        if not path.is_file():
             continue
         files.append(path)
     return files
@@ -117,6 +130,8 @@ def _git_has_changes() -> bool:
 def _commit_and_push(prompt_key: str) -> dict:
     """Stage, commit, and push workspace changes after a successful prompt run."""
     _run_git(["add", "-A"])
+    for exclude in GIT_EXCLUDES:
+        _run_git(["reset", "-q", "HEAD", "--", exclude], check=False)
 
     if not _git_has_changes():
         print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
@@ -132,7 +147,7 @@ def _commit_and_push(prompt_key: str) -> dict:
     print(f"[GIT] {prompt_key}: committed", flush=True)
 
     try:
-        _run_git(["push"])
+        _run_git(["push", "-u", "origin", "HEAD"])
     except subprocess.CalledProcessError as err:
         detail = (err.stderr or err.stdout or str(err)).strip()
         raise RuntimeError(f"git push failed: {detail}") from err
@@ -159,13 +174,14 @@ async def run_prompt(
                 async with await client.create_agent(
                     AgentOptions(
                         api_key=os.environ["CURSOR_API_KEY"],
-                        model="auto",
+                        model=MODEL,
                         local=LocalAgentOptions(cwd=str(PROJECT_DIR)),
                     )
                 ) as agent:
                     run = await agent.send(prompt_text)
                     print(
-                        f"[RUN] {key}: agent={agent.agent_id} run={run.id}",
+                        f"[RUN] {key}: agent={agent.agent_id} run={run.id} "
+                        f"model={MODEL}",
                         flush=True,
                     )
                     result = await run.wait()
@@ -215,7 +231,40 @@ async def run_prompt(
         return {"file": key, "status": "error", "message": last_error}
 
 
-async def main():
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run all prompts/*.md files (except prompts/.cursor) with Cursor "
+            "model=auto, then commit and push after each success."
+        )
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Ignore .run_prompts_state.json and re-run every discovered prompt.",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="Print discovered prompt files and exit without running agents.",
+    )
+    return parser.parse_args(argv)
+
+
+async def main(argv: list[str] | None = None):
+    args = _parse_args(argv)
+
+    files = _list_prompt_files()
+    if not files:
+        sys.exit(f"No .md files found in {PROMPTS_DIR}/ (excluding .cursor)")
+
+    keys = [_prompt_key(f) for f in files]
+    if args.list:
+        print(f"Discovered {len(keys)} prompt(s) under prompts/ (excluding .cursor):")
+        for key in keys:
+            print(f"  {key}")
+        return
+
     api_key = os.environ.get("CURSOR_API_KEY", "").strip()
     if not api_key or api_key == "cursor_...":
         sys.exit(
@@ -223,24 +272,33 @@ async def main():
             "'cursor_...' example value."
         )
 
-    files = _list_prompt_files()
-    if not files:
-        sys.exit(f"No .md files found in {PROMPTS_DIR}/ (excluding .cursor)")
+    known = set(keys)
+    if args.force:
+        finished: set[str] = set()
+        if STATE_FILE.exists():
+            STATE_FILE.unlink()
+            print("Cleared .run_prompts_state.json (--force).\n", flush=True)
+    else:
+        finished = _load_finished() & known
+        # Drop stale entries from previous prompt naming schemes.
+        _save_finished(finished)
 
-    known = {_prompt_key(f) for f in files}
-    finished = _load_finished() & known
     pending = [f for f in files if _prompt_key(f) not in finished]
     skipped = len(files) - len(pending)
 
     print(
         f"Found {len(files)} prompt file(s) under prompts/ "
-        f"(excluding .cursor; {skipped} already finished, {len(pending)} pending). "
-        f"Running with concurrency={MAX_CONCURRENCY}, model=auto; "
-        f"commit+push after each success...\n",
+        f"(excluding .cursor; {skipped} already finished, {len(pending)} pending).",
         flush=True,
     )
+    print(f"Model={MODEL}; concurrency={MAX_CONCURRENCY}; commit+push after each success.", flush=True)
+    print("Prompts to run:", flush=True)
+    for file in pending:
+        print(f"  - {_prompt_key(file)}", flush=True)
+    print(flush=True)
+
     if not pending:
-        print("Nothing left to run. Delete .run_prompts_state.json to rerun all.")
+        print("Nothing left to run. Pass --force to rerun all, or delete .run_prompts_state.json.")
         return
 
     semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
@@ -254,6 +312,7 @@ async def main():
         client_timeout=BRIDGE_TIMEOUT_SECONDS,
         max_retries=2,
     ) as client:
+        # Sequential gather via semaphore so each commit/push sees a clean workspace.
         pending_results = await asyncio.gather(
             *(
                 run_prompt(file, client, semaphore, finished, finished_lock)
@@ -278,10 +337,10 @@ async def main():
         print(f"\n{len(errors)} prompt(s) did not finish successfully.")
         print("Re-run the same command to retry only the failed ones.")
         sys.exit(1)
-    else:
-        print(f"\nAll {len(results)} prompts completed successfully.")
-        if STATE_FILE.exists():
-            STATE_FILE.unlink()
+
+    print(f"\nAll {len(results)} prompts completed successfully.")
+    if STATE_FILE.exists():
+        STATE_FILE.unlink()
 
 
 if __name__ == "__main__":
