@@ -103,6 +103,7 @@ Shared OPD appointment hub with `receptionFrontDeskWriteRequirement`, `allowClin
 - Row select → **Billing guidance** read-only dialog (`ReceptionPaymentGateDetailDialog`).
 - Actions: **Close** only (no cashier mutations).
 - Next-action column shows guidance label text.
+- Mobile cards include services and outstanding amount (same required info as desktop columns).
 
 ### Follow-ups section
 
