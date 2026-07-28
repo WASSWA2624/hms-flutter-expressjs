@@ -1,8 +1,7 @@
-"""Run each prompt file in prompts/ as a separate Cursor agent chat.
+"""Run prompts/dashboard.md 10 times sequentially with Cursor agents.
 
-Discovers all .md prompts under prompts/ recursively (excluding prompts/.cursor).
-Runs up to 3 prompts at a time with model=auto. After each prompt finishes
-successfully, commits and pushes any resulting changes to GitHub.
+Each iteration is a fresh agent chat. After every successful iteration,
+commits and pushes any resulting changes to GitHub before starting the next.
 """
 
 from __future__ import annotations
@@ -24,49 +23,28 @@ from cursor_sdk import (
 )
 
 
-PROMPTS_DIR = Path(__file__).parent / "prompts"
 PROJECT_DIR = Path(__file__).parent
-STATE_FILE = Path(__file__).parent / ".run_prompts_state.json"
-# How many prompt agents may run in parallel against the shared workspace.
-# Keep this modest: agents share one working tree and high fan-out causes
-# frequent non-finished agent statuses under load.
-MAX_CONCURRENCY = 3
+PROMPT_FILE = PROJECT_DIR / "prompts" / "dashboard.md"
+PROMPT_KEY = "dashboard.md"
+STATE_FILE = PROJECT_DIR / ".run_prompts_state.json"
+# How many times to run dashboard.md, one after another.
+ITERATIONS = 10
 MAX_ATTEMPTS = 3
-# Parallel Cursor agents may also touch git; retry through index.lock races.
+# Cursor agents may also touch git; retry through index.lock races.
 GIT_LOCK_RETRIES = 10
 GIT_LOCK_BASE_DELAY_SECONDS = 0.35
 # Agent runs can take much longer than the SDK defaults (60s unary / 600s stream).
 BRIDGE_TIMEOUT_SECONDS = None
 # Let Cursor pick the best available model for each run.
 MODEL = "auto"
-SKIP_DIR_NAMES = {".cursor"}
 # Never commit runner bookkeeping into prompt-driven commits.
 GIT_EXCLUDES = (".run_prompts_state.json",)
 INDEX_LOCK_PATH = PROJECT_DIR / ".git" / "index.lock"
 
 
-def _list_prompt_files() -> list[Path]:
-    """All .md files under prompts/, excluding anything under prompts/.cursor."""
-    if not PROMPTS_DIR.is_dir():
-        return []
-
-    files: list[Path] = []
-    for path in sorted(PROMPTS_DIR.rglob("*.md")):
-        try:
-            relative = path.relative_to(PROMPTS_DIR)
-        except ValueError:
-            continue
-        if any(part in SKIP_DIR_NAMES for part in relative.parts):
-            continue
-        if not path.is_file():
-            continue
-        files.append(path)
-    return files
-
-
-def _prompt_key(file: Path) -> str:
-    """Stable id for state tracking (relative path with forward slashes)."""
-    return file.relative_to(PROMPTS_DIR).as_posix()
+def _iteration_key(iteration: int) -> str:
+    """Stable id for state tracking of one sequential dashboard run."""
+    return f"{PROMPT_KEY}#{iteration}/{ITERATIONS}"
 
 
 def _load_finished() -> set[str]:
@@ -175,8 +153,8 @@ def _git_has_staged_changes() -> bool:
     return staged.returncode != 0
 
 
-def _commit_and_push(prompt_key: str) -> dict:
-    """Stage, commit, and push workspace changes after a successful prompt run."""
+def _commit_and_push(iteration_key: str) -> dict:
+    """Stage, commit, and push workspace changes after a successful iteration."""
     last_error = ""
     for attempt in range(1, GIT_LOCK_RETRIES + 1):
         try:
@@ -184,8 +162,6 @@ def _commit_and_push(prompt_key: str) -> dict:
             for exclude in GIT_EXCLUDES:
                 _run_git(["reset", "-q", "HEAD", "--", exclude], check=False)
 
-            # Only staged changes can be committed. Untracked leftovers from another
-            # concurrent agent (or ignore rules) must not fail this prompt's git step.
             if not _git_has_staged_changes():
                 leftover = _run_git(
                     ["ls-files", "--others", "--exclude-standard"],
@@ -193,29 +169,28 @@ def _commit_and_push(prompt_key: str) -> dict:
                 ).stdout.strip()
                 if leftover:
                     print(
-                        f"[GIT] {prompt_key}: no staged changes "
+                        f"[GIT] {iteration_key}: no staged changes "
                         f"(untracked still present; skipped commit)",
                         flush=True,
                     )
                 else:
-                    print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
+                    print(f"[GIT] {iteration_key}: no changes to commit", flush=True)
                 return {"committed": False, "pushed": False}
 
-            message = f"Apply prompt: {prompt_key}"
+            message = f"Apply prompt: {iteration_key}"
             try:
                 _run_git(["commit", "-m", message])
             except subprocess.CalledProcessError as err:
                 detail = _git_detail(err)
-                # Race with another prompt: index emptied between staging and commit.
                 if "nothing to commit" in detail.lower():
-                    print(f"[GIT] {prompt_key}: no changes to commit", flush=True)
+                    print(f"[GIT] {iteration_key}: no changes to commit", flush=True)
                     return {"committed": False, "pushed": False}
                 if _is_index_lock_error(detail) and attempt < GIT_LOCK_RETRIES:
                     last_error = detail
                     _clear_stale_index_lock()
                     delay = GIT_LOCK_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
                     print(
-                        f"[GIT] {prompt_key}: commit lock busy; "
+                        f"[GIT] {iteration_key}: commit lock busy; "
                         f"retry {attempt}/{GIT_LOCK_RETRIES} in {delay:.1f}s",
                         flush=True,
                     )
@@ -223,7 +198,7 @@ def _commit_and_push(prompt_key: str) -> dict:
                     continue
                 raise RuntimeError(f"git commit failed: {detail}") from err
 
-            print(f"[GIT] {prompt_key}: committed", flush=True)
+            print(f"[GIT] {iteration_key}: committed", flush=True)
 
             try:
                 _run_git(["push", "-u", "origin", "HEAD"])
@@ -231,7 +206,7 @@ def _commit_and_push(prompt_key: str) -> dict:
                 detail = _git_detail(err)
                 raise RuntimeError(f"git push failed: {detail}") from err
 
-            print(f"[GIT] {prompt_key}: pushed", flush=True)
+            print(f"[GIT] {iteration_key}: pushed", flush=True)
             return {"committed": True, "pushed": True}
         except RuntimeError as err:
             detail = str(err)
@@ -240,7 +215,7 @@ def _commit_and_push(prompt_key: str) -> dict:
                 _clear_stale_index_lock()
                 delay = GIT_LOCK_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
                 print(
-                    f"[GIT] {prompt_key}: lock busy; "
+                    f"[GIT] {iteration_key}: lock busy; "
                     f"retry {attempt}/{GIT_LOCK_RETRIES} in {delay:.1f}s",
                     flush=True,
                 )
@@ -253,125 +228,112 @@ def _commit_and_push(prompt_key: str) -> dict:
     )
 
 
-async def run_prompt(
-    file: Path,
+async def run_iteration(
+    iteration: int,
     client: AsyncClient,
-    semaphore: asyncio.Semaphore,
     finished: set[str],
-    finished_lock: asyncio.Lock,
-    git_lock: asyncio.Lock,
 ) -> dict:
-    """Run a single prompt file in a Cursor agent, then commit and push."""
-    async with semaphore:
-        key = _prompt_key(file)
-        print(f"[START] {key}", flush=True)
-        last_error = ""
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            try:
-                prompt_text = file.read_text(encoding="utf-8")
-                async with await client.create_agent(
-                    AgentOptions(
-                        api_key=os.environ["CURSOR_API_KEY"],
-                        model=MODEL,
-                        local=LocalAgentOptions(cwd=str(PROJECT_DIR)),
-                    )
-                ) as agent:
-                    run = await agent.send(prompt_text)
+    """Run one dashboard.md iteration, then commit and push before returning."""
+    key = _iteration_key(iteration)
+    print(f"[START] {key}", flush=True)
+    last_error = ""
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            prompt_text = PROMPT_FILE.read_text(encoding="utf-8")
+            async with await client.create_agent(
+                AgentOptions(
+                    api_key=os.environ["CURSOR_API_KEY"],
+                    model=MODEL,
+                    local=LocalAgentOptions(cwd=str(PROJECT_DIR)),
+                )
+            ) as agent:
+                run = await agent.send(prompt_text)
+                print(
+                    f"[RUN] {key}: agent={agent.agent_id} run={run.id} "
+                    f"model={MODEL}",
+                    flush=True,
+                )
+                result = await run.wait()
+            status = result.status
+            print(f"[{status.upper()}] {key}", flush=True)
+            if status != "finished":
+                last_error = f"agent status={status}"
+                result_id = getattr(result, "id", None)
+                if result_id:
+                    last_error = f"{last_error} run={result_id}"
+                if attempt < MAX_ATTEMPTS:
+                    wait_s = 2 ** (attempt - 1)
                     print(
-                        f"[RUN] {key}: agent={agent.agent_id} run={run.id} "
-                        f"model={MODEL}",
-                        flush=True,
-                    )
-                    result = await run.wait()
-                status = result.status
-                print(f"[{status.upper()}] {key}", flush=True)
-                if status != "finished":
-                    last_error = f"agent status={status}"
-                    result_id = getattr(result, "id", None)
-                    if result_id:
-                        last_error = f"{last_error} run={result_id}"
-                    # Agent crashes / cancelled runs are often transient under
-                    # high concurrency — retry like other retryable failures.
-                    if attempt < MAX_ATTEMPTS:
-                        wait_s = 2 ** (attempt - 1)
-                        print(
-                            f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
-                            f"{last_error} (sleep {wait_s}s)",
-                            file=sys.stderr,
-                            flush=True,
-                        )
-                        await asyncio.sleep(wait_s)
-                        continue
-                    print(
-                        f"[ERROR] {key}: {last_error}",
+                        f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
+                        f"{last_error} (sleep {wait_s}s)",
                         file=sys.stderr,
                         flush=True,
                     )
-                    return {
-                        "file": key,
-                        "status": "error",
-                        "message": last_error,
-                    }
-
-                # Agent succeeded — git retries live inside _commit_and_push.
-                async with git_lock:
-                    git_info = await asyncio.to_thread(_commit_and_push, key)
-                async with finished_lock:
-                    finished.add(key)
-                    _save_finished(finished)
+                    await asyncio.sleep(wait_s)
+                    continue
+                print(f"[ERROR] {key}: {last_error}", file=sys.stderr, flush=True)
                 return {
                     "file": key,
-                    "status": "finished",
-                    **git_info,
+                    "status": "error",
+                    "message": last_error,
                 }
-            except CursorAgentError as err:
-                last_error = _error_text(err)
-                if attempt < MAX_ATTEMPTS and _is_retryable(err):
-                    wait_s = 2 ** (attempt - 1)
-                    print(
-                        f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
-                        f"{last_error} (sleep {wait_s}s)",
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                    await asyncio.sleep(wait_s)
-                    continue
-                print(f"[ERROR] {key}: {last_error}", file=sys.stderr, flush=True)
-                return {"file": key, "status": "error", "message": last_error}
-            except Exception as err:
-                last_error = _error_text(err)
-                if attempt < MAX_ATTEMPTS and _is_retryable(err):
-                    wait_s = 2 ** (attempt - 1)
-                    print(
-                        f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
-                        f"{last_error} (sleep {wait_s}s)",
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                    await asyncio.sleep(wait_s)
-                    continue
-                print(f"[ERROR] {key}: {last_error}", file=sys.stderr, flush=True)
-                return {"file": key, "status": "error", "message": last_error}
 
-        return {"file": key, "status": "error", "message": last_error}
+            git_info = await asyncio.to_thread(_commit_and_push, key)
+            finished.add(key)
+            _save_finished(finished)
+            return {
+                "file": key,
+                "status": "finished",
+                **git_info,
+            }
+        except CursorAgentError as err:
+            last_error = _error_text(err)
+            if attempt < MAX_ATTEMPTS and _is_retryable(err):
+                wait_s = 2 ** (attempt - 1)
+                print(
+                    f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
+                    f"{last_error} (sleep {wait_s}s)",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                await asyncio.sleep(wait_s)
+                continue
+            print(f"[ERROR] {key}: {last_error}", file=sys.stderr, flush=True)
+            return {"file": key, "status": "error", "message": last_error}
+        except Exception as err:
+            last_error = _error_text(err)
+            if attempt < MAX_ATTEMPTS and _is_retryable(err):
+                wait_s = 2 ** (attempt - 1)
+                print(
+                    f"[RETRY] {key} attempt {attempt}/{MAX_ATTEMPTS}: "
+                    f"{last_error} (sleep {wait_s}s)",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                await asyncio.sleep(wait_s)
+                continue
+            print(f"[ERROR] {key}: {last_error}", file=sys.stderr, flush=True)
+            return {"file": key, "status": "error", "message": last_error}
+
+    return {"file": key, "status": "error", "message": last_error}
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run all prompts/*.md files (except prompts/.cursor) with Cursor "
-            "model=auto, then commit and push after each success."
+            f"Run {PROMPT_KEY} {ITERATIONS} times sequentially with Cursor "
+            "model=auto, committing and pushing after each successful iteration."
         )
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Ignore .run_prompts_state.json and re-run every discovered prompt.",
+        help="Ignore .run_prompts_state.json and re-run all iterations from 1.",
     )
     parser.add_argument(
         "--list",
         action="store_true",
-        help="Print discovered prompt files and exit without running agents.",
+        help="Print the planned iteration keys and exit without running agents.",
     )
     return parser.parse_args(argv)
 
@@ -379,14 +341,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 async def main(argv: list[str] | None = None):
     args = _parse_args(argv)
 
-    files = _list_prompt_files()
-    if not files:
-        sys.exit(f"No .md files found in {PROMPTS_DIR}/ (excluding .cursor)")
+    if not PROMPT_FILE.is_file():
+        sys.exit(f"Prompt file not found: {PROMPT_FILE}")
 
-    keys = [_prompt_key(f) for f in files]
+    all_keys = [_iteration_key(i) for i in range(1, ITERATIONS + 1)]
     if args.list:
-        print(f"Discovered {len(keys)} prompt(s) under prompts/ (excluding .cursor):")
-        for key in keys:
+        print(
+            f"Plan: run {PROMPT_FILE.relative_to(PROJECT_DIR).as_posix()} "
+            f"{ITERATIONS} times sequentially:"
+        )
+        for key in all_keys:
             print(f"  {key}")
         return
 
@@ -397,7 +361,7 @@ async def main(argv: list[str] | None = None):
             "'cursor_...' example value."
         )
 
-    known = set(keys)
+    known = set(all_keys)
     if args.force:
         finished: set[str] = set()
         if STATE_FILE.exists():
@@ -405,30 +369,33 @@ async def main(argv: list[str] | None = None):
             print("Cleared .run_prompts_state.json (--force).\n", flush=True)
     else:
         finished = _load_finished() & known
-        # Drop stale entries from previous prompt naming schemes.
         _save_finished(finished)
 
-    pending = [f for f in files if _prompt_key(f) not in finished]
-    skipped = len(files) - len(pending)
+    pending = [i for i in range(1, ITERATIONS + 1) if _iteration_key(i) not in finished]
+    skipped = ITERATIONS - len(pending)
 
     print(
-        f"Found {len(files)} prompt file(s) under prompts/ "
-        f"(excluding .cursor; {skipped} already finished, {len(pending)} pending).",
+        f"Prompt={PROMPT_FILE.relative_to(PROJECT_DIR).as_posix()}; "
+        f"iterations={ITERATIONS} sequential "
+        f"({skipped} already finished, {len(pending)} pending).",
         flush=True,
     )
-    print(f"Model={MODEL}; concurrency={MAX_CONCURRENCY}; commit+push after each success.", flush=True)
-    print("Prompts to run:", flush=True)
-    for file in pending:
-        print(f"  - {_prompt_key(file)}", flush=True)
+    print(
+        f"Model={MODEL}; concurrency=1; commit+push after each success.",
+        flush=True,
+    )
+    print("Iterations to run:", flush=True)
+    for iteration in pending:
+        print(f"  - {_iteration_key(iteration)}", flush=True)
     print(flush=True)
 
     if not pending:
-        print("Nothing left to run. Pass --force to rerun all, or delete .run_prompts_state.json.")
+        print(
+            "Nothing left to run. Pass --force to rerun all, "
+            "or delete .run_prompts_state.json."
+        )
         return
 
-    semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
-    finished_lock = asyncio.Lock()
-    git_lock = asyncio.Lock()
     results: list[dict] = [
         {"file": name, "status": "finished"} for name in sorted(finished)
     ]
@@ -438,16 +405,19 @@ async def main(argv: list[str] | None = None):
         client_timeout=BRIDGE_TIMEOUT_SECONDS,
         max_retries=2,
     ) as client:
-        # Up to MAX_CONCURRENCY agents in parallel; git ops are serialized.
-        pending_results = await asyncio.gather(
-            *(
-                run_prompt(
-                    file, client, semaphore, finished, finished_lock, git_lock
+        # Strictly sequential: finish iteration N (including git push)
+        # before starting iteration N+1.
+        for iteration in pending:
+            result = await run_iteration(iteration, client, finished)
+            results.append(result)
+            if result["status"] != "finished":
+                print(
+                    f"\nStopping after failed iteration {_iteration_key(iteration)}. "
+                    "Re-run to resume remaining iterations.",
+                    file=sys.stderr,
+                    flush=True,
                 )
-                for file in pending
-            )
-        )
-        results.extend(pending_results)
+                break
 
     results.sort(key=lambda r: r["file"])
 
@@ -462,11 +432,15 @@ async def main(argv: list[str] | None = None):
 
     errors = [r for r in results if r["status"] != "finished"]
     if errors:
-        print(f"\n{len(errors)} prompt(s) did not finish successfully.")
-        print("Re-run the same command to retry only the failed ones.")
+        print(f"\n{len(errors)} iteration(s) did not finish successfully.")
+        print("Re-run the same command to retry only the failed/remaining ones.")
         sys.exit(1)
 
-    print(f"\nAll {len(results)} prompts completed successfully.")
+    if len([r for r in results if r["status"] == "finished"]) < ITERATIONS:
+        print("\nRun incomplete; remaining iterations were not started.")
+        sys.exit(1)
+
+    print(f"\nAll {ITERATIONS} dashboard iterations completed successfully.")
     if STATE_FILE.exists():
         STATE_FILE.unlink()
 
