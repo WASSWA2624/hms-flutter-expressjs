@@ -24,6 +24,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/facility_sim
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/unit_similarity.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/ward_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/department_details_dialog.dart';
@@ -34,6 +35,7 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/unit_similarity_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/ward_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';

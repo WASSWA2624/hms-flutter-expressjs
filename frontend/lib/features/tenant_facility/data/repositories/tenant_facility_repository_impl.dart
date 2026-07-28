@@ -216,6 +216,66 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
+  Future<Result<AppPage<RoomProfile>>> listRooms({
+    required AppPageRequest request,
+    String? tenantId,
+    String? facilityId,
+    String? wardId,
+    String? search,
+    bool includeDeleted = false,
+  }) {
+    return _apiClient.get<AppPage<RoomProfile>>(
+      ApiEndpoints.collection(
+        HmsApiResource.rooms,
+        queryParameters: _withoutEmpty(<String, String?>{
+          'page': '${request.pageIndex + 1}',
+          'limit': '${request.pageSize}',
+          'tenant_id': tenantId,
+          'facility_id': facilityId,
+          'ward_id': wardId,
+          'search': search,
+          'include_deleted': includeDeleted ? 'true' : null,
+          'sort_by': 'name',
+          'order': 'asc',
+        }),
+      ),
+      decoder: (Object? data) => _decodeRoomPage(data, request: request).page,
+    );
+  }
+
+  @override
+  Future<Result<AppPage<BedProfile>>> listBeds({
+    required AppPageRequest request,
+    String? tenantId,
+    String? facilityId,
+    String? wardId,
+    String? roomId,
+    String? search,
+    BedSetupStatus? status,
+    bool includeDeleted = false,
+  }) {
+    return _apiClient.get<AppPage<BedProfile>>(
+      ApiEndpoints.collection(
+        HmsApiResource.beds,
+        queryParameters: _withoutEmpty(<String, String?>{
+          'page': '${request.pageIndex + 1}',
+          'limit': '${request.pageSize}',
+          'tenant_id': tenantId,
+          'facility_id': facilityId,
+          'ward_id': wardId,
+          'room_id': roomId,
+          'search': search,
+          'status': status?.apiValue,
+          'include_deleted': includeDeleted ? 'true' : null,
+          'sort_by': 'label',
+          'order': 'asc',
+        }),
+      ),
+      decoder: (Object? data) => _decodeBedPage(data, request: request).page,
+    );
+  }
+
+  @override
   Future<Result<void>> deleteTenant(String id) {
     return _deleteResource(HmsApiResource.tenants, id);
   }
@@ -1529,6 +1589,56 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     );
   }
 
+  static _RoomPageDto _decodeRoomPage(
+    Object? data, {
+    required AppPageRequest request,
+  }) {
+    final JsonMap envelope = _requireMap(data);
+    final List<RoomProfile> items = decodeList<RoomProfileDto>(
+      envelope['data'],
+      RoomProfileDto.fromJson,
+    ).map((RoomProfileDto dto) => dto.toEntity()).toList(growable: false);
+    final Object? paginationValue = envelope['pagination'];
+    final JsonMap? pagination = paginationValue is JsonMap
+        ? paginationValue
+        : null;
+    final int? total = pagination != null
+        ? _optionalInt(pagination['total'])
+        : null;
+    return _RoomPageDto(
+      page: AppPage<RoomProfile>(
+        items: items,
+        request: request,
+        totalItemCount: total,
+      ),
+    );
+  }
+
+  static _BedPageDto _decodeBedPage(
+    Object? data, {
+    required AppPageRequest request,
+  }) {
+    final JsonMap envelope = _requireMap(data);
+    final List<BedProfile> items = decodeList<BedProfileDto>(
+      envelope['data'],
+      BedProfileDto.fromJson,
+    ).map((BedProfileDto dto) => dto.toEntity()).toList(growable: false);
+    final Object? paginationValue = envelope['pagination'];
+    final JsonMap? pagination = paginationValue is JsonMap
+        ? paginationValue
+        : null;
+    final int? total = pagination != null
+        ? _optionalInt(pagination['total'])
+        : null;
+    return _BedPageDto(
+      page: AppPage<BedProfile>(
+        items: items,
+        request: request,
+        totalItemCount: total,
+      ),
+    );
+  }
+
   static int? _optionalInt(Object? value) {
     if (value == null) return null;
     if (value is int) return value;
@@ -1564,4 +1674,16 @@ final class _WardPageDto {
   const _WardPageDto({required this.page});
 
   final AppPage<WardProfile> page;
+}
+
+final class _RoomPageDto {
+  const _RoomPageDto({required this.page});
+
+  final AppPage<RoomProfile> page;
+}
+
+final class _BedPageDto {
+  const _BedPageDto({required this.page});
+
+  final AppPage<BedProfile> page;
 }

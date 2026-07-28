@@ -9079,6 +9079,71 @@
   "@tenantFacilityUnitNameAlreadyInUse": {
     "description": "Error when an exact unit name conflict is found."
   },
+  "tenantFacilitySimilarWardDialogTitle": "Similar ward found",
+  "@tenantFacilitySimilarWardDialogTitle": {
+    "description": "Title when ward similarity review finds matches."
+  },
+  "tenantFacilitySimilarWardWarningTitle": "Potential duplicate ward",
+  "@tenantFacilitySimilarWardWarningTitle": {
+    "description": "Warning banner title for similar wards."
+  },
+  "tenantFacilitySimilarWardWarningBody": "Review the similar wards below before saving.",
+  "@tenantFacilitySimilarWardWarningBody": {
+    "description": "Warning banner body for similar wards."
+  },
+  "tenantFacilityNoSimilarWardDialogTitle": "No similar ward found",
+  "@tenantFacilityNoSimilarWardDialogTitle": {
+    "description": "Title when ward similarity review finds no matches."
+  },
+  "tenantFacilityNoSimilarWardBannerTitle": "Match status: No similar found",
+  "@tenantFacilityNoSimilarWardBannerTitle": {
+    "description": "Banner title when no similar wards are found."
+  },
+  "tenantFacilityNoSimilarWardDialogBody": "Review the proposed ward details below. No similar wards were found in this scope.",
+  "@tenantFacilityNoSimilarWardDialogBody": {
+    "description": "Body when no similar wards are found."
+  },
+  "tenantFacilityProceedCreateWardAction": "Create anyway",
+  "@tenantFacilityProceedCreateWardAction": {
+    "description": "Confirm creating a ward despite similar matches."
+  },
+  "tenantFacilityContinueCreateWardAction": "Continue",
+  "@tenantFacilityContinueCreateWardAction": {
+    "description": "Continue creating a ward when no similar matches exist."
+  },
+  "tenantFacilityUseThisWardAction": "Use this ward",
+  "@tenantFacilityUseThisWardAction": {
+    "description": "Adopt an existing similar ward instead of creating."
+  },
+  "tenantFacilitySimilarWardProposedHeading": "Proposed ward",
+  "@tenantFacilitySimilarWardProposedHeading": {
+    "description": "Heading for the proposed ward card in similarity review."
+  },
+  "tenantFacilitySimilarWardExistingHeading": "Existing ward",
+  "@tenantFacilitySimilarWardExistingHeading": {
+    "description": "Heading for an existing ward match card."
+  },
+  "tenantFacilityWardOverallSimilarityLabel": "Overall similarity",
+  "@tenantFacilityWardOverallSimilarityLabel": {
+    "description": "Label for the overall ward similarity score."
+  },
+  "tenantFacilityWardNoMatchScoreLabel": "No matches · {score}% similarity",
+  "@tenantFacilityWardNoMatchScoreLabel": {
+    "description": "Shown when ward similarity review finds no matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilityWardSimilarityCheckingMessage": "Checking for similar wards…",
+  "@tenantFacilityWardSimilarityCheckingMessage": {
+    "description": "Loading message while ward similarity is checked."
+  },
+  "tenantFacilityWardNameAlreadyInUse": "This ward name is already in use",
+  "@tenantFacilityWardNameAlreadyInUse": {
+    "description": "Error when an exact ward name conflict is found."
+  },
   "tenantFacilityUnitNameLabel": "Unit name",
   "@tenantFacilityUnitNameLabel": {
     "description": "Unit name field label."
