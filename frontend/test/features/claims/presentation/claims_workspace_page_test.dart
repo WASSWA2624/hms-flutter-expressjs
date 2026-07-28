@@ -376,7 +376,7 @@ void main() {
     expect(find.text('CLM-PAID'), findsOneWidget);
     expect(find.byTooltip('Prepare claim'), findsNothing);
     expect(find.byTooltip('Request authorization'), findsNothing);
-    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsNothing);
     expect(
       find.descendant(
         of: find.byType(DataTable),
@@ -437,7 +437,7 @@ void main() {
     expect(find.byTooltip('Request authorization'), findsOneWidget);
   });
 
-  testWidgets('Insurance Setup tab shows catalog actions, not queue table', (
+  testWidgets('Insurance Setup tab shows catalog actions on the panel', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpClaimsWorkspace(
@@ -453,7 +453,11 @@ void main() {
       'insurance-setup',
     );
     expect(find.byType(AppListTable<ClaimsQueueItem>), findsNothing);
-    expect(find.textContaining('Add company'), findsWidgets);
+    // Sole entry points live on the panel — not duplicated on the tab strip.
+    expect(find.byTooltip('Add company'), findsNothing);
+    expect(find.byTooltip('Add scheme'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.textContaining('Add company'), findsOneWidget);
     expect(find.textContaining('Add scheme'), findsOneWidget);
     expect(find.textContaining('Add offer'), findsOneWidget);
     expect(find.textContaining('Enroll patient'), findsOneWidget);
@@ -485,6 +489,28 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets(
+    'Authorizations and Active Claims omit advanced filters and Refresh',
+    (WidgetTester tester) async {
+      await _pumpClaimsWorkspace(tester, repository: repository);
+
+      expect(find.byTooltip('Refresh'), findsNothing);
+      expect(find.textContaining('Filters'), findsNothing);
+      expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
+
+      await tester.tap(find.textContaining('Active Claims').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Refresh'), findsNothing);
+      expect(find.textContaining('Filters'), findsNothing);
+      expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
+      // Redundant workload chips that duplicated Submitted / Approved are gone.
+      expect(find.textContaining('Claims to submit'), findsNothing);
+      expect(find.textContaining('Ready to settle'), findsNothing);
+      expect(find.textContaining('Eligibility pending'), findsNothing);
+    },
+  );
 
   testWidgets('summary bar is hidden on Settled and Insurance Setup', (
     WidgetTester tester,
@@ -519,17 +545,40 @@ void main() {
     expect(find.textContaining('AUTH-PENDING'), findsWidgets);
   });
 
-  testWidgets('filter dialog opens with tab-scoped choices', (
+  testWidgets('Settled filter dialog opens with settled status choices', (
     WidgetTester tester,
   ) async {
     await _pumpClaimsWorkspace(tester, repository: repository);
 
+    await tester.tap(find.textContaining('Settled').first);
+    await tester.pumpAndSettle();
+
     await tester.tap(find.textContaining('Filters').first);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Authorization pending'), findsWidgets);
-    expect(find.textContaining('Claim submitted'), findsNothing);
+    expect(find.textContaining('Claim paid'), findsWidgets);
+    expect(find.textContaining('Authorization pending'), findsNothing);
   });
+
+  testWidgets(
+    'detail dialog shows one status-primary action, not parallel claim shortcuts',
+    (WidgetTester tester) async {
+      await _pumpClaimsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.textContaining('Active Claims').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('CLM-SUB'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(find.text('Record response'), findsWidgets);
+      expect(find.text('Sync status'), findsOneWidget);
+      // Parallel always-on shortcuts removed from the detail surface.
+      expect(find.text('Submit claim'), findsNothing);
+      expect(find.text('Close claim'), findsNothing);
+    },
+  );
 
   testWidgets('tapping a row opens the claims detail dialog', (
     WidgetTester tester,

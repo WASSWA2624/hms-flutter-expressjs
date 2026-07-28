@@ -103,6 +103,32 @@ void main() {
     expect(find.byIcon(Icons.chevron_right), findsWidgets);
   });
 
+  testWidgets('AppListTableMobileItem renders optional trailing next-action', (
+    WidgetTester tester,
+  ) async {
+    var pressed = false;
+    await pumpComponent(
+      tester,
+      AppListTableMobileItem(
+        title: 'Pat Lee',
+        caption: 'USR-1',
+        trailing: TextButton(
+          onPressed: () {
+            pressed = true;
+          },
+          child: const Text('Deactivate'),
+        ),
+      ),
+      size: const Size(500, 200),
+    );
+
+    expect(find.textContaining('Pat Lee'), findsOneWidget);
+    expect(find.text('Deactivate'), findsOneWidget);
+    await tester.tap(find.text('Deactivate'));
+    await tester.pump();
+    expect(pressed, isTrue);
+  });
+
   testWidgets('AppListTable mobile rows activate from the keyboard', (
     WidgetTester tester,
   ) async {

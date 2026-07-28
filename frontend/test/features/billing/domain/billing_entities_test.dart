@@ -58,4 +58,22 @@ void main() {
       );
     });
   });
+
+  group('BillingWorkspaceQuery.hasActiveFilters', () {
+    test('ignores queue-only selection owned by the tab strip', () {
+      expect(
+        const BillingWorkspaceQuery(
+          queue: BillingQueueType.needsIssue,
+        ).hasActiveFilters,
+        isFalse,
+      );
+      expect(
+        const BillingWorkspaceQuery(
+          queue: BillingQueueType.needsIssue,
+          patientId: 'PT-1',
+        ).hasActiveFilters,
+        isTrue,
+      );
+    });
+  });
 }

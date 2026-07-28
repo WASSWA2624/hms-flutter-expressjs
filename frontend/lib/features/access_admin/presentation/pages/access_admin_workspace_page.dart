@@ -639,6 +639,15 @@ class _WorklistPanel extends StatelessWidget {
                 icon: Icons.business_outlined,
               ),
           ],
+          trailing: accessAdminMobileNextAction(
+            context,
+            resource: resource,
+            item: item,
+            canWrite: canWrite,
+            onUserStatusToggle: _toggleUserStatus,
+            onRoleEdit: onRoleEdit,
+            onRegistrationActivate: controller.activateRegistration,
+          ),
         );
       },
     );

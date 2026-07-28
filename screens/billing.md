@@ -1,0 +1,109 @@
+# Action inventory — `/billing`
+
+Primary surface: `BillingWorkspacePage` (`frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart`).
+
+Write gate: `AppPermissions.billingWrite` (mutations / close shift / close day / next-action). Read: `billingRead` via route access. Approval decisions also require facility-manage capability in the detail action panel.
+
+Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
+
+---
+
+## Task inventory — duplicates / redundant surfaces
+
+| Duplicate / redundant surface | Outcome | Merge / removal |
+| --- | --- | --- |
+| Tab-strip **Refresh** (primary or secondary by tab) | Reload queue | **Removed** — list refreshes after mutations, realtime, scaffold retry |
+| Rotating primary (**Close shift** / **Close day** / **Refresh** by tab) | Same close / reload goals | **Merged** — stable **Close shift** primary + **Close day** secondary on every tab |
+| Advanced filters **Queue** group vs tab strip | Select queue | **Removed** from advanced filters — tabs own queue; clear filters preserves tab |
+| **Finalize financial clearance** confirm + snackbar | No billing mutation | **Removed** — client-only shell never called the backend |
+| Optional **Balance** column vs **Amount due** | Same `balanceDue` value | **Removed** Balance from column choices — Amount due remains |
+| Row **Next action** vs row select → detail actions | Start primary / all item actions | **Kept** — next-action is the labeled minimal path; detail holds secondary actions + print/download |
+| Disabled close toolbar when read-only | Close shift / day | **Unauthorized UI absent** — toolbar omitted without `billingWrite` |
+
+---
+
+## Billing workspace screen
+
+### Tab strip
+
+- **All / Needs issue / Awaiting payment / Claims pending / Approval required / Overdue**
+  - Location: Page chrome `AppTabStrip`.
+  - Opens modal: No.
+  - Immediate result: Switches `_section`, updates URL `?queue=…`, applies queue via controller.
+  - Condition: Always shown; count badges from overview summary.
+
+- **Close shift** (primary)
+  - Location: Tab-strip primary (`billingCloseShift`).
+  - Opens modal: Yes — shift close form.
+  - Immediate result: Closes shift; snackbar; workspace refresh.
+  - Condition: `billingWrite`; omitted when unauthorized.
+
+- **Close day** (secondary)
+  - Location: Tab-strip secondary (`billingCloseDay`).
+  - Opens modal: Yes — day close form.
+  - Immediate result: Closes day; snackbar; workspace refresh.
+  - Condition: `billingWrite`; omitted when unauthorized.
+
+Tab-strip **Refresh** was removed. Queue work refreshes after mutations, realtime sync, and scaffold **Try again**.
+
+- **Try again** (page load / inline failure)
+  - Location: `AsyncStateScaffold` or `AppFailureStateView`.
+  - Opens modal: No.
+  - Immediate result: Retries workspace load / refresh.
+  - Condition: Load or mutation failure surface.
+
+### Search / filters / table chrome
+
+- **Search**, **Clear**, **Filters** (advanced), **Settings** (columns)
+  - Location: `AppListTable` / `AppSearchBar` chrome.
+  - Opens modal: Advanced filters panel; Table Settings dialog.
+  - Immediate result: Filters/search/column visibility for the active queue (`billing_{queue}`).
+  - Condition: Always on the worklist.
+
+#### Advanced filters (from **Filters**)
+
+Fields: patient ID, invoice #, encounter #; source module; billing status; issued date from/to.
+
+- **Apply filters** / **Clear filters** / **Close**
+  - Location: Panel footer / chrome.
+  - Immediate result: Applies or clears advanced filters **without changing the active queue tab**.
+
+### Row activation
+
+- **Row select** (desktop / mobile)
+  - Location: Table row / mobile list item.
+  - Opens modal: Billing detail dialog (`BillingDetailBody`).
+  - Immediate result: Selects item and opens the single detail surface (actions, amounts, lines, payments, adjustments).
+  - Condition: When rows exist.
+
+- **Next action** (labeled primary row control)
+  - Location: Next-action column (`billingNextActionColumnLabel`).
+  - Opens modal: The mutation dialog for the item’s top allowed action (issue, receive payment, approve, submit/reconcile claim, pre-auth approve, refund, adjust, void, or send).
+  - Immediate result: Completes that mutation path without opening the full detail first.
+  - Condition: `billingWrite` and an actionable label; absent when unauthorized.
+
+### Detail dialog (from row select)
+
+Invoice / claim / approval / pre-auth actions appear only when allowed and `billingWrite` (approve/reject also need facility manage). Progressive disclosure: financial summary, line items, payments, adjustments.
+
+- **View ledger** — nested ledger dialog when patient id known.
+- **Print** / **Download** invoice — dialog footer when item is an invoice.
+- Nested forms: receive payment, issue notes, refund, adjustment, void reason, send email, approval notes/reason, claim submit/reconcile, pre-auth notes.
+
+### Empty / no-results / validation
+
+- Empty queue: `billingEmptyTitle` / `billingEmptyBody`.
+- Search/filter no matches: same empty panel after filter application.
+- Form validation stays inside each mutation dialog; success/pending-approval/error via snackbar (`billingActionSaved` / `billingActionPendingApproval` / failure message).
+
+---
+
+## Verification (Req 7)
+
+- Widget tests in `frontend/test/features/billing/presentation/billing_workspace_page_test.dart` prove:
+  - **Refresh** is absent from the tab strip on every queue (desktop/mobile).
+  - **Close shift** is the sole primary and **Close day** the sole secondary, stable across tabs when write-authorized.
+  - Unauthorized users see no Close shift / Close day / next-action controls.
+  - Advanced filters omit a Queue group; clearing filters does not reset the active tab queue.
+  - Finalize financial clearance is absent from next-action and detail actions.
+  - Next-action and detail entry points still open for representative issue / pay paths.

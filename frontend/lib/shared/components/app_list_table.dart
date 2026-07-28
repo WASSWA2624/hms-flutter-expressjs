@@ -574,14 +574,16 @@ final class AppListTableMobileMeta {
 /// after the title as one line).
 /// Line 2: middot-joined [meta] entries (optional icons); the whole meta line
 /// truncates from the end.
-/// Optional leading initials avatar; trailing chevron is added by the table
-/// when the row is selectable.
+/// Optional [trailing] hosts a labeled next-action (or similar) without nesting
+/// a second list chrome. A chevron is still added by the table when the row is
+/// selectable.
 class AppListTableMobileItem extends StatelessWidget {
   const AppListTableMobileItem({
     required this.title,
     this.caption,
     this.meta = const <AppListTableMobileMeta>[],
     this.leading,
+    this.trailing,
     this.showAvatar = true,
     this.avatarLabel,
     this.padding,
@@ -592,6 +594,7 @@ class AppListTableMobileItem extends StatelessWidget {
   final String? caption;
   final List<AppListTableMobileMeta> meta;
   final Widget? leading;
+  final Widget? trailing;
   final bool showAvatar;
   final String? avatarLabel;
   final EdgeInsetsGeometry? padding;
@@ -658,6 +661,10 @@ class AppListTableMobileItem extends StatelessWidget {
               ],
             ),
           ),
+          if (trailing != null) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            trailing!,
+          ],
         ],
       ),
     );

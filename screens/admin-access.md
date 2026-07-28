@@ -19,6 +19,7 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 | Detail **Edit role** vs row **Edit role** next-action | Edit role | **Removed** from detail — row next-action is the sole edit entry |
 | Detail **Activate / Deactivate** vs row status next-action | Toggle user status | **Removed** from detail — row next-action is the sole status entry |
 | Detail **Activate registration** vs row next-action | Activate registration | **Removed** from detail — row next-action is the sole activate entry; **Reject** stays on detail |
+| Mobile list without next-action trailing (after detail merge) | Status / edit / activate | **Fixed** — `accessAdminMobileNextAction` on `AppListTableMobileItem.trailing` mirrors desktop `next_action` |
 
 ---
 
@@ -79,7 +80,7 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
 ### Users / demo users
 
 - **Activate / Deactivate** (next-action)
-  - Location: `next_action` column (and mobile trailing).
+  - Location: `next_action` column; mobile `AppListTableMobileItem.trailing` via `accessAdminMobileNextAction`.
   - Opens modal: No.
   - Immediate result: Toggles `ACTIVE` / `INACTIVE` via `setUserStatus`.
   - Condition: `canWrite`.
@@ -87,7 +88,7 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
 ### Roles
 
 - **Edit role** (next-action)
-  - Location: `next_action` column (and mobile trailing).
+  - Location: `next_action` column; mobile `AppListTableMobileItem.trailing` via `accessAdminMobileNextAction`.
   - Opens modal: Yes — shared edit-role dialog.
   - Immediate result: Updates role identity/scope; on success reopens role detail.
   - Condition: `canWrite` and role is not system-critical.
@@ -95,7 +96,7 @@ Tab-strip **Refresh** and **Overview** were removed. Worklist data refreshes aft
 ### Registrations
 
 - **Activate registration** (next-action)
-  - Location: `next_action` column (and mobile trailing).
+  - Location: `next_action` column; mobile `AppListTableMobileItem.trailing` via `accessAdminMobileNextAction`.
   - Opens modal: No.
   - Immediate result: Activates the registration follow-up.
   - Condition: `canWrite` (tab elevated-only).
@@ -145,6 +146,8 @@ Permissions and entitlements details are read-only summaries (no write next-acti
 
 - **Duplicates gone**: Overview and Refresh absent from the tab strip on desktop/mobile and light/dark; detail has no Activate/Deactivate, Edit role, or Activate registration.
 - **Merged entry points**: Create user uses the shared mutation dialog (tenant/facility scope + similarity); Create role / Edit role use shared role dialogs.
-- **Authorized minimal paths**: With `canWrite`, Create user/role appear as tab primary; status / edit / activate appear as row next-actions only; Delete role and Reject registration remain on detail.
-- **Unauthorized**: With `canWrite` false, primary create and next-action cells are absent; Registrations tab absent when not elevated.
+- **Authorized minimal paths**: With `canWrite`, Create user/role appear as tab primary; status / edit / activate appear as row next-actions (desktop column + mobile trailing) only; Delete role and Reject registration remain on detail.
+- **Unauthorized**: With `canWrite` false, primary create and next-action cells/trailing are absent; Registrations tab absent when not elevated.
 - **States**: Loading/error use scaffold retry; empty uses empty state; validation/similarity live in shared mutation dialogs; success syncs the worklist without a toolbar Refresh.
+
+Automated: `frontend/test/features/access_admin/presentation/access_admin_workspace_ux_simplify_test.dart`.

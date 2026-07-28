@@ -127,6 +127,19 @@ AppAccessPolicy _billingWritePolicy() {
   );
 }
 
+AppAccessPolicy _billingReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['BILLING']),
+      permissions: <AppPermission>{AppPermissions.billingRead},
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+      ],
+    ),
+  );
+}
+
 List<BillingWorkItem> _itemsForQueue(BillingQueueType queue) {
   return switch (queue) {
     BillingQueueType.all => _allItems,
@@ -185,6 +198,7 @@ Future<_Harness> _pumpBillingWorkspace(
   BillingWorkspaceQuery? initialQuery,
   String initialLocation = '/billing',
   Size physicalSize = const Size(1440, 900),
+  AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -220,7 +234,9 @@ Future<_Harness> _pumpBillingWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_billingWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _billingWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -244,6 +260,14 @@ String billingQueueTabLabel(BillingQueueType queue) {
     BillingQueueType.approvalRequired => 'Approval required',
     BillingQueueType.overdue => 'Overdue',
   };
+}
+
+void _expectStableCloseToolbar() {
+  expect(_toolbarPrimary('Close shift'), findsOneWidget);
+  expect(_toolbarAction('Close day'), findsOneWidget);
+  expect(find.text('Refresh'), findsNothing);
+  expect(_toolbarPrimary('Close day'), findsNothing);
+  expect(_toolbarAction('Close shift'), findsNothing);
 }
 
 void main() {
@@ -273,9 +297,7 @@ void main() {
     expect(find.textContaining('Overdue'), findsWidgets);
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsOneWidget);
-    expect(_toolbarPrimary('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Close day'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    _expectStableCloseToolbar();
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
@@ -311,9 +333,7 @@ void main() {
     );
     expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Ada Draft'), findsNothing);
-    expect(_toolbarPrimary('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Close day'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    _expectStableCloseToolbar();
 
     await tester.tap(find.textContaining('Needs issue').first);
     await tester.pumpAndSettle();
@@ -321,36 +341,39 @@ void main() {
     expect(harness.router.state.uri.queryParameters['queue'], 'needs-issue');
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsNothing);
-    expect(_toolbarPrimary('Refresh'), findsOneWidget);
-    expect(_toolbarAction('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Close day'), findsOneWidget);
-    expect(_toolbarPrimary('Close shift'), findsNothing);
+    _expectStableCloseToolbar();
   });
 
-  testWidgets('toolbar primary changes across All, Needs issue, and Overdue', (
+  testWidgets('toolbar stays Close shift / Close day across tabs without Refresh', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    expect(_toolbarPrimary('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Close day'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    for (final BillingQueueType queue in BillingQueueType.values) {
+      if (queue != BillingQueueType.all) {
+        await tester.tap(
+          find.textContaining(billingQueueTabLabel(queue)).first,
+        );
+        await tester.pumpAndSettle();
+      }
+      _expectStableCloseToolbar();
+    }
+  });
 
-    await tester.tap(find.textContaining('Needs issue').first);
-    await tester.pumpAndSettle();
+  testWidgets('unauthorized write actions and next-action are absent', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _billingReadOnlyPolicy(),
+    );
 
-    expect(_toolbarPrimary('Refresh'), findsOneWidget);
-    expect(_toolbarAction('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Close day'), findsOneWidget);
-
-    await tester.tap(find.textContaining('Overdue').first);
-    await tester.pumpAndSettle();
-
-    expect(_toolbarPrimary('Close day'), findsOneWidget);
-    expect(_toolbarAction('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
-    expect(_toolbarPrimary('Close shift'), findsNothing);
-    expect(_toolbarPrimary('Refresh'), findsNothing);
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.text('Close day'), findsNothing);
+    expect(find.text('Refresh'), findsNothing);
+    expect(find.byTooltip('Issue'), findsNothing);
+    expect(find.byTooltip('Receive payment'), findsNothing);
   });
 
   testWidgets('deep link queue=pending-payment selects Awaiting Payment tab', (
@@ -372,9 +395,7 @@ void main() {
     expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Ada Draft'), findsNothing);
     expect(find.text('Cara Claim'), findsNothing);
-    expect(_toolbarPrimary('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Close day'), findsOneWidget);
-    expect(_toolbarAction('Refresh'), findsOneWidget);
+    _expectStableCloseToolbar();
   });
 
   testWidgets('deep link queue=needs-issue selects Needs Issue tab', (
@@ -391,9 +412,7 @@ void main() {
 
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsNothing);
-    expect(_toolbarPrimary('Refresh'), findsOneWidget);
-    expect(_toolbarAction('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Close day'), findsOneWidget);
+    _expectStableCloseToolbar();
   });
 
   testWidgets('each tab exposes five default columns', (
@@ -484,7 +503,7 @@ void main() {
     expect(find.text('Ada Draft'), findsNothing);
   });
 
-  testWidgets('filter dialog opens from Filters button', (
+  testWidgets('filter dialog opens without a Queue duplicate group', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
@@ -492,7 +511,41 @@ void main() {
     await tester.tap(find.text('Filters').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Filters'), findsWidgets);
+    expect(find.text('Advanced filters'), findsOneWidget);
+    expect(find.text('Source'), findsOneWidget);
+    expect(find.text('Status'), findsWidgets);
+    // Queue remains on the tab strip only.
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Queue'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('next-action Issue opens the issue dialog as the minimal path', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(tester, repository: repository);
+
+    await tester.tap(find.byTooltip('Issue').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Issue invoice'), findsOneWidget);
+    expect(find.text('Finalize financial clearance'), findsNothing);
+  });
+
+  testWidgets('row select opens detail without finalize clearance action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Ada Draft'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Issue'), findsWidgets);
+    expect(find.text('Finalize financial clearance'), findsNothing);
   });
 
   testWidgets('mobile breakpoint shows status badge and next action', (
@@ -507,9 +560,10 @@ void main() {
     expect(find.byType(DataTable), findsNothing);
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(_toolbarPrimary('Close shift'), findsOneWidget);
+    _expectStableCloseToolbar();
     expect(find.byType(AppWorkspaceStatusBadge), findsWidgets);
     expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.text('Refresh'), findsNothing);
   });
 
   testWidgets('tab switch applies queue filter via repository', (
@@ -534,8 +588,6 @@ void main() {
     );
     expect(find.text('Cara Claim'), findsOneWidget);
     expect(find.text('Dana Approval'), findsNothing);
-    expect(_toolbarPrimary('Refresh'), findsOneWidget);
-    expect(_toolbarAction('Close shift'), findsOneWidget);
-    expect(_toolbarAction('Close day'), findsOneWidget);
+    _expectStableCloseToolbar();
   });
 }

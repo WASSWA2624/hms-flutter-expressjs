@@ -290,53 +290,11 @@ bool accessAdminSearchMatcher(
   );
 }
 
-Widget accessAdminMobileListItem(
-  BuildContext context, {
-  required AccessAdminResource resource,
-  required AccessAdminItem item,
-  required bool canWrite,
-  required VoidCallback onTap,
-  required Future<void> Function(AccessAdminItem item)? onUserStatusToggle,
-  required void Function(AccessAdminItem item)? onRoleEdit,
-  required Future<void> Function(AccessAdminItem item)? onRegistrationActivate,
-}) {
-  final Widget? trailing = _mobileTrailing(
-    context,
-    resource: resource,
-    item: item,
-    canWrite: canWrite,
-    onUserStatusToggle: onUserStatusToggle,
-    onRoleEdit: onRoleEdit,
-    onRegistrationActivate: onRegistrationActivate,
-  );
-
-  final String subtitle = switch (resource) {
-    AccessAdminResource.roles => accessAdminRoleScopeLabel(context, item),
-    AccessAdminResource.moduleEntitlements => <String>[
-      item.moduleGroup ?? item.subtitle ?? '',
-      item.planLabel ?? '',
-      accessAdminEntitlementActiveLabel(context, item.isActive),
-    ].where((String value) => value.trim().isNotEmpty).join(' · '),
-    AccessAdminResource.permissions =>
-      item.permissionName ?? item.subtitle ?? item.effectiveDisplayId,
-    _ => <String>[
-      item.effectiveDisplayId,
-      if (item.facilityName != null) item.facilityName!,
-      if (item.status != null)
-        accessAdminItemStatus(context, item.status).label,
-    ].join(' · '),
-  };
-
-  return ListTile(
-    contentPadding: EdgeInsets.zero,
-    title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-    subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
-    trailing: trailing,
-    onTap: onTap,
-  );
-}
-
-Widget? _mobileTrailing(
+/// Labeled next-action for mobile worklist rows (mirrors desktop `next_action`).
+///
+/// Returns null when unauthorized or the resource has no write next-action so
+/// the row stays read/select-only.
+Widget? accessAdminMobileNextAction(
   BuildContext context, {
   required AccessAdminResource resource,
   required AccessAdminItem item,
@@ -346,13 +304,7 @@ Widget? _mobileTrailing(
   required Future<void> Function(AccessAdminItem item)? onRegistrationActivate,
 }) {
   if (!canWrite) {
-    return resource == AccessAdminResource.roles
-        ? AccessAdminRoleScopeBadge(item: item)
-        : item.status != null
-        ? AppWorkspaceStatusBadge(
-            status: accessAdminItemStatus(context, item.status),
-          )
-        : const Icon(Icons.chevron_right);
+    return null;
   }
 
   return switch (resource) {
@@ -376,13 +328,7 @@ Widget? _mobileTrailing(
           ? null
           : () => onRegistrationActivate(item),
     ),
-    AccessAdminResource.roles => AccessAdminRoleScopeBadge(item: item),
-    _ =>
-      item.status != null
-          ? AppWorkspaceStatusBadge(
-              status: accessAdminItemStatus(context, item.status),
-            )
-          : const Icon(Icons.chevron_right),
+    _ => null,
   };
 }
 

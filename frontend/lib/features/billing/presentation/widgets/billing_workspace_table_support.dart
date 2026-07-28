@@ -23,7 +23,6 @@ const String billingEncounterColumnId = 'encounter';
 const String billingSourceColumnId = 'source';
 const String billingAmountDueColumnId = 'amount_due';
 const String billingAmountPaidColumnId = 'amount_paid';
-const String billingBalanceColumnId = 'balance';
 const String billingUpdatedColumnId = 'updated';
 const String billingStatusColumnId = 'status';
 const String billingNextActionColumnId = 'next_action';

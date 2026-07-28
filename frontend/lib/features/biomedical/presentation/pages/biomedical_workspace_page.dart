@@ -216,11 +216,7 @@ class _BiomedicalWorkspaceContentState
                     id: panel,
                     icon: _panelIcon(panel),
                     label: _panelLabel(l10n, panel),
-                    count:
-                        panel == BiomedicalPanels.registry &&
-                            state.workbench.summary.totalEquipment > 0
-                        ? state.workbench.summary.totalEquipment
-                        : null,
+                    count: _panelCount(panel, state.workbench.summary),
                   ),
               ],
               selectedId: _currentPanel,
@@ -228,13 +224,7 @@ class _BiomedicalWorkspaceContentState
                 _switchPanel(tabId);
                 _updateUrlForPanel(tabId);
               },
-              primaryAction: _primaryActionWidget(l10n, state, controller),
-              secondaryActions: _secondaryActionsForPanel(
-                context,
-                l10n,
-                state,
-                controller,
-              ),
+              primaryAction: _primaryActionWidget(l10n, state),
             ),
             SizedBox(height: theme.spacing.sm),
             AppListTable<BiomedicalAsset>(
@@ -365,27 +355,7 @@ class _BiomedicalWorkspaceContentState
   Widget? _primaryActionWidget(
     AppLocalizations l10n,
     BiomedicalWorkspaceState state,
-    BiomedicalWorkspaceController controller,
   ) {
-    if (_currentPanel == BiomedicalPanels.support ||
-        _currentPanel == BiomedicalPanels.analytics) {
-      return AppTabToolbarPrimary(
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        isLoading: state.isRefreshing,
-        enabled: !state.isRefreshing,
-        onPressed: state.isRefreshing
-            ? null
-            : () async {
-                final AppFailure? failure = await controller.refresh();
-                if (!mounted) {
-                  return;
-                }
-                _showFailureIfNeeded(context, failure);
-              },
-      );
-    }
-
     final _PanelAction? action = _primaryActionForPanel(l10n, _currentPanel);
     if (action == null) {
       return null;
@@ -396,129 +366,30 @@ class _BiomedicalWorkspaceContentState
         return AppTabToolbarPrimary(
           label: action.label,
           icon: action.icon,
-          enabled: isAllowed && !state.isMutating,
-          onPressed: isAllowed && !state.isMutating
-              ? () => unawaited(
+          enabled: !state.isMutating,
+          onPressed: state.isMutating
+              ? null
+              : () => unawaited(
                   _openActionDialog(context, ref, state, action.kind),
-                )
-              : null,
+                ),
         );
       },
     );
   }
 
-  List<Widget> _secondaryActionsForPanel(
-    BuildContext context,
-    AppLocalizations l10n,
-    BiomedicalWorkspaceState state,
-    BiomedicalWorkspaceController controller,
-  ) {
-    final List<Widget> actions = <Widget>[];
-    final BiomedicalSummary summary = state.workbench.summary;
-
-    void addQueueAction({
-      required int count,
-      required String label,
-      required IconData icon,
-      required String queue,
-    }) {
-      if (count <= 0) {
-        return;
-      }
-      actions.add(
-        AppTabToolbarAction(
-          label: label,
-          icon: icon,
-          semanticLabel: label,
-          tooltip: label,
-          onPressed: () => _applyQueue(controller, state, queue),
-        ),
-      );
-    }
-
-    addQueueAction(
-      count: summary.overduePm,
-      label: l10n.biomedicalOverduePmSummaryLabel,
-      icon: Icons.event_busy_outlined,
-      queue: BiomedicalQueues.overduePm,
-    );
-    addQueueAction(
-      count: summary.openWorkOrders,
-      label: l10n.biomedicalOpenWorkOrdersSummaryLabel,
-      icon: Icons.build_outlined,
-      queue: BiomedicalQueues.openWorkOrders,
-    );
-    addQueueAction(
-      count: summary.criticalDowntime,
-      label: l10n.biomedicalCriticalDowntimeSummaryLabel,
-      icon: Icons.power_settings_new_outlined,
-      queue: BiomedicalQueues.criticalDowntime,
-    );
-    addQueueAction(
-      count: summary.activeRecalls,
-      label: l10n.biomedicalActiveRecallsSummaryLabel,
-      icon: Icons.campaign_outlined,
-      queue: BiomedicalQueues.recallActions,
-    );
-
-    if (_currentPanel == BiomedicalPanels.registry ||
-        _currentPanel == BiomedicalPanels.support) {
-      actions.add(
-        AppAccessActionGate(
-          requirement: _writeRequirement,
-          builder: (BuildContext gateContext, bool isAllowed) {
-            return AppTabToolbarAction(
-              label: l10n.biomedicalReportFaultAction,
-              icon: Icons.report_problem_outlined,
-              semanticLabel: l10n.biomedicalReportFaultAction,
-              tooltip: l10n.biomedicalReportFaultAction,
-              enabled: isAllowed && !state.isMutating,
-              onPressed: isAllowed && !state.isMutating
-                  ? () => unawaited(
-                      _openActionDialog(
-                        context,
-                        ref,
-                        state,
-                        _BiomedicalActionKind.fault,
-                      ),
-                    )
-                  : null,
-            );
-          },
-        ),
-      );
-    }
-
-    if (_currentPanel != BiomedicalPanels.support &&
-        _currentPanel != BiomedicalPanels.analytics) {
-      actions.add(_refreshSecondaryAction(context, l10n, state, controller));
-    }
-
-    return actions;
-  }
-
-  AppTabToolbarAction _refreshSecondaryAction(
-    BuildContext context,
-    AppLocalizations l10n,
-    BiomedicalWorkspaceState state,
-    BiomedicalWorkspaceController controller,
-  ) {
-    return AppTabToolbarAction(
-      label: l10n.commonRefreshActionLabel,
-      icon: Icons.refresh,
-      semanticLabel: l10n.commonRefreshActionLabel,
-      tooltip: l10n.commonRefreshActionLabel,
-      enabled: !state.isRefreshing,
-      isLoading: state.isRefreshing,
-      onPressed: state.isRefreshing
-          ? null
-          : () async {
-              final AppFailure? failure = await controller.refresh();
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-    );
+  static int? _panelCount(String panel, BiomedicalSummary summary) {
+    return switch (panel) {
+      BiomedicalPanels.registry when summary.totalEquipment > 0 =>
+        summary.totalEquipment,
+      BiomedicalPanels.preventive when summary.overduePm > 0 =>
+        summary.overduePm,
+      BiomedicalPanels.workOrders when summary.openWorkOrders > 0 =>
+        summary.openWorkOrders,
+      BiomedicalPanels.compliance
+          when summary.criticalDowntime + summary.activeRecalls > 0 =>
+        summary.criticalDowntime + summary.activeRecalls,
+      _ => null,
+    };
   }
 
   List<AppListTableColumn<BiomedicalAsset>> _defaultColumnsForPanel(
@@ -757,7 +628,7 @@ class _BiomedicalWorkspaceContentState
         icon: Icons.add_box_outlined,
         kind: _BiomedicalActionKind.asset,
       ),
-      BiomedicalPanels.overview || BiomedicalPanels.workOrders => _PanelAction(
+      BiomedicalPanels.workOrders => _PanelAction(
         label: l10n.biomedicalCreateWorkOrderAction,
         icon: Icons.build_outlined,
         kind: _BiomedicalActionKind.workOrder,
@@ -771,6 +642,11 @@ class _BiomedicalWorkspaceContentState
         label: l10n.biomedicalRecordCalibrationAction,
         icon: Icons.speed_outlined,
         kind: _BiomedicalActionKind.calibration,
+      ),
+      BiomedicalPanels.support => _PanelAction(
+        label: l10n.biomedicalReportFaultAction,
+        icon: Icons.report_problem_outlined,
+        kind: _BiomedicalActionKind.fault,
       ),
       _ => null,
     };
@@ -800,32 +676,6 @@ class _BiomedicalWorkspaceContentState
       BiomedicalPanels.analytics => l10n.biomedicalPanelAnalytics,
       _ => panel,
     };
-  }
-
-  void _applyQueue(
-    BiomedicalWorkspaceController controller,
-    BiomedicalWorkspaceState state,
-    String queue,
-  ) {
-    for (final BiomedicalQueueSummary summary in state.workbench.queues) {
-      if (summary.queue == queue) {
-        final String? panel = summary.panel;
-        if (panel != null &&
-            panel.isNotEmpty &&
-            panel != _currentPanel &&
-            BiomedicalPanels.values.contains(panel)) {
-          _tableColumnController.dispose();
-          setState(() {
-            _currentPanel = panel;
-            _tableColumnController =
-                AppListTableColumnVisibilityController<BiomedicalAsset>();
-          });
-          _updateUrlForPanel(panel);
-        }
-        unawaited(controller.applyQueue(summary));
-        return;
-      }
-    }
   }
 
   Future<void> _openAssetDetailDialog(
@@ -919,11 +769,6 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
           ),
           expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
-              label: l10n.biomedicalAssetTagLabel,
-              value: asset.displayId,
-              copyable: true,
-            ),
-            AppWorkspacePatientContextField(
               label: l10n.biomedicalFacilityLabel,
               value: _dash(asset.facilityLabel, l10n),
             ),
@@ -951,12 +796,6 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
             titleIcon: Icons.badge_outlined,
             child: AppInfoTileGrid(
               items: <AppInfoTileData>[
-                AppInfoTileData(
-                  label: l10n.biomedicalAssetTagLabel,
-                  value: asset.displayId,
-                  icon: Icons.tag_outlined,
-                  copyable: true,
-                ),
                 AppInfoTileData(
                   label: l10n.biomedicalEquipmentLabel,
                   value: asset.effectiveEquipmentLabel,
@@ -1004,52 +843,6 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
               ],
             ),
           ),
-          _RelatedSection(
-            title: l10n.biomedicalMaintenanceSectionTitle,
-            icon: Icons.build_outlined,
-            statuses: <AppWorkspaceStatus>[
-              AppWorkspaceStatus(
-                label: l10n.biomedicalScheduleMaintenanceAction,
-                tone: AppWorkspaceStatusTone.info,
-              ),
-              AppWorkspaceStatus(
-                label: l10n.biomedicalCreateWorkOrderAction,
-                tone: AppWorkspaceStatusTone.warning,
-              ),
-            ],
-          ),
-          _RelatedSection(
-            title: l10n.biomedicalComplianceSectionTitle,
-            icon: Icons.fact_check_outlined,
-            statuses: <AppWorkspaceStatus>[
-              AppWorkspaceStatus(
-                label: l10n.biomedicalRecordCalibrationAction,
-                tone: AppWorkspaceStatusTone.info,
-              ),
-              AppWorkspaceStatus(
-                label: l10n.biomedicalRecordSafetyTestAction,
-                tone: AppWorkspaceStatusTone.success,
-              ),
-              AppWorkspaceStatus(
-                label: l10n.biomedicalLogIncidentAction,
-                tone: AppWorkspaceStatusTone.warning,
-              ),
-            ],
-          ),
-          _RelatedSection(
-            title: l10n.biomedicalLifecycleSectionTitle,
-            icon: Icons.sync_alt_outlined,
-            statuses: <AppWorkspaceStatus>[
-              AppWorkspaceStatus(
-                label: l10n.biomedicalTransferLocationAction,
-                tone: AppWorkspaceStatusTone.info,
-              ),
-              AppWorkspaceStatus(
-                label: l10n.biomedicalDisposeTransferAction,
-                tone: AppWorkspaceStatusTone.error,
-              ),
-            ],
-          ),
         ]),
       ],
     );
@@ -1072,227 +865,117 @@ class _DetailActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final _BiomedicalActionKind? nextKind = _nextActionKindForAsset(asset);
+    final bool isWorkOrder =
+        asset.resource == BiomedicalResources.workOrders;
+    final String workOrderStatus = asset.status?.trim().toUpperCase() ?? '';
+
+    Widget? writeAction({
+      required _BiomedicalActionKind kind,
+      required String label,
+      required IconData icon,
+    }) {
+      if (!canWrite || kind == nextKind) {
+        return null;
+      }
+      return AppButton.secondary(
+        label: label,
+        leadingIcon: icon,
+        isLoading: state.isMutating,
+        onPressed: () => unawaited(
+          _openActionDialog(context, ref, state, kind, asset: asset),
+        ),
+      );
+    }
+
+    final List<Widget> actions = <Widget>[
+      if (canWrite && asset.isRegistryAsset)
+        ?writeAction(
+          kind: _BiomedicalActionKind.asset,
+          label: l10n.biomedicalEditAssetAction,
+          icon: Icons.edit_outlined,
+        ),
+      ?writeAction(
+        kind: _BiomedicalActionKind.transfer,
+        label: l10n.biomedicalTransferLocationAction,
+        icon: Icons.location_on_outlined,
+      ),
+      ?writeAction(
+        kind: _BiomedicalActionKind.maintenance,
+        label: l10n.biomedicalScheduleMaintenanceAction,
+        icon: Icons.event_repeat_outlined,
+      ),
+      ?writeAction(
+        kind: _BiomedicalActionKind.workOrder,
+        label: isWorkOrder
+            ? l10n.biomedicalUpdateWorkOrderAction
+            : l10n.biomedicalCreateWorkOrderAction,
+        icon: Icons.build_outlined,
+      ),
+      if (isWorkOrder &&
+          (workOrderStatus == 'OPEN' || workOrderStatus == 'PENDING'))
+        ?writeAction(
+          kind: _BiomedicalActionKind.startWorkOrder,
+          label: l10n.biomedicalStartWorkOrderAction,
+          icon: Icons.play_arrow_outlined,
+        ),
+      if (isWorkOrder && workOrderStatus == 'IN_PROGRESS')
+        ?writeAction(
+          kind: _BiomedicalActionKind.returnToService,
+          label: l10n.biomedicalReturnToServiceAction,
+          icon: Icons.verified_outlined,
+        ),
+      ?writeAction(
+        kind: _BiomedicalActionKind.calibration,
+        label: l10n.biomedicalRecordCalibrationAction,
+        icon: Icons.speed_outlined,
+      ),
+      ?writeAction(
+        kind: _BiomedicalActionKind.safety,
+        label: l10n.biomedicalRecordSafetyTestAction,
+        icon: Icons.fact_check_outlined,
+      ),
+      ?writeAction(
+        kind: _BiomedicalActionKind.downtime,
+        label: l10n.biomedicalReportDowntimeAction,
+        icon: Icons.power_settings_new_outlined,
+      ),
+      if (asset.resource == BiomedicalResources.downtimeLogs)
+        ?writeAction(
+          kind: _BiomedicalActionKind.closeDowntime,
+          label: l10n.biomedicalCloseDowntimeAction,
+          icon: Icons.done_all_outlined,
+        ),
+      ?writeAction(
+        kind: _BiomedicalActionKind.incident,
+        label: l10n.biomedicalLogIncidentAction,
+        icon: Icons.warning_amber_outlined,
+      ),
+      if (asset.resource == BiomedicalResources.recallNotices)
+        ?writeAction(
+          kind: _BiomedicalActionKind.recall,
+          label: l10n.biomedicalAcknowledgeRecallAction,
+          icon: Icons.campaign_outlined,
+        ),
+      ?writeAction(
+        kind: _BiomedicalActionKind.disposal,
+        label: l10n.biomedicalDisposeTransferAction,
+        icon: Icons.move_down_outlined,
+      ),
+      if (canPrint)
+        AppReportActionButton.print(
+          label: l10n.biomedicalPrintReportAction,
+          onPressed: () => unawaited(_printBiomedicalReport(context, ref, asset)),
+        ),
+    ];
+
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return AppQuickActions(
       title: l10n.patientsQuickActionsTitle,
-      extraActions: <Widget>[
-        if (canWrite && asset.isRegistryAsset)
-          AppButton.secondary(
-            label: l10n.biomedicalEditAssetAction,
-            leadingIcon: Icons.edit_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.asset,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalTransferLocationAction,
-            leadingIcon: Icons.location_on_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.transfer,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalScheduleMaintenanceAction,
-            leadingIcon: Icons.event_repeat_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.maintenance,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: asset.resource == BiomedicalResources.workOrders
-                ? l10n.biomedicalUpdateWorkOrderAction
-                : l10n.biomedicalCreateWorkOrderAction,
-            leadingIcon: Icons.build_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.workOrder,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite && asset.resource == BiomedicalResources.workOrders)
-          AppButton.secondary(
-            label: l10n.biomedicalStartWorkOrderAction,
-            leadingIcon: Icons.play_arrow_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.startWorkOrder,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite && asset.resource == BiomedicalResources.workOrders)
-          AppButton.secondary(
-            label: l10n.biomedicalReturnToServiceAction,
-            leadingIcon: Icons.verified_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.returnToService,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalRecordCalibrationAction,
-            leadingIcon: Icons.speed_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.calibration,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalRecordSafetyTestAction,
-            leadingIcon: Icons.fact_check_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.safety,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalReportDowntimeAction,
-            leadingIcon: Icons.power_settings_new_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.downtime,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite && asset.resource == BiomedicalResources.downtimeLogs)
-          AppButton.secondary(
-            label: l10n.biomedicalCloseDowntimeAction,
-            leadingIcon: Icons.done_all_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.closeDowntime,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalLogIncidentAction,
-            leadingIcon: Icons.warning_amber_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.incident,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite && asset.resource == BiomedicalResources.recallNotices)
-          AppButton.secondary(
-            label: l10n.biomedicalAcknowledgeRecallAction,
-            leadingIcon: Icons.campaign_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.recall,
-                asset: asset,
-              ),
-            ),
-          ),
-        if (canWrite)
-          AppButton.secondary(
-            label: l10n.biomedicalDisposeTransferAction,
-            leadingIcon: Icons.move_down_outlined,
-            isLoading: state.isMutating,
-            onPressed: () => unawaited(
-              _openActionDialog(
-                context,
-                ref,
-                state,
-                _BiomedicalActionKind.disposal,
-                asset: asset,
-              ),
-            ),
-          ),
-        AppReportActionButton.preview(
-          label: l10n.biomedicalPrintReportAction,
-          onPressed: () => unawaited(
-            _openActionDialog(
-              context,
-              ref,
-              state,
-              _BiomedicalActionKind.report,
-              asset: asset,
-            ),
-          ),
-        ),
-        AppReportActionButton.print(
-          label: l10n.reportsPrintAction,
-          enabled: canPrint,
-          onPressed: canPrint
-              ? () => unawaited(_printBiomedicalReport(context, ref, asset))
-              : null,
-        ),
-      ],
+      extraActions: actions,
     );
   }
 }
@@ -1396,35 +1079,6 @@ String _biomedicalReportHtml(BuildContext context, BiomedicalAsset asset) {
   ].join();
 }
 
-class _RelatedSection extends StatelessWidget {
-  const _RelatedSection({
-    required this.title,
-    required this.icon,
-    required this.statuses,
-  });
-
-  final String title;
-  final IconData icon;
-  final List<AppWorkspaceStatus> statuses;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppWorkspaceDetailPanel(
-      title: title,
-      titleIcon: icon,
-      child: Wrap(
-        spacing: Theme.of(context).spacing.xs,
-        runSpacing: Theme.of(context).spacing.xs,
-        children: <Widget>[
-          for (final AppWorkspaceStatus status in statuses)
-            AppWorkspaceStatusBadge(status: status),
-        ],
-      ),
-    );
-  }
-}
-
-
 String? _mobilePanelFieldLabel(
   BuildContext context,
   String panel,
@@ -1464,14 +1118,12 @@ class _BiomedicalNextActionCell extends ConsumerWidget {
     required this.canWrite,
     required this.state,
     required this.onOpenDetail,
-    this.compact = false,
   });
 
   final BiomedicalAsset asset;
   final bool canWrite;
   final BiomedicalWorkspaceState state;
   final VoidCallback onOpenDetail;
-  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1488,13 +1140,6 @@ class _BiomedicalNextActionCell extends ConsumerWidget {
         return;
       }
       onOpenDetail();
-    }
-
-    if (compact) {
-      return _BiomedicalCompactNextActionButton(
-        label: label,
-        onPressed: onPressed,
-      );
     }
 
     if (hasWriteAction) {
@@ -1518,66 +1163,6 @@ class _BiomedicalNextActionCell extends ConsumerWidget {
   }
 }
 
-class _BiomedicalCompactNextActionButton extends StatelessWidget {
-  const _BiomedicalCompactNextActionButton({
-    required this.label,
-    required this.onPressed,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Color primaryColor = theme.colorScheme.primary;
-
-    return Semantics(
-      button: true,
-      enabled: true,
-      label: label,
-      child: Tooltip(
-        message: label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onPressed,
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.xs,
-                vertical: 2,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    Icons.arrow_forward_outlined,
-                    size: 14,
-                    color: primaryColor,
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 enum _BiomedicalActionKind {
   asset,
   transfer,
@@ -1593,7 +1178,6 @@ enum _BiomedicalActionKind {
   recall,
   disposal,
   fault,
-  report,
 }
 
 BiomedicalWorkspaceState? _biomedicalStateFromAsync(
@@ -1724,26 +1308,24 @@ class _BiomedicalActionDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool isReport = widget.kind == _BiomedicalActionKind.report;
 
     return AppDialog(
       title: Text(_dialogTitle(l10n)),
       icon: Icon(_dialogIcon()),
       scrollable: true,
-      maxWidth: isReport ? 760 : 640,
-      content: isReport ? _buildReportPreview(context) : _buildForm(context),
+      maxWidth: 640,
+      content: _buildForm(context),
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        if (!isReport)
-          AppButton.primary(
-            label: _submitLabel(l10n),
-            leadingIcon: Icons.check_outlined,
-            isLoading: widget.state.isMutating,
-            onPressed: widget.state.isMutating ? null : _submit,
-          ),
+        AppButton.primary(
+          label: _submitLabel(l10n),
+          leadingIcon: Icons.check_outlined,
+          isLoading: widget.state.isMutating,
+          onPressed: widget.state.isMutating ? null : _submit,
+        ),
       ],
     );
   }
@@ -1941,58 +1523,6 @@ class _BiomedicalActionDialogState
     );
   }
 
-  Widget _buildReportPreview(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final BiomedicalAsset? asset = widget.asset;
-    return AppReportPreviewPanel(
-      title: l10n.biomedicalReportsSectionTitle,
-      selectable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          AppReportSummaryGrid(
-            records: <AppReportSummaryItem>[
-              AppReportSummaryItem(
-                label: l10n.biomedicalAssetTagLabel,
-                value: asset?.displayId ?? l10n.biomedicalNotAvailableLabel,
-                icon: Icons.tag_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.biomedicalStatusLabel,
-                value: _labelForCode(
-                  asset?.status,
-                  fallback: l10n.biomedicalNotAvailableLabel,
-                ),
-                icon: Icons.verified_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.biomedicalPriorityLabel,
-                value: _labelForCode(
-                  asset?.priority,
-                  fallback: l10n.biomedicalNotAvailableLabel,
-                ),
-                icon: Icons.priority_high_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.biomedicalFacilityLabel,
-                value: asset?.facilityLabel ?? l10n.biomedicalNotAvailableLabel,
-                icon: Icons.domain_outlined,
-              ),
-            ],
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          Text(
-            asset?.displayTitle ?? l10n.biomedicalNotAvailableLabel,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          Text(l10n.biomedicalPrintReportBody),
-        ],
-      ),
-    );
-  }
-
   Future<void> _submit() async {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
@@ -2054,7 +1584,6 @@ class _BiomedicalActionDialogState
       ),
       _BiomedicalActionKind.disposal => controller.disposeOrTransfer(payload),
       _BiomedicalActionKind.fault => controller.createFaultReport(payload),
-      _BiomedicalActionKind.report => Future<AppFailure?>.value(),
     };
   }
 
@@ -2184,8 +1713,7 @@ class _BiomedicalActionDialogState
       widget.kind != _BiomedicalActionKind.workOrder &&
       widget.kind != _BiomedicalActionKind.fault &&
       widget.kind != _BiomedicalActionKind.incident &&
-      widget.kind != _BiomedicalActionKind.recall &&
-      widget.kind != _BiomedicalActionKind.report;
+      widget.kind != _BiomedicalActionKind.recall;
   bool get _usesDateTwo =>
       widget.kind == _BiomedicalActionKind.calibration ||
       widget.kind == _BiomedicalActionKind.safety;
@@ -2242,7 +1770,6 @@ class _BiomedicalActionDialogState
       _BiomedicalActionKind.recall => l10n.biomedicalRecallDialogTitle,
       _BiomedicalActionKind.disposal => l10n.biomedicalDisposalDialogTitle,
       _BiomedicalActionKind.fault => l10n.biomedicalFaultDialogTitle,
-      _BiomedicalActionKind.report => l10n.biomedicalPrintReportDialogTitle,
     };
   }
 
@@ -2294,7 +1821,6 @@ class _BiomedicalActionDialogState
       _BiomedicalActionKind.recall => Icons.campaign_outlined,
       _BiomedicalActionKind.disposal => Icons.move_down_outlined,
       _BiomedicalActionKind.fault => Icons.report_problem_outlined,
-      _BiomedicalActionKind.report => Icons.description_outlined,
     };
   }
 }
