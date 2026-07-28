@@ -1,44 +1,49 @@
 # Align Rooms Setup With Departments
 
-Fix the false prerequisite gate on `/admin/setup?section=rooms`, and bring the Rooms tab to the same scoped list/CRUD pattern as Departments and Units. Follow `prompts/.cursor/prompt.mdc`.
+Fix the false prerequisite gate on `/admin/setup?section=rooms`, and match Departments/Units scoped list/CRUD. Follow `prompts/.cursor/prompt.mdc`.
 
 ## Context
 
-Departments and Units list via scoped APIs. Rooms still read `FacilitySetupSnapshot` (`departments`, `wards`, `rooms`), so Platform Admin can see structure elsewhere while Rooms shows **"Create at least one department or ward before adding rooms."** Hierarchy: **Tenant → Facility → Ward (optional) → Room**. Fields: name, optional ward, optional floor. Soft-delete only. Search hint: "Search rooms by name, ward, floor, or status".
+Rooms still read `FacilitySetupSnapshot` (departments, wards, rooms), so Platform Admin can see structure elsewhere while Rooms shows **"Create at least one department or ward before adding rooms."** Hierarchy: **Tenant → Facility → Ward (optional) → Room**. Fields: name, optional ward, optional floor. Soft-delete only. Search: "Search rooms by name, ward, floor, or status".
 
-**Accessible facility:** a non-deleted facility the actor may see under RBAC/ABAC. Ward is optional on create; rooms do not require a department.
+**Accessible facility:** non-deleted facility visible under RBAC/ABAC. Ward optional; rooms do not require a department.
 
 ## Requirements
 
-1. Load and filter Rooms independently (like `_DepartmentSetupSection`), scoped by account type; do not gate on wizard `snapshot.departments` / `snapshot.wards` alone.
-2. Show gate copy only when **no accessible facility** exists. When facilities exist and rooms are empty, show only **"No rooms have been added."** Keep **+ Create room** enabled when write access and at least one accessible facility exist.
-3. **Platform Admin:** list all rooms; filters Tenant / Facility / Ward / Status (deleted); create selects Tenant → Facility → Ward (optional).
-4. **Tenant Admin:** list rooms in their tenant; filters Facility / Ward / Status; tenant preselected; create selects Facility → Ward (optional).
-5. **Facility Admin:** list rooms in their facility; filters Ward / Status; tenant and facility preselected; create selects Ward (optional) only.
-6. Table parity with Departments: `#`, room name, ward, floor, facility (when in scope), tenant (platform only), status (active vs soft-deleted), Edit / soft-Delete (Restore for soft-deleted). Backend remains authoritative for visible rows and actions.
-7. Before create/edit persist, always open a dedicated room similarity dialog (even when no matches), scoped like create, excluding the edited room; support cancel / proceed-with-caution per existing structure similarity UX.
-8. After mutations, refresh the Rooms list (and related setup counts) without a misleading empty/gate flash. Cover loading, empty, no-results, error/retry, success, and validation feedback.
+1. Load/filter Rooms independently (like `_DepartmentSetupSection`); do not gate on wizard `snapshot.departments` / `snapshot.wards` alone.
+2. Show gate copy only when **no accessible facility** exists. When facilities exist and rooms are empty, show only **"No rooms have been added."** Enable **+ Create room** when write access and ≥1 accessible facility exist.
+3. **Platform Admin:** all rooms; filters Tenant / Facility / Ward / Status; create Tenant → Facility → Ward (optional).
+4. **Tenant Admin:** tenant rooms; filters Facility / Ward / Status; tenant preselected; create Facility → Ward (optional).
+5. **Facility Admin:** facility rooms; filters Ward / Status; tenant/facility preselected; create Ward (optional) only.
+6. Table parity with Departments: `#`, name, ward, floor, facility (in scope), tenant (platform), status, Edit / soft-Delete (Restore). Backend authoritative for rows/actions.
+7. Before create/edit persist, always open room similarity dialog (even if no matches), scoped like create, excluding edited room; cancel / proceed-with-caution per structure similarity UX.
+8. After mutations, refresh Rooms list and setup counts without empty/gate flash. Cover loading, empty, no-results, error/retry, success, validation.
+9. In create/edit room dialogs, while loading options, checking similarity, or other in-dialog async, show centered `AppLoadingIndicator` as a full-content overlay that blocks the form (OPD encounter Stack + AbsorbPointer + `Positioned.fill`). Replace the inline top-of-form row spinner.
+10. On successful create/edit, close the form and open the room details dialog for the saved entity (same flow as `_openDepartmentDialog` → `_openDepartmentDetails`).
 
 ## Constraints
 
-- Reuse Departments/Units list scope helpers, search/filter chrome, structure soft-delete/restore dialogs, form layout, and theme tokens.
-- Do not invent a parallel rooms authorization model; unauthorized controls must not render.
-- Soft delete only from the list Delete action (no hard-delete unless already shared by structure CRUD).
-- Drop the department-or-ward gate; rooms do not require a department.
+- Reuse Departments/Units scope helpers, chrome, soft-delete/restore, form layout, theme tokens, dialog loading overlay, and post-save details-dialog flow.
+- No parallel rooms auth model; unauthorized controls must not render.
+- Soft delete only from list Delete (no hard-delete unless shared by structure CRUD).
+- Drop department-or-ward gate; rooms do not require a department.
 
 ## Acceptance Criteria
 
-- With accessible facility and no rooms, Rooms empty state has no false gate sentence and Create room works (Req 1–2).
-- With zero accessible facilities, gate copy appears and create stays blocked (Req 2).
-- Each account type sees only in-scope rows, columns, filters, and create selectors (Req 3–6).
-- Similarity dialog always appears before save on create/edit (Req 7).
-- List updates after create/edit/delete/restore; unauthorized UI absent in tests (Req 6, 8).
+- Accessible facility, no rooms: empty state has no false gate; Create room works (Req 1–2).
+- Zero accessible facilities: gate copy; create blocked (Req 2).
+- Each account type sees only in-scope rows, columns, filters, selectors (Req 3–6).
+- Similarity dialog always before save (Req 7).
+- List updates after mutations; unauthorized UI absent (Req 6, 8).
+- Dialog loading/updating: centered `AppLoadingIndicator` overlays form; fields/actions not interactable (Req 9).
+- Successful create/edit opens the room details dialog for the saved room (Req 10).
 
 ## Relevant Files
 
-- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart` (`_RoomSetupSection`, `_RoomFormDialog`, `_DepartmentSetupSection`)
+- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart` (`_RoomSetupSection`, `_RoomFormDialog`, `_openDepartmentDialog`)
+- `frontend/lib/features/tenant_facility/presentation/widgets/department_details_dialog.dart` (post-save details pattern)
+- `frontend/lib/shared/components/app_loading_indicator.dart`
+- `frontend/lib/shared/components/opd_encounter_dialog.dart` (overlay reference)
 - `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart`
-- `frontend/lib/features/tenant_facility/domain/entities/tenant_facility_setup.dart`
-- `frontend/lib/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart`
 - `backend/src/modules/room/`
-- `frontend/test/features/tenant_facility/presentation/` (mirror departments/units tab gating/similarity tests)
+- `frontend/test/features/tenant_facility/presentation/`
