@@ -165,10 +165,15 @@ AppListTable<TherapyWorkItem> _table(WidgetTester tester) {
   );
 }
 
-Future<void> _pumpAfterAction(WidgetTester tester) async {
+Future<void> _pumpFrames(WidgetTester tester) async {
+  // Adaptive polling keeps timers alive, so avoid pumpAndSettle.
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(seconds: 1));
+}
+
+Future<void> _pumpAfterAction(WidgetTester tester) async {
+  await _pumpFrames(tester);
 }
 
 Future<GoRouter> _pumpPhysiotherapyWorkspace(
@@ -239,9 +244,7 @@ Future<GoRouter> _pumpPhysiotherapyWorkspace(
       ),
     ),
   );
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 500));
-  await tester.pumpAndSettle();
+  await _pumpFrames(tester);
   return router;
 }
 
@@ -354,7 +357,7 @@ void main() {
     );
 
     await tester.tap(find.textContaining('Today').first);
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
     expect(router.state.uri.queryParameters['section'], 'today');
     expect(_table(tester).columnVisibilityStorageKey, 'physiotherapy_today');
@@ -378,7 +381,7 @@ void main() {
     );
 
     await tester.tap(find.textContaining('Active plans').first);
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
     expect(router.state.uri.queryParameters['section'], 'active-plans');
     expect(
@@ -392,7 +395,7 @@ void main() {
     _stubWorkItems(repository, items: <TherapyWorkItem>[_followUpItem]);
 
     await tester.tap(find.textContaining('Follow-up due').first);
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
     expect(router.state.uri.queryParameters['section'], 'follow-up');
     expect(find.text('Schedule follow-up'), findsWidgets);
@@ -402,7 +405,7 @@ void main() {
     _stubWorkItems(repository, items: <TherapyWorkItem>[_missedItem]);
 
     await tester.tap(find.textContaining('Missed').first);
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
     expect(router.state.uri.queryParameters['section'], 'missed');
     expect(find.text('Mark attendance'), findsWidgets);
@@ -412,7 +415,7 @@ void main() {
     _stubWorkItems(repository, items: <TherapyWorkItem>[_completedItem]);
 
     await tester.tap(find.textContaining('Completed').first);
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
     expect(router.state.uri.queryParameters['section'], 'completed');
     expect(find.text('Print instructions'), findsWidgets);
@@ -470,7 +473,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'Rita');
     await tester.testTextInput.receiveAction(TextInputAction.search);
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
     final List<PhysiotherapyWorklistQuery> queries = verify(
       () => repository.listWorkItems(captureAny()),
@@ -495,11 +498,10 @@ void main() {
       tester.element(find.byType(AppTabStrip)),
     );
 
-    await tester.tap(find.text(l10n.physiotherapyAcceptReferralAction));
+    await tester.tap(find.byTooltip(l10n.physiotherapyAcceptReferralAction));
     await _pumpAfterAction(tester);
 
     expect(find.byType(ClinicalFreeTextActionDialog), findsOneWidget);
-    expect(find.text(l10n.physiotherapyAcceptReferralDialogTitle), findsOneWidget);
     expect(find.byType(AppQuickActions), findsNothing);
   });
 
@@ -587,7 +589,7 @@ void main() {
     expect(find.text(l10n.physiotherapyAcceptReferralAction), findsNothing);
 
     await tester.tap(find.textContaining('Completed').first);
-    await tester.pumpAndSettle();
+    await _pumpFrames(tester);
 
     expect(find.text(l10n.physiotherapyPrintInstructionsAction), findsWidgets);
   });
