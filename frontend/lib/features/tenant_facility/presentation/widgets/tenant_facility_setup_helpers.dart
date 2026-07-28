@@ -401,6 +401,38 @@ abstract final class TenantFacilityUnitsFilterKeys {
   static const String activeNo = 'no';
 }
 
+/// Wards tab reuses the same list-scope rules as departments/units.
+typedef TenantFacilityWardsListScope = TenantFacilityDepartmentsListScope;
+
+TenantFacilityWardsListScope tenantFacilityWardsListScope(
+  AppAccessPolicy policy,
+) => tenantFacilityDepartmentsListScope(policy);
+
+bool tenantFacilityWardsShowsTenantColumn(TenantFacilityWardsListScope scope) =>
+    tenantFacilityDepartmentsShowsTenantColumn(scope);
+
+bool tenantFacilityWardsShowsFacilityColumn(
+  TenantFacilityWardsListScope scope,
+) => tenantFacilityDepartmentsShowsFacilityColumn(scope);
+
+bool tenantFacilityWardsShowsTenantFilter(TenantFacilityWardsListScope scope) =>
+    tenantFacilityDepartmentsShowsTenantFilter(scope);
+
+bool tenantFacilityWardsShowsFacilityFilter(
+  TenantFacilityWardsListScope scope,
+) => tenantFacilityDepartmentsShowsFacilityFilter(scope);
+
+/// Advanced-filter keys for the wards tab.
+abstract final class TenantFacilityWardsFilterKeys {
+  static const String tenant = 'tenant';
+  static const String facility = 'facility';
+  static const String department = 'department';
+  static const String type = 'type';
+  static const String active = 'active';
+  static const String activeYes = 'yes';
+  static const String activeNo = 'no';
+}
+
 String tenantFacilitySetupDeskSectionLabel(
   AppLocalizations l10n,
   TenantFacilitySetupDeskSection section, {
