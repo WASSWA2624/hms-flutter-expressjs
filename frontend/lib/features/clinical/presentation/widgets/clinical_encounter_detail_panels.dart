@@ -195,7 +195,6 @@ class _ClinicalLabOrdersTablePanelState
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalLabOrdersTitle,
       description: l10n.clinicalLabOrdersBody,
-      collapsible: true,
       actions: _clinicalBatchHeaderActions(
         context: context,
         selectedCount: selectedOrders.length,
@@ -350,7 +349,6 @@ class _ClinicalRadiologyOrdersTablePanelState
 
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalRadiologyOrdersTitle,
-      collapsible: true,
       actions: _clinicalBatchHeaderActions(
         context: context,
         selectedCount: selectedOrders.length,
@@ -536,7 +534,6 @@ class _ClinicalPharmacyOrdersTablePanelState
 
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalPharmacyOrdersTitle,
-      collapsible: true,
       actions: _clinicalBatchHeaderActions(
         context: context,
         selectedCount: selectedOrders.length,
@@ -713,7 +710,6 @@ class _ClinicalDiagnosesTablePanelState
 
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalPatientDiagnosesTitle,
-      collapsible: true,
       actions: _clinicalBatchHeaderActions(
         context: context,
         selectedCount: selectedDiagnoses.length,

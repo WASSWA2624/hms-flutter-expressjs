@@ -1381,7 +1381,6 @@ class _ClinicalDetailPanel extends ConsumerWidget {
       if (triageHandoff?.hasWorkflowProgress ?? false)
         AppWorkspaceDetailPanel(
           title: l10n.clinicalWorkflowProgressLabel,
-          collapsible: true,
           child: ClinicalWorkflowProgressStrip(
             handoff: triageHandoff!,
             onNextAction: canRecordVitalsFromWorkflow
@@ -1401,7 +1400,6 @@ class _ClinicalDetailPanel extends ConsumerWidget {
           when previewEntries.isNotEmpty)
         AppWorkspaceDetailPanel(
           title: l10n.clinicalResultsChronologyTitle,
-          collapsible: true,
           actions: <Widget>[
             Builder(
               builder: (BuildContext context) {
@@ -1875,7 +1873,6 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
 
     return AppWorkspaceDetailPanel(
       title: l10n.opdWorkflowTriageTitle,
-      collapsible: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -2087,7 +2084,6 @@ class _ClinicalActionBar extends ConsumerWidget {
         return AppQuickActions(
           title: l10n.clinicalActionsTitle,
           presentation: AppQuickActionsPresentation.detailPanel,
-          collapsible: true,
           actions: <AppActionItem>[
             AppActionItem(
               label: l10n.clinicalAddNoteAction,
@@ -2271,7 +2267,6 @@ class _ClinicalRecordSection extends StatelessWidget {
 
     return AppWorkspaceDetailPanel(
       title: title,
-      collapsible: true,
       child: _ClinicalRecordList(records: records),
     );
   }

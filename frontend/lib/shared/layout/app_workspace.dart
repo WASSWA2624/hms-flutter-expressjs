@@ -481,7 +481,7 @@ class AppWorkspaceDetailPanel extends StatefulWidget {
     this.description,
     this.actions = const <Widget>[],
     this.titleIcon,
-    this.collapsible = false,
+    this.collapsible = true,
     this.initiallyExpanded = true,
     super.key,
   });
@@ -491,6 +491,8 @@ class AppWorkspaceDetailPanel extends StatefulWidget {
   final List<Widget> actions;
   final Widget child;
   final IconData? titleIcon;
+
+  /// When true (default), titled panels can collapse to the header only.
   final bool collapsible;
   final bool initiallyExpanded;
 

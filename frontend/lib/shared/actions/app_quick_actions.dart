@@ -51,7 +51,7 @@ class AppQuickActions extends ConsumerWidget {
     this.runSpacing,
     this.overflowLabel,
     this.hideWhenEmpty = true,
-    this.collapsible = false,
+    this.collapsible = true,
     this.initiallyExpanded = true,
     super.key,
   });
@@ -68,6 +68,9 @@ class AppQuickActions extends ConsumerWidget {
   final double? runSpacing;
   final String? overflowLabel;
   final bool hideWhenEmpty;
+
+  /// Forwarded to [AppWorkspaceDetailPanel] when [presentation] is
+  /// [AppQuickActionsPresentation.detailPanel]. Defaults to collapsible.
   final bool collapsible;
   final bool initiallyExpanded;
 

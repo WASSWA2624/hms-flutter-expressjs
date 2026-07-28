@@ -489,4 +489,46 @@ void main() {
       expect(find.byIcon(Icons.check), findsWidgets);
     },
   );
+
+  testWidgets('AppWorkspaceDetailPanel collapses to header by default', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkspaceDetailPanel(
+        title: 'Orders',
+        child: Text('Panel body'),
+      ),
+      size: const Size(800, 500),
+    );
+
+    expect(find.text('Orders'), findsOneWidget);
+    expect(find.text('Panel body'), findsOneWidget);
+    expect(find.byIcon(Icons.expand_less), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.expand_less));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Orders'), findsOneWidget);
+    expect(find.text('Panel body'), findsNothing);
+    expect(find.byIcon(Icons.expand_more), findsOneWidget);
+  });
+
+  testWidgets('AppWorkspaceDetailPanel can opt out of collapsing', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkspaceDetailPanel(
+        title: 'Fixed panel',
+        collapsible: false,
+        child: Text('Always visible'),
+      ),
+      size: const Size(800, 500),
+    );
+
+    expect(find.text('Always visible'), findsOneWidget);
+    expect(find.byIcon(Icons.expand_less), findsNothing);
+    expect(find.byIcon(Icons.expand_more), findsNothing);
+  });
 }
