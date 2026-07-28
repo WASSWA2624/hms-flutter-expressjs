@@ -1562,15 +1562,30 @@ class _ClinicalTriageHandoffPanel extends ConsumerWidget {
         writeAllowed &&
         !bundle.entry.isTerminal &&
         clinicalOpdFlowApiId(bundle.entry) != null;
+    final int criticalVitalCount = handoff.vitalSigns
+        .where(
+          (ClinicalVitalSummary vital) =>
+              vital.status.toUpperCase() == 'CRITICAL',
+        )
+        .length;
     final int abnormalVitalCount = handoff.vitalSigns.where((
       ClinicalVitalSummary vital,
     ) {
       final String status = vital.status.toUpperCase();
-      return status == 'ABNORMAL' || status == 'CRITICAL';
+      return status == 'HIGH' ||
+          status == 'LOW' ||
+          status == 'ABNORMAL' ||
+          status == 'CRITICAL';
     }).length;
     final AppWorkspaceStatus vitalStatus = AppWorkspaceStatus(
-      label: _apiLabel(abnormalVitalCount > 0 ? 'ABNORMAL' : 'NORMAL'),
-      tone: abnormalVitalCount > 0
+      label: criticalVitalCount > 0
+          ? l10n.clinicalResultsFlagCriticalLabel
+          : abnormalVitalCount > 0
+          ? l10n.opdAbnormalVitalsSummaryLabel
+          : l10n.patientsVitalNormalLabel,
+      tone: criticalVitalCount > 0
+          ? AppWorkspaceStatusTone.error
+          : abnormalVitalCount > 0
           ? AppWorkspaceStatusTone.warning
           : AppWorkspaceStatusTone.success,
     );
@@ -1650,19 +1665,10 @@ class _ClinicalTriageHandoffPanel extends ConsumerWidget {
                 _ClinicalStatusText(status: vitalStatus),
               ],
             ),
+            SizedBox(height: theme.spacing.xs),
+            _ClinicalVitalsLegend(),
             SizedBox(height: theme.spacing.sm),
             _ClinicalVitalsGrid(vitals: handoff.vitalSigns),
-          ],
-          if (handoff.alerts.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            Text(
-              l10n.opdClinicalAlertsSummaryLabel,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: theme.spacing.xs),
-            _ClinicalAlertsWrap(alerts: handoff.alerts),
           ],
         ],
       ),
@@ -1714,10 +1720,7 @@ class _ClinicalVitalSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color valueColor = _clinicalToneColor(
-      theme,
-      _clinicalVitalTone(vital.status),
-    );
+    final Color valueColor = _clinicalVitalValueColor(theme, vital.status);
     final String recordedAtLabel = vital.recordedAt == null
         ? ''
         : _dateTimeLabel(context, vital.recordedAt);
@@ -1758,33 +1761,62 @@ class _ClinicalVitalSummary extends StatelessWidget {
   }
 }
 
-class _ClinicalAlertsWrap extends StatelessWidget {
-  const _ClinicalAlertsWrap({required this.alerts});
-
-  final List<ClinicalAlertSummary> alerts;
-
+class _ClinicalVitalsLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     return Wrap(
       spacing: theme.spacing.md,
       runSpacing: theme.spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        for (final ClinicalAlertSummary alert in alerts)
-          _ClinicalStatusText(
-            status: AppWorkspaceStatus(
-              label: _joinDisplay(<String?>[
-                _apiLabel(alert.severity ?? ''),
-                alert.message,
-                alert.createdAt == null
-                    ? null
-                    : _dateTimeLabel(context, alert.createdAt),
-              ]),
-              tone: _clinicalAlertTone(alert.severity),
-              icon: Icons.warning_amber_outlined,
-            ),
-            textStyle: theme.textTheme.bodySmall,
+        _ClinicalVitalLegendItem(
+          color: _clinicalVitalValueColor(theme, 'LOW'),
+          label: l10n.labStatusLow,
+        ),
+        _ClinicalVitalLegendItem(
+          color: _clinicalVitalValueColor(theme, 'NORMAL'),
+          label: l10n.patientsVitalNormalLabel,
+        ),
+        _ClinicalVitalLegendItem(
+          color: _clinicalVitalValueColor(theme, 'HIGH'),
+          label: l10n.labStatusHigh,
+        ),
+        _ClinicalVitalLegendItem(
+          color: _clinicalVitalValueColor(theme, 'CRITICAL'),
+          label: l10n.labStatusCritical,
+        ),
+      ],
+    );
+  }
+}
+
+class _ClinicalVitalLegendItem extends StatelessWidget {
+  const _ClinicalVitalLegendItem({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        SizedBox(width: theme.spacing.xs),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
           ),
+        ),
       ],
     );
   }
@@ -3192,22 +3224,15 @@ AppWorkspaceStatusTone _statusTone(String? value) {
   };
 }
 
-AppWorkspaceStatusTone _clinicalVitalTone(String? value) {
-  return switch ((value ?? '').toUpperCase()) {
-    'CRITICAL' => AppWorkspaceStatusTone.error,
-    'ABNORMAL' => AppWorkspaceStatusTone.warning,
-    'NORMAL' => AppWorkspaceStatusTone.success,
-    'RECORDED' => AppWorkspaceStatusTone.info,
-    _ => _statusTone(value),
-  };
-}
-
-AppWorkspaceStatusTone _clinicalAlertTone(String? value) {
-  return switch ((value ?? '').toUpperCase()) {
-    'CRITICAL' || 'HIGH' => AppWorkspaceStatusTone.error,
-    'MEDIUM' => AppWorkspaceStatusTone.warning,
-    'LOW' => AppWorkspaceStatusTone.info,
-    _ => _statusTone(value),
+/// Low = blue, Normal = on-surface, High = amber, Critical = red.
+Color _clinicalVitalValueColor(ThemeData theme, String? status) {
+  final ColorScheme colorScheme = theme.colorScheme;
+  return switch ((status ?? '').toUpperCase()) {
+    'CRITICAL' => colorScheme.error,
+    'HIGH' || 'ABNORMAL' => const Color(0xFFD97706),
+    'LOW' => colorScheme.primary,
+    'NORMAL' || 'RECORDED' => colorScheme.onSurface,
+    _ => colorScheme.onSurface,
   };
 }
 

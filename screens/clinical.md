@@ -718,6 +718,6 @@ When planned, additional resolve actions:
 
 ## Notes on non-button surfaces
 
-- Status badges, triage handoff, vitals grid, results chronology, and generic clinical record rows are display-only (no row actions except pharmacy cancel/delete above). Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
+- Status badges, triage handoff, results chronology, and generic clinical record rows are display-only (no row actions except pharmacy cancel/delete above). Vitals use color-coded values (low/normal/high/critical) with a legend; the separate clinical-alerts list is not shown. Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
 - Copyable patient/encounter/admission identifiers in context tiles expose copy affordances from shared `AppCopyableIdentifier` / field `copyable: true` (not separate labeled page actions).
 - Empty clinical worklist has no primary empty-state button (state panel only).

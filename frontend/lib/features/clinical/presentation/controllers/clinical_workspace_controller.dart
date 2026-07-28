@@ -1439,21 +1439,76 @@ final class ClinicalWorkspaceController
     OpdVitalSign vital,
     List<ClinicalAlertSummary> alerts,
   ) {
-    final Iterable<ClinicalAlertSummary> activeAlerts = alerts.where(
-      (ClinicalAlertSummary alert) =>
-          alert.vitalSignId == vital.id &&
-          (alert.status ?? '').toUpperCase() != 'RESOLVED',
-    );
-    if (activeAlerts.any(
-      (ClinicalAlertSummary alert) =>
-          (alert.severity ?? '').toUpperCase() == 'CRITICAL',
-    )) {
+    final String vitalType = vital.vitalType.trim().toUpperCase();
+    final Iterable<ClinicalAlertSummary> activeAlerts = alerts.where((
+      ClinicalAlertSummary alert,
+    ) {
+      if ((alert.status ?? '').toUpperCase() == 'RESOLVED') {
+        return false;
+      }
+      if (alert.vitalSignId != null &&
+          alert.vitalSignId!.trim().isNotEmpty &&
+          alert.vitalSignId == vital.id) {
+        return true;
+      }
+      if (vitalType.isEmpty) {
+        return false;
+      }
+      final String message = (alert.message ?? '').toUpperCase();
+      return message.contains(vitalType);
+    });
+
+    String? worst;
+    for (final ClinicalAlertSummary alert in activeAlerts) {
+      final String band = _vitalAlertBand(alert);
+      worst = _worseVitalStatus(worst, band);
+    }
+    return worst ?? 'NORMAL';
+  }
+
+  String _vitalAlertBand(ClinicalAlertSummary alert) {
+    final String severity = (alert.severity ?? '').trim().toUpperCase();
+    if (severity == 'CRITICAL') {
       return 'CRITICAL';
     }
-    if (activeAlerts.isNotEmpty) {
-      return 'ABNORMAL';
+    if (severity == 'HIGH') {
+      return 'HIGH';
     }
-    return 'RECORDED';
+    if (severity == 'LOW') {
+      return 'LOW';
+    }
+
+    final String message = (alert.message ?? '').trim().toUpperCase();
+    if (message.startsWith('CRITICAL')) {
+      return 'CRITICAL';
+    }
+    if (message.startsWith('HIGH')) {
+      return 'HIGH';
+    }
+    if (message.startsWith('LOW')) {
+      return 'LOW';
+    }
+    if (severity == 'MEDIUM' || severity == 'WARNING' || severity == 'ABNORMAL') {
+      return 'HIGH';
+    }
+    return 'HIGH';
+  }
+
+  String _worseVitalStatus(String? current, String candidate) {
+    int rank(String? value) {
+      return switch ((value ?? '').toUpperCase()) {
+        'CRITICAL' => 4,
+        'HIGH' || 'ABNORMAL' => 3,
+        'LOW' => 2,
+        'NORMAL' || 'RECORDED' => 1,
+        _ => 0,
+      };
+    }
+
+    if (current == null) {
+      return candidate;
+    }
+    return rank(candidate) >= rank(current) ? candidate : current;
   }
 
   Future<ClinicalReferenceData> _referenceData() async {
