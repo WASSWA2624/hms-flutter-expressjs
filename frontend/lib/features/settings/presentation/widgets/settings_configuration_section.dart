@@ -209,54 +209,17 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
       title: l10n.settingsConfigurationTenantTitle,
       leadingIcon: Icons.domain_outlined,
       children: <Widget>[
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool wide = constraints.maxWidth >= 600;
-
-            final Widget currencyField = AppCurrencySelectField(
-              value: _currency,
-              labelText: l10n.settingsConfigurationCurrencyLabel,
-              helperText: l10n.settingsConfigurationCurrencyHelper,
-              enabled: !_saving,
-              onChanged: (String? value) {
-                setState(() => _currency = value);
-              },
-            );
-
-            final Widget feeField = AppCurrencyAmountField(
-              amountController: _feeController,
-              currency: resolvedCurrency,
-              onCurrencyChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _currency = value);
-                }
-              },
-              amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
-              currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
-              helperText: l10n.settingsConfigurationConsultationFeeHelper,
-              enabled: !_saving,
-            );
-
-            if (wide) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: currencyField),
-                  SizedBox(width: theme.spacing.lg),
-                  Expanded(child: feeField),
-                ],
-              );
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                currencyField,
-                SizedBox(height: theme.spacing.md),
-                feeField,
-              ],
-            );
+        // One currency+fee control — avoids a parallel standalone currency field.
+        AppCurrencyAmountField(
+          amountController: _feeController,
+          currency: resolvedCurrency,
+          onCurrencyChanged: (String? value) {
+            setState(() => _currency = value);
           },
+          amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
+          currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
+          helperText: l10n.settingsConfigurationConsultationFeeHelper,
+          enabled: !_saving,
         ),
         SizedBox(height: theme.spacing.lg),
         Wrap(
@@ -440,54 +403,16 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
           ),
         ),
         SizedBox(height: theme.spacing.sm),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool wide = constraints.maxWidth >= 600;
-
-            final Widget currencyField = AppCurrencySelectField(
-              value: _currency,
-              labelText: l10n.settingsConfigurationCurrencyLabel,
-              helperText: l10n.settingsConfigurationCurrencyHelper,
-              enabled: !_saving,
-              onChanged: (String? value) {
-                setState(() => _currency = value);
-              },
-            );
-
-            final Widget feeField = AppCurrencyAmountField(
-              amountController: _feeController,
-              currency: resolvedCurrency,
-              onCurrencyChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _currency = value);
-                }
-              },
-              amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
-              currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
-              helperText: l10n.settingsConfigurationConsultationFeeHelper,
-              enabled: !_saving,
-            );
-
-            if (wide) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: currencyField),
-                  SizedBox(width: theme.spacing.lg),
-                  Expanded(child: feeField),
-                ],
-              );
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                currencyField,
-                SizedBox(height: theme.spacing.md),
-                feeField,
-              ],
-            );
+        AppCurrencyAmountField(
+          amountController: _feeController,
+          currency: resolvedCurrency,
+          onCurrencyChanged: (String? value) {
+            setState(() => _currency = value);
           },
+          amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
+          currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
+          helperText: l10n.settingsConfigurationConsultationFeeHelper,
+          enabled: !_saving,
         ),
         SizedBox(height: theme.spacing.lg),
         Wrap(

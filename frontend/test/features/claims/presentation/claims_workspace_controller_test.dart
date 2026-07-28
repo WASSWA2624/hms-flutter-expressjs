@@ -152,5 +152,56 @@ void main() {
         () => repository.updatePreAuthorization('AUTH-001', any()),
       ).called(1);
     });
+
+    test('focusItem selects locally without a detail fetch', () async {
+      final _MockClaimsRepository repository = _MockClaimsRepository();
+      const ClaimsQueueItem item = ClaimsQueueItem.authorization(
+        PreAuthorizationRecord(
+          id: 'auth-1',
+          displayId: 'AUTH-001',
+          coveragePlanId: 'plan-1',
+          coveragePlanDisplayId: 'PLAN-001',
+          status: 'PENDING',
+        ),
+      );
+
+      when(() => repository.listQueue(any())).thenAnswer(
+        (_) async => const Result<AppPage<ClaimsQueueItem>>.success(
+          AppPage<ClaimsQueueItem>(
+            items: <ClaimsQueueItem>[item],
+            request: AppPageRequest(),
+          ),
+        ),
+      );
+      when(() => repository.loadReferenceData()).thenAnswer(
+        (_) async =>
+            const Result<ClaimsReferenceData>.success(ClaimsReferenceData()),
+      );
+      when(() => repository.loadWorkspaceSummary()).thenAnswer(
+        (_) async => const Result<ClaimsWorkspaceSummary>.success(
+          ClaimsWorkspaceSummary(),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [claimsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(claimsWorkspaceControllerProvider.future);
+
+      container.read(claimsWorkspaceControllerProvider.notifier).focusItem(item);
+
+      final ClaimsWorkspaceState? state = container
+          .read(claimsWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (ClaimsWorkspaceState value) => value,
+            failure: (_) => null,
+          );
+      expect(state?.selectedDetail?.item.displayId, 'AUTH-001');
+      expect(state?.selectedDetail?.authorization?.status, 'PENDING');
+      verifyNever(() => repository.getDetail(any()));
+    });
   });
 }

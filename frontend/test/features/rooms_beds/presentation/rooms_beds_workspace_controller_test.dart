@@ -224,6 +224,36 @@ void main() {
         () => repository.loadSetup(facilityId: any(named: 'facilityId')),
       ).called(1);
     });
+
+    test('applyRouteQuery selects the deep-linked bed', () async {
+      final _MockRoomsBedsRepository repository = _MockRoomsBedsRepository();
+      _stubSetup(repository);
+      _stubAssignments(repository);
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [roomsBedsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(roomsBedsWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(roomsBedsWorkspaceControllerProvider.notifier)
+          .applyRouteQuery(const RoomsBedsQuery(bedId: 'BED-001'));
+
+      expect(failure, isNull);
+      final RoomsBedsWorkspaceState state = container
+          .read(roomsBedsWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (RoomsBedsWorkspaceState value) => value,
+            failure: (AppFailure value) => fail(value.code),
+          );
+      expect(state.query.bedId, 'BED-001');
+      expect(state.selectedBed?.id, 'BED-001');
+      expect(state.beds.items, hasLength(1));
+      expect(state.beds.items.single.id, 'BED-001');
+    });
   });
 }
 

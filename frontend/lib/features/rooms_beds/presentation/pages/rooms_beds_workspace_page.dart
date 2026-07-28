@@ -64,13 +64,46 @@ class _RoomsBedsWorkspacePageState
       return;
     }
     _appliedRouteSignature = signature;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) {
         return;
       }
-      ref
+      // Wait for the provider's initial load so it cannot overwrite the routed
+      // selection / detail open.
+      await ref.read(roomsBedsWorkspaceControllerProvider.future);
+      if (!mounted) {
+        return;
+      }
+      final AppFailure? failure = await ref
           .read(roomsBedsWorkspaceControllerProvider.notifier)
           .applyRouteQuery(query);
+      if (!mounted || failure != null) {
+        return;
+      }
+      final String? bedId = query.bedId;
+      if (bedId == null || bedId.isEmpty) {
+        return;
+      }
+      final RoomsBedsWorkspaceState? state = _readRoomsBedsState(ref);
+      BedBoardItem? selected = state?.selectedBed;
+      if (state != null &&
+          (selected == null || selected.id != bedId)) {
+        selected = state.beds.items
+            .where((BedBoardItem item) => item.id == bedId)
+            .firstOrNull;
+      }
+      if (state == null || selected == null) {
+        return;
+      }
+      final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+      await _openBedDetailDialog(
+        context,
+        ref,
+        state,
+        selected,
+        canAdminBeds: _canAdminBeds(accessPolicy),
+        canIpdWrite: accessPolicy.grants(AppPermissions.clinicalWrite),
+      );
     });
   }
 
@@ -120,7 +153,6 @@ class _RoomsBedsWorkspaceContentState
   late final AppListTableColumnVisibilityController<BedBoardItem>
   _tableColumnController;
   late RoomsBedsSection _section;
-  String? _openedRouteBedId;
 
   @override
   void initState() {
@@ -129,7 +161,6 @@ class _RoomsBedsWorkspaceContentState
     _tableColumnController =
         AppListTableColumnVisibilityController<BedBoardItem>();
     _section = widget.state.query.section;
-    _scheduleOpenRoutedBed();
   }
 
   @override
@@ -142,35 +173,6 @@ class _RoomsBedsWorkspaceContentState
     if (oldWidget.state.query.section != widget.state.query.section) {
       _section = widget.state.query.section;
     }
-    _scheduleOpenRoutedBed();
-  }
-
-  void _scheduleOpenRoutedBed() {
-    final String? routeBedId = widget.state.query.bedId;
-    final BedBoardItem? selected = widget.state.selectedBed;
-    if (routeBedId == null ||
-        selected == null ||
-        selected.id != routeBedId ||
-        _openedRouteBedId == routeBedId) {
-      return;
-    }
-    _openedRouteBedId = routeBedId;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
-      unawaited(
-        _openBedDetailDialog(
-          context,
-          ref,
-          widget.state,
-          selected,
-          canAdminBeds: _canAdminBeds(accessPolicy),
-          canIpdWrite: accessPolicy.grants(AppPermissions.clinicalWrite),
-        ),
-      );
-    });
   }
 
   @override
@@ -406,6 +408,15 @@ class _RoomsBedsWorkspaceContentState
                 l10n: l10n,
                 nextActionCellBuilder:
                     (BuildContext context, BedBoardItem item) {
+                      final RoomsBedsNextActionKind kind =
+                          roomsBedsPrimaryNextActionKind(item);
+                      if (!roomsBedsNextActionShouldRender(
+                        kind: kind,
+                        canAdminBeds: canAdminBeds,
+                        canIpdWrite: canIpdWrite,
+                      )) {
+                        return const SizedBox.shrink();
+                      }
                       return RoomsBedsNextActionButton(
                         item: item,
                         state: state,
@@ -416,6 +427,22 @@ class _RoomsBedsWorkspaceContentState
                     },
               ),
               mobileItemBuilder: (BuildContext context, BedBoardItem item) {
+                final RoomsBedsNextActionKind kind =
+                    roomsBedsPrimaryNextActionKind(item);
+                final Widget? trailing = roomsBedsNextActionShouldRender(
+                      kind: kind,
+                      canAdminBeds: canAdminBeds,
+                      canIpdWrite: canIpdWrite,
+                    )
+                    ? RoomsBedsNextActionButton(
+                        item: item,
+                        state: state,
+                        canAdminBeds: canAdminBeds,
+                        canIpdWrite: canIpdWrite,
+                        callbacks: nextActionCallbacks,
+                        compact: true,
+                      )
+                    : null;
                 return AppListTableMobileItem(
                   title: item.label,
                   meta: <AppListTableMobileMeta>[
@@ -432,14 +459,7 @@ class _RoomsBedsWorkspaceContentState
                         icon: Icons.person_outline,
                       ),
                   ],
-                  trailing: RoomsBedsNextActionButton(
-                    item: item,
-                    state: state,
-                    canAdminBeds: canAdminBeds,
-                    canIpdWrite: canIpdWrite,
-                    callbacks: nextActionCallbacks,
-                    compact: true,
-                  ),
+                  trailing: trailing,
                 );
               },
             ),

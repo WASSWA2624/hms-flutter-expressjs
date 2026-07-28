@@ -1,17 +1,16 @@
 # Action inventory — `/settings`
 
 Primary surface: `SettingsPage`
-(`frontend/lib/features/settings/presentation/pages/settings_page.dart`)
-with section widgets under
-`frontend/lib/features/settings/presentation/widgets/`.
+(`frontend/lib/features/settings/presentation/pages/settings_page.dart`) with
+section widgets under `frontend/lib/features/settings/presentation/widgets/`.
 
-Route: `/settings` (`AppRoutes.settings`). Access: authenticated
-(`AppRouteAccess.authenticated`). Section visibility is gated by
-RBAC/ABAC; backend remains authoritative for mutations.
+Route: `/settings` (`AppRoutes.settings`). Query: `tab` (section id),
+`panel` (account deep links only: `profile` / `change-password`). Access:
+authenticated core destination; Administration / Configuration / Workspace
+sections gate on RBAC. Backend remains authoritative for mutations.
 
-Account tasks are inventoried in `screens/profile.md` (Settings Account
-tab / `/profile` redirect). Dialog chrome: each `AppDialog` has an
-icon-only **Close** that only dismisses; noted once here.
+Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses;
+noted once here. Account dialogs are inventoried in `screens/profile.md`.
 
 ---
 
@@ -19,14 +18,15 @@ icon-only **Close** that only dismisses; noted once here.
 
 | Duplicate / redundant surface | Outcome | Merge / removal |
 | --- | --- | --- |
-| Administration **Tenant and facility setup** + **Users and access** when workspace is visible | Open same setup / access destinations | **Removed** from Administration when workspace shows; workspace modules own Open/Create |
-| Workspace nested tabs (Context / Setup checklist / Modules) | Extra shell before modules | **Removed** — one scroll: context → checklist → filters + modules |
-| Context summary + tenant/facility selectors | Restate the same context | **Removed** summary; selector is the sole context control |
-| Summary cards + checklist counts + module states | Restate readiness | **Removed** summary cards; checklist is status-only |
-| Checklist tap + Quick actions + module Open/Create | Same open/create goals | **Removed** checklist taps and Quick actions; modules keep sole **Open** / **Create** |
-| Administration **Subscriptions** | Unique billing destination | **Kept** — only Administration entry when workspace is visible |
-| Administration full list when workspace absent | Tenant setup / access / subscriptions | **Kept** for roles without workspace (e.g. operations → Users and access) |
-| Configuration standalone currency + amount embedded currency | Two currency controls | **Merged** — one `AppCurrencyAmountField` (currency + fee) |
+| Administration **Tenant and facility setup** + **Users and access** when Workspace is visible | Navigate to same setup destinations | **Removed** from Administration when Workspace shows — Workspace modules own Open/Create; Administration keeps **Subscriptions** only |
+| Workspace nested tabs Overview / Setup / Modules | Extra hop before modules | **Removed** — one scroll: context → filters → modules |
+| Workspace **Quick actions** + module **Create** | Create setup entity | **Removed** Quick actions — module **Create** is the sole create entry |
+| Workspace **Setup checklist** chips (+ former manage taps) | Restate module readiness / parallel open | **Removed** — module row state + **Open** are the sole readiness / open path |
+| Workspace context summary + summary cards | Restate selector / module counts | **Removed** — selector + module rows keep required context |
+| Retapping the selected settings tab | Collapse to empty body | **Removed** — always keep one section selected |
+| Standalone currency field + amount currency (Configuration) | Set currency | **Merged** earlier into `AppCurrencyAmountField` only |
+| Account Profile / Change password tabs + intermediate password panel | Same account tasks | **Merged** earlier — see `screens/profile.md` |
+| Module **Unavailable** Open/Create when unauthorized or unmapped | No-access / dead route chrome | **Removed** — Open/Create render only when permitted and mapped |
 
 ---
 
@@ -34,92 +34,95 @@ icon-only **Close** that only dismisses; noted once here.
 
 ### Section strip
 
-- **Preferences / Accessibility / Account / Administration / Configuration / Workspace**
-  - Location: Page `AppTabStrip` (authorized sections only).
+- **Preferences / Accessibility / Account and security / Administration boundaries / Configuration / Administrative setup workspace**
+  - Location: Page `AppTabStrip`.
   - Opens modal: No.
-  - Immediate result: Expands the matching section; updates `?tab=…`.
-  - Condition: Administration only when authorized admin actions remain; Configuration / Workspace when their access requirements allow.
+  - Immediate result: Shows that section; updates `?tab=…`. Retap does not collapse.
+  - Condition: Administration only when authorized actions remain after Workspace merge. Configuration when tenant/facility config allowed. Workspace when settings-workspace or HR workspace requirement allowed.
 
 ### Preferences
 
 - **Theme mode** (System / Light / Dark)
   - Location: Preferences body.
-  - Immediate result: Persists theme; SnackBar on save failure.
-  - Condition: Always for authenticated users.
+  - Opens modal: No.
+  - Immediate result: Persists theme; SnackBar on save error.
+  - Condition: Always for authenticated settings.
 
 ### Accessibility
 
 - **Reduce motion**, **Bold text**, **Text scale**
   - Location: Accessibility body.
-  - Immediate result: Persists preference; SnackBar on save failure.
-  - Condition: Always for authenticated users.
+  - Opens modal: No.
+  - Immediate result: Persists preference; SnackBar on save error.
+  - Condition: Always for authenticated settings.
 
 ### Account and security
 
-See `screens/profile.md` — **Edit profile**, **Change password**, profile detail sections.
+- See `screens/profile.md` (**Change password**, **Edit profile**, profile detail, deep links).
 
 ### Administration boundaries
 
-- **Subscriptions** (when workspace visible and super-admin)
-  - Location: Administration action list.
+- **Subscriptions** (`Subscription plans`)
+  - Location: Administration action list (primary when Workspace is visible).
+  - Opens modal: No.
   - Immediate result: Navigates to subscriptions route.
-  - Condition: Super-admin; absent otherwise.
+  - Condition: Super-admin. Absent when unauthorized.
 
-- **Tenant and facility setup** / **Users and access** / **Subscriptions**
-  - Location: Administration action list.
-  - Immediate result: Navigates to dedicated routes.
-  - Condition: Only when workspace section is **not** shown and the matching access requirement allows; unauthorized tiles absent.
+- **Tenant and facility setup** / **Users and access**
+  - Location: Administration action list only when Workspace section is **not** shown.
+  - Opens modal: No.
+  - Immediate result: Navigates to tenant-facility setup or access admin.
+  - Condition: Matching admin requirements; hidden when Workspace is the primary entry.
 
 ### Configuration
 
-- **Save** / **Reset** tenant or facility currency + consultation fee
-  - Location: Tenant / Facility configuration panels.
-  - Opens modal: Reset confirm only.
-  - Immediate result: Persists via tenant-facility submission; SnackBar success/error.
-  - Condition: Tenant and/or facility config requirements; panels absent when unauthorized. Loading / error+retry when snapshot load fails.
+- **Save** / **Reset** (tenant and facility panels)
+  - Location: Configuration panels.
+  - Opens modal: Reset confirmation only.
+  - Immediate result: Saves or clears currency + consultation fee; SnackBar success/error.
+  - Condition: Tenant and/or facility config requirements; panels absent without access or context.
 
 ### Administrative setup workspace
 
-- **Tenant / Facility context selectors**
-  - Location: Top of workspace (and when tenant context required).
-  - Immediate result: Reloads workspace for selected tenant/facility.
-  - Condition: Reference options present; otherwise omitted.
+- **Tenant / Facility context** selectors
+  - Location: Workspace top when reference options exist.
+  - Opens modal: No.
+  - Immediate result: Reloads workspace for selected context.
+  - Condition: Backend returns tenants/facilities; required when status is tenant-context-required.
 
-- **Setup checklist** (status only)
-  - Location: Below context.
-  - Immediate result: Shows completed vs remaining readiness; does not open workflows.
-  - Condition: Checklist items from backend.
+- **Search / Group / State / Actionable only**
+  - Location: Filters panel.
+  - Opens modal: No.
+  - Immediate result: Filters module list.
+  - Condition: Workspace ready with modules.
 
-- **Search / group / state / actionable filters**
-  - Location: Above module list.
-  - Immediate result: Filters module groups client-side via workspace controller.
-
-- **Open** / **Create** (per module)
-  - Location: Module row actions.
-  - Immediate result: Navigates to mapped tenant-facility or access-admin route when `canRead` / `canCreate` and route exists; disabled unavailable controls show tooltip only (no parallel shortcuts).
-  - Condition: Backend module flags; unauthorized create omitted when `canCreate` is false.
+- **Open** / **Create** (module row)
+  - Location: Each module row.
+  - Opens modal: No — navigates to mapped tenant-facility or access-admin route.
+  - Immediate result: Leaves settings for the dedicated setup surface.
+  - Condition: Open only when `canRead` and route mapped; Create only when `canCreate` and create route mapped. Absent otherwise.
 
 ### States
 
-- Loading: preferences immediate; account/workspace/configuration use loading state views.
-- Empty: workspace empty modules; profile unavailable identity; config no-tenant copy.
-- Error / retry: account profile, workspace, configuration failure views with refresh.
-- Validation: change-password / edit-profile dialogs; configuration amount field validators.
-- Success: SnackBars for preference save errors, profile, password, configuration.
-- Unauthorized: section tabs and action tiles absent when requirements fail.
-- Responsive: tab strip and module actions wrap; theme tokens only.
+- Loading: preferences/accessibility immediate; account and workspace use loading state views; configuration spinner.
+- Empty: workspace empty refresh; module no-results after filters; profile empty identity / empty roles-permissions copy.
+- Error / retry: account and workspace failure views with **Try again**; configuration refresh; preference save SnackBar.
+- Validation: configuration and account dialogs keep field validators; reset confirms destructive clear.
+- Success: configuration / profile SnackBars; password change SnackBar + login.
+- Unauthorized: gated sections and actions absent (not disabled).
+- Responsive: section strip and workspace filters wrap; theme tokens only.
 
 ---
 
 ## Verification (Req 7)
 
-- `frontend/test/features/settings/presentation/pages/settings_page_test.dart`
-  - HR: workspace present; Administration / Tenant and facility setup absent.
-  - Super-admin with workspace: Administration shows **Subscriptions** only; tenant/access tiles absent.
-- `frontend/test/features/settings/presentation/widgets/settings_workspace_section_test.dart`
-  - Flattened surface: no Context summary / Quick actions; sole **Open** / **Create**.
-  - Checklist does not open manage dialogs.
-  - Tenant-context-required still shows selector.
-- Account paths covered by
-  `frontend/test/features/settings/presentation/widgets/settings_account_section_test.dart`
-  (see `screens/profile.md`).
+- Widget tests in
+  `frontend/test/features/settings/presentation/pages/settings_page_test.dart`
+  and
+  `frontend/test/features/settings/presentation/widgets/settings_workspace_section_test.dart`
+  prove:
+  - HR with workspace: no Administration **Tenant and facility setup** duplicate; workspace modules remain.
+  - Workspace has no nested Overview/Setup/Modules tabs, no Quick actions, no Setup checklist.
+  - Module **Open** present when readable; absent when `canRead` is false.
+  - Retapping Preferences keeps preferences content visible.
+  - Account paths covered by `settings_account_section_test.dart` / `screens/profile.md`.

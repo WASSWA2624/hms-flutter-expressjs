@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_status_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -95,7 +94,6 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final RoomsBedsNextActionKind kind = roomsBedsPrimaryNextActionKind(item);
 
     if (!roomsBedsNextActionShouldRender(
@@ -117,68 +115,15 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
     final bool isNarrow =
         compact || MediaQuery.sizeOf(context).width < 600;
 
-    if (isNarrow) {
-      return AppButton.secondary(
-        label: label,
-        icon: _iconForKind(kind),
-        iconOnly: true,
-        tooltip: label,
-        semanticLabel: label,
-        enabled: enabled,
-        onPressed: enabled ? () => _handleAction(context, kind) : null,
-      );
-    }
-
-    return Semantics(
-      button: true,
-      enabled: enabled,
+    return AppButton.secondary(
       label: label,
-      child: Tooltip(
-        message: label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: enabled ? () => _handleAction(context, kind) : null,
-          child: MouseRegion(
-            cursor: enabled
-                ? SystemMouseCursors.click
-                : SystemMouseCursors.basic,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.xs,
-                vertical: 2,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    _iconForKind(kind),
-                    size: 14,
-                    color: enabled
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.38),
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: enabled
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface.withValues(
-                                alpha: 0.38,
-                              ),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+      icon: _iconForKind(kind),
+      iconOnly: isNarrow,
+      tooltip: label,
+      semanticLabel: label,
+      dense: true,
+      enabled: enabled,
+      onPressed: enabled ? () => _handleAction(context, kind) : null,
     );
   }
 

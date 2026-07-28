@@ -18,7 +18,7 @@ import '../../../../helpers/test_harness.dart';
 
 void main() {
   testWidgets(
-    'HR policy sees personal settings and HR facility setup workspace',
+    'HR policy sees workspace without Administration tenant/facility duplicate',
     (WidgetTester tester) async {
       final AuthSession session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
@@ -40,8 +40,9 @@ void main() {
         ProviderScope(
           overrides: [
             appAccessPolicyProvider.overrideWithValue(policy),
+            // Ready session skips bearer-token waits during workspace bootstrap.
             initialSessionStateProvider.overrideWithValue(
-              SessionState.authenticated(session: session),
+              const SessionState.ready(),
             ),
             settingsWorkspaceRepositoryProvider.overrideWithValue(
               _FakeSettingsWorkspaceRepository(
@@ -50,43 +51,33 @@ void main() {
               ),
             ),
           ],
-          child: const SettingsPage(initialQuery: SettingsPageQuery()),
+          child: const SettingsPage(
+            initialQuery: SettingsPageQuery(tab: 'workspace'),
+          ),
         ),
         size: const Size(1280, 1400),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-
-      expect(find.text('Preferences'), findsOneWidget);
-      expect(find.text('Accessibility'), findsOneWidget);
-      expect(find.text('Account and security'), findsOneWidget);
-      // Workspace owns tenant/facility setup; Administration stays absent for HR.
-      expect(find.text('Administration boundaries'), findsNothing);
-      expect(find.text('Tenant and facility setup'), findsNothing);
-      expect(find.text('Administrative setup workspace'), findsOneWidget);
-      expect(find.text('Subscriptions'), findsNothing);
-      expect(find.text('Users and access'), findsNothing);
-
-      await tester.tap(find.text('Administrative setup workspace'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Administrative setup workspace'), findsWidgets);
+      expect(find.text('Administration boundaries'), findsNothing);
+      expect(find.text('Tenant and facility setup'), findsNothing);
+      expect(find.text('Subscription plans'), findsNothing);
+      expect(find.text('Users and access'), findsNothing);
       expect(find.text('Department'), findsWidgets);
       expect(find.text('Unit'), findsWidgets);
       expect(find.text('Quick actions'), findsNothing);
+      expect(find.text('Setup checklist'), findsNothing);
       expect(find.text('Context summary'), findsNothing);
     },
   );
 
   testWidgets(
-    'workspace-authorized admin keeps Subscriptions only under Administration',
+    'workspace-authorized elevated admin keeps Subscription plans only under Administration',
     (WidgetTester tester) async {
       final AuthSession session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
-        user: const AuthUserProfile(
-          tenantId: 'tenant-1',
-          facilityId: 'facility-1',
-          roles: <String>['SUPER_ADMIN'],
-        ),
+        user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
       );
       final AppAccessPolicy policy = AppAccessPolicy.fromSession(session);
 
@@ -96,7 +87,7 @@ void main() {
           overrides: [
             appAccessPolicyProvider.overrideWithValue(policy),
             initialSessionStateProvider.overrideWithValue(
-              SessionState.authenticated(session: session),
+              const SessionState.ready(),
             ),
             settingsWorkspaceRepositoryProvider.overrideWithValue(
               _FakeSettingsWorkspaceRepository(
@@ -105,24 +96,57 @@ void main() {
               ),
             ),
           ],
-          child: const SettingsPage(initialQuery: SettingsPageQuery()),
+          child: const SettingsPage(
+            initialQuery: SettingsPageQuery(tab: 'administration'),
+          ),
         ),
-        size: const Size(1280, 1400),
+        size: const Size(1600, 1400),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-
-      expect(find.text('Administration boundaries'), findsOneWidget);
-      expect(find.text('Administrative setup workspace'), findsOneWidget);
-
-      await tester.tap(find.text('Administration boundaries'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Subscriptions'), findsOneWidget);
+      expect(find.text('Administration boundaries'), findsWidgets);
+      expect(find.text('Subscription plans'), findsWidgets);
       expect(find.text('Tenant and facility setup'), findsNothing);
       expect(find.text('Users and access'), findsNothing);
+      expect(policy.isPlatformElevated, isTrue);
     },
   );
+
+  testWidgets('retapping the selected settings tab keeps section content', (
+    WidgetTester tester,
+  ) async {
+    final AuthSession session = AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+        roles: <String>['FACILITY_USER'],
+      ),
+    );
+    final AppAccessPolicy policy = AppAccessPolicy.fromSession(session);
+
+    await pumpLocalizedWidget(
+      tester,
+      ProviderScope(
+        overrides: [
+          appAccessPolicyProvider.overrideWithValue(policy),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+        ],
+        child: const SettingsPage(initialQuery: SettingsPageQuery()),
+      ),
+      size: const Size(900, 1000),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('App theme'), findsOneWidget);
+
+    await tester.tap(find.text('Preferences').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('App theme'), findsOneWidget);
+  });
 }
 
 final class _FakeSettingsWorkspaceRepository

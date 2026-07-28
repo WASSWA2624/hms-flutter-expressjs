@@ -61,6 +61,20 @@ const ClaimsQueueItem _submittedClaim = ClaimsQueueItem.claim(
   ),
 );
 
+const ClaimsQueueItem _approvedClaim = ClaimsQueueItem.claim(
+  InsuranceClaimRecord(
+    id: 'claim-approved',
+    displayId: 'CLM-APPROVED',
+    coveragePlanId: 'plan-1',
+    coveragePlanDisplayId: 'PLAN-001',
+    invoiceId: 'inv-3',
+    invoiceDisplayId: 'INV-003',
+    status: 'APPROVED',
+    patientDisplayId: 'PT-APPROVED',
+    claimAmount: 350,
+  ),
+);
+
 const ClaimsQueueItem _paidClaim = ClaimsQueueItem.claim(
   InsuranceClaimRecord(
     id: 'claim-paid',
@@ -80,6 +94,7 @@ const List<ClaimsQueueItem> _allItems = <ClaimsQueueItem>[
   _pendingAuth,
   _approvedAuth,
   _submittedClaim,
+  _approvedClaim,
   _paidClaim,
 ];
 
@@ -87,6 +102,7 @@ const ClaimsWorkspaceSummary _summary = ClaimsWorkspaceSummary(
   authorizationPendingCount: 1,
   authorizationApprovedCount: 1,
   submittedClaimsCount: 1,
+  approvedClaimsCount: 1,
   paidClosedCount: 1,
 );
 
@@ -100,6 +116,20 @@ AppAccessPolicy _claimsWritePolicy() {
         AppPermissions.billingWrite,
         AppPermissions.financialApprove,
       },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+      ],
+    ),
+  );
+}
+
+AppAccessPolicy _claimsReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['BILLING']),
+      permissions: <AppPermission>{AppPermissions.billingRead},
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
         AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
@@ -185,6 +215,7 @@ Future<_Harness> _pumpClaimsWorkspace(
   ClaimsWorkspaceQuery? initialQuery,
   String initialLocation = '/claims',
   Size physicalSize = const Size(1440, 900),
+  AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -220,7 +251,9 @@ Future<_Harness> _pumpClaimsWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_claimsWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _claimsWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -566,7 +599,7 @@ void main() {
   });
 
   testWidgets(
-    'detail dialog shows one status-primary action, not parallel claim shortcuts',
+    'detail dialog omits status-primary writes owned by next-action',
     (WidgetTester tester) async {
       await _pumpClaimsWorkspace(tester, repository: repository);
 
@@ -577,13 +610,150 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(find.text('Record response'), findsWidgets);
-      expect(find.text('Sync insurer status'), findsOneWidget);
-      // Parallel always-on shortcuts removed from the detail surface.
-      expect(find.text('Submit claim'), findsNothing);
-      expect(find.text('Close claim'), findsNothing);
+      // Sync remains detail-only; status-primary lives on next-action only.
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Sync insurer status'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Record response'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Submit claim'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Close as paid'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Update status'),
+        ),
+        findsNothing,
+      );
     },
   );
+
+  testWidgets(
+    'authorization detail omits Update status; next-action owns the write',
+    (WidgetTester tester) async {
+      await _pumpClaimsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.text('AUTH-PENDING'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Update status'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Sync insurer status'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Print statement'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'next-action opens mutation dialog without a detail fetch',
+    (WidgetTester tester) async {
+      await _pumpClaimsWorkspace(tester, repository: repository);
+
+      clearInteractions(repository);
+      _stubClaimsRepository(repository);
+
+      final Finder nextAction = find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Update status'),
+      );
+      expect(nextAction, findsOneWidget);
+      await tester.ensureVisible(nextAction);
+      await tester.tap(nextAction);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Update authorization status'), findsOneWidget);
+      verifyNever(() => repository.getDetail(any()));
+    },
+  );
+
+  testWidgets(
+    'Close as paid skips restated payer-response status select',
+    (WidgetTester tester) async {
+      await _pumpClaimsWorkspace(tester, repository: repository);
+
+      await tester.tap(find.textContaining('Active Claims').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Approved (').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('CLM-APPROVED'), findsOneWidget);
+      final Finder closeAction = find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Close as paid'),
+      );
+      expect(closeAction, findsOneWidget);
+      await tester.ensureVisible(closeAction);
+      await tester.tap(closeAction);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Close claim'), findsOneWidget);
+      // Status was chosen by next-action — dialog collects notes only.
+      expect(find.text('Payer response'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Close as paid'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('unauthorized write and setup actions are absent', (
+    WidgetTester tester,
+  ) async {
+    await _pumpClaimsWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _claimsReadOnlyPolicy(),
+    );
+
+    expect(find.byTooltip('Request authorization'), findsNothing);
+    expect(find.byTooltip('Update status'), findsNothing);
+
+    await tester.tap(find.textContaining('Insurance Setup').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Add company'), findsNothing);
+    expect(find.textContaining('Add scheme'), findsNothing);
+  });
 
   testWidgets('tapping a row opens the claims detail dialog', (
     WidgetTester tester,
@@ -597,7 +767,7 @@ void main() {
     verify(() => repository.getDetail(any())).called(greaterThanOrEqualTo(1));
   });
 
-  testWidgets('mobile breakpoint uses list tiles instead of data table', (
+  testWidgets('mobile breakpoint uses list tiles with next-action trailing', (
     WidgetTester tester,
   ) async {
     await _pumpClaimsWorkspace(
@@ -608,9 +778,32 @@ void main() {
 
     expect(find.byType(DataTable), findsNothing);
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(AppListTableMobileItem), findsWidgets);
     expect(find.textContaining('AUTH-PENDING'), findsOneWidget);
     expect(find.byTooltip('Request authorization'), findsOneWidget);
+    // Narrow trailing is icon-only; tooltip carries the next-action label.
+    expect(find.byTooltip('Update status'), findsOneWidget);
   });
+
+  testWidgets(
+    'mobile next-action opens mutation without opening detail first',
+    (WidgetTester tester) async {
+      await _pumpClaimsWorkspace(
+        tester,
+        repository: repository,
+        physicalSize: const Size(390, 844),
+      );
+
+      clearInteractions(repository);
+      _stubClaimsRepository(repository);
+
+      await tester.tap(find.byTooltip('Update status'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Update authorization status'), findsOneWidget);
+      verifyNever(() => repository.getDetail(any()));
+    },
+  );
 
   testWidgets('tab switch applies filter via repository', (
     WidgetTester tester,

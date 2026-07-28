@@ -95,7 +95,8 @@ void main() {
     });
 
     test('mobile rows wire next-action trailing', () {
-      expect(pageSource.contains('trailing: RoomsBedsNextActionButton('), isTrue);
+      expect(pageSource.contains('trailing: trailing'), isTrue);
+      expect(pageSource.contains('RoomsBedsNextActionButton('), isTrue);
       expect(pageSource.contains('compact: true'), isTrue);
     });
   });

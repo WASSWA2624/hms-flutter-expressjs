@@ -518,14 +518,17 @@ class _AppSearchBarState extends State<AppSearchBar> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (canClear)
-            AppButton(
-              iconOnly: true,
-              leadingIcon: Icons.close,
-              label: clearLabel,
-
-              semanticLabel: clearLabel,
-              tooltip: clearLabel,
-              onPressed: _clear,
+            AppActionLabelScope(
+              showLabels: false,
+              forceIconOnly: true,
+              child: AppButton(
+                iconOnly: true,
+                leadingIcon: Icons.close,
+                label: clearLabel,
+                semanticLabel: clearLabel,
+                tooltip: clearLabel,
+                onPressed: _clear,
+              ),
             ),
           if (widget.isLoading)
             Padding(

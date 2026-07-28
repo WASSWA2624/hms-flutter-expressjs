@@ -8,63 +8,88 @@ import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_
 import 'package:hosspi_hms/features/settings/domain/repositories/settings_workspace_repository.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
 
-import '../../../../shared/components/component_test_app.dart';
+import '../../../../helpers/test_harness.dart';
 
 void main() {
-  testWidgets('renders backend-backed settings workspace content', (
+  testWidgets(
+    'renders flat workspace with module Open and without duplicate surfaces',
+    (WidgetTester tester) async {
+      await _pumpWorkspace(
+        tester,
+        workspace: _workspace(SettingsWorkspaceStatus.ready),
+      );
+
+      expect(find.text('Administrative setup workspace'), findsOneWidget);
+      expect(find.text('Organization'), findsWidgets);
+      expect(find.text('Tenant'), findsWidgets);
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('Create'), findsOneWidget);
+      expect(find.text('Search setup modules'), findsWidgets);
+
+      expect(find.text('Context summary'), findsNothing);
+      expect(find.text('Setup checklist'), findsNothing);
+      expect(find.text('Quick actions'), findsNothing);
+      expect(find.text('Unavailable'), findsNothing);
+    },
+  );
+
+  testWidgets('omits Open when module cannot be read', (
     WidgetTester tester,
   ) async {
-    await pumpComponent(
+    await _pumpWorkspace(
       tester,
-      ProviderScope(
-        overrides: [
-          settingsWorkspaceRepositoryProvider.overrideWithValue(
-            _FakeSettingsWorkspaceRepository(
-              workspace: _workspace(SettingsWorkspaceStatus.ready),
-              referenceData: _referenceData(),
-            ),
-          ),
-        ],
-        child: const SettingsWorkspaceSection(),
+      workspace: _workspace(
+        SettingsWorkspaceStatus.ready,
+        canRead: false,
+        canCreate: false,
       ),
-      size: const Size(1280, 1200),
     );
-    await tester.pumpAndSettle();
 
-    expect(find.text('Administrative setup workspace'), findsOneWidget);
-    expect(find.text('Acme Health'), findsWidgets);
-    expect(find.text('Central Hospital'), findsWidgets);
-    expect(find.text('Organization'), findsWidgets);
     expect(find.text('Tenant'), findsWidgets);
-    expect(find.text('Open'), findsWidgets);
+    expect(find.text('Open'), findsNothing);
+    expect(find.text('Create'), findsNothing);
+    expect(find.text('Unavailable'), findsNothing);
   });
 
   testWidgets('renders tenant selector when backend requires tenant context', (
     WidgetTester tester,
   ) async {
-    await pumpComponent(
+    await _pumpWorkspace(
       tester,
-      ProviderScope(
-        overrides: [
-          settingsWorkspaceRepositoryProvider.overrideWithValue(
-            _FakeSettingsWorkspaceRepository(
-              workspace: _workspace(
-                SettingsWorkspaceStatus.tenantContextRequired,
-              ),
-              referenceData: _referenceData(),
-            ),
-          ),
-        ],
-        child: const SettingsWorkspaceSection(),
-      ),
+      workspace: _workspace(SettingsWorkspaceStatus.tenantContextRequired),
       size: const Size(900, 700),
     );
-    await tester.pumpAndSettle();
 
     expect(find.text('Tenant context required'), findsOneWidget);
     expect(find.text('Tenant'), findsWidgets);
     expect(find.text('Tenant context'), findsWidgets);
   });
+}
+
+Future<void> _pumpWorkspace(
+  WidgetTester tester, {
+  required SettingsWorkspace workspace,
+  Size size = const Size(1280, 1200),
+}) async {
+  // Match controller tests: repository override only (no auth token refresh).
+  await pumpLocalizedWidget(
+    tester,
+    ProviderScope(
+      overrides: [
+        settingsWorkspaceRepositoryProvider.overrideWithValue(
+          _FakeSettingsWorkspaceRepository(
+            workspace: workspace,
+            referenceData: _referenceData(),
+          ),
+        ),
+      ],
+      child: const SettingsWorkspaceSection(),
+    ),
+    size: size,
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pumpAndSettle();
 }
 
 final class _FakeSettingsWorkspaceRepository
@@ -103,7 +128,11 @@ SettingsReferenceData _referenceData() {
   );
 }
 
-SettingsWorkspace _workspace(SettingsWorkspaceStatus status) {
+SettingsWorkspace _workspace(
+  SettingsWorkspaceStatus status, {
+  bool canRead = true,
+  bool canCreate = true,
+}) {
   final bool ready = status == SettingsWorkspaceStatus.ready;
   return SettingsWorkspace(
     status: status,
@@ -159,7 +188,7 @@ SettingsWorkspace _workspace(SettingsWorkspaceStatus status) {
           ]
         : const <SettingsQuickAction>[],
     moduleGroups: ready
-        ? const <SettingsModuleGroup>[
+        ? <SettingsModuleGroup>[
             SettingsModuleGroup(
               id: 'organization',
               labelKey: 'settings.sidebar.groups.organization',
@@ -170,10 +199,10 @@ SettingsWorkspace _workspace(SettingsWorkspaceStatus status) {
                   groupId: 'organization',
                   count: 1,
                   state: SettingsModuleState.configured,
-                  canRead: true,
-                  canWrite: true,
-                  canCreate: true,
-                  dependencies: <SettingsModuleDependency>[],
+                  canRead: canRead,
+                  canWrite: canCreate,
+                  canCreate: canCreate,
+                  dependencies: const <SettingsModuleDependency>[],
                   route: '/settings/tenants',
                   createRoute: '/settings/tenants/create',
                 ),

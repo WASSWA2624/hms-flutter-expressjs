@@ -97,15 +97,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     setState(() {
       _expandedSectionId = sectionId;
     });
-    context.go(SettingsPageQuery(tab: sectionId).location());
+    GoRouter.maybeOf(
+      context,
+    )?.go(SettingsPageQuery(tab: sectionId).location());
   }
 
   void _onAccountPanelChanged(String panel) {
-    final SettingsPageQuery newQuery = SettingsPageQuery(
-      tab: 'account',
-      panel: panel,
+    GoRouter.maybeOf(context)?.go(
+      SettingsPageQuery(tab: 'account', panel: panel).location(),
     );
-    context.go(newQuery.location());
   }
 
   @override

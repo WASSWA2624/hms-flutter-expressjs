@@ -752,7 +752,6 @@ class _ClaimsQueuePanel extends ConsumerWidget {
               : _ClaimsNextActionButton(
                   item: item,
                   section: section,
-                  state: state,
                 ),
         );
       },
@@ -773,14 +772,14 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
       _claimsPatientColumn(l10n, id: 'auth_patient'),
       _claimsCoverageColumn(l10n, id: 'auth_coverage'),
       _claimsStatusColumn(l10n),
-      _claimsNextActionColumn(context, ref, state, section),
+      _claimsNextActionColumn(context, ref, section),
     ],
     ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'claim_reference'),
       _claimsPatientColumn(l10n, id: 'claim_patient'),
       _claimsCoverageColumn(l10n, id: 'claim_coverage'),
       _claimsStatusColumn(l10n),
-      _claimsNextActionColumn(context, ref, state, section),
+      _claimsNextActionColumn(context, ref, section),
     ],
     ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'settled_reference'),
@@ -991,7 +990,6 @@ AppListTableColumn<ClaimsQueueItem> _claimsTimelineColumn(
 AppListTableColumn<ClaimsQueueItem> _claimsNextActionColumn(
   BuildContext context,
   WidgetRef ref,
-  ClaimsWorkspaceState state,
   ClaimsDeskSection section,
 ) {
   final AppLocalizations l10n = context.l10n;
@@ -1008,7 +1006,6 @@ AppListTableColumn<ClaimsQueueItem> _claimsNextActionColumn(
       return _ClaimsNextActionButton(
         item: item,
         section: section,
-        state: state,
       );
     },
   );
@@ -1089,12 +1086,10 @@ class _ClaimsNextActionButton extends ConsumerWidget {
   const _ClaimsNextActionButton({
     required this.item,
     required this.section,
-    required this.state,
   });
 
   final ClaimsQueueItem item;
   final ClaimsDeskSection section;
-  final ClaimsWorkspaceState state;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1115,13 +1110,13 @@ class _ClaimsNextActionButton extends ConsumerWidget {
         return AppButton.tertiary(
           label: label,
           icon: isNarrow ? Icons.play_arrow_outlined : null,
-          tooltip: isNarrow ? label : null,
-          // Icon-only on narrow mobile trailing so the control stays tappable.
-          showLabel: !isNarrow,
+          iconOnly: isNarrow,
+          tooltip: label,
+          semanticLabel: label,
           enabled: isAllowed,
           onPressed: isAllowed
               ? () => unawaited(
-                  _handleClaimsNextAction(context, ref, state, item),
+                  _handleClaimsNextAction(context, ref, item),
                 )
               : null,
         );
@@ -1144,7 +1139,6 @@ AccessRequirement _writeRequirementForItem(ClaimsQueueItem item) {
 Future<void> _handleClaimsNextAction(
   BuildContext context,
   WidgetRef ref,
-  ClaimsWorkspaceState state,
   ClaimsQueueItem item,
 ) async {
   final ClaimsWorkspaceController controller = ref.read(
@@ -1152,6 +1146,9 @@ Future<void> _handleClaimsNextAction(
   );
   // Stage writes only need embedded ids — skip the detail fetch shell.
   controller.focusItem(item);
+  // Yield so the focus emission can rebuild without deactivating this context
+  // before the mutation dialog is presented.
+  await Future<void>.delayed(Duration.zero);
   if (!context.mounted) {
     return;
   }
@@ -1186,12 +1183,14 @@ Future<void> _handleClaimsNextAction(
         submitLabel: l10n.claimsRecordResponseSubmitAction,
       );
     case 'APPROVED':
+      // Next-action already chose "Close as paid" — do not restate status.
       await _openClaimResponseDialog(
         context,
         controller,
         initialStatus: 'PAID',
         title: l10n.claimsCloseClaimDialogTitle,
         submitLabel: l10n.claimsCloseClaimSubmitAction,
+        statusEditable: false,
       );
     default:
       await _openSubmitClaimDialog(context, controller);
@@ -1968,10 +1967,12 @@ class _ClaimResponseDialog extends StatefulWidget {
     required this.initialStatus,
     required this.submitLabel,
     required this.onSubmit,
+    this.statusEditable = true,
   });
 
   final String initialStatus;
   final String submitLabel;
+  final bool statusEditable;
   final Future<AppFailure?> Function({
     required String status,
     required String notes,
@@ -2009,20 +2010,21 @@ class _ClaimResponseDialogState extends State<_ClaimResponseDialog> {
       formKey: _formKey,
       formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
-        AppSelectField<String>(
-          labelText: l10n.claimsClaimResponseFieldLabel,
-          value: _status,
-          isRequired: true,
-          options: _claimResponseOptions(l10n),
-          validator: AppValidators.requiredValue<String>(
-            l10n.claimsStatusRequiredMessage,
+        if (widget.statusEditable)
+          AppSelectField<String>(
+            labelText: l10n.claimsClaimResponseFieldLabel,
+            value: _status,
+            isRequired: true,
+            options: _claimResponseOptions(l10n),
+            validator: AppValidators.requiredValue<String>(
+              l10n.claimsStatusRequiredMessage,
+            ),
+            onChanged: (String? value) {
+              setState(() {
+                _status = value ?? _status;
+              });
+            },
           ),
-          onChanged: (String? value) {
-            setState(() {
-              _status = value ?? _status;
-            });
-          },
-        ),
         AppTextField(
           controller: _notesController,
           labelText: l10n.claimsNotesFieldLabel,
@@ -2161,6 +2163,7 @@ Future<void> _openClaimResponseDialog(
   required String initialStatus,
   required String title,
   required String submitLabel,
+  bool statusEditable = true,
 }) async {
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -2168,6 +2171,7 @@ Future<void> _openClaimResponseDialog(
     content: _ClaimResponseDialog(
       initialStatus: initialStatus,
       submitLabel: submitLabel,
+      statusEditable: statusEditable,
       onSubmit: controller.reconcileClaim,
     ),
   );

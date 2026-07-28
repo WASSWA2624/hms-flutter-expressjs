@@ -2,7 +2,7 @@
 
 Primary surface: `RoomsBedsWorkspacePage` (`frontend/lib/features/rooms_beds/presentation/pages/rooms_beds_workspace_page.dart`).
 
-Write gates (client): `canAdminBeds` (elevated / tenant / facility / system admin) for catalog add room/bed, status mutations, manage catalog; `canIpdWrite` (`clinicalWrite`) for assign / release / transfer. Module navigation (IPD / housekeeping / operations) does not require bed admin. Unauthorized write controls do not render. Backend auth remains authoritative.
+Write gates: bed catalog / status admin via elevated or tenant/facility/system admin (`_canAdminBeds`); assign / release / transfer via `clinicalWrite`. Unauthorized write controls do not render (`roomsBedsNextActionShouldRender` / conditional toolbar & detail actions). Backend auth remains authoritative.
 
 Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; noted once here.
 
@@ -12,15 +12,15 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 
 | Duplicate / redundant surface | Outcome | Merge / removal |
 | --- | --- | --- |
-| Tab-strip **Refresh** (primary fallback + secondary) | Reload board | **Removed** — board syncs after mutations / realtime / scaffold **Try again** |
-| Turnover secondary **Open operations** | Navigate to operations | **Removed** — out-of-service tab primary + maintenance next-action are the entries |
-| Detail action matching row **Next action** (assign / release / mark available / manage transfer / open operations) | Same write / navigation | **Omitted** from detail — next-action is the sole primary for that goal |
-| Detail **Readiness** tile | Restate status | **Removed** — status tile remains |
-| Advanced **Status** filter on Available / Occupied / Turnover / Out of service | Same scope as tab | **Removed** on status-scoped tabs — All beds keeps status filter |
-| Unauthorized write next-actions shown disabled with lock | No access | **Omitted** — write next-actions absent; row select opens detail |
-| Release / transfer **admission** field when admission already known | Restate linked admission | **Removed** — confirm / destination ward only; admission still required when unknown |
-| Mobile list without next-action trailing | Same stage write as desktop | **Fixed** — `RoomsBedsNextActionButton` on mobile `trailing` |
-| Reserved next-action **Assign** (disabled until available) | Dead primary | **Fixed** — reserved next-action is **Mark available** (release hold) |
+| Tab-strip **Refresh** (primary when read-only; secondary when admin) | Reload board | **Removed** — mutations / realtime / scaffold **Try again** |
+| Occupied **IPD** / Turnover **Open housekeeping** / OOS **Open operations** strip primaries | Leave screen | **Removed** — board next-action (or app nav) owns cross-module jumps; strip keeps catalog writes only |
+| Turnover secondary **Open operations** | Leave screen | **Removed** with strip nav cleanup |
+| Detail action matching row **Next action** (Assign / Release / Manage transfer / Mark available / Open operations) | Same write or jump | **Omitted** via `omitNextActionKind` — next-action is the sole primary |
+| Detail **Readiness** tile restating status | Same info | **Removed** — status tile remains |
+| Status advanced filter on section tabs that already scope status | Restate tab scope | **Removed** from non–All tabs — status filter only on **All beds** |
+| Release / transfer **Admission number** when admission already known | Restate prior choice | **Removed** field — confirm / destination ward only |
+| Deep link `bedId` only selected bed | Intermediate shell; hunt for row | **Removed** — deep link opens bed detail dialog |
+| Unauthorized next-action shown disabled with lock | No access chrome | **Omitted** — control absent; row select opens detail |
 
 ---
 
@@ -31,54 +31,50 @@ Dialog chrome: each `AppDialog` has an icon-only **Close** that only dismisses; 
 - **All beds / Available / Occupied / Turnover / Out of service**
   - Location: Page chrome `AppTabStrip`.
   - Opens modal: No.
-  - Immediate result: Switches `_section`, updates URL `?section=…`, client-filters board.
+  - Immediate result: Switches `_section`, updates URL `?section=…`, client-filters board counts/rows.
   - Condition: Always when workspace loads.
-  - Counts: total / available / occupied / turnover / blocked aggregates.
+  - Counts: Aggregate status counts per section.
 
-- **Add room** (primary on All when authorized)
+- **Create room** (primary on All beds)
   - Location: Tab-strip primary.
   - Opens modal: Yes — tenant facility room form.
   - Immediate result: Creates room; board refresh.
-  - Condition: `canAdminBeds`; omitted when unauthorized.
+  - Condition: Bed admin; unauthorized control absent.
 
-- **Add bed** (primary on Available when authorized; secondary on All)
-  - Location: Tab-strip toolbar.
+- **Create bed** (primary on Available)
+  - Location: Tab-strip primary.
   - Opens modal: Yes — tenant facility bed form.
   - Immediate result: Creates bed; board refresh.
-  - Condition: `canAdminBeds`; omitted when unauthorized.
+  - Condition: Bed admin; unauthorized control absent.
 
-- **IPD** (primary on Occupied)
-  - Location: Tab-strip primary.
-  - Opens modal: No — navigates to `/ipd`.
-  - Immediate result: Leaves rooms-beds for IPD workspace.
+- **Create bed** (secondary on All) / **Create room** (secondary on Available)
+  - Location: Tab-strip secondary.
+  - Opens modal: Matching catalog form.
+  - Immediate result: Creates room or bed; board refresh.
+  - Condition: Bed admin.
 
-- **Open housekeeping** (primary on Turnover)
-  - Location: Tab-strip primary.
-  - Opens modal: No — navigates to `/housekeeping`.
-
-- **Open operations** (primary on Out of service)
-  - Location: Tab-strip primary.
-  - Opens modal: No — navigates to `/operations`.
-
-- **Manage catalog** (secondary when authorized)
+- **Manage catalog** (secondary on every tab)
   - Location: Tab-strip secondary.
   - Opens modal: No — navigates to tenant facility setup.
-  - Condition: `canAdminBeds`; omitted when unauthorized.
+  - Immediate result: Leaves board for full catalog admin.
+  - Condition: Bed admin; unauthorized control absent.
+
+Occupied / Turnover / Out of service have no strip primary (board next-action is the work entry).
 
 Tab-strip **Refresh** was removed.
 
 - **Try again** (page load / inline failure)
   - Location: `AsyncStateScaffold` / `AppFailureStateView`.
   - Opens modal: No.
-  - Immediate result: Retries workspace load / refresh.
+  - Immediate result: Reloads rooms & beds workspace.
   - Condition: Load or mutation failure surface.
 
 ### Search / filters / table chrome
 
-- **Search**, **Clear**, **Filters** (advanced), **Settings** (columns), pagination
+- **Search**, **Clear**, **Filters** (facility / ward / room; status on All only), **Settings** (columns), pagination
   - Location: `AppListTable` / `AppSearchBar` chrome.
-  - Opens modal: Advanced filters (facility / ward / room; **status only on All beds**); Table Settings.
-  - Immediate result: Filters/search/columns/pagination for the active section.
+  - Opens modal: Advanced filters; Table Settings.
+  - Immediate result: Filters / search / columns / page for the active tab.
   - Condition: Always when board is loaded.
 
 ### Empty / no-results
@@ -87,60 +83,58 @@ Tab-strip **Refresh** was removed.
   - Location: `AppWorkspaceStatePanel.empty`.
   - Opens modal: No.
   - Immediate result: Empty copy; section primary remains when authorized.
-  - Condition: Empty page.
+  - Condition: No rows after tab / search / filters.
 
 ### Row activation / next-action
 
 - **Row select** (desktop row / mobile item)
   - Location: Table row / mobile list item.
-  - Opens modal: Bed detail (identity tiles, complementary writes, assignment history).
-  - Immediate result: Selects bed and opens detail; omits the row next-action from detail actions.
+  - Opens modal: Bed detail dialog (history + complementary writes).
+  - Immediate result: Loads assignments / admission context; omits the board next-action from detail actions.
   - Condition: Always when rows exist.
 
-- **Next action** (status/capability-aware label)
-  - Location: `next_action` column (always visible on desktop); mobile list item `trailing`.
-  - Opens modal: Assign / release confirm / manage transfer when that is next; mark available mutates directly; housekeeping / operations navigate.
-  - Immediate result: Sole primary write/navigation for the row.
-  - Condition: Write next-actions require matching capability; unauthorized write next-actions absent (use row select). Navigation next-actions always available.
+- **Next action** (status-aware label)
+  - Location: `next_action` column (always visible).
+  - Opens modal: Assign / Release / Manage transfer dialogs, or mutates Mark available, or navigates to Operations; no empty detail shell.
+  - Immediate result: Sole labeled row path for the stage primary. Unauthorized writes absent (row select still opens detail).
+  - Condition: Authorized for that kind; otherwise control omitted.
 
-### Detail dialog
+### Deep link
+
+- **`?bed=` / `bedId=`**
+  - Location: Route query via `RoomsBedsQuery`.
+  - Opens modal: Bed detail dialog after load.
+  - Immediate result: No intermediate “selected only” shell.
+
+### Bed detail dialog
 
 - **Close**
-  - Location: Dialog actions.
-  - Opens modal: No (closes detail).
+  - Location: Dialog chrome.
+  - Opens modal: No.
   - Immediate result: Dismisses detail.
 
 - **Open IPD admission**
-  - Location: Detail body (when admission linked).
+  - Location: Detail body when admission linked.
   - Opens modal: No — navigates to `/ipd?admission=…`.
-  - Immediate result: Opens the linked admission in IPD.
+  - Immediate result: Leaves board for admission workspace.
+  - Condition: Current admission present.
 
-- **Complementary writes** (reserve, status marks, assign / release / transfer / manage transfer, housekeeping / operations links)
+- **Complementary status / IPD writes** (Reserve, Mark cleaning / maintenance / blocked, Request transfer, Open housekeeping when cleaning, Open operations when not the next-action, etc.)
   - Location: Detail action wrap.
-  - Opens modal: Assign / release / transfer / manage-transfer forms when applicable; status mutates directly.
-  - Immediate result: Mutates via controller; snackbar; board refresh.
-  - Condition: Capability + status; action omitted when it equals the row next-action; ineligible / unauthorized writes absent.
+  - Opens modal: Status mutates directly; transfer / assign / release as matching dialogs.
+  - Immediate result: Complementary work that is not the board next-action primary.
+  - Condition: Matching write gate; next-action twin omitted.
 
-### Nested dialogs (from next-action or detail)
+- **Assignment history**
+  - Location: Detail progressive-disclosure panel.
+  - Opens modal: No.
+  - Immediate result: Lists assignment records or empty copy.
 
-- **Assign** — admission number required.
-- **Release** — confirm body when admission known; admission field only when unknown.
+### Dialogs (assign / release / transfer / transfer update)
+
+- **Assign bed** — requires admission number (+ optional ward suitability hint).
+- **Release bed** — confirm body; admission field only when unknown.
 - **Request transfer** — destination ward required; admission field only when unknown.
-- **Manage transfer** — shared transfer update dialog (approve / start / complete / cancel + destination bed).
-- **Add room / Add bed** — tenant facility forms.
+- **Manage transfer** — shared transfer update dialog (approve / start / complete / cancel + destination bed when needed).
 
----
-
-## Manual checks (Req 7)
-
-- [x] Next action on available bed opens Assign (not detail first).
-- [x] Next action on occupied opens Release confirm without re-asking admission when linked.
-- [x] Next action on cleaning / reserved / blocked is Mark available; detail omits Mark available.
-- [x] Next action on maintenance / out-of-service opens Operations; detail omits Open operations.
-- [x] Row select opens detail; detail omits the label that matches that row’s next-action.
-- [x] Detail has no readiness tile; no toolbar Refresh; no turnover Open operations secondary.
-- [x] Status filter only on All beds.
-- [x] Without write capability, write next-actions and unauthorized catalog actions are absent.
-- [x] Mobile trailing exposes the same next-action as the desktop column.
-
-Automated: `frontend/test/features/rooms_beds/presentation/rooms_beds_ux_simplify_test.dart`, `rooms_beds_status_helpers_test.dart`.
+Loading / saving / success snackbar / validation / failure surfaces remain on these dialogs and the board.
