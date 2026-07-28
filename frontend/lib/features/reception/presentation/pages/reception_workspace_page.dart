@@ -2595,6 +2595,25 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
         ],
         if (stepLabel != null && stepLabel.trim().isNotEmpty)
           AppListTableMobileMeta(label: stepLabel.trim()),
+        if (section == ReceptionDeskSection.paymentGate) ...<AppListTableMobileMeta>[
+          if (row.paymentGateEntry?.services.isNotEmpty == true)
+            AppListTableMobileMeta(
+              label: row.paymentGateEntry!.services
+                  .map((String source) => billingApiLabel(context, source))
+                  .join(', '),
+              icon: Icons.category_outlined,
+            ),
+          if (row.paymentGateEntry?.outstandingByCurrency.isNotEmpty == true)
+            AppListTableMobileMeta(
+              label: row.paymentGateEntry!.outstandingByCurrency.entries
+                  .map(
+                    (MapEntry<String, num> total) =>
+                        billingMoney(context, total.value, total.key),
+                  )
+                  .join(' · '),
+              icon: Icons.account_balance_wallet_outlined,
+            ),
+        ],
         if (nextLabel != null && nextLabel.trim().isNotEmpty)
           AppListTableMobileMeta(label: nextLabel.trim()),
       ],

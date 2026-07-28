@@ -2910,8 +2910,9 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
   }
 
-  /// Enough blank rows (at [rowMinHeight]) to fill [availableHeight] under the
-  /// heading, without forcing a tall scrollable pad beyond the viewport.
+  /// Computes how many rows (data + blank spacers) are needed so the table body
+  /// fills [availableHeight] under the heading at [rowMinHeight], without a
+  /// fixed oversized pad beyond the viewport.
   static int _rowCountToFillHeight({
     required double availableHeight,
     required double headingHeight,

@@ -236,35 +236,41 @@ Future<void> _pumpResetPassword(
         routes: <RouteBase>[
           GoRoute(
             path: '/reset-password',
-            builder: (BuildContext context, GoRouterState state) {
-              return ResetPasswordPage(
-                token: state.uri.queryParameters['token'],
-                email: state.uri.queryParameters['email'],
+            pageBuilder: (BuildContext context, GoRouterState state) {
+              return NoTransitionPage<void>(
+                child: ResetPasswordPage(
+                  token: state.uri.queryParameters['token'],
+                  email: state.uri.queryParameters['email'],
+                ),
               );
             },
           ),
           GoRoute(
             path: '/login',
-            builder: (_, GoRouterState state) {
-              return LoginPage(from: state.uri.queryParameters['from']);
+            pageBuilder: (_, GoRouterState state) {
+              return NoTransitionPage<void>(
+                child: LoginPage(from: state.uri.queryParameters['from']),
+              );
             },
           ),
         ],
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (BuildContext context, _) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Text('forgot'),
-                  TextButton(
-                    onPressed: () => context.go('/reset-password'),
-                    child: const Text('back-reset'),
-                  ),
-                ],
+        pageBuilder: (BuildContext context, _) {
+          return NoTransitionPage<void>(
+            child: Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Text('forgot'),
+                    TextButton(
+                      onPressed: () => context.go('/reset-password'),
+                      child: const Text('back-reset'),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

@@ -8,7 +8,7 @@ Entry modes:
 - **Link-token:** `?token=` (non–six-digit) → new password + confirm only.
 - **Code:** no link token (optional `?email=` / six-digit `?token=` prefill) → email + reset code + new password + confirm.
 
-Reachable nested surface after a successful reset: `/login` (success banner + sign-in form).
+Reachable nested surface after a successful reset: `/login` (success SnackBar + sign-in form).
 
 ---
 
@@ -18,7 +18,7 @@ Reachable nested surface after a successful reset: `/login` (success banner + si
 | --- | --- | --- |
 | Success hub **Password updated** + **Sign in** | Extra step after mutation already succeeded | **Removed** hub — successful reset opens `/login` (sign-in is the next required action) |
 | Form **Back to sign in** vs success-hub **Sign in** | Same navigate-to-login goal on two shells | **Merged** — one abandon link on the form; success auto-navigates to login |
-| Sticky `passwordResetCompleted` shell on revisit | Blocked using the form again | **Removed** with hub — login shows a one-shot banner then clears the flag |
+| Sticky `passwordResetCompleted` shell on revisit | Blocked using the form again | **Removed** with hub — login shows a one-shot SnackBar then clears the flag |
 
 ---
 

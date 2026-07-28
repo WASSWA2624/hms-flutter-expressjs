@@ -817,7 +817,7 @@ void main() {
           viewSize: size,
         );
 
-        await tester.tap(find.text('Penny Payment').first);
+        await tester.tap(find.textContaining('Penny Payment').first);
         await tester.pumpAndSettle();
 
         expect(find.byType(FlowActionsDialog), findsOneWidget);
@@ -1054,9 +1054,9 @@ void main() {
       viewSize: const Size(390, 844),
     );
 
-    expect(find.text('Priya Progressed'), findsOneWidget);
-    expect(find.text('Lab pending'), findsOneWidget);
-    expect(find.text('Collect sample'), findsOneWidget);
+    expect(find.textContaining('Priya Progressed'), findsOneWidget);
+    expect(find.textContaining('Lab pending'), findsOneWidget);
+    expect(find.textContaining('Collect sample'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Collect sample'), findsNothing);
   });
 
@@ -1128,8 +1128,8 @@ void main() {
       viewSize: const Size(390, 844),
     );
 
-    expect(find.text('Casey Consultation'), findsOneWidget);
-    expect(find.text('Clinical notes'), findsOneWidget);
+    expect(find.textContaining('Casey Consultation'), findsOneWidget);
+    expect(find.textContaining('Clinical notes'), findsOneWidget);
     expect(find.byType(WorkflowActionButton), findsNothing);
     expect(find.widgetWithText(AppButton, 'Clinical notes'), findsNothing);
   });
@@ -1220,7 +1220,7 @@ void main() {
       viewSize: const Size(390, 844),
     );
 
-    expect(find.text('Penny Payment'), findsOneWidget);
+    expect(find.textContaining('Penny Payment'), findsOneWidget);
     expect(find.textContaining('Laboratory'), findsOneWidget);
     expect(find.textContaining('Radiology'), findsOneWidget);
     expect(find.textContaining('90,000'), findsOneWidget);
