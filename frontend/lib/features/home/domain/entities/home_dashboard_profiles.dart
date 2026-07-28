@@ -103,6 +103,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     homeTitle: 'Organization',
     emptyMessage:
         'Create facilities, assign roles, and onboard users across your organization.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'facilities_active',
@@ -153,6 +154,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     homeTitle: 'Facility ops',
     emptyMessage:
         'Facility setup is ready for daily work once patients, services, beds, and staff are configured.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'patient_flow_today',
@@ -705,6 +707,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Operations',
     homeTitle: 'Operations',
     emptyMessage: 'No operations items need action right now.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'occupied_beds',
@@ -754,6 +757,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'HR / workforce',
     homeTitle: 'Workforce',
     emptyMessage: 'No HR tasks are pending.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'active_staff',
@@ -1111,6 +1115,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Housekeeping manager',
     homeTitle: 'Housekeeping control dashboard',
     emptyMessage: 'No housekeeping backlog is pending.',
+    maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'pending_cleaning_tasks',
@@ -1157,6 +1162,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Biomedical manager',
     homeTitle: 'Biomedical risk dashboard',
     emptyMessage: 'No biomedical risk items need action.',
+    maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'open_work_orders', label: 'Work orders'),
       HomeStatusCardTemplate(
@@ -1227,6 +1233,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Mortuary manager',
     homeTitle: 'Mortuary oversight dashboard',
     emptyMessage: 'No mortuary approvals need action.',
+    maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'active_mortuary_cases',
@@ -1476,15 +1483,26 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
 ///
 /// Roles choose the default profile layout; visibility still requires
 /// `grantsAll` via [filterHomeDashboardForAccess] / action libraries.
+///
+/// Ordering keeps the base role's primary KPI window first, then inserts
+/// **cross-domain** grantable cards (permissions not already on the base
+/// profile) so extra grants (e.g. `billing:read` on a doctor) surface inside
+/// the 4–6 card budget. Same-domain extras follow after.
 HomeDashboardProfile expandHomeProfileForPermissions(
   HomeDashboardProfile base,
   AppAccessPolicy policy,
 ) {
-  final LinkedHashMap<String, HomeStatusCardTemplate> cards =
+  final LinkedHashSet<String> baseCardIds = LinkedHashSet<String>.of(
+    base.statusCards.map((HomeStatusCardTemplate template) => template.id),
+  );
+  final Set<AppPermission> basePermissionUniverse = <AppPermission>{
+    for (final HomeStatusCardTemplate template in base.statusCards)
+      ...template.effectiveRequiredPermissions,
+  };
+  final LinkedHashMap<String, HomeStatusCardTemplate> crossDomainCards =
       LinkedHashMap<String, HomeStatusCardTemplate>();
-  for (final HomeStatusCardTemplate template in base.statusCards) {
-    cards[template.id] = template;
-  }
+  final LinkedHashMap<String, HomeStatusCardTemplate> sameDomainCards =
+      LinkedHashMap<String, HomeStatusCardTemplate>();
 
   final LinkedHashSet<String> quickActionIds = LinkedHashSet<String>.of(
     base.quickActionIds,
@@ -1505,7 +1523,9 @@ HomeDashboardProfile expandHomeProfileForPermissions(
       continue;
     }
     for (final HomeStatusCardTemplate template in profile.statusCards) {
-      if (cards.containsKey(template.id)) {
+      if (baseCardIds.contains(template.id) ||
+          crossDomainCards.containsKey(template.id) ||
+          sameDomainCards.containsKey(template.id)) {
         continue;
       }
       final List<AppPermission> required =
@@ -1513,7 +1533,15 @@ HomeDashboardProfile expandHomeProfileForPermissions(
       if (required.isEmpty || !policy.grantsAll(required)) {
         continue;
       }
-      cards[template.id] = template;
+      final bool isCrossDomain = required.any(
+        (AppPermission permission) =>
+            !basePermissionUniverse.contains(permission),
+      );
+      if (isCrossDomain) {
+        crossDomainCards[template.id] = template;
+      } else {
+        sameDomainCards[template.id] = template;
+      }
     }
     for (final String id in profile.quickActionIds) {
       quickActionIds.add(id);
@@ -1534,17 +1562,32 @@ HomeDashboardProfile expandHomeProfileForPermissions(
     }
   }
 
-  final bool grew = cards.length > base.statusCards.length;
+  if (crossDomainCards.isEmpty && sameDomainCards.isEmpty) {
+    return base.copyWith(
+      quickActionIds: quickActionIds.toList(growable: false),
+      shortcutIds: shortcutIds.toList(growable: false),
+      emptyActionIds: emptyActionIds.toList(growable: false),
+      metricRouteTargets: metricRoutes,
+      metricActionTargets: metricActions,
+    );
+  }
+
+  final int primaryWindow = math.max(1, base.maxStatusCards);
+  final List<HomeStatusCardTemplate> ordered = <HomeStatusCardTemplate>[
+    ...base.statusCards.take(primaryWindow),
+    ...crossDomainCards.values,
+    ...sameDomainCards.values,
+    ...base.statusCards.skip(primaryWindow),
+  ];
+
   return base.copyWith(
-    statusCards: cards.values.toList(growable: false),
+    statusCards: ordered,
     quickActionIds: quickActionIds.toList(growable: false),
     shortcutIds: shortcutIds.toList(growable: false),
     emptyActionIds: emptyActionIds.toList(growable: false),
     metricRouteTargets: metricRoutes,
     metricActionTargets: metricActions,
-    maxStatusCards: grew
-        ? math.min(6, math.max(base.maxStatusCards, cards.length))
-        : base.maxStatusCards,
+    maxStatusCards: math.min(6, math.max(base.maxStatusCards, ordered.length)),
   );
 }
 

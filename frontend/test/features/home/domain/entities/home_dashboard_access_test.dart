@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 
@@ -170,8 +171,8 @@ void main() {
             // intentionally no billing:read
           ],
         );
-        final HomeDashboardProfile profile = homeProfileForRole(
-          AppRole.facilityAdmin,
+        final HomeDashboardProfile profile = homeProfileForAccessPolicy(
+          policy,
         );
         final HomeDashboard filtered = filterHomeDashboardForAccess(
           _dashboardForProfile(profile),
@@ -190,6 +191,10 @@ void main() {
           ]),
         );
         expect(ids, isNot(contains('billing_exceptions')));
+        expect(ids, isNot(contains('collections_today')));
+        // Cross-domain grants still union onto facility chrome.
+        expect(ids, contains('emergency_cases_today'));
+        expect(filtered.trend.hasData, isTrue);
       },
     );
 
@@ -366,10 +371,17 @@ void main() {
           policy,
         );
         final Set<String> ids = _cardIds(filtered);
+        final List<String> visible = filtered.statusCards
+            .take(profile.effectiveMaxStatusCards)
+            .map((HomeStatusCard card) => card.id)
+            .toList(growable: false);
 
         expect(profile.role, AppRole.doctor);
+        expect(profile.effectiveMaxStatusCards, 6);
         expect(ids, contains('assigned'));
         expect(ids, contains('collections_today'));
+        expect(visible, contains('assigned'));
+        expect(visible, contains('collections_today'));
         expect(ids, isNot(contains('pending_approvals')));
         expect(ids, isNot(contains('pending_dispense')));
       },

@@ -62,25 +62,11 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
   bool get isBillingDepartmentDashboard => id == 'billing';
 
   int get effectiveMaxStatusCards {
-    // Dashboard.md recommends 4–6 KPIs; permission-union profiles may raise
-    // [maxStatusCards] so extra granted domains can surface without a new role.
+    // Dashboard.md recommends 4–6 KPIs. Role profiles set [maxStatusCards];
+    // [expandHomeProfileForPermissions] may raise it to 6 so cross-domain
+    // grants (e.g. doctor + billing:read) can surface without a new role.
     const int kpiCap = 6;
-    if (isDoctorClinicalDashboard ||
-        isNurseClinicalDashboard ||
-        isLabDepartmentDashboard ||
-        isPharmacistDepartmentDashboard ||
-        isReceptionistFrontDeskDashboard ||
-        isBillingDepartmentDashboard) {
-      return math.min(maxStatusCards, kpiCap);
-    }
-    final int tierCap = switch (layoutTier) {
-      HomeDashboardLayoutTier.platform ||
-      HomeDashboardLayoutTier.organization ||
-      HomeDashboardLayoutTier.facilityCommand ||
-      HomeDashboardLayoutTier.workforce => 4,
-      _ => 3,
-    };
-    return math.min(maxStatusCards, tierCap);
+    return math.min(maxStatusCards, kpiCap);
   }
 
   int get maxQuickActions {

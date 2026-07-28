@@ -164,7 +164,7 @@ void main() {
       expect(profile.quickActionIds, isEmpty);
       expect(profile.shortcutIds, containsAll(<String>['hr', 'reports']));
       expect(profile.emptyActionIds, isEmpty);
-      expect(profile.maxStatusCards, 6);
+      expect(profile.maxStatusCards, 4);
       expect(
         profile.toolbarActionIds,
         contains(HomeToolbarActionId.openHrWorkspace),
