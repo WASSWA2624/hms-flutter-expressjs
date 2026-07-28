@@ -104,7 +104,6 @@ void _stubQueue(
     _pending,
     _completed,
   ],
-  bool detailHasSummary = false,
 }) {
   when(() => repository.listQueue(any())).thenAnswer(
     (_) async => Result<AppPage<IpdAdmissionSummary>>.success(
@@ -129,17 +128,7 @@ void _stubQueue(
       orElse: () => items.first,
     );
     return Result<DischargeAdmissionDetail>.success(
-      DischargeAdmissionDetail(
-        ipd: IpdAdmissionDetail(summary: summary),
-        latestDischargeSummary: detailHasSummary
-            ? DischargeSummaryRecord(
-                id: 'sum-1',
-                admissionId: summary.id,
-                status: summary.dischargeStatus ?? 'PLANNED',
-                summaryText: 'Ready for discharge.',
-              )
-            : null,
-      ),
+      DischargeAdmissionDetail(ipd: IpdAdmissionDetail(summary: summary)),
     );
   });
 }
@@ -150,11 +139,12 @@ Future<void> _pumpDischargeWorkspace(
   DischargeWorklistQuery? initialQuery,
   String initialLocation = '/discharge',
   AppAccessPolicy? policy,
+  Size viewSize = const Size(1440, 900),
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
 
-  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.physicalSize = viewSize;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -225,10 +215,11 @@ void main() {
     expect(find.text('Alice Planned'), findsOneWidget);
     expect(find.text('Bob Pending'), findsOneWidget);
     expect(find.text('Carol Completed'), findsOneWidget);
-    expect(find.byTooltip('Start discharge plan'), findsNothing);
-    expect(find.byTooltip('Manage clearance'), findsNothing);
-    expect(find.byTooltip('Print discharge summary'), findsWidgets);
+    // Strip toolbar duplicates removed; next-action remains the labeled entry.
     expect(find.byTooltip('Refresh'), findsNothing);
+    expect(find.byTooltip('Start discharge plan'), findsOneWidget);
+    expect(find.byTooltip('Manage clearance'), findsOneWidget);
+    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
@@ -348,10 +339,20 @@ void main() {
     await tester.tap(find.text('Bob Pending'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.text('Start discharge plan'), findsWidgets);
-    expect(find.text('Manage clearance'), findsNothing);
-    expect(find.text('Edit summary'), findsNothing);
+    final Finder detail = find.byType(AppDialog);
+    expect(detail, findsOneWidget);
+    expect(
+      find.descendant(of: detail, matching: find.text('Start discharge plan')),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(of: detail, matching: find.text('Manage clearance')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: detail, matching: find.text('Edit summary')),
+      findsNothing,
+    );
   });
 
   testWidgets('next action opens planning without prior detail shell', (
@@ -385,49 +386,15 @@ void main() {
   testWidgets('switches to mobile list layout at small breakpoints', (
     WidgetTester tester,
   ) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    final SharedPreferences preferences = await SharedPreferences.getInstance();
-
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final GoRouter router = GoRouter(
-      initialLocation: '/discharge',
-      routes: <RouteBase>[
-        GoRoute(
-          path: '/discharge',
-          builder: (BuildContext context, GoRouterState state) {
-            return const Scaffold(body: DischargeWorkspacePage());
-          },
-        ),
-      ],
+    await _pumpDischargeWorkspace(
+      tester,
+      repository: repository,
+      viewSize: const Size(390, 844),
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          dischargeRepositoryProvider.overrideWithValue(repository),
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          initialSessionStateProvider.overrideWithValue(
-            const SessionState.ready(),
-          ),
-          appAccessPolicyProvider.overrideWithValue(_dischargeWritePolicy()),
-        ],
-        child: MaterialApp.router(
-          routerConfig: router,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Alice Planned'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(AppListTable<IpdAdmissionSummary>), findsOneWidget);
+    expect(find.textContaining('Alice'), findsWidgets);
   });
 
   testWidgets('pending clearance tab shows status and next-action columns', (

@@ -23,7 +23,6 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 abstract final class EmergencyText {
   static const String active = 'Active';
@@ -276,6 +275,87 @@ String emergencyNextStepCode(EmergencyCaseSummary item) {
     return 'EMERGENCY_STABILIZE';
   }
   return 'EMERGENCY_STABILIZE';
+}
+
+/// Stage-aware primary write for a board row (next-action column).
+enum EmergencyNextActionKind {
+  triage,
+  response,
+  dispatch,
+  startTrip,
+  completeTrip,
+  handoff,
+}
+
+/// Resolves the single primary next write for [item] on [tab].
+///
+/// Ambulance specializes dispatch / start-trip after clinical readiness;
+/// other tabs advance triage → response → complete trip → handoff.
+EmergencyNextActionKind? emergencyBoardNextActionKind(
+  EmergencyCaseSummary item, {
+  EmergencyBoardTab? tab,
+}) {
+  if (!item.isOpen) {
+    return null;
+  }
+  if (item.latestTriage == null) {
+    return EmergencyNextActionKind.triage;
+  }
+  if (item.latestResponse == null) {
+    return EmergencyNextActionKind.response;
+  }
+  if (item.activeTrip != null) {
+    return EmergencyNextActionKind.completeTrip;
+  }
+  if (tab == EmergencyBoardTab.ambulance) {
+    if (item.latestDispatch == null) {
+      return EmergencyNextActionKind.dispatch;
+    }
+    return EmergencyNextActionKind.startTrip;
+  }
+  return EmergencyNextActionKind.handoff;
+}
+
+String emergencyNextActionLabel(
+  AppLocalizations l10n,
+  EmergencyNextActionKind kind,
+) {
+  return switch (kind) {
+    EmergencyNextActionKind.triage => l10n.emergencyTriageAction,
+    EmergencyNextActionKind.response => l10n.emergencyResponseAction,
+    EmergencyNextActionKind.dispatch => l10n.emergencyDispatchAction,
+    EmergencyNextActionKind.startTrip => l10n.emergencyDispatchStartTripAction,
+    EmergencyNextActionKind.completeTrip => EmergencyText.completeTrip,
+    EmergencyNextActionKind.handoff => l10n.emergencyHandoffRecordAction,
+  };
+}
+
+IconData emergencyNextActionIcon(EmergencyNextActionKind kind) {
+  return switch (kind) {
+    EmergencyNextActionKind.triage => Icons.monitor_heart_outlined,
+    EmergencyNextActionKind.response => Icons.medical_services_outlined,
+    EmergencyNextActionKind.dispatch => Icons.airport_shuttle_outlined,
+    EmergencyNextActionKind.startTrip => Icons.play_arrow_outlined,
+    EmergencyNextActionKind.completeTrip => Icons.flag_outlined,
+    EmergencyNextActionKind.handoff => AppActionIcons.handoff,
+  };
+}
+
+AccessRequirement emergencyNextActionRequirement(
+  EmergencyNextActionKind kind,
+  AccessRequirement writeRequirement,
+) {
+  if (kind == EmergencyNextActionKind.handoff) {
+    return const AccessRequirement(
+      anyPermissions: <AppPermission>[
+        AppPermissions.emergencyWrite,
+        AppPermissions.patientWrite,
+        AppPermissions.clinicalWrite,
+        AppPermissions.operationsWrite,
+      ],
+    );
+  }
+  return writeRequirement;
 }
 
 Color? rowColor(BuildContext context, EmergencyCaseSummary item) {
@@ -732,6 +812,8 @@ AppListTableColumn<EmergencyCaseSummary> emergencyClosedAtColumn(
 
 AppListTableColumn<EmergencyCaseSummary> emergencyNextActionColumn(
   BuildContext context, {
+  required EmergencyBoardTab tab,
+  required AccessRequirement writeRequirement,
   String? label,
 }) {
   final AppLocalizations l10n = context.l10n;
@@ -742,51 +824,9 @@ AppListTableColumn<EmergencyCaseSummary> emergencyNextActionColumn(
     sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
         appListTableCompareText(left.nextAction, right.nextAction),
     cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-      return WorkflowActionButton(
-        encounterId: item.id,
-        patientId: item.patientId,
-        stage: item.status,
-        nextStep: emergencyNextStepCode(item),
-        sourceModule: 'emergency',
-        compact: true,
-      );
-    },
-  );
-}
-
-AppListTableColumn<EmergencyCaseSummary> emergencyHandoffNextActionColumn(
-  BuildContext context, {
-  required AccessRequirement writeRequirement,
-}) {
-  return AppListTableColumn<EmergencyCaseSummary>(
-    id: 'next_action',
-    label: EmergencyText.recordHandoff,
-    alwaysVisible: true,
-    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
-        appListTableCompareText(left.nextAction, right.nextAction),
-    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-      return EmergencyHandoffActionCell(
+      return EmergencyCaseNextActionCell(
         item: item,
-        writeRequirement: writeRequirement,
-      );
-    },
-  );
-}
-
-AppListTableColumn<EmergencyCaseSummary> emergencyAmbulanceNextActionColumn(
-  BuildContext context, {
-  required AccessRequirement writeRequirement,
-}) {
-  final AppLocalizations l10n = context.l10n;
-  return AppListTableColumn<EmergencyCaseSummary>(
-    id: 'next_action',
-    label: l10n.emergencyNextActionColumnLabel,
-    alwaysVisible: true,
-    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
-        appListTableCompareText(left.nextAction, right.nextAction),
-    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-      return EmergencyAmbulanceActionCell(
-        item: item,
+        tab: tab,
         writeRequirement: writeRequirement,
       );
     },
@@ -887,263 +927,65 @@ AppWorkspaceStatus _ambulanceWorkflowStatus(
   );
 }
 
-class EmergencyHandoffActionCell extends ConsumerWidget {
-  const EmergencyHandoffActionCell({
+class EmergencyCaseNextActionCell extends ConsumerWidget {
+  const EmergencyCaseNextActionCell({
     required this.item,
+    required this.tab,
     required this.writeRequirement,
     this.compact = true,
     super.key,
   });
 
   final EmergencyCaseSummary item;
+  final EmergencyBoardTab tab;
   final AccessRequirement writeRequirement;
   final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final EmergencyNextActionKind? kind = emergencyBoardNextActionKind(
+      item,
+      tab: tab,
+    );
+    if (kind == null) {
+      return const SizedBox.shrink();
+    }
+
+    final AccessRequirement requirement = emergencyNextActionRequirement(
+      kind,
+      writeRequirement,
+    );
+    final AppLocalizations l10n = context.l10n;
+
     return AppAccessActionGate(
-      requirement: writeRequirement,
+      requirement: requirement,
       builder: (BuildContext context, bool isAllowed) {
         return AppButton.primary(
-          label: context.l10n.emergencyHandoffRecordAction,
-          leadingIcon: AppActionIcons.handoff,
-          enabled: isAllowed && item.isOpen,
-          onPressed: isAllowed && item.isOpen
-              ? () => unawaited(_openHandoff(context, ref))
+          label: emergencyNextActionLabel(l10n, kind),
+          leadingIcon: emergencyNextActionIcon(kind),
+          enabled: isAllowed,
+          onPressed: isAllowed
+              ? () => unawaited(_run(context, ref, kind))
               : null,
         );
       },
     );
   }
 
-  Future<void> _openHandoff(BuildContext context, WidgetRef ref) async {
-    final EmergencyWorkspaceController controller = ref.read(
-      emergencyWorkspaceControllerProvider.notifier,
-    );
-    final AppFailure? selectFailure = await controller.selectCase(item);
-    if (!context.mounted) {
-      return;
-    }
-    if (selectFailure != null) {
-      showFailureIfNeeded(context, selectFailure);
-      return;
-    }
-
-    final bool? saved = await showEmergencyHandoffDialog(
-      context: context,
-      onSubmit: (HandoffInput input) {
-        return controller.handoff(
-          destination: input.destination,
-          notes: input.notes,
-          closeCase: input.closeCase,
-        );
-      },
-    );
-    if (saved == true && context.mounted) {
-      showFailureIfNeeded(
-        context,
-        null,
-        successMessage: context.l10n.emergencyHandoffRecordedMessage,
-      );
-    }
-  }
-}
-
-class EmergencyAmbulanceActionCell extends ConsumerWidget {
-  const EmergencyAmbulanceActionCell({
-    required this.item,
-    required this.writeRequirement,
-    this.compact = true,
-    super.key,
-  });
-
-  final EmergencyCaseSummary item;
-  final AccessRequirement writeRequirement;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (item.latestTriage == null || item.latestResponse == null) {
-      return WorkflowActionButton(
-        encounterId: item.id,
-        patientId: item.patientId,
-        stage: item.status,
-        nextStep: emergencyNextStepCode(item),
-        sourceModule: 'emergency',
-        compact: compact,
-      );
-    }
-
+  Future<void> _run(
+    BuildContext context,
+    WidgetRef ref,
+    EmergencyNextActionKind kind,
+  ) async {
     final EmergencyWorkspaceState? state = readEmergencyState(ref);
-    final EmergencyReferenceData referenceData =
-        state?.referenceData ?? const EmergencyReferenceData();
-
-    if (item.activeTrip != null) {
-      return AppAccessActionGate(
-        requirement: writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppButton.primary(
-            label: EmergencyText.completeTrip,
-            leadingIcon: Icons.flag_outlined,
-            enabled: isAllowed,
-            onPressed: isAllowed
-                ? () => unawaited(_completeTrip(context, ref))
-                : null,
-          );
-        },
-      );
-    }
-
-    if (item.latestDispatch == null) {
-      return AppAccessActionGate(
-        requirement: writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppButton.primary(
-            label: context.l10n.emergencyDispatchAction,
-            leadingIcon: Icons.airport_shuttle_outlined,
-            enabled: isAllowed && item.isOpen,
-            onPressed: isAllowed && item.isOpen
-                ? () => unawaited(_openDispatch(context, ref, referenceData))
-                : null,
-          );
-        },
-      );
-    }
-
-    return AppAccessActionGate(
-      requirement: writeRequirement,
-      builder: (BuildContext context, bool isAllowed) {
-        return AppButton.primary(
-          label: EmergencyText.startTrip,
-          leadingIcon: Icons.play_arrow_outlined,
-          enabled: isAllowed && item.isOpen,
-          onPressed: isAllowed && item.isOpen
-              ? () => unawaited(_startTrip(context, ref, referenceData))
-              : null,
-        );
-      },
-    );
-  }
-
-  Future<bool> _ensureCaseSelected(BuildContext context, WidgetRef ref) async {
-    final AppFailure? failure = await ref
-        .read(emergencyWorkspaceControllerProvider.notifier)
-        .selectCase(item);
-    if (context.mounted && failure != null) {
-      showFailureIfNeeded(context, failure);
-    }
-    return failure == null;
-  }
-
-  Future<void> _openDispatch(
-    BuildContext context,
-    WidgetRef ref,
-    EmergencyReferenceData referenceData,
-  ) async {
-    final bool selected = await _ensureCaseSelected(context, ref);
-    if (!selected || !context.mounted) {
-      return;
-    }
-
-    final bool? saved = await showEmergencyDispatchDialog(
+    await runEmergencyNextAction(
       context: context,
-      referenceData: referenceData,
-      onSubmit: (DispatchInput input) {
-        return ref
-            .read(emergencyWorkspaceControllerProvider.notifier)
-            .dispatchAmbulance(
-              ambulanceId: input.ambulanceId,
-              status: input.status,
-            );
-      },
+      ref: ref,
+      item: item,
+      kind: kind,
+      referenceData: state?.referenceData ?? const EmergencyReferenceData(),
+      fallbackDetail: state?.selectedDetail,
     );
-    if (saved == true && context.mounted) {
-      showFailureIfNeeded(
-        context,
-        null,
-        successMessage: context.l10n.emergencyDispatchSucceededMessage,
-      );
-    }
-  }
-
-  Future<void> _startTrip(
-    BuildContext context,
-    WidgetRef ref,
-    EmergencyReferenceData referenceData,
-  ) async {
-    final bool selected = await _ensureCaseSelected(context, ref);
-    if (!selected || !context.mounted) {
-      return;
-    }
-
-    final EmergencyWorkspaceController controller = ref.read(
-      emergencyWorkspaceControllerProvider.notifier,
-    );
-    String? ambulanceId = item.latestDispatch?.ambulanceId;
-    if (ambulanceId == null && referenceData.availableAmbulances.length == 1) {
-      ambulanceId = referenceData.availableAmbulances.first.id;
-    }
-    if (ambulanceId == null) {
-      final bool? saved = await showEmergencyDispatchDialog(
-        context: context,
-        referenceData: referenceData,
-        purpose: DispatchDialogPurpose.selectAmbulance,
-        initialStatus: 'EN_ROUTE',
-        onSubmit: (DispatchInput input) {
-          return controller.startAmbulanceTrip(ambulanceId: input.ambulanceId);
-        },
-      );
-      if (saved == true && context.mounted) {
-        showFailureIfNeeded(
-          context,
-          null,
-          successMessage: context.l10n.emergencyDispatchTripStartedMessage,
-        );
-      }
-      return;
-    }
-
-    final AppFailure? failure = await controller.startAmbulanceTrip(
-      ambulanceId: ambulanceId,
-    );
-    if (context.mounted) {
-      showFailureIfNeeded(
-        context,
-        failure,
-        successMessage: context.l10n.emergencyDispatchTripStartedMessage,
-      );
-    }
-  }
-
-  Future<void> _completeTrip(BuildContext context, WidgetRef ref) async {
-    final bool selected = await _ensureCaseSelected(context, ref);
-    if (!selected || !context.mounted) {
-      return;
-    }
-
-    final bool? confirmed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const AppConfirmActionDialog(
-        title: 'Complete ambulance trip',
-        body: 'This records ambulance arrival for the active emergency trip.',
-        submitLabel: 'Complete trip',
-      ),
-    );
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
-
-    final AppFailure? failure = await ref
-        .read(emergencyWorkspaceControllerProvider.notifier)
-        .completeTrip();
-    if (context.mounted) {
-      showFailureIfNeeded(
-        context,
-        failure,
-        successMessage: 'Complete trip done',
-      );
-    }
   }
 }
 

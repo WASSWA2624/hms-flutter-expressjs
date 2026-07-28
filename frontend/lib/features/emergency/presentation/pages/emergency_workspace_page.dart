@@ -150,12 +150,32 @@ class _EmergencyWorkspaceContentState
     if (!mounted) {
       return;
     }
+
+    // Panel-focused deep links open the mutation dialog directly (no empty
+    // detail shell). Bare case links open detail with the stage next-action
+    // omitted so it is not duplicated inside Quick Actions.
+    if (query.panel != EmergencyDetailPanelFocus.none) {
+      await openEmergencyFocusedAction(
+        context,
+        ref,
+        state,
+        target,
+        query.panel,
+        _writeRequirement,
+      );
+      return;
+    }
+
     await openEmergencyDetailDialog(
       context,
       ref,
       state,
       target,
       _writeRequirement,
+      omitNextActionKind: emergencyBoardNextActionKind(
+        target,
+        tab: _currentTab,
+      ),
     );
   }
 
@@ -228,11 +248,6 @@ class _EmergencyWorkspaceContentState
                 }
               },
               primaryAction: _buildPrimaryAction(context),
-              secondaryActions: _buildSecondaryActions(
-                context,
-                state,
-                controller,
-              ),
             ),
             SizedBox(height: theme.spacing.sm),
             AppListTable<EmergencyCaseSummary>(
@@ -289,6 +304,10 @@ class _EmergencyWorkspaceContentState
                     state,
                     summary,
                     _writeRequirement,
+                    omitNextActionKind: emergencyBoardNextActionKind(
+                      summary,
+                      tab: _currentTab,
+                    ),
                   ),
                 );
               },
@@ -332,23 +351,6 @@ class _EmergencyWorkspaceContentState
         );
       },
     );
-  }
-
-  List<Widget> _buildSecondaryActions(
-    BuildContext context,
-    EmergencyWorkspaceState state,
-    EmergencyWorkspaceController controller,
-  ) {
-    return <Widget>[
-      AppTabToolbarAction(
-        label: context.l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        enabled: !state.isRefreshingBoard,
-        onPressed: state.isRefreshingBoard
-            ? null
-            : () => unawaited(controller.refresh()),
-      ),
-    ];
   }
 
   List<EmergencyCaseSummary> _filteredRows(EmergencyWorkspaceState state) {
@@ -513,22 +515,31 @@ List<AppListTableColumn<EmergencyCaseSummary>> emergencyDefaultColumnsForTab(
       emergencyPriorityColumn(),
       emergencyLocationColumn(),
       emergencyCaseStatusColumn(context),
-      emergencyNextActionColumn(context),
+      emergencyNextActionColumn(
+        context,
+        tab: tab,
+        writeRequirement: writeRequirement,
+      ),
     ],
     EmergencyBoardTab.critical => <AppListTableColumn<EmergencyCaseSummary>>[
       emergencyPatientColumn(),
       emergencyPriorityColumn(),
       emergencyArrivalColumn(),
       emergencyCaseStatusColumn(context),
-      emergencyNextActionColumn(context),
+      emergencyNextActionColumn(
+        context,
+        tab: tab,
+        writeRequirement: writeRequirement,
+      ),
     ],
     EmergencyBoardTab.ambulance => <AppListTableColumn<EmergencyCaseSummary>>[
       emergencyPatientColumn(),
       emergencyPriorityColumn(),
       emergencyAmbulanceColumn(),
       emergencyAmbulanceWorkflowStatusColumn(context),
-      emergencyAmbulanceNextActionColumn(
+      emergencyNextActionColumn(
         context,
+        tab: tab,
         writeRequirement: writeRequirement,
       ),
     ],
@@ -537,8 +548,9 @@ List<AppListTableColumn<EmergencyCaseSummary>> emergencyDefaultColumnsForTab(
       emergencyPriorityColumn(),
       emergencyTriageColumn(),
       emergencyCaseStatusColumn(context),
-      emergencyHandoffNextActionColumn(
+      emergencyNextActionColumn(
         context,
+        tab: tab,
         writeRequirement: writeRequirement,
       ),
     ],

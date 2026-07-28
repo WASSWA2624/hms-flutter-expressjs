@@ -37,7 +37,14 @@ final class EmergencyWorkspaceQuery {
     }
 
     return EmergencyWorkspaceQuery(
-      caseId: pick(<String>['id', 'case', 'caseId', 'emergencyCaseId']),
+      caseId: pick(<String>[
+        'id',
+        'case',
+        'caseId',
+        'emergencyCaseId',
+        'encounterId',
+        'encounter',
+      ]),
       panel: _panelFromValue(pick(<String>['panel', 'focus', 'action'])),
       search: pick(<String>['search', 'q', 'patient']),
       scope: pick(<String>['scope', 'board', 'tab']),

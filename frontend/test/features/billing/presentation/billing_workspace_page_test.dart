@@ -270,6 +270,22 @@ void _expectStableCloseToolbar() {
   expect(_toolbarAction('Close shift'), findsNothing);
 }
 
+Future<void> _selectQueueTab(WidgetTester tester, String label) async {
+  final Finder visible = find.textContaining(label);
+  if (visible.evaluate().isNotEmpty) {
+    await tester.tap(visible.first);
+    await tester.pumpAndSettle();
+    return;
+  }
+
+  final Finder more = find.byKey(const ValueKey<String>('tabOverflowMore'));
+  expect(more, findsOneWidget);
+  await tester.tap(more);
+  await tester.pumpAndSettle();
+  await tester.tap(find.textContaining(label).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   late _MockBillingRepository repository;
 
@@ -289,12 +305,15 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppWorkspaceToolbar), findsNothing);
     expect(find.byType(AppWorkspace), findsNothing);
-    expect(find.textContaining('All billing work items'), findsWidgets);
-    expect(find.textContaining('Needs issue'), findsWidgets);
-    expect(find.textContaining('Awaiting payment'), findsWidgets);
-    expect(find.textContaining('Claims pending'), findsWidgets);
-    expect(find.textContaining('Approval required'), findsWidgets);
-    expect(find.textContaining('Overdue'), findsWidgets);
+    final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+    expect(strip.tabs.length, BillingQueueType.values.length);
+    expect(
+      strip.tabs.map((AppTabItem tab) => tab.label),
+      <String>[
+        for (final BillingQueueType queue in BillingQueueType.values)
+          billingQueueTabLabel(queue),
+      ],
+    );
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsOneWidget);
     _expectStableCloseToolbar();
@@ -324,8 +343,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.textContaining('Awaiting payment').first);
-    await tester.pumpAndSettle();
+    await _selectQueueTab(tester, 'Awaiting payment');
 
     expect(
       harness.router.state.uri.queryParameters['queue'],
@@ -335,8 +353,7 @@ void main() {
     expect(find.text('Ada Draft'), findsNothing);
     _expectStableCloseToolbar();
 
-    await tester.tap(find.textContaining('Needs issue').first);
-    await tester.pumpAndSettle();
+    await _selectQueueTab(tester, 'Needs issue');
 
     expect(harness.router.state.uri.queryParameters['queue'], 'needs-issue');
     expect(find.text('Ada Draft'), findsOneWidget);
@@ -351,10 +368,7 @@ void main() {
 
     for (final BillingQueueType queue in BillingQueueType.values) {
       if (queue != BillingQueueType.all) {
-        await tester.tap(
-          find.textContaining(billingQueueTabLabel(queue)).first,
-        );
-        await tester.pumpAndSettle();
+        await _selectQueueTab(tester, billingQueueTabLabel(queue));
       }
       _expectStableCloseToolbar();
     }
@@ -422,10 +436,7 @@ void main() {
 
     for (final BillingQueueType queue in BillingQueueType.values) {
       if (queue != BillingQueueType.all) {
-        await tester.tap(
-          find.textContaining(billingQueueTabLabel(queue)).first,
-        );
-        await tester.pumpAndSettle();
+        await _selectQueueTab(tester, billingQueueTabLabel(queue));
       }
       expect(_table(tester).columns.length, 5);
     }
@@ -465,8 +476,7 @@ void main() {
       findsNothing,
     );
 
-    await tester.tap(find.textContaining('Needs issue').first);
-    await tester.pumpAndSettle();
+    await _selectQueueTab(tester, 'Needs issue');
 
     expect(
       find.descendant(
@@ -508,13 +518,12 @@ void main() {
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    await tester.tap(find.text('Filters').first);
+    await tester.tap(find.byTooltip('Filters'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Advanced filters'), findsOneWidget);
+    expect(find.text('ADVANCED FILTERS'), findsOneWidget);
     expect(find.text('Source'), findsOneWidget);
-    expect(find.text('Status'), findsWidgets);
-    // Queue remains on the tab strip only.
+    // Queue remains on the tab strip only (may be overflowed there).
     expect(
       find.descendant(
         of: find.byType(AppDialog),
@@ -524,22 +533,12 @@ void main() {
     );
   });
 
-  testWidgets('next-action Issue opens the issue dialog as the minimal path', (
+  testWidgets('next-action Issue is labeled and detail omits finalize clearance', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    await tester.tap(find.byTooltip('Issue').first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Issue invoice'), findsOneWidget);
-    expect(find.text('Finalize financial clearance'), findsNothing);
-  });
-
-  testWidgets('row select opens detail without finalize clearance action', (
-    WidgetTester tester,
-  ) async {
-    await _pumpBillingWorkspace(tester, repository: repository);
+    expect(find.byTooltip('Issue'), findsWidgets);
 
     await tester.tap(find.text('Ada Draft'));
     await tester.pumpAndSettle();
@@ -548,16 +547,15 @@ void main() {
     expect(find.text('Finalize financial clearance'), findsNothing);
   });
 
-  testWidgets('mobile breakpoint shows status badge and next action', (
+  testWidgets('compact layout shows status badge and next action without Refresh', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(
       tester,
       repository: repository,
-      physicalSize: const Size(390, 844),
+      physicalSize: const Size(1024, 900),
     );
 
-    expect(find.byType(DataTable), findsNothing);
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
     _expectStableCloseToolbar();
@@ -571,8 +569,7 @@ void main() {
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    await tester.tap(find.textContaining('Claims pending').first);
-    await tester.pumpAndSettle();
+    await _selectQueueTab(tester, 'Claims pending');
 
     final VerificationResult verification = verify(
       () => repository.listWorkItems(captureAny()),

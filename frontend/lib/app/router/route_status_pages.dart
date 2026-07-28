@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement_l10n.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -57,27 +58,53 @@ class ForbiddenPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final bool isAuthenticated = ref.watch(
+      sessionStateProvider.select((state) => state.isAuthenticated),
+    );
     final String? fromPath = GoRouterState.of(
       context,
     ).uri.queryParameters['from'];
-    final AppRouteData? deniedRoute = _matchRoute(fromPath);
+
+    // Authenticated: explain route-level denial. Session-forbidden (and other
+    // non-auth states): keep generic copy — permission messaging would mislead.
     final String body;
-    if (deniedRoute == null) {
+    if (!isAuthenticated) {
       body = l10n.routeForbiddenBody;
     } else {
-      body = accessRequirementDenialMessage(
-        l10n,
-        deniedRoute.accessRequirement,
-        ref.watch(appAccessPolicyProvider),
-      );
+      final AppRouteData? deniedRoute = _matchRoute(fromPath);
+      if (deniedRoute == null) {
+        body = l10n.routeForbiddenBody;
+      } else {
+        body = accessRequirementDenialMessage(
+          l10n,
+          deniedRoute.accessRequirement,
+          ref.watch(appAccessPolicyProvider),
+        );
+      }
     }
+
+    // Session-forbidden users cannot open the dashboard (guard loops). One
+    // primary recovery: Sign in. Authenticated denials: Go to dashboard.
+    final VoidCallback? onSignIn = isAuthenticated
+        ? null
+        : () {
+            if (fromPath == null || fromPath.isEmpty) {
+              context.go(AppRoutes.login.location());
+              return;
+            }
+            final Uri fromUri = Uri.tryParse(fromPath) ?? Uri(path: fromPath);
+            context.go(AppRoutes.login.locationWithFrom(fromUri));
+          };
 
     return _RouteStatusPage(
       icon: Icons.block_outlined,
       title: l10n.routeForbiddenTitle,
       body: body,
       detail: fromPath,
-      actionLabel: l10n.commonGoHomeActionLabel,
+      actionLabel: isAuthenticated
+          ? l10n.commonGoHomeActionLabel
+          : l10n.authLoginActionLabel,
+      onAction: onSignIn,
     );
   }
 }
