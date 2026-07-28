@@ -9,6 +9,9 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const {
+  softDeleteFacilityCascade,
+} = require('@lib/facility-structure/cascade-soft-delete');
 
 const normalizeFacilityName = (value) =>
   String(value || '')
@@ -214,29 +217,19 @@ const update = async (id, data) => {
 };
 
 /**
- * Soft delete facility
+ * Soft delete facility and cascade to departments, units, wards, rooms, beds.
  *
  * @param {string} id - Facility ID
  * @returns {Promise<Object>} Deleted facility
  */
 const softDelete = async (id) => {
   try {
-    const existing = await prisma.facility.findUnique({
-      where: { id },
-      select: { id: true, deleted_at: true }
-    });
-
-    if (!existing || existing.deleted_at) {
-      throw Object.assign(new Error('Record not found'), { code: 'P2025' });
-    }
-
-    return await prisma.facility.update({
-      where: { id },
-      data: {
-        deleted_at: new Date()
-      }
-    });
+    const result = await softDeleteFacilityCascade(id);
+    return result.facility;
   } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
     if (error.code === 'P2025') {
       throw new HttpError('errors.facility.not_found', 404);
     }

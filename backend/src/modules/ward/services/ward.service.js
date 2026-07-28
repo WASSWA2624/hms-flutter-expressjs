@@ -13,7 +13,8 @@ const { HttpError } = require('@lib/errors');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
-  resolveEntityId} = require('@lib/billing/identifiers');
+  resolveEntityId,
+  resolvePublicIdentifier} = require('@lib/billing/identifiers');
 const {
   resolveModelIdByIdentifier,
   resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
@@ -25,6 +26,18 @@ const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
   ROLES.TENANT_ADMIN,
   ROLES.NURSE
 ]);
+
+const normalizeWardRecord = (ward) => {
+  if (!ward || typeof ward !== 'object') {
+    return ward;
+  }
+
+  return {
+    ...ward,
+    resource_uuid: ward.id,
+    display_id: resolvePublicIdentifier(ward.human_friendly_id) || null,
+  };
+};
 
 const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorUserId, payload = {}) => {
   await publishCrudRealtimeEvent({
@@ -191,7 +204,7 @@ const listWards = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
   const hasPreviousPage = page > 1;
 
   return {
-    wards,
+    wards: wards.map((ward) => normalizeWardRecord(ward)),
     pagination: {
       page,
       limit,
@@ -217,7 +230,7 @@ const getWardById = async (id) => {
     throw new HttpError('errors.ward.not_found', 404);
   }
 
-  return ward;
+  return normalizeWardRecord(ward);
 };
 
 /**
@@ -234,7 +247,7 @@ const getWardBeds = async (wardId) => {
     throw new HttpError('errors.ward.not_found', 404);
   }
 
-  return ward;
+  return normalizeWardRecord(ward);
 };
 
 /**
@@ -285,7 +298,7 @@ const createWard = async (data, context = {}) => {
     ward_type: ward.ward_type
   });
 
-  return ward;
+  return normalizeWardRecord(ward);
 };
 
 /**
@@ -351,7 +364,7 @@ const updateWard = async (id, data, context = {}) => {
     ward_type: ward.ward_type
   });
 
-  return ward;
+  return normalizeWardRecord(ward);
 };
 
 /**
@@ -441,7 +454,7 @@ const restoreWard = async (id, context = {}) => {
     name: ward.name,
     ward_type: ward.ward_type});
 
-  return ward;
+  return normalizeWardRecord(ward);
 };
 
 module.exports = {

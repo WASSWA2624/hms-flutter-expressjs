@@ -5142,10 +5142,10 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
     Future<bool> Function() action,
   ) async {
     if (mounted) {
-      setState(() => _busyRoomId = room.id);
+      setState(() => _busyRoomId = room.mutationId);
     }
     final bool succeeded = await action();
-    if (!succeeded && mounted && _busyRoomId == room.id) {
+    if (!succeeded && mounted && _busyRoomId == room.mutationId) {
       setState(() => _busyRoomId = null);
     }
     return succeeded;
@@ -5249,6 +5249,20 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
             preferredWidth: 160,
             cellBuilder: (_, RoomProfile room) => Text(_wardLabel(room)),
           ),
+        ];
+    final List<AppListTableColumn<RoomProfile>> optionalColumns =
+        <AppListTableColumn<RoomProfile>>[
+          AppListTableColumn<RoomProfile>(
+            id: 'floor',
+            label: l10n.tenantFacilityRoomFloorLabel,
+            preferredWidth: 100,
+            cellBuilder: (_, RoomProfile room) {
+              final String? floor = room.floor?.trim();
+              return Text(
+                floor == null || floor.isEmpty ? '—' : floor,
+              );
+            },
+          ),
           if (showFacilityColumn)
             AppListTableColumn<RoomProfile>(
               id: 'facility',
@@ -5293,6 +5307,18 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
               if (floor != null && floor.isNotEmpty) {
                 details.add(floor);
               }
+              if (showFacilityColumn) {
+                final String facility = _facilityLabel(room);
+                if (facility != '—') {
+                  details.add(facility);
+                }
+              }
+              if (showTenantColumn) {
+                final String tenant = _tenantLabel(room);
+                if (tenant != '—') {
+                  details.add(tenant);
+                }
+              }
               return details;
             },
             items: _rooms,
@@ -5305,7 +5331,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
             canAdd: canAdd,
             isSubmitting: isSubmitting,
             busyItemId: _busyRoomId,
-            itemIdBuilder: (RoomProfile room) => room.id,
+            itemIdBuilder: (RoomProfile room) => room.mutationId,
             blockedMessage: blockedMessage,
             onAdd: () => unawaited(
               _afterMutation(
@@ -5315,6 +5341,9 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                   tenantOptions: _tenantOptions,
                   facilityOptions: _accessibleFacilities,
                   wardOptions: _accessibleWards,
+                  tenantNameFor: _tenantLabel,
+                  facilityNameFor: _facilityLabel,
+                  wardNameFor: _wardLabel,
                 ),
               ),
             ),
@@ -5360,6 +5389,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
               return l10n.tenantFacilityTenantStatusActive;
             },
             extraColumns: extraColumns,
+            optionalColumns: optionalColumns,
             isDeletedBuilder: (RoomProfile room) => room.isDeleted,
             onEdit: (RoomProfile room) {
               if (room.isDeleted ||
@@ -5375,6 +5405,9 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                   tenantOptions: _tenantOptions,
                   facilityOptions: _accessibleFacilities,
                   wardOptions: _accessibleWards,
+                  tenantNameFor: _tenantLabel,
+                  facilityNameFor: _facilityLabel,
+                  wardNameFor: _wardLabel,
                 );
                 if (!mounted) {
                   return;
@@ -9377,8 +9410,6 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
 
   bool get _isCreate => widget.room == null;
 
-  bool get _showLoadingOverlay => _loadingOptions || _checkingSimilarity;
-
   @override
   void initState() {
     super.initState();
@@ -9625,17 +9656,31 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
     );
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool isEditing = !_isCreate;
-    final bool canEdit = !submission.isSubmitting && !_checkingSimilarity;
+    final bool showDialogLoadingOverlay =
+        _loadingOptions || _checkingSimilarity || submission.isSubmitting;
+    final bool canEdit = !showDialogLoadingOverlay;
     final bool showTenantPicker =
         _isCreate && tenantFacilityRoomsShowsTenantFilter(scope);
     final bool showFacilityPicker =
         _isCreate && tenantFacilityRoomsShowsFacilityFilter(scope);
     final ThemeData theme = Theme.of(context);
+    final String overlayTitle;
+    final String overlayBody;
+    if (_checkingSimilarity) {
+      overlayTitle = l10n.tenantFacilityRoomSimilarityCheckingMessage;
+      overlayBody = l10n.tenantFacilityRoomSimilarityCheckingBody;
+    } else if (submission.isSubmitting) {
+      overlayTitle = l10n.tenantFacilityRoomSavingTitle;
+      overlayBody = l10n.tenantFacilityRoomSavingBody;
+    } else {
+      overlayTitle = l10n.tenantFacilityRoomFormLoadingTitle;
+      overlayBody = l10n.tenantFacilityRoomFormLoadingBody;
+    }
 
     final Widget? tenantField = showTenantPicker
         ? AppSelectField<String>.searchable(
             value: _selectedTenantId ?? _noneSelection,
-            enabled: canEdit && !_loadingOptions,
+            enabled: canEdit,
             labelText: l10n.profileTenantLabel,
             isRequired: true,
             options: <AppSelectOption<String>>[
@@ -9670,7 +9715,6 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
             value: _selectedFacilityId ?? _noneSelection,
             enabled:
                 canEdit &&
-                !_loadingOptions &&
                 (!showTenantPicker ||
                     (_selectedTenantId != null &&
                         _selectedTenantId!.isNotEmpty)),
@@ -9704,7 +9748,7 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
           )
         : null;
 
-    final Widget form = Form(
+    final Widget formBody = Form(
       key: _formKey,
       child: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -9737,7 +9781,7 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
           ),
           AppSelectField<String>.searchable(
             value: _wardId,
-            enabled: canEdit && !_loadingOptions,
+            enabled: canEdit,
             labelText: l10n.tenantFacilityRoomWardLabel,
             helperText: l10n.tenantFacilityRoomWardOptionalHint,
             options: <AppSelectOption<String>>[
@@ -9780,28 +9824,27 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
             ? l10n.tenantFacilityEditRoomTitle
             : l10n.tenantFacilityAddRoomTitle,
       ),
-      scrollable: true,
-      closeEnabled: canEdit && !_showLoadingOverlay,
+      scrollable: false,
+      closeEnabled: canEdit,
       content: Stack(
+        fit: StackFit.expand,
         children: <Widget>[
           ExcludeSemantics(
-            excluding: _showLoadingOverlay,
+            excluding: showDialogLoadingOverlay,
             child: AbsorbPointer(
-              absorbing: _showLoadingOverlay,
-              child: form,
+              absorbing: showDialogLoadingOverlay,
+              child: SingleChildScrollView(child: formBody),
             ),
           ),
-          if (_showLoadingOverlay)
+          if (showDialogLoadingOverlay)
             Positioned.fill(
               child: ColoredBox(
                 color: theme.colorScheme.surface.withValues(alpha: 0.94),
-                child: Center(
-                  child: AppLoadingIndicator(
-                    title: _checkingSimilarity
-                        ? l10n.tenantFacilityRoomSimilarityCheckingMessage
-                        : l10n.commonLoadingCompactTitle,
-                    expand: false,
-                  ),
+                child: AppLoadingIndicator(
+                  title: overlayTitle,
+                  body: overlayBody,
+                  expand: true,
+                  semanticLabel: overlayTitle,
                 ),
               ),
             ),
@@ -9810,7 +9853,7 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
-          enabled: canEdit && !_showLoadingOverlay,
+          enabled: canEdit,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
@@ -9819,7 +9862,7 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
               : l10n.tenantFacilityCreateAction,
           leadingIcon: Icons.save_outlined,
           isLoading: submission.isSubmitting || _checkingSimilarity,
-          onPressed: _showLoadingOverlay ? null : _submit,
+          onPressed: showDialogLoadingOverlay ? null : _submit,
         ),
       ],
     );

@@ -9,6 +9,9 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const {
+  softDeleteTenantStructureInTx,
+} = require('@lib/facility-structure/cascade-soft-delete');
 
 const TENANT_ADMIN_RELATION_INCLUDE = Object.freeze({
   user_roles: {
@@ -272,8 +275,9 @@ const update = async (id, data) => {
 };
 
 /**
- * Soft delete tenant and cascade soft-delete to all active facilities.
- * Facilities already soft-deleted are left unchanged.
+ * Soft delete tenant and cascade soft-delete to facilities and structure.
+ * Facilities already soft-deleted are left unchanged for matching restore;
+ * all active structure under the tenant is soft-deleted.
  *
  * @param {string} id - Tenant ID
  * @returns {Promise<{ tenant: Object, facilities: Object[] }>}
@@ -297,25 +301,11 @@ const softDelete = async (id) => {
     const deletedAt = new Date();
 
     return await prisma.$transaction(async (tx) => {
-      const facilities = await tx.facility.findMany({
-        where: {
-          tenant_id: id,
-          deleted_at: null},
-        select: {
-          id: true,
-          tenant_id: true,
-          name: true,
-          facility_type: true,
-          is_active: true}});
-
-      if (facilities.length > 0) {
-        await tx.facility.updateMany({
-          where: {
-            tenant_id: id,
-            deleted_at: null},
-          data: {
-            deleted_at: deletedAt}});
-      }
+      const { facilities } = await softDeleteTenantStructureInTx(
+        tx,
+        id,
+        deletedAt
+      );
 
       const tenant = await tx.tenant.update({
         where: { id },
