@@ -10610,6 +10610,23 @@
   "@clinicalCancelRadiologyOrderDialogBody": {
     "description": "Clinical cancel radiology order confirmation body."
   },
+  "clinicalCancelSelectedRadiologyOrdersAction": "Cancel selected",
+  "@clinicalCancelSelectedRadiologyOrdersAction": {
+    "description": "Cancel multiple selected radiology orders."
+  },
+  "clinicalCancelSelectedRadiologyOrdersDialogTitle": "Cancel selected radiology orders",
+  "@clinicalCancelSelectedRadiologyOrdersDialogTitle": {
+    "description": "Confirmation title for cancelling selected radiology orders."
+  },
+  "clinicalCancelSelectedRadiologyOrdersDialogBody": "Cancel {count} radiology orders and mark them as cancelled?",
+  "@clinicalCancelSelectedRadiologyOrdersDialogBody": {
+    "description": "Confirmation body for cancelling selected radiology orders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "clinicalDeleteRadiologyOrderDialogTitle": "Delete radiology order",
   "@clinicalDeleteRadiologyOrderDialogTitle": {
     "description": "Clinical delete radiology order confirmation title."
@@ -10617,6 +10634,23 @@
   "clinicalDeleteRadiologyOrderDialogBody": "Delete this radiology order from the active patient record?",
   "@clinicalDeleteRadiologyOrderDialogBody": {
     "description": "Clinical delete radiology order confirmation body."
+  },
+  "clinicalDeleteSelectedRadiologyOrdersAction": "Delete selected",
+  "@clinicalDeleteSelectedRadiologyOrdersAction": {
+    "description": "Delete multiple selected radiology orders."
+  },
+  "clinicalDeleteSelectedRadiologyOrdersDialogTitle": "Delete selected radiology orders",
+  "@clinicalDeleteSelectedRadiologyOrdersDialogTitle": {
+    "description": "Confirmation title for deleting selected radiology orders."
+  },
+  "clinicalDeleteSelectedRadiologyOrdersDialogBody": "Delete {count} radiology orders from the active patient record?",
+  "@clinicalDeleteSelectedRadiologyOrdersDialogBody": {
+    "description": "Confirmation body for deleting selected radiology orders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "clinicalRadiologyOrderItemCount": "{count} tests",
   "@clinicalRadiologyOrderItemCount": {

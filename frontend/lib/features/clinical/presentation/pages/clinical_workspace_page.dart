@@ -1382,7 +1382,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
           when previewEntries.isNotEmpty)
         AppClinicalResultsPreview(
           title: l10n.clinicalResultsChronologyTitle,
-          status: AppClinicalResultStatus.verified,
+          status: _clinicalResultsPreviewOverallStatus(previewEntries),
           encounterPublicId: bundle.entry.encounterPublicId,
           child: AppClinicalResultsPreviewList(
             entries: previewEntries,
@@ -1443,6 +1443,52 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                     .read(clinicalWorkspaceControllerProvider.notifier)
                     .deleteRadiologyOrder(order.id),
               ),
+          onCancelSelected:
+              (BuildContext context, List<ClinicalRelatedRecord> orders) =>
+                  _confirmLabOrderMutation(
+                    context: context,
+                    title: l10n.clinicalCancelSelectedRadiologyOrdersDialogTitle,
+                    body: l10n.clinicalCancelSelectedRadiologyOrdersDialogBody(
+                      orders.length,
+                    ),
+                    confirmLabel:
+                        l10n.clinicalCancelSelectedRadiologyOrdersAction,
+                    action: () async {
+                      AppFailure? failure;
+                      for (final ClinicalRelatedRecord order in orders) {
+                        failure = await ref
+                            .read(clinicalWorkspaceControllerProvider.notifier)
+                            .cancelRadiologyOrder(order.id);
+                        if (failure != null) {
+                          return failure;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+          onDeleteSelected:
+              (BuildContext context, List<ClinicalRelatedRecord> orders) =>
+                  _confirmLabOrderMutation(
+                    context: context,
+                    title: l10n.clinicalDeleteSelectedRadiologyOrdersDialogTitle,
+                    body: l10n.clinicalDeleteSelectedRadiologyOrdersDialogBody(
+                      orders.length,
+                    ),
+                    confirmLabel:
+                        l10n.clinicalDeleteSelectedRadiologyOrdersAction,
+                    action: () async {
+                      AppFailure? failure;
+                      for (final ClinicalRelatedRecord order in orders) {
+                        failure = await ref
+                            .read(clinicalWorkspaceControllerProvider.notifier)
+                            .deleteRadiologyOrder(order.id);
+                        if (failure != null) {
+                          return failure;
+                        }
+                      }
+                      return null;
+                    },
+                  ),
         ),
       if (_clinicalHasRecordSections(bundle))
         _ClinicalRecordSections(bundle: bundle),
@@ -3312,6 +3358,7 @@ bool _hasText(String? value) {
   return value != null && value.trim().isNotEmpty;
 }
 
+/// Lab and radiology result rows only — hide the timeline when none are ready.
 List<AppClinicalResultPreviewEntry> _clinicalResultsPreviewEntries(
   ClinicalEncounterBundle bundle,
 ) {
@@ -3374,40 +3421,31 @@ List<AppClinicalResultPreviewEntry> _clinicalResultsPreviewEntries(
     );
   }
 
-  for (final ClinicalRelatedRecord procedure in bundle.procedures) {
-    entries.add(
-      AppClinicalResultPreviewEntry(
-        id: procedure.id,
-        module: AppClinicalResultModule.procedure,
-        title: procedure.title ?? procedure.id,
-        status: _clinicalResultStatusFromRecordStatus(procedure.status),
-        occurredAt: procedure.occurredAt,
-        subtitle: procedure.subtitle,
-        procedure: AppClinicalProcedureResultContent(
-          findings: procedure.subtitle,
-          notes: procedure.status,
-        ),
-      ),
-    );
-  }
-
-  for (final ClinicalRelatedRecord note in bundle.clinicalNotes) {
-    entries.add(
-      AppClinicalResultPreviewEntry(
-        id: note.id,
-        module: AppClinicalResultModule.clinicalAssessment,
-        title: note.title ?? note.id,
-        status: _clinicalResultStatusFromRecordStatus(note.status),
-        occurredAt: note.occurredAt,
-        subtitle: note.subtitle,
-        assessment: AppClinicalAssessmentResultContent(
-          summary: note.subtitle ?? note.title,
-        ),
-      ),
-    );
-  }
-
   return entries;
+}
+
+AppClinicalResultStatus _clinicalResultsPreviewOverallStatus(
+  List<AppClinicalResultPreviewEntry> entries,
+) {
+  if (entries.any(
+    (AppClinicalResultPreviewEntry e) =>
+        e.status == AppClinicalResultStatus.corrected,
+  )) {
+    return AppClinicalResultStatus.corrected;
+  }
+  if (entries.any(
+    (AppClinicalResultPreviewEntry e) =>
+        e.status == AppClinicalResultStatus.preliminary,
+  )) {
+    return AppClinicalResultStatus.preliminary;
+  }
+  if (entries.any(
+    (AppClinicalResultPreviewEntry e) =>
+        e.status == AppClinicalResultStatus.verified,
+  )) {
+    return AppClinicalResultStatus.verified;
+  }
+  return AppClinicalResultStatus.unavailable;
 }
 
 AppClinicalResultStatus _clinicalResultStatusFromRecordStatus(String? status) {

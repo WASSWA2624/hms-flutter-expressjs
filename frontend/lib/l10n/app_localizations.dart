@@ -15352,6 +15352,24 @@ abstract class AppLocalizations {
   /// **'Cancel this radiology order and mark it as cancelled?'**
   String get clinicalCancelRadiologyOrderDialogBody;
 
+  /// Cancel multiple selected radiology orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selected'**
+  String get clinicalCancelSelectedRadiologyOrdersAction;
+
+  /// Confirmation title for cancelling selected radiology orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selected radiology orders'**
+  String get clinicalCancelSelectedRadiologyOrdersDialogTitle;
+
+  /// Confirmation body for cancelling selected radiology orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel {count} radiology orders and mark them as cancelled?'**
+  String clinicalCancelSelectedRadiologyOrdersDialogBody(int count);
+
   /// Clinical delete radiology order confirmation title.
   ///
   /// In en, this message translates to:
@@ -15363,6 +15381,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete this radiology order from the active patient record?'**
   String get clinicalDeleteRadiologyOrderDialogBody;
+
+  /// Delete multiple selected radiology orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get clinicalDeleteSelectedRadiologyOrdersAction;
+
+  /// Confirmation title for deleting selected radiology orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected radiology orders'**
+  String get clinicalDeleteSelectedRadiologyOrdersDialogTitle;
+
+  /// Confirmation body for deleting selected radiology orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} radiology orders from the active patient record?'**
+  String clinicalDeleteSelectedRadiologyOrdersDialogBody(int count);
 
   /// Clinical radiology order requested test count.
   ///

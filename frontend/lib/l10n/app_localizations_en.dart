@@ -8335,12 +8335,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cancel this radiology order and mark it as cancelled?';
 
   @override
+  String get clinicalCancelSelectedRadiologyOrdersAction => 'Cancel selected';
+
+  @override
+  String get clinicalCancelSelectedRadiologyOrdersDialogTitle =>
+      'Cancel selected radiology orders';
+
+  @override
+  String clinicalCancelSelectedRadiologyOrdersDialogBody(int count) {
+    return 'Cancel $count radiology orders and mark them as cancelled?';
+  }
+
+  @override
   String get clinicalDeleteRadiologyOrderDialogTitle =>
       'Delete radiology order';
 
   @override
   String get clinicalDeleteRadiologyOrderDialogBody =>
       'Delete this radiology order from the active patient record?';
+
+  @override
+  String get clinicalDeleteSelectedRadiologyOrdersAction => 'Delete selected';
+
+  @override
+  String get clinicalDeleteSelectedRadiologyOrdersDialogTitle =>
+      'Delete selected radiology orders';
+
+  @override
+  String clinicalDeleteSelectedRadiologyOrdersDialogBody(int count) {
+    return 'Delete $count radiology orders from the active patient record?';
+  }
 
   @override
   String clinicalRadiologyOrderItemCount(int count) {

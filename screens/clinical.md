@@ -338,15 +338,30 @@ All clinical write actions below use write gate; disabled when not allowed (exce
 
 ### Radiology orders panel (`ClinicalRadiologyOrdersTablePanel`)
 
-- **Cancel order** (icon-only)
+Table fills panel width. Row checkboxes support single and batch selection.
+
+- **Row checkbox / select-all**
+  - Location: First column / header.
+  - Opens modal: No.
+  - Immediate result: Selects orders for batch cancel/delete.
+  - Condition: Always when panel has orders.
+
+- **Cancel order** (icon-only; primary row action for active orders)
   - Location: Radiology order actions.
   - Opens modal: Yes — confirm cancel radiology.
-  - Condition: Write gate; status `ORDERED` / `PENDING` / `IN_PROCESS`.
+  - Immediate result: Marks order cancelled.
+  - Condition: Write gate; status `ORDERED` / `PENDING` / `IN_PROCESS`. Not shown together with Delete.
 
-- **Delete order** (icon-only)
+- **Delete order** (icon-only; only when cancel is unavailable)
   - Location: Radiology order actions.
   - Opens modal: Yes — confirm delete radiology.
-  - Condition: Write gate; status `ORDERED` / `PENDING` / `CANCELLED`.
+  - Immediate result: Removes order from active record.
+  - Condition: Write gate; status `CANCELLED` (or other delete-eligible, non-cancellable).
+
+- **Cancel selected** / **Delete selected**
+  - Location: Batch toolbar above table when ≥1 row selected.
+  - Opens modal: Yes — confirm for the selected subset (cancel for cancellable rows; delete for delete-only rows).
+  - Condition: Write gate; matching selected rows exist.
 
 ### Pharmacy orders (record section rows)
 
@@ -751,6 +766,6 @@ When planned, additional resolve actions:
 
 ## Notes on non-button surfaces
 
-- Status badges, triage handoff, results chronology, and generic clinical record rows are display-only (no row actions except pharmacy cancel/delete above). Vitals use color-coded values (low/normal/high/critical) with a legend; the separate clinical-alerts list is not shown. Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
+- Status badges, triage handoff, and generic clinical record rows are display-only (no row actions except pharmacy cancel/delete above). **Results timeline** appears only when the encounter has ready lab and/or radiology results (not notes, procedures, or open orders). Vitals use color-coded values (low/normal/high/critical) with a legend; the separate clinical-alerts list is not shown. Record/Edit vitals is available from Clinical actions (and worklist next-action for `RECORD_VITALS`).
 - Copyable patient/encounter/admission identifiers in context tiles expose copy affordances from shared `AppCopyableIdentifier` / field `copyable: true` (not separate labeled page actions).
 - Empty clinical worklist has no primary empty-state button (state panel only).
