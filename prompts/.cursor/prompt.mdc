@@ -11,7 +11,7 @@ Prompts must define observable behavior without requiring scope or implementatio
 
 ## Required Structure
 
-- Prompts must use `.md`, stay under 501 words, and begin with an H1 and objective.
+- Prompts must use `.md`, stay under 1001 words, and begin with an H1 and objective.
 - Prompts must include `Context`, `Requirements`, `Constraints`, `Acceptance Criteria`, and `Relevant Files`.
 - Requirements must be numbered, and acceptance criteria must be observable.
 
