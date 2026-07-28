@@ -177,9 +177,40 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.patientRead],
       ),
       HomeStatusCardTemplate(
+        id: 'emergency_cases_today',
+        label: 'Emergency',
+        requiredPermissions: <AppPermission>[AppPermissions.emergencyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'collections_today',
+        label: 'Revenue',
+        format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
+      HomeStatusCardTemplate(
         id: 'billing_exceptions',
         label: 'Billing',
         requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'low_stock',
+        label: 'Pharmacy',
+        requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'critical_labs',
+        label: 'Lab critical',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'pending_leaves',
+        label: 'HR leave',
+        requiredPermissions: <AppPermission>[AppPermissions.hrRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'open_incidents',
+        label: 'Equipment',
+        requiredPermissions: <AppPermission>[AppPermissions.biomedRead],
       ),
       HomeStatusCardTemplate(
         id: 'operational_blockers',
@@ -196,7 +227,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'register_patient',
       'book_appointment',
     ],
-    shortcutIds: <String>['opd', 'patients'],
+    shortcutIds: <String>['opd', 'patients', 'reports'],
     emptyActionIds: const <String>[],
   ),
   AppRole.doctor: HomeDashboardProfile(
@@ -495,7 +526,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'Critical stock',
         requiredPermissions: <AppPermission>[AppPermissions.pharmacyRead],
       ),
-      // Gap: billing_pending — no pharmacy billing-pending metric source yet.
+      // Dashboard.md §7 Billing Pending — live open invoice balances.
+      HomeStatusCardTemplate(
+        id: 'billing_pending',
+        label: 'Billing pending',
+        format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
     ],
     quickActionIds: <String>[
       'dispense_medication',
@@ -503,7 +540,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'receive_pharmacy_stock',
       'adjust_pharmacy_stock',
     ],
-    shortcutIds: <String>['pharmacy', 'patients'],
+    shortcutIds: <String>['pharmacy', 'patients', 'billing'],
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'orders_today': HomeMetricRouteTarget(
@@ -520,6 +557,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       'critical_stock': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'inventory'},
+      ),
+      'billing_pending': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'pendingPayment'},
       ),
     },
   ),

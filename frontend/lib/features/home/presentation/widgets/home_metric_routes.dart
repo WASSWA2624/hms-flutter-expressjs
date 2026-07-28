@@ -125,12 +125,18 @@ AppRouteData? _clinicalMetricRoute({
     return AppRoutes.lab;
   }
 
-  if (profile.id == 'pharmacist' &&
-      policy.grantsAny(const <AppPermission>[
-        AppPermissions.pharmacyRead,
-        AppPermissions.pharmacyWrite,
-      ])) {
-    return AppRoutes.pharmacy;
+  if (profile.id == 'pharmacist') {
+    return switch (cardId) {
+      'billing_pending' when policy.grants(AppPermissions.billingRead) =>
+        AppRoutes.billing,
+      _
+          when policy.grantsAny(const <AppPermission>[
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+          ]) =>
+        AppRoutes.pharmacy,
+      _ => null,
+    };
   }
 
   if (profile.id == 'receptionist') {

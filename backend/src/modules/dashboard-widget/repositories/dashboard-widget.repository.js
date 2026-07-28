@@ -1081,15 +1081,31 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     }
 
     if (packId === ROLE_PACKS.PHARMACIST) {
-      const [ordersToday, pendingDispense, dispensedToday, lowStock, criticalStock] = await Promise.all([
+      const openBalanceWhere = {
+        ...invoiceWhere,
+        OR: [
+          { status: { in: ['SENT', 'OVERDUE'] } },
+          { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
+        ]
+      };
+      const [ordersToday, pendingDispense, dispensedToday, lowStock, criticalStock, pendingBalanceAmount] = await Promise.all([
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, ordered_at: { gte: todayStart } } }),
         prisma.pharmacy_order.count({ where: { ...pharmacyOrderWhere, status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] } } }),
         prisma.dispense_log.count({ where: { ...dispenseLogWhere, status: 'DISPENSED', dispensed_at: { gte: todayStart } } }),
         countLowStock(inventoryStockWhere, 1),
-        countLowStock(inventoryStockWhere, 0.5)
+        countLowStock(inventoryStockWhere, 0.5),
+        sumField(prisma.invoice, openBalanceWhere, 'total_amount')
       ]);
       return {
-        metrics: { ordersToday, pendingDispense, dispensedToday, lowStock, criticalStock },
+        metrics: {
+          ordersToday,
+          pendingDispense,
+          dispensedToday,
+          lowStock,
+          criticalStock,
+          pendingBalanceAmount,
+          billingPending: pendingBalanceAmount
+        },
         trendDates: await selectDateSeries(prisma.dispense_log, { ...dispenseLogWhere, dispensed_at: { gte: trendStart } }, 'dispensed_at'),
         statusCounts: await countByStatuses(prisma.pharmacy_order, pharmacyOrderWhere, ['ORDERED', 'PARTIALLY_DISPENSED', 'DISPENSED', 'CANCELLED']),
         activity: {
@@ -1101,20 +1117,29 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     }
 
     if (packId === ROLE_PACKS.RECEPTIONIST) {
+      const openBalanceWhere = {
+        ...invoiceWhere,
+        OR: [
+          { status: { in: ['SENT', 'OVERDUE'] } },
+          { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
+        ]
+      };
       const [
         registrationsToday,
         appointmentDeskQueue,
         turnaroundPressure,
         noShowPressure,
         appointmentsToday,
-        emergencyCasesToday
+        emergencyCasesToday,
+        pendingBalanceAmount
       ] = await Promise.all([
         prisma.patient.count({ where: { ...patientWhere, created_at: { gte: todayStart } } }),
         prisma.appointment.count({ where: { ...appointmentWhere, status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] } } }),
         prisma.appointment.count({ where: { ...appointmentWhere, status: 'IN_PROGRESS' } }),
         prisma.appointment.count({ where: { ...appointmentWhere, status: 'NO_SHOW' } }),
         prisma.appointment.count({ where: { ...appointmentWhere, scheduled_start: { gte: todayStart } } }),
-        prisma.emergency_case.count({ where: { ...emergencyCaseWhere, created_at: { gte: todayStart } } })
+        prisma.emergency_case.count({ where: { ...emergencyCaseWhere, created_at: { gte: todayStart } } }),
+        sumField(prisma.invoice, openBalanceWhere, 'total_amount')
       ]);
       return {
         metrics: {
@@ -1123,7 +1148,8 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           turnaroundPressure,
           noShowPressure,
           appointmentsToday,
-          emergencyCasesToday
+          emergencyCasesToday,
+          pendingBalanceAmount
         },
         trendDates: await selectDateSeries(prisma.patient, { ...patientWhere, created_at: { gte: trendStart } }, 'created_at'),
         statusCounts: await countByStatuses(prisma.appointment, appointmentWhere, ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW', 'CANCELLED']),
@@ -1572,7 +1598,33 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
       };
     }
 
-    const [patientsToday, appointmentsToday, activeAdmissions, openInvoices, paymentsToday, activeUsers, openMaintenance, pendingLeaves, occupiedBeds] = await Promise.all([
+    const equipmentRegistryWhere = {
+      deleted_at: null,
+      ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+      ...(scope.facility_id ? { facility_id: scope.facility_id } : {})
+    };
+    const equipmentIncidentWhere = {
+      deleted_at: null,
+      ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+      ...(scope.facility_id
+        ? { equipment_registry: { is: equipmentRegistryWhere } }
+        : {})
+    };
+    const [
+      patientsToday,
+      appointmentsToday,
+      activeAdmissions,
+      openInvoices,
+      paymentsToday,
+      activeUsers,
+      openMaintenance,
+      pendingLeaves,
+      occupiedBeds,
+      emergencyCasesToday,
+      lowStock,
+      criticalLabs,
+      openIncidents
+    ] = await Promise.all([
       prisma.patient.count({ where: { ...patientWhere, created_at: { gte: todayStart } } }),
       prisma.appointment.count({ where: { ...appointmentWhere, scheduled_start: { gte: todayStart } } }),
       prisma.admission.count({ where: { ...admissionWhere, status: 'ADMITTED' } }),
@@ -1590,7 +1642,13 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
           status: 'REQUESTED'
         }
       }),
-      prisma.bed.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), status: 'OCCUPIED' } })
+      prisma.bed.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), status: 'OCCUPIED' } }),
+      prisma.emergency_case.count({ where: { ...emergencyCaseWhere, created_at: { gte: todayStart } } }),
+      countLowStock(inventoryStockWhere, 1),
+      prisma.lab_result.count({ where: { ...labResultWhere, status: 'CRITICAL' } }),
+      prisma.equipment_incident_report.count({
+        where: { ...equipmentIncidentWhere, status: { in: ['OPEN', 'IN_PROGRESS', 'REPORTED'] } }
+      })
     ]);
     return {
       metrics: {
@@ -1599,13 +1657,19 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         activeAdmissions,
         openInvoices,
         paymentsToday,
+        collectionsToday: paymentsToday,
         activeUsers,
         usersTotal: activeUsers,
         patientFlow: appointmentsToday,
         revenueSummary: paymentsToday,
         staffingExceptions: pendingLeaves,
+        pendingLeaves,
         openMaintenance,
-        occupiedBeds
+        occupiedBeds,
+        emergencyCasesToday,
+        lowStock,
+        criticalLabs,
+        openIncidents
       },
       trendDates: await selectDateSeries(prisma.appointment, { ...appointmentWhere, scheduled_start: { gte: trendStart } }, 'scheduled_start'),
       statusCounts: await countByStatuses(prisma.invoice, invoiceWhere, ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']),

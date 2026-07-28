@@ -652,7 +652,19 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'appointments_today', label: 'Appointments today', value: metrics.appointmentsToday || 0, required_permissions: ['patient:read'] },
       { id: 'active_admissions', label: 'Active admissions', value: metrics.activeAdmissions || 0, required_permissions: ['patient:read'] },
       { id: 'bed_occupancy', label: 'Occupied beds', value: metrics.occupiedBeds || 0, required_permissions: ['patient:read'] },
+      { id: 'emergency_cases_today', label: 'Emergency queue', value: metrics.emergencyCasesToday || 0, required_permissions: ['emergency:read'] },
+      {
+        id: 'collections_today',
+        label: 'Revenue today',
+        value: metrics.collectionsToday || metrics.paymentsToday || 0,
+        format: 'currency',
+        required_permissions: ['billing:read'],
+      },
       { id: 'billing_exceptions', label: 'Billing exceptions', value: metrics.openInvoices || 0, required_permissions: ['billing:read'] },
+      { id: 'low_stock', label: 'Pharmacy low stock', value: metrics.lowStock || 0, required_permissions: ['pharmacy:read'] },
+      { id: 'critical_labs', label: 'Critical labs', value: metrics.criticalLabs || 0, required_permissions: ['lab:read'] },
+      { id: 'pending_leaves', label: 'HR leave requests', value: metrics.pendingLeaves || 0, required_permissions: ['hr:read'] },
+      { id: 'open_incidents', label: 'Equipment incidents', value: metrics.openIncidents || 0, required_permissions: ['biomed:read'] },
       { id: 'operational_blockers', label: 'Operational blockers', value: metrics.openMaintenance || 0, required_permissions: ['operations:read'] },
     ];
   }
@@ -713,6 +725,14 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'dispensed_today', label: 'Dispensed', value: metrics.dispensedToday || 0, required_permissions: ['pharmacy:read'] },
       { id: 'low_stock', label: 'Low stock', value: metrics.lowStock || 0, required_permissions: ['pharmacy:read'] },
       { id: 'critical_stock', label: 'Critical stock', value: metrics.criticalStock || 0, required_permissions: ['pharmacy:read'] },
+      // Dashboard.md §7 Billing Pending — live open invoice balances.
+      {
+        id: 'billing_pending',
+        label: 'Billing pending',
+        value: metrics.billingPending || metrics.pendingBalanceAmount || 0,
+        format: 'currency',
+        required_permissions: ['billing:read'],
+      },
     ];
   }
 

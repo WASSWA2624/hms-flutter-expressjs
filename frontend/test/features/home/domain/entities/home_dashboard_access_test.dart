@@ -188,12 +188,15 @@ void main() {
             'active_admissions',
             'bed_occupancy',
             'operational_blockers',
+            'emergency_cases_today',
+            'low_stock',
+            'critical_labs',
+            'pending_leaves',
+            'open_incidents',
           ]),
         );
         expect(ids, isNot(contains('billing_exceptions')));
         expect(ids, isNot(contains('collections_today')));
-        // Cross-domain grants still union onto facility chrome.
-        expect(ids, contains('emergency_cases_today'));
         expect(filtered.trend.hasData, isTrue);
       },
     );
@@ -582,6 +585,54 @@ void main() {
           ).alerts.map((HomeAlertItem alert) => alert.id),
           containsAll(<String>['security_alerts', 'audit_summary']),
         );
+      },
+    );
+
+    test(
+      'pharmacy without billing:read hides billing_pending KPI',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['PHARMACIST'],
+          permissions: <AppPermission>[
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(
+          AppRole.pharmacist,
+        );
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(ids, contains('orders_today'));
+        expect(ids, contains('pending_dispense'));
+        expect(ids, isNot(contains('billing_pending')));
+      },
+    );
+
+    test(
+      'pharmacy with billing:read keeps billing_pending KPI',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['PHARMACIST'],
+          permissions: <AppPermission>[
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+            AppPermissions.billingRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForRole(
+          AppRole.pharmacist,
+        );
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+
+        expect(_cardIds(filtered), contains('billing_pending'));
       },
     );
 

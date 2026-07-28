@@ -170,6 +170,49 @@ void main() {
       });
     });
 
+    test('pharmacist billing_pending navigates to billing when granted', () {
+      final HomeDashboardProfile profile = homeProfileForRole(
+        AppRole.pharmacist,
+      );
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['PHARMACIST'],
+          ),
+          permissions: const <AppPermission>[
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+            AppPermissions.billingRead,
+          ],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: 'pharmacy'),
+            AppModuleEntitlement(code: 'pharmacy-dispensing'),
+            AppModuleEntitlement(code: 'billing-payments'),
+          ],
+        ),
+      );
+
+      final HomeMetricNavigation? billingPending = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'billing_pending',
+          label: 'Billing pending',
+          value: 120,
+          format: 'currency',
+          requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+        ),
+        policy: policy,
+      );
+
+      expect(billingPending?.route, AppRoutes.billing);
+      expect(billingPending?.queryParameters, <String, String>{
+        'queue': 'pendingPayment',
+      });
+    });
+
     test('receptionist metric cards navigate to front-desk workspaces', () {
       final HomeDashboardProfile profile = homeProfileForRole(
         AppRole.receptionist,

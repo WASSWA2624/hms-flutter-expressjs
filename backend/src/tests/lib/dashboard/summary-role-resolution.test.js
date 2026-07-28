@@ -126,6 +126,76 @@ describe('per-card required_permissions (Dashboard.md)', () => {
     );
   });
 
+  it('gates facility-admin pack cards per Dashboard.md permissions', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.FACILITY_ADMIN, {
+      patientsToday: 4,
+      appointmentsToday: 6,
+      activeAdmissions: 2,
+      occupiedBeds: 10,
+      emergencyCasesToday: 1,
+      paymentsToday: 1500,
+      openInvoices: 3,
+      lowStock: 5,
+      criticalLabs: 2,
+      pendingLeaves: 1,
+      openIncidents: 1,
+      openMaintenance: 2,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'active_admissions',
+          required_permissions: ['patient:read'],
+        }),
+        expect.objectContaining({
+          id: 'emergency_cases_today',
+          required_permissions: ['emergency:read'],
+        }),
+        expect.objectContaining({
+          id: 'collections_today',
+          required_permissions: ['billing:read'],
+          format: 'currency',
+        }),
+        expect.objectContaining({
+          id: 'low_stock',
+          required_permissions: ['pharmacy:read'],
+        }),
+        expect.objectContaining({
+          id: 'critical_labs',
+          required_permissions: ['lab:read'],
+        }),
+        expect.objectContaining({
+          id: 'pending_leaves',
+          required_permissions: ['hr:read'],
+        }),
+        expect.objectContaining({
+          id: 'open_incidents',
+          required_permissions: ['biomed:read'],
+        }),
+      ])
+    );
+  });
+
+  it('gates pharmacy billing_pending on billing:read', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.PHARMACIST, {
+      ordersToday: 4,
+      pendingDispense: 2,
+      pendingBalanceAmount: 900,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'billing_pending',
+          required_permissions: ['billing:read'],
+          value: 900,
+          format: 'currency',
+        }),
+      ])
+    );
+  });
+
   it('gates biomed work orders on biomed:write and ambulance fleet_out on operations:read', () => {
     const biomed = metricsToRoleSummary(ROLE_PACKS.BIOMED, {
       openWorkOrders: 3,

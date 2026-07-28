@@ -38,6 +38,8 @@ abstract final class HomeDashboardAtomPermissions {
         'opd_notifications_attention': <AppPermission>[
           AppPermissions.patientRead,
         ],
+        // emergency_cases_today / collections_today / low_stock / critical_labs /
+        // pending_leaves / open_incidents declared on facility templates + packs.
 
         // Doctor (Dashboard.md §4)
         'assigned': <AppPermission>[AppPermissions.clinicalRead],
