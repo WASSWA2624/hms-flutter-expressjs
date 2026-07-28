@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 enum AppFormSectionDensity { compact, regular, spacious }
 
+/// Form field groups that share the app's titled section chrome.
+///
+/// When framed with a title, builds [AppWorkspaceDetailPanel] (collapsible by
+/// default). Untitled or explicitly unframed layouts stay as plain columns.
 class AppFormSection extends StatelessWidget {
   const AppFormSection({
     required this.children,
@@ -11,6 +16,8 @@ class AppFormSection extends StatelessWidget {
     this.density = AppFormSectionDensity.regular,
     this.crossAxisAlignment = CrossAxisAlignment.start,
     this.framed,
+    this.collapsible = true,
+    this.initiallyExpanded = true,
     super.key,
   });
 
@@ -23,20 +30,27 @@ class AppFormSection extends StatelessWidget {
   /// When null, titled sections are framed so adjacent blocks stay distinct.
   final bool? framed;
 
+  /// Forwarded to [AppWorkspaceDetailPanel] for framed titled sections.
+  final bool collapsible;
+  final bool initiallyExpanded;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final TextTheme textTheme = theme.textTheme;
     final double gap = _gap(theme);
-    final bool showFrame = framed ?? title != null;
+    final String? resolvedTitle = title?.trim().isNotEmpty == true
+        ? title
+        : null;
+    final bool showFrame = framed ?? resolvedTitle != null;
 
     final Widget body = Column(
       crossAxisAlignment: showFrame
           ? CrossAxisAlignment.stretch
           : crossAxisAlignment,
       children: <Widget>[
-        if (title != null) ...<Widget>[
-          Text(title!, style: textTheme.titleMedium),
+        if (resolvedTitle != null && !showFrame) ...<Widget>[
+          Text(resolvedTitle, style: textTheme.titleMedium),
           if (description != null) ...<Widget>[
             SizedBox(height: theme.spacing.xs),
             Text(description!, style: textTheme.bodyMedium),
@@ -52,6 +66,16 @@ class AppFormSection extends StatelessWidget {
 
     if (!showFrame) {
       return body;
+    }
+
+    if (resolvedTitle != null) {
+      return AppWorkspaceDetailPanel(
+        title: resolvedTitle,
+        description: description,
+        collapsible: collapsible,
+        initiallyExpanded: initiallyExpanded,
+        child: body,
+      );
     }
 
     return SizedBox(

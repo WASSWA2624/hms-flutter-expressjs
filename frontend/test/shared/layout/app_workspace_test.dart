@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 import '../components/component_test_app.dart';
@@ -577,5 +578,52 @@ void main() {
 
     expect(find.text('Match row'), findsNothing);
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
+  });
+
+  testWidgets('AppFormSection with title uses collapsible AppWorkspaceDetailPanel', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppFormSection(
+        title: 'Patient details',
+        children: <Widget>[Text('Form field')],
+      ),
+      size: const Size(800, 500),
+    );
+
+    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.text('Patient details'), findsOneWidget);
+    expect(find.text('Form field'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.expand_less));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Form field'), findsNothing);
+  });
+
+  testWidgets('AppScreenSection uses collapsible AppWorkspaceDetailPanel', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppScreenSection(
+        title: 'Account',
+        body: 'Manage account settings',
+        child: Text('Account body'),
+      ),
+      size: const Size(800, 500),
+    );
+
+    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.text('Account'), findsOneWidget);
+    expect(find.text('Manage account settings'), findsOneWidget);
+    expect(find.text('Account body'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.expand_less));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Account body'), findsNothing);
+    expect(find.text('Manage account settings'), findsNothing);
   });
 }

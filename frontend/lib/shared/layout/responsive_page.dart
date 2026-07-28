@@ -5,6 +5,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/layout/responsive_spacing.dart';
 
+export 'package:hosspi_hms/shared/layout/app_screen_section.dart';
+
 enum PageMaxWidth {
   authForm(520),
   form(720),
@@ -329,55 +331,6 @@ class _HeaderText extends StatelessWidget {
           Text(body!, style: bodyStyle),
         ],
       ],
-    );
-  }
-}
-
-class AppScreenSection extends StatelessWidget {
-  const AppScreenSection({
-    required this.title,
-    required this.body,
-    required this.child,
-    super.key,
-  });
-
-  final String title;
-  final String body;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool compact = breakpoint.isMobile;
-    final double padding = theme.spacing.md;
-    final double headingGap = compact ? theme.spacing.sm : theme.spacing.md;
-
-    return Material(
-      color: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: EdgeInsets.all(padding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(title, style: theme.textTheme.titleMedium),
-            SizedBox(height: theme.spacing.xs),
-            Text(
-              body,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: headingGap),
-            child,
-          ],
-        ),
-      ),
     );
   }
 }

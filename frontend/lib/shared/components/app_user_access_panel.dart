@@ -159,214 +159,120 @@ class AppUserAccessPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _CollapsibleAccessSection(
+        AppWorkspaceDetailPanel(
           title: l10n.accessAdminAssignedRolesLabel,
           description: l10n.accessAdminUserDetailRolesSectionDescription,
-          leadingIcon: Icons.groups_outlined,
+          titleIcon: Icons.groups_outlined,
           initiallyExpanded: rolesInitiallyExpanded,
-          trailing: _HeaderActions(
-            count: roleGroups.length,
-            canWrite: canWrite,
-            isBusy: isBusy,
-            addLabel: l10n.accessAdminUserAccessAddRoleAction,
-            addIcon: Icons.person_add_alt_1_outlined,
-            onAdd: onAddRole,
-            removeAllLabel: l10n.accessAdminUserAccessRemoveAllRolesAction,
-            onRemoveAll: removableRoleCount > 0 ? onRemoveAllRoles : null,
-          ),
-          children: <Widget>[
-            if (roleGroups.isEmpty)
-              Text(
-                l10n.accessAdminUserDetailNoRolesMessage,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              )
-            else
-              ...roleGroups.map(
-                (AppUserAccessRoleGroup group) => Padding(
-                  padding: EdgeInsets.only(bottom: theme.spacing.sm),
-                  child: _RoleGroupCard(
-                    group: group,
-                    canWrite: canWrite,
-                    isBusy: isBusy,
-                    onRemove: onRemoveRole == null
-                        ? null
-                        : () => onRemoveRole!(group),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        _CollapsibleAccessSection(
-          title: l10n.hrAccessDirectPermissionsLabel,
-          description: l10n.accessAdminUserAccessDirectPermissionsDescription,
-          leadingIcon: Icons.key_outlined,
-          initiallyExpanded: permissionsInitiallyExpanded,
-          trailing: _HeaderActions(
-            count: directPermissions.length,
-            canWrite: canWrite,
-            isBusy: isBusy,
-            addLabel: l10n.accessAdminUserAccessAddDirectPermissionAction,
-            addIcon: Icons.add_outlined,
-            onAdd: onAddDirectPermission,
-            removeAllLabel:
-                l10n.accessAdminUserAccessRemoveAllDirectPermissionsAction,
-            onRemoveAll: directPermissions.isNotEmpty
-                ? onRemoveAllDirectPermissions
-                : null,
-          ),
-          children: <Widget>[
-            if (directPermissions.isEmpty)
-              Text(
-                l10n.accessAdminUserAccessNoDirectPermissionsMessage,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              )
-            else
-              ...directPermissions.map(
-                (AppUserAccessDirectPermission permission) => Padding(
-                  padding: EdgeInsets.only(bottom: theme.spacing.xs),
-                  child: _DirectPermissionRow(
-                    permission: permission,
-                    canWrite: canWrite,
-                    isBusy: isBusy,
-                    onRemove: onRemoveDirectPermission == null
-                        ? null
-                        : () => onRemoveDirectPermission!(permission),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        _CollapsibleAccessSection(
-          title: l10n.accessAdminEffectivePermissionsLabel,
-          description: l10n.accessAdminUserDetailPermissionsSectionDescription,
-          leadingIcon: Icons.verified_user_outlined,
-          initiallyExpanded: effectiveInitiallyExpanded,
-          trailing: _HeaderActions(
-            count: effectiveOptions.length,
-            canWrite: false,
-            isBusy: isBusy,
-            addLabel: '',
-            addIcon: Icons.add_outlined,
-          ),
-          children: <Widget>[
-            AppPermissionGroupedView(
-              permissions: effectiveOptions,
-              initiallyExpandAll: effectiveOptions.length <= 24,
-              emptyMessage: l10n.accessAdminUserDetailNoPermissionsMessage,
+          actions: <Widget>[
+            _HeaderActions(
+              count: roleGroups.length,
+              canWrite: canWrite,
+              isBusy: isBusy,
+              addLabel: l10n.accessAdminUserAccessAddRoleAction,
+              addIcon: Icons.person_add_alt_1_outlined,
+              onAdd: onAddRole,
+              removeAllLabel: l10n.accessAdminUserAccessRemoveAllRolesAction,
+              onRemoveAll: removableRoleCount > 0 ? onRemoveAllRoles : null,
             ),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-class _CollapsibleAccessSection extends StatefulWidget {
-  const _CollapsibleAccessSection({
-    required this.title,
-    required this.description,
-    required this.leadingIcon,
-    required this.trailing,
-    required this.children,
-    this.initiallyExpanded = true,
-  });
-
-  final String title;
-  final String description;
-  final IconData leadingIcon;
-  final Widget trailing;
-  final List<Widget> children;
-  final bool initiallyExpanded;
-
-  @override
-  State<_CollapsibleAccessSection> createState() =>
-      _CollapsibleAccessSectionState();
-}
-
-class _CollapsibleAccessSectionState extends State<_CollapsibleAccessSection> {
-  late bool _expanded = widget.initiallyExpanded;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
-
-    return AppContentPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Expanded(
-                child: InkWell(
-                  onTap: () => setState(() => _expanded = !_expanded),
-                  borderRadius: BorderRadius.circular(theme.radius.sm),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Icon(
-                          widget.leadingIcon,
-                          color: colors.primary,
-                          size: theme.appTokens.listIconSize,
-                        ),
-                        SizedBox(width: theme.spacing.sm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                widget.title,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  color: colors.onSurface,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              SizedBox(height: theme.spacing.xs),
-                              Text(
-                                widget.description,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: theme.spacing.xs),
-                        Icon(
-                          _expanded ? Icons.expand_less : Icons.expand_more,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ],
+              if (roleGroups.isEmpty)
+                Text(
+                  l10n.accessAdminUserDetailNoRolesMessage,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                ...roleGroups.map(
+                  (AppUserAccessRoleGroup group) => Padding(
+                    padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                    child: _RoleGroupCard(
+                      group: group,
+                      canWrite: canWrite,
+                      isBusy: isBusy,
+                      onRemove: onRemoveRole == null
+                          ? null
+                          : () => onRemoveRole!(group),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              widget.trailing,
             ],
           ),
-          if (_expanded) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
-            for (var index = 0; index < widget.children.length; index += 1)
-              ...<Widget>[
-                widget.children[index],
-                if (index < widget.children.length - 1)
-                  SizedBox(height: theme.spacing.md),
-              ],
+        ),
+        SizedBox(height: theme.spacing.md),
+        AppWorkspaceDetailPanel(
+          title: l10n.hrAccessDirectPermissionsLabel,
+          description: l10n.accessAdminUserAccessDirectPermissionsDescription,
+          titleIcon: Icons.key_outlined,
+          initiallyExpanded: permissionsInitiallyExpanded,
+          actions: <Widget>[
+            _HeaderActions(
+              count: directPermissions.length,
+              canWrite: canWrite,
+              isBusy: isBusy,
+              addLabel: l10n.accessAdminUserAccessAddDirectPermissionAction,
+              addIcon: Icons.add_outlined,
+              onAdd: onAddDirectPermission,
+              removeAllLabel:
+                  l10n.accessAdminUserAccessRemoveAllDirectPermissionsAction,
+              onRemoveAll: directPermissions.isNotEmpty
+                  ? onRemoveAllDirectPermissions
+                  : null,
+            ),
           ],
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (directPermissions.isEmpty)
+                Text(
+                  l10n.accessAdminUserAccessNoDirectPermissionsMessage,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                ...directPermissions.map(
+                  (AppUserAccessDirectPermission permission) => Padding(
+                    padding: EdgeInsets.only(bottom: theme.spacing.xs),
+                    child: _DirectPermissionRow(
+                      permission: permission,
+                      canWrite: canWrite,
+                      isBusy: isBusy,
+                      onRemove: onRemoveDirectPermission == null
+                          ? null
+                          : () => onRemoveDirectPermission!(permission),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(height: theme.spacing.md),
+        AppWorkspaceDetailPanel(
+          title: l10n.accessAdminEffectivePermissionsLabel,
+          description: l10n.accessAdminUserDetailPermissionsSectionDescription,
+          titleIcon: Icons.verified_user_outlined,
+          initiallyExpanded: effectiveInitiallyExpanded,
+          actions: <Widget>[
+            _HeaderActions(
+              count: effectiveOptions.length,
+              canWrite: false,
+              isBusy: isBusy,
+              addLabel: '',
+              addIcon: Icons.add_outlined,
+            ),
+          ],
+          child: AppPermissionGroupedView(
+            permissions: effectiveOptions,
+            initiallyExpandAll: effectiveOptions.length <= 24,
+            emptyMessage: l10n.accessAdminUserDetailNoPermissionsMessage,
+          ),
+        ),
+      ],
     );
   }
 }
