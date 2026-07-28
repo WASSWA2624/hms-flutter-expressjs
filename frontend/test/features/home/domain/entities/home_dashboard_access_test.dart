@@ -298,5 +298,55 @@ void main() {
       );
       expect(_cardIds(filtered), <String>{'assigned'});
     });
+
+    test(
+      'custom clinical+lab pack unions grantable atoms without billing',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['CUSTOM_CLINICIAN'],
+          permissions: <AppPermission>[
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForAccessPolicy(policy);
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(profile.role, AppRole.doctor);
+        expect(ids, containsAll(<String>['assigned', 'results_pending_review']));
+        expect(ids, contains('orders_today'));
+        expect(ids, isNot(contains('collections_today')));
+        expect(ids, isNot(contains('pending_dispense')));
+        expect(ids, isNot(contains('draft_reports')));
+      },
+    );
+
+    test(
+      'custom clinical+billing union keeps clinical layout and billing KPIs',
+      () {
+        final AppAccessPolicy policy = _policy(
+          roles: <String>['CUSTOM_MIXED'],
+          permissions: <AppPermission>[
+            AppPermissions.clinicalRead,
+            AppPermissions.billingRead,
+          ],
+        );
+        final HomeDashboardProfile profile = homeProfileForAccessPolicy(policy);
+        final HomeDashboard filtered = filterHomeDashboardForAccess(
+          _dashboardForProfile(profile),
+          policy,
+        );
+        final Set<String> ids = _cardIds(filtered);
+
+        expect(profile.role, AppRole.doctor);
+        expect(ids, contains('assigned'));
+        expect(ids, contains('collections_today'));
+        expect(ids, isNot(contains('pending_approvals')));
+      },
+    );
   });
 }

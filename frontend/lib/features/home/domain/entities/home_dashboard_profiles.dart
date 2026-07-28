@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math' as math;
 
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -153,15 +154,40 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage:
         'Facility setup is ready for daily work once patients, services, beds, and staff are configured.',
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'patient_flow_today', label: 'Flow today'),
-      HomeStatusCardTemplate(id: 'appointments_today', label: 'Appointments'),
-      HomeStatusCardTemplate(id: 'active_admissions', label: 'Admissions'),
-      HomeStatusCardTemplate(id: 'bed_occupancy', label: 'Occupied'),
-      HomeStatusCardTemplate(id: 'billing_exceptions', label: 'Billing'),
-      HomeStatusCardTemplate(id: 'operational_blockers', label: 'Blockers'),
+      HomeStatusCardTemplate(
+        id: 'patient_flow_today',
+        label: 'Flow today',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'appointments_today',
+        label: 'Appointments',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'active_admissions',
+        label: 'Admissions',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'bed_occupancy',
+        label: 'Occupied',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'billing_exceptions',
+        label: 'Billing',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'operational_blockers',
+        label: 'Blockers',
+        requiredPermissions: <AppPermission>[AppPermissions.operationsRead],
+      ),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
+        requiredPermissions: <AppPermission>[AppPermissions.patientRead],
       ),
     ],
     quickActionIds: <String>[
@@ -179,18 +205,40 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No assigned clinical work right now.',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'assigned', label: 'Assigned today'),
-      HomeStatusCardTemplate(id: 'in_progress', label: 'In progress'),
+      HomeStatusCardTemplate(
+        id: 'assigned',
+        label: 'Assigned today',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'in_progress',
+        label: 'In progress',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
       HomeStatusCardTemplate(
         id: 'results_pending_review',
         label: 'Results to review',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
       ),
-      HomeStatusCardTemplate(id: 'follow_ups_due', label: 'Follow-ups due'),
-      HomeStatusCardTemplate(id: 'completed', label: 'Completed'),
-      HomeStatusCardTemplate(id: 'critical_labs', label: 'Critical labs'),
+      HomeStatusCardTemplate(
+        id: 'follow_ups_due',
+        label: 'Follow-ups due',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'completed',
+        label: 'Completed',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'critical_labs',
+        label: 'Critical labs',
+        requiredPermissions: <AppPermission>[AppPermissions.labRead],
+      ),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
+        requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
       ),
     ],
     quickActionIds: <String>[
@@ -505,20 +553,35 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'collections_today',
         label: 'Collected today',
         format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
       ),
       HomeStatusCardTemplate(
         id: 'overdue_balance_amount',
         label: 'Overdue amount',
         format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
       ),
       HomeStatusCardTemplate(
         id: 'pending_balance_amount',
         label: 'Pending balances',
         format: 'currency',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
       ),
-      HomeStatusCardTemplate(id: 'invoices_today', label: 'Invoices today'),
-      HomeStatusCardTemplate(id: 'overdue_invoices', label: 'Overdue'),
-      HomeStatusCardTemplate(id: 'open_balances', label: 'Open accounts'),
+      HomeStatusCardTemplate(
+        id: 'invoices_today',
+        label: 'Invoices today',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'overdue_invoices',
+        label: 'Overdue',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
+      HomeStatusCardTemplate(
+        id: 'open_balances',
+        label: 'Open accounts',
+        requiredPermissions: <AppPermission>[AppPermissions.billingRead],
+      ),
       HomeStatusCardTemplate(
         id: 'refunds_today',
         label: 'Refunds',
@@ -530,6 +593,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'Approvals',
         requiredPermissions: <AppPermission>[AppPermissions.financialApprove],
       ),
+      // Gap: pending_insurance_claims — no dedicated claims KPI source yet.
     ],
     quickActionIds: <String>[
       'create_invoice',
@@ -1111,6 +1175,8 @@ HomeDashboardProfile homeProfileForRoles(Iterable<AppRole> roles) {
 HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
   final HomeDashboardProfile fromRoles = homeProfileForRoles(policy.roles);
   if (fromRoles.role != AppRole.other) {
+    // Ranked role chooses layout chrome; [filterHomeDashboardForAccess] is the
+    // visibility gate. Do not swap the whole profile when grants diverge.
     return fromRoles;
   }
 
@@ -1122,64 +1188,132 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
   bool has(AppPermission permission) => permissions.contains(permission);
 
   if (policy.isElevated || has(AppPermissions.systemAdmin)) {
-    return homeDashboardProfiles[AppRole.superAdmin]!;
+    return expandHomeProfileForPermissions(
+      homeDashboardProfiles[AppRole.superAdmin]!,
+      policy,
+    );
   }
   if (has(AppPermissions.tenantAdmin)) {
-    return homeDashboardProfiles[AppRole.tenantAdmin]!;
+    return expandHomeProfileForPermissions(
+      homeDashboardProfiles[AppRole.tenantAdmin]!,
+      policy,
+    );
   }
   if (has(AppPermissions.facilityAdmin)) {
-    return homeDashboardProfiles[AppRole.facilityAdmin]!;
+    return expandHomeProfileForPermissions(
+      homeDashboardProfiles[AppRole.facilityAdmin]!,
+      policy,
+    );
   }
 
-  // Multi-domain custom packs should not inherit a single canonical role UX
-  // (e.g. clinical:read alone must not force the full doctor dashboard).
-  final int domainHits = <bool>[
-    has(AppPermissions.clinicalRead) || has(AppPermissions.clinicalWrite),
-    has(AppPermissions.labRead) || has(AppPermissions.labWrite),
-    has(AppPermissions.radiologyRead) || has(AppPermissions.radiologyWrite),
-    has(AppPermissions.pharmacyRead) || has(AppPermissions.pharmacyWrite),
-    has(AppPermissions.billingRead) || has(AppPermissions.billingWrite),
-    has(AppPermissions.hrRead) || has(AppPermissions.hrWrite),
-    has(AppPermissions.operationsRead) || has(AppPermissions.operationsWrite),
-    has(AppPermissions.patientRead) || has(AppPermissions.patientWrite),
-  ].where((bool hit) => hit).length;
-  if (domainHits >= 2) {
-    return homeDashboardProfiles[AppRole.other]!;
-  }
-
+  // Pick a layout base from the primary domain; [expandHomeProfileForPermissions]
+  // unions grantable atoms from other domains (no separate persona apps).
+  final HomeDashboardProfile inferred;
   if (has(AppPermissions.clinicalWrite) || has(AppPermissions.clinicalRead)) {
-    return homeDashboardProfiles[AppRole.doctor]!;
-  }
-  if (has(AppPermissions.labWrite) || has(AppPermissions.labRead)) {
-    return homeDashboardProfiles[AppRole.labTech]!;
-  }
-  if (has(AppPermissions.pharmacyWrite) || has(AppPermissions.pharmacyRead)) {
-    return homeDashboardProfiles[AppRole.pharmacist]!;
-  }
-  if (has(AppPermissions.radiologyWrite) || has(AppPermissions.radiologyRead)) {
-    return homeDashboardProfiles[AppRole.radiologyTech]!;
-  }
-  if (has(AppPermissions.billingWrite) || has(AppPermissions.billingRead)) {
-    return homeDashboardProfiles[AppRole.billing]!;
-  }
-  if (has(AppPermissions.hrWrite) || has(AppPermissions.hrRead)) {
-    return homeDashboardProfiles[AppRole.hr]!;
-  }
-  if (has(AppPermissions.operationsWrite) ||
+    inferred = homeDashboardProfiles[AppRole.doctor]!;
+  } else if (has(AppPermissions.labWrite) || has(AppPermissions.labRead)) {
+    inferred = homeDashboardProfiles[AppRole.labTech]!;
+  } else if (has(AppPermissions.pharmacyWrite) ||
+      has(AppPermissions.pharmacyRead)) {
+    inferred = homeDashboardProfiles[AppRole.pharmacist]!;
+  } else if (has(AppPermissions.radiologyWrite) ||
+      has(AppPermissions.radiologyRead)) {
+    inferred = homeDashboardProfiles[AppRole.radiologyTech]!;
+  } else if (has(AppPermissions.billingWrite) ||
+      has(AppPermissions.billingRead)) {
+    inferred = homeDashboardProfiles[AppRole.billing]!;
+  } else if (has(AppPermissions.hrWrite) || has(AppPermissions.hrRead)) {
+    inferred = homeDashboardProfiles[AppRole.hr]!;
+  } else if (has(AppPermissions.operationsWrite) ||
       has(AppPermissions.operationsRead)) {
-    return homeDashboardProfiles[AppRole.operations]!;
-  }
-  if (has(AppPermissions.patientWrite) || has(AppPermissions.patientRead)) {
-    return homeDashboardProfiles[AppRole.receptionist]!;
+    inferred = homeDashboardProfiles[AppRole.operations]!;
+  } else if (has(AppPermissions.patientWrite) ||
+      has(AppPermissions.patientRead)) {
+    inferred = homeDashboardProfiles[AppRole.receptionist]!;
+  } else if (permissions.length >= 8) {
+    // Broad custom packs: facility-command chrome, then permission filter.
+    inferred = homeDashboardProfiles[AppRole.facilityAdmin]!;
+  } else {
+    return fromRoles;
   }
 
-  // Broad custom permission packs should not fall back to the empty "other"
-  // dashboard when the user clearly has operational rights.
-  if (permissions.length >= 8) {
-    return homeDashboardProfiles[AppRole.facilityAdmin]!;
+  return expandHomeProfileForPermissions(inferred, policy);
+}
+
+/// Unions grantable KPI/action/shortcut atoms onto [base] layout chrome.
+///
+/// Roles choose the default profile layout; visibility still requires
+/// `grantsAll` via [filterHomeDashboardForAccess] / action libraries.
+HomeDashboardProfile expandHomeProfileForPermissions(
+  HomeDashboardProfile base,
+  AppAccessPolicy policy,
+) {
+  final LinkedHashMap<String, HomeStatusCardTemplate> cards =
+      LinkedHashMap<String, HomeStatusCardTemplate>();
+  for (final HomeStatusCardTemplate template in base.statusCards) {
+    cards[template.id] = template;
   }
 
-  return fromRoles;
+  final LinkedHashSet<String> quickActionIds = LinkedHashSet<String>.of(
+    base.quickActionIds,
+  );
+  final LinkedHashSet<String> shortcutIds = LinkedHashSet<String>.of(
+    base.shortcutIds,
+  );
+  final LinkedHashSet<String> emptyActionIds = LinkedHashSet<String>.of(
+    base.emptyActionIds,
+  );
+  final Map<String, HomeMetricRouteTarget> metricRoutes =
+      Map<String, HomeMetricRouteTarget>.of(base.metricRouteTargets);
+  final Map<String, HomeMetricActionTarget> metricActions =
+      Map<String, HomeMetricActionTarget>.of(base.metricActionTargets);
+
+  for (final HomeDashboardProfile profile in homeDashboardProfiles.values) {
+    if (profile.id == base.id || profile.role == AppRole.other) {
+      continue;
+    }
+    for (final HomeStatusCardTemplate template in profile.statusCards) {
+      if (cards.containsKey(template.id)) {
+        continue;
+      }
+      final List<AppPermission> required =
+          template.effectiveRequiredPermissions;
+      if (required.isEmpty || !policy.grantsAll(required)) {
+        continue;
+      }
+      cards[template.id] = template;
+    }
+    for (final String id in profile.quickActionIds) {
+      quickActionIds.add(id);
+    }
+    for (final String id in profile.shortcutIds) {
+      shortcutIds.add(id);
+    }
+    for (final String id in profile.emptyActionIds) {
+      emptyActionIds.add(id);
+    }
+    for (final MapEntry<String, HomeMetricRouteTarget> entry
+        in profile.metricRouteTargets.entries) {
+      metricRoutes.putIfAbsent(entry.key, () => entry.value);
+    }
+    for (final MapEntry<String, HomeMetricActionTarget> entry
+        in profile.metricActionTargets.entries) {
+      metricActions.putIfAbsent(entry.key, () => entry.value);
+    }
+  }
+
+  final bool grew = cards.length > base.statusCards.length;
+  return base.copyWith(
+    statusCards: cards.values.toList(growable: false),
+    quickActionIds: quickActionIds.toList(growable: false),
+    shortcutIds: shortcutIds.toList(growable: false),
+    emptyActionIds: emptyActionIds.toList(growable: false),
+    metricRouteTargets: metricRoutes,
+    metricActionTargets: metricActions,
+    maxStatusCards: grew
+        ? math.min(6, math.max(base.maxStatusCards, cards.length))
+        : base.maxStatusCards,
+  );
 }
 
 HomeDashboardProfile homeProfileForRole(AppRole? role) {

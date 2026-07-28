@@ -81,12 +81,10 @@ RoleDashboardLayout homeRoleDashboardLayoutAfterFilter({
 }) {
   final bool showMetrics =
       profile.showMetricsSection && dashboard.statusCards.isNotEmpty;
-  final bool showCharts =
-      dashboard.trend.requiredPermissions.isNotEmpty &&
-      profile.showChartsWhenData(
-        trend: dashboard.trend,
-        distribution: dashboard.distribution,
-      );
+  final bool showCharts = profile.showChartsWhenData(
+    trend: dashboard.trend,
+    distribution: dashboard.distribution,
+  );
 
   return RoleDashboardLayout(
     showMetrics: showMetrics,

@@ -11,11 +11,12 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_dtos.dart';
 import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_lookups_dtos.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
-import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_guided_content.dart';
-import 'package:hosspi_hms/features/home/domain/entities/home_nurse_dashboard_context.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_scope.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_nurse_dashboard_context.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
@@ -136,6 +137,7 @@ final class HomeRepositoryImpl implements HomeRepository {
     return mergeHomeDashboardForProfile(
       profile: tailoredProfile,
       dashboard: dashboard,
+      policy: _accessPolicy,
     );
   }
 
@@ -187,7 +189,7 @@ final class HomeRepositoryImpl implements HomeRepository {
         ? guidedFallbackAlerts(tailoredProfile)
         : const <HomeAlertItem>[];
 
-    return HomeDashboard(
+    final HomeDashboard raw = HomeDashboard(
       state: HomeDashboardLoadState.ready,
       profile: tailoredProfile,
       context: HomeDashboardContext(
@@ -213,5 +215,6 @@ final class HomeRepositoryImpl implements HomeRepository {
       generatedAt: DateTime.now().toUtc(),
       usesFallbackData: usesFallbackData,
     );
+    return filterHomeDashboardForAccess(raw, _accessPolicy);
   }
 }

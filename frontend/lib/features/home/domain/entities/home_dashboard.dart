@@ -212,6 +212,47 @@ final class HomeDashboardProfile {
   final bool suppressHomeQuickActions;
   final bool suppressHomeShortcuts;
 
+  HomeDashboardProfile copyWith({
+    String? id,
+    AppRole? role,
+    String? roleLabel,
+    String? homeTitle,
+    String? emptyMessage,
+    List<HomeStatusCardTemplate>? statusCards,
+    List<String>? quickActionIds,
+    List<String>? shortcutIds,
+    List<String>? emptyActionIds,
+    Map<String, HomeMetricRouteTarget>? metricRouteTargets,
+    Map<String, HomeMetricActionTarget>? metricActionTargets,
+    List<HomeToolbarActionId>? toolbarActionIds,
+    int? maxStatusCards,
+    bool? showEmptyWorkspaceLink,
+    bool? suppressHomeQuickActions,
+    bool? suppressHomeShortcuts,
+  }) {
+    return HomeDashboardProfile(
+      id: id ?? this.id,
+      role: role ?? this.role,
+      roleLabel: roleLabel ?? this.roleLabel,
+      homeTitle: homeTitle ?? this.homeTitle,
+      emptyMessage: emptyMessage ?? this.emptyMessage,
+      statusCards: statusCards ?? this.statusCards,
+      quickActionIds: quickActionIds ?? this.quickActionIds,
+      shortcutIds: shortcutIds ?? this.shortcutIds,
+      emptyActionIds: emptyActionIds ?? this.emptyActionIds,
+      metricRouteTargets: metricRouteTargets ?? this.metricRouteTargets,
+      metricActionTargets: metricActionTargets ?? this.metricActionTargets,
+      toolbarActionIds: toolbarActionIds ?? this.toolbarActionIds,
+      maxStatusCards: maxStatusCards ?? this.maxStatusCards,
+      showEmptyWorkspaceLink:
+          showEmptyWorkspaceLink ?? this.showEmptyWorkspaceLink,
+      suppressHomeQuickActions:
+          suppressHomeQuickActions ?? this.suppressHomeQuickActions,
+      suppressHomeShortcuts:
+          suppressHomeShortcuts ?? this.suppressHomeShortcuts,
+    );
+  }
+
   List<HomeStatusCard> fallbackStatusCards() {
     return statusCards
         .map(

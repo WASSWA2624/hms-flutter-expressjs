@@ -1,4 +1,6 @@
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_access.dart';
 
 /// Manager roles assigned as extras that should not override day-to-day dashboards.
 const Set<String> homeDashboardManagerOverlayRoleValues = <String>{
@@ -60,8 +62,9 @@ List<String> scopeHomeActionIds({
 HomeDashboard mergeHomeDashboardForProfile({
   required HomeDashboardProfile profile,
   required HomeDashboard dashboard,
+  AppAccessPolicy? policy,
 }) {
-  return dashboard.copyWith(
+  final HomeDashboard merged = dashboard.copyWith(
     profile: profile,
     statusCards: scopeHomeStatusCards(
       profile: profile,
@@ -80,4 +83,8 @@ HomeDashboard mergeHomeDashboardForProfile({
             apiIds: dashboard.shortcutIds,
           ),
   );
+  if (policy == null) {
+    return merged;
+  }
+  return filterHomeDashboardForAccess(merged, policy);
 }

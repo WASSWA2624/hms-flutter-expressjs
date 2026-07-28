@@ -62,17 +62,16 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
   bool get isBillingDepartmentDashboard => id == 'billing';
 
   int get effectiveMaxStatusCards {
-    if (isDoctorClinicalDashboard) {
-      return math.min(maxStatusCards, 4);
-    }
-    if (isNurseClinicalDashboard) {
-      return math.min(maxStatusCards, 5);
-    }
-    if (isLabDepartmentDashboard ||
+    // Dashboard.md recommends 4–6 KPIs; permission-union profiles may raise
+    // [maxStatusCards] so extra granted domains can surface without a new role.
+    const int kpiCap = 6;
+    if (isDoctorClinicalDashboard ||
+        isNurseClinicalDashboard ||
+        isLabDepartmentDashboard ||
         isPharmacistDepartmentDashboard ||
         isReceptionistFrontDeskDashboard ||
         isBillingDepartmentDashboard) {
-      return math.min(maxStatusCards, 4);
+      return math.min(maxStatusCards, kpiCap);
     }
     final int tierCap = switch (layoutTier) {
       HomeDashboardLayoutTier.platform ||
@@ -159,7 +158,9 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     required HomeDashboardTrend trend,
     required HomeDashboardDistribution distribution,
   }) {
-    if (isDoctorClinicalDashboard && !trend.hasData && !distribution.hasData) {
+    // Collapse empty chart strips for every persona (permission filter may
+    // clear trend/distribution when reports:read is missing).
+    if (!trend.hasData && !distribution.hasData) {
       return false;
     }
     return showCharts;
