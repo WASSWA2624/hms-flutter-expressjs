@@ -49,6 +49,11 @@ class AppContentPanel extends StatelessWidget {
   }
 }
 
+/// Titled content sections for workspaces and dialogs.
+///
+/// When [title] is set, builds [AppWorkspaceDetailPanel] (collapsible by
+/// default) so all titled sections share one chrome. Untitled usage keeps
+/// compact [AppContentPanel] tone chrome.
 class AppSectionPanel extends StatelessWidget {
   const AppSectionPanel({
     required this.children,
@@ -62,6 +67,8 @@ class AppSectionPanel extends StatelessWidget {
     this.crossAxisAlignment = CrossAxisAlignment.start,
     this.backgroundColor,
     this.borderColor,
+    this.collapsible = true,
+    this.initiallyExpanded = true,
     super.key,
   });
 
@@ -77,14 +84,43 @@ class AppSectionPanel extends StatelessWidget {
   final Color? backgroundColor;
   final Color? borderColor;
 
+  /// Forwarded to [AppWorkspaceDetailPanel] for titled sections.
+  final bool collapsible;
+  final bool initiallyExpanded;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final double gap = spacing ?? _spacing(theme);
-    final bool hasHeader =
-        title != null || description != null || leadingIcon != null;
-    final Widget? trailingWidget = trailing;
+    final String? resolvedTitle = title?.trim().isNotEmpty == true
+        ? title
+        : null;
+    final Widget body = Column(
+      crossAxisAlignment: crossAxisAlignment,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        for (var index = 0; index < children.length; index += 1) ...<Widget>[
+          children[index],
+          if (index < children.length - 1) SizedBox(height: gap),
+        ],
+      ],
+    );
 
+    // Titled sections use the shared collapsible workspace panel.
+    if (resolvedTitle != null) {
+      return AppWorkspaceDetailPanel(
+        title: resolvedTitle,
+        description: description,
+        titleIcon: leadingIcon,
+        actions: trailing == null ? const <Widget>[] : <Widget>[trailing!],
+        collapsible: collapsible,
+        initiallyExpanded: initiallyExpanded,
+        child: body,
+      );
+    }
+
+    // Untitled panels remain compact content chrome (not section headers).
+    final bool hasHeader = description != null || leadingIcon != null;
     return AppContentPanel(
       tone: tone,
       density: density,
@@ -96,17 +132,14 @@ class AppSectionPanel extends StatelessWidget {
         children: <Widget>[
           if (hasHeader)
             _AppSectionPanelHeader(
-              title: title,
+              title: null,
               description: description,
               leadingIcon: leadingIcon,
-              trailing: trailingWidget,
+              trailing: trailing,
               tone: tone,
             ),
           if (hasHeader && children.isNotEmpty) SizedBox(height: gap),
-          for (var index = 0; index < children.length; index += 1) ...<Widget>[
-            children[index],
-            if (index < children.length - 1) SizedBox(height: gap),
-          ],
+          body,
         ],
       ),
     );

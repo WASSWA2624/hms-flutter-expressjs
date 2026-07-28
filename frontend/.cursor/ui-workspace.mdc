@@ -20,19 +20,20 @@ Module work queues (OPD, IPD, Lab, Billing, Nursing) must use this stack unless 
 - Workspace shell: `AppWorkspace`
 - Worklist: `AppListTable`
 - Detail: `AppWorkspaceDetailPanel`
-- Detail **modal** bodies: a `Column` of titled `AppWorkspaceDetailPanel` sections (collapsible by default), spaced with `appWorkspaceDetailSectionSpacing`. Do **not** wrap those sections in one outer AWDP, and do **not** invent feature-local `_DetailSection` / `_IpdSection` / nested `AppSectionPanel` chrome for dialog body sections.
+- Detail **modal** bodies: a `Column` of titled `AppWorkspaceDetailPanel` sections (collapsible by default), spaced with `appWorkspaceDetailSectionSpacing`. Do **not** wrap those sections in one outer AWDP, and do **not** invent feature-local `_DetailSection` / `_IpdSection` chrome for dialog body sections.
 - Actions: `AppActionPanel` / `AppActionList`
 - Mutations: `AppDialog` / `AppWorkspaceMutationDialog`
 
 Must import from `shared/layout`, `shared/components`, and `shared/actions` before adding feature-local equivalents.
 
-## Detail modal section rules
+## Section unification rules
 
-- One section = one `AppWorkspaceDetailPanel` with a title.
+- **One titled section component:** `AppWorkspaceDetailPanel` (collapsible by default).
+- `AppSectionPanel` with a title is an adapter that builds `AppWorkspaceDetailPanel` — do not invent a third section chrome.
 - Opt out of collapse only when hiding the body would break the task (`collapsible: false`), e.g. active result-entry editors.
-- Keep `AppSectionPanel` for compact toned chrome **outside** detail-dialog body sections (forms, banners, dense workspace shortcuts).
+- Untitled `AppContentPanel` / untitled `AppSectionPanel` remain for compact toned content chrome (not section headers).
 - Keep `AppPatientDetails` for the patient header (its own expand model).
-- Prefer `AppQuickActions(presentation: detailPanel)` for action strips in detail modals.
+- Prefer `AppQuickActions(presentation: detailPanel)` or `section` for action strips — both use `AppWorkspaceDetailPanel`.
 
 ## Mandatory behavior
 

@@ -11,7 +11,6 @@ import 'package:hosspi_hms/shared/actions/app_action_item.dart';
 import 'package:hosspi_hms/shared/actions/app_action_lifecycle.dart';
 import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
-import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_permission_action.dart';
 import 'package:hosspi_hms/shared/components/app_permission_async_action.dart';
@@ -25,7 +24,7 @@ enum AppQuickActionsPresentation {
   /// A lightweight title and action list for embedding in existing content.
   plain,
 
-  /// A compact bordered section for workspace-level shortcuts.
+  /// A titled collapsible section ([AppWorkspaceDetailPanel]) for workspace shortcuts.
   section,
 
   /// A standard detail panel for record-specific actions.
@@ -174,12 +173,13 @@ class AppQuickActions extends ConsumerWidget {
         description: description,
         child: content,
       ),
-      AppQuickActionsPresentation.section => AppSectionPanel(
+      AppQuickActionsPresentation.section => AppWorkspaceDetailPanel(
         title: title!,
         description: description,
-        leadingIcon: leadingIcon,
-        density: AppContentPanelDensity.compact,
-        children: <Widget>[content],
+        titleIcon: leadingIcon,
+        collapsible: collapsible,
+        initiallyExpanded: initiallyExpanded,
+        child: content,
       ),
       AppQuickActionsPresentation.detailPanel => AppWorkspaceDetailPanel(
         title: title!,

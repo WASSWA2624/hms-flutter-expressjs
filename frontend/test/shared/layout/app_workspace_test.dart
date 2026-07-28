@@ -554,4 +554,28 @@ void main() {
     expect(find.text('Two'), findsOneWidget);
     expect(find.byType(SizedBox), findsWidgets);
   });
+
+  testWidgets('AppSectionPanel with title uses collapsible AppWorkspaceDetailPanel', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppSectionPanel(
+        title: 'Similarity matches',
+        children: <Widget>[Text('Match row')],
+      ),
+      size: const Size(800, 500),
+    );
+
+    expect(find.byType(AppWorkspaceDetailPanel), findsOneWidget);
+    expect(find.text('Similarity matches'), findsOneWidget);
+    expect(find.text('Match row'), findsOneWidget);
+    expect(find.byIcon(Icons.expand_less), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.expand_less));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Match row'), findsNothing);
+    expect(find.byIcon(Icons.expand_more), findsOneWidget);
+  });
 }
