@@ -7170,17 +7170,6 @@ String _departmentSubtitle(
   ]);
 }
 
-String _unitSubtitle(
-  AppLocalizations l10n,
-  FacilitySetupSnapshot snapshot,
-  UnitProfile unit,
-) {
-  return _joinParts(<String?>[
-    _departmentName(snapshot, unit.departmentId),
-    _activeStatusLabel(l10n, unit.isActive),
-  ]);
-}
-
 String _wardSubtitle(
   AppLocalizations l10n,
   FacilitySetupSnapshot snapshot,
