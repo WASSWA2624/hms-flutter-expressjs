@@ -1,86 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/features/tenant_facility/domain/entities/bed_similarity.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/room_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-enum BedSimilarityAction { cancel, useExisting, proceed }
+enum RoomSimilarityAction { cancel, useExisting, proceed }
 
-final class BedSimilarityDialogResult {
-  const BedSimilarityDialogResult._({
+final class RoomSimilarityDialogResult {
+  const RoomSimilarityDialogResult._({
     required this.action,
-    this.selectedBed,
+    this.selectedRoom,
   });
 
-  const BedSimilarityDialogResult.cancel()
-    : this._(action: BedSimilarityAction.cancel);
+  const RoomSimilarityDialogResult.cancel()
+    : this._(action: RoomSimilarityAction.cancel);
 
-  const BedSimilarityDialogResult.proceed()
-    : this._(action: BedSimilarityAction.proceed);
+  const RoomSimilarityDialogResult.proceed()
+    : this._(action: RoomSimilarityAction.proceed);
 
-  const BedSimilarityDialogResult.useExisting(BedProfile bed)
-    : this._(action: BedSimilarityAction.useExisting, selectedBed: bed);
+  const RoomSimilarityDialogResult.useExisting(RoomProfile room)
+    : this._(action: RoomSimilarityAction.useExisting, selectedRoom: room);
 
-  final BedSimilarityAction action;
-  final BedProfile? selectedBed;
+  final RoomSimilarityAction action;
+  final RoomProfile? selectedRoom;
 }
 
-Future<BedSimilarityDialogResult> showBedSimilarityDialog(
+Future<RoomSimilarityDialogResult> showRoomSimilarityDialog(
   BuildContext context, {
-  required BedSimilarityProposedValues proposed,
-  required List<BedSimilarityMatch> matches,
+  required RoomSimilarityProposedValues proposed,
+  required List<RoomSimilarityMatch> matches,
   bool allowProceed = true,
 }) {
   final AppLocalizations l10n = context.l10n;
-  final List<BedSimilarityMatch> visibleMatches = matches
+  final List<RoomSimilarityMatch> visibleMatches = matches
       .take(5)
       .toList(growable: false);
-  final bool hasExactLabelConflict = visibleMatches.any(
-    (BedSimilarityMatch match) => match.exactLabelConflict,
+  final bool hasExactNameConflict = visibleMatches.any(
+    (RoomSimilarityMatch match) => match.exactNameConflict,
   );
   final bool hasMatches = visibleMatches.isNotEmpty;
-  final bool canProceed = allowProceed && !hasExactLabelConflict;
+  final bool canProceed = allowProceed && !hasExactNameConflict;
   final int overallScore = hasMatches
       ? visibleMatches
-            .map((BedSimilarityMatch match) => match.score)
+            .map((RoomSimilarityMatch match) => match.score)
             .reduce((int a, int b) => a > b ? a : b)
       : 0;
 
-  final String dialogTitle = hasExactLabelConflict || hasMatches
-      ? l10n.tenantFacilitySimilarBedDialogTitle
-      : l10n.tenantFacilityNoSimilarBedDialogTitle;
+  final String dialogTitle = hasExactNameConflict || hasMatches
+      ? l10n.tenantFacilitySimilarRoomDialogTitle
+      : l10n.tenantFacilityNoSimilarRoomDialogTitle;
 
   final String proceedLabel = hasMatches
-      ? l10n.tenantFacilityProceedCreateBedAction
-      : l10n.tenantFacilityContinueCreateBedAction;
+      ? l10n.tenantFacilityProceedCreateRoomAction
+      : l10n.tenantFacilityContinueCreateRoomAction;
 
-  return showAppDialog<BedSimilarityDialogResult>(
+  return showAppDialog<RoomSimilarityDialogResult>(
     context: context,
     builder: (BuildContext dialogContext) {
       final ThemeData theme = Theme.of(dialogContext);
-      final AppFormInformationVariant bannerVariant = hasExactLabelConflict
+      final AppFormInformationVariant bannerVariant = hasExactNameConflict
           ? AppFormInformationVariant.error
           : hasMatches
           ? AppFormInformationVariant.warning
           : AppFormInformationVariant.success;
-      final String bannerTitle = hasExactLabelConflict
-          ? l10n.tenantFacilityBedLabelAlreadyInUse
+      final String bannerTitle = hasExactNameConflict
+          ? l10n.tenantFacilityRoomNameAlreadyInUse
           : hasMatches
-          ? l10n.tenantFacilitySimilarBedWarningTitle
-          : l10n.tenantFacilityNoSimilarBedBannerTitle;
-      final String bannerMessage = hasExactLabelConflict
-          ? l10n.tenantFacilitySimilarBedWarningBody
+          ? l10n.tenantFacilitySimilarRoomWarningTitle
+          : l10n.tenantFacilityNoSimilarRoomBannerTitle;
+      final String bannerMessage = hasExactNameConflict
+          ? l10n.tenantFacilitySimilarRoomWarningBody
           : hasMatches
-          ? l10n.tenantFacilitySimilarBedWarningBody
-          : l10n.tenantFacilityNoSimilarBedDialogBody;
+          ? l10n.tenantFacilitySimilarRoomWarningBody
+          : l10n.tenantFacilityNoSimilarRoomDialogBody;
 
       return AppDialog(
         title: Text(dialogTitle),
         icon: Icon(
-          hasExactLabelConflict
+          hasExactNameConflict
               ? Icons.gpp_bad_outlined
               : hasMatches
               ? Icons.warning_amber_outlined
@@ -95,18 +95,18 @@ Future<BedSimilarityDialogResult> showBedSimilarityDialog(
               title: bannerTitle,
               message: bannerMessage,
               variant: bannerVariant,
-              icon: hasExactLabelConflict
+              icon: hasExactNameConflict
                   ? Icons.gpp_bad_outlined
                   : hasMatches
                   ? Icons.manage_search_outlined
                   : Icons.verified_outlined,
             ),
             SizedBox(height: theme.spacing.md),
-            _ProposedBedCard(
+            _ProposedRoomCard(
               proposed: proposed,
               overallScore: overallScore,
               hasMatches: hasMatches,
-              hasExactLabelConflict: hasExactLabelConflict,
+              hasExactNameConflict: hasExactNameConflict,
             ),
             SizedBox(height: theme.spacing.lg),
             if (hasMatches) ...<Widget>[
@@ -136,17 +136,17 @@ Future<BedSimilarityDialogResult> showBedSimilarityDialog(
                 Widget
               >[
                 if (index > 0) SizedBox(height: theme.spacing.md),
-                _BedSimilarityMatchCard(
+                _RoomSimilarityMatchCard(
                   match: visibleMatches[index],
                   onUseExisting: () => Navigator.of(dialogContext).pop(
-                    BedSimilarityDialogResult.useExisting(
-                      visibleMatches[index].bed,
+                    RoomSimilarityDialogResult.useExisting(
+                      visibleMatches[index].room,
                     ),
                   ),
                 ),
               ],
             ] else
-              _BedNoMatchScorePanel(score: overallScore),
+              _RoomNoMatchScorePanel(score: overallScore),
           ],
         ),
         actions: <Widget>[
@@ -154,7 +154,7 @@ Future<BedSimilarityDialogResult> showBedSimilarityDialog(
             label: l10n.commonCancelActionLabel,
             leadingIcon: Icons.close,
             onPressed: () => Navigator.of(dialogContext).pop(
-              const BedSimilarityDialogResult.cancel(),
+              const RoomSimilarityDialogResult.cancel(),
             ),
           ),
           if (canProceed)
@@ -164,30 +164,30 @@ Future<BedSimilarityDialogResult> showBedSimilarityDialog(
                   ? Icons.add_home_work_outlined
                   : Icons.check_circle_outline,
               onPressed: () => Navigator.of(dialogContext).pop(
-                const BedSimilarityDialogResult.proceed(),
+                const RoomSimilarityDialogResult.proceed(),
               ),
             ),
         ],
       );
     },
   ).then(
-    (BedSimilarityDialogResult? value) =>
-        value ?? const BedSimilarityDialogResult.cancel(),
+    (RoomSimilarityDialogResult? value) =>
+        value ?? const RoomSimilarityDialogResult.cancel(),
   );
 }
 
-class _ProposedBedCard extends StatelessWidget {
-  const _ProposedBedCard({
+class _ProposedRoomCard extends StatelessWidget {
+  const _ProposedRoomCard({
     required this.proposed,
     required this.overallScore,
     required this.hasMatches,
-    required this.hasExactLabelConflict,
+    required this.hasExactNameConflict,
   });
 
-  final BedSimilarityProposedValues proposed;
+  final RoomSimilarityProposedValues proposed;
   final int overallScore;
   final bool hasMatches;
-  final bool hasExactLabelConflict;
+  final bool hasExactNameConflict;
 
   @override
   Widget build(BuildContext context) {
@@ -195,34 +195,36 @@ class _ProposedBedCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final AppStatusColors statusColors = theme.statusColors;
 
-    final Color badgeContainer = hasExactLabelConflict
+    final Color badgeContainer = hasExactNameConflict
         ? statusColors.errorContainer
         : hasMatches
         ? statusColors.warningContainer
         : statusColors.successContainer;
-    final Color badgeOnContainer = hasExactLabelConflict
+    final Color badgeOnContainer = hasExactNameConflict
         ? statusColors.onErrorContainer
         : hasMatches
         ? statusColors.onWarningContainer
         : statusColors.onSuccessContainer;
-    final Color accent = hasExactLabelConflict
+    final Color accent = hasExactNameConflict
         ? statusColors.error
         : hasMatches
         ? statusColors.warning
         : statusColors.success;
 
     final List<(String, String)> facts = <(String, String)>[
-      (l10n.tenantFacilityBedLabelLabel, _display(proposed.label, l10n)),
-      (l10n.tenantFacilityBedWardLabel, _display(proposed.wardName, l10n)),
-      (l10n.tenantFacilityBedRoomLabel, _display(proposed.roomName, l10n)),
-      (l10n.tenantFacilityBedStatusLabel, _display(proposed.statusLabel, l10n)),
+      (l10n.tenantFacilityRoomNameLabel, _display(proposed.name, l10n)),
+      (
+        l10n.tenantFacilityRoomWardLabel,
+        _display(proposed.wardName, l10n),
+      ),
+      (l10n.tenantFacilityRoomFloorLabel, _display(proposed.floor, l10n)),
     ];
 
     return AppSectionPanel(
       tone: AppWorkspaceStatusTone.info,
       density: AppContentPanelDensity.compact,
       leadingIcon: Icons.edit_note_outlined,
-      title: l10n.tenantFacilitySimilarBedProposedHeading,
+      title: l10n.tenantFacilitySimilarRoomProposedHeading,
       trailing: Container(
         padding: EdgeInsets.symmetric(
           horizontal: theme.spacing.sm,
@@ -237,7 +239,7 @@ class _ProposedBedCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
             Text(
-              l10n.tenantFacilityBedOverallSimilarityLabel,
+              l10n.tenantFacilityRoomOverallSimilarityLabel,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: badgeOnContainer,
                 fontWeight: FontWeight.w700,
@@ -293,8 +295,8 @@ class _ProposedBedCard extends StatelessWidget {
   }
 }
 
-class _BedNoMatchScorePanel extends StatelessWidget {
-  const _BedNoMatchScorePanel({required this.score});
+class _RoomNoMatchScorePanel extends StatelessWidget {
+  const _RoomNoMatchScorePanel({required this.score});
 
   final int score;
 
@@ -317,7 +319,7 @@ class _BedNoMatchScorePanel extends StatelessWidget {
           SizedBox(width: theme.spacing.sm),
           Expanded(
             child: Text(
-              l10n.tenantFacilityBedNoMatchScoreLabel(score),
+              l10n.tenantFacilityRoomNoMatchScoreLabel(score),
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -346,13 +348,13 @@ class _BedNoMatchScorePanel extends StatelessWidget {
   }
 }
 
-class _BedSimilarityMatchCard extends StatelessWidget {
-  const _BedSimilarityMatchCard({
+class _RoomSimilarityMatchCard extends StatelessWidget {
+  const _RoomSimilarityMatchCard({
     required this.match,
     required this.onUseExisting,
   });
 
-  final BedSimilarityMatch match;
+  final RoomSimilarityMatch match;
   final VoidCallback onUseExisting;
 
   @override
@@ -360,13 +362,13 @@ class _BedSimilarityMatchCard extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final AppStatusColors statusColors = theme.statusColors;
-    final BedProfile bed = match.bed;
-    final Color accent = match.exactLabelConflict
+    final RoomProfile room = match.room;
+    final Color accent = match.exactNameConflict
         ? statusColors.error
         : statusColors.warning;
 
     return AppContentPanel(
-      tone: match.exactLabelConflict
+      tone: match.exactNameConflict
           ? AppWorkspaceStatusTone.error
           : AppWorkspaceStatusTone.warning,
       density: AppContentPanelDensity.compact,
@@ -381,7 +383,7 @@ class _BedSimilarityMatchCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      l10n.tenantFacilitySimilarBedExistingHeading,
+                      l10n.tenantFacilitySimilarRoomExistingHeading,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w700,
@@ -389,7 +391,7 @@ class _BedSimilarityMatchCard extends StatelessWidget {
                     ),
                     SizedBox(height: theme.spacing.xs / 2),
                     Text(
-                      bed.label,
+                      room.name,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -403,10 +405,10 @@ class _BedSimilarityMatchCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if ((match.roomName ?? '').trim().isNotEmpty) ...<Widget>[
+                    if ((room.floor ?? '').trim().isNotEmpty) ...<Widget>[
                       SizedBox(height: theme.spacing.xs / 2),
                       Text(
-                        match.roomName!,
+                        room.floor!,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -440,7 +442,7 @@ class _BedSimilarityMatchCard extends StatelessWidget {
             spacing: theme.spacing.sm,
             runSpacing: theme.spacing.xs,
             children: <Widget>[
-              for (final BedFieldComparison comparison
+              for (final RoomFieldComparison comparison
                   in match.fieldComparisons)
                 if (comparison.score != null)
                   Text(
@@ -455,7 +457,7 @@ class _BedSimilarityMatchCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: AppButton.secondary(
-              label: l10n.tenantFacilityUseThisBedAction,
+              label: l10n.tenantFacilityUseThisRoomAction,
               leadingIcon: Icons.check,
               onPressed: onUseExisting,
             ),

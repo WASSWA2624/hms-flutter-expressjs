@@ -37,7 +37,7 @@ void main() {
         'class _UnitSetupSection extends ConsumerStatefulWidget',
       );
       final int nextSectionStart = setupPageSource.indexOf(
-        'class _WardSetupSection extends ConsumerWidget',
+        'class _WardSetupSection extends ConsumerStatefulWidget',
       );
       expect(sectionStart, greaterThanOrEqualTo(0));
       expect(nextSectionStart, greaterThan(sectionStart));
@@ -57,7 +57,7 @@ void main() {
     }
 
     test('unit section gates Add on accessible departments, not snapshot', () {
-      final String sectionSource = unitSectionSource();
+      final String sectionSource = unitSectionSource().replaceAll('\r\n', '\n');
 
       expect(sectionSource.contains('_accessibleDepartments.isNotEmpty'), isTrue);
       expect(

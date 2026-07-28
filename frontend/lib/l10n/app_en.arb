@@ -8061,6 +8061,10 @@
   "@tenantFacilityGateNeedWardOrDepartmentForRooms": {
     "description": "Prerequisite message when rooms require a parent location."
   },
+  "tenantFacilityGateNeedFacilityForRooms": "Create at least one facility before adding rooms.",
+  "@tenantFacilityGateNeedFacilityForRooms": {
+    "description": "Rooms tab gate when no accessible facility exists."
+  },
   "tenantFacilityGateNeedWardsForBeds": "Create at least one ward before adding beds.",
   "@tenantFacilityGateNeedWardsForBeds": {
     "description": "Prerequisite message when beds require wards."
@@ -9143,6 +9147,136 @@
   "tenantFacilityWardNameAlreadyInUse": "This ward name is already in use",
   "@tenantFacilityWardNameAlreadyInUse": {
     "description": "Error when an exact ward name conflict is found."
+  },
+  "tenantFacilitySimilarRoomDialogTitle": "Similar room found",
+  "@tenantFacilitySimilarRoomDialogTitle": {
+    "description": "Title when similar rooms are found before save."
+  },
+  "tenantFacilitySimilarRoomWarningTitle": "Potential duplicate room",
+  "@tenantFacilitySimilarRoomWarningTitle": {
+    "description": "Warning title for potential duplicate rooms."
+  },
+  "tenantFacilitySimilarRoomWarningBody": "Review the similar rooms below before saving.",
+  "@tenantFacilitySimilarRoomWarningBody": {
+    "description": "Warning body for potential duplicate rooms."
+  },
+  "tenantFacilityNoSimilarRoomDialogTitle": "No similar room found",
+  "@tenantFacilityNoSimilarRoomDialogTitle": {
+    "description": "Title when no similar rooms are found."
+  },
+  "tenantFacilityNoSimilarRoomBannerTitle": "Match status: No similar found",
+  "@tenantFacilityNoSimilarRoomBannerTitle": {
+    "description": "Banner title when no similar rooms are found."
+  },
+  "tenantFacilityNoSimilarRoomDialogBody": "Review the proposed room details below. No similar rooms were found in this scope.",
+  "@tenantFacilityNoSimilarRoomDialogBody": {
+    "description": "Body when no similar rooms are found."
+  },
+  "tenantFacilityProceedCreateRoomAction": "Create anyway",
+  "@tenantFacilityProceedCreateRoomAction": {
+    "description": "Proceed with room create despite similar matches."
+  },
+  "tenantFacilityContinueCreateRoomAction": "Continue",
+  "@tenantFacilityContinueCreateRoomAction": {
+    "description": "Continue room create when no similar matches."
+  },
+  "tenantFacilityUseThisRoomAction": "Use this room",
+  "@tenantFacilityUseThisRoomAction": {
+    "description": "Select an existing similar room instead of creating."
+  },
+  "tenantFacilitySimilarRoomProposedHeading": "Proposed room",
+  "@tenantFacilitySimilarRoomProposedHeading": {
+    "description": "Heading for the proposed room card in similarity review."
+  },
+  "tenantFacilitySimilarRoomExistingHeading": "Existing room",
+  "@tenantFacilitySimilarRoomExistingHeading": {
+    "description": "Heading for an existing room match card."
+  },
+  "tenantFacilityRoomOverallSimilarityLabel": "Overall similarity",
+  "@tenantFacilityRoomOverallSimilarityLabel": {
+    "description": "Label for the overall room similarity score."
+  },
+  "tenantFacilityRoomNoMatchScoreLabel": "No matches · {score}% similarity",
+  "@tenantFacilityRoomNoMatchScoreLabel": {
+    "description": "Shown when room similarity review finds no matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilityRoomSimilarityCheckingMessage": "Checking for similar rooms…",
+  "@tenantFacilityRoomSimilarityCheckingMessage": {
+    "description": "Loading message while room similarity is checked."
+  },
+  "tenantFacilityRoomNameAlreadyInUse": "This room name is already in use",
+  "@tenantFacilityRoomNameAlreadyInUse": {
+    "description": "Error when an exact room name conflict is found."
+  },
+  "tenantFacilitySimilarBedDialogTitle": "Similar bed found",
+  "@tenantFacilitySimilarBedDialogTitle": {
+    "description": "Title when bed similarity review finds matches."
+  },
+  "tenantFacilitySimilarBedWarningTitle": "Potential duplicate bed",
+  "@tenantFacilitySimilarBedWarningTitle": {
+    "description": "Warning banner title for similar beds."
+  },
+  "tenantFacilitySimilarBedWarningBody": "Review the similar beds below before saving.",
+  "@tenantFacilitySimilarBedWarningBody": {
+    "description": "Warning banner body for similar beds."
+  },
+  "tenantFacilityNoSimilarBedDialogTitle": "No similar bed found",
+  "@tenantFacilityNoSimilarBedDialogTitle": {
+    "description": "Title when bed similarity review finds no matches."
+  },
+  "tenantFacilityNoSimilarBedBannerTitle": "Match status: No similar found",
+  "@tenantFacilityNoSimilarBedBannerTitle": {
+    "description": "Banner title when no similar beds are found."
+  },
+  "tenantFacilityNoSimilarBedDialogBody": "Review the proposed bed details below. No similar beds were found in this scope.",
+  "@tenantFacilityNoSimilarBedDialogBody": {
+    "description": "Body when no similar beds are found."
+  },
+  "tenantFacilityProceedCreateBedAction": "Create anyway",
+  "@tenantFacilityProceedCreateBedAction": {
+    "description": "Confirm creating a bed despite similar matches."
+  },
+  "tenantFacilityContinueCreateBedAction": "Continue",
+  "@tenantFacilityContinueCreateBedAction": {
+    "description": "Continue creating a bed when no similar matches exist."
+  },
+  "tenantFacilityUseThisBedAction": "Use this bed",
+  "@tenantFacilityUseThisBedAction": {
+    "description": "Adopt an existing similar bed instead of creating."
+  },
+  "tenantFacilitySimilarBedProposedHeading": "Proposed bed",
+  "@tenantFacilitySimilarBedProposedHeading": {
+    "description": "Heading for the proposed bed card in similarity review."
+  },
+  "tenantFacilitySimilarBedExistingHeading": "Existing bed",
+  "@tenantFacilitySimilarBedExistingHeading": {
+    "description": "Heading for an existing bed match in similarity review."
+  },
+  "tenantFacilityBedOverallSimilarityLabel": "Overall similarity",
+  "@tenantFacilityBedOverallSimilarityLabel": {
+    "description": "Label for the overall bed similarity score."
+  },
+  "tenantFacilityBedNoMatchScoreLabel": "No matches · {score}% similarity",
+  "@tenantFacilityBedNoMatchScoreLabel": {
+    "description": "Shown when bed similarity review finds no matches.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilityBedSimilarityCheckingMessage": "Checking for similar beds…",
+  "@tenantFacilityBedSimilarityCheckingMessage": {
+    "description": "Loading message while bed similarity is checked."
+  },
+  "tenantFacilityBedLabelAlreadyInUse": "This bed label is already in use in the selected ward",
+  "@tenantFacilityBedLabelAlreadyInUse": {
+    "description": "Error when an exact bed label conflict is found in a ward."
   },
   "tenantFacilityUnitNameLabel": "Unit name",
   "@tenantFacilityUnitNameLabel": {

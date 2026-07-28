@@ -6356,6 +6356,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create at least one department or ward before adding rooms.';
 
   @override
+  String get tenantFacilityGateNeedFacilityForRooms =>
+      'Create at least one facility before adding rooms.';
+
+  @override
   String get tenantFacilityGateNeedWardsForBeds =>
       'Create at least one ward before adding beds.';
 
@@ -7149,6 +7153,164 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tenantFacilityUnitNameAlreadyInUse =>
       'This unit name is already in use';
+
+  @override
+  String get tenantFacilitySimilarWardDialogTitle => 'Similar ward found';
+
+  @override
+  String get tenantFacilitySimilarWardWarningTitle =>
+      'Potential duplicate ward';
+
+  @override
+  String get tenantFacilitySimilarWardWarningBody =>
+      'Review the similar wards below before saving.';
+
+  @override
+  String get tenantFacilityNoSimilarWardDialogTitle => 'No similar ward found';
+
+  @override
+  String get tenantFacilityNoSimilarWardBannerTitle =>
+      'Match status: No similar found';
+
+  @override
+  String get tenantFacilityNoSimilarWardDialogBody =>
+      'Review the proposed ward details below. No similar wards were found in this scope.';
+
+  @override
+  String get tenantFacilityProceedCreateWardAction => 'Create anyway';
+
+  @override
+  String get tenantFacilityContinueCreateWardAction => 'Continue';
+
+  @override
+  String get tenantFacilityUseThisWardAction => 'Use this ward';
+
+  @override
+  String get tenantFacilitySimilarWardProposedHeading => 'Proposed ward';
+
+  @override
+  String get tenantFacilitySimilarWardExistingHeading => 'Existing ward';
+
+  @override
+  String get tenantFacilityWardOverallSimilarityLabel => 'Overall similarity';
+
+  @override
+  String tenantFacilityWardNoMatchScoreLabel(int score) {
+    return 'No matches · $score% similarity';
+  }
+
+  @override
+  String get tenantFacilityWardSimilarityCheckingMessage =>
+      'Checking for similar wards…';
+
+  @override
+  String get tenantFacilityWardNameAlreadyInUse =>
+      'This ward name is already in use';
+
+  @override
+  String get tenantFacilitySimilarRoomDialogTitle => 'Similar room found';
+
+  @override
+  String get tenantFacilitySimilarRoomWarningTitle =>
+      'Potential duplicate room';
+
+  @override
+  String get tenantFacilitySimilarRoomWarningBody =>
+      'Review the similar rooms below before saving.';
+
+  @override
+  String get tenantFacilityNoSimilarRoomDialogTitle => 'No similar room found';
+
+  @override
+  String get tenantFacilityNoSimilarRoomBannerTitle =>
+      'Match status: No similar found';
+
+  @override
+  String get tenantFacilityNoSimilarRoomDialogBody =>
+      'Review the proposed room details below. No similar rooms were found in this scope.';
+
+  @override
+  String get tenantFacilityProceedCreateRoomAction => 'Create anyway';
+
+  @override
+  String get tenantFacilityContinueCreateRoomAction => 'Continue';
+
+  @override
+  String get tenantFacilityUseThisRoomAction => 'Use this room';
+
+  @override
+  String get tenantFacilitySimilarRoomProposedHeading => 'Proposed room';
+
+  @override
+  String get tenantFacilitySimilarRoomExistingHeading => 'Existing room';
+
+  @override
+  String get tenantFacilityRoomOverallSimilarityLabel => 'Overall similarity';
+
+  @override
+  String tenantFacilityRoomNoMatchScoreLabel(int score) {
+    return 'No matches · $score% similarity';
+  }
+
+  @override
+  String get tenantFacilityRoomSimilarityCheckingMessage =>
+      'Checking for similar rooms…';
+
+  @override
+  String get tenantFacilityRoomNameAlreadyInUse =>
+      'This room name is already in use';
+
+  @override
+  String get tenantFacilitySimilarBedDialogTitle => 'Similar bed found';
+
+  @override
+  String get tenantFacilitySimilarBedWarningTitle => 'Potential duplicate bed';
+
+  @override
+  String get tenantFacilitySimilarBedWarningBody =>
+      'Review the similar beds below before saving.';
+
+  @override
+  String get tenantFacilityNoSimilarBedDialogTitle => 'No similar bed found';
+
+  @override
+  String get tenantFacilityNoSimilarBedBannerTitle =>
+      'Match status: No similar found';
+
+  @override
+  String get tenantFacilityNoSimilarBedDialogBody =>
+      'Review the proposed bed details below. No similar beds were found in this scope.';
+
+  @override
+  String get tenantFacilityProceedCreateBedAction => 'Create anyway';
+
+  @override
+  String get tenantFacilityContinueCreateBedAction => 'Continue';
+
+  @override
+  String get tenantFacilityUseThisBedAction => 'Use this bed';
+
+  @override
+  String get tenantFacilitySimilarBedProposedHeading => 'Proposed bed';
+
+  @override
+  String get tenantFacilitySimilarBedExistingHeading => 'Existing bed';
+
+  @override
+  String get tenantFacilityBedOverallSimilarityLabel => 'Overall similarity';
+
+  @override
+  String tenantFacilityBedNoMatchScoreLabel(int score) {
+    return 'No matches · $score% similarity';
+  }
+
+  @override
+  String get tenantFacilityBedSimilarityCheckingMessage =>
+      'Checking for similar beds…';
+
+  @override
+  String get tenantFacilityBedLabelAlreadyInUse =>
+      'This bed label is already in use in the selected ward';
 
   @override
   String get tenantFacilityUnitNameLabel => 'Unit name';

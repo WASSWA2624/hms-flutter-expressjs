@@ -1,0 +1,199 @@
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  group('Beds tab prompt behaviors', () {
+    late String setupPageSource;
+    late String helpersSource;
+    late String repositorySource;
+    late String repositoryInterfaceSource;
+    late String bedSimilaritySource;
+    late String bedSimilarityDialogSource;
+
+    setUpAll(() {
+      setupPageSource = File(
+        'lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart',
+      ).readAsStringSync();
+      helpersSource = File(
+        'lib/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart',
+      ).readAsStringSync();
+      repositorySource = File(
+        'lib/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart',
+      ).readAsStringSync();
+      repositoryInterfaceSource = File(
+        'lib/features/tenant_facility/domain/repositories/tenant_facility_repository.dart',
+      ).readAsStringSync();
+      bedSimilaritySource = File(
+        'lib/features/tenant_facility/domain/entities/bed_similarity.dart',
+      ).readAsStringSync();
+      bedSimilarityDialogSource = File(
+        'lib/features/tenant_facility/presentation/widgets/bed_similarity_dialog.dart',
+      ).readAsStringSync();
+    });
+
+    String bedSectionSource() {
+      final int sectionStart = setupPageSource.indexOf(
+        'class _BedSetupSection extends ConsumerStatefulWidget',
+      );
+      final int nextSectionStart = setupPageSource.indexOf(
+        'class _ModalSectionBody extends StatelessWidget',
+      );
+      expect(sectionStart, greaterThanOrEqualTo(0));
+      expect(nextSectionStart, greaterThan(sectionStart));
+      return setupPageSource.substring(sectionStart, nextSectionStart);
+    }
+
+    String bedFormSource() {
+      final int formStart = setupPageSource.indexOf(
+        'class _BedFormDialog extends ConsumerStatefulWidget',
+      );
+      final int nextStart = setupPageSource.indexOf(
+        'class _SubmissionFailureBanner extends ConsumerWidget',
+      );
+      expect(formStart, greaterThanOrEqualTo(0));
+      expect(nextStart, greaterThan(formStart));
+      return setupPageSource.substring(formStart, nextStart);
+    }
+
+    test('bed section gates Add on accessible wards, not snapshot', () {
+      final String sectionSource = bedSectionSource().replaceAll('\r\n', '\n');
+
+      expect(sectionSource.contains('_accessibleWards.isNotEmpty'), isTrue);
+      expect(
+        sectionSource.contains('l10n.tenantFacilityGateNeedWardsForBeds'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('snapshot.wards.isNotEmpty'),
+        isFalse,
+      );
+      expect(
+        sectionSource.contains(
+          'canManageRecords &&\n        prerequisitesMet &&\n        !isSubmitting &&\n        _busyBedId == null',
+        ),
+        isTrue,
+      );
+    });
+
+    test('bed list loads through scoped listBeds API', () {
+      final String sectionSource = bedSectionSource();
+      expect(sectionSource.contains('listBeds('), isTrue);
+      expect(sectionSource.contains('listWards('), isTrue);
+      expect(sectionSource.contains('listRooms('), isTrue);
+      expect(sectionSource.contains('tenantFacilityBedsListScope'), isTrue);
+      expect(
+        repositoryInterfaceSource.contains(
+          'Future<Result<AppPage<BedProfile>>> listBeds({',
+        ),
+        isTrue,
+      );
+      expect(
+        repositorySource.contains(
+          'Future<Result<AppPage<BedProfile>>> listBeds({',
+        ),
+        isTrue,
+      );
+      expect(repositorySource.contains("'ward_id': wardId"), isTrue);
+      expect(repositorySource.contains("'room_id': roomId"), isTrue);
+    });
+
+    test('bed mutations keep Add visible with loading while submitting', () {
+      final String sectionSource = bedSectionSource();
+      expect(sectionSource.contains('isSubmitting: isSubmitting'), isTrue);
+      expect(
+        sectionSource.contains(
+          'canManageRecords = canSubmit && !submission.isSubmitting',
+        ),
+        isFalse,
+      );
+      expect(sectionSource.contains('canManageRecords = widget.canSubmit'), isTrue);
+    });
+
+    test('bed list uses branded loader and row-scoped mutation busy', () {
+      final String sectionSource = bedSectionSource();
+      expect(
+        sectionSource.contains('AppLoadingIndicator.compact()'),
+        isTrue,
+      );
+      expect(sectionSource.contains('busyItemId: _busyBedId'), isTrue);
+      expect(sectionSource.contains('itemIdBuilder:'), isTrue);
+      expect(sectionSource.contains('_runBusyBedAction'), isTrue);
+      expect(sectionSource.contains('onRestore:'), isTrue);
+      expect(sectionSource.contains('onPermanentDelete:'), isFalse);
+    });
+
+    test('role-scoped columns and filters for beds', () {
+      final String sectionSource = bedSectionSource();
+      expect(
+        sectionSource.contains('tenantFacilityBedsShowsTenantColumn'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('tenantFacilityBedsShowsFacilityColumn'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityBedsFilterKeys.tenant'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityBedsFilterKeys.facility'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityBedsFilterKeys.ward'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityBedsFilterKeys.room'),
+        isTrue,
+      );
+      expect(
+        sectionSource.contains('TenantFacilityBedsFilterKeys.status'),
+        isTrue,
+      );
+      expect(
+        helpersSource.contains('abstract final class TenantFacilityBedsFilterKeys'),
+        isTrue,
+      );
+      expect(
+        helpersSource.contains(
+          'typedef TenantFacilityBedsListScope = TenantFacilityDepartmentsListScope',
+        ),
+        isTrue,
+      );
+    });
+
+    test('role-aware create pickers with required ward and optional room', () {
+      final String formSource = bedFormSource();
+      expect(formSource.contains('showTenantPicker'), isTrue);
+      expect(formSource.contains('showFacilityPicker'), isTrue);
+      expect(formSource.contains('tenantFacilityBedsListScope'), isTrue);
+      expect(formSource.contains('l10n.tenantFacilityBedWardLabel'), isTrue);
+      expect(formSource.contains('l10n.tenantFacilityBedRoomLabel'), isTrue);
+      expect(formSource.contains('_onWardChanged'), isTrue);
+    });
+
+    test('create and edit always open bed similarity dialog', () {
+      final String formSource = bedFormSource();
+      expect(formSource.contains('showBedSimilarityDialog'), isTrue);
+      expect(formSource.contains('checkBedDuplicates'), isTrue);
+      expect(formSource.contains('_checkingSimilarity'), isTrue);
+      expect(formSource.contains('excludeBedId'), isTrue);
+      expect(bedSimilaritySource.contains('checkBedDuplicates'), isTrue);
+      expect(
+        bedSimilarityDialogSource.contains('showBedSimilarityDialog'),
+        isTrue,
+      );
+      expect(
+        bedSimilarityDialogSource.contains('BedSimilarityAction.proceed'),
+        isTrue,
+      );
+      expect(
+        bedSimilarityDialogSource.contains('BedSimilarityAction.cancel'),
+        isTrue,
+      );
+    });
+  });
+}

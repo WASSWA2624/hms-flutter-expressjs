@@ -11848,6 +11848,12 @@ abstract class AppLocalizations {
   /// **'Create at least one department or ward before adding rooms.'**
   String get tenantFacilityGateNeedWardOrDepartmentForRooms;
 
+  /// Rooms tab gate when no accessible facility exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one facility before adding rooms.'**
+  String get tenantFacilityGateNeedFacilityForRooms;
+
   /// Prerequisite message when beds require wards.
   ///
   /// In en, this message translates to:
@@ -13209,6 +13215,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This unit name is already in use'**
   String get tenantFacilityUnitNameAlreadyInUse;
+
+  /// Title when ward similarity review finds matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar ward found'**
+  String get tenantFacilitySimilarWardDialogTitle;
+
+  /// Warning banner title for similar wards.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate ward'**
+  String get tenantFacilitySimilarWardWarningTitle;
+
+  /// Warning banner body for similar wards.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar wards below before saving.'**
+  String get tenantFacilitySimilarWardWarningBody;
+
+  /// Title when ward similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar ward found'**
+  String get tenantFacilityNoSimilarWardDialogTitle;
+
+  /// Banner title when no similar wards are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get tenantFacilityNoSimilarWardBannerTitle;
+
+  /// Body when no similar wards are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the proposed ward details below. No similar wards were found in this scope.'**
+  String get tenantFacilityNoSimilarWardDialogBody;
+
+  /// Confirm creating a ward despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get tenantFacilityProceedCreateWardAction;
+
+  /// Continue creating a ward when no similar matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get tenantFacilityContinueCreateWardAction;
+
+  /// Adopt an existing similar ward instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this ward'**
+  String get tenantFacilityUseThisWardAction;
+
+  /// Heading for the proposed ward card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed ward'**
+  String get tenantFacilitySimilarWardProposedHeading;
+
+  /// Heading for an existing ward match card.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing ward'**
+  String get tenantFacilitySimilarWardExistingHeading;
+
+  /// Label for the overall ward similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall similarity'**
+  String get tenantFacilityWardOverallSimilarityLabel;
+
+  /// Shown when ward similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches · {score}% similarity'**
+  String tenantFacilityWardNoMatchScoreLabel(int score);
+
+  /// Loading message while ward similarity is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for similar wards…'**
+  String get tenantFacilityWardSimilarityCheckingMessage;
+
+  /// Error when an exact ward name conflict is found.
+  ///
+  /// In en, this message translates to:
+  /// **'This ward name is already in use'**
+  String get tenantFacilityWardNameAlreadyInUse;
+
+  /// Title when similar rooms are found before save.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar room found'**
+  String get tenantFacilitySimilarRoomDialogTitle;
+
+  /// Warning title for potential duplicate rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate room'**
+  String get tenantFacilitySimilarRoomWarningTitle;
+
+  /// Warning body for potential duplicate rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar rooms below before saving.'**
+  String get tenantFacilitySimilarRoomWarningBody;
+
+  /// Title when no similar rooms are found.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar room found'**
+  String get tenantFacilityNoSimilarRoomDialogTitle;
+
+  /// Banner title when no similar rooms are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get tenantFacilityNoSimilarRoomBannerTitle;
+
+  /// Body when no similar rooms are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the proposed room details below. No similar rooms were found in this scope.'**
+  String get tenantFacilityNoSimilarRoomDialogBody;
+
+  /// Proceed with room create despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get tenantFacilityProceedCreateRoomAction;
+
+  /// Continue room create when no similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get tenantFacilityContinueCreateRoomAction;
+
+  /// Select an existing similar room instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this room'**
+  String get tenantFacilityUseThisRoomAction;
+
+  /// Heading for the proposed room card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed room'**
+  String get tenantFacilitySimilarRoomProposedHeading;
+
+  /// Heading for an existing room match card.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing room'**
+  String get tenantFacilitySimilarRoomExistingHeading;
+
+  /// Label for the overall room similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall similarity'**
+  String get tenantFacilityRoomOverallSimilarityLabel;
+
+  /// Shown when room similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches · {score}% similarity'**
+  String tenantFacilityRoomNoMatchScoreLabel(int score);
+
+  /// Loading message while room similarity is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for similar rooms…'**
+  String get tenantFacilityRoomSimilarityCheckingMessage;
+
+  /// Error when an exact room name conflict is found.
+  ///
+  /// In en, this message translates to:
+  /// **'This room name is already in use'**
+  String get tenantFacilityRoomNameAlreadyInUse;
+
+  /// Title when bed similarity review finds matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar bed found'**
+  String get tenantFacilitySimilarBedDialogTitle;
+
+  /// Warning banner title for similar beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate bed'**
+  String get tenantFacilitySimilarBedWarningTitle;
+
+  /// Warning banner body for similar beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar beds below before saving.'**
+  String get tenantFacilitySimilarBedWarningBody;
+
+  /// Title when bed similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No similar bed found'**
+  String get tenantFacilityNoSimilarBedDialogTitle;
+
+  /// Banner title when no similar beds are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Match status: No similar found'**
+  String get tenantFacilityNoSimilarBedBannerTitle;
+
+  /// Body when no similar beds are found.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the proposed bed details below. No similar beds were found in this scope.'**
+  String get tenantFacilityNoSimilarBedDialogBody;
+
+  /// Confirm creating a bed despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get tenantFacilityProceedCreateBedAction;
+
+  /// Continue creating a bed when no similar matches exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get tenantFacilityContinueCreateBedAction;
+
+  /// Adopt an existing similar bed instead of creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this bed'**
+  String get tenantFacilityUseThisBedAction;
+
+  /// Heading for the proposed bed card in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed bed'**
+  String get tenantFacilitySimilarBedProposedHeading;
+
+  /// Heading for an existing bed match in similarity review.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing bed'**
+  String get tenantFacilitySimilarBedExistingHeading;
+
+  /// Label for the overall bed similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall similarity'**
+  String get tenantFacilityBedOverallSimilarityLabel;
+
+  /// Shown when bed similarity review finds no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches · {score}% similarity'**
+  String tenantFacilityBedNoMatchScoreLabel(int score);
+
+  /// Loading message while bed similarity is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for similar beds…'**
+  String get tenantFacilityBedSimilarityCheckingMessage;
+
+  /// Error when an exact bed label conflict is found in a ward.
+  ///
+  /// In en, this message translates to:
+  /// **'This bed label is already in use in the selected ward'**
+  String get tenantFacilityBedLabelAlreadyInUse;
 
   /// Unit name field label.
   ///
