@@ -4190,20 +4190,15 @@ class _PatientMergePreviewPanel extends StatelessWidget {
 
 class PatientFormDialog extends StatefulWidget {
   const PatientFormDialog({
+    required this.patient,
     required this.referenceData,
     required this.onSubmit,
-    this.patient,
-    this.onLookupDuplicates,
     super.key,
   });
 
-  final Patient? patient;
+  final Patient patient;
   final PatientReferenceData referenceData;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
-  final Future<Result<AppPage<PatientDuplicateCandidate>>> Function(
-    PatientDuplicateQuery query,
-  )?
-  onLookupDuplicates;
 
   @override
   State<PatientFormDialog> createState() => _PatientFormDialogState();
@@ -4222,52 +4217,30 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
   String? _facilityId;
   bool _isActive = true;
   bool _isSaving = false;
-  bool _isCheckingDuplicates = false;
-  bool _duplicateWarningAccepted = false;
-  List<PatientDuplicateCandidate> _duplicateCandidates =
-      const <PatientDuplicateCandidate>[];
   AppFailure? _failure;
-
-  bool get _isEditing => widget.patient != null;
 
   @override
   void initState() {
     super.initState();
-    final Patient? patient = widget.patient;
-    _firstNameController = TextEditingController(text: patient?.firstName);
-    _lastNameController = TextEditingController(text: patient?.lastName);
-    _phoneController = TextEditingController(text: patient?.primaryPhone);
-    _emailController = TextEditingController(text: patient?.primaryEmail);
+    final Patient patient = widget.patient;
+    _firstNameController = TextEditingController(text: patient.firstName);
+    _lastNameController = TextEditingController(text: patient.lastName);
+    _phoneController = TextEditingController(text: patient.primaryPhone);
+    _emailController = TextEditingController(text: patient.primaryEmail);
     _identifierTypeController = TextEditingController(
-      text: patient?.primaryIdentifierType,
+      text: patient.primaryIdentifierType,
     );
     _identifierValueController = TextEditingController(
-      text: patient?.primaryIdentifierValue,
+      text: patient.primaryIdentifierValue,
     );
-    _dateOfBirth = patient?.dateOfBirth;
-    _gender = patient?.gender;
-    _facilityId = patient?.facilityId;
-    _isActive = patient?.isActive ?? true;
-    if (!_isEditing) {
-      _firstNameController.addListener(_clearDuplicateWarning);
-      _lastNameController.addListener(_clearDuplicateWarning);
-      _phoneController.addListener(_clearDuplicateWarning);
-      _emailController.addListener(_clearDuplicateWarning);
-      _identifierTypeController.addListener(_clearDuplicateWarning);
-      _identifierValueController.addListener(_clearDuplicateWarning);
-    }
+    _dateOfBirth = patient.dateOfBirth;
+    _gender = patient.gender;
+    _facilityId = patient.facilityId;
+    _isActive = patient.isActive;
   }
 
   @override
   void dispose() {
-    if (!_isEditing) {
-      _firstNameController.removeListener(_clearDuplicateWarning);
-      _lastNameController.removeListener(_clearDuplicateWarning);
-      _phoneController.removeListener(_clearDuplicateWarning);
-      _emailController.removeListener(_clearDuplicateWarning);
-      _identifierTypeController.removeListener(_clearDuplicateWarning);
-      _identifierValueController.removeListener(_clearDuplicateWarning);
-    }
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
@@ -4282,7 +4255,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
     final l10n = context.l10n;
 
     return AppDialog(
-      title: Text(_isEditing ? l10n.patientsEditTitle : l10n.patientsAddTitle),
+      title: Text(l10n.patientsEditTitle),
       icon: const Icon(Icons.assignment_ind_outlined),
       closeEnabled: !_isSaving,
       maxWidth: 760,
@@ -4290,13 +4263,11 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
         height: _formBodyHeight(context),
         child: AppFormShell(
           formKey: _formKey,
-          enabled: !_isSaving && !_isCheckingDuplicates,
+          enabled: !_isSaving,
           scrollable: true,
           density: AppFormSectionDensity.compact,
           formStatus: appFormFailureStatus(context, _failure),
           children: <Widget>[
-            if (_duplicateCandidates.isNotEmpty)
-              PatientDuplicateWarningPanel(duplicates: _duplicateCandidates),
             AppResponsiveFieldRow.two(
               left: AppTextField(
                 controller: _firstNameController,
@@ -4324,7 +4295,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                   setState(() {
                     _dateOfBirth = value;
                   });
-                  _clearDuplicateWarning();
                 },
               ),
               right: AppGenderField(
@@ -4339,7 +4309,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                   setState(() {
                     _gender = value;
                   });
-                  _clearDuplicateWarning();
                 },
               ),
             ),
@@ -4353,7 +4322,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                   setState(() {
                     _facilityId = value;
                   });
-                  _clearDuplicateWarning();
                 },
               ),
             PatientPhoneField(
@@ -4376,7 +4344,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                   setState(() {
                     _identifierTypeController.text = value ?? '';
                   });
-                  _clearDuplicateWarning();
                 },
                 options: _identifierTypeSelectOptions(
                   _identifierTypeController.text,
@@ -4396,7 +4363,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                 setState(() {
                   _isActive = value;
                 });
-                _clearDuplicateWarning();
               },
             ),
           ],
@@ -4408,10 +4374,8 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
           onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
-          label: _duplicateCandidates.isNotEmpty && _duplicateWarningAccepted
-              ? l10n.patientsSaveAnywayAction
-              : l10n.patientsSaveAction,
-          isLoading: _isSaving || _isCheckingDuplicates,
+          label: l10n.patientsSaveAction,
+          isLoading: _isSaving,
           onPressed: _submit,
         ),
       ],
@@ -4426,17 +4390,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
-    }
-
-    final bool shouldCheckDuplicates =
-        !_isEditing &&
-        !_duplicateWarningAccepted &&
-        widget.onLookupDuplicates != null;
-    if (shouldCheckDuplicates) {
-      final bool canContinue = await _checkDuplicatesBeforeSave();
-      if (!canContinue) {
-        return;
-      }
     }
 
     setState(() {
@@ -4470,64 +4423,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
     setState(() {
       _isSaving = false;
       _failure = failure;
-    });
-  }
-
-  Future<bool> _checkDuplicatesBeforeSave() async {
-    setState(() {
-      _isCheckingDuplicates = true;
-      _failure = null;
-    });
-
-    final Result<AppPage<PatientDuplicateCandidate>> result =
-        await widget.onLookupDuplicates!(
-          PatientDuplicateQuery(
-            firstName: _firstNameController.text.trim(),
-            lastName: _lastNameController.text.trim(),
-            dateOfBirth: _dateOfBirth,
-            phone: _phoneController.text.trim(),
-            identifierValue: _identifierValueController.text.trim(),
-          ),
-        );
-    if (!mounted) {
-      return false;
-    }
-
-    return result.when(
-      success: (AppPage<PatientDuplicateCandidate> page) {
-        if (page.items.isEmpty) {
-          setState(() {
-            _isCheckingDuplicates = false;
-            _duplicateCandidates = const <PatientDuplicateCandidate>[];
-          });
-          return true;
-        }
-
-        setState(() {
-          _isCheckingDuplicates = false;
-          _duplicateCandidates = page.items;
-          _duplicateWarningAccepted = true;
-        });
-        return false;
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _isCheckingDuplicates = false;
-          _failure = failure;
-        });
-        return false;
-      },
-    );
-  }
-
-  void _clearDuplicateWarning() {
-    if (_duplicateCandidates.isEmpty && !_duplicateWarningAccepted) {
-      return;
-    }
-
-    setState(() {
-      _duplicateCandidates = const <PatientDuplicateCandidate>[];
-      _duplicateWarningAccepted = false;
     });
   }
 }

@@ -46,11 +46,17 @@ class PatientDetailQuickActions extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final Patient patient = detail.patient;
     final PatientVisitContext? visit = patient.currentVisit;
+    final List<PatientActiveWorkItem> activeWorkItems =
+        collectPatientActiveWorkItems(detail);
     final bool hasActiveOpdEncounter = isActiveOpdPatientVisit(visit);
-    final bool hasActiveOpdWorkItem = collectPatientActiveWorkItems(detail).any(
+    final bool hasActiveOpdWorkItem = activeWorkItems.any(
       (PatientActiveWorkItem item) =>
           item.kind == PatientActiveWorkKind.encounter ||
           item.kind == PatientActiveWorkKind.queue,
+    );
+    final bool hasActiveWorkAdmission = activeWorkItems.any(
+      (PatientActiveWorkItem item) =>
+          item.kind == PatientActiveWorkKind.admission,
     );
     final PatientSummaryRecord? activeAdmission = activePatientAdmissionRecord(
       detail.workspace.admissions,
@@ -134,11 +140,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         ),
       // Active work Continue is the sole discharge entry when an admission
       // work item is already listed; keep the chip only for visit-only cases.
-      if (hasActiveAdmission &&
-          !collectPatientActiveWorkItems(detail).any(
-            (PatientActiveWorkItem item) =>
-                item.kind == PatientActiveWorkKind.admission,
-          ))
+      if (hasActiveAdmission && !hasActiveWorkAdmission)
         AppPermissionActionItem(
           label: dischargeActionLabel,
           icon: Icons.logout_outlined,

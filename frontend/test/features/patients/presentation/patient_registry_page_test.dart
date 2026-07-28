@@ -550,12 +550,150 @@ void main() {
     expect(find.text('+256700000000'), findsOneWidget);
     expect(find.text('Penicillin - Severe'), findsOneWidget);
     expect(find.text('OPD - In Progress'), findsNothing);
+    // Open record is label-only (row select opens detail); not a second button.
     expect(find.text('Open record'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppButton),
+        matching: find.text('Open record'),
+      ),
+      findsNothing,
+    );
 
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Table Settings'), findsOneWidget);
   });
+
+  testWidgets(
+    'Complete record next action opens edit form without detail shell',
+    (WidgetTester tester) async {
+      final patientRepository = _MockPatientRepository();
+      final opdRepository = _MockOpdRepository();
+      const patient = Patient(
+        id: 'patient-incomplete-1',
+        publicId: 'PAT-INC-1',
+        firstName: 'Incomplete',
+        lastName: 'Patient',
+        requiresCompletion: true,
+      );
+
+      _stubPatientRegistry(patientRepository, patient);
+      _stubProviderLookup(opdRepository);
+      when(() => patientRepository.updatePatient(patient.id, any())).thenAnswer(
+        (_) async => const Result<Patient>.success(patient),
+      );
+
+      await _pumpPatientRegistry(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        size: const Size(1280, 900),
+        roles: const <String>['SUPER_ADMIN'],
+      );
+
+      expect(find.text('Complete record'), findsOneWidget);
+      await tester.tap(find.text('Complete record'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit patient'), findsOneWidget);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.text('Quick actions'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Duplicate review toolbar opens when overview has candidates',
+    (WidgetTester tester) async {
+      final patientRepository = _MockPatientRepository();
+      final opdRepository = _MockOpdRepository();
+      const patient = Patient(
+        id: 'patient-1',
+        publicId: 'PAT-1001',
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
+      const duplicate = PatientDuplicateCandidate(
+        reviewId: 'dup-1',
+        confidenceScore: 88,
+        classification: 'STRONG',
+        primaryPatient: patient,
+        secondaryPatient: Patient(
+          id: 'patient-2',
+          publicId: 'PAT-1002',
+          firstName: 'Amina',
+          lastName: 'Kato',
+        ),
+      );
+
+      _stubPatientRegistry(
+        patientRepository,
+        patient,
+        duplicates: const <PatientDuplicateCandidate>[duplicate],
+      );
+      _stubProviderLookup(opdRepository);
+
+      await _pumpPatientRegistry(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        size: const Size(1280, 900),
+        roles: const <String>['SUPER_ADMIN'],
+      );
+
+      expect(find.byTooltip('Potential matches needing review.'), findsOneWidget);
+      await tester.tap(find.text('Duplicate review'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Duplicate review'), findsWidgets);
+      expect(find.text('Review merge'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'unauthorized users do not see Register patient or Duplicate review',
+    (WidgetTester tester) async {
+      final patientRepository = _MockPatientRepository();
+      final opdRepository = _MockOpdRepository();
+      const patient = Patient(
+        id: 'patient-1',
+        publicId: 'PAT-1001',
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
+      const duplicate = PatientDuplicateCandidate(
+        reviewId: 'dup-1',
+        confidenceScore: 88,
+        classification: 'STRONG',
+        primaryPatient: patient,
+        secondaryPatient: Patient(
+          id: 'patient-2',
+          publicId: 'PAT-1002',
+          firstName: 'Amina',
+          lastName: 'Kato',
+        ),
+      );
+
+      _stubPatientRegistry(
+        patientRepository,
+        patient,
+        duplicates: const <PatientDuplicateCandidate>[duplicate],
+      );
+      _stubProviderLookup(opdRepository);
+
+      await _pumpPatientRegistry(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        size: const Size(1280, 900),
+        roles: const <String>['PHARMACIST'],
+      );
+
+      expect(find.byTooltip('Register patient'), findsNothing);
+      expect(find.text('Duplicate review'), findsNothing);
+    },
+  );
 
   testWidgets(
     'RegisterNewPatientDialog opens patient detail dialog after save',
@@ -1053,9 +1191,11 @@ void main() {
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Discharge planning'), findsOneWidget);
+    // Active work Continue is the sole discharge entry — no duplicate chip.
+    expect(find.text('Discharge planning'), findsNothing);
+    expect(find.text('Manage admission'), findsOneWidget);
 
-    await tester.tap(find.text('Discharge planning'));
+    await tester.tap(find.text('Manage admission'));
     await tester.pumpAndSettle();
 
     expect(find.text('Clearance checklist'), findsOneWidget);
@@ -1432,10 +1572,16 @@ void _stubPatientRegistry(
   _MockPatientRepository patientRepository,
   Patient patient, {
   PatientDetail? detail,
+  List<PatientDuplicateCandidate> duplicates =
+      const <PatientDuplicateCandidate>[],
 }) {
   when(() => patientRepository.loadOverview()).thenAnswer(
-    (_) async => const Result<PatientRegistryOverview>.success(
-      PatientRegistryOverview(totalPatients: 1, activePatients: 1),
+    (_) async => Result<PatientRegistryOverview>.success(
+      PatientRegistryOverview(
+        totalPatients: 1,
+        activePatients: 1,
+        duplicates: duplicates,
+      ),
     ),
   );
   when(() => patientRepository.loadReferenceData()).thenAnswer(

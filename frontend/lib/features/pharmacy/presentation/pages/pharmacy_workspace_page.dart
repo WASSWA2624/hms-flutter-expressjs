@@ -174,7 +174,13 @@ class _PharmacyWorkspaceContentState
     if (query.encounterId.isNotEmpty || query.orderId.isNotEmpty) {
       final PharmacyOrder? order = _findOrderByQuery(query);
       if (order != null) {
-        await controller.selectOrder(order);
+        await _openPharmacyDetailDialog(
+          context,
+          ref,
+          widget.state,
+          order,
+          _writeRequirement,
+        );
       }
     }
   }
@@ -331,134 +337,15 @@ class _PharmacyWorkspaceContentState
     };
   }
 
-  Widget _primaryActionForSection(
-    AppLocalizations l10n,
-    PharmacyDeskSection section,
-  ) {
-    return switch (section) {
-      PharmacyDeskSection.queue ||
-      PharmacyDeskSection.inProgress ||
-      PharmacyDeskSection.completed ||
-      PharmacyDeskSection.allOrders => AppTabToolbarPrimary(
-        label: l10n.pharmacyCatalogPanelTitle,
-        icon: Icons.inventory_2_outlined,
-        onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
-      ),
-      PharmacyDeskSection.pendingPayment => AppTabToolbarPrimary(
-        label: l10n.navigationBillingLabel,
-        icon: Icons.payments_outlined,
-        onPressed: () => context.go(AppRoutes.billing.location()),
-      ),
-    };
-  }
-
-  List<Widget> _secondaryActionsForSection(
-    AppLocalizations l10n,
-    PharmacyWorkspaceState state,
-    PharmacyWorkspaceController controller,
-    PharmacyDeskSection section,
-  ) {
-    final List<Widget> actions = <Widget>[];
-
-    if (section == PharmacyDeskSection.pendingPayment) {
-      actions.add(
-        AppTabToolbarAction(
-          label: l10n.pharmacyCatalogPanelTitle,
-          icon: Icons.inventory_2_outlined,
-          onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
-        ),
-      );
-    }
-
-    actions.add(
-      AppTabToolbarAction(
-        label: l10n.commonRefreshActionLabel,
-        icon: Icons.refresh,
-        isLoading: state.isRefreshingOrders,
-        enabled: !state.isRefreshingOrders,
-        onPressed: state.isRefreshingOrders
-            ? null
-            : () {
-                unawaited(
-                  controller.refresh().then((AppFailure? failure) {
-                    if (!mounted) {
-                      return;
-                    }
-                    _showFailureIfNeeded(context, failure);
-                  }),
-                );
-              },
-      ),
+  Widget _catalogPrimaryAction(AppLocalizations l10n) {
+    return AppTabToolbarPrimary(
+      label: l10n.pharmacyCatalogPanelTitle,
+      icon: Icons.inventory_2_outlined,
+      onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
     );
-
-    if (section == PharmacyDeskSection.queue ||
-        section == PharmacyDeskSection.inProgress ||
-        section == PharmacyDeskSection.allOrders) {
-      final PharmacyInventoryStockSummary summary =
-          state.inventoryWorkbench.summary;
-      if (summary.criticalStockRows > 0) {
-        actions.add(
-          AppTabToolbarAction(
-            label: l10n.pharmacySummaryLowStockLabel,
-            icon: Icons.warning_amber_outlined,
-            onPressed: () => unawaited(
-              _openCatalogForInventoryAlert(PharmacyInventoryFilter.lowStock),
-            ),
-          ),
-        );
-      }
-      if (summary.almostOutOfStockRows > 0) {
-        actions.add(
-          AppTabToolbarAction(
-            label: l10n.pharmacySummaryAlmostOutLabel,
-            icon: Icons.inventory_outlined,
-            onPressed: () => unawaited(
-              _openCatalogForInventoryAlert(
-                PharmacyInventoryFilter.almostOutOfStock,
-              ),
-            ),
-          ),
-        );
-      }
-      if (summary.expiringSoonRows > 0) {
-        actions.add(
-          AppTabToolbarAction(
-            label: l10n.pharmacySummaryExpiringSoonLabel,
-            icon: Icons.event_busy_outlined,
-            onPressed: () => unawaited(
-              _openCatalogForInventoryAlert(
-                PharmacyInventoryFilter.expiringSoon,
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
-    return actions;
   }
 
   // ─── End tab helpers ──────────────────────────────────────────────────
-
-  Future<void> _openCatalogForInventoryAlert(
-    PharmacyInventoryFilter filter,
-  ) async {
-    final AppFailure? failure = await ref
-        .read(pharmacyWorkspaceControllerProvider.notifier)
-        .applyInventoryFilter(filter);
-    if (!mounted) {
-      return;
-    }
-    _showFailureIfNeeded(context, failure);
-    if (_readPharmacyState(ref) == null) {
-      return;
-    }
-    await openPharmacyCatalogDialog(
-      context,
-      ref,
-      initialTab: PharmacyCatalogTab.inventory,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -502,13 +389,7 @@ class _PharmacyWorkspaceContentState
                   }
                 }
               },
-              primaryAction: _primaryActionForSection(l10n, _section),
-              secondaryActions: _secondaryActionsForSection(
-                l10n,
-                state,
-                controller,
-                _section,
-              ),
+              primaryAction: _catalogPrimaryAction(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
             _PharmacyQueuePanel(

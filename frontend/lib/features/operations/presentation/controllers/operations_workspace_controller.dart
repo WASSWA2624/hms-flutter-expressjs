@@ -193,8 +193,8 @@ final class OperationsWorkspaceController
     final Result<OperationsWorkItem> result = await _repository.getRequest(
       item.effectiveDisplayId,
     );
-    return result.when(
-      success: (OperationsWorkItem detail) async {
+    switch (result) {
+      case ResultSuccess<OperationsWorkItem>(value: final OperationsWorkItem detail):
         final AppPage<OperationsServiceLog> logs = await _serviceLogsFor(
           detail,
         );
@@ -210,8 +210,7 @@ final class OperationsWorkspaceController
           );
         }
         return null;
-      },
-      failure: (AppFailure failure) {
+      case ResultFailure<OperationsWorkItem>(failure: final AppFailure failure):
         final OperationsWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
@@ -219,8 +218,7 @@ final class OperationsWorkspaceController
           );
         }
         return failure;
-      },
-    );
+    }
   }
 
   Future<AppFailure?> createRequest(OperationsRequestDraft draft) async {

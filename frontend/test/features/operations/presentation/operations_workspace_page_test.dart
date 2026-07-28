@@ -473,9 +473,30 @@ void main() {
     );
 
     await _pumpOperationsWorkspace(tester, repository: repository);
+    clearInteractions(repository);
+    when(() => repository.getRequest(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      return const Result<OperationsWorkItem>.success(_openRequest);
+    });
+    when(() => repository.listServiceLogs(any())).thenAnswer(
+      (_) async => const Result<AppPage<OperationsServiceLog>>.success(
+        AppPage<OperationsServiceLog>(
+          items: <OperationsServiceLog>[],
+          request: AppPageRequest(),
+        ),
+      ),
+    );
 
-    await tester.tap(find.text('Assign technician or team'));
+    final Finder action = find.byTooltip('Assign technician or team');
+    expect(action, findsOneWidget);
+    await tester.ensureVisible(action);
+    await tester.tap(action, warnIfMissed: true);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
+
+    verify(() => repository.getRequest(any())).called(1);
 
     expect(find.text('Assign'), findsWidgets);
     expect(find.text('Request detail'), findsNothing);
